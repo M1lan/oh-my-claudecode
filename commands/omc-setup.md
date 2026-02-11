@@ -8,7 +8,9 @@ This is the **only command you need to learn**. After running this, everything e
 
 ## Graceful Interrupt Handling
 
-**IMPORTANT**: This setup process saves progress after each step. If interrupted (Ctrl+C or connection loss), the setup can resume from where it left off.
+**IMPORTANT**: This setup process saves progress after each step. If
+interrupted (Ctrl+C or connection loss), the setup can resume from where it
+left off.
 
 ### Resume Detection (Step 0)
 
@@ -64,10 +66,12 @@ If state exists, use AskUserQuestion to prompt:
 **Question:** "Found a previous setup session. Would you like to resume or start fresh?"
 
 **Options:**
+
 1. **Resume from step $LAST_STEP** - Continue where you left off
 2. **Start fresh** - Begin from the beginning (clears saved state)
 
 If user chooses "Start fresh":
+
 ```bash
 rm -f ".omc/state/setup-state.json"
 echo "Previous state cleared. Starting fresh setup."
@@ -80,28 +84,70 @@ Use the AskUserQuestion tool to prompt the user:
 **Question:** "Where should I configure oh-my-claudecode?"
 
 **Options:**
-1. **Local (this project)** - Creates `.claude/CLAUDE.md` in current project directory. Best for project-specific configurations.
-2. **Global (all projects)** - Creates `~/.claude/CLAUDE.md` for all Claude Code sessions. Best for consistent behavior everywhere.
+
+1. **Local (this project)** - Creates `.claude/CLAUDE.md` in current project
+   directory. Best for project-specific configurations.
+2. **Global (all projects)** - Creates `~/.claude/CLAUDE.md` for all Claude
+   Code sessions. Best for consistent behavior everywhere.
 
 ## Step 2: Execute Based on Choice
 
-### If User Chooses LOCAL:
+### If User Chooses LOCAL
+
+Safely download fresh `CLAUDE.md` without destructive overwrite:
 
 ```bash
 # Create .claude directory in current project
 mkdir -p .claude
 
-# Download fresh CLAUDE.md from GitHub
-curl -fsSL "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md" -o .claude/CLAUDE.md && \
-echo "Downloaded CLAUDE.md to .claude/CLAUDE.md"
+TARGET_PATH=".claude/CLAUDE.md"
+TEMP_OMC="$(mktemp "${TMPDIR:-/tmp}/omc-claude-local-XXXXXX.md")"
+trap 'rm -f "$TEMP_OMC"' EXIT
+
+# Download to a temp file first, then move into place atomically.
+curl -fsSL "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md" -o "$TEMP_OMC"
+
+if [ ! -s "$TEMP_OMC" ]; then
+  echo "ERROR: Failed to download CLAUDE.md. Keeping existing file unchanged."
+  exit 1
+fi
+
+if [ -f "$TARGET_PATH" ]; then
+  BACKUP_PATH="${TARGET_PATH}.backup.$(date +%Y-%m-%d_%H%M%S)"
+  cp "$TARGET_PATH" "$BACKUP_PATH"
+  echo "Existing CLAUDE.md found. Backup created at $BACKUP_PATH"
+fi
+
+mv "$TEMP_OMC" "$TARGET_PATH"
+echo "Downloaded CLAUDE.md to $TARGET_PATH"
 ```
 
-### If User Chooses GLOBAL:
+### If User Chooses GLOBAL
 
 ```bash
-# Download fresh CLAUDE.md to global config
-curl -fsSL "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md" -o ~/.claude/CLAUDE.md && \
-echo "Downloaded CLAUDE.md to ~/.claude/CLAUDE.md"
+# Ensure global config directory exists
+mkdir -p "$HOME/.claude"
+
+TARGET_PATH="$HOME/.claude/CLAUDE.md"
+TEMP_OMC="$(mktemp "${TMPDIR:-/tmp}/omc-claude-global-XXXXXX.md")"
+trap 'rm -f "$TEMP_OMC"' EXIT
+
+# Download to a temp file first, then move into place atomically.
+curl -fsSL "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md" -o "$TEMP_OMC"
+
+if [ ! -s "$TEMP_OMC" ]; then
+  echo "ERROR: Failed to download CLAUDE.md. Keeping existing file unchanged."
+  exit 1
+fi
+
+if [ -f "$TARGET_PATH" ]; then
+  BACKUP_PATH="${TARGET_PATH}.backup.$(date +%Y-%m-%d_%H%M%S)"
+  cp "$TARGET_PATH" "$BACKUP_PATH"
+  echo "Existing CLAUDE.md found. Backup created at $BACKUP_PATH"
+fi
+
+mv "$TEMP_OMC" "$TARGET_PATH"
+echo "Downloaded CLAUDE.md to $TARGET_PATH"
 ```
 
 ## Step 3: Setup HUD Statusline
@@ -111,6 +157,7 @@ The HUD shows real-time status in Claude Code's status bar. **Invoke the hud ski
 Use the Skill tool to invoke: `hud` with args: `setup`
 
 This will:
+
 1. Install the HUD wrapper script to `~/.claude/hud/omc-hud.mjs`
 2. Configure `statusLine` in `~/.claude/settings.json`
 3. Report status and prompt to restart if needed
@@ -119,13 +166,15 @@ This will:
 
 The OMC CLI provides standalone token analytics commands (`omc stats`, `omc agents`, `omc backfill`, `omc tui`).
 
-Ask user: "Would you like to install the OMC CLI for standalone analytics? (Recommended for tracking token usage and costs)"
+Ask user: "Would you like to install the OMC CLI for standalone analytics?
+(Recommended for tracking token usage and costs)"
 
 **Options:**
+
 1. **Yes (Recommended)** - Install CLI tools globally for `omc stats`, `omc agents`, etc.
 2. **No** - Skip CLI installation, use only plugin skills
 
-### If User Chooses YES:
+### If User Chooses YES
 
 ```bash
 # Check for bun (preferred) or npm
@@ -155,7 +204,7 @@ else
 fi
 ```
 
-### If User Chooses NO:
+### If User Chooses NO
 
 Skip this step. User can install later with `bun install -g oh-my-claude-sisyphus` or `npm install -g oh-my-claude-sisyphus`.
 
@@ -172,10 +221,11 @@ The plugin includes AST-aware code search and transformation tools (`ast_grep_se
 Ask user: "Would you like to install AST tools for advanced code search? (Pattern-based AST matching across 17 languages)"
 
 **Options:**
+
 1. **Yes (Recommended)** - Install `@ast-grep/napi` for AST-powered search/replace
 2. **No** - Skip, AST tools will show helpful error when used
 
-### If User Chooses YES:
+### If User Chooses YES
 
 ```bash
 # Check for bun (preferred) or npm
@@ -217,7 +267,7 @@ else
 fi
 ```
 
-### If User Chooses NO:
+### If User Chooses NO
 
 Skip this step. AST tools will gracefully degrade with a helpful installation message when used.
 
@@ -228,7 +278,8 @@ MCP servers extend Claude Code with additional tools (web search, GitHub, etc.).
 Ask user: "Would you like to configure MCP servers for enhanced capabilities? (Context7, Exa search, GitHub, etc.)"
 
 If yes, invoke the mcp-setup skill:
-```
+
+```text
 /oh-my-claudecode:mcp-setup
 ```
 
@@ -238,15 +289,16 @@ If no, skip to next step.
 
 Agent teams are an experimental Claude Code feature that spawns N coordinated agents on a shared task list with inter-agent messaging. **Disabled by default** — requires enabling in `settings.json`.
 
-Reference: https://code.claude.com/docs/en/agent-teams
+Reference: <https://code.claude.com/docs/en/agent-teams>
 
 Ask user: "Would you like to enable agent teams? (experimental Claude Code feature)"
 
 **Options:**
+
 1. **Yes, enable teams (Recommended)** - Enable the experimental feature and configure defaults
 2. **No, skip** - Leave teams disabled (can enable later)
 
-### If User Chooses YES:
+### If User Chooses YES
 
 #### 5.5.1: Enable in settings.json
 
@@ -324,9 +376,10 @@ jq empty "$SETTINGS_FILE" 2>/dev/null && echo "settings.json: valid" || echo "ER
 jq -e '.env.CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS' "$SETTINGS_FILE" > /dev/null 2>&1 && echo "Agent teams: ENABLED" || echo "WARNING: not enabled"
 ```
 
-### If User Chooses NO:
+### If User Chooses NO
 
 Skip. Teams remain disabled. Enable later by adding to `~/.claude/settings.json`:
+
 ```json
 { "env": { "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1" } }
 ```
@@ -334,6 +387,7 @@ Skip. Teams remain disabled. Enable later by adding to `~/.claude/settings.json`
 ## Step 6: Detect Upgrade from 2.x
 
 Check if user has existing configuration:
+
 ```bash
 # Check for existing 2.x artifacts
 ls ~/.claude/commands/ralph-loop.md 2>/dev/null || ls ~/.claude/commands/ultrawork.md 2>/dev/null
@@ -343,9 +397,9 @@ If found, this is an upgrade from 2.x.
 
 ## Step 7: Show Welcome Message
 
-### For New Users:
+### For New Users
 
-```
+```text
 OMC Setup Complete!
 
 You don't need to learn any commands. I now have intelligent behaviors that activate automatically.
@@ -395,9 +449,9 @@ AST TOOLS (if installed):
 That's it! Just use Claude Code normally.
 ```
 
-### For Users Upgrading from 2.x:
+### For Users Upgrading from 2.x
 
-```
+```text
 OMC Setup Complete! (Upgraded from 2.x)
 
 GOOD NEWS: Your existing commands still work!
@@ -444,13 +498,14 @@ First, check if `gh` CLI is available and authenticated:
 gh auth status &>/dev/null
 ```
 
-### If gh is available and authenticated:
+### If gh is available and authenticated
 
 Use the AskUserQuestion tool to prompt the user:
 
 **Question:** "If you're enjoying oh-my-claudecode, would you like to support the project by starring it on GitHub?"
 
 **Options:**
+
 1. **Yes, star it!** - Star the repository
 2. **No thanks** - Skip without further prompts
 3. **Maybe later** - Skip without further prompts
@@ -463,7 +518,7 @@ gh api -X PUT /user/starred/Yeachan-Heo/oh-my-claudecode 2>/dev/null && echo "Th
 
 **Note:** Fail gracefully if the API call doesn't work - never block setup completion.
 
-### If gh is NOT available or not authenticated:
+### If gh is NOT available or not authenticated
 
 Skip the AskUserQuestion and just display:
 
@@ -477,4 +532,4 @@ echo ""
 ## Fallback
 
 If curl fails, tell user to manually download from:
-https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md
+<https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md>
