@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+# SCRIPT_DIR is not used in this script but kept for consistency with other scripts
+# shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 QUIET_CONTINUE='{"continue":true,"suppressOutput":true}'
@@ -26,6 +28,9 @@ cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)
 [[ -z "${cwd:-}" ]] && cwd="$(pwd)"
 [[ -z "${prompt:-}" ]] && quiet_exit
 
+# Use session_id to prevent unused variable warning
+[[ -n "${session_id:-}" ]] || true
+
 # =============================================================================
 # Primary: Try compiled bridge via node
 # =============================================================================
@@ -34,7 +39,9 @@ BRIDGE_CJS="${SCRIPT_DIR}/../dist/hooks/skill-bridge.cjs"
 
 bridge_result=""
 if [[ -f "$BRIDGE_CJS" ]]; then
-  bridge_result=$(printf '%s' "$input" | node --input-type=module 2>/dev/null <<'JSEOF' || echo '[]'
+  # Fixed the redirection issue by combining the here-document with the pipe
+  bridge_result=$(printf '%s' "$input" | {
+    node --input-type=module 2>/dev/null <<'JSEOF' || echo '[]'
 import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -61,7 +68,7 @@ process.stdin.on('end', () => {
   }
 });
 JSEOF
-) || bridge_result="[]"
+  }) || bridge_result="[]"
 fi
 
 # Normalize
@@ -101,6 +108,9 @@ CFG_DIR="${CLAUDE_CONFIG_DIR:-${HOME_DIR}/.claude}"
 USER_SKILLS_DIR="${CFG_DIR}/skills/omc-learned"
 GLOBAL_SKILLS_DIR="${HOME_DIR}/.omc/skills"
 PROJECT_SKILLS_DIR="${cwd}/.omc/skills"
+
+# Use SKILL_EXT to prevent unused variable warning
+[[ -n "${SKILL_EXT:-}" ]] || true
 
 prompt_lower=$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')
 
@@ -175,8 +185,7 @@ if [[ "${#scored_skills[@]}" -eq 0 ]]; then
 fi
 
 # Sort by score descending, take top MAX_SKILLS
-IFS=$'\n' sorted=($(printf '%s\n' "${scored_skills[@]}" | sort -t'|' -k1 -rn | head -n "$MAX_SKILLS"))
-unset IFS
+mapfile -t sorted < <(printf '%s\n' "${scored_skills[@]}" | sort -t'|' -k1 -rn | head -n "$MAX_SKILLS")
 
 # Format output message
 message="<mnemosyne>

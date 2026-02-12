@@ -7,7 +7,6 @@ set -e
 BLUE='\033[0;34m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m'
 
 echo -e "${BLUE}Oh-My-Claude-Sisyphus Uninstaller${NC}"
@@ -104,7 +103,7 @@ if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
     TEMP_SETTINGS=$(mktemp)
 
     # Use jq to filter out Sisyphus hooks
-    jq '
+    if jq '
       # Remove Sisyphus hooks from UserPromptSubmit
       if .hooks.UserPromptSubmit then
         .hooks.UserPromptSubmit |= map(
@@ -129,9 +128,7 @@ if [ -f "$SETTINGS_FILE" ] && command -v jq &> /dev/null; then
       if .hooks.UserPromptSubmit == [] then del(.hooks.UserPromptSubmit) else . end |
       if .hooks.Stop == [] then del(.hooks.Stop) else . end |
       if .hooks == {} then del(.hooks) else . end
-    ' "$SETTINGS_FILE" > "$TEMP_SETTINGS" 2>/dev/null
-
-    if [ $? -eq 0 ] && [ -s "$TEMP_SETTINGS" ]; then
+    ' "$SETTINGS_FILE" > "$TEMP_SETTINGS" 2>/dev/null && [ -s "$TEMP_SETTINGS" ]; then
         mv "$TEMP_SETTINGS" "$SETTINGS_FILE"
         echo -e "${GREEN}✓ Removed Sisyphus hooks from settings.json${NC}"
         echo -e "${YELLOW}  Backup saved to: $SETTINGS_FILE.bak${NC}"

@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+# SCRIPT_DIR is not used in this script but kept for consistency with other scripts
+# shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ALLOW='{"continue":true,"suppressOutput":true}'
@@ -465,4 +467,5 @@ Task: ${orig_prompt}"
   allow
 }
 
+# Call main function to execute the script
 main || printf '%s\n' '{"continue":true,"suppressOutput":true}'

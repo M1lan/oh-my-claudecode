@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# SCRIPT_DIR is not used in this script but kept for consistency with other scripts
+# shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # On any unhandled error, emit safe passthrough
@@ -201,7 +203,7 @@ create_mcp_delegation() {
     return
   fi
 
-  printf '[MAGIC KEYWORD: %s]\n\nYou MUST delegate this task to the %s MCP tool.\n\nSteps:\n1. Write a prompt file to `.omc/prompts/%s-{purpose}-{timestamp}.md` containing clear task instructions derived from the user'"'"'s request\n2. Determine the appropriate agent_role from: %s\n3. Call the `%s` MCP tool with:\n   - agent_role: <detected or default "%s">\n   - prompt_file: <path you wrote>\n   - output_file: <corresponding -summary.md path>\n   - context_files: <relevant files from user'"'"'s request>\n\nUser request:\n%s\n\nIMPORTANT: Do NOT invoke a skill. Delegate to the MCP tool IMMEDIATELY.\n' \
+  printf "[MAGIC KEYWORD: %s]\n\nYou MUST delegate this task to the %s MCP tool.\n\nSteps:\n1. Write a prompt file to \`.omc/prompts/%s-{purpose}-{timestamp}.md\` containing clear task instructions derived from the user's request\n2. Determine the appropriate agent_role from: %s\n3. Call the \`%s\` MCP tool with:\n   - agent_role: <detected or default \"%s\">\n   - prompt_file: <path you wrote>\n   - output_file: <corresponding -summary.md path>\n   - context_files: <relevant files from user's request>\n\nUser request:\n%s\n\nIMPORTANT: Do NOT invoke a skill. Delegate to the MCP tool IMMEDIATELY.\n" \
     "${provider^^}" "$provider_label" "$provider" "$roles" "$tool" "$default_role" "$orig_prompt"
 }
 
@@ -348,12 +350,11 @@ for m in "${matches[@]}"; do
 done
 
 # Resolve conflicts
-has_cancel=false; has_ecomode=false; has_ultrawork=false; has_team_r=false
+has_cancel=false; has_ecomode=false; has_team_r=false
 for m in "${unique_matches[@]}"; do
   case "$m" in
     cancel)    has_cancel=true ;;
     ecomode)   has_ecomode=true ;;
-    ultrawork) has_ultrawork=true ;;
     team)      has_team_r=true ;;
   esac
 done
@@ -388,13 +389,13 @@ else
       prev="${filtered[$j]}"
       prev_idx="${prio_idx[$prev]:-999}"
       if [[ $prev_idx -gt $key_idx ]]; then
-        filtered[$((j+1))]="${filtered[$j]}"
+        filtered[j+1]="${filtered[$j]}"
         j=$(( j - 1 ))
       else
         break
       fi
     done
-    filtered[$((j+1))]="$key"
+    filtered[j+1]="$key"
   done
 
   resolved=("${filtered[@]}")

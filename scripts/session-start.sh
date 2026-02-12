@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# SCRIPT_DIR is not used in this script but kept for consistency with other scripts
+# shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Claude config directory (respects CLAUDE_CONFIG_DIR env var)
@@ -24,8 +26,10 @@ read_json_file() {
 
 # Semver comparison: returns 0 (true) if $1 > $2
 semver_gt() {
+  local v1="$1" v2="$2"
   local IFS=.
-  local a=($1) b=($2)
+  read -ra a <<< "$v1"
+  read -ra b <<< "$v2"
   for ((i=0; i<3; i++)); do
     (( ${a[i]:-0} > ${b[i]:-0} )) && return 0
     (( ${a[i]:-0} < ${b[i]:-0} )) && return 1
@@ -35,8 +39,10 @@ semver_gt() {
 
 # Semver compare for sorting: outputs -1, 0, or 1
 semver_compare() {
+  local v1="$1" v2="$2"
   local IFS=.
-  local a=($1) b=($2)
+  read -ra a <<< "$v1"
+  read -ra b <<< "$v2"
   for ((i=0; i<3; i++)); do
     (( ${a[i]:-0} > ${b[i]:-0} )) && echo 1 && return
     (( ${a[i]:-0} < ${b[i]:-0} )) && echo -1 && return
@@ -69,7 +75,8 @@ claude_md_path="${CONFIG_DIR}/CLAUDE.md"
 if [[ -f "${claude_md_path}" ]]; then
   marker_match="$(grep -oE '<!-- OMC:VERSION:[0-9]+\.[0-9]+\.[0-9]+[^ ]* -->' "${claude_md_path}" 2>/dev/null | head -1 || true)"
   if [[ -n "${marker_match}" ]]; then
-    claude_md_version="$(echo "${marker_match}" | sed 's/<!-- OMC:VERSION:\(.*\) -->/\1/')"
+    claude_md_version="${marker_match#<!-- OMC:VERSION:}"
+    claude_md_version="${claude_md_version% -->}"
   else
     claude_md_version="unknown"
   fi
@@ -124,7 +131,6 @@ if [[ -n "${plugin_version}" ]]; then
 
   if [[ -f "${cache_file}" ]]; then
     cache_ts="$(jq -r '.timestamp // 0' "${cache_file}" 2>/dev/null || echo 0)"
-    now_ms="$(date +%s)000"
     # bash integer arithmetic: compare epoch seconds (strip ms)
     cache_ts_s="${cache_ts:0:-3}"
     now_s="$(date +%s)"
@@ -291,7 +297,16 @@ fi
 cache_base="${CONFIG_DIR}/plugins/cache/omc/oh-my-claudecode"
 if [[ -d "${cache_base}" ]]; then
   # Get version directories matching semver pattern, sort by version descending
-  mapfile -t versions < <(ls -1 "${cache_base}" 2>/dev/null | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | sort -t. -k1,1rn -k2,2rn -k3,3rn || true)
+  mapfile -t versions < <(
+    shopt -s nullglob
+    version_dirs=()
+    for dir in "${cache_base}"/*; do
+      [[ -d "$dir" ]] || continue
+      basename_dir="${dir##*/}"
+      [[ $basename_dir =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] && version_dirs+=("$basename_dir")
+    done
+    printf '%s\n' "${version_dirs[@]}" | sort -t. -k1,1rn -k2,2rn -k3,3rn
+  )
   if (( ${#versions[@]} > 2 )); then
     for version in "${versions[@]:2}"; do
       rm -rf "${cache_base:?}/${version}" 2>/dev/null || true
