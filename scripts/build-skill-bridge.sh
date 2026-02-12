@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -7,7 +7,7 @@ PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTFILE="dist/hooks/skill-bridge.cjs"
 OUTDIR="$(dirname "${PROJECT_DIR}/${OUTFILE}")"
 
-echo "Building ${OUTFILE}..."
+printf 'Building %s...\n' "${OUTFILE}" >&2
 
 mkdir -p "${OUTDIR}"
 
@@ -16,7 +16,7 @@ if [[ ! -x "${ESBUILD}" ]]; then
   ESBUILD="npx esbuild"
 fi
 
-cd "${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 ${ESBUILD} "src/hooks/learner/bridge.ts" \
   --bundle \
   --platform=node \
@@ -38,4 +38,4 @@ ${ESBUILD} "src/hooks/learner/bridge.ts" \
   --external:assert \
   --external:module
 
-echo "Built ${OUTFILE}"
+printf 'Built %s\n' "${OUTFILE}" >&2

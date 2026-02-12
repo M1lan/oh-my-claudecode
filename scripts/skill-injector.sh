@@ -3,7 +3,7 @@
 # Injects relevant learned skills into context based on prompt triggers.
 # Bash port of skill-injector.mjs
 
-set -euo pipefail
+set -uo pipefail
 
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
@@ -23,7 +23,7 @@ input=$(timeout 5 cat 2>/dev/null || true)
 
 # Parse fields from JSON input
 prompt=$(printf '%s' "$input" | jq -r '.prompt // empty' 2>/dev/null || true)
-session_id=$(printf '%s' "$input" | jq -r '.session_id // .sessionId // "unknown"' 2>/dev/null || echo "unknown")
+session_id=$(printf '%s' "$input" | jq -r '.session_id // .sessionId // "unknown"' 2>/dev/null || printf '%s' "unknown")
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)
 [[ -z "${cwd:-}" ]] && cwd="$(pwd)"
 [[ -z "${prompt:-}" ]] && quiet_exit
@@ -41,7 +41,7 @@ bridge_result=""
 if [[ -f "$BRIDGE_CJS" ]]; then
   # Fixed the redirection issue by combining the here-document with the pipe
   bridge_result=$(printf '%s' "$input" | {
-    node --input-type=module 2>/dev/null <<'JSEOF' || echo '[]'
+    node --input-type=module 2>/dev/null <<'JSEOF' || printf '%s' '[]'
 import { createRequire } from 'module';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -75,7 +75,7 @@ fi
 [[ -z "${bridge_result:-}" ]] && bridge_result="[]"
 
 # Check if bridge returned real results
-bridge_count=$(printf '%s' "$bridge_result" | jq 'length' 2>/dev/null || echo "0")
+bridge_count=$(printf '%s' "$bridge_result" | jq 'length' 2>/dev/null || printf '%s' "0")
 
 if [[ "$bridge_count" -gt 0 ]]; then
   # Format from bridge results (already parsed objects)
@@ -142,38 +142,38 @@ for entry in "${candidates[@]+"${candidates[@]}"}"; do
   [[ -z "$content" ]] && continue
 
   # Check for frontmatter
-  if ! printf '%s' "$content" | grep -q '^---'; then
+  if ! printf '%s' "$content" | ggrep -q '^---'; then
     continue
   fi
 
   # Extract frontmatter block (between first two ---)
-  frontmatter=$(printf '%s' "$content" | awk '/^---/{count++; if(count==1){next} if(count==2){exit}} count==1{print}')
+  frontmatter=$(printf '%s' "$content" | gawk '/^---/{count++; if(count==1){next} if(count==2){exit}} count==1{print}')
   # Extract body (after second ---)
-  body=$(printf '%s' "$content" | awk '/^---/{count++} count>=2 && !/^---/{print}' | tail -n +2)
-  body=$(printf '%s' "$body" | sed '/./,$!d' | sed -e 's/[[:space:]]*$//')
+  body=$(printf '%s' "$content" | gawk '/^---/{count++} count>=2 && !/^---/{print}' | tail -n +2)
+  body=$(printf '%s' "$body" | gsed '/./,$!d' | gsed -e 's/[[:space:]]*$//')
 
   # Extract name
-  skill_name=$(printf '%s' "$frontmatter" | grep -m1 '^name:' | sed "s/^name:[[:space:]]*//" | tr -d '"'"'" || true)
+  skill_name=$(printf '%s' "$frontmatter" | ggrep -m1 '^name:' | gsed "s/^name:[[:space:]]*//" | tr -d '"'"'" || true)
   [[ -z "${skill_name:-}" ]] && skill_name="Unnamed Skill"
 
   # Extract triggers list (lines like "  - value")
   score=0
   triggers_json="[]"
-  triggers_raw=$(printf '%s' "$frontmatter" | awk '/^triggers:/{found=1;next} found && /^  -/{print} found && !/^  -/{exit}')
+  triggers_raw=$(printf '%s' "$frontmatter" | gawk '/^triggers:/{found=1;next} found && /^  -/{print} found && !/^  -/{exit}')
 
   declare -a triggers=()
   while IFS= read -r line; do
-    trigger=$(printf '%s' "$line" | sed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'")
+    trigger=$(printf '%s' "$line" | gsed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'")
     trigger="${trigger,,}"
     [[ -z "${trigger:-}" ]] && continue
     triggers+=("$trigger")
-    if printf '%s' "$prompt_lower" | grep -qF "$trigger" 2>/dev/null; then
+    if printf '%s' "$prompt_lower" | ggrep -qF "$trigger" 2>/dev/null; then
       score=$((score + 10))
     fi
   done <<< "$triggers_raw"
 
   if [[ "${#triggers[@]}" -gt 0 ]]; then
-    triggers_json=$(printf '%s\n' "${triggers[@]}" | jq -R . | jq -s . 2>/dev/null || echo "[]")
+    triggers_json=$(printf '%s\n' "${triggers[@]}" | jq -R . | jq -s . 2>/dev/null || printf '%s' "[]")
   fi
 
   if [[ "$score" -gt 0 ]]; then
@@ -204,7 +204,7 @@ for entry in "${sorted[@]}"; do
     --argjson triggers "$trig_json" \
     --argjson score "$sc" \
     --arg scope "$scope" \
-    '{"path":$path,"triggers":$triggers,"score":$score,"scope":$scope}' 2>/dev/null || echo '{}')
+    '{"path":$path,"triggers":$triggers,"score":$score,"scope":$scope}' 2>/dev/null || printf '%s' '{}')
 
   message+="### ${nm} (${scope})
 <skill-metadata>${metadata}</skill-metadata>

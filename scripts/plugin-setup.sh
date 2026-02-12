@@ -3,7 +3,7 @@
 # Configures HUD statusline when plugin is installed.
 # Bash port of plugin-setup.mjs
 
-set -euo pipefail
+set -uo pipefail
 
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
@@ -14,7 +14,7 @@ HUD_DIR="${CLAUDE_DIR}/hud"
 SETTINGS_FILE="${CLAUDE_DIR}/settings.json"
 HUD_SCRIPT="${HUD_DIR}/omc-hud.mjs"
 
-echo "[OMC] Running post-install setup..."
+printf '[OMC] Running post-install setup...\n' >&2
 
 # 1. Create HUD directory
 mkdir -p "$HUD_DIR"
@@ -98,7 +98,7 @@ main();
 HUDEOF
 
 chmod 755 "$HUD_SCRIPT" 2>/dev/null || true
-echo "[OMC] Installed HUD wrapper script"
+printf '[OMC] Installed HUD wrapper script\n' >&2
 
 # 3. Configure settings.json
 if settings=$(jq '.' "$SETTINGS_FILE" 2>/dev/null); then
@@ -109,11 +109,11 @@ fi
 
 settings=$(printf '%s' "$settings" | jq --arg cmd "node ${HUD_SCRIPT}" \
   '.statusLine = {"type": "command", "command": $cmd}' 2>/dev/null) || {
-  echo "[OMC] Warning: Could not configure settings.json: jq error"
-  echo "[OMC] Setup complete! Restart Claude Code to activate HUD."
+  printf '[OMC] Warning: Could not configure settings.json: jq error\n' >&2
+  printf '[OMC] Setup complete! Restart Claude Code to activate HUD.\n' >&2
   exit 0
 }
 
 printf '%s\n' "$settings" > "$SETTINGS_FILE"
-echo "[OMC] Configured HUD statusLine in settings.json"
-echo "[OMC] Setup complete! Restart Claude Code to activate HUD."
+printf '[OMC] Configured HUD statusLine in settings.json\n' >&2
+printf '[OMC] Setup complete! Restart Claude Code to activate HUD.\n' >&2

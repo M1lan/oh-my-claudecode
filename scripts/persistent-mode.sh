@@ -3,7 +3,7 @@
 # Minimal continuation enforcer for all OMC modes.
 # Supported modes: ralph, autopilot, ultrapilot, swarm, ultrawork, ecomode, ultraqa, pipeline
 
-set -euo pipefail
+set -uo pipefail
 
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
@@ -20,7 +20,7 @@ iso_to_epoch() {
 import sys, datetime
 ts = sys.argv[1].replace('Z','+00:00')
 print(int(datetime.datetime.fromisoformat(ts).timestamp()))
-" "$1" 2>/dev/null || echo 0
+" "$1" 2>/dev/null || printf '%s' '0'
 }
 
 # is_stale <state_json>  → returns 0 (true) if stale, 1 if fresh
@@ -30,8 +30,8 @@ is_stale() {
   now=$(date +%s)
   lc=$(printf '%s' "$state_json" | jq -r '.last_checked_at // empty')
   sa=$(printf '%s' "$state_json" | jq -r '.started_at // empty')
-  epoch_lc=$( [[ -n "$lc" ]] && iso_to_epoch "$lc" || echo 0 )
-  epoch_sa=$( [[ -n "$sa" ]] && iso_to_epoch "$sa" || echo 0 )
+  epoch_lc=$( [[ -n "$lc" ]] && iso_to_epoch "$lc" || printf '%s' '0' )
+  epoch_sa=$( [[ -n "$sa" ]] && iso_to_epoch "$sa" || printf '%s' '0' )
   most_recent=$(( epoch_lc > epoch_sa ? epoch_lc : epoch_sa ))
   [[ $most_recent -eq 0 ]] && return 0
   (( (now - most_recent) > 7200 ))
@@ -44,17 +44,17 @@ read_state() {
   STATE_IS_GLOBAL=false
   if [[ -n "$session" && "$session" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$ ]]; then
     STATE_PATH="${state_dir}/sessions/${session}/${filename}"
-    STATE_JSON=$(jq -r '.' "$STATE_PATH" 2>/dev/null || echo 'null')
+    STATE_JSON=$(jq -r '.' "$STATE_PATH" 2>/dev/null || printf '%s' 'null')
     return
   fi
   local lp="${state_dir}/${filename}" gp="${global_dir}/${filename}"
   if [[ -f "$lp" ]]; then
     STATE_PATH="$lp"
-    STATE_JSON=$(jq -r '.' "$lp" 2>/dev/null || echo 'null')
+    STATE_JSON=$(jq -r '.' "$lp" 2>/dev/null || printf '%s' 'null')
   elif [[ -f "$gp" ]]; then
     STATE_PATH="$gp"
     STATE_IS_GLOBAL=true
-    STATE_JSON=$(jq -r '.' "$gp" 2>/dev/null || echo 'null')
+    STATE_JSON=$(jq -r '.' "$gp" 2>/dev/null || printf '%s' 'null')
   else
     STATE_PATH="$lp"
     STATE_JSON='null'
@@ -123,11 +123,11 @@ is_for_project() {
 
 count_incomplete_tasks() {
   local session="$1"
-  [[ -z "$session" || ! "$session" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$ ]] && echo 0 && return
+  [[ -z "$session" || ! "$session" =~ ^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$ ]] && printf '%s\n' 0 && return
   local cfg_dir="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
   local task_dir="${cfg_dir}/tasks/${session}"
-  [[ -d "$task_dir" ]] || { echo 0; return; }
-  find "$task_dir" -maxdepth 1 -name '*.json' ! -name '.lock' -print0 2>/dev/null \
+  [[ -d "$task_dir" ]] || { printf '%s\n' 0; return; }
+  gfind "$task_dir" -maxdepth 1 -name '*.json' ! -name '.lock' -print0 2>/dev/null \
     | xargs -0 -I{} jq -r 'select(.status=="pending" or .status=="in_progress") | .status' {} 2>/dev/null \
     | wc -l | tr -d ' '
 }
@@ -141,7 +141,7 @@ count_incomplete_todos() {
     local session_todo="${HOME}/.claude/todos/${session}.json"
     if [[ -f "$session_todo" ]]; then
       local n
-      n=$(jq '[if type=="array" then .[] elif .todos and (.todos|type)=="array" then .todos[] else empty end | select(.status != "completed" and .status != "cancelled")] | length' "$session_todo" 2>/dev/null || echo 0)
+      n=$(jq '[if type=="array" then .[] elif .todos and (.todos|type)=="array" then .todos[] else empty end | select(.status != "completed" and .status != "cancelled")] | length' "$session_todo" 2>/dev/null || printf '%s' '0')
       count=$(( count + n ))
     fi
   fi
@@ -150,7 +150,7 @@ count_incomplete_todos() {
   for todo_path in "${project_dir}/.omc/todos.json" "${project_dir}/.claude/todos.json"; do
     if [[ -f "$todo_path" ]]; then
       local n
-      n=$(jq '[if type=="array" then .[] elif .todos and (.todos|type)=="array" then .todos[] else empty end | select(.status != "completed" and .status != "cancelled")] | length' "$todo_path" 2>/dev/null || echo 0)
+      n=$(jq '[if type=="array" then .[] elif .todos and (.todos|type)=="array" then .todos[] else empty end | select(.status != "completed" and .status != "cancelled")] | length' "$todo_path" 2>/dev/null || printf '%s' '0')
       count=$(( count + n ))
     fi
   done
@@ -164,7 +164,7 @@ main() {
 
   local data='{}'
   if [[ -n "$input" ]]; then
-    data=$(printf '%s' "$input" | jq -r '.' 2>/dev/null || echo '{}')
+    data=$(printf '%s' "$input" | jq -r '.' 2>/dev/null || printf '%s' '{}')
   fi
 
   local directory session_id_raw session_id has_valid_session
@@ -238,7 +238,7 @@ main() {
   local swarm_marker=false swarm_json='null'
   [[ -f "${state_dir}/swarm-active.marker" ]] && swarm_marker=true
   if [[ -f "${state_dir}/swarm-summary.json" ]]; then
-    swarm_json=$(jq -r '.' "${state_dir}/swarm-summary.json" 2>/dev/null || echo 'null')
+    swarm_json=$(jq -r '.' "${state_dir}/swarm-summary.json" 2>/dev/null || printf '%s' 'null')
   fi
 
   # Count incomplete items

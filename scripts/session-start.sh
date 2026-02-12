@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
@@ -44,10 +44,10 @@ semver_compare() {
   read -ra a <<< "$v1"
   read -ra b <<< "$v2"
   for ((i=0; i<3; i++)); do
-    (( ${a[i]:-0} > ${b[i]:-0} )) && echo 1 && return
-    (( ${a[i]:-0} < ${b[i]:-0} )) && echo -1 && return
+    (( ${a[i]:-0} > ${b[i]:-0} )) && printf '%s\n' 1 && return
+    (( ${a[i]:-0} < ${b[i]:-0} )) && printf '%s\n' -1 && return
   done
-  echo 0
+  printf '%s\n' 0
 }
 
 # Output array to collect messages
@@ -73,7 +73,7 @@ fi
 # Get CLAUDE.md version from OMC:VERSION marker
 claude_md_path="${CONFIG_DIR}/CLAUDE.md"
 if [[ -f "${claude_md_path}" ]]; then
-  marker_match="$(grep -oE '<!-- OMC:VERSION:[0-9]+\.[0-9]+\.[0-9]+[^ ]* -->' "${claude_md_path}" 2>/dev/null | head -1 || true)"
+  marker_match="$(ggrep -oE '<!-- OMC:VERSION:[0-9]+\.[0-9]+\.[0-9]+[^ ]* -->' "${claude_md_path}" 2>/dev/null | head -1 || true)"
   if [[ -n "${marker_match}" ]]; then
     claude_md_version="${marker_match#<!-- OMC:VERSION:}"
     claude_md_version="${claude_md_version% -->}"
@@ -130,7 +130,7 @@ if [[ -n "${plugin_version}" ]]; then
   latest_version=""
 
   if [[ -f "${cache_file}" ]]; then
-    cache_ts="$(jq -r '.timestamp // 0' "${cache_file}" 2>/dev/null || echo 0)"
+    cache_ts="$(jq -r '.timestamp // 0' "${cache_file}" 2>/dev/null || printf '%s' 0)"
     # bash integer arithmetic: compare epoch seconds (strip ms)
     cache_ts_s="${cache_ts:0:-3}"
     now_s="$(date +%s)"
@@ -269,7 +269,7 @@ fi
 incomplete_count=0
 for todo_file in "${directory}/.omc/todos.json" "${directory}/.claude/todos.json"; do
   if [[ -f "${todo_file}" ]]; then
-    count="$(jq '[(.todos // (if type=="array" then . else [] end))[] | select(.status != "completed" and .status != "cancelled")] | length' "${todo_file}" 2>/dev/null || echo 0)"
+    count="$(jq '[(.todos // (if type=="array" then . else [] end))[] | select(.status != "completed" and .status != "cancelled")] | length' "${todo_file}" 2>/dev/null || printf '%s' 0)"
     incomplete_count=$(( incomplete_count + count ))
   fi
 done
@@ -284,9 +284,9 @@ notepad_path="${directory}/.omc/notepad.md"
 if [[ -f "${notepad_path}" ]]; then
   notepad_content="$(cat "${notepad_path}" 2>/dev/null || true)"
   # Extract content between "## Priority Context" and next "## " or EOF
-  priority_section="$(printf '%s' "${notepad_content}" | awk '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
+  priority_section="$(printf '%s' "${notepad_content}" | gawk '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
   # Strip HTML comments
-  clean_content="$(printf '%s' "${priority_section}" | sed 's/<!--.*-->//g' | sed '/^[[:space:]]*$/d' || true)"
+  clean_content="$(printf '%s' "${priority_section}" | gsed 's/<!--.*-->//g' | gsed '/^[[:space:]]*$/d' || true)"
   if [[ -n "${clean_content// /}" ]]; then
     messages+=("<notepad-context>\n[NOTEPAD - Priority Context]\n${clean_content}\n</notepad-context>")
   fi

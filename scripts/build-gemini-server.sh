@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -7,7 +7,7 @@ PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 OUTFILE="bridge/gemini-server.cjs"
 AGENTS_DIR="${PROJECT_DIR}/agents"
 
-echo "Building ${OUTFILE}..."
+printf 'Building %s...\n' "${OUTFILE}" >&2
 
 mkdir -p "${PROJECT_DIR}/bridge"
 
@@ -21,7 +21,7 @@ AGENT_ROLES_JSON="["
 AGENT_PROMPTS_JSON="{"
 first_role=true
 
-mapfile -t agent_files < <(find "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
+mapfile -t agent_files < <(gfind "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
 
 for filepath in "${agent_files[@]}"; do
   filename="$(basename "${filepath}")"
@@ -49,7 +49,7 @@ AGENT_ROLES_JSON+="]"
 AGENT_PROMPTS_JSON+="}"
 
 agent_count="${#agent_files[@]}"
-echo "Embedding ${agent_count} agent roles + prompts into ${OUTFILE}"
+printf 'Embedding %s agent roles + prompts into %s\n' "${agent_count}" "${OUTFILE}" >&2
 
 # ── Banner ───────────────────────────────────────────────────────────────────
 BANNER_FILE="${PROJECT_DIR}/bridge/.banner-tmp-$$.js"
@@ -67,14 +67,14 @@ try {
 EOF
 
 # ── esbuild ──────────────────────────────────────────────────────────────────
-cd "${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 ${ESBUILD} "src/mcp/gemini-standalone-server.ts" \
   --bundle \
   --platform=node \
   --target=node18 \
   --format=cjs \
   --outfile="${OUTFILE}" \
-  "--banner:js=$(cat "${BANNER_FILE}")" \
+  "--banner:js=$(<"${BANNER_FILE}")" \
   "--define:__AGENT_ROLES__=${AGENT_ROLES_JSON}" \
   "--define:__AGENT_PROMPTS__=${AGENT_PROMPTS_JSON}" \
   --main-fields=module,main \
@@ -102,4 +102,4 @@ ${ESBUILD} "src/mcp/gemini-standalone-server.ts" \
   --external:better-sqlite3
 
 rm -f "${BANNER_FILE}"
-echo "Built ${OUTFILE}"
+printf 'Built %s\n' "${OUTFILE}" >&2

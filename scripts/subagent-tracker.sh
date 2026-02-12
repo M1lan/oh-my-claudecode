@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 action="${1:-}"
@@ -15,7 +15,7 @@ const chunks = [];
 for await (const chunk of process.stdin) chunks.push(chunk);
 const data = JSON.parse(Buffer.concat(chunks).toString() || '{}');
 const { processSubagentStart, processSubagentStop } = await import('file://${SCRIPT_DIR}/../dist/hooks/subagent-tracker/index.js');
-const result = await $( [[ "$action" == "start" ]] && echo 'processSubagentStart(data)' || echo 'processSubagentStop(data)' );
+const result = await $( [[ "$action" == "start" ]] && printf '%s' 'processSubagentStart(data)' || printf '%s' 'processSubagentStop(data)' );
 process.stdout.write(JSON.stringify(result ?? {"continue":true,"suppressOutput":true}));
 EOF
 )

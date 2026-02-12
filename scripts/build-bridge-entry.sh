@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OUTFILE="bridge/team-bridge.cjs"
 
-echo "Building ${OUTFILE}..."
+printf 'Building %s...\n' "${OUTFILE}" >&2
 
 mkdir -p "${PROJECT_DIR}/bridge"
 
@@ -30,14 +30,14 @@ try {
 } catch (_e) { /* npm not available - native modules will gracefully degrade */ }
 EOF
 
-cd "${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 ${ESBUILD} "src/team/bridge-entry.ts" \
   --bundle \
   --platform=node \
   --target=node18 \
   --format=cjs \
   --outfile="${OUTFILE}" \
-  "--banner:js=$(cat "${BANNER_FILE}")" \
+  "--banner:js=$(<"${BANNER_FILE}")" \
   --external:fs \
   --external:path \
   --external:os \
@@ -62,4 +62,4 @@ ${ESBUILD} "src/team/bridge-entry.ts" \
   --external:better-sqlite3
 
 rm -f "${BANNER_FILE}"
-echo "Built ${OUTFILE}"
+printf 'Built %s\n' "${OUTFILE}" >&2

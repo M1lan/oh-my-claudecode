@@ -8,5 +8,6 @@
 # Usage: read_stdin [timeout_seconds]
 read_stdin() {
   local timeout_secs="${1:-5}"
+  # shellcheck disable=SC2034  # STDIN_DATA is set for callers to read
   STDIN_DATA=$(timeout "${timeout_secs}" cat 2>/dev/null || true)
 }

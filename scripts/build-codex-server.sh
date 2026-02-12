@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -8,7 +8,7 @@ OUTFILE="bridge/codex-server.cjs"
 AGENTS_DIR="${PROJECT_DIR}/agents"
 CODEX_DIR="${PROJECT_DIR}/agents.codex"
 
-echo "Building ${OUTFILE}..."
+printf 'Building %s...\n' "${OUTFILE}" >&2
 
 mkdir -p "${PROJECT_DIR}/bridge"
 
@@ -26,11 +26,11 @@ strip_frontmatter() {
   # If the file starts with ---, strip up to and including the closing ---
   if [[ "${content}" =~ ^---[[:space:]]*$'\n' ]] || [[ "${content:0:3}" == "---" ]]; then
     # Use awk to remove the frontmatter block
-    content=$(awk '/^---/{if(NR==1){found=1;next}if(found){found=0;next}}!found' "${file}" | \
-              awk 'BEGIN{skip=1} /^---$/{if(skip){skip=0;next}} !skip{print}' 2>/dev/null || true)
+    content=$(gawk '/^---/{if(NR==1){found=1;next}if(found){found=0;next}}!found' "${file}" | \
+              gawk 'BEGIN{skip=1} /^---$/{if(skip){skip=0;next}} !skip{print}' 2>/dev/null || true)
     # Fallback: simpler sed-based strip
     if [[ -z "${content}" ]]; then
-      content=$(sed -n '/^---$/,/^---$/{/^---$/!p}' "${file}" | tail -n +2)
+      content=$(gsed -n '/^---$/,/^---$/{/^---$/!p}' "${file}" | tail -n +2)
     fi
     # More reliable: node one-liner for frontmatter strip
     content=$(node -e "
@@ -49,7 +49,7 @@ AGENT_PROMPTS_JSON="{"
 first_role=true
 
 # Collect sorted agent .md files
-mapfile -t agent_files < <(find "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
+mapfile -t agent_files < <(gfind "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
 
 for filepath in "${agent_files[@]}"; do
   filename="$(basename "${filepath}")"
@@ -77,7 +77,7 @@ AGENT_ROLES_JSON+="]"
 AGENT_PROMPTS_JSON+="}"
 
 agent_count="${#agent_files[@]}"
-echo "Embedding ${agent_count} agent roles + prompts into ${OUTFILE}"
+printf 'Embedding %s agent roles + prompts into %s\n' "${agent_count}" "${OUTFILE}" >&2
 
 # ── Collect Codex-specific prompts from agents.codex/*.md ───────────────────
 CODEX_PROMPTS_JSON="{"
@@ -85,7 +85,7 @@ first_codex=true
 codex_count=0
 
 if [[ -d "${CODEX_DIR}" ]]; then
-  mapfile -t codex_files < <(find "${CODEX_DIR}" -maxdepth 1 -name "*.md" ! -name "CONVERSION-GUIDE.md" | sort)
+  mapfile -t codex_files < <(gfind "${CODEX_DIR}" -maxdepth 1 -name "*.md" ! -name "CONVERSION-GUIDE.md" | sort)
   for filepath in "${codex_files[@]}"; do
     filename="$(basename "${filepath}")"
     role="${filename%.md}"
@@ -105,7 +105,7 @@ if [[ -d "${CODEX_DIR}" ]]; then
     CODEX_PROMPTS_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")":${prompt}
     (( codex_count++ )) || true
   done
-  echo "Embedding ${codex_count} Codex agent prompts"
+  printf 'Embedding %s Codex agent prompts\n' "${codex_count}" >&2
 fi
 
 CODEX_PROMPTS_JSON+="}"
@@ -118,7 +118,7 @@ if [[ -d "${CODEX_DIR}" ]]; then
       const p = ${CODEX_PROMPTS_JSON};
       process.exit(p['${role}'] ? 0 : 1);
     " 2>/dev/null; then
-      echo "WARNING: Agent '${role}' has no Codex-specific prompt in agents.codex/" >&2
+      printf '%s\n' "WARNING: Agent '${role}' has no Codex-specific prompt in agents.codex/" >&2
     fi
   done
 fi
@@ -139,14 +139,14 @@ try {
 EOF
 
 # ── esbuild ──────────────────────────────────────────────────────────────────
-cd "${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 ${ESBUILD} "src/mcp/codex-standalone-server.ts" \
   --bundle \
   --platform=node \
   --target=node18 \
   --format=cjs \
   --outfile="${OUTFILE}" \
-  "--banner:js=$(cat "${BANNER_FILE}")" \
+  "--banner:js=$(<"${BANNER_FILE}")" \
   "--define:__AGENT_ROLES__=${AGENT_ROLES_JSON}" \
   "--define:__AGENT_PROMPTS__=${AGENT_PROMPTS_JSON}" \
   "--define:__AGENT_PROMPTS_CODEX__=${CODEX_PROMPTS_JSON}" \
@@ -175,4 +175,4 @@ ${ESBUILD} "src/mcp/codex-standalone-server.ts" \
   --external:better-sqlite3
 
 rm -f "${BANNER_FILE}"
-echo "Built ${OUTFILE}"
+printf 'Built %s\n' "${OUTFILE}" >&2

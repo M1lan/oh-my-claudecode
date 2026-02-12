@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OUTFILE="bridge/mcp-server.cjs"
 
-echo "Building ${OUTFILE}..."
+printf 'Building %s...\n' "${OUTFILE}" >&2
 
 mkdir -p "${PROJECT_DIR}/bridge"
 
@@ -29,14 +29,14 @@ try {
 } catch (_e) { /* npm not available - native modules will gracefully degrade */ }
 EOF
 
-cd "${PROJECT_DIR}"
+cd "${PROJECT_DIR}" || exit 1
 ${ESBUILD} "src/mcp/standalone-server.ts" \
   --bundle \
   --platform=node \
   --target=node18 \
   --format=cjs \
   --outfile="${OUTFILE}" \
-  "--banner:js=$(cat "${BANNER_FILE}")" \
+  "--banner:js=$(<"${BANNER_FILE}")" \
   --main-fields=module,main \
   --external:fs \
   --external:path \
@@ -62,4 +62,4 @@ ${ESBUILD} "src/mcp/standalone-server.ts" \
   --external:better-sqlite3
 
 rm -f "${BANNER_FILE}"
-echo "Built ${OUTFILE}"
+printf 'Built %s\n' "${OUTFILE}" >&2

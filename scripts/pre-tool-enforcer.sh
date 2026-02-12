@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -uo pipefail
 
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
@@ -16,7 +16,7 @@ extract_field() {
     value=$(printf '%s' "$input" | jq -r --arg f "$field" '.[$f] // empty' 2>/dev/null || true)
   fi
   if [[ -z "$value" ]]; then
-    value=$(printf '%s' "$input" | grep -oP "\"${field}\"\s*:\s*\"\K[^\"]*" 2>/dev/null | head -1 || true)
+    value=$(printf '%s' "$input" | perl -ne "print \$1 if /\"${field}\"\\s*:\\s*\"([^\"]*)\"/" 2>/dev/null | head -1 || true)
   fi
   printf '%s' "${value:-$default}"
 }
@@ -30,8 +30,8 @@ get_todo_status() {
     if [[ -f "$todo_file" ]]; then
       if command -v jq &>/dev/null; then
         local p ip
-        p=$(jq '[(.todos // .) | arrays[] | select(.status == "pending")] | length' "$todo_file" 2>/dev/null || echo 0)
-        ip=$(jq '[(.todos // .) | arrays[] | select(.status == "in_progress")] | length' "$todo_file" 2>/dev/null || echo 0)
+        p=$(jq '[(.todos // .) | arrays[] | select(.status == "pending")] | length' "$todo_file" 2>/dev/null || printf '%s' 0)
+        ip=$(jq '[(.todos // .) | arrays[] | select(.status == "in_progress")] | length' "$todo_file" 2>/dev/null || printf '%s' 0)
         pending=$(( pending + p ))
         in_progress=$(( in_progress + ip ))
       fi
@@ -47,9 +47,9 @@ get_running_agents() {
   local directory="$1"
   local tracking_file="${directory}/.omc/state/subagent-tracking.json"
   if [[ -f "$tracking_file" ]] && command -v jq &>/dev/null; then
-    jq '[.agents // [] | .[] | select(.status == "running")] | length' "$tracking_file" 2>/dev/null || echo 0
+    jq '[.agents // [] | .[] | select(.status == "running")] | length' "$tracking_file" 2>/dev/null || printf '%s' 0
   else
-    echo 0
+    printf '%s\n' 0
   fi
 }
 
@@ -63,10 +63,10 @@ todo_status=$(get_todo_status "$directory")
 if [[ "$tool_name" == "Task" || "$tool_name" == "TaskCreate" || "$tool_name" == "TaskUpdate" ]]; then
   # Extract from toolInput or tool_input
   if command -v jq &>/dev/null; then
-    agent_type=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).subagent_type // "unknown"' 2>/dev/null || echo "unknown")
-    model=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).model // "inherit"' 2>/dev/null || echo "inherit")
-    desc=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).description // ""' 2>/dev/null || echo "")
-    bg=$(printf '%s' "$input" | jq -r 'if (.toolInput // .tool_input // {}).run_in_background == true then " [BACKGROUND]" else "" end' 2>/dev/null || echo "")
+    agent_type=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).subagent_type // "unknown"' 2>/dev/null || printf '%s' "unknown")
+    model=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).model // "inherit"' 2>/dev/null || printf '%s' "inherit")
+    desc=$(printf '%s' "$input" | jq -r '(.toolInput // .tool_input // {}).description // ""' 2>/dev/null || printf '%s' "")
+    bg=$(printf '%s' "$input" | jq -r 'if (.toolInput // .tool_input // {}).run_in_background == true then " [BACKGROUND]" else "" end' 2>/dev/null || printf '%s' "")
   else
     agent_type="unknown"
     model="inherit"
@@ -113,4 +113,4 @@ printf '%s\n' "$(printf '%s' "$message" | jq -Rs --arg msg "$(printf '%s' "$mess
     "additionalContext": $msg
   }
 }' 2>/dev/null || printf '{"continue":true,"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"%s"}}' \
-  "$(printf '%s' "$message" | sed 's/"/\\"/g')")"
+  "$(printf '%s' "$message" | gsed 's/"/\\"/g')")"
