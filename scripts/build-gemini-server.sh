@@ -2,6 +2,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OUTFILE="bridge/gemini-server.cjs"
@@ -21,7 +23,7 @@ AGENT_ROLES_JSON="["
 AGENT_PROMPTS_JSON="{"
 first_role=true
 
-mapfile -t agent_files < <(gfind "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
+mapfile -t agent_files < <($FIND "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
 
 for filepath in "${agent_files[@]}"; do
   filename="$(basename "${filepath}")"

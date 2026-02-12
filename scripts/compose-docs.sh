@@ -2,6 +2,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 DOCS_DIR="${PROJECT_DIR}/docs"
@@ -39,7 +41,7 @@ if [[ -d "${PARTIALS_DIR}" ]]; then
     filename="$(basename "${partial_file}")"
     cp "${partial_file}" "${SHARED_DIR}/${filename}"
     (( partial_count++ )) || true
-  done < <(gfind "${PARTIALS_DIR}" -maxdepth 1 -name "*.md" -print0 | sort -z)
+  done < <($FIND "${PARTIALS_DIR}" -maxdepth 1 -name "*.md" -print0 | sort -z)
   printf 'Synced %s partials to shared/\n' "${partial_count}" >&2
 fi
 
@@ -55,7 +57,7 @@ if [[ -d "${TEMPLATES_DIR}" ]]; then
     printf 'Processing %s -> %s\n' "${filename}" "${output_name}" >&2
     process_template "${template_file}" "${output_file}"
     (( template_count++ )) || true
-  done < <(gfind "${TEMPLATES_DIR}" -maxdepth 1 -name "*.template.md" -print0 | sort -z)
+  done < <($FIND "${TEMPLATES_DIR}" -maxdepth 1 -name "*.template.md" -print0 | sort -z)
 
   if [[ "${template_count}" -gt 0 ]]; then
     printf 'Processed %s template(s)\n' "${template_count}" >&2

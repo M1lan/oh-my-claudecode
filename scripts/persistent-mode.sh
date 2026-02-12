@@ -8,19 +8,18 @@ set -uo pipefail
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 
 ALLOW='{"continue":true,"suppressOutput":true}'
 
 allow() { printf '%s\n' "$ALLOW"; exit 0; }
 block() { printf '%s\n' "{\"decision\":\"block\",\"reason\":$(printf '%s' "$1" | jq -Rs .)}"; exit 0; }
 
-# ISO timestamp → epoch seconds (macOS-compatible)
+# ISO timestamp → epoch seconds (cross-platform, no python3 dependency)
 iso_to_epoch() {
-  python3 -c "
-import sys, datetime
-ts = sys.argv[1].replace('Z','+00:00')
-print(int(datetime.datetime.fromisoformat(ts).timestamp()))
-" "$1" 2>/dev/null || printf '%s' '0'
+  local ts="${1//Z/+00:00}"
+  $DATE -d "$ts" +%s 2>/dev/null || printf '%s' '0'
 }
 
 # is_stale <state_json>  → returns 0 (true) if stale, 1 if fresh
@@ -127,7 +126,7 @@ count_incomplete_tasks() {
   local cfg_dir="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
   local task_dir="${cfg_dir}/tasks/${session}"
   [[ -d "$task_dir" ]] || { printf '%s\n' 0; return; }
-  gfind "$task_dir" -maxdepth 1 -name '*.json' ! -name '.lock' -print0 2>/dev/null \
+  $FIND "$task_dir" -maxdepth 1 -name '*.json' ! -name '.lock' -print0 2>/dev/null \
     | xargs -0 -I{} jq -r 'select(.status=="pending" or .status=="in_progress") | .status' {} 2>/dev/null \
     | wc -l | tr -d ' '
 }

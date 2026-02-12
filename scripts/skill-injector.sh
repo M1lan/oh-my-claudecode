@@ -8,6 +8,8 @@ set -uo pipefail
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 
 QUIET_CONTINUE='{"continue":true,"suppressOutput":true}'
 
@@ -142,32 +144,32 @@ for entry in "${candidates[@]+"${candidates[@]}"}"; do
   [[ -z "$content" ]] && continue
 
   # Check for frontmatter
-  if ! printf '%s' "$content" | ggrep -q '^---'; then
+  if ! printf '%s' "$content" | $GREP -q '^---'; then
     continue
   fi
 
   # Extract frontmatter block (between first two ---)
-  frontmatter=$(printf '%s' "$content" | gawk '/^---/{count++; if(count==1){next} if(count==2){exit}} count==1{print}')
+  frontmatter=$(printf '%s' "$content" | $AWK '/^---/{count++; if(count==1){next} if(count==2){exit}} count==1{print}')
   # Extract body (after second ---)
-  body=$(printf '%s' "$content" | gawk '/^---/{count++} count>=2 && !/^---/{print}' | tail -n +2)
-  body=$(printf '%s' "$body" | gsed '/./,$!d' | gsed -e 's/[[:space:]]*$//')
+  body=$(printf '%s' "$content" | $AWK '/^---/{count++} count>=2 && !/^---/{print}' | tail -n +2)
+  body=$(printf '%s' "$body" | $SED '/./,$!d' | $SED -e 's/[[:space:]]*$//')
 
   # Extract name
-  skill_name=$(printf '%s' "$frontmatter" | ggrep -m1 '^name:' | gsed "s/^name:[[:space:]]*//" | tr -d '"'"'" || true)
+  skill_name=$(printf '%s' "$frontmatter" | $GREP -m1 '^name:' | $SED "s/^name:[[:space:]]*//" | tr -d '"'"'" || true)
   [[ -z "${skill_name:-}" ]] && skill_name="Unnamed Skill"
 
   # Extract triggers list (lines like "  - value")
   score=0
   triggers_json="[]"
-  triggers_raw=$(printf '%s' "$frontmatter" | gawk '/^triggers:/{found=1;next} found && /^  -/{print} found && !/^  -/{exit}')
+  triggers_raw=$(printf '%s' "$frontmatter" | $AWK '/^triggers:/{found=1;next} found && /^  -/{print} found && !/^  -/{exit}')
 
   declare -a triggers=()
   while IFS= read -r line; do
-    trigger=$(printf '%s' "$line" | gsed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'")
+    trigger=$(printf '%s' "$line" | $SED 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'")
     trigger="${trigger,,}"
     [[ -z "${trigger:-}" ]] && continue
     triggers+=("$trigger")
-    if printf '%s' "$prompt_lower" | ggrep -qF "$trigger" 2>/dev/null; then
+    if printf '%s' "$prompt_lower" | $GREP -qF "$trigger" 2>/dev/null; then
       score=$((score + 10))
     fi
   done <<< "$triggers_raw"

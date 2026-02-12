@@ -4,6 +4,8 @@ set -uo pipefail
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 
 # Claude config directory (respects CLAUDE_CONFIG_DIR env var)
 CONFIG_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
@@ -73,7 +75,7 @@ fi
 # Get CLAUDE.md version from OMC:VERSION marker
 claude_md_path="${CONFIG_DIR}/CLAUDE.md"
 if [[ -f "${claude_md_path}" ]]; then
-  marker_match="$(ggrep -oE '<!-- OMC:VERSION:[0-9]+\.[0-9]+\.[0-9]+[^ ]* -->' "${claude_md_path}" 2>/dev/null | head -1 || true)"
+  marker_match="$($GREP -oE '<!-- OMC:VERSION:[0-9]+\.[0-9]+\.[0-9]+[^ ]* -->' "${claude_md_path}" 2>/dev/null | head -1 || true)"
   if [[ -n "${marker_match}" ]]; then
     claude_md_version="${marker_match#<!-- OMC:VERSION:}"
     claude_md_version="${claude_md_version% -->}"
@@ -284,9 +286,9 @@ notepad_path="${directory}/.omc/notepad.md"
 if [[ -f "${notepad_path}" ]]; then
   notepad_content="$(cat "${notepad_path}" 2>/dev/null || true)"
   # Extract content between "## Priority Context" and next "## " or EOF
-  priority_section="$(printf '%s' "${notepad_content}" | gawk '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
+  priority_section="$(printf '%s' "${notepad_content}" | $AWK '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
   # Strip HTML comments
-  clean_content="$(printf '%s' "${priority_section}" | gsed 's/<!--.*-->//g' | gsed '/^[[:space:]]*$/d' || true)"
+  clean_content="$(printf '%s' "${priority_section}" | $SED 's/<!--.*-->//g' | $SED '/^[[:space:]]*$/d' || true)"
   if [[ -n "${clean_content// /}" ]]; then
     messages+=("<notepad-context>\n[NOTEPAD - Priority Context]\n${clean_content}\n</notepad-context>")
   fi

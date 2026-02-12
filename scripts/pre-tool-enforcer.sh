@@ -4,6 +4,8 @@ set -uo pipefail
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 
 input=$(timeout 5 cat 2>/dev/null || true)
 
@@ -113,4 +115,4 @@ printf '%s\n' "$(printf '%s' "$message" | jq -Rs --arg msg "$(printf '%s' "$mess
     "additionalContext": $msg
   }
 }' 2>/dev/null || printf '{"continue":true,"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"%s"}}' \
-  "$(printf '%s' "$message" | gsed 's/"/\\"/g')")"
+  "$(printf '%s' "$message" | $SED 's/"/\\"/g')")"

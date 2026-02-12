@@ -4,6 +4,8 @@ set -uo pipefail
 # SCRIPT_DIR is not used in this script but kept for consistency with other scripts
 # shellcheck disable=SC2034
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 
 # On any unhandled error, emit safe passthrough
 trap 'printf "%s\n" "{\"continue\":true,\"suppressOutput\":true}"; exit 0' ERR
@@ -61,7 +63,7 @@ pmatch() {
 
 is_valid_session() {
   local sid="$1"
-  [[ -n "$sid" ]] && printf '%s' "$sid" | ggrep -qE '^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$'
+  [[ -n "$sid" ]] && printf '%s' "$sid" | $GREP -qE '^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$'
 }
 
 get_state_path() {
@@ -218,19 +220,19 @@ create_hook_output() {
 declare -a matches=()
 
 # Cancel
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(cancelomc|stopomc)\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(cancelomc|stopomc)\b'; then
   matches+=("cancel")
 fi
 
 # Ralph
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(ralph|until done)\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(ralph|until done)\b' || \
    pmatch "$clean_prompt" "don't stop" || \
    pmatch "$clean_prompt" 'must complete'; then
   matches+=("ralph")
 fi
 
 # Autopilot
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(autopilot|auto-pilot|autonomous|fullsend)\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(autopilot|auto-pilot|autonomous|fullsend)\b' || \
    pmatch "$clean_prompt" 'auto pilot' || \
    pmatch "$clean_prompt" 'full auto' || \
    pmatch "$clean_prompt" '\bbuild\s+me\s+' || \
@@ -245,7 +247,7 @@ if printf '%s' "$clean_prompt" | ggrep -qE '\b(autopilot|auto-pilot|autonomous|f
 fi
 
 # Ultrapilot (legacy)
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(ultrapilot|ultra-pilot)\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(ultrapilot|ultra-pilot)\b' || \
    pmatch "$clean_prompt" '\bparallel\s+build\b' || \
    pmatch "$clean_prompt" '\bswarm\s+build\b' || \
    pmatch "$clean_prompt" '\bswarm\s+[0-9]+\s+agents?\b' || \
@@ -254,12 +256,12 @@ if printf '%s' "$clean_prompt" | ggrep -qE '\b(ultrapilot|ultra-pilot)\b' || \
 fi
 
 # Ultrawork
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(ultrawork|ulw|uw)\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(ultrawork|ulw|uw)\b'; then
   matches+=("ultrawork")
 fi
 
 # Ecomode
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(eco|ecomode|eco-mode|efficient|save-tokens|budget)\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(eco|ecomode|eco-mode|efficient|save-tokens|budget)\b'; then
   matches+=("ecomode")
 fi
 
@@ -276,41 +278,41 @@ if [[ "$has_team_keyword" == "true" ]] && is_team_enabled; then
 fi
 
 # Pipeline
-if printf '%s' "$clean_prompt" | ggrep -qE '\bpipeline\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\bpipeline\b' || \
    pmatch "$clean_prompt" '\bchain\s+agents\b'; then
   matches+=("pipeline")
 fi
 
 # Ralplan
-if printf '%s' "$clean_prompt" | ggrep -qE '\bralplan\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\bralplan\b'; then
   matches+=("ralplan")
 fi
 
 # Plan
-if printf '%s' "$clean_prompt" | ggrep -qE '\bplan (this|the)\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\bplan (this|the)\b'; then
   matches+=("plan")
 fi
 
 # TDD
-if printf '%s' "$clean_prompt" | ggrep -qE '\btdd\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\btdd\b' || \
    pmatch "$clean_prompt" '\btest\s+first\b' || \
    pmatch "$clean_prompt" '\bred\s+green\b'; then
   matches+=("tdd")
 fi
 
 # Research
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(research|statistics)\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(research|statistics)\b' || \
    pmatch "$clean_prompt" '\banalyze\s+data\b'; then
   matches+=("research")
 fi
 
 # Ultrathink
-if printf '%s' "$clean_prompt" | ggrep -qE '\b(ultrathink|think hard|think deeply)\b'; then
+if printf '%s' "$clean_prompt" | $GREP -qE '\b(ultrathink|think hard|think deeply)\b'; then
   matches+=("ultrathink")
 fi
 
 # Deepsearch
-if printf '%s' "$clean_prompt" | ggrep -qE '\bdeepsearch\b' || \
+if printf '%s' "$clean_prompt" | $GREP -qE '\bdeepsearch\b' || \
    pmatch "$clean_prompt" '\bsearch\s+(the\s+)?(codebase|code|files?|project)\b' || \
    pmatch "$clean_prompt" '\bfind\s+(in\s+)?(codebase|code|all\s+files?)\b'; then
   matches+=("deepsearch")

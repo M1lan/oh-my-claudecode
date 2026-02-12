@@ -37,12 +37,12 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-codex-server.mjs && node scripts/build-gemini-server.mjs && node scripts/build-bridge-entry.mjs && npm run compose-docs",
-    "build:bridge": "node scripts/build-skill-bridge.mjs",
-    "build:codex": "node scripts/build-codex-server.mjs",
-    "build:gemini": "node scripts/build-gemini-server.mjs",
-    "build:bridge-entry": "node scripts/build-bridge-entry.mjs",
-    "compose-docs": "node scripts/compose-docs.mjs",
+    "build": "tsc && bash scripts/build-skill-bridge.sh && bash scripts/build-mcp-server.sh && bash scripts/build-codex-server.sh && bash scripts/build-gemini-server.sh && bash scripts/build-bridge-entry.sh && npm run compose-docs",
+    "build:bridge": "bash scripts/build-skill-bridge.sh",
+    "build:codex": "bash scripts/build-codex-server.sh",
+    "build:gemini": "bash scripts/build-gemini-server.sh",
+    "build:bridge-entry": "bash scripts/build-bridge-entry.sh",
+    "compose-docs": "bash scripts/compose-docs.sh",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "test": "vitest",

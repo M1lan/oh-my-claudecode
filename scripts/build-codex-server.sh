@@ -2,6 +2,8 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/platform.sh
+source "${SCRIPT_DIR}/lib/platform.sh"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 OUTFILE="bridge/codex-server.cjs"
@@ -26,11 +28,11 @@ strip_frontmatter() {
   # If the file starts with ---, strip up to and including the closing ---
   if [[ "${content}" =~ ^---[[:space:]]*$'\n' ]] || [[ "${content:0:3}" == "---" ]]; then
     # Use awk to remove the frontmatter block
-    content=$(gawk '/^---/{if(NR==1){found=1;next}if(found){found=0;next}}!found' "${file}" | \
-              gawk 'BEGIN{skip=1} /^---$/{if(skip){skip=0;next}} !skip{print}' 2>/dev/null || true)
+    content=$($AWK '/^---/{if(NR==1){found=1;next}if(found){found=0;next}}!found' "${file}" | \
+              $AWK 'BEGIN{skip=1} /^---$/{if(skip){skip=0;next}} !skip{print}' 2>/dev/null || true)
     # Fallback: simpler sed-based strip
     if [[ -z "${content}" ]]; then
-      content=$(gsed -n '/^---$/,/^---$/{/^---$/!p}' "${file}" | tail -n +2)
+      content=$($SED -n '/^---$/,/^---$/{/^---$/!p}' "${file}" | tail -n +2)
     fi
     # More reliable: node one-liner for frontmatter strip
     content=$(node -e "
@@ -49,7 +51,7 @@ AGENT_PROMPTS_JSON="{"
 first_role=true
 
 # Collect sorted agent .md files
-mapfile -t agent_files < <(gfind "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
+mapfile -t agent_files < <($FIND "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
 
 for filepath in "${agent_files[@]}"; do
   filename="$(basename "${filepath}")"
@@ -85,7 +87,7 @@ first_codex=true
 codex_count=0
 
 if [[ -d "${CODEX_DIR}" ]]; then
-  mapfile -t codex_files < <(gfind "${CODEX_DIR}" -maxdepth 1 -name "*.md" ! -name "CONVERSION-GUIDE.md" | sort)
+  mapfile -t codex_files < <($FIND "${CODEX_DIR}" -maxdepth 1 -name "*.md" ! -name "CONVERSION-GUIDE.md" | sort)
   for filepath in "${codex_files[@]}"; do
     filename="$(basename "${filepath}")"
     role="${filename%.md}"
