@@ -12,8 +12,8 @@ CONFIG_DIR="${CLAUDE_CONFIG_DIR:-${HOME}/.claude}"
 input=$(timeout 5 cat 2>/dev/null || true)
 
 # Parse stdin JSON
-directory="$(echo "${input}" | jq -r '.cwd // .directory // ""' 2>/dev/null || true)"
-session_id="$(echo "${input}" | jq -r '.session_id // .sessionId // ""' 2>/dev/null || true)"
+directory="$(printf '%s' "${input}" | jq -r '.cwd // .directory // ""' 2>/dev/null || true)"
+session_id="$(printf '%s' "${input}" | jq -r '.session_id // .sessionId // ""' 2>/dev/null || true)"
 [[ -z "${directory}" ]] && directory="$(pwd)"
 
 # Helper: read JSON file safely, outputs empty string on failure
@@ -146,7 +146,7 @@ if [[ -n "${plugin_version}" ]]; then
   if [[ "${cache_valid}" == "false" ]]; then
     npm_response="$(curl -s --max-time 2 "https://registry.npmjs.org/oh-my-claude-sisyphus/latest" 2>/dev/null || true)"
     if [[ -n "${npm_response}" ]]; then
-      fetched_version="$(echo "${npm_response}" | jq -r '.version // ""' 2>/dev/null || true)"
+      fetched_version="$(printf '%s' "${npm_response}" | jq -r '.version // ""' 2>/dev/null || true)"
       if [[ -n "${fetched_version}" ]]; then
         update_available=false
         if semver_gt "${fetched_version}" "${plugin_version}"; then
@@ -186,7 +186,7 @@ else
       sleep 0.1
       continue
     fi
-    status_line="$(echo "${settings_content}" | jq -r '.statusLine // ""' 2>/dev/null || true)"
+    status_line="$(printf '%s' "${settings_content}" | jq -r '.statusLine // ""' 2>/dev/null || true)"
     if [[ -z "${status_line}" ]]; then
       if (( attempt < 3 )); then
         sleep 0.1
@@ -212,7 +212,7 @@ if [[ -n "${session_id}" ]] && [[ "${session_id}" =~ ${SESSION_ID_PATTERN} ]]; t
   if [[ -f "${uw_path}" ]]; then
     uw_json="$(jq '.' "${uw_path}" 2>/dev/null || true)"
     # Validate session identity
-    uw_sid="$(echo "${uw_json}" | jq -r '.session_id // ""' 2>/dev/null || true)"
+    uw_sid="$(printf '%s' "${uw_json}" | jq -r '.session_id // ""' 2>/dev/null || true)"
     if [[ -z "${uw_sid}" || "${uw_sid}" == "${session_id}" ]]; then
       ultrawork_state="${uw_json}"
     fi
@@ -223,10 +223,10 @@ else
 fi
 
 if [[ -n "${ultrawork_state}" ]]; then
-  uw_active="$(echo "${ultrawork_state}" | jq -r '.active // false' 2>/dev/null || true)"
+  uw_active="$(printf '%s' "${ultrawork_state}" | jq -r '.active // false' 2>/dev/null || true)"
   if [[ "${uw_active}" == "true" ]]; then
-    uw_started="$(echo "${ultrawork_state}" | jq -r '.started_at // ""' 2>/dev/null || true)"
-    uw_prompt="$(echo "${ultrawork_state}" | jq -r '.original_prompt // ""' 2>/dev/null || true)"
+    uw_started="$(printf '%s' "${ultrawork_state}" | jq -r '.started_at // ""' 2>/dev/null || true)"
+    uw_prompt="$(printf '%s' "${ultrawork_state}" | jq -r '.original_prompt // ""' 2>/dev/null || true)"
     messages+=("<session-restore>\n\n[ULTRAWORK MODE RESTORED]\n\nYou have an active ultrawork session from ${uw_started}.\nOriginal task: ${uw_prompt}\n\nContinue working in ultrawork mode until all tasks are complete.\n\n</session-restore>\n\n---\n")
   fi
 fi
@@ -239,7 +239,7 @@ if [[ -n "${session_id}" ]] && [[ "${session_id}" =~ ${SESSION_ID_PATTERN} ]]; t
   ralph_path="${directory}/.omc/state/sessions/${session_id}/ralph-state.json"
   if [[ -f "${ralph_path}" ]]; then
     ralph_json="$(jq '.' "${ralph_path}" 2>/dev/null || true)"
-    ralph_sid="$(echo "${ralph_json}" | jq -r '.session_id // ""' 2>/dev/null || true)"
+    ralph_sid="$(printf '%s' "${ralph_json}" | jq -r '.session_id // ""' 2>/dev/null || true)"
     if [[ -z "${ralph_sid}" || "${ralph_sid}" == "${session_id}" ]]; then
       ralph_state="${ralph_json}"
     fi
@@ -255,11 +255,11 @@ else
 fi
 
 if [[ -n "${ralph_state}" ]]; then
-  ralph_active="$(echo "${ralph_state}" | jq -r '.active // false' 2>/dev/null || true)"
+  ralph_active="$(printf '%s' "${ralph_state}" | jq -r '.active // false' 2>/dev/null || true)"
   if [[ "${ralph_active}" == "true" ]]; then
-    ralph_prompt="$(echo "${ralph_state}" | jq -r '.prompt // "Task in progress"' 2>/dev/null || true)"
-    ralph_iter="$(echo "${ralph_state}" | jq -r '.iteration // 1' 2>/dev/null || true)"
-    ralph_max="$(echo "${ralph_state}" | jq -r '.max_iterations // 10' 2>/dev/null || true)"
+    ralph_prompt="$(printf '%s' "${ralph_state}" | jq -r '.prompt // "Task in progress"' 2>/dev/null || true)"
+    ralph_iter="$(printf '%s' "${ralph_state}" | jq -r '.iteration // 1' 2>/dev/null || true)"
+    ralph_max="$(printf '%s' "${ralph_state}" | jq -r '.max_iterations // 10' 2>/dev/null || true)"
     messages+=("<session-restore>\n\n[RALPH LOOP RESTORED]\n\nYou have an active ralph-loop session.\nOriginal task: ${ralph_prompt}\nIteration: ${ralph_iter}/${ralph_max}\n\nContinue working until the task is verified complete.\n\n</session-restore>\n\n---\n")
   fi
 fi
@@ -284,9 +284,9 @@ notepad_path="${directory}/.omc/notepad.md"
 if [[ -f "${notepad_path}" ]]; then
   notepad_content="$(cat "${notepad_path}" 2>/dev/null || true)"
   # Extract content between "## Priority Context" and next "## " or EOF
-  priority_section="$(echo "${notepad_content}" | awk '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
+  priority_section="$(printf '%s' "${notepad_content}" | awk '/^## Priority Context/{found=1; next} found && /^## /{exit} found{print}' || true)"
   # Strip HTML comments
-  clean_content="$(echo "${priority_section}" | sed 's/<!--.*-->//g' | sed '/^[[:space:]]*$/d' || true)"
+  clean_content="$(printf '%s' "${priority_section}" | sed 's/<!--.*-->//g' | sed '/^[[:space:]]*$/d' || true)"
   if [[ -n "${clean_content// /}" ]]; then
     messages+=("<notepad-context>\n[NOTEPAD - Priority Context]\n${clean_content}\n</notepad-context>")
   fi

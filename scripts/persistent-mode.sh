@@ -155,7 +155,7 @@ count_incomplete_todos() {
     fi
   done
 
-  echo "$count"
+  printf '%s\n' "$count"
 }
 
 main() {
@@ -185,8 +185,8 @@ main() {
 
   # Context limit check → allow
   local stop_reason end_turn_reason
-  stop_reason=$(printf '%s' "$data" | jq -r '.stop_reason // .stopReason // empty' | tr '[:upper:]' '[:lower:]')
-  end_turn_reason=$(printf '%s' "$data" | jq -r '.end_turn_reason // .endTurnReason // empty' | tr '[:upper:]' '[:lower:]')
+  stop_reason=$(printf '%s' "$data" | jq -r '.stop_reason // .stopReason // empty | ascii_downcase')
+  end_turn_reason=$(printf '%s' "$data" | jq -r '.end_turn_reason // .endTurnReason // empty | ascii_downcase')
   local context_patterns="context_limit context_window context_exceeded context_full max_context token_limit max_tokens conversation_too_long input_too_long"
   for p in $context_patterns; do
     if [[ "$stop_reason" == *"$p"* || "$end_turn_reason" == *"$p"* ]]; then
@@ -468,4 +468,5 @@ Task: ${orig_prompt}"
 }
 
 # Call main function to execute the script
+# shellcheck disable=SC2317  # fallback output is reached when main exits non-zero
 main || printf '%s\n' '{"continue":true,"suppressOutput":true}'

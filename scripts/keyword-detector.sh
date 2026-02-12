@@ -17,15 +17,15 @@ if [[ -z "${input// }" ]]; then
 fi
 
 # Extract fields from JSON input
-directory=$(echo "$input" | jq -r '.cwd // .directory // ""' 2>/dev/null || true)
-session_id=$(echo "$input" | jq -r '.session_id // .sessionId // ""' 2>/dev/null || true)
+directory=$(printf '%s' "$input" | jq -r '.cwd // .directory // ""' 2>/dev/null || true)
+session_id=$(printf '%s' "$input" | jq -r '.session_id // .sessionId // ""' 2>/dev/null || true)
 
 if [[ -z "$directory" ]]; then
   directory="$(pwd)"
 fi
 
 # Extract prompt from various JSON structures
-prompt=$(echo "$input" | jq -r '
+prompt=$(printf '%s' "$input" | jq -r '
   if .prompt then .prompt
   elif .message.content then .message.content
   elif (.parts | type) == "array" then

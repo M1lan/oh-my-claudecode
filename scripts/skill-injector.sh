@@ -112,7 +112,7 @@ PROJECT_SKILLS_DIR="${cwd}/.omc/skills"
 # Use SKILL_EXT to prevent unused variable warning
 [[ -n "${SKILL_EXT:-}" ]] || true
 
-prompt_lower=$(printf '%s' "$prompt" | tr '[:upper:]' '[:lower:]')
+prompt_lower="${prompt,,}"
 
 # Collect candidate skill files: path|scope
 declare -a candidates=()
@@ -163,7 +163,8 @@ for entry in "${candidates[@]+"${candidates[@]}"}"; do
 
   declare -a triggers=()
   while IFS= read -r line; do
-    trigger=$(printf '%s' "$line" | sed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'" | tr '[:upper:]' '[:lower:]')
+    trigger=$(printf '%s' "$line" | sed 's/^[[:space:]]*-[[:space:]]*//' | tr -d '"'"'")
+    trigger="${trigger,,}"
     [[ -z "${trigger:-}" ]] && continue
     triggers+=("$trigger")
     if printf '%s' "$prompt_lower" | grep -qF "$trigger" 2>/dev/null; then
