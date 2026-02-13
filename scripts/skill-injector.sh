@@ -34,73 +34,7 @@ cwd=$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)
 [[ -n "${session_id:-}" ]] || true
 
 # =============================================================================
-# Primary: Try compiled bridge via node
-# =============================================================================
-
-BRIDGE_CJS="${SCRIPT_DIR}/../dist/hooks/skill-bridge.cjs"
-
-bridge_result=""
-if [[ -f "$BRIDGE_CJS" ]]; then
-  # Fixed the redirection issue by combining the here-document with the pipe
-  bridge_result=$(printf '%s' "$input" | {
-    node --input-type=module 2>/dev/null <<'JSEOF' || printf '%s' '[]'
-import { createRequire } from 'module';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { homedir } from 'os';
-
-const scriptDir = process.env.SKILL_INJECTOR_SCRIPT_DIR;
-const bridgePath = join(scriptDir, '..', 'dist', 'hooks', 'skill-bridge.cjs');
-const require = createRequire(import.meta.url);
-
-const chunks = [];
-process.stdin.on('data', c => chunks.push(c));
-process.stdin.on('end', () => {
-  try {
-    const bridge = require(bridgePath);
-    const data = JSON.parse(Buffer.concat(chunks).toString() || '{}');
-    const prompt = data.prompt || '';
-    const sessionId = data.session_id || data.sessionId || 'unknown';
-    const directory = data.cwd || process.cwd();
-    const matches = bridge.matchSkillsForInjection(prompt, directory, sessionId, { maxResults: 5 });
-    if (matches.length > 0) bridge.markSkillsInjected(sessionId, matches.map(s => s.path), directory);
-    console.log(JSON.stringify(matches));
-  } catch {
-    console.log('[]');
-  }
-});
-JSEOF
-  }) || bridge_result="[]"
-fi
-
-# Normalize
-[[ -z "${bridge_result:-}" ]] && bridge_result="[]"
-
-# Check if bridge returned real results
-bridge_count=$(printf '%s' "$bridge_result" | jq 'length' 2>/dev/null || printf '%s' "0")
-
-if [[ "$bridge_count" -gt 0 ]]; then
-  # Format from bridge results (already parsed objects)
-  formatted=$(printf '%s' "$bridge_result" | jq -r '
-    "<mnemosyne>\n\n## Relevant Learned Skills\n\nThe following skills from previous sessions may help:\n\n" +
-    (map(
-      "### " + .name + " (" + .scope + ")\n" +
-      "<skill-metadata>" + (. | {path, triggers, score, scope} | tojson) + "</skill-metadata>\n\n" +
-      .content + "\n\n---\n"
-    ) | join("\n")) +
-    "\n</mnemosyne>"
-  ' 2>/dev/null || true)
-
-  if [[ -n "${formatted:-}" ]]; then
-    printf '%s\n' "$(jq -n \
-      --arg ctx "$formatted" \
-      '{"continue":true,"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":$ctx}}')"
-    exit 0
-  fi
-fi
-
-# =============================================================================
-# Fallback: pure-bash skill matching
+# Pure-bash skill matching
 # =============================================================================
 
 MAX_SKILLS=5

@@ -21,28 +21,16 @@ fi
 
 # ── Collect agent roles and prompts from agents/*.md ────────────────────────
 # Strip YAML frontmatter (--- ... ---) from content, keeping only the body.
+# param: file path
+# returns: body text after frontmatter, leading blank lines trimmed
 strip_frontmatter() {
   local file="$1"
-  local content
-  content=$(<"${file}")
-  # If the file starts with ---, strip up to and including the closing ---
-  if [[ "${content}" =~ ^---[[:space:]]*$'\n' ]] || [[ "${content:0:3}" == "---" ]]; then
-    # Use awk to remove the frontmatter block
-    content=$($AWK '/^---/{if(NR==1){found=1;next}if(found){found=0;next}}!found' "${file}" | \
-              $AWK 'BEGIN{skip=1} /^---$/{if(skip){skip=0;next}} !skip{print}' 2>/dev/null || true)
-    # Fallback: simpler sed-based strip
-    if [[ -z "${content}" ]]; then
-      content=$($SED -n '/^---$/,/^---$/{/^---$/!p}' "${file}" | tail -n +2)
-    fi
-    # More reliable: node one-liner for frontmatter strip
-    content=$(node -e "
-      const fs = require('fs');
-      const c = fs.readFileSync('${file}', 'utf-8');
-      const m = c.match(/^---[\\s\\S]*?---\\s*([\\s\\S]*)$/);
-      process.stdout.write(m ? m[1].trim() : c.trim());
-    ")
-  fi
-  printf '%s' "${content}"
+  $AWK '
+    NR==1 && /^---[[:space:]]*$/ { in_fm=1; next }
+    in_fm && /^---[[:space:]]*$/ { in_fm=0; next }
+    in_fm { next }
+    { print }
+  ' "${file}" | $SED '/./,$!d'
 }
 
 # Build JSON for __AGENT_ROLES__, __AGENT_PROMPTS__, __AGENT_PROMPTS_CODEX__
@@ -64,15 +52,11 @@ for filepath in "${agent_files[@]}"; do
     AGENT_PROMPTS_JSON+=","
   fi
 
-  AGENT_ROLES_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")"
+  role_json=$(jq -n --arg v "${role}" '$v')
+  AGENT_ROLES_JSON+="${role_json}"
 
-  prompt=$(node -e "
-    const fs = require('fs');
-    const c = fs.readFileSync('${filepath}', 'utf-8');
-    const m = c.match(/^---[\\s\\S]*?---\\s*([\\s\\S]*)\$/);
-    process.stdout.write(JSON.stringify(m ? m[1].trim() : c.trim()));
-  ")
-  AGENT_PROMPTS_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")":${prompt}
+  prompt=$(strip_frontmatter "${filepath}" | jq -Rs .)
+  AGENT_PROMPTS_JSON+="${role_json}:${prompt}"
 done
 
 AGENT_ROLES_JSON+="]"
@@ -98,13 +82,9 @@ if [[ -d "${CODEX_DIR}" ]]; then
       CODEX_PROMPTS_JSON+=","
     fi
 
-    prompt=$(node -e "
-      const fs = require('fs');
-      const c = fs.readFileSync('${filepath}', 'utf-8');
-      const m = c.match(/^---[\\s\\S]*?---\\s*([\\s\\S]*)\$/);
-      process.stdout.write(JSON.stringify(m ? m[1].trim() : c.trim()));
-    ")
-    CODEX_PROMPTS_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")":${prompt}
+    role_json=$(jq -n --arg v "${role}" '$v')
+    prompt=$(strip_frontmatter "${filepath}" | jq -Rs .)
+    CODEX_PROMPTS_JSON+="${role_json}:${prompt}"
     (( codex_count++ )) || true
   done
   printf 'Embedding %s Codex agent prompts\n' "${codex_count}" >&2
@@ -116,10 +96,7 @@ CODEX_PROMPTS_JSON+="}"
 if [[ -d "${CODEX_DIR}" ]]; then
   for filepath in "${agent_files[@]}"; do
     role="$(basename "${filepath}" .md)"
-    if ! node -e "
-      const p = ${CODEX_PROMPTS_JSON};
-      process.exit(p['${role}'] ? 0 : 1);
-    " 2>/dev/null; then
+    if ! printf '%s' "${CODEX_PROMPTS_JSON}" | jq -e --arg r "${role}" 'has($r)' >/dev/null 2>&1; then
       printf '%s\n' "WARNING: Agent '${role}' has no Codex-specific prompt in agents.codex/" >&2
     fi
   done

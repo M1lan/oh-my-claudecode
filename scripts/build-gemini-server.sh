@@ -25,6 +25,17 @@ first_role=true
 
 mapfile -t agent_files < <($FIND "${AGENTS_DIR}" -maxdepth 1 -name "*.md" | sort)
 
+# strip YAML frontmatter (--- ... ---), return plain text body
+strip_frontmatter() {
+  local file="$1"
+  $AWK '
+    NR==1 && /^---[[:space:]]*$/ { in_fm=1; next }
+    in_fm && /^---[[:space:]]*$/ { in_fm=0; next }
+    in_fm { next }
+    { print }
+  ' "${file}" | $SED '/./,$!d'
+}
+
 for filepath in "${agent_files[@]}"; do
   filename="$(basename "${filepath}")"
   role="${filename%.md}"
@@ -36,15 +47,11 @@ for filepath in "${agent_files[@]}"; do
     AGENT_PROMPTS_JSON+=","
   fi
 
-  AGENT_ROLES_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")"
+  role_json=$(jq -n --arg v "${role}" '$v')
+  AGENT_ROLES_JSON+="${role_json}"
 
-  prompt=$(node -e "
-    const fs = require('fs');
-    const c = fs.readFileSync('${filepath}', 'utf-8');
-    const m = c.match(/^---[\\s\\S]*?---\\s*([\\s\\S]*)\$/);
-    process.stdout.write(JSON.stringify(m ? m[1].trim() : c.trim()));
-  ")
-  AGENT_PROMPTS_JSON+="$(node -e "process.stdout.write(JSON.stringify('${role}'))")":${prompt}
+  prompt=$(strip_frontmatter "${filepath}" | jq -Rs .)
+  AGENT_PROMPTS_JSON+="${role_json}:${prompt}"
 done
 
 AGENT_ROLES_JSON+="]"

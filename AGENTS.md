@@ -1,4 +1,4 @@
-<!-- Generated: 2026-01-28 | Updated: 2026-01-31 -->
+<!-- Generated: 2026-01-28 | Updated: 2026-02-13 -->
 
 # oh-my-claudecode
 
@@ -36,14 +36,15 @@ oh-my-claudecode enhances Claude Code with:
 | Directory | Purpose | Related AGENTS.md |
 |-----------|---------|-------------------|
 | `src/` | TypeScript source code - core library | `src/AGENTS.md` |
-| `agents/` | Markdown prompt templates for 28 agents (see `agents/templates/` for guidelines) | - |
+| `agents/` | Markdown prompt templates for all agents | `agents/AGENTS.md` |
 | `skills/` | 37 skill definitions for workflows | `skills/AGENTS.md` |
-| `commands/` | 31 slash command definitions (mirrors skills) | - |
-| `scripts/` | Build scripts, utilities, and automation | - |
+| `commands/` | 35 slash command definitions (mirrors skills) | `commands/AGENTS.md` |
+| `scripts/` | Build scripts, utilities, and automation | `scripts/AGENTS.md` |
 | `docs/` | User documentation and guides | `docs/AGENTS.md` |
-| `templates/` | Hook and rule templates (coding-style, testing, security, performance, git-workflow) | - |
+| `templates/` | Hook and rule templates (coding-style, testing, security, performance, git-workflow) | `templates/AGENTS.md` |
 | `benchmark/` | Performance testing framework | - |
-| `bridge/` | Pre-bundled MCP server for plugin distribution | - |
+| `bridge/` | Pre-bundled MCP server for plugin distribution | `bridge/AGENTS.md` |
+| `hooks/` | Claude Code plugin hooks configuration (hooks.json) | `hooks/AGENTS.md` |
 
 ## For AI Agents
 
