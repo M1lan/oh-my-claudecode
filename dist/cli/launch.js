@@ -6,7 +6,12 @@ import { execFileSync } from 'child_process';
 import { cpSync, copyFileSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync, } from 'fs';
 import { homedir } from 'os';
 import { basename, join } from 'path';
-import { resolveLaunchPolicy, buildTmuxSessionName, buildTmuxShellCommand, wrapWithLoginShell, isClaudeAvailable, quoteShellArg, } from './tmux-utils.js';
+import { resolvePluginDirArg } from '../lib/plugin-dir.js';
+import { stripRetiredTeamMcpServers } from '../installer/mcp-registry.js';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { resolveLaunchPolicy, buildTmuxSessionName, buildTmuxShellCommand, wrapWithLoginShell, isClaudeAvailable, quoteShellArg, tmuxExec, } from './tmux-utils.js';
+import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
+import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
 // Flag mapping
 const MADMAX_FLAG = '--madmax';
 const YOLO_FLAG = '--yolo';
@@ -52,7 +57,7 @@ function ensureMirroredPath(sourcePath, targetPath) {
         copyFileSync(sourcePath, targetPath);
     }
 }
-export function prepareOmcLaunchConfigDir(baseConfigDir = process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude')) {
+export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()) {
     const companionPath = join(baseConfigDir, 'CLAUDE-omc.md');
     if (!hasOmcMarkers(companionPath)) {
         return baseConfigDir;
@@ -70,7 +75,7 @@ export function prepareOmcLaunchConfigDir(baseConfigDir = process.env.CLAUDE_CON
         'projects',
         'rules',
         'skills',
-        '.omc-config.json',
+        OMC_CONFIG_FILE_REL,
         '.omc-version.json',
         '.omc-silent-update.json',
         'keybindings.json',
@@ -79,8 +84,25 @@ export function prepareOmcLaunchConfigDir(baseConfigDir = process.env.CLAUDE_CON
     ]) {
         ensureMirroredPath(join(baseConfigDir, entry), join(runtimeConfigDir, basename(entry)));
     }
+    const runtimeSettingsPath = join(runtimeConfigDir, 'settings.json');
+    if (existsSync(runtimeSettingsPath)) {
+        try {
+            const rawSettings = JSON.parse(readFileSync(runtimeSettingsPath, 'utf-8'));
+            const repaired = stripRetiredTeamMcpServers(rawSettings);
+            if (repaired.changed) {
+                writeFileSync(runtimeSettingsPath, JSON.stringify(repaired.settings, null, 2));
+            }
+        }
+        catch {
+            // Best-effort compatibility repair; launch must continue even if a legacy
+            // settings file cannot be parsed or rewritten.
+        }
+    }
     writeFileSync(join(runtimeConfigDir, '.omc-launch-profile.json'), JSON.stringify({ sourceConfigDir: baseConfigDir, sourceClaudeMd: companionPath }, null, 2));
     return runtimeConfigDir;
+}
+function isDefaultClaudeConfigDirPath(configDir) {
+    return configDir === join(homedir(), '.claude');
 }
 /**
  * Extract the OMC-specific --notify flag from launch args.
@@ -342,7 +364,7 @@ export function runClaude(cwd, args, sessionId) {
 function runClaudeInsideTmux(cwd, args) {
     // Enable mouse scrolling in the current tmux session (non-fatal if it fails)
     try {
-        execFileSync('tmux', ['set-option', 'mouse', 'on'], { stdio: 'ignore' });
+        tmuxExec(['set-option', 'mouse', 'on'], { stdio: 'ignore' });
     }
     catch { /* non-fatal — user's tmux may not support these options */ }
     // Launch Claude in current pane
@@ -375,6 +397,7 @@ export const TMUX_ENV_FORWARD = [
     'OMC_DISCORD',
     'OMC_SLACK',
     'OMC_WEBHOOK',
+    OMC_PLUGIN_ROOT_ENV,
 ];
 export function buildEnvExportPrefix(vars) {
     const parts = [];
@@ -402,27 +425,27 @@ function runClaudeOutsideTmux(cwd, args, _sessionId) {
     const claudeCmd = wrapWithLoginShell(`${envPrefix}sleep 0.3; perl -e 'use POSIX;tcflush(0,TCIFLUSH)' 2>/dev/null; ${rawClaudeCmd}`);
     const sessionName = buildTmuxSessionName(cwd);
     try {
-        execFileSync('tmux', ['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], { stdio: 'inherit' });
+        tmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], { stripTmux: true, stdio: 'inherit' });
     }
     catch {
         runClaudeDirect(cwd, args);
         return;
     }
     try {
-        execFileSync('tmux', ['set-option', '-t', sessionName, 'mouse', 'on'], { stdio: 'ignore' });
+        tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], { stripTmux: true, stdio: 'ignore' });
     }
     catch {
         /* non-fatal — user's tmux may not support these options */
     }
     try {
-        execFileSync('tmux', ['attach-session', '-t', sessionName], { stdio: 'inherit' });
+        tmuxExec(['attach-session', '-t', sessionName], { stripTmux: true, stdio: 'inherit' });
     }
     catch {
         // If the detached session still exists, preserve it so interrupted
         // attach paths (SSH disconnect, terminal drop, etc.) do not kill or
         // duplicate a valid Claude session.
         try {
-            execFileSync('tmux', ['has-session', '-t', sessionName], { stdio: 'ignore' });
+            tmuxExec(['has-session', '-t', sessionName], { stripTmux: true, stdio: 'ignore' });
             return;
         }
         catch {
@@ -463,7 +486,38 @@ export async function postLaunch(_cwd, _sessionId) {
  * Main launch command entry point
  * Orchestrates the 3-phase launch: preLaunch -> run -> postLaunch
  */
+/**
+ * Parse `--plugin-dir <path>` / `--plugin-dir=<path>` from launch args (non-consuming).
+ *
+ * Returns the resolved absolute path if found, or null. The flag is NOT removed
+ * from `args` — it must still forward to Claude Code's plugin loader untouched.
+ */
+export function parsePluginDirArg(args) {
+    for (let i = 0; i < args.length; i++) {
+        const a = args[i];
+        if (a === '--plugin-dir') {
+            const next = args[i + 1];
+            if (typeof next === 'string' && next.length > 0) {
+                return resolvePluginDirArg(next);
+            }
+        }
+        else if (typeof a === 'string' && a.startsWith('--plugin-dir=')) {
+            const value = a.slice('--plugin-dir='.length);
+            if (value.length > 0) {
+                return resolvePluginDirArg(value);
+            }
+        }
+    }
+    return null;
+}
 export async function launchCommand(args) {
+    // Capture --plugin-dir <path> so the HUD wrapper (and any other env-aware
+    // child of Claude Code) can resolve the active plugin root via OMC_PLUGIN_ROOT.
+    // Non-consuming: the flag still flows through to Claude Code untouched.
+    const pluginDir = parsePluginDirArg(args);
+    if (pluginDir) {
+        process.env[OMC_PLUGIN_ROOT_ENV] = pluginDir;
+    }
     // Extract OMC-specific --notify flag before passing remaining args to Claude CLI
     const { notifyEnabled, remainingArgs } = extractNotifyFlag(args);
     if (!notifyEnabled) {
@@ -521,7 +575,13 @@ export async function launchCommand(args) {
         console.error('  npm install -g @anthropic-ai/claude-code');
         process.exit(1);
     }
-    process.env.CLAUDE_CONFIG_DIR = prepareOmcLaunchConfigDir();
+    const launchConfigDir = prepareOmcLaunchConfigDir();
+    if (isDefaultClaudeConfigDirPath(launchConfigDir)) {
+        delete process.env.CLAUDE_CONFIG_DIR;
+    }
+    else {
+        process.env.CLAUDE_CONFIG_DIR = launchConfigDir;
+    }
     const normalizedArgs = normalizeClaudeLaunchArgs(argsAfterWebhook);
     const sessionId = `omc-${Date.now()}-${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
     // Phase 1: preLaunch

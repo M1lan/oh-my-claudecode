@@ -237,6 +237,43 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(hookSpecificOutput.additionalContext).toContain('legacy-team');
   });
 
+  it('routes Task calls from canonical team state when coarse team-state drifts away', () => {
+    const sessionId = 'session-canonical-team';
+    const canonicalTeamDir = join(tempDir, '.omc', 'state', 'team', 'canonical-team');
+    writeJson(join(canonicalTeamDir, 'manifest.json'), {
+      name: 'canonical-team',
+      task: 'Canonical team task',
+      leader: {
+        session_id: sessionId,
+        worker_id: 'leader-fixed',
+        role: 'leader',
+      },
+      created_at: new Date().toISOString(),
+      leader_cwd: tempDir,
+      team_state_root: join(tempDir, '.omc', 'state'),
+    });
+    writeJson(join(canonicalTeamDir, 'phase-state.json'), {
+      current_phase: 'executing',
+      updated_at: new Date().toISOString(),
+    });
+
+    const output = runPreToolEnforcer({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:executor',
+        description: 'Fix type errors',
+        prompt: 'Fix all type errors in src/auth/',
+      },
+      cwd: tempDir,
+      session_id: sessionId,
+    });
+
+    const hookSpecificOutput = output.hookSpecificOutput as Record<string, unknown>;
+    expect(output.continue).toBe(true);
+    expect(hookSpecificOutput.additionalContext).toContain('TEAM ROUTING REQUIRED');
+    expect(hookSpecificOutput.additionalContext).toContain('canonical-team');
+  });
+
   it('respects session isolation — ignores team state from different session', () => {
     writeJson(
       join(tempDir, '.omc', 'state', 'sessions', 'other-session', 'team-state.json'),
@@ -549,7 +586,15 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
 
   // === Agent definition model routing (issue: subagent_type bare-model-id on Bedrock) ===
 
-  it('denies Agent call with subagent_type whose definition has a bare Anthropic model ID when forceInherit is enabled', () => {
+  it('denies Agent call when a discovered plugin agent definition has a bare Anthropic model ID', () => {
+    const pluginRoot = join(tempDir, 'bare-model-plugin-agent');
+    const agentsDir = join(pluginRoot, 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(
+      join(agentsDir, 'critic.md'),
+      '---\nname: critic\nmodel: claude-opus-4-6\n---\nPlugin critic body.',
+    );
+
     const output = runPreToolEnforcerWithEnv(
       {
         tool_name: 'Agent',
@@ -564,6 +609,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       {
         OMC_ROUTING_FORCE_INHERIT: 'true',
         OMC_SUBAGENT_MODEL: 'global.anthropic.claude-sonnet-4-6',
+        CLAUDE_PLUGIN_ROOT: pluginRoot,
       },
     );
 
@@ -574,7 +620,15 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(hookOutput.permissionDecisionReason as string).toContain('claude-opus-4-6');
   });
 
-  it('denies Task call with subagent_type whose definition has a bare Anthropic model ID when forceInherit is enabled', () => {
+  it('denies Task call when a discovered plugin agent definition has a bare Anthropic model ID', () => {
+    const pluginRoot = join(tempDir, 'bare-model-plugin-task');
+    const agentsDir = join(pluginRoot, 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(
+      join(agentsDir, 'executor.md'),
+      '---\nname: executor\nmodel: claude-sonnet-4-6\n---\nPlugin executor body.',
+    );
+
     const output = runPreToolEnforcerWithEnv(
       {
         tool_name: 'Task',
@@ -589,6 +643,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       {
         OMC_ROUTING_FORCE_INHERIT: 'true',
         OMC_SUBAGENT_MODEL: 'global.anthropic.claude-sonnet-4-6',
+        CLAUDE_PLUGIN_ROOT: pluginRoot,
       },
     );
 
@@ -598,7 +653,15 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(hookOutput.permissionDecisionReason as string).toContain('[MODEL ROUTING]');
   });
 
-  it('deny message includes the bare model from the definition and suggests the tier alias', () => {
+  it('deny message includes the bare model from a plugin definition and suggests the tier alias', () => {
+    const pluginRoot = join(tempDir, 'bare-model-plugin-message');
+    const agentsDir = join(pluginRoot, 'agents');
+    mkdirSync(agentsDir, { recursive: true });
+    writeFileSync(
+      join(agentsDir, 'critic.md'),
+      '---\nname: critic\nmodel: claude-opus-4-6\n---\nPlugin critic body.',
+    );
+
     const output = runPreToolEnforcerWithEnv(
       {
         tool_name: 'Agent',
@@ -613,6 +676,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       {
         OMC_ROUTING_FORCE_INHERIT: 'true',
         OMC_SUBAGENT_MODEL: 'global.anthropic.claude-sonnet-4-6',
+        CLAUDE_PLUGIN_ROOT: pluginRoot,
       },
     );
 
@@ -691,6 +755,28 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
   });
 
+  it('does not deny shipped agent definitions that use routable tier aliases in frontmatter', () => {
+    const output = runPreToolEnforcerWithEnv(
+      {
+        tool_name: 'Agent',
+        toolInput: {
+          subagent_type: 'oh-my-claudecode:critic',
+          description: 'Review spec',
+          prompt: 'Review this spec',
+        },
+        cwd: tempDir,
+        session_id: 'session-shipped-tier-alias',
+      },
+      {
+        OMC_ROUTING_FORCE_INHERIT: 'true',
+        OMC_SUBAGENT_MODEL: 'global.anthropic.claude-sonnet-4-6-v1:0',
+      },
+    );
+
+    expect(output.continue).toBe(true);
+    expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+  });
+
   it('does not throw or deny when subagent_type is a non-string value', () => {
     const output = runPreToolEnforcerWithEnv(
       {
@@ -735,7 +821,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
   });
 
-  it('falls back to script-relative agents dir when CLAUDE_PLUGIN_ROOT points to a non-existent path', () => {
+  it('falls back to script-relative agents dir when CLAUDE_PLUGIN_ROOT points to a non-existent path and allows shipped tier aliases', () => {
     const output = runPreToolEnforcerWithEnv(
       {
         tool_name: 'Agent',
@@ -754,15 +840,11 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       },
     );
 
-    // Despite stale CLAUDE_PLUGIN_ROOT, falls back to script-relative agents dir and detects bare model
-    const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
     expect(output.continue).toBe(true);
-    expect(hookOutput.permissionDecision).toBe('deny');
-    expect(hookOutput.permissionDecisionReason as string).toContain('[MODEL ROUTING]');
-    expect(hookOutput.permissionDecisionReason as string).toContain('claude-opus-4-6');
+    expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
   });
 
-  it('falls back to script-relative agents dir when CLAUDE_PLUGIN_ROOT/agents exists but lacks the specific agent file', () => {
+  it('falls back to script-relative agents dir when CLAUDE_PLUGIN_ROOT/agents exists but lacks the specific agent file, and allows shipped tier aliases', () => {
     // CLAUDE_PLUGIN_ROOT/agents/ exists (non-empty check passes) but does not contain critic.md
     const pluginRoot = join(tempDir, 'partial-plugin');
     const pluginAgentsDir = join(pluginRoot, 'agents');
@@ -788,12 +870,8 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       },
     );
 
-    // Should fall back to script-relative agents/, find critic.md, and deny on bare model ID
-    const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
     expect(output.continue).toBe(true);
-    expect(hookOutput.permissionDecision).toBe('deny');
-    expect(hookOutput.permissionDecisionReason as string).toContain('[MODEL ROUTING]');
-    expect(hookOutput.permissionDecisionReason as string).toContain('claude-opus-4-6');
+    expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
   });
 
   it('does not deny when model: appears inside a body --- block (not real frontmatter)', () => {

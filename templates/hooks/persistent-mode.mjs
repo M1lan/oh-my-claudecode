@@ -164,16 +164,18 @@ const TEAM_ACTIVE_PHASES = new Set([
 /**
  * Check if a state is stale based on its timestamps.
  * A state is considered stale if it hasn't been updated recently.
- * We check both `last_checked_at` and `started_at` - using whichever is more recent.
+ * We check `last_checked_at`, `updated_at`, and `started_at` - using whichever is more recent.
  */
 function isStaleState(state) {
   if (!state) return true;
 
-  const lastChecked = state.last_checked_at
-    ? new Date(state.last_checked_at).getTime()
-    : 0;
-  const startedAt = state.started_at ? new Date(state.started_at).getTime() : 0;
-  const mostRecent = Math.max(lastChecked, startedAt);
+  const timestamps = [state.last_checked_at, state.updated_at, state.started_at].filter(
+    (value) => typeof value === "string" && value.length > 0,
+  );
+  const mostRecent = timestamps.reduce((max, value) => {
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) && parsed > max ? parsed : max;
+  }, 0);
 
   if (mostRecent === 0) return true; // No valid timestamps
 
@@ -995,8 +997,8 @@ async function main() {
       }
     }
 
-    // Priority 8: Ultrawork - ALWAYS continue while active (not just when tasks exist)
-    // This prevents false stops from bash errors, transient failures, etc.
+    // Priority 8: Ultrawork - reinforce only while tracked work remains incomplete.
+    // This prevents false stops from bash errors or transient failures mid-task.
     // Session isolation: only block if state belongs to this session (issue #311)
     // If state has session_id, it must match. If no session_id (legacy), allow.
     if (
@@ -1007,6 +1009,19 @@ async function main() {
         : !ultrawork.state.session_id || ultrawork.state.session_id === sessionId) &&
       isStateForCurrentProject(ultrawork.state, directory, ultrawork.isGlobal)
     ) {
+      if (totalIncomplete === 0) {
+        // Issue #2419: once tracked work is complete, auto-clear ultrawork so
+        // Stop can exit cleanly instead of forcing repeated cancel prompts.
+        try {
+          ultrawork.state.active = false;
+          ultrawork.state.deactivated_reason = 'task_completion';
+          ultrawork.state.last_checked_at = new Date().toISOString();
+          writeJsonFile(ultrawork.path, ultrawork.state);
+        } catch { /* best-effort cleanup */ }
+        console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+        return;
+      }
+
       const newCount = (ultrawork.state.reinforcement_count || 0) + 1;
       const maxReinforcements = ultrawork.state.max_reinforcements || 50;
 

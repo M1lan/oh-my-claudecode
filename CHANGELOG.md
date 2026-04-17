@@ -1,75 +1,114 @@
-# oh-my-claudecode v4.11.1: add gitStatus working-tree, add hostname element, cwd folder format
+# oh-my-claudecode v4.12.0: add upgrade test, per-role provider and, display extra usage
 
 ## Release Notes
 
-Release with **3 new features**, **8 security improvements**, **33 bug fixes**, **1 other change** across **45 merged PRs**.
+Release with **6 new features**, **67 bug fixes**, **3 other changes** across **121 merged PRs**.
 
 ### Highlights
 
-- **feat(hud): add gitStatus working-tree indicator element** (#2247)
-- **feat(hud): add hostname element for multi-host SSH workflows** (#2246)
-- **feat(hud): cwd folder format shows parent/leaf instead of just leaf** (#2238)
-- **fix(security): clamp hardMaxIterations and enforce in autopilot** (#2331)
-- **fix(security): delegate gitea URL validation to validateUrlForSSRF** (#2336)
-- **fix(security): enforce disableExternalLLM in omc ask command** (#2324)
+- **feat(ci): add upgrade test to catch warnings and errors**
+- **feat(team): per-role provider and model routing with resolved-routing snapshot** (#2614)
+- **feat(hud): display extra usage spend data in HUD (closes #2570)**
+- **feat(hud): add MiniMax coding plan usage provider**
+- **feat(hud): split usage cache by provider to eliminate cross-session thrashing**
 
 ### New Features
 
-- **feat(hud): add gitStatus working-tree indicator element** (#2247)
-- **feat(hud): add hostname element for multi-host SSH workflows** (#2246)
-- **feat(hud): cwd folder format shows parent/leaf instead of just leaf** (#2238)
-
-### Security & Hardening
-
-- **fix(security): clamp hardMaxIterations and enforce in autopilot** (#2331)
-- **fix(security): delegate gitea URL validation to validateUrlForSSRF** (#2336)
-- **fix(security): enforce disableExternalLLM in omc ask command** (#2324)
-- **fix(security): sanitize trigger_message control characters before tmux send-keys** (#2323)
-- **fix(security): check iteration directly against hardMax independent of max_iterations** (#2322)
-- **fix(security): reject non-positive hardMaxIterations in strict mode** (#2321)
-- **fix(security): enforce hardMaxIterations for ultrawork persistent mode** (#2320)
-- **fix(security): block all tmux subcommands in worker context** (#2316)
+- **feat(ci): add upgrade test to catch warnings and errors**
+- **feat(team): per-role provider and model routing with resolved-routing snapshot** (#2614)
+- **feat(hud): display extra usage spend data in HUD (closes #2570)**
+- **feat(hud): add MiniMax coding plan usage provider**
+- **feat(hud): split usage cache by provider to eliminate cross-session thrashing**
+- **feat(release): rewrite release skill as generic repo-aware assistant** (#2501)
 
 ### Bug Fixes
 
-- **fix(installer): use getPackageDir() instead of __dirname for HUD helper copies** (#2347)
-- **fix(team): lock unregisterMcpWorker and registerInConfig read-modify-write paths** (#2333)
-- **fix(shared-memory): add retry timeout to writeEntry lock acquisition** (#2342)
-- **fix: guard against fd leak in tryAcquireSync on write failure** (#2341)
-- **fix(team): use randomUUID in MCP team-server job ID generation** (#2340)
-- **fix(cancel,team): add skill-active cleanup to bash fallback and guard startTeamV2 events** (#2339)
-- **fix(i18n): prevent Korean keyword false positives for 설명서 and 랄프로렌** (#2337)
-- **fix(state-tools): correct cancel signal path and add legacy fallback** (#2335)
-- **fix: guard Atomics.wait with try/catch in session-registry and subagent-tracker** (#2334)
-- **fix(cancel): write legacy cancel signal to .omc/state/ instead of worktree root** (#2332)
-- **fix(worktree-paths): include dot in project path encoding regex** (#2329)
-- **fix(team): add locking to teamUpdateTask for concurrent safety** (#2330)
-- **fix(hud): apply wrap mode when terminal width is auto-detected** (#2338)
-- **fix(hud): handle ST-terminated OSC 8 sequences in ANSI regex** (#2319)
-- **fix(prompt-prerequisites): use suffix matching for file path comparison** (#2314)
-- **fix(prompt-prerequisites): require path prefix or file extension in isLikelyPath** (#2313)
-- **fix(prompt-prerequisites): move progress recording after blocking check** (#2312)
-- **fix(setup): clean up preserve-mode artifacts on overwrite** (#2298)
-- **fix(launch): mirror keybindings.json and rules/ to runtime config dir** (#2297)
-- **fix(team): sync worker_count after canonicalization dedup** (#2296)
-- **fix(team): skip past colliding worker names in scaleUp** (#2295)
-- **fix(skill-state): add recency check to orchestrator idle bypass** (#2287)
-- **fix(wiki): normalize CRLF in parseFrontmatter for Windows compatibility** (#2285)
-- **fix(wiki): escape newlines in title to prevent frontmatter corruption** (#2284)
-- **fix(wiki): guard writePageUnsafe against reserved filenames** (#2283)
-- **fix(pre-tool-enforcer): strip UTF-8 BOM before frontmatter parsing** (#2276)
-- **fix(wiki): titleToSlug produces bare .md for non-ASCII titles** (#2270)
-- **fix(wiki): keyword search returns 0 results for CJK text** (#2263)
-- **fix(skills): clarify ralph step 7 chaining and ai-slop-cleaner skill invocation** (#2245)
-- **fix(persistent-mode): relax overly-strict ralph/ultrawork session-id check** (#2244)
-- **fix(hud): correctly mark background agents as completed in transcript parser** (#2243)
-- **fix: ignore HTML comments in keyword detector** (#2249)
-- **fix(launch): forward env vars into tmux sessions & respect CLAUDE_CONFIG_DIR** (#2204)
+- **fix: align persistent stop hook and tighten agent output contracts** (#2653)
+- **fix(hud): support z.ai weekly token limit on pro+ tiers**
+- **fix(ci): remove unsafe HOME override and widen stderr check in upgrade-test**
+- **fix(ci): improve fork detection, version checks, and comment accuracy**
+- **fix(ci): filter npm deprecation warnings from omc update stderr check**
+- **fix(ci): skip claude step on fork PRs to avoid false failures**
+- **fix(test): relax performance threshold in CI environment**
+- **fix(keyword-detector): ignore pasted transcript blocks**
+- **fix(session-start): ensure stale-root parent dir exists before temp symlink**
+- **fix(hooks): align startup contract for autopilot and ralplan**
+- **fix(session-start): unlink dangling stale path before fallback symlink**
+- **fix(session-start): use absolute symlink target on POSIX**
+- **fix(session-start): strip trailing separators before creating stale-root symlink**
+- **fix(session-start): symlink stale CLAUDE_PLUGIN_ROOT to latest version**
+- **fix(pre-tool-enforcer): honor OMC_STATE_DIR via centralized state-root resolver** (#2621)
+- **fix(hooks): require invocation intent before auto-starting ralplan** (#2620)
+- **fix(team): shorten trigger messages to fit sendToWorker 200-char limit** (#2617)
+- **fix(hooks): prevent duplicate hook firing when plugin and standalone coexist**
+- **fix(context-bloat): eliminate three sources of repeated rule/skill injection** (#2577)
+- **fix(permission-handler): allow read-only gh issue/pr commands; add installer lib assertions**
+- **fix(installer): preserve user skills with OMC-style frontmatter during updates** (#2573)
+- **fix(tmux-detector): suppress stale pane history and commit/UI text false-positives**
+- **fix(hud): keep MiniMax routing independent of credential presence**
+- **fix(hud): support minimaxi.com and minimax.com domains for MiniMax provider**
+- **fix(openclaw): hoist dead-pane guard to index.ts; drop session-level suppressor**
+- **fix(openclaw): suppress dead-session pane replay alerts** (#2562)
+- **fix(ask): close stdin for provider spawns to prevent hang in piped environments**
+- **fix(post-tool-verifier): suppress non-actionable error token noise** (#2558)
+- **fix(openclaw): suppress late lifecycle alerts for completed/cleaned-up sessions**
+- **fix(keyword-detector): suppress review-seed echo from tripping code-review alerts** (#2541)
+- **fix(purge): symlink stale plugin version dirs instead of deleting them**
+- **fix(deep-interview): replace five remaining hardcoded 20%/0.2 threshold signals (issue #2545)**
+- **fix(stop-hook): cap echoed task prompt to 150 chars to fix #2542**
+- **fix(mcp): wire wiki, shared_memory, skills, and deepinit tools into standalone server**
+- **fix(openclaw): suppress stale tmux pane history in stop/session-end alerts**
+- **fix(state-root): centralize OMC_STATE_DIR resolution across hook entrypoints** (#2532)
+- **fix(setup): only clean up OMC-managed skills**
+- **fix(hooks): reduce bash failure false positives**
+- **fix(ask): pipe multiline prompts to provider advisor stdin**
+- **fix(config): warn on deprecated delegation routing**
+- **fix(notifications): suppress usage-text tmux alert noise**
+- **fix(psm): launch trusted sessions with initial prompt**
+- **fix(psm): inject PR/issue context into Claude after session launch**
+- **fix: surface HUD import errors from plugin root wrapper**
+- **fix: keep Windows tmux.cmd execution consistent with availability checks** (#2444)
+- **fix(cli): restore tmux-utils API compatibility for #2441** (#2442)
+- **fix(tests): clean up tmux sessions spawned by scaling tests**
+- **fix(tests): align test helpers with production path encoding and platform behavior**
+- **fix(hud): remove stale inline wrapper from HUD skill, copy from canonical template**
+- **fix(hooks): avoid .json false positive in source extension matching**
+- **fix(installer): always update claude config CLAUDE.md**
+- **fix(auto-update): avoid hook re-injection for plugin installs**
+- **fix(tmux): centralize all tmux execution through wrapper functions**
+- **fix(keyword-detector): preserve activation in mixed command/help prompts**
+- **fix(keyword-detector): keep help-style use queries informational**
+- **fix(doctor): remove extra brace in version drift command**
+- **fix(doctor): use deterministic CLAUDE source for version drift check**
+- **fix(doctor): support companion version markers and mingw-safe checks**
+- **fix(setup): validate and strictly select cache version candidates**
+- **fix(release): sync marketplace.json, docs/CLAUDE.md, and package-lock to 4.11.4**
+- **fix(doctor): detect CLAUDE.md version drift against plugin cache**
+- **fix(setup): prefer latest cache version over stale installed path**
+- **fix(team): preserve forceInherit by skipping worker model resolution** (#2418)
+- **fix(hud): try older built cache versions when latest import fails** (#2416)
+- **fix(installer): use portable hook command paths on Windows** (#2415)
+- **fix(preemptive-compaction): fallback to hook context window usage** (#2412)
+- **fix(keyword-detector): narrow false-positive suppression for #2390** (#2411)
+
+### Refactoring
+
+- **refactor(hud): classify z.ai TOKENS_LIMIT by unit instead of reset time**
+- **refactor(mcp): deslop standalone-server and listtools test**
+
+### Documentation
+
+- **docs(hud): note 2026-02-12 (UTC+8) cutoff for z.ai weekly TOKENS_LIMIT**
+- **docs: split install commands into separate code blocks for clarity**
+- **docs: add omc symlink bootstrap and .mcp.json conflict resolution to CONTRIBUTING**
+- **docs(readme): refresh core maintainers and top collaborators**
 
 ### Other Changes
 
-- **Make artifact-first handoffs explicit for interop and prompt persistence** (#2257)
+- **chore(test): fix stale comment in standalone-server.test.ts**
+- **chore: sync metadata artifacts for version consistency**
+- **chore: sync metadata artifacts for version consistency**
 
 ### Stats
 
-- **45 PRs merged** | **3 new features** | **33 bug fixes** | **8 security/hardening improvements** | **1 other change**
+- **121 PRs merged** | **6 new features** | **67 bug fixes** | **0 security/hardening improvements** | **3 other changes**

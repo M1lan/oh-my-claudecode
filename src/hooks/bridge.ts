@@ -24,9 +24,10 @@ import {
 } from "fs";
 import { dirname, join } from "path";
 import { resolveToWorktreeRoot, getOmcRoot } from "../lib/worktree-paths.js";
-import { writeModeState } from "../lib/mode-state-io.js";
+import { readModeState, writeModeState } from "../lib/mode-state-io.js";
 import { formatOmcCliInvocation } from "../utils/omc-cli-rendering.js";
 import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
+import { readCanonicalTeamStateCandidate } from "./team-canonical-state.js";
 
 // Hot-path imports: needed on every/most hook invocations (keyword-detector, pre/post-tool-use)
 import {
@@ -67,6 +68,7 @@ import {
   resolveAutopilotPlanPath,
   resolveOpenQuestionsPlanPath,
 } from "../config/plan-output.js";
+import { formatAutopilotRuntimeInsight } from "./autopilot/runtime-insight.js";
 import { writeSkillActiveState } from "./skill-state/index.js";
 import {
   ULTRAWORK_MESSAGE,
@@ -306,6 +308,131 @@ function activateRalplanState(directory: string, sessionId?: string): void {
   );
 }
 
+function deactivateRalplanState(directory: string, sessionId?: string): void {
+  const state = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
+  if (!state) {
+    return;
+  }
+
+  const currentPhase =
+    typeof state.current_phase === "string" ? state.current_phase : undefined;
+  const terminalPhases = new Set([
+    "complete",
+    "completed",
+    "failed",
+    "cancelled",
+    "done",
+  ]);
+  const completedAt =
+    typeof state.completed_at === "string"
+      ? state.completed_at
+      : new Date().toISOString();
+
+  writeModeState(
+    "ralplan",
+    {
+      ...state,
+      active: false,
+      current_phase:
+        currentPhase && terminalPhases.has(currentPhase.toLowerCase())
+          ? currentPhase
+          : "complete",
+      completed_at: completedAt,
+      deactivated_reason:
+        typeof state.deactivated_reason === "string"
+          ? state.deactivated_reason
+          : "skill_completed",
+    },
+    directory,
+    sessionId,
+  );
+}
+
+function seedRalplanStartupState(directory: string, sessionId?: string): void {
+  const existingState = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
+  if (existingState?.active === true) {
+    if (existingState.awaiting_confirmation === true) {
+      markModeAwaitingConfirmation(directory, sessionId, "ralplan");
+    }
+    return;
+  }
+
+  activateRalplanState(directory, sessionId);
+  markModeAwaitingConfirmation(directory, sessionId, "ralplan");
+}
+
+async function seedAutopilotStartupState(
+  directory: string,
+  prompt: string,
+  sessionId?: string,
+): Promise<void> {
+  const { readAutopilotState, writeAutopilotState, DEFAULT_CONFIG } = await import("./autopilot/index.js");
+  const existingState = readAutopilotState(directory, sessionId);
+  const existingAutopilotRecord = existingState as unknown as Record<string, unknown> | null;
+
+  if (existingState?.active === true) {
+    if (existingAutopilotRecord?.awaiting_confirmation === true) {
+      markModeAwaitingConfirmation(directory, sessionId, "autopilot");
+    }
+    return;
+  }
+
+  const now = new Date().toISOString();
+  const wrote = writeAutopilotState(
+    directory,
+    {
+      active: true,
+      phase: "expansion",
+      iteration: 1,
+      max_iterations: DEFAULT_CONFIG.maxIterations ?? 10,
+      originalIdea: prompt,
+      expansion: {
+        analyst_complete: false,
+        architect_complete: false,
+        spec_path: null,
+        requirements_summary: "",
+        tech_stack: [],
+      },
+      planning: {
+        plan_path: null,
+        architect_iterations: 0,
+        approved: false,
+      },
+      execution: {
+        ralph_iterations: 0,
+        ultrawork_active: false,
+        tasks_completed: 0,
+        tasks_total: 0,
+        files_created: [],
+        files_modified: [],
+      },
+      qa: {
+        ultraqa_cycles: 0,
+        build_status: "pending",
+        lint_status: "pending",
+        test_status: "pending",
+      },
+      validation: {
+        architects_spawned: 0,
+        verdicts: [],
+        all_approved: false,
+        validation_rounds: 0,
+      },
+      started_at: now,
+      completed_at: null,
+      phase_durations: {},
+      total_agents_spawned: 0,
+      wisdom_entries: 0,
+      session_id: sessionId,
+      project_path: directory,
+    },
+    sessionId,
+  );
+  if (wrote) {
+    markModeAwaitingConfirmation(directory, sessionId, "autopilot");
+  }
+}
+
 interface TeamStagedState {
   active?: boolean;
   stage?: string;
@@ -341,6 +468,7 @@ function readTeamStagedState(
       ]
     : [join(stateDir, "team-state.json")];
 
+  let coarseState: TeamStagedState | null = null;
   for (const statePath of statePaths) {
     if (!existsSync(statePath)) {
       continue;
@@ -359,13 +487,34 @@ function readTeamStagedState(
         continue;
       }
 
-      return parsed;
+      coarseState = parsed;
+      if (parsed.active === true && !isTeamStateTerminal(parsed)) {
+        return parsed;
+      }
     } catch {
       continue;
     }
   }
 
-  return null;
+  const canonical = readCanonicalTeamStateCandidate(directory, sessionId);
+  if (canonical) {
+    return {
+      active: canonical.active,
+      session_id: canonical.sessionId,
+      team_name: canonical.teamName,
+      stage: canonical.stage,
+      current_stage: canonical.stage,
+      current_phase: canonical.stage,
+      phase: canonical.stage,
+      status: canonical.stage,
+      task: canonical.task,
+      started_at: canonical.startedAt,
+      last_checked_at: canonical.updatedAt,
+      reinforcement_count: 0,
+    };
+  }
+
+  return coarseState;
 }
 
 function getTeamStage(state: TeamStagedState): string {
@@ -711,6 +860,28 @@ function getPromptText(input: HookInput): string {
   return "";
 }
 
+function isExplicitRalplanSlashInvocation(promptText: string): boolean {
+  return /^\s*\/(?:oh-my-claudecode:)?ralplan(?:\s|$)/i.test(promptText);
+}
+
+function activateRalplanStartupState(directory: string, sessionId?: string): void {
+  const now = new Date().toISOString();
+  writeModeState(
+    "ralplan",
+    {
+      active: true,
+      session_id: sessionId,
+      current_phase: "ralplan",
+      started_at: now,
+      awaiting_confirmation: true,
+      awaiting_confirmation_set_at: now,
+      last_checked_at: now,
+    },
+    directory,
+    sessionId,
+  );
+}
+
 /**
  * Process keyword detection hook
  * Detects magic keywords and returns injection message
@@ -734,16 +905,32 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
   const sessionId = input.sessionId;
   const directory = resolveToWorktreeRoot(input.directory);
   const messages: string[] = [];
+  const explicitRalplanSlashInvocation =
+    isExplicitRalplanSlashInvocation(promptText);
+
+  if (explicitRalplanSlashInvocation) {
+    activateRalplanStartupState(directory, sessionId);
+    return {
+      continue: true,
+      hookSpecificOutput: {
+        hookEventName: "UserPromptSubmit",
+        additionalContext:
+          `[RALPLAN INIT] Explicit /ralplan invoke detected during UserPromptSubmit.\n` +
+          `ralplan state is armed for startup and marked awaiting confirmation, so the stop hook will not block this initialization path.\n` +
+          `Proceed immediately with the consensus planning workflow for:\n${promptText}`,
+      },
+    } as HookOutput & { hookSpecificOutput: Record<string, unknown> };
+  }
 
   // Record prompt submission time in HUD state
   try {
-    const hudState = readHudState(directory) || {
+    const hudState = readHudState(directory, input.sessionId) || {
       timestamp: new Date().toISOString(),
       backgroundTasks: [],
     };
     hudState.lastPromptTimestamp = new Date().toISOString();
     hudState.timestamp = new Date().toISOString();
-    writeHudState(hudState, directory);
+    writeHudState(hudState, directory, input.sessionId);
   } catch {
     // Silent failure - don't break keyword detection
   }
@@ -851,49 +1038,21 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
         // Lazy-load ralph module
         const {
           createRalphLoopHook,
-          findPrdPath: findPrd,
-          initPrd: initPrdFn,
-          initProgress: initProgressFn,
-          detectNoPrdFlag: detectNoPrd,
-          stripNoPrdFlag: stripNoPrd,
           detectCriticModeFlag,
           stripCriticModeFlag,
         } = await import("./ralph/index.js");
 
-        // Handle --no-prd flag
-        const noPrd = detectNoPrd(promptText);
         const criticMode = detectCriticModeFlag(promptText) ?? undefined;
-        const promptWithoutCriticFlag = stripCriticModeFlag(promptText);
-        const cleanPrompt = noPrd
-          ? stripNoPrd(promptWithoutCriticFlag)
-          : promptWithoutCriticFlag;
-
-        // Auto-generate scaffold PRD if none exists and --no-prd not set
-        const existingPrd = findPrd(directory);
-        if (!noPrd && !existingPrd) {
-          const { basename } = await import("path");
-          const { execSync } = await import("child_process");
-          const projectName = basename(directory);
-          let branchName = "ralph/task";
-          try {
-            branchName = execSync("git rev-parse --abbrev-ref HEAD", {
-              cwd: directory,
-              encoding: "utf-8",
-              timeout: 5000,
-            }).trim();
-          } catch {
-            // Not a git repo or git not available — use fallback
-          }
-          initPrdFn(directory, projectName, branchName, cleanPrompt);
-          initProgressFn(directory);
-        }
+        const cleanPrompt = stripCriticModeFlag(promptText);
 
         // Activate ralph state which also auto-activates ultrawork
         const hook = createRalphLoopHook(directory);
         const started = hook.startLoop(
           sessionId,
           cleanPrompt,
-          criticMode ? { criticMode } : undefined,
+          {
+            ...(criticMode ? { criticMode } : {}),
+          },
         );
         if (started) {
           markModeAwaitingConfirmation(directory, sessionId, 'ralph', 'ultrawork');
@@ -945,6 +1104,11 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
       case "autopilot":
       case "ralplan":
       case "deep-interview":
+        if (keywordType === "autopilot") {
+          await seedAutopilotStartupState(directory, cleanedText, sessionId);
+        } else if (keywordType === "ralplan") {
+          seedRalplanStartupState(directory, sessionId);
+        }
         messages.push(
           `[MODE: ${keywordType.toUpperCase()}] Skill invocation handled by UserPromptSubmit hook.`,
         );
@@ -1009,6 +1173,7 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
   const {
     checkPersistentModes,
     createHookOutput,
+    shouldWakeOpenClawOnStop,
     shouldSendIdleNotification,
     recordIdleNotificationSent,
   } = await import("./persistent-mode/index.js");
@@ -1078,14 +1243,16 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
         stopContext.stop_reason === "context_limit" ||
         stopContext.stopReason === "context_limit";
       if (!isAbort && !isContextLimit) {
-        // Always wake OpenClaw on stop — cooldown only applies to user-facing notifications
-        _openclaw.wake("stop", { sessionId, projectPath: directory });
-
         // Per-session cooldown: prevent notification spam when the session idles repeatedly.
         // Uses session-scoped state so one session does not suppress another.
         const stateDir = join(getOmcRoot(directory), "state");
-        if (shouldSendIdleNotification(stateDir, sessionId)) {
-          recordIdleNotificationSent(stateDir, sessionId);
+        const { getIdleNotificationRepoState } = await import("./persistent-mode/idle-repo-state.js");
+        const idleRepoState = getIdleNotificationRepoState(directory);
+        if (shouldWakeOpenClawOnStop(stateDir, sessionId, idleRepoState)) {
+          _openclaw.wake("stop", { sessionId, projectPath: directory });
+        }
+        if (shouldSendIdleNotification(stateDir, sessionId, idleRepoState)) {
+          recordIdleNotificationSent(stateDir, sessionId, idleRepoState);
           const logSessionIdleNotifyFailure = createSwallowedErrorLogger(
             'hooks.bridge session-idle notification failed',
           );
@@ -1238,7 +1405,7 @@ async function processSessionStart(input: HookInput): Promise<HookOutput> {
   }
 
   // Check for active autopilot state - only restore if it belongs to this session
-  const autopilotState = readAutopilotState(directory);
+  const autopilotState = readAutopilotState(directory, sessionId);
   if (autopilotState?.active && autopilotState.session_id === sessionId) {
     messages.push(`<session-restore>
 
@@ -1258,7 +1425,7 @@ Treat this as prior-session context only. Prioritize the user's newest request, 
   }
 
   // Check for active ultrawork state - only restore if it belongs to this session
-  const ultraworkState = readUltraworkState(directory);
+  const ultraworkState = readUltraworkState(directory, sessionId);
   if (ultraworkState?.active && ultraworkState.session_id === sessionId) {
     messages.push(`<session-restore>
 
@@ -1268,6 +1435,38 @@ You have an active ultrawork session from ${ultraworkState.started_at}.
 Original task: ${ultraworkState.original_prompt}
 
 Treat this as prior-session context only. Prioritize the user's newest request, and resume ultrawork only if the user explicitly asks to continue it.
+
+</session-restore>
+
+---
+
+`);
+  }
+
+  const ralplanState = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
+  if (ralplanState?.active === true && ralplanState.session_id === sessionId) {
+    const ralplanPhase =
+      typeof ralplanState.current_phase === "string"
+        ? ralplanState.current_phase
+        : typeof ralplanState.phase === "string"
+          ? ralplanState.phase
+          : typeof ralplanState.status === "string"
+            ? ralplanState.status
+            : "ralplan";
+    const restoreStatus =
+      ralplanState.awaiting_confirmation === true
+        ? "awaiting skill confirmation"
+        : "active";
+
+    messages.push(`<session-restore>
+
+[RALPLAN MODE RESTORED]
+
+You have an active ralplan consensus planning session from ${ralplanState.started_at ?? "an earlier turn"}.
+Current phase: ${ralplanPhase}
+Status: ${restoreStatus}
+
+Treat this as prior-session context only. Prioritize the user's newest request, and resume ralplan only if the user explicitly asks to continue it.
 
 </session-restore>
 
@@ -1756,7 +1955,7 @@ function processPreToolUse(input: HookInput): HookOutput {
     if (toolInput?.run_in_background) {
       const config = loadConfig();
       const maxBgTasks = config.permissions?.maxBackgroundTasks ?? 5;
-      const runningCount = getRunningTaskCount(directory);
+      const runningCount = getRunningTaskCount(directory, input.sessionId);
 
       if (runningCount >= maxBgTasks) {
         return {
@@ -1789,6 +1988,7 @@ function processPreToolUse(input: HookInput): HookOutput {
         toolInput.description,
         toolInput.subagent_type,
         directory,
+        input.sessionId,
       );
     }
   }
@@ -1891,11 +2091,6 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
     if (skillName === "ralph") {
       const {
         createRalphLoopHook,
-        findPrdPath: findPrd,
-        initPrd: initPrdFn,
-        initProgress: initProgressFn,
-        detectNoPrdFlag: detectNoPrd,
-        stripNoPrdFlag: stripNoPrd,
         detectCriticModeFlag,
         stripCriticModeFlag,
       } = await import("./ralph/index.js");
@@ -1904,39 +2099,16 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
           ? input.prompt
           : "Ralph loop activated via Skill tool";
 
-      // Handle --no-prd flag
-      const noPrd = detectNoPrd(rawPrompt);
       const criticMode = detectCriticModeFlag(rawPrompt) ?? undefined;
-      const promptWithoutCriticFlag = stripCriticModeFlag(rawPrompt);
-      const cleanPrompt = noPrd
-        ? stripNoPrd(promptWithoutCriticFlag)
-        : promptWithoutCriticFlag;
-
-      // Auto-generate scaffold PRD if none exists and --no-prd not set
-      const existingPrd = findPrd(directory);
-      if (!noPrd && !existingPrd) {
-        const { basename } = await import("path");
-        const { execSync } = await import("child_process");
-        const projectName = basename(directory);
-        let branchName = "ralph/task";
-        try {
-          branchName = execSync("git rev-parse --abbrev-ref HEAD", {
-            cwd: directory,
-            encoding: "utf-8",
-            timeout: 5000,
-          }).trim();
-        } catch {
-          // Not a git repo or git not available — use fallback
-        }
-        initPrdFn(directory, projectName, branchName, cleanPrompt);
-        initProgressFn(directory);
-      }
+      const cleanPrompt = stripCriticModeFlag(rawPrompt);
 
       const hook = createRalphLoopHook(directory);
       hook.startLoop(
         input.sessionId,
         cleanPrompt,
-        criticMode ? { criticMode } : undefined,
+        {
+          ...(criticMode ? { criticMode } : {}),
+        },
       );
     }
 
@@ -1952,6 +2124,9 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
       .replace(/^oh-my-claudecode:/, "");
     if (!currentState || !currentState.active || currentState.skill_name === completingSkill) {
       clearSkillActiveState(directory, input.sessionId);
+    }
+    if (isConsensusPlanningSkillInvocation(skillName, input.toolInput)) {
+      deactivateRalplanState(directory, input.sessionId);
     }
   }
 
@@ -1988,25 +2163,27 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
 
     if (asyncAgentId) {
       if (toolUseId) {
-        remapBackgroundTaskId(toolUseId, asyncAgentId, directory);
+        remapBackgroundTaskId(toolUseId, asyncAgentId, directory, input.sessionId);
       } else if (description) {
         remapMostRecentMatchingBackgroundTaskId(
           description,
           asyncAgentId,
           directory,
           agentType,
+          input.sessionId,
         );
       }
     } else {
       const failed = taskLaunchDidFail(input.toolOutput);
       if (toolUseId) {
-        completeBackgroundTask(toolUseId, directory, failed);
+        completeBackgroundTask(toolUseId, directory, failed, input.sessionId);
       } else if (description) {
         completeMostRecentMatchingBackgroundTask(
           description,
           directory,
           failed,
           agentType,
+          input.sessionId,
         );
       }
     }
@@ -2023,12 +2200,13 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
   if (input.toolName === "TaskOutput") {
     const taskOutput = parseTaskOutputLifecycle(input.toolOutput);
     if (taskOutput) {
-      completeBackgroundTask(
-        taskOutput.taskId,
-        directory,
-        taskOutputDidFail(taskOutput.status),
-      );
-    }
+    completeBackgroundTask(
+      taskOutput.taskId,
+      directory,
+      taskOutputDidFail(taskOutput.status),
+      input.sessionId,
+    );
+  }
   }
 
   // Wake OpenClaw gateway for post-tool-use (non-blocking, fires for all tools).
@@ -2080,11 +2258,13 @@ async function processAutopilot(input: HookInput): Promise<HookOutput> {
   };
 
   const phasePrompt = getPhasePrompt(state.phase, context);
+  const runtimeInsight = formatAutopilotRuntimeInsight(directory, input.sessionId);
 
-  if (phasePrompt) {
+  if (phasePrompt || runtimeInsight) {
+    const detailParts = [runtimeInsight, phasePrompt].filter(Boolean);
     return {
       continue: true,
-      message: `[AUTOPILOT - Phase: ${state.phase.toUpperCase()}]\n\n${phasePrompt}`,
+      message: `[AUTOPILOT - Phase: ${state.phase.toUpperCase()}]\n\n${detailParts.join("\n\n")}`,
     };
   }
 

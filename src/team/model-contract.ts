@@ -30,6 +30,12 @@ export interface WorkerLaunchConfig {
    * Used by runtime preflight validation to ensure spawns are pinned.
    */
   resolvedBinaryPath?: string;
+  /**
+   * Optional path the worker writes its structured verdict JSON to
+   * (used by the CLI-worker output contract for critic/reviewer stages).
+   * Consumed by the worker-completion handler in runtime-v2.
+   */
+  output_file?: string;
 }
 
 /** @deprecated Backward-compat shim for older team API consumers. */
@@ -394,6 +400,12 @@ export function isPromptModeAgent(agentType: CliAgentType): boolean {
 export function resolveClaudeWorkerModel(
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
+  // When force-inherit routing is enabled, do not resolve/override worker model.
+  // This preserves parent model inheritance and avoids alias normalization drift.
+  if (env.OMC_ROUTING_FORCE_INHERIT === 'true') {
+    return undefined;
+  }
+
   // Only needed for non-standard providers
   if (!isBedrock() && !isVertexAI()) {
     return undefined;

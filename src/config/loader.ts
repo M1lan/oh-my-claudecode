@@ -9,7 +9,16 @@
 
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
-import type { PluginConfig, ExternalModelsConfig } from "../shared/types.js";
+import type {
+  PluginConfig,
+  ExternalModelsConfig,
+  DelegationProvider,
+  TeamRoleAssignmentSpec,
+} from "../shared/types.js";
+import {
+  CANONICAL_TEAM_ROLES,
+  KNOWN_AGENT_NAMES,
+} from "../shared/types.js";
 import { getConfigDir } from "../utils/paths.js";
 import { parseJsonc } from "../utils/jsonc.js";
 import {
@@ -17,6 +26,7 @@ import {
   BUILTIN_EXTERNAL_MODEL_DEFAULTS,
   isNonClaudeProvider,
 } from "./models.js";
+import { normalizeDelegationRole } from "../features/delegation-routing/types.js";
 
 /**
  * Default configuration.
@@ -145,6 +155,12 @@ export function buildDefaultConfig(): PluginConfig {
       enabled: false,
       defaultProvider: "claude",
       roles: {},
+    },
+    // /team role routing (Option E — /team-scoped per-role provider & model)
+    // Empty defaults: zero behavior change until user opts in.
+    team: {
+      ops: {},
+      roleRouting: {},
     },
     planOutput: {
       directory: ".omc/plans",
@@ -405,12 +421,167 @@ export function loadEnvConfig(): Partial<PluginConfig> {
     }
   }
 
+  // /team role routing env override (OMC_TEAM_ROLE_OVERRIDES — single JSON var).
+  // Best-effort: invalid JSON logs and is ignored (no throw on env path).
+  const teamRoleOverrides = parseTeamRoleOverridesFromEnv();
+  if (teamRoleOverrides) {
+    config.team = {
+      ...config.team,
+      roleRouting: {
+        ...config.team?.roleRouting,
+        ...teamRoleOverrides,
+      },
+    };
+  }
+
   return config;
 }
 
 /**
  * Load and merge all configuration sources
  */
+function warnOnDeprecatedDelegationRouting(config: PluginConfig): void {
+  const deprecatedProviders = new Set<DelegationProvider>();
+  const defaultProvider = config.delegationRouting?.defaultProvider;
+  if (defaultProvider === "codex" || defaultProvider === "gemini") {
+    deprecatedProviders.add(defaultProvider);
+  }
+
+  const roles = config.delegationRouting?.roles ?? {};
+  for (const route of Object.values(roles)) {
+    const provider = route?.provider;
+    if (provider === "codex" || provider === "gemini") {
+      deprecatedProviders.add(provider);
+    }
+  }
+
+  if (deprecatedProviders.size === 0) {
+    return;
+  }
+
+  console.warn(
+    "[OMC] delegationRouting to Codex/Gemini is deprecated and falls back to Claude Task. Use /team for Codex/Gemini CLI workers instead.",
+  );
+}
+
+/**
+ * Validate `team.roleRouting` parsed from the merged config.
+ *
+ * Walks the raw parsed object (not TS types) so deepMerge escapes are caught.
+ * Throws a descriptive error naming offending key + allowed values.
+ */
+const CANONICAL_TEAM_ROLE_SET = new Set<string>(CANONICAL_TEAM_ROLES);
+const KNOWN_AGENT_NAME_SET = new Set<string>(KNOWN_AGENT_NAMES);
+const TEAM_ROLE_PROVIDERS = new Set(["claude", "codex", "gemini"]);
+const TEAM_ROLE_TIERS = new Set(["HIGH", "MEDIUM", "LOW"]);
+
+export function validateTeamConfig(config: PluginConfig): void {
+  const team = (config as Record<string, unknown>).team as
+    | Record<string, unknown>
+    | undefined;
+  if (!team || typeof team !== "object") return;
+
+  const ops = team.ops as Record<string, unknown> | undefined;
+  if (ops && typeof ops === "object") {
+    if (ops.defaultAgentType !== undefined) {
+      if (
+        typeof ops.defaultAgentType !== "string" ||
+        !TEAM_ROLE_PROVIDERS.has(ops.defaultAgentType)
+      ) {
+        throw new Error(
+          `[OMC] team.ops.defaultAgentType: invalid value "${String(ops.defaultAgentType)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(", ")}`,
+        );
+      }
+    }
+  }
+
+  const roleRouting = team.roleRouting as Record<string, unknown> | undefined;
+  if (!roleRouting || typeof roleRouting !== "object") return;
+
+  for (const [rawRoleKey, rawSpec] of Object.entries(roleRouting)) {
+    const normalized = normalizeDelegationRole(rawRoleKey);
+    if (!CANONICAL_TEAM_ROLE_SET.has(normalized)) {
+      throw new Error(
+        `[OMC] team.roleRouting: unknown role "${rawRoleKey}". Allowed roles: ${[...CANONICAL_TEAM_ROLE_SET].join(", ")}`,
+      );
+    }
+
+    if (!rawSpec || typeof rawSpec !== "object" || Array.isArray(rawSpec)) {
+      throw new Error(
+        `[OMC] team.roleRouting.${rawRoleKey}: must be an object, got ${Array.isArray(rawSpec) ? "array" : typeof rawSpec}`,
+      );
+    }
+    const spec = rawSpec as Record<string, unknown>;
+
+    // Orchestrator entry: only `model` is allowed.
+    if (normalized === "orchestrator") {
+      for (const key of Object.keys(spec)) {
+        if (key !== "model") {
+          throw new Error(
+            `[OMC] team.roleRouting.orchestrator: key "${key}" is not allowed (orchestrator is pinned to claude; only "model" is configurable)`,
+          );
+        }
+      }
+      if (spec.model !== undefined && !isValidModelValue(spec.model)) {
+        throw new Error(
+          `[OMC] team.roleRouting.orchestrator.model: must be a tier name (HIGH|MEDIUM|LOW) or model ID string, got ${typeof spec.model}`,
+        );
+      }
+      continue;
+    }
+
+    if (spec.provider !== undefined) {
+      if (typeof spec.provider !== "string" || !TEAM_ROLE_PROVIDERS.has(spec.provider)) {
+        throw new Error(
+          `[OMC] team.roleRouting.${rawRoleKey}.provider: invalid value "${String(spec.provider)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(", ")}`,
+        );
+      }
+    }
+
+    if (spec.model !== undefined && !isValidModelValue(spec.model)) {
+      throw new Error(
+        `[OMC] team.roleRouting.${rawRoleKey}.model: must be a tier name (HIGH|MEDIUM|LOW) or a non-empty model ID string`,
+      );
+    }
+
+    if (spec.agent !== undefined) {
+      if (typeof spec.agent !== "string" || !KNOWN_AGENT_NAME_SET.has(spec.agent)) {
+        throw new Error(
+          `[OMC] team.roleRouting.${rawRoleKey}.agent: unknown agent "${String(spec.agent)}". Allowed: ${[...KNOWN_AGENT_NAME_SET].join(", ")}`,
+        );
+      }
+    }
+  }
+}
+
+function isValidModelValue(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  if (value.length === 0) return false;
+  // Accept tier names OR explicit model IDs (any non-empty string).
+  // Tier names are canonicalized during resolution; explicit IDs pass through.
+  return TEAM_ROLE_TIERS.has(value) || value.length > 0;
+}
+
+function parseTeamRoleOverridesFromEnv(): Record<string, TeamRoleAssignmentSpec> | undefined {
+  const raw = process.env.OMC_TEAM_ROLE_OVERRIDES;
+  if (!raw) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      console.warn(
+        "[OMC] OMC_TEAM_ROLE_OVERRIDES: expected a JSON object; ignoring.",
+      );
+      return undefined;
+    }
+    return parsed as Record<string, TeamRoleAssignmentSpec>;
+  } catch (err) {
+    console.warn(
+      `[OMC] OMC_TEAM_ROLE_OVERRIDES: invalid JSON, ignoring (${(err as Error).message})`,
+    );
+    return undefined;
+  }
+}
+
 export function loadConfig(): PluginConfig {
   const paths = getConfigPaths();
 
@@ -449,6 +620,12 @@ export function loadConfig(): PluginConfig {
       forceInherit: true,
     };
   }
+
+  warnOnDeprecatedDelegationRouting(config);
+
+  // Validate /team role routing post-merge. Throws on invalid shape,
+  // walking the parsed object so deepMerge bypasses surface here.
+  validateTeamConfig(config);
 
   return config;
 }
@@ -848,6 +1025,38 @@ export function generateConfigSchema(): object {
                 fallback: { type: "array", items: { type: "string" } },
               },
               required: ["provider", "tool"],
+            },
+          },
+        },
+      },
+      team: {
+        type: "object",
+        description: "/team runtime configuration",
+        properties: {
+          ops: {
+            type: "object",
+            properties: {
+              maxAgents: { type: "integer", minimum: 1 },
+              defaultAgentType: {
+                type: "string",
+                enum: ["claude", "codex", "gemini"],
+                default: "claude",
+              },
+              monitorIntervalMs: { type: "integer", minimum: 1 },
+              shutdownTimeoutMs: { type: "integer", minimum: 1 },
+              costMode: { type: "string", enum: ["normal", "downgrade"] },
+            },
+          },
+          roleRouting: {
+            type: "object",
+            description: "Provider/model overrides for canonical /team roles",
+            additionalProperties: {
+              type: "object",
+              properties: {
+                provider: { type: "string", enum: ["claude", "codex", "gemini"] },
+                model: { type: "string" },
+                agent: { type: "string" },
+              },
             },
           },
         },

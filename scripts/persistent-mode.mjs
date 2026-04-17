@@ -25,6 +25,7 @@ import { join, dirname, resolve, normalize } from "path";
 import { homedir } from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { getClaudeConfigDir } from "./lib/config-dir.mjs";
+import { resolveOmcStateRoot } from "./lib/state-root.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -209,16 +210,18 @@ const TEAM_ACTIVE_PHASES = new Set([
 /**
  * Check if a state is stale based on its timestamps.
  * A state is considered stale if it hasn't been updated recently.
- * We check both `last_checked_at` and `started_at` - using whichever is more recent.
+ * We check `last_checked_at`, `updated_at`, and `started_at` - using whichever is more recent.
  */
 function isStaleState(state) {
   if (!state) return true;
 
-  const lastChecked = state.last_checked_at
-    ? new Date(state.last_checked_at).getTime()
-    : 0;
-  const startedAt = state.started_at ? new Date(state.started_at).getTime() : 0;
-  const mostRecent = Math.max(lastChecked, startedAt);
+  const timestamps = [state.last_checked_at, state.updated_at, state.started_at].filter(
+    (value) => typeof value === "string" && value.length > 0,
+  );
+  const mostRecent = timestamps.reduce((max, value) => {
+    const parsed = new Date(value).getTime();
+    return Number.isFinite(parsed) && parsed > max ? parsed : max;
+  }, 0);
 
   if (mostRecent === 0) return true; // No valid timestamps
 
@@ -628,7 +631,8 @@ async function main() {
     const sessionIdRaw = data.sessionId || data.session_id || data.sessionid || "";
     const sessionId = sanitizeSessionId(sessionIdRaw);
     const hasValidSessionId = isValidSessionId(sessionIdRaw);
-    const stateDir = join(directory, ".omc", "state");
+    const omcRoot = await resolveOmcStateRoot(directory);
+    const stateDir = join(omcRoot, "state");
     const globalStateDir = join(homedir(), ".omc", "state");
 
     // CRITICAL: Never block context-limit stops.

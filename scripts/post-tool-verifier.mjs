@@ -170,6 +170,48 @@ function stripClaudeTempCwdErrors(output) {
 // Pattern matching Claude Code's "Error: Exit code N" prefix line
 // Note: no /g flag — module-level regex with /g is stateful (.lastIndex persists across calls)
 const CLAUDE_EXIT_CODE_PREFIX = /^Error: Exit code \d+\s*$/m;
+const QUOTED_SPAN_PATTERN =
+  /"[^"\n]{1,400}"|'[^'\n]{1,400}'|“[^”\n]{1,400}”|‘[^’\n]{1,400}’/g;
+const NON_ACTIONABLE_ERROR_LINES = [
+  /^\s*["']?severity["']?\s*[:=]\s*["']error["']?\s*[,}]?\s*$/i,
+  /^\s*["']?totalErrors["']?\s*[:=]\s*0\b.*$/i,
+  /^\s*totalErrors\s*[:=]\s*0\b.*$/i,
+  /^\s*["']?error["']?\s*:\s*["'][^"']*["']\s*[,}]?\s*$/i,
+  /^\s*return\s*\{[^\n]*\berror\s*:\s*["'][^"']*["'][^\n]*\}\s*;?$/i,
+];
+
+function stripQuotedSpans(output) {
+  return output.replace(QUOTED_SPAN_PATTERN, ' ');
+}
+
+function isPytestRunOutput(output) {
+  if (!output) return false;
+
+  const cleaned = stripClaudeTempCwdErrors(output);
+  const hasPytestHeader =
+    /(^|\n)=+\s*test session starts\s*=+/i.test(cleaned) ||
+    /(^|\n).*pytest-\d/i.test(cleaned) ||
+    /(^|\n)collected\s+\d+\s+items?\b/i.test(cleaned);
+  const hasPytestBody =
+    /(^|\n)=+\s*short test summary info\s*=+/i.test(cleaned) ||
+    /(^|\n)=+\s*failures\s*=+/i.test(cleaned) ||
+    /(^|\n)(?:FAILED|ERROR)\s+.+::.+/m.test(cleaned) ||
+    /(^|\n)\S+\.py::\S+\s+(?:PASSED|FAILED|ERROR)\b/m.test(cleaned);
+
+  return hasPytestHeader && hasPytestBody;
+}
+
+function stripNonActionableErrorContext(output) {
+  if (!output) return '';
+  return output
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      return !NON_ACTIONABLE_ERROR_LINES.some((pattern) => pattern.test(trimmed));
+    })
+    .join('\n');
+}
 
 /**
  * Detect non-zero exit code with valid stdout (issue #960).
@@ -179,7 +221,7 @@ const CLAUDE_EXIT_CODE_PREFIX = /^Error: Exit code \d+\s*$/m;
  */
 export function isNonZeroExitWithOutput(output) {
   if (!output) return false;
-  const cleaned = stripClaudeTempCwdErrors(output);
+  const cleaned = stripNonActionableErrorContext(stripClaudeTempCwdErrors(output));
 
   // Must contain Claude Code's exit code prefix
   if (!CLAUDE_EXIT_CODE_PREFIX.test(cleaned)) return false;
@@ -203,26 +245,46 @@ export function isNonZeroExitWithOutput(output) {
     /abort/i,
   ];
 
-  return !contentErrorPatterns.some(p => p.test(remaining));
+  return !contentErrorPatterns.some(p => p.test(stripQuotedSpans(remaining)));
 }
 
 // Detect failures in Bash output
 export function detectBashFailure(output) {
+  if (!output) return false;
+
   const cleaned = stripClaudeTempCwdErrors(output);
-  const errorPatterns = [
-    /error:/i,
-    /failed/i,
-    /cannot/i,
-    /permission denied/i,
-    /command not found/i,
-    /no such file/i,
-    /exit code: [1-9]/i,
-    /exit status [1-9]/i,
-    /fatal:/i,
-    /abort/i,
+
+  if (isPytestRunOutput(cleaned)) {
+    return false;
+  }
+
+  const explicitExitPatterns = [
+    /(^|\n)Error: Exit code [1-9]\d*(\n|$)/i,
+    /(^|\n).*\bexit code:\s*[1-9]\d*\b/i,
+    /(^|\n).*\bexit status\s+[1-9]\d*\b/i,
   ];
 
-  return errorPatterns.some(pattern => pattern.test(cleaned));
+  if (explicitExitPatterns.some(pattern => pattern.test(cleaned))) {
+    return true;
+  }
+
+  const linePatterns = [
+    /^error:\s+/i,
+    /^(?:bash|zsh|sh): .*command not found/i,
+    /^(?:bash|zsh|sh): .*no such file/i,
+    /^(?:bash|zsh|sh): .*permission denied/i,
+    /^(?:rm|cp|mv|cat|chmod|chown|git|node|npm|pnpm|yarn|python|python3|pip|pip3|cargo|go|rustc|docker|ffmpeg): .*permission denied/i,
+    /^(?:rm|cp|mv|cat|git|node|npm|pnpm|yarn|python|python3|pip|pip3|cargo|go|rustc|docker|ffmpeg): .*no such file/i,
+    /^fatal:\s+/i,
+    /^abort(?:ed)?\b/i,
+    /^(?:build|command|task|operation) failed\b/i,
+  ];
+
+  return cleaned
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+    .some(line => linePatterns.some(pattern => pattern.test(line)));
 }
 
 // Detect background operation
@@ -326,6 +388,39 @@ function readTranscriptUsage(transcriptPath) {
   }
 }
 
+function readContextUsageFromHookInput(data) {
+  const contextWindow = data?.context_window;
+  if (!contextWindow || typeof contextWindow !== 'object') {
+    return null;
+  }
+
+  const usedPercentage = contextWindow.used_percentage;
+  if (Number.isFinite(usedPercentage) && usedPercentage >= 0) {
+    return Math.min(100, Math.max(0, Math.round(usedPercentage)));
+  }
+
+  const size = contextWindow.context_window_size;
+  if (!Number.isFinite(size) || size <= 0) {
+    return null;
+  }
+
+  const usage = contextWindow.current_usage;
+  if (!usage || typeof usage !== 'object') {
+    return null;
+  }
+
+  const inputTokens = Number(usage.input_tokens || 0);
+  const cacheCreationTokens = Number(usage.cache_creation_input_tokens || 0);
+  const cacheReadTokens = Number(usage.cache_read_input_tokens || 0);
+
+  const totalTokens = inputTokens + cacheCreationTokens + cacheReadTokens;
+  if (!Number.isFinite(totalTokens) || totalTokens < 0) {
+    return null;
+  }
+
+  return Math.min(100, Math.max(0, Math.round((totalTokens / size) * 100)));
+}
+
 function getPreemptiveCooldownFilePath(directory, sessionId) {
   const cooldownScope =
     sessionId && sessionId !== 'unknown'
@@ -381,9 +476,11 @@ function maybeBuildPreemptiveCompactionMessage(toolName, data, directory) {
     return '';
   }
 
-  const percentUsed = readTranscriptUsage(
+  const percentFromTranscript = readTranscriptUsage(
     resolveTranscriptPath(data.transcript_path || data.transcriptPath, directory),
   );
+  const percentUsed =
+    percentFromTranscript ?? readContextUsageFromHookInput(data);
   const warningThreshold = getPreemptiveWarningThreshold();
   const criticalThreshold = getPreemptiveCriticalThreshold();
 
@@ -418,6 +515,28 @@ function getInvokedSkillName(toolInput) {
     : normalized.toLowerCase();
 }
 
+function getSkillInvocationArgs(toolInput) {
+  if (!toolInput || typeof toolInput !== 'object') return '';
+  const candidates = [
+    toolInput.args,
+    toolInput.arguments,
+    toolInput.argument,
+    toolInput.skill_args,
+    toolInput.skillArgs,
+    toolInput.prompt,
+    toolInput.description,
+    toolInput.input,
+  ];
+  return candidates.find(value => typeof value === 'string' && value.trim().length > 0)?.trim() || '';
+}
+
+function isConsensusPlanningSkillInvocation(skillName, toolInput) {
+  if (!skillName) return false;
+  if (skillName === 'ralplan') return true;
+  if (skillName !== 'plan' && skillName !== 'omc-plan') return false;
+  return getSkillInvocationArgs(toolInput).toLowerCase().includes('--consensus');
+}
+
 function getSkillActiveStatePaths(directory, sessionId) {
   const stateDir = join(directory, '.omc', 'state');
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
@@ -444,6 +563,53 @@ function clearSkillActiveState(directory, sessionId) {
   for (const statePath of getSkillActiveStatePaths(directory, sessionId)) {
     try {
       unlinkSync(statePath);
+    } catch {
+      // Best-effort cleanup; never fail the hook
+    }
+  }
+}
+
+function getRalplanStatePaths(directory, sessionId) {
+  const stateDir = join(directory, '.omc', 'state');
+  const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
+  return [
+    safeSessionId ? join(stateDir, 'sessions', safeSessionId, 'ralplan-state.json') : null,
+    join(stateDir, 'ralplan-state.json'),
+  ].filter(Boolean);
+}
+
+function deactivateRalplanState(directory, sessionId) {
+  const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
+  const terminalPhases = new Set(['complete', 'completed', 'failed', 'cancelled', 'done']);
+  const now = new Date().toISOString();
+
+  for (const statePath of getRalplanStatePaths(directory, sessionId)) {
+    try {
+      if (!existsSync(statePath)) continue;
+      const state = JSON.parse(readFileSync(statePath, 'utf-8'));
+      if (!state || typeof state !== 'object') continue;
+      if (safeSessionId && typeof state.session_id === 'string' && state.session_id !== safeSessionId) {
+        continue;
+      }
+      const currentPhase = typeof state.current_phase === 'string' ? state.current_phase : '';
+      const nextPhase = terminalPhases.has(currentPhase.toLowerCase()) ? currentPhase : 'complete';
+      writeFileSync(
+        statePath,
+        JSON.stringify(
+          {
+            ...state,
+            active: false,
+            current_phase: nextPhase,
+            completed_at: typeof state.completed_at === 'string' ? state.completed_at : now,
+            deactivated_reason:
+              typeof state.deactivated_reason === 'string'
+                ? state.deactivated_reason
+                : 'skill_completed',
+          },
+          null,
+          2,
+        ),
+      );
     } catch {
       // Best-effort cleanup; never fail the hook
     }
@@ -522,7 +688,7 @@ function processRememberTags(output, directory) {
 // Patterns are tightened to tool-level failure phrases to avoid false positives
 // when edited file content contains error-handling code (issue #1005)
 export function detectWriteFailure(output) {
-  const cleaned = stripClaudeTempCwdErrors(output);
+  const cleaned = stripQuotedSpans(stripClaudeTempCwdErrors(output));
   const errorPatterns = [
     /\berror:/i,              // "error:" with word boundary — avoids "setError", "console.error"
     /\bfailed to\b/i,        // "failed to write" — avoids "failedOidc", UI strings
@@ -708,12 +874,16 @@ async function main() {
 
     if (toolName === 'Skill' || toolName === 'skill') {
       const toolInput = data.tool_input || data.toolInput || {};
+      const skillName = getInvokedSkillName(toolInput);
       const currentState = readSkillActiveState(directory, sessionId);
-      const completingSkill = (getInvokedSkillName(toolInput) ?? '')
+      const completingSkill = (skillName ?? '')
         .toLowerCase()
         .replace(/^oh-my-claudecode:/, '');
       if (!currentState || !currentState.active || currentState.skill_name === completingSkill) {
         clearSkillActiveState(directory, sessionId);
+      }
+      if (isConsensusPlanningSkillInvocation(skillName, toolInput)) {
+        deactivateRalplanState(directory, sessionId);
       }
     }
 

@@ -24,7 +24,6 @@ _Don't learn Claude Code. Just use OMC._
 | Role | Name | GitHub |
 | --- | --- | --- |
 | Creator & Lead | Yeachan Heo | [@Yeachan-Heo](https://github.com/Yeachan-Heo) |
-| Maintainer | HaD0Yun | [@HaD0Yun](https://github.com/HaD0Yun) |
 
 ## Ambassadors
 
@@ -34,22 +33,28 @@ _Don't learn Claude Code. Just use OMC._
 
 ## Top Collaborators
 
-| Name | GitHub |
-| --- | --- |
-| riftzen-bit | [@riftzen-bit](https://github.com/riftzen-bit) |
-| Seunggwan Song | [@nathan-song](https://github.com/nathan-song) |
-| JunghwanNA | [@shaun0927](https://github.com/shaun0927) |
-| Junho Yeo | [@junhoyeo](https://github.com/junhoyeo) |
-| Alex Urevick-Ackelsberg | [@AlexUrevick](https://github.com/AlexUrevick) |
+| Name | GitHub | Commits |
+| --- | --- | --- |
+| JunghwanNA | [@shaun0927](https://github.com/shaun0927) | 65 |
+| riftzen-bit | [@riftzen-bit](https://github.com/riftzen-bit) | 52 |
+| Seunggwan Song | [@Nathan-Song](https://github.com/Nathan-Song) | 20 |
+| BLUE | [@blue-int](https://github.com/blue-int) | 20 |
+| Junho Yeo | [@junhoyeo](https://github.com/junhoyeo) | 15 |
 
 ## Quick Start
 
 **Step 1: Install**
 
-Marketplace/plugin install (recommended for most Claude Code users):
+Marketplace/plugin install (recommended for most Claude Code users).
+These are Claude Code slash commands — enter them **one at a time** (pasting both lines at once will fail):
 
 ```bash
 /plugin marketplace add https://github.com/Yeachan-Heo/oh-my-claudecode
+```
+
+Then:
+
+```bash
 /plugin install oh-my-claudecode
 ```
 
@@ -70,7 +75,7 @@ npm i -g oh-my-claude-sisyphus@latest
 omc setup
 ```
 
-If you run OMC via `omc --plugin-dir <path>` or `claude --plugin-dir <path>`, add `--plugin-dir-mode` to `omc setup` (or export `OMC_PLUGIN_ROOT` before running it) so the installer doesn't duplicate skills/agents that the plugin already provides at runtime.
+If you run OMC via `omc --plugin-dir <path>` or `claude --plugin-dir <path>`, add `--plugin-dir-mode` to `omc setup` (or export `OMC_PLUGIN_ROOT` before running it) so the installer doesn't duplicate skills/agents that the plugin already provides at runtime. See the [Plugin directory flags section in REFERENCE.md](./docs/REFERENCE.md#plugin-directory-flags) for a complete decision matrix and all available flags.
 
 **Step 3: Build something**
 
@@ -244,9 +249,13 @@ Multiple strategies for different use cases — from Team-backed orchestration t
 
 - **Magic keywords** - `ralph`, `ulw`, `ralplan`; Team stays explicit via `/team`
 - **HUD statusline** - Real-time orchestration metrics in your status bar
-  - If you launch Claude Code directly with `claude --plugin-dir <path>` (bypassing the `omc` shim), export `OMC_PLUGIN_ROOT=<path>` in your shell so the HUD bundle resolves to the same checkout as the plugin loader.
+  - If you launch Claude Code directly with `claude --plugin-dir <path>` (bypassing the `omc` shim), export `OMC_PLUGIN_ROOT=<path>` in your shell so the HUD bundle resolves to the same checkout as the plugin loader. See the [Plugin directory flags section in REFERENCE.md](./docs/REFERENCE.md#plugin-directory-flags) for details.
 - **Skill learning** - Extract reusable patterns from your sessions
 - **Analytics & cost tracking** - Understand token usage across all sessions
+
+### Contributing
+
+Want to contribute to OMC? See [CONTRIBUTING.md](./CONTRIBUTING.md) for the full developer guide, including how to fork, set up a local checkout, link it as your active plugin, run tests, and submit PRs.
 
 ### Custom Skills
 
@@ -516,18 +525,18 @@ MIT
 
 Top personal non-fork, non-archived repos from all-time OMC contributors (100+ GitHub stars).
 
-- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 26k)
-- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 1.6k)
-- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 1.1k)
+- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 28k)
+- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 1.8k)
+- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 1.2k)
 - [@BowTiedSwan](https://github.com/BowTiedSwan) — [buildflow](https://github.com/BowTiedSwan/buildflow) (⭐ 290)
-- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 268)
+- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 269)
 - [@jcwleo](https://github.com/jcwleo) — [random-network-distillation-pytorch](https://github.com/jcwleo/random-network-distillation-pytorch) (⭐ 261)
 - [@emgeee](https://github.com/emgeee) — [mean-tutorial](https://github.com/emgeee/mean-tutorial) (⭐ 200)
-- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 174)
+- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 177)
 - [@anduinnn](https://github.com/anduinnn) — [HiFiNi-Auto-CheckIn](https://github.com/anduinnn/HiFiNi-Auto-CheckIn) (⭐ 170)
 - [@Znuff](https://github.com/Znuff) — [consolas-powerline](https://github.com/Znuff/consolas-powerline) (⭐ 146)
-- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 133)
-- [@HaD0Yun](https://github.com/HaD0Yun) — [Gopeak-godot-mcp](https://github.com/HaD0Yun/Gopeak-godot-mcp) (⭐ 112)
+- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 143)
+- [@HaD0Yun](https://github.com/HaD0Yun) — [Gopeak-godot-mcp](https://github.com/HaD0Yun/Gopeak-godot-mcp) (⭐ 122)
 
 <!-- OMC:FEATURED-CONTRIBUTORS:END -->
 

@@ -7,9 +7,10 @@
  */
 
 import { existsSync, readFileSync, readdirSync, rmSync, mkdirSync, writeFileSync, symlinkSync, lstatSync, readlinkSync, unlinkSync, renameSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, basename } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
+import { resolveOmcStateRoot } from './lib/state-root.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -372,6 +373,7 @@ async function main() {
 
     const directory = data.cwd || data.directory || process.cwd();
     const sessionId = data.session_id || data.sessionId || '';
+    const omcRoot = await resolveOmcStateRoot(directory);
     const messages = [];
     const projectMemoryModules = await loadProjectMemoryModules();
 
@@ -422,14 +424,14 @@ async function main() {
     let ultraworkState = null;
     if (sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
       // Session-scoped ONLY — no legacy fallback
-      ultraworkState = readJsonFile(join(directory, '.omc', 'state', 'sessions', sessionId, 'ultrawork-state.json'));
+      ultraworkState = readJsonFile(join(omcRoot, 'state', 'sessions', sessionId, 'ultrawork-state.json'));
       // Validate session identity
       if (ultraworkState && ultraworkState.session_id && ultraworkState.session_id !== sessionId) {
         ultraworkState = null;
       }
     } else {
       // No session_id — legacy behavior for backward compat
-      ultraworkState = readJsonFile(join(directory, '.omc', 'state', 'ultrawork-state.json'));
+      ultraworkState = readJsonFile(join(omcRoot, 'state', 'ultrawork-state.json'));
     }
 
     if (ultraworkState?.active) {
@@ -453,16 +455,16 @@ Treat this as prior-session context only. Prioritize the user's newest request, 
     let ralphState = null;
     if (sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
       // Session-scoped ONLY — no legacy fallback
-      ralphState = readJsonFile(join(directory, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'));
+      ralphState = readJsonFile(join(omcRoot, 'state', 'sessions', sessionId, 'ralph-state.json'));
       // Validate session identity
       if (ralphState && ralphState.session_id && ralphState.session_id !== sessionId) {
         ralphState = null;
       }
     } else {
       // No session_id — legacy behavior for backward compat
-      ralphState = readJsonFile(join(directory, '.omc', 'state', 'ralph-state.json'));
+      ralphState = readJsonFile(join(omcRoot, 'state', 'ralph-state.json'));
       if (!ralphState) {
-        ralphState = readJsonFile(join(directory, '.omc', 'ralph-state.json'));
+        ralphState = readJsonFile(join(omcRoot, 'ralph-state.json'));
       }
     }
     if (ralphState?.active) {
@@ -489,7 +491,7 @@ Treat this as prior-session context only. Prioritize the user's newest request, 
     // That directory accumulates todo files from ALL past sessions across all
     // projects, causing phantom task counts in fresh sessions (see issue #354).
     const localTodoPaths = [
-      join(directory, '.omc', 'todos.json'),
+      join(omcRoot, 'todos.json'),
       join(directory, '.claude', 'todos.json')
     ];
     let incompleteCount = 0;
@@ -538,7 +540,7 @@ ${summary}
     }
 
     // Check for notepad Priority Context
-    const notepadPath = join(directory, '.omc', 'notepad.md');
+    const notepadPath = join(omcRoot, 'notepad.md');
     if (existsSync(notepadPath)) {
       try {
         const notepadContent = readFileSync(notepadPath, 'utf-8');
@@ -565,8 +567,9 @@ ${cleanContent}
     // plugin update whose CLAUDE_PLUGIN_ROOT still points to the old version.
     try {
       const cacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+      let versions = [];
       if (existsSync(cacheBase)) {
-        const versions = readdirSync(cacheBase)
+        versions = readdirSync(cacheBase)
           .filter(v => /^\d+\.\d+\.\d+/.test(v))
           .sort(semverCompare)
           .reverse();
@@ -621,6 +624,43 @@ ${cleanContent}
               // lstatSync / rmSync / unlinkSync failure — leave old directory as-is.
             }
           }
+        }
+      }
+
+      // Guard against CLAUDE_PLUGIN_ROOT pointing to a stale/deleted version.
+      // When an old version directory is removed during upgrade but a running
+      // session still has the old CLAUDE_PLUGIN_ROOT in its environment, the
+      // directory won't exist. Create a symlink so subsequent hook invocations
+      // via run.cjs resolve correctly.
+      const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT?.replace(/[\/\\]+$/, ''); // strip trailing separators
+      if (pluginRoot && !existsSync(pluginRoot)) {
+        const pluginRootVersion = basename(pluginRoot);
+        if (/^\d+\.\d+\.\d+/.test(pluginRootVersion) && versions.length > 0) {
+          const latest = versions[0];
+          const stalePath = pluginRoot;
+          const isWin = process.platform === 'win32';
+          // Always use absolute path to avoid symlink target resolution issues
+          // when stalePath is not under cacheBase (e.g., after config-dir move)
+          const symlinkTarget = join(cacheBase, latest);
+          try {
+            // Atomic: create temp symlink then rename over stale path
+            const tmpLink = stalePath + '.tmp.' + process.pid;
+            // Ensure parent dir exists (stalePath may reference a deleted config tree)
+            const parentDir = dirname(stalePath);
+            if (!existsSync(parentDir)) {
+              try { mkdirSync(parentDir, { recursive: true }); } catch {}
+            }
+            symlinkSync(symlinkTarget, tmpLink, isWin ? 'junction' : undefined);
+            try {
+              renameSync(tmpLink, stalePath);
+            } catch {
+              try { unlinkSync(tmpLink); } catch {}
+              // Remove any pre-existing dangling symlink/junction at stalePath
+              // before recreating, otherwise symlinkSync throws EEXIST
+              try { unlinkSync(stalePath); } catch {}
+              symlinkSync(symlinkTarget, stalePath, isWin ? 'junction' : undefined);
+            }
+          } catch {}
         }
       }
     } catch {}
