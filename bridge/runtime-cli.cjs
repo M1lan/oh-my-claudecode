@@ -1469,7 +1469,7 @@ var TIER_ENV_KEYS = {
 var CLAUDE_FAMILY_DEFAULTS = {
   HAIKU: "claude-haiku-4-5",
   SONNET: "claude-sonnet-4-6",
-  OPUS: "claude-opus-4-6"
+  OPUS: "claude-opus-4-7"
 };
 var BUILTIN_TIER_MODEL_DEFAULTS = {
   LOW: CLAUDE_FAMILY_DEFAULTS.HAIKU,
@@ -1640,6 +1640,9 @@ function buildDefaultConfig() {
     mcpServers: {
       exa: { enabled: true },
       context7: { enabled: true }
+    },
+    companyContext: {
+      onError: "warn"
     },
     permissions: {
       allowBash: true,
@@ -2751,6 +2754,22 @@ var CONTRACTS = {
     parseOutput(rawOutput) {
       return rawOutput.trim();
     }
+  },
+  cursor: {
+    agentType: "cursor",
+    binary: "cursor-agent",
+    installInstructions: "Install Cursor Agent CLI: see https://docs.cursor.com/cli",
+    // cursor-agent runs as an interactive REPL — no exit-on-complete prompt mode.
+    // Keep supportsPromptMode false so the verdict-file contract path
+    // (CONTRACT_ROLES + shouldInjectContract) skips this provider; cursor
+    // workers participate as executors only.
+    supportsPromptMode: false,
+    buildLaunchArgs(_model, extraFlags = []) {
+      return [...extraFlags];
+    },
+    parseOutput(rawOutput) {
+      return rawOutput.trim();
+    }
   }
 };
 function getContract(agentType) {
@@ -2939,11 +2958,7 @@ function sanitizePromptContent(content, maxLength = 4e3) {
       sanitized = sanitized.slice(0, -1);
     }
   }
-  sanitized = sanitized.replace(/<(\/?)(TASK_SUBJECT)[^>]*>/gi, "[$1$2]");
-  sanitized = sanitized.replace(/<(\/?)(TASK_DESCRIPTION)[^>]*>/gi, "[$1$2]");
-  sanitized = sanitized.replace(/<(\/?)(INBOX_MESSAGE)[^>]*>/gi, "[$1$2]");
-  sanitized = sanitized.replace(/<(\/?)(INSTRUCTIONS)[^>]*>/gi, "[$1$2]");
-  sanitized = sanitized.replace(/<(\/?)(SYSTEM)[^>]*>/gi, "[$1$2]");
+  sanitized = sanitized.replace(/<(\/?)(system-instructions|system-reminder|TASK_SUBJECT|TASK_DESCRIPTION|INBOX_MESSAGE)(?=[\s>/])[^>]*>/gi, "[$1$2]");
   return sanitized;
 }
 
@@ -3024,6 +3039,13 @@ function agentTypeGuidance(agentType) {
         "- Execute task work in small, verifiable increments and report each milestone to leader-fixed.",
         "- Keep commit-sized changes scoped to assigned files only; no broad refactors.",
         `- CRITICAL: You MUST run \`${claimTaskCommand}\` before starting work and \`${transitionTaskStatusCommand}\` when done. Do not exit without transitioning the task status.`
+      ].join("\n");
+    case "cursor":
+      return [
+        "### Agent-Type Guidance (cursor)",
+        "- You are an interactive REPL (cursor-agent), not a one-shot CLI. Stay in the session; the leader will continue to send prompts via mailbox.",
+        `- You MUST run \`${claimTaskCommand}\` before starting work and \`${transitionTaskStatusCommand}\` when done. Then keep waiting for the next mailbox message; do NOT type \`/exit\` unless the leader sends an explicit shutdown.`,
+        "- Reviewer/critic/security-review roles are NOT supported for cursor workers \u2014 those require a verdict-file write-and-exit which the REPL does not perform. Take only executor-style tasks."
       ].join("\n");
     case "claude":
     default:
@@ -5729,7 +5751,7 @@ var VALID_VERDICTS = /* @__PURE__ */ new Set(["approve", "revise", "reject"]);
 var VALID_SEVERITIES = /* @__PURE__ */ new Set(["critical", "major", "minor", "nit"]);
 function shouldInjectContract(role, provider) {
   if (!role || !provider) return false;
-  if (provider === "claude") return false;
+  if (provider === "claude" || provider === "cursor") return false;
   return CONTRACT_ROLES.has(role);
 }
 function renderCliWorkerOutputContract(role, output_file) {
@@ -5875,6 +5897,20 @@ function sanitizeTeamName(name) {
   const sanitized = name.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 30);
   if (!sanitized) throw new Error(`Invalid team name: "${name}" produces empty slug after sanitization`);
   return sanitized;
+}
+function shouldUseLaunchTimeCliResolution(reason) {
+  return /untrusted location|relative path/i.test(reason);
+}
+function resolvePreflightBinaryPath(agentType) {
+  try {
+    return { path: resolveValidatedBinaryPath(agentType), degraded: false };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    if (shouldUseLaunchTimeCliResolution(reason)) {
+      return { path: getContract(agentType).binary, degraded: true, reason };
+    }
+    throw err;
+  }
 }
 async function isWorkerPaneAlive(paneId) {
   if (!paneId) return false;
@@ -6174,7 +6210,7 @@ async function startTeamV2(config) {
   const missingBinaryReasons = [];
   for (const agentType of [...new Set(agentTypes)]) {
     try {
-      resolvedBinaryPaths[agentType] = resolveValidatedBinaryPath(agentType);
+      resolvedBinaryPaths[agentType] = resolvePreflightBinaryPath(agentType).path;
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       missingBinaryReasons.push({ agentType, reason });
@@ -6185,7 +6221,7 @@ async function startTeamV2(config) {
     if (resolvedBinaryPaths[provider]) continue;
     if (missingBinaryReasons.some((m) => m.agentType === provider)) continue;
     try {
-      resolvedBinaryPaths[provider] = resolveValidatedBinaryPath(provider);
+      resolvedBinaryPaths[provider] = resolvePreflightBinaryPath(provider).path;
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       missingBinaryReasons.push({ agentType: provider, reason });
