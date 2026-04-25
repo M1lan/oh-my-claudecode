@@ -1,32 +1,35 @@
-# oh-my-claudecode v4.13.0: Bug Fixes
+# oh-my-claudecode v4.13.4: Bug Fixes
 
 ## Release Notes
 
-Release with **2 bug fixes**, **2 other changes** across **4 merged PRs**.
+Release with **2 bug fixes**, **1 other change** across **4 merged PRs**.
 
 ### Highlights
 
-- **fix(installer): Copy hooks lib modules during update** (#2728)
-- **fix(hooks, windows): pass shell:true to plugin-patterns npm/npx spawns** (#2722)
+- **fix(hud): scope hud-stdin-cache.json to session to prevent cross-session corruption (v2)** (#2802)
+- **fix(keyword-detector): prevent re-entry from pasted system-echo blocks** (#2795)
 
 ### Bug Fixes
 
-- **fix(installer): Copy hooks lib modules during update** (#2728)
-- **fix(hooks, windows): pass shell:true to plugin-patterns npm/npx spawns** (#2722)
+- **fix(hud): scope hud-stdin-cache.json to session to prevent cross-session corruption (v2)** (#2802)
+- **fix(keyword-detector): prevent re-entry from pasted system-echo blocks** (#2795)
+
+### Documentation
+
+- **docs: fix broken /docs/concepts link in Getting Started** (#2796)
 
 ### Other Changes
 
-- **Reland: autoresearch-as-a-skill migration (fixes conflicts vs #2716)** (#2727)
-- **Fix deep-interview threshold on native skill path** (#2724)
+- **Make native team cleanup fail closed** (#2803)
 
 ### Stats
 
-- **4 PRs merged** | **0 new features** | **2 bug fixes** | **0 security/hardening improvements** | **2 other changes**
+- **4 PRs merged** | **0 new features** | **2 bug fixes** | **0 security/hardening improvements** | **1 other change**
 
 ### Install / Update
 
 ```bash
-npm install -g oh-my-claude-sisyphus@4.13.0
+npm install -g oh-my-claude-sisyphus@4.13.4
 ```
 
 Or reinstall the plugin:
@@ -34,10 +37,10 @@ Or reinstall the plugin:
 claude /install-plugin oh-my-claudecode
 ```
 
-**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.12.1...v4.13.0
+**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.13.3...v4.13.4
 
 ## Contributors
 
 Thank you to all contributors who made this release possible!
 
-@50sotero @Gujiassh @Yeachan-Heo
+@glen-tl @hongsu @jiseongnoh @milo417 @Yeachan-Heo
