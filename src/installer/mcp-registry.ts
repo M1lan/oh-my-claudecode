@@ -114,7 +114,7 @@ function isLauncherBackedMcpCommand(command: string, args: readonly string[]): b
     return true;
   }
 
-  return base === 'npm' && args[0]?.toLowerCase() === 'exec';
+  return base === 'pnpm' && args[0]?.toLowerCase() === 'exec';
 }
 
 function normalizeRegistryEntry(value: unknown): UnifiedMcpRegistryEntry | null {

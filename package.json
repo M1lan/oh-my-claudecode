@@ -38,7 +38,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-bridge-entry.mjs && npm run compose-docs && npm run build:runtime-cli && npm run build:team-server && npm run build:cli",
+    "build": "tsc && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-bridge-entry.mjs && pnpm run compose-docs && pnpm run build:runtime-cli && pnpm run build:team-server && pnpm run build:cli",
     "build:bridge": "node scripts/build-skill-bridge.mjs",
     "build:bridge-entry": "node scripts/build-bridge-entry.mjs",
     "build:cli": "node scripts/build-cli.mjs",
@@ -64,7 +64,7 @@
     "sync-metadata:verify": "tsx scripts/sync-metadata.ts --verify",
     "sync-metadata:dry-run": "tsx scripts/sync-metadata.ts --dry-run",
     "release": "tsx scripts/release.ts",
-    "prepublishOnly": "npm run build && npm run compose-docs",
+    "prepublishOnly": "pnpm run build && pnpm run compose-docs",
     "version": "bash scripts/sync-version.sh"
   },
   "dependencies": {

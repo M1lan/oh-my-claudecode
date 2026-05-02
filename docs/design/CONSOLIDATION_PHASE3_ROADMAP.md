@@ -79,9 +79,9 @@ This roadmap defines the next wave: agent utilization cleanup, routing simplific
 ### Milestone D — Validation Gate
 
 - Run full verification:
-  - `npm test`
-  - `npm run build`
-  - `npm run lint`
+  - `pnpm test`
+  - `pnpm run build`
+  - `pnpm run lint`
 - Validate no Tier-0 regressions.
 
 ## Risks

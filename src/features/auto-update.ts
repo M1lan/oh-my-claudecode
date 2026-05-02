@@ -162,18 +162,18 @@ export function syncPluginCache(verbose: boolean = false): { synced: boolean; sk
   }
 
   try {
-    const npmRoot = String(execSync('npm root -g', {
+    const pnpmRoot = String(execSync('pnpm root -g', {
       encoding: 'utf-8',
       stdio: 'pipe',
       timeout: 10000,
       ...(process.platform === 'win32' ? { windowsHide: true } : {}),
     }) ?? '').trim();
 
-    if (!npmRoot) {
-      throw new Error('npm root -g returned an empty path');
+    if (!pnpmRoot) {
+      throw new Error('pnpm root -g returned an empty path');
     }
 
-    const sourceRoot = join(npmRoot, 'oh-my-claude-sisyphus');
+    const sourceRoot = join(pnpmRoot, 'oh-my-claude-sisyphus');
     const packageJsonPath = join(sourceRoot, 'package.json');
     const packageJsonRaw = String(readFileSync(packageJsonPath, 'utf-8') ?? '');
     const packageMetadata = JSON.parse(packageJsonRaw) as { version?: unknown };
@@ -392,8 +392,8 @@ export interface VersionMetadata {
   lastCheckAt?: string;
   /** Git commit hash if installed from source */
   commitHash?: string;
-  /** Installation method: 'script' | 'npm' | 'source' */
-  installMethod: 'script' | 'npm' | 'source';
+  /** Installation method: 'script' | 'pnpm' | 'source' */
+  installMethod: 'script' | 'pnpm' | 'source';
 }
 
 /**
@@ -442,10 +442,10 @@ export interface UpdateReconcileResult {
  */
 export function getInstalledVersion(): VersionMetadata | null {
   if (!existsSync(VERSION_FILE)) {
-    // Try to detect version from package.json if installed via npm
+    // Try to detect version from package.json if installed via pnpm
     try {
       // Check if we can find the package in node_modules
-      const result = execSync('npm list -g oh-my-claude-sisyphus --json', {
+      const result = execSync('pnpm list -g oh-my-claude-sisyphus --json', {
         encoding: 'utf-8',
         timeout: 5000,
         stdio: 'pipe'
@@ -455,11 +455,11 @@ export function getInstalledVersion(): VersionMetadata | null {
         return {
           version: data.dependencies['oh-my-claude-sisyphus'].version,
           installedAt: new Date().toISOString(),
-          installMethod: 'npm'
+          installMethod: 'pnpm'
         };
       }
     } catch {
-      // Not installed via npm or command failed
+      // Not installed via pnpm or command failed
     }
     return null;
   }
@@ -720,14 +720,14 @@ export async function performUpdate(options?: {
   const previousVersion = installed?.version ?? null;
 
   try {
-    // Block npm update only from active Claude Code/plugin sessions.
+    // Block pnpm update only from active Claude Code/plugin sessions.
     // Standalone terminals may inherit CLAUDE_PLUGIN_ROOT and should still update.
     if (shouldBlockStandaloneUpdateInCurrentSession() && !options?.standalone) {
       return {
         success: false,
         previousVersion,
         newVersion: 'unknown',
-        message: 'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force npm update.',
+        message: 'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force pnpm update.',
       };
     }
 
@@ -735,12 +735,12 @@ export async function performUpdate(options?: {
     const release = await fetchLatestRelease();
     const newVersion = release.tag_name.replace(/^v/, '');
 
-    // Use npm for updates on all platforms (install.sh was removed)
+    // Use pnpm for updates on all platforms (install.sh was removed)
     try {
-      execSync('npm install -g oh-my-claude-sisyphus@latest', {
+      execSync('pnpm add -g oh-my-claude-sisyphus@latest', {
         encoding: 'utf-8',
         stdio: options?.verbose ? 'inherit' : 'pipe',
-        timeout: 120000, // 2 minute timeout for npm
+        timeout: 120000, // 2 minute timeout for pnpm
         ...(process.platform === 'win32' ? { windowsHide: true } : {})
       });
 
@@ -752,7 +752,7 @@ export async function performUpdate(options?: {
 
       syncPluginCache(options?.verbose ?? false);
 
-      // CRITICAL FIX: After npm updates the global package, the current process
+      // CRITICAL FIX: After pnpm updates the global package, the current process
       // still has OLD code loaded in memory. We must re-exec to run reconciliation
       // with the NEW code. Otherwise, installOmc() runs OLD logic against NEW files.
       if (!process.env.OMC_UPDATE_RECONCILE) {
@@ -785,7 +785,7 @@ export async function performUpdate(options?: {
         saveVersionMetadata({
           version: newVersion,
           installedAt: new Date().toISOString(),
-          installMethod: 'npm',
+          installMethod: 'pnpm',
           lastCheckAt: new Date().toISOString()
         });
 
@@ -814,12 +814,12 @@ export async function performUpdate(options?: {
           message: 'Reconciliation completed successfully'
         };
       }
-    } catch (npmError) {
+    } catch (pnpmError) {
       throw new Error(
-        'Auto-update via npm failed. Please run manually:\n' +
-        '  npm install -g oh-my-claude-sisyphus@latest\n' +
+        'Auto-update via pnpm failed. Please run manually:\n' +
+        '  pnpm add -g oh-my-claude-sisyphus@latest\n' +
         'Or use: /plugin install oh-my-claudecode\n' +
-        `Error: ${npmError instanceof Error ? npmError.message : npmError}`
+        `Error: ${pnpmError instanceof Error ? pnpmError.message : pnpmError}`
       );
     }
   } catch (error) {

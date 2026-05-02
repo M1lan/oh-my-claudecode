@@ -246,7 +246,7 @@ The enforcer runs in the `pre-tool-use` hook:
 Run tests:
 
 ```bash
-npm test -- delegation-enforcer
+pnpm test -- delegation-enforcer
 ```
 
 Run demo:

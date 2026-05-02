@@ -108,7 +108,7 @@ export interface SkillInvocation {
 
 export interface PendingPermission {
   toolName: string;       // "Edit", "Bash", etc. (proxy_ prefix stripped)
-  targetSummary: string;  // "src/main.ts" or "npm install"
+  targetSummary: string;  // "src/main.ts" or "pnpm install"
   timestamp: Date;
 }
 

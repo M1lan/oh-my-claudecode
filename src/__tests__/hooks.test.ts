@@ -1518,15 +1518,15 @@ describe('UltraQA Loop', () => {
   describe('Goal Commands', () => {
     it('should map goal types to commands', () => {
       const goalCommands: Record<string, string> = {
-        tests: 'npm test',
-        build: 'npm run build',
-        lint: 'npm run lint',
-        typecheck: 'npm run typecheck || tsc --noEmit'
+        tests: 'pnpm test',
+        build: 'pnpm run build',
+        lint: 'pnpm run lint',
+        typecheck: 'pnpm run typecheck || tsc --noEmit'
       };
 
-      expect(goalCommands.tests).toBe('npm test');
-      expect(goalCommands.build).toBe('npm run build');
-      expect(goalCommands.lint).toBe('npm run lint');
+      expect(goalCommands.tests).toBe('pnpm test');
+      expect(goalCommands.build).toBe('pnpm run build');
+      expect(goalCommands.lint).toBe('pnpm run lint');
     });
   });
 

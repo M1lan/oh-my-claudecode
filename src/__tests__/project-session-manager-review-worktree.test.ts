@@ -81,7 +81,7 @@ describe('project-session-manager review worktree hardening', () => {
   });
 
   it('guides PR review flows toward focused verification before full-suite fallback', () => {
-    expect(PR_REVIEW_TEMPLATE).toContain('npm run test:run -- <changed-test-paths>');
+    expect(PR_REVIEW_TEMPLATE).toContain('pnpm run test:run -- <changed-test-paths>');
     expect(PR_REVIEW_TEMPLATE).toContain('preferred focused verification');
     expect(PR_REVIEW_TEMPLATE).toContain('symlinked node_modules from the source repo');
   });

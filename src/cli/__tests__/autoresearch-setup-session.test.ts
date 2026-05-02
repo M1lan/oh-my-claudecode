@@ -27,13 +27,13 @@ describe('collectAutoresearchRepoSignals', () => {
     const repo = mkdtempSync(join(tmpdir(), 'omc-autoresearch-signals-'));
     writeFileSync(join(repo, 'package.json'), JSON.stringify({ scripts: { test: 'vitest run', build: 'tsc --noEmit' } }), 'utf-8');
     mkdirSync(join(repo, 'missions', 'demo'), { recursive: true });
-    writeFileSync(join(repo, 'missions', 'demo', 'sandbox.md'), '---\nevaluator:\n  command: npm run test\n  format: json\n---\n', 'utf-8');
+    writeFileSync(join(repo, 'missions', 'demo', 'sandbox.md'), '---\nevaluator:\n  command: pnpm run test\n  format: json\n---\n', 'utf-8');
 
     const signals = collectAutoresearchRepoSignals(repo);
 
     expect(signals.lines).toContain('package.json script test: vitest run');
     expect(signals.lines).toContain('existing mission example: missions/demo');
-    expect(signals.lines).toContain('existing mission evaluator: npm run test');
+    expect(signals.lines).toContain('existing mission evaluator: pnpm run test');
   });
 });
 
@@ -60,7 +60,7 @@ describe('runAutoresearchSetupSession', () => {
   it('parses validated JSON from claude print mode', () => {
     vi.mocked(spawnSync).mockReturnValue({
       status: 0,
-      stdout: '{"missionText":"Improve launch flow","evaluatorCommand":"npm run test:run -- launch","evaluatorSource":"inferred","confidence":0.86,"slug":"launch-flow","readyToLaunch":true}',
+      stdout: '{"missionText":"Improve launch flow","evaluatorCommand":"pnpm run test:run -- launch","evaluatorSource":"inferred","confidence":0.86,"slug":"launch-flow","readyToLaunch":true}',
       stderr: '',
       pid: 1,
       output: [],
@@ -93,7 +93,7 @@ describe('runAutoresearchSetupSession', () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     vi.mocked(spawnSync).mockReturnValue({
       status: 0,
-      stdout: '{"missionText":"Improve launch flow","evaluatorCommand":"npm run test:run -- launch","evaluatorSource":"inferred","confidence":0.86,"slug":"launch-flow","readyToLaunch":true}',
+      stdout: '{"missionText":"Improve launch flow","evaluatorCommand":"pnpm run test:run -- launch","evaluatorSource":"inferred","confidence":0.86,"slug":"launch-flow","readyToLaunch":true}',
       stderr: '',
       pid: 1,
       output: [],

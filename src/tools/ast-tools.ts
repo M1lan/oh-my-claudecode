@@ -344,7 +344,7 @@ Note: Patterns must be valid AST nodes for the language.`,
           content: [
             {
               type: "text" as const,
-              text: `@ast-grep/napi is not available. Install it with: npm install -g @ast-grep/napi\nError: ${sgLoadError}`,
+              text: `@ast-grep/napi is not available. Install it with: pnpm add -g @ast-grep/napi\nError: ${sgLoadError}`,
             },
           ],
         };
@@ -480,7 +480,7 @@ IMPORTANT: dryRun=true (default) only previews changes. Set dryRun=false to appl
           content: [
             {
               type: "text" as const,
-              text: `@ast-grep/napi is not available. Install it with: npm install -g @ast-grep/napi\nError: ${sgLoadError}`,
+              text: `@ast-grep/napi is not available. Install it with: pnpm add -g @ast-grep/napi\nError: ${sgLoadError}`,
             },
           ],
         };

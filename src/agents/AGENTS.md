@@ -193,7 +193,7 @@ export const newAgentHigh: AgentConfig = {
 Agents are tested via integration tests:
 
 ```bash
-npm test -- --grep "agent"
+pnpm test -- --grep "agent"
 ```
 
 ### Common Patterns

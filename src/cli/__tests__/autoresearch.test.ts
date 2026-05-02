@@ -13,8 +13,8 @@ describe('parseAutoresearchArgs', () => {
   });
 
   it('preserves arbitrary legacy args without attempting runtime parsing', () => {
-    expect(parseAutoresearchArgs(['--mission', 'Improve onboarding', '--eval', 'npm run eval'])).toEqual({
-      args: ['--mission', 'Improve onboarding', '--eval', 'npm run eval'],
+    expect(parseAutoresearchArgs(['--mission', 'Improve onboarding', '--eval', 'pnpm run eval'])).toEqual({
+      args: ['--mission', 'Improve onboarding', '--eval', 'pnpm run eval'],
       deprecated: true,
     });
   });

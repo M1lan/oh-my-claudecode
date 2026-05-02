@@ -447,7 +447,7 @@ lsp_servers()
 
 | Problem | Solution |
 |---------|----------|
-| LSP tools not working | Install the language server: `npm install -g typescript-language-server` |
+| LSP tools not working | Install the language server: `pnpm add -g typescript-language-server` |
 | Timeout errors | Increase `OMC_LSP_TIMEOUT_MS` |
 | Check server status | Run `lsp_servers()` to verify installation |
 

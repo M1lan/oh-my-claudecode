@@ -174,26 +174,26 @@ describe('HUD marketplace resolution', () => {
     expect(normalized).toContain('/broken-plugin-root/dist/hud/index.js');
   });
 
-  it('omc-hud.mjs loads a global npm install outside a Node project via npm prefix resolution', () => {
+  it('omc-hud.mjs loads a global pnpm install outside a Node project via pnpm prefix resolution', () => {
     const configDir = mkdtempSync(join(tmpdir(), 'omc-hud-global-prefix-'));
     tempDirs.push(configDir);
 
     const fakeHome = join(configDir, 'home');
     const outsideCwd = join(configDir, 'outside-cwd');
-    const npmPrefix = join(configDir, 'global-prefix');
+    const pnpmPrefix = join(configDir, 'global-prefix');
     mkdirSync(fakeHome, { recursive: true });
     mkdirSync(outsideCwd, { recursive: true });
 
     const sentinelPath = join(configDir, 'global-prefix-loaded.txt');
-    const npmRoot = process.platform === 'win32'
-      ? join(npmPrefix, 'node_modules')
-      : join(npmPrefix, 'lib', 'node_modules');
-    const npmPackageRoot = join(npmRoot, 'oh-my-claude-sisyphus');
-    const npmHudDir = join(npmPackageRoot, 'dist', 'hud');
-    mkdirSync(npmHudDir, { recursive: true });
-    writeFileSync(join(npmPackageRoot, 'package.json'), '{"type":"module"}\n');
+    const pnpmRoot = process.platform === 'win32'
+      ? join(pnpmPrefix, 'node_modules')
+      : join(pnpmPrefix, 'lib', 'node_modules');
+    const pnpmPackageRoot = join(pnpmRoot, 'oh-my-claude-sisyphus');
+    const pnpmHudDir = join(pnpmPackageRoot, 'dist', 'hud');
+    mkdirSync(pnpmHudDir, { recursive: true });
+    writeFileSync(join(pnpmPackageRoot, 'package.json'), '{"type":"module"}\n');
     writeFileSync(
-      join(npmHudDir, 'index.js'),
+      join(pnpmHudDir, 'index.js'),
       `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(sentinelPath)}, 'global-prefix-loaded');\n`
     );
 
@@ -216,7 +216,7 @@ describe('HUD marketplace resolution', () => {
         ...process.env,
         CLAUDE_CONFIG_DIR: configDir,
         HOME: fakeHome,
-        npm_config_prefix: npmPrefix,
+        npm_config_prefix: pnpmPrefix,
       },
       stdio: 'pipe',
     });
@@ -224,21 +224,21 @@ describe('HUD marketplace resolution', () => {
     expect(readFileSync(sentinelPath, 'utf-8')).toBe('global-prefix-loaded');
   });
 
-  it('omc-hud.mjs loads the published npm package name before the branded fallback', () => {
+  it('omc-hud.mjs loads the published pnpm package name before the branded fallback', () => {
     const configDir = mkdtempSync(join(tmpdir(), 'omc-hud-npm-package-'));
     tempDirs.push(configDir);
 
     const fakeHome = join(configDir, 'home');
     mkdirSync(fakeHome, { recursive: true });
 
-    const sentinelPath = join(configDir, 'npm-package-loaded.txt');
-    const npmPackageRoot = join(configDir, 'node_modules', 'oh-my-claude-sisyphus');
-    const npmHudDir = join(npmPackageRoot, 'dist', 'hud');
-    mkdirSync(npmHudDir, { recursive: true });
-    writeFileSync(join(npmPackageRoot, 'package.json'), '{"type":"module"}\n');
+    const sentinelPath = join(configDir, 'pnpm-package-loaded.txt');
+    const pnpmPackageRoot = join(configDir, 'node_modules', 'oh-my-claude-sisyphus');
+    const pnpmHudDir = join(pnpmPackageRoot, 'dist', 'hud');
+    mkdirSync(pnpmHudDir, { recursive: true });
+    writeFileSync(join(pnpmPackageRoot, 'package.json'), '{"type":"module"}\n');
     writeFileSync(
-      join(npmHudDir, 'index.js'),
-      `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(sentinelPath)}, 'npm-package-loaded');\n`
+      join(pnpmHudDir, 'index.js'),
+      `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(sentinelPath)}, 'pnpm-package-loaded');\n`
     );
 
     execFileSync(process.execPath, [join(root, 'scripts', 'plugin-setup.mjs')], {
@@ -271,6 +271,6 @@ describe('HUD marketplace resolution', () => {
       stdio: 'pipe',
     });
 
-    expect(readFileSync(sentinelPath, 'utf-8')).toBe('npm-package-loaded');
+    expect(readFileSync(sentinelPath, 'utf-8')).toBe('pnpm-package-loaded');
   });
 });

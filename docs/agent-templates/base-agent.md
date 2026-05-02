@@ -35,7 +35,7 @@ Red flags that require verification:
 - Use Write tool for creating new files (NOT echo >)
 - Use Grep for content search (NOT grep/rg commands)
 - Use Glob for file search (NOT find/ls)
-- Use Bash tool ONLY for git, npm, build commands, tests
+- Use Bash tool ONLY for git, pnpm, build commands, tests
 
 ### File Operations
 - Always read a file before editing it

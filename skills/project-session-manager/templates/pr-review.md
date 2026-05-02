@@ -52,11 +52,11 @@ git diff {{BASE_BRANCH}}...HEAD
 # Run the narrowest relevant tests first
 # If this clean review worktree has a symlinked node_modules from the source repo,
 # focused vitest commands should work without a fresh install.
-npm run test:run -- <changed-test-paths>  # preferred focused verification
-npm test  # or appropriate full test command if focused coverage is insufficient
+pnpm run test:run -- <changed-test-paths>  # preferred focused verification
+pnpm test  # or appropriate full test command if focused coverage is insufficient
 
 # Check build
-npm run build  # or appropriate build command
+pnpm run build  # or appropriate build command
 ```
 
 ## Review Checklist

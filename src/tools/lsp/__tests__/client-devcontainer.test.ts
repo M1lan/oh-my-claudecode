@@ -132,7 +132,7 @@ describe('LspClient devcontainer support', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
+      installHint: 'pnpm add -g typescript-language-server'
     }, context);
 
     await client.connect();
@@ -163,7 +163,7 @@ describe('LspClient devcontainer support', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
+      installHint: 'pnpm add -g typescript-language-server'
     }, context);
 
     await client.connect();
@@ -203,7 +203,7 @@ describe('LspClient devcontainer support', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
+      installHint: 'pnpm add -g typescript-language-server'
     }, context);
 
     await client.connect();

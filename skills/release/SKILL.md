@@ -156,7 +156,7 @@ Using the rules discovered, walk through:
 4. **Tag** — `git tag -a vX.Y.Z -m "vX.Y.Z"` (annotated tags are preferred over lightweight).
 5. **Push** — `git push origin <branch> && git push origin vX.Y.Z`.
 6. **CI takes over** — if the release trigger is a tag push, remind the user that CI will handle the rest (publish, GitHub release creation). Show the expected CI workflow file.
-7. **Manual publish** — if no CI automation exists, list the manual publish command (e.g. `npm publish --access public`, `twine upload dist/*`).
+7. **Manual publish** — if no CI automation exists, list the manual publish command (e.g. `pnpm publish --access public`, `twine upload dist/*`).
 
 ---
 

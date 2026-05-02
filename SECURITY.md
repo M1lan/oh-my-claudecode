@@ -75,7 +75,7 @@ Blocks Codex (OpenAI) and Gemini (Google) CLI workers from being spawned in team
 
 ### Auto-Update Disable (`disableAutoUpdate`)
 
-Overrides `silentAutoUpdate` in OMC config. When enabled, `isSilentAutoUpdateEnabled()` always returns `false` regardless of user config, preventing unverified npm package installs.
+Overrides `silentAutoUpdate` in OMC config. When enabled, `isSilentAutoUpdateEnabled()` always returns `false` regardless of user config, preventing unverified package installs.
 
 ### Hard Max Iterations (`hardMaxIterations`)
 

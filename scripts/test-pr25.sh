@@ -128,8 +128,8 @@ echo ""
 # =============================================================================
 echo -e "${BLUE}=== Build Verification ===${NC}"
 
-log_info "Running npm run build..."
-if npm run build &> /tmp/pr25-build.log; then
+log_info "Running pnpm run build..."
+if pnpm run build &> /tmp/pr25-build.log; then
     log_pass "TypeScript build succeeded"
 else
     log_fail "TypeScript build failed"

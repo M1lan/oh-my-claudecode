@@ -29,7 +29,7 @@ log_info "Starting benchmark setup..."
 log_info "Checking for required tools..."
 command -v docker >/dev/null 2>&1 || { log_error "Docker is required but not installed. Aborting."; exit 1; }
 command -v python3 >/dev/null 2>&1 || { log_error "Python 3 is required but not installed. Aborting."; exit 1; }
-command -v npm >/dev/null 2>&1 || { log_error "npm is required but not installed. Aborting."; exit 1; }
+command -v pnpm >/dev/null 2>&1 || { log_error "pnpm is required but not installed. Aborting."; exit 1; }
 
 log_info "All required tools found."
 
@@ -111,8 +111,8 @@ fi
 # 7. Build OMC project
 log_info "Building oh-my-claudecode project..."
 cd "$PROJECT_ROOT"
-npm install --silent
-npm run build --silent
+pnpm install --silent
+pnpm run build --silent
 
 # 8. Verify installation
 log_info "Running sanity checks..."

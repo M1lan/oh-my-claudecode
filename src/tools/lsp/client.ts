@@ -188,7 +188,7 @@ export class LspClient {
     }
 
     return new Promise((resolve, reject) => {
-      // On Windows, npm-installed binaries are .cmd scripts that require
+      // On Windows, pnpm-installed binaries are .cmd scripts that require
       // shell execution. Without this, spawn() fails with ENOENT. (#569)
       // Safe: server commands come from a hardcoded registry (servers.ts),
       // not user input, so shell metacharacter injection is not a concern.

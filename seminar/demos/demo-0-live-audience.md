@@ -44,7 +44,7 @@ Use React + Vite. Make it work immediately."
 ### 4. 결과 시연 (2분)
 ```bash
 cd [생성된 앱]
-npm run dev
+pnpm run dev
 ```
 
 브라우저 띄워서:

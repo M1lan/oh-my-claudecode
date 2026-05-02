@@ -68,15 +68,15 @@ Use the source PRD/test-spec checklist when modifying this area. At minimum, cha
 Recommended focused commands:
 
 ```bash
-npm test -- --run src/team/__tests__/git-worktree.test.ts
-npm test -- --run src/team/__tests__/worker-bootstrap.test.ts
-npm test -- --run src/team/__tests__/runtime-v2.dispatch.test.ts
-npm test -- --run src/team/__tests__/runtime-v2.shutdown.test.ts
-npm test -- --run src/team/__tests__/api-interop.dispatch.test.ts
-npm test -- --run src/team/__tests__/api-interop.cwd-resolution.test.ts
-npm test -- --run src/team/__tests__/scaling-launch-config.test.ts
-npm test -- --run src/cli/__tests__/team-runtime-boundary.test.ts
-npm run build
+pnpm test -- --run src/team/__tests__/git-worktree.test.ts
+pnpm test -- --run src/team/__tests__/worker-bootstrap.test.ts
+pnpm test -- --run src/team/__tests__/runtime-v2.dispatch.test.ts
+pnpm test -- --run src/team/__tests__/runtime-v2.shutdown.test.ts
+pnpm test -- --run src/team/__tests__/api-interop.dispatch.test.ts
+pnpm test -- --run src/team/__tests__/api-interop.cwd-resolution.test.ts
+pnpm test -- --run src/team/__tests__/scaling-launch-config.test.ts
+pnpm test -- --run src/cli/__tests__/team-runtime-boundary.test.ts
+pnpm run build
 ```
 
 ## Review notes

@@ -29,7 +29,7 @@ validate_worktree_path() {
 
 # Best-effort dependency bootstrap for clean PR review worktrees.
 # Reuses the source repo node_modules only when package.json matches exactly.
-# This keeps focused test commands like `npm run test:run -- ...` usable
+# This keeps focused test commands like `pnpm run test:run -- ...` usable
 # without forcing a full install in every review worktree.
 psm_bootstrap_review_dependencies() {
     local local_repo="$1"

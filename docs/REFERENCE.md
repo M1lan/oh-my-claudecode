@@ -25,7 +25,7 @@ Complete reference for oh-my-claudecode. For quick start, see the main [README.m
 
 ## Installation
 
-**Only the Claude Code Plugin method is supported.** Other installation methods (npm, bun, curl) are deprecated and may not work correctly.
+**Only the Claude Code Plugin method is supported.** Other installation methods (pnpm, bun, curl) are deprecated and may not work correctly.
 
 ### Claude Code Plugin (Required)
 
@@ -39,7 +39,7 @@ Complete reference for oh-my-claudecode. For quick start, see the main [README.m
 
 This integrates directly with Claude Code's plugin system and uses Node.js hooks.
 
-> **Note**: Direct npm/bun global installs are **not supported**. The plugin system handles all installation and hook setup automatically.
+> **Note**: Direct pnpm/bun global installs are **not supported**. The plugin system handles all installation and hook setup automatically.
 
 ### Requirements
 
@@ -129,7 +129,7 @@ If both a legacy `{worktree}/.omc/` directory and a centralized directory exist,
 - **Different machines**: Run on each machine where you use Claude Code
 - **New projects**: Run `/oh-my-claudecode:omc-setup --local` in each project that needs omc
 
-> **NOTE**: After updating the plugin (via `npm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
+> **NOTE**: After updating the plugin (via `pnpm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
 
 ### Remote OMC / Remote MCP Access
 
@@ -921,7 +921,7 @@ Available presets: `minimal`, `focused`, `full`, `dense`, `analytics`, `opencode
 | Commands not found    | Re-run `/oh-my-claudecode:omc-setup`                                             |
 | Hooks not executing   | Check hook permissions: `chmod +x ~/.claude/hooks/**/*.sh`                       |
 | Agents not delegating | Verify CLAUDE.md is loaded: check `./.claude/CLAUDE.md` or `~/.claude/CLAUDE.md` |
-| LSP tools not working | Install language servers: `npm install -g typescript-language-server`            |
+| LSP tools not working | Install language servers: `pnpm add -g typescript-language-server`            |
 | Token limit errors    | Use `/oh-my-claudecode:` for token-efficient execution                           |
 
 ### Auto-Update

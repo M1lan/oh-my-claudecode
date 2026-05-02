@@ -71,7 +71,7 @@ This is a TypeScript monorepo using:
 - Zod for validation
 - Commander for CLI
 
-Always prefer Bun commands over npm/npx.
+Always prefer Bun commands over pnpm/pnpx.
 Always validate user input with Zod schemas.
 `
   });

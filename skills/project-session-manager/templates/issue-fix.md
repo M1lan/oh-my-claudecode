@@ -38,10 +38,10 @@ You are fixing Issue #{{ISSUE_NUMBER}}: **{{ISSUE_TITLE}}**
 
 ```bash
 # Run tests
-npm test  # or appropriate test command
+pnpm test  # or appropriate test command
 
 # Check build
-npm run build  # or appropriate build command
+pnpm run build  # or appropriate build command
 
 # Create PR when done
 gh pr create --title "Fix #{{ISSUE_NUMBER}}: <description>" --body "Fixes #{{ISSUE_NUMBER}}"

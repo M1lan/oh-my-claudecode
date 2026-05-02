@@ -1373,7 +1373,7 @@ This article argues that fake popularity signals damage trust in open source.`;
       });
 
       it('should pass with test runner command', () => {
-        expect(isUnderspecifiedForExecution('ralph npm test && fix failures')).toBe(false);
+        expect(isUnderspecifiedForExecution('ralph pnpm test && fix failures')).toBe(false);
       });
 
       it('should pass with vitest target', () => {

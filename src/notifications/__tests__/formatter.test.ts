@@ -277,8 +277,8 @@ describe("parseTmuxTail noise filters", () => {
   });
 
   it("preserves prompt line that has a command after it", () => {
-    const result = parseTmuxTail("❯ npm test\nAll tests passed");
-    expect(result).toBe("❯ npm test\nAll tests passed");
+    const result = parseTmuxTail("❯ pnpm test\nAll tests passed");
+    expect(result).toBe("❯ pnpm test\nAll tests passed");
   });
 
   it("drops lines with low alphanumeric density (mostly special chars)", () => {
@@ -531,11 +531,11 @@ describe("tmuxTail in formatters", () => {
       message: "",
       timestamp: new Date().toISOString(),
       projectPath: "/tmp/test",
-      tmuxTail: "$ npm test\nAll tests passed",
+      tmuxTail: "$ pnpm test\nAll tests passed",
     };
     const result = formatSessionIdle(payload);
     expect(result).toContain("**Recent output:**");
-    expect(result).toContain("$ npm test");
+    expect(result).toContain("$ pnpm test");
     expect(result).toContain("All tests passed");
   });
 

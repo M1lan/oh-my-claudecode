@@ -30,7 +30,7 @@ describe('getEffectivePermissions', () => {
       workerName: 'w1',
       deniedPaths: ['.git/**', 'custom/deny/**'],
       allowedPaths: ['src/**'],
-      allowedCommands: ['npm test'],
+      allowedCommands: ['pnpm test'],
       maxFileSize: 1024,
     });
 
@@ -47,7 +47,7 @@ describe('getEffectivePermissions', () => {
 
     // Caller's allowedPaths preserved
     expect(perms.allowedPaths).toEqual(['src/**']);
-    expect(perms.allowedCommands).toEqual(['npm test']);
+    expect(perms.allowedCommands).toEqual(['pnpm test']);
     expect(perms.maxFileSize).toBe(1024);
   });
 

@@ -157,7 +157,7 @@ feature-name/
 ### Testing Requirements
 
 ```bash
-npm test -- --grep "features"
+pnpm test -- --grep "features"
 ```
 
 ## Dependencies

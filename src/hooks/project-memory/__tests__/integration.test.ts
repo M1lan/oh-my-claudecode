@@ -280,13 +280,13 @@ describe("Project Memory Integration", () => {
 
       await learnFromToolOutput(
         "Bash",
-        { command: "npm run build" },
+        { command: "pnpm run build" },
         "",
         tempDir,
       );
 
       memory = await loadProjectMemory(tempDir);
-      expect(memory?.build.buildCommand).toBe("npm run build");
+      expect(memory?.build.buildCommand).toBe("pnpm run build");
     });
 
     it("should learn environment hints from command output", async () => {
@@ -299,7 +299,7 @@ describe("Project Memory Integration", () => {
       const sessionId = "test-session-6";
       await registerProjectMemoryContext(sessionId, tempDir);
 
-      const output = `Node.js v20.10.0\nnpm v10.2.0`;
+      const output = `Node.js v20.10.0\npnpm v10.2.0`;
       await learnFromToolOutput(
         "Bash",
         { command: "node --version" },

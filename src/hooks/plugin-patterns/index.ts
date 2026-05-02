@@ -303,11 +303,11 @@ export function runTests(directory: string): { success: boolean; message: string
     try {
       const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
       if (pkg.scripts?.test) {
-        execFileSync('npm', ['test'], {
+        execFileSync('pnpm', ['test'], {
           cwd: directory,
           encoding: 'utf-8',
           stdio: 'pipe',
-          // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npm.cmd (CVE-2024-27980). #2721
+          // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
           shell: process.platform === 'win32',
         });
         return { success: true, message: 'Tests passed' };
@@ -345,11 +345,11 @@ export function runLint(directory: string): { success: boolean; message: string 
       const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
       if (pkg.scripts?.lint) {
         try {
-          execFileSync('npm', ['run', 'lint'], {
+          execFileSync('pnpm', ['run', 'lint'], {
             cwd: directory,
             encoding: 'utf-8',
             stdio: 'pipe',
-            // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npm.cmd (CVE-2024-27980). #2721
+            // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
             shell: process.platform === 'win32',
           });
           return { success: true, message: 'Lint passed' };

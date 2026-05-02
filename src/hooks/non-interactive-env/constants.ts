@@ -29,9 +29,9 @@ export const NON_INTERACTIVE_ENV: Record<string, string> = {
  */
 export const SHELL_COMMAND_PATTERNS = {
   // Package managers - always use non-interactive flags
-  npm: {
-    bad: ["npm init", "npm install (prompts)"],
-    good: ["npm init -y", "npm install --yes"],
+  pnpm: {
+    bad: ["pnpm init", "pnpm install (prompts)"],
+    good: ["pnpm init -y", "pnpm install --yes"],
   },
   apt: {
     bad: ["apt-get install pkg"],

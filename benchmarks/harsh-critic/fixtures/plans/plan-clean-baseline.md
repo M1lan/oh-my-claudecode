@@ -122,7 +122,7 @@ The service starts with the feature flag `notifications.service_enabled` set to 
 Enable the feature flag for the staging environment and run the full integration test suite:
 
 ```bash
-npm run test:integration -- --suite notifications --env staging
+pnpm run test:integration -- --suite notifications --env staging
 ```
 
 Test coverage includes:

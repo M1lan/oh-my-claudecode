@@ -19,8 +19,8 @@ Use this when you want parallel external perspectives without launching tmux tea
 
 ## Requirements
 
-- **Codex CLI**: `npm install -g @openai/codex` (or `@openai/codex`)
-- **Gemini CLI**: `npm install -g @google/gemini-cli`
+- **Codex CLI**: `pnpm add -g @openai/codex` (or `@openai/codex`)
+- **Gemini CLI**: `pnpm add -g @google/gemini-cli`
 - `omc ask` command available
 - If either CLI is unavailable, continue with whichever provider is available and note the limitation
 

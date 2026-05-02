@@ -95,10 +95,10 @@ if (notification.method === 'textDocument/publishDiagnostics') {
 LSP tests require language servers to be installed:
 ```bash
 # Install TypeScript server
-npm i -g typescript-language-server typescript
+pnpm add -g typescript-language-server typescript
 
 # Run tests
-npm test -- --grep "lsp"
+pnpm test -- --grep "lsp"
 ```
 
 ## Dependencies

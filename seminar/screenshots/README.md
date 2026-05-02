@@ -151,7 +151,7 @@ autopilot: build a React dashboard with user authentication
 │   • QA cycles: 1                                                           │
 │   • Validations: 3/3 approved                                              │
 │                                                                             │
-│ To start the server: npm install && npm run dev                            │
+│ To start the server: pnpm install && pnpm run dev                            │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -212,9 +212,9 @@ autopilot: build a React dashboard with user authentication
 │                                     │   BUILD: PASS                       │
 │ > Can you run the tests?            │   LINT: PASS                        │
 │                                     │   TEST: 15/15 PASS                  │
-│ (You need to run: npm test)         │                                     │
+│ (You need to run: pnpm test)         │                                     │
 │                                     │ ▶ Phase 4: Validation               │
-│ > npm test                          │   [architect] APPROVED              │
+│ > pnpm test                          │   [architect] APPROVED              │
 │   FAIL auth.test.ts                 │   [security-reviewer] APPROVED      │
 │   ● missing hash comparison         │   [code-reviewer] APPROVED          │
 │                                     │                                     │
@@ -225,7 +225,7 @@ autopilot: build a React dashboard with user authentication
 │ [Updates auth.ts]                   │ Time: 8m 42s (hands-off)            │
 │ Try running tests again.            │                                     │
 │                                     │                                     │
-│ > npm test                          │                                     │
+│ > pnpm test                          │                                     │
 │   PASS auth.test.ts                 │                                     │
 │   ✓ All tests passing               │                                     │
 │                                     │                                     │
@@ -439,14 +439,14 @@ Time →
 │                                                                             │
 │ [build-fixer:sonnet] Running build verification...                          │
 │ ✗ BUILD FAILED                                                              │
-│   Warning: npm install needed to resolve dependencies                       │
+│   Warning: pnpm install needed to resolve dependencies                       │
 │                                                                             │
 │ 🔄 Ralph continuing...                                                       │
 │                                                                             │
 │ ═══ Ralph Iteration 3 ═══                                                  │
 │                                                                             │
 │ [executor-low:haiku] Installing dependencies...                             │
-│ $ npm install                                                               │
+│ $ pnpm install                                                               │
 │ ✓ jsonwebtoken@9.0.2 installed                                             │
 │ ✓ @types/jsonwebtoken@9.0.5 installed                                      │
 │                                                                             │

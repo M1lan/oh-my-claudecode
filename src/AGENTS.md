@@ -81,8 +81,8 @@ This directory contains all TypeScript source code organized into modules:
 ### Testing Requirements
 
 - Test files are in `__tests__/` with pattern `*.test.ts`
-- Run `npm test -- --grep "module-name"` for specific modules
-- Verify type safety with `npm run build` after changes
+- Run `pnpm test -- --grep "module-name"` for specific modules
+- Verify type safety with `pnpm run build` after changes
 - Use `lsp_diagnostics_directory` tool for project-wide type checking
 
 ### Common Patterns
