@@ -26,7 +26,7 @@ const CACHE_STUB_MARKER = 'FROM_CACHE_STUB_99_99_99';
  * `<configDir>/plugins/cache/omc/oh-my-claudecode/99.99.99/dist/hud/index.js`.
  * Used to pin the cache-fallback step (step 2 in the wrapper) so tests can
  * assert the wrapper actually executed that branch instead of accidentally
- * matching a globally-installed npm fallback (step 4).
+ * matching a globally-installed pnpm fallback (step 4).
  */
 function makeStubConfigDir(rootDir: string): string {
   const configDir = join(rootDir, 'isolated-config');
@@ -46,7 +46,7 @@ function makeStubConfigDir(rootDir: string): string {
 /**
  * Minimal env that scrubs PATH/NODE_PATH so the wrapper's
  * `getGlobalNodeModuleRoots()` cannot reach a globally-installed
- * `oh-my-claude-sisyphus` and silently satisfy the npm fallback step.
+ * `oh-my-claude-sisyphus` and silently satisfy the pnpm fallback step.
  */
 function scrubbedEnv(extra: Record<string, string>): Record<string, string> {
   return {
@@ -303,11 +303,11 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
     expect(txt).not.toContain('projects/oh-my-claudecode');
   });
 
-  it('uses shell:true only for Windows npm root discovery', () => {
+  it('uses shell:true only for Windows pnpm root discovery', () => {
     const txt = readFileSync(TEMPLATE_TXT, 'utf8');
 
     expect(txt).toContain('const isWin = process.platform === "win32";');
-    expect(txt).toContain('const npmCommand = isWin ? "npm.cmd" : "npm";');
+    expect(txt).toContain('const pnpmCommand = isWin ? "pnpm.cmd" : "pnpm";');
     expect(txt).toContain('shell: isWin');
     expect(txt).not.toContain('shell: true');
   });

@@ -57,7 +57,7 @@ describe('auto-update reconciliation', () => {
                 return JSON.stringify({
                     version: '4.1.5',
                     installedAt: '2026-02-09T00:00:00.000Z',
-                    installMethod: 'npm',
+                    installMethod: 'pnpm',
                 });
             }
             return '';
@@ -141,7 +141,7 @@ describe('auto-update reconciliation', () => {
                 return JSON.stringify({
                     version: '4.1.5',
                     installedAt: '2026-02-09T00:00:00.000Z',
-                    installMethod: 'npm',
+                    installMethod: 'pnpm',
                 });
             }
             if (normalized.endsWith('/plugins/installed_plugins.json')) {
@@ -192,7 +192,7 @@ describe('auto-update reconciliation', () => {
         const cacheRoot = join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
         const versionedCacheRoot = `${cacheRoot}/4.9.0`;
         mockedExecSync.mockImplementation((command) => {
-            if (command === 'npm root -g') {
+            if (command === 'pnpm root -g') {
                 return '/usr/lib/node_modules\n';
             }
             return '';
@@ -206,7 +206,7 @@ describe('auto-update reconciliation', () => {
                 return JSON.stringify({
                     version: '4.1.5',
                     installedAt: '2026-02-09T00:00:00.000Z',
-                    installMethod: 'npm',
+                    installMethod: 'pnpm',
                 });
             }
             return '';
@@ -223,7 +223,7 @@ describe('auto-update reconciliation', () => {
         });
         const result = syncPluginCache();
         expect(result).toEqual({ synced: true, skipped: false, errors: [] });
-        expect(mockedExecSync).toHaveBeenCalledWith('npm root -g', expect.objectContaining({
+        expect(mockedExecSync).toHaveBeenCalledWith('pnpm root -g', expect.objectContaining({
             encoding: 'utf-8',
             stdio: 'pipe',
             timeout: 10000,
@@ -244,7 +244,7 @@ describe('auto-update reconciliation', () => {
         });
         const result = syncPluginCache();
         expect(result).toEqual({ synced: false, skipped: true, errors: [] });
-        expect(mockedExecSync).not.toHaveBeenCalledWith('npm root -g', expect.anything());
+        expect(mockedExecSync).not.toHaveBeenCalledWith('pnpm root -g', expect.anything());
         expect(mockedCpSync).not.toHaveBeenCalled();
     });
     it('handles plugin cache sync errors non-fatally', () => {
@@ -252,7 +252,7 @@ describe('auto-update reconciliation', () => {
         const cacheRoot = join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
         const versionedCacheRoot = `${cacheRoot}/4.9.0`;
         mockedExecSync.mockImplementation((command) => {
-            if (command === 'npm root -g') {
+            if (command === 'pnpm root -g') {
                 return '/usr/lib/node_modules\n';
             }
             return '';
@@ -266,7 +266,7 @@ describe('auto-update reconciliation', () => {
                 return JSON.stringify({
                     version: '4.1.5',
                     installedAt: '2026-02-09T00:00:00.000Z',
-                    installMethod: 'npm',
+                    installMethod: 'pnpm',
                 });
             }
             return '';
@@ -317,7 +317,7 @@ describe('auto-update reconciliation', () => {
                 return JSON.stringify({
                     version: '4.1.5',
                     installedAt: '2026-02-09T00:00:00.000Z',
-                    installMethod: 'npm',
+                    installMethod: 'pnpm',
                 });
             }
             if (normalized.endsWith('/plugins/installed_plugins.json')) {
@@ -374,10 +374,10 @@ describe('auto-update reconciliation', () => {
             }),
         }));
         mockedExecSync.mockImplementation((command) => {
-            if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
+            if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
                 return '';
             }
-            if (command === 'npm root -g') {
+            if (command === 'pnpm root -g') {
                 return '/usr/lib/node_modules\n';
             }
             return '';
@@ -397,11 +397,11 @@ describe('auto-update reconciliation', () => {
         });
         const result = await performUpdate({ verbose: false });
         expect(result.success).toBe(true);
-        expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claude-sisyphus@latest', expect.any(Object));
+        expect(mockedExecSync).toHaveBeenCalledWith('pnpm add -g oh-my-claude-sisyphus@latest', expect.any(Object));
     });
     it('runs reconciliation as part of performUpdate without plugin hook reinjection', async () => {
         // Set env var so performUpdate takes the direct reconciliation path
-        // (simulates being in the re-exec'd process after npm install)
+        // (simulates being in the re-exec'd process after pnpm install)
         process.env.OMC_UPDATE_RECONCILE = '1';
         process.env.CLAUDE_PLUGIN_ROOT = join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc', 'oh-my-claudecode', '4.1.5');
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
@@ -419,7 +419,7 @@ describe('auto-update reconciliation', () => {
         mockedExecSync.mockReturnValue('');
         const result = await performUpdate({ verbose: false });
         expect(result.success).toBe(true);
-        expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claude-sisyphus@latest', expect.any(Object));
+        expect(mockedExecSync).toHaveBeenCalledWith('pnpm add -g oh-my-claude-sisyphus@latest', expect.any(Object));
         expect(mockedInstall).toHaveBeenCalledWith({
             force: true,
             verbose: false,
@@ -597,23 +597,23 @@ describe('auto-update reconciliation', () => {
             }),
         }));
         mockedExecSync.mockImplementation((command) => {
-            if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
+            if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
                 return '';
             }
             throw new Error(`Unexpected execSync command: ${command}`);
         });
         mockedExecFileSync.mockImplementation((command) => {
             if (command === 'where.exe') {
-                return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n';
+                return 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd\r\n';
             }
-            if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd') {
+            if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd') {
                 return '';
             }
             throw new Error(`Unexpected execFileSync command: ${command}`);
         });
         const result = await performUpdate({ verbose: false });
         expect(result.success).toBe(true);
-        expect(mockedExecSync).toHaveBeenCalledWith('npm install -g oh-my-claude-sisyphus@latest', expect.objectContaining({
+        expect(mockedExecSync).toHaveBeenCalledWith('pnpm add -g oh-my-claude-sisyphus@latest', expect.objectContaining({
             windowsHide: true,
         }));
         expect(mockedExecFileSync).toHaveBeenNthCalledWith(1, 'where.exe', ['omc.cmd'], expect.objectContaining({
@@ -622,7 +622,7 @@ describe('auto-update reconciliation', () => {
             timeout: 5000,
             windowsHide: true,
         }));
-        expect(mockedExecFileSync).toHaveBeenNthCalledWith(2, 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd', ['update-reconcile'], expect.objectContaining({
+        expect(mockedExecFileSync).toHaveBeenNthCalledWith(2, 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd', ['update-reconcile'], expect.objectContaining({
             encoding: 'utf-8',
             stdio: 'pipe',
             timeout: 60000,
@@ -656,10 +656,10 @@ describe('auto-update reconciliation', () => {
         mockedExecSync.mockReturnValue('');
         mockedExecFileSync.mockImplementation((command) => {
             if (command === 'where.exe') {
-                return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n';
+                return 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd\r\n';
             }
-            if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd') {
-                const error = Object.assign(new Error('spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT'), {
+            if (command === 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd') {
+                const error = Object.assign(new Error('spawnSync C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd ENOENT'), {
                     code: 'ENOENT',
                 });
                 throw error;
@@ -669,8 +669,8 @@ describe('auto-update reconciliation', () => {
         const result = await performUpdate({ verbose: false });
         expect(result.success).toBe(false);
         expect(result.message).toBe('Updated to 4.1.6, but runtime reconciliation failed');
-        expect(result.errors).toEqual(['spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT']);
-        expect(mockedExecFileSync).toHaveBeenNthCalledWith(2, 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd', ['update-reconcile'], expect.objectContaining({
+        expect(result.errors).toEqual(['spawnSync C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd ENOENT']);
+        expect(mockedExecFileSync).toHaveBeenNthCalledWith(2, 'C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd', ['update-reconcile'], expect.objectContaining({
             shell: true,
             windowsHide: true,
             env: expect.objectContaining({ OMC_UPDATE_RECONCILE: '1' }),

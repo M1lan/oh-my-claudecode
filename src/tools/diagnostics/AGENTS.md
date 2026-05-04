@@ -90,7 +90,7 @@ interface DirectoryDiagnosticResult {
 
 ```bash
 # Test with a TypeScript project
-npm test -- --grep "diagnostics"
+pnpm test -- --grep "diagnostics"
 ```
 
 ## Dependencies

@@ -220,7 +220,7 @@ For long-running operations, use the \`run_in_background\` parameter to avoid bl
 ### When to Use Background Execution
 
 **Run in Background** (set \`run_in_background: true\`):
-- Package installation (\`npm install\`, \`pip install\`, \`cargo build\`, etc.)
+- Package installation (\`pnpm install\`, \`pip install\`, \`cargo build\`, etc.)
 - Build processes (project build command, \`make\`, etc.)
 - Test suites (project test command, etc.)
 - Docker operations: \`docker build\`, \`docker pull\`

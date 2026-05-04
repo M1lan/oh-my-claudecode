@@ -105,7 +105,7 @@ describe('teleportCommand', () => {
     it('symlinks node_modules when package.json matches and config allows it', async () => {
         await teleportCommand('#1', { worktreePath: '/root' });
         expect(symlinkSync).toHaveBeenCalledWith('/repo/node_modules', '/root/issue/repo-1/node_modules', expect.stringMatching(/dir|junction/));
-        const installCalls = execFileSync.mock.calls.filter(([cmd]) => cmd === 'npm' || cmd === 'pnpm' || cmd === 'yarn');
+        const installCalls = execFileSync.mock.calls.filter(([cmd]) => cmd === 'pnpm' || cmd === 'pnpm' || cmd === 'yarn');
         expect(installCalls).toHaveLength(0);
     });
     it('falls back to install with a warning when package.json differs', async () => {
@@ -121,7 +121,7 @@ describe('teleportCommand', () => {
         await teleportCommand('#1', { worktreePath: '/root' });
         expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('package.json differs'));
         expect(symlinkSync).not.toHaveBeenCalled();
-        expect(execFileSync).toHaveBeenCalledWith('npm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+        expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
     });
     it('falls back to pnpm install when symlinking is disabled in config', async () => {
         loadConfig.mockReturnValue({

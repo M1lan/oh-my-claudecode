@@ -6,9 +6,9 @@
  * Prevents version drift and ensures consistency across the project.
  *
  * Usage:
- *   npm run sync-metadata              # Sync all files
- *   npm run sync-metadata -- --dry-run # Preview changes
- *   npm run sync-metadata -- --verify  # Check if files are in sync
+ *   pnpm run sync-metadata              # Sync all files
+ *   pnpm run sync-metadata -- --dry-run # Preview changes
+ *   pnpm run sync-metadata -- --verify  # Check if files are in sync
  */
 
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'fs';
@@ -42,7 +42,7 @@ interface Metadata {
   keywords: string[];
   repository: string;
   homepage: string;
-  npmPackage: string;
+  pnpmPackage: string;
 }
 
 // File sync configuration
@@ -72,7 +72,7 @@ function loadMetadata(): Metadata {
     keywords: packageJson.keywords || [],
     repository: packageJson.repository?.url?.replace(/^git\+/, '').replace(/\.git$/, '') || '',
     homepage: packageJson.homepage || '',
-    npmPackage: packageJson.name || 'oh-my-claude-sisyphus',
+    pnpmPackage: packageJson.name || 'oh-my-claude-sisyphus',
   };
 }
 
@@ -113,12 +113,12 @@ function getFileSyncConfigs(): FileSync[] {
       replacements: [
         {
           pattern: /\[!\[npm version\]\(https:\/\/img\.shields\.io\/npm\/v\/[^)]+\)/g,
-          replacement: (m) => `[![npm version](https://img.shields.io/npm/v/${m.npmPackage}?color=cb3837)`,
+          replacement: (m) => `[![npm version](https://img.shields.io/npm/v/${m.pnpmPackage}?color=cb3837)`,
           description: 'npm version badge',
         },
         {
           pattern: /\[!\[npm downloads\]\(https:\/\/img\.shields\.io\/npm\/dm\/[^)]+\)/g,
-          replacement: (m) => `[![npm downloads](https://img.shields.io/npm/dm/${m.npmPackage}?color=blue)`,
+          replacement: (m) => `[![npm downloads](https://img.shields.io/npm/dm/${m.pnpmPackage}?color=blue)`,
           description: 'npm downloads badge',
         },
       ],
@@ -133,7 +133,7 @@ function getFileSyncConfigs(): FileSync[] {
         },
         {
           pattern: /\[!\[npm version\]\(https:\/\/img\.shields\.io\/npm\/v\/[^?]+[^)]*\)/g,
-          replacement: (m) => `[![npm version](https://img.shields.io/npm/v/${m.npmPackage}?color=cb3837)`,
+          replacement: (m) => `[![npm version](https://img.shields.io/npm/v/${m.pnpmPackage}?color=cb3837)`,
           description: 'npm version badge',
         },
         {
@@ -290,7 +290,7 @@ async function syncAll(dryRun: boolean): Promise<void> {
   console.log(color('\n📦 Metadata Sync System', colors.bright));
   console.log(color('========================\n', colors.bright));
   console.log(`Version: ${color(metadata.version, colors.green)}`);
-  console.log(`Package: ${color(metadata.npmPackage, colors.cyan)}`);
+  console.log(`Package: ${color(metadata.pnpmPackage, colors.cyan)}`);
   console.log(`Agents: ${color(String(getAgentCount()), colors.blue)}`);
   console.log(`Skills: ${color(String(getSkillCount()), colors.blue)}`);
 
@@ -350,9 +350,9 @@ async function main(): Promise<void> {
 ${color('Metadata Sync System', colors.bright)}
 
 ${color('Usage:', colors.cyan)}
-  npm run sync-metadata              Sync all files
-  npm run sync-metadata -- --dry-run Preview changes without writing
-  npm run sync-metadata -- --verify  Check if files are in sync
+  pnpm run sync-metadata              Sync all files
+  pnpm run sync-metadata -- --dry-run Preview changes without writing
+  pnpm run sync-metadata -- --verify  Check if files are in sync
 
 ${color('Description:', colors.cyan)}
   Synchronizes version and metadata from package.json to documentation files.
@@ -366,9 +366,9 @@ ${color('Files Synced:', colors.cyan)}
   - CHANGELOG.md (version header verification)
 
 ${color('Examples:', colors.cyan)}
-  npm run sync-metadata              # Apply all updates
-  npm run sync-metadata -- --dry-run # See what would change
-  npm run sync-metadata -- --verify  # CI/CD verification
+  pnpm run sync-metadata              # Apply all updates
+  pnpm run sync-metadata -- --dry-run # See what would change
+  pnpm run sync-metadata -- --verify  # CI/CD verification
 `);
     return;
   }
@@ -381,7 +381,7 @@ ${color('Examples:', colors.cyan)}
 
       if (!inSync) {
         console.log(color('\n❌ Files are out of sync!', colors.red));
-        console.log(color('Run: npm run sync-metadata', colors.cyan));
+        console.log(color('Run: pnpm run sync-metadata', colors.cyan));
         process.exit(1);
       } else {
         console.log(color('\n✅ All files are in sync!', colors.green));

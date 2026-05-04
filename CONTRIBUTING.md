@@ -7,7 +7,7 @@ Thank you for your interest in contributing to oh-my-claudecode (OMC). This guid
 Before you start, make sure you have:
 
 - **Node.js** ≥ 20 (required; check with `node --version`)
-- **npm** (comes with Node.js)
+- **pnpm** (install via https://pnpm.io/installation)
 - **git** (for version control)
 - **Claude Code** installed (to test in-session skills and commands)
 - Basic familiarity with TypeScript, ESBuild, and git workflows
@@ -59,12 +59,12 @@ Note: The repo has two main branches:
 
 1. **Install dependencies**:
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. **Understand the build chain** (from `package.json`):
    ```bash
-   npm run build
+   pnpm run build
    # Runs: tsc && build-skill-bridge && build-mcp-server && build-bridge-entry && compose-docs && build:runtime-cli && build:team-server && build:cli
    ```
 
@@ -79,7 +79,7 @@ Note: The repo has two main branches:
 
 3. **Build once**:
    ```bash
-   npm run build
+   pnpm run build
    ```
 
 All TypeScript and bundling steps are handled. The output goes to `dist/` and `bridge/`.
@@ -92,7 +92,7 @@ Once built, you need to tell Claude Code to use your local checkout. Here are th
 
 ### Bootstrap: make the `omc` command available
 
-All three flows below use the `omc` CLI. If you don't have it installed globally (via `npm i -g oh-my-claude-sisyphus`), create a symlink from your checkout:
+All three flows below use the `omc` CLI. If you don't have it installed globally (via `pnpm add -g oh-my-claude-sisyphus`), create a symlink from your checkout:
 
 ```bash
 # Create ~/.local/bin if it doesn't exist
@@ -133,7 +133,7 @@ This tells Claude Code to ignore the repo's `.mcp.json` entry and use the plugin
 
 **Rebuilding**: After code changes:
 ```bash
-npm run build
+pnpm run build
 omc setup --plugin-dir-mode  # or just re-run build and restart Claude Code
 ```
 
@@ -154,7 +154,7 @@ claude plugin install oh-my-claudecode@oh-my-claudecode
 
 **Rebuilding**: After code changes:
 ```bash
-npm run build
+pnpm run build
 claude plugin marketplace update oh-my-claudecode
 claude plugin update oh-my-claudecode@oh-my-claudecode
 /setup
@@ -192,13 +192,13 @@ export OMC_DEV_ROOT="$HOME/_Git/_Claude/oh-my-claudecode"
 alias omcdev='omc --plugin-dir "$OMC_DEV_ROOT"'
 
 # Build quickly
-alias omcbuild='(cd "$OMC_DEV_ROOT" && npm run build)'
+alias omcbuild='(cd "$OMC_DEV_ROOT" && pnpm run build)'
 
 # Run tests
-alias omctest='(cd "$OMC_DEV_ROOT" && npm run test:run)'
+alias omctest='(cd "$OMC_DEV_ROOT" && pnpm run test:run)'
 
 # Full watch mode (tsc + esbuild)
-alias omcwatch='(cd "$OMC_DEV_ROOT" && npm run dev:full)'
+alias omcwatch='(cd "$OMC_DEV_ROOT" && pnpm run dev:full)'
 ```
 
 Then you can use:
@@ -219,20 +219,20 @@ If you only edited `.ts` files in `src/` (no agent/skill markdown changes), choo
 
 ```bash
 # Option A: tsc-only quick feedback (no bundle rebuild)
-npm run dev
+pnpm run dev
 
 # Option B: full bundle watch — tsc + esbuild steps in watch mode (recommended)
-npm run dev:full
+pnpm run dev:full
 ```
 
-**Choose one, not both.** `npm run dev` gives faster feedback for type-checking but does not rebuild bundles under `dist/` or `bridge/`. `npm run dev:full` rebuilds everything on every change — use this when you need the full artifact up to date (e.g., testing the CLI end-to-end).
+**Choose one, not both.** `pnpm run dev` gives faster feedback for type-checking but does not rebuild bundles under `dist/` or `bridge/`. `pnpm run dev:full` rebuilds everything on every change — use this when you need the full artifact up to date (e.g., testing the CLI end-to-end).
 
 ### Agent, skill, or command changes
 
 After editing markdown files in `agents/`, `skills/`, or `commands/`:
 
 ```bash
-npm run build
+pnpm run build
 omc setup --plugin-dir-mode
 ```
 
@@ -241,7 +241,7 @@ The setup command re-reads the markdown files and refreshes the in-session comma
 ### Full build (recommended)
 
 ```bash
-npm run build
+pnpm run build
 ```
 
 Runs the complete pipeline: `tsc` → esbuild bundles → docs composition → all bridge artifacts.
@@ -254,25 +254,25 @@ Runs the complete pipeline: `tsc` → esbuild bundles → docs composition → a
 
 ```bash
 # Interactive watch mode
-npm test
+pnpm test
 
 # Run once and exit
-npm run test:run
+pnpm run test:run
 
 # Generate coverage report
-npm run test:coverage
+pnpm run test:coverage
 ```
 
 ### Run linter
 
 ```bash
-npm run lint
+pnpm run lint
 ```
 
 ### Format code
 
 ```bash
-npm run format
+pnpm run format
 ```
 
 All of these should pass before you submit a PR. GitHub CI will verify them.
@@ -298,8 +298,8 @@ git rebase upstream/dev
 git push --force-with-lease origin <your-branch>
 
 # Re-run tests after rebase
-npm run build
-npm run test:run
+pnpm run build
+pnpm run test:run
 ```
 
 ### For release branches (target `upstream/main`)
@@ -315,8 +315,8 @@ git rebase upstream/main
 git push --force-with-lease origin <your-branch>
 
 # Re-run tests
-npm run build
-npm run test:run
+pnpm run build
+pnpm run test:run
 ```
 
 **Why `--force-with-lease`?** It's safer than `--force` because it aborts if someone else pushed to your branch since the last fetch.
@@ -372,7 +372,7 @@ omc --plugin-dir /path/to/oh-my-claudecode
 
 ### "Skills/agents not showing up after rebuild"
 
-After `npm run build`, you must re-run setup to refresh the in-session command registry:
+After `pnpm run build`, you must re-run setup to refresh the in-session command registry:
 
 ```bash
 omc setup --plugin-dir-mode
@@ -383,24 +383,24 @@ Then restart Claude Code.
 ### Build fails with "esbuild: not found"
 
 ```bash
-npm install
-npm run build
+pnpm install
+pnpm run build
 ```
 
 If that doesn't work, clear and reinstall:
 
 ```bash
-rm -rf node_modules package-lock.json
-npm install
-npm run build
+rm -rf node_modules pnpm-lock.yaml
+pnpm install
+pnpm run build
 ```
 
 ### Tests fail after rebase
 
 ```bash
 # Clear caches and reinstall
-npm ci
-npm run test:run
+pnpm install --frozen-lockfile
+pnpm run test:run
 ```
 
 ### Plugin still showing old version
@@ -408,7 +408,7 @@ npm run test:run
 The plugin cache may need a refresh:
 
 ```bash
-npm run build
+pnpm run build
 omc setup --plugin-dir-mode
 # Restart Claude Code
 ```

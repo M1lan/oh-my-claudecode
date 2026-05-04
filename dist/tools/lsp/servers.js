@@ -16,7 +16,7 @@ export const LSP_SERVERS = {
         command: 'typescript-language-server',
         args: ['--stdio'],
         extensions: ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'],
-        installHint: 'npm install -g typescript-language-server typescript'
+        installHint: 'pnpm add -g typescript-language-server typescript'
     },
     python: {
         name: 'Python Language Server (ty)',
@@ -58,35 +58,35 @@ export const LSP_SERVERS = {
         command: 'vscode-json-language-server',
         args: ['--stdio'],
         extensions: ['.json', '.jsonc'],
-        installHint: 'npm install -g vscode-langservers-extracted'
+        installHint: 'pnpm add -g vscode-langservers-extracted'
     },
     html: {
         name: 'HTML Language Server',
         command: 'vscode-html-language-server',
         args: ['--stdio'],
         extensions: ['.html', '.htm'],
-        installHint: 'npm install -g vscode-langservers-extracted'
+        installHint: 'pnpm add -g vscode-langservers-extracted'
     },
     css: {
         name: 'CSS Language Server',
         command: 'vscode-css-language-server',
         args: ['--stdio'],
         extensions: ['.css', '.scss', '.less'],
-        installHint: 'npm install -g vscode-langservers-extracted'
+        installHint: 'pnpm add -g vscode-langservers-extracted'
     },
     yaml: {
         name: 'YAML Language Server',
         command: 'yaml-language-server',
         args: ['--stdio'],
         extensions: ['.yaml', '.yml'],
-        installHint: 'npm install -g yaml-language-server'
+        installHint: 'pnpm add -g yaml-language-server'
     },
     php: {
         name: 'PHP Language Server (Intelephense)',
         command: 'intelephense',
         args: ['--stdio'],
         extensions: ['.php', '.phtml'],
-        installHint: 'npm install -g intelephense'
+        installHint: 'pnpm add -g intelephense'
     },
     ruby: {
         name: 'Ruby Language Server (Solargraph)',

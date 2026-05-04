@@ -607,14 +607,14 @@ Narrate:
 **Talking Points**
 
 **Prerequisites** (Slide 38)
-- "You need Claude Code installed: `npm install -g claude-code`"
+- "You need Claude Code installed: `pnpm add -g claude-code`"
 - "You need a Claude subscription (Pro or Team) or an API key"
 - "That's it. No Docker, no databases, no complex dependencies."
 
 **Installation** (Slide 39)
 ```bash
 # Step 1: Install OMC
-npm install -g oh-my-claudecode
+pnpm add -g oh-my-claudecode
 
 # Step 2: Run setup wizard
 claude-code "/oh-my-claudecode:omc-setup"

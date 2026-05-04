@@ -123,7 +123,7 @@ describe('teleportCommand', () => {
     );
 
     const installCalls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls.filter(
-      ([cmd]) => cmd === 'npm' || cmd === 'pnpm' || cmd === 'yarn',
+      ([cmd]) => cmd === 'pnpm' || cmd === 'pnpm' || cmd === 'yarn',
     );
     expect(installCalls).toHaveLength(0);
   });
@@ -142,7 +142,7 @@ describe('teleportCommand', () => {
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('package.json differs'));
     expect(symlinkSync).not.toHaveBeenCalled();
-    expect(execFileSync).toHaveBeenCalledWith('npm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
   });
 
   it('falls back to pnpm install when symlinking is disabled in config', async () => {

@@ -7,7 +7,7 @@
 
 - Clean demo directory
 - OMC installed and configured
-- Node.js and npm available
+- Node.js and pnpm available
 - Terminal visible to audience
 
 ## Setup (30 seconds before demo)
@@ -118,7 +118,7 @@ bookstore-api/
 ### Working API
 ```bash
 # Start the server
-npm start
+pnpm start
 
 # Test endpoints
 curl http://localhost:3000/books
@@ -128,7 +128,7 @@ curl -X PUT http://localhost:3000/books/123 -d '{"quantity":10}'
 curl -X DELETE http://localhost:3000/books/123
 
 # Run tests
-npm test  # All passing
+pnpm test  # All passing
 ```
 
 ## Key Talking Points
@@ -229,7 +229,7 @@ Total time: 3m 42s
 Active agents used: 8 (analyst, architect, critic, 3x executor, qa-tester, security-reviewer, code-reviewer)
 
 Next steps:
-  - Run: npm start
+  - Run: pnpm start
   - Test: curl http://localhost:3000/books
   - Deploy: Add production database and deploy
 ```
@@ -241,7 +241,7 @@ Next steps:
 - Let Phase 1-2 complete, then skip to Phase 5 and show fallback output for middle phases
 - Explain: "In production this might take 5-10 minutes for complex features"
 
-### Issue: Network error during npm install
+### Issue: Network error during pnpm install
 **Solution:**
 - Acknowledge the error: "Network hiccup - happens in live demos"
 - Show fallback output: "Here's what would have completed..."

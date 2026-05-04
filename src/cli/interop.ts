@@ -84,7 +84,7 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
 
   if (!hasCodex) {
     console.warn('Warning: codex CLI is not available. Only Claude Code will be launched.');
-    console.warn('Install oh-my-codex (npm install -g @openai/codex) for full interop support.\n');
+    console.warn('Install oh-my-codex (pnpm add -g @openai/codex) for full interop support.\n');
   }
 
   // Check if already in tmux
@@ -150,7 +150,7 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       // Codex not available, just inform user
       console.log('\nClaude Code is ready in this pane.');
       console.log('Install oh-my-codex to enable split-pane interop mode.');
-      console.log('\nInstall: npm install -g @openai/codex');
+      console.log('\nInstall: pnpm add -g @openai/codex');
     }
   } catch (error) {
     console.error('Error creating split pane:', error instanceof Error ? error.message : String(error));

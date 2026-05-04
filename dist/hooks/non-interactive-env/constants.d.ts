@@ -5,9 +5,9 @@ export declare const NON_INTERACTIVE_ENV: Record<string, string>;
  * These patterns should be followed to avoid hanging on user input.
  */
 export declare const SHELL_COMMAND_PATTERNS: {
-    readonly npm: {
-        readonly bad: readonly ["npm init", "npm install (prompts)"];
-        readonly good: readonly ["npm init -y", "npm install --yes"];
+    readonly pnpm: {
+        readonly bad: readonly ["pnpm init", "pnpm install (prompts)"];
+        readonly good: readonly ["pnpm init -y", "pnpm install --yes"];
     };
     readonly apt: {
         readonly bad: readonly ["apt-get install pkg"];

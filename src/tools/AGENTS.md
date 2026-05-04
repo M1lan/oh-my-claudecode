@@ -142,10 +142,10 @@ The `lsp_diagnostics_directory` tool supports two strategies:
 
 ```bash
 # Test LSP tools (requires language server installed)
-npm test -- --grep "lsp"
+pnpm test -- --grep "lsp"
 
 # Test AST tools
-npm test -- --grep "ast"
+pnpm test -- --grep "ast"
 ```
 
 ### Common Patterns
@@ -232,16 +232,16 @@ async function withLspClient(filePath, operation, fn) {
 ### LSP (via language servers)
 | Language | Server | Install |
 |----------|--------|---------|
-| TypeScript/JavaScript | typescript-language-server | `npm i -g typescript-language-server typescript` |
+| TypeScript/JavaScript | typescript-language-server | `pnpm add -g typescript-language-server typescript` |
 | Python | ty | `Install ty from https://github.com/astral-sh/ty` |
 | Rust | rust-analyzer | `rustup component add rust-analyzer` |
 | Go | gopls | `go install golang.org/x/tools/gopls@latest` |
 | C/C++ | clangd | System package manager |
 | Java | jdtls | Eclipse JDT.LS |
-| JSON | vscode-json-language-server | `npm i -g vscode-langservers-extracted` |
-| HTML | vscode-html-language-server | `npm i -g vscode-langservers-extracted` |
-| CSS | vscode-css-language-server | `npm i -g vscode-langservers-extracted` |
-| YAML | yaml-language-server | `npm i -g yaml-language-server` |
+| JSON | vscode-json-language-server | `pnpm add -g vscode-langservers-extracted` |
+| HTML | vscode-html-language-server | `pnpm add -g vscode-langservers-extracted` |
+| CSS | vscode-css-language-server | `pnpm add -g vscode-langservers-extracted` |
+| YAML | yaml-language-server | `pnpm add -g yaml-language-server` |
 
 ### AST (via ast-grep)
 JavaScript, TypeScript, TSX, Python, Ruby, Go, Rust, Java, Kotlin, Swift, C, C++, C#, HTML, CSS, JSON, YAML

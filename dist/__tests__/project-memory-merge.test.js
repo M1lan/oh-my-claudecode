@@ -131,7 +131,7 @@ describe('mergeProjectMemory', () => {
     // -------------------------------------------------------------------------
     it('should deep merge techStack without losing sibling fields', () => {
         const existing = baseMemory({
-            techStack: { languages: [], frameworks: [], packageManager: 'npm', runtime: 'node' },
+            techStack: { languages: [], frameworks: [], packageManager: 'pnpm', runtime: 'node' },
         });
         const merged = mergeProjectMemory(existing, {
             techStack: { languages: [], frameworks: [], packageManager: 'bun', runtime: null },
@@ -142,8 +142,8 @@ describe('mergeProjectMemory', () => {
     it('should deep merge build.scripts without losing existing keys', () => {
         const existing = baseMemory({
             build: {
-                buildCommand: 'npm run build',
-                testCommand: 'npm test',
+                buildCommand: 'pnpm run build',
+                testCommand: 'pnpm test',
                 lintCommand: null,
                 devCommand: null,
                 scripts: { build: 'tsc', test: 'vitest', lint: 'eslint .' },
@@ -330,7 +330,7 @@ describe('mergeProjectMemory', () => {
             techStack: {
                 languages: [{ name: 'TypeScript', version: '5.0', confidence: 'high', markers: [] }],
                 frameworks: [{ name: 'React', version: '18', category: 'frontend' }],
-                packageManager: 'npm',
+                packageManager: 'pnpm',
                 runtime: 'node',
             },
             customNotes: [{ timestamp: 100, source: 'manual', category: 'arch', content: 'monorepo' }],
@@ -338,10 +338,10 @@ describe('mergeProjectMemory', () => {
         // Session B only writes build info — should NOT lose techStack or notes
         const sessionBUpdate = {
             build: {
-                buildCommand: 'npm run build',
-                testCommand: 'npm test',
-                lintCommand: 'npm run lint',
-                devCommand: 'npm run dev',
+                buildCommand: 'pnpm run build',
+                testCommand: 'pnpm test',
+                lintCommand: 'pnpm run lint',
+                devCommand: 'pnpm run dev',
                 scripts: { build: 'tsc', test: 'vitest' },
             },
         };
@@ -349,10 +349,10 @@ describe('mergeProjectMemory', () => {
         // Session A's data preserved
         expect(merged.techStack.languages).toHaveLength(1);
         expect(merged.techStack.frameworks).toHaveLength(1);
-        expect(merged.techStack.packageManager).toBe('npm');
+        expect(merged.techStack.packageManager).toBe('pnpm');
         expect(merged.customNotes).toHaveLength(1);
         // Session B's data applied
-        expect(merged.build.buildCommand).toBe('npm run build');
+        expect(merged.build.buildCommand).toBe('pnpm run build');
         expect(merged.build.scripts.build).toBe('tsc');
     });
 });

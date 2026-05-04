@@ -197,7 +197,7 @@ export function generateReleaseBody(version, changelog, contributors, prevTag, r
     let body = changelog;
     body += `\n### Install / Update\n\n`;
     body += '```bash\n';
-    body += `npm install -g oh-my-claude-sisyphus@${version}\n`;
+    body += `pnpm add -g oh-my-claude-sisyphus@${version}\n`;
     body += '```\n\n';
     body += 'Or reinstall the plugin:\n```bash\nclaude /install-plugin oh-my-claudecode\n```\n';
     if (prevTag) {

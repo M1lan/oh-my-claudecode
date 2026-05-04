@@ -12,7 +12,7 @@ describe('HUD build/load guidance', () => {
     const content = readFileSync(join(root, 'scripts', 'session-start.mjs'), 'utf-8');
     expect(content).toContain("const hudScriptLegacy = join(hudDir, 'omc-hud.js');");
     expect(content).toContain('HUD plugin cache is not built. Run: cd');
-    expect(content).toContain('npm install && npm run build');
+    expect(content).toContain('pnpm install && pnpm run build');
   });
 
   it('shared HUD wrapper template resolves marketplace installs before fallback guidance', () => {

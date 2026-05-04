@@ -66,7 +66,7 @@ level: 3
     - Use Read to review existing tests and code to test.
     - Use Write to create new test files.
     - Use Edit to fix existing tests.
-    - Use Bash to run test suites (npm test, pytest, go test, cargo test).
+    - Use Bash to run test suites (pnpm test, pytest, go test, cargo test).
     - Use Grep to find untested code paths.
     - Use lsp_diagnostics to verify test code compiles.
     <External_Consultation>

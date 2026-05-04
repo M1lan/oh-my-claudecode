@@ -108,7 +108,7 @@ export async function initJobDb(cwd) {
                     ? importError.message
                     : String(importError);
                 console.error("[job-state-db] Failed to load better-sqlite3:", errorMessage);
-                console.error("[job-state-db] Install with: npm install better-sqlite3");
+                console.error("[job-state-db] Install with: pnpm install better-sqlite3");
                 return false;
             }
         }

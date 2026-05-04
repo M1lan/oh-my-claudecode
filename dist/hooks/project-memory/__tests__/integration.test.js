@@ -323,16 +323,16 @@ describe("Project Memory Integration", () => {
             await registerProjectMemoryContext(sessionId, tempDir);
             let memory = await loadProjectMemory(tempDir);
             expect(memory?.build.buildCommand).toBeNull();
-            await learnFromToolOutput("Bash", { command: "npm run build" }, "", tempDir);
+            await learnFromToolOutput("Bash", { command: "pnpm run build" }, "", tempDir);
             memory = await loadProjectMemory(tempDir);
-            expect(memory?.build.buildCommand).toBe("npm run build");
+            expect(memory?.build.buildCommand).toBe("pnpm run build");
         });
         it("should learn environment hints from command output", async () => {
             const packageJson = { name: "test" };
             await fs.writeFile(path.join(tempDir, "package.json"), JSON.stringify(packageJson));
             const sessionId = "test-session-6";
             await registerProjectMemoryContext(sessionId, tempDir);
-            const output = `Node.js v20.10.0\nnpm v10.2.0`;
+            const output = `Node.js v20.10.0\npnpm v10.2.0`;
             await learnFromToolOutput("Bash", { command: "node --version" }, output, tempDir);
             const memory = await loadProjectMemory(tempDir);
             expect(memory?.customNotes.length).toBeGreaterThan(0);

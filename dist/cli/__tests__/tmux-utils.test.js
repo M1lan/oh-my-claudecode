@@ -114,7 +114,7 @@ describe('resolveLaunchPolicy', () => {
     });
 });
 describe('isClaudeAvailable', () => {
-    it('uses shell:true on win32 so npm .cmd wrappers resolve', () => {
+    it('uses shell:true on win32 so pnpm .cmd wrappers resolve', () => {
         const originalPlatform = process.platform;
         Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
         mockedExecFileSync.mockReturnValue(Buffer.from('2.1.116'));

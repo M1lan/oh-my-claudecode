@@ -57,7 +57,7 @@ function isLauncherBackedMcpCommand(command, args) {
     if (base === 'npx' || base === 'uvx') {
         return true;
     }
-    return base === 'npm' && args[0]?.toLowerCase() === 'exec';
+    return base === 'pnpm' && args[0]?.toLowerCase() === 'exec';
 }
 function normalizeRegistryEntry(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {

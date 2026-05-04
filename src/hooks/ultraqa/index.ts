@@ -235,11 +235,11 @@ function normalizeFailure(failure: string): string {
 export function getGoalCommand(goalType: UltraQAGoalType): string {
   switch (goalType) {
     case 'tests':
-      return '# Run the project test command (e.g., npm test, pytest, go test ./..., cargo test)';
+      return '# Run the project test command (e.g., pnpm test, pytest, go test ./..., cargo test)';
     case 'build':
-      return '# Run the project build command (e.g., npm run build, go build ./..., cargo build)';
+      return '# Run the project build command (e.g., pnpm run build, go build ./..., cargo build)';
     case 'lint':
-      return '# Run the project lint command (e.g., npm run lint, ruff check ., golangci-lint run)';
+      return '# Run the project lint command (e.g., pnpm run lint, ruff check ., golangci-lint run)';
     case 'typecheck':
       return '# Run the project type check command (e.g., tsc --noEmit, mypy ., cargo check)';
     case 'custom':

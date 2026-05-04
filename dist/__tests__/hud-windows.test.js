@@ -53,11 +53,11 @@ describe('HUD Windows Compatibility', () => {
             const content = readFileSync(templatePath, 'utf-8');
             expect(content).toContain('pathToFileURL(pluginPath).href');
         });
-        it('shared HUD wrapper template uses shell:true only for Windows npm root discovery', () => {
+        it('shared HUD wrapper template uses shell:true only for Windows pnpm root discovery', () => {
             const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
             const content = readFileSync(templatePath, 'utf-8');
             expect(content).toContain('const isWin = process.platform === "win32";');
-            expect(content).toContain('const npmCommand = isWin ? "npm.cmd" : "npm";');
+            expect(content).toContain('const pnpmCommand = isWin ? "pnpm.cmd" : "pnpm";');
             expect(content).toContain('shell: isWin');
             expect(content).not.toContain('shell: true');
         });

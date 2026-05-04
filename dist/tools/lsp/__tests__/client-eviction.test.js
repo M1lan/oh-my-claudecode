@@ -87,7 +87,7 @@ describe('LspClientManager eviction and disconnectAll', () => {
             command: 'test-lsp',
             args: [],
             extensions: ['.ts'],
-            installHint: 'npm install test-lsp',
+            installHint: 'pnpm install test-lsp',
         });
         // Dynamically import to get fresh module state
         // Note: because of module caching, we reset modules each time

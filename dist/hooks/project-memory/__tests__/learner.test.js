@@ -97,7 +97,7 @@ describe('Project Memory Learner', () => {
             const memory = createBasicMemory();
             await saveProjectMemory(tempDir, memory);
             const output = 'Error: Missing environment variable: DATABASE_URL\n...';
-            await learnFromToolOutput('Bash', { command: 'npm start' }, output, tempDir);
+            await learnFromToolOutput('Bash', { command: 'pnpm start' }, output, tempDir);
             const updated = await loadProjectMemory(tempDir);
             expect(updated?.customNotes).toHaveLength(1);
             expect(updated?.customNotes[0].category).toBe('env');

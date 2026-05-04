@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# sync-version.sh — called by npm "version" lifecycle hook
+# sync-version.sh — called by pnpm "version" lifecycle hook
 # Syncs the version from package.json to all satellite files:
 #   - .claude-plugin/plugin.json
 #   - .claude-plugin/marketplace.json
 #   - docs/CLAUDE.md (OMC:VERSION marker)
 #
-# Usage: automatically invoked by `npm version <bump>`
+# Usage: automatically invoked by `pnpm version <bump>`
 #        or manually: ./scripts/sync-version.sh [version]
 
 set -euo pipefail

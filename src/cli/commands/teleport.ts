@@ -65,11 +65,11 @@ function detectPackageManager(parentRepoRoot: string, worktreePath: string): Sup
         return packageManager;
       }
     } catch {
-      // Ignore and fall back to npm.
+      // Ignore and fall back to pnpm.
     }
   }
 
-  return 'npm';
+  return 'pnpm';
 }
 
 function symlinkNodeModules(parentRepoRoot: string, worktreePath: string): boolean {

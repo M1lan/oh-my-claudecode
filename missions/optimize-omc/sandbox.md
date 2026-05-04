@@ -1,5 +1,5 @@
 ---
 evaluator:
-  command: npm run build
+  command: pnpm run build
   format: json
 ---

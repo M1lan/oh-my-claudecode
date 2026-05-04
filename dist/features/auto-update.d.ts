@@ -146,8 +146,8 @@ export interface VersionMetadata {
     lastCheckAt?: string;
     /** Git commit hash if installed from source */
     commitHash?: string;
-    /** Installation method: 'script' | 'npm' | 'source' */
-    installMethod: 'script' | 'npm' | 'source';
+    /** Installation method: 'script' | 'pnpm' | 'source' */
+    installMethod: 'script' | 'pnpm' | 'source';
 }
 /**
  * GitHub release information

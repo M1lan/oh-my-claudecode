@@ -2787,7 +2787,7 @@ var CONTRACTS = {
   codex: {
     agentType: "codex",
     binary: "codex",
-    installInstructions: "Install Codex CLI: npm install -g @openai/codex",
+    installInstructions: "Install Codex CLI: pnpm add -g @openai/codex",
     // Team workers must be persistent interactive panes. Do not use `codex exec`
     // or positional prompt mode here; runtime dispatch writes inbox.md and nudges
     // the live Codex TUI with `codex` as the worker process.
@@ -2817,7 +2817,7 @@ var CONTRACTS = {
   gemini: {
     agentType: "gemini",
     binary: "gemini",
-    installInstructions: "Install Gemini CLI: npm install -g @google/gemini-cli",
+    installInstructions: "Install Gemini CLI: pnpm add -g @google/gemini-cli",
     supportsPromptMode: true,
     promptModeFlag: "-p",
     buildLaunchArgs(model, extraFlags = []) {

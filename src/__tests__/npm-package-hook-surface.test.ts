@@ -92,7 +92,7 @@ function collectRequiredScriptFiles(entryRelPath: string, collected = new Set<st
 }
 
 function getPackedFiles(): Set<string> {
-  const stdout = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+  const stdout = execFileSync('pnpm', ['pack', '--dry-run', '--json'], {
     cwd: PACKAGE_ROOT,
     encoding: 'utf-8',
   });
@@ -101,7 +101,7 @@ function getPackedFiles(): Set<string> {
   return new Set((results[0]?.files ?? []).map(file => file.path));
 }
 
-describe('npm package hook surface regression', () => {
+describe('pnpm package hook surface regression', () => {
   it('packs hooks.json, hook entry scripts, and their local script dependencies', () => {
     const requiredFiles = new Set<string>(['hooks/hooks.json']);
 

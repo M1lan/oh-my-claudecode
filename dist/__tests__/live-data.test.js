@@ -23,7 +23,7 @@ beforeEach(() => {
     // Mock a permissive security policy that allows all test commands
     mockedExistsSync.mockReturnValue(true);
     mockedReadFileSync.mockReturnValue(JSON.stringify({
-        allowed_commands: ['echo', 'cmd1', 'cmd2', 'git', 'docker', 'node', 'npm', 'cat', 'ls', 'pwd', 'bad-cmd', 'slow-cmd', 'big-cmd', 'empty-cmd', 'multiline', 'any-command'],
+        allowed_commands: ['echo', 'cmd1', 'cmd2', 'git', 'docker', 'node', 'pnpm', 'cat', 'ls', 'pwd', 'bad-cmd', 'slow-cmd', 'big-cmd', 'empty-cmd', 'multiline', 'any-command'],
         allowed_patterns: ['.*']
     }));
 });
@@ -195,9 +195,9 @@ describe('resolveLiveData - conditional', () => {
     });
     it('!only-once executes first time, skips second', () => {
         mockedExecSync.mockReturnValue('installed\n');
-        const result1 = resolveLiveData('!only-once npm install');
-        expect(result1).toContain('<live-data command="npm install">installed\n</live-data>');
-        const result2 = resolveLiveData('!only-once npm install');
+        const result1 = resolveLiveData('!only-once pnpm install');
+        expect(result1).toContain('<live-data command="pnpm install">installed\n</live-data>');
+        const result2 = resolveLiveData('!only-once pnpm install');
         expect(result2).toContain('skipped="true"');
         expect(result2).toContain('already executed this session');
         expect(mockedExecSync).toHaveBeenCalledTimes(1);
@@ -233,7 +233,7 @@ describe('resolveLiveData - security', () => {
         expect(mockedExecSync).not.toHaveBeenCalled();
     });
     it('enforces allowlist when defined', () => {
-        setupPolicy({ allowed_commands: ['git', 'npm'] });
+        setupPolicy({ allowed_commands: ['git', 'pnpm'] });
         mockedExecSync.mockReturnValue('ok\n');
         const result1 = resolveLiveData('!git status');
         expect(result1).toContain('ok\n</live-data>');

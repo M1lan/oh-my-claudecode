@@ -92,19 +92,19 @@ if (validation.valid) {
 
 ### BUILD
 - **Type**: `build_success`
-- **Command**: `npm run build`
+- **Command**: `pnpm run build`
 - **Required**: Yes
 - **Purpose**: Ensures TypeScript compiles without errors
 
 ### TEST
 - **Type**: `test_pass`
-- **Command**: `npm test`
+- **Command**: `pnpm test`
 - **Required**: Yes
 - **Purpose**: Ensures all tests pass
 
 ### LINT
 - **Type**: `lint_clean`
-- **Command**: `npm run lint`
+- **Command**: `pnpm run lint`
 - **Required**: Yes
 - **Purpose**: Ensures no linting errors
 

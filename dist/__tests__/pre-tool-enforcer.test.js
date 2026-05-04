@@ -263,7 +263,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
             cwd: tempDir,
         });
         const bashOutput = bash.hookSpecificOutput;
-        expect(bashOutput.additionalContext).toBe('Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests).');
+        expect(bashOutput.additionalContext).toBe('Use parallel execution for independent tasks. Use run_in_background for long operations (pnpm install, builds, tests).');
         const read = runPreToolEnforcer({
             tool_name: 'Read',
             cwd: tempDir,

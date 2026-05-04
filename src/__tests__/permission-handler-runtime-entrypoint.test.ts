@@ -90,7 +90,7 @@ describe('scripts/permission-handler.mjs runtime entrypoint', () => {
   });
 
   it('does not auto-allow broad tests or non-git temp directories', () => {
-    const broadTestResult = runPermissionHandler('npm test', gitDir);
+    const broadTestResult = runPermissionHandler('pnpm test', gitDir);
     expect(broadTestResult.continue).toBe(true);
     expect(broadTestResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
 

@@ -38,10 +38,10 @@ You are developing feature: **{{FEATURE_NAME}}**
 
 ```bash
 # Run tests
-npm test  # or appropriate test command
+pnpm test  # or appropriate test command
 
 # Check build
-npm run build  # or appropriate build command
+pnpm run build  # or appropriate build command
 
 # Create PR when ready
 gh pr create --title "Feature: {{FEATURE_NAME}}" --body "## Summary\n\n<description>\n\n## Changes\n\n- <change 1>\n- <change 2>"

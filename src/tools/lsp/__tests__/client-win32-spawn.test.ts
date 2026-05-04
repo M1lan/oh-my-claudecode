@@ -51,7 +51,7 @@ describe('LspClient Windows spawn shell option (#569)', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server',
+      installHint: 'pnpm add -g typescript-language-server',
     });
 
     await client.connect().catch(() => {});
@@ -70,7 +70,7 @@ describe('LspClient Windows spawn shell option (#569)', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server',
+      installHint: 'pnpm add -g typescript-language-server',
     });
 
     await client.connect().catch(() => {});
@@ -89,7 +89,7 @@ describe('LspClient Windows spawn shell option (#569)', () => {
       command: 'typescript-language-server',
       args: ['--stdio'],
       extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server',
+      installHint: 'pnpm add -g typescript-language-server',
     });
 
     await client.connect().catch(() => {});

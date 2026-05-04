@@ -420,7 +420,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm run lint',
+          command: 'pnpm run lint',
           run_in_background: true,
         },
         directory: '/tmp/test',
@@ -438,7 +438,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm test',
+          command: 'pnpm test',
         },
         directory: '/tmp/test',
       };
@@ -469,7 +469,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm run lint',
+          command: 'pnpm run lint',
           run_in_background: true,
         },
         directory: '/tmp/test',
@@ -602,7 +602,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm test',
+          command: 'pnpm test',
           run_in_background: true,
         },
         directory: '/tmp/test',

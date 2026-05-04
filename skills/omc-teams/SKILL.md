@@ -37,9 +37,9 @@ Spawn N CLI worker processes in tmux panes to execute tasks in parallel. Support
 
 - **tmux binary** must be installed and discoverable (`command -v tmux`)
 - **Classic tmux session optional** for in-place pane splitting (`$TMUX` set). Inside cmux or a plain terminal, `omc team` falls back to a detached tmux session instead of splitting the current surface.
-- **claude** CLI: `npm install -g @anthropic-ai/claude-code`
-- **codex** CLI: `npm install -g @openai/codex`
-- **gemini** CLI: `npm install -g @google/gemini-cli`
+- **claude** CLI: `pnpm add -g @anthropic-ai/claude-code`
+- **codex** CLI: `pnpm add -g @openai/codex`
+- **gemini** CLI: `pnpm add -g @google/gemini-cli`
 
 ## Workflow
 
@@ -176,8 +176,8 @@ If encountered, switch to `omc team ...` CLI commands.
 | `not inside tmux`            | Requested in-place pane topology from a non-tmux surface | Start tmux and rerun, or let `omc team` use its detached-session fallback           |
 | `cmux surface detected`      | Running inside cmux without `$TMUX` | Use the normal `omc team ...` flow; OMC will launch a detached tmux session         |
 | `Unsupported agent type`     | Requested agent is not claude/codex/gemini | Use `claude`, `codex`, or `gemini`; for native Claude Code agents use `/oh-my-claudecode:team` |
-| `codex: command not found`   | Codex CLI not installed             | `npm install -g @openai/codex`                                                      |
-| `gemini: command not found`  | Gemini CLI not installed            | `npm install -g @google/gemini-cli`                                                 |
+| `codex: command not found`   | Codex CLI not installed             | `pnpm add -g @openai/codex`                                                      |
+| `gemini: command not found`  | Gemini CLI not installed            | `pnpm add -g @google/gemini-cli`                                                 |
 | `Team <name> is not running` | stale or missing runtime state      | `omc team status <team-name>` then `omc team shutdown <team-name> --force` if stale |
 | `status: failed`             | Workers exited with incomplete work | inspect runtime output, narrow scope, rerun                                         |
 

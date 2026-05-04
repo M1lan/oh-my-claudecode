@@ -1039,18 +1039,18 @@ function getKnownMarketplaceInstallRoots(): string[] {
 
 function getGlobalInstalledPackageRoot(): string | null {
   try {
-    const npmRoot = String(execSync('npm root -g', {
+    const pnpmRoot = String(execSync('pnpm root -g', {
       encoding: 'utf-8',
       stdio: 'pipe',
       timeout: 10000,
       ...(process.platform === 'win32' ? { windowsHide: true } : {}),
     }) ?? '').trim();
 
-    if (!npmRoot) {
+    if (!pnpmRoot) {
       return null;
     }
 
-    const globalPackageRoot = join(npmRoot, 'oh-my-claude-sisyphus');
+    const globalPackageRoot = join(pnpmRoot, 'oh-my-claude-sisyphus');
     return existsSync(globalPackageRoot) ? globalPackageRoot : null;
   } catch {
     return null;
@@ -1954,7 +1954,7 @@ export function install(options: InstallOptions = {}): InstallResult {
       const versionMetadata = {
         version: targetVersion,
         installedAt: new Date().toISOString(),
-        installMethod: 'npm' as const,
+        installMethod: 'pnpm' as const,
         lastCheckAt: new Date().toISOString()
       };
       writeFileSync(VERSION_FILE, JSON.stringify(versionMetadata, null, 2));

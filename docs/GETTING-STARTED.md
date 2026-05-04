@@ -28,9 +28,9 @@ OMC ships two surfaces and they are designed to coexist:
 | Surface | What you get | Recommended install |
 |---|---|---|
 | **Claude Code plugin** (`oh-my-claudecode@omc`) | In-session skills, agents, hooks, statusline, MCP servers — the `/autopilot`, `/ralph`, `/ultrawork`, `/team` slash commands | Marketplace plugin install (Step 1–2 below) |
-| **Terminal CLI** (`omc` binary, package `oh-my-claude-sisyphus`) | Shell commands: `omc setup`, `omc update`, `omc team`, `omc ask`, and a hard-deprecated `omc autoresearch` shim | `npm i -g oh-my-claude-sisyphus@latest` |
+| **Terminal CLI** (`omc` binary, package `oh-my-claude-sisyphus`) | Shell commands: `omc setup`, `omc update`, `omc team`, `omc ask`, and a hard-deprecated `omc autoresearch` shim | `pnpm add -g oh-my-claude-sisyphus@latest` |
 
-Most users want **both**: the plugin for the in-session experience, and the npm CLI for shell-side automation and updates. Running them in parallel is fully supported — `omc update` and `omc setup` are idempotent and detect the plugin install to avoid duplicating in-session skills (#2252).
+Most users want **both**: the plugin for the in-session experience, and the pnpm CLI for shell-side automation and updates. Running them in parallel is fully supported — `omc update` and `omc setup` are idempotent and detect the plugin install to avoid duplicating in-session skills (#2252).
 
 > Older versions of this doc said OMC was "plugin-only". That was incorrect: the `omc` CLI is the canonical entry point for `omc setup`/`omc update` and is published on npm as `oh-my-claude-sisyphus`. See the [Quick Start in README.md](../README.md#quick-start) for the same two-path layout.
 
@@ -55,7 +55,7 @@ After adding the marketplace, install the plugin:
 If you want `omc setup`, `omc update`, `omc team`, `omc ask`, etc. on your shell:
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
 > **Known npm warning:** npm may print `deprecated prebuild-install@7.1.3` during this CLI install.

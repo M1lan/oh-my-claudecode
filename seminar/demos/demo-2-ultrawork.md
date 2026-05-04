@@ -138,11 +138,11 @@ main();
 EOF
 
 # Install dependencies
-npm install
+pnpm install
 
 # Verify errors exist
 echo "Running TypeScript check to show errors..."
-npm run check
+pnpm run check
 ```
 
 This should produce 8-10 TypeScript errors across 4 files.
@@ -320,7 +320,7 @@ export function filterInStock(products: Product[]): Product[] {
 If live demo fails, show this realistic terminal output:
 
 ```
-$ npm run check
+$ pnpm run check
 
 src/user.ts:8:5 - error TS2322: Type 'undefined' is not assignable to type 'string'.
 src/user.ts:13:29 - error TS7006: Parameter 'email' implicitly has an 'any' type.
@@ -382,7 +382,7 @@ Summary:
 Serial execution estimate: ~5m 30s
 Speedup achieved: 3.5x
 
-$ npm run check
+$ pnpm run check
 
 Success: no errors found.
 ```

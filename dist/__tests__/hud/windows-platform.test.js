@@ -84,19 +84,19 @@ describe('Windows HUD Platform Fixes (#739)', () => {
             expect(getSeparator('linux')).toBe(':');
         });
         it('should correctly build NODE_PATH with existing value on Windows', () => {
-            const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules';
+            const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\pnpm\\node_modules';
             const existingNodePath = 'C:\\some\\other\\path';
             const sep = getSeparator('win32');
             const result = globalRoot + (existingNodePath ? sep + existingNodePath : '');
-            expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules;C:\\some\\other\\path');
+            expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\pnpm\\node_modules;C:\\some\\other\\path');
             expect(result).not.toContain(':C:\\');
         });
         it('should correctly build NODE_PATH without existing value on Windows', () => {
-            const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules';
+            const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\pnpm\\node_modules';
             const existingNodePath = '';
             const sep = getSeparator('win32');
             const result = globalRoot + (existingNodePath ? sep + existingNodePath : '');
-            expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules');
+            expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\pnpm\\node_modules');
         });
     });
     // =========================================================================

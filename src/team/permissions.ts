@@ -14,7 +14,7 @@ export interface WorkerPermissions {
   workerName: string;
   allowedPaths: string[];   // glob patterns relative to workingDirectory
   deniedPaths: string[];    // glob patterns that override allowed
-  allowedCommands: string[]; // command prefixes (e.g., 'npm test', 'tsc')
+  allowedCommands: string[]; // command prefixes (e.g., 'pnpm test', 'tsc')
   maxFileSize: number;      // max bytes per file write
 }
 

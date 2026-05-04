@@ -109,7 +109,7 @@ describe('initAutoresearchMission', () => {
         try {
             const result = await initAutoresearchMission({
                 topic: 'Investigate flaky tests',
-                evaluatorCommand: 'npm run eval',
+                evaluatorCommand: 'pnpm run eval',
                 slug: 'flaky-tests',
                 repoRoot: repo,
             });
@@ -224,7 +224,7 @@ describe('guidedAutoresearchSetup', () => {
         const runSetupSession = vi.fn()
             .mockReturnValueOnce({
             missionText: 'Improve search onboarding',
-            evaluatorCommand: 'npm run test:onboarding',
+            evaluatorCommand: 'pnpm run test:onboarding',
             evaluatorSource: 'inferred',
             confidence: 0.4,
             slug: 'search-onboarding',
@@ -233,7 +233,7 @@ describe('guidedAutoresearchSetup', () => {
         })
             .mockReturnValueOnce({
             missionText: 'Improve search onboarding',
-            evaluatorCommand: 'npm run test:onboarding',
+            evaluatorCommand: 'pnpm run test:onboarding',
             evaluatorSource: 'inferred',
             confidence: 0.92,
             slug: 'search-onboarding',

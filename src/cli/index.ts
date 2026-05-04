@@ -732,14 +732,14 @@ program
   .option('-c, --check', 'Only check for updates, do not install')
   .option('-f, --force', 'Force reinstall even if up to date')
   .option('-q, --quiet', 'Suppress output except for errors')
-  .option('--standalone', 'Force npm update even in plugin context')
+  .option('--standalone', 'Force pnpm update even in plugin context')
   .option('--clean', 'Purge old plugin cache versions immediately (bypass 24h grace period)')
   .addHelpText('after', `
 Examples:
   $ omc update                   Check and install updates
   $ omc update --check           Only check, don't install
   $ omc update --force           Force reinstall
-  $ omc update --standalone      Force npm update in plugin context`)
+  $ omc update --standalone      Force pnpm update in plugin context`)
   .action(async (options) => {
     if (!options.quiet) {
       console.log(chalk.blue('Oh-My-ClaudeCode Update\n'));
@@ -809,7 +809,7 @@ Examples:
 
 /**
  * Update reconcile command - Internal command for post-update reconciliation
- * Called automatically after npm install to ensure hooks/settings are updated with NEW code
+ * Called automatically after pnpm install to ensure hooks/settings are updated with NEW code
  */
 program
   .command('update-reconcile')
@@ -1338,11 +1338,11 @@ Examples:
   });
 
 /**
- * Postinstall command - Silent install for npm postinstall hook
+ * Postinstall command - Silent install for pnpm postinstall hook
  */
 program
   .command('postinstall', { hidden: true })
-  .description('Run post-install setup (called automatically by npm)')
+  .description('Run post-install setup (called automatically by pnpm)')
   .action(async () => {
     // Silent install - only show errors
     const result = installOmc({
@@ -1356,7 +1356,7 @@ program
       console.log(chalk.gray('  Run "oh-my-claudecode info" to see available agents.'));
       console.log(chalk.yellow('  Run "/omc-default" (project) or "/omc-default-global" (global) in Claude Code.'));
     } else {
-      // Don't fail the npm install, just warn
+      // Don't fail the pnpm install, just warn
       console.warn(chalk.yellow('⚠ Could not complete OMC setup:'), result.message);
       console.warn(chalk.gray('  Run "oh-my-claudecode install" manually to complete setup.'));
     }

@@ -1,6 +1,6 @@
 ---
 name: omc-setup
-description: Install or refresh oh-my-claudecode for plugin, npm, and local-dev setups from the canonical setup flow
+description: Install or refresh oh-my-claudecode for plugin, pnpm, and local-dev setups from the canonical setup flow
 level: 2
 ---
 
@@ -17,7 +17,7 @@ Note: All `~/.claude/...` paths in this guide respect `CLAUDE_CONFIG_DIR` when t
 Choose this setup flow when the user wants to **install, refresh, or repair OMC itself**.
 
 - Marketplace/plugin install users should land here after `/plugin install oh-my-claudecode`
-- npm users should land here after `npm i -g oh-my-claude-sisyphus@latest`
+- pnpm users should land here after `pnpm add -g oh-my-claude-sisyphus@latest`
 - local-dev and worktree users should land here after updating the checked-out repo and rerunning setup
 
 ## Flag Parsing
@@ -176,7 +176,7 @@ Execute phases sequentially. For each phase, read the corresponding file and fol
 
 ## Keeping Up to Date
 
-After installing oh-my-claudecode updates (via npm or plugin update):
+After installing oh-my-claudecode updates (via pnpm or plugin update):
 
 **Automatic**: Just run `/oh-my-claudecode:omc-setup` - it will detect you've already configured and offer a quick "Update CLAUDE.md only" option that skips the full wizard.
 

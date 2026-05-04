@@ -238,7 +238,7 @@ Use `tsoa` to generate an OpenAPI 3.1 specification from route definitions and T
 ```yaml
 # .github/workflows/api-spec.yml
 - name: Validate OpenAPI spec
-  run: npm run generate:openapi && git diff --exit-code docs/openapi.yaml
+  run: pnpm run generate:openapi && git diff --exit-code docs/openapi.yaml
 ```
 
 **Acceptance criteria:**

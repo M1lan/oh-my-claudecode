@@ -129,7 +129,7 @@ export async function initJobDb(cwd: string): Promise<boolean> {
           errorMessage,
         );
         console.error(
-          "[job-state-db] Install with: npm install better-sqlite3",
+          "[job-state-db] Install with: pnpm install better-sqlite3",
         );
         return false;
       }

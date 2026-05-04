@@ -41,7 +41,7 @@ describe('Auto-Learner Module', () => {
         });
         it('content hashing provides deduplication', () => {
             const problem = 'Error: Module not found';
-            const solution = 'Install the missing dependency with npm install package-name';
+            const solution = 'Install the missing dependency with pnpm add package-name';
             // Record same pattern twice
             const pattern1 = recordPattern(state, problem, solution);
             const pattern2 = recordPattern(state, problem, solution);
@@ -58,7 +58,7 @@ describe('Auto-Learner Module', () => {
             expect(pattern.occurrences).toBe(2);
         });
         it('records multiple different patterns separately', () => {
-            recordPattern(state, 'Error: Module not found react', 'Install react with: npm install react');
+            recordPattern(state, 'Error: Module not found react', 'Install react with: pnpm add react');
             recordPattern(state, 'TypeError: undefined is not a function', 'Check if the function exists before calling it');
             expect(state.patterns.size).toBe(2);
         });
@@ -264,7 +264,7 @@ describe('Auto-Learner Module', () => {
         it('verifies default threshold of 70', () => {
             // Create a pattern that should be around the threshold
             const problem = 'Error: Module react not found in /src/App.tsx';
-            const solution = 'Install the missing dependency: npm install react. The fix resolved the import error in the component.';
+            const solution = 'Install the missing dependency: pnpm add react. The fix resolved the import error in the component.';
             // Record multiple times to boost score
             for (let i = 0; i < 3; i++) {
                 recordPattern(state, problem, solution);

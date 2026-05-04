@@ -147,7 +147,7 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
       const pkgScripts = packageJson.scripts || {};
 
       // Determine package manager
-      let pm = 'npm';
+      let pm = 'pnpm';
       if (await fileExists(path.join(projectRoot, 'pnpm-lock.yaml'))) {
         pm = 'pnpm';
       } else if (await fileExists(path.join(projectRoot, 'yarn.lock'))) {

@@ -1013,7 +1013,7 @@ console.log('Reason:', result.reason);
 **Problem:** Plugin loads but manifest parsing fails.
 
 **Checklist:**
-- `plugin.json` is valid JSON (use `npm install -g jsonlint` to validate)
+- `plugin.json` is valid JSON (use `pnpm add -g jsonlint` to validate)
 - Required fields present: `name`, `version`
 - No syntax errors in paths or configs
 - File encoding is UTF-8

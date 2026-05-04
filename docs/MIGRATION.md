@@ -102,7 +102,7 @@ Maintenance release fixing test suite issues and continuing skill consolidation 
 ### Migration Steps
 
 1. **No breaking changes** - All functionality preserved
-2. **Test suite** now runs cleanly with `npm run test:run`
+2. **Test suite** now runs cleanly with `pnpm run test:run`
 3. **Deprecated skills** removed (already replaced in v3.5.3)
 
 ### For Developers
@@ -199,7 +199,7 @@ The project was rebranded to better reflect its purpose and improve discoverabil
 #### NPM Install Command (unchanged)
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
 ### What Changed
@@ -354,10 +354,10 @@ No more `/oh-my-claudecode:cancel-ralph` - just say "cancel"!
 
 Follow these steps to migrate your existing setup:
 
-#### 1. Uninstall Old Package (if installed via npm)
+#### 1. Uninstall Old Package (if installed via pnpm)
 
 ```bash
-npm uninstall -g oh-my-claudecode
+pnpm remove -g oh-my-claudecode
 ```
 
 #### 2. Install via Plugin System (Required)
@@ -368,7 +368,7 @@ npm uninstall -g oh-my-claudecode
 /plugin install oh-my-claudecode
 ```
 
-> **Note**: npm/bun global installs are no longer supported. Use the plugin system.
+> **Note**: pnpm/bun global installs are no longer supported. Use the plugin system.
 
 #### 3. Rename Local Project Directories
 
@@ -431,7 +431,7 @@ After migration, verify your setup:
 1. **Check installation**:
 
    ```bash
-   npm list -g oh-my-claudecode
+   pnpm list -g oh-my-claudecode
    ```
 
 2. **Verify directories exist**:
@@ -619,7 +619,7 @@ Background agents can be resumed with full context via `resume-session` tool.
 Version 3.1 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claudecode
+pnpm update -g oh-my-claudecode
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -727,7 +727,7 @@ Users set their default mode preference via `/oh-my-claudecode:omc-setup`.
 Version 3.4.0 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claudecode
+pnpm update -g oh-my-claudecode
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -796,7 +796,7 @@ After upgrading, verify new features:
 1. **Check installation**:
 
    ```bash
-   npm list -g oh-my-claudecode
+   pnpm list -g oh-my-claudecode
    ```
 
 2. **Test unified cancel**:

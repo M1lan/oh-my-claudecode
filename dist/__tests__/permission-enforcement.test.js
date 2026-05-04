@@ -22,7 +22,7 @@ describe('getEffectivePermissions', () => {
             workerName: 'w1',
             deniedPaths: ['.git/**', 'custom/deny/**'],
             allowedPaths: ['src/**'],
-            allowedCommands: ['npm test'],
+            allowedCommands: ['pnpm test'],
             maxFileSize: 1024,
         });
         // .git/** should only appear once (from caller, not duplicated from defaults)
@@ -35,7 +35,7 @@ describe('getEffectivePermissions', () => {
         expect(perms.deniedPaths).toContain('**/secrets/**');
         // Caller's allowedPaths preserved
         expect(perms.allowedPaths).toEqual(['src/**']);
-        expect(perms.allowedCommands).toEqual(['npm test']);
+        expect(perms.allowedCommands).toEqual(['pnpm test']);
         expect(perms.maxFileSize).toBe(1024);
     });
     it('returns full defaults when no base provided', () => {

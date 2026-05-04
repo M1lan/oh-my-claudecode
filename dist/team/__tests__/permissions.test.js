@@ -83,7 +83,7 @@ describe('permissions', () => {
     describe('isCommandAllowed', () => {
         it('allows all commands with empty list', () => {
             const perms = getDefaultPermissions('worker1');
-            expect(isCommandAllowed(perms, 'npm test')).toBe(true);
+            expect(isCommandAllowed(perms, 'pnpm test')).toBe(true);
             expect(isCommandAllowed(perms, 'rm -rf /')).toBe(true);
         });
         it('allows matching command prefixes', () => {
@@ -91,11 +91,11 @@ describe('permissions', () => {
                 workerName: 'worker1',
                 allowedPaths: [],
                 deniedPaths: [],
-                allowedCommands: ['npm test', 'tsc', 'npx vitest'],
+                allowedCommands: ['pnpm test', 'tsc', 'npx vitest'],
                 maxFileSize: Infinity,
             };
-            expect(isCommandAllowed(perms, 'npm test')).toBe(true);
-            expect(isCommandAllowed(perms, 'npm test --coverage')).toBe(true);
+            expect(isCommandAllowed(perms, 'pnpm test')).toBe(true);
+            expect(isCommandAllowed(perms, 'pnpm test --coverage')).toBe(true);
             expect(isCommandAllowed(perms, 'tsc --noEmit')).toBe(true);
         });
         it('denies non-matching commands', () => {
@@ -103,11 +103,11 @@ describe('permissions', () => {
                 workerName: 'worker1',
                 allowedPaths: [],
                 deniedPaths: [],
-                allowedCommands: ['npm test', 'tsc'],
+                allowedCommands: ['pnpm test', 'tsc'],
                 maxFileSize: Infinity,
             };
             expect(isCommandAllowed(perms, 'rm -rf /')).toBe(false);
-            expect(isCommandAllowed(perms, 'npm install')).toBe(false);
+            expect(isCommandAllowed(perms, 'pnpm install')).toBe(false);
         });
     });
     describe('formatPermissionInstructions', () => {
@@ -116,14 +116,14 @@ describe('permissions', () => {
                 workerName: 'worker1',
                 allowedPaths: ['src/**'],
                 deniedPaths: ['src/secrets/**'],
-                allowedCommands: ['npm test'],
+                allowedCommands: ['pnpm test'],
                 maxFileSize: 102400, // 100KB
             };
             const instructions = formatPermissionInstructions(perms);
             expect(instructions).toContain('PERMISSION CONSTRAINTS');
             expect(instructions).toContain('src/**');
             expect(instructions).toContain('src/secrets/**');
-            expect(instructions).toContain('npm test');
+            expect(instructions).toContain('pnpm test');
             expect(instructions).toContain('100KB');
         });
         it('shows no restrictions for default permissions', () => {

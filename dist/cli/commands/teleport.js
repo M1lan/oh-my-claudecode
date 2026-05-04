@@ -45,10 +45,10 @@ function detectPackageManager(parentRepoRoot, worktreePath) {
             }
         }
         catch {
-            // Ignore and fall back to npm.
+            // Ignore and fall back to pnpm.
         }
     }
-    return 'npm';
+    return 'pnpm';
 }
 function symlinkNodeModules(parentRepoRoot, worktreePath) {
     const sourceNodeModules = join(parentRepoRoot, 'node_modules');

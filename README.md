@@ -64,10 +64,10 @@ Then:
 /plugin install oh-my-claudecode
 ```
 
-If you prefer the npm CLI/runtime path instead of the marketplace flow:
+If you prefer the pnpm CLI/runtime path instead of the marketplace flow:
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
 > **Known npm warning:** npm may print `deprecated prebuild-install@7.1.3` during the CLI install.
@@ -106,7 +106,7 @@ That's it. Everything else is automatic.
 
 OMC exposes two different surfaces:
 
-- **Terminal CLI commands**: run `omc ...` from your shell after installing the npm/runtime path (`npm i -g oh-my-claude-sisyphus@latest`) or from a local checkout.
+- **Terminal CLI commands**: run `omc ...` from your shell after installing the pnpm/runtime path (`pnpm add -g oh-my-claude-sisyphus@latest`) or from a local checkout.
 - **In-session skills**: run `/...` inside a Claude Code session after installing the plugin/setup flow.
 
 | Feature | Terminal CLI | In-session skill | Notes |
@@ -184,14 +184,14 @@ Workers spawn on-demand and die when their task completes — no idle resource u
 
 Native team worker worktrees are being added behind an opt-in/config gate. See [Native Team Worktree Mode](docs/TEAM-WORKTREE-MODE.md) for the workspace contract, canonical state-root rules, dirty-worktree preservation policy, and verification checklist.
 
-> **Note: Package naming** — The project is branded as **oh-my-claudecode** (repo, plugin, commands), but the npm package is published as [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). If you install or upgrade the CLI tools via npm/bun, use `npm i -g oh-my-claude-sisyphus@latest`.
+> **Note: Package naming** — The project is branded as **oh-my-claudecode** (repo, plugin, commands), but the npm package is published as [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). If you install or upgrade the CLI tools via pnpm/bun, use `pnpm add -g oh-my-claude-sisyphus@latest`.
 
 ### Updating
 
-If you installed OMC via npm, upgrade with the published package name:
+If you installed OMC via pnpm, upgrade with the published package name:
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
 > **Package naming note:** the repo, plugin, and commands are branded **oh-my-claudecode**, but the published npm package name remains `oh-my-claude-sisyphus`.
@@ -513,8 +513,8 @@ OMC can optionally orchestrate external AI providers for cross-validation and de
 
 | Provider                                                  | Install                             | What it enables                                  |
 | --------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Design review, UI consistency (1M token context) |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Architecture validation, code review cross-check |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Design review, UI consistency (1M token context) |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Architecture validation, code review cross-check |
 
 **Cost:** 3 Pro plans (Claude + Gemini + ChatGPT) cover everything for ~$60/month.
 

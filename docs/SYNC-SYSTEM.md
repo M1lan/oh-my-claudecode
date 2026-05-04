@@ -70,7 +70,7 @@ This ensures documentation always reflects current state.
 ### Basic Sync
 
 ```bash
-npm run sync-metadata
+pnpm run sync-metadata
 ```
 
 Syncs all files. Output:
@@ -100,7 +100,7 @@ Skills: 45
 ### Dry Run (Preview Changes)
 
 ```bash
-npm run sync-metadata -- --dry-run
+pnpm run sync-metadata -- --dry-run
 ```
 
 Shows what **would** change without writing files:
@@ -121,7 +121,7 @@ Run without --dry-run to apply changes
 ### Verify Sync (CI/CD)
 
 ```bash
-npm run sync-metadata -- --verify
+pnpm run sync-metadata -- --verify
 ```
 
 Checks if files are in sync. Exits with status code:
@@ -135,13 +135,13 @@ Checks if files are in sync. Exits with status code:
   - Version badge needs update
 
 ❌ Files are out of sync!
-Run: npm run sync-metadata
+Run: pnpm run sync-metadata
 ```
 
 ### Help
 
 ```bash
-npm run sync-metadata -- --help
+pnpm run sync-metadata -- --help
 ```
 
 ## When to Run
@@ -152,10 +152,10 @@ Run sync **before** committing version changes:
 
 ```bash
 # 1. Bump version
-npm version patch
+pnpm version patch
 
 # 2. Sync metadata
-npm run sync-metadata
+pnpm run sync-metadata
 
 # 3. Commit everything together
 git add .
@@ -169,12 +169,12 @@ Add to `package.json`:
 ```json
 {
   "scripts": {
-    "version": "npm run sync-metadata && git add ."
+    "version": "pnpm run sync-metadata && git add ."
   }
 }
 ```
 
-Now `npm version patch` automatically:
+Now `pnpm version patch` automatically:
 1. Bumps version in `package.json`
 2. Runs sync script
 3. Stages synced files
@@ -189,10 +189,10 @@ Add to `.husky/pre-commit`:
 . "$(dirname "$0")/_/husky.sh"
 
 # Verify metadata is in sync
-npm run sync-metadata -- --verify
+pnpm run sync-metadata -- --verify
 
 if [ $? -ne 0 ]; then
-  echo "❌ Metadata out of sync! Run: npm run sync-metadata"
+  echo "❌ Metadata out of sync! Run: pnpm run sync-metadata"
   exit 1
 fi
 ```
@@ -203,7 +203,7 @@ Add verification step to GitHub Actions:
 
 ```yaml
 - name: Verify Metadata Sync
-  run: npm run sync-metadata -- --verify
+  run: pnpm run sync-metadata -- --verify
 ```
 
 ## How to Extend
@@ -350,13 +350,13 @@ Scales linearly with number of target files.
 
 ```bash
 # 1. Make a change to package.json
-npm version patch
+pnpm version patch
 
 # 2. Run dry-run to preview
-npm run sync-metadata -- --dry-run
+pnpm run sync-metadata -- --dry-run
 
 # 3. Apply changes
-npm run sync-metadata
+pnpm run sync-metadata
 
 # 4. Verify with git
 git diff
@@ -426,7 +426,7 @@ sudo chown $USER docs/*.md
 
 Before releasing:
 ```bash
-npm run sync-metadata -- --dry-run
+pnpm run sync-metadata -- --dry-run
 ```
 
 Review changes, then apply.
@@ -435,14 +435,14 @@ Review changes, then apply.
 
 Add to your workflow:
 ```bash
-npm run sync-metadata && git add -A
+pnpm run sync-metadata && git add -A
 ```
 
 ### 3. Use verification in CI
 
 Catch stale docs in pull requests:
 ```yaml
-- run: npm run sync-metadata -- --verify
+- run: pnpm run sync-metadata -- --verify
 ```
 
 ### 4. Keep patterns maintainable
@@ -462,7 +462,7 @@ Document complex regex:
 
 After any change to package.json:
 ```bash
-npm run sync-metadata -- --verify
+pnpm run sync-metadata -- --verify
 ```
 
 ## Migration Guide
@@ -488,14 +488,14 @@ Update all instances manually.
 ### Step 3: Run Initial Sync
 
 ```bash
-npm run sync-metadata
+pnpm run sync-metadata
 ```
 
 Should report "All files are already in sync".
 
 ### Step 4: Add to Workflow
 
-Add npm script, pre-commit hook, CI verification.
+Add pnpm script, pre-commit hook, CI verification.
 
 ### Step 5: Document for Team
 
@@ -503,8 +503,8 @@ Update CONTRIBUTING.md:
 ```markdown
 ## Releasing
 
-1. Bump version: `npm version patch`
-2. Sync metadata: `npm run sync-metadata`
+1. Bump version: `pnpm version patch`
+2. Sync metadata: `pnpm run sync-metadata`
 3. Commit and tag
 ```
 

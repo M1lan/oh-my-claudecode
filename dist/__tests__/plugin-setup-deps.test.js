@@ -9,9 +9,9 @@ const PLUGIN_SETUP_PATH = join(PACKAGE_ROOT, 'scripts', 'plugin-setup.mjs');
 /**
  * Tests for plugin-setup.mjs dependency installation logic (issue #1113).
  *
- * The plugin cache directory does not include node_modules because npm publish
+ * The plugin cache directory does not include node_modules because pnpm publish
  * strips it.  plugin-setup.mjs must detect the missing dependencies and run
- * `npm install --omit=dev --ignore-scripts` to restore them.
+ * `pnpm install --omit=dev --ignore-scripts` to restore them.
  */
 describe('plugin-setup.mjs dependency installation', () => {
     it('script file exists', () => {
@@ -26,12 +26,12 @@ describe('plugin-setup.mjs dependency installation', () => {
     it('checks for node_modules/commander as dependency sentinel', () => {
         expect(scriptContent).toContain("node_modules', 'commander'");
     });
-    it('runs npm install with --omit=dev flag', () => {
-        expect(scriptContent).toContain('npm install --omit=dev --ignore-scripts');
+    it('runs pnpm install with --omit=dev flag', () => {
+        expect(scriptContent).toContain('pnpm install --omit=dev --ignore-scripts');
     });
     it('uses --ignore-scripts to prevent recursive setup', () => {
         // --ignore-scripts must be present to avoid re-triggering plugin-setup.mjs
-        const installMatches = scriptContent.match(/npm install[^'"]+/g) || [];
+        const installMatches = scriptContent.match(/pnpm install[^'"]+/g) || [];
         expect(installMatches.length).toBeGreaterThan(0);
         expect(installMatches.some(m => m.includes('--ignore-scripts'))).toBe(true);
     });
@@ -51,14 +51,14 @@ describe('package.json prepare script removal', () => {
     const pkgPath = join(PACKAGE_ROOT, 'package.json');
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
     it('does not have a prepare script', () => {
-        // prepare was removed to prevent the "prepare trap" where npm install
+        // prepare was removed to prevent the "prepare trap" where pnpm install
         // in the plugin cache directory triggers tsc (which requires devDependencies)
         expect(pkg.scripts.prepare).toBeUndefined();
     });
     it('has prepublishOnly with build step', () => {
         // The build step moved from prepare to prepublishOnly so it only runs
-        // before npm publish, not on npm install in consumer contexts
-        expect(pkg.scripts.prepublishOnly).toContain('npm run build');
+        // before pnpm publish, not on pnpm install in consumer contexts
+        expect(pkg.scripts.prepublishOnly).toContain('pnpm run build');
     });
 });
 //# sourceMappingURL=plugin-setup-deps.test.js.map

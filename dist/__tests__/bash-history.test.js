@@ -34,9 +34,9 @@ describe('Bash History Integration', () => {
         });
         it('should append multiple commands', () => {
             appendToBashHistory('git status', testHistoryPath);
-            appendToBashHistory('npm test', testHistoryPath);
+            appendToBashHistory('pnpm test', testHistoryPath);
             const content = readFileSync(testHistoryPath, 'utf-8');
-            expect(content).toBe('git status\nnpm test\n');
+            expect(content).toBe('git status\npnpm test\n');
         });
         it('should trim whitespace', () => {
             appendToBashHistory('  ls  ', testHistoryPath);

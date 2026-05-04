@@ -35,9 +35,9 @@ The `swarm` compatibility alias was removed in #1131.
 /team 4:designer "implement responsive layouts for all page components"
 /team "refactor the auth module with security review"
 /team ralph "build a complete REST API for user management"
-# With Codex CLI workers (requires: npm install -g @openai/codex)
+# With Codex CLI workers (requires: pnpm add -g @openai/codex)
 /team 2:codex "review architecture and suggest improvements"
-# With Gemini CLI workers (requires: npm install -g @google/gemini-cli)
+# With Gemini CLI workers (requires: pnpm add -g @google/gemini-cli)
 /team 2:gemini "redesign the UI components"
 # Mixed: Codex for backend analysis, Gemini for frontend (use /ccg instead for this)
 ```
@@ -598,8 +598,8 @@ Tasks are tagged with an execution mode during decomposition:
 | Execution Mode | Provider | Capabilities |
 |---------------|----------|-------------|
 | `claude_worker` | Claude agent | Full Claude Code tool access (Read/Write/Edit/Bash/Task). Best for tasks needing Claude's reasoning + iterative tool use. |
-| `codex_worker` | Codex CLI (tmux pane) | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `npm install -g @openai/codex`. |
-| `gemini_worker` | Gemini CLI (tmux pane) | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `npm install -g @google/gemini-cli`. |
+| `codex_worker` | Codex CLI (tmux pane) | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `pnpm add -g @openai/codex`. |
+| `gemini_worker` | Gemini CLI (tmux pane) | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `pnpm add -g @google/gemini-cli`. |
 
 ### How CLI Workers Operate
 

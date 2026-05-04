@@ -9,7 +9,7 @@
  * - Caching: `!cache 300s git log -10`
  * - Conditional: `!if-modified src/** then git diff src/`
  * - Conditional: `!if-branch feat/* then echo "feature branch"`
- * - Once per session: `!only-once npm install`
+ * - Once per session: `!only-once pnpm install`
  * - Output formats: `!json docker inspect ...`, `!table ...`, `!diff git diff`
  * - Multi-line: `!begin-script bash` ... `!end-script`
  * - Security allowlist via .omc/config/live-data-policy.json

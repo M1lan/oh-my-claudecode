@@ -54,7 +54,7 @@ describe('release generation', () => {
             { number: '2137', title: 'Fix team tmux pane geometry collapse and bundled agent path resolution', author: 'Yeachan-Heo', headRefName: 'fix-issue-2135-pane-geometry' },
             { number: '2144', title: 'fix: preserve existing global CLAUDE.md during setup', author: 'Yeachan-Heo', headRefName: 'issue-2143-safe-setup-config' },
             { number: '2146', title: 'fix: follow up #2143 with explicit overwrite choice + omc launch profile', author: 'Yeachan-Heo', headRefName: 'issue-2143-omc-launch-followup' },
-            { number: '2149', title: 'fix: resolve global HUD npm package lookup outside Node projects', author: 'Yeachan-Heo', headRefName: 'fix/issue-2148-hud-global-npm' },
+            { number: '2149', title: 'fix: resolve global HUD pnpm package lookup outside Node projects', author: 'Yeachan-Heo', headRefName: 'fix/issue-2148-hud-global-pnpm' },
             { number: '2151', title: 'feat(hud): make call-count icon rendering configurable', author: 'Yeachan-Heo', headRefName: 'issue-2150-hud-call-count-icons' },
         ];
         const categories = categorizeReleaseNoteEntries(buildReleaseNoteEntriesFromPullRequests(pullRequests));
@@ -87,7 +87,7 @@ describe('release generation', () => {
     });
     it('assembles a single custom release body with compare link and contributors', () => {
         const body = generateReleaseBody('4.10.2', '# oh-my-claudecode v4.10.2: Bug Fixes', ['blue-int', 'DdangJin', 'Yeachan-Heo'], 'v4.10.1');
-        expect(body).toContain('npm install -g oh-my-claude-sisyphus@4.10.2');
+        expect(body).toContain('pnpm add -g oh-my-claude-sisyphus@4.10.2');
         expect(body).toContain('https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.10.1...v4.10.2');
         expect(body).toContain('@blue-int @DdangJin @Yeachan-Heo');
         expect(body.match(/## Contributors/g)).toHaveLength(1);

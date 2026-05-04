@@ -256,9 +256,9 @@ export async function runFeaturedContributorsCli(args = process.argv.slice(2)) {
 Featured Contributors README Generator
 
 Usage:
-  npm run sync-featured-contributors
-  npm run sync-featured-contributors -- --dry-run
-  npm run sync-featured-contributors -- --verify
+  pnpm run sync-featured-contributors
+  pnpm run sync-featured-contributors -- --dry-run
+  pnpm run sync-featured-contributors -- --verify
 
 Options:
   --repo=<owner/name>     Override the GitHub repository slug from package.json
@@ -283,7 +283,7 @@ Notes:
     }
     console.log(`Featured contributors: ${result.entries.length}`);
     if (options.verify && result.changed) {
-        console.error('Run: npm run sync-featured-contributors');
+        console.error('Run: pnpm run sync-featured-contributors');
         process.exit(1);
     }
 }

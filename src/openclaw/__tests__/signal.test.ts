@@ -18,7 +18,7 @@ describe("buildOpenClawSignal", () => {
   it("classifies bash test commands as high-priority test signals", () => {
     const signal = buildOpenClawSignal("pre-tool-use", {
       toolName: "Bash",
-      toolInput: { command: "npm test -- --runInBand" },
+      toolInput: { command: "pnpm test -- --runInBand" },
     });
 
     expect(signal).toMatchObject({

@@ -20,8 +20,8 @@ describe('permission-handler', () => {
                 'git branch',
                 'git show',
                 'git fetch',
-                'npm run lint',
-                'npm run build',
+                'pnpm run lint',
+                'pnpm run build',
                 'tsc',
                 'tsc --noEmit',
                 'eslint .',
@@ -95,7 +95,7 @@ describe('permission-handler', () => {
                 { cmd: 'git status [abc]', desc: 'bracket character class' },
                 // Carriage return and null byte
                 { cmd: 'git status\rmalicious', desc: 'carriage return injection' },
-                { cmd: 'npm test\r\nrm -rf /', desc: 'CRLF injection' },
+                { cmd: 'pnpm test\r\nrm -rf /', desc: 'CRLF injection' },
                 { cmd: 'git status\0malicious', desc: 'null byte injection' },
                 // Command substitution (caught by $ not quotes)
                 { cmd: 'git status "$(whoami)"', desc: 'command substitution in double quotes' },
@@ -112,8 +112,8 @@ describe('permission-handler', () => {
                 { cmd: 'git status !previous', desc: 'history expansion in command' },
                 // Comment injection
                 { cmd: 'git status #ignore rest', desc: 'comment injection' },
-                { cmd: 'npm test # malicious', desc: 'comment to hide code' },
-                { cmd: 'npm test -- --run src/example.test.ts', desc: 'broad npm test invocation' },
+                { cmd: 'pnpm test # malicious', desc: 'comment to hide code' },
+                { cmd: 'pnpm test -- --run src/example.test.ts', desc: 'broad pnpm test invocation' },
                 { cmd: 'pytest tests/example_test.py', desc: 'broad pytest invocation' },
             ];
             additionalDangerousCases.forEach(({ cmd, desc }) => {
@@ -209,12 +209,12 @@ describe('permission-handler', () => {
         });
         it('allows narrow single-test commands', () => {
             expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts', testDir)).toBe(true);
-            expect(isSafeTargetedLocalTestCommand('npm test -- --run src/__tests__/sample.test.ts', testDir)).toBe(true);
+            expect(isSafeTargetedLocalTestCommand('pnpm test -- --run src/__tests__/sample.test.ts', testDir)).toBe(true);
             expect(isSafeTargetedLocalTestCommand('pnpm vitest run src/__tests__/sample.test.ts', testDir)).toBe(true);
             expect(isSafeTargetedLocalTestCommand('node --test src/__tests__/sample.test.ts', testDir)).toBe(true);
         });
         it('rejects broad or malformed test commands', () => {
-            expect(isSafeTargetedLocalTestCommand('npm test', testDir)).toBe(false);
+            expect(isSafeTargetedLocalTestCommand('pnpm test', testDir)).toBe(false);
             expect(isSafeTargetedLocalTestCommand('vitest run', testDir)).toBe(false);
             expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts --watch', testDir)).toBe(false);
             expect(isSafeTargetedLocalTestCommand('vitest run ../other.test.ts', testDir)).toBe(false);
@@ -459,7 +459,7 @@ describe('permission-handler', () => {
                 expect(result.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
             });
             it('should not auto-approve broad local test commands', () => {
-                const result = processPermissionRequest(createInput('npm test'));
+                const result = processPermissionRequest(createInput('pnpm test'));
                 expect(result.continue).toBe(true);
                 expect(result.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
             });
