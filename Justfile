@@ -261,7 +261,7 @@ sync-contributors-verify:
 release:
     {{PM}} run release
 
-# Pre-publish gate (run as part of npm publish)
+# Pre-publish gate (run as part of pnpm publish)
 prepublish: verify build
     @echo "ready to publish"
 

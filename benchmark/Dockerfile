@@ -20,6 +20,9 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Enable pnpm via corepack (canonical package manager for this project)
+RUN corepack enable && corepack prepare pnpm@10.33.3 --activate
+
 # Install Docker CLI (for SWE-bench container operations)
 RUN curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg \
     && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list \
@@ -37,7 +40,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Claude Code CLI globally
-RUN npm install -g @anthropic-ai/claude-code
+RUN pnpm add -g @anthropic-ai/claude-code
 
 # Create directories for benchmark artifacts
 RUN mkdir -p /workspace/results \
