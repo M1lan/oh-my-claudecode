@@ -33,6 +33,9 @@ function runPreToolEnforcerWithEnv(input, env = {}) {
             OMC_SUBAGENT_MODEL: '',
             CLAUDE_MODEL: '',
             ANTHROPIC_MODEL: '',
+            ANTHROPIC_BASE_URL: '',
+            CLAUDE_CODE_USE_BEDROCK: '',
+            CLAUDE_CODE_USE_VERTEX: '',
             // Reset tier-resolution chain env vars (resolveTierAliasToSafeModel reads these).
             OMC_MODEL_LOW: '',
             OMC_MODEL_MEDIUM: '',
@@ -324,6 +327,57 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
         }, { OMC_QUIET: '2' });
         expect(output).toEqual({ continue: true, suppressOutput: true });
     });
+    it('warns without blocking when Task prompt uses fallback or workaround language', () => {
+        const output = runPreToolEnforcer({
+            tool_name: 'Task',
+            toolInput: {
+                subagent_type: 'oh-my-claudecode:executor',
+                description: 'Implement a fallback',
+                prompt: 'Add a workaround if the normal architecture is hard.',
+            },
+            cwd: tempDir,
+            session_id: 'session-slop-warning',
+        });
+        const hookSpecificOutput = output.hookSpecificOutput;
+        const context = String(hookSpecificOutput.additionalContext);
+        expect(output.continue).toBe(true);
+        expect(hookSpecificOutput.hookEventName).toBe('PreToolUse');
+        expect(context).toContain('[SLOP WARNING]');
+        expect(context).toContain('Do not make potential slop');
+        expect(context).toContain('consult the architect');
+        expect(context).toContain('ask the user to confirm constraints');
+        expect(context).toContain('Spawning agent');
+        expect(hookSpecificOutput).not.toHaveProperty('permissionDecision');
+    });
+    it('keeps slop warning visible even when routine reminders are quieted', () => {
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Bash',
+            toolInput: {
+                command: 'node scripts/add-fallback-workaround.mjs',
+            },
+            cwd: tempDir,
+            session_id: 'session-slop-warning-quiet',
+        }, { OMC_QUIET: '2' });
+        const hookSpecificOutput = output.hookSpecificOutput;
+        const context = String(hookSpecificOutput.additionalContext);
+        expect(output.continue).toBe(true);
+        expect(context).toContain('[SLOP WARNING]');
+        expect(context).not.toContain('Use parallel execution');
+    });
+    it('does not warn for read-only search tools that mention fallback as the query', () => {
+        const output = runPreToolEnforcer({
+            tool_name: 'Grep',
+            toolInput: {
+                pattern: 'fallback|workaround',
+            },
+            cwd: tempDir,
+            session_id: 'session-slop-search',
+        });
+        const hookSpecificOutput = output.hookSpecificOutput;
+        expect(output.continue).toBe(true);
+        expect(String(hookSpecificOutput.additionalContext)).not.toContain('[SLOP WARNING]');
+        expect(String(hookSpecificOutput.additionalContext)).toContain('Combine searches in parallel');
+    });
     it('blocks agent-heavy Task preflight when transcript context budget is exhausted', () => {
         const transcriptPath = join(tempDir, 'transcript.jsonl');
         writeTranscriptWithContext(transcriptPath, 1000, 800); // 80%
@@ -445,6 +499,86 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
         });
         expect(output.continue).toBe(true);
         expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+    });
+    it.each([
+        ['sonnet', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'glm-5.1:cloud', 'session-tier-proxy-sonnet'],
+        ['opus', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'glm-5.1:cloud', 'session-tier-proxy-opus'],
+        ['haiku', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'glm-5.1:cloud', 'session-tier-proxy-haiku'],
+    ])('allows tier alias %s via proxy ANTHROPIC_DEFAULT_*_MODEL when non-Claude routing is active', (tier, envKey, proxyModel, sessionId) => {
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Agent',
+            toolInput: { subagent_type: 'oh-my-claudecode:executor', model: tier },
+            cwd: tempDir,
+            session_id: sessionId,
+        }, {
+            OMC_ROUTING_FORCE_INHERIT: 'true',
+            OMC_SUBAGENT_MODEL: '',
+            ANTHROPIC_MODEL: 'glm-5.1:cloud',
+            [envKey]: proxyModel,
+        });
+        expect(output.continue).toBe(true);
+        expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+    });
+    it('blocks tier alias when proxy ANTHROPIC_DEFAULT_*_MODEL is only whitespace', () => {
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Agent',
+            toolInput: { subagent_type: 'oh-my-claudecode:executor', model: 'sonnet' },
+            cwd: tempDir,
+            session_id: 'session-tier-proxy-empty',
+        }, {
+            OMC_ROUTING_FORCE_INHERIT: 'true',
+            OMC_SUBAGENT_MODEL: '',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: '   ',
+        });
+        const hookOutput = output.hookSpecificOutput;
+        expect(hookOutput.permissionDecisionReason).toContain('MODEL ROUTING');
+    });
+    it('preserves provider-specific validation for CLAUDE_CODE_BEDROCK_*_MODEL in proxy mode', () => {
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Agent',
+            toolInput: { subagent_type: 'oh-my-claudecode:executor', model: 'sonnet' },
+            cwd: tempDir,
+            session_id: 'session-tier-proxy-invalid-bedrock-var',
+        }, {
+            OMC_ROUTING_FORCE_INHERIT: 'true',
+            OMC_SUBAGENT_MODEL: '',
+            CLAUDE_CODE_BEDROCK_SONNET_MODEL: 'glm-5.1:cloud',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: '',
+        });
+        const hookOutput = output.hookSpecificOutput;
+        expect(hookOutput.permissionDecisionReason).toContain('MODEL ROUTING');
+    });
+    it('allows proxy ANTHROPIC_DEFAULT_*_MODEL in config force-inherit mode when no normal Claude model is active', () => {
+        const configDir = join(tempDir, '.omc');
+        mkdirSync(configDir, { recursive: true });
+        writeFileSync(join(configDir, 'config.json'), JSON.stringify({ routing: { forceInherit: true } }));
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Agent',
+            toolInput: { subagent_type: 'oh-my-claudecode:executor', model: 'sonnet' },
+            cwd: tempDir,
+            session_id: 'session-tier-config-proxy-default',
+        }, {
+            OMC_ROUTING_FORCE_INHERIT: 'true',
+            OMC_SUBAGENT_MODEL: '',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-5.1:cloud',
+        });
+        expect(output.continue).toBe(true);
+        expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+    });
+    it('rejects proxy ANTHROPIC_DEFAULT_*_MODEL when env force-inherit runs under a normal Claude active model', () => {
+        const output = runPreToolEnforcerWithEnv({
+            tool_name: 'Agent',
+            toolInput: { subagent_type: 'oh-my-claudecode:executor', model: 'sonnet' },
+            cwd: tempDir,
+            session_id: 'session-tier-env-force-normal-claude-proxy-default',
+        }, {
+            OMC_ROUTING_FORCE_INHERIT: 'true',
+            OMC_SUBAGENT_MODEL: '',
+            ANTHROPIC_MODEL: 'claude-sonnet-4-5',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'glm-5.1:cloud',
+        });
+        const hookOutput = output.hookSpecificOutput;
+        expect(hookOutput.permissionDecisionReason).toContain('MODEL ROUTING');
     });
     it('OMC_SUBAGENT_MODEL takes priority over ANTHROPIC_DEFAULT_*_MODEL when both set', () => {
         const output = runPreToolEnforcerWithEnv({

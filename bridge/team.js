@@ -220,7 +220,31 @@ async function claimTask(taskId, workerName, expectedVersion, deps) {
   if (!lock.ok) return { ok: false, error: "claim_conflict" };
   return lock.value;
 }
-async function transitionTaskStatus(taskId, from, to, claimToken, deps) {
+function extractDelegationComplianceEvidence(task, terminalData) {
+  const plan = task.delegation;
+  if (!plan || plan.mode === "none") return null;
+  if (plan.mode === "optional" && plan.required_parallel_probe !== true) return null;
+  const result = typeof terminalData?.result === "string" ? terminalData.result : "";
+  const spawnMatch = result.match(/^\s*Subagent spawn evidence:\s*(.+)$/im);
+  if (spawnMatch?.[1]?.trim()) {
+    const detail = spawnMatch[1].trim();
+    if (!/^none\b|^0\b/i.test(detail)) {
+      return { status: "spawned", source: "terminal_result", detail, recorded_at: (/* @__PURE__ */ new Date()).toISOString() };
+    }
+  }
+  if (plan.skip_allowed_reason_required === true) {
+    const skipMatch = result.match(/^\s*Subagent skip reason:\s*(.+)$/im);
+    if (skipMatch?.[1]?.trim()) {
+      return { status: "skipped", source: "terminal_result", detail: skipMatch[1].trim(), recorded_at: (/* @__PURE__ */ new Date()).toISOString() };
+    }
+  }
+  return null;
+}
+function requiresDelegationComplianceEvidence(task) {
+  const plan = task.delegation;
+  return !!plan && (plan.mode === "auto" || plan.mode === "required" || plan.required_parallel_probe === true);
+}
+async function transitionTaskStatus(taskId, from, to, claimToken, terminalData, deps) {
   if (!deps.canTransitionTaskStatus(from, to)) return { ok: false, error: "invalid_transition" };
   const lock = await deps.withTaskClaimLock(deps.teamName, taskId, deps.cwd, async () => {
     const current = await deps.readTask(deps.teamName, taskId, deps.cwd);
@@ -233,10 +257,19 @@ async function transitionTaskStatus(taskId, from, to, claimToken, deps) {
       return { ok: false, error: "claim_conflict" };
     }
     if (new Date(v.claim.leased_until) <= /* @__PURE__ */ new Date()) return { ok: false, error: "lease_expired" };
+    const normalizedResult = typeof terminalData?.result === "string" ? terminalData.result : void 0;
+    const normalizedError = typeof terminalData?.error === "string" ? terminalData.error : void 0;
+    const delegationCompliance = to === "completed" ? extractDelegationComplianceEvidence(v, terminalData) : null;
+    if (to === "completed" && requiresDelegationComplianceEvidence(v) && !delegationCompliance) {
+      return { ok: false, error: "missing_delegation_compliance_evidence" };
+    }
     const updated = {
       ...v,
       status: to,
       completed_at: to === "completed" ? (/* @__PURE__ */ new Date()).toISOString() : v.completed_at,
+      result: to === "completed" ? normalizedResult : void 0,
+      error: to === "failed" ? normalizedError : void 0,
+      delegation_compliance: to === "completed" ? delegationCompliance ?? v.delegation_compliance : v.delegation_compliance,
       claim: void 0,
       version: v.version + 1
     };
@@ -736,8 +769,8 @@ async function teamClaimTask(teamName, taskId, workerName, expectedVersion, cwd)
     writeAtomic
   });
 }
-async function teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd) {
-  return transitionTaskStatus(taskId, from, to, claimToken, {
+async function teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd, terminalData) {
+  return transitionTaskStatus(taskId, from, to, claimToken, terminalData, {
     teamName,
     cwd,
     readTask: teamReadTask,
@@ -2909,14 +2942,45 @@ var init_ssrf_guard = __esm({
 });
 
 // src/config/models.ts
+function readEnvValue(key) {
+  const value = process.env[key]?.trim();
+  return value || void 0;
+}
 function resolveTierModelFromEnv(tier) {
   for (const key of TIER_ENV_KEYS[tier]) {
-    const value = process.env[key]?.trim();
+    const value = readEnvValue(key);
     if (value) {
       return value;
     }
   }
   return void 0;
+}
+function getDirectModelEnvValue() {
+  for (const key of DIRECT_MODEL_ENV_KEYS) {
+    const value = readEnvValue(key);
+    if (value) {
+      return value;
+    }
+  }
+  return void 0;
+}
+function getProviderDetectionModelEnvValues() {
+  const directModel = getDirectModelEnvValue();
+  if (directModel) {
+    return [directModel];
+  }
+  const values = /* @__PURE__ */ new Set();
+  for (const tier of INHERIT_TIER_PRIORITY) {
+    const value = resolveTierModelFromEnv(tier);
+    if (value) {
+      values.add(value);
+    }
+  }
+  return [...values];
+}
+function getDirectProviderDetectionModelEnvValues() {
+  const directModel = getDirectModelEnvValue();
+  return directModel ? [directModel] : [];
 }
 function getDefaultModelHigh() {
   return resolveTierModelFromEnv("HIGH") || BUILTIN_TIER_MODEL_DEFAULTS.HIGH;
@@ -2942,18 +3006,22 @@ function resolveClaudeFamily(modelId) {
   if (lower.includes("haiku")) return "HAIKU";
   return null;
 }
+function hasBedrockModelId(modelIds) {
+  for (const modelId of modelIds) {
+    if (/^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
+      return true;
+    }
+    if (/^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) && /:(inference-profile|application-inference-profile)\//i.test(modelId) && modelId.toLowerCase().includes("claude")) {
+      return true;
+    }
+  }
+  return false;
+}
 function isBedrock() {
   if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && /^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
-    return true;
-  }
-  if (modelId && /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) && /:(inference-profile|application-inference-profile)\//i.test(modelId) && modelId.toLowerCase().includes("claude")) {
-    return true;
-  }
-  return false;
+  return hasBedrockModelId(getProviderDetectionModelEnvValues());
 }
 function isProviderSpecificModelId(modelId) {
   if (/^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
@@ -2971,24 +3039,32 @@ function isVertexAI() {
   if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && modelId.toLowerCase().startsWith("vertex_ai/")) {
-    return true;
+  return hasVertexModelId(getProviderDetectionModelEnvValues());
+}
+function hasVertexModelId(modelIds) {
+  return modelIds.some((modelId) => modelId.toLowerCase().startsWith("vertex_ai/"));
+}
+function hasNonClaudeModelId(modelIds) {
+  for (const modelId of modelIds) {
+    const lower = modelId.toLowerCase();
+    if (!lower.includes("claude") && !CLAUDE_TIER_ALIASES.has(lower)) {
+      return true;
+    }
   }
   return false;
 }
-function isNonClaudeProvider() {
+function shouldAutoForceInherit() {
   if (process.env.OMC_ROUTING_FORCE_INHERIT === "true") {
     return true;
   }
-  if (isBedrock()) {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
-  if (isVertexAI()) {
+  if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && !modelId.toLowerCase().includes("claude")) {
+  const directModelValues = getDirectProviderDetectionModelEnvValues();
+  if (hasBedrockModelId(directModelValues) || hasVertexModelId(directModelValues) || hasNonClaudeModelId(directModelValues)) {
     return true;
   }
   const baseUrl = process.env.ANTHROPIC_BASE_URL || "";
@@ -3004,11 +3080,14 @@ function isNonClaudeProvider() {
   }
   return false;
 }
-var TIER_ENV_KEYS, CLAUDE_FAMILY_DEFAULTS, BUILTIN_TIER_MODEL_DEFAULTS, CLAUDE_FAMILY_HIGH_VARIANTS, BUILTIN_EXTERNAL_MODEL_DEFAULTS;
+var DIRECT_MODEL_ENV_KEYS, INHERIT_TIER_PRIORITY, CLAUDE_TIER_ALIASES, TIER_ENV_KEYS, CLAUDE_FAMILY_DEFAULTS, BUILTIN_TIER_MODEL_DEFAULTS, CLAUDE_FAMILY_HIGH_VARIANTS, BUILTIN_EXTERNAL_MODEL_DEFAULTS;
 var init_models = __esm({
   "src/config/models.ts"() {
     "use strict";
     init_ssrf_guard();
+    DIRECT_MODEL_ENV_KEYS = ["CLAUDE_MODEL", "ANTHROPIC_MODEL"];
+    INHERIT_TIER_PRIORITY = ["MEDIUM", "HIGH", "LOW"];
+    CLAUDE_TIER_ALIASES = /* @__PURE__ */ new Set(["sonnet", "opus", "haiku"]);
     TIER_ENV_KEYS = {
       LOW: [
         "OMC_MODEL_LOW",
@@ -3534,7 +3613,7 @@ function loadConfig() {
   }
   const envConfig = loadEnvConfig();
   config = deepMerge(config, envConfig);
-  if (config.routing?.forceInherit !== true && process.env.OMC_ROUTING_FORCE_INHERIT === void 0 && isNonClaudeProvider()) {
+  if (config.routing?.forceInherit !== true && process.env.OMC_ROUTING_FORCE_INHERIT === void 0 && shouldAutoForceInherit()) {
     config.routing = {
       ...config.routing,
       forceInherit: true
@@ -4083,6 +4162,7 @@ var init_definitions = __esm({
     "use strict";
     init_utils();
     init_loader();
+    init_models();
     init_skininthegamebros_guidance();
     init_architect();
     init_designer();
@@ -4162,6 +4242,9 @@ var init_definitions = __esm({
 
 // src/features/delegation-enforcer.ts
 function normalizeToCcAlias(model) {
+  if (isProviderSpecificModelId(model)) {
+    return model;
+  }
   const family = resolveClaudeFamily(model);
   return family ? FAMILY_TO_ALIAS[family] ?? model : model;
 }
@@ -4319,6 +4402,9 @@ function resolveCliBinaryPath(binary) {
   resolvedPathCache.set(binary, resolvedPath);
   return resolvedPath;
 }
+function shouldUseClaudeBareMode(env = process.env) {
+  return typeof env.ANTHROPIC_API_KEY === "string" && env.ANTHROPIC_API_KEY.trim().length > 0;
+}
 function getContract(agentType) {
   const contract = CONTRACTS[agentType];
   if (!contract) {
@@ -4439,6 +4525,9 @@ var init_model_contract = __esm({
         installInstructions: "Install Claude CLI: https://claude.ai/download",
         buildLaunchArgs(model, extraFlags = []) {
           const args = ["--dangerously-skip-permissions"];
+          if (shouldUseClaudeBareMode() && !extraFlags.includes("--bare")) {
+            args.push("--bare");
+          }
           if (model) {
             const resolved = isProviderSpecificModelId(model) ? model : normalizeToCcAlias(model);
             args.push("--model", resolved);
@@ -4615,7 +4704,7 @@ function generateWorkerOverlay(params) {
   const shutdownAckPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, "workers", workerName, "shutdown-ack.json");
   const claimTaskCommand = formatOmcCliInvocation(`team api claim-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"worker\\":\\"${workerName}\\"}" --json`);
   const sendAckCommand = formatOmcCliInvocation(`team api send-message --input "{\\"team_name\\":\\"${teamName}\\",\\"from_worker\\":\\"${workerName}\\",\\"to_worker\\":\\"leader-fixed\\",\\"body\\":\\"ACK: ${workerName} initialized\\"}" --json`);
-  const completeTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`);
+  const completeTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\",\\"result\\":\\"Summary: <what changed>\\\\nVerification: <tests/checks run>\\\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session\\"}" --json`);
   const failTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"failed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`);
   const readTaskCommand = formatOmcCliInvocation(`team api read-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\"}" --json`);
   const releaseClaimCommand = formatOmcCliInvocation(`team api release-task-claim --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"claim_token\\":\\"<claim_token>\\",\\"worker\\":\\"${workerName}\\"}" --json`);
@@ -4668,6 +4757,11 @@ Use the CLI API for all task lifecycle operations. Do NOT directly edit task fil
 - Complete task: \`${completeTaskCommand}\`
 - Fail task: \`${failTaskCommand}\`
 - Release claim (rollback): \`${releaseClaimCommand}\`
+- Delegation compliance evidence (required for broad delegated tasks):
+  - The completion command MUST include a \`result\` string with summary and verification evidence.
+  - Because worker protocol forbids nested sub-agents, use: \`Subagent skip reason: <why in-session execution was safer/sufficient>\`
+  - Only if the leader explicitly grants an exception to spawn nested help, use: \`Subagent spawn evidence: <count, child task names/thread ids, and integrated findings>\`
+  - Completion is rejected with \`missing_delegation_compliance_evidence\` when required evidence is absent.
 
 ## Canonical Team State Root
 - Resolve the team state root in this order: \`OMC_TEAM_STATE_ROOT\` env -> worker identity \`team_state_root\` -> config/manifest \`team_state_root\` -> ${params.cwd}/.omc/state/team/${teamName}.
@@ -6773,8 +6867,8 @@ async function startMergeOrchestrator(config) {
   let persisted = { lastShas: {} };
   if (existsSync17(persistedPath)) {
     try {
-      const { readFileSync: readFileSync11 } = await import("node:fs");
-      persisted = JSON.parse(readFileSync11(persistedPath, "utf-8"));
+      const { readFileSync: readFileSync12 } = await import("node:fs");
+      persisted = JSON.parse(readFileSync12(persistedPath, "utf-8"));
     } catch {
       persisted = { lastShas: {} };
     }
@@ -7163,8 +7257,8 @@ async function recoverFromRestart(config) {
   let persistedShasLoaded = 0;
   if (existsSync17(persistedPath)) {
     try {
-      const { readFileSync: readFileSync11 } = await import("node:fs");
-      const persisted = JSON.parse(readFileSync11(persistedPath, "utf-8"));
+      const { readFileSync: readFileSync12 } = await import("node:fs");
+      const persisted = JSON.parse(readFileSync12(persistedPath, "utf-8"));
       persistedShasLoaded = Object.keys(persisted.lastShas ?? {}).length;
     } catch {
       persistedShasLoaded = 0;
@@ -7377,7 +7471,7 @@ function buildV2TaskInstruction(teamName, workerName, task, taskId, cliOutputCon
     {}
   );
   const completeTaskCommand = formatOmcCliInvocation(
-    `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "completed", claim_token: "<claim_token>" })}' --json`
+    `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "completed", claim_token: "<claim_token>", result: "Summary: <what changed>\\nVerification: <tests/checks run>\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session" })}' --json`
   );
   const failTaskCommand = formatOmcCliInvocation(
     `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "failed", claim_token: "<claim_token>" })}' --json`
@@ -7392,6 +7486,7 @@ function buildV2TaskInstruction(teamName, workerName, task, taskId, cliOutputCon
     `2. Do the work described below.`,
     `3. On completion (use claim_token from step 1):`,
     `   ${completeTaskCommand}`,
+    `   The result field is required for completion evidence. For broad delegated tasks, include either "Subagent skip reason: <why no nested worker was needed/allowed>" or, only when explicitly allowed by the leader, "Subagent spawn evidence: <child task names/thread ids and integrated findings>".`,
     `4. On failure (use claim_token from step 1):`,
     `   ${failTaskCommand}`,
     `5. ACK/progress replies are not a stop signal. Keep executing your assigned or next feasible work until the task is actually complete or failed, then transition and exit.`,
@@ -7755,6 +7850,7 @@ async function startTeamV2(config) {
       status: "pending",
       owner: null,
       result: null,
+      ...config.tasks[i].delegation ? { delegation: config.tasks[i].delegation } : {},
       created_at: (/* @__PURE__ */ new Date()).toISOString()
     }, null, 2), "utf-8");
   }
@@ -8131,10 +8227,10 @@ async function requeueDeadWorkerTasks(teamName, deadWorkerNames, cwd) {
     await writeFile8(sidecarPath, JSON.stringify(sidecar, null, 2), "utf-8");
     const taskPath2 = absPath(cwd, TeamPaths.taskFile(sanitized, task.id));
     try {
-      const { readFileSync: readFileSync11, writeFileSync: writeFileSync4 } = await import("fs");
+      const { readFileSync: readFileSync12, writeFileSync: writeFileSync4 } = await import("fs");
       const { withFileLockSync: withFileLockSync2 } = await Promise.resolve().then(() => (init_file_lock(), file_lock_exports));
       withFileLockSync2(taskPath2 + ".lock", () => {
-        const raw = readFileSync11(taskPath2, "utf-8");
+        const raw = readFileSync12(taskPath2, "utf-8");
         const taskData = JSON.parse(raw);
         if (taskData.status === "in_progress") {
           taskData.status = "pending";
@@ -8164,7 +8260,7 @@ async function processCliWorkerVerdicts(teamName, cwd) {
     "team.runtime-v2.processCliWorkerVerdicts appendTeamEvent failed"
   );
   const { rename: rename3 } = await import("fs/promises");
-  const { readFileSync: readFileSync11, writeFileSync: writeFileSync4, existsSync: fsExistsSync } = await import("fs");
+  const { readFileSync: readFileSync12, writeFileSync: writeFileSync4, existsSync: fsExistsSync } = await import("fs");
   const { withFileLockSync: withFileLockSync2 } = await Promise.resolve().then(() => (init_file_lock(), file_lock_exports));
   for (const worker of config.workers) {
     const outputFile = worker.output_file;
@@ -8198,7 +8294,7 @@ async function processCliWorkerVerdicts(teamName, cwd) {
       const taskPath2 = absPath(cwd, TeamPaths.taskFile(sanitized, taskId));
       if (!fsExistsSync(taskPath2)) continue;
       try {
-        const taskRaw = readFileSync11(taskPath2, "utf-8");
+        const taskRaw = readFileSync12(taskPath2, "utf-8");
         const taskData = JSON.parse(taskRaw);
         if (taskData.owner === worker.name && taskData.status === "in_progress") {
           targetTaskId = taskId;
@@ -8226,7 +8322,7 @@ async function processCliWorkerVerdicts(teamName, cwd) {
     let transitionOk = false;
     try {
       withFileLockSync2(targetTaskPath + ".lock", () => {
-        const raw = readFileSync11(targetTaskPath, "utf-8");
+        const raw = readFileSync12(targetTaskPath, "utf-8");
         const taskData = JSON.parse(raw);
         if (taskData.status !== "in_progress" || taskData.owner !== worker.name) {
           return;
@@ -8772,9 +8868,9 @@ var init_runtime_v2 = __esm({
 // src/cli/team.ts
 import { randomUUID as randomUUID6 } from "crypto";
 import { spawn } from "child_process";
-import { existsSync as existsSync20, mkdirSync as mkdirSync3, readFileSync as readFileSync10, writeFileSync as writeFileSync3 } from "fs";
+import { existsSync as existsSync21, mkdirSync as mkdirSync3, readFileSync as readFileSync11, writeFileSync as writeFileSync3 } from "fs";
 import { readFile as readFile11, rm as rm5 } from "fs/promises";
-import { dirname as dirname16, join as join23 } from "path";
+import { dirname as dirname16, join as join24 } from "path";
 import { fileURLToPath as fileURLToPath3 } from "url";
 
 // src/team/api-interop.ts
@@ -9006,7 +9102,7 @@ async function resumeTeam(teamName, cwd) {
 init_runtime_v2();
 init_git_worktree();
 init_swallowed_error();
-var TEAM_UPDATE_TASK_MUTABLE_FIELDS = /* @__PURE__ */ new Set(["subject", "description", "blocked_by", "requires_code_change"]);
+var TEAM_UPDATE_TASK_MUTABLE_FIELDS = /* @__PURE__ */ new Set(["subject", "description", "blocked_by", "requires_code_change", "delegation"]);
 var TEAM_UPDATE_TASK_REQUEST_FIELDS = /* @__PURE__ */ new Set(["team_name", "task_id", "workingDirectory", ...TEAM_UPDATE_TASK_MUTABLE_FIELDS]);
 var TEAM_API_OPERATIONS = [
   "send-message",
@@ -9058,6 +9154,60 @@ function parseValidatedTaskIdArray(value, fieldName) {
     taskIds.push(normalized);
   }
   return taskIds;
+}
+function parseTaskDelegationPlan(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("delegation must be an object");
+  }
+  const raw = value;
+  const mode = raw.mode;
+  if (mode !== "none" && mode !== "optional" && mode !== "auto" && mode !== "required") {
+    throw new Error("delegation.mode must be one of: none, optional, auto, required");
+  }
+  const plan = { mode };
+  if ("max_parallel_subtasks" in raw) {
+    if (!isFiniteInteger(raw.max_parallel_subtasks) || raw.max_parallel_subtasks < 1) {
+      throw new Error("delegation.max_parallel_subtasks must be a positive integer when provided");
+    }
+    plan.max_parallel_subtasks = raw.max_parallel_subtasks;
+  }
+  if ("required_parallel_probe" in raw) {
+    if (typeof raw.required_parallel_probe !== "boolean") throw new Error("delegation.required_parallel_probe must be a boolean when provided");
+    plan.required_parallel_probe = raw.required_parallel_probe;
+  }
+  if ("spawn_before_serial_search_threshold" in raw) {
+    if (!isFiniteInteger(raw.spawn_before_serial_search_threshold) || raw.spawn_before_serial_search_threshold < 1) {
+      throw new Error("delegation.spawn_before_serial_search_threshold must be a positive integer when provided");
+    }
+    plan.spawn_before_serial_search_threshold = raw.spawn_before_serial_search_threshold;
+  }
+  if ("child_model_policy" in raw) {
+    const policy = raw.child_model_policy;
+    if (policy !== "standard" && policy !== "fast" && policy !== "inherit" && policy !== "frontier") {
+      throw new Error("delegation.child_model_policy must be one of: standard, fast, inherit, frontier");
+    }
+    plan.child_model_policy = policy;
+  }
+  if ("child_model" in raw) {
+    if (typeof raw.child_model !== "string") throw new Error("delegation.child_model must be a string when provided");
+    plan.child_model = raw.child_model;
+  }
+  if ("subtask_candidates" in raw) {
+    if (!Array.isArray(raw.subtask_candidates) || !raw.subtask_candidates.every((item) => typeof item === "string")) {
+      throw new Error("delegation.subtask_candidates must be an array of strings when provided");
+    }
+    plan.subtask_candidates = raw.subtask_candidates;
+  }
+  if ("child_report_format" in raw) {
+    const format = raw.child_report_format;
+    if (format !== "bullets" && format !== "json") throw new Error("delegation.child_report_format must be bullets or json when provided");
+    plan.child_report_format = format;
+  }
+  if ("skip_allowed_reason_required" in raw) {
+    if (typeof raw.skip_allowed_reason_required !== "boolean") throw new Error("delegation.skip_allowed_reason_required must be a boolean when provided");
+    plan.skip_allowed_reason_required = raw.skip_allowed_reason_required;
+  }
+  return plan;
 }
 function teamStateExists(teamName, candidateCwd) {
   if (!TEAM_NAME_SAFE_PATTERN.test(teamName)) return false;
@@ -9430,13 +9580,22 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         const owner = args.owner;
         const blockedBy = args.blocked_by;
         const requiresCodeChange = args.requires_code_change;
+        let delegation;
+        if ("delegation" in args) {
+          try {
+            delegation = parseTaskDelegationPlan(args.delegation);
+          } catch (error) {
+            return { ok: false, operation, error: { code: "invalid_input", message: error.message } };
+          }
+        }
         const task = await teamCreateTask(teamName, {
           subject,
           description,
           status: "pending",
           owner: owner || void 0,
           blocked_by: blockedBy,
-          requires_code_change: requiresCodeChange
+          requires_code_change: requiresCodeChange,
+          ...delegation ? { delegation } : {}
         }, cwd);
         return { ok: true, operation, data: { task } };
       }
@@ -9498,6 +9657,13 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
             return { ok: false, operation, error: { code: "invalid_input", message: error.message } };
           }
         }
+        if ("delegation" in args) {
+          try {
+            updates.delegation = parseTaskDelegationPlan(args.delegation);
+          } catch (error) {
+            return { ok: false, operation, error: { code: "invalid_input", message: error.message } };
+          }
+        }
         const task = await teamUpdateTask(teamName, taskId, updates, cwd);
         return task ? { ok: true, operation, data: { task } } : { ok: false, operation, error: { code: "task_not_found", message: "task_not_found" } };
       }
@@ -9521,6 +9687,8 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         const from = String(args.from || "").trim();
         const to = String(args.to || "").trim();
         const claimToken = String(args.claim_token || "").trim();
+        const transitionResult = args.result;
+        const transitionError = args.error;
         if (!teamName || !taskId || !from || !to || !claimToken) {
           return { ok: false, operation, error: { code: "invalid_input", message: "team_name, task_id, from, to, claim_token are required" } };
         }
@@ -9528,7 +9696,24 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         if (!allowed.has(from) || !allowed.has(to)) {
           return { ok: false, operation, error: { code: "invalid_input", message: "from and to must be valid task statuses" } };
         }
-        const result = await teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd);
+        if (transitionResult !== void 0 && typeof transitionResult !== "string") {
+          return { ok: false, operation, error: { code: "invalid_input", message: "result must be a string when provided" } };
+        }
+        if (transitionError !== void 0 && typeof transitionError !== "string") {
+          return { ok: false, operation, error: { code: "invalid_input", message: "error must be a string when provided" } };
+        }
+        const result = await teamTransitionTaskStatus(
+          teamName,
+          taskId,
+          from,
+          to,
+          claimToken,
+          cwd,
+          {
+            result: typeof transitionResult === "string" ? transitionResult : void 0,
+            error: typeof transitionError === "string" ? transitionError : void 0
+          }
+        );
         return { ok: true, operation, data: result };
       }
       case "release-task-claim": {
@@ -9752,6 +9937,278 @@ init_team_name();
 init_monitor();
 init_platform();
 init_paths();
+
+// src/planning/artifacts.ts
+import { readdirSync as readdirSync5, readFileSync as readFileSync10, existsSync as existsSync20 } from "fs";
+import { join as join23 } from "path";
+
+// src/planning/artifact-names.ts
+import { basename as basename7 } from "path";
+var PLANNING_ARTIFACT_TIMESTAMP_PATTERN = /^\d{8}T\d{6}Z$/;
+function legacyTestSpecSlug(fileNameOrPath) {
+  const match = basename7(fileNameOrPath).match(/^test-?spec-(?<slug>.+)\.md$/i);
+  return match?.groups?.slug ?? null;
+}
+function requiredTimestampedTestSpecFileName(prdArtifact) {
+  return prdArtifact.kind === "prd" && prdArtifact.timestamp ? `test-spec-${prdArtifact.timestamp}-${prdArtifact.slug}.md` : null;
+}
+function splitTimestampPrefix(rawSlug) {
+  const separatorIndex = rawSlug.indexOf("-");
+  if (separatorIndex === -1) {
+    return { slug: rawSlug };
+  }
+  const prefix = rawSlug.slice(0, separatorIndex);
+  if (!PLANNING_ARTIFACT_TIMESTAMP_PATTERN.test(prefix)) {
+    return { slug: rawSlug };
+  }
+  return {
+    timestamp: prefix,
+    slug: rawSlug.slice(separatorIndex + 1)
+  };
+}
+function parsePlanningArtifactFileName(fileNameOrPath) {
+  const fileName = basename7(fileNameOrPath);
+  const autoresearchDeepInterviewMatch = fileName.match(
+    /^deep-interview-autoresearch-(?<slug>.+)\.md$/i
+  );
+  if (autoresearchDeepInterviewMatch?.groups?.slug) {
+    const parsedSlug = splitTimestampPrefix(autoresearchDeepInterviewMatch.groups.slug);
+    if (!parsedSlug.slug) return null;
+    return {
+      kind: "deep-interview-autoresearch",
+      ...parsedSlug
+    };
+  }
+  const deepInterviewMatch = fileName.match(/^deep-interview-(?<slug>.+)\.md$/i);
+  if (deepInterviewMatch?.groups?.slug) {
+    const parsedSlug = splitTimestampPrefix(deepInterviewMatch.groups.slug);
+    if (!parsedSlug.slug) return null;
+    return {
+      kind: "deep-interview",
+      ...parsedSlug
+    };
+  }
+  const prdMatch = fileName.match(/^prd-(?<slug>.+)\.md$/i);
+  if (prdMatch?.groups?.slug) {
+    const parsedSlug = splitTimestampPrefix(prdMatch.groups.slug);
+    if (!parsedSlug.slug) return null;
+    return {
+      kind: "prd",
+      ...parsedSlug
+    };
+  }
+  const testSpecMatch = fileName.match(/^test-?spec-(?<slug>.+)\.md$/i);
+  if (testSpecMatch?.groups?.slug) {
+    const parsedSlug = splitTimestampPrefix(testSpecMatch.groups.slug);
+    if (!parsedSlug.slug) return null;
+    return {
+      kind: "test-spec",
+      ...parsedSlug
+    };
+  }
+  return null;
+}
+function comparePlanningArtifactPaths(left, right) {
+  const leftParsed = parsePlanningArtifactFileName(left);
+  const rightParsed = parsePlanningArtifactFileName(right);
+  if (leftParsed?.timestamp && rightParsed?.timestamp && leftParsed.timestamp !== rightParsed.timestamp) {
+    return leftParsed.timestamp.localeCompare(rightParsed.timestamp);
+  }
+  if (leftParsed?.timestamp && !rightParsed?.timestamp) {
+    return 1;
+  }
+  if (!leftParsed?.timestamp && rightParsed?.timestamp) {
+    return -1;
+  }
+  return left.localeCompare(right);
+}
+function selectMatchingTestSpecsForPrd(prdPath, testSpecPaths) {
+  if (!prdPath) {
+    return [];
+  }
+  const prdArtifact = parsePlanningArtifactFileName(prdPath);
+  if (prdArtifact?.kind !== "prd") {
+    return [];
+  }
+  const requiredTimestampedFileName = requiredTimestampedTestSpecFileName(prdArtifact);
+  return (requiredTimestampedFileName ? testSpecPaths.filter((path4) => basename7(path4) === requiredTimestampedFileName) : testSpecPaths.filter((path4) => legacyTestSpecSlug(path4) === prdArtifact.slug)).sort(comparePlanningArtifactPaths);
+}
+function selectLatestPlanningArtifactPath(paths) {
+  return [...paths].sort(comparePlanningArtifactPaths).at(-1) ?? null;
+}
+
+// src/planning/artifacts.ts
+function readFileSafe(path4) {
+  try {
+    return readFileSync10(path4, "utf-8");
+  } catch {
+    return null;
+  }
+}
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+function getSectionContent(markdown, heading) {
+  const headingRe = new RegExp(
+    `^##\\s+${escapeRegex(heading)}[ \\t]*$`,
+    "im"
+  );
+  const headingMatch = headingRe.exec(markdown);
+  if (!headingMatch || headingMatch.index === void 0) return null;
+  const bodyStart = headingMatch.index + headingMatch[0].length;
+  const rest = markdown.slice(bodyStart).replace(/^\r?\n/, "");
+  const nextHeadingMatch = /\r?\n##\s+/.exec(rest);
+  const body = (nextHeadingMatch ? rest.slice(0, nextHeadingMatch.index) : rest).trim();
+  return body.length > 0 ? body : null;
+}
+function hasRequiredSections(markdown, headings) {
+  return headings.every(
+    (heading) => getSectionContent(markdown, heading) !== null
+  );
+}
+function getPlansDirCandidates(cwd) {
+  return [join23(cwd, ".omc", "plans"), join23(cwd, ".omx", "plans")];
+}
+function sortArtifactPathsDescending(paths) {
+  return [...paths].sort((a, b) => comparePlanningArtifactPaths(b, a));
+}
+function hasCompletePlanningPair(prdPath, matchingTestSpecPaths) {
+  if (matchingTestSpecPaths.length === 0) {
+    return false;
+  }
+  const prd = readFileSafe(prdPath);
+  const testSpec = readFileSafe(matchingTestSpecPaths[0]);
+  if (!prd || !testSpec) {
+    return false;
+  }
+  return hasRequiredSections(prd, [
+    "Acceptance criteria",
+    "Requirement coverage map"
+  ]) && hasRequiredSections(testSpec, [
+    "Unit coverage",
+    "Verification mapping"
+  ]);
+}
+function readPlanningArtifacts(cwd) {
+  let entries;
+  const prdPaths = [];
+  const testSpecPaths = [];
+  for (const plansDir of getPlansDirCandidates(cwd)) {
+    if (!existsSync20(plansDir)) {
+      continue;
+    }
+    try {
+      entries = readdirSync5(plansDir);
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      if (entry.startsWith("prd-") && entry.endsWith(".md")) {
+        prdPaths.push(join23(plansDir, entry));
+      } else if (entry.startsWith("test-spec-") && entry.endsWith(".md")) {
+        testSpecPaths.push(join23(plansDir, entry));
+      }
+    }
+  }
+  return {
+    prdPaths: sortArtifactPathsDescending(prdPaths),
+    testSpecPaths: sortArtifactPathsDescending(testSpecPaths)
+  };
+}
+function decodeQuotedValue(raw) {
+  const normalized = raw.trim();
+  if (!normalized) return null;
+  try {
+    return JSON.parse(normalized);
+  } catch {
+    if (normalized.startsWith('"') && normalized.endsWith('"') || normalized.startsWith("'") && normalized.endsWith("'")) {
+      return normalized.slice(1, -1);
+    }
+    return null;
+  }
+}
+function launchHintPattern(mode) {
+  return mode === "team" ? /(?<command>(?:om[cx]\s+team|\$team)(?:\s+ralph)?(?:\s+(?<count>\d+)(?::(?<role>[a-z][a-z0-9-]*))?)?\s+(?<task>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(?<flags>(?:\s+--[\w-]+)*))/gi : /(?<command>(?:om[cx]\s+ralph|\$ralph)\s+(?<task>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(?<flags>(?:\s+--[\w-]+)*))/gi;
+}
+function collectLaunchHintMatches(content, mode) {
+  return [...content.matchAll(launchHintPattern(mode))];
+}
+function selectLaunchHintMatch(matches, normalizedTask, normalizedCommand) {
+  const decodedMatches = matches.flatMap((match) => {
+    const command = match[0]?.trim();
+    const task = match.groups?.task ? decodeQuotedValue(match.groups.task) : null;
+    if (!command || task == null) return [];
+    const flags = match.groups?.flags ?? "";
+    const workerCount = match.groups?.count ? Number.parseInt(match.groups.count, 10) : void 0;
+    return [{
+      command,
+      task,
+      ...workerCount == null ? {} : { workerCount },
+      agentType: match.groups?.role || void 0,
+      linkedRalph: /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph
+    }];
+  });
+  const matchesToConsider = normalizedCommand ? decodedMatches.filter((match) => match.command === normalizedCommand) : normalizedTask ? decodedMatches.filter((match) => match.task.trim() === normalizedTask) : decodedMatches;
+  if (matchesToConsider.length === 0) return { status: "no-match" };
+  if (matchesToConsider.length > 1) return { status: "ambiguous" };
+  return { status: "unique", ...matchesToConsider[0] };
+}
+function parseFlags(flagStr) {
+  return {
+    linkedRalph: /--linked-ralph/.test(flagStr)
+  };
+}
+function readApprovedExecutionLaunchHintOutcome(cwd, mode, options = {}) {
+  const artifacts = readPlanningArtifacts(cwd);
+  if (artifacts.prdPaths.length === 0) return { status: "absent" };
+  const prdPath = options.prdPath ? artifacts.prdPaths.includes(options.prdPath) ? options.prdPath : null : selectLatestPlanningArtifactPath(artifacts.prdPaths);
+  const matchingTestSpecs = selectMatchingTestSpecsForPrd(
+    prdPath,
+    artifacts.testSpecPaths
+  );
+  if (!prdPath) return { status: "absent" };
+  if (artifacts.testSpecPaths.length > 0 && matchingTestSpecs.length === 0) {
+    return { status: "absent" };
+  }
+  const content = readFileSafe(prdPath);
+  if (!content) return { status: "absent" };
+  const selected = selectLaunchHintMatch(
+    collectLaunchHintMatches(content, mode),
+    options.task?.trim(),
+    options.command?.trim()
+  );
+  if (selected.status === "ambiguous") return { status: "ambiguous" };
+  if (selected.status !== "unique") return { status: "absent" };
+  if (options.requirePlanningComplete && !hasCompletePlanningPair(prdPath, matchingTestSpecs)) {
+    return { status: "incomplete" };
+  }
+  if (mode === "team") {
+    return {
+      status: "resolved",
+      hint: {
+        mode: "team",
+        command: selected.command,
+        task: selected.task,
+        workerCount: selected.workerCount,
+        agentType: selected.agentType,
+        linkedRalph: selected.linkedRalph,
+        sourcePath: prdPath
+      }
+    };
+  }
+  return {
+    status: "resolved",
+    hint: {
+      mode: "ralph",
+      command: selected.command,
+      task: selected.task,
+      linkedRalph: selected.linkedRalph,
+      sourcePath: prdPath
+    }
+  };
+}
+
+// src/cli/team.ts
 var JOB_ID_PATTERN = /^omc-[a-z0-9]{1,16}$/;
 var VALID_CLI_AGENT_TYPES = /* @__PURE__ */ new Set(["claude", "codex", "gemini", "cursor"]);
 var SUBCOMMANDS = /* @__PURE__ */ new Set(["start", "status", "wait", "cleanup", "resume", "shutdown", "api", "help", "--help", "-h"]);
@@ -9820,24 +10277,24 @@ function resolveRuntimeCliPath(env = process.env) {
     return env.OMC_RUNTIME_CLI_PATH;
   }
   const moduleDir = dirname16(fileURLToPath3(import.meta.url));
-  return join23(moduleDir, "../../bridge/runtime-cli.cjs");
+  return join24(moduleDir, "../../bridge/runtime-cli.cjs");
 }
 function ensureJobsDir(jobsDir) {
-  if (!existsSync20(jobsDir)) {
+  if (!existsSync21(jobsDir)) {
     mkdirSync3(jobsDir, { recursive: true });
   }
 }
 function jobPath(jobsDir, jobId) {
-  return join23(jobsDir, `${jobId}.json`);
+  return join24(jobsDir, `${jobId}.json`);
 }
 function resultArtifactPath(jobsDir, jobId) {
-  return join23(jobsDir, `${jobId}-result.json`);
+  return join24(jobsDir, `${jobId}-result.json`);
 }
 function panesArtifactPath(jobsDir, jobId) {
-  return join23(jobsDir, `${jobId}-panes.json`);
+  return join24(jobsDir, `${jobId}-panes.json`);
 }
 function teamStateRoot2(cwd, teamName) {
-  return join23(cwd, ".omc", "state", "team", teamName);
+  return join24(cwd, ".omc", "state", "team", teamName);
 }
 function validateJobId(jobId) {
   if (!JOB_ID_PATTERN.test(jobId)) {
@@ -9877,7 +10334,7 @@ async function resolveCleanupPaneEvidence(job, jobsDir, jobId) {
 }
 function readJobFromDisk(jobId, jobsDir) {
   try {
-    const content = readFileSync10(jobPath(jobsDir, jobId), "utf-8");
+    const content = readFileSync11(jobPath(jobsDir, jobId), "utf-8");
     return parseJsonSafe(content);
   } catch {
     return null;
@@ -9906,7 +10363,7 @@ function generateJobId(now = Date.now()) {
 }
 function convergeWithResultArtifact(jobId, job, jobsDir) {
   try {
-    const artifactRaw = readFileSync10(resultArtifactPath(jobsDir, jobId), "utf-8");
+    const artifactRaw = readFileSync11(resultArtifactPath(jobsDir, jobId), "utf-8");
     const artifactParsed = parseJsonSafe(artifactRaw);
     if (artifactParsed?.status === "completed" || artifactParsed?.status === "failed") {
       return {
@@ -10657,9 +11114,9 @@ function parseLegacyStartAlias(args) {
   if (!spec) return null;
   const match = spec.match(/^(\d+):([a-zA-Z0-9_-]+)(?::([a-zA-Z0-9_-]+))?$/);
   if (!match) return null;
-  const workerCount = toInt(match[1], "worker-count");
+  let workerCount = toInt(match[1], "worker-count");
   if (workerCount < 1) throw new Error("worker-count must be >= 1");
-  const agentType = normalizeAgentType(match[2]);
+  let agentType = normalizeAgentType(match[2]);
   const role = match[3] || void 0;
   index += 1;
   let json = false;
@@ -10694,8 +11151,35 @@ function parseLegacyStartAlias(args) {
     }
     taskParts.push(token);
   }
-  const task = taskParts.join(" ").trim();
+  let task = taskParts.join(" ").trim();
   if (!task) throw new Error("Legacy start alias requires a task string");
+  const shortFollowup = ["team", "/team", "team please", "run team", "start team"].includes(task.toLowerCase());
+  if (shortFollowup) {
+    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(cwd, "team", {
+      requirePlanningComplete: true
+    });
+    if (approvedHintOutcome.status === "ambiguous") {
+      throw new Error("approved_execution_hint_ambiguous:team");
+    }
+    if (approvedHintOutcome.status === "incomplete") {
+      throw new Error("approved_execution_hint_incomplete:team");
+    }
+    if (approvedHintOutcome.status === "resolved") {
+      task = approvedHintOutcome.hint.task;
+      workerCount = approvedHintOutcome.hint.workerCount ?? workerCount;
+      agentType = approvedHintOutcome.hint.agentType ? normalizeAgentType(approvedHintOutcome.hint.agentType) : agentType;
+      ralph = approvedHintOutcome.hint.linkedRalph === true ? true : ralph;
+    }
+  } else {
+    const command = `omc team ${ralph ? "ralph " : ""}${spec} ${JSON.stringify(task)}`;
+    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(cwd, "team", {
+      task,
+      command
+    });
+    if (approvedHintOutcome.status === "ambiguous") {
+      throw new Error("approved_execution_hint_ambiguous:team");
+    }
+  }
   return {
     workerCount,
     agentType,

@@ -29,6 +29,53 @@ function hasExtendedContextSuffix(modelId) {
 function isSubagentSafeModelId(modelId) {
   return isProviderSpecificModelId(modelId) && !hasExtendedContextSuffix(modelId);
 }
+function isBedrockProviderEnv() {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') return true;
+  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || '';
+  if (/^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) return true;
+  if (
+    /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId)
+    && /:(inference-profile|application-inference-profile)\//i.test(modelId)
+    && modelId.toLowerCase().includes('claude')
+  ) {
+    return true;
+  }
+  return false;
+}
+function isVertexProviderEnv() {
+  if (process.env.CLAUDE_CODE_USE_VERTEX === '1') return true;
+  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || '';
+  return !!modelId && modelId.toLowerCase().startsWith('vertex_ai/');
+}
+function getActiveModelIds() {
+  return [process.env.CLAUDE_MODEL || '', process.env.ANTHROPIC_MODEL || ''].filter(Boolean);
+}
+function isNormalClaudeModelId(modelId) {
+  const lower = (modelId || '').toLowerCase();
+  return Boolean(lower) && lower.includes('claude') && !isProviderSpecificModelId(modelId);
+}
+function hasNormalClaudeActiveModel() {
+  return getActiveModelIds().some(isNormalClaudeModelId);
+}
+function isConfigForceInheritProxyEnv() {
+  const config = loadOmcConfig();
+  return config.routing?.forceInherit === true && !hasNormalClaudeActiveModel();
+}
+function isNonClaudeProviderEnv() {
+  if (isBedrockProviderEnv() || isVertexProviderEnv()) return true;
+  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || '';
+  if (modelId && !modelId.toLowerCase().includes('claude')) return true;
+  const baseUrl = process.env.ANTHROPIC_BASE_URL || '';
+  if (baseUrl && !baseUrl.includes('anthropic.com')) return true;
+  return isConfigForceInheritProxyEnv();
+}
+function acceptsProxyAnthropicDefaultTierValue(key, value) {
+  return key.startsWith('ANTHROPIC_DEFAULT_')
+    && Boolean(value)
+    && isNonClaudeProviderEnv()
+    && !isBedrockProviderEnv()
+    && !isVertexProviderEnv();
+}
 const TIER_ALIASES = new Set(['sonnet', 'opus', 'haiku']);
 function isTierAlias(modelId) {
   return TIER_ALIASES.has((modelId || '').toLowerCase());
@@ -55,9 +102,10 @@ function resolveTierAliasToSafeModel(tierAlias) {
     // model resolution, which handles [1m] suffixes correctly for explicit model= calls.
     // OMC-internal vars (OMC_SUBAGENT_MODEL, OMC_MODEL_*) are not read by CC, so a [1m]
     // value there is not a valid routing proof — keep the stricter isSubagentSafeModelId check.
-    const isNativeCcVar = key.startsWith('ANTHROPIC_DEFAULT_') || key.startsWith('CLAUDE_CODE_BEDROCK_');
+    const isAnthropicDefaultTierVar = key.startsWith('ANTHROPIC_DEFAULT_');
+    const isNativeCcVar = isAnthropicDefaultTierVar || key.startsWith('CLAUDE_CODE_BEDROCK_');
     const validator = isNativeCcVar ? isProviderSpecificModelId : isSubagentSafeModelId;
-    if (value && validator(value)) return value;
+    if (value && (validator(value) || acceptsProxyAnthropicDefaultTierValue(key, value))) return value;
   }
   return '';
 }
@@ -107,6 +155,64 @@ function readAgentDefinitionModel(subagentType) {
   } catch {
     return null;
   }
+}
+
+
+const SLOP_RISK_TOOL_NAMES = new Set([
+  'Task',
+  'TaskCreate',
+  'TaskUpdate',
+  'Agent',
+  'Bash',
+  'Edit',
+  'MultiEdit',
+  'Write',
+  'NotebookEdit',
+]);
+const SLOP_FALLBACK_LANGUAGE_PATTERN = /\b(?:fallback|fall\s+back|workaround|work\s+around)\b/i;
+
+function collectStringValues(value, output = [], depth = 0) {
+  if (depth > 5 || output.length > 100) return output;
+  if (typeof value === 'string') {
+    output.push(value);
+    return output;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectStringValues(item, output, depth + 1);
+    return output;
+  }
+  if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) {
+      // Skip hook/runtime metadata so warnings are driven by user-authored tool intent.
+      if (/^(cwd|directory|session_?id|transcript_?path|hook_event_name)$/i.test(key)) continue;
+      collectStringValues(child, output, depth + 1);
+    }
+  }
+  return output;
+}
+
+function generateSlopWarning(data, toolName) {
+  if (!SLOP_RISK_TOOL_NAMES.has(toolName)) return '';
+  const toolInput = data.toolInput || data.tool_input || {};
+  const promptLikeFields = {
+    prompt: data.prompt,
+    userPrompt: data.userPrompt,
+    user_prompt: data.user_prompt,
+    message: data.message,
+  };
+  const inspectedText = collectStringValues(toolInput)
+    .concat(collectStringValues(promptLikeFields))
+    .join('\n');
+  if (!SLOP_FALLBACK_LANGUAGE_PATTERN.test(inspectedText)) return '';
+
+  return '[SLOP WARNING] Detected fallback/workaround language in this tool input. ' +
+    'Do not make potential slop: avoid ad-hoc fallback layers, workaround shims, or environment-specific patches unless explicitly justified. ' +
+    'For architecture concerns, consult the architect for a concrete design first. ' +
+    'If this seems environment-specific, ask the user to confirm constraints before proceeding.';
+}
+
+function combineHookMessages(...messages) {
+  return messages.filter(Boolean).join('\n\n');
 }
 
 const SESSION_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/;
@@ -859,6 +965,7 @@ async function main() {
       }
     }
 
+    const slopWarning = generateSlopWarning(data, toolName);
     let message;
     if (toolName === 'Task' || toolName === 'TaskCreate' || toolName === 'TaskUpdate') {
       const toolInput = data.toolInput || data.tool_input || null;
@@ -866,6 +973,7 @@ async function main() {
     } else {
       message = generateMessage(toolName, todoStatus, modeActive);
     }
+    message = combineHookMessages(slopWarning, message);
 
     if (!message) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));

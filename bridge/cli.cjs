@@ -3497,9 +3497,53 @@ var init_ssrf_guard = __esm({
 });
 
 // src/config/models.ts
+function readEnvValue(key) {
+  const value = process.env[key]?.trim();
+  return value || void 0;
+}
 function resolveTierModelFromEnv(tier) {
   for (const key of TIER_ENV_KEYS[tier]) {
-    const value = process.env[key]?.trim();
+    const value = readEnvValue(key);
+    if (value) {
+      return value;
+    }
+  }
+  return void 0;
+}
+function getDirectModelEnvValue() {
+  for (const key of DIRECT_MODEL_ENV_KEYS) {
+    const value = readEnvValue(key);
+    if (value) {
+      return value;
+    }
+  }
+  return void 0;
+}
+function getProviderDetectionModelEnvValues() {
+  const directModel = getDirectModelEnvValue();
+  if (directModel) {
+    return [directModel];
+  }
+  const values = /* @__PURE__ */ new Set();
+  for (const tier of INHERIT_TIER_PRIORITY) {
+    const value = resolveTierModelFromEnv(tier);
+    if (value) {
+      values.add(value);
+    }
+  }
+  return [...values];
+}
+function getDirectProviderDetectionModelEnvValues() {
+  const directModel = getDirectModelEnvValue();
+  return directModel ? [directModel] : [];
+}
+function resolveInheritedModelFromEnv() {
+  const directModel = getDirectModelEnvValue();
+  if (directModel) {
+    return directModel;
+  }
+  for (const tier of INHERIT_TIER_PRIORITY) {
+    const value = resolveTierModelFromEnv(tier);
     if (value) {
       return value;
     }
@@ -3530,18 +3574,22 @@ function resolveClaudeFamily(modelId) {
   if (lower.includes("haiku")) return "HAIKU";
   return null;
 }
+function hasBedrockModelId(modelIds) {
+  for (const modelId of modelIds) {
+    if (/^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
+      return true;
+    }
+    if (/^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) && /:(inference-profile|application-inference-profile)\//i.test(modelId) && modelId.toLowerCase().includes("claude")) {
+      return true;
+    }
+  }
+  return false;
+}
 function isBedrock() {
   if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && /^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
-    return true;
-  }
-  if (modelId && /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) && /:(inference-profile|application-inference-profile)\//i.test(modelId) && modelId.toLowerCase().includes("claude")) {
-    return true;
-  }
-  return false;
+  return hasBedrockModelId(getProviderDetectionModelEnvValues());
 }
 function isProviderSpecificModelId(modelId) {
   if (/^((us|eu|ap|global)\.anthropic\.|anthropic\.claude)/i.test(modelId)) {
@@ -3559,24 +3607,32 @@ function isVertexAI() {
   if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && modelId.toLowerCase().startsWith("vertex_ai/")) {
-    return true;
+  return hasVertexModelId(getProviderDetectionModelEnvValues());
+}
+function hasVertexModelId(modelIds) {
+  return modelIds.some((modelId) => modelId.toLowerCase().startsWith("vertex_ai/"));
+}
+function hasNonClaudeModelId(modelIds) {
+  for (const modelId of modelIds) {
+    const lower = modelId.toLowerCase();
+    if (!lower.includes("claude") && !CLAUDE_TIER_ALIASES.has(lower)) {
+      return true;
+    }
   }
   return false;
 }
-function isNonClaudeProvider() {
+function shouldAutoForceInherit() {
   if (process.env.OMC_ROUTING_FORCE_INHERIT === "true") {
     return true;
   }
-  if (isBedrock()) {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
-  if (isVertexAI()) {
+  if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
-  const modelId = process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL || "";
-  if (modelId && !modelId.toLowerCase().includes("claude")) {
+  const directModelValues = getDirectProviderDetectionModelEnvValues();
+  if (hasBedrockModelId(directModelValues) || hasVertexModelId(directModelValues) || hasNonClaudeModelId(directModelValues)) {
     return true;
   }
   const baseUrl = process.env.ANTHROPIC_BASE_URL || "";
@@ -3592,11 +3648,14 @@ function isNonClaudeProvider() {
   }
   return false;
 }
-var TIER_ENV_KEYS, CLAUDE_FAMILY_DEFAULTS, BUILTIN_TIER_MODEL_DEFAULTS, CLAUDE_FAMILY_HIGH_VARIANTS, BUILTIN_EXTERNAL_MODEL_DEFAULTS;
+var DIRECT_MODEL_ENV_KEYS, INHERIT_TIER_PRIORITY, CLAUDE_TIER_ALIASES, TIER_ENV_KEYS, CLAUDE_FAMILY_DEFAULTS, BUILTIN_TIER_MODEL_DEFAULTS, CLAUDE_FAMILY_HIGH_VARIANTS, BUILTIN_EXTERNAL_MODEL_DEFAULTS;
 var init_models = __esm({
   "src/config/models.ts"() {
     "use strict";
     init_ssrf_guard();
+    DIRECT_MODEL_ENV_KEYS = ["CLAUDE_MODEL", "ANTHROPIC_MODEL"];
+    INHERIT_TIER_PRIORITY = ["MEDIUM", "HIGH", "LOW"];
+    CLAUDE_TIER_ALIASES = /* @__PURE__ */ new Set(["sonnet", "opus", "haiku"]);
     TIER_ENV_KEYS = {
       LOW: [
         "OMC_MODEL_LOW",
@@ -4120,7 +4179,7 @@ function loadConfig() {
   }
   const envConfig = loadEnvConfig();
   config2 = deepMerge(config2, envConfig);
-  if (config2.routing?.forceInherit !== true && process.env.OMC_ROUTING_FORCE_INHERIT === void 0 && isNonClaudeProvider()) {
+  if (config2.routing?.forceInherit !== true && process.env.OMC_ROUTING_FORCE_INHERIT === void 0 && shouldAutoForceInherit()) {
     config2.routing = {
       ...config2.routing,
       forceInherit: true
@@ -5079,7 +5138,7 @@ function getAgentDefinitions(options) {
     "document-specialist": documentSpecialistAgent
   };
   const resolvedConfig = options?.config ?? loadConfig();
-  const inheritModel = resolvedConfig.routing?.forceInherit ? process.env.CLAUDE_MODEL || process.env.ANTHROPIC_MODEL : void 0;
+  const inheritModel = resolvedConfig.routing?.forceInherit ? resolveInheritedModelFromEnv() : void 0;
   const result = {};
   for (const [name, agentConfig] of Object.entries(agents)) {
     const override = options?.overrides?.[name];
@@ -5107,6 +5166,7 @@ var init_definitions = __esm({
     "use strict";
     init_utils();
     init_loader();
+    init_models();
     init_skininthegamebros_guidance();
     init_architect();
     init_designer();
@@ -5616,6 +5676,66 @@ function validateWorkingDirectory(workingDirectory) {
       return trustedRoot;
     }
     return providedRoot;
+  }
+  let resolvedReal;
+  try {
+    resolvedReal = (0, import_fs12.realpathSync)(resolved);
+  } catch {
+    throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+  }
+  const rel = (0, import_path17.relative)(trustedRootReal, resolvedReal);
+  if (rel.startsWith("..") || (0, import_path17.isAbsolute)(rel)) {
+    throw new Error(`workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`);
+  }
+  return trustedRoot;
+}
+function getGitCommonDir(cwd2) {
+  try {
+    const commonDir = (0, import_child_process6.execSync)("git rev-parse --path-format=absolute --git-common-dir", {
+      cwd: cwd2,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
+      timeout: 5e3
+    }).trim();
+    return (0, import_fs12.realpathSync)(commonDir);
+  } catch {
+    return null;
+  }
+}
+function validateWorkingDirectoryOrLinkedWorktree(workingDirectory) {
+  const trustedRoot = getWorktreeRoot(process.cwd()) || process.cwd();
+  if (!workingDirectory) {
+    return trustedRoot;
+  }
+  const resolved = (0, import_path17.resolve)(workingDirectory);
+  let trustedRootReal;
+  try {
+    trustedRootReal = (0, import_fs12.realpathSync)(trustedRoot);
+  } catch {
+    trustedRootReal = trustedRoot;
+  }
+  const providedRoot = getWorktreeRoot(resolved);
+  if (providedRoot) {
+    let providedRootReal;
+    try {
+      providedRootReal = (0, import_fs12.realpathSync)(providedRoot);
+    } catch {
+      throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+    }
+    if (providedRootReal === trustedRootReal) {
+      return providedRoot;
+    }
+    const trustedCommonDir = getGitCommonDir(trustedRoot);
+    const providedCommonDir = getGitCommonDir(providedRoot);
+    if (trustedCommonDir && providedCommonDir && providedCommonDir === trustedCommonDir) {
+      return providedRoot;
+    }
+    console.error("[worktree] workingDirectory resolved to different git worktree root, using trusted root", {
+      workingDirectory: resolved,
+      providedRoot: providedRootReal,
+      trustedRoot: trustedRootReal
+    });
+    return trustedRoot;
   }
   let resolvedReal;
   try {
@@ -6923,6 +7043,27 @@ function getLegacyStateCandidates(mode, directory) {
     (0, import_path24.join)(getOmcRoot(baseDir), `${normalizedName}.json`)
   ];
 }
+function getRuntimeArtifactCandidates(mode, directory, sessionId) {
+  const baseDir = resolveStateRoot(directory);
+  const stateRoot2 = (0, import_path24.join)(getOmcRoot(baseDir), "state");
+  const artifactNames = [
+    `${mode}-stop-breaker.json`,
+    `${mode}-last-steer-at`,
+    `${mode}-continue-steer.lock`
+  ];
+  const candidateDirs = /* @__PURE__ */ new Set([stateRoot2]);
+  if (sessionId) {
+    candidateDirs.add((0, import_path24.join)(stateRoot2, "sessions", sessionId));
+  } else {
+    for (const sid of listSessionIds(baseDir)) {
+      candidateDirs.add((0, import_path24.join)(stateRoot2, "sessions", sid));
+    }
+  }
+  return [...candidateDirs].flatMap((dir) => artifactNames.map((name) => (0, import_path24.join)(dir, name)));
+}
+function hasSessionEndSummary(baseDir, sessionId) {
+  return (0, import_fs18.existsSync)((0, import_path24.join)(getOmcRoot(baseDir), "sessions", `${sessionId}.json`));
+}
 function findSessionOwnedStateFiles(mode, sessionId, directory) {
   const matches = /* @__PURE__ */ new Set();
   const baseDir = resolveStateRoot(directory);
@@ -6938,6 +7079,30 @@ function findSessionOwnedStateFiles(mode, sessionId, directory) {
     try {
       const raw = JSON.parse((0, import_fs18.readFileSync)(candidatePath, "utf-8"));
       if (getStateSessionOwner(raw) === sessionId) {
+        matches.add(candidatePath);
+      }
+    } catch {
+    }
+  }
+  return [...matches];
+}
+function findCompletedSessionStateFiles(mode, directory, requesterSessionId) {
+  const matches = /* @__PURE__ */ new Set();
+  const baseDir = resolveStateRoot(directory);
+  for (const sid of listSessionIds(baseDir)) {
+    if (requesterSessionId && sid === requesterSessionId) {
+      continue;
+    }
+    if (!hasSessionEndSummary(baseDir, sid)) {
+      continue;
+    }
+    const candidatePath = resolveSessionStatePath(mode, sid, baseDir);
+    if (!(0, import_fs18.existsSync)(candidatePath)) {
+      continue;
+    }
+    try {
+      const raw = JSON.parse((0, import_fs18.readFileSync)(candidatePath, "utf-8"));
+      if (raw.active === true) {
         matches.add(candidatePath);
       }
     } catch {
@@ -6996,12 +7161,18 @@ function clearModeStateFile(mode, directory, sessionId) {
   };
   if (sessionId) {
     unlinkIfPresent(resolveFile(mode, directory, sessionId));
+    for (const artifactPath of getRuntimeArtifactCandidates(mode, baseDir, sessionId)) {
+      unlinkIfPresent(artifactPath);
+    }
   } else {
     for (const legacyPath of getLegacyStateCandidates(mode, baseDir)) {
       unlinkIfPresent(legacyPath);
     }
     for (const sid of listSessionIds(baseDir)) {
       unlinkIfPresent(resolveSessionStatePath(mode, sid, baseDir));
+    }
+    for (const artifactPath of getRuntimeArtifactCandidates(mode, baseDir)) {
+      unlinkIfPresent(artifactPath);
     }
   }
   if (sessionId) {
@@ -10633,8 +10804,7 @@ var init_installer = __esm({
     SKININTHEGAMEBROS_ONLY_SKILLS = /* @__PURE__ */ new Set([
       "remember",
       "verify",
-      "debug",
-      "skillify"
+      "debug"
     ]);
     OMC_HOOK_FILENAMES = /* @__PURE__ */ new Set([
       "keyword-detector.mjs",
@@ -14091,11 +14261,68 @@ var init_mission_board = __esm({
 });
 
 // src/hud/types.ts
-var DEFAULT_ELEMENT_ORDER, DEFAULT_HUD_USAGE_POLL_INTERVAL_MS, DEFAULT_HUD_CONFIG, PRESET_CONFIGS;
+function isHudLocale(value) {
+  return value === "en" || value === "zh-CN";
+}
+function sanitizeHudLabels(labels) {
+  if (!labels || typeof labels !== "object") return {};
+  const sanitized = {};
+  for (const key of HUD_LABEL_KEYS) {
+    const value = labels[key];
+    if (typeof value === "string" && value.length > 0) {
+      sanitized[key] = value;
+    }
+  }
+  return sanitized;
+}
+function resolveHudLabels(locale, labels) {
+  return {
+    ...DEFAULT_HUD_LABELS,
+    ...isHudLocale(locale) ? HUD_LOCALE_LABELS[locale] : {},
+    ...sanitizeHudLabels(labels)
+  };
+}
+var DEFAULT_HUD_LABELS, HUD_LOCALE_LABELS, HUD_LABEL_KEYS, DEFAULT_ELEMENT_ORDER, DEFAULT_HUD_USAGE_POLL_INTERVAL_MS, DEFAULT_HUD_CONFIG, PRESET_CONFIGS;
 var init_types4 = __esm({
   "src/hud/types.ts"() {
     "use strict";
     init_mission_board();
+    DEFAULT_HUD_LABELS = {
+      context: "ctx",
+      tokens: "tok",
+      tool: "T",
+      agent: "A",
+      skill: "S",
+      ralph: "ralph",
+      background: "bg",
+      thinking: "thinking",
+      staged: "+",
+      modified: "!",
+      untracked: "?",
+      ahead: "\u21E1",
+      behind: "\u21E3"
+    };
+    HUD_LOCALE_LABELS = {
+      en: DEFAULT_HUD_LABELS,
+      "zh-CN": {
+        context: "\u4E0A\u4E0B\u6587",
+        tokens: "\u4EE4\u724C",
+        tool: "\u5DE5\u5177",
+        agent: "\u667A\u80FD\u4F53",
+        skill: "\u6280\u80FD",
+        ralph: "\u5FAA\u73AF",
+        background: "\u540E\u53F0",
+        thinking: "\u601D\u8003",
+        staged: "\u5DF2\u6682\u5B58",
+        modified: "\u5DF2\u4FEE\u6539",
+        untracked: "\u672A\u8DDF\u8E2A",
+        ahead: "\u9886\u5148",
+        behind: "\u843D\u540E"
+      }
+    };
+    HUD_LABEL_KEYS = Object.freeze(
+      Object.keys(DEFAULT_HUD_LABELS)
+    );
     DEFAULT_ELEMENT_ORDER = {
       line1: ["hostname", "cwd", "gitRepo", "gitBranch", "gitStatus", "model", "apiKeySource", "profile"],
       main: [
@@ -14125,6 +14352,8 @@ var init_types4 = __esm({
     DEFAULT_HUD_USAGE_POLL_INTERVAL_MS = 90 * 1e3;
     DEFAULT_HUD_CONFIG = {
       preset: "focused",
+      locale: "en",
+      labels: DEFAULT_HUD_LABELS,
       elements: {
         cwd: false,
         // Disabled by default for backward compatibility
@@ -14706,7 +14935,12 @@ function readHudConfig() {
           missionBoard: mergeMissionBoardConfig(
             legacyConfig?.missionBoard,
             settings.omcHud.missionBoard
-          )
+          ),
+          locale: isHudLocale(settings.omcHud.locale) ? settings.omcHud.locale : legacyConfig?.locale,
+          labels: {
+            ...sanitizeHudLabels(legacyConfig?.labels),
+            ...sanitizeHudLabels(settings.omcHud.labels)
+          }
         });
       }
     } catch (error2) {
@@ -14731,8 +14965,11 @@ function mergeWithDefaults(config2) {
     ...config2.missionBoard,
     enabled: missionBoardEnabled
   };
+  const locale = isHudLocale(config2.locale) ? config2.locale : DEFAULT_HUD_CONFIG.locale;
   return {
     preset,
+    locale,
+    labels: resolveHudLabels(locale, config2.labels),
     elements: {
       ...DEFAULT_HUD_CONFIG.elements,
       // Base defaults
@@ -16247,6 +16484,7 @@ var init_skill_state = __esm({
       "external-context": "medium",
       "ai-slop-cleaner": "medium",
       sciomc: "medium",
+      skillify: "medium",
       learner: "medium",
       "omc-setup": "medium",
       setup: "medium",
@@ -20038,6 +20276,18 @@ function isAwaitingConfirmation2(state) {
   }
   return Date.now() - setAtMs < AWAITING_CONFIRMATION_TTL_MS2;
 }
+function isOrphanedRoutingEchoState(state) {
+  const phase = typeof state.phase === "string" ? state.phase.trim().toLowerCase() : "";
+  if (phase && phase !== "unspecified") return false;
+  const stateRecord = state;
+  const promptText = [
+    stateRecord.originalIdea,
+    stateRecord.original_idea,
+    stateRecord.prompt,
+    stateRecord.task_description
+  ].filter((value) => typeof value === "string").join("\n").trim();
+  return /^\[MAGIC KEYWORDS?(?: DETECTED)?:\s*AUTOPILOT\s*\]\s*$/i.test(promptText);
+}
 function getNextPhase(current) {
   switch (current) {
     case "expansion":
@@ -20064,6 +20314,9 @@ async function checkAutopilot(sessionId, directory) {
     return null;
   }
   if (isAwaitingConfirmation2(state)) {
+    return null;
+  }
+  if (isOrphanedRoutingEchoState(state)) {
     return null;
   }
   const hardMax = getHardMaxIterations();
@@ -23132,12 +23385,12 @@ function isClaudeAvailable() {
     return false;
   }
 }
-function resolveLaunchPolicy(env2 = process.env, args = []) {
+function resolveLaunchPolicy(env2 = process.env, args = [], options = {}) {
   if (args.some((arg) => arg === "--print" || arg === "-p")) {
     return "direct";
   }
   if (env2.TMUX) return "inside-tmux";
-  if (env2.CMUX_SURFACE_ID) return "direct";
+  if (env2.CMUX_SURFACE_ID && !options.requireTmux) return "direct";
   if (!isTmuxAvailable()) {
     return "direct";
   }
@@ -27116,7 +27369,31 @@ async function claimTask(taskId, workerName2, expectedVersion, deps) {
   if (!lock.ok) return { ok: false, error: "claim_conflict" };
   return lock.value;
 }
-async function transitionTaskStatus(taskId, from, to, claimToken, deps) {
+function extractDelegationComplianceEvidence(task, terminalData) {
+  const plan = task.delegation;
+  if (!plan || plan.mode === "none") return null;
+  if (plan.mode === "optional" && plan.required_parallel_probe !== true) return null;
+  const result = typeof terminalData?.result === "string" ? terminalData.result : "";
+  const spawnMatch = result.match(/^\s*Subagent spawn evidence:\s*(.+)$/im);
+  if (spawnMatch?.[1]?.trim()) {
+    const detail = spawnMatch[1].trim();
+    if (!/^none\b|^0\b/i.test(detail)) {
+      return { status: "spawned", source: "terminal_result", detail, recorded_at: (/* @__PURE__ */ new Date()).toISOString() };
+    }
+  }
+  if (plan.skip_allowed_reason_required === true) {
+    const skipMatch = result.match(/^\s*Subagent skip reason:\s*(.+)$/im);
+    if (skipMatch?.[1]?.trim()) {
+      return { status: "skipped", source: "terminal_result", detail: skipMatch[1].trim(), recorded_at: (/* @__PURE__ */ new Date()).toISOString() };
+    }
+  }
+  return null;
+}
+function requiresDelegationComplianceEvidence(task) {
+  const plan = task.delegation;
+  return !!plan && (plan.mode === "auto" || plan.mode === "required" || plan.required_parallel_probe === true);
+}
+async function transitionTaskStatus(taskId, from, to, claimToken, terminalData, deps) {
   if (!deps.canTransitionTaskStatus(from, to)) return { ok: false, error: "invalid_transition" };
   const lock = await deps.withTaskClaimLock(deps.teamName, taskId, deps.cwd, async () => {
     const current = await deps.readTask(deps.teamName, taskId, deps.cwd);
@@ -27129,10 +27406,19 @@ async function transitionTaskStatus(taskId, from, to, claimToken, deps) {
       return { ok: false, error: "claim_conflict" };
     }
     if (new Date(v.claim.leased_until) <= /* @__PURE__ */ new Date()) return { ok: false, error: "lease_expired" };
+    const normalizedResult = typeof terminalData?.result === "string" ? terminalData.result : void 0;
+    const normalizedError = typeof terminalData?.error === "string" ? terminalData.error : void 0;
+    const delegationCompliance = to === "completed" ? extractDelegationComplianceEvidence(v, terminalData) : null;
+    if (to === "completed" && requiresDelegationComplianceEvidence(v) && !delegationCompliance) {
+      return { ok: false, error: "missing_delegation_compliance_evidence" };
+    }
     const updated = {
       ...v,
       status: to,
       completed_at: to === "completed" ? (/* @__PURE__ */ new Date()).toISOString() : v.completed_at,
+      result: to === "completed" ? normalizedResult : void 0,
+      error: to === "failed" ? normalizedError : void 0,
+      delegation_compliance: to === "completed" ? delegationCompliance ?? v.delegation_compliance : v.delegation_compliance,
       claim: void 0,
       version: v.version + 1
     };
@@ -27533,8 +27819,8 @@ async function teamClaimTask(teamName, taskId, workerName2, expectedVersion, cwd
     writeAtomic
   });
 }
-async function teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd2) {
-  return transitionTaskStatus(taskId, from, to, claimToken, {
+async function teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd2, terminalData) {
+  return transitionTaskStatus(taskId, from, to, claimToken, terminalData, {
     teamName,
     cwd: cwd2,
     readTask: teamReadTask,
@@ -28394,6 +28680,9 @@ var init_team_name = __esm({
 
 // src/features/delegation-enforcer.ts
 function normalizeToCcAlias(model) {
+  if (isProviderSpecificModelId(model)) {
+    return model;
+  }
   const family = resolveClaudeFamily(model);
   return family ? FAMILY_TO_ALIAS[family] ?? model : model;
 }
@@ -28468,6 +28757,9 @@ function resolveCliBinaryPath(binary) {
   }
   resolvedPathCache.set(binary, resolvedPath);
   return resolvedPath;
+}
+function shouldUseClaudeBareMode(env2 = process.env) {
+  return typeof env2.ANTHROPIC_API_KEY === "string" && env2.ANTHROPIC_API_KEY.trim().length > 0;
 }
 function getContract(agentType) {
   const contract = CONTRACTS[agentType];
@@ -28609,6 +28901,9 @@ var init_model_contract = __esm({
         installInstructions: "Install Claude CLI: https://claude.ai/download",
         buildLaunchArgs(model, extraFlags = []) {
           const args = ["--dangerously-skip-permissions"];
+          if (shouldUseClaudeBareMode() && !extraFlags.includes("--bare")) {
+            args.push("--bare");
+          }
           if (model) {
             const resolved = isProviderSpecificModelId(model) ? model : normalizeToCcAlias(model);
             args.push("--model", resolved);
@@ -29582,7 +29877,7 @@ function generateWorkerOverlay(params) {
   const shutdownAckPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, "workers", workerName2, "shutdown-ack.json");
   const claimTaskCommand = formatOmcCliInvocation(`team api claim-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"worker\\":\\"${workerName2}\\"}" --json`);
   const sendAckCommand = formatOmcCliInvocation(`team api send-message --input "{\\"team_name\\":\\"${teamName}\\",\\"from_worker\\":\\"${workerName2}\\",\\"to_worker\\":\\"leader-fixed\\",\\"body\\":\\"ACK: ${workerName2} initialized\\"}" --json`);
-  const completeTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`);
+  const completeTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\",\\"result\\":\\"Summary: <what changed>\\\\nVerification: <tests/checks run>\\\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session\\"}" --json`);
   const failTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"failed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`);
   const readTaskCommand = formatOmcCliInvocation(`team api read-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\"}" --json`);
   const releaseClaimCommand = formatOmcCliInvocation(`team api release-task-claim --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"claim_token\\":\\"<claim_token>\\",\\"worker\\":\\"${workerName2}\\"}" --json`);
@@ -29635,6 +29930,11 @@ Use the CLI API for all task lifecycle operations. Do NOT directly edit task fil
 - Complete task: \`${completeTaskCommand}\`
 - Fail task: \`${failTaskCommand}\`
 - Release claim (rollback): \`${releaseClaimCommand}\`
+- Delegation compliance evidence (required for broad delegated tasks):
+  - The completion command MUST include a \`result\` string with summary and verification evidence.
+  - Because worker protocol forbids nested sub-agents, use: \`Subagent skip reason: <why in-session execution was safer/sufficient>\`
+  - Only if the leader explicitly grants an exception to spawn nested help, use: \`Subagent spawn evidence: <count, child task names/thread ids, and integrated findings>\`
+  - Completion is rejected with \`missing_delegation_compliance_evidence\` when required evidence is absent.
 
 ## Canonical Team State Root
 - Resolve the team state root in this order: \`OMC_TEAM_STATE_ROOT\` env -> worker identity \`team_state_root\` -> config/manifest \`team_state_root\` -> ${params.cwd}/.omc/state/team/${teamName}.
@@ -32235,7 +32535,7 @@ function buildV2TaskInstruction(teamName, workerName2, task, taskId, cliOutputCo
     {}
   );
   const completeTaskCommand = formatOmcCliInvocation(
-    `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "completed", claim_token: "<claim_token>" })}' --json`
+    `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "completed", claim_token: "<claim_token>", result: "Summary: <what changed>\\nVerification: <tests/checks run>\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session" })}' --json`
   );
   const failTaskCommand = formatOmcCliInvocation(
     `team api transition-task-status --input '${JSON.stringify({ team_name: teamName, task_id: taskId, from: "in_progress", to: "failed", claim_token: "<claim_token>" })}' --json`
@@ -32250,6 +32550,7 @@ function buildV2TaskInstruction(teamName, workerName2, task, taskId, cliOutputCo
     `2. Do the work described below.`,
     `3. On completion (use claim_token from step 1):`,
     `   ${completeTaskCommand}`,
+    `   The result field is required for completion evidence. For broad delegated tasks, include either "Subagent skip reason: <why no nested worker was needed/allowed>" or, only when explicitly allowed by the leader, "Subagent spawn evidence: <child task names/thread ids and integrated findings>".`,
     `4. On failure (use claim_token from step 1):`,
     `   ${failTaskCommand}`,
     `5. ACK/progress replies are not a stop signal. Keep executing your assigned or next feasible work until the task is actually complete or failed, then transition and exit.`,
@@ -32613,6 +32914,7 @@ async function startTeamV2(config2) {
       status: "pending",
       owner: null,
       result: null,
+      ...config2.tasks[i].delegation ? { delegation: config2.tasks[i].delegation } : {},
       created_at: (/* @__PURE__ */ new Date()).toISOString()
     }, null, 2), "utf-8");
   }
@@ -42894,11 +43196,21 @@ function parseResetDate(value) {
 }
 function getTotalTokens(stdin) {
   const usage = getCurrentUsage(stdin);
-  return (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0);
+  return (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0) + (usage?.cache_read_input_tokens ?? 0);
+}
+function getTotalInputTokens(stdin) {
+  return stdin.context_window?.total_input_tokens ?? 0;
 }
 function getRoundedNativeContextPercent(stdin) {
   const nativePercent = stdin?.context_window?.used_percentage;
   if (typeof nativePercent !== "number" || Number.isNaN(nativePercent)) {
+    return null;
+  }
+  return Math.min(100, Math.max(0, Math.round(nativePercent)));
+}
+function getPositiveNativeContextPercent(stdin) {
+  const nativePercent = stdin?.context_window?.used_percentage;
+  if (typeof nativePercent !== "number" || Number.isNaN(nativePercent) || nativePercent <= 0) {
     return null;
   }
   return Math.min(100, Math.max(0, Math.round(nativePercent)));
@@ -42911,11 +43223,26 @@ function getManualContextPercent(stdin) {
   const totalTokens = getTotalTokens(stdin);
   return Math.min(100, Math.round(totalTokens / size * 100));
 }
+function getPositiveManualContextPercent(stdin) {
+  const manualPercent = getManualContextPercent(stdin);
+  return manualPercent !== null && manualPercent > 0 ? manualPercent : null;
+}
+function getTotalInputContextPercent(stdin) {
+  const size = stdin.context_window?.context_window_size;
+  if (!size || size <= 0) {
+    return null;
+  }
+  const totalInputTokens = getTotalInputTokens(stdin);
+  if (totalInputTokens <= 0) {
+    return null;
+  }
+  return Math.min(100, Math.round(totalInputTokens / size * 100));
+}
 function isSameContextStream(current, previous) {
   return current.cwd === previous.cwd && current.transcript_path === previous.transcript_path && current.context_window?.context_window_size === previous.context_window?.context_window_size;
 }
 function stabilizeContextPercent(stdin, previousStdin) {
-  if (getRoundedNativeContextPercent(stdin) !== null) {
+  if (getPositiveNativeContextPercent(stdin) !== null) {
     return stdin;
   }
   if (!previousStdin || !isSameContextStream(stdin, previousStdin)) {
@@ -42925,8 +43252,11 @@ function stabilizeContextPercent(stdin, previousStdin) {
   if (previousNativePercent === null) {
     return stdin;
   }
-  const manualPercent = getManualContextPercent(stdin);
-  if (manualPercent !== null && Math.abs(manualPercent - previousNativePercent) > TRANSIENT_CONTEXT_PERCENT_TOLERANCE) {
+  const fallbackPercent = getPositiveManualContextPercent(stdin) ?? getTotalInputContextPercent(stdin);
+  if (fallbackPercent === null && getRoundedNativeContextPercent(stdin) === 0) {
+    return stdin;
+  }
+  if (fallbackPercent !== null && Math.abs(fallbackPercent - previousNativePercent) > TRANSIENT_CONTEXT_PERCENT_TOLERANCE) {
     return stdin;
   }
   return {
@@ -42938,11 +43268,7 @@ function stabilizeContextPercent(stdin, previousStdin) {
   };
 }
 function getContextPercent(stdin) {
-  const nativePercent = getRoundedNativeContextPercent(stdin);
-  if (nativePercent !== null) {
-    return nativePercent;
-  }
-  return getManualContextPercent(stdin) ?? 0;
+  return getPositiveNativeContextPercent(stdin) ?? getPositiveManualContextPercent(stdin) ?? getTotalInputContextPercent(stdin) ?? 0;
 }
 function getRateLimitsFromStdin(stdin) {
   const fiveHour = stdin.rate_limits?.five_hour?.used_percentage;
@@ -43762,7 +44088,7 @@ var init_colors = __esm({
 });
 
 // src/hud/elements/ralph.ts
-function renderRalph(state, thresholds) {
+function renderRalph(state, thresholds, labels = DEFAULT_HUD_LABELS) {
   if (!state?.active) {
     return null;
   }
@@ -43777,12 +44103,13 @@ function renderRalph(state, thresholds) {
   } else {
     color = GREEN2;
   }
-  return `ralph:${color}${iteration}/${maxIterations}${RESET}`;
+  return `${labels.ralph}:${color}${iteration}/${maxIterations}${RESET}`;
 }
 var RED2, YELLOW2, GREEN2;
 var init_ralph2 = __esm({
   "src/hud/elements/ralph.ts"() {
     "use strict";
+    init_types4();
     init_colors();
     RED2 = "\x1B[31m";
     YELLOW2 = "\x1B[33m";
@@ -44312,23 +44639,24 @@ function getStableContextDisplayPercent(percent, thresholds, displayScope) {
   lastDisplayUpdatedAt = now;
   return safePercent;
 }
-function renderContext(percent, thresholds, displayScope) {
+function renderContext(percent, thresholds, displayScope, labels = DEFAULT_HUD_LABELS) {
   const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
   const { color, suffix } = getContextDisplayStyle(safePercent, thresholds);
-  return `ctx:${color}${safePercent}%${suffix}${RESET}`;
+  return `${labels.context}:${color}${safePercent}%${suffix}${RESET}`;
 }
-function renderContextWithBar(percent, thresholds, barWidth = 10, displayScope) {
+function renderContextWithBar(percent, thresholds, barWidth = 10, displayScope, labels = DEFAULT_HUD_LABELS) {
   const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
   const filled = Math.round(safePercent / 100 * barWidth);
   const empty = barWidth - filled;
   const { color, suffix } = getContextDisplayStyle(safePercent, thresholds);
   const bar = `${color}${"\u2588".repeat(filled)}${DIM3}${"\u2591".repeat(empty)}${RESET}`;
-  return `ctx:[${bar}]${color}${safePercent}%${suffix}${RESET}`;
+  return `${labels.context}:[${bar}]${color}${safePercent}%${suffix}${RESET}`;
 }
 var GREEN4, YELLOW4, RED3, DIM3, CONTEXT_DISPLAY_HYSTERESIS, CONTEXT_DISPLAY_STATE_TTL_MS, lastDisplayedPercent, lastDisplayedSeverity, lastDisplayScope, lastDisplayUpdatedAt;
 var init_context = __esm({
   "src/hud/elements/context.ts"() {
     "use strict";
+    init_types4();
     init_colors();
     GREEN4 = "\x1B[32m";
     YELLOW4 = "\x1B[33m";
@@ -44344,7 +44672,7 @@ var init_context = __esm({
 });
 
 // src/hud/elements/background.ts
-function renderBackground(tasks) {
+function renderBackground(tasks, labels = DEFAULT_HUD_LABELS) {
   const running = tasks.filter((t) => t.status === "running").length;
   if (running === 0) {
     return null;
@@ -44357,12 +44685,13 @@ function renderBackground(tasks) {
   } else {
     color = GREEN5;
   }
-  return `bg:${color}${running}/${MAX_CONCURRENT}${RESET}`;
+  return `${labels.background}:${color}${running}/${MAX_CONCURRENT}${RESET}`;
 }
 var CYAN4, GREEN5, YELLOW5, MAX_CONCURRENT;
 var init_background = __esm({
   "src/hud/elements/background.ts"() {
     "use strict";
+    init_types4();
     init_colors();
     init_string_width();
     CYAN4 = "\x1B[36m";
@@ -44602,7 +44931,7 @@ var init_permission = __esm({
 });
 
 // src/hud/elements/thinking.ts
-function renderThinking(state, format = "text") {
+function renderThinking(state, format = "text", labels = DEFAULT_HUD_LABELS) {
   if (!state?.active) return null;
   switch (format) {
     case "bubble":
@@ -44612,7 +44941,7 @@ function renderThinking(state, format = "text") {
     case "face":
       return "\u{1F914}";
     case "text":
-      return `${CYAN6}thinking${RESET}`;
+      return `${CYAN6}${labels.thinking}${RESET}`;
     default:
       return "\u{1F4AD}";
   }
@@ -44621,6 +44950,7 @@ var CYAN6;
 var init_thinking = __esm({
   "src/hud/elements/thinking.ts"() {
     "use strict";
+    init_types4();
     init_colors();
     CYAN6 = "\x1B[36m";
   }
@@ -44640,12 +44970,12 @@ var init_session = __esm({
 });
 
 // src/hud/elements/token-usage.ts
-function renderTokenUsage(usage, sessionTotalTokens) {
+function renderTokenUsage(usage, sessionTotalTokens, labels = DEFAULT_HUD_LABELS) {
   if (!usage) return null;
   const hasUsage = usage.inputTokens > 0 || usage.outputTokens > 0;
   if (!hasUsage) return null;
   const parts = [
-    `tok:i${formatTokenCount(usage.inputTokens)}/o${formatTokenCount(usage.outputTokens)}`
+    `${labels.tokens}:i${formatTokenCount(usage.inputTokens)}/o${formatTokenCount(usage.outputTokens)}`
   ];
   if (usage.reasoningTokens && usage.reasoningTokens > 0) {
     parts.push(`r${formatTokenCount(usage.reasoningTokens)}`);
@@ -44658,6 +44988,7 @@ function renderTokenUsage(usage, sessionTotalTokens) {
 var init_token_usage = __esm({
   "src/hud/elements/token-usage.ts"() {
     "use strict";
+    init_types4();
     init_formatting();
   }
 });
@@ -45011,7 +45342,7 @@ function getGitStatusCounts(cwd2) {
   statusCache.set(key, { value: result, expiresAt: Date.now() + CACHE_TTL_MS3 });
   return result;
 }
-function renderGitStatus(cwd2) {
+function renderGitStatus(cwd2, labels = DEFAULT_HUD_LABELS) {
   const counts = getGitStatusCounts(cwd2);
   if (!counts) return null;
   const { staged, modified, untracked, ahead, behind } = counts;
@@ -45019,11 +45350,11 @@ function renderGitStatus(cwd2) {
     return null;
   }
   const parts = [];
-  if (staged > 0) parts.push(`${green("+")}${staged}`);
-  if (modified > 0) parts.push(`${red("!")}${modified}`);
-  if (untracked > 0) parts.push(`${cyan("?")}${untracked}`);
-  if (ahead > 0) parts.push(`${green("\u21E1")}${ahead}`);
-  if (behind > 0) parts.push(`${red("\u21E3")}${behind}`);
+  if (staged > 0) parts.push(`${green(labels.staged)}${staged}`);
+  if (modified > 0) parts.push(`${red(labels.modified)}${modified}`);
+  if (untracked > 0) parts.push(`${cyan(labels.untracked)}${untracked}`);
+  if (ahead > 0) parts.push(`${green(labels.ahead)}${ahead}`);
+  if (behind > 0) parts.push(`${red(labels.behind)}${behind}`);
   return parts.join(" ");
 }
 var import_node_child_process10, import_node_fs9, import_node_path13, CACHE_TTL_MS3, repoCache, branchCache, worktreeCache, statusCache;
@@ -45034,6 +45365,7 @@ var init_git = __esm({
     import_node_fs9 = require("node:fs");
     import_node_path13 = require("node:path");
     init_colors();
+    init_types4();
     CACHE_TTL_MS3 = 3e4;
     repoCache = /* @__PURE__ */ new Map();
     branchCache = /* @__PURE__ */ new Map();
@@ -45126,17 +45458,17 @@ function shouldUseAscii(format = "auto") {
   if (format === "emoji") return false;
   return process.platform === "win32" || isWSL();
 }
-function getIcons(format = "auto") {
+function getIcons(format = "auto", labels = DEFAULT_HUD_LABELS) {
   const useAscii = shouldUseAscii(format);
   return {
-    tool: useAscii ? "T:" : "\u{1F527}",
-    agent: useAscii ? "A:" : "\u{1F916}",
-    skill: useAscii ? "S:" : "\u26A1"
+    tool: useAscii ? `${labels.tool}:` : "\u{1F527}",
+    agent: useAscii ? `${labels.agent}:` : "\u{1F916}",
+    skill: useAscii ? `${labels.skill}:` : "\u26A1"
   };
 }
-function renderCallCounts(toolCalls, agentInvocations, skillUsages, format = "auto") {
+function renderCallCounts(toolCalls, agentInvocations, skillUsages, format = "auto", labels = DEFAULT_HUD_LABELS) {
   const parts = [];
-  const icons = getIcons(format);
+  const icons = getIcons(format, labels);
   if (toolCalls > 0) {
     parts.push(`${icons.tool}${toolCalls}`);
   }
@@ -45152,6 +45484,7 @@ var init_call_counts = __esm({
   "src/hud/elements/call-counts.ts"() {
     "use strict";
     init_platform();
+    init_types4();
   }
 });
 
@@ -45306,6 +45639,7 @@ function limitOutputLines(lines, maxLines) {
 }
 async function render(context, config2) {
   const { elements: enabledElements } = config2;
+  const hudLabels = config2.labels ?? DEFAULT_HUD_LABELS;
   const rendered = /* @__PURE__ */ new Map();
   const renderedDetail = /* @__PURE__ */ new Map();
   if (enabledElements.hostname) {
@@ -45329,7 +45663,7 @@ async function render(context, config2) {
     if (gitBranchElement) rendered.set("gitBranch", gitBranchElement);
   }
   if (enabledElements.gitStatus) {
-    const gitStatusElement = renderGitStatus(context.cwd);
+    const gitStatusElement = renderGitStatus(context.cwd, hudLabels);
     if (gitStatusElement) rendered.set("gitStatus", gitStatusElement);
   }
   if (enabledElements.model && context.modelName) {
@@ -45385,7 +45719,8 @@ async function render(context, config2) {
   if (enabledElements.thinking && context.thinkingState) {
     const thinking = renderThinking(
       context.thinkingState,
-      enabledElements.thinkingFormat
+      enabledElements.thinkingFormat,
+      hudLabels
     );
     if (thinking) rendered.set("thinking", thinking);
   }
@@ -45411,19 +45746,21 @@ async function render(context, config2) {
     } else if (enabledElements.showTokens === true) {
       const tokenUsage = renderTokenUsage(
         context.lastRequestTokenUsage,
-        context.sessionTotalTokens
+        context.sessionTotalTokens,
+        hudLabels
       );
       if (tokenUsage) rendered.set("tokens", tokenUsage);
     }
   } else if (enabledElements.showTokens === true) {
     const tokenUsage = renderTokenUsage(
       context.lastRequestTokenUsage,
-      context.sessionTotalTokens
+      context.sessionTotalTokens,
+      hudLabels
     );
     if (tokenUsage) rendered.set("tokens", tokenUsage);
   }
   if (enabledElements.ralph && context.ralph) {
-    const ralph = renderRalph(context.ralph, config2.thresholds);
+    const ralph = renderRalph(context.ralph, config2.thresholds, hudLabels);
     if (ralph) rendered.set("ralph", ralph);
   }
   if (enabledElements.autopilot && context.autopilot) {
@@ -45451,11 +45788,13 @@ async function render(context, config2) {
       context.contextPercent,
       config2.thresholds,
       10,
-      context.contextDisplayScope
+      context.contextDisplayScope,
+      hudLabels
     ) : renderContext(
       context.contextPercent,
       config2.thresholds,
-      context.contextDisplayScope
+      context.contextDisplayScope,
+      hudLabels
     );
     if (ctx) rendered.set("contextBar", ctx);
   }
@@ -45474,7 +45813,7 @@ async function render(context, config2) {
     }
   }
   if (enabledElements.backgroundTasks) {
-    const bg = renderBackground(context.backgroundTasks);
+    const bg = renderBackground(context.backgroundTasks, hudLabels);
     if (bg) rendered.set("background", bg);
   }
   const showCounts = enabledElements.showCallCounts ?? true;
@@ -45483,7 +45822,8 @@ async function render(context, config2) {
       context.toolCallCount,
       context.agentCallCount,
       context.skillCallCount,
-      enabledElements.callCountsFormat ?? "auto"
+      enabledElements.callCountsFormat ?? "auto",
+      hudLabels
     );
     if (counts) rendered.set("callCounts", counts);
   }
@@ -74019,6 +74359,55 @@ function clearSessionOwnedStateCandidates(mode, root2, sessionId) {
   }
   return { cleared, hadFailure, paths };
 }
+function clearCompletedSessionStateCandidates(mode, root2, requesterSessionId) {
+  let cleared = 0;
+  let hadFailure = false;
+  const paths = findCompletedSessionStateFiles(mode, root2, requesterSessionId);
+  for (const statePath of paths) {
+    try {
+      (0, import_fs20.unlinkSync)(statePath);
+      cleared++;
+    } catch {
+      hadFailure = true;
+    }
+  }
+  return { cleared, hadFailure, paths };
+}
+function getModeRuntimeArtifactNames(mode) {
+  return [
+    `${mode}-stop-breaker.json`,
+    `${mode}-last-steer-at`,
+    `${mode}-continue-steer.lock`
+  ];
+}
+function clearModeRuntimeArtifacts(mode, root2, sessionId) {
+  let cleared = 0;
+  let hadFailure = false;
+  const stateRoot2 = (0, import_path26.join)(getOmcRoot(root2), "state");
+  const candidateDirs = /* @__PURE__ */ new Set([stateRoot2]);
+  if (sessionId) {
+    candidateDirs.add((0, import_path26.join)(stateRoot2, "sessions", sessionId));
+  } else {
+    for (const sid of listSessionIds(root2)) {
+      candidateDirs.add((0, import_path26.join)(stateRoot2, "sessions", sid));
+    }
+  }
+  for (const dir of candidateDirs) {
+    for (const artifactName of getModeRuntimeArtifactNames(mode)) {
+      const artifactPath = (0, import_path26.join)(dir, artifactName);
+      if (!(0, import_fs20.existsSync)(artifactPath)) {
+        continue;
+      }
+      try {
+        (0, import_fs20.unlinkSync)(artifactPath);
+        cleared++;
+      } catch {
+        hadFailure = true;
+      }
+    }
+  }
+  return { cleared, hadFailure };
+}
 function writeSessionCancelSignal(root2, sessionId, mode) {
   const now = Date.now();
   const cancelSignalPath = resolveSessionStatePath("cancel-signal", sessionId, root2);
@@ -74067,6 +74456,30 @@ var stateReadTool = {
         validateSessionId(sessionId);
         const statePath2 = MODE_CONFIGS[mode] ? getStateFilePath(root2, mode, sessionId) : resolveSessionStatePath(mode, sessionId, root2);
         if (!(0, import_fs20.existsSync)(statePath2)) {
+          const completedSessionPaths = findCompletedSessionStateFiles(mode, root2, sessionId);
+          if (completedSessionPaths.length > 0) {
+            const orphanList = completedSessionPaths.map((orphanPath) => {
+              const sessionMarker = `${(0, import_path26.join)("state", "sessions")}/`;
+              const markerIndex = orphanPath.indexOf(sessionMarker);
+              if (markerIndex === -1) return `- ${orphanPath}`;
+              const rest = orphanPath.slice(markerIndex + sessionMarker.length);
+              const orphanSessionId = rest.split(/[\\/]/)[0] || "unknown";
+              return `- session: ${orphanSessionId}
+  path: ${orphanPath}`;
+            }).join("\n");
+            return {
+              content: [{
+                type: "text",
+                text: `No state found for mode: ${mode} in session: ${sessionId}
+Expected path: ${statePath2}
+
+Discovered ${completedSessionPaths.length} completed-session orphan state file${completedSessionPaths.length === 1 ? "" : "s"} for this mode:
+${orphanList}
+
+Run state_clear(mode="${mode}", session_id="${sessionId}") to clear the current session plus these completed-session orphan files.`
+              }]
+            };
+          }
           return {
             content: [{
               type: "text",
@@ -74317,6 +74730,13 @@ var stateClearTool = {
         for (const teamStatePath of findSessionOwnedStateFiles("team", sessionId, root2)) {
           collectTeamNamesForCleanup(teamStatePath);
         }
+        if (mode === "team") {
+          for (const teamStatePath of findCompletedSessionStateFiles("team", root2, sessionId)) {
+            collectTeamNamesForCleanup(teamStatePath);
+          }
+        }
+        const completedSessionCleanup = clearCompletedSessionStateCandidates(mode, root2, sessionId);
+        const runtimeCleanup2 = clearModeRuntimeArtifacts(mode, root2, sessionId);
         writeSessionCancelSignal(root2, sessionId, mode);
         if (MODE_CONFIGS[mode]) {
           const success = clearModeState(mode, root2, sessionId);
@@ -74325,7 +74745,7 @@ var stateClearTool = {
           let ownerSessionId2;
           let ownerSessionCleanup2 = { cleared: 0, hadFailure: false, paths: [] };
           let ownerLegacyCleanup2 = { cleared: 0, hadFailure: false };
-          if (requestedSessionOwnedPaths.length === 0 && sessionCleanup2.cleared === 0 && legacyCleanup2.cleared === 0) {
+          if (requestedSessionOwnedPaths.length === 0 && completedSessionCleanup.cleared === 0 && sessionCleanup2.cleared === 0 && legacyCleanup2.cleared === 0) {
             ownerSessionId2 = findSingleOwningSessionForMode(mode, root2, sessionId);
             if (ownerSessionId2) {
               if (mode === "team") {
@@ -74334,6 +74754,9 @@ var stateClearTool = {
                 }
               }
               writeSessionCancelSignal(root2, ownerSessionId2, mode);
+              const ownerRuntimeCleanup = clearModeRuntimeArtifacts(mode, root2, ownerSessionId2);
+              runtimeCleanup2.cleared += ownerRuntimeCleanup.cleared;
+              runtimeCleanup2.hadFailure ||= ownerRuntimeCleanup.hadFailure;
               clearModeState(mode, root2, ownerSessionId2);
               ownerSessionCleanup2 = clearSessionOwnedStateCandidates(mode, root2, ownerSessionId2);
               ownerLegacyCleanup2 = clearLegacyStateCandidates(mode, root2, ownerSessionId2);
@@ -74343,8 +74766,14 @@ var stateClearTool = {
           if (legacyCleanup2.cleared > 0) {
             ghostNoteParts2.push("ghost legacy file also removed");
           }
+          if (completedSessionCleanup.cleared > 0) {
+            ghostNoteParts2.push(`removed ${completedSessionCleanup.cleared} completed-session orphan file${completedSessionCleanup.cleared === 1 ? "" : "s"}`);
+          }
           if (sessionCleanup2.cleared > 0) {
             ghostNoteParts2.push(`removed ${sessionCleanup2.cleared} recovered session file${sessionCleanup2.cleared === 1 ? "" : "s"}`);
+          }
+          if (runtimeCleanup2.cleared > 0) {
+            ghostNoteParts2.push(`removed ${runtimeCleanup2.cleared} runtime artifact${runtimeCleanup2.cleared === 1 ? "" : "s"}`);
           }
           if (ownerSessionId2) {
             ghostNoteParts2.push(`cleared owning session: ${ownerSessionId2}`);
@@ -74360,7 +74789,7 @@ var stateClearTool = {
             if (prunedMissions > 0) details.push(`pruned ${prunedMissions} HUD mission entry(ies)`);
             return details.length > 0 ? ` (${details.join(", ")})` : "";
           })();
-          if (success && !legacyCleanup2.hadFailure && !sessionCleanup2.hadFailure && !ownerSessionCleanup2.hadFailure && !ownerLegacyCleanup2.hadFailure) {
+          if (success && !legacyCleanup2.hadFailure && !sessionCleanup2.hadFailure && !completedSessionCleanup.hadFailure && !ownerSessionCleanup2.hadFailure && !ownerLegacyCleanup2.hadFailure && !runtimeCleanup2.hadFailure) {
             return {
               content: [{
                 type: "text",
@@ -74381,7 +74810,7 @@ var stateClearTool = {
         let ownerSessionId;
         let ownerSessionCleanup = { cleared: 0, hadFailure: false, paths: [] };
         let ownerLegacyCleanup = { cleared: 0, hadFailure: false };
-        if (requestedSessionOwnedPaths.length === 0 && sessionCleanup.cleared === 0 && legacyCleanup.cleared === 0) {
+        if (requestedSessionOwnedPaths.length === 0 && completedSessionCleanup.cleared === 0 && sessionCleanup.cleared === 0 && legacyCleanup.cleared === 0) {
           ownerSessionId = findSingleOwningSessionForMode(mode, root2, sessionId);
           if (ownerSessionId) {
             if (mode === "team") {
@@ -74390,6 +74819,9 @@ var stateClearTool = {
               }
             }
             writeSessionCancelSignal(root2, ownerSessionId, mode);
+            const ownerRuntimeCleanup = clearModeRuntimeArtifacts(mode, root2, ownerSessionId);
+            runtimeCleanup2.cleared += ownerRuntimeCleanup.cleared;
+            runtimeCleanup2.hadFailure ||= ownerRuntimeCleanup.hadFailure;
             ownerSessionCleanup = clearSessionOwnedStateCandidates(mode, root2, ownerSessionId);
             ownerLegacyCleanup = clearLegacyStateCandidates(mode, root2, ownerSessionId);
           }
@@ -74398,8 +74830,14 @@ var stateClearTool = {
         if (legacyCleanup.cleared > 0) {
           ghostNoteParts.push("ghost legacy file also removed");
         }
+        if (completedSessionCleanup.cleared > 0) {
+          ghostNoteParts.push(`removed ${completedSessionCleanup.cleared} completed-session orphan file${completedSessionCleanup.cleared === 1 ? "" : "s"}`);
+        }
         if (sessionCleanup.cleared > 0) {
           ghostNoteParts.push(`removed ${sessionCleanup.cleared} recovered session file${sessionCleanup.cleared === 1 ? "" : "s"}`);
+        }
+        if (runtimeCleanup2.cleared > 0) {
+          ghostNoteParts.push(`removed ${runtimeCleanup2.cleared} runtime artifact${runtimeCleanup2.cleared === 1 ? "" : "s"}`);
         }
         if (ownerSessionId) {
           ghostNoteParts.push(`cleared owning session: ${ownerSessionId}`);
@@ -74418,7 +74856,7 @@ var stateClearTool = {
         return {
           content: [{
             type: "text",
-            text: `${legacyCleanup.hadFailure || sessionCleanup.hadFailure || ownerSessionCleanup.hadFailure || ownerLegacyCleanup.hadFailure ? "Warning: Some files could not be removed" : "Successfully cleared state"} for mode: ${mode} in session: ${sessionId}${ghostNote}${runtimeCleanupNote}`
+            text: `${legacyCleanup.hadFailure || sessionCleanup.hadFailure || completedSessionCleanup.hadFailure || ownerSessionCleanup.hadFailure || ownerLegacyCleanup.hadFailure || runtimeCleanup2.hadFailure ? "Warning: Some files could not be removed" : "Successfully cleared state"} for mode: ${mode} in session: ${sessionId}${ghostNote}${runtimeCleanupNote}`
           }]
         };
       }
@@ -74444,6 +74882,7 @@ var stateClearTool = {
           }
         }
       }
+      const runtimeCleanup = clearModeRuntimeArtifacts(mode, root2);
       let clearedCount = 0;
       const errors = [];
       if (mode === "team") {
@@ -74463,6 +74902,10 @@ var stateClearTool = {
       clearedCount += extraLegacyCleanup.cleared;
       if (extraLegacyCleanup.hadFailure) {
         errors.push("legacy path");
+      }
+      clearedCount += runtimeCleanup.cleared;
+      if (runtimeCleanup.hadFailure) {
+        errors.push("runtime artifacts");
       }
       const sessionIds = listSessionIds(root2);
       for (const sid of sessionIds) {
@@ -78913,7 +79356,7 @@ var wikiIngestTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const result = ingestKnowledge(root2, {
         title: args.title,
         content: args.content,
@@ -78954,7 +79397,7 @@ var wikiQueryTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const matches = queryWiki(root2, args.query, {
         tags: args.tags,
         category: args.category,
@@ -79003,7 +79446,7 @@ var wikiLintTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const report = lintWiki(root2);
       if (report.issues.length === 0) {
         return {
@@ -79051,7 +79494,7 @@ var wikiAddTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const slug = titleToSlug(args.title);
       if (readPage(root2, slug)) {
         return {
@@ -79094,7 +79537,7 @@ var wikiListTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const index = readIndex(root2);
       if (!index) {
         const pages = listPages(root2);
@@ -79140,7 +79583,7 @@ var wikiReadTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const filename = args.page.endsWith(".md") ? args.page : `${args.page}.md`;
       const page = readPage(root2, filename);
       if (!page) {
@@ -79188,7 +79631,7 @@ var wikiDeleteTool = {
   },
   handler: async (args) => {
     try {
-      const root2 = validateWorkingDirectory(args.workingDirectory);
+      const root2 = validateWorkingDirectoryOrLinkedWorktree(args.workingDirectory);
       const filename = args.page.endsWith(".md") ? args.page : `${args.page}.md`;
       const deleted = deletePage(root2, filename);
       if (!deleted) {
@@ -81773,7 +82216,7 @@ function removeSessionStartedMarker(directory, sessionId) {
   } catch {
   }
 }
-function hasSessionEndSummary(directory, sessionId) {
+function hasSessionEndSummary2(directory, sessionId) {
   return (0, import_fs81.existsSync)((0, import_path98.join)(getOmcRoot(directory), "sessions", `${sessionId}.json`));
 }
 function cleanupSessionModeStateFiles(directory, sessionId) {
@@ -81829,7 +82272,7 @@ async function reconcileAbandonedSessionStarts(directory, currentSessionId) {
     const marker = readJsonObject2(markerPath);
     if (!marker) continue;
     if (marker.session_id !== sessionId) continue;
-    if (hasSessionEndSummary(directory, sessionId)) {
+    if (hasSessionEndSummary2(directory, sessionId)) {
       removeSessionStartedMarker(directory, sessionId);
       continue;
     }
@@ -82945,9 +83388,18 @@ Please continue working on these tasks.
 
 [MODEL ROUTING OVERRIDE \u2014 NON-STANDARD PROVIDER DETECTED]
 
-This environment uses a non-standard model provider (AWS Bedrock, Google Vertex AI, or a proxy).
-Do NOT pass the \`model\` parameter on Task/Agent calls. Omit it entirely so agents inherit the parent session's model.
-The CLAUDE.md instruction "Pass model on Task calls: haiku, sonnet, opus" does NOT apply here.
+This environment uses a non-standard model provider (AWS Bedrock, Google Vertex AI, or a proxy such as CC Switch / LiteLLM).
+
+How to pass \`model\` on Task/Agent calls:
+- Prefer a tier alias: \`model: "sonnet"\`, \`model: "opus"\`, or \`model: "haiku"\`. OMC's pre-tool enforcer resolves these to provider-safe IDs when one of these env vars is set: \`ANTHROPIC_DEFAULT_SONNET_MODEL\` (and sibling \`ANTHROPIC_DEFAULT_OPUS_MODEL\` / \`ANTHROPIC_DEFAULT_HAIKU_MODEL\`), \`CLAUDE_CODE_BEDROCK_SONNET_MODEL\` (and sibling \`CLAUDE_CODE_BEDROCK_OPUS_MODEL\` / \`CLAUDE_CODE_BEDROCK_HAIKU_MODEL\`), or \`OMC_SUBAGENT_MODEL\`.
+- If none of those env vars are configured, the enforcer will deny the tier alias with an env-var configuration hint \u2014 set one of them in your \`settings.json\` env or shell profile.
+- The enforcer denies tier aliases it cannot resolve. It also denies provider-specific IDs that carry a \`[1m]\` context-window suffix or otherwise fail subagent-safe validation (sub-agents cannot inherit \`[1m]\`). Valid provider-specific IDs without extended-context suffixes are allowed.
+
+When the session model carries a \`[1m]\` suffix, passing an explicit \`model\` is REQUIRED \u2014 omitting it will be denied (sub-agents cannot inherit the \`[1m]\` suffix). Use a tier alias (requires resolver env vars above); the Agent tool schema does not accept provider-specific IDs, so tier aliases are the only valid option.
+
+When the session model has no \`[1m]\` suffix, omitting \`model\` is safe UNLESS a custom sub-agent definition pins a bare Anthropic model ID (e.g. \`model: claude-sonnet-4-6\` in agent frontmatter). When resolver env vars are configured, the enforcer will deny that call with tier-alias guidance; when they are absent, the call is not denied by the enforcer but will fail at the provider. Either way, custom sub-agents should pin tier aliases (not bare Anthropic IDs) in their frontmatter. Shipped OMC agents already do this and are unaffected.
+
+The CLAUDE.md instruction "Pass model on Task calls: haiku, sonnet, opus" applies here \u2014 subject to the resolution prerequisites above.
 
 </system-reminder>`);
     }
@@ -83065,7 +83517,7 @@ Command blocked: ${command}`
     if (inputModel) {
       const config2 = loadConfig();
       if (config2.routing?.forceInherit) {
-        const denyReason = `[MODEL ROUTING] This environment uses a non-standard provider (Bedrock/Vertex/proxy). Do NOT pass the \`model\` parameter on ${input.toolName} calls \u2014 remove \`model\` and retry so agents inherit the parent session's model. The model "${inputModel}" is not valid for this provider.`;
+        const denyReason = `[MODEL ROUTING] This environment uses a non-standard provider (Bedrock/Vertex/proxy). Omit the \`model\` parameter on ${input.toolName} calls so agents inherit the parent session's model. The model "${inputModel}" was rejected.`;
         return {
           continue: true,
           hookSpecificOutput: {
@@ -84047,8 +84499,7 @@ var CC_NATIVE_COMMANDS2 = /* @__PURE__ */ new Set([
 var SKININTHEGAMEBROS_ONLY_SKILLS2 = /* @__PURE__ */ new Set([
   "remember",
   "verify",
-  "debug",
-  "skillify"
+  "debug"
 ]);
 var DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD = 0.2;
 function toSafeSkillName(name) {
@@ -84160,7 +84611,11 @@ function loadSkillsFromDirectory() {
   const skills = [];
   const seenNames = /* @__PURE__ */ new Set();
   try {
-    const entries = (0, import_fs86.readdirSync)(SKILLS_DIR2, { withFileTypes: true });
+    const entries = (0, import_fs86.readdirSync)(SKILLS_DIR2, { withFileTypes: true }).sort((a, b) => {
+      if (a.name === "skillify") return -1;
+      if (b.name === "skillify") return 1;
+      return a.name.localeCompare(b.name);
+    });
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
       if (SKININTHEGAMEBROS_ONLY_SKILLS2.has(entry.name) && !isSkininthegamebrosUser()) {
@@ -85863,7 +86318,7 @@ init_runtime();
 init_runtime_v2();
 init_git_worktree();
 init_swallowed_error();
-var TEAM_UPDATE_TASK_MUTABLE_FIELDS = /* @__PURE__ */ new Set(["subject", "description", "blocked_by", "requires_code_change"]);
+var TEAM_UPDATE_TASK_MUTABLE_FIELDS = /* @__PURE__ */ new Set(["subject", "description", "blocked_by", "requires_code_change", "delegation"]);
 var TEAM_UPDATE_TASK_REQUEST_FIELDS = /* @__PURE__ */ new Set(["team_name", "task_id", "workingDirectory", ...TEAM_UPDATE_TASK_MUTABLE_FIELDS]);
 var TEAM_API_OPERATIONS = [
   "send-message",
@@ -85915,6 +86370,60 @@ function parseValidatedTaskIdArray(value, fieldName) {
     taskIds.push(normalized);
   }
   return taskIds;
+}
+function parseTaskDelegationPlan(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error("delegation must be an object");
+  }
+  const raw = value;
+  const mode = raw.mode;
+  if (mode !== "none" && mode !== "optional" && mode !== "auto" && mode !== "required") {
+    throw new Error("delegation.mode must be one of: none, optional, auto, required");
+  }
+  const plan = { mode };
+  if ("max_parallel_subtasks" in raw) {
+    if (!isFiniteInteger(raw.max_parallel_subtasks) || raw.max_parallel_subtasks < 1) {
+      throw new Error("delegation.max_parallel_subtasks must be a positive integer when provided");
+    }
+    plan.max_parallel_subtasks = raw.max_parallel_subtasks;
+  }
+  if ("required_parallel_probe" in raw) {
+    if (typeof raw.required_parallel_probe !== "boolean") throw new Error("delegation.required_parallel_probe must be a boolean when provided");
+    plan.required_parallel_probe = raw.required_parallel_probe;
+  }
+  if ("spawn_before_serial_search_threshold" in raw) {
+    if (!isFiniteInteger(raw.spawn_before_serial_search_threshold) || raw.spawn_before_serial_search_threshold < 1) {
+      throw new Error("delegation.spawn_before_serial_search_threshold must be a positive integer when provided");
+    }
+    plan.spawn_before_serial_search_threshold = raw.spawn_before_serial_search_threshold;
+  }
+  if ("child_model_policy" in raw) {
+    const policy = raw.child_model_policy;
+    if (policy !== "standard" && policy !== "fast" && policy !== "inherit" && policy !== "frontier") {
+      throw new Error("delegation.child_model_policy must be one of: standard, fast, inherit, frontier");
+    }
+    plan.child_model_policy = policy;
+  }
+  if ("child_model" in raw) {
+    if (typeof raw.child_model !== "string") throw new Error("delegation.child_model must be a string when provided");
+    plan.child_model = raw.child_model;
+  }
+  if ("subtask_candidates" in raw) {
+    if (!Array.isArray(raw.subtask_candidates) || !raw.subtask_candidates.every((item) => typeof item === "string")) {
+      throw new Error("delegation.subtask_candidates must be an array of strings when provided");
+    }
+    plan.subtask_candidates = raw.subtask_candidates;
+  }
+  if ("child_report_format" in raw) {
+    const format = raw.child_report_format;
+    if (format !== "bullets" && format !== "json") throw new Error("delegation.child_report_format must be bullets or json when provided");
+    plan.child_report_format = format;
+  }
+  if ("skip_allowed_reason_required" in raw) {
+    if (typeof raw.skip_allowed_reason_required !== "boolean") throw new Error("delegation.skip_allowed_reason_required must be a boolean when provided");
+    plan.skip_allowed_reason_required = raw.skip_allowed_reason_required;
+  }
+  return plan;
 }
 function teamStateExists(teamName, candidateCwd) {
   if (!TEAM_NAME_SAFE_PATTERN.test(teamName)) return false;
@@ -86287,13 +86796,22 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         const owner = args.owner;
         const blockedBy = args.blocked_by;
         const requiresCodeChange = args.requires_code_change;
+        let delegation;
+        if ("delegation" in args) {
+          try {
+            delegation = parseTaskDelegationPlan(args.delegation);
+          } catch (error2) {
+            return { ok: false, operation, error: { code: "invalid_input", message: error2.message } };
+          }
+        }
         const task = await teamCreateTask(teamName, {
           subject,
           description,
           status: "pending",
           owner: owner || void 0,
           blocked_by: blockedBy,
-          requires_code_change: requiresCodeChange
+          requires_code_change: requiresCodeChange,
+          ...delegation ? { delegation } : {}
         }, cwd2);
         return { ok: true, operation, data: { task } };
       }
@@ -86355,6 +86873,13 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
             return { ok: false, operation, error: { code: "invalid_input", message: error2.message } };
           }
         }
+        if ("delegation" in args) {
+          try {
+            updates.delegation = parseTaskDelegationPlan(args.delegation);
+          } catch (error2) {
+            return { ok: false, operation, error: { code: "invalid_input", message: error2.message } };
+          }
+        }
         const task = await teamUpdateTask(teamName, taskId, updates, cwd2);
         return task ? { ok: true, operation, data: { task } } : { ok: false, operation, error: { code: "task_not_found", message: "task_not_found" } };
       }
@@ -86378,6 +86903,8 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         const from = String(args.from || "").trim();
         const to = String(args.to || "").trim();
         const claimToken = String(args.claim_token || "").trim();
+        const transitionResult = args.result;
+        const transitionError = args.error;
         if (!teamName || !taskId || !from || !to || !claimToken) {
           return { ok: false, operation, error: { code: "invalid_input", message: "team_name, task_id, from, to, claim_token are required" } };
         }
@@ -86385,7 +86912,24 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
         if (!allowed.has(from) || !allowed.has(to)) {
           return { ok: false, operation, error: { code: "invalid_input", message: "from and to must be valid task statuses" } };
         }
-        const result = await teamTransitionTaskStatus(teamName, taskId, from, to, claimToken, cwd2);
+        if (transitionResult !== void 0 && typeof transitionResult !== "string") {
+          return { ok: false, operation, error: { code: "invalid_input", message: "result must be a string when provided" } };
+        }
+        if (transitionError !== void 0 && typeof transitionError !== "string") {
+          return { ok: false, operation, error: { code: "invalid_input", message: "error must be a string when provided" } };
+        }
+        const result = await teamTransitionTaskStatus(
+          teamName,
+          taskId,
+          from,
+          to,
+          claimToken,
+          cwd2,
+          {
+            result: typeof transitionResult === "string" ? transitionResult : void 0,
+            error: typeof transitionError === "string" ? transitionError : void 0
+          }
+        );
         return { ok: true, operation, data: result };
       }
       case "release-task-claim": {
@@ -86602,6 +87146,32 @@ async function executeTeamApiOperation(operation, args, fallbackCwd) {
   }
 }
 
+// src/team/delegation-evidence.ts
+var BROAD_TASK_VERBS_RE = /\b(?:investigate|analy[sz]e|debug|review|audit|refactor|cleanup|research|design|build|implement|improve)\b/i;
+var BROAD_FIX_RE = /\bfix\b/i;
+var BROAD_OBJECTS_RE = /\b(?:runtime|system|codebase|architecture|workflow|pipeline|tests?|failures?|flaky|behavior|semantics|flow|feature|bug)\b/i;
+var FILE_REF_RE = /\b(?:[\w./-]+\/)?[\w.-]+\.[a-z0-9]{1,8}\b/i;
+var SYMBOL_REF_RE = /`[^`]+`|\b[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+\b/;
+var BROAD_TASK_DELEGATION_PLAN = {
+  mode: "auto",
+  required_parallel_probe: true,
+  skip_allowed_reason_required: true,
+  child_report_format: "bullets"
+};
+function isBroadTeamTaskText(text) {
+  const normalized = text.trim();
+  if (!normalized) return false;
+  const wordCount = (normalized.match(/\b[\w-]+\b/g) ?? []).length;
+  if (wordCount < 4) return false;
+  const hasNarrowCodeTarget = FILE_REF_RE.test(normalized) || SYMBOL_REF_RE.test(normalized);
+  if (hasNarrowCodeTarget && wordCount < 12) return false;
+  if (BROAD_TASK_VERBS_RE.test(normalized)) return true;
+  return BROAD_FIX_RE.test(normalized) && BROAD_OBJECTS_RE.test(normalized);
+}
+function inferDelegationPlanForTeamTask(text) {
+  return isBroadTeamTaskText(text) ? { ...BROAD_TASK_DELEGATION_PLAN } : void 0;
+}
+
 // src/cli/commands/team.ts
 init_loader();
 var HELP_TOKENS = /* @__PURE__ */ new Set(["--help", "-h", "help"]);
@@ -86681,8 +87251,8 @@ var TEAM_API_OPERATION_REQUIRED_FIELDS = {
   "write-task-approval": ["team_name", "task_id", "status", "reviewer", "decision_reason"]
 };
 var TEAM_API_OPERATION_OPTIONAL_FIELDS = {
-  "create-task": ["owner", "blocked_by", "requires_code_change"],
-  "update-task": ["subject", "description", "blocked_by", "requires_code_change"],
+  "create-task": ["owner", "blocked_by", "requires_code_change", "delegation"],
+  "update-task": ["subject", "description", "blocked_by", "requires_code_change", "delegation"],
   "claim-task": ["expected_version"],
   "read-shutdown-ack": ["min_updated_at"],
   "write-worker-identity": [
@@ -87046,18 +87616,22 @@ async function handleTeamStart(parsed, cwd2) {
   if (decomposition.strategy !== "atomic" && decomposition.subtasks.length > 1) {
     const subtasks = decomposition.subtasks.slice(0, effectiveWorkerCount);
     for (let i = 0; i < subtasks.length; i++) {
+      const delegation = inferDelegationPlanForTeamTask(subtasks[i].description);
       tasks.push({
         subject: subtasks[i].subject,
         description: subtasks[i].description,
-        owner: `worker-${i + 1}`
+        owner: `worker-${i + 1}`,
+        ...delegation ? { delegation } : {}
       });
     }
   } else {
     for (let i = 0; i < effectiveWorkerCount; i++) {
+      const delegation = inferDelegationPlanForTeamTask(parsed.task);
       tasks.push({
         subject: effectiveWorkerCount === 1 ? parsed.task.slice(0, 80) : `Worker ${i + 1}: ${parsed.task}`.slice(0, 80),
         description: parsed.task,
-        owner: `worker-${i + 1}`
+        owner: `worker-${i + 1}`,
+        ...delegation ? { delegation } : {}
       });
     }
   }
@@ -88818,8 +89392,13 @@ function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()) {
     return baseConfigDir;
   }
   const runtimeConfigDir = (0, import_path121.join)(baseConfigDir, OMC_RUNTIME_DIRNAME);
+  const runtimeClaudeJsonPath = (0, import_path121.join)(runtimeConfigDir, ".claude.json");
+  const preservedClaudeJson = (0, import_fs102.existsSync)(runtimeClaudeJsonPath) ? (0, import_fs102.readFileSync)(runtimeClaudeJsonPath) : null;
   (0, import_fs102.rmSync)(runtimeConfigDir, { recursive: true, force: true });
   (0, import_fs102.mkdirSync)(runtimeConfigDir, { recursive: true });
+  if (preservedClaudeJson) {
+    (0, import_fs102.writeFileSync)(runtimeClaudeJsonPath, preservedClaudeJson);
+  }
   (0, import_fs102.copyFileSync)(companionPath, (0, import_path121.join)(runtimeConfigDir, "CLAUDE.md"));
   for (const entry of [
     "agents",
@@ -88996,22 +89575,57 @@ async function preLaunch(_cwd, _sessionId) {
 function isPrintMode(args) {
   return args.some((arg) => arg === "--print" || arg === "-p");
 }
+function hasMadmaxFlag(args) {
+  return args.some((arg) => arg === MADMAX_FLAG || arg === YOLO_FLAG);
+}
+var MadmaxTmuxRequiredError = class extends Error {
+  constructor(reason) {
+    super(`madmax requires tmux: ${reason}`);
+    this.reason = reason;
+    this.name = "MadmaxTmuxRequiredError";
+  }
+};
+function abortMadmaxRequiresTmux(reason) {
+  if (reason === "missing") {
+    console.error("[omc] Error: --madmax/--yolo on macOS requires tmux, but tmux is not installed.");
+    console.error("  Install it with: brew install tmux");
+  } else {
+    console.error("[omc] Error: --madmax/--yolo on macOS requires tmux, but launching tmux failed.");
+    console.error("  Verify tmux works: tmux -V && tmux new-session -d -s _omc_probe \\; kill-session -t _omc_probe");
+  }
+  process.exit(1);
+  throw new MadmaxTmuxRequiredError(reason);
+}
 function runClaude(cwd2, args, sessionId) {
   if (isPrintMode(args)) {
     runClaudeDirect(cwd2, args);
     return;
   }
-  const policy = resolveLaunchPolicy(process.env, args);
-  switch (policy) {
-    case "inside-tmux":
-      runClaudeInsideTmux(cwd2, args);
-      break;
-    case "outside-tmux":
-      runClaudeOutsideTmux(cwd2, args, sessionId);
-      break;
-    case "direct":
-      runClaudeDirect(cwd2, args);
-      break;
+  const requireTmux = process.platform === "darwin" && hasMadmaxFlag(args);
+  try {
+    if (requireTmux && !process.env.TMUX && !isTmuxAvailable()) {
+      abortMadmaxRequiresTmux("missing");
+    }
+    const policy = resolveLaunchPolicy(process.env, args, { requireTmux });
+    switch (policy) {
+      case "inside-tmux":
+        runClaudeInsideTmux(cwd2, args);
+        break;
+      case "outside-tmux":
+        runClaudeOutsideTmux(cwd2, args, sessionId, { requireTmux });
+        break;
+      case "direct":
+        if (requireTmux) {
+          abortMadmaxRequiresTmux("missing");
+        }
+        runClaudeDirect(cwd2, args);
+        break;
+    }
+  } catch (err) {
+    if (err instanceof MadmaxTmuxRequiredError) {
+      return;
+    }
+    throw err;
   }
 }
 function runClaudeInsideTmux(cwd2, args) {
@@ -89054,7 +89668,7 @@ function buildEnvExportPrefix(vars) {
   }
   return parts.length > 0 ? parts.join("; ") + "; " : "";
 }
-function runClaudeOutsideTmux(cwd2, args, _sessionId) {
+function runClaudeOutsideTmux(cwd2, args, _sessionId, options = {}) {
   const forwardedEnv = Object.fromEntries(
     TMUX_ENV_FORWARD.map((name) => [name, process.env[name]]).filter(([, value]) => value !== void 0)
   );
@@ -89066,6 +89680,9 @@ function runClaudeOutsideTmux(cwd2, args, _sessionId) {
   try {
     tmuxExec(["new-session", "-d", "-s", sessionName2, "-c", cwd2, claudeCmd], { stripTmux: true, stdio: "inherit" });
   } catch {
+    if (options.requireTmux) {
+      abortMadmaxRequiresTmux("launch-failed");
+    }
     runClaudeDirect(cwd2, args);
     return;
   }
@@ -89076,6 +89693,9 @@ function runClaudeOutsideTmux(cwd2, args, _sessionId) {
   try {
     tmuxExec(["attach-session", "-t", sessionName2], { stripTmux: true, stdio: "inherit" });
   } catch {
+    if (options.requireTmux) {
+      abortMadmaxRequiresTmux("launch-failed");
+    }
     try {
       tmuxExec(["has-session", "-t", sessionName2], { stripTmux: true, stdio: "ignore" });
       return;

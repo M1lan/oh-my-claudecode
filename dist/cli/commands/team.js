@@ -8,6 +8,7 @@
  *   omc team api <operation> --input '...'  Worker CLI API
  */
 import { TEAM_API_OPERATIONS, resolveTeamApiOperation, executeTeamApiOperation, } from '../../team/api-interop.js';
+import { inferDelegationPlanForTeamTask } from '../../team/delegation-evidence.js';
 import { loadConfig } from '../../config/loader.js';
 const HELP_TOKENS = new Set(['--help', '-h', 'help']);
 const MIN_WORKER_COUNT = 1;
@@ -86,8 +87,8 @@ const TEAM_API_OPERATION_REQUIRED_FIELDS = {
     'write-task-approval': ['team_name', 'task_id', 'status', 'reviewer', 'decision_reason'],
 };
 const TEAM_API_OPERATION_OPTIONAL_FIELDS = {
-    'create-task': ['owner', 'blocked_by', 'requires_code_change'],
-    'update-task': ['subject', 'description', 'blocked_by', 'requires_code_change'],
+    'create-task': ['owner', 'blocked_by', 'requires_code_change', 'delegation'],
+    'update-task': ['subject', 'description', 'blocked_by', 'requires_code_change', 'delegation'],
     'claim-task': ['expected_version'],
     'read-shutdown-ack': ['min_updated_at'],
     'write-worker-identity': [
@@ -343,12 +344,14 @@ export function buildStartupTasks(parsed) {
     return Array.from({ length: parsed.workerCount }, (_, index) => {
         const workerSpec = parsed.workerSpecs[index];
         const roleLabel = workerSpec?.role ? ` (${workerSpec.role})` : '';
+        const delegation = inferDelegationPlanForTeamTask(parsed.task);
         return {
             subject: parsed.workerCount === 1
                 ? parsed.task.slice(0, 80)
                 : `Worker ${index + 1}${roleLabel}: ${parsed.task}`.slice(0, 80),
             description: parsed.task,
             ...(workerSpec?.role ? { owner: `worker-${index + 1}` } : {}),
+            ...(delegation ? { delegation } : {}),
         };
     });
 }
@@ -481,22 +484,26 @@ async function handleTeamStart(parsed, cwd) {
         // Use decomposed subtasks — one per subtask (up to effectiveWorkerCount)
         const subtasks = decomposition.subtasks.slice(0, effectiveWorkerCount);
         for (let i = 0; i < subtasks.length; i++) {
+            const delegation = inferDelegationPlanForTeamTask(subtasks[i].description);
             tasks.push({
                 subject: subtasks[i].subject,
                 description: subtasks[i].description,
                 owner: `worker-${i + 1}`,
+                ...(delegation ? { delegation } : {}),
             });
         }
     }
     else {
         // Atomic task: replicate across all workers (backward compatible)
         for (let i = 0; i < effectiveWorkerCount; i++) {
+            const delegation = inferDelegationPlanForTeamTask(parsed.task);
             tasks.push({
                 subject: effectiveWorkerCount === 1
                     ? parsed.task.slice(0, 80)
                     : `Worker ${i + 1}: ${parsed.task}`.slice(0, 80),
                 description: parsed.task,
                 owner: `worker-${i + 1}`,
+                ...(delegation ? { delegation } : {}),
             });
         }
     }
