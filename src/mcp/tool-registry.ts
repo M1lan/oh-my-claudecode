@@ -13,21 +13,21 @@
  * excluded: they live in the separate "team" MCP server (bridge/team-mcp.cjs).
  */
 
-import { lspTools } from '../tools/lsp-tools.js';
-import { astTools } from '../tools/ast-tools.js';
+import { lspTools } from "../tools/lsp-tools.js";
+import { astTools } from "../tools/ast-tools.js";
 // IMPORTANT: Import from tool.js, NOT index.js!
 // tool.js exports pythonReplTool with wrapped handler returning { content: [...] }
 // index.js exports pythonReplTool with raw handler returning string
-import { pythonReplTool } from '../tools/python-repl/tool.js';
-import { stateTools } from '../tools/state-tools.js';
-import { notepadTools } from '../tools/notepad-tools.js';
-import { memoryTools } from '../tools/memory-tools.js';
-import { traceTools } from '../tools/trace-tools.js';
-import { sharedMemoryTools } from '../tools/shared-memory-tools.js';
-import { deepinitManifestTool } from '../tools/deepinit-manifest.js';
-import { wikiTools } from '../tools/wiki-tools.js';
-import { skillsTools } from '../tools/skills-tools.js';
-import { z } from 'zod';
+import { pythonReplTool } from "../tools/python-repl/tool.js";
+import { stateTools } from "../tools/state-tools.js";
+import { notepadTools } from "../tools/notepad-tools.js";
+import { memoryTools } from "../tools/memory-tools.js";
+import { traceTools } from "../tools/trace-tools.js";
+import { sharedMemoryTools } from "../tools/shared-memory-tools.js";
+import { deepinitManifestTool } from "../tools/deepinit-manifest.js";
+import { wikiTools } from "../tools/wiki-tools.js";
+import { skillsTools } from "../tools/skills-tools.js";
+import { z } from "zod";
 
 /** Minimal tool definition shape shared across all tool families. */
 export interface ToolDef {
@@ -42,7 +42,10 @@ export interface ToolDef {
   schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>;
   handler: (
     args: unknown,
-  ) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>;
+  ) => Promise<{
+    content: Array<{ type: "text"; text: string }>;
+    isError?: boolean;
+  }>;
 }
 
 /** All tools exposed by the standalone server, in registration order. */
@@ -68,7 +71,7 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   if (!zodType || !zodType._def) {
-    return { type: 'string' };
+    return { type: "string" };
   }
 
   if (zodType instanceof z.ZodOptional) {
@@ -87,35 +90,41 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   }
 
   if (zodType instanceof z.ZodString) {
-    result.type = 'string';
+    result.type = "string";
   } else if (zodType instanceof z.ZodNumber) {
-    result.type = zodType._def?.checks?.some((c: { kind: string }) => c.kind === 'int')
-      ? 'integer'
-      : 'number';
+    result.type = zodType._def?.checks?.some(
+      (c: { kind: string }) => c.kind === "int",
+    )
+      ? "integer"
+      : "number";
   } else if (zodType instanceof z.ZodBoolean) {
-    result.type = 'boolean';
+    result.type = "boolean";
   } else if (zodType instanceof z.ZodArray) {
-    result.type = 'array';
-    result.items = zodType._def?.type ? zodTypeToJsonSchema(zodType._def.type) : { type: 'string' };
+    result.type = "array";
+    result.items = zodType._def?.type
+      ? zodTypeToJsonSchema(zodType._def.type)
+      : { type: "string" };
   } else if (zodType instanceof z.ZodEnum) {
-    result.type = 'string';
+    result.type = "string";
     result.enum = zodType._def?.values;
   } else if (zodType instanceof z.ZodObject) {
     return zodToJsonSchema(zodType.shape);
   } else if (zodType instanceof z.ZodRecord) {
-    result.type = 'object';
+    result.type = "object";
     if (zodType._def?.valueType) {
       result.additionalProperties = zodTypeToJsonSchema(zodType._def.valueType);
     }
   } else {
-    result.type = 'string';
+    result.type = "string";
   }
 
   return result;
 }
 
-export function zodToJsonSchema(schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>): {
-  type: 'object';
+export function zodToJsonSchema(
+  schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>,
+): {
+  type: "object";
   properties: Record<string, unknown>;
   required: string[];
 } {
@@ -129,21 +138,27 @@ export function zodToJsonSchema(schema: z.ZodRawShape | z.ZodObject<z.ZodRawShap
     properties[key] = zodTypeToJsonSchema(zodType);
 
     const isOptional =
-      zodType && typeof zodType.isOptional === 'function' && zodType.isOptional();
+      zodType &&
+      typeof zodType.isOptional === "function" &&
+      zodType.isOptional();
     if (!isOptional) {
       required.push(key);
     }
   }
 
-  return { type: 'object', properties, required };
+  return { type: "object", properties, required };
 }
 
 /** The exact payload returned by the ListTools MCP handler. */
 export interface ListToolsEntry {
   name: string;
   description: string;
-  inputSchema: { type: 'object'; properties: Record<string, unknown>; required: string[] };
-  annotations?: ToolDef['annotations'];
+  inputSchema: {
+    type: "object";
+    properties: Record<string, unknown>;
+    required: string[];
+  };
+  annotations?: ToolDef["annotations"];
 }
 
 /**

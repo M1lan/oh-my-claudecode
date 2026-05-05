@@ -212,14 +212,18 @@ const REVIEW_SEED_LIST_RE = /^(?:[-*•]|\d+[.)]|[A-Z][A-Z_-]+:|\([a-z0-9]+\))/;
 
 /** Static source/grep output lines that often trip keyword alerts without representing runtime failure. */
 const SOURCE_PATH_LINE_RE = /^(?:\.\/)?[A-Za-z0-9_./-]+:\d+:/;
-const STATIC_CODE_ALERT_RE = /(?:\blog_error\b|\becho\b).*?(?:"error\||"Usage:)|==\s*"error"/;
+const STATIC_CODE_ALERT_RE =
+  /(?:\blog_error\b|\becho\b).*?(?:"error\||"Usage:)|==\s*"error"/;
 const HELP_USAGE_LINE_RE = /^(?:Usage|Examples?|Commands?|Options?|Flags?):/i;
-const STATIC_HELP_CODE_RE = /^(?:log_error\s+"Usage:|if\s+\[\[.*==\s*"error".*\]\];?\s*then$)/;
-const DIFF_HEADER_LINE_RE = /^(?:diff --git\b|index\s+[0-9a-f]{6,}\.\.[0-9a-f]{6,}\b|@@\s+[-+]\d|---\s+\S|\+\+\+\s+\S)/i;
+const STATIC_HELP_CODE_RE =
+  /^(?:log_error\s+"Usage:|if\s+\[\[.*==\s*"error".*\]\];?\s*then$)/;
+const DIFF_HEADER_LINE_RE =
+  /^(?:diff --git\b|index\s+[0-9a-f]{6,}\.\.[0-9a-f]{6,}\b|@@\s+[-+]\d|---\s+\S|\+\+\+\s+\S)/i;
 const STRUCTURED_ALERT_KEYWORD_RE =
   /\b(?:error|errors?|fail(?:ed|ure|ures)?|conflict|conflicts|operation_failed|claim_conflict|invalid_transition|blocked_dependency|worker_notify_failed)\b/i;
 const SEARCH_COMMAND_RE = /^(?:[$❯>#]\s*)?(?:rg|ripgrep|grep|egrep|fgrep)\b/i;
-const QUOTED_OR_REGEX_QUERY_RE = /(?:"[^"\n]+"|'[^'\n]+'|`[^`\n]+`|\/[^/\n]+\/[a-z]*)/i;
+const QUOTED_OR_REGEX_QUERY_RE =
+  /(?:"[^"\n]+"|'[^'\n]+'|`[^`\n]+`|\/[^/\n]+\/[a-z]*)/i;
 const ZERO_ALERT_SUMMARY_RE =
   /\b(?:0|zero)\s+(?:errors?|fail(?:ed|ures?)?|conflicts?)\b|\b(?:errors?|fail(?:ed|ures?)?|conflicts?)\s*[:=]\s*0\b|\btotalErrors\s*[:=]\s*0\b|\b(?:TypeScript|LSP)\s+check\s+passed:\s*0 errors,\s*0 warnings\b/i;
 const ALERT_REGEX_LITERAL_RE =
@@ -232,8 +236,7 @@ const PERMISSION_DENIED_SCAN_LINE_RE =
   /^(?:find|grep|rg): .*permission denied$/i;
 const CLEAN_DIAGNOSTIC_QUERY_RE =
   /^(?:[$❯>#]\s*)?(?:rg|ripgrep|grep)\b.*\b(?:severity\s*[:=]\s*["']?error["']?|diagnostic(?:s)?|lsp_diagnostics(?:_directory)?)\b/i;
-const JSONISH_LINE_RE =
-  /^(?:[{[]|"(?:[^"\\]|\\.)+"\s*:|'(?:[^'\\]|\\.)+'\s*:)/;
+const JSONISH_LINE_RE = /^(?:[{[]|"(?:[^"\\]|\\.)+"\s*:|'(?:[^'\\]|\\.)+'\s*:)/;
 const REQUEST_RESPONSE_LITERAL_RE =
   /^(?:payload|request|response|input|output|args|params|body|mcp)\s*[:=]\s*[{[]/i;
 const CODE_LITERAL_PREFIX_RE =
@@ -244,9 +247,9 @@ const CODE_LITERAL_PREFIX_RE =
 const DEFAULT_MAX_TAIL_LINES = 15;
 
 function extractReviewSeedOutcomeKeys(line: string): string[] {
-  return REVIEW_SEED_OUTCOME_PATTERNS
-    .filter(({ pattern }) => pattern.test(line))
-    .map(({ key }) => key);
+  return REVIEW_SEED_OUTCOME_PATTERNS.filter(({ pattern }) =>
+    pattern.test(line),
+  ).map(({ key }) => key);
 }
 
 function trimReviewSeedPrefix(lines: string[]): string[] {
@@ -289,9 +292,11 @@ function trimReviewSeedPrefix(lines: string[]): string[] {
 function looksLikeStructuredAlertLiteral(line: string): boolean {
   const trimmed = line.trim();
   if (!STRUCTURED_ALERT_KEYWORD_RE.test(trimmed)) return false;
-  if (/^(?:\{.*\}|\[.*\])$/.test(trimmed) && /["'{\[\]}:,]/.test(trimmed)) return true;
+  if (/^(?:\{.*\}|\[.*\])$/.test(trimmed) && /["'{\[\]}:,]/.test(trimmed))
+    return true;
   if (JSONISH_LINE_RE.test(trimmed)) return true;
-  if (CODE_LITERAL_PREFIX_RE.test(trimmed) && /["'`{}[\]()=>]/.test(trimmed)) return true;
+  if (CODE_LITERAL_PREFIX_RE.test(trimmed) && /["'`{}[\]()=>]/.test(trimmed))
+    return true;
   return false;
 }
 
@@ -306,11 +311,16 @@ function looksLikeAlertSearchCommand(line: string): boolean {
 
 function looksLikeAlertRegexLiteral(line: string): boolean {
   const trimmed = line.trim();
-  return STRUCTURED_ALERT_KEYWORD_RE.test(trimmed) && ALERT_REGEX_LITERAL_RE.test(trimmed);
+  return (
+    STRUCTURED_ALERT_KEYWORD_RE.test(trimmed) &&
+    ALERT_REGEX_LITERAL_RE.test(trimmed)
+  );
 }
 
 function isCommandBoilerplateLine(line: string): boolean {
-  return /^(?:command failed with exit code \d+:|exit code \d+)$/i.test(line.trim());
+  return /^(?:command failed with exit code \d+:|exit code \d+)$/i.test(
+    line.trim(),
+  );
 }
 
 function stripLeadingNoisePrefix(lines: string[]): string[] {
@@ -341,7 +351,10 @@ function stripLeadingNoisePrefix(lines: string[]): string[] {
  * - Drops "ctrl+o to expand" hint lines
  * - Returns at most `maxLines` non-empty lines (default 10)
  */
-export function parseTmuxTail(raw: string, maxLines: number = DEFAULT_MAX_TAIL_LINES): string {
+export function parseTmuxTail(
+  raw: string,
+  maxLines: number = DEFAULT_MAX_TAIL_LINES,
+): string {
   const meaningful: string[] = [];
 
   for (const line of raw.split("\n")) {
@@ -365,17 +378,23 @@ export function parseTmuxTail(raw: string, maxLines: number = DEFAULT_MAX_TAIL_L
     if (ISSUE_PROMPT_NOISE_RE.test(trimmed)) continue;
     if (PERMISSION_DENIED_SCAN_LINE_RE.test(trimmed)) continue;
     if (CLEAN_DIAGNOSTIC_QUERY_RE.test(trimmed)) continue;
-    if (SOURCE_PATH_LINE_RE.test(trimmed) && STATIC_CODE_ALERT_RE.test(trimmed)) continue;
+    if (SOURCE_PATH_LINE_RE.test(trimmed) && STATIC_CODE_ALERT_RE.test(trimmed))
+      continue;
     if (SOURCE_PATH_LINE_RE.test(trimmed)) {
       const sourceContent = trimmed.replace(SOURCE_PATH_LINE_RE, "").trim();
-      if (looksLikeStructuredAlertLiteral(sourceContent) || looksLikeAlertRegexLiteral(sourceContent)) continue;
+      if (
+        looksLikeStructuredAlertLiteral(sourceContent) ||
+        looksLikeAlertRegexLiteral(sourceContent)
+      )
+        continue;
     }
     if (looksLikeAlertRegexLiteral(trimmed)) continue;
     if (looksLikeStructuredAlertLiteral(trimmed)) continue;
 
     // Alphanumeric density check: drop lines mostly composed of special characters
     const alnumCount = (trimmed.match(/[a-zA-Z0-9]/g) || []).length;
-    if (trimmed.length >= 8 && alnumCount / trimmed.length < MIN_ALNUM_RATIO) continue;
+    if (trimmed.length >= 8 && alnumCount / trimmed.length < MIN_ALNUM_RATIO)
+      continue;
 
     meaningful.push(stripped.trimEnd());
   }

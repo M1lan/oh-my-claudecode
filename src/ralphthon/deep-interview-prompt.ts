@@ -1,5 +1,9 @@
-export function buildRalphthonDeepInterviewPrompt(task: string, maxWaves: number, pollIntervalMs: number): string {
-  const sanitizedTask = task.replace(/[\r\n\0]+/g, ' ').trim();
+export function buildRalphthonDeepInterviewPrompt(
+  task: string,
+  maxWaves: number,
+  pollIntervalMs: number,
+): string {
+  const sanitizedTask = task.replace(/[\r\n\0]+/g, " ").trim();
 
   return `/deep-interview ${sanitizedTask}
 

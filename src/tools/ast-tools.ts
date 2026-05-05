@@ -24,7 +24,7 @@ import { isToolPathRestricted } from "../lib/security-config.js";
 // via NODE_PATH set in the bundle's startup banner.
 let sgModule: typeof import("@ast-grep/napi") | null = null;
 let sgLoadFailed = false;
-let sgLoadError = '';
+let sgLoadError = "";
 
 async function getSgModule(): Promise<typeof import("@ast-grep/napi") | null> {
   if (sgLoadFailed) {
@@ -33,7 +33,9 @@ async function getSgModule(): Promise<typeof import("@ast-grep/napi") | null> {
   if (!sgModule) {
     try {
       // Use createRequire for CJS-style resolution (respects NODE_PATH)
-      const require = createRequire(import.meta.url || __filename || process.cwd() + '/');
+      const require = createRequire(
+        import.meta.url || __filename || process.cwd() + "/",
+      );
       sgModule = require("@ast-grep/napi") as typeof import("@ast-grep/napi");
     } catch {
       // Fallback to dynamic import for pure ESM environments
@@ -240,7 +242,9 @@ function getFilesForLanguage(
   try {
     stat = statSync(resolvedPath);
   } catch (err) {
-    throw new Error(`Cannot access path "${resolvedPath}": ${(err as Error).message}`);
+    throw new Error(
+      `Cannot access path "${resolvedPath}": ${(err as Error).message}`,
+    );
   }
 
   if (stat.isFile()) {
@@ -547,7 +551,7 @@ IMPORTANT: dryRun=true (default) only previews changes. Set dryRun=false to appl
                 if (captured) {
                   // Escape $ in captured text to prevent JS replacement patterns
                   // ($&, $', $`, $$) from being interpreted by replaceAll
-                  const safeText = captured.text().replace(/\$/g, '$$$$');
+                  const safeText = captured.text().replace(/\$/g, "$$$$");
                   finalReplacement = finalReplacement.replaceAll(
                     metaVar,
                     safeText,

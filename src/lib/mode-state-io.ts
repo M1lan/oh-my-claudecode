@@ -6,8 +6,8 @@
  * and file permissions so that individual mode modules don't duplicate this logic.
  */
 
-import { existsSync, readFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { existsSync, readFileSync, unlinkSync } from "fs";
+import { join } from "path";
 import {
   getOmcRoot,
   resolveStatePath,
@@ -16,24 +16,26 @@ import {
   ensureOmcDir,
   listSessionIds,
   getWorktreeRoot,
-} from './worktree-paths.js';
-import { atomicWriteJsonSync } from './atomic-write.js';
+} from "./worktree-paths.js";
+import { atomicWriteJsonSync } from "./atomic-write.js";
 
-export function getStateSessionOwner(state: Record<string, unknown> | null | undefined): string | undefined {
-  if (!state || typeof state !== 'object') {
+export function getStateSessionOwner(
+  state: Record<string, unknown> | null | undefined,
+): string | undefined {
+  if (!state || typeof state !== "object") {
     return undefined;
   }
 
   const meta = state._meta;
-  if (meta && typeof meta === 'object') {
+  if (meta && typeof meta === "object") {
     const metaSessionId = (meta as Record<string, unknown>).sessionId;
-    if (typeof metaSessionId === 'string' && metaSessionId) {
+    if (typeof metaSessionId === "string" && metaSessionId) {
       return metaSessionId;
     }
   }
 
   const topLevelSessionId = state.session_id;
-  return typeof topLevelSessionId === 'string' && topLevelSessionId
+  return typeof topLevelSessionId === "string" && topLevelSessionId
     ? topLevelSessionId
     : undefined;
 }
@@ -60,7 +62,11 @@ function resolveStateRoot(directory?: string): string {
  * When sessionId is provided, returns the session-scoped path.
  * Otherwise returns the legacy (global) path.
  */
-function resolveFile(mode: string, directory?: string, sessionId?: string): string {
+function resolveFile(
+  mode: string,
+  directory?: string,
+  sessionId?: string,
+): string {
   const baseDir = resolveStateRoot(directory);
   if (sessionId) {
     return resolveSessionStatePath(mode, sessionId, baseDir);
@@ -70,7 +76,7 @@ function resolveFile(mode: string, directory?: string, sessionId?: string): stri
 
 function getLegacyStateCandidates(mode: string, directory?: string): string[] {
   const baseDir = resolveStateRoot(directory);
-  const normalizedName = mode.endsWith('-state') ? mode : `${mode}-state`;
+  const normalizedName = mode.endsWith("-state") ? mode : `${mode}-state`;
 
   return [
     resolveStatePath(mode, baseDir),
@@ -78,9 +84,13 @@ function getLegacyStateCandidates(mode: string, directory?: string): string[] {
   ];
 }
 
-function getRuntimeArtifactCandidates(mode: string, directory?: string, sessionId?: string): string[] {
+function getRuntimeArtifactCandidates(
+  mode: string,
+  directory?: string,
+  sessionId?: string,
+): string[] {
   const baseDir = resolveStateRoot(directory);
-  const stateRoot = join(getOmcRoot(baseDir), 'state');
+  const stateRoot = join(getOmcRoot(baseDir), "state");
   const artifactNames = [
     `${mode}-stop-breaker.json`,
     `${mode}-last-steer-at`,
@@ -89,18 +99,20 @@ function getRuntimeArtifactCandidates(mode: string, directory?: string, sessionI
   const candidateDirs = new Set<string>([stateRoot]);
 
   if (sessionId) {
-    candidateDirs.add(join(stateRoot, 'sessions', sessionId));
+    candidateDirs.add(join(stateRoot, "sessions", sessionId));
   } else {
     for (const sid of listSessionIds(baseDir)) {
-      candidateDirs.add(join(stateRoot, 'sessions', sid));
+      candidateDirs.add(join(stateRoot, "sessions", sid));
     }
   }
 
-  return [...candidateDirs].flatMap((dir) => artifactNames.map((name) => join(dir, name)));
+  return [...candidateDirs].flatMap((dir) =>
+    artifactNames.map((name) => join(dir, name)),
+  );
 }
 
 function hasSessionEndSummary(baseDir: string, sessionId: string): boolean {
-  return existsSync(join(getOmcRoot(baseDir), 'sessions', `${sessionId}.json`));
+  return existsSync(join(getOmcRoot(baseDir), "sessions", `${sessionId}.json`));
 }
 
 /**
@@ -131,7 +143,10 @@ export function findSessionOwnedStateFiles(
     }
 
     try {
-      const raw = JSON.parse(readFileSync(candidatePath, 'utf-8')) as Record<string, unknown>;
+      const raw = JSON.parse(readFileSync(candidatePath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       if (getStateSessionOwner(raw) === sessionId) {
         matches.add(candidatePath);
       }
@@ -175,7 +190,10 @@ export function findCompletedSessionStateFiles(
     }
 
     try {
-      const raw = JSON.parse(readFileSync(candidatePath, 'utf-8')) as Record<string, unknown>;
+      const raw = JSON.parse(readFileSync(candidatePath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       if (raw.active === true) {
         matches.add(candidatePath);
       }
@@ -211,12 +229,16 @@ export function writeModeState(
     if (sessionId) {
       ensureSessionStateDir(sessionId, baseDir);
     } else {
-      ensureOmcDir('state', baseDir);
+      ensureOmcDir("state", baseDir);
     }
     const filePath = resolveFile(mode, directory, sessionId);
     const envelope = {
       ...state,
-      _meta: { written_at: new Date().toISOString(), mode, ...(sessionId ? { sessionId } : {}) },
+      _meta: {
+        written_at: new Date().toISOString(),
+        mode,
+        ...(sessionId ? { sessionId } : {}),
+      },
     };
     atomicWriteJsonSync(filePath, envelope);
     return true;
@@ -246,10 +268,10 @@ export function readModeState<T = Record<string, unknown>>(
     return null;
   }
   try {
-    const content = readFileSync(filePath, 'utf-8');
+    const content = readFileSync(filePath, "utf-8");
     const parsed = JSON.parse(content);
     // Strip _meta envelope if present
-    if (parsed && typeof parsed === 'object' && '_meta' in parsed) {
+    if (parsed && typeof parsed === "object" && "_meta" in parsed) {
       const { _meta: _, ...rest } = parsed;
       return rest as T;
     }
@@ -290,7 +312,11 @@ export function clearModeStateFile(
 
   if (sessionId) {
     unlinkIfPresent(resolveFile(mode, directory, sessionId));
-    for (const artifactPath of getRuntimeArtifactCandidates(mode, baseDir, sessionId)) {
+    for (const artifactPath of getRuntimeArtifactCandidates(
+      mode,
+      baseDir,
+      sessionId,
+    )) {
       unlinkIfPresent(artifactPath);
     }
   } else {
@@ -314,7 +340,7 @@ export function clearModeStateFile(
       }
 
       try {
-        const content = readFileSync(legacyPath, 'utf-8');
+        const content = readFileSync(legacyPath, "utf-8");
         const legacyState = JSON.parse(content) as Record<string, unknown>;
         // Only remove if it belongs to this session or is unowned
         if (canClearStateForSession(legacyState, sessionId)) {

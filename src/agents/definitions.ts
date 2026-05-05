@@ -8,40 +8,40 @@
  * 4. omcSystemPrompt for the main orchestrator
  */
 
-import type { AgentConfig, PluginConfig } from '../shared/types.js';
-import { loadAgentPrompt, parseDisallowedTools } from './utils.js';
-import { loadConfig } from '../config/loader.js';
-import { resolveInheritedModelFromEnv } from '../config/models.js';
-import { appendSkininthegamebrosGuidance } from './skininthegamebros-guidance.js';
+import type { AgentConfig, PluginConfig } from "../shared/types.js";
+import { loadAgentPrompt, parseDisallowedTools } from "./utils.js";
+import { loadConfig } from "../config/loader.js";
+import { resolveInheritedModelFromEnv } from "../config/models.js";
+import { appendSkininthegamebrosGuidance } from "./skininthegamebros-guidance.js";
 
 // Re-export base agents from individual files (rebranded names)
-export { architectAgent } from './architect.js';
-export { designerAgent } from './designer.js';
-export { writerAgent } from './writer.js';
-export { criticAgent } from './critic.js';
-export { analystAgent } from './analyst.js';
-export { executorAgent } from './executor.js';
-export { plannerAgent } from './planner.js';
-export { qaTesterAgent } from './qa-tester.js';
-export { scientistAgent } from './scientist.js';
-export { exploreAgent } from './explore.js';
-export { tracerAgent } from './tracer.js';
+export { architectAgent } from "./architect.js";
+export { designerAgent } from "./designer.js";
+export { writerAgent } from "./writer.js";
+export { criticAgent } from "./critic.js";
+export { analystAgent } from "./analyst.js";
+export { executorAgent } from "./executor.js";
+export { plannerAgent } from "./planner.js";
+export { qaTesterAgent } from "./qa-tester.js";
+export { scientistAgent } from "./scientist.js";
+export { exploreAgent } from "./explore.js";
+export { tracerAgent } from "./tracer.js";
 
-export { documentSpecialistAgent } from './document-specialist.js';
+export { documentSpecialistAgent } from "./document-specialist.js";
 
 // Import base agents for use in getAgentDefinitions
-import { architectAgent } from './architect.js';
-import { designerAgent } from './designer.js';
-import { writerAgent } from './writer.js';
-import { criticAgent } from './critic.js';
-import { analystAgent } from './analyst.js';
-import { executorAgent } from './executor.js';
-import { plannerAgent } from './planner.js';
-import { qaTesterAgent } from './qa-tester.js';
-import { scientistAgent } from './scientist.js';
-import { exploreAgent } from './explore.js';
-import { tracerAgent } from './tracer.js';
-import { documentSpecialistAgent } from './document-specialist.js';
+import { architectAgent } from "./architect.js";
+import { designerAgent } from "./designer.js";
+import { writerAgent } from "./writer.js";
+import { criticAgent } from "./critic.js";
+import { analystAgent } from "./analyst.js";
+import { executorAgent } from "./executor.js";
+import { plannerAgent } from "./planner.js";
+import { qaTesterAgent } from "./qa-tester.js";
+import { scientistAgent } from "./scientist.js";
+import { exploreAgent } from "./explore.js";
+import { tracerAgent } from "./tracer.js";
+import { documentSpecialistAgent } from "./document-specialist.js";
 
 // Re-export loadAgentPrompt (also exported from index.ts)
 export { loadAgentPrompt };
@@ -54,22 +54,23 @@ export { loadAgentPrompt };
  * Debugger Agent - Root-Cause Analysis & Debugging (Sonnet)
  */
 export const debuggerAgent: AgentConfig = {
-  name: 'debugger',
-  description: 'Root-cause analysis, regression isolation, failure diagnosis (Sonnet).',
-  prompt: loadAgentPrompt('debugger'),
-  model: 'sonnet',
-  defaultModel: 'sonnet'
+  name: "debugger",
+  description:
+    "Root-cause analysis, regression isolation, failure diagnosis (Sonnet).",
+  prompt: loadAgentPrompt("debugger"),
+  model: "sonnet",
+  defaultModel: "sonnet",
 };
 
 /**
  * Verifier Agent - Completion Evidence & Test Validation (Sonnet)
  */
 export const verifierAgent: AgentConfig = {
-  name: 'verifier',
-  description: 'Completion evidence, claim validation, test adequacy (Sonnet).',
-  prompt: loadAgentPrompt('verifier'),
-  model: 'sonnet',
-  defaultModel: 'sonnet'
+  name: "verifier",
+  description: "Completion evidence, claim validation, test adequacy (Sonnet).",
+  prompt: loadAgentPrompt("verifier"),
+  model: "sonnet",
+  defaultModel: "sonnet",
 };
 
 // ============================================================
@@ -85,11 +86,11 @@ export const verifierAgent: AgentConfig = {
  * Replaces: tdd-guide agent
  */
 export const testEngineerAgent: AgentConfig = {
-  name: 'test-engineer',
-  description: 'Test strategy, coverage, flaky test hardening (Sonnet).',
-  prompt: loadAgentPrompt('test-engineer'),
-  model: 'sonnet',
-  defaultModel: 'sonnet'
+  name: "test-engineer",
+  description: "Test strategy, coverage, flaky test hardening (Sonnet).",
+  prompt: loadAgentPrompt("test-engineer"),
+  model: "sonnet",
+  defaultModel: "sonnet",
 };
 
 // ============================================================
@@ -100,45 +101,48 @@ export const testEngineerAgent: AgentConfig = {
  * Security-Reviewer Agent - Security Vulnerability Detection (Sonnet)
  */
 export const securityReviewerAgent: AgentConfig = {
-  name: 'security-reviewer',
-  description: 'Security vulnerability detection specialist (Sonnet). Use for security audits and OWASP detection.',
-  prompt: loadAgentPrompt('security-reviewer'),
-  model: 'sonnet',
-  defaultModel: 'sonnet'
+  name: "security-reviewer",
+  description:
+    "Security vulnerability detection specialist (Sonnet). Use for security audits and OWASP detection.",
+  prompt: loadAgentPrompt("security-reviewer"),
+  model: "sonnet",
+  defaultModel: "sonnet",
 };
 
 /**
  * Code-Reviewer Agent - Expert Code Review (Opus)
  */
 export const codeReviewerAgent: AgentConfig = {
-  name: 'code-reviewer',
-  description: 'Expert code review specialist (Opus). Use for comprehensive code quality review.',
-  prompt: loadAgentPrompt('code-reviewer'),
-  model: 'opus',
-  defaultModel: 'opus'
+  name: "code-reviewer",
+  description:
+    "Expert code review specialist (Opus). Use for comprehensive code quality review.",
+  prompt: loadAgentPrompt("code-reviewer"),
+  model: "opus",
+  defaultModel: "opus",
 };
-
 
 /**
  * Git-Master Agent - Git Operations Expert (Sonnet)
  */
 export const gitMasterAgent: AgentConfig = {
-  name: 'git-master',
-  description: 'Git expert for atomic commits, rebasing, and history management with style detection',
-  prompt: loadAgentPrompt('git-master'),
-  model: 'sonnet',
-  defaultModel: 'sonnet'
+  name: "git-master",
+  description:
+    "Git expert for atomic commits, rebasing, and history management with style detection",
+  prompt: loadAgentPrompt("git-master"),
+  model: "sonnet",
+  defaultModel: "sonnet",
 };
 
 /**
  * Code-Simplifier Agent - Code Simplification & Refactoring (Opus)
  */
 export const codeSimplifierAgent: AgentConfig = {
-  name: 'code-simplifier',
-  description: 'Simplifies and refines code for clarity, consistency, and maintainability (Opus).',
-  prompt: loadAgentPrompt('code-simplifier'),
-  model: 'opus',
-  defaultModel: 'opus'
+  name: "code-simplifier",
+  description:
+    "Simplifies and refines code for clarity, consistency, and maintainability (Opus).",
+  prompt: loadAgentPrompt("code-simplifier"),
+  model: "opus",
+  defaultModel: "opus",
 };
 
 // ============================================================
@@ -151,28 +155,33 @@ export const codeSimplifierAgent: AgentConfig = {
 export const tddGuideAgentAlias = testEngineerAgent;
 
 const AGENT_CONFIG_KEY_MAP = {
-  explore: 'explore',
-  analyst: 'analyst',
-  planner: 'planner',
-  architect: 'architect',
-  debugger: 'debugger',
-  executor: 'executor',
-  verifier: 'verifier',
-  'security-reviewer': 'securityReviewer',
-  'code-reviewer': 'codeReviewer',
-  'test-engineer': 'testEngineer',
-  designer: 'designer',
-  writer: 'writer',
-  'qa-tester': 'qaTester',
-  scientist: 'scientist',
-  tracer: 'tracer',
-  'git-master': 'gitMaster',
-  'code-simplifier': 'codeSimplifier',
-  critic: 'critic',
-  'document-specialist': 'documentSpecialist',
-} as const satisfies Partial<Record<string, keyof NonNullable<PluginConfig['agents']>>>;
+  explore: "explore",
+  analyst: "analyst",
+  planner: "planner",
+  architect: "architect",
+  debugger: "debugger",
+  executor: "executor",
+  verifier: "verifier",
+  "security-reviewer": "securityReviewer",
+  "code-reviewer": "codeReviewer",
+  "test-engineer": "testEngineer",
+  designer: "designer",
+  writer: "writer",
+  "qa-tester": "qaTester",
+  scientist: "scientist",
+  tracer: "tracer",
+  "git-master": "gitMaster",
+  "code-simplifier": "codeSimplifier",
+  critic: "critic",
+  "document-specialist": "documentSpecialist",
+} as const satisfies Partial<
+  Record<string, keyof NonNullable<PluginConfig["agents"]>>
+>;
 
-function getConfiguredAgentModel(name: string, config: PluginConfig): string | undefined {
+function getConfiguredAgentModel(
+  name: string,
+  config: PluginConfig,
+): string | undefined {
   const key = AGENT_CONFIG_KEY_MAP[name as keyof typeof AGENT_CONFIG_KEY_MAP];
   return key ? config.agents?.[key]?.model : undefined;
 }
@@ -202,14 +211,17 @@ function getConfiguredAgentModel(name: string, config: PluginConfig): string | u
 export function getAgentDefinitions(options?: {
   overrides?: Partial<Record<string, Partial<AgentConfig>>>;
   config?: PluginConfig;
-}): Record<string, {
-  description: string;
-  prompt: string;
-  tools?: string[];
-  disallowedTools?: string[];
-  model?: string;
-  defaultModel?: string;
-}> {
+}): Record<
+  string,
+  {
+    description: string;
+    prompt: string;
+    tools?: string[];
+    disallowedTools?: string[];
+    model?: string;
+    defaultModel?: string;
+  }
+> {
   const agents: Record<string, AgentConfig> = {
     // ============================================================
     // BUILD/ANALYSIS LANE
@@ -225,20 +237,20 @@ export function getAgentDefinitions(options?: {
     // ============================================================
     // REVIEW LANE
     // ============================================================
-    'security-reviewer': securityReviewerAgent,
-    'code-reviewer': codeReviewerAgent,
+    "security-reviewer": securityReviewerAgent,
+    "code-reviewer": codeReviewerAgent,
 
     // ============================================================
     // DOMAIN SPECIALISTS
     // ============================================================
-    'test-engineer': testEngineerAgent,
+    "test-engineer": testEngineerAgent,
     designer: designerAgent,
     writer: writerAgent,
-    'qa-tester': qaTesterAgent,
+    "qa-tester": qaTesterAgent,
     scientist: scientistAgent,
     tracer: tracerAgent,
-    'git-master': gitMasterAgent,
-    'code-simplifier': codeSimplifierAgent,
+    "git-master": gitMasterAgent,
+    "code-simplifier": codeSimplifierAgent,
 
     // ============================================================
     // COORDINATION
@@ -248,27 +260,40 @@ export function getAgentDefinitions(options?: {
     // ============================================================
     // BACKWARD COMPATIBILITY (Deprecated)
     // ============================================================
-    'document-specialist': documentSpecialistAgent
+    "document-specialist": documentSpecialistAgent,
   };
 
   const resolvedConfig = options?.config ?? loadConfig();
   const inheritModel = resolvedConfig.routing?.forceInherit
     ? resolveInheritedModelFromEnv()
     : undefined;
-  const result: Record<string, { description: string; prompt: string; tools?: string[]; disallowedTools?: string[]; model?: string; defaultModel?: string }> = {};
+  const result: Record<
+    string,
+    {
+      description: string;
+      prompt: string;
+      tools?: string[];
+      disallowedTools?: string[];
+      model?: string;
+      defaultModel?: string;
+    }
+  > = {};
 
   for (const [name, agentConfig] of Object.entries(agents)) {
     const override = options?.overrides?.[name];
     const configuredModel = getConfiguredAgentModel(name, resolvedConfig);
-    const disallowedTools = agentConfig.disallowedTools ?? parseDisallowedTools(name);
-    const resolvedModel = override?.model ?? inheritModel ?? configuredModel ?? agentConfig.model;
-    const resolvedDefaultModel = override?.defaultModel ?? agentConfig.defaultModel;
+    const disallowedTools =
+      agentConfig.disallowedTools ?? parseDisallowedTools(name);
+    const resolvedModel =
+      override?.model ?? inheritModel ?? configuredModel ?? agentConfig.model;
+    const resolvedDefaultModel =
+      override?.defaultModel ?? agentConfig.defaultModel;
 
     result[name] = {
       description: override?.description ?? agentConfig.description,
       prompt: appendSkininthegamebrosGuidance(
         override?.prompt ?? agentConfig.prompt,
-        'agent',
+        "agent",
       ),
       tools: override?.tools ?? agentConfig.tools,
       disallowedTools,

@@ -1,11 +1,11 @@
-import { execFileSync } from 'node:child_process';
-import type { GitProvider, PRInfo, IssueInfo, ProviderName } from './types.js';
-import { validateUrlForSSRF } from '../utils/ssrf-guard.js';
+import { execFileSync } from "node:child_process";
+import type { GitProvider, PRInfo, IssueInfo, ProviderName } from "./types.js";
+import { validateUrlForSSRF } from "../utils/ssrf-guard.js";
 
 function validateGiteaUrl(raw: string): string | null {
   try {
     const u = new URL(raw);
-    if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
+    if (u.protocol !== "https:" && u.protocol !== "http:") return null;
     if (!validateUrlForSSRF(raw).allowed) return null;
     return u.origin;
   } catch {
@@ -16,12 +16,12 @@ function validateGiteaUrl(raw: string): string | null {
 export class GiteaProvider implements GitProvider {
   readonly name: ProviderName;
   readonly displayName: string;
-  readonly prTerminology = 'PR' as const;
+  readonly prTerminology = "PR" as const;
   readonly prRefspec = null;
 
-  constructor(options?: { name?: 'gitea' | 'forgejo'; displayName?: string }) {
-    this.name = options?.name ?? 'gitea';
-    this.displayName = options?.displayName ?? 'Gitea';
+  constructor(options?: { name?: "gitea" | "forgejo"; displayName?: string }) {
+    this.name = options?.name ?? "gitea";
+    this.displayName = options?.displayName ?? "Gitea";
   }
 
   detectFromRemote(_url: string): boolean {
@@ -50,10 +50,10 @@ export class GiteaProvider implements GitProvider {
     if (!Number.isInteger(number) || number < 1) return null;
     // Try tea CLI first
     try {
-      const raw = execFileSync('tea', ['pr', 'view', String(number)], {
-        encoding: 'utf-8',
+      const raw = execFileSync("tea", ["pr", "view", String(number)], {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -71,19 +71,23 @@ export class GiteaProvider implements GitProvider {
     return this.viewPRviaRest(number, owner, repo);
   }
 
-  private viewPRviaRest(number: number, owner?: string, repo?: string): PRInfo | null {
-    const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? '');
+  private viewPRviaRest(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): PRInfo | null {
+    const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? "");
     const token = process.env.GITEA_TOKEN;
     if (!baseUrl || !owner || !repo) return null;
 
     try {
-      const args = ['-sS'];
-      if (token) args.push('-H', `Authorization: token ${token}`);
+      const args = ["-sS"];
+      if (token) args.push("-H", `Authorization: token ${token}`);
       args.push(`${baseUrl}/api/v1/repos/${owner}/${repo}/pulls/${number}`);
-      const raw = execFileSync('curl', args, {
-        encoding: 'utf-8',
+      const raw = execFileSync("curl", args, {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -103,10 +107,10 @@ export class GiteaProvider implements GitProvider {
     if (!Number.isInteger(number) || number < 1) return null;
     // Try tea CLI first
     try {
-      const raw = execFileSync('tea', ['issues', 'view', String(number)], {
-        encoding: 'utf-8',
+      const raw = execFileSync("tea", ["issues", "view", String(number)], {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -122,19 +126,23 @@ export class GiteaProvider implements GitProvider {
     return this.viewIssueviaRest(number, owner, repo);
   }
 
-  private viewIssueviaRest(number: number, owner?: string, repo?: string): IssueInfo | null {
-    const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? '');
+  private viewIssueviaRest(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): IssueInfo | null {
+    const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? "");
     const token = process.env.GITEA_TOKEN;
     if (!baseUrl || !owner || !repo) return null;
 
     try {
-      const args = ['-sS'];
-      if (token) args.push('-H', `Authorization: token ${token}`);
+      const args = ["-sS"];
+      if (token) args.push("-H", `Authorization: token ${token}`);
       args.push(`${baseUrl}/api/v1/repos/${owner}/${repo}/issues/${number}`);
-      const raw = execFileSync('curl', args, {
-        encoding: 'utf-8',
+      const raw = execFileSync("curl", args, {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -154,10 +162,10 @@ export class GiteaProvider implements GitProvider {
 
     // Try tea CLI auth
     try {
-      execFileSync('tea', ['login', 'list'], {
-        encoding: 'utf-8',
+      execFileSync("tea", ["login", "list"], {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       return true;
     } catch {

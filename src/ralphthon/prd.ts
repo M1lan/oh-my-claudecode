@@ -240,7 +240,10 @@ export function getRalphthonPrdStatus(prd: RalphthonPRD): RalphthonPrdStatus {
 
 type RetriableTask = Pick<RalphthonTask, "retries" | "status" | "notes">;
 
-function incrementRetry(task: RetriableTask, maxRetries: number): { retries: number; skipped: boolean } {
+function incrementRetry(
+  task: RetriableTask,
+  maxRetries: number,
+): { retries: number; skipped: boolean } {
   task.retries += 1;
   const skipped = task.retries >= maxRetries;
   if (skipped) {

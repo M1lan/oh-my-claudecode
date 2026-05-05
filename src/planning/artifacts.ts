@@ -56,17 +56,16 @@ function escapeRegex(value: string): string {
 }
 
 function getSectionContent(markdown: string, heading: string): string | null {
-  const headingRe = new RegExp(
-    `^##\\s+${escapeRegex(heading)}[ \\t]*$`,
-    "im",
-  );
+  const headingRe = new RegExp(`^##\\s+${escapeRegex(heading)}[ \\t]*$`, "im");
   const headingMatch = headingRe.exec(markdown);
   if (!headingMatch || headingMatch.index === undefined) return null;
 
   const bodyStart = headingMatch.index + headingMatch[0].length;
   const rest = markdown.slice(bodyStart).replace(/^\r?\n/, "");
   const nextHeadingMatch = /\r?\n##\s+/.exec(rest);
-  const body = (nextHeadingMatch ? rest.slice(0, nextHeadingMatch.index) : rest).trim();
+  const body = (
+    nextHeadingMatch ? rest.slice(0, nextHeadingMatch.index) : rest
+  ).trim();
   return body.length > 0 ? body : null;
 }
 
@@ -103,10 +102,7 @@ function hasCompletePlanningPair(
       "Acceptance criteria",
       "Requirement coverage map",
     ]) &&
-    hasRequiredSections(testSpec, [
-      "Unit coverage",
-      "Verification mapping",
-    ])
+    hasRequiredSections(testSpec, ["Unit coverage", "Verification mapping"])
   );
 }
 
@@ -211,20 +207,25 @@ function selectLaunchHintMatch(
 ): LaunchHintSelection {
   const decodedMatches = matches.flatMap((match) => {
     const command = match[0]?.trim();
-    const task = match.groups?.task ? decodeQuotedValue(match.groups.task) : null;
+    const task = match.groups?.task
+      ? decodeQuotedValue(match.groups.task)
+      : null;
     if (!command || task == null) return [];
     const flags = match.groups?.flags ?? "";
     const workerCount = match.groups?.count
       ? Number.parseInt(match.groups.count, 10)
       : undefined;
 
-    return [{
-      command,
-      task,
-      ...(workerCount == null ? {} : { workerCount }),
-      agentType: match.groups?.role || undefined,
-      linkedRalph: /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph,
-    }];
+    return [
+      {
+        command,
+        task,
+        ...(workerCount == null ? {} : { workerCount }),
+        agentType: match.groups?.role || undefined,
+        linkedRalph:
+          /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph,
+      },
+    ];
   });
 
   const matchesToConsider = normalizedCommand

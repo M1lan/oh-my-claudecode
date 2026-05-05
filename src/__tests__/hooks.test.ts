@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from 'fs';
-import { join } from 'path';
-import { tmpdir, homedir } from 'os';
-import { execSync } from 'child_process';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mkdirSync, writeFileSync, readFileSync, rmSync, existsSync } from "fs";
+import { join } from "path";
+import { tmpdir, homedir } from "os";
+import { execSync } from "child_process";
 
 // Mock isTeamEnabled so team keywords are detected in CI
-vi.mock('../features/auto-update.js', async (importOriginal) => {
+vi.mock("../features/auto-update.js", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
     ...actual,
@@ -19,30 +19,32 @@ import {
   detectKeywordsWithType,
   hasKeyword,
   getPrimaryKeyword,
-  type DetectedKeyword
-} from '../hooks/keyword-detector/index.js';
+  type DetectedKeyword,
+} from "../hooks/keyword-detector/index.js";
 import {
   formatTodoStatus,
   getNextPendingTodo,
   type Todo,
-  type IncompleteTodosResult
-} from '../hooks/todo-continuation/index.js';
-import {
-  resetTodoContinuationAttempts
-} from '../hooks/persistent-mode/index.js';
+  type IncompleteTodosResult,
+} from "../hooks/todo-continuation/index.js";
+import { resetTodoContinuationAttempts } from "../hooks/persistent-mode/index.js";
 import {
   startUltraQA,
   clearUltraQAState,
-  isRalphLoopActive
-} from '../hooks/ultraqa/index.js';
+  isRalphLoopActive,
+} from "../hooks/ultraqa/index.js";
 import {
   createRalphLoopHook,
   clearRalphState,
-  isUltraQAActive
-} from '../hooks/ralph/index.js';
-import { processHook, type HookInput } from '../hooks/bridge.js';
+  isUltraQAActive,
+} from "../hooks/ralph/index.js";
+import { processHook, type HookInput } from "../hooks/bridge.js";
 
-function writeTranscriptWithContext(filePath: string, contextWindow: number, inputTokens: number): void {
+function writeTranscriptWithContext(
+  filePath: string,
+  contextWindow: number,
+  inputTokens: number,
+): void {
   writeFileSync(
     filePath,
     `${JSON.stringify({
@@ -53,536 +55,534 @@ function writeTranscriptWithContext(filePath: string, contextWindow: number, inp
   );
 }
 
-describe('Keyword Detector', () => {
-  describe('extractPromptText', () => {
-    it('should extract text from text parts', () => {
+describe("Keyword Detector", () => {
+  describe("extractPromptText", () => {
+    it("should extract text from text parts", () => {
       const parts = [
-        { type: 'text', text: 'Hello world' },
-        { type: 'text', text: 'How are you?' }
+        { type: "text", text: "Hello world" },
+        { type: "text", text: "How are you?" },
       ];
-      expect(extractPromptText(parts)).toBe('Hello world How are you?');
+      expect(extractPromptText(parts)).toBe("Hello world How are you?");
     });
 
-    it('should filter out non-text parts', () => {
+    it("should filter out non-text parts", () => {
       const parts = [
-        { type: 'text', text: 'Hello' },
-        { type: 'image', url: 'test.jpg' },
-        { type: 'text', text: 'world' }
+        { type: "text", text: "Hello" },
+        { type: "image", url: "test.jpg" },
+        { type: "text", text: "world" },
       ];
-      expect(extractPromptText(parts)).toBe('Hello world');
+      expect(extractPromptText(parts)).toBe("Hello world");
     });
 
-    it('should handle empty parts array', () => {
-      expect(extractPromptText([])).toBe('');
+    it("should handle empty parts array", () => {
+      expect(extractPromptText([])).toBe("");
     });
 
-    it('should handle parts without text', () => {
-      const parts = [
-        { type: 'text' },
-        { type: 'text', text: undefined }
-      ];
-      expect(extractPromptText(parts)).toBe('');
+    it("should handle parts without text", () => {
+      const parts = [{ type: "text" }, { type: "text", text: undefined }];
+      expect(extractPromptText(parts)).toBe("");
     });
 
-    it('should join multiple text parts with space', () => {
+    it("should join multiple text parts with space", () => {
       const parts = [
-        { type: 'text', text: 'analyze' },
-        { type: 'text', text: 'this' },
-        { type: 'text', text: 'code' }
+        { type: "text", text: "analyze" },
+        { type: "text", text: "this" },
+        { type: "text", text: "code" },
       ];
-      expect(extractPromptText(parts)).toBe('analyze this code');
+      expect(extractPromptText(parts)).toBe("analyze this code");
     });
   });
 
-  describe('removeCodeBlocks', () => {
-    it('should remove triple backtick fenced code blocks', () => {
-      const text = 'Some text\n```javascript\nconst x = 1;\n```\nMore text';
+  describe("removeCodeBlocks", () => {
+    it("should remove triple backtick fenced code blocks", () => {
+      const text = "Some text\n```javascript\nconst x = 1;\n```\nMore text";
       const result = removeCodeBlocks(text);
-      expect(result).not.toContain('const x = 1');
-      expect(result).toContain('Some text');
-      expect(result).toContain('More text');
+      expect(result).not.toContain("const x = 1");
+      expect(result).toContain("Some text");
+      expect(result).toContain("More text");
     });
 
-    it('should remove tilde fenced code blocks', () => {
+    it("should remove tilde fenced code blocks", () => {
       const text = 'Before\n~~~python\nprint("hello")\n~~~\nAfter';
       const result = removeCodeBlocks(text);
       expect(result).not.toContain('print("hello")');
-      expect(result).toContain('Before');
-      expect(result).toContain('After');
+      expect(result).toContain("Before");
+      expect(result).toContain("After");
     });
 
-    it('should remove inline code with single backticks', () => {
-      const text = 'Use `analyze` command here';
+    it("should remove inline code with single backticks", () => {
+      const text = "Use `analyze` command here";
       const result = removeCodeBlocks(text);
-      expect(result).not.toContain('`analyze`');
-      expect(result).toContain('Use');
-      expect(result).toContain('command here');
+      expect(result).not.toContain("`analyze`");
+      expect(result).toContain("Use");
+      expect(result).toContain("command here");
     });
 
-    it('should handle multiple code blocks', () => {
-      const text = '```js\ncode1\n```\ntext\n```ts\ncode2\n```';
+    it("should handle multiple code blocks", () => {
+      const text = "```js\ncode1\n```\ntext\n```ts\ncode2\n```";
       const result = removeCodeBlocks(text);
-      expect(result).not.toContain('code1');
-      expect(result).not.toContain('code2');
-      expect(result).toContain('text');
+      expect(result).not.toContain("code1");
+      expect(result).not.toContain("code2");
+      expect(result).toContain("text");
     });
 
-    it('should handle text without code blocks', () => {
-      const text = 'Just plain text here';
+    it("should handle text without code blocks", () => {
+      const text = "Just plain text here";
       expect(removeCodeBlocks(text)).toBe(text);
     });
 
-    it('should handle empty string', () => {
-      expect(removeCodeBlocks('')).toBe('');
+    it("should handle empty string", () => {
+      expect(removeCodeBlocks("")).toBe("");
     });
 
-    it('should handle nested inline code', () => {
-      const text = 'Text with `inline` and `another` code';
+    it("should handle nested inline code", () => {
+      const text = "Text with `inline` and `another` code";
       const result = removeCodeBlocks(text);
-      expect(result).not.toContain('`');
-      expect(result).toContain('Text with');
-      expect(result).toContain('and');
-      expect(result).toContain('code');
+      expect(result).not.toContain("`");
+      expect(result).toContain("Text with");
+      expect(result).toContain("and");
+      expect(result).toContain("code");
     });
   });
 
-  describe('detectKeywordsWithType', () => {
-    it('should detect ultrawork keyword', () => {
-      const detected = detectKeywordsWithType('I need ultrawork mode');
+  describe("detectKeywordsWithType", () => {
+    it("should detect ultrawork keyword", () => {
+      const detected = detectKeywordsWithType("I need ultrawork mode");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('ultrawork');
-      expect(detected[0].keyword).toBe('ultrawork');
+      expect(detected[0].type).toBe("ultrawork");
+      expect(detected[0].keyword).toBe("ultrawork");
     });
 
-    it('should detect ulw abbreviation', () => {
-      const detected = detectKeywordsWithType('Use ulw for this task');
+    it("should detect ulw abbreviation", () => {
+      const detected = detectKeywordsWithType("Use ulw for this task");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('ultrawork');
-      expect(detected[0].keyword).toBe('ulw');
+      expect(detected[0].type).toBe("ultrawork");
+      expect(detected[0].keyword).toBe("ulw");
     });
 
-    it('should detect ultrathink keyword', () => {
-      const detected = detectKeywordsWithType('I need to ultrathink this');
+    it("should detect ultrathink keyword", () => {
+      const detected = detectKeywordsWithType("I need to ultrathink this");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('ultrathink');
-      expect(detected[0].keyword).toBe('ultrathink');
+      expect(detected[0].type).toBe("ultrathink");
+      expect(detected[0].keyword).toBe("ultrathink");
     });
 
-    it('should detect ultrathink keyword directly', () => {
-      const detected = detectKeywordsWithType('Let me ultrathink about it');
+    it("should detect ultrathink keyword directly", () => {
+      const detected = detectKeywordsWithType("Let me ultrathink about it");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('ultrathink');
-      expect(detected[0].keyword).toBe('ultrathink');
+      expect(detected[0].type).toBe("ultrathink");
+      expect(detected[0].keyword).toBe("ultrathink");
     });
 
-    it('should detect deepsearch keywords for codebase search', () => {
+    it("should detect deepsearch keywords for codebase search", () => {
       const patterns = [
-        'search the codebase',
-        'find in codebase',
-        'deepsearch for pattern'
+        "search the codebase",
+        "find in codebase",
+        "deepsearch for pattern",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        expect(detected[0].type).toBe('deepsearch');
+        expect(detected[0].type).toBe("deepsearch");
       }
     });
 
-    it('should detect analyze keywords with restricted patterns', () => {
+    it("should detect analyze keywords with restricted patterns", () => {
       const patterns = [
-        'deep analyze this code',
-        'deepanalyze this code',
-        'deep-analyze the issue'
+        "deep analyze this code",
+        "deepanalyze this code",
+        "deep-analyze the issue",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        expect(detected[0].type).toBe('analyze');
+        expect(detected[0].type).toBe("analyze");
       }
     });
 
-    it('should be case insensitive', () => {
-      const variants = ['ULTRAWORK', 'UltraWork', 'uLtRaWoRk'];
+    it("should be case insensitive", () => {
+      const variants = ["ULTRAWORK", "UltraWork", "uLtRaWoRk"];
       for (const variant of variants) {
         const detected = detectKeywordsWithType(variant);
         expect(detected).toHaveLength(1);
-        expect(detected[0].type).toBe('ultrawork');
+        expect(detected[0].type).toBe("ultrawork");
       }
     });
 
-    it('should respect word boundaries', () => {
+    it("should respect word boundaries", () => {
       // Should not match partial words
-      const text = 'multiwork is not ultrawork';
+      const text = "multiwork is not ultrawork";
       const detected = detectKeywordsWithType(text);
       expect(detected).toHaveLength(1);
-      expect(detected[0].keyword).toBe('ultrawork');
+      expect(detected[0].keyword).toBe("ultrawork");
     });
 
-    it('should include position information', () => {
-      const detected = detectKeywordsWithType('Start search the codebase here');
+    it("should include position information", () => {
+      const detected = detectKeywordsWithType("Start search the codebase here");
       expect(detected[0].position).toBeGreaterThanOrEqual(0);
     });
 
-    it('should return empty array for no matches', () => {
-      const detected = detectKeywordsWithType('Just plain text');
+    it("should return empty array for no matches", () => {
+      const detected = detectKeywordsWithType("Just plain text");
       expect(detected).toEqual([]);
     });
 
-    it('should detect multiple different keyword types', () => {
-      const text = 'search the codebase and deep analyze the bug';
+    it("should detect multiple different keyword types", () => {
+      const text = "search the codebase and deep analyze the bug";
       const detected = detectKeywordsWithType(text);
       expect(detected.length).toBeGreaterThanOrEqual(2);
-      const types = detected.map(d => d.type);
-      expect(types).toContain('deepsearch');
-      expect(types).toContain('analyze');
+      const types = detected.map((d) => d.type);
+      expect(types).toContain("deepsearch");
+      expect(types).toContain("analyze");
     });
 
     // New keyword types tests
-    it('should detect cancel keyword', () => {
-      const detected = detectKeywordsWithType('cancelomc this task');
+    it("should detect cancel keyword", () => {
+      const detected = detectKeywordsWithType("cancelomc this task");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('cancel');
-      expect(detected[0].keyword).toBe('cancelomc');
+      expect(detected[0].type).toBe("cancel");
+      expect(detected[0].keyword).toBe("cancelomc");
     });
 
-    it('should detect cancel keyword variations', () => {
-      const cancelTerms = ['cancelomc', 'stopomc'];
+    it("should detect cancel keyword variations", () => {
+      const cancelTerms = ["cancelomc", "stopomc"];
       for (const term of cancelTerms) {
         const detected = detectKeywordsWithType(`Please ${term} the process`);
         expect(detected).toHaveLength(1);
-        expect(detected[0].type).toBe('cancel');
+        expect(detected[0].type).toBe("cancel");
         expect(detected[0].keyword).toBe(term);
       }
     });
 
-    it('should not detect deprecated ultrapilot keyword (#1131)', () => {
-      const detected = detectKeywordsWithType('use ultrapilot for this');
+    it("should not detect deprecated ultrapilot keyword (#1131)", () => {
+      const detected = detectKeywordsWithType("use ultrapilot for this");
       expect(detected).toHaveLength(0);
     });
 
-    it('should detect ralplan keyword', () => {
-      const detected = detectKeywordsWithType('ralplan this feature');
+    it("should detect ralplan keyword", () => {
+      const detected = detectKeywordsWithType("ralplan this feature");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('ralplan');
-      expect(detected[0].keyword).toBe('ralplan');
+      expect(detected[0].type).toBe("ralplan");
+      expect(detected[0].keyword).toBe("ralplan");
     });
 
     it('should NOT detect "plan this" / "plan the" patterns (FP-prone, removed in #824)', () => {
-      const patterns = [
-        'plan this feature',
-        'plan the refactoring'
-      ];
+      const patterns = ["plan this feature", "plan the refactoring"];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected).toHaveLength(0);
       }
     });
 
-    it('should detect tdd keyword', () => {
-      const detected = detectKeywordsWithType('use tdd for this');
+    it("should detect tdd keyword", () => {
+      const detected = detectKeywordsWithType("use tdd for this");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('tdd');
-      expect(detected[0].keyword).toBe('tdd');
+      expect(detected[0].type).toBe("tdd");
+      expect(detected[0].keyword).toBe("tdd");
     });
 
-    it('should detect tdd patterns', () => {
-      const patterns = [
-        'test first development',
-        'use tdd approach'
-      ];
+    it("should detect tdd patterns", () => {
+      const patterns = ["test first development", "use tdd approach"];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasTDD = detected.some(d => d.type === 'tdd');
+        const hasTDD = detected.some((d) => d.type === "tdd");
         expect(hasTDD).toBe(true);
       }
     });
 
-    it('should not detect research keyword', () => {
-      const detected = detectKeywordsWithType('research this topic');
+    it("should not detect research keyword", () => {
+      const detected = detectKeywordsWithType("research this topic");
       expect(detected).toHaveLength(0);
     });
 
-    it('should detect deepsearch keyword', () => {
-      const detected = detectKeywordsWithType('deepsearch for the pattern');
+    it("should detect deepsearch keyword", () => {
+      const detected = detectKeywordsWithType("deepsearch for the pattern");
       expect(detected).toHaveLength(1);
-      expect(detected[0].type).toBe('deepsearch');
-      expect(detected[0].keyword).toBe('deepsearch');
+      expect(detected[0].type).toBe("deepsearch");
+      expect(detected[0].keyword).toBe("deepsearch");
     });
 
-    it('should detect deepsearch patterns', () => {
+    it("should detect deepsearch patterns", () => {
       const patterns = [
-        'search the codebase for errors',
-        'find in codebase',
-        'find in the codebase'
+        "search the codebase for errors",
+        "find in codebase",
+        "find in the codebase",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasDeepsearch = detected.some(d => d.type === 'deepsearch');
+        const hasDeepsearch = detected.some((d) => d.type === "deepsearch");
         expect(hasDeepsearch).toBe(true);
       }
     });
 
-    it('should NOT detect deepsearch for generic find', () => {
+    it("should NOT detect deepsearch for generic find", () => {
       const patterns = [
-        'find the file',
-        'find this function',
-        'search for help'
+        "find the file",
+        "find this function",
+        "search for help",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
-        const hasDeepsearch = detected.some(d => d.type === 'deepsearch');
+        const hasDeepsearch = detected.some((d) => d.type === "deepsearch");
         expect(hasDeepsearch).toBe(false);
       }
     });
 
-    it('should detect analyze patterns with restrictions', () => {
+    it("should detect analyze patterns with restrictions", () => {
       const patterns = [
-        'deep analyze this code',
-        'deepanalyze this issue',
-        'deep-analyze the problem'
+        "deep analyze this code",
+        "deepanalyze this issue",
+        "deep-analyze the problem",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasAnalyze = detected.some(d => d.type === 'analyze');
+        const hasAnalyze = detected.some((d) => d.type === "analyze");
         expect(hasAnalyze).toBe(true);
       }
     });
 
-    it('should NOT detect analyze for generic patterns', () => {
+    it("should NOT detect analyze for generic patterns", () => {
       const patterns = [
-        'how to do this',
-        'understand this code',
-        'review this code',
-        'analyze without context',
-        'investigate the bug',
-        'debug the issue'
+        "how to do this",
+        "understand this code",
+        "review this code",
+        "analyze without context",
+        "investigate the bug",
+        "debug the issue",
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
-        const hasAnalyze = detected.some(d => d.type === 'analyze');
+        const hasAnalyze = detected.some((d) => d.type === "analyze");
         expect(hasAnalyze).toBe(false);
       }
     });
 
     it('should NOT trigger autopilot for "오토파일럿 설명" (bare 설명 is informational)', () => {
-      const detected = detectKeywordsWithType('오토파일럿 설명');
-      const hasAutopilot = detected.some(d => d.type === 'autopilot');
+      const detected = detectKeywordsWithType("오토파일럿 설명");
+      const hasAutopilot = detected.some((d) => d.type === "autopilot");
       expect(hasAutopilot).toBe(false);
     });
   });
 
-  describe('hasKeyword', () => {
-    it('should return true when keyword exists', () => {
-      expect(hasKeyword('use ultrawork mode')).toBe(true);
-      expect(hasKeyword('search the codebase')).toBe(true);
-      expect(hasKeyword('deep analyze the bug')).toBe(true);
+  describe("hasKeyword", () => {
+    it("should return true when keyword exists", () => {
+      expect(hasKeyword("use ultrawork mode")).toBe(true);
+      expect(hasKeyword("search the codebase")).toBe(true);
+      expect(hasKeyword("deep analyze the bug")).toBe(true);
     });
 
-    it('should return false when no keyword exists', () => {
-      expect(hasKeyword('just normal text')).toBe(false);
-      expect(hasKeyword('hello world')).toBe(false);
+    it("should return false when no keyword exists", () => {
+      expect(hasKeyword("just normal text")).toBe(false);
+      expect(hasKeyword("hello world")).toBe(false);
     });
 
-    it('should ignore keywords in code blocks', () => {
-      const text = 'Normal text\n```\nsearch in code\n```\nMore text';
+    it("should ignore keywords in code blocks", () => {
+      const text = "Normal text\n```\nsearch in code\n```\nMore text";
       expect(hasKeyword(text)).toBe(false);
     });
 
-    it('should detect keywords outside code blocks', () => {
-      const text = 'Please search the codebase\n```\nsome code\n```\nfor this';
+    it("should detect keywords outside code blocks", () => {
+      const text = "Please search the codebase\n```\nsome code\n```\nfor this";
       expect(hasKeyword(text)).toBe(true);
     });
 
-    it('should handle empty string', () => {
-      expect(hasKeyword('')).toBe(false);
+    it("should handle empty string", () => {
+      expect(hasKeyword("")).toBe(false);
     });
   });
 
-  describe('getPrimaryKeyword', () => {
-    it('should return highest priority keyword', () => {
+  describe("getPrimaryKeyword", () => {
+    it("should return highest priority keyword", () => {
       // ultrawork has highest priority
-      const text = 'search and analyze with ultrawork';
+      const text = "search and analyze with ultrawork";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('ultrawork');
+      expect(primary!.type).toBe("ultrawork");
     });
 
-    it('should return ultrathink when present', () => {
-      const text = 'ultrathink about this problem';
+    it("should return ultrathink when present", () => {
+      const text = "ultrathink about this problem";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('ultrathink');
+      expect(primary!.type).toBe("ultrathink");
     });
 
-    it('should return deepsearch for codebase search', () => {
-      const text = 'find in codebase';
+    it("should return deepsearch for codebase search", () => {
+      const text = "find in codebase";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('deepsearch');
+      expect(primary!.type).toBe("deepsearch");
     });
 
-    it('should return analyze when only analyze keyword', () => {
-      const text = 'deep analyze the issue';
+    it("should return analyze when only analyze keyword", () => {
+      const text = "deep analyze the issue";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('analyze');
+      expect(primary!.type).toBe("analyze");
     });
 
-    it('should return null when no keywords', () => {
-      const primary = getPrimaryKeyword('just normal text');
+    it("should return null when no keywords", () => {
+      const primary = getPrimaryKeyword("just normal text");
       expect(primary).toBeNull();
     });
 
-    it('should ignore code blocks', () => {
-      const text = '```\nultrawork code\n```\nsearch the codebase';
+    it("should ignore code blocks", () => {
+      const text = "```\nultrawork code\n```\nsearch the codebase";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('deepsearch');
+      expect(primary!.type).toBe("deepsearch");
     });
 
-    it('should return first detected when same priority', () => {
+    it("should return first detected when same priority", () => {
       // deepsearch has higher priority than analyze in the priority list
-      const text = 'search the codebase and deep analyze the bug';
+      const text = "search the codebase and deep analyze the bug";
       const primary = getPrimaryKeyword(text);
       expect(primary).not.toBeNull();
       // Should return deepsearch as it comes first in priority list
-      expect(primary!.type).toBe('deepsearch');
+      expect(primary!.type).toBe("deepsearch");
     });
 
     // New priority tests for new keywords
-    it('should give cancel highest priority', () => {
-      const primary = getPrimaryKeyword('stopomc searching for files');
+    it("should give cancel highest priority", () => {
+      const primary = getPrimaryKeyword("stopomc searching for files");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('cancel');
+      expect(primary!.type).toBe("cancel");
     });
 
-    it('should give cancel priority over analyze', () => {
-      const primary = getPrimaryKeyword('cancelomc this investigation');
+    it("should give cancel priority over analyze", () => {
+      const primary = getPrimaryKeyword("cancelomc this investigation");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('cancel');
+      expect(primary!.type).toBe("cancel");
     });
 
-    it('should prioritize cancel over all other keywords', () => {
-      const primary = getPrimaryKeyword('stopomc ultrawork and search');
+    it("should prioritize cancel over all other keywords", () => {
+      const primary = getPrimaryKeyword("stopomc ultrawork and search");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('cancel');
+      expect(primary!.type).toBe("cancel");
     });
 
-    it('should prioritize ralph after cancel', () => {
-      const primary = getPrimaryKeyword('ralph mode for the task');
+    it("should prioritize ralph after cancel", () => {
+      const primary = getPrimaryKeyword("ralph mode for the task");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('ralph');
+      expect(primary!.type).toBe("ralph");
     });
 
-    it('should not detect ralph in ralph-init compound name', () => {
+    it("should not detect ralph in ralph-init compound name", () => {
       const detected = detectKeywordsWithType('ralph-init "create a PRD"');
-      const ralphMatch = detected.find(d => d.type === 'ralph');
+      const ralphMatch = detected.find((d) => d.type === "ralph");
       expect(ralphMatch).toBeUndefined();
     });
 
-    it('should not detect ralph in /oh-my-claudecode:ralph-init', () => {
-      const primary = getPrimaryKeyword('/oh-my-claudecode:ralph-init "my project"');
-      expect(primary?.type).not.toBe('ralph');
+    it("should not detect ralph in /oh-my-claudecode:ralph-init", () => {
+      const primary = getPrimaryKeyword(
+        '/oh-my-claudecode:ralph-init "my project"',
+      );
+      expect(primary?.type).not.toBe("ralph");
     });
 
-    it('should still detect ralph when standalone', () => {
-      const detected = detectKeywordsWithType('use ralph for this task');
-      const ralphMatch = detected.find(d => d.type === 'ralph');
+    it("should still detect ralph when standalone", () => {
+      const detected = detectKeywordsWithType("use ralph for this task");
+      const ralphMatch = detected.find((d) => d.type === "ralph");
       expect(ralphMatch).toBeDefined();
-      expect(ralphMatch!.keyword).toBe('ralph');
+      expect(ralphMatch!.keyword).toBe("ralph");
     });
 
-    it('should return null for deprecated ultrapilot (#1131)', () => {
-      const primary = getPrimaryKeyword('ultrapilot this task');
+    it("should return null for deprecated ultrapilot (#1131)", () => {
+      const primary = getPrimaryKeyword("ultrapilot this task");
       expect(primary).toBeNull();
     });
 
-    it('should return null for deprecated swarm (#1131)', () => {
-      const primary = getPrimaryKeyword('swarm 5 agents for this');
+    it("should return null for deprecated swarm (#1131)", () => {
+      const primary = getPrimaryKeyword("swarm 5 agents for this");
       expect(primary).toBeNull();
     });
 
-    it('should return null for deprecated pipeline (#1131)', () => {
-      const primary = getPrimaryKeyword('agent pipeline the task');
+    it("should return null for deprecated pipeline (#1131)", () => {
+      const primary = getPrimaryKeyword("agent pipeline the task");
       expect(primary).toBeNull();
     });
 
-    it('should prioritize ralplan over plan', () => {
-      const primary = getPrimaryKeyword('ralplan this project');
+    it("should prioritize ralplan over plan", () => {
+      const primary = getPrimaryKeyword("ralplan this project");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('ralplan');
+      expect(primary!.type).toBe("ralplan");
     });
 
     it('should NOT detect plan for "plan this feature" (FP-prone pattern removed in #824)', () => {
-      const primary = getPrimaryKeyword('plan this feature');
+      const primary = getPrimaryKeyword("plan this feature");
       expect(primary).toBeNull();
     });
 
-    it('should prioritize tdd correctly', () => {
-      const primary = getPrimaryKeyword('tdd for this feature');
+    it("should prioritize tdd correctly", () => {
+      const primary = getPrimaryKeyword("tdd for this feature");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('tdd');
+      expect(primary!.type).toBe("tdd");
     });
 
-    it('should return null for removed research keyword', () => {
-      const primary = getPrimaryKeyword('research this topic');
+    it("should return null for removed research keyword", () => {
+      const primary = getPrimaryKeyword("research this topic");
       expect(primary).toBeNull();
     });
 
-    it('should prioritize deepsearch over generic search', () => {
-      const primary = getPrimaryKeyword('search the codebase');
+    it("should prioritize deepsearch over generic search", () => {
+      const primary = getPrimaryKeyword("search the codebase");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('deepsearch');
+      expect(primary!.type).toBe("deepsearch");
     });
 
-    it('should prioritize analyze with restricted pattern', () => {
-      const primary = getPrimaryKeyword('deep analyze the bug');
+    it("should prioritize analyze with restricted pattern", () => {
+      const primary = getPrimaryKeyword("deep analyze the bug");
       expect(primary).not.toBeNull();
-      expect(primary!.type).toBe('analyze');
+      expect(primary!.type).toBe("analyze");
     });
   });
 });
 
-describe('Team staged workflow integration', () => {
+describe("Team staged workflow integration", () => {
   let testDir: string;
-  const sessionId = 'team-session-test';
+  const sessionId = "team-session-test";
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `omc-team-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    mkdirSync(join(testDir, '.omc', 'state', 'sessions', sessionId), { recursive: true });
-    execSync('git init', { cwd: testDir });
+    testDir = join(
+      tmpdir(),
+      `omc-team-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(join(testDir, ".omc", "state", "sessions", sessionId), {
+      recursive: true,
+    });
+    execSync("git init", { cwd: testDir });
   });
 
   afterEach(() => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  it('restores active Team stage on session-start', async () => {
+  it("restores active Team stage on session-start", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-exec',
-        team_name: 'delivery-team'
-      })
+        stage: "team-exec",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('session-start', {
+    const result = await processHook("session-start", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').toContain('[TEAM MODE RESTORED]');
-    expect(result.message || '').toContain('delivery-team');
-    expect(result.message || '').toContain('team-exec');
+    expect(result.message || "").toContain("[TEAM MODE RESTORED]");
+    expect(result.message || "").toContain("delivery-team");
+    expect(result.message || "").toContain("team-exec");
   });
 
-  it('compacts OMC-style root AGENTS guidance on session-start without dropping key sections', async () => {
+  it("compacts OMC-style root AGENTS guidance on session-start without dropping key sections", async () => {
     const agentsContent = `# oh-my-claudecode - Intelligent Multi-Agent Orchestration
 
 <guidance_schema_contract>
@@ -609,299 +609,330 @@ schema
 - preserve verification
 </verification>`;
 
-    writeFileSync(join(testDir, 'AGENTS.md'), agentsContent);
+    writeFileSync(join(testDir, "AGENTS.md"), agentsContent);
 
-    const result = await processHook('session-start', {
+    const result = await processHook("session-start", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').toContain('[ROOT AGENTS.md LOADED]');
-    expect(result.message || '').toContain('<operating_principles>');
-    expect(result.message || '').toContain('<verification>');
-    expect(result.message || '').not.toContain('<agent_catalog>');
-    expect(result.message || '').not.toContain('<skills>');
-    expect(result.message || '').not.toContain('<team_compositions>');
+    expect(result.message || "").toContain("[ROOT AGENTS.md LOADED]");
+    expect(result.message || "").toContain("<operating_principles>");
+    expect(result.message || "").toContain("<verification>");
+    expect(result.message || "").not.toContain("<agent_catalog>");
+    expect(result.message || "").not.toContain("<skills>");
+    expect(result.message || "").not.toContain("<team_compositions>");
   });
 
-  it('keeps session-start under budget when only a tiny omission remainder remains', async () => {
+  it("keeps session-start under budget when only a tiny omission remainder remains", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'ultrawork-state.json'),
+      join(
+        testDir,
+        ".omc",
+        "state",
+        "sessions",
+        sessionId,
+        "ultrawork-state.json",
+      ),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        started_at: '2026-04-23T00:00:00.000Z',
-        original_prompt: 'budget '.repeat(520),
+        started_at: "2026-04-23T00:00:00.000Z",
+        original_prompt: "budget ".repeat(520),
       }),
     );
     writeFileSync(
-      join(testDir, 'AGENTS.md'),
+      join(testDir, "AGENTS.md"),
       `# oh-my-claudecode - Intelligent Multi-Agent Orchestration
 
 <guidance_schema_contract>schema</guidance_schema_contract>
 
 <operating_principles>
-${'- preserve this startup guidance\n'.repeat(400)}
+${"- preserve this startup guidance\n".repeat(400)}
 </operating_principles>`,
     );
 
-    const result = await processHook('session-start', {
+    const result = await processHook("session-start", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect((result.message || '').length).toBeLessThanOrEqual(6000);
+    expect((result.message || "").length).toBeLessThanOrEqual(6000);
   });
 
-  it('keeps combined session-start restore context under aggregate budget', async () => {
+  it("keeps combined session-start restore context under aggregate budget", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-exec',
-        team_name: 'budget-team'
-      })
+        stage: "team-exec",
+        team_name: "budget-team",
+      }),
     );
     writeFileSync(
-      join(testDir, 'AGENTS.md'),
+      join(testDir, "AGENTS.md"),
       `# oh-my-claudecode - Intelligent Multi-Agent Orchestration
 
 <guidance_schema_contract>schema</guidance_schema_contract>
 
 <operating_principles>
-${'- preserve this startup guidance\n'.repeat(500)}
+${"- preserve this startup guidance\n".repeat(500)}
 </operating_principles>
 
-<agent_catalog>${'- drop catalog\n'.repeat(500)}</agent_catalog>
+<agent_catalog>${"- drop catalog\n".repeat(500)}</agent_catalog>
 
-<skills>${'- drop skills\n'.repeat(500)}</skills>`
+<skills>${"- drop skills\n".repeat(500)}</skills>`,
     );
 
-    const result = await processHook('session-start', {
+    const result = await processHook("session-start", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').toContain('[TEAM MODE RESTORED]');
-    expect((result.message || '').length).toBeLessThanOrEqual(6000);
+    expect(result.message || "").toContain("[TEAM MODE RESTORED]");
+    expect((result.message || "").length).toBeLessThanOrEqual(6000);
   });
 
-  it('emits terminal Team restore guidance on cancelled stage', async () => {
+  it("emits terminal Team restore guidance on cancelled stage", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-fix',
-        status: 'cancelled',
-        team_name: 'delivery-team'
-      })
+        stage: "team-fix",
+        status: "cancelled",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('session-start', {
+    const result = await processHook("session-start", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').toContain('[TEAM MODE TERMINAL STATE DETECTED]');
-    expect(result.message || '').toContain('cancel');
+    expect(result.message || "").toContain(
+      "[TEAM MODE TERMINAL STATE DETECTED]",
+    );
+    expect(result.message || "").toContain("cancel");
   });
 
-  it('enforces verify stage continuation while active and non-terminal', async () => {
+  it("enforces verify stage continuation while active and non-terminal", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-verify',
-        team_name: 'delivery-team'
-      })
+        stage: "team-verify",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(false);
     // checkTeamPipeline() in persistent-mode now handles team enforcement
-    expect(result.message).toContain('team-pipeline-continuation');
-    expect(result.message).toContain('team-verify');
-    expect(result.message).toContain('Continue working');
+    expect(result.message).toContain("team-pipeline-continuation");
+    expect(result.message).toContain("team-verify");
+    expect(result.message).toContain("Continue working");
   });
 
-  it('enforces fix stage continuation while active and non-terminal', async () => {
+  it("enforces fix stage continuation while active and non-terminal", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-fix',
-        team_name: 'delivery-team'
-      })
+        stage: "team-fix",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(false);
     // checkTeamPipeline() in persistent-mode now handles team enforcement
-    expect(result.message).toContain('team-pipeline-continuation');
-    expect(result.message).toContain('team-fix');
-    expect(result.message).toContain('Continue working');
+    expect(result.message).toContain("team-pipeline-continuation");
+    expect(result.message).toContain("team-fix");
+    expect(result.message).toContain("Continue working");
   });
 
-  it('skips Team stage continuation on authentication stop reasons', async () => {
+  it("skips Team stage continuation on authentication stop reasons", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-verify',
-        team_name: 'delivery-team'
-      })
+        stage: "team-verify",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
-      stopReason: 'oauth_expired',
+      stopReason: "oauth_expired",
     } as HookInput);
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').not.toContain('[TEAM MODE CONTINUATION]');
-    expect(result.message || '').toContain('AUTHENTICATION ERROR');
+    expect(result.message || "").not.toContain("[TEAM MODE CONTINUATION]");
+    expect(result.message || "").toContain("AUTHENTICATION ERROR");
   });
 
-  it('allows terminal cleanup when Team stage is cancelled', async () => {
+  it("allows terminal cleanup when Team stage is cancelled", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-verify',
-        status: 'cancelled',
-        team_name: 'delivery-team'
-      })
+        stage: "team-verify",
+        status: "cancelled",
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(result.message || "").not.toContain("[TEAM MODE CONTINUATION]");
   });
 
-  it('fails open when Team stage is missing', async () => {
+  it("fails open when Team stage is missing", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        team_name: 'delivery-team'
-      })
+        team_name: "delivery-team",
+      }),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(result.message || "").not.toContain("[TEAM MODE CONTINUATION]");
   });
 
-  it('fails open when Team stage is unknown or malformed', async () => {
+  it("fails open when Team stage is unknown or malformed", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
         stage: { bad: true },
-        team_name: 'delivery-team'
-      })
+        team_name: "delivery-team",
+      }),
     );
 
-    const malformedResult = await processHook('persistent-mode', {
+    const malformedResult = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
     expect(malformedResult.continue).toBe(true);
-    expect(malformedResult.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(malformedResult.message || "").not.toContain(
+      "[TEAM MODE CONTINUATION]",
+    );
 
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-unknown',
-        team_name: 'delivery-team'
-      })
+        stage: "team-unknown",
+        team_name: "delivery-team",
+      }),
     );
 
-    const unknownResult = await processHook('persistent-mode', {
+    const unknownResult = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
     expect(unknownResult.continue).toBe(true);
-    expect(unknownResult.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(unknownResult.message || "").not.toContain(
+      "[TEAM MODE CONTINUATION]",
+    );
   });
 
-  it('trips Team continuation circuit breaker after max stop reinforcements', async () => {
+  it("trips Team continuation circuit breaker after max stop reinforcements", async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      join(testDir, ".omc", "state", "sessions", sessionId, "team-state.json"),
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        stage: 'team-exec',
-        team_name: 'delivery-team'
-      })
+        stage: "team-exec",
+        team_name: "delivery-team",
+      }),
     );
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-pipeline-stop-breaker.json'),
-      JSON.stringify({ count: 20, updated_at: new Date().toISOString() }, null, 2)
+      join(
+        testDir,
+        ".omc",
+        "state",
+        "sessions",
+        sessionId,
+        "team-pipeline-stop-breaker.json",
+      ),
+      JSON.stringify(
+        { count: 20, updated_at: new Date().toISOString() },
+        null,
+        2,
+      ),
     );
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(result.message || "").not.toContain("[TEAM MODE CONTINUATION]");
   });
 
-  it('bypasses autopilot continuation when transcript context is critically exhausted', async () => {
-    const transcriptPath = join(testDir, 'transcript.jsonl');
+  it("bypasses autopilot continuation when transcript context is critically exhausted", async () => {
+    const transcriptPath = join(testDir, "transcript.jsonl");
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'),
+      join(
+        testDir,
+        ".omc",
+        "state",
+        "sessions",
+        sessionId,
+        "autopilot-state.json",
+      ),
       JSON.stringify({
         active: true,
-        phase: 'execution',
+        phase: "execution",
         session_id: sessionId,
         iteration: 2,
         max_iterations: 20,
         reinforcement_count: 0,
         last_checked_at: new Date().toISOString(),
         started_at: new Date().toISOString(),
-      })
+      }),
     );
     writeTranscriptWithContext(transcriptPath, 1000, 960);
 
-    const result = await processHook('persistent-mode', {
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
       transcript_path: transcriptPath,
-      stopReason: 'end_turn',
+      stopReason: "end_turn",
     } as HookInput);
 
     expect(result.continue).toBe(true);
@@ -909,19 +940,25 @@ ${'- preserve this startup guidance\n'.repeat(500)}
   });
 });
 
-describe('Persistent-mode reply cleanup behavior', () => {
+describe("Persistent-mode reply cleanup behavior", () => {
   const originalHome = process.env.HOME;
   const originalUserProfile = process.env.USERPROFILE;
   let testDir: string;
   let tempHome: string;
-  const sessionId = 'reply-cleanup-session';
+  const sessionId = "reply-cleanup-session";
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `omc-reply-cleanup-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempHome = join(tmpdir(), `omc-reply-home-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `omc-reply-cleanup-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    tempHome = join(
+      tmpdir(),
+      `omc-reply-home-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     mkdirSync(tempHome, { recursive: true });
-    execSync('git init', { cwd: testDir });
+    execSync("git init", { cwd: testDir });
 
     process.env.HOME = tempHome;
     process.env.USERPROFILE = tempHome;
@@ -934,28 +971,33 @@ describe('Persistent-mode reply cleanup behavior', () => {
     rmSync(tempHome, { recursive: true, force: true });
   });
 
-  it('does not remove reply-session registry on idle Stop/persistent-mode', async () => {
-    const registryPath = join(homedir(), '.omc', 'state', 'reply-session-registry.jsonl');
-    mkdirSync(join(homedir(), '.omc', 'state'), { recursive: true });
+  it("does not remove reply-session registry on idle Stop/persistent-mode", async () => {
+    const registryPath = join(
+      homedir(),
+      ".omc",
+      "state",
+      "reply-session-registry.jsonl",
+    );
+    mkdirSync(join(homedir(), ".omc", "state"), { recursive: true });
     writeFileSync(
       registryPath,
       `${JSON.stringify({
-        platform: 'telegram',
-        messageId: '123',
+        platform: "telegram",
+        messageId: "123",
         sessionId,
-        tmuxPaneId: '%1',
-        tmuxSessionName: 'main',
-        event: 'session-start',
+        tmuxPaneId: "%1",
+        tmuxSessionName: "main",
+        event: "session-start",
         createdAt: new Date().toISOString(),
       })}\n`,
     );
 
-    const before = readFileSync(registryPath, 'utf-8');
-    const result = await processHook('persistent-mode', {
+    const before = readFileSync(registryPath, "utf-8");
+    const result = await processHook("persistent-mode", {
       sessionId,
       directory: testDir,
     });
-    const after = readFileSync(registryPath, 'utf-8');
+    const after = readFileSync(registryPath, "utf-8");
 
     expect(result.continue).toBe(true);
     expect(existsSync(registryPath)).toBe(true);
@@ -964,252 +1006,257 @@ describe('Persistent-mode reply cleanup behavior', () => {
   });
 });
 
-describe('Todo Continuation', () => {
-  describe('formatTodoStatus', () => {
-    it('should format when all tasks complete', () => {
+describe("Todo Continuation", () => {
+  describe("formatTodoStatus", () => {
+    it("should format when all tasks complete", () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: "todo",
       };
-      expect(formatTodoStatus(result)).toBe('All tasks complete (5 total)');
+      expect(formatTodoStatus(result)).toBe("All tasks complete (5 total)");
     });
 
-    it('should format with incomplete tasks', () => {
+    it("should format with incomplete tasks", () => {
       const result: IncompleteTodosResult = {
         count: 3,
         todos: [],
         total: 10,
-        source: 'todo'
+        source: "todo",
       };
-      expect(formatTodoStatus(result)).toBe('7/10 completed, 3 remaining');
+      expect(formatTodoStatus(result)).toBe("7/10 completed, 3 remaining");
     });
 
-    it('should handle zero total tasks', () => {
+    it("should handle zero total tasks", () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: "none",
       };
-      expect(formatTodoStatus(result)).toBe('All tasks complete (0 total)');
+      expect(formatTodoStatus(result)).toBe("All tasks complete (0 total)");
     });
 
-    it('should handle all tasks incomplete', () => {
+    it("should handle all tasks incomplete", () => {
       const result: IncompleteTodosResult = {
         count: 5,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: "todo",
       };
-      expect(formatTodoStatus(result)).toBe('0/5 completed, 5 remaining');
+      expect(formatTodoStatus(result)).toBe("0/5 completed, 5 remaining");
     });
 
-    it('should handle single task remaining', () => {
+    it("should handle single task remaining", () => {
       const result: IncompleteTodosResult = {
         count: 1,
         todos: [],
         total: 10,
-        source: 'todo'
+        source: "todo",
       };
-      expect(formatTodoStatus(result)).toBe('9/10 completed, 1 remaining');
+      expect(formatTodoStatus(result)).toBe("9/10 completed, 1 remaining");
     });
   });
 
-  describe('getNextPendingTodo', () => {
-    it('should return in_progress todo first', () => {
+  describe("getNextPendingTodo", () => {
+    it("should return in_progress todo first", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending' },
-        { content: 'Task 2', status: 'in_progress' },
-        { content: 'Task 3', status: 'pending' }
+        { content: "Task 1", status: "pending" },
+        { content: "Task 2", status: "in_progress" },
+        { content: "Task 3", status: "pending" },
       ];
       const result: IncompleteTodosResult = {
         count: 3,
         todos,
         total: 3,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.content).toBe('Task 2');
-      expect(next!.status).toBe('in_progress');
+      expect(next!.content).toBe("Task 2");
+      expect(next!.status).toBe("in_progress");
     });
 
-    it('should return first pending when no in_progress', () => {
+    it("should return first pending when no in_progress", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending' },
-        { content: 'Task 2', status: 'pending' },
-        { content: 'Task 3', status: 'completed' }
+        { content: "Task 1", status: "pending" },
+        { content: "Task 2", status: "pending" },
+        { content: "Task 3", status: "completed" },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
-        todos: todos.filter(t => t.status !== 'completed'),
+        todos: todos.filter((t) => t.status !== "completed"),
         total: 3,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.content).toBe('Task 1');
-      expect(next!.status).toBe('pending');
+      expect(next!.content).toBe("Task 1");
+      expect(next!.status).toBe("pending");
     });
 
-    it('should return null when no todos', () => {
+    it("should return null when no todos", () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: "none",
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
     });
 
-    it('should return null when all completed', () => {
+    it("should return null when all completed", () => {
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
         total: 3,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
     });
 
-    it('should handle todos with priority field', () => {
+    it("should handle todos with priority field", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending', priority: 'low' },
-        { content: 'Task 2', status: 'in_progress', priority: 'high' }
+        { content: "Task 1", status: "pending", priority: "low" },
+        { content: "Task 2", status: "in_progress", priority: "high" },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.content).toBe('Task 2');
+      expect(next!.content).toBe("Task 2");
     });
 
-    it('should handle todos with id field', () => {
+    it("should handle todos with id field", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending', id: 'todo-1' },
-        { content: 'Task 2', status: 'pending', id: 'todo-2' }
+        { content: "Task 1", status: "pending", id: "todo-1" },
+        { content: "Task 2", status: "pending", id: "todo-2" },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.id).toBe('todo-1');
+      expect(next!.id).toBe("todo-1");
     });
 
-    it('should ignore cancelled todos', () => {
+    it("should ignore cancelled todos", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'cancelled' },
-        { content: 'Task 2', status: 'pending' }
+        { content: "Task 1", status: "cancelled" },
+        { content: "Task 2", status: "pending" },
       ];
       const result: IncompleteTodosResult = {
         count: 1,
         todos: [todos[1]],
         total: 2,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.content).toBe('Task 2');
+      expect(next!.content).toBe("Task 2");
     });
 
-    it('should prefer in_progress over multiple pending', () => {
+    it("should prefer in_progress over multiple pending", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending' },
-        { content: 'Task 2', status: 'pending' },
-        { content: 'Task 3', status: 'pending' },
-        { content: 'Task 4', status: 'in_progress' }
+        { content: "Task 1", status: "pending" },
+        { content: "Task 2", status: "pending" },
+        { content: "Task 3", status: "pending" },
+        { content: "Task 4", status: "in_progress" },
       ];
       const result: IncompleteTodosResult = {
         count: 4,
         todos,
         total: 4,
-        source: 'todo'
+        source: "todo",
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
-      expect(next!.content).toBe('Task 4');
-      expect(next!.status).toBe('in_progress');
+      expect(next!.content).toBe("Task 4");
+      expect(next!.status).toBe("in_progress");
     });
   });
 
-  describe('Todo type validation', () => {
-    it('should handle all valid status values', () => {
-      const statuses: Array<Todo['status']> = ['pending', 'in_progress', 'completed', 'cancelled'];
+  describe("Todo type validation", () => {
+    it("should handle all valid status values", () => {
+      const statuses: Array<Todo["status"]> = [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ];
       const todos: Todo[] = statuses.map((status, i) => ({
         content: `Task ${i + 1}`,
-        status
+        status,
       }));
 
       expect(todos).toHaveLength(4);
-      todos.forEach(todo => {
+      todos.forEach((todo) => {
         expect(todo.content).toBeTruthy();
         expect(statuses).toContain(todo.status);
       });
     });
 
-    it('should handle optional fields', () => {
+    it("should handle optional fields", () => {
       const todo: Todo = {
-        content: 'Test task',
-        status: 'pending',
-        priority: 'high',
-        id: 'test-123'
+        content: "Test task",
+        status: "pending",
+        priority: "high",
+        id: "test-123",
       };
 
-      expect(todo.content).toBe('Test task');
-      expect(todo.status).toBe('pending');
-      expect(todo.priority).toBe('high');
-      expect(todo.id).toBe('test-123');
+      expect(todo.content).toBe("Test task");
+      expect(todo.status).toBe("pending");
+      expect(todo.priority).toBe("high");
+      expect(todo.id).toBe("test-123");
     });
 
-    it('should handle minimal todo object', () => {
+    it("should handle minimal todo object", () => {
       const todo: Todo = {
-        content: 'Minimal task',
-        status: 'pending'
+        content: "Minimal task",
+        status: "pending",
       };
 
-      expect(todo.content).toBe('Minimal task');
-      expect(todo.status).toBe('pending');
+      expect(todo.content).toBe("Minimal task");
+      expect(todo.status).toBe("pending");
       expect(todo.priority).toBeUndefined();
       expect(todo.id).toBeUndefined();
     });
   });
 
-  describe('IncompleteTodosResult validation', () => {
-    it('should maintain consistency between count and todos length', () => {
+  describe("IncompleteTodosResult validation", () => {
+    it("should maintain consistency between count and todos length", () => {
       const todos: Todo[] = [
-        { content: 'Task 1', status: 'pending' },
-        { content: 'Task 2', status: 'in_progress' }
+        { content: "Task 1", status: "pending" },
+        { content: "Task 2", status: "in_progress" },
       ];
       const result: IncompleteTodosResult = {
         count: todos.length,
         todos,
         total: 5,
-        source: 'todo'
+        source: "todo",
       };
 
       expect(result.count).toBe(result.todos.length);
       expect(result.total).toBeGreaterThanOrEqual(result.count);
     });
 
-    it('should handle edge case of more completed than total', () => {
+    it("should handle edge case of more completed than total", () => {
       // This shouldn't happen in practice, but test the type structure
       const result: IncompleteTodosResult = {
         count: 0,
         todos: [],
         total: 3,
-        source: 'todo'
+        source: "todo",
       };
 
       expect(result.count).toBeLessThanOrEqual(result.total);
@@ -1217,68 +1264,68 @@ describe('Todo Continuation', () => {
   });
 });
 
-describe('Hook Output Structure', () => {
-  describe('JSON output format', () => {
-    it('should create valid hook output with continue flag', () => {
+describe("Hook Output Structure", () => {
+  describe("JSON output format", () => {
+    it("should create valid hook output with continue flag", () => {
       const output = {
         continue: true,
-        message: 'Test message'
+        message: "Test message",
       };
 
-      expect(output).toHaveProperty('continue');
-      expect(output).toHaveProperty('message');
-      expect(typeof output.continue).toBe('boolean');
-      expect(typeof output.message).toBe('string');
+      expect(output).toHaveProperty("continue");
+      expect(output).toHaveProperty("message");
+      expect(typeof output.continue).toBe("boolean");
+      expect(typeof output.message).toBe("string");
     });
 
-    it('should create valid hook output without message', () => {
+    it("should create valid hook output without message", () => {
       const output = {
-        continue: false
+        continue: false,
       };
 
-      expect(output).toHaveProperty('continue');
+      expect(output).toHaveProperty("continue");
       expect(output.continue).toBe(false);
     });
 
-    it('should serialize to valid JSON', () => {
+    it("should serialize to valid JSON", () => {
       const output = {
         continue: true,
-        message: 'ULTRAWORK MODE ACTIVATED'
+        message: "ULTRAWORK MODE ACTIVATED",
       };
 
       const json = JSON.stringify(output);
       const parsed = JSON.parse(json);
 
       expect(parsed.continue).toBe(true);
-      expect(parsed.message).toBe('ULTRAWORK MODE ACTIVATED');
+      expect(parsed.message).toBe("ULTRAWORK MODE ACTIVATED");
     });
 
-    it('should handle multiline messages', () => {
+    it("should handle multiline messages", () => {
       const output = {
         continue: true,
-        message: 'Line 1\nLine 2\nLine 3'
+        message: "Line 1\nLine 2\nLine 3",
       };
 
       const json = JSON.stringify(output);
       const parsed = JSON.parse(json);
 
-      expect(parsed.message).toContain('\n');
-      expect(parsed.message.split('\n')).toHaveLength(3);
+      expect(parsed.message).toContain("\n");
+      expect(parsed.message.split("\n")).toHaveLength(3);
     });
 
-    it('should handle empty message', () => {
+    it("should handle empty message", () => {
       const output = {
         continue: true,
-        message: ''
+        message: "",
       };
 
-      expect(output.message).toBe('');
+      expect(output.message).toBe("");
     });
 
-    it('should handle special characters in message', () => {
+    it("should handle special characters in message", () => {
       const output = {
         continue: true,
-        message: 'Message with "quotes" and \'apostrophes\' and \\ backslashes'
+        message: "Message with \"quotes\" and 'apostrophes' and \\ backslashes",
       };
 
       const json = JSON.stringify(output);
@@ -1288,42 +1335,43 @@ describe('Hook Output Structure', () => {
     });
   });
 
-  describe('Hook message formatting', () => {
-    it('should format continuation message', () => {
-      const message = '[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain. Continue working.';
-      expect(message).toContain('[SYSTEM REMINDER');
-      expect(message).toContain('TODO CONTINUATION');
-      expect(message).toContain('Continue working');
+  describe("Hook message formatting", () => {
+    it("should format continuation message", () => {
+      const message =
+        "[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain. Continue working.";
+      expect(message).toContain("[SYSTEM REMINDER");
+      expect(message).toContain("TODO CONTINUATION");
+      expect(message).toContain("Continue working");
     });
 
-    it('should format keyword detection message', () => {
+    it("should format keyword detection message", () => {
       const keyword: DetectedKeyword = {
-        type: 'ultrawork',
-        keyword: 'ultrawork',
-        position: 0
+        type: "ultrawork",
+        keyword: "ultrawork",
+        position: 0,
       };
       const message = `ULTRAWORK MODE ACTIVATED - Detected keyword: ${keyword.keyword}`;
-      expect(message).toContain('ULTRAWORK MODE');
+      expect(message).toContain("ULTRAWORK MODE");
       expect(message).toContain(keyword.keyword);
     });
 
-    it('should format todo status message', () => {
+    it("should format todo status message", () => {
       const result: IncompleteTodosResult = {
         count: 2,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: "todo",
       };
       const status = formatTodoStatus(result);
       const message = `Todo Status: ${status}`;
-      expect(message).toContain('3/5 completed');
-      expect(message).toContain('2 remaining');
+      expect(message).toContain("3/5 completed");
+      expect(message).toContain("2 remaining");
     });
   });
 });
 
-describe('Integration: Keyword Detection with Code Blocks', () => {
-  it('should detect keywords outside code and ignore inside', () => {
+describe("Integration: Keyword Detection with Code Blocks", () => {
+  it("should detect keywords outside code and ignore inside", () => {
     const text = `
 Please search the codebase
 
@@ -1338,143 +1386,144 @@ Now deep analyze the bug
     `;
 
     const detected = detectKeywordsWithType(removeCodeBlocks(text));
-    const types = detected.map(d => d.type);
+    const types = detected.map((d) => d.type);
 
-    expect(types).toContain('deepsearch');
-    expect(types).toContain('analyze');
+    expect(types).toContain("deepsearch");
+    expect(types).toContain("analyze");
     // Should only detect the ones outside code blocks
-    expect(detected.filter(d => d.type === 'deepsearch')).toHaveLength(1);
-    expect(detected.filter(d => d.type === 'analyze')).toHaveLength(1);
+    expect(detected.filter((d) => d.type === "deepsearch")).toHaveLength(1);
+    expect(detected.filter((d) => d.type === "analyze")).toHaveLength(1);
   });
 
-  it('should handle inline code with keywords', () => {
-    const text = 'Use the `deepsearch` command to find in codebase';
+  it("should handle inline code with keywords", () => {
+    const text = "Use the `deepsearch` command to find in codebase";
     const cleanText = removeCodeBlocks(text);
     const detected = detectKeywordsWithType(cleanText);
 
     // The phrase 'find in codebase' should still be detected
-    expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+    expect(detected.some((d) => d.type === "deepsearch")).toBe(true);
   });
 
-  it('should prioritize ultrawork even with other keywords', () => {
-    const text = 'search the codebase, deep analyze the bug, and use ultrawork mode';
+  it("should prioritize ultrawork even with other keywords", () => {
+    const text =
+      "search the codebase, deep analyze the bug, and use ultrawork mode";
     const primary = getPrimaryKeyword(text);
 
     expect(primary).not.toBeNull();
-    expect(primary!.type).toBe('ultrawork');
-    expect(primary!.keyword).toBe('ultrawork');
+    expect(primary!.type).toBe("ultrawork");
+    expect(primary!.keyword).toBe("ultrawork");
   });
 });
 
-describe('Edge Cases', () => {
-  describe('Empty and null inputs', () => {
-    it('should handle empty prompt parts', () => {
-      expect(extractPromptText([])).toBe('');
+describe("Edge Cases", () => {
+  describe("Empty and null inputs", () => {
+    it("should handle empty prompt parts", () => {
+      expect(extractPromptText([])).toBe("");
     });
 
-    it('should handle empty text in removeCodeBlocks', () => {
-      expect(removeCodeBlocks('')).toBe('');
+    it("should handle empty text in removeCodeBlocks", () => {
+      expect(removeCodeBlocks("")).toBe("");
     });
 
-    it('should handle empty text in detectKeywordsWithType', () => {
-      expect(detectKeywordsWithType('')).toEqual([]);
+    it("should handle empty text in detectKeywordsWithType", () => {
+      expect(detectKeywordsWithType("")).toEqual([]);
     });
 
-    it('should handle empty text in hasKeyword', () => {
-      expect(hasKeyword('')).toBe(false);
+    it("should handle empty text in hasKeyword", () => {
+      expect(hasKeyword("")).toBe(false);
     });
 
-    it('should handle empty text in getPrimaryKeyword', () => {
-      expect(getPrimaryKeyword('')).toBeNull();
+    it("should handle empty text in getPrimaryKeyword", () => {
+      expect(getPrimaryKeyword("")).toBeNull();
     });
   });
 
-  describe('Whitespace handling', () => {
-    it('should detect keywords with extra whitespace', () => {
-      const text = '   search    the   codebase   ';
+  describe("Whitespace handling", () => {
+    it("should detect keywords with extra whitespace", () => {
+      const text = "   search    the   codebase   ";
       expect(hasKeyword(text)).toBe(true);
     });
 
-    it('should handle newlines and tabs', () => {
-      const text = 'search\n\tthe\r\ncodebase';
+    it("should handle newlines and tabs", () => {
+      const text = "search\n\tthe\r\ncodebase";
       const detected = detectKeywordsWithType(text);
-      expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+      expect(detected.some((d) => d.type === "deepsearch")).toBe(true);
     });
   });
 
-  describe('Unicode and special characters', () => {
-    it('should handle unicode characters', () => {
-      const text = 'search the codebase with émojis 🔍';
+  describe("Unicode and special characters", () => {
+    it("should handle unicode characters", () => {
+      const text = "search the codebase with émojis 🔍";
       expect(hasKeyword(text)).toBe(true);
     });
 
-    it('should handle mixed scripts', () => {
-      const text = 'Please search the codebase 搜索 искать';
+    it("should handle mixed scripts", () => {
+      const text = "Please search the codebase 搜索 искать";
       const detected = detectKeywordsWithType(text);
-      expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+      expect(detected.some((d) => d.type === "deepsearch")).toBe(true);
     });
   });
 
-  describe('Very long inputs', () => {
-    it('should handle long text efficiently', () => {
-      const longText = 'plain text '.repeat(1000) + ' search the codebase';
+  describe("Very long inputs", () => {
+    it("should handle long text efficiently", () => {
+      const longText = "plain text ".repeat(1000) + " search the codebase";
       expect(hasKeyword(longText)).toBe(true);
     });
 
-    it('should handle many code blocks', () => {
-      const manyBlocks = '```code```\n'.repeat(100) + 'search the codebase';
+    it("should handle many code blocks", () => {
+      const manyBlocks = "```code```\n".repeat(100) + "search the codebase";
       const cleaned = removeCodeBlocks(manyBlocks);
       expect(hasKeyword(cleaned)).toBe(true);
     });
   });
 });
 
-describe('UltraQA Loop', () => {
-  describe('State Management', () => {
-    it('should define valid UltraQA goal types', () => {
-      const validGoalTypes = ['tests', 'build', 'lint', 'typecheck', 'custom'];
-      validGoalTypes.forEach(goalType => {
-        expect(typeof goalType).toBe('string');
+describe("UltraQA Loop", () => {
+  describe("State Management", () => {
+    it("should define valid UltraQA goal types", () => {
+      const validGoalTypes = ["tests", "build", "lint", "typecheck", "custom"];
+      validGoalTypes.forEach((goalType) => {
+        expect(typeof goalType).toBe("string");
       });
     });
 
-    it('should have valid state structure', () => {
+    it("should have valid state structure", () => {
       const state = {
         active: true,
-        goal_type: 'tests',
+        goal_type: "tests",
         goal_pattern: null,
         cycle: 1,
         max_cycles: 5,
         failures: [],
         started_at: new Date().toISOString(),
-        session_id: 'test-session'
+        session_id: "test-session",
       };
 
       expect(state.active).toBe(true);
-      expect(state.goal_type).toBe('tests');
+      expect(state.goal_type).toBe("tests");
       expect(state.cycle).toBe(1);
       expect(state.max_cycles).toBe(5);
       expect(Array.isArray(state.failures)).toBe(true);
     });
 
-    it('should track failure history', () => {
-      const failures = ['Error 1', 'Error 2', 'Error 1'];
+    it("should track failure history", () => {
+      const failures = ["Error 1", "Error 2", "Error 1"];
       expect(failures).toHaveLength(3);
-      expect(failures.filter(f => f === 'Error 1')).toHaveLength(2);
+      expect(failures.filter((f) => f === "Error 1")).toHaveLength(2);
     });
   });
 
-  describe('Cycle Limits', () => {
-    it('should respect max cycles limit', () => {
+  describe("Cycle Limits", () => {
+    it("should respect max cycles limit", () => {
       const state = {
         cycle: 5,
-        max_cycles: 5
+        max_cycles: 5,
       };
       expect(state.cycle).toBe(state.max_cycles);
       expect(state.cycle <= state.max_cycles).toBe(true);
     });
 
-    it('should allow incrementing cycles within limit', () => {
+    it("should allow incrementing cycles within limit", () => {
       let cycle = 1;
       const maxCycles = 5;
       while (cycle < maxCycles) {
@@ -1485,67 +1534,67 @@ describe('UltraQA Loop', () => {
     });
   });
 
-  describe('Result Types', () => {
-    it('should have valid success result', () => {
+  describe("Result Types", () => {
+    it("should have valid success result", () => {
       const result = {
         success: true,
         cycles: 3,
-        reason: 'goal_met' as const
+        reason: "goal_met" as const,
       };
       expect(result.success).toBe(true);
-      expect(result.reason).toBe('goal_met');
+      expect(result.reason).toBe("goal_met");
     });
 
-    it('should have valid failure result', () => {
+    it("should have valid failure result", () => {
       const result = {
         success: false,
         cycles: 5,
-        reason: 'max_cycles' as const,
-        diagnosis: 'Unable to fix recurring issue'
+        reason: "max_cycles" as const,
+        diagnosis: "Unable to fix recurring issue",
       };
       expect(result.success).toBe(false);
-      expect(result.reason).toBe('max_cycles');
+      expect(result.reason).toBe("max_cycles");
       expect(result.diagnosis).toBeDefined();
     });
 
-    it('should detect same failure pattern', () => {
-      const failures = ['Error A', 'Error A', 'Error A'];
-      const allSame = failures.every(f => f === failures[0]);
+    it("should detect same failure pattern", () => {
+      const failures = ["Error A", "Error A", "Error A"];
+      const allSame = failures.every((f) => f === failures[0]);
       expect(allSame).toBe(true);
     });
   });
 
-  describe('Goal Commands', () => {
-    it('should map goal types to commands', () => {
+  describe("Goal Commands", () => {
+    it("should map goal types to commands", () => {
       const goalCommands: Record<string, string> = {
-        tests: 'pnpm test',
-        build: 'pnpm run build',
-        lint: 'pnpm run lint',
-        typecheck: 'pnpm run typecheck || tsc --noEmit'
+        tests: "pnpm test",
+        build: "pnpm run build",
+        lint: "pnpm run lint",
+        typecheck: "pnpm run typecheck || tsc --noEmit",
       };
 
-      expect(goalCommands.tests).toBe('pnpm test');
-      expect(goalCommands.build).toBe('pnpm run build');
-      expect(goalCommands.lint).toBe('pnpm run lint');
+      expect(goalCommands.tests).toBe("pnpm test");
+      expect(goalCommands.build).toBe("pnpm run build");
+      expect(goalCommands.lint).toBe("pnpm run lint");
     });
   });
 
-  describe('Progress Formatting', () => {
-    it('should format progress message', () => {
+  describe("Progress Formatting", () => {
+    it("should format progress message", () => {
       const cycle = 2;
       const maxCycles = 5;
-      const status = 'Running tests...';
+      const status = "Running tests...";
       const message = `[ULTRAQA Cycle ${cycle}/${maxCycles}] ${status}`;
 
-      expect(message).toBe('[ULTRAQA Cycle 2/5] Running tests...');
-      expect(message).toContain('ULTRAQA');
+      expect(message).toBe("[ULTRAQA Cycle 2/5] Running tests...");
+      expect(message).toContain("ULTRAQA");
       expect(message).toContain(`${cycle}/${maxCycles}`);
     });
   });
 });
 
-describe('Persistent Mode - Max Attempts Counter', () => {
-  const testSessionId = 'test-session-123';
+describe("Persistent Mode - Max Attempts Counter", () => {
+  const testSessionId = "test-session-123";
 
   beforeEach(() => {
     // Reset the counter before each test
@@ -1557,15 +1606,15 @@ describe('Persistent Mode - Max Attempts Counter', () => {
     resetTodoContinuationAttempts(testSessionId);
   });
 
-  it('should export resetTodoContinuationAttempts function', () => {
-    expect(typeof resetTodoContinuationAttempts).toBe('function');
+  it("should export resetTodoContinuationAttempts function", () => {
+    expect(typeof resetTodoContinuationAttempts).toBe("function");
   });
 
-  it('should not throw when resetting non-existent session', () => {
-    expect(() => resetTodoContinuationAttempts('non-existent')).not.toThrow();
+  it("should not throw when resetting non-existent session", () => {
+    expect(() => resetTodoContinuationAttempts("non-existent")).not.toThrow();
   });
 
-  it('should allow resetting attempts multiple times', () => {
+  it("should allow resetting attempts multiple times", () => {
     resetTodoContinuationAttempts(testSessionId);
     resetTodoContinuationAttempts(testSessionId);
     resetTodoContinuationAttempts(testSessionId);
@@ -1574,15 +1623,18 @@ describe('Persistent Mode - Max Attempts Counter', () => {
   });
 });
 
-describe('Mutual Exclusion - UltraQA and Ralph', () => {
+describe("Mutual Exclusion - UltraQA and Ralph", () => {
   let testDir: string;
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `omc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `omc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
-    mkdirSync(join(testDir, '.omc'), { recursive: true });
-    mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
+    mkdirSync(join(testDir, ".omc"), { recursive: true });
+    mkdirSync(join(testDir, ".omc", "state"), { recursive: true });
   });
 
   afterEach(() => {
@@ -1594,66 +1646,74 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     }
   });
 
-  describe('isUltraQAActive', () => {
-    it('should return false when no ultraqa state exists', () => {
+  describe("isUltraQAActive", () => {
+    it("should return false when no ultraqa state exists", () => {
       expect(isUltraQAActive(testDir)).toBe(false);
     });
 
-    it('should return true when ultraqa is active', () => {
-      const stateFile = join(testDir, '.omc', 'state', 'ultraqa-state.json');
+    it("should return true when ultraqa is active", () => {
+      const stateFile = join(testDir, ".omc", "state", "ultraqa-state.json");
       writeFileSync(stateFile, JSON.stringify({ active: true }));
       expect(isUltraQAActive(testDir)).toBe(true);
     });
 
-    it('should return false when ultraqa is not active', () => {
-      const stateFile = join(testDir, '.omc', 'state', 'ultraqa-state.json');
+    it("should return false when ultraqa is not active", () => {
+      const stateFile = join(testDir, ".omc", "state", "ultraqa-state.json");
       writeFileSync(stateFile, JSON.stringify({ active: false }));
       expect(isUltraQAActive(testDir)).toBe(false);
     });
 
-    it('should return false for invalid JSON', () => {
-      const stateFile = join(testDir, '.omc', 'state', 'ultraqa-state.json');
-      writeFileSync(stateFile, 'invalid json');
+    it("should return false for invalid JSON", () => {
+      const stateFile = join(testDir, ".omc", "state", "ultraqa-state.json");
+      writeFileSync(stateFile, "invalid json");
       expect(isUltraQAActive(testDir)).toBe(false);
     });
   });
 
-  describe('isRalphLoopActive', () => {
-    it('should return false when no ralph state exists', () => {
+  describe("isRalphLoopActive", () => {
+    it("should return false when no ralph state exists", () => {
       expect(isRalphLoopActive(testDir)).toBe(false);
     });
 
-    it('should return true when ralph is active', () => {
-      const stateFile = join(testDir, '.omc', 'state', 'ralph-state.json');
+    it("should return true when ralph is active", () => {
+      const stateFile = join(testDir, ".omc", "state", "ralph-state.json");
       writeFileSync(stateFile, JSON.stringify({ active: true }));
       expect(isRalphLoopActive(testDir)).toBe(true);
     });
 
-    it('should return false when ralph is not active', () => {
-      const stateFile = join(testDir, '.omc', 'state', 'ralph-state.json');
+    it("should return false when ralph is not active", () => {
+      const stateFile = join(testDir, ".omc", "state", "ralph-state.json");
       writeFileSync(stateFile, JSON.stringify({ active: false }));
       expect(isRalphLoopActive(testDir)).toBe(false);
     });
   });
 
-  describe('UltraQA mutual exclusion', () => {
-    it('should fail to start UltraQA when Ralph is active', () => {
+  describe("UltraQA mutual exclusion", () => {
+    it("should fail to start UltraQA when Ralph is active", () => {
       // Activate Ralph first - write to session-scoped path since startUltraQA
       // passes sessionId which makes readRalphState check session path only
-      const sessionDir = join(testDir, '.omc', 'state', 'sessions', 'test-session');
+      const sessionDir = join(
+        testDir,
+        ".omc",
+        "state",
+        "sessions",
+        "test-session",
+      );
       mkdirSync(sessionDir, { recursive: true });
-      const ralphStateFile = join(sessionDir, 'ralph-state.json');
+      const ralphStateFile = join(sessionDir, "ralph-state.json");
       writeFileSync(ralphStateFile, JSON.stringify({ active: true }));
 
       // Try to start UltraQA
-      const result = startUltraQA(testDir, 'tests', 'test-session');
+      const result = startUltraQA(testDir, "tests", "test-session");
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Cannot start UltraQA while Ralph Loop is active');
+      expect(result.error).toContain(
+        "Cannot start UltraQA while Ralph Loop is active",
+      );
     });
 
-    it('should succeed starting UltraQA when Ralph is not active', () => {
-      const result = startUltraQA(testDir, 'tests', 'test-session');
+    it("should succeed starting UltraQA when Ralph is not active", () => {
+      const result = startUltraQA(testDir, "tests", "test-session");
 
       expect(result.success).toBe(true);
       expect(result.error).toBeUndefined();
@@ -1662,11 +1722,11 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
       clearUltraQAState(testDir);
     });
 
-    it('should succeed starting UltraQA when ralph state exists but inactive', () => {
-      const ralphStateFile = join(testDir, '.omc', 'state', 'ralph-state.json');
+    it("should succeed starting UltraQA when ralph state exists but inactive", () => {
+      const ralphStateFile = join(testDir, ".omc", "state", "ralph-state.json");
       writeFileSync(ralphStateFile, JSON.stringify({ active: false }));
 
-      const result = startUltraQA(testDir, 'tests', 'test-session');
+      const result = startUltraQA(testDir, "tests", "test-session");
 
       expect(result.success).toBe(true);
 
@@ -1675,25 +1735,31 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     });
   });
 
-  describe('Ralph mutual exclusion', () => {
-    it('should fail to start Ralph when UltraQA is active', () => {
+  describe("Ralph mutual exclusion", () => {
+    it("should fail to start Ralph when UltraQA is active", () => {
       // Activate UltraQA first - write to session-scoped path since startLoop
       // passes sessionId which makes isUltraQAActive check session path only
-      const sessionDir = join(testDir, '.omc', 'state', 'sessions', 'test-session');
+      const sessionDir = join(
+        testDir,
+        ".omc",
+        "state",
+        "sessions",
+        "test-session",
+      );
       mkdirSync(sessionDir, { recursive: true });
-      const ultraqaStateFile = join(sessionDir, 'ultraqa-state.json');
+      const ultraqaStateFile = join(sessionDir, "ultraqa-state.json");
       writeFileSync(ultraqaStateFile, JSON.stringify({ active: true }));
 
       // Try to start Ralph
       const hook = createRalphLoopHook(testDir);
-      const result = hook.startLoop('test-session', 'test prompt');
+      const result = hook.startLoop("test-session", "test prompt");
 
       expect(result).toBe(false);
     });
 
-    it('should succeed starting Ralph when UltraQA is not active', () => {
+    it("should succeed starting Ralph when UltraQA is not active", () => {
       const hook = createRalphLoopHook(testDir);
-      const result = hook.startLoop('test-session', 'test prompt');
+      const result = hook.startLoop("test-session", "test prompt");
 
       expect(result).toBe(true);
 
@@ -1701,12 +1767,17 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
       clearRalphState(testDir);
     });
 
-    it('should succeed starting Ralph when ultraqa state exists but inactive', () => {
-      const ultraqaStateFile = join(testDir, '.omc', 'state', 'ultraqa-state.json');
+    it("should succeed starting Ralph when ultraqa state exists but inactive", () => {
+      const ultraqaStateFile = join(
+        testDir,
+        ".omc",
+        "state",
+        "ultraqa-state.json",
+      );
       writeFileSync(ultraqaStateFile, JSON.stringify({ active: false }));
 
       const hook = createRalphLoopHook(testDir);
-      const result = hook.startLoop('test-session', 'test prompt');
+      const result = hook.startLoop("test-session", "test prompt");
 
       expect(result).toBe(true);
 
@@ -1715,9 +1786,9 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     });
   });
 
-  describe('State cleanup', () => {
-    it('should clear UltraQA state properly', () => {
-      const result = startUltraQA(testDir, 'tests', 'test-session');
+  describe("State cleanup", () => {
+    it("should clear UltraQA state properly", () => {
+      const result = startUltraQA(testDir, "tests", "test-session");
       expect(result.success).toBe(true);
 
       const cleared = clearUltraQAState(testDir);
@@ -1726,9 +1797,9 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
       expect(isRalphLoopActive(testDir)).toBe(false);
     });
 
-    it('should clear Ralph state properly', () => {
+    it("should clear Ralph state properly", () => {
       const hook = createRalphLoopHook(testDir);
-      hook.startLoop('test-session', 'test prompt');
+      hook.startLoop("test-session", "test prompt");
 
       const cleared = clearRalphState(testDir);
       expect(cleared).toBe(true);
@@ -1742,24 +1813,31 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
 // Skill-Active State Clearing on Skill Completion
 // ===========================================================================
 
-describe('Skill-active state lifecycle', () => {
+describe("Skill-active state lifecycle", () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `hooks-skill-clear-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `hooks-skill-clear-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
-    execSync('git init', { cwd: testDir, stdio: 'pipe' });
+    execSync("git init", { cwd: testDir, stdio: "pipe" });
   });
 
   afterEach(() => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  it('clearSkillActiveState is a no-op for legacy/external skills without protection', async () => {
-    const { writeSkillActiveState, readSkillActiveState, clearSkillActiveState } = await import('../hooks/skill-state/index.js');
+  it("clearSkillActiveState is a no-op for legacy/external skills without protection", async () => {
+    const {
+      writeSkillActiveState,
+      readSkillActiveState,
+      clearSkillActiveState,
+    } = await import("../hooks/skill-state/index.js");
 
-    const sessionId = 'test-skill-clear-session';
-    const written = writeSkillActiveState(testDir, 'code-review', sessionId);
+    const sessionId = "test-skill-clear-session";
+    const written = writeSkillActiveState(testDir, "code-review", sessionId);
     expect(written).toBeNull();
 
     // Verify legacy/external skill state is not created
@@ -1775,12 +1853,13 @@ describe('Skill-active state lifecycle', () => {
     expect(stateAfter).toBeNull();
   });
 
-  it('clearSkillActiveState is safe to call when no state exists', async () => {
-    const { clearSkillActiveState, readSkillActiveState } = await import('../hooks/skill-state/index.js');
+  it("clearSkillActiveState is safe to call when no state exists", async () => {
+    const { clearSkillActiveState, readSkillActiveState } =
+      await import("../hooks/skill-state/index.js");
 
     // Should not throw even when no state file exists
-    clearSkillActiveState(testDir, 'no-such-session');
-    const state = readSkillActiveState(testDir, 'no-such-session');
+    clearSkillActiveState(testDir, "no-such-session");
+    const state = readSkillActiveState(testDir, "no-such-session");
     expect(state).toBeNull();
   });
 });

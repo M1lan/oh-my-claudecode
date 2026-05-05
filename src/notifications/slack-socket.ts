@@ -25,7 +25,7 @@
  * - https://api.slack.com/apis/socket-mode
  */
 
-import { createHmac, timingSafeEqual } from 'crypto';
+import { createHmac, timingSafeEqual } from "crypto";
 
 // ============================================================================
 // Constants
@@ -36,11 +36,11 @@ const MAX_TIMESTAMP_AGE_SECONDS = 300;
 
 /** Valid Slack Socket Mode envelope types */
 const VALID_ENVELOPE_TYPES = new Set([
-  'events_api',
-  'slash_commands',
-  'interactive',
-  'hello',
-  'disconnect',
+  "events_api",
+  "slash_commands",
+  "interactive",
+  "hello",
+  "disconnect",
 ]);
 
 // ============================================================================
@@ -49,10 +49,10 @@ const VALID_ENVELOPE_TYPES = new Set([
 
 /** Connection states for Slack Socket Mode */
 export type SlackConnectionState =
-  | 'disconnected'
-  | 'connecting'
-  | 'authenticated'
-  | 'reconnecting';
+  | "disconnected"
+  | "connecting"
+  | "authenticated"
+  | "reconnecting";
 
 /** Result of message validation */
 export interface SlackValidationResult {
@@ -101,8 +101,8 @@ export function verifySlackSignature(
 
   const sigBasestring = `v0:${timestamp}:${body}`;
   const expectedSignature =
-    'v0=' +
-    createHmac('sha256', signingSecret).update(sigBasestring).digest('hex');
+    "v0=" +
+    createHmac("sha256", signingSecret).update(sigBasestring).digest("hex");
 
   // Timing-safe comparison to prevent timing attacks
   try {
@@ -149,26 +149,24 @@ export function isTimestampValid(
  * Ensures the message has required fields and a valid type
  * before it can be processed for session injection.
  */
-export function validateSlackEnvelope(
-  data: unknown,
-): SlackValidationResult {
-  if (typeof data !== 'object' || data === null) {
-    return { valid: false, reason: 'Message is not an object' };
+export function validateSlackEnvelope(data: unknown): SlackValidationResult {
+  if (typeof data !== "object" || data === null) {
+    return { valid: false, reason: "Message is not an object" };
   }
 
   const envelope = data as Record<string, unknown>;
 
   // envelope_id is required for Socket Mode messages
   if (
-    typeof envelope.envelope_id !== 'string' ||
+    typeof envelope.envelope_id !== "string" ||
     !envelope.envelope_id.trim()
   ) {
-    return { valid: false, reason: 'Missing or empty envelope_id' };
+    return { valid: false, reason: "Missing or empty envelope_id" };
   }
 
   // type is required
-  if (typeof envelope.type !== 'string' || !envelope.type.trim()) {
-    return { valid: false, reason: 'Missing or empty message type' };
+  if (typeof envelope.type !== "string" || !envelope.type.trim()) {
+    return { valid: false, reason: "Missing or empty message type" };
   }
 
   // Validate against known Slack Socket Mode types
@@ -180,11 +178,11 @@ export function validateSlackEnvelope(
   }
 
   // events_api type must have a payload
-  if (envelope.type === 'events_api') {
-    if (typeof envelope.payload !== 'object' || envelope.payload === null) {
+  if (envelope.type === "events_api") {
+    if (typeof envelope.payload !== "object" || envelope.payload === null) {
       return {
         valid: false,
-        reason: 'events_api envelope missing payload',
+        reason: "events_api envelope missing payload",
       };
     }
   }
@@ -210,7 +208,7 @@ export function validateSlackEnvelope(
  * authentication has not been re-established.
  */
 export class SlackConnectionStateTracker {
-  private state: SlackConnectionState = 'disconnected';
+  private state: SlackConnectionState = "disconnected";
   private authenticatedAt: number | null = null;
   private reconnectCount = 0;
   private readonly maxReconnectAttempts: number;
@@ -239,7 +237,7 @@ export class SlackConnectionStateTracker {
 
   /** Transition to connecting state. */
   onConnecting(): void {
-    this.state = 'connecting';
+    this.state = "connecting";
   }
 
   /**
@@ -247,7 +245,7 @@ export class SlackConnectionStateTracker {
    * Resets reconnect counter on successful authentication.
    */
   onAuthenticated(): void {
-    this.state = 'authenticated';
+    this.state = "authenticated";
     this.authenticatedAt = Date.now();
     this.reconnectCount = 0;
   }
@@ -257,7 +255,7 @@ export class SlackConnectionStateTracker {
    * Increments reconnect counter and clears authentication timestamp.
    */
   onReconnecting(): void {
-    this.state = 'reconnecting';
+    this.state = "reconnecting";
     this.reconnectCount++;
     this.authenticatedAt = null;
   }
@@ -267,7 +265,7 @@ export class SlackConnectionStateTracker {
    * Clears message queue to prevent processing stale messages.
    */
   onDisconnected(): void {
-    this.state = 'disconnected';
+    this.state = "disconnected";
     this.authenticatedAt = null;
     this.messageQueue = [];
   }
@@ -282,7 +280,7 @@ export class SlackConnectionStateTracker {
    * Only allows processing when the connection is authenticated.
    */
   canProcessMessages(): boolean {
-    return this.state === 'authenticated';
+    return this.state === "authenticated";
   }
 
   /**
@@ -352,7 +350,7 @@ export function validateSlackMessage(
   try {
     parsed = JSON.parse(rawMessage);
   } catch {
-    return { valid: false, reason: 'Invalid JSON message' };
+    return { valid: false, reason: "Invalid JSON message" };
   }
 
   // 3. Validate envelope structure
@@ -366,13 +364,13 @@ export function validateSlackMessage(
     if (
       !verifySlackSignature(signingSecret, signature, timestamp, rawMessage)
     ) {
-      return { valid: false, reason: 'Signature verification failed' };
+      return { valid: false, reason: "Signature verification failed" };
     }
   } else if (signingSecret && (!signature || !timestamp)) {
     // Signing secret is configured but signing material is missing
     return {
       valid: false,
-      reason: 'Signing secret configured but signature/timestamp missing',
+      reason: "Signing secret configured but signature/timestamp missing",
     };
   }
 
@@ -401,7 +399,7 @@ export interface SlackSocketConfig {
 type MessageHandler = (event: SlackMessageEvent) => void | Promise<void>;
 type LogFn = (message: string) => void;
 
-import { redactTokens } from './redact.js';
+import { redactTokens } from "./redact.js";
 
 /** Timeout for Slack API calls */
 const API_TIMEOUT_MS = 10_000;
@@ -454,8 +452,10 @@ export class SlackSocketClient {
    * Obtains a WebSocket URL from Slack and connects.
    */
   async start(): Promise<void> {
-    if (typeof WebSocket === 'undefined') {
-      this.log('WARN: WebSocket not available, Slack Socket Mode requires Node 20.10+');
+    if (typeof WebSocket === "undefined") {
+      this.log(
+        "WARN: WebSocket not available, Slack Socket Mode requires Node 20.10+",
+      );
       return;
     }
     this.connectionState.onConnecting();
@@ -486,10 +486,10 @@ export class SlackSocketClient {
     this.ws = null;
 
     // Remove listeners before closing to prevent callbacks on dead socket
-    if (this.onWsOpen) ws.removeEventListener('open', this.onWsOpen);
-    if (this.onWsMessage) ws.removeEventListener('message', this.onWsMessage);
-    if (this.onWsClose) ws.removeEventListener('close', this.onWsClose);
-    if (this.onWsError) ws.removeEventListener('error', this.onWsError);
+    if (this.onWsOpen) ws.removeEventListener("open", this.onWsOpen);
+    if (this.onWsMessage) ws.removeEventListener("message", this.onWsMessage);
+    if (this.onWsClose) ws.removeEventListener("close", this.onWsClose);
+    if (this.onWsError) ws.removeEventListener("error", this.onWsError);
     this.onWsOpen = null;
     this.onWsMessage = null;
     this.onWsClose = null;
@@ -514,25 +514,31 @@ export class SlackSocketClient {
 
     try {
       // Step 1: Get WebSocket URL via apps.connections.open
-      const resp = await fetch('https://slack.com/api/apps.connections.open', {
-        method: 'POST',
+      const resp = await fetch("https://slack.com/api/apps.connections.open", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${this.config.appToken}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Bearer ${this.config.appToken}`,
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         signal: AbortSignal.timeout(API_TIMEOUT_MS),
       });
 
-      const data = await resp.json() as { ok: boolean; url?: string; error?: string };
+      const data = (await resp.json()) as {
+        ok: boolean;
+        url?: string;
+        error?: string;
+      };
       if (!data.ok || !data.url) {
-        throw new Error(`apps.connections.open failed: ${data.error || 'no url returned'}`);
+        throw new Error(
+          `apps.connections.open failed: ${data.error || "no url returned"}`,
+        );
       }
 
       // Step 2: Connect via WebSocket with tracked listeners
       this.ws = new WebSocket(data.url);
 
       this.onWsOpen = () => {
-        this.log('Slack Socket Mode connected');
+        this.log("Slack Socket Mode connected");
         this.reconnectAttempts = 0;
       };
       this.onWsMessage = (event) => {
@@ -543,21 +549,24 @@ export class SlackSocketClient {
         this.cleanupWs();
         if (!this.isShuttingDown) {
           this.connectionState.onReconnecting();
-          this.log('Slack Socket Mode disconnected, scheduling reconnect');
+          this.log("Slack Socket Mode disconnected, scheduling reconnect");
           this.scheduleReconnect();
         }
       };
       this.onWsError = (e) => {
-        this.log(`Slack Socket Mode WebSocket error: ${e instanceof Error ? e.message : 'unknown'}`);
+        this.log(
+          `Slack Socket Mode WebSocket error: ${e instanceof Error ? e.message : "unknown"}`,
+        );
       };
 
-      this.ws.addEventListener('open', this.onWsOpen);
-      this.ws.addEventListener('message', this.onWsMessage);
-      this.ws.addEventListener('close', this.onWsClose);
-      this.ws.addEventListener('error', this.onWsError);
-
+      this.ws.addEventListener("open", this.onWsOpen);
+      this.ws.addEventListener("message", this.onWsMessage);
+      this.ws.addEventListener("close", this.onWsClose);
+      this.ws.addEventListener("error", this.onWsError);
     } catch (error) {
-      this.log(`Slack Socket Mode connection error: ${error instanceof Error ? error.message : String(error)}`);
+      this.log(
+        `Slack Socket Mode connection error: ${error instanceof Error ? error.message : String(error)}`,
+      );
       if (!this.isShuttingDown) {
         this.scheduleReconnect();
       }
@@ -579,7 +588,7 @@ export class SlackSocketClient {
       try {
         parsed = JSON.parse(raw);
       } catch {
-        this.log('REJECTED Slack message: Invalid JSON');
+        this.log("REJECTED Slack message: Invalid JSON");
         return;
       }
 
@@ -604,14 +613,16 @@ export class SlackSocketClient {
       }
 
       // Handle hello - marks connection as authenticated
-      if (envelope.type === 'hello') {
+      if (envelope.type === "hello") {
         this.connectionState.onAuthenticated();
-        this.log('Slack Socket Mode authenticated (hello received)');
+        this.log("Slack Socket Mode authenticated (hello received)");
 
         // Drain any queued messages from reconnection window
         const queued = this.connectionState.drainQueue();
         if (queued.length > 0) {
-          this.log(`Processing ${queued.length} queued messages after re-authentication`);
+          this.log(
+            `Processing ${queued.length} queued messages after re-authentication`,
+          );
           for (const queuedEnvelope of queued) {
             this.handleEnvelope(JSON.stringify(queuedEnvelope));
           }
@@ -620,9 +631,9 @@ export class SlackSocketClient {
       }
 
       // Handle disconnect requests from Slack
-      if (envelope.type === 'disconnect') {
+      if (envelope.type === "disconnect") {
         this.connectionState.onReconnecting();
-        this.log(`Slack requested disconnect: ${envelope.reason || 'unknown'}`);
+        this.log(`Slack requested disconnect: ${envelope.reason || "unknown"}`);
         if (this.ws) {
           this.ws.close();
         }
@@ -631,9 +642,13 @@ export class SlackSocketClient {
 
       // Reject messages during reconnection windows
       if (!this.connectionState.canProcessMessages()) {
-        this.log(`REJECTED Slack message: connection not authenticated (state: ${this.connectionState.getState()})`);
+        this.log(
+          `REJECTED Slack message: connection not authenticated (state: ${this.connectionState.getState()})`,
+        );
         // Queue for processing after re-authentication
-        this.connectionState.queueMessage(envelope as unknown as SlackSocketEnvelope);
+        this.connectionState.queueMessage(
+          envelope as unknown as SlackSocketEnvelope,
+        );
         return;
       }
 
@@ -642,36 +657,41 @@ export class SlackSocketClient {
         // Socket Mode doesn't provide HTTP-style headers, but if signing
         // material is embedded in the envelope, verify it
         const envelopeAny = envelope as Record<string, unknown>;
-        const sig = envelopeAny['x_slack_signature'] as string | undefined;
-        const ts = envelopeAny['x_slack_request_timestamp'] as string | undefined;
+        const sig = envelopeAny["x_slack_signature"] as string | undefined;
+        const ts = envelopeAny["x_slack_request_timestamp"] as
+          | string
+          | undefined;
         if (sig && ts) {
           if (!verifySlackSignature(this.config.signingSecret, sig, ts, raw)) {
-            this.log('REJECTED Slack message: Signature verification failed');
+            this.log("REJECTED Slack message: Signature verification failed");
             return;
           }
         }
       }
 
       // Process events_api envelopes containing message events
-      if (envelope.type === 'events_api' && envelope.payload?.event) {
+      if (envelope.type === "events_api" && envelope.payload?.event) {
         const event = envelope.payload.event;
 
         // Filter: only 'message' type in our channel, no subtypes (edits, joins, etc.)
         if (
-          event.type === 'message' &&
+          event.type === "message" &&
           event.channel === this.config.channelId &&
           !event.subtype &&
           event.text
         ) {
           // Fire-and-forget: don't block the WebSocket handler
-          Promise.resolve(this.onMessage(event)).catch(err => {
-            this.log(`Slack message handler error: ${err instanceof Error ? err.message : String(err)}`);
+          Promise.resolve(this.onMessage(event)).catch((err) => {
+            this.log(
+              `Slack message handler error: ${err instanceof Error ? err.message : String(err)}`,
+            );
           });
         }
       }
-
     } catch (error) {
-      this.log(`Slack envelope parse error: ${error instanceof Error ? error.message : String(error)}`);
+      this.log(
+        `Slack envelope parse error: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
 
@@ -681,7 +701,9 @@ export class SlackSocketClient {
   private scheduleReconnect(): void {
     if (this.isShuttingDown) return;
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      this.log(`Slack Socket Mode max reconnect attempts (${this.maxReconnectAttempts}) reached`);
+      this.log(
+        `Slack Socket Mode max reconnect attempts (${this.maxReconnectAttempts}) reached`,
+      );
       return;
     }
 
@@ -697,7 +719,9 @@ export class SlackSocketClient {
     );
     this.reconnectAttempts++;
 
-    this.log(`Slack Socket Mode reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    this.log(
+      `Slack Socket Mode reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`,
+    );
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
       if (!this.isShuttingDown) {
@@ -720,17 +744,17 @@ export async function postSlackBotMessage(
   channel: string,
   text: string,
 ): Promise<{ ok: boolean; ts?: string; error?: string }> {
-  const resp = await fetch('https://slack.com/api/chat.postMessage', {
-    method: 'POST',
+  const resp = await fetch("https://slack.com/api/chat.postMessage", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${botToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ channel, text }),
     signal: AbortSignal.timeout(API_TIMEOUT_MS),
   });
 
-  return await resp.json() as { ok: boolean; ts?: string; error?: string };
+  return (await resp.json()) as { ok: boolean; ts?: string; error?: string };
 }
 
 /**
@@ -740,13 +764,13 @@ export async function addSlackReaction(
   botToken: string,
   channel: string,
   timestamp: string,
-  emoji: string = 'white_check_mark',
+  emoji: string = "white_check_mark",
 ): Promise<void> {
-  await fetch('https://slack.com/api/reactions.add', {
-    method: 'POST',
+  await fetch("https://slack.com/api/reactions.add", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${botToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ channel, timestamp, name: emoji }),
     signal: AbortSignal.timeout(REACTION_TIMEOUT_MS),
@@ -762,11 +786,11 @@ export async function replySlackThread(
   threadTs: string,
   text: string,
 ): Promise<void> {
-  await fetch('https://slack.com/api/chat.postMessage', {
-    method: 'POST',
+  await fetch("https://slack.com/api/chat.postMessage", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${botToken}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${botToken}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({ channel, text, thread_ts: threadTs }),
     signal: AbortSignal.timeout(REACTION_TIMEOUT_MS),

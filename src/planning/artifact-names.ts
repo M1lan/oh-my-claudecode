@@ -15,7 +15,10 @@ export interface PlanningArtifactNameInfo {
 }
 
 export function planningArtifactTimestamp(date: Date = new Date()): string {
-  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
 }
 
 function legacyTestSpecSlug(fileNameOrPath: string): string | null {
@@ -31,7 +34,10 @@ function requiredTimestampedTestSpecFileName(
     : null;
 }
 
-function splitTimestampPrefix(rawSlug: string): { slug: string; timestamp?: string } {
+function splitTimestampPrefix(rawSlug: string): {
+  slug: string;
+  timestamp?: string;
+} {
   const separatorIndex = rawSlug.indexOf("-");
   if (separatorIndex === -1) {
     return { slug: rawSlug };
@@ -57,7 +63,9 @@ export function parsePlanningArtifactFileName(
     /^deep-interview-autoresearch-(?<slug>.+)\.md$/i,
   );
   if (autoresearchDeepInterviewMatch?.groups?.slug) {
-    const parsedSlug = splitTimestampPrefix(autoresearchDeepInterviewMatch.groups.slug);
+    const parsedSlug = splitTimestampPrefix(
+      autoresearchDeepInterviewMatch.groups.slug,
+    );
     if (!parsedSlug.slug) return null;
     return {
       kind: "deep-interview-autoresearch",
@@ -65,7 +73,9 @@ export function parsePlanningArtifactFileName(
     };
   }
 
-  const deepInterviewMatch = fileName.match(/^deep-interview-(?<slug>.+)\.md$/i);
+  const deepInterviewMatch = fileName.match(
+    /^deep-interview-(?<slug>.+)\.md$/i,
+  );
   if (deepInterviewMatch?.groups?.slug) {
     const parsedSlug = splitTimestampPrefix(deepInterviewMatch.groups.slug);
     if (!parsedSlug.slug) return null;
@@ -106,11 +116,18 @@ export function planningArtifactSlug(
   return parsed?.kind === kind ? parsed.slug : null;
 }
 
-export function comparePlanningArtifactPaths(left: string, right: string): number {
+export function comparePlanningArtifactPaths(
+  left: string,
+  right: string,
+): number {
   const leftParsed = parsePlanningArtifactFileName(left);
   const rightParsed = parsePlanningArtifactFileName(right);
 
-  if (leftParsed?.timestamp && rightParsed?.timestamp && leftParsed.timestamp !== rightParsed.timestamp) {
+  if (
+    leftParsed?.timestamp &&
+    rightParsed?.timestamp &&
+    leftParsed.timestamp !== rightParsed.timestamp
+  ) {
     return leftParsed.timestamp.localeCompare(rightParsed.timestamp);
   }
   if (leftParsed?.timestamp && !rightParsed?.timestamp) {
@@ -136,13 +153,21 @@ export function selectMatchingTestSpecsForPrd(
     return [];
   }
 
-  const requiredTimestampedFileName = requiredTimestampedTestSpecFileName(prdArtifact);
-  return (requiredTimestampedFileName
-    ? testSpecPaths.filter((path) => basename(path) === requiredTimestampedFileName)
-    : testSpecPaths.filter((path) => legacyTestSpecSlug(path) === prdArtifact.slug))
-    .sort(comparePlanningArtifactPaths);
+  const requiredTimestampedFileName =
+    requiredTimestampedTestSpecFileName(prdArtifact);
+  return (
+    requiredTimestampedFileName
+      ? testSpecPaths.filter(
+          (path) => basename(path) === requiredTimestampedFileName,
+        )
+      : testSpecPaths.filter(
+          (path) => legacyTestSpecSlug(path) === prdArtifact.slug,
+        )
+  ).sort(comparePlanningArtifactPaths);
 }
 
-export function selectLatestPlanningArtifactPath(paths: readonly string[]): string | null {
+export function selectLatestPlanningArtifactPath(
+  paths: readonly string[],
+): string | null {
   return [...paths].sort(comparePlanningArtifactPaths).at(-1) ?? null;
 }

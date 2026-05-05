@@ -35,5 +35,5 @@ export function truncatePromptForEcho(
   if (trimmed.length <= maxChars) {
     return trimmed;
   }
-  return trimmed.slice(0, maxChars) + '…';
+  return trimmed.slice(0, maxChars) + "…";
 }

@@ -27,7 +27,6 @@ import {
 const CONFIG_FILE = join(getClaudeConfigDir(), ".omc-config.json");
 const DEFAULT_TMUX_TAIL_LINES = 15;
 
-
 /**
  * Read raw config from .omc-config.json
  */
@@ -113,7 +112,9 @@ export function validateMention(raw: string | undefined): string | undefined {
  * Rejects control characters, shell metacharacters, and path traversal sequences.
  * Returns the channel string if valid, undefined otherwise.
  */
-export function validateSlackChannel(raw: string | undefined): string | undefined {
+export function validateSlackChannel(
+  raw: string | undefined,
+): string | undefined {
   const channel = normalizeOptional(raw);
   if (!channel) return undefined;
   // Channel ID: C or G followed by alphanumeric (e.g., C1234567890)
@@ -129,7 +130,9 @@ export function validateSlackChannel(raw: string | undefined): string | undefine
  * Rejects control characters, shell metacharacters, and path traversal sequences.
  * Returns the username string if valid, undefined otherwise.
  */
-export function validateSlackUsername(raw: string | undefined): string | undefined {
+export function validateSlackUsername(
+  raw: string | undefined,
+): string | undefined {
   const username = normalizeOptional(raw);
   if (!username) return undefined;
   if (username.length > 80) return undefined;
@@ -143,7 +146,9 @@ export function validateSlackUsername(raw: string | undefined): string | undefin
  * Accepts: <@UXXXXXXXX> (user), <!channel>, <!here>, <!everyone>, <!subteam^SXXXXXXXXX> (user group).
  * Returns the mention string if valid, undefined otherwise.
  */
-export function validateSlackMention(raw: string | undefined): string | undefined {
+export function validateSlackMention(
+  raw: string | undefined,
+): string | undefined {
   const mention = normalizeOptional(raw);
   if (!mention) return undefined;
   // <@U...> user mention
@@ -158,9 +163,10 @@ export function validateSlackMention(raw: string | undefined): string | undefine
 /**
  * Parse a validated mention into allowed_mentions structure for Discord API.
  */
-export function parseMentionAllowedMentions(
-  mention: string | undefined,
-): { users?: string[]; roles?: string[] } {
+export function parseMentionAllowedMentions(mention: string | undefined): {
+  users?: string[];
+  roles?: string[];
+} {
   if (!mention) return {};
   const userMatch = mention.match(/^<@!?(\d{17,20})>$/);
   if (userMatch) return { users: [userMatch[1]] };
@@ -269,8 +275,10 @@ function mergeEnvIntoFileConfig(
     // Fill missing fields from env (e.g., mention from env when file lacks it)
     merged["discord-bot"] = {
       ...merged["discord-bot"],
-      botToken: merged["discord-bot"].botToken || envConfig["discord-bot"].botToken,
-      channelId: merged["discord-bot"].channelId || envConfig["discord-bot"].channelId,
+      botToken:
+        merged["discord-bot"].botToken || envConfig["discord-bot"].botToken,
+      channelId:
+        merged["discord-bot"].channelId || envConfig["discord-bot"].channelId,
       mention:
         merged["discord-bot"].mention !== undefined
           ? validateMention(merged["discord-bot"].mention)
@@ -336,7 +344,8 @@ function mergeEnvIntoFileConfig(
       ...merged["slack-bot"],
       appToken: merged["slack-bot"].appToken || envConfig["slack-bot"].appToken,
       botToken: merged["slack-bot"].botToken || envConfig["slack-bot"].botToken,
-      channelId: merged["slack-bot"].channelId || envConfig["slack-bot"].channelId,
+      channelId:
+        merged["slack-bot"].channelId || envConfig["slack-bot"].channelId,
       mention:
         merged["slack-bot"].mention !== undefined
           ? validateSlackMention(merged["slack-bot"].mention)
@@ -382,10 +391,16 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
   if (envMention) {
     if (merged["discord-bot"] && merged["discord-bot"].mention == null) {
-      merged = { ...merged, "discord-bot": { ...merged["discord-bot"], mention: envMention } };
+      merged = {
+        ...merged,
+        "discord-bot": { ...merged["discord-bot"], mention: envMention },
+      };
     }
     if (merged.discord && merged.discord.mention == null) {
-      merged = { ...merged, discord: { ...merged.discord, mention: envMention } };
+      merged = {
+        ...merged,
+        discord: { ...merged.discord, mention: envMention },
+      };
     }
   }
 
@@ -393,10 +408,16 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   const envSlackMention = validateSlackMention(process.env.OMC_SLACK_MENTION);
   if (envSlackMention) {
     if (merged.slack && merged.slack.mention == null) {
-      merged = { ...merged, slack: { ...merged.slack, mention: envSlackMention } };
+      merged = {
+        ...merged,
+        slack: { ...merged.slack, mention: envSlackMention },
+      };
     }
     if (merged["slack-bot"] && merged["slack-bot"].mention == null) {
-      merged = { ...merged, "slack-bot": { ...merged["slack-bot"], mention: envSlackMention } };
+      merged = {
+        ...merged,
+        "slack-bot": { ...merged["slack-bot"], mention: envSlackMention },
+      };
     }
   }
 
@@ -443,13 +464,20 @@ export function getVerbosity(config: NotificationConfig): VerbosityLevel {
  * Invalid values are ignored (fall back to config or default).
  */
 export function getTmuxTailLines(config: NotificationConfig): number {
-  const envValue = Number.parseInt(process.env.OMC_NOTIFY_TMUX_TAIL_LINES ?? "", 10);
+  const envValue = Number.parseInt(
+    process.env.OMC_NOTIFY_TMUX_TAIL_LINES ?? "",
+    10,
+  );
   if (Number.isInteger(envValue) && envValue >= 1) {
     return envValue;
   }
 
   const configValue = config.tmuxTailLines;
-  if (typeof configValue === "number" && Number.isInteger(configValue) && configValue >= 1) {
+  if (
+    typeof configValue === "number" &&
+    Number.isInteger(configValue) &&
+    configValue >= 1
+  ) {
     return configValue;
   }
 
@@ -506,13 +534,17 @@ export function shouldIncludeTmuxTail(verbosity: VerbosityLevel): boolean {
  *
  * @param profileName - Optional profile name (overrides OMC_NOTIFY_PROFILE env var)
  */
-export function getNotificationConfig(profileName?: string): NotificationConfig | null {
+export function getNotificationConfig(
+  profileName?: string,
+): NotificationConfig | null {
   const raw = readRawConfig();
   const effectiveProfile = profileName || process.env.OMC_NOTIFY_PROFILE;
 
   // Priority 0: Named profile from notificationProfiles
   if (effectiveProfile && raw) {
-    const profiles = raw.notificationProfiles as Record<string, NotificationConfig> | undefined;
+    const profiles = raw.notificationProfiles as
+      | Record<string, NotificationConfig>
+      | undefined;
     if (profiles && profiles[effectiveProfile]) {
       const profileConfig = profiles[effectiveProfile];
       if (typeof profileConfig.enabled !== "boolean") {
@@ -596,7 +628,8 @@ export function isEventEnabled(
   // Check event-specific platform overrides
   if (
     (isPlatformActivated("discord") && eventConfig.discord?.enabled) ||
-    (isPlatformActivated("discord-bot") && eventConfig["discord-bot"]?.enabled) ||
+    (isPlatformActivated("discord-bot") &&
+      eventConfig["discord-bot"]?.enabled) ||
     (isPlatformActivated("telegram") && eventConfig.telegram?.enabled) ||
     (isPlatformActivated("slack") && eventConfig.slack?.enabled) ||
     (isPlatformActivated("slack-bot") && eventConfig["slack-bot"]?.enabled) ||
@@ -756,14 +789,10 @@ export function getReplyListenerPlatformConfig(
       discordBotConfig?.botToken || config["discord-bot"]?.botToken,
     discordChannelId:
       discordBotConfig?.channelId || config["discord-bot"]?.channelId,
-    discordMention:
-      discordBotConfig?.mention || config["discord-bot"]?.mention,
-    slackAppToken:
-      slackBotConfig?.appToken || config["slack-bot"]?.appToken,
-    slackBotToken:
-      slackBotConfig?.botToken || config["slack-bot"]?.botToken,
-    slackChannelId:
-      slackBotConfig?.channelId || config["slack-bot"]?.channelId,
+    discordMention: discordBotConfig?.mention || config["discord-bot"]?.mention,
+    slackAppToken: slackBotConfig?.appToken || config["slack-bot"]?.appToken,
+    slackBotToken: slackBotConfig?.botToken || config["slack-bot"]?.botToken,
+    slackChannelId: slackBotConfig?.channelId || config["slack-bot"]?.channelId,
   };
 }
 
@@ -787,8 +816,9 @@ function parseSlackUserIds(
 
   // Try config array
   if (Array.isArray(configValue)) {
-    const ids = configValue
-      .filter((id) => typeof id === "string" && /^[UW][A-Z0-9]{8,11}$/.test(id));
+    const ids = configValue.filter(
+      (id) => typeof id === "string" && /^[UW][A-Z0-9]{8,11}$/.test(id),
+    );
     if (ids.length > 0) return ids;
   }
 
@@ -814,8 +844,9 @@ function parseDiscordUserIds(
 
   // Try config array
   if (Array.isArray(configValue)) {
-    const ids = configValue
-      .filter((id) => typeof id === "string" && /^\d{17,20}$/.test(id));
+    const ids = configValue.filter(
+      (id) => typeof id === "string" && /^\d{17,20}$/.test(id),
+    );
     if (ids.length > 0) return ids;
   }
 
@@ -853,25 +884,29 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
 
   // Check if any reply-capable platform (discord-bot, telegram, or slack-bot) is enabled.
   // Supports event-level platform config (not just top-level defaults).
-  const hasDiscordBot = !!getEnabledReplyPlatformConfig<DiscordBotNotificationConfig>(
-    notifConfig,
-    "discord-bot",
-  );
-  const hasTelegram = !!getEnabledReplyPlatformConfig<TelegramNotificationConfig>(
-    notifConfig,
-    "telegram",
-  );
-  const hasSlackBot = !!getEnabledReplyPlatformConfig<SlackBotNotificationConfig>(
-    notifConfig,
-    "slack-bot",
-  );
+  const hasDiscordBot =
+    !!getEnabledReplyPlatformConfig<DiscordBotNotificationConfig>(
+      notifConfig,
+      "discord-bot",
+    );
+  const hasTelegram =
+    !!getEnabledReplyPlatformConfig<TelegramNotificationConfig>(
+      notifConfig,
+      "telegram",
+    );
+  const hasSlackBot =
+    !!getEnabledReplyPlatformConfig<SlackBotNotificationConfig>(
+      notifConfig,
+      "slack-bot",
+    );
   if (!hasDiscordBot && !hasTelegram && !hasSlackBot) return null;
 
   // Read reply-specific config
   const raw = readRawConfig();
   const replyRaw = (raw?.notifications as any)?.reply;
 
-  const enabled = process.env.OMC_REPLY_ENABLED === "true" || replyRaw?.enabled === true;
+  const enabled =
+    process.env.OMC_REPLY_ENABLED === "true" || replyRaw?.enabled === true;
   if (!enabled) return null;
 
   const authorizedDiscordUserIds = parseDiscordUserIds(
@@ -883,7 +918,7 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
   if (hasDiscordBot && authorizedDiscordUserIds.length === 0) {
     console.warn(
       "[notifications] Discord reply listening disabled: authorizedDiscordUserIds is empty. " +
-      "Set OMC_REPLY_DISCORD_USER_IDS or add to .omc-config.json notifications.reply.authorizedDiscordUserIds"
+        "Set OMC_REPLY_DISCORD_USER_IDS or add to .omc-config.json notifications.reply.authorizedDiscordUserIds",
     );
   }
 
@@ -894,10 +929,18 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
 
   return {
     enabled: true,
-    pollIntervalMs: parseIntSafe(process.env.OMC_REPLY_POLL_INTERVAL_MS) ?? replyRaw?.pollIntervalMs ?? 3000,
+    pollIntervalMs:
+      parseIntSafe(process.env.OMC_REPLY_POLL_INTERVAL_MS) ??
+      replyRaw?.pollIntervalMs ??
+      3000,
     maxMessageLength: replyRaw?.maxMessageLength ?? 500,
-    rateLimitPerMinute: parseIntSafe(process.env.OMC_REPLY_RATE_LIMIT) ?? replyRaw?.rateLimitPerMinute ?? 10,
-    includePrefix: process.env.OMC_REPLY_INCLUDE_PREFIX !== "false" && (replyRaw?.includePrefix !== false),
+    rateLimitPerMinute:
+      parseIntSafe(process.env.OMC_REPLY_RATE_LIMIT) ??
+      replyRaw?.rateLimitPerMinute ??
+      10,
+    includePrefix:
+      process.env.OMC_REPLY_INCLUDE_PREFIX !== "false" &&
+      replyRaw?.includePrefix !== false,
     authorizedDiscordUserIds,
     authorizedSlackUserIds,
   };
@@ -907,13 +950,13 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
 // CUSTOM INTEGRATION CONFIG (Added for Notification Refactor)
 // ============================================================================
 
-import type {
-  CustomIntegration,
-  CustomIntegrationsConfig,
-} from "./types.js";
+import type { CustomIntegration, CustomIntegrationsConfig } from "./types.js";
 import { validateCustomIntegration, checkDuplicateIds } from "./validation.js";
 
-const LEGACY_OPENCLAW_CONFIG = join(getClaudeConfigDir(), "omc_config.openclaw.json");
+const LEGACY_OPENCLAW_CONFIG = join(
+  getClaudeConfigDir(),
+  "omc_config.openclaw.json",
+);
 
 /**
  * Detect if legacy OpenClaw configuration exists.
@@ -930,14 +973,14 @@ export function migrateLegacyOpenClawConfig(): CustomIntegration | null {
 
   try {
     const legacy = JSON.parse(readFileSync(LEGACY_OPENCLAW_CONFIG, "utf-8"));
-    
+
     // Get first gateway (legacy format supported multiple, we take the first)
     const gateways = legacy.gateways as Record<string, any> | undefined;
     if (!gateways || Object.keys(gateways).length === 0) return null;
-    
+
     const gateway = Object.values(gateways)[0];
     const gatewayName = Object.keys(gateways)[0];
-    
+
     // Get enabled hooks as events
     const hooks = legacy.hooks as Record<string, any> | undefined;
     const events: string[] = [];
@@ -945,7 +988,7 @@ export function migrateLegacyOpenClawConfig(): CustomIntegration | null {
       for (const [hookName, hookConfig] of Object.entries(hooks)) {
         if ((hookConfig as any)?.enabled) {
           // Normalize hook name to event name
-          const eventName = hookName.replace(/([A-Z])/g, '-$1').toLowerCase();
+          const eventName = hookName.replace(/([A-Z])/g, "-$1").toLowerCase();
           events.push(eventName);
         }
       }
@@ -960,16 +1003,20 @@ export function migrateLegacyOpenClawConfig(): CustomIntegration | null {
         url: gateway.url || "",
         method: (gateway.method as any) || "POST",
         headers: gateway.headers || { "Content-Type": "application/json" },
-        bodyTemplate: JSON.stringify({
-          event: "{{event}}",
-          instruction: "Session {{sessionId}} {{event}}",
-          timestamp: "{{timestamp}}",
-          context: {
-            projectPath: "{{projectPath}}",
-            projectName: "{{projectName}}",
-            sessionId: "{{sessionId}}"
-          }
-        }, null, 2),
+        bodyTemplate: JSON.stringify(
+          {
+            event: "{{event}}",
+            instruction: "Session {{sessionId}} {{event}}",
+            timestamp: "{{timestamp}}",
+            context: {
+              projectPath: "{{projectPath}}",
+              projectName: "{{projectName}}",
+              sessionId: "{{sessionId}}",
+            },
+          },
+          null,
+          2,
+        ),
         timeout: gateway.timeout || 10000,
       },
       events: events as any,
@@ -988,7 +1035,9 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
   const raw = readRawConfig();
   if (!raw) return null;
 
-  const customIntegrations = raw.customIntegrations as CustomIntegrationsConfig | undefined;
+  const customIntegrations = raw.customIntegrations as
+    | CustomIntegrationsConfig
+    | undefined;
   if (!customIntegrations) return null;
 
   // Validate and filter out invalid integrations
@@ -999,7 +1048,7 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
       validIntegrations.push(integration);
     } else {
       console.warn(
-        `[notifications] Invalid custom integration "${integration.id}": ${result.errors.join(", ")}`
+        `[notifications] Invalid custom integration "${integration.id}": ${result.errors.join(", ")}`,
       );
     }
   }
@@ -1008,7 +1057,7 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
   const duplicates = checkDuplicateIds(validIntegrations);
   if (duplicates.length > 0) {
     console.warn(
-      `[notifications] Duplicate custom integration IDs found: ${duplicates.join(", ")}`
+      `[notifications] Duplicate custom integration IDs found: ${duplicates.join(", ")}`,
     );
   }
 
@@ -1022,13 +1071,13 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
  * Get all custom integrations enabled for a specific event.
  */
 export function getCustomIntegrationsForEvent(
-  event: string
+  event: string,
 ): CustomIntegration[] {
   const config = getCustomIntegrationsConfig();
   if (!config?.enabled) return [];
 
   return config.integrations.filter(
-    (i) => i.enabled && i.events.includes(event as any)
+    (i) => i.enabled && i.events.includes(event as any),
   );
 }
 
@@ -1040,6 +1089,6 @@ export function hasCustomIntegrationsEnabled(event?: string): boolean {
   if (!config?.enabled) return false;
   if (!event) return config.integrations.some((i) => i.enabled);
   return config.integrations.some(
-    (i) => i.enabled && i.events.includes(event as any)
+    (i) => i.enabled && i.events.includes(event as any),
   );
 }

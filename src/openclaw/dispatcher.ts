@@ -27,7 +27,9 @@ function validateGatewayUrl(url: string): boolean {
     if (parsed.protocol === "https:") return true;
     if (
       parsed.protocol === "http:" &&
-      (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1" || parsed.hostname === "::1")
+      (parsed.hostname === "localhost" ||
+        parsed.hostname === "127.0.0.1" ||
+        parsed.hostname === "::1")
     ) {
       return true;
     }
@@ -163,16 +165,24 @@ export async function wakeCommandGateway(
 
     const timeout = gatewayConfig.timeout ?? DEFAULT_TIMEOUT_MS;
 
-    const payloadJson = payload ? JSON.stringify(payload) : variables.payloadJson;
+    const payloadJson = payload
+      ? JSON.stringify(payload)
+      : variables.payloadJson;
 
     await execFileAsync("sh", ["-c", command], {
       timeout,
       env: {
         ...process.env,
         ...(payloadJson ? { OPENCLAW_PAYLOAD_JSON: payloadJson } : {}),
-        ...(variables.signalRouteKey ? { OPENCLAW_SIGNAL_ROUTE_KEY: variables.signalRouteKey } : {}),
-        ...(variables.signalPhase ? { OPENCLAW_SIGNAL_PHASE: variables.signalPhase } : {}),
-        ...(variables.signalKind ? { OPENCLAW_SIGNAL_KIND: variables.signalKind } : {}),
+        ...(variables.signalRouteKey
+          ? { OPENCLAW_SIGNAL_ROUTE_KEY: variables.signalRouteKey }
+          : {}),
+        ...(variables.signalPhase
+          ? { OPENCLAW_SIGNAL_PHASE: variables.signalPhase }
+          : {}),
+        ...(variables.signalKind
+          ? { OPENCLAW_SIGNAL_KIND: variables.signalKind }
+          : {}),
       },
     });
 

@@ -23,7 +23,10 @@ export function stripOptionalQuotes(value: string): string {
  * Parse YAML-like frontmatter from markdown content.
  * Returns { metadata, body } where metadata is a flat string map.
  */
-export function parseFrontmatter(content: string): { metadata: Record<string, string>; body: string } {
+export function parseFrontmatter(content: string): {
+  metadata: Record<string, string>;
+  body: string;
+} {
   const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = content.match(frontmatterRegex);
 
@@ -34,8 +37,8 @@ export function parseFrontmatter(content: string): { metadata: Record<string, st
   const [, yamlContent, body] = match;
   const metadata: Record<string, string> = {};
 
-  for (const line of yamlContent.split('\n')) {
-    const colonIndex = line.indexOf(':');
+  for (const line of yamlContent.split("\n")) {
+    const colonIndex = line.indexOf(":");
     if (colonIndex === -1) continue;
 
     const key = line.slice(0, colonIndex).trim();
@@ -51,7 +54,9 @@ export function parseFrontmatter(content: string): { metadata: Record<string, st
  * Parse the `aliases` frontmatter field into an array of strings.
  * Supports inline YAML list: `aliases: [foo, bar]` or single value.
  */
-export function parseFrontmatterAliases(rawAliases: string | undefined): string[] {
+export function parseFrontmatterAliases(
+  rawAliases: string | undefined,
+): string[] {
   return parseFrontmatterList(rawAliases);
 }
 
@@ -65,12 +70,12 @@ export function parseFrontmatterList(rawValue: string | undefined): string[] {
   const trimmed = rawValue.trim();
   if (!trimmed) return [];
 
-  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
     const inner = trimmed.slice(1, -1).trim();
     if (!inner) return [];
 
     return inner
-      .split(',')
+      .split(",")
       .map((item) => stripOptionalQuotes(item))
       .filter((item) => item.length > 0);
   }

@@ -3,9 +3,9 @@
  * Provides unified process management across Windows, macOS, and Linux.
  */
 
-import { execFileSync, execFile } from 'child_process';
-import { promisify } from 'util';
-import * as fsPromises from 'fs/promises';
+import { execFileSync, execFile } from "child_process";
+import { promisify } from "util";
+import * as fsPromises from "fs/promises";
 
 const execFileAsync = promisify(execFile);
 
@@ -17,27 +17,30 @@ const execFileAsync = promisify(execFile);
  */
 export async function killProcessTree(
   pid: number,
-  signal: NodeJS.Signals = 'SIGTERM'
+  signal: NodeJS.Signals = "SIGTERM",
 ): Promise<boolean> {
   if (!Number.isInteger(pid) || pid <= 0) return false;
 
-  if (process.platform === 'win32') {
-    return killProcessTreeWindows(pid, signal === 'SIGKILL');
+  if (process.platform === "win32") {
+    return killProcessTreeWindows(pid, signal === "SIGKILL");
   } else {
     return killProcessTreeUnix(pid, signal);
   }
 }
 
-async function killProcessTreeWindows(pid: number, force: boolean): Promise<boolean> {
+async function killProcessTreeWindows(
+  pid: number,
+  force: boolean,
+): Promise<boolean> {
   try {
-    const args = ['/T', '/PID', String(pid)];
+    const args = ["/T", "/PID", String(pid)];
     if (force) {
-      args.unshift('/F');
+      args.unshift("/F");
     }
-    execFileSync('taskkill.exe', args, {
-      stdio: 'ignore',
+    execFileSync("taskkill.exe", args, {
+      stdio: "ignore",
       timeout: 5000,
-      windowsHide: true
+      windowsHide: true,
     });
     return true;
   } catch (err: unknown) {
@@ -73,7 +76,12 @@ export function isProcessAlive(pid: number): boolean {
     process.kill(pid, 0);
     return true;
   } catch (e: unknown) {
-    if (e && typeof e === 'object' && 'code' in e && (e as NodeJS.ErrnoException).code === 'EPERM') {
+    if (
+      e &&
+      typeof e === "object" &&
+      "code" in e &&
+      (e as NodeJS.ErrnoException).code === "EPERM"
+    ) {
       return true;
     }
     return false;
@@ -84,25 +92,37 @@ export function isProcessAlive(pid: number): boolean {
  * Get process start time for PID reuse detection.
  * Returns milliseconds timestamp on macOS/Windows, jiffies on Linux.
  */
-export async function getProcessStartTime(pid: number): Promise<number | undefined> {
+export async function getProcessStartTime(
+  pid: number,
+): Promise<number | undefined> {
   if (!Number.isInteger(pid) || pid <= 0) return undefined;
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return getProcessStartTimeWindows(pid);
-  } else if (process.platform === 'darwin') {
+  } else if (process.platform === "darwin") {
     return getProcessStartTimeMacOS(pid);
-  } else if (process.platform === 'linux') {
+  } else if (process.platform === "linux") {
     return getProcessStartTimeLinux(pid);
   }
   return undefined;
 }
 
-async function getProcessStartTimeWindows(pid: number): Promise<number | undefined> {
+async function getProcessStartTimeWindows(
+  pid: number,
+): Promise<number | undefined> {
   try {
-    const { stdout } = await execFileAsync('wmic', [
-      'process', 'where', `ProcessId=${pid}`,
-      'get', 'CreationDate', '/format:csv'
-    ], { timeout: 5000, windowsHide: true });
+    const { stdout } = await execFileAsync(
+      "wmic",
+      [
+        "process",
+        "where",
+        `ProcessId=${pid}`,
+        "get",
+        "CreationDate",
+        "/format:csv",
+      ],
+      { timeout: 5000, windowsHide: true },
+    );
 
     const wmicTime = parseWmicCreationDate(stdout);
     if (wmicTime !== undefined) return wmicTime;
@@ -117,10 +137,13 @@ async function getProcessStartTimeWindows(pid: number): Promise<number | undefin
 }
 
 function parseWmicCreationDate(stdout: string): number | undefined {
-  const lines = stdout.trim().split(/\r?\n/).filter(l => l.trim());
+  const lines = stdout
+    .trim()
+    .split(/\r?\n/)
+    .filter((l) => l.trim());
   if (lines.length < 2) return undefined;
 
-  const candidate = lines.find(line => /,\d{14}/.test(line)) ?? lines[1];
+  const candidate = lines.find((line) => /,\d{14}/.test(line)) ?? lines[1];
   const match = candidate.match(/,(\d{14})/);
   if (!match) return undefined;
 
@@ -131,7 +154,7 @@ function parseWmicCreationDate(stdout: string): number | undefined {
     parseInt(d.slice(6, 8), 10),
     parseInt(d.slice(8, 10), 10),
     parseInt(d.slice(10, 12), 10),
-    parseInt(d.slice(12, 14), 10)
+    parseInt(d.slice(12, 14), 10),
   );
 
   const value = date.getTime();
@@ -145,17 +168,19 @@ function parseWindowsEpochMilliseconds(stdout: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-async function getProcessStartTimeWindowsPowerShellCim(pid: number): Promise<number | undefined> {
+async function getProcessStartTimeWindowsPowerShellCim(
+  pid: number,
+): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
-      'powershell',
+      "powershell",
       [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        `$p = Get-CimInstance Win32_Process -Filter "ProcessId = ${pid}" -ErrorAction Stop; if ($p -and $p.CreationDate) { [DateTimeOffset]$p.CreationDate | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `$p = Get-CimInstance Win32_Process -Filter "ProcessId = ${pid}" -ErrorAction Stop; if ($p -and $p.CreationDate) { [DateTimeOffset]$p.CreationDate | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`,
       ],
-      { timeout: 5000, windowsHide: true }
+      { timeout: 5000, windowsHide: true },
     );
     return parseWindowsEpochMilliseconds(stdout);
   } catch {
@@ -163,17 +188,19 @@ async function getProcessStartTimeWindowsPowerShellCim(pid: number): Promise<num
   }
 }
 
-async function getProcessStartTimeWindowsPowerShellProcess(pid: number): Promise<number | undefined> {
+async function getProcessStartTimeWindowsPowerShellProcess(
+  pid: number,
+): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
-      'powershell',
+      "powershell",
       [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if ($p -and $p.StartTime) { [DateTimeOffset]$p.StartTime | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`
+        "-NoProfile",
+        "-NonInteractive",
+        "-Command",
+        `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if ($p -and $p.StartTime) { [DateTimeOffset]$p.StartTime | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`,
       ],
-      { timeout: 5000, windowsHide: true }
+      { timeout: 5000, windowsHide: true },
     );
     return parseWindowsEpochMilliseconds(stdout);
   } catch {
@@ -181,12 +208,18 @@ async function getProcessStartTimeWindowsPowerShellProcess(pid: number): Promise
   }
 }
 
-async function getProcessStartTimeMacOS(pid: number): Promise<number | undefined> {
+async function getProcessStartTimeMacOS(
+  pid: number,
+): Promise<number | undefined> {
   try {
-    const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'lstart='], {
-      env: { ...process.env, LC_ALL: 'C' },
-      windowsHide: true
-    });
+    const { stdout } = await execFileAsync(
+      "ps",
+      ["-p", String(pid), "-o", "lstart="],
+      {
+        env: { ...process.env, LC_ALL: "C" },
+        windowsHide: true,
+      },
+    );
     const date = new Date(stdout.trim());
     return isNaN(date.getTime()) ? undefined : date.getTime();
   } catch {
@@ -194,13 +227,15 @@ async function getProcessStartTimeMacOS(pid: number): Promise<number | undefined
   }
 }
 
-async function getProcessStartTimeLinux(pid: number): Promise<number | undefined> {
+async function getProcessStartTimeLinux(
+  pid: number,
+): Promise<number | undefined> {
   try {
-    const stat = await fsPromises.readFile(`/proc/${pid}/stat`, 'utf8');
-    const closeParen = stat.lastIndexOf(')');
+    const stat = await fsPromises.readFile(`/proc/${pid}/stat`, "utf8");
+    const closeParen = stat.lastIndexOf(")");
     if (closeParen === -1) return undefined;
 
-    const fields = stat.substring(closeParen + 2).split(' ');
+    const fields = stat.substring(closeParen + 2).split(" ");
     const startTime = parseInt(fields[19], 10);
     return isNaN(startTime) ? undefined : startTime;
   } catch {
@@ -213,20 +248,20 @@ async function getProcessStartTimeLinux(pid: number): Promise<number | undefined
  */
 export async function gracefulKill(
   pid: number,
-  gracePeriodMs: number = 5000
-): Promise<'graceful' | 'forced' | 'failed'> {
-  if (!isProcessAlive(pid)) return 'graceful';
+  gracePeriodMs: number = 5000,
+): Promise<"graceful" | "forced" | "failed"> {
+  if (!isProcessAlive(pid)) return "graceful";
 
-  await killProcessTree(pid, 'SIGTERM');
+  await killProcessTree(pid, "SIGTERM");
 
   const deadline = Date.now() + gracePeriodMs;
   while (Date.now() < deadline) {
-    if (!isProcessAlive(pid)) return 'graceful';
-    await new Promise(r => setTimeout(r, 100));
+    if (!isProcessAlive(pid)) return "graceful";
+    await new Promise((r) => setTimeout(r, 100));
   }
 
-  await killProcessTree(pid, 'SIGKILL');
+  await killProcessTree(pid, "SIGKILL");
 
-  await new Promise(r => setTimeout(r, 1000));
-  return isProcessAlive(pid) ? 'failed' : 'forced';
+  await new Promise((r) => setTimeout(r, 1000));
+  return isProcessAlive(pid) ? "failed" : "forced";
 }

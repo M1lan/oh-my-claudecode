@@ -9,10 +9,16 @@
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
 import { getClaudeConfigDir } from "../utils/config-dir.js";
-import type { OpenClawConfig, OpenClawHookEvent, OpenClawGatewayConfig, OpenClawCommandGatewayConfig } from "./types.js";
+import type {
+  OpenClawConfig,
+  OpenClawHookEvent,
+  OpenClawGatewayConfig,
+  OpenClawCommandGatewayConfig,
+} from "./types.js";
 
-const CONFIG_FILE = process.env.OMC_OPENCLAW_CONFIG
-  || join(getClaudeConfigDir(), "omc_config.openclaw.json");
+const CONFIG_FILE =
+  process.env.OMC_OPENCLAW_CONFIG ||
+  join(getClaudeConfigDir(), "omc_config.openclaw.json");
 
 /** Cached config (null = not yet read, undefined = read but file missing/invalid) */
 let _cachedConfig: OpenClawConfig | undefined | null = null;
@@ -43,7 +49,9 @@ export function getOpenClawConfig(): OpenClawConfig | null {
   }
 
   try {
-    const raw = JSON.parse(readFileSync(CONFIG_FILE, "utf-8")) as OpenClawConfig;
+    const raw = JSON.parse(
+      readFileSync(CONFIG_FILE, "utf-8"),
+    ) as OpenClawConfig;
     if (!raw.enabled || !raw.gateways || !raw.hooks) {
       _cachedConfig = undefined;
       return null;
@@ -64,7 +72,11 @@ export function getOpenClawConfig(): OpenClawConfig | null {
 export function resolveGateway(
   config: OpenClawConfig,
   event: OpenClawHookEvent,
-): { gatewayName: string; gateway: OpenClawGatewayConfig; instruction: string } | null {
+): {
+  gatewayName: string;
+  gateway: OpenClawGatewayConfig;
+  instruction: string;
+} | null {
   const mapping = config.hooks[event];
   if (!mapping || !mapping.enabled) {
     return null;
@@ -82,7 +94,11 @@ export function resolveGateway(
     if (!("url" in gateway) || !gateway.url) return null;
   }
 
-  return { gatewayName: mapping.gateway, gateway, instruction: mapping.instruction };
+  return {
+    gatewayName: mapping.gateway,
+    gateway,
+    instruction: mapping.instruction,
+  };
 }
 
 /**

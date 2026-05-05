@@ -12,16 +12,40 @@ import { basename } from "path";
 /** Set of known template variables for validation */
 const KNOWN_VARIABLES = new Set<string>([
   // Raw payload fields
-  "event", "sessionId", "message", "timestamp", "tmuxSession",
-  "projectPath", "projectName", "modesUsed", "contextSummary",
-  "durationMs", "agentsSpawned", "agentsCompleted",
-  "reason", "activeMode", "iteration", "maxIterations",
-  "question", "incompleteTasks", "agentName", "agentType",
-  "tmuxTail", "tmuxPaneId",
-  "replyChannel", "replyTarget", "replyThread",
+  "event",
+  "sessionId",
+  "message",
+  "timestamp",
+  "tmuxSession",
+  "projectPath",
+  "projectName",
+  "modesUsed",
+  "contextSummary",
+  "durationMs",
+  "agentsSpawned",
+  "agentsCompleted",
+  "reason",
+  "activeMode",
+  "iteration",
+  "maxIterations",
+  "question",
+  "incompleteTasks",
+  "agentName",
+  "agentType",
+  "tmuxTail",
+  "tmuxPaneId",
+  "replyChannel",
+  "replyTarget",
+  "replyThread",
   // Computed variables
-  "duration", "time", "modesDisplay", "iterationDisplay",
-  "agentDisplay", "projectDisplay", "footer", "tmuxTailBlock",
+  "duration",
+  "time",
+  "modesDisplay",
+  "iterationDisplay",
+  "agentDisplay",
+  "projectDisplay",
+  "footer",
+  "tmuxTailBlock",
   "reasonDisplay",
 ]);
 
@@ -106,17 +130,14 @@ export function computeTemplateVariables(
     payload.agentsCompleted != null ? String(payload.agentsCompleted) : "";
   vars.reason = payload.reason || "";
   vars.activeMode = payload.activeMode || "";
-  vars.iteration =
-    payload.iteration != null ? String(payload.iteration) : "";
+  vars.iteration = payload.iteration != null ? String(payload.iteration) : "";
   vars.maxIterations =
     payload.maxIterations != null ? String(payload.maxIterations) : "";
   vars.question = payload.question || "";
   // incompleteTasks: undefined/null → "" (so {{#if}} is falsy when unset)
   // 0 → "0" (distinguishable from unset; templates can display "0 incomplete tasks")
   vars.incompleteTasks =
-    payload.incompleteTasks != null
-      ? String(payload.incompleteTasks)
-      : "";
+    payload.incompleteTasks != null ? String(payload.incompleteTasks) : "";
   vars.agentName = payload.agentName || "";
   vars.agentType = payload.agentType || "";
   vars.tmuxTail = payload.tmuxTail || "";
@@ -214,9 +235,10 @@ export function interpolateTemplate(
  * Validate a template string for unknown variables.
  * Returns { valid, unknownVars }.
  */
-export function validateTemplate(
-  template: string,
-): { valid: boolean; unknownVars: string[] } {
+export function validateTemplate(template: string): {
+  valid: boolean;
+  unknownVars: string[];
+} {
   const unknownVars: string[] = [];
 
   // Check {{#if var}} conditionals

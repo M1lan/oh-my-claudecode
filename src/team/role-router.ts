@@ -8,19 +8,19 @@
  */
 
 export type LaneIntent =
-  | 'implementation'
-  | 'verification'
-  | 'review'
-  | 'debug'
-  | 'design'
-  | 'docs'
-  | 'build-fix'
-  | 'cleanup'
-  | 'unknown';
+  | "implementation"
+  | "verification"
+  | "review"
+  | "debug"
+  | "design"
+  | "docs"
+  | "build-fix"
+  | "cleanup"
+  | "unknown";
 
 export interface RoleRouterResult {
   role: string;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
   reason: string;
 }
 
@@ -31,7 +31,7 @@ export interface RoleRouterResult {
 /** Patterns that signal a specific lane intent */
 const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
   {
-    intent: 'build-fix',
+    intent: "build-fix",
     patterns: [
       /\bfix(?:ing)?\s+(?:the\s+)?(?:build|ci|lint|compile|tsc|type.?check)/i,
       /\bfailing\s+build\b/i,
@@ -42,7 +42,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'debug',
+    intent: "debug",
     patterns: [
       /\bdebug(?:ging)?\b/i,
       /\btroubleshoot(?:ing)?\b/i,
@@ -54,7 +54,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'docs',
+    intent: "docs",
     patterns: [
       /\bdocument(?:ation|ing|ation)?\b/i,
       /\bwrite\s+(?:docs|readme|changelog|comments|jsdoc|tsdoc)/i,
@@ -65,7 +65,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'design',
+    intent: "design",
     patterns: [
       /\bdesign\b/i,
       /\barchitect(?:ure|ing)?\b/i,
@@ -79,7 +79,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'cleanup',
+    intent: "cleanup",
     patterns: [
       /\bclean\s*up\b/i,
       /\brefactor(?:ing)?\b/i,
@@ -91,7 +91,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'review',
+    intent: "review",
     patterns: [
       /\breview\b/i,
       /\baudit\b/i,
@@ -101,7 +101,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'verification',
+    intent: "verification",
     patterns: [
       /\btest(?:ing|s)?\b/i,
       /\bverif(?:y|ication)\b/i,
@@ -115,7 +115,7 @@ const INTENT_PATTERNS: Array<{ intent: LaneIntent; patterns: RegExp[] }> = [
     ],
   },
   {
-    intent: 'implementation',
+    intent: "implementation",
     patterns: [
       /\bimplement(?:ing|ation)?\b/i,
       /\badd\s+(?:the\s+)?(?:feature|function|method|class|endpoint|route)\b/i,
@@ -132,15 +132,56 @@ const SECURITY_DOMAIN_RE =
 
 /** Role-to-keyword mapping for keyword-count scoring fallback */
 export const ROLE_KEYWORDS: Record<string, RegExp[]> = {
-  'build-fixer': [/\bbuild\b/i, /\bci\b/i, /\bcompile\b/i, /\btsc\b/i, /\blint\b/i],
-  debugger: [/\bdebug\b/i, /\btroubleshoot\b/i, /\binvestigate\b/i, /\bdiagnos/i],
+  "build-fixer": [
+    /\bbuild\b/i,
+    /\bci\b/i,
+    /\bcompile\b/i,
+    /\btsc\b/i,
+    /\blint\b/i,
+  ],
+  debugger: [
+    /\bdebug\b/i,
+    /\btroubleshoot\b/i,
+    /\binvestigate\b/i,
+    /\bdiagnos/i,
+  ],
   writer: [/\bdoc(?:ument)?/i, /\breadme\b/i, /\bchangelog\b/i, /\bcomment/i],
-  designer: [/\bdesign\b/i, /\barchitect/i, /\bui\b/i, /\bux\b/i, /\bwireframe\b/i],
-  'code-simplifier': [/\brefactor/i, /\bclean/i, /\bsimplif/i, /\bdebt\b/i, /\bunused\b/i],
-  'security-reviewer': [/\bsecurity\b/i, /\bvulnerabilit/i, /\bcve\b/i, /\bowasp\b/i, /\bxss\b/i],
-  'quality-reviewer': [/\breview\b/i, /\baudit\b/i, /\bcheck\b/i],
-  'test-engineer': [/\btest/i, /\bverif/i, /\bvalidat/i, /\bspec\b/i, /\bcoverage\b/i],
-  executor: [/\bimplement/i, /\bbuild\b/i, /\bcreate\b/i, /\badd\b/i, /\bwrite\b/i],
+  designer: [
+    /\bdesign\b/i,
+    /\barchitect/i,
+    /\bui\b/i,
+    /\bux\b/i,
+    /\bwireframe\b/i,
+  ],
+  "code-simplifier": [
+    /\brefactor/i,
+    /\bclean/i,
+    /\bsimplif/i,
+    /\bdebt\b/i,
+    /\bunused\b/i,
+  ],
+  "security-reviewer": [
+    /\bsecurity\b/i,
+    /\bvulnerabilit/i,
+    /\bcve\b/i,
+    /\bowasp\b/i,
+    /\bxss\b/i,
+  ],
+  "quality-reviewer": [/\breview\b/i, /\baudit\b/i, /\bcheck\b/i],
+  "test-engineer": [
+    /\btest/i,
+    /\bverif/i,
+    /\bvalidat/i,
+    /\bspec\b/i,
+    /\bcoverage\b/i,
+  ],
+  executor: [
+    /\bimplement/i,
+    /\bbuild\b/i,
+    /\bcreate\b/i,
+    /\badd\b/i,
+    /\bwrite\b/i,
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -152,7 +193,7 @@ export const ROLE_KEYWORDS: Record<string, RegExp[]> = {
  * Returns 'unknown' when no clear signal is found.
  */
 export function inferLaneIntent(text: string): LaneIntent {
-  if (!text || text.trim().length === 0) return 'unknown';
+  if (!text || text.trim().length === 0) return "unknown";
 
   for (const { intent, patterns } of INTENT_PATTERNS) {
     for (const pattern of patterns) {
@@ -162,7 +203,7 @@ export function inferLaneIntent(text: string): LaneIntent {
     }
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -183,62 +224,94 @@ export function inferLaneIntent(text: string): LaneIntent {
 export function routeTaskToRole(
   taskSubject: string,
   taskDescription: string,
-  fallbackRole: string
+  fallbackRole: string,
 ): RoleRouterResult {
   const combined = `${taskSubject} ${taskDescription}`.trim();
   const intent = inferLaneIntent(combined);
   const isSecurityDomain = SECURITY_DOMAIN_RE.test(combined);
 
   switch (intent) {
-    case 'build-fix':
-      return { role: 'build-fixer', confidence: 'high', reason: 'build-fix intent detected' };
+    case "build-fix":
+      return {
+        role: "build-fixer",
+        confidence: "high",
+        reason: "build-fix intent detected",
+      };
 
-    case 'debug':
-      return { role: 'debugger', confidence: 'high', reason: 'debug intent detected' };
+    case "debug":
+      return {
+        role: "debugger",
+        confidence: "high",
+        reason: "debug intent detected",
+      };
 
-    case 'docs':
-      return { role: 'writer', confidence: 'high', reason: 'docs intent detected' };
+    case "docs":
+      return {
+        role: "writer",
+        confidence: "high",
+        reason: "docs intent detected",
+      };
 
-    case 'design':
-      return { role: 'designer', confidence: 'high', reason: 'design intent detected' };
+    case "design":
+      return {
+        role: "designer",
+        confidence: "high",
+        reason: "design intent detected",
+      };
 
-    case 'cleanup':
-      return { role: 'code-simplifier', confidence: 'high', reason: 'cleanup intent detected' };
+    case "cleanup":
+      return {
+        role: "code-simplifier",
+        confidence: "high",
+        reason: "cleanup intent detected",
+      };
 
-    case 'review':
+    case "review":
       if (isSecurityDomain) {
-        return { role: 'security-reviewer', confidence: 'high', reason: 'review intent with security domain detected' };
+        return {
+          role: "security-reviewer",
+          confidence: "high",
+          reason: "review intent with security domain detected",
+        };
       }
-      return { role: 'quality-reviewer', confidence: 'high', reason: 'review intent detected' };
+      return {
+        role: "quality-reviewer",
+        confidence: "high",
+        reason: "review intent detected",
+      };
 
-    case 'verification':
-      return { role: 'test-engineer', confidence: 'high', reason: 'verification intent detected' };
+    case "verification":
+      return {
+        role: "test-engineer",
+        confidence: "high",
+        reason: "verification intent detected",
+      };
 
-    case 'implementation':
+    case "implementation":
       // Security implementation stays on fallback role — not routed to security-reviewer
       return {
         role: fallbackRole,
-        confidence: 'medium',
+        confidence: "medium",
         reason: isSecurityDomain
-          ? 'implementation intent with security domain — stays on fallback role'
-          : 'implementation intent — using fallback role',
+          ? "implementation intent with security domain — stays on fallback role"
+          : "implementation intent — using fallback role",
       };
 
-    case 'unknown':
+    case "unknown":
     default: {
       // Keyword-count scoring fallback
       const best = scoreByKeywords(combined);
       if (best) {
         return {
           role: best.role,
-          confidence: 'medium',
+          confidence: "medium",
           reason: `keyword match (${best.count} hits) for role '${best.role}'`,
         };
       }
       return {
         role: fallbackRole,
-        confidence: 'low',
-        reason: 'no clear intent signal — using fallback role',
+        confidence: "low",
+        reason: "no clear intent signal — using fallback role",
       };
     }
   }
@@ -253,12 +326,14 @@ function scoreByKeywords(text: string): { role: string; count: number } | null {
   let bestCount = 0;
 
   for (const [role, patterns] of Object.entries(ROLE_KEYWORDS)) {
-    const count = patterns.filter(p => p.test(text)).length;
+    const count = patterns.filter((p) => p.test(text)).length;
     if (count > bestCount) {
       bestCount = count;
       bestRole = role;
     }
   }
 
-  return bestRole && bestCount > 0 ? { role: bestRole, count: bestCount } : null;
+  return bestRole && bestCount > 0
+    ? { role: bestRole, count: bestCount }
+    : null;
 }

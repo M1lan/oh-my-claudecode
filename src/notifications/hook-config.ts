@@ -102,7 +102,9 @@ export function mergeHookConfigIntoNotificationConfig(
   const merged = { ...notifConfig };
   const events = { ...(merged.events || {}) };
 
-  for (const [eventName, hookEventConfig] of Object.entries(hookConfig.events)) {
+  for (const [eventName, hookEventConfig] of Object.entries(
+    hookConfig.events,
+  )) {
     if (!hookEventConfig) continue;
     const event = eventName as NotificationEvent;
     const existing = events[event as keyof typeof events];

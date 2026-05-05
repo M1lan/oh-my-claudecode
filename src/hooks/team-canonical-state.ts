@@ -1,7 +1,7 @@
-import { existsSync, readFileSync, readdirSync } from 'fs';
-import { join } from 'path';
-import { getOmcRoot } from '../lib/worktree-paths.js';
-import type { TeamPipelinePhase } from './team-pipeline/types.js';
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { getOmcRoot } from "../lib/worktree-paths.js";
+import type { TeamPipelinePhase } from "./team-pipeline/types.js";
 
 export interface CanonicalTeamStateCandidate {
   teamName: string;
@@ -16,35 +16,35 @@ export interface CanonicalTeamStateCandidate {
 }
 
 function safeString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : '';
+  return typeof value === "string" ? value.trim() : "";
 }
 
 function readJson<T>(path: string): T | null {
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, 'utf-8')) as T;
+    return JSON.parse(readFileSync(path, "utf-8")) as T;
   } catch {
     return null;
   }
 }
 
 function isTerminalCanonicalPhase(phase: string): boolean {
-  return phase === 'completed' || phase === 'failed';
+  return phase === "completed" || phase === "failed";
 }
 
 function mapCanonicalPhaseToStage(phase: string): TeamPipelinePhase | null {
   switch (phase) {
-    case 'initializing':
-    case 'planning':
-      return 'team-plan';
-    case 'executing':
-      return 'team-exec';
-    case 'fixing':
-      return 'team-fix';
-    case 'completed':
-      return 'complete';
-    case 'failed':
-      return 'failed';
+    case "initializing":
+    case "planning":
+      return "team-plan";
+    case "executing":
+      return "team-exec";
+    case "fixing":
+      return "team-fix";
+    case "completed":
+      return "complete";
+    case "failed":
+      return "failed";
     default:
       return null;
   }
@@ -64,7 +64,7 @@ function buildCandidate(
     teamName,
     sessionId,
     stage,
-    active: stage !== 'complete' && stage !== 'failed',
+    active: stage !== "complete" && stage !== "failed",
     startedAt: startedAt || updatedAt || new Date().toISOString(),
     updatedAt: updatedAt || startedAt || new Date().toISOString(),
     task,
@@ -87,7 +87,7 @@ export function readCanonicalTeamStateCandidate(
   const currentSessionId = safeString(sessionId);
   if (!currentSessionId) return null;
 
-  const teamRoot = join(getOmcRoot(directory), 'state', 'team');
+  const teamRoot = join(getOmcRoot(directory), "state", "team");
   if (!existsSync(teamRoot)) return null;
 
   const entries = readdirSync(teamRoot, { withFileTypes: true })
@@ -106,11 +106,11 @@ export function readCanonicalTeamStateCandidate(
       leader_cwd?: unknown;
       team_state_root?: unknown;
       created_at?: unknown;
-    }>(join(teamDir, 'manifest.json'));
+    }>(join(teamDir, "manifest.json"));
     const phaseState = readJson<{
       current_phase?: unknown;
       updated_at?: unknown;
-    }>(join(teamDir, 'phase-state.json'));
+    }>(join(teamDir, "phase-state.json"));
     if (!manifest || !phaseState) continue;
 
     const ownerSessionId = safeString(manifest.leader?.session_id);
@@ -138,6 +138,8 @@ export function readCanonicalTeamStateCandidate(
   return null;
 }
 
-export function canonicalTeamStateIsTerminal(candidate: CanonicalTeamStateCandidate | null): boolean {
+export function canonicalTeamStateIsTerminal(
+  candidate: CanonicalTeamStateCandidate | null,
+): boolean {
   return !candidate ? false : isTerminalCanonicalPhase(candidate.stage);
 }

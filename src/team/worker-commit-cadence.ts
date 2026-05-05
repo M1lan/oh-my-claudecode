@@ -11,10 +11,10 @@
 // Both mechanisms respect a sentinel file (.hook-paused in the worktree root) that
 // suppresses commits during rebase conflict resolution.
 
-import { existsSync, watch as fsWatch } from 'fs';
-import { readFile, writeFile, mkdir, unlink } from 'fs/promises';
-import { join, dirname } from 'path';
-import { exec } from 'child_process';
+import { existsSync, watch as fsWatch } from "fs";
+import { readFile, writeFile, mkdir, unlink } from "fs/promises";
+import { join, dirname } from "path";
+import { exec } from "child_process";
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -24,21 +24,21 @@ export interface WorkerCadenceContext {
   teamName: string;
   workerName: string;
   worktreePath: string;
-  agentType: 'claude' | 'codex' | 'gemini' | 'cursor';
+  agentType: "claude" | "codex" | "gemini" | "cursor";
   enabled: boolean;
 }
 
-export type CadenceMethod = 'hook' | 'fallback-poll' | 'none';
+export type CadenceMethod = "hook" | "fallback-poll" | "none";
 
 // ---------------------------------------------------------------------------
 // Internal constants
 // ---------------------------------------------------------------------------
 
 /** Sentinel file placed in worktree root to pause auto-commits during rebase. */
-const SENTINEL_FILENAME = '.hook-paused';
+const SENTINEL_FILENAME = ".hook-paused";
 
 /** PostToolUse hook matcher pattern. */
-const HOOK_MATCHER = 'Write|Edit|MultiEdit';
+const HOOK_MATCHER = "Write|Edit|MultiEdit";
 
 /** Default debounce interval for the fallback poller (ms). */
 const DEFAULT_POLL_DEBOUNCE_MS = 3000;
@@ -91,7 +91,7 @@ function buildHookCommand(workerName: string): string {
 // ---------------------------------------------------------------------------
 
 interface ClaudeHookEntry {
-  type: 'command';
+  type: "command";
   command: string;
 }
 
@@ -119,7 +119,7 @@ async function mergeSettingsWithHook(
 ): Promise<ClaudeSettings> {
   let existing: ClaudeSettings = { hooks: { PostToolUse: [] } };
   try {
-    const raw = await readFile(settingsPath, 'utf-8');
+    const raw = await readFile(settingsPath, "utf-8");
     const parsed = JSON.parse(raw) as Partial<ClaudeSettings>;
     existing = {
       ...parsed,
@@ -139,7 +139,7 @@ async function mergeSettingsWithHook(
 
   const newEntry: ClaudePostToolUseHook = {
     matcher: HOOK_MATCHER,
-    hooks: [{ type: 'command', command: hookCommand }],
+    hooks: [{ type: "command", command: hookCommand }],
   };
 
   return {
@@ -173,14 +173,18 @@ export async function installPostToolUseHook(
     return;
   }
 
-  const claudeDir = join(worktreePath, '.claude');
+  const claudeDir = join(worktreePath, ".claude");
   await mkdir(claudeDir, { recursive: true });
 
-  const settingsPath = join(claudeDir, 'settings.json');
+  const settingsPath = join(claudeDir, "settings.json");
   const hookCommand = buildHookCommand(workerName);
   const merged = await mergeSettingsWithHook(settingsPath, hookCommand);
 
-  await writeFile(settingsPath, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+  await writeFile(
+    settingsPath,
+    JSON.stringify(merged, null, 2) + "\n",
+    "utf-8",
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -191,18 +195,22 @@ export async function installPostToolUseHook(
  * Touches `{worktreePath}/.hook-paused` to suppress auto-commits.
  * Idempotent — no error if already paused.
  */
-export async function pauseHookViaSentinel(worktreePath: string): Promise<void> {
+export async function pauseHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   // Ensure parent dir exists (should always be the worktree root, but be safe).
   await mkdir(dirname(sentinelPath), { recursive: true });
-  await writeFile(sentinelPath, '', 'utf-8');
+  await writeFile(sentinelPath, "", "utf-8");
 }
 
 /**
  * Removes `{worktreePath}/.hook-paused` to re-enable auto-commits.
  * Idempotent — no error if already absent.
  */
-export async function resumeHookViaSentinel(worktreePath: string): Promise<void> {
+export async function resumeHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   try {
     await unlink(sentinelPath);
@@ -272,12 +280,20 @@ export function startFallbackPoller(
 
   // Watch the worktree root recursively (node:fs.watch with recursive flag).
   // On macOS/Linux this uses FSEvents/inotify.
-  const watcher = fsWatch(worktreePath, { recursive: true }, (eventType, filename) => {
-    if (stopped) return;
-    // Ignore .git internal changes to avoid feedback loops.
-    if (filename && (filename.startsWith('.git') || filename.startsWith('.git/'))) return;
-    scheduleDebounce();
-  });
+  const watcher = fsWatch(
+    worktreePath,
+    { recursive: true },
+    (eventType, filename) => {
+      if (stopped) return;
+      // Ignore .git internal changes to avoid feedback loops.
+      if (
+        filename &&
+        (filename.startsWith(".git") || filename.startsWith(".git/"))
+      )
+        return;
+      scheduleDebounce();
+    },
+  );
 
   return {
     stop(): void {
@@ -308,28 +324,30 @@ export async function installCommitCadence(
   ctx: WorkerCadenceContext,
 ): Promise<{ method: CadenceMethod }> {
   if (!ctx.enabled) {
-    return { method: 'none' };
+    return { method: "none" };
   }
 
-  if (ctx.agentType === 'claude') {
+  if (ctx.agentType === "claude") {
     await installPostToolUseHook(ctx.worktreePath, ctx.workerName);
-    return { method: 'hook' };
+    return { method: "hook" };
   }
 
   // codex / gemini / cursor: no PostToolUse hook; caller starts the fallback poller.
-  return { method: 'fallback-poll' };
+  return { method: "fallback-poll" };
 }
 
 /**
  * Removes the auto-commit PostToolUse hook from .claude/settings.json.
  * For fallback-poll workers the caller is responsible for stopping the poller handle.
  */
-export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
-  if (ctx.agentType !== 'claude') return;
+export async function uninstallCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
+  if (ctx.agentType !== "claude") return;
 
-  const settingsPath = join(ctx.worktreePath, '.claude', 'settings.json');
+  const settingsPath = join(ctx.worktreePath, ".claude", "settings.json");
   try {
-    const raw = await readFile(settingsPath, 'utf-8');
+    const raw = await readFile(settingsPath, "utf-8");
     const parsed = JSON.parse(raw) as ClaudeSettings;
     const filtered = (parsed.hooks?.PostToolUse ?? []).filter(
       (h) => h.matcher !== HOOK_MATCHER,
@@ -341,7 +359,11 @@ export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise
         PostToolUse: filtered,
       },
     };
-    await writeFile(settingsPath, JSON.stringify(updated, null, 2) + '\n', 'utf-8');
+    await writeFile(
+      settingsPath,
+      JSON.stringify(updated, null, 2) + "\n",
+      "utf-8",
+    );
   } catch {
     // File absent — nothing to uninstall.
   }
@@ -351,7 +373,9 @@ export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise
  * Pauses commit cadence by touching the sentinel file.
  * Used by the orchestrator before fanning out a rebase.
  */
-export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function pauseCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await pauseHookViaSentinel(ctx.worktreePath);
 }
 
@@ -359,6 +383,8 @@ export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<voi
  * Resumes commit cadence by removing the sentinel file.
  * Used by the orchestrator after rebase conflict resolution.
  */
-export async function resumeCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function resumeCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await resumeHookViaSentinel(ctx.worktreePath);
 }

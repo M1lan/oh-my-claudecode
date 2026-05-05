@@ -18,8 +18,8 @@ import {
   markDispatchRequestNotified,
   type TeamDispatchRequest,
   type TeamDispatchRequestInput,
-} from './dispatch-queue.js';
-import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
+} from "./dispatch-queue.js";
+import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,12 @@ export interface TeamNotifierTarget {
   paneId?: string;
 }
 
-export type DispatchTransport = 'hook' | 'prompt_stdin' | 'tmux_send_keys' | 'mailbox' | 'none';
+export type DispatchTransport =
+  | "hook"
+  | "prompt_stdin"
+  | "tmux_send_keys"
+  | "mailbox"
+  | "none";
 
 export interface DispatchOutcome {
   ok: boolean;
@@ -48,39 +53,62 @@ export type TeamNotifier = (
 
 /** Dependency interface for inbox write operations */
 export interface InboxWriter {
-  writeWorkerInbox(teamName: string, workerName: string, inbox: string, cwd: string): Promise<void>;
+  writeWorkerInbox(
+    teamName: string,
+    workerName: string,
+    inbox: string,
+    cwd: string,
+  ): Promise<void>;
 }
 
 /** Dependency interface for mailbox message operations */
 export interface MailboxSender {
-  sendDirectMessage(teamName: string, fromWorker: string, toWorker: string, body: string, cwd: string): Promise<{ message_id: string; to_worker: string }>;
-  broadcastMessage(teamName: string, fromWorker: string, body: string, cwd: string): Promise<Array<{ message_id: string; to_worker: string }>>;
-  markMessageNotified(teamName: string, workerName: string, messageId: string, cwd: string): Promise<void>;
+  sendDirectMessage(
+    teamName: string,
+    fromWorker: string,
+    toWorker: string,
+    body: string,
+    cwd: string,
+  ): Promise<{ message_id: string; to_worker: string }>;
+  broadcastMessage(
+    teamName: string,
+    fromWorker: string,
+    body: string,
+    cwd: string,
+  ): Promise<Array<{ message_id: string; to_worker: string }>>;
+  markMessageNotified(
+    teamName: string,
+    workerName: string,
+    messageId: string,
+    cwd: string,
+  ): Promise<void>;
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────────
 
 function isConfirmedNotification(outcome: DispatchOutcome): boolean {
   if (!outcome.ok) return false;
-  if (outcome.transport !== 'hook') return true;
-  return outcome.reason !== 'queued_for_hook_dispatch';
+  if (outcome.transport !== "hook") return true;
+  return outcome.reason !== "queued_for_hook_dispatch";
 }
 
 function isLeaderPaneMissingMailboxPersistedOutcome(
   request: TeamDispatchRequest,
   outcome: DispatchOutcome,
 ): boolean {
-  return request.to_worker === 'leader-fixed'
-    && outcome.ok
-    && outcome.reason === 'leader_pane_missing_mailbox_persisted';
+  return (
+    request.to_worker === "leader-fixed" &&
+    outcome.ok &&
+    outcome.reason === "leader_pane_missing_mailbox_persisted"
+  );
 }
 
 function fallbackTransportForPreference(
-  preference: TeamDispatchRequestInput['transport_preference'],
+  preference: TeamDispatchRequestInput["transport_preference"],
 ): DispatchTransport {
-  if (preference === 'prompt_stdin') return 'prompt_stdin';
-  if (preference === 'transport_direct') return 'tmux_send_keys';
-  return 'hook';
+  if (preference === "prompt_stdin") return "prompt_stdin";
+  if (preference === "transport_direct") return "tmux_send_keys";
+  return "hook";
 }
 
 function notifyExceptionReason(error: unknown): string {
@@ -96,20 +124,25 @@ async function markImmediateDispatchFailure(params: {
   cwd: string;
 }): Promise<void> {
   const { teamName, request, reason, messageId, cwd } = params;
-  if (request.transport_preference === 'hook_preferred_with_fallback') return;
+  if (request.transport_preference === "hook_preferred_with_fallback") return;
   const logTransitionFailure = createSwallowedErrorLogger(
-    'team.mcp-comm.markImmediateDispatchFailure transitionDispatchRequest failed',
+    "team.mcp-comm.markImmediateDispatchFailure transitionDispatchRequest failed",
   );
 
   const current = await readDispatchRequest(teamName, request.request_id, cwd);
   if (!current) return;
-  if (current.status === 'failed' || current.status === 'notified' || current.status === 'delivered') return;
+  if (
+    current.status === "failed" ||
+    current.status === "notified" ||
+    current.status === "delivered"
+  )
+    return;
 
   await transitionDispatchRequest(
     teamName,
     request.request_id,
     current.status,
-    'failed',
+    "failed",
     {
       message_id: messageId ?? current.message_id,
       last_reason: reason,
@@ -126,11 +159,11 @@ async function markLeaderPaneMissingDeferred(params: {
 }): Promise<void> {
   const { teamName, request, cwd, messageId } = params;
   const logTransitionFailure = createSwallowedErrorLogger(
-    'team.mcp-comm.markLeaderPaneMissingDeferred transitionDispatchRequest failed',
+    "team.mcp-comm.markLeaderPaneMissingDeferred transitionDispatchRequest failed",
   );
   const current = await readDispatchRequest(teamName, request.request_id, cwd);
   if (!current) return;
-  if (current.status !== 'pending') return;
+  if (current.status !== "pending") return;
 
   await transitionDispatchRequest(
     teamName,
@@ -139,7 +172,7 @@ async function markLeaderPaneMissingDeferred(params: {
     current.status,
     {
       message_id: messageId ?? current.message_id,
-      last_reason: 'leader_pane_missing_deferred',
+      last_reason: "leader_pane_missing_deferred",
     },
     cwd,
   ).catch(logTransitionFailure);
@@ -155,18 +188,20 @@ export interface QueueInboxParams {
   inbox: string;
   triggerMessage: string;
   cwd: string;
-  transportPreference?: TeamDispatchRequestInput['transport_preference'];
+  transportPreference?: TeamDispatchRequestInput["transport_preference"];
   fallbackAllowed?: boolean;
   inboxCorrelationKey?: string;
   notify: TeamNotifier;
   deps: InboxWriter;
 }
 
-export async function queueInboxInstruction(params: QueueInboxParams): Promise<DispatchOutcome> {
+export async function queueInboxInstruction(
+  params: QueueInboxParams,
+): Promise<DispatchOutcome> {
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
-      kind: 'inbox',
+      kind: "inbox",
       to_worker: params.workerName,
       worker_index: params.workerIndex,
       pane_id: params.paneId,
@@ -181,34 +216,51 @@ export async function queueInboxInstruction(params: QueueInboxParams): Promise<D
   if (queued.deduped) {
     return {
       ok: false,
-      transport: 'none',
-      reason: 'duplicate_pending_dispatch_request',
+      transport: "none",
+      reason: "duplicate_pending_dispatch_request",
       request_id: queued.request.request_id,
     };
   }
 
   try {
-    await params.deps.writeWorkerInbox(params.teamName, params.workerName, params.inbox, params.cwd);
+    await params.deps.writeWorkerInbox(
+      params.teamName,
+      params.workerName,
+      params.inbox,
+      params.cwd,
+    );
   } catch (error) {
     await markImmediateDispatchFailure({
       teamName: params.teamName,
       request: queued.request,
-      reason: 'inbox_write_failed',
+      reason: "inbox_write_failed",
       cwd: params.cwd,
     });
     throw error;
   }
 
-  const notifyOutcome = await Promise.resolve(params.notify(
-    { workerName: params.workerName, workerIndex: params.workerIndex, paneId: params.paneId },
-    params.triggerMessage,
-    { request: queued.request },
-  )).catch((error) => ({
-    ok: false,
-    transport: fallbackTransportForPreference(params.transportPreference),
-    reason: notifyExceptionReason(error),
-  } as DispatchOutcome));
-  const outcome: DispatchOutcome = { ...notifyOutcome, request_id: queued.request.request_id };
+  const notifyOutcome = await Promise.resolve(
+    params.notify(
+      {
+        workerName: params.workerName,
+        workerIndex: params.workerIndex,
+        paneId: params.paneId,
+      },
+      params.triggerMessage,
+      { request: queued.request },
+    ),
+  ).catch(
+    (error) =>
+      ({
+        ok: false,
+        transport: fallbackTransportForPreference(params.transportPreference),
+        reason: notifyExceptionReason(error),
+      }) as DispatchOutcome,
+  );
+  const outcome: DispatchOutcome = {
+    ...notifyOutcome,
+    request_id: queued.request.request_id,
+  };
 
   if (isConfirmedNotification(outcome)) {
     await markDispatchRequestNotified(
@@ -238,18 +290,26 @@ export interface QueueDirectMessageParams {
   body: string;
   triggerMessage: string;
   cwd: string;
-  transportPreference?: TeamDispatchRequestInput['transport_preference'];
+  transportPreference?: TeamDispatchRequestInput["transport_preference"];
   fallbackAllowed?: boolean;
   notify: TeamNotifier;
   deps: MailboxSender;
 }
 
-export async function queueDirectMailboxMessage(params: QueueDirectMessageParams): Promise<DispatchOutcome> {
-  const message = await params.deps.sendDirectMessage(params.teamName, params.fromWorker, params.toWorker, params.body, params.cwd);
+export async function queueDirectMailboxMessage(
+  params: QueueDirectMessageParams,
+): Promise<DispatchOutcome> {
+  const message = await params.deps.sendDirectMessage(
+    params.teamName,
+    params.fromWorker,
+    params.toWorker,
+    params.body,
+    params.cwd,
+  );
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
-      kind: 'mailbox',
+      kind: "mailbox",
       to_worker: params.toWorker,
       worker_index: params.toWorkerIndex,
       pane_id: params.toPaneId,
@@ -264,22 +324,31 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
   if (queued.deduped) {
     return {
       ok: false,
-      transport: 'none',
-      reason: 'duplicate_pending_dispatch_request',
+      transport: "none",
+      reason: "duplicate_pending_dispatch_request",
       request_id: queued.request.request_id,
       message_id: message.message_id,
     };
   }
 
-  const notifyOutcome = await Promise.resolve(params.notify(
-    { workerName: params.toWorker, workerIndex: params.toWorkerIndex, paneId: params.toPaneId },
-    params.triggerMessage,
-    { request: queued.request, message_id: message.message_id },
-  )).catch((error) => ({
-    ok: false,
-    transport: fallbackTransportForPreference(params.transportPreference),
-    reason: notifyExceptionReason(error),
-  } as DispatchOutcome));
+  const notifyOutcome = await Promise.resolve(
+    params.notify(
+      {
+        workerName: params.toWorker,
+        workerIndex: params.toWorkerIndex,
+        paneId: params.toPaneId,
+      },
+      params.triggerMessage,
+      { request: queued.request, message_id: message.message_id },
+    ),
+  ).catch(
+    (error) =>
+      ({
+        ok: false,
+        transport: fallbackTransportForPreference(params.transportPreference),
+        reason: notifyExceptionReason(error),
+      }) as DispatchOutcome,
+  );
   const outcome: DispatchOutcome = {
     ...notifyOutcome,
     request_id: queued.request.request_id,
@@ -296,7 +365,12 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
     return outcome;
   }
   if (isConfirmedNotification(outcome)) {
-    await params.deps.markMessageNotified(params.teamName, params.toWorker, message.message_id, params.cwd);
+    await params.deps.markMessageNotified(
+      params.teamName,
+      params.toWorker,
+      message.message_id,
+      params.cwd,
+    );
     await markDispatchRequestNotified(
       params.teamName,
       queued.request.request_id,
@@ -318,19 +392,32 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
 export interface QueueBroadcastParams {
   teamName: string;
   fromWorker: string;
-  recipients: Array<{ workerName: string; workerIndex: number; paneId?: string }>;
+  recipients: Array<{
+    workerName: string;
+    workerIndex: number;
+    paneId?: string;
+  }>;
   body: string;
   cwd: string;
   triggerFor: (workerName: string) => string;
-  transportPreference?: TeamDispatchRequestInput['transport_preference'];
+  transportPreference?: TeamDispatchRequestInput["transport_preference"];
   fallbackAllowed?: boolean;
   notify: TeamNotifier;
   deps: MailboxSender;
 }
 
-export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams): Promise<DispatchOutcome[]> {
-  const messages = await params.deps.broadcastMessage(params.teamName, params.fromWorker, params.body, params.cwd);
-  const recipientByName = new Map(params.recipients.map((r) => [r.workerName, r]));
+export async function queueBroadcastMailboxMessage(
+  params: QueueBroadcastParams,
+): Promise<DispatchOutcome[]> {
+  const messages = await params.deps.broadcastMessage(
+    params.teamName,
+    params.fromWorker,
+    params.body,
+    params.cwd,
+  );
+  const recipientByName = new Map(
+    params.recipients.map((r) => [r.workerName, r]),
+  );
   const outcomes: DispatchOutcome[] = [];
 
   for (const message of messages) {
@@ -340,7 +427,7 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
     const queued = await enqueueDispatchRequest(
       params.teamName,
       {
-        kind: 'mailbox',
+        kind: "mailbox",
         to_worker: recipient.workerName,
         worker_index: recipient.workerIndex,
         pane_id: recipient.paneId,
@@ -355,8 +442,8 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
     if (queued.deduped) {
       outcomes.push({
         ok: false,
-        transport: 'none',
-        reason: 'duplicate_pending_dispatch_request',
+        transport: "none",
+        reason: "duplicate_pending_dispatch_request",
         request_id: queued.request.request_id,
         message_id: message.message_id,
         to_worker: recipient.workerName,
@@ -364,15 +451,24 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
       continue;
     }
 
-    const notifyOutcome = await Promise.resolve(params.notify(
-      { workerName: recipient.workerName, workerIndex: recipient.workerIndex, paneId: recipient.paneId },
-      params.triggerFor(recipient.workerName),
-      { request: queued.request, message_id: message.message_id },
-    )).catch((error) => ({
-      ok: false,
-      transport: fallbackTransportForPreference(params.transportPreference),
-      reason: notifyExceptionReason(error),
-    } as DispatchOutcome));
+    const notifyOutcome = await Promise.resolve(
+      params.notify(
+        {
+          workerName: recipient.workerName,
+          workerIndex: recipient.workerIndex,
+          paneId: recipient.paneId,
+        },
+        params.triggerFor(recipient.workerName),
+        { request: queued.request, message_id: message.message_id },
+      ),
+    ).catch(
+      (error) =>
+        ({
+          ok: false,
+          transport: fallbackTransportForPreference(params.transportPreference),
+          reason: notifyExceptionReason(error),
+        }) as DispatchOutcome,
+    );
 
     const outcome: DispatchOutcome = {
       ...notifyOutcome,
@@ -383,7 +479,12 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
     outcomes.push(outcome);
 
     if (isConfirmedNotification(outcome)) {
-      await params.deps.markMessageNotified(params.teamName, recipient.workerName, message.message_id, params.cwd);
+      await params.deps.markMessageNotified(
+        params.teamName,
+        recipient.workerName,
+        message.message_id,
+        params.cwd,
+      );
       await markDispatchRequestNotified(
         params.teamName,
         queued.request.request_id,
@@ -419,7 +520,11 @@ export async function waitForDispatchReceipt(
   while (Date.now() <= deadline) {
     const request = await readDispatchRequest(teamName, requestId, cwd);
     if (!request) return null;
-    if (request.status === 'notified' || request.status === 'delivered' || request.status === 'failed') {
+    if (
+      request.status === "notified" ||
+      request.status === "delivered" ||
+      request.status === "failed"
+    ) {
       return request;
     }
     const jitter = Math.random() * currentPollMs * 0.3;

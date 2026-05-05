@@ -7,11 +7,11 @@
 // This resolves C1: leader notifications arrive via file, not tmux send-keys.
 // DO NOT register the leader as a member of the team registry (Option C, rejected).
 
-import { appendFile, mkdir, writeFile } from 'fs/promises';
-import { existsSync } from 'fs';
-import { dirname, join } from 'path';
-import { sanitizeName } from './tmux-session.js';
-import { validateResolvedPath } from './fs-utils.js';
+import { appendFile, mkdir, writeFile } from "fs/promises";
+import { existsSync } from "fs";
+import { dirname, join } from "path";
+import { sanitizeName } from "./tmux-session.js";
+import { validateResolvedPath } from "./fs-utils.js";
 
 const LEADER_INBOX_HEADER = `# Leader Inbox
 
@@ -37,12 +37,15 @@ export function leaderInboxPath(teamName: string, cwd: string): string {
  * Idempotent: safe to call multiple times.
  * Validates path is within cwd to prevent traversal.
  */
-export async function ensureLeaderInbox(teamName: string, cwd: string): Promise<string> {
+export async function ensureLeaderInbox(
+  teamName: string,
+  cwd: string,
+): Promise<string> {
   const inboxPath = leaderInboxPath(teamName, cwd);
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
   if (!existsSync(inboxPath)) {
-    await writeFile(inboxPath, LEADER_INBOX_HEADER, 'utf-8');
+    await writeFile(inboxPath, LEADER_INBOX_HEADER, "utf-8");
   }
   return inboxPath;
 }
@@ -52,11 +55,15 @@ export async function ensureLeaderInbox(teamName: string, cwd: string): Promise<
  * Mirrors appendToInbox for workers: appends `\n\n---\n${message}` to the inbox file.
  * Validates path is within cwd to prevent traversal.
  */
-export async function appendToLeaderInbox(teamName: string, message: string, cwd: string): Promise<void> {
+export async function appendToLeaderInbox(
+  teamName: string,
+  message: string,
+  cwd: string,
+): Promise<void> {
   const inboxPath = leaderInboxPath(teamName, cwd);
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
-  await appendFile(inboxPath, `\n\n---\n${message}`, 'utf-8');
+  await appendFile(inboxPath, `\n\n---\n${message}`, "utf-8");
 }
 
 /**

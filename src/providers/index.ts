@@ -5,13 +5,13 @@
  * access to provider-specific adapters.
  */
 
-import { execSync } from 'node:child_process';
-import type { ProviderName, RemoteUrlInfo, GitProvider } from './types.js';
-import { GitHubProvider } from './github.js';
-import { GitLabProvider } from './gitlab.js';
-import { BitbucketProvider } from './bitbucket.js';
-import { AzureDevOpsProvider } from './azure-devops.js';
-import { GiteaProvider } from './gitea.js';
+import { execSync } from "node:child_process";
+import type { ProviderName, RemoteUrlInfo, GitProvider } from "./types.js";
+import { GitHubProvider } from "./github.js";
+import { GitLabProvider } from "./gitlab.js";
+import { BitbucketProvider } from "./bitbucket.js";
+import { AzureDevOpsProvider } from "./azure-devops.js";
+import { GiteaProvider } from "./gitea.js";
 
 // Singleton provider registry
 let providerRegistry: Map<ProviderName, GitProvider> | null = null;
@@ -44,7 +44,10 @@ function getCachedRemoteUrl(cwd: string): string | null | undefined {
 }
 
 function setCachedRemoteUrl(cwd: string, url: string | null): void {
-  remoteUrlCache.set(cwd, { url, expiresAt: Date.now() + REMOTE_URL_CACHE_TTL_MS });
+  remoteUrlCache.set(cwd, {
+    url,
+    expiresAt: Date.now() + REMOTE_URL_CACHE_TTL_MS,
+  });
 }
 
 function getRemoteUrl(cwd?: string): string | null {
@@ -53,11 +56,11 @@ function getRemoteUrl(cwd?: string): string | null {
   if (cached !== undefined) return cached;
 
   try {
-    const url = execSync('git remote get-url origin', {
+    const url = execSync("git remote get-url origin", {
       cwd: resolvedCwd,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       timeout: 3000,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
 
     const result = url || null;
@@ -77,41 +80,45 @@ export function detectProvider(remoteUrl: string): ProviderName {
 
   // Extract host portion for accurate matching (strip port if present)
   const hostMatch = url.match(/^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/);
-  const rawHost = hostMatch ? hostMatch[1].toLowerCase() : '';
-  const host = rawHost.replace(/:\d+$/, ''); // strip port for matching
+  const rawHost = hostMatch ? hostMatch[1].toLowerCase() : "";
+  const host = rawHost.replace(/:\d+$/, ""); // strip port for matching
 
   // Azure DevOps (check before generic patterns)
-  if (host.includes('dev.azure.com') || host.includes('ssh.dev.azure.com') || host.endsWith('.visualstudio.com')) {
-    return 'azure-devops';
+  if (
+    host.includes("dev.azure.com") ||
+    host.includes("ssh.dev.azure.com") ||
+    host.endsWith(".visualstudio.com")
+  ) {
+    return "azure-devops";
   }
 
   // GitHub
-  if (host === 'github.com') {
-    return 'github';
+  if (host === "github.com") {
+    return "github";
   }
 
   // GitLab (SaaS)
-  if (host === 'gitlab.com') {
-    return 'gitlab';
+  if (host === "gitlab.com") {
+    return "gitlab";
   }
 
   // Bitbucket
-  if (host === 'bitbucket.org') {
-    return 'bitbucket';
+  if (host === "bitbucket.org") {
+    return "bitbucket";
   }
 
   // Self-hosted heuristics — match hostname labels only
   if (/(^|[.-])gitlab([.-]|$)/.test(host)) {
-    return 'gitlab';
+    return "gitlab";
   }
   if (/(^|[.-])gitea([.-]|$)/.test(host)) {
-    return 'gitea';
+    return "gitea";
   }
   if (/(^|[.-])forgejo([.-]|$)/.test(host)) {
-    return 'forgejo';
+    return "forgejo";
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 /**
@@ -123,12 +130,12 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps HTTPS: https://dev.azure.com/{org}/{project}/_git/{repo}
   const azureHttpsMatch = trimmed.match(
-    /https?:\/\/dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureHttpsMatch) {
     return {
-      provider: 'azure-devops',
-      host: 'dev.azure.com',
+      provider: "azure-devops",
+      host: "dev.azure.com",
       owner: `${azureHttpsMatch[1]}/${azureHttpsMatch[2]}`,
       repo: azureHttpsMatch[3],
     };
@@ -136,12 +143,12 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps SSH: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
   const azureSshMatch = trimmed.match(
-    /git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/\s]+?)(?:\.git)?$/
+    /git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureSshMatch) {
     return {
-      provider: 'azure-devops',
-      host: 'dev.azure.com',
+      provider: "azure-devops",
+      host: "dev.azure.com",
       owner: `${azureSshMatch[1]}/${azureSshMatch[2]}`,
       repo: azureSshMatch[3],
     };
@@ -149,11 +156,11 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps legacy HTTPS: https://{org}.visualstudio.com/{project}/_git/{repo}
   const azureLegacyMatch = trimmed.match(
-    /https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureLegacyMatch) {
     return {
-      provider: 'azure-devops',
+      provider: "azure-devops",
       host: `${azureLegacyMatch[1]}.visualstudio.com`,
       owner: `${azureLegacyMatch[1]}/${azureLegacyMatch[2]}`,
       repo: azureLegacyMatch[3],
@@ -162,7 +169,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Standard HTTPS: https://host/owner/repo.git (supports nested groups like group/subgroup/repo)
   const httpsMatch = trimmed.match(
-    /https?:\/\/([^/]+)\/(.+?)\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/([^/]+)\/(.+?)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (httpsMatch) {
     const host = httpsMatch[1];
@@ -176,7 +183,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // SSH URL-style: ssh://git@host[:port]/owner/repo.git (must check before SCP-style)
   const sshUrlMatch = trimmed.match(
-    /ssh:\/\/git@([^/:]+)(?::\d+)?\/(.+?)\/([^/\s]+?)(?:\.git)?$/
+    /ssh:\/\/git@([^/:]+)(?::\d+)?\/(.+?)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (sshUrlMatch) {
     const host = sshUrlMatch[1];
@@ -189,9 +196,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
   }
 
   // SSH SCP-style: git@host:owner/repo.git (supports nested groups like group/subgroup/repo)
-  const sshMatch = trimmed.match(
-    /git@([^:]+):(.+?)\/([^/\s]+?)(?:\.git)?$/
-  );
+  const sshMatch = trimmed.match(/git@([^:]+):(.+?)\/([^/\s]+?)(?:\.git)?$/);
   if (sshMatch) {
     const host = sshMatch[1];
     return {
@@ -211,7 +216,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
  */
 export function detectProviderFromCwd(cwd?: string): ProviderName {
   const url = getRemoteUrl(cwd);
-  if (!url) return 'unknown';
+  if (!url) return "unknown";
   return detectProvider(url);
 }
 
@@ -231,12 +236,12 @@ function initRegistry(): Map<ProviderName, GitProvider> {
   if (providerRegistry) return providerRegistry;
 
   providerRegistry = new Map<ProviderName, GitProvider>([
-    ['github', new GitHubProvider()],
-    ['gitlab', new GitLabProvider()],
-    ['bitbucket', new BitbucketProvider()],
-    ['azure-devops', new AzureDevOpsProvider()],
-    ['gitea', new GiteaProvider()],
-    ['forgejo', new GiteaProvider({ name: 'forgejo', displayName: 'Forgejo' })],
+    ["github", new GitHubProvider()],
+    ["gitlab", new GitLabProvider()],
+    ["bitbucket", new BitbucketProvider()],
+    ["azure-devops", new AzureDevOpsProvider()],
+    ["gitea", new GiteaProvider()],
+    ["forgejo", new GiteaProvider({ name: "forgejo", displayName: "Forgejo" })],
   ]);
 
   return providerRegistry;
@@ -257,9 +262,15 @@ export function getProvider(name: ProviderName): GitProvider | null {
  */
 export function getProviderFromCwd(cwd?: string): GitProvider | null {
   const name = detectProviderFromCwd(cwd);
-  if (name === 'unknown') return null;
+  if (name === "unknown") return null;
   return getProvider(name);
 }
 
 // Re-export types for convenience
-export type { ProviderName, RemoteUrlInfo, GitProvider, PRInfo, IssueInfo } from './types.js';
+export type {
+  ProviderName,
+  RemoteUrlInfo,
+  GitProvider,
+  PRInfo,
+  IssueInfo,
+} from "./types.js";

@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import {
   readPrd,
   writePrd,
@@ -21,15 +21,18 @@ import {
   formatStory,
   PRD_FILENAME,
   type PRD,
-  type UserStory
-} from '../hooks/ralph/index.js';
+  type UserStory,
+} from "../hooks/ralph/index.js";
 
-describe('Ralph PRD Module', () => {
+describe("Ralph PRD Module", () => {
   let testDir: string;
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `ralph-prd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-prd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -40,28 +43,28 @@ describe('Ralph PRD Module', () => {
     }
   });
 
-  describe('findPrdPath', () => {
-    it('should return null when no prd.json exists', () => {
+  describe("findPrdPath", () => {
+    it("should return null when no prd.json exists", () => {
       expect(findPrdPath(testDir)).toBeNull();
     });
 
-    it('should find prd.json in root directory', () => {
+    it("should find prd.json in root directory", () => {
       const prdPath = join(testDir, PRD_FILENAME);
-      writeFileSync(prdPath, '{}');
+      writeFileSync(prdPath, "{}");
       expect(findPrdPath(testDir)).toBe(prdPath);
     });
 
-    it('should find prd.json in .omc directory', () => {
-      const omcDir = join(testDir, '.omc');
+    it("should find prd.json in .omc directory", () => {
+      const omcDir = join(testDir, ".omc");
       mkdirSync(omcDir, { recursive: true });
       const prdPath = join(omcDir, PRD_FILENAME);
-      writeFileSync(prdPath, '{}');
+      writeFileSync(prdPath, "{}");
       expect(findPrdPath(testDir)).toBe(prdPath);
     });
 
-    it('should prefer root over .omc', () => {
+    it("should prefer root over .omc", () => {
       const rootPath = join(testDir, PRD_FILENAME);
-      const omcDir = join(testDir, '.omc');
+      const omcDir = join(testDir, ".omc");
       mkdirSync(omcDir, { recursive: true });
       const omcPath = join(omcDir, PRD_FILENAME);
 
@@ -72,116 +75,153 @@ describe('Ralph PRD Module', () => {
     });
   });
 
-  describe('readPrd / writePrd', () => {
+  describe("readPrd / writePrd", () => {
     const samplePrd: PRD = {
-      project: 'TestProject',
-      branchName: 'ralph/test-feature',
-      description: 'Test feature description',
+      project: "TestProject",
+      branchName: "ralph/test-feature",
+      description: "Test feature description",
       userStories: [
         {
-          id: 'US-001',
-          title: 'First story',
-          description: 'As a user, I want to test',
-          acceptanceCriteria: ['Criterion 1', 'Criterion 2'],
+          id: "US-001",
+          title: "First story",
+          description: "As a user, I want to test",
+          acceptanceCriteria: ["Criterion 1", "Criterion 2"],
           priority: 1,
           passes: false,
-          architectVerified: false
+          architectVerified: false,
         },
         {
-          id: 'US-002',
-          title: 'Second story',
-          description: 'As a user, I want more tests',
-          acceptanceCriteria: ['Criterion A'],
+          id: "US-002",
+          title: "Second story",
+          description: "As a user, I want more tests",
+          acceptanceCriteria: ["Criterion A"],
           priority: 2,
           passes: true,
-          architectVerified: true
-        }
-      ]
+          architectVerified: true,
+        },
+      ],
     };
 
-    it('should return null when reading non-existent prd', () => {
+    it("should return null when reading non-existent prd", () => {
       expect(readPrd(testDir)).toBeNull();
     });
 
-    it('should write and read prd correctly', () => {
+    it("should write and read prd correctly", () => {
       expect(writePrd(testDir, samplePrd)).toBe(true);
       const read = readPrd(testDir);
       expect(read).toEqual(samplePrd);
     });
 
-    it('should create .omc directory when writing', () => {
+    it("should create .omc directory when writing", () => {
       writePrd(testDir, samplePrd);
-      expect(existsSync(join(testDir, '.omc'))).toBe(true);
+      expect(existsSync(join(testDir, ".omc"))).toBe(true);
     });
 
-    it('isolates transient PRDs for concurrent sessions in the same project', () => {
-      const sessionA = 'session-a';
-      const sessionB = 'session-b';
+    it("isolates transient PRDs for concurrent sessions in the same project", () => {
+      const sessionA = "session-a";
+      const sessionB = "session-b";
       const prdA: PRD = {
         ...samplePrd,
-        project: 'Session A',
+        project: "Session A",
         userStories: [
-          { ...samplePrd.userStories[0], id: 'US-A', title: 'A story' }
-        ]
+          { ...samplePrd.userStories[0], id: "US-A", title: "A story" },
+        ],
       };
       const prdB: PRD = {
         ...samplePrd,
-        project: 'Session B',
+        project: "Session B",
         userStories: [
-          { ...samplePrd.userStories[0], id: 'US-B', title: 'B story' }
-        ]
+          { ...samplePrd.userStories[0], id: "US-B", title: "B story" },
+        ],
       };
 
       expect(writePrd(testDir, prdA, sessionA)).toBe(true);
       expect(writePrd(testDir, prdB, sessionB)).toBe(true);
 
-      expect(readPrd(testDir, sessionA)?.project).toBe('Session A');
-      expect(readPrd(testDir, sessionA)?.userStories[0].id).toBe('US-A');
-      expect(readPrd(testDir, sessionB)?.project).toBe('Session B');
-      expect(readPrd(testDir, sessionB)?.userStories[0].id).toBe('US-B');
-      expect(findPrdPath(testDir, sessionA)).toBe(getSessionPrdPath(testDir, sessionA));
-      expect(findPrdPath(testDir, sessionB)).toBe(getSessionPrdPath(testDir, sessionB));
-      expect(existsSync(join(testDir, '.omc', 'prd.json'))).toBe(false);
+      expect(readPrd(testDir, sessionA)?.project).toBe("Session A");
+      expect(readPrd(testDir, sessionA)?.userStories[0].id).toBe("US-A");
+      expect(readPrd(testDir, sessionB)?.project).toBe("Session B");
+      expect(readPrd(testDir, sessionB)?.userStories[0].id).toBe("US-B");
+      expect(findPrdPath(testDir, sessionA)).toBe(
+        getSessionPrdPath(testDir, sessionA),
+      );
+      expect(findPrdPath(testDir, sessionB)).toBe(
+        getSessionPrdPath(testDir, sessionB),
+      );
+      expect(existsSync(join(testDir, ".omc", "prd.json"))).toBe(false);
     });
 
-    it('migrates an existing project PRD into the requesting session without mutating the legacy file', () => {
-      const legacyPrd: PRD = { ...samplePrd, project: 'Legacy Project' };
-      const legacyPath = join(testDir, '.omc', 'prd.json');
-      mkdirSync(join(testDir, '.omc'), { recursive: true });
+    it("migrates an existing project PRD into the requesting session without mutating the legacy file", () => {
+      const legacyPrd: PRD = { ...samplePrd, project: "Legacy Project" };
+      const legacyPath = join(testDir, ".omc", "prd.json");
+      mkdirSync(join(testDir, ".omc"), { recursive: true });
       writeFileSync(legacyPath, JSON.stringify(legacyPrd, null, 2));
 
-      const result = ensurePrdForStartup(testDir, 'New Project', 'branch', 'New task', undefined, 'session-a');
+      const result = ensurePrdForStartup(
+        testDir,
+        "New Project",
+        "branch",
+        "New task",
+        undefined,
+        "session-a",
+      );
 
       expect(result.ok).toBe(true);
-      expect(result.path).toBe(getSessionPrdPath(testDir, 'session-a'));
-      expect(readPrd(testDir, 'session-a')?.project).toBe('Legacy Project');
-      expect(JSON.parse(readFileSync(legacyPath, 'utf-8')).project).toBe('Legacy Project');
+      expect(result.path).toBe(getSessionPrdPath(testDir, "session-a"));
+      expect(readPrd(testDir, "session-a")?.project).toBe("Legacy Project");
+      expect(JSON.parse(readFileSync(legacyPath, "utf-8")).project).toBe(
+        "Legacy Project",
+      );
     });
 
-    it('should return null for malformed JSON', () => {
+    it("should return null for malformed JSON", () => {
       const prdPath = join(testDir, PRD_FILENAME);
-      writeFileSync(prdPath, 'not valid json');
+      writeFileSync(prdPath, "not valid json");
       expect(readPrd(testDir)).toBeNull();
     });
 
-    it('should return null for missing userStories', () => {
+    it("should return null for missing userStories", () => {
       const prdPath = join(testDir, PRD_FILENAME);
-      writeFileSync(prdPath, JSON.stringify({ project: 'Test' }));
+      writeFileSync(prdPath, JSON.stringify({ project: "Test" }));
       expect(readPrd(testDir)).toBeNull();
     });
   });
 
-  describe('getPrdStatus', () => {
-    it('should correctly calculate status for mixed completion', () => {
+  describe("getPrdStatus", () => {
+    it("should correctly calculate status for mixed completion", () => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
+        project: "Test",
+        branchName: "test",
+        description: "Test",
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false },
-          { id: 'US-003', title: 'C', description: '', acceptanceCriteria: [], priority: 3, passes: false, architectVerified: false }
-        ]
+          {
+            id: "US-001",
+            title: "A",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: "US-002",
+            title: "B",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: "US-003",
+            title: "C",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 3,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
@@ -189,19 +229,35 @@ describe('Ralph PRD Module', () => {
       expect(status.completed).toBe(1);
       expect(status.pending).toBe(2);
       expect(status.allComplete).toBe(false);
-      expect(status.nextStory?.id).toBe('US-002');
-      expect(status.incompleteIds).toEqual(['US-002', 'US-003']);
+      expect(status.nextStory?.id).toBe("US-002");
+      expect(status.incompleteIds).toEqual(["US-002", "US-003"]);
     });
 
-    it('should return allComplete true when all stories pass', () => {
+    it("should return allComplete true when all stories pass", () => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
+        project: "Test",
+        branchName: "test",
+        description: "Test",
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [], priority: 2, passes: true, architectVerified: true }
-        ]
+          {
+            id: "US-001",
+            title: "A",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: "US-002",
+            title: "B",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: true,
+            architectVerified: true,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
@@ -210,28 +266,52 @@ describe('Ralph PRD Module', () => {
       expect(status.incompleteIds).toEqual([]);
     });
 
-    it('should sort pending stories by priority', () => {
+    it("should sort pending stories by priority", () => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
+        project: "Test",
+        branchName: "test",
+        description: "Test",
         userStories: [
-          { id: 'US-001', title: 'Low', description: '', acceptanceCriteria: [], priority: 3, passes: false, architectVerified: false },
-          { id: 'US-002', title: 'High', description: '', acceptanceCriteria: [], priority: 1, passes: false, architectVerified: false },
-          { id: 'US-003', title: 'Med', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false }
-        ]
+          {
+            id: "US-001",
+            title: "Low",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 3,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: "US-002",
+            title: "High",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: "US-003",
+            title: "Med",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
-      expect(status.nextStory?.id).toBe('US-002'); // Highest priority (1)
+      expect(status.nextStory?.id).toBe("US-002"); // Highest priority (1)
     });
 
-    it('should handle empty stories array', () => {
+    it("should handle empty stories array", () => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
-        userStories: []
+        project: "Test",
+        branchName: "test",
+        description: "Test",
+        userStories: [],
       };
 
       const status = getPrdStatus(prd);
@@ -241,89 +321,115 @@ describe('Ralph PRD Module', () => {
     });
   });
 
-  describe('markStoryComplete / markStoryIncomplete', () => {
+  describe("markStoryComplete / markStoryIncomplete", () => {
     beforeEach(() => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
+        project: "Test",
+        branchName: "test",
+        description: "Test",
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: false, architectVerified: false }
-        ]
+          {
+            id: "US-001",
+            title: "A",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
       writePrd(testDir, prd);
     });
 
-    it('should mark story as complete', () => {
-      expect(markStoryComplete(testDir, 'US-001', 'Done!')).toBe(true);
+    it("should mark story as complete", () => {
+      expect(markStoryComplete(testDir, "US-001", "Done!")).toBe(true);
       const prd = readPrd(testDir);
       expect(prd?.userStories[0].passes).toBe(true);
       expect(prd?.userStories[0].architectVerified).toBe(false);
-      expect(prd?.userStories[0].notes).toBe('Done!');
+      expect(prd?.userStories[0].notes).toBe("Done!");
     });
 
-    it('should mark story as incomplete', () => {
-      markStoryComplete(testDir, 'US-001');
-      expect(markStoryIncomplete(testDir, 'US-001', 'Needs rework')).toBe(true);
+    it("should mark story as incomplete", () => {
+      markStoryComplete(testDir, "US-001");
+      expect(markStoryIncomplete(testDir, "US-001", "Needs rework")).toBe(true);
       const prd = readPrd(testDir);
       expect(prd?.userStories[0].passes).toBe(false);
       expect(prd?.userStories[0].architectVerified).toBe(false);
-      expect(prd?.userStories[0].notes).toBe('Needs rework');
+      expect(prd?.userStories[0].notes).toBe("Needs rework");
     });
 
-    it('should mark story as architect verified', () => {
-      markStoryComplete(testDir, 'US-001');
-      expect(markStoryArchitectVerified(testDir, 'US-001', 'Approved')).toBe(true);
+    it("should mark story as architect verified", () => {
+      markStoryComplete(testDir, "US-001");
+      expect(markStoryArchitectVerified(testDir, "US-001", "Approved")).toBe(
+        true,
+      );
       const prd = readPrd(testDir);
       expect(prd?.userStories[0].passes).toBe(true);
       expect(prd?.userStories[0].architectVerified).toBe(true);
-      expect(prd?.userStories[0].notes).toBe('Approved');
+      expect(prd?.userStories[0].notes).toBe("Approved");
     });
 
-    it('should return false for non-existent story', () => {
-      expect(markStoryComplete(testDir, 'US-999')).toBe(false);
+    it("should return false for non-existent story", () => {
+      expect(markStoryComplete(testDir, "US-999")).toBe(false);
     });
 
-    it('should return false when no prd exists', () => {
-      rmSync(join(testDir, '.omc'), { recursive: true, force: true });
-      expect(markStoryComplete(testDir, 'US-001')).toBe(false);
+    it("should return false when no prd exists", () => {
+      rmSync(join(testDir, ".omc"), { recursive: true, force: true });
+      expect(markStoryComplete(testDir, "US-001")).toBe(false);
     });
   });
 
-  describe('getStory / getNextStory', () => {
+  describe("getStory / getNextStory", () => {
     beforeEach(() => {
       const prd: PRD = {
-        project: 'Test',
-        branchName: 'test',
-        description: 'Test',
+        project: "Test",
+        branchName: "test",
+        description: "Test",
         userStories: [
-          { id: 'US-001', title: 'First', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'Second', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false }
-        ]
+          {
+            id: "US-001",
+            title: "First",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: "US-002",
+            title: "Second",
+            description: "",
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
       writePrd(testDir, prd);
     });
 
-    it('should get story by ID', () => {
-      const story = getStory(testDir, 'US-001');
-      expect(story?.title).toBe('First');
+    it("should get story by ID", () => {
+      const story = getStory(testDir, "US-001");
+      expect(story?.title).toBe("First");
     });
 
-    it('should return null for non-existent story', () => {
-      expect(getStory(testDir, 'US-999')).toBeNull();
+    it("should return null for non-existent story", () => {
+      expect(getStory(testDir, "US-999")).toBeNull();
     });
 
-    it('should get next incomplete story', () => {
+    it("should get next incomplete story", () => {
       const story = getNextStory(testDir);
-      expect(story?.id).toBe('US-002');
+      expect(story?.id).toBe("US-002");
     });
   });
 
-  describe('createPrd / createSimplePrd', () => {
-    it('should create PRD with auto-assigned priorities', () => {
-      const prd = createPrd('Project', 'branch', 'Description', [
-        { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [] },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+  describe("createPrd / createSimplePrd", () => {
+    it("should create PRD with auto-assigned priorities", () => {
+      const prd = createPrd("Project", "branch", "Description", [
+        { id: "US-001", title: "A", description: "", acceptanceCriteria: [] },
+        { id: "US-002", title: "B", description: "", acceptanceCriteria: [] },
       ]);
 
       expect(prd.userStories[0].priority).toBe(1);
@@ -334,137 +440,162 @@ describe('Ralph PRD Module', () => {
       expect(prd.userStories[1].architectVerified).toBe(false);
     });
 
-    it('should respect provided priorities', () => {
-      const prd = createPrd('Project', 'branch', 'Description', [
-        { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 10 },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+    it("should respect provided priorities", () => {
+      const prd = createPrd("Project", "branch", "Description", [
+        {
+          id: "US-001",
+          title: "A",
+          description: "",
+          acceptanceCriteria: [],
+          priority: 10,
+        },
+        { id: "US-002", title: "B", description: "", acceptanceCriteria: [] },
       ]);
 
       expect(prd.userStories[0].priority).toBe(10);
       expect(prd.userStories[1].priority).toBe(2); // Auto-assigned
     });
 
-    it('should create simple PRD with single story', () => {
-      const prd = createSimplePrd('Project', 'branch', 'Implement feature X');
+    it("should create simple PRD with single story", () => {
+      const prd = createSimplePrd("Project", "branch", "Implement feature X");
 
       expect(prd.userStories.length).toBe(1);
-      expect(prd.userStories[0].id).toBe('US-001');
-      expect(prd.userStories[0].description).toBe('Implement feature X');
+      expect(prd.userStories[0].id).toBe("US-001");
+      expect(prd.userStories[0].description).toBe("Implement feature X");
       expect(prd.userStories[0].acceptanceCriteria.length).toBeGreaterThan(0);
     });
 
-    it('should truncate long titles in simple PRD', () => {
-      const longTask = 'A'.repeat(100);
-      const prd = createSimplePrd('Project', 'branch', longTask);
+    it("should truncate long titles in simple PRD", () => {
+      const longTask = "A".repeat(100);
+      const prd = createSimplePrd("Project", "branch", longTask);
 
       expect(prd.userStories[0].title.length).toBeLessThanOrEqual(53); // 50 + "..."
-      expect(prd.userStories[0].title.endsWith('...')).toBe(true);
+      expect(prd.userStories[0].title.endsWith("...")).toBe(true);
     });
   });
 
-  describe('initPrd', () => {
-    it('should initialize PRD in directory', () => {
-      expect(initPrd(testDir, 'Project', 'branch', 'Description')).toBe(true);
+  describe("initPrd", () => {
+    it("should initialize PRD in directory", () => {
+      expect(initPrd(testDir, "Project", "branch", "Description")).toBe(true);
       const prd = readPrd(testDir);
-      expect(prd?.project).toBe('Project');
+      expect(prd?.project).toBe("Project");
       expect(prd?.userStories.length).toBe(1);
     });
 
-    it('should initialize PRD with custom stories', () => {
+    it("should initialize PRD with custom stories", () => {
       const stories = [
-        { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [] },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+        { id: "US-001", title: "A", description: "", acceptanceCriteria: [] },
+        { id: "US-002", title: "B", description: "", acceptanceCriteria: [] },
       ];
-      expect(initPrd(testDir, 'Project', 'branch', 'Description', stories)).toBe(true);
+      expect(
+        initPrd(testDir, "Project", "branch", "Description", stories),
+      ).toBe(true);
       const prd = readPrd(testDir);
       expect(prd?.userStories.length).toBe(2);
     });
   });
 
-  describe('ensurePrdForStartup', () => {
-    it('creates a scaffold when startup has no prd.json', () => {
-      const result = ensurePrdForStartup(testDir, 'Project', 'branch', 'Description');
+  describe("ensurePrdForStartup", () => {
+    it("creates a scaffold when startup has no prd.json", () => {
+      const result = ensurePrdForStartup(
+        testDir,
+        "Project",
+        "branch",
+        "Description",
+      );
 
       expect(result.ok).toBe(true);
       expect(result.created).toBe(true);
       expect(result.prd?.userStories.length).toBe(1);
     });
 
-    it('fails clearly when an existing prd.json is invalid', () => {
-      writeFileSync(join(testDir, PRD_FILENAME), '{ invalid json');
+    it("fails clearly when an existing prd.json is invalid", () => {
+      writeFileSync(join(testDir, PRD_FILENAME), "{ invalid json");
 
-      const result = ensurePrdForStartup(testDir, 'Project', 'branch', 'Description');
+      const result = ensurePrdForStartup(
+        testDir,
+        "Project",
+        "branch",
+        "Description",
+      );
 
       expect(result.ok).toBe(false);
       expect(result.created).toBe(false);
-      expect(result.error).toContain('Failed to read');
+      expect(result.error).toContain("Failed to read");
     });
   });
 
-  describe('formatPrdStatus / formatStory', () => {
-    it('should format status correctly', () => {
+  describe("formatPrdStatus / formatStory", () => {
+    it("should format status correctly", () => {
       const status = {
         total: 3,
         completed: 1,
         pending: 2,
         allComplete: false,
-        nextStory: { id: 'US-002', title: 'Next', description: '', acceptanceCriteria: [], priority: 2, passes: false },
-        incompleteIds: ['US-002', 'US-003']
+        nextStory: {
+          id: "US-002",
+          title: "Next",
+          description: "",
+          acceptanceCriteria: [],
+          priority: 2,
+          passes: false,
+        },
+        incompleteIds: ["US-002", "US-003"],
       };
 
       const formatted = formatPrdStatus(status);
-      expect(formatted).toContain('1/3');
-      expect(formatted).toContain('US-002');
-      expect(formatted).toContain('US-003');
+      expect(formatted).toContain("1/3");
+      expect(formatted).toContain("US-002");
+      expect(formatted).toContain("US-003");
     });
 
-    it('should format complete status', () => {
+    it("should format complete status", () => {
       const status = {
         total: 2,
         completed: 2,
         pending: 0,
         allComplete: true,
         nextStory: null,
-        incompleteIds: []
+        incompleteIds: [],
       };
 
       const formatted = formatPrdStatus(status);
-      expect(formatted).toContain('COMPLETE');
+      expect(formatted).toContain("COMPLETE");
     });
 
-    it('should format story correctly', () => {
+    it("should format story correctly", () => {
       const story: UserStory = {
-        id: 'US-001',
-        title: 'Test Story',
-        description: 'As a user, I want to test',
-        acceptanceCriteria: ['Criterion 1', 'Criterion 2'],
+        id: "US-001",
+        title: "Test Story",
+        description: "As a user, I want to test",
+        acceptanceCriteria: ["Criterion 1", "Criterion 2"],
         priority: 1,
         passes: false,
         architectVerified: false,
-        notes: 'Some notes'
+        notes: "Some notes",
       };
 
       const formatted = formatStory(story);
-      expect(formatted).toContain('US-001');
-      expect(formatted).toContain('Test Story');
-      expect(formatted).toContain('PENDING');
-      expect(formatted).toContain('Criterion 1');
-      expect(formatted).toContain('Some notes');
+      expect(formatted).toContain("US-001");
+      expect(formatted).toContain("Test Story");
+      expect(formatted).toContain("PENDING");
+      expect(formatted).toContain("Criterion 1");
+      expect(formatted).toContain("Some notes");
     });
 
-    it('should format awaiting architect review status', () => {
+    it("should format awaiting architect review status", () => {
       const story: UserStory = {
-        id: 'US-002',
-        title: 'Needs review',
-        description: 'Pending approval',
-        acceptanceCriteria: ['Criterion'],
+        id: "US-002",
+        title: "Needs review",
+        description: "Pending approval",
+        acceptanceCriteria: ["Criterion"],
         priority: 2,
         passes: true,
-        architectVerified: false
+        architectVerified: false,
       };
 
       const formatted = formatStory(story);
-      expect(formatted).toContain('AWAITING ARCHITECT REVIEW');
+      expect(formatted).toContain("AWAITING ARCHITECT REVIEW");
     });
   });
 });

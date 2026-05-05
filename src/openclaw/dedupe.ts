@@ -14,7 +14,11 @@ import { join } from "path";
 
 import { atomicWriteJsonSync } from "../lib/atomic-write.js";
 import { isProcessAlive } from "../platform/index.js";
-import type { OpenClawContext, OpenClawHookEvent, OpenClawSignal } from "./types.js";
+import type {
+  OpenClawContext,
+  OpenClawHookEvent,
+  OpenClawSignal,
+} from "./types.js";
 
 const STATE_DIR = [".omc", "state"];
 const STATE_FILE = "openclaw-event-dedupe.json";
@@ -103,12 +107,18 @@ function readState(projectPath: string): DedupeState {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(statePath, "utf-8")) as Partial<DedupeState>;
+    const parsed = JSON.parse(
+      readFileSync(statePath, "utf-8"),
+    ) as Partial<DedupeState>;
     return {
       updatedAt:
-        typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date(0).toISOString(),
+        typeof parsed.updatedAt === "string"
+          ? parsed.updatedAt
+          : new Date(0).toISOString(),
       records:
-        parsed.records && typeof parsed.records === "object" ? parsed.records as Record<string, DedupeStateRecord> : {},
+        parsed.records && typeof parsed.records === "object"
+          ? (parsed.records as Record<string, DedupeStateRecord>)
+          : {},
     };
   } catch {
     return { updatedAt: new Date(0).toISOString(), records: {} };
@@ -132,8 +142,14 @@ function readLockSnapshot(projectPath: string): LockFileSnapshot | null {
       const parsed = JSON.parse(trimmed) as { pid?: unknown; token?: unknown };
       return {
         raw,
-        pid: typeof parsed.pid === "number" && Number.isFinite(parsed.pid) ? parsed.pid : null,
-        token: typeof parsed.token === "string" && parsed.token.length > 0 ? parsed.token : null,
+        pid:
+          typeof parsed.pid === "number" && Number.isFinite(parsed.pid)
+            ? parsed.pid
+            : null,
+        token:
+          typeof parsed.token === "string" && parsed.token.length > 0
+            ? parsed.token
+            : null,
       };
     } catch {
       return { raw, pid: null, token: null };
@@ -143,7 +159,10 @@ function readLockSnapshot(projectPath: string): LockFileSnapshot | null {
   }
 }
 
-function removeLockIfUnchanged(projectPath: string, snapshot: LockFileSnapshot): boolean {
+function removeLockIfUnchanged(
+  projectPath: string,
+  snapshot: LockFileSnapshot,
+): boolean {
   try {
     const currentRaw = readFileSync(getLockPath(projectPath), "utf-8");
     if (currentRaw !== snapshot.raw) {
@@ -173,7 +192,12 @@ function acquireLock(projectPath: string): LockHandle | null {
         constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY,
         0o600,
       );
-      writeSync(fd, JSON.stringify({ pid: process.pid, token, acquiredAt: Date.now() }), null, "utf-8");
+      writeSync(
+        fd,
+        JSON.stringify({ pid: process.pid, token, acquiredAt: Date.now() }),
+        null,
+        "utf-8",
+      );
       return { fd, token };
     } catch (error) {
       const err = error as NodeJS.ErrnoException;
@@ -257,7 +281,10 @@ function buildDescriptor(
         windowMs: START_WINDOW_MS,
       };
     case "keyword-detector": {
-      const prompt = typeof context.prompt === "string" ? normalizePrompt(context.prompt) : "";
+      const prompt =
+        typeof context.prompt === "string"
+          ? normalizePrompt(context.prompt)
+          : "";
       if (!prompt) {
         return null;
       }
@@ -351,7 +378,13 @@ export function shouldCollapseOpenClawBurst(
     return false;
   }
 
-  const descriptor = buildDescriptor(event, signal, context, tmuxSession, projectPath);
+  const descriptor = buildDescriptor(
+    event,
+    signal,
+    context,
+    tmuxSession,
+    projectPath,
+  );
   if (!descriptor) {
     return false;
   }
@@ -365,14 +398,23 @@ export function shouldCollapseOpenClawBurst(
     // arrive after the session has already reached a terminal state.
     // Do NOT update dedupe state here so the terminal record stays alive for
     // further suppression checks within the window.
-    if (isObsoleteAfterTerminalState(event, state, tmuxSession, projectPath, nowMs)) {
+    if (
+      isObsoleteAfterTerminalState(
+        event,
+        state,
+        tmuxSession,
+        projectPath,
+        nowMs,
+      )
+    ) {
       return true;
     }
 
     const nowIso = new Date(nowMs).toISOString();
     const existing = state.records[descriptor.key];
     const lastSeenMs = existing ? Date.parse(existing.lastSeenAt) : Number.NaN;
-    const shouldCollapse = Number.isFinite(lastSeenMs) && nowMs - lastSeenMs < descriptor.windowMs;
+    const shouldCollapse =
+      Number.isFinite(lastSeenMs) && nowMs - lastSeenMs < descriptor.windowMs;
 
     state.records[descriptor.key] = {
       event,

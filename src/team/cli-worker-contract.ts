@@ -15,20 +15,21 @@
  * contract in their inbox when assigned reviewer-style roles.
  */
 
-import type { CanonicalTeamRole } from '../shared/types.js';
-import type { CliAgentType } from './model-contract.js';
+import type { CanonicalTeamRole } from "../shared/types.js";
+import type { CliAgentType } from "./model-contract.js";
 
 /** Roles that emit a structured verdict and therefore use the output-file contract. */
-export const CONTRACT_ROLES: ReadonlySet<CanonicalTeamRole> = new Set<CanonicalTeamRole>([
-  'critic',
-  'code-reviewer',
-  'security-reviewer',
-  'test-engineer',
-]);
+export const CONTRACT_ROLES: ReadonlySet<CanonicalTeamRole> =
+  new Set<CanonicalTeamRole>([
+    "critic",
+    "code-reviewer",
+    "security-reviewer",
+    "test-engineer",
+  ]);
 
-export type CliWorkerVerdict = 'approve' | 'revise' | 'reject';
+export type CliWorkerVerdict = "approve" | "revise" | "reject";
 
-export type CliWorkerFindingSeverity = 'critical' | 'major' | 'minor' | 'nit';
+export type CliWorkerFindingSeverity = "critical" | "major" | "minor" | "nit";
 
 export interface CliWorkerFinding {
   severity: CliWorkerFindingSeverity;
@@ -45,8 +46,17 @@ export interface CliWorkerOutputPayload {
   findings: CliWorkerFinding[];
 }
 
-const VALID_VERDICTS: ReadonlySet<string> = new Set(['approve', 'revise', 'reject']);
-const VALID_SEVERITIES: ReadonlySet<string> = new Set(['critical', 'major', 'minor', 'nit']);
+const VALID_VERDICTS: ReadonlySet<string> = new Set([
+  "approve",
+  "revise",
+  "reject",
+]);
+const VALID_SEVERITIES: ReadonlySet<string> = new Set([
+  "critical",
+  "major",
+  "minor",
+  "nit",
+]);
 
 /**
  * Returns true when a role + provider pair requires the verdict-output contract.
@@ -65,7 +75,7 @@ export function shouldInjectContract(
   // role-router and worker-bootstrap guidance both flag this; here we
   // simply skip contract injection if a cursor worker somehow lands on
   // a CONTRACT_ROLES role rather than emit instructions it cannot follow.
-  if (provider === 'claude' || provider === 'cursor') return false;
+  if (provider === "claude" || provider === "cursor") return false;
   return CONTRACT_ROLES.has(role);
 }
 
@@ -79,42 +89,42 @@ export function renderCliWorkerOutputContract(
   output_file: string,
 ): string {
   return [
-    '',
-    '---',
-    '## REQUIRED: Structured Verdict Output',
-    '',
+    "",
+    "---",
+    "## REQUIRED: Structured Verdict Output",
+    "",
     `You are acting in the \`${role}\` role. Before you exit, write a JSON verdict to:`,
-    '',
+    "",
     `    ${output_file}`,
-    '',
-    'Schema (all keys required; `findings` may be an empty array):',
-    '',
-    '```json',
-    '{',
+    "",
+    "Schema (all keys required; `findings` may be an empty array):",
+    "",
+    "```json",
+    "{",
     `  "role": "${role}",`,
     '  "task_id": "<task id from the assignment above>",',
     '  "verdict": "approve" | "revise" | "reject",',
     '  "summary": "one- or two-sentence overall assessment",',
     '  "findings": [',
-    '    {',
+    "    {",
     '      "severity": "critical" | "major" | "minor" | "nit",',
     '      "message": "what is wrong and why it matters",',
     '      "file": "optional/path/to/file",',
     '      "line": 42',
-    '    }',
-    '  ]',
-    '}',
-    '```',
-    '',
-    'Rules:',
-    '- Write valid JSON only (no surrounding prose, no markdown fences in the file).',
-    '- `verdict` MUST be one of `approve`, `revise`, or `reject`.',
-    '- Each finding MUST carry a `severity` from the enum above.',
-    '- Use `approve` only when you have no blocking concerns.',
+    "    }",
+    "  ]",
+    "}",
+    "```",
+    "",
+    "Rules:",
+    "- Write valid JSON only (no surrounding prose, no markdown fences in the file).",
+    "- `verdict` MUST be one of `approve`, `revise`, or `reject`.",
+    "- Each finding MUST carry a `severity` from the enum above.",
+    "- Use `approve` only when you have no blocking concerns.",
     '- If you cannot produce a verdict, write `{"verdict":"revise", ...}` with an explanatory finding rather than exiting silently.',
-    '- The team leader reads this file to mark the task complete; omitting it leaves the task stuck in_progress pending human review.',
-    '',
-  ].join('\n');
+    "- The team leader reads this file to mark the task complete; omitting it leaves the task stuck in_progress pending human review.",
+    "",
+  ].join("\n");
 }
 
 /**
@@ -129,51 +139,54 @@ export function parseCliWorkerVerdict(raw: string): CliWorkerOutputPayload {
   } catch (err) {
     throw new Error(`verdict_json_parse_failed: ${(err as Error).message}`);
   }
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('verdict_not_object');
+  if (!parsed || typeof parsed !== "object") {
+    throw new Error("verdict_not_object");
   }
   const obj = parsed as Record<string, unknown>;
 
   const role = obj.role;
-  if (typeof role !== 'string' || !role) {
-    throw new Error('verdict_missing_role');
+  if (typeof role !== "string" || !role) {
+    throw new Error("verdict_missing_role");
   }
   const taskId = obj.task_id;
-  if (typeof taskId !== 'string' || !taskId) {
-    throw new Error('verdict_missing_task_id');
+  if (typeof taskId !== "string" || !taskId) {
+    throw new Error("verdict_missing_task_id");
   }
   const verdict = obj.verdict;
-  if (typeof verdict !== 'string' || !VALID_VERDICTS.has(verdict)) {
+  if (typeof verdict !== "string" || !VALID_VERDICTS.has(verdict)) {
     throw new Error(`verdict_invalid_verdict:${String(verdict)}`);
   }
   const summary = obj.summary;
-  if (typeof summary !== 'string') {
-    throw new Error('verdict_missing_summary');
+  if (typeof summary !== "string") {
+    throw new Error("verdict_missing_summary");
   }
   const findingsRaw = obj.findings;
   if (!Array.isArray(findingsRaw)) {
-    throw new Error('verdict_findings_not_array');
+    throw new Error("verdict_findings_not_array");
   }
 
   const findings: CliWorkerFinding[] = findingsRaw.map((entry, idx) => {
-    if (!entry || typeof entry !== 'object') {
+    if (!entry || typeof entry !== "object") {
       throw new Error(`verdict_finding_${idx}_not_object`);
     }
     const f = entry as Record<string, unknown>;
     const severity = f.severity;
-    if (typeof severity !== 'string' || !VALID_SEVERITIES.has(severity)) {
-      throw new Error(`verdict_finding_${idx}_invalid_severity:${String(severity)}`);
+    if (typeof severity !== "string" || !VALID_SEVERITIES.has(severity)) {
+      throw new Error(
+        `verdict_finding_${idx}_invalid_severity:${String(severity)}`,
+      );
     }
     const message = f.message;
-    if (typeof message !== 'string' || !message) {
+    if (typeof message !== "string" || !message) {
       throw new Error(`verdict_finding_${idx}_missing_message`);
     }
     const finding: CliWorkerFinding = {
       severity: severity as CliWorkerFindingSeverity,
       message,
     };
-    if (typeof f.file === 'string' && f.file) finding.file = f.file;
-    if (typeof f.line === 'number' && Number.isFinite(f.line)) finding.line = f.line;
+    if (typeof f.file === "string" && f.file) finding.file = f.file;
+    if (typeof f.line === "number" && Number.isFinite(f.line))
+      finding.line = f.line;
     return finding;
   });
 
@@ -196,5 +209,5 @@ export function cliWorkerOutputFilePath(
 ): string {
   // Intentional forward-slash join — consumed by prompts rendered for CLI
   // workers, matches other team state path conventions.
-  return `${teamStateRootAbs.replaceAll('\\', '/')}/workers/${workerName}/verdict.json`;
+  return `${teamStateRootAbs.replaceAll("\\", "/")}/workers/${workerName}/verdict.json`;
 }

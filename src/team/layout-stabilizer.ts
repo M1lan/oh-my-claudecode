@@ -1,4 +1,4 @@
-import { tmuxExecAsync, tmuxCmdAsync } from '../cli/tmux-utils.js';
+import { tmuxExecAsync, tmuxCmdAsync } from "../cli/tmux-utils.js";
 
 export interface LayoutStabilizerOptions {
   sessionTarget: string;
@@ -49,7 +49,7 @@ export class LayoutStabilizer {
 
     if (this.running) {
       this.queuedWhileRunning = true;
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         this.flushResolvers.push(resolve);
       });
     }
@@ -82,27 +82,47 @@ export class LayoutStabilizer {
     this.running = true;
     try {
       try {
-        await tmuxExecAsync(['select-layout', '-t', this.sessionTarget, 'main-vertical']);
+        await tmuxExecAsync([
+          "select-layout",
+          "-t",
+          this.sessionTarget,
+          "main-vertical",
+        ]);
       } catch {
         // ignore
       }
 
       try {
         const widthResult = await tmuxCmdAsync([
-          'display-message', '-p', '-t', this.sessionTarget, '#{window_width}',
+          "display-message",
+          "-p",
+          "-t",
+          this.sessionTarget,
+          "#{window_width}",
         ]);
         const width = parseInt(widthResult.stdout.trim(), 10);
         if (Number.isFinite(width) && width >= 40) {
           const half = String(Math.floor(width / 2));
-          await tmuxExecAsync(['set-window-option', '-t', this.sessionTarget, 'main-pane-width', half]);
-          await tmuxExecAsync(['select-layout', '-t', this.sessionTarget, 'main-vertical']);
+          await tmuxExecAsync([
+            "set-window-option",
+            "-t",
+            this.sessionTarget,
+            "main-pane-width",
+            half,
+          ]);
+          await tmuxExecAsync([
+            "select-layout",
+            "-t",
+            this.sessionTarget,
+            "main-vertical",
+          ]);
         }
       } catch {
         // ignore
       }
 
       try {
-        await tmuxExecAsync(['select-pane', '-t', this.leaderPaneId]);
+        await tmuxExecAsync(["select-pane", "-t", this.leaderPaneId]);
       } catch {
         // ignore
       }

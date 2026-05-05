@@ -22,14 +22,15 @@ are hard-deprecated shims and no longer launch the old runtime.
 `;
 
 function renderDeprecationMessage(args: readonly string[]): string {
-  const suffix = args.length > 0
-    ? `\nReceived legacy arguments: ${args.join(' ')}\n`
-    : '\n';
+  const suffix =
+    args.length > 0 ? `\nReceived legacy arguments: ${args.join(" ")}\n` : "\n";
 
   return `${AUTORESEARCH_HELP}${suffix}`;
 }
 
-export function normalizeAutoresearchClaudeArgs(claudeArgs: readonly string[]): string[] {
+export function normalizeAutoresearchClaudeArgs(
+  claudeArgs: readonly string[],
+): string[] {
   return [...claudeArgs];
 }
 
@@ -38,7 +39,9 @@ export interface ParsedAutoresearchArgs {
   deprecated: true;
 }
 
-export function parseAutoresearchArgs(args: readonly string[]): ParsedAutoresearchArgs {
+export function parseAutoresearchArgs(
+  args: readonly string[],
+): ParsedAutoresearchArgs {
   return {
     args: [...args],
     deprecated: true,

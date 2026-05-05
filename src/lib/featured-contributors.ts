@@ -1,17 +1,19 @@
-import { execSync } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { dirname, join, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { execSync } from "child_process";
+import { existsSync, readFileSync, writeFileSync } from "fs";
+import { dirname, join, resolve } from "path";
+import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const FEATURED_CONTRIBUTORS_START_MARKER = '<!-- OMC:FEATURED-CONTRIBUTORS:START -->';
-export const FEATURED_CONTRIBUTORS_END_MARKER = '<!-- OMC:FEATURED-CONTRIBUTORS:END -->';
-export const FEATURED_CONTRIBUTORS_TITLE = '## Featured by OmC Contributors';
+export const FEATURED_CONTRIBUTORS_START_MARKER =
+  "<!-- OMC:FEATURED-CONTRIBUTORS:START -->";
+export const FEATURED_CONTRIBUTORS_END_MARKER =
+  "<!-- OMC:FEATURED-CONTRIBUTORS:END -->";
+export const FEATURED_CONTRIBUTORS_TITLE = "## Featured by OmC Contributors";
 export const FEATURED_CONTRIBUTORS_MIN_STARS = 100;
-const DEFAULT_README_PATH = 'README.md';
-const DEFAULT_INSERTION_ANCHOR = '## Star History';
+const DEFAULT_README_PATH = "README.md";
+const DEFAULT_INSERTION_ANCHOR = "## Star History";
 const REQUEST_DELAY_MS = 150;
 
 export interface GitHubContributor {
@@ -84,9 +86,9 @@ function getGitHubToken(): string | null {
   }
 
   try {
-    const token = execSync('gh auth token', {
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+    const token = execSync("gh auth token", {
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
 
     cachedGitHubToken = token || null;
@@ -101,8 +103,8 @@ function getGitHubHeaders(): Record<string, string> {
   const token = getGitHubToken();
 
   return {
-    Accept: 'application/vnd.github+json',
-    'User-Agent': 'oh-my-claudecode-featured-contributors-generator',
+    Accept: "application/vnd.github+json",
+    "User-Agent": "oh-my-claudecode-featured-contributors-generator",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
@@ -112,9 +114,9 @@ function parseNextLink(linkHeader: string | null): string | null {
     return null;
   }
 
-  for (const part of linkHeader.split(',')) {
+  for (const part of linkHeader.split(",")) {
     const match = part.match(/<([^>]+)>;\s*rel="([^"]+)"/);
-    if (match?.[2] === 'next') {
+    if (match?.[2] === "next") {
       return match[1] ?? null;
     }
   }
@@ -122,7 +124,9 @@ function parseNextLink(linkHeader: string | null): string | null {
   return null;
 }
 
-async function fetchGitHubJson<T>(url: string): Promise<{ data: T; headers: Headers }> {
+async function fetchGitHubJson<T>(
+  url: string,
+): Promise<{ data: T; headers: Headers }> {
   const response = await fetch(url, {
     headers: getGitHubHeaders(),
   });
@@ -133,12 +137,14 @@ async function fetchGitHubJson<T>(url: string): Promise<{ data: T; headers: Head
     if (response.status === 403) {
       throw new Error(
         `GitHub API request failed with 403 for ${url}. ` +
-          'Set GITHUB_TOKEN/GH_TOKEN or slow down requests if you hit secondary rate limits. ' +
-          `Response: ${details}`
+          "Set GITHUB_TOKEN/GH_TOKEN or slow down requests if you hit secondary rate limits. " +
+          `Response: ${details}`,
       );
     }
 
-    throw new Error(`GitHub API request failed with ${response.status} for ${url}: ${details}`);
+    throw new Error(
+      `GitHub API request failed with ${response.status} for ${url}: ${details}`,
+    );
   }
 
   return {
@@ -160,39 +166,43 @@ async function fetchAllPages<T>(url: string): Promise<T[]> {
 
     const { data, headers } = await fetchGitHubJson<T[]>(nextUrl);
     items.push(...data);
-    nextUrl = parseNextLink(headers.get('link'));
+    nextUrl = parseNextLink(headers.get("link"));
   }
 
   return items;
 }
 
 export function extractRepoSlug(repositoryUrl: string): string {
-  const match = repositoryUrl.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i);
+  const match = repositoryUrl.match(
+    /github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i,
+  );
   if (!match?.[1]) {
-    throw new Error(`Could not determine GitHub repository slug from: ${repositoryUrl}`);
+    throw new Error(
+      `Could not determine GitHub repository slug from: ${repositoryUrl}`,
+    );
   }
 
   return match[1];
 }
 
 export function loadRepoSlugFromPackageJson(projectRoot: string): string {
-  const packageJsonPath = join(projectRoot, 'package.json');
+  const packageJsonPath = join(projectRoot, "package.json");
 
   if (!existsSync(packageJsonPath)) {
     throw new Error(`package.json not found at ${packageJsonPath}`);
   }
 
-  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as {
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8")) as {
     repository?: { url?: string } | string;
   };
 
   const repositoryUrl =
-    typeof packageJson.repository === 'string'
+    typeof packageJson.repository === "string"
       ? packageJson.repository
       : packageJson.repository?.url;
 
   if (!repositoryUrl) {
-    throw new Error('package.json is missing repository.url');
+    throw new Error("package.json is missing repository.url");
   }
 
   return extractRepoSlug(repositoryUrl);
@@ -201,59 +211,70 @@ export function loadRepoSlugFromPackageJson(projectRoot: string): string {
 export function formatStarCount(stars: number): string {
   if (stars >= 1000) {
     const compact = (stars / 1000).toFixed(stars >= 10000 ? 0 : 1);
-    return `${compact.replace(/\.0$/, '')}k`;
+    return `${compact.replace(/\.0$/, "")}k`;
   }
 
   return String(stars);
 }
 
-export function sortFeaturedContributors(entries: FeaturedContributor[]): FeaturedContributor[] {
+export function sortFeaturedContributors(
+  entries: FeaturedContributor[],
+): FeaturedContributor[] {
   return [...entries].sort(
-    (left, right) => right.stars - left.stars || left.login.localeCompare(right.login)
+    (left, right) =>
+      right.stars - left.stars || left.login.localeCompare(right.login),
   );
 }
 
-export function pickTopPersonalRepo(login: string, repos: GitHubRepo[]): GitHubRepo | null {
+export function pickTopPersonalRepo(
+  login: string,
+  repos: GitHubRepo[],
+): GitHubRepo | null {
   const eligibleRepos = repos.filter(
     (repo) =>
       !repo.fork &&
       !repo.archived &&
       repo.owner.login === login &&
-      repo.owner.type === 'User'
+      repo.owner.type === "User",
   );
 
   if (eligibleRepos.length === 0) {
     return null;
   }
 
-  return [...eligibleRepos].sort(
-    (left, right) =>
-      right.stargazers_count - left.stargazers_count || left.full_name.localeCompare(right.full_name)
-  )[0] ?? null;
+  return (
+    [...eligibleRepos].sort(
+      (left, right) =>
+        right.stargazers_count - left.stargazers_count ||
+        left.full_name.localeCompare(right.full_name),
+    )[0] ?? null
+  );
 }
 
-async function fetchAllTimeContributors(repoSlug: string): Promise<GitHubContributor[]> {
+async function fetchAllTimeContributors(
+  repoSlug: string,
+): Promise<GitHubContributor[]> {
   return fetchAllPages<GitHubContributor>(
-    `https://api.github.com/repos/${repoSlug}/contributors?per_page=100`
+    `https://api.github.com/repos/${repoSlug}/contributors?per_page=100`,
   );
 }
 
 async function fetchOwnedRepos(login: string): Promise<GitHubRepo[]> {
   return fetchAllPages<GitHubRepo>(
-    `https://api.github.com/users/${login}/repos?type=owner&per_page=100`
+    `https://api.github.com/users/${login}/repos?type=owner&per_page=100`,
   );
 }
 
 export async function collectFeaturedContributors(
   repoSlug: string,
-  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS
+  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS,
 ): Promise<FeaturedContributor[]> {
   const contributors = await fetchAllTimeContributors(repoSlug);
   const seen = new Set<string>();
   const entries: FeaturedContributor[] = [];
 
   for (const contributor of contributors) {
-    if (contributor.type !== 'User' || seen.has(contributor.login)) {
+    if (contributor.type !== "User" || seen.has(contributor.login)) {
       continue;
     }
 
@@ -281,36 +302,38 @@ export async function collectFeaturedContributors(
 
 export function renderFeaturedContributorsSection(
   entries: FeaturedContributor[],
-  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS
+  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS,
 ): string {
   const sortedEntries = sortFeaturedContributors(entries);
   const lines = [
     FEATURED_CONTRIBUTORS_START_MARKER,
     FEATURED_CONTRIBUTORS_TITLE,
-    '',
+    "",
     `Top personal non-fork, non-archived repos from all-time OMC contributors (${minStars}+ GitHub stars).`,
-    '',
+    "",
   ];
 
   if (sortedEntries.length === 0) {
-    lines.push(`_No contributors currently meet the ${minStars}+ star threshold._`);
+    lines.push(
+      `_No contributors currently meet the ${minStars}+ star threshold._`,
+    );
   } else {
     for (const entry of sortedEntries) {
       lines.push(
-        `- [@${entry.login}](${entry.profileUrl}) — [${entry.repoName}](${entry.repoUrl}) (⭐ ${formatStarCount(entry.stars)})`
+        `- [@${entry.login}](${entry.profileUrl}) — [${entry.repoName}](${entry.repoUrl}) (⭐ ${formatStarCount(entry.stars)})`,
       );
     }
   }
 
-  lines.push('', FEATURED_CONTRIBUTORS_END_MARKER);
+  lines.push("", FEATURED_CONTRIBUTORS_END_MARKER);
 
-  return `${lines.join('\n')}\n`;
+  return `${lines.join("\n")}\n`;
 }
 
 export function upsertFeaturedContributorsSection(
   readmeContent: string,
   featuredSection: string,
-  anchor: string = DEFAULT_INSERTION_ANCHOR
+  anchor: string = DEFAULT_INSERTION_ANCHOR,
 ): string {
   const startIndex = readmeContent.indexOf(FEATURED_CONTRIBUTORS_START_MARKER);
   const endIndex = readmeContent.indexOf(FEATURED_CONTRIBUTORS_END_MARKER);
@@ -321,22 +344,25 @@ export function upsertFeaturedContributorsSection(
 
     return trailingContent.length === 0
       ? `${readmeContent.slice(0, startIndex)}${featuredSection}`
-      : `${readmeContent.slice(0, startIndex)}${featuredSection}${trailingContent.replace(/^\n+/, '\n')}`;
+      : `${readmeContent.slice(0, startIndex)}${featuredSection}${trailingContent.replace(/^\n+/, "\n")}`;
   }
 
   const anchorIndex = readmeContent.indexOf(anchor);
   if (anchorIndex !== -1) {
-    return `${readmeContent.slice(0, anchorIndex).replace(/\n*$/, '\n\n')}${featuredSection}\n${readmeContent.slice(anchorIndex)}`;
+    return `${readmeContent.slice(0, anchorIndex).replace(/\n*$/, "\n\n")}${featuredSection}\n${readmeContent.slice(anchorIndex)}`;
   }
 
-  return `${readmeContent.replace(/\s*$/, '\n\n')}${featuredSection}`;
+  return `${readmeContent.replace(/\s*$/, "\n\n")}${featuredSection}`;
 }
 
 export async function syncFeaturedContributorsReadme(
-  options: SyncFeaturedContributorsOptions = {}
+  options: SyncFeaturedContributorsOptions = {},
 ): Promise<SyncFeaturedContributorsResult> {
-  const projectRoot = options.projectRoot ?? resolve(__dirname, '../..');
-  const readmePath = join(projectRoot, options.readmePath ?? DEFAULT_README_PATH);
+  const projectRoot = options.projectRoot ?? resolve(__dirname, "../..");
+  const readmePath = join(
+    projectRoot,
+    options.readmePath ?? DEFAULT_README_PATH,
+  );
   const repoSlug = options.repoSlug ?? loadRepoSlugFromPackageJson(projectRoot);
   const minStars = options.minStars ?? FEATURED_CONTRIBUTORS_MIN_STARS;
 
@@ -345,18 +371,21 @@ export async function syncFeaturedContributorsReadme(
   }
 
   const entries = await collectFeaturedContributors(repoSlug, minStars);
-  const originalContent = readFileSync(readmePath, 'utf-8');
+  const originalContent = readFileSync(readmePath, "utf-8");
   const featuredSection = renderFeaturedContributorsSection(entries, minStars);
-  const updatedContent = upsertFeaturedContributorsSection(originalContent, featuredSection);
+  const updatedContent = upsertFeaturedContributorsSection(
+    originalContent,
+    featuredSection,
+  );
   const changed = updatedContent !== originalContent;
 
   if (changed && !options.dryRun) {
-    writeFileSync(readmePath, updatedContent, 'utf-8');
+    writeFileSync(readmePath, updatedContent, "utf-8");
   }
 
   return {
     changed,
-    changes: ['Featured contributors README block'],
+    changes: ["Featured contributors README block"],
     entries,
     readmePath,
   };
@@ -370,28 +399,28 @@ function parseCliOptions(args: string[]): CliOptions {
   };
 
   for (const arg of args) {
-    if (arg === '--dry-run') {
+    if (arg === "--dry-run") {
       options.dryRun = true;
       continue;
     }
 
-    if (arg === '--verify') {
+    if (arg === "--verify") {
       options.verify = true;
       continue;
     }
 
-    if (arg === '--help' || arg === '-h') {
+    if (arg === "--help" || arg === "-h") {
       options.help = true;
       continue;
     }
 
-    if (arg.startsWith('--repo=')) {
-      options.repoSlug = arg.slice('--repo='.length);
+    if (arg.startsWith("--repo=")) {
+      options.repoSlug = arg.slice("--repo=".length);
       continue;
     }
 
-    if (arg.startsWith('--min-stars=')) {
-      options.minStars = Number(arg.slice('--min-stars='.length));
+    if (arg.startsWith("--min-stars=")) {
+      options.minStars = Number(arg.slice("--min-stars=".length));
       continue;
     }
   }
@@ -399,7 +428,9 @@ function parseCliOptions(args: string[]): CliOptions {
   return options;
 }
 
-export async function runFeaturedContributorsCli(args: string[] = process.argv.slice(2)): Promise<void> {
+export async function runFeaturedContributorsCli(
+  args: string[] = process.argv.slice(2),
+): Promise<void> {
   const options = parseCliOptions(args);
 
   if (options.help) {
@@ -430,16 +461,18 @@ Notes:
 
   if (result.changed) {
     console.log(
-      `${options.verify ? '✗' : options.dryRun ? '📝' : '✓'} ${DEFAULT_README_PATH} — featured contributors block`
+      `${options.verify ? "✗" : options.dryRun ? "📝" : "✓"} ${DEFAULT_README_PATH} — featured contributors block`,
     );
   } else {
-    console.log(`✓ ${DEFAULT_README_PATH} — featured contributors block already up to date`);
+    console.log(
+      `✓ ${DEFAULT_README_PATH} — featured contributors block already up to date`,
+    );
   }
 
   console.log(`Featured contributors: ${result.entries.length}`);
 
   if (options.verify && result.changed) {
-    console.error('Run: pnpm run sync-featured-contributors');
+    console.error("Run: pnpm run sync-featured-contributors");
     process.exit(1);
   }
 }

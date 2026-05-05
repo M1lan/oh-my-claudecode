@@ -273,9 +273,7 @@ export function writeHudState(
     atomicWriteJsonSync(stateFile, nextState);
 
     if (sessionId) {
-      const legacyCandidates = [
-        getLegacyRootStateFilePath(directory),
-      ];
+      const legacyCandidates = [getLegacyRootStateFilePath(directory)];
       for (const legacyFile of legacyCandidates) {
         if (!existsSync(legacyFile)) {
           continue;
@@ -527,7 +525,11 @@ export async function initializeHUDState(
   sessionId?: string,
 ): Promise<void> {
   // Clean up stale background tasks from previous sessions
-  const removedStale = await cleanupStaleBackgroundTasks(undefined, directory, sessionId);
+  const removedStale = await cleanupStaleBackgroundTasks(
+    undefined,
+    directory,
+    sessionId,
+  );
   const markedOrphaned = await markOrphanedTasksAsStale(directory, sessionId);
 
   if (removedStale > 0 || markedOrphaned > 0) {

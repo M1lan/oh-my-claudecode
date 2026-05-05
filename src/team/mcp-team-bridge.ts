@@ -668,7 +668,11 @@ export async function runBridge(config: BridgeConfig): Promise<void> {
         // Run full shutdown cleanup (unregister, heartbeat, etc.) but skip duplicate ack
         await handleShutdown(
           config,
-          { requestId: drain.requestId, reason: `drain: ${drain.reason}`, _ackAlreadyWritten: true },
+          {
+            requestId: drain.requestId,
+            reason: `drain: ${drain.reason}`,
+            _ackAlreadyWritten: true,
+          },
           null,
         );
         break;

@@ -248,14 +248,14 @@ export interface ReplyConfig {
 // ============================================================================
 
 /** Type of custom integration */
-export type CustomIntegrationType = 'webhook' | 'cli';
+export type CustomIntegrationType = "webhook" | "cli";
 
 /** Configuration for webhook-based custom integrations */
 export interface WebhookIntegrationConfig {
   /** Webhook URL (must be HTTPS for production) */
   url: string;
   /** HTTP method */
-  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   /** HTTP headers to include */
   headers: Record<string, string>;
   /** Body template with {{variable}} interpolation */

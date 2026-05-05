@@ -10,11 +10,10 @@
  * accessible across MCP server modules.
  */
 
-
 /**
  * Output path policy types
  */
-export type OutputPathPolicy = 'strict' | 'redirect_output';
+export type OutputPathPolicy = "strict" | "redirect_output";
 
 /**
  * MCP Configuration interface
@@ -32,8 +31,8 @@ export interface McpConfig {
  * Default MCP configuration values
  */
 export const DEFAULT_MCP_CONFIG: McpConfig = {
-  outputPathPolicy: 'strict',
-  outputRedirectDir: '.omc/outputs',
+  outputPathPolicy: "strict",
+  outputRedirectDir: ".omc/outputs",
   allowExternalPrompt: false,
 };
 
@@ -41,30 +40,40 @@ export const DEFAULT_MCP_CONFIG: McpConfig = {
  * Parse environment variable to OutputPathPolicy
  */
 function parseOutputPathPolicy(value: string | undefined): OutputPathPolicy {
-  if (value === 'redirect_output') {
-    return 'redirect_output';
+  if (value === "redirect_output") {
+    return "redirect_output";
   }
   // Default to strict for any other value (including undefined)
-  return 'strict';
+  return "strict";
 }
 
 /**
  * Parse boolean-like environment variable (0|1, true|false)
  */
-function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
-  if (value === undefined || value === '') {
+function parseBooleanEnv(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
+  if (value === undefined || value === "") {
     return defaultValue;
   }
-  return value === '1' || value.toLowerCase() === 'true';
+  return value === "1" || value.toLowerCase() === "true";
 }
 
 /**
  * Load MCP configuration from environment variables
  */
 export function loadMcpConfig(): McpConfig {
-  const outputPathPolicy = parseOutputPathPolicy(process.env.OMC_MCP_OUTPUT_PATH_POLICY);
-  const outputRedirectDir = process.env.OMC_MCP_OUTPUT_REDIRECT_DIR || DEFAULT_MCP_CONFIG.outputRedirectDir;
-  const allowExternalPrompt = parseBooleanEnv(process.env.OMC_MCP_ALLOW_EXTERNAL_PROMPT, DEFAULT_MCP_CONFIG.allowExternalPrompt);
+  const outputPathPolicy = parseOutputPathPolicy(
+    process.env.OMC_MCP_OUTPUT_PATH_POLICY,
+  );
+  const outputRedirectDir =
+    process.env.OMC_MCP_OUTPUT_REDIRECT_DIR ||
+    DEFAULT_MCP_CONFIG.outputRedirectDir;
+  const allowExternalPrompt = parseBooleanEnv(
+    process.env.OMC_MCP_ALLOW_EXTERNAL_PROMPT,
+    DEFAULT_MCP_CONFIG.allowExternalPrompt,
+  );
 
   const config: McpConfig = {
     outputPathPolicy,
@@ -74,7 +83,9 @@ export function loadMcpConfig(): McpConfig {
 
   // Log warning if external prompt access is enabled (security consideration)
   if (config.allowExternalPrompt) {
-    console.warn('[MCP Config] WARNING: OMC_MCP_ALLOW_EXTERNAL_PROMPT is enabled. External prompt files outside the working directory are allowed. This may pose a security risk.');
+    console.warn(
+      "[MCP Config] WARNING: OMC_MCP_ALLOW_EXTERNAL_PROMPT is enabled. External prompt files outside the working directory are allowed. This may pose a security risk.",
+    );
   }
 
   return config;

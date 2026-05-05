@@ -1,18 +1,20 @@
-import { execFileSync } from 'node:child_process';
-import type { GitProvider, PRInfo, IssueInfo } from './types.js';
+import { execFileSync } from "node:child_process";
+import type { GitProvider, PRInfo, IssueInfo } from "./types.js";
 
 export class GitLabProvider implements GitProvider {
-  readonly name = 'gitlab' as const;
-  readonly displayName = 'GitLab';
-  readonly prTerminology = 'MR' as const;
-  readonly prRefspec = 'merge-requests/{number}/head:{branch}';
+  readonly name = "gitlab" as const;
+  readonly displayName = "GitLab";
+  readonly prTerminology = "MR" as const;
+  readonly prRefspec = "merge-requests/{number}/head:{branch}";
 
   detectFromRemote(url: string): boolean {
     const lower = url.toLowerCase();
-    if (lower.includes('gitlab.com')) return true;
+    if (lower.includes("gitlab.com")) return true;
     // Self-hosted: match hostname label containing 'gitlab', not path/query
-    const hostMatch = lower.match(/^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/);
-    const host = hostMatch ? hostMatch[1] : '';
+    const hostMatch = lower.match(
+      /^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/,
+    );
+    const host = hostMatch ? hostMatch[1] : "";
     return /(^|[.-])gitlab([.-]|$)/.test(host);
   }
 
@@ -28,13 +30,13 @@ export class GitLabProvider implements GitProvider {
   viewPR(number: number, owner?: string, repo?: string): PRInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const args = ['mr', 'view', String(number)];
-      if (owner && repo) args.push('--repo', `${owner}/${repo}`);
-      args.push('--output', 'json');
-      const raw = execFileSync('glab', args, {
-        encoding: 'utf-8',
+      const args = ["mr", "view", String(number)];
+      if (owner && repo) args.push("--repo", `${owner}/${repo}`);
+      args.push("--output", "json");
+      const raw = execFileSync("glab", args, {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -53,13 +55,13 @@ export class GitLabProvider implements GitProvider {
   viewIssue(number: number, owner?: string, repo?: string): IssueInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const args = ['issue', 'view', String(number)];
-      if (owner && repo) args.push('--repo', `${owner}/${repo}`);
-      args.push('--output', 'json');
-      const raw = execFileSync('glab', args, {
-        encoding: 'utf-8',
+      const args = ["issue", "view", String(number)];
+      if (owner && repo) args.push("--repo", `${owner}/${repo}`);
+      args.push("--output", "json");
+      const raw = execFileSync("glab", args, {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       const data = JSON.parse(raw);
       return {
@@ -75,10 +77,10 @@ export class GitLabProvider implements GitProvider {
 
   checkAuth(): boolean {
     try {
-      execFileSync('glab', ['auth', 'status'], {
-        encoding: 'utf-8',
+      execFileSync("glab", ["auth", "status"], {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       return true;
     } catch {
@@ -87,6 +89,6 @@ export class GitLabProvider implements GitProvider {
   }
 
   getRequiredCLI(): string | null {
-    return 'glab';
+    return "glab";
   }
 }

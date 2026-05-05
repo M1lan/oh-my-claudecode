@@ -1,5 +1,5 @@
-import { existsSync, readdirSync } from 'fs';
-import { dirname, relative } from 'path';
+import { existsSync, readdirSync } from "fs";
+import { dirname, relative } from "path";
 
 const MAX_RESOURCE_ENTRIES = 12;
 
@@ -7,9 +7,9 @@ function toDisplayPath(pathValue: string): string {
   const relativeToCwd = relative(process.cwd(), pathValue);
   if (
     relativeToCwd &&
-    relativeToCwd !== '' &&
-    !relativeToCwd.startsWith('..') &&
-    relativeToCwd !== '.'
+    relativeToCwd !== "" &&
+    !relativeToCwd.startsWith("..") &&
+    relativeToCwd !== "."
   ) {
     return relativeToCwd;
   }
@@ -22,7 +22,9 @@ export interface SkillResourceSummary {
   entries: string[];
 }
 
-export function summarizeSkillResources(skillFilePath: string): SkillResourceSummary | undefined {
+export function summarizeSkillResources(
+  skillFilePath: string,
+): SkillResourceSummary | undefined {
   const skillDirectory = dirname(skillFilePath);
   if (!existsSync(skillDirectory)) {
     return undefined;
@@ -31,10 +33,12 @@ export function summarizeSkillResources(skillFilePath: string): SkillResourceSum
   let directoryEntries: string[] = [];
   try {
     directoryEntries = readdirSync(skillDirectory, { withFileTypes: true })
-      .filter((entry) => entry.name !== 'SKILL.md' && !entry.name.startsWith('.'))
+      .filter(
+        (entry) => entry.name !== "SKILL.md" && !entry.name.startsWith("."),
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, MAX_RESOURCE_ENTRIES)
-      .map((entry) => entry.isDirectory() ? `${entry.name}/` : entry.name);
+      .map((entry) => (entry.isDirectory() ? `${entry.name}/` : entry.name));
   } catch {
     return undefined;
   }
@@ -52,17 +56,17 @@ export function summarizeSkillResources(skillFilePath: string): SkillResourceSum
 export function renderSkillResourcesGuidance(skillFilePath: string): string {
   const summary = summarizeSkillResources(skillFilePath);
   if (!summary) {
-    return '';
+    return "";
   }
 
   const lines = [
-    '## Skill Resources',
+    "## Skill Resources",
     `Skill directory: \`${summary.skillDirectory}\``,
-    'Bundled resources:',
+    "Bundled resources:",
     ...summary.entries.map((entry) => `- \`${entry}\``),
-    '',
-    'Prefer reusing these bundled resources when they fit the task instead of recreating them from scratch.',
+    "",
+    "Prefer reusing these bundled resources when they fit the task instead of recreating them from scratch.",
   ];
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

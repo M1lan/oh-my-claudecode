@@ -6,33 +6,33 @@
  * All types used across the team bridge module for MCP worker orchestration.
  */
 
-import type { TeamTaskStatus } from './contracts.js';
-import type { TeamPhase } from './phase-controller.js';
-import type { TeamLeaderNextAction } from './leader-nudge-guidance.js';
-import type { CanonicalTeamRole, RoleAssignment } from '../shared/types.js';
+import type { TeamTaskStatus } from "./contracts.js";
+import type { TeamPhase } from "./phase-controller.js";
+import type { TeamLeaderNextAction } from "./leader-nudge-guidance.js";
+import type { CanonicalTeamRole, RoleAssignment } from "../shared/types.js";
 
 /** Bridge daemon configuration — passed via --config file to bridge-entry.ts */
 export interface BridgeConfig {
   teamName: string;
   workerName: string;
-  provider: 'codex' | 'gemini';
+  provider: "codex" | "gemini";
   model?: string;
   workingDirectory: string;
-  pollIntervalMs: number;       // default: 3000
-  taskTimeoutMs: number;        // default: 600000 (10 min)
-  maxConsecutiveErrors: number;  // default: 3 — self-quarantine threshold
-  outboxMaxLines: number;       // default: 500 — rotation trigger
-  maxRetries?: number;          // default: 5 — max task retry attempts
-  permissionEnforcement?: 'off' | 'audit' | 'enforce'; // default: 'off'
+  pollIntervalMs: number; // default: 3000
+  taskTimeoutMs: number; // default: 600000 (10 min)
+  maxConsecutiveErrors: number; // default: 3 — self-quarantine threshold
+  outboxMaxLines: number; // default: 500 — rotation trigger
+  maxRetries?: number; // default: 5 — max task retry attempts
+  permissionEnforcement?: "off" | "audit" | "enforce"; // default: 'off'
   permissions?: BridgeWorkerPermissions;
 }
 
 /** Permission scoping embedded in BridgeConfig (mirrors WorkerPermissions shape) */
 export interface BridgeWorkerPermissions {
-  allowedPaths: string[];   // glob patterns relative to workingDirectory
-  deniedPaths: string[];    // glob patterns that override allowed
+  allowedPaths: string[]; // glob patterns relative to workingDirectory
+  deniedPaths: string[]; // glob patterns that override allowed
   allowedCommands: string[]; // command prefixes (e.g., 'pnpm test', 'tsc')
-  maxFileSize: number;      // max bytes per file write
+  maxFileSize: number; // max bytes per file write
 }
 
 /** Mirrors the JSON structure of {cwd}/.omc/state/team/{team}/tasks/{id}.json */
@@ -52,18 +52,32 @@ export interface TaskFile {
 }
 
 /** Partial update for a task file (only fields being changed) */
-export type TaskFileUpdate = Partial<Pick<TaskFile, 'status' | 'owner' | 'metadata' | 'claimedBy' | 'claimedAt' | 'claimPid'>>;
+export type TaskFileUpdate = Partial<
+  Pick<
+    TaskFile,
+    "status" | "owner" | "metadata" | "claimedBy" | "claimedAt" | "claimPid"
+  >
+>;
 
 /** JSONL message from lead -> worker (inbox) */
 export interface InboxMessage {
-  type: 'message' | 'context';
+  type: "message" | "context";
   content: string;
   timestamp: string;
 }
 
 /** JSONL message from worker -> lead (outbox) */
 export interface OutboxMessage {
-  type: 'ready' | 'task_complete' | 'task_failed' | 'idle' | 'shutdown_ack' | 'drain_ack' | 'heartbeat' | 'error' | 'all_tasks_complete';
+  type:
+    | "ready"
+    | "task_complete"
+    | "task_failed"
+    | "idle"
+    | "shutdown_ack"
+    | "drain_ack"
+    | "heartbeat"
+    | "error"
+    | "all_tasks_complete";
   taskId?: string;
   summary?: string;
   message?: string;
@@ -88,14 +102,14 @@ export interface DrainSignal {
 
 /** MCP worker member entry for config.json or shadow registry */
 export interface McpWorkerMember {
-  agentId: string;          // "{workerName}@{teamName}"
-  name: string;             // workerName
-  agentType: string;        // "mcp-codex" | "mcp-gemini"
+  agentId: string; // "{workerName}@{teamName}"
+  name: string; // workerName
+  agentType: string; // "mcp-codex" | "mcp-gemini"
   model: string;
-  joinedAt: number;         // Date.now()
-  tmuxPaneId: string;       // tmux session name
+  joinedAt: number; // Date.now()
+  tmuxPaneId: string; // tmux session name
   cwd: string;
-  backendType: 'tmux';
+  backendType: "tmux";
   subscriptions: string[];
 }
 
@@ -103,22 +117,22 @@ export interface McpWorkerMember {
 export interface HeartbeatData {
   workerName: string;
   teamName: string;
-  provider: 'codex' | 'gemini' | 'claude';
+  provider: "codex" | "gemini" | "claude";
   pid: number;
-  lastPollAt: string;       // ISO timestamp of last poll cycle
-  currentTaskId?: string;   // task being executed, if any
+  lastPollAt: string; // ISO timestamp of last poll cycle
+  currentTaskId?: string; // task being executed, if any
   consecutiveErrors: number;
-  status: 'ready' | 'polling' | 'executing' | 'shutdown' | 'quarantined';
+  status: "ready" | "polling" | "executing" | "shutdown" | "quarantined";
 }
 
 /** Offset cursor for JSONL consumption */
 export interface InboxCursor {
-  bytesRead: number;        // file offset in bytes
+  bytesRead: number; // file offset in bytes
 }
 
 /** Result of config.json schema probe */
 export interface ConfigProbeResult {
-  probeResult: 'pass' | 'fail' | 'partial';
+  probeResult: "pass" | "fail" | "partial";
   probedAt: string;
   version: string;
 }
@@ -126,7 +140,7 @@ export interface ConfigProbeResult {
 /** Sidecar mapping task IDs to execution modes */
 export interface TaskModeMap {
   teamName: string;
-  taskModes: Record<string, 'mcp_codex' | 'mcp_gemini' | 'claude_worker'>;
+  taskModes: Record<string, "mcp_codex" | "mcp_gemini" | "claude_worker">;
 }
 
 /** Failure sidecar for a task */
@@ -138,20 +152,27 @@ export interface TaskFailureSidecar {
 }
 
 /** Worker backend type */
-export type WorkerBackend = 'claude-native' | 'mcp-codex' | 'mcp-gemini' | 'tmux-claude' | 'tmux-codex' | 'tmux-gemini' | 'tmux-cursor';
+export type WorkerBackend =
+  | "claude-native"
+  | "mcp-codex"
+  | "mcp-gemini"
+  | "tmux-claude"
+  | "tmux-codex"
+  | "tmux-gemini"
+  | "tmux-cursor";
 
 /** Worker capability tag */
 export type WorkerCapability =
-  | 'code-edit'
-  | 'code-review'
-  | 'security-review'
-  | 'architecture'
-  | 'testing'
-  | 'documentation'
-  | 'ui-design'
-  | 'refactoring'
-  | 'research'
-  | 'general';
+  | "code-edit"
+  | "code-review"
+  | "security-review"
+  | "architecture"
+  | "testing"
+  | "documentation"
+  | "ui-design"
+  | "refactoring"
+  | "research"
+  | "general";
 
 // ---------------------------------------------------------------------------
 // OMX-aligned types for event-driven team coordination
@@ -162,12 +183,16 @@ export interface TeamTaskV2 extends TeamTask {
   version: number;
 }
 
-export type TeamTaskDelegationMode = 'none' | 'optional' | 'auto' | 'required';
-export type TeamTaskChildModelPolicy = 'standard' | 'fast' | 'inherit' | 'frontier';
+export type TeamTaskDelegationMode = "none" | "optional" | "auto" | "required";
+export type TeamTaskChildModelPolicy =
+  | "standard"
+  | "fast"
+  | "inherit"
+  | "frontier";
 
 export interface TeamTaskDelegationComplianceEvidence {
-  status: 'spawned' | 'skipped';
-  source: 'terminal_result';
+  status: "spawned" | "skipped";
+  source: "terminal_result";
   detail: string;
   recorded_at: string;
 }
@@ -180,7 +205,7 @@ export interface TeamTaskDelegationPlan {
   child_model_policy?: TeamTaskChildModelPolicy;
   child_model?: string;
   subtask_candidates?: string[];
-  child_report_format?: 'bullets' | 'json';
+  child_report_format?: "bullets" | "json";
   skip_allowed_reason_required?: boolean;
 }
 
@@ -222,9 +247,9 @@ export interface TeamLeader {
 
 /** Team transport/runtime policy configuration */
 export interface TeamTransportPolicy {
-  display_mode: 'split_pane' | 'auto';
-  worker_launch_mode: 'interactive' | 'prompt';
-  dispatch_mode: 'hook_preferred_with_fallback' | 'transport_direct';
+  display_mode: "split_pane" | "auto";
+  worker_launch_mode: "interactive" | "prompt";
+  dispatch_mode: "hook_preferred_with_fallback" | "transport_direct";
   dispatch_ack_timeout_ms: number;
 }
 
@@ -263,9 +288,9 @@ export interface TeamManifestV2 {
   created_at: string;
   leader_cwd?: string;
   team_state_root?: string;
-  workspace_mode?: 'single' | 'worktree';
-  worktree_mode?: 'disabled' | 'detached' | 'named';
-  lifecycle_profile?: 'default' | 'linked_ralph';
+  workspace_mode?: "single" | "worktree";
+  worktree_mode?: "disabled" | "detached" | "named";
+  lifecycle_profile?: "default" | "linked_ralph";
   leader_pane_id: string | null;
   hud_pane_id: string | null;
   resize_hook_name: string | null;
@@ -278,7 +303,7 @@ export interface WorkerInfo {
   name: string;
   index: number;
   role: string;
-  worker_cli?: 'codex' | 'claude' | 'gemini' | 'cursor';
+  worker_cli?: "codex" | "claude" | "gemini" | "cursor";
   assigned_tasks: string[];
   pid?: number;
   pane_id?: string;
@@ -302,7 +327,7 @@ export interface TeamConfig {
   name: string;
   task: string;
   agent_type: string;
-  worker_launch_mode: 'interactive' | 'prompt';
+  worker_launch_mode: "interactive" | "prompt";
   policy?: TeamTransportPolicy;
   governance?: TeamGovernance;
   worker_count: number;
@@ -314,9 +339,9 @@ export interface TeamConfig {
   next_task_id: number;
   leader_cwd?: string;
   team_state_root?: string;
-  workspace_mode?: 'single' | 'worktree';
-  worktree_mode?: 'disabled' | 'detached' | 'named';
-  lifecycle_profile?: 'default' | 'linked_ralph';
+  workspace_mode?: "single" | "worktree";
+  worktree_mode?: "disabled" | "detached" | "named";
+  lifecycle_profile?: "default" | "linked_ralph";
   leader_pane_id: string | null;
   hud_pane_id: string | null;
   resize_hook_name: string | null;
@@ -327,13 +352,23 @@ export interface TeamConfig {
    * Populated at team creation by `buildResolvedRoutingSnapshot()`; read by
    * `scaleUp`, worker restart, and spawn paths. Immutable for the team's lifetime.
    */
-  resolved_routing?: Record<CanonicalTeamRole, { primary: RoleAssignment; fallback: RoleAssignment }>;
+  resolved_routing?: Record<
+    CanonicalTeamRole,
+    { primary: RoleAssignment; fallback: RoleAssignment }
+  >;
 }
 
 /** Dispatch request kinds */
-export type TeamDispatchRequestKind = 'inbox' | 'mailbox' | 'nudge';
-export type TeamDispatchRequestStatus = 'pending' | 'notified' | 'delivered' | 'failed';
-export type TeamDispatchTransportPreference = 'hook_preferred_with_fallback' | 'transport_direct' | 'prompt_stdin';
+export type TeamDispatchRequestKind = "inbox" | "mailbox" | "nudge";
+export type TeamDispatchRequestStatus =
+  | "pending"
+  | "notified"
+  | "delivered"
+  | "failed";
+export type TeamDispatchTransportPreference =
+  | "hook_preferred_with_fallback"
+  | "transport_direct"
+  | "prompt_stdin";
 
 /** Dispatch request for worker notification */
 export interface TeamDispatchRequest {
@@ -377,16 +412,16 @@ export interface TeamEvent {
   event_id: string;
   team: string;
   type:
-    | 'task_completed'
-    | 'task_failed'
-    | 'worker_idle'
-    | 'worker_stopped'
-    | 'message_received'
-    | 'shutdown_ack'
-    | 'shutdown_gate'
-    | 'shutdown_gate_forced'
-    | 'approval_decision'
-    | 'team_leader_nudge';
+    | "task_completed"
+    | "task_failed"
+    | "worker_idle"
+    | "worker_stopped"
+    | "message_received"
+    | "shutdown_ack"
+    | "shutdown_gate"
+    | "shutdown_gate_forced"
+    | "approval_decision"
+    | "team_leader_nudge";
   worker: string;
   task_id?: string;
   message_id?: string | null;
@@ -417,7 +452,7 @@ export interface TeamMailbox {
 export interface TaskApprovalRecord {
   task_id: string;
   required: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   reviewer: string;
   decision_reason: string;
   decided_at: string;
@@ -426,30 +461,55 @@ export interface TaskApprovalRecord {
 /** Task readiness check result */
 export type TaskReadiness =
   | { ready: true }
-  | { ready: false; reason: 'blocked_dependency'; dependencies: string[] };
+  | { ready: false; reason: "blocked_dependency"; dependencies: string[] };
 
 /** Result of claiming a task */
 export type ClaimTaskResult =
   | { ok: true; task: TeamTaskV2; claimToken: string }
-  | { ok: false; error: 'claim_conflict' | 'blocked_dependency' | 'task_not_found' | 'already_terminal' | 'worker_not_found'; dependencies?: string[] };
+  | {
+      ok: false;
+      error:
+        | "claim_conflict"
+        | "blocked_dependency"
+        | "task_not_found"
+        | "already_terminal"
+        | "worker_not_found";
+      dependencies?: string[];
+    };
 
 /** Result of transitioning a task status */
 export type TransitionTaskResult =
   | { ok: true; task: TeamTaskV2 }
-  | { ok: false; error: 'claim_conflict' | 'invalid_transition' | 'task_not_found' | 'already_terminal' | 'lease_expired' | 'missing_delegation_compliance_evidence' };
+  | {
+      ok: false;
+      error:
+        | "claim_conflict"
+        | "invalid_transition"
+        | "task_not_found"
+        | "already_terminal"
+        | "lease_expired"
+        | "missing_delegation_compliance_evidence";
+    };
 
 /** Result of releasing a task claim */
 export type ReleaseTaskClaimResult =
   | { ok: true; task: TeamTaskV2 }
-  | { ok: false; error: 'claim_conflict' | 'task_not_found' | 'already_terminal' | 'lease_expired' };
+  | {
+      ok: false;
+      error:
+        | "claim_conflict"
+        | "task_not_found"
+        | "already_terminal"
+        | "lease_expired";
+    };
 
 /** Team summary for monitoring */
 export interface TeamSummary {
   teamName: string;
   workerCount: number;
   team_state_root?: string;
-  workspace_mode?: 'single' | 'worktree';
-  worktree_mode?: 'disabled' | 'detached' | 'named';
+  workspace_mode?: "single" | "worktree";
+  worktree_mode?: "disabled" | "detached" | "named";
   tasks: {
     total: number;
     pending: number;
@@ -486,7 +546,7 @@ export interface TeamSummaryPerformance {
 
 /** Shutdown acknowledgment from a worker */
 export interface ShutdownAck {
-  status: 'accept' | 'reject';
+  status: "accept" | "reject";
   reason?: string;
   updated_at?: string;
 }
@@ -495,7 +555,7 @@ export interface ShutdownAck {
 export interface TeamMonitorSnapshotState {
   taskStatusById: Record<string, string>;
   workerAliveByName: Record<string, boolean>;
-  workerLivenessByName?: Record<string, 'alive' | 'dead' | 'unknown'>;
+  workerLivenessByName?: Record<string, "alive" | "dead" | "unknown">;
   workerStateByName: Record<string, string>;
   workerTurnCountByName: Record<string, number>;
   workerTaskIdByName: Record<string, string>;
@@ -521,7 +581,14 @@ export interface TeamPhaseState {
 
 /** Worker status for event-driven coordination */
 export interface WorkerStatus {
-  state: 'idle' | 'working' | 'blocked' | 'done' | 'failed' | 'draining' | 'unknown';
+  state:
+    | "idle"
+    | "working"
+    | "blocked"
+    | "done"
+    | "failed"
+    | "draining"
+    | "unknown";
   current_task_id?: string;
   reason?: string;
   updated_at: string;

@@ -7,8 +7,8 @@
  * Issue #804 - Startup codebase map injection hook
  */
 
-import { existsSync, readdirSync, statSync, readFileSync } from 'node:fs';
-import { join, extname } from 'node:path';
+import { existsSync, readdirSync, statSync, readFileSync } from "node:fs";
+import { join, extname } from "node:path";
 
 export interface CodebaseMapOptions {
   /** Maximum files to include in the map. Default: 200 */
@@ -32,39 +32,98 @@ export interface CodebaseMapResult {
 
 // Directories always skipped during scan
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', 'out', 'coverage',
-  '.next', '.nuxt', '.svelte-kit', '.cache', '.turbo', '.parcel-cache',
-  '__pycache__', '.mypy_cache', '.pytest_cache', '.ruff_cache',
-  'target', '.gradle', 'vendor',
-  '.venv', 'venv', 'env',
-  '.omc', '.claude',
-  'tmp', 'temp',
+  "node_modules",
+  ".git",
+  "dist",
+  "build",
+  "out",
+  "coverage",
+  ".next",
+  ".nuxt",
+  ".svelte-kit",
+  ".cache",
+  ".turbo",
+  ".parcel-cache",
+  "__pycache__",
+  ".mypy_cache",
+  ".pytest_cache",
+  ".ruff_cache",
+  "target",
+  ".gradle",
+  "vendor",
+  ".venv",
+  "venv",
+  "env",
+  ".omc",
+  ".claude",
+  "tmp",
+  "temp",
 ]);
 
 // File extensions considered source/config files
 const SOURCE_EXTENSIONS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.py', '.rb', '.go', '.rs', '.java', '.kt', '.swift',
-  '.c', '.cpp', '.h', '.hpp',
-  '.cs', '.fs',
-  '.vue', '.svelte',
-  '.sh', '.bash', '.zsh',
-  '.json', '.jsonc', '.yaml', '.yml', '.toml',
-  '.md', '.mdx',
-  '.css', '.scss', '.sass', '.less',
-  '.html', '.htm',
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".py",
+  ".rb",
+  ".go",
+  ".rs",
+  ".java",
+  ".kt",
+  ".swift",
+  ".c",
+  ".cpp",
+  ".h",
+  ".hpp",
+  ".cs",
+  ".fs",
+  ".vue",
+  ".svelte",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".json",
+  ".jsonc",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".md",
+  ".mdx",
+  ".css",
+  ".scss",
+  ".sass",
+  ".less",
+  ".html",
+  ".htm",
 ]);
 
 // Lock files and generated manifests — not useful for navigation
-const SKIP_FILE_SUFFIXES = ['-lock.json', '.lock', '-lock.yaml', '-lock.toml'];
+const SKIP_FILE_SUFFIXES = ["-lock.json", ".lock", "-lock.yaml", "-lock.toml"];
 
 // Important top-level files always included regardless of extension
 const IMPORTANT_FILES = new Set([
-  'package.json', 'tsconfig.json', 'tsconfig.base.json',
-  'pyproject.toml', 'Cargo.toml', 'go.mod', 'go.sum',
-  'CLAUDE.md', 'AGENTS.md', 'README.md', 'CONTRIBUTING.md',
-  '.eslintrc.json', 'vitest.config.ts', 'jest.config.ts', 'jest.config.js',
-  'Makefile', 'Dockerfile', '.gitignore',
+  "package.json",
+  "tsconfig.json",
+  "tsconfig.base.json",
+  "pyproject.toml",
+  "Cargo.toml",
+  "go.mod",
+  "go.sum",
+  "CLAUDE.md",
+  "AGENTS.md",
+  "README.md",
+  "CONTRIBUTING.md",
+  ".eslintrc.json",
+  "vitest.config.ts",
+  "jest.config.ts",
+  "jest.config.js",
+  "Makefile",
+  "Dockerfile",
+  ".gitignore",
 ]);
 
 interface TreeNode {
@@ -82,7 +141,7 @@ export function shouldSkipEntry(
   ignorePatterns: string[],
 ): boolean {
   // Skip hidden directories (allow hidden files if important)
-  if (name.startsWith('.') && isDir && !IMPORTANT_FILES.has(name)) {
+  if (name.startsWith(".") && isDir && !IMPORTANT_FILES.has(name)) {
     return true;
   }
 
@@ -177,14 +236,18 @@ export function buildTree(
 /**
  * Render a tree of nodes to ASCII art lines.
  */
-export function renderTree(nodes: TreeNode[], prefix: string, lines: string[]): void {
+export function renderTree(
+  nodes: TreeNode[],
+  prefix: string,
+  lines: string[],
+): void {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const isLast = i === nodes.length - 1;
-    const connector = isLast ? '└── ' : '├── ';
-    const childPrefix = isLast ? '    ' : '│   ';
+    const connector = isLast ? "└── " : "├── ";
+    const childPrefix = isLast ? "    " : "│   ";
 
-    lines.push(`${prefix}${connector}${node.name}${node.isDir ? '/' : ''}`);
+    lines.push(`${prefix}${connector}${node.name}${node.isDir ? "/" : ""}`);
 
     if (node.isDir && node.children && node.children.length > 0) {
       renderTree(node.children, prefix + childPrefix, lines);
@@ -196,11 +259,11 @@ export function renderTree(nodes: TreeNode[], prefix: string, lines: string[]): 
  * Extract a short summary from package.json (name, description, key scripts).
  */
 export function extractPackageMetadata(directory: string): string {
-  const pkgPath = join(directory, 'package.json');
-  if (!existsSync(pkgPath)) return '';
+  const pkgPath = join(directory, "package.json");
+  if (!existsSync(pkgPath)) return "";
 
   try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8')) as {
+    const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as {
       name?: string;
       description?: string;
       scripts?: Record<string, string>;
@@ -210,13 +273,13 @@ export function extractPackageMetadata(directory: string): string {
     if (pkg.name) lines.push(`Package: ${pkg.name}`);
     if (pkg.description) lines.push(`Description: ${pkg.description}`);
     if (pkg.scripts) {
-      const scriptNames = Object.keys(pkg.scripts).slice(0, 8).join(', ');
+      const scriptNames = Object.keys(pkg.scripts).slice(0, 8).join(", ");
       if (scriptNames) lines.push(`Scripts: ${scriptNames}`);
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -239,15 +302,22 @@ export function generateCodebaseMap(
   } = options;
 
   if (!existsSync(directory)) {
-    return { map: '', totalFiles: 0, truncated: false };
+    return { map: "", totalFiles: 0, truncated: false };
   }
 
   const fileCount = { value: 0 };
-  const tree = buildTree(directory, 0, maxDepth, fileCount, maxFiles, ignorePatterns);
+  const tree = buildTree(
+    directory,
+    0,
+    maxDepth,
+    fileCount,
+    maxFiles,
+    ignorePatterns,
+  );
 
   const treeLines: string[] = [];
-  renderTree(tree, '', treeLines);
-  const treeStr = treeLines.join('\n');
+  renderTree(tree, "", treeLines);
+  const treeStr = treeLines.join("\n");
 
   const parts: string[] = [];
 
@@ -260,11 +330,13 @@ export function generateCodebaseMap(
 
   const truncated = fileCount.value >= maxFiles;
   if (truncated) {
-    parts.push(`[Map truncated at ${maxFiles} files — use Glob/Grep for full search]`);
+    parts.push(
+      `[Map truncated at ${maxFiles} files — use Glob/Grep for full search]`,
+    );
   }
 
   return {
-    map: parts.join('\n\n'),
+    map: parts.join("\n\n"),
     totalFiles: fileCount.value,
     truncated,
   };

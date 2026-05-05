@@ -20,15 +20,15 @@ function resolveParentPid(
   processRef: ShutdownProcessLike,
   overrideParentPid?: number,
 ): number | undefined {
-  if (typeof overrideParentPid === 'number') {
+  if (typeof overrideParentPid === "number") {
     return overrideParentPid;
   }
 
-  if (typeof processRef.ppid === 'number') {
+  if (typeof processRef.ppid === "number") {
     return processRef.ppid;
   }
 
-  if (typeof process.ppid === 'number') {
+  if (typeof process.ppid === "number") {
     return process.ppid;
   }
 
@@ -41,7 +41,7 @@ function resolveParentPid(
  * are closed without forwarding SIGTERM/SIGINT.
  */
 export function registerStandaloneShutdownHandlers(
-  options: RegisterStandaloneShutdownHandlersOptions
+  options: RegisterStandaloneShutdownHandlersOptions,
 ): { shutdown: (reason: string) => Promise<void> } {
   const processRef = options.processRef ?? process;
   const pollIntervalMs = Math.max(100, options.pollIntervalMs ?? 1000);
@@ -71,26 +71,29 @@ export function registerStandaloneShutdownHandlers(
     });
   };
 
-  register('SIGTERM', 'SIGTERM');
-  register('SIGINT', 'SIGINT');
-  register('disconnect', 'parent disconnect');
-  processRef.stdin?.once('end', () => {
-    void shutdown('stdin end');
+  register("SIGTERM", "SIGTERM");
+  register("SIGINT", "SIGINT");
+  register("disconnect", "parent disconnect");
+  processRef.stdin?.once("end", () => {
+    void shutdown("stdin end");
   });
-  processRef.stdin?.once('close', () => {
-    void shutdown('stdin close');
+  processRef.stdin?.once("close", () => {
+    void shutdown("stdin close");
   });
 
   const expectedParentPid = resolveParentPid(processRef, options.parentPid);
-  if (typeof expectedParentPid === 'number' && expectedParentPid > 1) {
-    const getParentPid = options.getParentPid ?? (() => resolveParentPid(processRef));
+  if (typeof expectedParentPid === "number" && expectedParentPid > 1) {
+    const getParentPid =
+      options.getParentPid ?? (() => resolveParentPid(processRef));
     parentWatch = setIntervalFn(() => {
       const currentParentPid = getParentPid();
-      if (typeof currentParentPid !== 'number') {
+      if (typeof currentParentPid !== "number") {
         return;
       }
       if (currentParentPid <= 1 || currentParentPid !== expectedParentPid) {
-        void shutdown(`parent pid changed (${expectedParentPid} -> ${currentParentPid})`);
+        void shutdown(
+          `parent pid changed (${expectedParentPid} -> ${currentParentPid})`,
+        );
       }
     }, pollIntervalMs);
     (parentWatch as { unref?: () => void }).unref?.();

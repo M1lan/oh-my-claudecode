@@ -16,14 +16,28 @@
  * that teams created by older versions continue to work transparently.
  */
 
-import { readFileSync, readdirSync, existsSync, openSync, closeSync, unlinkSync, writeSync, statSync, constants as fsConstants } from 'fs';
-import { join } from 'path';
-import { getClaudeConfigDir } from '../utils/config-dir.js';
-import type { TaskFile, TaskFileUpdate, TaskFailureSidecar } from './types.js';
-import { sanitizeName } from './tmux-session.js';
-import { atomicWriteJson, validateResolvedPath, ensureDirWithMode } from './fs-utils.js';
-import { isProcessAlive } from '../platform/index.js';
-import { getTaskStoragePath, getLegacyTaskStoragePath } from './state-paths.js';
+import {
+  readFileSync,
+  readdirSync,
+  existsSync,
+  openSync,
+  closeSync,
+  unlinkSync,
+  writeSync,
+  statSync,
+  constants as fsConstants,
+} from "fs";
+import { join } from "path";
+import { getClaudeConfigDir } from "../utils/config-dir.js";
+import type { TaskFile, TaskFileUpdate, TaskFailureSidecar } from "./types.js";
+import { sanitizeName } from "./tmux-session.js";
+import {
+  atomicWriteJson,
+  validateResolvedPath,
+  ensureDirWithMode,
+} from "./fs-utils.js";
+import { isProcessAlive } from "../platform/index.js";
+import { getTaskStoragePath, getLegacyTaskStoragePath } from "./state-paths.js";
 
 // ─── Lock-based atomic claiming ────────────────────────────────────────────
 
@@ -59,20 +73,33 @@ export function acquireTaskLock(
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const fd = openSync(lockPath, fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY, 0o600);
+      const fd = openSync(
+        lockPath,
+        fsConstants.O_CREAT | fsConstants.O_EXCL | fsConstants.O_WRONLY,
+        0o600,
+      );
       // Write payload so stale-detection can read PID + timestamp
       const payload = JSON.stringify({
         pid: process.pid,
-        workerName: opts?.workerName ?? '',
+        workerName: opts?.workerName ?? "",
         timestamp: Date.now(),
       });
-      writeSync(fd, payload, null, 'utf-8');
+      writeSync(fd, payload, null, "utf-8");
       return { fd, path: lockPath };
     } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'code' in err && (err as { code: string }).code === 'EEXIST') {
+      if (
+        err &&
+        typeof err === "object" &&
+        "code" in err &&
+        (err as { code: string }).code === "EEXIST"
+      ) {
         // Lock file exists — check if stale
         if (attempt === 0 && isLockStale(lockPath, staleLockMs)) {
-          try { unlinkSync(lockPath); } catch { /* another worker reaped it */ }
+          try {
+            unlinkSync(lockPath);
+          } catch {
+            /* another worker reaped it */
+          }
           continue; // retry once
         }
         return null; // held by a live worker
@@ -88,8 +115,16 @@ export function acquireTaskLock(
  * Closes the file descriptor and removes the lock file.
  */
 export function releaseTaskLock(handle: LockHandle): void {
-  try { closeSync(handle.fd); } catch { /* already closed */ }
-  try { unlinkSync(handle.path); } catch { /* already removed */ }
+  try {
+    closeSync(handle.fd);
+  } catch {
+    /* already closed */
+  }
+  try {
+    unlinkSync(handle.path);
+  } catch {
+    /* already removed */
+  }
 }
 
 /**
@@ -123,7 +158,7 @@ function isLockStale(lockPath: string, staleLockMs: number): boolean {
 
     // Try to read PID from the lock payload
     try {
-      const raw = readFileSync(lockPath, 'utf-8');
+      const raw = readFileSync(lockPath, "utf-8");
       const payload = JSON.parse(raw) as { pid?: number };
       if (payload.pid && isProcessAlive(payload.pid)) return false;
     } catch {
@@ -155,7 +190,7 @@ function sanitizeTaskId(taskId: string): string {
 function canonicalTasksDir(teamName: string, cwd?: string): string {
   const root = cwd ?? process.cwd();
   const dir = getTaskStoragePath(root, sanitizeName(teamName));
-  validateResolvedPath(dir, join(root, '.omc', 'state', 'team'));
+  validateResolvedPath(dir, join(root, ".omc", "state", "team"));
   return dir;
 }
 
@@ -166,7 +201,7 @@ function canonicalTasksDir(teamName: string, cwd?: string): string {
 function legacyTasksDir(teamName: string): string {
   const claudeConfigDir = getClaudeConfigDir();
   const dir = getLegacyTaskStoragePath(claudeConfigDir, sanitizeName(teamName));
-  validateResolvedPath(dir, join(claudeConfigDir, 'tasks'));
+  validateResolvedPath(dir, join(claudeConfigDir, "tasks"));
   return dir;
 }
 
@@ -177,11 +212,21 @@ function legacyTasksDir(teamName: string): string {
  * to the legacy path so that data written by older versions is still readable.
  * New writes never use the legacy path.
  */
-function resolveTaskPathForRead(teamName: string, taskId: string, cwd?: string): string {
-  const canonical = join(canonicalTasksDir(teamName, cwd), `${sanitizeTaskId(taskId)}.json`);
+function resolveTaskPathForRead(
+  teamName: string,
+  taskId: string,
+  cwd?: string,
+): string {
+  const canonical = join(
+    canonicalTasksDir(teamName, cwd),
+    `${sanitizeTaskId(taskId)}.json`,
+  );
   if (existsSync(canonical)) return canonical;
 
-  const legacy = join(legacyTasksDir(teamName), `${sanitizeTaskId(taskId)}.json`);
+  const legacy = join(
+    legacyTasksDir(teamName),
+    `${sanitizeTaskId(taskId)}.json`,
+  );
   if (existsSync(legacy)) return legacy;
 
   // Neither exists — return canonical so callers get a predictable missing-file path
@@ -192,22 +237,40 @@ function resolveTaskPathForRead(teamName: string, taskId: string, cwd?: string):
  * Resolve the path to a task file for WRITE operations.
  * Always returns the canonical path regardless of whether legacy data exists.
  */
-function resolveTaskPathForWrite(teamName: string, taskId: string, cwd?: string): string {
-  return join(canonicalTasksDir(teamName, cwd), `${sanitizeTaskId(taskId)}.json`);
+function resolveTaskPathForWrite(
+  teamName: string,
+  taskId: string,
+  cwd?: string,
+): string {
+  return join(
+    canonicalTasksDir(teamName, cwd),
+    `${sanitizeTaskId(taskId)}.json`,
+  );
 }
 
-function failureSidecarPath(teamName: string, taskId: string, cwd?: string): string {
-  return join(canonicalTasksDir(teamName, cwd), `${sanitizeTaskId(taskId)}.failure.json`);
+function failureSidecarPath(
+  teamName: string,
+  taskId: string,
+  cwd?: string,
+): string {
+  return join(
+    canonicalTasksDir(teamName, cwd),
+    `${sanitizeTaskId(taskId)}.failure.json`,
+  );
 }
 
 // ─── Public API ────────────────────────────────────────────────────────────
 
 /** Read a single task file. Returns null if not found or malformed. */
-export function readTask(teamName: string, taskId: string, opts?: { cwd?: string }): TaskFile | null {
+export function readTask(
+  teamName: string,
+  taskId: string,
+  opts?: { cwd?: string },
+): TaskFile | null {
   const filePath = resolveTaskPathForRead(teamName, taskId, opts?.cwd);
   if (!existsSync(filePath)) return null;
   try {
-    const raw = readFileSync(filePath, 'utf-8');
+    const raw = readFileSync(filePath, "utf-8");
     return JSON.parse(raw) as TaskFile;
   } catch {
     return null;
@@ -239,7 +302,7 @@ export function updateTask(
     const readPath = resolveTaskPathForRead(teamName, taskId, opts?.cwd);
     let task: Record<string, unknown>;
     try {
-      const raw = readFileSync(readPath, 'utf-8');
+      const raw = readFileSync(readPath, "utf-8");
       task = JSON.parse(raw) as Record<string, unknown>;
     } catch {
       throw new Error(`Task file not found or malformed: ${taskId}`);
@@ -261,7 +324,9 @@ export function updateTask(
 
   const handle = acquireTaskLock(teamName, taskId, { cwd: opts?.cwd });
   if (!handle) {
-    throw new Error(`Cannot acquire lock for task ${taskId}: another process holds the lock`);
+    throw new Error(
+      `Cannot acquire lock for task ${taskId}: another process holds the lock`,
+    );
   }
 
   try {
@@ -282,7 +347,11 @@ export function updateTask(
  * Uses O_EXCL lock files for atomic claiming — no sleep/jitter needed.
  * The kernel guarantees only one worker can create the lock file.
  */
-export async function findNextTask(teamName: string, workerName: string, opts?: { cwd?: string }): Promise<TaskFile | null> {
+export async function findNextTask(
+  teamName: string,
+  workerName: string,
+  opts?: { cwd?: string },
+): Promise<TaskFile | null> {
   const dir = canonicalTasksDir(teamName, opts?.cwd);
   if (!existsSync(dir)) return null;
 
@@ -292,12 +361,15 @@ export async function findNextTask(teamName: string, workerName: string, opts?: 
     // Quick pre-check without lock (avoid lock overhead for obvious skips)
     const task = readTask(teamName, id, opts);
     if (!task) continue;
-    if (task.status !== 'pending') continue;
+    if (task.status !== "pending") continue;
     if (task.owner !== workerName) continue;
     if (!areBlockersResolved(teamName, task.blockedBy, opts)) continue;
 
     // Attempt atomic lock
-    const handle = acquireTaskLock(teamName, id, { workerName, cwd: opts?.cwd });
+    const handle = acquireTaskLock(teamName, id, {
+      workerName,
+      cwd: opts?.cwd,
+    });
     if (!handle) continue; // another worker holds the lock — skip
 
     try {
@@ -305,7 +377,7 @@ export async function findNextTask(teamName: string, workerName: string, opts?: 
       const freshTask = readTask(teamName, id, opts);
       if (
         !freshTask ||
-        freshTask.status !== 'pending' ||
+        freshTask.status !== "pending" ||
         freshTask.owner !== workerName ||
         !areBlockersResolved(teamName, freshTask.blockedBy, opts)
       ) {
@@ -318,7 +390,7 @@ export async function findNextTask(teamName: string, workerName: string, opts?: 
       try {
         // Read from wherever the task currently lives
         const readPath = resolveTaskPathForRead(teamName, id, opts?.cwd);
-        const raw = readFileSync(readPath, 'utf-8');
+        const raw = readFileSync(readPath, "utf-8");
         taskData = JSON.parse(raw) as Record<string, unknown>;
       } catch {
         continue;
@@ -327,10 +399,16 @@ export async function findNextTask(teamName: string, workerName: string, opts?: 
       taskData.claimedBy = workerName;
       taskData.claimedAt = Date.now();
       taskData.claimPid = process.pid;
-      taskData.status = 'in_progress';
+      taskData.status = "in_progress";
       atomicWriteJson(filePath, taskData);
 
-      return { ...freshTask, claimedBy: workerName, claimedAt: taskData.claimedAt as number, claimPid: process.pid, status: 'in_progress' };
+      return {
+        ...freshTask,
+        claimedBy: workerName,
+        claimedAt: taskData.claimedAt as number,
+        claimPid: process.pid,
+        status: "in_progress",
+      };
     } finally {
       releaseTaskLock(handle);
     }
@@ -340,11 +418,15 @@ export async function findNextTask(teamName: string, workerName: string, opts?: 
 }
 
 /** Check if all blocker task IDs have status 'completed' */
-export function areBlockersResolved(teamName: string, blockedBy: string[], opts?: { cwd?: string }): boolean {
+export function areBlockersResolved(
+  teamName: string,
+  blockedBy: string[],
+  opts?: { cwd?: string },
+): boolean {
   if (!blockedBy || blockedBy.length === 0) return true;
   for (const blockerId of blockedBy) {
     const blocker = readTask(teamName, blockerId, opts);
-    if (!blocker || blocker.status !== 'completed') return false;
+    if (!blocker || blocker.status !== "completed") return false;
   }
   return true;
 }
@@ -354,7 +436,12 @@ export function areBlockersResolved(teamName: string, blockedBy: string[], opts?
  * If sidecar already exists, increments retryCount.
  * Returns the persisted sidecar payload.
  */
-export function writeTaskFailure(teamName: string, taskId: string, error: string, opts?: { cwd?: string }): TaskFailureSidecar {
+export function writeTaskFailure(
+  teamName: string,
+  taskId: string,
+  error: string,
+  opts?: { cwd?: string },
+): TaskFailureSidecar {
   const filePath = failureSidecarPath(teamName, taskId, opts?.cwd);
   const existing = readTaskFailure(teamName, taskId, opts);
   const sidecar: TaskFailureSidecar = {
@@ -368,11 +455,15 @@ export function writeTaskFailure(teamName: string, taskId: string, error: string
 }
 
 /** Read failure sidecar if it exists */
-export function readTaskFailure(teamName: string, taskId: string, opts?: { cwd?: string }): TaskFailureSidecar | null {
+export function readTaskFailure(
+  teamName: string,
+  taskId: string,
+  opts?: { cwd?: string },
+): TaskFailureSidecar | null {
   const filePath = failureSidecarPath(teamName, taskId, opts?.cwd);
   if (!existsSync(filePath)) return null;
   try {
-    const raw = readFileSync(filePath, 'utf-8');
+    const raw = readFileSync(filePath, "utf-8");
     return JSON.parse(raw) as TaskFailureSidecar;
   } catch {
     return null;
@@ -395,13 +486,22 @@ export function isTaskRetryExhausted(
 }
 
 /** List all task IDs in a team directory, sorted ascending */
-export function listTaskIds(teamName: string, opts?: { cwd?: string }): string[] {
+export function listTaskIds(
+  teamName: string,
+  opts?: { cwd?: string },
+): string[] {
   const scanDir = (dir: string): string[] => {
     if (!existsSync(dir)) return [];
     try {
       return readdirSync(dir)
-        .filter(f => f.endsWith('.json') && !f.includes('.tmp.') && !f.includes('.failure.') && !f.endsWith('.lock'))
-        .map(f => f.replace('.json', ''));
+        .filter(
+          (f) =>
+            f.endsWith(".json") &&
+            !f.includes(".tmp.") &&
+            !f.includes(".failure.") &&
+            !f.endsWith(".lock"),
+        )
+        .map((f) => f.replace(".json", ""));
     } catch {
       return [];
     }

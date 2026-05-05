@@ -20,11 +20,14 @@ import {
   unlinkSync,
   statSync,
   constants,
-} from 'fs';
-import { join, dirname } from 'path';
-import { randomUUID } from 'crypto';
-import { isProcessAlive } from '../platform/index.js';
-import { getGlobalOmcStateCandidates, getGlobalOmcStateRoot } from '../utils/paths.js';
+} from "fs";
+import { join, dirname } from "path";
+import { randomUUID } from "crypto";
+import { isProcessAlive } from "../platform/index.js";
+import {
+  getGlobalOmcStateCandidates,
+  getGlobalOmcStateRoot,
+} from "../utils/paths.js";
 
 // ============================================================================
 // Constants
@@ -48,25 +51,25 @@ const LOCK_MAX_WAIT_MS = 10000;
  * can redirect all I/O to a temporary directory without touching global state.
  */
 function getRegistryStateDir(): string {
-  return process.env['OMC_TEST_REGISTRY_DIR'] ?? getGlobalOmcStateRoot();
+  return process.env["OMC_TEST_REGISTRY_DIR"] ?? getGlobalOmcStateRoot();
 }
 
 /** Global registry JSONL path */
 function getRegistryPath(): string {
-  return join(getRegistryStateDir(), 'reply-session-registry.jsonl');
+  return join(getRegistryStateDir(), "reply-session-registry.jsonl");
 }
 
 function getRegistryReadPaths(): string[] {
-  if (process.env['OMC_TEST_REGISTRY_DIR']) {
+  if (process.env["OMC_TEST_REGISTRY_DIR"]) {
     return [getRegistryPath()];
   }
 
-  return getGlobalOmcStateCandidates('reply-session-registry.jsonl');
+  return getGlobalOmcStateCandidates("reply-session-registry.jsonl");
 }
 
 /** Lock file path for cross-process synchronization */
 function getLockPath(): string {
-  return join(getRegistryStateDir(), 'reply-session-registry.lock');
+  return join(getRegistryStateDir(), "reply-session-registry.lock");
 }
 
 // Shared array for Atomics.wait-based synchronous sleep
@@ -121,7 +124,9 @@ function sleepMs(ms: number): void {
   } catch {
     // Main thread: Atomics.wait throws on Node <22
     const waitUntil = Date.now() + ms;
-    while (Date.now() < waitUntil) { /* spin */ }
+    while (Date.now() < waitUntil) {
+      /* spin */
+    }
   }
 }
 
@@ -134,7 +139,7 @@ function sleepMs(ms: number): void {
  */
 function readLockSnapshot(): LockFileSnapshot | null {
   try {
-    const raw = readFileSync(getLockPath(), 'utf-8');
+    const raw = readFileSync(getLockPath(), "utf-8");
     const trimmed = raw.trim();
 
     if (!trimmed) {
@@ -143,12 +148,18 @@ function readLockSnapshot(): LockFileSnapshot | null {
 
     try {
       const parsed = JSON.parse(trimmed) as { pid?: unknown; token?: unknown };
-      const pid = typeof parsed.pid === 'number' && Number.isFinite(parsed.pid) ? parsed.pid : null;
-      const token = typeof parsed.token === 'string' && parsed.token.length > 0 ? parsed.token : null;
+      const pid =
+        typeof parsed.pid === "number" && Number.isFinite(parsed.pid)
+          ? parsed.pid
+          : null;
+      const token =
+        typeof parsed.token === "string" && parsed.token.length > 0
+          ? parsed.token
+          : null;
       return { raw, pid, token };
     } catch {
-      const [pidStr] = trimmed.split(':');
-      const parsedPid = Number.parseInt(pidStr ?? '', 10);
+      const [pidStr] = trimmed.split(":");
+      const parsedPid = Number.parseInt(pidStr ?? "", 10);
       return {
         raw,
         pid: Number.isFinite(parsedPid) && parsedPid > 0 ? parsedPid : null,
@@ -165,7 +176,7 @@ function readLockSnapshot(): LockFileSnapshot | null {
  */
 function removeLockIfUnchanged(snapshot: LockFileSnapshot): boolean {
   try {
-    const currentRaw = readFileSync(getLockPath(), 'utf-8');
+    const currentRaw = readFileSync(getLockPath(), "utf-8");
     if (currentRaw !== snapshot.raw) {
       return false;
     }
@@ -203,11 +214,11 @@ function acquireRegistryLock(): RegistryLockHandle | null {
         acquiredAt: Date.now(),
         token,
       });
-      writeSync(fd, lockPayload, null, 'utf-8');
+      writeSync(fd, lockPayload, null, "utf-8");
       return { fd, token };
     } catch (error) {
       const err = error as NodeJS.ErrnoException;
-      if (err.code !== 'EEXIST') {
+      if (err.code !== "EEXIST") {
         throw error;
       }
 
@@ -246,7 +257,9 @@ function acquireRegistryLock(): RegistryLockHandle | null {
  * Acquire registry lock with retries up to a cumulative deadline.
  * Returns null if the deadline is exceeded (e.g. lock holder is a hung process).
  */
-function acquireRegistryLockOrWait(maxWaitMs: number = LOCK_MAX_WAIT_MS): RegistryLockHandle | null {
+function acquireRegistryLockOrWait(
+  maxWaitMs: number = LOCK_MAX_WAIT_MS,
+): RegistryLockHandle | null {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     const lock = acquireRegistryLock();
@@ -318,25 +331,23 @@ function withRegistryLock<T>(onLocked: () => T, onLockUnavailable: () => T): T {
  * Each mapping serializes to well under 4096 bytes, making this operation atomic.
  */
 export function registerMessage(mapping: SessionMapping): void {
-  withRegistryLockOrWait(
-    () => {
-      ensureRegistryDir();
+  withRegistryLockOrWait(() => {
+    ensureRegistryDir();
 
-      const line = JSON.stringify(mapping) + '\n';
-      const fd = openSync(
-        getRegistryPath(),
-        constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT,
-        SECURE_FILE_MODE,
-      );
+    const line = JSON.stringify(mapping) + "\n";
+    const fd = openSync(
+      getRegistryPath(),
+      constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT,
+      SECURE_FILE_MODE,
+    );
 
-      try {
-        const buf = Buffer.from(line, 'utf-8');
-        writeSync(fd, buf);
-      } finally {
-        closeSync(fd);
-      }
-    },
-  );
+    try {
+      const buf = Buffer.from(line, "utf-8");
+      writeSync(fd, buf);
+    } finally {
+      closeSync(fd);
+    }
+  });
 }
 
 /**
@@ -357,11 +368,11 @@ function readAllMappingsUnsafe(): SessionMapping[] {
     }
 
     try {
-      const content = readFileSync(registryPath, 'utf-8');
+      const content = readFileSync(registryPath, "utf-8");
       return content
-        .split('\n')
-        .filter(line => line.trim())
-        .map(line => {
+        .split("\n")
+        .filter((line) => line.trim())
+        .map((line) => {
           try {
             return JSON.parse(line) as SessionMapping;
           } catch {
@@ -381,11 +392,18 @@ function readAllMappingsUnsafe(): SessionMapping[] {
  * Look up a mapping by platform and message ID.
  * Returns the most recent entry when duplicates exist (last match in append-ordered JSONL).
  */
-export function lookupByMessageId(platform: string, messageId: string): SessionMapping | null {
+export function lookupByMessageId(
+  platform: string,
+  messageId: string,
+): SessionMapping | null {
   const mappings = loadAllMappings();
 
   // Use findLast so that the most recently appended entry wins when duplicates exist.
-  return mappings.findLast(m => m.platform === platform && m.messageId === messageId) ?? null;
+  return (
+    mappings.findLast(
+      (m) => m.platform === platform && m.messageId === messageId,
+    ) ?? null
+  );
 }
 
 /**
@@ -396,7 +414,7 @@ export function removeSession(sessionId: string): void {
   withRegistryLock(
     () => {
       const mappings = readAllMappingsUnsafe();
-      const filtered = mappings.filter(m => m.sessionId !== sessionId);
+      const filtered = mappings.filter((m) => m.sessionId !== sessionId);
 
       if (filtered.length === mappings.length) {
         // No changes needed
@@ -419,7 +437,7 @@ export function removeMessagesByPane(paneId: string): void {
   withRegistryLock(
     () => {
       const mappings = readAllMappingsUnsafe();
-      const filtered = mappings.filter(m => m.tmuxPaneId !== paneId);
+      const filtered = mappings.filter((m) => m.tmuxPaneId !== paneId);
 
       if (filtered.length === mappings.length) {
         // No changes needed
@@ -443,7 +461,7 @@ export function pruneStale(): void {
     () => {
       const now = Date.now();
       const mappings = readAllMappingsUnsafe();
-      const filtered = mappings.filter(m => {
+      const filtered = mappings.filter((m) => {
         try {
           const age = now - new Date(m.createdAt).getTime();
           return age < MAX_AGE_MS;
@@ -475,10 +493,10 @@ function rewriteRegistryUnsafe(mappings: SessionMapping[]): void {
 
   if (mappings.length === 0) {
     // Empty registry - write empty file
-    writeFileSync(getRegistryPath(), '', { mode: SECURE_FILE_MODE });
+    writeFileSync(getRegistryPath(), "", { mode: SECURE_FILE_MODE });
     return;
   }
 
-  const content = mappings.map(m => JSON.stringify(m)).join('\n') + '\n';
+  const content = mappings.map((m) => JSON.stringify(m)).join("\n") + "\n";
   writeFileSync(getRegistryPath(), content, { mode: SECURE_FILE_MODE });
 }

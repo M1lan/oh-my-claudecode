@@ -6,10 +6,18 @@
  * (which work universally) and handle platform-specific directory conventions.
  */
 
-import { join } from 'path';
-import { existsSync, readFileSync, readdirSync, statSync, unlinkSync, rmSync, symlinkSync } from 'fs';
-import { homedir } from 'os';
-import { getClaudeConfigDir } from './config-dir.js';
+import { join } from "path";
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  rmSync,
+  symlinkSync,
+} from "fs";
+import { homedir } from "os";
+import { getClaudeConfigDir } from "./config-dir.js";
 
 /**
  * Convert a path to use forward slashes (for JSON/config files)
@@ -17,7 +25,7 @@ import { getClaudeConfigDir } from './config-dir.js';
  * by shells that expect forward slashes even on Windows
  */
 export function toForwardSlash(path: string): string {
-  return path.replace(/\\/g, '/');
+  return path.replace(/\\/g, "/");
 }
 
 /**
@@ -27,7 +35,7 @@ export function toForwardSlash(path: string): string {
 export function toShellPath(path: string): string {
   const normalized = toForwardSlash(path);
   // Windows paths with spaces need quoting
-  if (normalized.includes(' ')) {
+  if (normalized.includes(" ")) {
     return `"${normalized}"`;
   }
   return normalized;
@@ -38,39 +46,39 @@ export function toShellPath(path: string): string {
  * Falls back to sensible locations instead of XDG paths
  */
 export function getDataDir(): string {
-  if (process.platform === 'win32') {
-    return process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local');
+  if (process.platform === "win32") {
+    return process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
   }
-  return process.env.XDG_DATA_HOME || join(homedir(), '.local', 'share');
+  return process.env.XDG_DATA_HOME || join(homedir(), ".local", "share");
 }
 
 /**
  * Get Windows-appropriate config directory
  */
 export function getConfigDir(): string {
-  if (process.platform === 'win32') {
-    return process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
+  if (process.platform === "win32") {
+    return process.env.APPDATA || join(homedir(), "AppData", "Roaming");
   }
-  return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
+  return process.env.XDG_CONFIG_HOME || join(homedir(), ".config");
 }
 
 /**
  * Get Windows-appropriate state directory.
  */
 export function getStateDir(): string {
-  if (process.platform === 'win32') {
-    return process.env.LOCALAPPDATA || join(homedir(), 'AppData', 'Local');
+  if (process.platform === "win32") {
+    return process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
   }
 
-  return process.env.XDG_STATE_HOME || join(homedir(), '.local', 'state');
+  return process.env.XDG_STATE_HOME || join(homedir(), ".local", "state");
 }
 
 function prefersXdgOmcDirs(): boolean {
-  return process.platform !== 'win32' && process.platform !== 'darwin';
+  return process.platform !== "win32" && process.platform !== "darwin";
 }
 
 function getUserHomeDir(): string {
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     return process.env.USERPROFILE || process.env.HOME || homedir();
   }
 
@@ -81,7 +89,7 @@ function getUserHomeDir(): string {
  * Legacy global OMC directory under the user's home directory.
  */
 export function getLegacyOmcDir(): string {
-  return join(getUserHomeDir(), '.omc');
+  return join(getUserHomeDir(), ".omc");
 }
 
 /**
@@ -99,7 +107,7 @@ export function getGlobalOmcConfigRoot(): string {
   }
 
   if (prefersXdgOmcDirs()) {
-    return join(getConfigDir(), 'omc');
+    return join(getConfigDir(), "omc");
   }
 
   return getLegacyOmcDir();
@@ -114,14 +122,14 @@ export function getGlobalOmcConfigRoot(): string {
 export function getGlobalOmcStateRoot(): string {
   const explicitRoot = process.env.OMC_HOME?.trim();
   if (explicitRoot) {
-    return join(explicitRoot, 'state');
+    return join(explicitRoot, "state");
   }
 
   if (prefersXdgOmcDirs()) {
-    return join(getStateDir(), 'omc');
+    return join(getStateDir(), "omc");
   }
 
-  return join(getLegacyOmcDir(), 'state');
+  return join(getLegacyOmcDir(), "state");
 }
 
 export function getGlobalOmcConfigPath(...segments: string[]): string {
@@ -162,7 +170,7 @@ export function getGlobalOmcStateCandidates(...segments: string[]): string[] {
 
   return dedupePaths([
     getGlobalOmcStatePath(...segments),
-    getLegacyOmcPath('state', ...segments),
+    getLegacyOmcPath("state", ...segments),
   ]);
 }
 
@@ -173,7 +181,13 @@ export function getGlobalOmcStateCandidates(...segments: string[]): string[] {
  * Structure: <configDir>/plugins/cache/omc/oh-my-claudecode/
  */
 export function getPluginCacheBase(): string {
-  return join(getClaudeConfigDir(), 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+  return join(
+    getClaudeConfigDir(),
+    "plugins",
+    "cache",
+    "omc",
+    "oh-my-claudecode",
+  );
 }
 
 /**
@@ -238,7 +252,7 @@ export interface PurgeCacheResult {
  * Strip trailing slashes from a normalised forward-slash path.
  */
 function stripTrailing(p: string): string {
-  return toForwardSlash(p).replace(/\/+$/, '');
+  return toForwardSlash(p).replace(/\/+$/, "");
 }
 
 /** Default grace period: skip directories modified within the last 24 hours.
@@ -251,8 +265,9 @@ const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
  * Non-numeric segments fall back to 0.
  */
 function compareSemverDesc(a: string, b: string): number {
-  const parse = (s: string) => s.split('.').map(n => parseInt(n, 10) || 0);
-  const pa = parse(a), pb = parse(b);
+  const parse = (s: string) => s.split(".").map((n) => parseInt(n, 10) || 0);
+  const pa = parse(a),
+    pb = parse(b);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
     if (diff !== 0) return diff;
@@ -260,13 +275,21 @@ function compareSemverDesc(a: string, b: string): number {
   return 0;
 }
 
-export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: boolean }): PurgeCacheResult {
-  const result: PurgeCacheResult = { removed: 0, removedPaths: [], symlinked: 0, symlinkPaths: [], errors: [] };
+export function purgeStalePluginCacheVersions(options?: {
+  skipGracePeriod?: boolean;
+}): PurgeCacheResult {
+  const result: PurgeCacheResult = {
+    removed: 0,
+    removedPaths: [],
+    symlinked: 0,
+    symlinkPaths: [],
+    errors: [],
+  };
 
   const configDir = getClaudeConfigDir();
-  const pluginsDir = join(configDir, 'plugins');
-  const installedFile = join(pluginsDir, 'installed_plugins.json');
-  const cacheDir = join(pluginsDir, 'cache');
+  const pluginsDir = join(configDir, "plugins");
+  const installedFile = join(pluginsDir, "installed_plugins.json");
+  const cacheDir = join(pluginsDir, "cache");
 
   if (!existsSync(installedFile) || !existsSync(cacheDir)) {
     return result;
@@ -275,10 +298,16 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
   // Collect active install paths (normalised, trailing-slash stripped)
   let activePaths: Set<string>;
   try {
-    const raw = JSON.parse(readFileSync(installedFile, 'utf-8'));
+    const raw = JSON.parse(readFileSync(installedFile, "utf-8"));
     const plugins = raw.plugins ?? raw;
-    if (typeof plugins !== 'object' || plugins === null || Array.isArray(plugins)) {
-      result.errors.push('installed_plugins.json has unexpected top-level structure');
+    if (
+      typeof plugins !== "object" ||
+      plugins === null ||
+      Array.isArray(plugins)
+    ) {
+      result.errors.push(
+        "installed_plugins.json has unexpected top-level structure",
+      );
       return result;
     }
     activePaths = new Set<string>();
@@ -292,7 +321,9 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
       }
     }
   } catch (err) {
-    result.errors.push(`Failed to parse installed_plugins.json: ${err instanceof Error ? err.message : err}`);
+    result.errors.push(
+      `Failed to parse installed_plugins.json: ${err instanceof Error ? err.message : err}`,
+    );
     return result;
   }
 
@@ -300,8 +331,8 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
   let marketplaces: string[];
   try {
     marketplaces = readdirSync(cacheDir, { withFileTypes: true })
-      .filter(d => d.isDirectory())
-      .map(d => d.name);
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
   } catch {
     return result;
   }
@@ -314,26 +345,31 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
     let pluginNames: string[];
     try {
       pluginNames = readdirSync(marketDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-    } catch { continue; }
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+    } catch {
+      continue;
+    }
 
     for (const pluginName of pluginNames) {
       const pluginDir = join(marketDir, pluginName);
       let versions: string[];
       try {
         versions = readdirSync(pluginDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-      } catch { continue; }
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name);
+      } catch {
+        continue;
+      }
 
       for (const version of versions) {
         const versionDir = join(pluginDir, version);
         const normalised = stripTrailing(versionDir);
 
         // Check if this version or any of its subdirectories are referenced
-        const isActive = activePaths.has(normalised) ||
-          activePathsArray.some(ap => ap.startsWith(normalised + '/'));
+        const isActive =
+          activePaths.has(normalised) ||
+          activePathsArray.some((ap) => ap.startsWith(normalised + "/"));
 
         if (isActive) continue;
 
@@ -343,7 +379,9 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
           try {
             const stats = statSync(versionDir);
             if (now - stats.mtimeMs < STALE_THRESHOLD_MS) continue;
-          } catch { continue; }
+          } catch {
+            continue;
+          }
         }
 
         // When an active version exists in the same plugin namespace, replace the
@@ -352,20 +390,23 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
         const pluginDirNorm = stripTrailing(pluginDir);
         const activeVersionDirsHere = dedupePaths(
           activePathsArray
-            .filter(ap => ap.startsWith(pluginDirNorm + '/'))
-            .map(ap => join(pluginDir, ap.slice(pluginDirNorm.length + 1).split('/')[0])),
+            .filter((ap) => ap.startsWith(pluginDirNorm + "/"))
+            .map((ap) =>
+              join(pluginDir, ap.slice(pluginDirNorm.length + 1).split("/")[0]),
+            ),
         );
 
         if (activeVersionDirsHere.length > 0) {
           const target = [...activeVersionDirsHere].sort((a, b) =>
-            compareSemverDesc(
-              a.split('/').pop() ?? a,
-              b.split('/').pop() ?? b,
-            ),
+            compareSemverDesc(a.split("/").pop() ?? a, b.split("/").pop() ?? b),
           )[0];
           if (safeRmSync(versionDir)) {
             try {
-              symlinkSync(target, versionDir, process.platform === 'win32' ? 'junction' : 'dir');
+              symlinkSync(
+                target,
+                versionDir,
+                process.platform === "win32" ? "junction" : "dir",
+              );
               result.symlinked++;
               result.symlinkPaths.push(versionDir);
             } catch (err) {

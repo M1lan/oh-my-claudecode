@@ -99,23 +99,41 @@ export function getSecurityConfig(): SecurityConfig {
   if (isStrict) {
     // In strict mode, config file can only TIGHTEN security, not relax it
     cachedConfig = {
-      restrictToolPaths: base.restrictToolPaths || (fileOverrides.restrictToolPaths ?? false),
-      pythonSandbox: base.pythonSandbox || (fileOverrides.pythonSandbox ?? false),
-      disableProjectSkills: base.disableProjectSkills || (fileOverrides.disableProjectSkills ?? false),
-      disableAutoUpdate: base.disableAutoUpdate || (fileOverrides.disableAutoUpdate ?? false),
-      disableRemoteMcp: base.disableRemoteMcp || (fileOverrides.disableRemoteMcp ?? false),
-      disableExternalLLM: base.disableExternalLLM || (fileOverrides.disableExternalLLM ?? false),
-      hardMaxIterations: Math.min(base.hardMaxIterations, (typeof fileOverrides.hardMaxIterations === "number" && fileOverrides.hardMaxIterations > 0) ? fileOverrides.hardMaxIterations : base.hardMaxIterations),
+      restrictToolPaths:
+        base.restrictToolPaths || (fileOverrides.restrictToolPaths ?? false),
+      pythonSandbox:
+        base.pythonSandbox || (fileOverrides.pythonSandbox ?? false),
+      disableProjectSkills:
+        base.disableProjectSkills ||
+        (fileOverrides.disableProjectSkills ?? false),
+      disableAutoUpdate:
+        base.disableAutoUpdate || (fileOverrides.disableAutoUpdate ?? false),
+      disableRemoteMcp:
+        base.disableRemoteMcp || (fileOverrides.disableRemoteMcp ?? false),
+      disableExternalLLM:
+        base.disableExternalLLM || (fileOverrides.disableExternalLLM ?? false),
+      hardMaxIterations: Math.min(
+        base.hardMaxIterations,
+        typeof fileOverrides.hardMaxIterations === "number" &&
+          fileOverrides.hardMaxIterations > 0
+          ? fileOverrides.hardMaxIterations
+          : base.hardMaxIterations,
+      ),
     };
   } else {
     cachedConfig = {
-      restrictToolPaths: fileOverrides.restrictToolPaths ?? base.restrictToolPaths,
+      restrictToolPaths:
+        fileOverrides.restrictToolPaths ?? base.restrictToolPaths,
       pythonSandbox: fileOverrides.pythonSandbox ?? base.pythonSandbox,
-      disableProjectSkills: fileOverrides.disableProjectSkills ?? base.disableProjectSkills,
-      disableAutoUpdate: fileOverrides.disableAutoUpdate ?? base.disableAutoUpdate,
+      disableProjectSkills:
+        fileOverrides.disableProjectSkills ?? base.disableProjectSkills,
+      disableAutoUpdate:
+        fileOverrides.disableAutoUpdate ?? base.disableAutoUpdate,
       disableRemoteMcp: fileOverrides.disableRemoteMcp ?? base.disableRemoteMcp,
-      disableExternalLLM: fileOverrides.disableExternalLLM ?? base.disableExternalLLM,
-      hardMaxIterations: fileOverrides.hardMaxIterations ?? base.hardMaxIterations,
+      disableExternalLLM:
+        fileOverrides.disableExternalLLM ?? base.disableExternalLLM,
+      hardMaxIterations:
+        fileOverrides.hardMaxIterations ?? base.hardMaxIterations,
     };
   }
 

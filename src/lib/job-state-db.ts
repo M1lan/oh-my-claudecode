@@ -48,11 +48,15 @@ function getDb(cwd?: string): BetterSqlite3.Database | null {
   }
   // Emit deprecation warning when multiple DBs are open and no cwd provided
   if (dbMap.size > 1) {
-    console.warn('[job-state-db] DEPRECATED: getDb() called without explicit cwd while multiple DBs are open. Pass cwd explicitly.');
+    console.warn(
+      "[job-state-db] DEPRECATED: getDb() called without explicit cwd while multiple DBs are open. Pass cwd explicitly.",
+    );
   }
   // Backward compat: use last initialized cwd
   if (_lastCwd) {
-    console.warn('[job-state-db] DEPRECATED: using _lastCwd fallback. Pass cwd explicitly.');
+    console.warn(
+      "[job-state-db] DEPRECATED: using _lastCwd fallback. Pass cwd explicitly.",
+    );
     return dbMap.get(_lastCwd) ?? null;
   }
   // Return any available instance (single-worktree case)
@@ -227,17 +231,27 @@ export function closeJobDb(cwd?: string): void {
     const resolvedCwd = resolve(cwd);
     const db = dbMap.get(resolvedCwd);
     if (db) {
-      try { db.close(); } catch { /* Ignore close errors */ }
+      try {
+        db.close();
+      } catch {
+        /* Ignore close errors */
+      }
       dbMap.delete(resolvedCwd);
       if (_lastCwd === resolvedCwd) _lastCwd = null;
     }
   } else {
     if (dbMap.size > 0) {
-      console.warn('[job-state-db] DEPRECATED: closeJobDb() called without cwd. Use closeAllJobDbs() for explicit intent.');
+      console.warn(
+        "[job-state-db] DEPRECATED: closeJobDb() called without cwd. Use closeAllJobDbs() for explicit intent.",
+      );
     }
     // Close all connections
     for (const [key, db] of dbMap.entries()) {
-      try { db.close(); } catch { /* Ignore close errors */ }
+      try {
+        db.close();
+      } catch {
+        /* Ignore close errors */
+      }
       dbMap.delete(key);
     }
     _lastCwd = null;
@@ -250,7 +264,11 @@ export function closeJobDb(cwd?: string): void {
  */
 export function closeAllJobDbs(): void {
   for (const [key, db] of dbMap.entries()) {
-    try { db.close(); } catch { /* Ignore close errors */ }
+    try {
+      db.close();
+    } catch {
+      /* Ignore close errors */
+    }
     dbMap.delete(key);
   }
   _lastCwd = null;
@@ -347,7 +365,9 @@ export function getJob(
     const stmt = db.prepare(
       "SELECT * FROM jobs WHERE provider = ? AND job_id = ?",
     );
-    const row = stmt.get(provider, jobId) as Record<string, unknown> | undefined;
+    const row = stmt.get(provider, jobId) as
+      | Record<string, unknown>
+      | undefined;
 
     if (!row) return null;
     return rowToJobStatus(row);
@@ -628,10 +648,7 @@ export function migrateFromJsonFiles(
 
     importAll();
   } catch (error) {
-    console.error(
-      "[job-state-db] Failed to migrate from JSON files:",
-      error,
-    );
+    console.error("[job-state-db] Failed to migrate from JSON files:", error);
   }
 
   return result;
@@ -748,7 +765,10 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
     // Recent completed/failed jobs (last hour) - brief summary
     const recentJobs = getRecentJobs(undefined, 60 * 60 * 1000, cwd);
     const terminalJobs = recentJobs.filter(
-      (j) => j.status === "completed" || j.status === "failed" || j.status === "timeout",
+      (j) =>
+        j.status === "completed" ||
+        j.status === "failed" ||
+        j.status === "timeout",
     );
 
     if (terminalJobs.length > 0) {
@@ -759,7 +779,9 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
         const fallback = job.usedFallback
           ? ` (fallback: ${job.fallbackModel})`
           : "";
-        const errorNote = job.error ? ` - error: ${job.error.slice(0, 80)}` : "";
+        const errorNote = job.error
+          ? ` - error: ${job.error.slice(0, 80)}`
+          : "";
         lines.push(
           `- **${job.provider}** \`${job.jobId}\` (${job.agentRole}): ${icon}${fallback}${errorNote}`,
         );

@@ -1,20 +1,23 @@
-import { describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, normalize, relative } from 'node:path';
+import { describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join, normalize, relative } from "node:path";
 
 const PACKAGE_ROOT = process.cwd();
-const HOOKS_JSON_PATH = join(PACKAGE_ROOT, 'hooks', 'hooks.json');
-const SCRIPTS_ROOT = join(PACKAGE_ROOT, 'scripts');
+const HOOKS_JSON_PATH = join(PACKAGE_ROOT, "hooks", "hooks.json");
+const SCRIPTS_ROOT = join(PACKAGE_ROOT, "scripts");
 
 type HookCommandConfig = {
   command?: string;
 };
 
 type HooksJson = {
-  hooks?: Record<string, Array<{
-    hooks?: HookCommandConfig[];
-  }>>;
+  hooks?: Record<
+    string,
+    Array<{
+      hooks?: HookCommandConfig[];
+    }>
+  >;
 };
 
 type NpmPackDryRunEntry = {
@@ -25,17 +28,20 @@ type NpmPackDryRunResult = {
   files?: NpmPackDryRunEntry[];
 };
 
-const LOCAL_IMPORT_RE = /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
+const LOCAL_IMPORT_RE =
+  /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
 const PLUGIN_SCRIPT_RE = /"\$CLAUDE_PLUGIN_ROOT"\/(scripts\/[^\s"]+)/g;
 
 function listHookScriptEntries(): string[] {
-  const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8')) as HooksJson;
-  const entries = new Set<string>(['scripts/run.cjs']);
+  const hooksJson = JSON.parse(
+    readFileSync(HOOKS_JSON_PATH, "utf-8"),
+  ) as HooksJson;
+  const entries = new Set<string>(["scripts/run.cjs"]);
 
   for (const eventHooks of Object.values(hooksJson.hooks ?? {})) {
     for (const matcherEntry of eventHooks) {
       for (const hook of matcherEntry.hooks ?? []) {
-        const command = hook.command ?? '';
+        const command = hook.command ?? "";
         for (const match of command.matchAll(PLUGIN_SCRIPT_RE)) {
           entries.add(match[1]);
         }
@@ -46,16 +52,19 @@ function listHookScriptEntries(): string[] {
   return [...entries].sort();
 }
 
-function resolveRelativeScriptImport(fromFile: string, specifier: string): string | null {
+function resolveRelativeScriptImport(
+  fromFile: string,
+  specifier: string,
+): string | null {
   const resolved = normalize(join(dirname(fromFile), specifier));
   const candidates = [
     resolved,
     `${resolved}.mjs`,
     `${resolved}.cjs`,
     `${resolved}.js`,
-    join(resolved, 'index.mjs'),
-    join(resolved, 'index.cjs'),
-    join(resolved, 'index.js'),
+    join(resolved, "index.mjs"),
+    join(resolved, "index.cjs"),
+    join(resolved, "index.js"),
   ];
 
   for (const candidate of candidates) {
@@ -67,43 +76,52 @@ function resolveRelativeScriptImport(fromFile: string, specifier: string): strin
   return null;
 }
 
-function collectRequiredScriptFiles(entryRelPath: string, collected = new Set<string>()): Set<string> {
+function collectRequiredScriptFiles(
+  entryRelPath: string,
+  collected = new Set<string>(),
+): Set<string> {
   const absolutePath = join(PACKAGE_ROOT, entryRelPath);
   if (!existsSync(absolutePath)) {
     throw new Error(`Required hook file is missing in repo: ${entryRelPath}`);
   }
 
-  const normalizedRel = relative(PACKAGE_ROOT, absolutePath).replace(/\\/g, '/');
+  const normalizedRel = relative(PACKAGE_ROOT, absolutePath).replace(
+    /\\/g,
+    "/",
+  );
   if (collected.has(normalizedRel)) {
     return collected;
   }
   collected.add(normalizedRel);
 
-  const content = readFileSync(absolutePath, 'utf-8');
+  const content = readFileSync(absolutePath, "utf-8");
   for (const match of content.matchAll(LOCAL_IMPORT_RE)) {
     const resolved = resolveRelativeScriptImport(absolutePath, match[1]);
     if (!resolved) {
       continue;
     }
-    collectRequiredScriptFiles(relative(PACKAGE_ROOT, resolved).replace(/\\/g, '/'), collected);
+    collectRequiredScriptFiles(
+      relative(PACKAGE_ROOT, resolved).replace(/\\/g, "/"),
+      collected,
+    );
   }
 
   return collected;
 }
 
 function getPackedFiles(): Set<string> {
-  const stdout = execFileSync('pnpm', ['pack', '--dry-run', '--json'], {
+  const stdout = execFileSync("pnpm", ["pack", "--dry-run", "--json"], {
     cwd: PACKAGE_ROOT,
-    encoding: 'utf-8',
+    encoding: "utf-8",
   });
 
   const results = JSON.parse(stdout) as NpmPackDryRunResult[];
-  return new Set((results[0]?.files ?? []).map(file => file.path));
+  return new Set((results[0]?.files ?? []).map((file) => file.path));
 }
 
-describe('pnpm package hook surface regression', () => {
-  it('packs hooks.json, hook entry scripts, and their local script dependencies', () => {
-    const requiredFiles = new Set<string>(['hooks/hooks.json']);
+describe("pnpm package hook surface regression", () => {
+  it("packs hooks.json, hook entry scripts, and their local script dependencies", () => {
+    const requiredFiles = new Set<string>(["hooks/hooks.json"]);
 
     for (const entryRelPath of listHookScriptEntries()) {
       for (const file of collectRequiredScriptFiles(entryRelPath)) {
@@ -114,7 +132,9 @@ describe('pnpm package hook surface regression', () => {
     const packedFiles = getPackedFiles();
     expect([...requiredFiles].sort()).not.toHaveLength(0);
 
-    const missing = [...requiredFiles].filter(file => !packedFiles.has(file)).sort();
+    const missing = [...requiredFiles]
+      .filter((file) => !packedFiles.has(file))
+      .sort();
     expect(missing).toEqual([]);
   });
 });

@@ -1,12 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { describe, it, expect } from "vitest";
+import { readFileSync, existsSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const PACKAGE_ROOT = join(__dirname, '..', '..');
-const PLUGIN_SETUP_PATH = join(PACKAGE_ROOT, 'scripts', 'plugin-setup.mjs');
+const PACKAGE_ROOT = join(__dirname, "..", "..");
+const PLUGIN_SETUP_PATH = join(PACKAGE_ROOT, "scripts", "plugin-setup.mjs");
 
 /**
  * Tests for plugin-setup.mjs dependency installation logic (issue #1113).
@@ -15,62 +15,66 @@ const PLUGIN_SETUP_PATH = join(PACKAGE_ROOT, 'scripts', 'plugin-setup.mjs');
  * strips it.  plugin-setup.mjs must detect the missing dependencies and run
  * `pnpm install --omit=dev --ignore-scripts` to restore them.
  */
-describe('plugin-setup.mjs dependency installation', () => {
-  it('script file exists', () => {
+describe("plugin-setup.mjs dependency installation", () => {
+  it("script file exists", () => {
     expect(existsSync(PLUGIN_SETUP_PATH)).toBe(true);
   });
 
   const scriptContent = existsSync(PLUGIN_SETUP_PATH)
-    ? readFileSync(PLUGIN_SETUP_PATH, 'utf-8')
-    : '';
+    ? readFileSync(PLUGIN_SETUP_PATH, "utf-8")
+    : "";
 
-  it('imports execSync from child_process', () => {
-    expect(scriptContent).toMatch(/import\s*\{[^}]*execSync[^}]*\}\s*from\s*['"]node:child_process['"]/);
+  it("imports execSync from child_process", () => {
+    expect(scriptContent).toMatch(
+      /import\s*\{[^}]*execSync[^}]*\}\s*from\s*['"]node:child_process['"]/,
+    );
   });
 
-  it('checks for node_modules/commander as dependency sentinel', () => {
+  it("checks for node_modules/commander as dependency sentinel", () => {
     expect(scriptContent).toContain("node_modules', 'commander'");
   });
 
-  it('runs pnpm install with --omit=dev flag', () => {
-    expect(scriptContent).toContain('pnpm install --omit=dev --ignore-scripts');
+  it("runs pnpm install with --omit=dev flag", () => {
+    expect(scriptContent).toContain("pnpm install --omit=dev --ignore-scripts");
   });
 
-  it('uses --ignore-scripts to prevent recursive setup', () => {
+  it("uses --ignore-scripts to prevent recursive setup", () => {
     // --ignore-scripts must be present to avoid re-triggering plugin-setup.mjs
     const installMatches = scriptContent.match(/pnpm install[^'"]+/g) || [];
     expect(installMatches.length).toBeGreaterThan(0);
-    expect(installMatches.some(m => m.includes('--ignore-scripts'))).toBe(true);
+    expect(installMatches.some((m) => m.includes("--ignore-scripts"))).toBe(
+      true,
+    );
   });
 
-  it('sets a timeout on execSync to avoid hanging', () => {
+  it("sets a timeout on execSync to avoid hanging", () => {
     expect(scriptContent).toMatch(/timeout:\s*\d+/);
   });
 
-  it('skips install when node_modules/commander already exists', () => {
+  it("skips install when node_modules/commander already exists", () => {
     // The script should have a conditional branch that logs "already present"
-    expect(scriptContent).toContain('Runtime dependencies already present');
+    expect(scriptContent).toContain("Runtime dependencies already present");
   });
 
-  it('wraps install in try/catch for graceful failure', () => {
+  it("wraps install in try/catch for graceful failure", () => {
     // The install should be wrapped in try/catch so setup continues on failure
-    expect(scriptContent).toContain('Could not install dependencies');
+    expect(scriptContent).toContain("Could not install dependencies");
   });
 });
 
-describe('package.json prepare script removal', () => {
-  const pkgPath = join(PACKAGE_ROOT, 'package.json');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+describe("package.json prepare script removal", () => {
+  const pkgPath = join(PACKAGE_ROOT, "package.json");
+  const pkg = JSON.parse(readFileSync(pkgPath, "utf-8"));
 
-  it('does not have a prepare script', () => {
+  it("does not have a prepare script", () => {
     // prepare was removed to prevent the "prepare trap" where pnpm install
     // in the plugin cache directory triggers tsc (which requires devDependencies)
     expect(pkg.scripts.prepare).toBeUndefined();
   });
 
-  it('has prepublishOnly with build step', () => {
+  it("has prepublishOnly with build step", () => {
     // The build step moved from prepare to prepublishOnly so it only runs
     // before pnpm publish, not on pnpm install in consumer contexts
-    expect(pkg.scripts.prepublishOnly).toContain('pnpm run build');
+    expect(pkg.scripts.prepublishOnly).toContain("pnpm run build");
   });
 });

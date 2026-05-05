@@ -119,7 +119,11 @@ export async function parseTranscript(
     cacheKey = `${transcriptPath}:${stat.size}:${stat.mtimeMs}`;
     const cached = transcriptCache.get(transcriptPath);
     if (cached?.cacheKey === cacheKey) {
-      return finalizeTranscriptResult(cloneTranscriptData(cached.baseResult), options, cached.pendingPermissions);
+      return finalizeTranscriptResult(
+        cloneTranscriptData(cached.baseResult),
+        options,
+        cached.pendingPermissions,
+      );
     }
   } catch {
     return result;
@@ -208,11 +212,18 @@ export async function parseTranscript(
   ].slice(0, 10);
   result.todos = latestTodos;
   if (sessionTotalsReliable && sessionTokenTotals.seenUsage) {
-    result.sessionTotalTokens = sessionTokenTotals.inputTokens + sessionTokenTotals.outputTokens;
+    result.sessionTotalTokens =
+      sessionTokenTotals.inputTokens + sessionTokenTotals.outputTokens;
   }
 
-  const pendingPermissions = Array.from(pendingPermissionMap.values()).map(clonePendingPermission);
-  const finalized = finalizeTranscriptResult(result, options, pendingPermissions);
+  const pendingPermissions = Array.from(pendingPermissionMap.values()).map(
+    clonePendingPermission,
+  );
+  const finalized = finalizeTranscriptResult(
+    result,
+    options,
+    pendingPermissions,
+  );
   if (cacheKey) {
     if (transcriptCache.size >= TRANSCRIPT_CACHE_MAX_SIZE) {
       transcriptCache.clear();
@@ -235,7 +246,9 @@ function cloneDate(value: Date | undefined): Date | undefined {
   return value ? new Date(value.getTime()) : undefined;
 }
 
-function clonePendingPermission(permission: PendingPermission): PendingPermission {
+function clonePendingPermission(
+  permission: PendingPermission,
+): PendingPermission {
   return {
     ...permission,
     timestamp: new Date(permission.timestamp.getTime()),
@@ -287,7 +300,9 @@ function finalizeTranscriptResult(
       const runningTime = now - agent.startTime.getTime();
       if (runningTime > staleAgentThresholdMs) {
         agent.status = "completed";
-        agent.endTime = new Date(agent.startTime.getTime() + staleAgentThresholdMs);
+        agent.endTime = new Date(
+          agent.startTime.getTime() + staleAgentThresholdMs,
+        );
       }
     }
   }
@@ -468,7 +483,11 @@ function processEntry(
   // run_in_background, Explore/Plan/general-purpose, etc.) never transition
   // from "running" to "completed" in the HUD.
   if (typeof content === "string") {
-    if (content.includes("<task-notification>") || content.includes("<task_id>") || content.includes("<task-id>")) {
+    if (
+      content.includes("<task-notification>") ||
+      content.includes("<task_id>") ||
+      content.includes("<task-id>")
+    ) {
       const taskOutput = parseTaskOutputResult(content);
       if (taskOutput && taskOutput.status === "completed") {
         // Prefer direct tool-use-id lookup (skips the backgroundAgentMap
@@ -510,7 +529,11 @@ function processEntry(
     if (block.type === "tool_use" && block.id && block.name) {
       result.toolCallCount++;
       result.lastToolName = block.name;
-      if (block.name === "Task" || block.name === "proxy_Task" || block.name === "Agent") {
+      if (
+        block.name === "Task" ||
+        block.name === "proxy_Task" ||
+        block.name === "Agent"
+      ) {
         result.agentCallCount++;
         const input = block.input as TaskInput | undefined;
         const agentEntry: ActiveAgent = {
@@ -542,7 +565,10 @@ function processEntry(
         }
 
         agentMap.set(block.id, agentEntry);
-      } else if (block.name === "TodoWrite" || block.name === "proxy_TodoWrite") {
+      } else if (
+        block.name === "TodoWrite" ||
+        block.name === "proxy_TodoWrite"
+      ) {
         const input = block.input as TodoWriteInput | undefined;
         if (input?.todos && Array.isArray(input.todos)) {
           // Replace latest todos with new ones
@@ -614,7 +640,9 @@ function processEntry(
               typeof blockContent[0] === "object" &&
               blockContent[0] !== null &&
               (blockContent[0] as { type?: string }).type === "text" &&
-              startsWithAsyncLaunch((blockContent[0] as { text?: string }).text);
+              startsWithAsyncLaunch(
+                (blockContent[0] as { text?: string }).text,
+              );
 
         if (isBackgroundLaunch) {
           // Extract and store the background agent ID mapping
@@ -718,18 +746,19 @@ interface SkillInput {
   args?: string;
 }
 
-
-function extractLastRequestTokenUsage(usage: TranscriptUsage | undefined): LastRequestTokenUsage | null {
+function extractLastRequestTokenUsage(
+  usage: TranscriptUsage | undefined,
+): LastRequestTokenUsage | null {
   if (!usage) return null;
 
   const inputTokens = getNumericUsageValue(usage.input_tokens);
   const outputTokens = getNumericUsageValue(usage.output_tokens);
   const reasoningTokens = getNumericUsageValue(
-    usage.reasoning_tokens
-      ?? usage.output_tokens_details?.reasoning_tokens
-      ?? usage.output_tokens_details?.reasoningTokens
-      ?? usage.completion_tokens_details?.reasoning_tokens
-      ?? usage.completion_tokens_details?.reasoningTokens,
+    usage.reasoning_tokens ??
+      usage.output_tokens_details?.reasoning_tokens ??
+      usage.output_tokens_details?.reasoningTokens ??
+      usage.completion_tokens_details?.reasoning_tokens ??
+      usage.completion_tokens_details?.reasoningTokens,
   );
 
   if (inputTokens == null && outputTokens == null) {

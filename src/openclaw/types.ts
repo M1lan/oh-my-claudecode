@@ -41,7 +41,9 @@ export interface OpenClawCommandGatewayConfig {
 }
 
 /** Gateway configuration — HTTP or CLI command */
-export type OpenClawGatewayConfig = OpenClawHttpGatewayConfig | OpenClawCommandGatewayConfig;
+export type OpenClawGatewayConfig =
+  | OpenClawHttpGatewayConfig
+  | OpenClawCommandGatewayConfig;
 
 /** Per-hook-event mapping to a gateway + instruction */
 export interface OpenClawHookMapping {

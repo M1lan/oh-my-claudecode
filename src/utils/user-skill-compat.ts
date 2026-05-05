@@ -7,13 +7,13 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
-} from 'fs';
-import { basename, join } from 'path';
-import { getClaudeConfigDir } from './config-dir.js';
+} from "fs";
+import { basename, join } from "path";
+import { getClaudeConfigDir } from "./config-dir.js";
 
-const CLAUDE_SKILLS_DIR = join(getClaudeConfigDir(), 'skills');
-const OMC_LEARNED_DIR = join(CLAUDE_SKILLS_DIR, 'omc-learned');
-const CLAUDE_SKILL_FILENAME = 'SKILL.md';
+const CLAUDE_SKILLS_DIR = join(getClaudeConfigDir(), "skills");
+const OMC_LEARNED_DIR = join(CLAUDE_SKILLS_DIR, "omc-learned");
+const CLAUDE_SKILL_FILENAME = "SKILL.md";
 
 export interface UserSkillCompatEntry {
   skillName: string;
@@ -28,18 +28,30 @@ function getCompatSkillPath(skillName: string): string {
   return join(getCompatSkillDir(skillName), CLAUDE_SKILL_FILENAME);
 }
 
-function isSameSkillContent(sourceSkillPath: string, targetSkillPath: string): boolean {
+function isSameSkillContent(
+  sourceSkillPath: string,
+  targetSkillPath: string,
+): boolean {
   try {
-    return readFileSync(sourceSkillPath, 'utf-8') === readFileSync(targetSkillPath, 'utf-8');
+    return (
+      readFileSync(sourceSkillPath, "utf-8") ===
+      readFileSync(targetSkillPath, "utf-8")
+    );
   } catch {
     return false;
   }
 }
 
-function isCompatSymlinkTarget(sourceSkillPath: string, targetSkillPath: string): boolean {
+function isCompatSymlinkTarget(
+  sourceSkillPath: string,
+  targetSkillPath: string,
+): boolean {
   try {
-    return lstatSync(targetSkillPath).isSymbolicLink()
-      && readFileSync(sourceSkillPath, 'utf-8') === readFileSync(targetSkillPath, 'utf-8');
+    return (
+      lstatSync(targetSkillPath).isSymbolicLink() &&
+      readFileSync(sourceSkillPath, "utf-8") ===
+        readFileSync(targetSkillPath, "utf-8")
+    );
   } catch {
     return false;
   }
@@ -47,14 +59,16 @@ function isCompatSymlinkTarget(sourceSkillPath: string, targetSkillPath: string)
 
 export function ensureClaudeCodeUserSkillCompat(
   skillName: string,
-  sourceSkillPath: string
+  sourceSkillPath: string,
 ): boolean {
   const targetDir = getCompatSkillDir(skillName);
   const targetSkillPath = getCompatSkillPath(skillName);
 
   if (existsSync(targetSkillPath)) {
-    return isCompatSymlinkTarget(sourceSkillPath, targetSkillPath)
-      || isSameSkillContent(sourceSkillPath, targetSkillPath);
+    return (
+      isCompatSymlinkTarget(sourceSkillPath, targetSkillPath) ||
+      isSameSkillContent(sourceSkillPath, targetSkillPath)
+    );
   }
 
   if (existsSync(targetDir)) {
@@ -75,7 +89,7 @@ export function ensureClaudeCodeUserSkillCompat(
     return true;
   } catch {
     try {
-      writeFileSync(targetSkillPath, readFileSync(sourceSkillPath, 'utf-8'));
+      writeFileSync(targetSkillPath, readFileSync(sourceSkillPath, "utf-8"));
       return true;
     } catch {
       try {
@@ -96,9 +110,9 @@ export function listOmcLearnedUserSkills(): UserSkillCompatEntry[] {
   const entries: UserSkillCompatEntry[] = [];
 
   for (const entry of readdirSync(OMC_LEARNED_DIR, { withFileTypes: true })) {
-    if (entry.isFile() && entry.name.endsWith('.md')) {
+    if (entry.isFile() && entry.name.endsWith(".md")) {
       entries.push({
-        skillName: basename(entry.name, '.md'),
+        skillName: basename(entry.name, ".md"),
         sourceSkillPath: join(OMC_LEARNED_DIR, entry.name),
       });
       continue;
@@ -108,7 +122,11 @@ export function listOmcLearnedUserSkills(): UserSkillCompatEntry[] {
       continue;
     }
 
-    const sourceSkillPath = join(OMC_LEARNED_DIR, entry.name, CLAUDE_SKILL_FILENAME);
+    const sourceSkillPath = join(
+      OMC_LEARNED_DIR,
+      entry.name,
+      CLAUDE_SKILL_FILENAME,
+    );
     if (!existsSync(sourceSkillPath)) {
       continue;
     }
@@ -126,7 +144,9 @@ export function syncOmcLearnedUserSkillsForClaudeCode(): string[] {
   const synced: string[] = [];
 
   for (const entry of listOmcLearnedUserSkills()) {
-    if (ensureClaudeCodeUserSkillCompat(entry.skillName, entry.sourceSkillPath)) {
+    if (
+      ensureClaudeCodeUserSkillCompat(entry.skillName, entry.sourceSkillPath)
+    ) {
       synced.push(entry.skillName);
     }
   }

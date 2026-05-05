@@ -9,30 +9,39 @@
  * of {worktree}/.omc/. This preserves state across worktree deletions.
  */
 
-import { createHash } from 'crypto';
-import { execSync } from 'child_process';
-import { existsSync, mkdirSync, realpathSync, readdirSync } from 'fs';
-import { homedir } from 'os';
-import { resolve, normalize, relative, sep, join, isAbsolute, basename, dirname } from 'path';
-import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { createHash } from "crypto";
+import { execSync } from "child_process";
+import { existsSync, mkdirSync, realpathSync, readdirSync } from "fs";
+import { homedir } from "os";
+import {
+  resolve,
+  normalize,
+  relative,
+  sep,
+  join,
+  isAbsolute,
+  basename,
+  dirname,
+} from "path";
+import { getClaudeConfigDir } from "../utils/config-dir.js";
 
 /** Standard .omc subdirectories */
 export const OmcPaths = {
-  ROOT: '.omc',
-  STATE: '.omc/state',
-  SESSIONS: '.omc/state/sessions',
-  PLANS: '.omc/plans',
-  RESEARCH: '.omc/research',
-  NOTEPAD: '.omc/notepad.md',
-  PROJECT_MEMORY: '.omc/project-memory.json',
-  DRAFTS: '.omc/drafts',
-  NOTEPADS: '.omc/notepads',
-  LOGS: '.omc/logs',
-  SCIENTIST: '.omc/scientist',
-  AUTOPILOT: '.omc/autopilot',
-  SKILLS: '.omc/skills',
-  SHARED_MEMORY: '.omc/state/shared-memory',
-  DEEPINIT_MANIFEST: '.omc/deepinit-manifest.json',
+  ROOT: ".omc",
+  STATE: ".omc/state",
+  SESSIONS: ".omc/state/sessions",
+  PLANS: ".omc/plans",
+  RESEARCH: ".omc/research",
+  NOTEPAD: ".omc/notepad.md",
+  PROJECT_MEMORY: ".omc/project-memory.json",
+  DRAFTS: ".omc/drafts",
+  NOTEPADS: ".omc/notepads",
+  LOGS: ".omc/logs",
+  SCIENTIST: ".omc/scientist",
+  AUTOPILOT: ".omc/autopilot",
+  SKILLS: ".omc/skills",
+  SHARED_MEMORY: ".omc/state/shared-memory",
+  DEEPINIT_MANIFEST: ".omc/deepinit-manifest.json",
 } as const;
 
 /**
@@ -60,10 +69,10 @@ export function getWorktreeRoot(cwd?: string): string | null {
   }
 
   try {
-    const root = execSync('git rev-parse --show-toplevel', {
+    const root = execSync("git rev-parse --show-toplevel", {
       cwd: effectiveCwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
       timeout: 5000,
     }).trim();
 
@@ -90,13 +99,13 @@ export function getWorktreeRoot(cwd?: string): string | null {
  */
 export function validatePath(inputPath: string): void {
   // Reject explicit path traversal
-  if (inputPath.includes('..')) {
+  if (inputPath.includes("..")) {
     throw new Error(`Invalid path: path traversal not allowed (${inputPath})`);
   }
 
   // Reject absolute paths - use isAbsolute() for cross-platform coverage
   // Covers: /unix, ~/home, C:\windows, D:/windows, \\UNC
-  if (inputPath.startsWith('~') || isAbsolute(inputPath)) {
+  if (inputPath.startsWith("~") || isAbsolute(inputPath)) {
     throw new Error(`Invalid path: absolute paths not allowed (${inputPath})`);
   }
 }
@@ -134,10 +143,10 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
 
   let source: string;
   try {
-    const remoteUrl = execSync('git remote get-url origin', {
+    const remoteUrl = execSync("git remote get-url origin", {
       cwd: root,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
     source = remoteUrl || root;
   } catch {
@@ -152,18 +161,21 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
   // directories despite sharing the same remote URL hash.
   let primaryRoot = root;
   try {
-    const commonDir = execSync('git rev-parse --path-format=absolute --git-common-dir', {
-      cwd: root,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
-    }).trim();
+    const commonDir = execSync(
+      "git rev-parse --path-format=absolute --git-common-dir",
+      {
+        cwd: root,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: 5000,
+      },
+    ).trim();
     // Only resolve when --git-common-dir points to a .git directory.
     // - Linked worktrees: returns <primary>/.git → dirname gives primary root ✓
     // - Submodules: returns <super>/.git/modules/<name> → skip (wrong parent)
     // - Bare repos: returns the repo root itself (no .git suffix) → skip
     //   (dirname would go up to the parent folder, colliding sibling repos)
-    const isGitDir = basename(commonDir) === '.git';
+    const isGitDir = basename(commonDir) === ".git";
     const isSubmodule = commonDir.includes(`${sep}.git${sep}modules`);
     if (isGitDir && !isSubmodule) {
       const resolved = dirname(commonDir);
@@ -175,8 +187,8 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
     // Not a git repo or command failed — fall back to worktree root
   }
 
-  const hash = createHash('sha256').update(source).digest('hex').slice(0, 16);
-  const dirName = basename(primaryRoot).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const hash = createHash("sha256").update(source).digest("hex").slice(0, 16);
+  const dirName = basename(primaryRoot).replace(/[^a-zA-Z0-9_-]/g, "_");
   return `${dirName}-${hash}`;
 }
 
@@ -200,11 +212,15 @@ export function getOmcRoot(worktreeRoot?: string): string {
     // Log notice if both legacy .omc/ and new centralized dir exist
     const legacyPath = join(root, OmcPaths.ROOT);
     const warningKey = `${legacyPath}:${centralizedPath}`;
-    if (!dualDirWarnings.has(warningKey) && existsSync(legacyPath) && existsSync(centralizedPath)) {
+    if (
+      !dualDirWarnings.has(warningKey) &&
+      existsSync(legacyPath) &&
+      existsSync(centralizedPath)
+    ) {
       dualDirWarnings.add(warningKey);
       console.warn(
         `[omc] Both legacy state dir (${legacyPath}) and centralized state dir (${centralizedPath}) exist. ` +
-        `Using centralized dir. Consider migrating data from the legacy dir and removing it.`
+          `Using centralized dir. Consider migrating data from the legacy dir and removing it.`,
       );
     }
 
@@ -223,7 +239,10 @@ export function getOmcRoot(worktreeRoot?: string): string {
  * @returns Absolute path
  * @throws Error if path would escape omc boundary
  */
-export function resolveOmcPath(relativePath: string, worktreeRoot?: string): string {
+export function resolveOmcPath(
+  relativePath: string,
+  worktreeRoot?: string,
+): string {
   validatePath(relativePath);
 
   const omcDir = getOmcRoot(worktreeRoot);
@@ -231,7 +250,7 @@ export function resolveOmcPath(relativePath: string, worktreeRoot?: string): str
 
   // Verify resolved path is still under omc directory
   const relativeToOmc = relative(omcDir, fullPath);
-  if (relativeToOmc.startsWith('..') || relativeToOmc.startsWith(sep + '..')) {
+  if (relativeToOmc.startsWith("..") || relativeToOmc.startsWith(sep + "..")) {
     throw new Error(`Path escapes omc boundary: ${relativePath}`);
   }
 
@@ -248,9 +267,14 @@ export function resolveOmcPath(relativePath: string, worktreeRoot?: string): str
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to state file
  */
-export function resolveStatePath(stateName: string, worktreeRoot?: string): string {
+export function resolveStatePath(
+  stateName: string,
+  worktreeRoot?: string,
+): string {
   // Normalize: ensure -state suffix is present, then add .json
-  const normalizedName = stateName.endsWith('-state') ? stateName : `${stateName}-state`;
+  const normalizedName = stateName.endsWith("-state")
+    ? stateName
+    : `${stateName}-state`;
   return resolveOmcPath(`state/${normalizedName}.json`, worktreeRoot);
 }
 
@@ -262,7 +286,10 @@ export function resolveStatePath(stateName: string, worktreeRoot?: string): stri
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to the created directory
  */
-export function ensureOmcDir(relativePath: string, worktreeRoot?: string): string {
+export function ensureOmcDir(
+  relativePath: string,
+  worktreeRoot?: string,
+): string {
   const fullPath = resolveOmcPath(relativePath, worktreeRoot);
 
   if (!existsSync(fullPath)) {
@@ -284,59 +311,74 @@ export function ensureOmcDir(relativePath: string, worktreeRoot?: string): strin
  * This version auto-detects worktree root.
  */
 export function getWorktreeNotepadPath(worktreeRoot?: string): string {
-  return join(getOmcRoot(worktreeRoot), 'notepad.md');
+  return join(getOmcRoot(worktreeRoot), "notepad.md");
 }
 
 /**
  * Get the absolute path to the project memory file.
  */
 export function getWorktreeProjectMemoryPath(worktreeRoot?: string): string {
-  return join(getOmcRoot(worktreeRoot), 'project-memory.json');
+  return join(getOmcRoot(worktreeRoot), "project-memory.json");
 }
 
 /**
  * Resolve a plan file path.
  * @param planName - Plan name (without .md extension)
  */
-export function resolvePlanPath(planName: string, worktreeRoot?: string): string {
+export function resolvePlanPath(
+  planName: string,
+  worktreeRoot?: string,
+): string {
   validatePath(planName);
-  return join(getOmcRoot(worktreeRoot), 'plans', `${planName}.md`);
+  return join(getOmcRoot(worktreeRoot), "plans", `${planName}.md`);
 }
 
 /**
  * Resolve a research directory path.
  * @param name - Research folder name
  */
-export function resolveResearchPath(name: string, worktreeRoot?: string): string {
+export function resolveResearchPath(
+  name: string,
+  worktreeRoot?: string,
+): string {
   validatePath(name);
-  return join(getOmcRoot(worktreeRoot), 'research', name);
+  return join(getOmcRoot(worktreeRoot), "research", name);
 }
 
 /**
  * Resolve the logs directory path.
  */
 export function resolveLogsPath(worktreeRoot?: string): string {
-  return join(getOmcRoot(worktreeRoot), 'logs');
+  return join(getOmcRoot(worktreeRoot), "logs");
 }
 
 /**
  * Resolve a wisdom/plan-scoped notepad directory path.
  * @param planName - Plan name for the scoped notepad
  */
-export function resolveWisdomPath(planName: string, worktreeRoot?: string): string {
+export function resolveWisdomPath(
+  planName: string,
+  worktreeRoot?: string,
+): string {
   validatePath(planName);
-  return join(getOmcRoot(worktreeRoot), 'notepads', planName);
+  return join(getOmcRoot(worktreeRoot), "notepads", planName);
 }
 
 /**
  * Check if an absolute path is under the .omc directory.
  * @param absolutePath - Absolute path to check
  */
-export function isPathUnderOmc(absolutePath: string, worktreeRoot?: string): boolean {
+export function isPathUnderOmc(
+  absolutePath: string,
+  worktreeRoot?: string,
+): boolean {
   const omcRoot = getOmcRoot(worktreeRoot);
   const normalizedPath = normalize(absolutePath);
   const normalizedOmc = normalize(omcRoot);
-  return normalizedPath.startsWith(normalizedOmc + sep) || normalizedPath === normalizedOmc;
+  return (
+    normalizedPath.startsWith(normalizedOmc + sep) ||
+    normalizedPath === normalizedOmc
+  );
 }
 
 /**
@@ -344,7 +386,15 @@ export function isPathUnderOmc(absolutePath: string, worktreeRoot?: string): boo
  */
 export function ensureAllOmcDirs(worktreeRoot?: string): void {
   const omcRoot = getOmcRoot(worktreeRoot);
-  const subdirs = ['', 'state', 'plans', 'research', 'logs', 'notepads', 'drafts'];
+  const subdirs = [
+    "",
+    "state",
+    "plans",
+    "research",
+    "logs",
+    "notepads",
+    "drafts",
+  ];
   for (const subdir of subdirs) {
     const fullPath = subdir ? join(omcRoot, subdir) : omcRoot;
     if (!existsSync(fullPath)) {
@@ -423,13 +473,21 @@ export function resetProcessSessionId(): void {
  */
 export function validateSessionId(sessionId: string): void {
   if (!sessionId) {
-    throw new Error('Session ID cannot be empty');
+    throw new Error("Session ID cannot be empty");
   }
-  if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
-    throw new Error(`Invalid session ID: path traversal not allowed (${sessionId})`);
+  if (
+    sessionId.includes("..") ||
+    sessionId.includes("/") ||
+    sessionId.includes("\\")
+  ) {
+    throw new Error(
+      `Invalid session ID: path traversal not allowed (${sessionId})`,
+    );
   }
   if (!SESSION_ID_REGEX.test(sessionId)) {
-    throw new Error(`Invalid session ID: must be alphanumeric with hyphens/underscores, max 256 chars (${sessionId})`);
+    throw new Error(
+      `Invalid session ID: must be alphanumeric with hyphens/underscores, max 256 chars (${sessionId})`,
+    );
   }
 }
 
@@ -441,23 +499,23 @@ export function validateSessionId(sessionId: string): void {
  * @returns true if path is valid, false otherwise
  */
 export function isValidTranscriptPath(transcriptPath: string): boolean {
-  if (!transcriptPath || typeof transcriptPath !== 'string') {
+  if (!transcriptPath || typeof transcriptPath !== "string") {
     return false;
   }
 
   // Reject path traversal
-  if (transcriptPath.includes('..')) {
+  if (transcriptPath.includes("..")) {
     return false;
   }
 
   // Must be absolute
-  if (!isAbsolute(transcriptPath) && !transcriptPath.startsWith('~')) {
+  if (!isAbsolute(transcriptPath) && !transcriptPath.startsWith("~")) {
     return false;
   }
 
   // Expand home directory if present
   let expandedPath = transcriptPath;
-  if (transcriptPath.startsWith('~')) {
+  if (transcriptPath.startsWith("~")) {
     expandedPath = join(homedir(), transcriptPath.slice(1));
   }
 
@@ -468,17 +526,16 @@ export function isValidTranscriptPath(transcriptPath: string): boolean {
   // Allowed: [$CLAUDE_CONFIG_DIR|~/.claude], ~/.omc/..., /tmp/...
   const allowedPrefixes = [
     getClaudeConfigDir(),
-    join(home, '.omc'),
-    '/tmp',
-    '/var/folders', // macOS temp
+    join(home, ".omc"),
+    "/tmp",
+    "/var/folders", // macOS temp
   ];
 
   return allowedPrefixes.some((prefix) => {
     const rel = relative(prefix, normalized);
-    return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+    return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
   });
 }
-
 
 /**
  * Resolve a session-scoped state file path.
@@ -489,11 +546,20 @@ export function isValidTranscriptPath(transcriptPath: string): boolean {
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to session-scoped state file
  */
-export function resolveSessionStatePath(stateName: string, sessionId: string, worktreeRoot?: string): string {
+export function resolveSessionStatePath(
+  stateName: string,
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   validateSessionId(sessionId);
 
-  const normalizedName = stateName.endsWith('-state') ? stateName : `${stateName}-state`;
-  return resolveOmcPath(`state/sessions/${sessionId}/${normalizedName}.json`, worktreeRoot);
+  const normalizedName = stateName.endsWith("-state")
+    ? stateName
+    : `${stateName}-state`;
+  return resolveOmcPath(
+    `state/sessions/${sessionId}/${normalizedName}.json`,
+    worktreeRoot,
+  );
 }
 
 /**
@@ -504,9 +570,12 @@ export function resolveSessionStatePath(stateName: string, sessionId: string, wo
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to session state directory
  */
-export function getSessionStateDir(sessionId: string, worktreeRoot?: string): string {
+export function getSessionStateDir(
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   validateSessionId(sessionId);
-  return join(getOmcRoot(worktreeRoot), 'state', 'sessions', sessionId);
+  return join(getOmcRoot(worktreeRoot), "state", "sessions", sessionId);
 }
 
 /**
@@ -516,7 +585,7 @@ export function getSessionStateDir(sessionId: string, worktreeRoot?: string): st
  * @returns Array of session IDs
  */
 export function listSessionIds(worktreeRoot?: string): string[] {
-  const sessionsDir = join(getOmcRoot(worktreeRoot), 'state', 'sessions');
+  const sessionsDir = join(getOmcRoot(worktreeRoot), "state", "sessions");
 
   if (!existsSync(sessionsDir)) {
     return [];
@@ -525,8 +594,10 @@ export function listSessionIds(worktreeRoot?: string): string[] {
   try {
     const entries = readdirSync(sessionsDir, { withFileTypes: true });
     return entries
-      .filter(entry => entry.isDirectory() && SESSION_ID_REGEX.test(entry.name))
-      .map(entry => entry.name);
+      .filter(
+        (entry) => entry.isDirectory() && SESSION_ID_REGEX.test(entry.name),
+      )
+      .map((entry) => entry.name);
   } catch {
     return [];
   }
@@ -539,7 +610,10 @@ export function listSessionIds(worktreeRoot?: string): string[] {
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to the session state directory
  */
-export function ensureSessionStateDir(sessionId: string, worktreeRoot?: string): string {
+export function ensureSessionStateDir(
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   const sessionDir = getSessionStateDir(sessionId, worktreeRoot);
 
   if (!existsSync(sessionDir)) {
@@ -573,9 +647,12 @@ export function resolveToWorktreeRoot(directory?: string): string {
     const root = getWorktreeRoot(resolved);
     if (root) return root;
 
-    console.error('[worktree] non-git directory provided, falling back to process root', {
-      directory: resolved,
-    });
+    console.error(
+      "[worktree] non-git directory provided, falling back to process root",
+      {
+        directory: resolved,
+      },
+    );
   }
   // Fallback: derive from process CWD (the MCP server / CLI entry point)
   return getWorktreeRoot(process.cwd()) || process.cwd();
@@ -606,7 +683,10 @@ export function resolveToWorktreeRoot(directory?: string): string {
  * @param cwd - Optional CWD for fallback detection
  * @returns The resolved transcript path (original if already correct or no resolution found)
  */
-export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: string): string | undefined {
+export function resolveTranscriptPath(
+  transcriptPath: string | undefined,
+  cwd?: string,
+): string | undefined {
   if (!transcriptPath) return undefined;
 
   // Fast path: if the file already exists, no resolution needed
@@ -619,7 +699,7 @@ export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: 
   // project directory encoding.
   const worktreeSegmentPattern = /--claude-worktrees-[^/\\]+/;
   if (worktreeSegmentPattern.test(transcriptPath)) {
-    const resolved = transcriptPath.replace(worktreeSegmentPattern, '');
+    const resolved = transcriptPath.replace(worktreeSegmentPattern, "");
     if (existsSync(resolved)) return resolved;
   }
 
@@ -627,26 +707,29 @@ export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: 
   // When the CWD contains `/.claude/worktrees/`, we can derive the main
   // project root and look for the transcript there.
   const effectiveCwd = cwd || process.cwd();
-  const worktreeMarker = '.claude/worktrees/';
+  const worktreeMarker = ".claude/worktrees/";
   const markerIdx = effectiveCwd.indexOf(worktreeMarker);
   if (markerIdx !== -1) {
     // Adjust index to exclude the preceding path separator
     const mainProjectRoot = effectiveCwd.substring(
       0,
-      markerIdx > 0 && effectiveCwd[markerIdx - 1] === sep ? markerIdx - 1 : markerIdx,
+      markerIdx > 0 && effectiveCwd[markerIdx - 1] === sep
+        ? markerIdx - 1
+        : markerIdx,
     );
 
     // Extract session filename from the original path
-    const lastSep = transcriptPath.lastIndexOf('/');
-    const sessionFile = lastSep !== -1 ? transcriptPath.substring(lastSep + 1) : '';
+    const lastSep = transcriptPath.lastIndexOf("/");
+    const sessionFile =
+      lastSep !== -1 ? transcriptPath.substring(lastSep + 1) : "";
     if (sessionFile) {
       // The projects directory is under the Claude config dir
-      const projectsDir = join(getClaudeConfigDir(), 'projects');
+      const projectsDir = join(getClaudeConfigDir(), "projects");
 
       if (existsSync(projectsDir)) {
         // Encode the main project root the same way Claude Code does:
         // replace path separators with `-`, replace dots with `-`.
-        const encodedMain = mainProjectRoot.replace(/[/\\.]/g, '-');
+        const encodedMain = mainProjectRoot.replace(/[/\\.]/g, "-");
         const resolvedPath = join(projectsDir, encodedMain, sessionFile);
         if (existsSync(resolvedPath)) return resolvedPath;
       }
@@ -659,36 +742,41 @@ export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: 
   // the main repo's encoded path. Use `git rev-parse --git-common-dir`
   // to find the main repo root and re-encode.
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', {
+    const gitCommonDir = execSync("git rev-parse --git-common-dir", {
       cwd: effectiveCwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
     // For linked worktrees, git-common-dir is <repo>/.git/worktrees/<name>
     // so dirname gives <repo>/.git/worktrees — navigate up to the actual repo root
     let mainRepoRoot = dirname(absoluteCommonDir);
-    if (mainRepoRoot.endsWith(join('.git', 'worktrees'))) {
+    if (mainRepoRoot.endsWith(join(".git", "worktrees"))) {
       mainRepoRoot = dirname(dirname(mainRepoRoot));
     }
     // Resolve symlinks for consistent comparison (e.g. /tmp -> /private/tmp on macOS,
     // ecryptfs $HOME on Linux, autofs /home, etc.)
-    try { mainRepoRoot = realpathSync(mainRepoRoot); } catch { /* keep as-is */ }
+    try {
+      mainRepoRoot = realpathSync(mainRepoRoot);
+    } catch {
+      /* keep as-is */
+    }
 
-    const worktreeTop = execSync('git rev-parse --show-toplevel', {
+    const worktreeTop = execSync("git rev-parse --show-toplevel", {
       cwd: effectiveCwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
 
     if (mainRepoRoot !== worktreeTop) {
-      const lastSep = transcriptPath.lastIndexOf('/');
-      const sessionFile = lastSep !== -1 ? transcriptPath.substring(lastSep + 1) : '';
+      const lastSep = transcriptPath.lastIndexOf("/");
+      const sessionFile =
+        lastSep !== -1 ? transcriptPath.substring(lastSep + 1) : "";
       if (sessionFile) {
-        const projectsDir = join(getClaudeConfigDir(), 'projects');
+        const projectsDir = join(getClaudeConfigDir(), "projects");
         if (existsSync(projectsDir)) {
-          const encodedMain = mainRepoRoot.replace(/[/\\.]/g, '-');
+          const encodedMain = mainRepoRoot.replace(/[/\\.]/g, "-");
           const resolvedPath = join(projectsDir, encodedMain, sessionFile);
           if (existsSync(resolvedPath)) return resolvedPath;
         }
@@ -740,15 +828,20 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
     try {
       providedRootReal = realpathSync(providedRoot);
     } catch {
-      throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+      throw new Error(
+        `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+      );
     }
 
     if (providedRootReal !== trustedRootReal) {
-      console.error('[worktree] workingDirectory resolved to different git worktree root, using trusted root', {
-        workingDirectory: resolved,
-        providedRoot: providedRootReal,
-        trustedRoot: trustedRootReal,
-      });
+      console.error(
+        "[worktree] workingDirectory resolved to different git worktree root, using trusted root",
+        {
+          workingDirectory: resolved,
+          providedRoot: providedRootReal,
+          trustedRoot: trustedRootReal,
+        },
+      );
       return trustedRoot;
     }
 
@@ -762,12 +855,16 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
   try {
     resolvedReal = realpathSync(resolved);
   } catch {
-    throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+    );
   }
 
   const rel = relative(trustedRootReal, resolvedReal);
-  if (rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error(`workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error(
+      `workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`,
+    );
   }
 
   // Directory is under trusted root but git failed — return trusted root,
@@ -777,12 +874,15 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
 
 function getGitCommonDir(cwd: string): string | null {
   try {
-    const commonDir = execSync('git rev-parse --path-format=absolute --git-common-dir', {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
-    }).trim();
+    const commonDir = execSync(
+      "git rev-parse --path-format=absolute --git-common-dir",
+      {
+        cwd,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+        timeout: 5000,
+      },
+    ).trim();
     return realpathSync(commonDir);
   } catch {
     return null;
@@ -800,7 +900,9 @@ function getGitCommonDir(cwd: string): string | null {
  * to the trusted startup cwd, and non-repo paths outside the trusted root are
  * rejected.
  */
-export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: string): string {
+export function validateWorkingDirectoryOrLinkedWorktree(
+  workingDirectory?: string,
+): string {
   const trustedRoot = getWorktreeRoot(process.cwd()) || process.cwd();
 
   if (!workingDirectory) {
@@ -823,7 +925,9 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
     try {
       providedRootReal = realpathSync(providedRoot);
     } catch {
-      throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+      throw new Error(
+        `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+      );
     }
 
     if (providedRootReal === trustedRootReal) {
@@ -832,15 +936,22 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
 
     const trustedCommonDir = getGitCommonDir(trustedRoot);
     const providedCommonDir = getGitCommonDir(providedRoot);
-    if (trustedCommonDir && providedCommonDir && providedCommonDir === trustedCommonDir) {
+    if (
+      trustedCommonDir &&
+      providedCommonDir &&
+      providedCommonDir === trustedCommonDir
+    ) {
       return providedRoot;
     }
 
-    console.error('[worktree] workingDirectory resolved to different git worktree root, using trusted root', {
-      workingDirectory: resolved,
-      providedRoot: providedRootReal,
-      trustedRoot: trustedRootReal,
-    });
+    console.error(
+      "[worktree] workingDirectory resolved to different git worktree root, using trusted root",
+      {
+        workingDirectory: resolved,
+        providedRoot: providedRootReal,
+        trustedRoot: trustedRootReal,
+      },
+    );
     return trustedRoot;
   }
 
@@ -848,12 +959,16 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
   try {
     resolvedReal = realpathSync(resolved);
   } catch {
-    throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+    );
   }
 
   const rel = relative(trustedRootReal, resolvedReal);
-  if (rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error(`workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`);
+  if (rel.startsWith("..") || isAbsolute(rel)) {
+    throw new Error(
+      `workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`,
+    );
   }
 
   return trustedRoot;

@@ -7,13 +7,13 @@
 
 /** Supported git hosting provider identifiers */
 export type ProviderName =
-  | 'github'
-  | 'gitlab'
-  | 'bitbucket'
-  | 'azure-devops'
-  | 'gitea'
-  | 'forgejo'
-  | 'unknown';
+  | "github"
+  | "gitlab"
+  | "bitbucket"
+  | "azure-devops"
+  | "gitea"
+  | "forgejo"
+  | "unknown";
 
 /** Parsed remote URL information */
 export interface RemoteUrlInfo {
@@ -55,7 +55,7 @@ export interface GitProvider {
   readonly displayName: string;
 
   /** What this provider calls PRs: 'PR' or 'MR' */
-  readonly prTerminology: 'PR' | 'MR';
+  readonly prTerminology: "PR" | "MR";
 
   /**
    * Git refspec pattern for fetching PR/MR branches.
@@ -73,10 +73,18 @@ export interface GitProvider {
   detectFromApi?(baseUrl: string): Promise<boolean>;
 
   /** Fetch PR/MR information */
-  viewPR(number: number, owner?: string, repo?: string): PRInfo | null | Promise<PRInfo | null>;
+  viewPR(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): PRInfo | null | Promise<PRInfo | null>;
 
   /** Fetch issue/work-item information */
-  viewIssue(number: number, owner?: string, repo?: string): IssueInfo | null | Promise<IssueInfo | null>;
+  viewIssue(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): IssueInfo | null | Promise<IssueInfo | null>;
 
   /** Check if the provider's CLI is authenticated */
   checkAuth(): boolean;

@@ -16,8 +16,8 @@ export {
   extractPromptText,
   removeCodeBlocks,
   type DetectedKeyword,
-  type KeywordType
-} from './keyword-detector/index.js';
+  type KeywordType,
+} from "./keyword-detector/index.js";
 
 export {
   // Ralph Hook (consolidated: loop, PRD, progress, verifier)
@@ -98,22 +98,22 @@ export {
   type ProgressEntry,
   type CodebasePattern,
   type ProgressLog,
-  type VerificationState
-} from './ralph/index.js';
+  type VerificationState,
+} from "./ralph/index.js";
 
 export {
   // Todo Continuation
   createTodoContinuationHook,
   checkIncompleteTodos,
-  type TodoContinuationHook
-} from './todo-continuation/index.js';
+  type TodoContinuationHook,
+} from "./todo-continuation/index.js";
 
 export {
   // Hook Bridge (main entry point for shell scripts)
   processHook,
   type HookInput,
-  type HookOutput
-} from './bridge.js';
+  type HookOutput,
+} from "./bridge.js";
 
 export {
   // Think Mode
@@ -138,8 +138,8 @@ export {
   type MessageWithModel,
   type ThinkModeInput,
   type ClaudeThinkingConfig,
-  type ThinkingConfig
-} from './think-mode/index.js';
+  type ThinkingConfig,
+} from "./think-mode/index.js";
 
 export {
   // Rules Injector
@@ -167,8 +167,8 @@ export {
   type InjectedRulesData,
   type RuleToInject,
   type MatchResult,
-  type RuleFrontmatterResult
-} from './rules-injector/index.js';
+  type RuleFrontmatterResult,
+} from "./rules-injector/index.js";
 
 export {
   // OMC Orchestrator
@@ -192,8 +192,8 @@ export {
   VERIFICATION_REMINDER,
   SINGLE_TASK_DIRECTIVE,
   type ToolExecuteInput as OrchestratorToolInput,
-  type ToolExecuteOutput as OrchestratorToolOutput
-} from './omc-orchestrator/index.js';
+  type ToolExecuteOutput as OrchestratorToolOutput,
+} from "./omc-orchestrator/index.js";
 
 export {
   // Auto Slash Command
@@ -220,8 +220,8 @@ export {
   type CommandInfo,
   type CommandMetadata,
   type CommandScope,
-  type ExecuteResult
-} from './auto-slash-command/index.js';
+  type ExecuteResult,
+} from "./auto-slash-command/index.js";
 
 export {
   // Comment Checker
@@ -236,8 +236,8 @@ export {
   type CommentInfo,
   type CommentCheckResult,
   type PendingCall as CommentPendingCall,
-  type CommentCheckerConfig
-} from './comment-checker/index.js';
+  type CommentCheckerConfig,
+} from "./comment-checker/index.js";
 
 export {
   // Unified Recovery Module
@@ -298,8 +298,8 @@ export {
   type StoredPart as RecoveryStoredPart,
   type StoredTextPart as RecoveryStoredTextPart,
   type StoredToolPart as RecoveryStoredToolPart,
-  type StoredReasoningPart as RecoveryStoredReasoningPart
-} from './recovery/index.js';
+  type StoredReasoningPart as RecoveryStoredReasoningPart,
+} from "./recovery/index.js";
 
 export {
   // Preemptive Compaction
@@ -319,8 +319,8 @@ export {
   CONTEXT_WARNING_MESSAGE,
   CONTEXT_CRITICAL_MESSAGE,
   type ContextUsageResult,
-  type PreemptiveCompactionConfig
-} from './preemptive-compaction/index.js';
+  type PreemptiveCompactionConfig,
+} from "./preemptive-compaction/index.js";
 
 export {
   // Background Notification
@@ -333,8 +333,8 @@ export {
   type BackgroundNotificationHookConfig,
   type BackgroundNotificationHookInput,
   type BackgroundNotificationHookOutput,
-  type NotificationCheckResult
-} from './background-notification/index.js';
+  type NotificationCheckResult,
+} from "./background-notification/index.js";
 
 export {
   // Directory README / AGENTS.md Injector
@@ -348,8 +348,8 @@ export {
   AGENTS_FILENAME,
   CONTEXT_FILENAMES,
   TRACKED_TOOLS as README_TRACKED_TOOLS,
-  type InjectedPathsData
-} from './directory-readme-injector/index.js';
+  type InjectedPathsData,
+} from "./directory-readme-injector/index.js";
 
 export {
   // Empty Message Sanitizer
@@ -369,8 +369,8 @@ export {
   type MessageWithParts,
   type EmptyMessageSanitizerInput,
   type EmptyMessageSanitizerOutput,
-  type EmptyMessageSanitizerConfig
-} from './empty-message-sanitizer/index.js';
+  type EmptyMessageSanitizerConfig,
+} from "./empty-message-sanitizer/index.js";
 
 export {
   // Thinking Block Validator
@@ -396,8 +396,8 @@ export {
   type MessagesTransformInput,
   type MessagesTransformOutput,
   type MessagesTransformHook,
-  type ValidationResult
-} from './thinking-block-validator/index.js';
+  type ValidationResult,
+} from "./thinking-block-validator/index.js";
 
 export {
   // Non-Interactive Environment
@@ -407,8 +407,8 @@ export {
   NON_INTERACTIVE_ENV,
   SHELL_COMMAND_PATTERNS,
   type NonInteractiveEnvConfig,
-  type ShellHook
-} from './non-interactive-env/index.js';
+  type ShellHook,
+} from "./non-interactive-env/index.js";
 
 export {
   // Agent Usage Reminder
@@ -419,8 +419,8 @@ export {
   TARGET_TOOLS,
   AGENT_TOOLS,
   REMINDER_MESSAGE,
-  type AgentUsageState
-} from './agent-usage-reminder/index.js';
+  type AgentUsageState,
+} from "./agent-usage-reminder/index.js";
 
 export {
   // Ultrawork State (Persistent Mode)
@@ -432,15 +432,15 @@ export {
   shouldReinforceUltrawork,
   getUltraworkPersistenceMessage,
   createUltraworkStateHook,
-  type UltraworkState
-} from './ultrawork/index.js';
+  type UltraworkState,
+} from "./ultrawork/index.js";
 
 export {
   // Persistent Mode (Unified Stop Handler)
   checkPersistentModes,
   createHookOutput,
-  type PersistentModeResult
-} from './persistent-mode/index.js';
+  type PersistentModeResult,
+} from "./persistent-mode/index.js";
 
 export {
   // Plugin Patterns (Popular Community Patterns)
@@ -459,8 +459,8 @@ export {
   type FormatConfig,
   type LintConfig,
   type CommitConfig,
-  type PreCommitResult
-} from './plugin-patterns/index.js';
+  type PreCommitResult,
+} from "./plugin-patterns/index.js";
 
 export {
   // UltraQA Loop (QA cycling workflow)
@@ -477,8 +477,8 @@ export {
   type UltraQAState,
   type UltraQAGoalType,
   type UltraQAOptions,
-  type UltraQAResult
-} from './ultraqa/index.js';
+  type UltraQAResult,
+} from "./ultraqa/index.js";
 
 export {
   // Notepad (Compaction-Resilient Memory)
@@ -503,8 +503,8 @@ export {
   type NotepadConfig,
   type NotepadStats,
   type PriorityContextResult,
-  type PruneResult
-} from './notepad/index.js';
+  type PruneResult,
+} from "./notepad/index.js";
 
 export {
   // Learned Skills (Learner)
@@ -560,8 +560,8 @@ export {
   type PromotionCandidate,
   type LearnerConfig,
   type WriteSkillResult,
-  type SkillParseResult
-} from './learner/index.js';
+  type SkillParseResult,
+} from "./learner/index.js";
 
 // Autopilot
 export {
@@ -628,8 +628,8 @@ export {
   type AutopilotSignal,
   type TransitionResult,
   type ValidationCoordinatorResult,
-  type CancelResult
-} from './autopilot/index.js';
+  type CancelResult,
+} from "./autopilot/index.js";
 
 // Mode Registry (Centralized State Management)
 export {
@@ -654,8 +654,8 @@ export {
   type ExecutionMode,
   type ModeConfig,
   type ModeStatus,
-  type CanStartResult
-} from './mode-registry/index.js';
+  type CanStartResult,
+} from "./mode-registry/index.js";
 
 export {
   // Setup Hook
@@ -669,8 +669,8 @@ export {
   processSetup,
   type SetupInput,
   type SetupResult,
-  type HookOutput as SetupHookOutput
-} from './setup/index.js';
+  type HookOutput as SetupHookOutput,
+} from "./setup/index.js";
 
 export {
   // Beads Context
@@ -681,8 +681,8 @@ export {
   BEADS_INSTRUCTIONS,
   BEADS_RUST_INSTRUCTIONS,
   type TaskTool,
-  type BeadsContextConfig
-} from './beads-context/index.js';
+  type BeadsContextConfig,
+} from "./beads-context/index.js";
 
 export {
   // Subagent Tracker Hook
@@ -704,8 +704,8 @@ export {
   type SubagentTrackingState,
   type SubagentStartInput,
   type SubagentStopInput,
-  type HookOutput as SubagentHookOutput
-} from './subagent-tracker/index.js';
+  type HookOutput as SubagentHookOutput,
+} from "./subagent-tracker/index.js";
 
 export {
   // PreCompact Hook
@@ -719,8 +719,8 @@ export {
   getCompactionQueueDepth,
   type PreCompactInput,
   type CompactCheckpoint,
-  type HookOutput as PreCompactHookOutput
-} from './pre-compact/index.js';
+  type HookOutput as PreCompactHookOutput,
+} from "./pre-compact/index.js";
 
 export {
   // Permission Handler Hook
@@ -729,8 +729,8 @@ export {
   isSafeCommand,
   isActiveModeRunning,
   type PermissionRequestInput,
-  type HookOutput as PermissionHookOutput
-} from './permission-handler/index.js';
+  type HookOutput as PermissionHookOutput,
+} from "./permission-handler/index.js";
 
 export {
   // Session End Hook
@@ -741,8 +741,8 @@ export {
   exportSessionSummary,
   type SessionEndInput,
   type SessionMetrics,
-  type HookOutput as SessionEndHookOutput
-} from './session-end/index.js';
+  type HookOutput as SessionEndHookOutput,
+} from "./session-end/index.js";
 
 export {
   // Project Memory Hook
@@ -776,8 +776,8 @@ export {
   type CustomNote,
   type DirectoryInfo,
   type HotPath,
-  type UserDirective
-} from './project-memory/index.js';
+  type UserDirective,
+} from "./project-memory/index.js";
 
 export {
   // Flow Tracer (Agent Flow Trace Recording)
@@ -787,7 +787,7 @@ export {
   recordSkillActivated,
   recordSkillInvoked,
   recordModeChange,
-} from './subagent-tracker/flow-tracer.js';
+} from "./subagent-tracker/flow-tracer.js";
 
 export {
   // Codebase Map Generator (issue #804)
@@ -798,13 +798,13 @@ export {
   extractPackageMetadata,
   type CodebaseMapOptions,
   type CodebaseMapResult,
-} from './codebase-map.js';
+} from "./codebase-map.js";
 
 export {
   // Agents Overlay - startup context injection (issue #804)
   buildAgentsOverlay,
   type AgentsOverlayResult,
-} from './agents-overlay.js';
+} from "./agents-overlay.js";
 
 export {
   // Code Simplifier Stop Hook
@@ -819,4 +819,4 @@ export {
   TRIGGER_MARKER_FILENAME,
   type CodeSimplifierConfig,
   type CodeSimplifierHookResult,
-} from './code-simplifier/index.js';
+} from "./code-simplifier/index.js";

@@ -1,14 +1,14 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { homedir } from 'os';
-import { dirname, join } from 'path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { homedir } from "os";
+import { dirname, join } from "path";
 
-import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { getClaudeConfigDir } from "../utils/config-dir.js";
 import {
   getGlobalOmcConfigPath,
   getGlobalOmcConfigCandidates,
   getGlobalOmcStatePath,
   getGlobalOmcStateCandidates,
-} from '../utils/paths.js';
+} from "../utils/paths.js";
 
 export interface UnifiedMcpRegistryEntry {
   command?: string;
@@ -44,17 +44,20 @@ export interface UnifiedMcpRegistryStatus {
   codexMismatched: string[];
 }
 
-const MANAGED_START = '# BEGIN OMC MANAGED MCP REGISTRY';
-const MANAGED_END = '# END OMC MANAGED MCP REGISTRY';
+const MANAGED_START = "# BEGIN OMC MANAGED MCP REGISTRY";
+const MANAGED_END = "# END OMC MANAGED MCP REGISTRY";
 const DEFAULT_LAUNCHER_MCP_STARTUP_TIMEOUT_SEC = 15;
 const CODEX_MCP_SERVER_NAME_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export function getUnifiedMcpRegistryPath(): string {
-  return process.env.OMC_MCP_REGISTRY_PATH?.trim() || getGlobalOmcConfigPath('mcp-registry.json');
+  return (
+    process.env.OMC_MCP_REGISTRY_PATH?.trim() ||
+    getGlobalOmcConfigPath("mcp-registry.json")
+  );
 }
 
 function getUnifiedMcpRegistryStatePath(): string {
-  return getGlobalOmcStatePath('mcp-registry-state.json');
+  return getGlobalOmcStatePath("mcp-registry-state.json");
 }
 
 function getUnifiedMcpRegistryPathCandidates(): string[] {
@@ -62,11 +65,11 @@ function getUnifiedMcpRegistryPathCandidates(): string[] {
     return [process.env.OMC_MCP_REGISTRY_PATH.trim()];
   }
 
-  return getGlobalOmcConfigCandidates('mcp-registry.json');
+  return getGlobalOmcConfigCandidates("mcp-registry.json");
 }
 
 function getUnifiedMcpRegistryStatePathCandidates(): string[] {
-  return getGlobalOmcStateCandidates('mcp-registry-state.json');
+  return getGlobalOmcStateCandidates("mcp-registry-state.json");
 }
 
 export function getClaudeMcpConfigPath(): string {
@@ -74,51 +77,62 @@ export function getClaudeMcpConfigPath(): string {
     return process.env.CLAUDE_MCP_CONFIG_PATH.trim();
   }
 
-  return join(dirname(getClaudeConfigDir()), '.claude.json');
+  return join(dirname(getClaudeConfigDir()), ".claude.json");
 }
 
 export function getCodexConfigPath(): string {
-  const codexHome = process.env.CODEX_HOME?.trim() || join(homedir(), '.codex');
-  return join(codexHome, 'config.toml');
+  const codexHome = process.env.CODEX_HOME?.trim() || join(homedir(), ".codex");
+  return join(codexHome, "config.toml");
 }
 
 function isStringRecord(value: unknown): value is Record<string, string> {
-  return !!value
-    && typeof value === 'object'
-    && !Array.isArray(value)
-    && Object.values(value).every(item => typeof item === 'string');
+  return (
+    !!value &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.values(value).every((item) => typeof item === "string")
+  );
 }
 
 const RETIRED_TEAM_MCP_PATH_PATTERN = /(^|[\\/])bridge[\\/]+team-mcp\.cjs$/i;
 
 function isRetiredTeamMcpEntry(value: unknown): boolean {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
 
   const raw = value as Record<string, unknown>;
-  const args = Array.isArray(raw.args) && raw.args.every(item => typeof item === 'string')
-    ? raw.args
-    : [];
+  const args =
+    Array.isArray(raw.args) &&
+    raw.args.every((item) => typeof item === "string")
+      ? raw.args
+      : [];
 
-  return args.some(arg => RETIRED_TEAM_MCP_PATH_PATTERN.test(arg));
+  return args.some((arg) => RETIRED_TEAM_MCP_PATH_PATTERN.test(arg));
 }
 
 function launcherCommandBasename(command: string): string {
-  return command.replace(/\\/g, '/').trim().split('/').pop()?.toLowerCase() ?? '';
+  return (
+    command.replace(/\\/g, "/").trim().split("/").pop()?.toLowerCase() ?? ""
+  );
 }
 
-function isLauncherBackedMcpCommand(command: string, args: readonly string[]): boolean {
+function isLauncherBackedMcpCommand(
+  command: string,
+  args: readonly string[],
+): boolean {
   const base = launcherCommandBasename(command);
-  if (base === 'npx' || base === 'uvx') {
+  if (base === "npx" || base === "uvx") {
     return true;
   }
 
-  return base === 'pnpm' && args[0]?.toLowerCase() === 'exec';
+  return base === "pnpm" && args[0]?.toLowerCase() === "exec";
 }
 
-function normalizeRegistryEntry(value: unknown): UnifiedMcpRegistryEntry | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+function normalizeRegistryEntry(
+  value: unknown,
+): UnifiedMcpRegistryEntry | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return null;
   }
 
@@ -127,29 +141,40 @@ function normalizeRegistryEntry(value: unknown): UnifiedMcpRegistryEntry | null 
   }
 
   const raw = value as Record<string, unknown>;
-  const command = typeof raw.command === 'string' && raw.command.trim().length > 0
-    ? raw.command.trim()
-    : undefined;
-  const url = typeof raw.url === 'string' && raw.url.trim().length > 0
-    ? raw.url.trim()
-    : undefined;
-  const type = typeof raw.type === 'string' && raw.type.trim().length > 0
-    ? raw.type.trim()
-    : undefined;
+  const command =
+    typeof raw.command === "string" && raw.command.trim().length > 0
+      ? raw.command.trim()
+      : undefined;
+  const url =
+    typeof raw.url === "string" && raw.url.trim().length > 0
+      ? raw.url.trim()
+      : undefined;
+  const type =
+    typeof raw.type === "string" && raw.type.trim().length > 0
+      ? raw.type.trim()
+      : undefined;
 
   if (!command && !url) {
     return null;
   }
 
-  const args = Array.isArray(raw.args) && raw.args.every(item => typeof item === 'string')
-    ? [...raw.args]
-    : [];
+  const args =
+    Array.isArray(raw.args) &&
+    raw.args.every((item) => typeof item === "string")
+      ? [...raw.args]
+      : [];
   const env = isStringRecord(raw.env) ? { ...raw.env } : undefined;
-  const timeout = typeof raw.timeout === 'number' && Number.isFinite(raw.timeout) && raw.timeout > 0
-    ? raw.timeout
-    : undefined;
+  const timeout =
+    typeof raw.timeout === "number" &&
+    Number.isFinite(raw.timeout) &&
+    raw.timeout > 0
+      ? raw.timeout
+      : undefined;
   const effectiveTimeout =
-    timeout ?? (command && isLauncherBackedMcpCommand(command, args) ? DEFAULT_LAUNCHER_MCP_STARTUP_TIMEOUT_SEC : undefined);
+    timeout ??
+    (command && isLauncherBackedMcpCommand(command, args)
+      ? DEFAULT_LAUNCHER_MCP_STARTUP_TIMEOUT_SEC
+      : undefined);
 
   return {
     ...(command ? { command } : {}),
@@ -162,7 +187,7 @@ function normalizeRegistryEntry(value: unknown): UnifiedMcpRegistryEntry | null 
 }
 
 function normalizeRegistry(value: unknown): UnifiedMcpRegistry {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
 
@@ -177,17 +202,27 @@ function normalizeRegistry(value: unknown): UnifiedMcpRegistry {
   }
 
   return Object.fromEntries(
-    Object.entries(entries).sort(([left], [right]) => left.localeCompare(right))
+    Object.entries(entries).sort(([left], [right]) =>
+      left.localeCompare(right),
+    ),
   );
 }
 
-export function extractClaudeMcpRegistry(settings: Record<string, unknown>): UnifiedMcpRegistry {
+export function extractClaudeMcpRegistry(
+  settings: Record<string, unknown>,
+): UnifiedMcpRegistry {
   return normalizeRegistry(settings.mcpServers);
 }
 
-export function stripRetiredTeamMcpServers<T extends Record<string, unknown>>(settings: T): { settings: T; changed: boolean } {
+export function stripRetiredTeamMcpServers<T extends Record<string, unknown>>(
+  settings: T,
+): { settings: T; changed: boolean } {
   const mcpServers = settings.mcpServers;
-  if (!mcpServers || typeof mcpServers !== 'object' || Array.isArray(mcpServers)) {
+  if (
+    !mcpServers ||
+    typeof mcpServers !== "object" ||
+    Array.isArray(mcpServers)
+  ) {
     return { settings, changed: false };
   }
 
@@ -218,7 +253,7 @@ export function stripRetiredTeamMcpServers<T extends Record<string, unknown>>(se
 
 function loadRegistryFromDisk(path: string): UnifiedMcpRegistry {
   try {
-    return normalizeRegistry(JSON.parse(readFileSync(path, 'utf-8')));
+    return normalizeRegistry(JSON.parse(readFileSync(path, "utf-8")));
   } catch {
     return {};
   }
@@ -238,9 +273,13 @@ function readManagedServerNames(): string[] {
     }
 
     try {
-      const state = JSON.parse(readFileSync(statePath, 'utf-8')) as { managedServers?: unknown };
+      const state = JSON.parse(readFileSync(statePath, "utf-8")) as {
+        managedServers?: unknown;
+      };
       return Array.isArray(state.managedServers)
-        ? state.managedServers.filter((item): item is string => typeof item === 'string').sort((a, b) => a.localeCompare(b))
+        ? state.managedServers
+            .filter((item): item is string => typeof item === "string")
+            .sort((a, b) => a.localeCompare(b))
         : [];
     } catch {
       return [];
@@ -253,10 +292,20 @@ function readManagedServerNames(): string[] {
 function writeManagedServerNames(serverNames: string[]): void {
   const statePath = getUnifiedMcpRegistryStatePath();
   ensureParentDir(statePath);
-  writeFileSync(statePath, JSON.stringify({ managedServers: [...serverNames].sort((a, b) => a.localeCompare(b)) }, null, 2));
+  writeFileSync(
+    statePath,
+    JSON.stringify(
+      { managedServers: [...serverNames].sort((a, b) => a.localeCompare(b)) },
+      null,
+      2,
+    ),
+  );
 }
 
-function bootstrapRegistryFromClaude(settings: Record<string, unknown>, registryPath: string): UnifiedMcpRegistry {
+function bootstrapRegistryFromClaude(
+  settings: Record<string, unknown>,
+  registryPath: string,
+): UnifiedMcpRegistry {
   const registry = extractClaudeMcpRegistry(settings);
   if (Object.keys(registry).length === 0) {
     return {};
@@ -299,7 +348,10 @@ export function applyRegistryToClaudeSettings(
   settings: Record<string, unknown>,
 ): { settings: Record<string, unknown>; changed: boolean } {
   const nextSettings = { ...settings };
-  const changed = Object.prototype.hasOwnProperty.call(nextSettings, 'mcpServers');
+  const changed = Object.prototype.hasOwnProperty.call(
+    nextSettings,
+    "mcpServers",
+  );
   delete nextSettings.mcpServers;
 
   return {
@@ -315,7 +367,10 @@ function syncClaudeMcpConfig(
   legacySettingsServers: UnifiedMcpRegistry = {},
 ): { claudeConfig: Record<string, unknown>; changed: boolean } {
   const existingServers = extractClaudeMcpRegistry(existingClaudeConfig);
-  const nextServers: UnifiedMcpRegistry = { ...legacySettingsServers, ...existingServers };
+  const nextServers: UnifiedMcpRegistry = {
+    ...legacySettingsServers,
+    ...existingServers,
+  };
 
   for (const managedName of managedServerNames) {
     delete nextServers[managedName];
@@ -339,15 +394,11 @@ function syncClaudeMcpConfig(
 }
 
 function escapeTomlString(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/"/g, '\\"');
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function unescapeTomlString(value: string): string {
-  return value
-    .replace(/\\"/g, '"')
-    .replace(/\\\\/g, '\\');
+  return value.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
 }
 
 function renderTomlString(value: string): string {
@@ -360,13 +411,14 @@ function parseTomlQuotedString(value: string): string | undefined {
 }
 
 function renderTomlStringArray(values: string[]): string {
-  return `[${values.map(renderTomlString).join(', ')}]`;
+  return `[${values.map(renderTomlString).join(", ")}]`;
 }
 
 function parseTomlStringArray(value: string): string[] | undefined {
   try {
     const parsed = JSON.parse(value.trim()) as unknown;
-    return Array.isArray(parsed) && parsed.every(item => typeof item === 'string')
+    return Array.isArray(parsed) &&
+      parsed.every((item) => typeof item === "string")
       ? parsed
       : undefined;
   } catch {
@@ -379,12 +431,12 @@ function renderTomlEnvTable(env: Record<string, string>): string {
     .sort(([left], [right]) => left.localeCompare(right))
     .map(([key, value]) => `${key} = ${renderTomlString(value)}`);
 
-  return `{ ${entries.join(', ')} }`;
+  return `{ ${entries.join(", ")} }`;
 }
 
 function parseTomlEnvTable(value: string): Record<string, string> | undefined {
   const trimmed = value.trim();
-  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+  if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
     return undefined;
   }
 
@@ -400,7 +452,10 @@ function parseTomlEnvTable(value: string): Record<string, string> | undefined {
   return Object.keys(env).length > 0 ? env : undefined;
 }
 
-function renderCodexServerBlock(name: string, entry: UnifiedMcpRegistryEntry): string {
+function renderCodexServerBlock(
+  name: string,
+  entry: UnifiedMcpRegistryEntry,
+): string {
   const lines = [`[mcp_servers.${name}]`];
 
   if (entry.command) {
@@ -422,16 +477,16 @@ function renderCodexServerBlock(name: string, entry: UnifiedMcpRegistryEntry): s
     lines.push(`startup_timeout_sec = ${entry.timeout}`);
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 function stripManagedCodexBlock(content: string): string {
   const managedBlockPattern = new RegExp(
-    `${MANAGED_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[\\s\\S]*?${MANAGED_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\n?`,
-    'g',
+    `${MANAGED_START.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s\\S]*?${MANAGED_END.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\n?`,
+    "g",
   );
 
-  return content.replace(managedBlockPattern, '').trimEnd();
+  return content.replace(managedBlockPattern, "").trimEnd();
 }
 
 function parseCodexMcpServerNames(content: string): Set<string> {
@@ -439,7 +494,7 @@ function parseCodexMcpServerNames(content: string): Set<string> {
 
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
+    if (!line || line.startsWith("#")) {
       continue;
     }
 
@@ -455,28 +510,45 @@ function parseCodexMcpServerNames(content: string): Set<string> {
   return names;
 }
 
-export function renderManagedCodexMcpBlock(registry: UnifiedMcpRegistry): string {
+export function renderManagedCodexMcpBlock(
+  registry: UnifiedMcpRegistry,
+): string {
   const names = Object.keys(registry);
   if (names.length === 0) {
-    return '';
+    return "";
   }
 
-  const blocks = names.map(name => renderCodexServerBlock(name, registry[name]));
-  return [MANAGED_START, '', ...blocks.flatMap((block, index) => index === 0 ? [block] : ['', block]), '', MANAGED_END].join('\n');
+  const blocks = names.map((name) =>
+    renderCodexServerBlock(name, registry[name]),
+  );
+  return [
+    MANAGED_START,
+    "",
+    ...blocks.flatMap((block, index) => (index === 0 ? [block] : ["", block])),
+    "",
+    MANAGED_END,
+  ].join("\n");
 }
 
-export function syncCodexConfigToml(existingContent: string, registry: UnifiedMcpRegistry): { content: string; changed: boolean } {
+export function syncCodexConfigToml(
+  existingContent: string,
+  registry: UnifiedMcpRegistry,
+): { content: string; changed: boolean } {
   const base = stripManagedCodexBlock(existingContent);
   const existingServerNames = parseCodexMcpServerNames(base);
   const managedRegistry = Object.fromEntries(
-    Object.entries(registry).filter(([name]) => (
-      CODEX_MCP_SERVER_NAME_PATTERN.test(name) && !existingServerNames.has(name)
-    ))
+    Object.entries(registry).filter(
+      ([name]) =>
+        CODEX_MCP_SERVER_NAME_PATTERN.test(name) &&
+        !existingServerNames.has(name),
+    ),
   );
   const managedBlock = renderManagedCodexMcpBlock(managedRegistry);
   const nextContent = managedBlock
-    ? `${base ? `${base}\n\n` : ''}${managedBlock}\n`
-    : (base ? `${base}\n` : '');
+    ? `${base ? `${base}\n\n` : ""}${managedBlock}\n`
+    : base
+      ? `${base}\n`
+      : "";
 
   return {
     content: nextContent,
@@ -502,7 +574,7 @@ function parseCodexMcpRegistryEntries(content: string): UnifiedMcpRegistry {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (!line || line.startsWith('#')) {
+    if (!line || line.startsWith("#")) {
       continue;
     }
 
@@ -518,37 +590,41 @@ function parseCodexMcpRegistryEntries(content: string): UnifiedMcpRegistry {
       continue;
     }
 
-    const [rawKey, ...rawValueParts] = line.split('=');
+    const [rawKey, ...rawValueParts] = line.split("=");
     if (!rawKey || rawValueParts.length === 0) {
       continue;
     }
 
     const key = rawKey.trim();
-    const value = rawValueParts.join('=').trim();
+    const value = rawValueParts.join("=").trim();
 
-    if (key === 'command') {
+    if (key === "command") {
       const parsed = parseTomlQuotedString(value);
       if (parsed) currentEntry.command = parsed;
-    } else if (key === 'args') {
+    } else if (key === "args") {
       const parsed = parseTomlStringArray(value);
       if (parsed) currentEntry.args = parsed;
-    } else if (key === 'url') {
+    } else if (key === "url") {
       const parsed = parseTomlQuotedString(value);
       if (parsed) currentEntry.url = parsed;
-    } else if (key === 'type') {
+    } else if (key === "type") {
       const parsed = parseTomlQuotedString(value);
       if (parsed) currentEntry.type = parsed;
-    } else if (key === 'env') {
+    } else if (key === "env") {
       const parsed = parseTomlEnvTable(value);
       if (parsed) currentEntry.env = parsed;
-    } else if (key === 'startup_timeout_sec') {
+    } else if (key === "startup_timeout_sec") {
       const parsed = Number(value);
       if (Number.isFinite(parsed) && parsed > 0) currentEntry.timeout = parsed;
     }
   }
 
   flushCurrent();
-  return Object.fromEntries(Object.entries(entries).sort(([left], [right]) => left.localeCompare(right)));
+  return Object.fromEntries(
+    Object.entries(entries).sort(([left], [right]) =>
+      left.localeCompare(right),
+    ),
+  );
 }
 
 export function syncUnifiedMcpRegistryTargets(
@@ -560,23 +636,34 @@ export function syncUnifiedMcpRegistryTargets(
   const managedServerNames = readManagedServerNames();
   const legacyClaudeRegistry = extractClaudeMcpRegistry(settings);
   const currentClaudeConfig = readJsonObject(claudeConfigPath);
-  const claudeConfigForBootstrap = Object.keys(extractClaudeMcpRegistry(currentClaudeConfig)).length > 0
-    ? currentClaudeConfig
-    : settings;
+  const claudeConfigForBootstrap =
+    Object.keys(extractClaudeMcpRegistry(currentClaudeConfig)).length > 0
+      ? currentClaudeConfig
+      : settings;
   const registryState = loadOrBootstrapRegistry(claudeConfigForBootstrap);
   const registry = registryState.registry;
   const serverNames = Object.keys(registry);
 
   const cleanedSettings = applyRegistryToClaudeSettings(settings);
-  const claude = syncClaudeMcpConfig(currentClaudeConfig, registry, managedServerNames, legacyClaudeRegistry);
+  const claude = syncClaudeMcpConfig(
+    currentClaudeConfig,
+    registry,
+    managedServerNames,
+    legacyClaudeRegistry,
+  );
 
   if (claude.changed) {
     ensureParentDir(claudeConfigPath);
-    writeFileSync(claudeConfigPath, JSON.stringify(claude.claudeConfig, null, 2));
+    writeFileSync(
+      claudeConfigPath,
+      JSON.stringify(claude.claudeConfig, null, 2),
+    );
   }
 
   let codexChanged = false;
-  const currentCodexConfig = existsSync(codexConfigPath) ? readFileSync(codexConfigPath, 'utf-8') : '';
+  const currentCodexConfig = existsSync(codexConfigPath)
+    ? readFileSync(codexConfigPath, "utf-8")
+    : "";
   const nextCodexConfig = syncCodexConfigToml(currentCodexConfig, registry);
   if (nextCodexConfig.changed) {
     ensureParentDir(codexConfigPath);
@@ -584,7 +671,11 @@ export function syncUnifiedMcpRegistryTargets(
     codexChanged = true;
   }
 
-  if (registryState.registryExists || Object.keys(legacyClaudeRegistry).length > 0 || managedServerNames.length > 0) {
+  if (
+    registryState.registryExists ||
+    Object.keys(legacyClaudeRegistry).length > 0 ||
+    managedServerNames.length > 0
+  ) {
     writeManagedServerNames(serverNames);
   }
 
@@ -609,9 +700,9 @@ function readJsonObject(path: string): Record<string, unknown> {
   }
 
   try {
-    const raw = JSON.parse(readFileSync(path, 'utf-8'));
-    return raw && typeof raw === 'object' && !Array.isArray(raw)
-      ? raw as Record<string, unknown>
+    const raw = JSON.parse(readFileSync(path, "utf-8"));
+    return raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
       : {};
   } catch {
     return {};
@@ -642,7 +733,7 @@ export function inspectUnifiedMcpRegistrySync(): UnifiedMcpRegistryStatus {
   const claudeSettings = readJsonObject(claudeConfigPath);
   const claudeEntries = extractClaudeMcpRegistry(claudeSettings);
   const codexEntries = existsSync(codexConfigPath)
-    ? parseCodexMcpRegistryEntries(readFileSync(codexConfigPath, 'utf-8'))
+    ? parseCodexMcpRegistryEntries(readFileSync(codexConfigPath, "utf-8"))
     : {};
 
   const claudeMissing: string[] = [];

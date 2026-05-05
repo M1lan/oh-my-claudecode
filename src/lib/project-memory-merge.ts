@@ -12,7 +12,12 @@
  * - Scalars: incoming value wins (last-write-wins at leaf level)
  */
 
-import type { ProjectMemory, CustomNote, UserDirective, HotPath } from '../hooks/project-memory/types.js';
+import type {
+  ProjectMemory,
+  CustomNote,
+  UserDirective,
+  HotPath,
+} from "../hooks/project-memory/types.js";
 
 // ---------------------------------------------------------------------------
 // Generic deep-merge utilities
@@ -23,7 +28,7 @@ import type { ProjectMemory, CustomNote, UserDirective, HotPath } from '../hooks
  */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
     !Array.isArray(value) &&
     !(value instanceof Date) &&
@@ -46,7 +51,8 @@ export function deepMerge<T extends Record<string, unknown>>(
   const result: Record<string, unknown> = { ...base };
 
   for (const key of Object.keys(incoming)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (key === "__proto__" || key === "constructor" || key === "prototype")
+      continue;
     const baseVal = (base as Record<string, unknown>)[key];
     const incomingVal = (incoming as Record<string, unknown>)[key];
 
@@ -89,9 +95,13 @@ export function deepMerge<T extends Record<string, unknown>>(
  * - `workspaces`, `mainDirectories`, `keyFiles`, `markers`: string union
  * - Default: union by JSON equality
  */
-function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): unknown[] {
+function mergeArrays(
+  fieldName: string,
+  base: unknown[],
+  incoming: unknown[],
+): unknown[] {
   switch (fieldName) {
-    case 'customNotes':
+    case "customNotes":
       return mergeByKey(
         base as CustomNote[],
         incoming as CustomNote[],
@@ -99,7 +109,7 @@ function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): u
         (a, b) => (b.timestamp >= a.timestamp ? b : a),
       );
 
-    case 'userDirectives':
+    case "userDirectives":
       return mergeByKey(
         base as UserDirective[],
         incoming as UserDirective[],
@@ -107,7 +117,7 @@ function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): u
         (a, b) => (b.timestamp >= a.timestamp ? b : a),
       );
 
-    case 'hotPaths':
+    case "hotPaths":
       return mergeByKey(
         base as HotPath[],
         incoming as HotPath[],
@@ -119,8 +129,8 @@ function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): u
         }),
       );
 
-    case 'languages':
-    case 'frameworks':
+    case "languages":
+    case "frameworks":
       return mergeByKey(
         base as Array<{ name: string }>,
         incoming as Array<{ name: string }>,
@@ -128,10 +138,10 @@ function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): u
         (_a, b) => b,
       );
 
-    case 'workspaces':
-    case 'mainDirectories':
-    case 'keyFiles':
-    case 'markers':
+    case "workspaces":
+    case "mainDirectories":
+    case "keyFiles":
+    case "markers":
       return mergeScalarArray(base as string[], incoming as string[]);
 
     default:

@@ -15,10 +15,7 @@ import type {
   DelegationProvider,
   TeamRoleAssignmentSpec,
 } from "../shared/types.js";
-import {
-  CANONICAL_TEAM_ROLES,
-  KNOWN_AGENT_NAMES,
-} from "../shared/types.js";
+import { CANONICAL_TEAM_ROLES, KNOWN_AGENT_NAMES } from "../shared/types.js";
 import { getConfigDir } from "../utils/paths.js";
 import { parseJsonc } from "../utils/jsonc.js";
 import {
@@ -497,8 +494,17 @@ export function validateTeamConfig(config: PluginConfig): void {
       }
     }
     if (ops.worktreeMode !== undefined) {
-      const allowed = new Set(["disabled", "off", "detached", "branch", "named"]);
-      if (typeof ops.worktreeMode !== "string" || !allowed.has(ops.worktreeMode)) {
+      const allowed = new Set([
+        "disabled",
+        "off",
+        "detached",
+        "branch",
+        "named",
+      ]);
+      if (
+        typeof ops.worktreeMode !== "string" ||
+        !allowed.has(ops.worktreeMode)
+      ) {
         throw new Error(
           `[OMC] team.ops.worktreeMode: invalid value "${String(ops.worktreeMode)}". Allowed: ${[...allowed].join(", ")}`,
         );
@@ -542,7 +548,10 @@ export function validateTeamConfig(config: PluginConfig): void {
     }
 
     if (spec.provider !== undefined) {
-      if (typeof spec.provider !== "string" || !TEAM_ROLE_PROVIDERS.has(spec.provider)) {
+      if (
+        typeof spec.provider !== "string" ||
+        !TEAM_ROLE_PROVIDERS.has(spec.provider)
+      ) {
         throw new Error(
           `[OMC] team.roleRouting.${rawRoleKey}.provider: invalid value "${String(spec.provider)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(", ")}`,
         );
@@ -556,7 +565,10 @@ export function validateTeamConfig(config: PluginConfig): void {
     }
 
     if (spec.agent !== undefined) {
-      if (typeof spec.agent !== "string" || !KNOWN_AGENT_NAME_SET.has(spec.agent)) {
+      if (
+        typeof spec.agent !== "string" ||
+        !KNOWN_AGENT_NAME_SET.has(spec.agent)
+      ) {
         throw new Error(
           `[OMC] team.roleRouting.${rawRoleKey}.agent: unknown agent "${String(spec.agent)}". Allowed: ${[...KNOWN_AGENT_NAME_SET].join(", ")}`,
         );
@@ -573,7 +585,9 @@ function isValidModelValue(value: unknown): value is string {
   return TEAM_ROLE_TIERS.has(value) || value.length > 0;
 }
 
-function parseTeamRoleOverridesFromEnv(): Record<string, TeamRoleAssignmentSpec> | undefined {
+function parseTeamRoleOverridesFromEnv():
+  | Record<string, TeamRoleAssignmentSpec>
+  | undefined {
   const raw = process.env.OMC_TEAM_ROLE_OVERRIDES;
   if (!raw) return undefined;
   try {
@@ -695,7 +709,8 @@ export function compactOmcStartupGuidance(content: string): string {
     return removedAny ? normalized : content;
   }
 
-  const notice = "\n\n[OMC startup guidance truncated to preserve an 8000-character budget. Read the source file directly for the full document.]";
+  const notice =
+    "\n\n[OMC startup guidance truncated to preserve an 8000-character budget. Read the source file directly for the full document.]";
   return `${normalized.slice(0, OMC_STARTUP_GUIDANCE_MAX_CHARS - notice.length).trimEnd()}${notice}`;
 }
 
@@ -749,7 +764,8 @@ export function loadContextFromFiles(files: string[]): string {
       const content = compactOmcStartupGuidance(readFileSync(file, "utf-8"));
       const contextBlock = `## Context from ${file}\n\n${content}`;
       const separatorLength = contexts.length > 0 ? separator.length : 0;
-      const remainingBudget = OMC_CONTEXT_FILES_MAX_CHARS - used - separatorLength;
+      const remainingBudget =
+        OMC_CONTEXT_FILES_MAX_CHARS - used - separatorLength;
 
       if (remainingBudget <= 0) break;
       if (contextBlock.length > remainingBudget) {
@@ -897,17 +913,20 @@ export function generateConfigSchema(): object {
       },
       companyContext: {
         type: "object",
-        description: "Prompt-level company-context MCP contract for workflow skills",
+        description:
+          "Prompt-level company-context MCP contract for workflow skills",
         properties: {
           tool: {
             type: "string",
-            description: "Full MCP tool name to call, for example mcp__vendor__get_company_context",
+            description:
+              "Full MCP tool name to call, for example mcp__vendor__get_company_context",
           },
           onError: {
             type: "string",
             enum: ["warn", "silent", "fail"],
             default: "warn",
-            description: "How prompt workflows should react when the configured company-context tool call fails",
+            description:
+              "How prompt workflows should react when the configured company-context tool call fails",
           },
         },
       },
@@ -943,7 +962,8 @@ export function generateConfigSchema(): object {
           symlinkNodeModules: {
             type: "boolean",
             default: true,
-            description: "Symlink node_modules from the parent repo when teleport-created worktrees have a matching package.json",
+            description:
+              "Symlink node_modules from the parent repo when teleport-created worktrees have a matching package.json",
           },
         },
       },
@@ -1106,7 +1126,10 @@ export function generateConfigSchema(): object {
             additionalProperties: {
               type: "object",
               properties: {
-                provider: { type: "string", enum: ["claude", "codex", "gemini"] },
+                provider: {
+                  type: "string",
+                  enum: ["claude", "codex", "gemini"],
+                },
                 model: { type: "string" },
                 agent: { type: "string" },
               },

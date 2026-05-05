@@ -9,11 +9,11 @@
  * the monitor loop.
  */
 
-import { existsSync } from 'fs';
-import { readFile, mkdir } from 'fs/promises';
-import { dirname } from 'path';
-import { performance } from 'perf_hooks';
-import { TeamPaths, absPath } from './state-paths.js';
+import { existsSync } from "fs";
+import { readFile, mkdir } from "fs/promises";
+import { dirname } from "path";
+import { performance } from "perf_hooks";
+import { TeamPaths, absPath } from "./state-paths.js";
 import type {
   TeamConfig,
   TeamManifestV2,
@@ -25,10 +25,10 @@ import type {
   TeamTask,
   TeamSummary,
   TeamSummaryPerformance,
-} from './types.js';
-import type { TeamPhase } from './phase-controller.js';
-import { normalizeTeamManifest } from './governance.js';
-import { canonicalizeTeamConfigWorkers } from './worker-canonicalization.js';
+} from "./types.js";
+import type { TeamPhase } from "./phase-controller.js";
+import { normalizeTeamManifest } from "./governance.js";
+import { canonicalizeTeamConfigWorkers } from "./worker-canonicalization.js";
 
 // ---------------------------------------------------------------------------
 // State I/O helpers (self-contained, no external deps beyond fs)
@@ -37,7 +37,7 @@ import { canonicalizeTeamConfigWorkers } from './worker-canonicalization.js';
 async function readJsonSafe<T>(filePath: string): Promise<T | null> {
   try {
     if (!existsSync(filePath)) return null;
-    const raw = await readFile(filePath, 'utf-8');
+    const raw = await readFile(filePath, "utf-8");
     return JSON.parse(raw) as T;
   } catch {
     return null;
@@ -45,11 +45,11 @@ async function readJsonSafe<T>(filePath: string): Promise<T | null> {
 }
 
 async function writeAtomic(filePath: string, data: string): Promise<void> {
-  const { writeFile } = await import('fs/promises');
+  const { writeFile } = await import("fs/promises");
   await mkdir(dirname(filePath), { recursive: true });
   const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-  await writeFile(tmpPath, data, 'utf-8');
-  const { rename } = await import('fs/promises');
+  await writeFile(tmpPath, data, "utf-8");
+  const { rename } = await import("fs/promises");
   await rename(tmpPath, filePath);
 }
 
@@ -61,7 +61,7 @@ function configFromManifest(manifest: TeamManifestV2): TeamConfig {
   return {
     name: manifest.name,
     task: manifest.task,
-    agent_type: 'claude',
+    agent_type: "claude",
     policy: manifest.policy,
     governance: manifest.governance,
     worker_launch_mode: manifest.policy.worker_launch_mode,
@@ -83,26 +83,41 @@ function configFromManifest(manifest: TeamManifestV2): TeamConfig {
   };
 }
 
-export async function readTeamConfig(teamName: string, cwd: string): Promise<TeamConfig | null> {
+export async function readTeamConfig(
+  teamName: string,
+  cwd: string,
+): Promise<TeamConfig | null> {
   const [config, manifest] = await Promise.all([
     readJsonSafe<TeamConfig>(absPath(cwd, TeamPaths.config(teamName))),
     readTeamManifest(teamName, cwd),
   ]);
   if (!config && !manifest) return null;
   if (!manifest) return config ? canonicalizeTeamConfigWorkers(config) : null;
-  if (!config) return canonicalizeTeamConfigWorkers(configFromManifest(manifest));
+  if (!config)
+    return canonicalizeTeamConfigWorkers(configFromManifest(manifest));
   return canonicalizeTeamConfigWorkers({
     ...configFromManifest(manifest),
     ...config,
     workers: [...(config.workers ?? []), ...(manifest.workers ?? [])],
-    worker_count: Math.max(config.worker_count ?? 0, manifest.worker_count ?? 0),
-    next_task_id: Math.max(config.next_task_id ?? 1, manifest.next_task_id ?? 1),
+    worker_count: Math.max(
+      config.worker_count ?? 0,
+      manifest.worker_count ?? 0,
+    ),
+    next_task_id: Math.max(
+      config.next_task_id ?? 1,
+      manifest.next_task_id ?? 1,
+    ),
     max_workers: Math.max(config.max_workers ?? 0, 20),
   });
 }
 
-export async function readTeamManifest(teamName: string, cwd: string): Promise<TeamManifestV2 | null> {
-  const manifest = await readJsonSafe<TeamManifestV2>(absPath(cwd, TeamPaths.manifest(teamName)));
+export async function readTeamManifest(
+  teamName: string,
+  cwd: string,
+): Promise<TeamManifestV2 | null> {
+  const manifest = await readJsonSafe<TeamManifestV2>(
+    absPath(cwd, TeamPaths.manifest(teamName)),
+  );
   return manifest ? normalizeTeamManifest(manifest) : null;
 }
 
@@ -115,8 +130,10 @@ export async function readWorkerStatus(
   workerName: string,
   cwd: string,
 ): Promise<WorkerStatus> {
-  const data = await readJsonSafe<WorkerStatus>(absPath(cwd, TeamPaths.workerStatus(teamName, workerName)));
-  return data ?? { state: 'unknown', updated_at: '' };
+  const data = await readJsonSafe<WorkerStatus>(
+    absPath(cwd, TeamPaths.workerStatus(teamName, workerName)),
+  );
+  return data ?? { state: "unknown", updated_at: "" };
 }
 
 export async function writeWorkerStatus(
@@ -125,7 +142,10 @@ export async function writeWorkerStatus(
   status: WorkerStatus,
   cwd: string,
 ): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.workerStatus(teamName, workerName)), JSON.stringify(status, null, 2));
+  await writeAtomic(
+    absPath(cwd, TeamPaths.workerStatus(teamName, workerName)),
+    JSON.stringify(status, null, 2),
+  );
 }
 
 export async function readWorkerHeartbeat(
@@ -133,7 +153,9 @@ export async function readWorkerHeartbeat(
   workerName: string,
   cwd: string,
 ): Promise<WorkerHeartbeat | null> {
-  return readJsonSafe<WorkerHeartbeat>(absPath(cwd, TeamPaths.heartbeat(teamName, workerName)));
+  return readJsonSafe<WorkerHeartbeat>(
+    absPath(cwd, TeamPaths.heartbeat(teamName, workerName)),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -147,18 +169,19 @@ export async function readMonitorSnapshot(
   const p = absPath(cwd, TeamPaths.monitorSnapshot(teamName));
   if (!existsSync(p)) return null;
   try {
-    const raw = await readFile(p, 'utf-8');
+    const raw = await readFile(p, "utf-8");
     const parsed = JSON.parse(raw) as Partial<TeamMonitorSnapshotState>;
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== "object") return null;
     const monitorTimings = (() => {
-      const candidate = parsed.monitorTimings as TeamMonitorSnapshotState['monitorTimings'];
-      if (!candidate || typeof candidate !== 'object') return undefined;
+      const candidate =
+        parsed.monitorTimings as TeamMonitorSnapshotState["monitorTimings"];
+      if (!candidate || typeof candidate !== "object") return undefined;
       if (
-        typeof candidate.list_tasks_ms !== 'number' ||
-        typeof candidate.worker_scan_ms !== 'number' ||
-        typeof candidate.mailbox_delivery_ms !== 'number' ||
-        typeof candidate.total_ms !== 'number' ||
-        typeof candidate.updated_at !== 'string'
+        typeof candidate.list_tasks_ms !== "number" ||
+        typeof candidate.worker_scan_ms !== "number" ||
+        typeof candidate.mailbox_delivery_ms !== "number" ||
+        typeof candidate.total_ms !== "number" ||
+        typeof candidate.updated_at !== "string"
       ) {
         return undefined;
       }
@@ -185,26 +208,41 @@ export async function writeMonitorSnapshot(
   snapshot: TeamMonitorSnapshotState,
   cwd: string,
 ): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.monitorSnapshot(teamName)), JSON.stringify(snapshot, null, 2));
+  await writeAtomic(
+    absPath(cwd, TeamPaths.monitorSnapshot(teamName)),
+    JSON.stringify(snapshot, null, 2),
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Phase state persistence
 // ---------------------------------------------------------------------------
 
-export async function readTeamPhaseState(teamName: string, cwd: string): Promise<TeamPhaseState | null> {
+export async function readTeamPhaseState(
+  teamName: string,
+  cwd: string,
+): Promise<TeamPhaseState | null> {
   const p = absPath(cwd, TeamPaths.phaseState(teamName));
   if (!existsSync(p)) return null;
   try {
-    const raw = await readFile(p, 'utf-8');
+    const raw = await readFile(p, "utf-8");
     const parsed = JSON.parse(raw) as Partial<TeamPhaseState>;
-    if (!parsed || typeof parsed !== 'object') return null;
+    if (!parsed || typeof parsed !== "object") return null;
     return {
-      current_phase: (parsed.current_phase as TeamPhase) ?? 'executing',
-      max_fix_attempts: typeof parsed.max_fix_attempts === 'number' ? parsed.max_fix_attempts : 3,
-      current_fix_attempt: typeof parsed.current_fix_attempt === 'number' ? parsed.current_fix_attempt : 0,
+      current_phase: (parsed.current_phase as TeamPhase) ?? "executing",
+      max_fix_attempts:
+        typeof parsed.max_fix_attempts === "number"
+          ? parsed.max_fix_attempts
+          : 3,
+      current_fix_attempt:
+        typeof parsed.current_fix_attempt === "number"
+          ? parsed.current_fix_attempt
+          : 0,
       transitions: Array.isArray(parsed.transitions) ? parsed.transitions : [],
-      updated_at: typeof parsed.updated_at === 'string' ? parsed.updated_at : new Date().toISOString(),
+      updated_at:
+        typeof parsed.updated_at === "string"
+          ? parsed.updated_at
+          : new Date().toISOString(),
     };
   } catch {
     return null;
@@ -216,7 +254,10 @@ export async function writeTeamPhaseState(
   phaseState: TeamPhaseState,
   cwd: string,
 ): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.phaseState(teamName)), JSON.stringify(phaseState, null, 2));
+  await writeAtomic(
+    absPath(cwd, TeamPaths.phaseState(teamName)),
+    JSON.stringify(phaseState, null, 2),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -233,7 +274,10 @@ export async function writeShutdownRequest(
     from: fromWorker,
     requested_at: new Date().toISOString(),
   };
-  await writeAtomic(absPath(cwd, TeamPaths.shutdownRequest(teamName, workerName)), JSON.stringify(data, null, 2));
+  await writeAtomic(
+    absPath(cwd, TeamPaths.shutdownRequest(teamName, workerName)),
+    JSON.stringify(data, null, 2),
+  );
 }
 
 export async function readShutdownAck(
@@ -241,13 +285,21 @@ export async function readShutdownAck(
   workerName: string,
   cwd: string,
   requestedAfter?: string,
-): Promise<{ status: 'accept' | 'reject'; reason?: string; updated_at?: string } | null> {
-  const ack = await readJsonSafe<{ status: 'accept' | 'reject'; reason?: string; updated_at?: string }>(
-    absPath(cwd, TeamPaths.shutdownAck(teamName, workerName)),
-  );
+): Promise<{
+  status: "accept" | "reject";
+  reason?: string;
+  updated_at?: string;
+} | null> {
+  const ack = await readJsonSafe<{
+    status: "accept" | "reject";
+    reason?: string;
+    updated_at?: string;
+  }>(absPath(cwd, TeamPaths.shutdownAck(teamName, workerName)));
   if (!ack) return null;
   if (requestedAfter && ack.updated_at) {
-    if (new Date(ack.updated_at).getTime() < new Date(requestedAfter).getTime()) {
+    if (
+      new Date(ack.updated_at).getTime() < new Date(requestedAfter).getTime()
+    ) {
       return null; // Stale ack from a previous request
     }
   }
@@ -264,7 +316,10 @@ export async function writeWorkerIdentity(
   workerInfo: WorkerInfo,
   cwd: string,
 ): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.workerIdentity(teamName, workerName)), JSON.stringify(workerInfo, null, 2));
+  await writeAtomic(
+    absPath(cwd, TeamPaths.workerIdentity(teamName, workerName)),
+    JSON.stringify(workerInfo, null, 2),
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -277,13 +332,15 @@ export async function listTasksFromFiles(
 ): Promise<TeamTask[]> {
   const tasksDir = absPath(cwd, TeamPaths.tasks(teamName));
   if (!existsSync(tasksDir)) return [];
-  const { readdir } = await import('fs/promises');
+  const { readdir } = await import("fs/promises");
   const entries = await readdir(tasksDir);
   const tasks: TeamTask[] = [];
   for (const entry of entries) {
     const match = /^(?:task-)?(\d+)\.json$/.exec(entry);
     if (!match) continue;
-    const task = await readJsonSafe<TeamTask>(absPath(cwd, `${TeamPaths.tasks(teamName)}/${entry}`));
+    const task = await readJsonSafe<TeamTask>(
+      absPath(cwd, `${TeamPaths.tasks(teamName)}/${entry}`),
+    );
     if (task) tasks.push(task);
   }
   return tasks.sort((a, b) => Number(a.id) - Number(b.id));
@@ -299,7 +356,10 @@ export async function writeWorkerInbox(
   content: string,
   cwd: string,
 ): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.inbox(teamName, workerName)), content);
+  await writeAtomic(
+    absPath(cwd, TeamPaths.inbox(teamName, workerName)),
+    content,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -318,16 +378,23 @@ export async function getTeamSummary(
   const tasks = await listTasksFromFiles(teamName, cwd);
   const tasksLoadedMs = performance.now() - tasksStartMs;
 
-  const counts = { total: tasks.length, pending: 0, blocked: 0, in_progress: 0, completed: 0, failed: 0 };
+  const counts = {
+    total: tasks.length,
+    pending: 0,
+    blocked: 0,
+    in_progress: 0,
+    completed: 0,
+    failed: 0,
+  };
   for (const t of tasks) {
-    if (t.status === 'pending') counts.pending++;
-    else if (t.status === 'blocked') counts.blocked++;
-    else if (t.status === 'in_progress') counts.in_progress++;
-    else if (t.status === 'completed') counts.completed++;
-    else if (t.status === 'failed') counts.failed++;
+    if (t.status === "pending") counts.pending++;
+    else if (t.status === "blocked") counts.blocked++;
+    else if (t.status === "in_progress") counts.in_progress++;
+    else if (t.status === "completed") counts.completed++;
+    else if (t.status === "failed") counts.failed++;
   }
 
-  const workerSummaries: TeamSummary['workers'] = [];
+  const workerSummaries: TeamSummary["workers"] = [];
   const nonReportingWorkers: string[] = [];
 
   const workerPollStartMs = performance.now();
@@ -347,7 +414,7 @@ export async function getTeamSummary(
     const lastTurnAt = hb?.last_turn_at ?? null;
     const turnsWithoutProgress = 0; // Simplified; full delta tracking done in monitorTeam
 
-    if (alive && status.state === 'working' && (hb?.turn_count ?? 0) > 5) {
+    if (alive && status.state === "working" && (hb?.turn_count ?? 0) > 5) {
       nonReportingWorkers.push(worker.name);
     }
 
@@ -391,8 +458,14 @@ export async function getTeamSummary(
 // Team config save
 // ---------------------------------------------------------------------------
 
-export async function saveTeamConfig(config: TeamConfig, cwd: string): Promise<void> {
-  await writeAtomic(absPath(cwd, TeamPaths.config(config.name)), JSON.stringify(config, null, 2));
+export async function saveTeamConfig(
+  config: TeamConfig,
+  cwd: string,
+): Promise<void> {
+  await writeAtomic(
+    absPath(cwd, TeamPaths.config(config.name)),
+    JSON.stringify(config, null, 2),
+  );
   const manifestPath = absPath(cwd, TeamPaths.manifest(config.name));
   const existingManifest = await readJsonSafe<TeamManifestV2>(manifestPath);
   if (existingManifest) {
@@ -430,7 +503,7 @@ export async function withScalingLock<T>(
   timeoutMs: number = 10_000,
 ): Promise<T> {
   const lockDir = absPath(cwd, TeamPaths.scalingLock(teamName));
-  const { mkdir: mkdirAsync, rm } = await import('fs/promises');
+  const { mkdir: mkdirAsync, rm } = await import("fs/promises");
   const start = Date.now();
 
   while (Date.now() - start < timeoutMs) {
@@ -443,7 +516,7 @@ export async function withScalingLock<T>(
       }
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code;
-      if (code !== 'EEXIST') throw error;
+      if (code !== "EEXIST") throw error;
       await new Promise((r) => setTimeout(r, 100));
     }
   }
@@ -455,7 +528,7 @@ export async function withScalingLock<T>(
 // ---------------------------------------------------------------------------
 
 export interface DerivedEvent {
-  type: 'task_completed' | 'task_failed' | 'worker_idle' | 'worker_stopped';
+  type: "task_completed" | "task_failed" | "worker_idle" | "worker_stopped";
   worker: string;
   task_id?: string;
   reason: string;
@@ -472,21 +545,23 @@ export function diffSnapshots(
   const events: DerivedEvent[] = [];
 
   // Task status transitions
-  for (const [taskId, currentStatus] of Object.entries(current.taskStatusById)) {
+  for (const [taskId, currentStatus] of Object.entries(
+    current.taskStatusById,
+  )) {
     const prevStatus = prev.taskStatusById[taskId];
     if (!prevStatus || prevStatus === currentStatus) continue;
 
-    if (currentStatus === 'completed' && !prev.completedEventTaskIds[taskId]) {
+    if (currentStatus === "completed" && !prev.completedEventTaskIds[taskId]) {
       events.push({
-        type: 'task_completed',
-        worker: 'leader-fixed',
+        type: "task_completed",
+        worker: "leader-fixed",
         task_id: taskId,
         reason: `status_transition:${prevStatus}->${currentStatus}`,
       });
-    } else if (currentStatus === 'failed') {
+    } else if (currentStatus === "failed") {
       events.push({
-        type: 'task_failed',
-        worker: 'leader-fixed',
+        type: "task_failed",
+        worker: "leader-fixed",
         task_id: taskId,
         reason: `status_transition:${prevStatus}->${currentStatus}`,
       });
@@ -494,23 +569,29 @@ export function diffSnapshots(
   }
 
   // Worker state transitions
-  for (const [workerName, currentAlive] of Object.entries(current.workerAliveByName)) {
+  for (const [workerName, currentAlive] of Object.entries(
+    current.workerAliveByName,
+  )) {
     const prevAlive = prev.workerAliveByName[workerName];
-    const currentLiveness = current.workerLivenessByName?.[workerName] ?? (currentAlive ? 'alive' : 'dead');
-    if (prevAlive === true && currentLiveness === 'dead') {
+    const currentLiveness =
+      current.workerLivenessByName?.[workerName] ??
+      (currentAlive ? "alive" : "dead");
+    if (prevAlive === true && currentLiveness === "dead") {
       events.push({
-        type: 'worker_stopped',
+        type: "worker_stopped",
         worker: workerName,
-        reason: 'pane_exited',
+        reason: "pane_exited",
       });
     }
   }
 
-  for (const [workerName, currentState] of Object.entries(current.workerStateByName)) {
+  for (const [workerName, currentState] of Object.entries(
+    current.workerStateByName,
+  )) {
     const prevState = prev.workerStateByName[workerName];
-    if (prevState === 'working' && currentState === 'idle') {
+    if (prevState === "working" && currentState === "idle") {
       events.push({
-        type: 'worker_idle',
+        type: "worker_idle",
         worker: workerName,
         reason: `state_transition:${prevState}->${currentState}`,
       });
@@ -524,9 +605,12 @@ export function diffSnapshots(
 // State cleanup
 // ---------------------------------------------------------------------------
 
-export async function cleanupTeamState(teamName: string, cwd: string): Promise<void> {
+export async function cleanupTeamState(
+  teamName: string,
+  cwd: string,
+): Promise<void> {
   const root = absPath(cwd, TeamPaths.root(teamName));
-  const { rm } = await import('fs/promises');
+  const { rm } = await import("fs/promises");
   try {
     await rm(root, { recursive: true, force: true });
   } catch {

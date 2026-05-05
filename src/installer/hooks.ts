@@ -13,8 +13,8 @@ import { join, dirname } from "path";
 import { readFileSync, existsSync } from "fs";
 import { fileURLToPath } from "url";
 import { homedir } from "os";
-import { getClaudeConfigDir } from '../utils/config-dir.js';
-import { getDefaultUltraworkMessage } from '../hooks/keyword-detector/ultrawork/index.js';
+import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { getDefaultUltraworkMessage } from "../hooks/keyword-detector/ultrawork/index.js";
 
 // =============================================================================
 // TEMPLATE LOADER (loads hook scripts from templates/hooks/)
@@ -70,7 +70,6 @@ export function isWindows(): boolean {
   return process.platform === "win32";
 }
 
-
 /** Get the hooks directory path */
 export function getHooksDir(): string {
   return join(getClaudeConfigDir(), "hooks");
@@ -85,11 +84,14 @@ export function getHomeEnvVar(): string {
 }
 
 function normalizePath(value: string): string {
-  return value.replace(/\\/g, '/').replace(/\/+$/, '');
+  return value.replace(/\\/g, "/").replace(/\/+$/, "");
 }
 
 function isDefaultClaudeConfigDir(): boolean {
-  return normalizePath(getClaudeConfigDir()) === normalizePath(join(homedir(), '.claude'));
+  return (
+    normalizePath(getClaudeConfigDir()) ===
+    normalizePath(join(homedir(), ".claude"))
+  );
 }
 
 function quoteCommandPath(path: string): string {
@@ -102,14 +104,14 @@ function buildHookCommand(filename: string): string {
       return `node "\${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/${filename}"`;
     }
 
-    return `node ${quoteCommandPath(join(getClaudeConfigDir(), 'hooks', filename).replace(/\\/g, '/'))}`;
+    return `node ${quoteCommandPath(join(getClaudeConfigDir(), "hooks", filename).replace(/\\/g, "/"))}`;
   }
 
   if (isDefaultClaudeConfigDir()) {
     return `node "\${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/${filename}"`;
   }
 
-  return `node ${quoteCommandPath(join(getClaudeConfigDir(), 'hooks', filename).replace(/\\/g, '/'))}`;
+  return `node ${quoteCommandPath(join(getClaudeConfigDir(), "hooks", filename).replace(/\\/g, "/"))}`;
 }
 
 /**
@@ -315,7 +317,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('keyword-detector.mjs'),
+            command: buildHookCommand("keyword-detector.mjs"),
           },
         ],
       },
@@ -325,7 +327,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('session-start.mjs'),
+            command: buildHookCommand("session-start.mjs"),
           },
         ],
       },
@@ -335,7 +337,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('pre-tool-use.mjs'),
+            command: buildHookCommand("pre-tool-use.mjs"),
           },
         ],
       },
@@ -345,7 +347,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('post-tool-use.mjs'),
+            command: buildHookCommand("post-tool-use.mjs"),
           },
         ],
       },
@@ -355,7 +357,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('post-tool-use-failure.mjs'),
+            command: buildHookCommand("post-tool-use-failure.mjs"),
           },
         ],
       },
@@ -365,7 +367,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('persistent-mode.mjs'),
+            command: buildHookCommand("persistent-mode.mjs"),
           },
         ],
       },
@@ -373,7 +375,7 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
         hooks: [
           {
             type: "command" as const,
-            command: buildHookCommand('code-simplifier.mjs'),
+            command: buildHookCommand("code-simplifier.mjs"),
           },
         ],
       },

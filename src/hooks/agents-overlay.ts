@@ -8,8 +8,11 @@
  * Issue #804 - Startup codebase map injection hook
  */
 
-import { generateCodebaseMap, type CodebaseMapOptions } from './codebase-map.js';
-import { loadConfig } from '../config/loader.js';
+import {
+  generateCodebaseMap,
+  type CodebaseMapOptions,
+} from "./codebase-map.js";
+import { loadConfig } from "../config/loader.js";
 
 export interface AgentsOverlayResult {
   /** Context message to prepend, or empty string if nothing to inject */
@@ -33,7 +36,7 @@ export function buildAgentsOverlay(
 
   // Respect the enabled flag (default: true)
   if (mapConfig.enabled === false) {
-    return { message: '', hasCodebaseMap: false };
+    return { message: "", hasCodebaseMap: false };
   }
 
   const mergedOptions: CodebaseMapOptions = {
@@ -46,7 +49,7 @@ export function buildAgentsOverlay(
   const result = generateCodebaseMap(directory, mergedOptions);
 
   if (!result.map) {
-    return { message: '', hasCodebaseMap: false };
+    return { message: "", hasCodebaseMap: false };
   }
 
   const message = `<session-restore>

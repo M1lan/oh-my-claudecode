@@ -22,7 +22,7 @@ export type {
   TaskFailureSidecar,
   WorkerBackend,
   WorkerCapability,
-} from './types.js';
+} from "./types.js";
 
 export {
   readTask,
@@ -32,7 +32,7 @@ export {
   writeTaskFailure,
   readTaskFailure,
   listTaskIds,
-} from './task-file-ops.js';
+} from "./task-file-ops.js";
 
 export {
   validateTmux,
@@ -43,7 +43,7 @@ export {
   isSessionAlive,
   listActiveSessions,
   spawnBridgeInSession,
-} from './tmux-session.js';
+} from "./tmux-session.js";
 
 export {
   appendOutbox,
@@ -59,7 +59,7 @@ export {
   checkDrainSignal,
   deleteDrainSignal,
   cleanupWorkerFiles,
-} from './inbox-outbox.js';
+} from "./inbox-outbox.js";
 
 export {
   registerMcpWorker,
@@ -69,7 +69,7 @@ export {
   getRegistrationStrategy,
   readProbeResult,
   writeProbeResult,
-} from './team-registration.js';
+} from "./team-registration.js";
 
 export {
   writeHeartbeat,
@@ -78,34 +78,31 @@ export {
   isWorkerAlive,
   deleteHeartbeat,
   cleanupTeamHeartbeats,
-} from './heartbeat.js';
+} from "./heartbeat.js";
 
 export {
   readNewOutboxMessages,
   readAllTeamOutboxMessages,
   resetOutboxCursor,
-} from './outbox-reader.js';
+} from "./outbox-reader.js";
 
-export type { OutboxCursor } from './outbox-reader.js';
+export type { OutboxCursor } from "./outbox-reader.js";
 
-export { getTeamStatus } from './team-status.js';
-export type { WorkerStatus, TeamStatus } from './team-status.js';
+export { getTeamStatus } from "./team-status.js";
+export type { WorkerStatus, TeamStatus } from "./team-status.js";
 
-export { runBridge, sanitizePromptContent } from './mcp-team-bridge.js';
+export { runBridge, sanitizePromptContent } from "./mcp-team-bridge.js";
 
 // validateConfigPath is intentionally not re-exported here: bridge-entry.ts is
 // a CJS bundle (esbuild) and importing it as ESM causes ERR_AMBIGUOUS_MODULE_SYNTAX.
 // Import validateConfigPath directly from './bridge-entry.js' in the rare cases it is needed.
 
-export { logAuditEvent, readAuditLog, rotateAuditLog } from './audit-log.js';
-export type { AuditEventType, AuditEvent } from './audit-log.js';
+export { logAuditEvent, readAuditLog, rotateAuditLog } from "./audit-log.js";
+export type { AuditEventType, AuditEvent } from "./audit-log.js";
 
-export {
-  getWorkerHealthReports,
-  checkWorkerHealth,
-} from './worker-health.js';
+export { getWorkerHealthReports, checkWorkerHealth } from "./worker-health.js";
 
-export type { WorkerHealthReport } from './worker-health.js';
+export type { WorkerHealthReport } from "./worker-health.js";
 
 export {
   shouldRestart,
@@ -113,81 +110,89 @@ export {
   readRestartState,
   clearRestartState,
   synthesizeBridgeConfig,
-} from './worker-restart.js';
+} from "./worker-restart.js";
 
-export type { RestartPolicy, RestartState } from './worker-restart.js';
+export type { RestartPolicy, RestartState } from "./worker-restart.js";
 
-export { getTeamMembers } from './unified-team.js';
-export type { UnifiedTeamMember } from './unified-team.js';
+export { getTeamMembers } from "./unified-team.js";
+export type { UnifiedTeamMember } from "./unified-team.js";
 
-export { routeMessage, broadcastToTeam } from './message-router.js';
-export type { RouteResult, BroadcastResult } from './message-router.js';
+export { routeMessage, broadcastToTeam } from "./message-router.js";
+export type { RouteResult, BroadcastResult } from "./message-router.js";
 
 export {
   getDefaultCapabilities,
   scoreWorkerFitness,
   rankWorkersForTask,
-} from './capabilities.js';
+} from "./capabilities.js";
 
-export { routeTasks } from './task-router.js';
-export type { TaskRoutingDecision } from './task-router.js';
+export { routeTasks } from "./task-router.js";
+export type { TaskRoutingDecision } from "./task-router.js";
 
 export {
   createWorkerWorktree,
   removeWorkerWorktree,
   listTeamWorktrees,
   cleanupTeamWorktrees,
-} from './git-worktree.js';
+} from "./git-worktree.js";
 
-export type { WorktreeInfo } from './git-worktree.js';
+export type { WorktreeInfo } from "./git-worktree.js";
 
-export { getActivityLog, formatActivityTimeline } from './activity-log.js';
-export type { ActivityEntry } from './activity-log.js';
+export { getActivityLog, formatActivityTimeline } from "./activity-log.js";
+export type { ActivityEntry } from "./activity-log.js";
 
 export {
   recordTaskUsage,
   measureCharCounts,
   generateUsageReport,
-} from './usage-tracker.js';
+} from "./usage-tracker.js";
 
-export type { TaskUsageRecord, WorkerUsageSummary, TeamUsageReport } from './usage-tracker.js';
+export type {
+  TaskUsageRecord,
+  WorkerUsageSummary,
+  TeamUsageReport,
+} from "./usage-tracker.js";
 
 export {
   checkMergeConflicts,
   mergeWorkerBranch,
   mergeAllWorkerBranches,
-} from './merge-coordinator.js';
+} from "./merge-coordinator.js";
 
-export type { MergeResult } from './merge-coordinator.js';
+export type { MergeResult } from "./merge-coordinator.js";
 
-export { generateTeamReport, saveTeamReport } from './summary-report.js';
+export { generateTeamReport, saveTeamReport } from "./summary-report.js";
 
 export {
   isPathAllowed,
   isCommandAllowed,
   formatPermissionInstructions,
   getDefaultPermissions,
-} from './permissions.js';
+} from "./permissions.js";
 
-export type { WorkerPermissions } from './permissions.js';
+export type { WorkerPermissions } from "./permissions.js";
 
-export { TeamPaths, absPath, teamStateRoot } from './state-paths.js';
+export { TeamPaths, absPath, teamStateRoot } from "./state-paths.js";
 
 export {
   checkSentinelReadiness,
   waitForSentinelReadiness,
-} from './sentinel-gate.js';
+} from "./sentinel-gate.js";
 
 export type {
   SentinelReadinessOptions,
   SentinelGateResult,
   SentinelWaitOptions,
   SentinelWaitResult,
-} from './sentinel-gate.js';
+} from "./sentinel-gate.js";
 
 // New tmux-based multi-CLI team modules
 // model-contract: getWorkerEnv is exported via worker-bootstrap (single source of truth)
-export type { CliAgentType, CliAgentContract, WorkerLaunchConfig } from './model-contract.js';
+export type {
+  CliAgentType,
+  CliAgentContract,
+  WorkerLaunchConfig,
+} from "./model-contract.js";
 export {
   getContract,
   isCliAvailable as isCliAvailableForAgent,
@@ -200,15 +205,15 @@ export {
   validateCliBinaryPath,
   resolveCliBinaryPath,
   clearResolvedPathCache,
-} from './model-contract.js';
-export type { CliBinaryValidation } from './model-contract.js';
+} from "./model-contract.js";
+export type { CliBinaryValidation } from "./model-contract.js";
 
 // cli-detection: only export symbols not already covered by model-contract
-export type { CliInfo } from './cli-detection.js';
-export { detectCli, detectAllClis } from './cli-detection.js';
+export type { CliInfo } from "./cli-detection.js";
+export { detectCli, detectAllClis } from "./cli-detection.js";
 
 // worker-bootstrap
-export type { WorkerBootstrapParams } from './worker-bootstrap.js';
+export type { WorkerBootstrapParams } from "./worker-bootstrap.js";
 export {
   generateWorkerOverlay,
   composeInitialInbox,
@@ -216,7 +221,7 @@ export {
   getWorkerEnv,
   ensureWorkerStateDir,
   writeWorkerOverlay,
-} from './worker-bootstrap.js';
+} from "./worker-bootstrap.js";
 
 // tmux-comm
 export {
@@ -225,15 +230,19 @@ export {
   queueDirectMessage,
   queueBroadcastMessage,
   readMailbox,
-} from './tmux-comm.js';
+} from "./tmux-comm.js";
 
 // Deprecated backward-compat exports for older layout APIs.
-export { LayoutStabilizer } from './layout-stabilizer.js';
-export type { LayoutStabilizerOptions } from './layout-stabilizer.js';
+export { LayoutStabilizer } from "./layout-stabilizer.js";
+export type { LayoutStabilizerOptions } from "./layout-stabilizer.js";
 
 // phase-controller
-export type { TeamPhase, PhaseableTask } from './phase-controller.js';
-export { inferPhase, getPhaseTransitionLog, isTerminalPhase } from './phase-controller.js';
+export type { TeamPhase, PhaseableTask } from "./phase-controller.js";
+export {
+  inferPhase,
+  getPhaseTransitionLog,
+  isTerminalPhase,
+} from "./phase-controller.js";
 
 // runtime: WorkerStatus conflicts with team-status.ts; export as RuntimeWorkerStatus
 export type {
@@ -242,10 +251,17 @@ export type {
   WorkerStatus as RuntimeWorkerStatus,
   TeamSnapshot,
   WatchdogCompletionEvent,
-} from './runtime.js';
-export { startTeam, monitorTeam, assignTask, shutdownTeam, resumeTeam, watchdogCliWorkers } from './runtime.js';
+} from "./runtime.js";
+export {
+  startTeam,
+  monitorTeam,
+  assignTask,
+  shutdownTeam,
+  resumeTeam,
+  watchdogCliWorkers,
+} from "./runtime.js";
 
-export { injectToLeaderPane } from './tmux-session.js';
+export { injectToLeaderPane } from "./tmux-session.js";
 
 // api-interop (CLI API for workers)
 export {
@@ -254,22 +270,26 @@ export {
   resolveTeamApiOperation,
   executeTeamApiOperation,
   buildLegacyTeamDeprecationHint,
-} from './api-interop.js';
+} from "./api-interop.js";
 
-export type { TeamApiOperation, TeamApiEnvelope } from './api-interop.js';
+export type { TeamApiOperation, TeamApiEnvelope } from "./api-interop.js";
 
 // scaling (dynamic worker scaling)
-export {
-  isScalingEnabled,
-  scaleUp,
-  scaleDown,
-} from './scaling.js';
+export { isScalingEnabled, scaleUp, scaleDown } from "./scaling.js";
 
-export type { ScaleUpResult, ScaleDownResult, ScaleError, ScaleDownOptions } from './scaling.js';
+export type {
+  ScaleUpResult,
+  ScaleDownResult,
+  ScaleError,
+  ScaleDownOptions,
+} from "./scaling.js";
 
 // team-leader-nudge-hook
-export { checkLeaderStaleness, maybeNudgeLeader } from '../hooks/team-leader-nudge-hook.js';
-export type { TmuxRunner } from '../hooks/team-leader-nudge-hook.js';
+export {
+  checkLeaderStaleness,
+  maybeNudgeLeader,
+} from "../hooks/team-leader-nudge-hook.js";
+export type { TmuxRunner } from "../hooks/team-leader-nudge-hook.js";
 
 // contracts
 export {
@@ -283,13 +303,13 @@ export {
   TEAM_TASK_APPROVAL_STATUSES,
   isTerminalTeamTaskStatus,
   canTransitionTeamTaskStatus,
-} from './contracts.js';
+} from "./contracts.js";
 
 export type {
   TeamTaskStatus,
   TeamEventType,
   TeamTaskApprovalStatus,
-} from './contracts.js';
+} from "./contracts.js";
 
 // OMX-aligned types
 export type {
@@ -324,7 +344,7 @@ export type {
   TeamPhaseState,
   WorkerStatus as TeamWorkerStatus,
   WorkerHeartbeat as TeamWorkerHeartbeat,
-} from './types.js';
+} from "./types.js";
 
 export {
   DEFAULT_TEAM_TRANSPORT_POLICY,
@@ -333,4 +353,4 @@ export {
   normalizeTeamGovernance,
   normalizeTeamManifest,
   getConfigGovernance,
-} from './governance.js';
+} from "./governance.js";

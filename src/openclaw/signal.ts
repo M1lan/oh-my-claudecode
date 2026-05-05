@@ -1,6 +1,11 @@
-import type { OpenClawContext, OpenClawHookEvent, OpenClawSignal } from "./types.js";
+import type {
+  OpenClawContext,
+  OpenClawHookEvent,
+  OpenClawSignal,
+} from "./types.js";
 
-const CLAUDE_TEMP_CWD_PATTERN = /zsh:\d+: permission denied:.*\/T\/claude-[a-z0-9]+-cwd/gi;
+const CLAUDE_TEMP_CWD_PATTERN =
+  /zsh:\d+: permission denied:.*\/T\/claude-[a-z0-9]+-cwd/gi;
 const CLAUDE_EXIT_CODE_PREFIX = /^Error: Exit code \d+\s*$/gm;
 const PR_CREATE_PATTERN = /\bgh\s+pr\s+create\b/i;
 const PR_URL_PATTERN = /https:\/\/github\.com\/[^\s/]+\/[^\s/]+\/pull\/\d+/i;
@@ -81,12 +86,15 @@ function detectWriteFailure(output: string): boolean {
 function getCommand(toolInput: unknown): string | undefined {
   if (!toolInput || typeof toolInput !== "object") return undefined;
   const raw = (toolInput as Record<string, unknown>).command;
-  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+  return typeof raw === "string" && raw.trim().length > 0
+    ? raw.trim()
+    : undefined;
 }
 
 function detectTestRunner(command?: string): string | undefined {
   if (!command) return undefined;
-  return TEST_COMMAND_PATTERNS.find(({ pattern }) => pattern.test(command))?.runner;
+  return TEST_COMMAND_PATTERNS.find(({ pattern }) => pattern.test(command))
+    ?.runner;
 }
 
 function summarize(value: unknown, maxLength = 160): string | undefined {
@@ -104,7 +112,10 @@ function summarize(value: unknown, maxLength = 160): string | undefined {
   return `${normalized.slice(0, Math.max(0, maxLength - 2)).trimEnd()}…`;
 }
 
-function getToolPhase(toolName: string | undefined, toolOutput: unknown): "finished" | "failed" {
+function getToolPhase(
+  toolName: string | undefined,
+  toolOutput: unknown,
+): "finished" | "failed" {
   if (typeof toolOutput !== "string" || toolOutput.trim().length === 0) {
     return "finished";
   }
@@ -121,12 +132,20 @@ function getToolPhase(toolName: string | undefined, toolOutput: unknown): "finis
   return "finished";
 }
 
-function buildToolSignal(event: "pre-tool-use" | "post-tool-use", context: OpenClawContext): OpenClawSignal {
+function buildToolSignal(
+  event: "pre-tool-use" | "post-tool-use",
+  context: OpenClawContext,
+): OpenClawSignal {
   const toolName = context.toolName || "unknown";
   const command = getCommand(context.toolInput);
-  const testRunner = toolName === "Bash" ? detectTestRunner(command) : undefined;
-  const isPrCreate = toolName === "Bash" && !!command && PR_CREATE_PATTERN.test(command);
-  const phase = event === "pre-tool-use" ? "started" : getToolPhase(context.toolName, context.toolOutput);
+  const testRunner =
+    toolName === "Bash" ? detectTestRunner(command) : undefined;
+  const isPrCreate =
+    toolName === "Bash" && !!command && PR_CREATE_PATTERN.test(command);
+  const phase =
+    event === "pre-tool-use"
+      ? "started"
+      : getToolPhase(context.toolName, context.toolOutput);
   const summary = summarize(context.toolOutput ?? command);
 
   if (testRunner) {
@@ -144,10 +163,15 @@ function buildToolSignal(event: "pre-tool-use" | "post-tool-use", context: OpenC
   }
 
   if (isPrCreate) {
-    const output = typeof context.toolOutput === "string" ? context.toolOutput : "";
+    const output =
+      typeof context.toolOutput === "string" ? context.toolOutput : "";
     const prUrl = output.match(PR_URL_PATTERN)?.[0];
     const routeKey =
-      phase === "started" ? "pull-request.started" : phase === "failed" ? "pull-request.failed" : "pull-request.created";
+      phase === "started"
+        ? "pull-request.started"
+        : phase === "failed"
+          ? "pull-request.failed"
+          : "pull-request.created";
     return {
       kind: "pull-request",
       name: "pull-request-create",
@@ -157,7 +181,9 @@ function buildToolSignal(event: "pre-tool-use" | "post-tool-use", context: OpenC
       toolName,
       command,
       prUrl,
-      summary: summarize(prUrl ? `${prUrl}${summary ? ` ${summary}` : ""}` : summary),
+      summary: summarize(
+        prUrl ? `${prUrl}${summary ? ` ${summary}` : ""}` : summary,
+      ),
     };
   }
 
@@ -172,7 +198,10 @@ function buildToolSignal(event: "pre-tool-use" | "post-tool-use", context: OpenC
   };
 }
 
-export function buildOpenClawSignal(event: OpenClawHookEvent, context: OpenClawContext): OpenClawSignal {
+export function buildOpenClawSignal(
+  event: OpenClawHookEvent,
+  context: OpenClawContext,
+): OpenClawSignal {
   switch (event) {
     case "session-start":
       return {

@@ -1,4 +1,4 @@
-import { isAbsolute, join } from 'path';
+import { isAbsolute, join } from "path";
 
 /**
  * Typed path builders for all team state files.
@@ -22,30 +22,27 @@ import { isAbsolute, join } from 'path';
  *       {workerName}.json
  */
 export function normalizeTaskFileStem(taskId: string): string {
-  const trimmed = String(taskId).trim().replace(/\.json$/i, '');
+  const trimmed = String(taskId)
+    .trim()
+    .replace(/\.json$/i, "");
   if (/^task-\d+$/.test(trimmed)) return trimmed;
   if (/^\d+$/.test(trimmed)) return `task-${trimmed}`;
   return trimmed;
 }
 
 export const TeamPaths = {
-  root: (teamName: string) =>
-    `.omc/state/team/${teamName}`,
+  root: (teamName: string) => `.omc/state/team/${teamName}`,
 
-  config: (teamName: string) =>
-    `.omc/state/team/${teamName}/config.json`,
+  config: (teamName: string) => `.omc/state/team/${teamName}/config.json`,
 
-  shutdown: (teamName: string) =>
-    `.omc/state/team/${teamName}/shutdown.json`,
+  shutdown: (teamName: string) => `.omc/state/team/${teamName}/shutdown.json`,
 
-  tasks: (teamName: string) =>
-    `.omc/state/team/${teamName}/tasks`,
+  tasks: (teamName: string) => `.omc/state/team/${teamName}/tasks`,
 
   taskFile: (teamName: string, taskId: string) =>
     `.omc/state/team/${teamName}/tasks/${normalizeTaskFileStem(taskId)}.json`,
 
-  workers: (teamName: string) =>
-    `.omc/state/team/${teamName}/workers`,
+  workers: (teamName: string) => `.omc/state/team/${teamName}/workers`,
 
   workerDir: (teamName: string, workerName: string) =>
     `.omc/state/team/${teamName}/workers/${workerName}`,
@@ -89,14 +86,12 @@ export const TeamPaths = {
   workerPrevNotifyState: (teamName: string, workerName: string) =>
     `.omc/state/team/${teamName}/workers/${workerName}/prev-notify-state.json`,
 
-  events: (teamName: string) =>
-    `.omc/state/team/${teamName}/events.jsonl`,
+  events: (teamName: string) => `.omc/state/team/${teamName}/events.jsonl`,
 
   approval: (teamName: string, taskId: string) =>
     `.omc/state/team/${teamName}/approvals/${taskId}.json`,
 
-  manifest: (teamName: string) =>
-    `.omc/state/team/${teamName}/manifest.json`,
+  manifest: (teamName: string) => `.omc/state/team/${teamName}/manifest.json`,
 
   monitorSnapshot: (teamName: string) =>
     `.omc/state/team/${teamName}/monitor-snapshot.json`,
@@ -146,7 +141,11 @@ export function teamStateRoot(cwd: string, teamName: string): string {
  * Use this as the single source of truth for task file locations.
  * New writes always use this canonical path.
  */
-export function getTaskStoragePath(cwd: string, teamName: string, taskId?: string): string {
+export function getTaskStoragePath(
+  cwd: string,
+  teamName: string,
+  taskId?: string,
+): string {
   if (taskId !== undefined) {
     return join(cwd, TeamPaths.taskFile(teamName, taskId));
   }
@@ -164,9 +163,13 @@ export function getTaskStoragePath(cwd: string, teamName: string, taskId?: strin
  *
  * @deprecated Use getTaskStoragePath instead.
  */
-export function getLegacyTaskStoragePath(claudeConfigDir: string, teamName: string, taskId?: string): string {
+export function getLegacyTaskStoragePath(
+  claudeConfigDir: string,
+  teamName: string,
+  taskId?: string,
+): string {
   if (taskId !== undefined) {
-    return join(claudeConfigDir, 'tasks', teamName, `${taskId}.json`);
+    return join(claudeConfigDir, "tasks", teamName, `${taskId}.json`);
   }
-  return join(claudeConfigDir, 'tasks', teamName);
+  return join(claudeConfigDir, "tasks", teamName);
 }

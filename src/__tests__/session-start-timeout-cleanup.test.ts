@@ -1,33 +1,33 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from "vitest";
 
-describe('BUG 4: session-start hooks clear timeout in finally', () => {
-  it('templates/hooks/session-start.mjs uses finally for clearTimeout', async () => {
-    const { readFileSync } = await import('fs');
-    const { join } = await import('path');
+describe("BUG 4: session-start hooks clear timeout in finally", () => {
+  it("templates/hooks/session-start.mjs uses finally for clearTimeout", async () => {
+    const { readFileSync } = await import("fs");
+    const { join } = await import("path");
     const source = readFileSync(
-      join(process.cwd(), 'templates/hooks/session-start.mjs'),
-      'utf-8',
+      join(process.cwd(), "templates/hooks/session-start.mjs"),
+      "utf-8",
     );
 
     // Find the checkForUpdates function
-    const fnStart = source.indexOf('async function checkForUpdates');
+    const fnStart = source.indexOf("async function checkForUpdates");
     expect(fnStart).toBeGreaterThan(-1);
 
     const fnBody = source.slice(fnStart, fnStart + 1500);
     expect(fnBody).toMatch(/finally\s*\{[\s\S]*?clearTimeout/);
   });
 
-  it('scripts/session-start.mjs uses finally for clearTimeout', async () => {
-    const { readFileSync } = await import('fs');
-    const { join } = await import('path');
+  it("scripts/session-start.mjs uses finally for clearTimeout", async () => {
+    const { readFileSync } = await import("fs");
+    const { join } = await import("path");
     const source = readFileSync(
-      join(process.cwd(), 'scripts/session-start.mjs'),
-      'utf-8',
+      join(process.cwd(), "scripts/session-start.mjs"),
+      "utf-8",
     );
 
     // The checkPnpmUpdate function should use finally for clearTimeout
     // Look for the pnpm fetch section
-    const fetchSection = source.indexOf('registry.npmjs.org');
+    const fetchSection = source.indexOf("registry.npmjs.org");
     expect(fetchSection).toBeGreaterThan(-1);
 
     // Find the surrounding try/finally block

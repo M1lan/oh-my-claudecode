@@ -5,7 +5,11 @@
  */
 
 import type { HudRenderContext, HudConfig, LayoutConfig } from "./types.js";
-import { DEFAULT_HUD_CONFIG, DEFAULT_ELEMENT_ORDER, DEFAULT_HUD_LABELS } from "./types.js";
+import {
+  DEFAULT_HUD_CONFIG,
+  DEFAULT_ELEMENT_ORDER,
+  DEFAULT_HUD_LABELS,
+} from "./types.js";
 import { bold, dim } from "./colors.js";
 import { stringWidth, getCharWidth } from "../utils/string-width.js";
 import { renderRalph } from "./elements/ralph.js";
@@ -33,7 +37,11 @@ import { renderPromptTime } from "./elements/prompt-time.js";
 import { renderAutopilot } from "./elements/autopilot.js";
 import { renderCwd } from "./elements/cwd.js";
 import { renderHostname } from "./elements/hostname.js";
-import { renderGitRepo, renderGitBranch, renderGitStatus } from "./elements/git.js";
+import {
+  renderGitRepo,
+  renderGitBranch,
+  renderGitStatus,
+} from "./elements/git.js";
 import { renderModel } from "./elements/model.js";
 import { renderApiKeySource } from "./elements/api-key-source.js";
 import { renderCallCounts } from "./elements/call-counts.js";
@@ -300,12 +308,11 @@ export async function render(
 
   // Determine effective enterprise mode before rendering limits: only real
   // enterprise accounts replace token-window limits with enterprise cost.
-  const isEnterprise = enabledElements.enterpriseMode !== undefined
-    ? enabledElements.enterpriseMode
-    : (
-        (context.subscriptionType ?? '').toLowerCase() === 'enterprise' ||
-        /claude_zero/i.test(context.rateLimitTier ?? '')
-      );
+  const isEnterprise =
+    enabledElements.enterpriseMode !== undefined
+      ? enabledElements.enterpriseMode
+      : (context.subscriptionType ?? "").toLowerCase() === "enterprise" ||
+        /claude_zero/i.test(context.rateLimitTier ?? "");
 
   // Rate limits (5h and weekly) - data takes priority over error indicator.
   // Enterprise cost data only replaces token-window limits for accounts that
@@ -315,7 +322,11 @@ export async function render(
   const enterpriseCostReplacesRateLimits =
     isEnterprise &&
     context.rateLimitsResult?.rateLimits?.enterpriseSpentUsd !== undefined;
-  if (enabledElements.rateLimits && context.rateLimitsResult && !enterpriseCostReplacesRateLimits) {
+  if (
+    enabledElements.rateLimits &&
+    context.rateLimitsResult &&
+    !enterpriseCostReplacesRateLimits
+  ) {
     if (context.rateLimitsResult.rateLimits) {
       const stale = context.rateLimitsResult.stale;
       const limits = enabledElements.useBars
@@ -467,7 +478,7 @@ export async function render(
       context.toolCallCount,
       context.agentCallCount,
       context.skillCallCount,
-      enabledElements.callCountsFormat ?? 'auto',
+      enabledElements.callCountsFormat ?? "auto",
       hudLabels,
     );
     if (counts) rendered.set("callCounts", counts);
@@ -489,7 +500,10 @@ export async function render(
     context.missionBoard &&
     (config.missionBoard?.enabled ?? config.elements.missionBoard ?? false)
   ) {
-    const mbLines = renderMissionBoard(context.missionBoard, config.missionBoard);
+    const mbLines = renderMissionBoard(
+      context.missionBoard,
+      config.missionBoard,
+    );
     if (mbLines.length > 0) renderedDetail.set("missionBoard", mbLines);
   }
 
@@ -513,7 +527,10 @@ export async function render(
     line1: safeArray(config.layout?.line1, DEFAULT_ELEMENT_ORDER.line1),
     // `layout.main` remains the advanced authoritative layout control.
     // `elementOrder` is a narrow convenience alias for the main HUD line only.
-    main: safeArray(config.layout?.main, buildMainElementOrder(config.elementOrder)),
+    main: safeArray(
+      config.layout?.main,
+      buildMainElementOrder(config.elementOrder),
+    ),
     detail: safeArray(config.layout?.detail, DEFAULT_ELEMENT_ORDER.detail),
   };
 

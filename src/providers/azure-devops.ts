@@ -1,38 +1,46 @@
-import { execFileSync } from 'node:child_process';
-import type { GitProvider, PRInfo, IssueInfo } from './types.js';
+import { execFileSync } from "node:child_process";
+import type { GitProvider, PRInfo, IssueInfo } from "./types.js";
 
 function stripRefPrefix(ref: string): string {
-  return ref.replace(/^refs\/heads\//, '');
+  return ref.replace(/^refs\/heads\//, "");
 }
 
 export class AzureDevOpsProvider implements GitProvider {
-  readonly name = 'azure-devops' as const;
-  readonly displayName = 'Azure DevOps';
-  readonly prTerminology = 'PR' as const;
+  readonly name = "azure-devops" as const;
+  readonly displayName = "Azure DevOps";
+  readonly prTerminology = "PR" as const;
   readonly prRefspec = null;
 
   detectFromRemote(url: string): boolean {
     return (
-      url.includes('dev.azure.com') ||
-      url.includes('ssh.dev.azure.com') ||
-      url.includes('visualstudio.com')
+      url.includes("dev.azure.com") ||
+      url.includes("ssh.dev.azure.com") ||
+      url.includes("visualstudio.com")
     );
   }
 
   viewPR(number: number): PRInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const raw = execFileSync('az', ['repos', 'pr', 'show', '--id', String(number), '--output', 'json'], {
-        encoding: 'utf-8',
-        timeout: 15000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const raw = execFileSync(
+        "az",
+        ["repos", "pr", "show", "--id", String(number), "--output", "json"],
+        {
+          encoding: "utf-8",
+          timeout: 15000,
+          stdio: ["pipe", "pipe", "pipe"],
+        },
+      );
       const data = JSON.parse(raw);
       const createdBy = data.createdBy as Record<string, unknown> | undefined;
       return {
         title: data.title as string,
-        headBranch: data.sourceRefName ? stripRefPrefix(data.sourceRefName as string) : undefined,
-        baseBranch: data.targetRefName ? stripRefPrefix(data.targetRefName as string) : undefined,
+        headBranch: data.sourceRefName
+          ? stripRefPrefix(data.sourceRefName as string)
+          : undefined,
+        baseBranch: data.targetRefName
+          ? stripRefPrefix(data.targetRefName as string)
+          : undefined,
         url: data.url as string | undefined,
         body: data.description as string | undefined,
         author: createdBy?.displayName as string | undefined,
@@ -45,16 +53,28 @@ export class AzureDevOpsProvider implements GitProvider {
   viewIssue(number: number): IssueInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const raw = execFileSync('az', ['boards', 'work-item', 'show', '--id', String(number), '--output', 'json'], {
-        encoding: 'utf-8',
-        timeout: 15000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const raw = execFileSync(
+        "az",
+        [
+          "boards",
+          "work-item",
+          "show",
+          "--id",
+          String(number),
+          "--output",
+          "json",
+        ],
+        {
+          encoding: "utf-8",
+          timeout: 15000,
+          stdio: ["pipe", "pipe", "pipe"],
+        },
+      );
       const data = JSON.parse(raw);
       const fields = data.fields as Record<string, unknown> | undefined;
       return {
-        title: (fields?.['System.Title'] as string) ?? '',
-        body: fields?.['System.Description'] as string | undefined,
+        title: (fields?.["System.Title"] as string) ?? "",
+        body: fields?.["System.Description"] as string | undefined,
         url: data.url as string | undefined,
       };
     } catch {
@@ -64,10 +84,10 @@ export class AzureDevOpsProvider implements GitProvider {
 
   checkAuth(): boolean {
     try {
-      execFileSync('az', ['account', 'show'], {
-        encoding: 'utf-8',
+      execFileSync("az", ["account", "show"], {
+        encoding: "utf-8",
         timeout: 10000,
-        stdio: ['pipe', 'pipe', 'pipe'],
+        stdio: ["pipe", "pipe", "pipe"],
       });
       return true;
     } catch {
@@ -76,6 +96,6 @@ export class AzureDevOpsProvider implements GitProvider {
   }
 
   getRequiredCLI(): string | null {
-    return 'az';
+    return "az";
   }
 }

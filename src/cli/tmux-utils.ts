@@ -13,9 +13,9 @@ import {
   type ExecSyncOptionsWithStringEncoding,
   type SpawnSyncOptionsWithStringEncoding,
   type SpawnSyncReturns,
-} from 'child_process';
-import { basename, isAbsolute, win32 as win32Path } from 'path';
-import { promisify } from 'util';
+} from "child_process";
+import { basename, isAbsolute, win32 as win32Path } from "path";
+import { promisify } from "util";
 
 // ── tmux environment & execution wrappers ────────────────────────────────────
 
@@ -41,18 +41,20 @@ interface TmuxCommandInvocation {
 }
 
 function isUnixLikeOnWindows(): boolean {
-  return process.platform === 'win32' &&
-    !!(process.env.MSYSTEM || process.env.MINGW_PREFIX);
+  return (
+    process.platform === "win32" &&
+    !!(process.env.MSYSTEM || process.env.MINGW_PREFIX)
+  );
 }
 
 export function isNativeWindowsShell(): boolean {
-  return process.platform === 'win32' && !isUnixLikeOnWindows();
+  return process.platform === "win32" && !isUnixLikeOnWindows();
 }
 
 function quoteForCmd(arg: string): string {
   if (arg.length === 0) return '""';
   if (!/[\s"%^&|<>()]/.test(arg)) return arg;
-  return `"${arg.replace(/(["%])/g, '$1$1')}"`;
+  return `"${arg.replace(/(["%])/g, "$1$1")}"`;
 }
 
 function escapeForCmdSet(value: string): string {
@@ -61,12 +63,15 @@ function escapeForCmdSet(value: string): string {
 
 function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
   const resolvedBinary = resolveTmuxBinaryPath();
-  if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
-    const comspec = process.env.COMSPEC || 'cmd.exe';
-    const commandLine = [quoteForCmd(resolvedBinary), ...args.map(quoteForCmd)].join(' ');
+  if (process.platform === "win32" && /\.(cmd|bat)$/i.test(resolvedBinary)) {
+    const comspec = process.env.COMSPEC || "cmd.exe";
+    const commandLine = [
+      quoteForCmd(resolvedBinary),
+      ...args.map(quoteForCmd),
+    ].join(" ");
     return {
       command: comspec,
-      args: ['/d', '/s', '/c', commandLine],
+      args: ["/d", "/s", "/c", commandLine],
     };
   }
 
@@ -78,11 +83,18 @@ function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
 
 export function tmuxExec(
   args: string[],
-  opts?: TmuxExecOptions & Omit<ExecFileSyncOptionsWithStringEncoding, 'env' | 'encoding'> & { encoding?: BufferEncoding },
+  opts?: TmuxExecOptions &
+    Omit<ExecFileSyncOptionsWithStringEncoding, "env" | "encoding"> & {
+      encoding?: BufferEncoding;
+    },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
   const invocation = resolveTmuxInvocation(args);
-  return execFileSync(invocation.command, invocation.args, { encoding: 'utf-8', ...execOpts, env: resolveEnv(opts) });
+  return execFileSync(invocation.command, invocation.args, {
+    encoding: "utf-8",
+    ...execOpts,
+    env: resolveEnv(opts),
+  });
 }
 
 export async function tmuxExecAsync(
@@ -92,17 +104,26 @@ export async function tmuxExecAsync(
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
   const invocation = resolveTmuxInvocation(args);
   return promisify(execFile)(invocation.command, invocation.args, {
-    encoding: 'utf-8', env: resolveEnv(opts),
-    ...(timeout !== undefined ? { timeout } : {}), ...rest,
+    encoding: "utf-8",
+    env: resolveEnv(opts),
+    ...(timeout !== undefined ? { timeout } : {}),
+    ...rest,
   });
 }
 
 export function tmuxShell(
   command: string,
-  opts?: TmuxExecOptions & Omit<ExecSyncOptionsWithStringEncoding, 'env' | 'encoding'> & { encoding?: BufferEncoding },
+  opts?: TmuxExecOptions &
+    Omit<ExecSyncOptionsWithStringEncoding, "env" | "encoding"> & {
+      encoding?: BufferEncoding;
+    },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
-  return execSync(`tmux ${command}`, { encoding: 'utf-8', ...execOpts, env: resolveEnv(opts) }) as string;
+  return execSync(`tmux ${command}`, {
+    encoding: "utf-8",
+    ...execOpts,
+    env: resolveEnv(opts),
+  }) as string;
 }
 
 export async function tmuxShellAsync(
@@ -111,32 +132,43 @@ export async function tmuxShellAsync(
 ): Promise<{ stdout: string; stderr: string }> {
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
   return promisify(exec)(`tmux ${command}`, {
-    encoding: 'utf-8', env: resolveEnv(opts),
-    ...(timeout !== undefined ? { timeout } : {}), ...rest,
+    encoding: "utf-8",
+    env: resolveEnv(opts),
+    ...(timeout !== undefined ? { timeout } : {}),
+    ...rest,
   });
 }
 
 export function tmuxSpawn(
   args: string[],
-  opts?: TmuxExecOptions & Omit<SpawnSyncOptionsWithStringEncoding, 'env' | 'encoding'> & { encoding?: BufferEncoding },
+  opts?: TmuxExecOptions &
+    Omit<SpawnSyncOptionsWithStringEncoding, "env" | "encoding"> & {
+      encoding?: BufferEncoding;
+    },
 ): SpawnSyncReturns<string> {
   const { stripTmux: _, ...spawnOpts } = opts ?? {};
   const invocation = resolveTmuxInvocation(args);
-  return spawnSync(invocation.command, invocation.args, { encoding: 'utf-8', ...spawnOpts, env: resolveEnv(opts) });
+  return spawnSync(invocation.command, invocation.args, {
+    encoding: "utf-8",
+    ...spawnOpts,
+    env: resolveEnv(opts),
+  });
 }
 
 export async function tmuxCmdAsync(
   args: string[],
   opts?: TmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
-  if (args.some(a => a.includes('#{'))) {
-    const escaped = args.map(a => "'" + a.replace(/'/g, "'\\''") + "'").join(' ');
+  if (args.some((a) => a.includes("#{"))) {
+    const escaped = args
+      .map((a) => "'" + a.replace(/'/g, "'\\''") + "'")
+      .join(" ");
     return tmuxShellAsync(escaped, opts);
   }
   return tmuxExecAsync(args, opts);
 }
 
-export type ClaudeLaunchPolicy = 'inside-tmux' | 'outside-tmux' | 'direct';
+export type ClaudeLaunchPolicy = "inside-tmux" | "outside-tmux" | "direct";
 
 export interface TmuxPaneSnapshot {
   paneId: string;
@@ -145,21 +177,22 @@ export interface TmuxPaneSnapshot {
 }
 
 function resolveTmuxBinaryPath(): string {
-  if (process.platform !== 'win32') {
-    return 'tmux';
+  if (process.platform !== "win32") {
+    return "tmux";
   }
 
   try {
-    const result = spawnSync('where', ['tmux'], {
+    const result = spawnSync("where", ["tmux"], {
       timeout: 5000,
-      encoding: 'utf8',
+      encoding: "utf8",
     });
-    if (result.status !== 0) return 'tmux';
+    if (result.status !== 0) return "tmux";
 
-    const candidates = result.stdout
-      ?.split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean) ?? [];
+    const candidates =
+      result.stdout
+        ?.split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean) ?? [];
     const first = candidates[0];
     if (first && (isAbsolute(first) || win32Path.isAbsolute(first))) {
       return first;
@@ -168,7 +201,7 @@ function resolveTmuxBinaryPath(): string {
     // Fall back to plain tmux lookup below.
   }
 
-  return 'tmux';
+  return "tmux";
 }
 
 /**
@@ -177,18 +210,25 @@ function resolveTmuxBinaryPath(): string {
 export function isTmuxAvailable(): boolean {
   try {
     const resolvedBinary = resolveTmuxBinaryPath();
-    if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
-      const comspec = process.env.COMSPEC || 'cmd.exe';
-      const result = spawnSync(comspec, ['/d', '/s', '/c', `"${resolvedBinary}" -V`], { timeout: 5000 });
+    if (process.platform === "win32" && /\.(cmd|bat)$/i.test(resolvedBinary)) {
+      const comspec = process.env.COMSPEC || "cmd.exe";
+      const result = spawnSync(
+        comspec,
+        ["/d", "/s", "/c", `"${resolvedBinary}" -V`],
+        { timeout: 5000 },
+      );
       return result.status === 0;
     }
 
-    if (process.platform === 'win32') {
-      const result = spawnSync(resolvedBinary, ['-V'], { timeout: 5000, shell: true });
+    if (process.platform === "win32") {
+      const result = spawnSync(resolvedBinary, ["-V"], {
+        timeout: 5000,
+        shell: true,
+      });
       return result.status === 0;
     }
 
-    tmuxExec(['-V'], { stripTmux: true, stdio: 'ignore' });
+    tmuxExec(["-V"], { stripTmux: true, stdio: "ignore" });
     return true;
   } catch {
     return false;
@@ -200,9 +240,9 @@ export function isTmuxAvailable(): boolean {
  */
 export function isClaudeAvailable(): boolean {
   try {
-    execFileSync('claude', ['--version'], {
-      stdio: 'ignore',
-      shell: process.platform === 'win32',
+    execFileSync("claude", ["--version"], {
+      stdio: "ignore",
+      shell: process.platform === "win32",
     });
     return true;
   } catch {
@@ -231,20 +271,20 @@ export function resolveLaunchPolicy(
   args: string[] = [],
   options: ResolveLaunchPolicyOptions = {},
 ): ClaudeLaunchPolicy {
-  if (args.some((arg) => arg === '--print' || arg === '-p')) {
-    return 'direct';
+  if (args.some((arg) => arg === "--print" || arg === "-p")) {
+    return "direct";
   }
-  if (env.TMUX) return 'inside-tmux';
+  if (env.TMUX) return "inside-tmux";
   // Terminal emulators that embed their own multiplexer (e.g. cmux, a
   // Ghostty-based terminal) set CMUX_SURFACE_ID but not TMUX. tmux
   // attach-session fails in these environments because the host PTY is
   // not directly compatible, leaving orphaned detached sessions.
   // Demote to direct unless the caller explicitly requires tmux.
-  if (env.CMUX_SURFACE_ID && !options.requireTmux) return 'direct';
+  if (env.CMUX_SURFACE_ID && !options.requireTmux) return "direct";
   if (!isTmuxAvailable()) {
-    return 'direct';
+    return "direct";
   }
-  return 'outside-tmux';
+  return "outside-tmux";
 }
 
 /**
@@ -254,13 +294,13 @@ export function resolveLaunchPolicy(
  */
 export function buildTmuxSessionName(cwd: string): string {
   const dirToken = sanitizeTmuxToken(basename(cwd));
-  let branchToken = 'detached';
+  let branchToken = "detached";
 
   try {
-    const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+    const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
       cwd,
-      encoding: 'utf-8',
-      stdio: ['ignore', 'pipe', 'ignore'],
+      encoding: "utf-8",
+      stdio: ["ignore", "pipe", "ignore"],
     }).trim();
     if (branch) {
       branchToken = sanitizeTmuxToken(branch);
@@ -270,7 +310,7 @@ export function buildTmuxSessionName(cwd: string): string {
   }
 
   const now = new Date();
-  const pad = (n: number) => String(n).padStart(2, '0');
+  const pad = (n: number) => String(n).padStart(2, "0");
   const utcTimestamp =
     `${now.getUTCFullYear()}` +
     `${pad(now.getUTCMonth() + 1)}` +
@@ -290,9 +330,9 @@ export function buildTmuxSessionName(cwd: string): string {
 export function sanitizeTmuxToken(value: string): string {
   const cleaned = value
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-  return cleaned || 'unknown';
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned || "unknown";
 }
 
 /**
@@ -300,9 +340,9 @@ export function sanitizeTmuxToken(value: string): string {
  */
 export function buildTmuxShellCommand(command: string, args: string[]): string {
   if (isNativeWindowsShell()) {
-    return [command, ...args].map(quoteForCmd).join(' ');
+    return [command, ...args].map(quoteForCmd).join(" ");
   }
-  return [quoteShellArg(command), ...args.map(quoteShellArg)].join(' ');
+  return [quoteShellArg(command), ...args.map(quoteShellArg)].join(" ");
 }
 
 export function buildTmuxShellCommandWithEnv(
@@ -318,14 +358,15 @@ export function buildTmuxShellCommandWithEnv(
   if (isNativeWindowsShell()) {
     const envPrefix = envEntries
       .map(([key, value]) => `set "${key}=${escapeForCmdSet(value)}"`)
-      .join(' && ');
+      .join(" && ");
     return `${envPrefix} && ${buildTmuxShellCommand(command, args)}`;
   }
 
-  return buildTmuxShellCommand(
-    'env',
-    [...envEntries.map(([key, value]) => `${key}=${value}`), command, ...args],
-  );
+  return buildTmuxShellCommand("env", [
+    ...envEntries.map(([key, value]) => `${key}=${value}`),
+    command,
+    ...args,
+  ]);
 }
 
 /**
@@ -339,16 +380,16 @@ export function buildTmuxShellCommandWithEnv(
  */
 export function wrapWithLoginShell(command: string): string {
   if (isNativeWindowsShell()) {
-    const comspec = process.env.COMSPEC || 'cmd.exe';
+    const comspec = process.env.COMSPEC || "cmd.exe";
     return `${quoteForCmd(comspec)} /d /s /c ${quoteForCmd(command)}`;
   }
 
-  const shell = process.env.SHELL || '/bin/sh';
-  const shellName = basename(shell).replace(/\.(exe|cmd|bat)$/i, '');
-  const rcFile = process.env.HOME ? `${process.env.HOME}/.${shellName}rc` : '';
+  const shell = process.env.SHELL || "/bin/sh";
+  const shellName = basename(shell).replace(/\.(exe|cmd|bat)$/i, "");
+  const rcFile = process.env.HOME ? `${process.env.HOME}/.${shellName}rc` : "";
   const sourcePrefix = rcFile
     ? `[ -f ${quoteShellArg(rcFile)} ] && . ${quoteShellArg(rcFile)}; `
-    : '';
+    : "";
   return `exec ${quoteShellArg(shell)} -lc ${quoteShellArg(`${sourcePrefix}${command}`)}`;
 }
 
@@ -365,18 +406,19 @@ export function quoteShellArg(value: string): string {
  */
 export function parseTmuxPaneSnapshot(output: string): TmuxPaneSnapshot[] {
   return output
-    .split('\n')
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .map((line) => {
-      const [paneId = '', currentCommand = '', ...startCommandParts] = line.split('\t');
+      const [paneId = "", currentCommand = "", ...startCommandParts] =
+        line.split("\t");
       return {
         paneId: paneId.trim(),
         currentCommand: currentCommand.trim(),
-        startCommand: startCommandParts.join('\t').trim(),
+        startCommand: startCommandParts.join("\t").trim(),
       };
     })
-    .filter((pane) => pane.paneId.startsWith('%'));
+    .filter((pane) => pane.paneId.startsWith("%"));
 }
 
 /**
@@ -384,15 +426,20 @@ export function parseTmuxPaneSnapshot(output: string): TmuxPaneSnapshot[] {
  */
 export function isHudWatchPane(pane: TmuxPaneSnapshot): boolean {
   const command = `${pane.startCommand} ${pane.currentCommand}`.toLowerCase();
-  return /\bhud\b/.test(command)
-    && /--watch\b/.test(command)
-    && (/\bomc(?:\.js)?\b/.test(command) || /\bnode\b/.test(command));
+  return (
+    /\bhud\b/.test(command) &&
+    /--watch\b/.test(command) &&
+    (/\bomc(?:\.js)?\b/.test(command) || /\bnode\b/.test(command))
+  );
 }
 
 /**
  * Find HUD watch pane IDs in current window
  */
-export function findHudWatchPaneIds(panes: TmuxPaneSnapshot[], currentPaneId?: string): string[] {
+export function findHudWatchPaneIds(
+  panes: TmuxPaneSnapshot[],
+  currentPaneId?: string,
+): string[] {
   return panes
     .filter((pane) => pane.paneId !== currentPaneId)
     .filter((pane) => isHudWatchPane(pane))
@@ -402,11 +449,15 @@ export function findHudWatchPaneIds(panes: TmuxPaneSnapshot[], currentPaneId?: s
 /**
  * List HUD watch panes in current tmux window
  */
-export function listHudWatchPaneIdsInCurrentWindow(currentPaneId?: string): string[] {
+export function listHudWatchPaneIdsInCurrentWindow(
+  currentPaneId?: string,
+): string[] {
   try {
-    const output = tmuxExec(
-      ['list-panes', '-F', '#{pane_id}\t#{pane_current_command}\t#{pane_start_command}'],
-    );
+    const output = tmuxExec([
+      "list-panes",
+      "-F",
+      "#{pane_id}\t#{pane_current_command}\t#{pane_start_command}",
+    ]);
     return findHudWatchPaneIds(parseTmuxPaneSnapshot(output), currentPaneId);
   } catch {
     return [];
@@ -420,11 +471,21 @@ export function listHudWatchPaneIdsInCurrentWindow(currentPaneId?: string): stri
 export function createHudWatchPane(cwd: string, hudCmd: string): string | null {
   try {
     const wrappedCmd = wrapWithLoginShell(hudCmd);
-    const output = tmuxExec(
-      ['split-window', '-v', '-l', '4', '-d', '-c', cwd, '-P', '-F', '#{pane_id}', wrappedCmd],
-    );
-    const paneId = output.split('\n')[0]?.trim() || '';
-    return paneId.startsWith('%') ? paneId : null;
+    const output = tmuxExec([
+      "split-window",
+      "-v",
+      "-l",
+      "4",
+      "-d",
+      "-c",
+      cwd,
+      "-P",
+      "-F",
+      "#{pane_id}",
+      wrappedCmd,
+    ]);
+    const paneId = output.split("\n")[0]?.trim() || "";
+    return paneId.startsWith("%") ? paneId : null;
   } catch {
     return null;
   }
@@ -434,9 +495,9 @@ export function createHudWatchPane(cwd: string, hudCmd: string): string | null {
  * Kill tmux pane by ID
  */
 export function killTmuxPane(paneId: string): void {
-  if (!paneId.startsWith('%')) return;
+  if (!paneId.startsWith("%")) return;
   try {
-    tmuxExec(['kill-pane', '-t', paneId], { stdio: 'ignore' });
+    tmuxExec(["kill-pane", "-t", paneId], { stdio: "ignore" });
   } catch {
     // Pane may already be gone; ignore
   }

@@ -19,53 +19,57 @@ import type {
   TeamRoleAssignmentSpec,
   TeamRoleProvider,
   TeamRoleTier,
-} from '../shared/types.js';
-import { CANONICAL_TEAM_ROLES } from '../shared/types.js';
-import { normalizeDelegationRole } from '../features/delegation-routing/types.js';
+} from "../shared/types.js";
+import { CANONICAL_TEAM_ROLES } from "../shared/types.js";
+import { normalizeDelegationRole } from "../features/delegation-routing/types.js";
 import {
   BUILTIN_EXTERNAL_MODEL_DEFAULTS,
   getDefaultTierModels,
-} from '../config/models.js';
+} from "../config/models.js";
 
 /** Map canonical team role → KnownAgentName key (matches PluginConfig.agents.*). */
 const ROLE_TO_AGENT: Record<CanonicalTeamRole, KnownAgentName> = {
-  orchestrator: 'omc',
-  planner: 'planner',
-  analyst: 'analyst',
-  architect: 'architect',
-  executor: 'executor',
-  debugger: 'debugger',
-  critic: 'critic',
-  'code-reviewer': 'codeReviewer',
-  'security-reviewer': 'securityReviewer',
-  'test-engineer': 'testEngineer',
-  designer: 'designer',
-  writer: 'writer',
-  'code-simplifier': 'codeSimplifier',
-  explore: 'explore',
-  'document-specialist': 'documentSpecialist',
+  orchestrator: "omc",
+  planner: "planner",
+  analyst: "analyst",
+  architect: "architect",
+  executor: "executor",
+  debugger: "debugger",
+  critic: "critic",
+  "code-reviewer": "codeReviewer",
+  "security-reviewer": "securityReviewer",
+  "test-engineer": "testEngineer",
+  designer: "designer",
+  writer: "writer",
+  "code-simplifier": "codeSimplifier",
+  explore: "explore",
+  "document-specialist": "documentSpecialist",
 };
 
 /** Default model tier per canonical role (mirrors buildDefaultConfig().agents tiers). */
 const ROLE_DEFAULT_TIER: Record<CanonicalTeamRole, TeamRoleTier> = {
-  orchestrator: 'HIGH',
-  planner: 'HIGH',
-  analyst: 'HIGH',
-  architect: 'HIGH',
-  executor: 'MEDIUM',
-  debugger: 'MEDIUM',
-  critic: 'HIGH',
-  'code-reviewer': 'HIGH',
-  'security-reviewer': 'MEDIUM',
-  'test-engineer': 'MEDIUM',
-  designer: 'MEDIUM',
-  writer: 'LOW',
-  'code-simplifier': 'HIGH',
-  explore: 'LOW',
-  'document-specialist': 'MEDIUM',
+  orchestrator: "HIGH",
+  planner: "HIGH",
+  analyst: "HIGH",
+  architect: "HIGH",
+  executor: "MEDIUM",
+  debugger: "MEDIUM",
+  critic: "HIGH",
+  "code-reviewer": "HIGH",
+  "security-reviewer": "MEDIUM",
+  "test-engineer": "MEDIUM",
+  designer: "MEDIUM",
+  writer: "LOW",
+  "code-simplifier": "HIGH",
+  explore: "LOW",
+  "document-specialist": "MEDIUM",
 };
 
-const TIER_SET: ReadonlySet<string> = new Set<TeamRoleTier>(['HIGH', 'MEDIUM', 'LOW']);
+const TIER_SET: ReadonlySet<string> = new Set<TeamRoleTier>([
+  "HIGH",
+  "MEDIUM",
+  "LOW",
+]);
 
 function isTier(value: string): value is TeamRoleTier {
   return TIER_SET.has(value);
@@ -104,7 +108,7 @@ export function getRoleRoutingSpec(
  */
 function resolveTierToModelId(tier: TeamRoleTier, cfg: PluginConfig): string {
   const fromCfg = cfg.routing?.tierModels?.[tier];
-  if (typeof fromCfg === 'string' && fromCfg.length > 0) return fromCfg;
+  if (typeof fromCfg === "string" && fromCfg.length > 0) return fromCfg;
   return getDefaultTierModels()[tier];
 }
 
@@ -118,7 +122,7 @@ function resolveClaudeModel(
   raw: string | undefined,
   cfg: PluginConfig,
 ): string {
-  if (typeof raw === 'string' && raw.length > 0) {
+  if (typeof raw === "string" && raw.length > 0) {
     return isTier(raw) ? resolveTierToModelId(raw, cfg) : raw;
   }
   return resolveTierToModelId(ROLE_DEFAULT_TIER[role], cfg);
@@ -132,15 +136,15 @@ function resolveClaudeModel(
  * explicit non-tier model ID is passed through.
  */
 function resolveExternalModel(
-  provider: 'codex' | 'gemini',
+  provider: "codex" | "gemini",
   raw: string | undefined,
   cfg: PluginConfig,
 ): string {
-  if (typeof raw === 'string' && raw.length > 0 && !isTier(raw)) {
+  if (typeof raw === "string" && raw.length > 0 && !isTier(raw)) {
     return raw;
   }
   const defaults = cfg.externalModels?.defaults;
-  if (provider === 'codex') {
+  if (provider === "codex") {
     return defaults?.codexModel ?? BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel;
   }
   return defaults?.geminiModel ?? BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
@@ -163,21 +167,24 @@ export function resolveRoleAssignment(
   cfg: PluginConfig,
 ): RoleAssignment {
   const normalized = normalizeDelegationRole(role) as CanonicalTeamRole;
-  const canonical: CanonicalTeamRole = isCanonicalRole(normalized) ? normalized : role;
+  const canonical: CanonicalTeamRole = isCanonicalRole(normalized)
+    ? normalized
+    : role;
 
   const roleRouting = cfg.team?.roleRouting as
     | Record<string, TeamRoleAssignmentSpec | undefined>
     | undefined;
   const spec = getRoleRoutingSpec(roleRouting, canonical);
 
-  const isOrchestrator = canonical === 'orchestrator';
+  const isOrchestrator = canonical === "orchestrator";
   const provider: TeamRoleProvider = isOrchestrator
-    ? 'claude'
-    : (spec?.provider ?? 'claude');
+    ? "claude"
+    : (spec?.provider ?? "claude");
 
-  const model = provider === 'claude'
-    ? resolveClaudeModel(canonical, spec?.model, cfg)
-    : resolveExternalModel(provider, spec?.model, cfg);
+  const model =
+    provider === "claude"
+      ? resolveClaudeModel(canonical, spec?.model, cfg)
+      : resolveExternalModel(provider, spec?.model, cfg);
   const agent: KnownAgentName = spec?.agent ?? ROLE_TO_AGENT[canonical];
 
   return { provider, model, agent };
@@ -197,8 +204,14 @@ function isCanonicalRole(value: string): value is CanonicalTeamRole {
  */
 export function buildResolvedRoutingSnapshot(
   cfg: PluginConfig,
-): Record<CanonicalTeamRole, { primary: RoleAssignment; fallback: RoleAssignment }> {
-  const out = {} as Record<CanonicalTeamRole, { primary: RoleAssignment; fallback: RoleAssignment }>;
+): Record<
+  CanonicalTeamRole,
+  { primary: RoleAssignment; fallback: RoleAssignment }
+> {
+  const out = {} as Record<
+    CanonicalTeamRole,
+    { primary: RoleAssignment; fallback: RoleAssignment }
+  >;
   const roleRouting = cfg.team?.roleRouting as
     | Record<string, TeamRoleAssignmentSpec | undefined>
     | undefined;
@@ -212,12 +225,13 @@ export function buildResolvedRoutingSnapshot(
     // (e.g., 'gpt-5.3-codex'), drop it for fallback so claude doesn't
     // receive an external model id; tier names always survive.
     const spec = getRoleRoutingSpec(roleRouting, role);
-    const isExternalPrimary = primary.provider !== 'claude';
-    const fallbackModelInput = isExternalPrimary && spec?.model && !isTier(spec.model)
-      ? undefined
-      : spec?.model;
+    const isExternalPrimary = primary.provider !== "claude";
+    const fallbackModelInput =
+      isExternalPrimary && spec?.model && !isTier(spec.model)
+        ? undefined
+        : spec?.model;
     const fallback: RoleAssignment = {
-      provider: 'claude',
+      provider: "claude",
       model: resolveClaudeModel(role, fallbackModelInput, cfg),
       agent: primary.agent,
     };

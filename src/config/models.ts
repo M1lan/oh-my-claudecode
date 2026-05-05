@@ -1,27 +1,27 @@
-import { validateAnthropicBaseUrl } from '../utils/ssrf-guard.js';
+import { validateAnthropicBaseUrl } from "../utils/ssrf-guard.js";
 
-export type ModelTier = 'LOW' | 'MEDIUM' | 'HIGH';
-export type ClaudeModelFamily = 'HAIKU' | 'SONNET' | 'OPUS';
+export type ModelTier = "LOW" | "MEDIUM" | "HIGH";
+export type ClaudeModelFamily = "HAIKU" | "SONNET" | "OPUS";
 
-const DIRECT_MODEL_ENV_KEYS = ['CLAUDE_MODEL', 'ANTHROPIC_MODEL'] as const;
-const INHERIT_TIER_PRIORITY: readonly ModelTier[] = ['MEDIUM', 'HIGH', 'LOW'];
-const CLAUDE_TIER_ALIASES = new Set(['sonnet', 'opus', 'haiku']);
+const DIRECT_MODEL_ENV_KEYS = ["CLAUDE_MODEL", "ANTHROPIC_MODEL"] as const;
+const INHERIT_TIER_PRIORITY: readonly ModelTier[] = ["MEDIUM", "HIGH", "LOW"];
+const CLAUDE_TIER_ALIASES = new Set(["sonnet", "opus", "haiku"]);
 
 const TIER_ENV_KEYS: Record<ModelTier, readonly string[]> = {
   LOW: [
-    'OMC_MODEL_LOW',
-    'CLAUDE_CODE_BEDROCK_HAIKU_MODEL',
-    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    "OMC_MODEL_LOW",
+    "CLAUDE_CODE_BEDROCK_HAIKU_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
   ],
   MEDIUM: [
-    'OMC_MODEL_MEDIUM',
-    'CLAUDE_CODE_BEDROCK_SONNET_MODEL',
-    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    "OMC_MODEL_MEDIUM",
+    "CLAUDE_CODE_BEDROCK_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
   ],
   HIGH: [
-    'OMC_MODEL_HIGH',
-    'CLAUDE_CODE_BEDROCK_OPUS_MODEL',
-    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    "OMC_MODEL_HIGH",
+    "CLAUDE_CODE_BEDROCK_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
   ],
 };
 
@@ -30,9 +30,9 @@ const TIER_ENV_KEYS: Record<ModelTier, readonly string[]> = {
  * Keep these date-less so version bumps are a one-line edit per family.
  */
 export const CLAUDE_FAMILY_DEFAULTS: Record<ClaudeModelFamily, string> = {
-  HAIKU: 'claude-haiku-4-5',
-  SONNET: 'claude-sonnet-4-6',
-  OPUS: 'claude-opus-4-7',
+  HAIKU: "claude-haiku-4-5",
+  SONNET: "claude-sonnet-4-6",
+  OPUS: "claude-opus-4-7",
 };
 
 /** Canonical tier->model mapping used as built-in defaults */
@@ -51,8 +51,8 @@ export const CLAUDE_FAMILY_HIGH_VARIANTS: Record<ClaudeModelFamily, string> = {
 
 /** Built-in defaults for external provider models */
 export const BUILTIN_EXTERNAL_MODEL_DEFAULTS = {
-  codexModel: 'gpt-5.3-codex',
-  geminiModel: 'gemini-3.1-pro-preview',
+  codexModel: "gpt-5.3-codex",
+  geminiModel: "gemini-3.1-pro-preview",
 } as const;
 
 /**
@@ -151,20 +151,22 @@ export function hasTierModelEnvOverrides(): boolean {
   return Object.values(TIER_ENV_KEYS).some((keys) =>
     keys.some((key) => {
       return Boolean(readEnvValue(key));
-    })
+    }),
   );
 }
 
 export function getDefaultModelHigh(): string {
-  return resolveTierModelFromEnv('HIGH') || BUILTIN_TIER_MODEL_DEFAULTS.HIGH;
+  return resolveTierModelFromEnv("HIGH") || BUILTIN_TIER_MODEL_DEFAULTS.HIGH;
 }
 
 export function getDefaultModelMedium(): string {
-  return resolveTierModelFromEnv('MEDIUM') || BUILTIN_TIER_MODEL_DEFAULTS.MEDIUM;
+  return (
+    resolveTierModelFromEnv("MEDIUM") || BUILTIN_TIER_MODEL_DEFAULTS.MEDIUM
+  );
 }
 
 export function getDefaultModelLow(): string {
-  return resolveTierModelFromEnv('LOW') || BUILTIN_TIER_MODEL_DEFAULTS.LOW;
+  return resolveTierModelFromEnv("LOW") || BUILTIN_TIER_MODEL_DEFAULTS.LOW;
 }
 
 /**
@@ -185,11 +187,11 @@ export function getDefaultTierModels(): Record<ModelTier, string> {
  */
 export function resolveClaudeFamily(modelId: string): ClaudeModelFamily | null {
   const lower = modelId.toLowerCase();
-  if (!lower.includes('claude')) return null;
+  if (!lower.includes("claude")) return null;
 
-  if (lower.includes('sonnet')) return 'SONNET';
-  if (lower.includes('opus')) return 'OPUS';
-  if (lower.includes('haiku')) return 'HAIKU';
+  if (lower.includes("sonnet")) return "SONNET";
+  if (lower.includes("opus")) return "OPUS";
+  if (lower.includes("haiku")) return "HAIKU";
 
   return null;
 }
@@ -204,12 +206,13 @@ export function getClaudeHighVariantFromModel(modelId: string): string | null {
 }
 
 /** Get built-in default model for an external provider */
-export function getBuiltinExternalDefaultModel(provider: 'codex' | 'gemini'): string {
-  return provider === 'codex'
+export function getBuiltinExternalDefaultModel(
+  provider: "codex" | "gemini",
+): string {
+  return provider === "codex"
     ? BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel
     : BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
 }
-
 
 function hasBedrockModelId(modelIds: readonly string[]): boolean {
   for (const modelId of modelIds) {
@@ -217,9 +220,9 @@ function hasBedrockModelId(modelIds: readonly string[]): boolean {
       return true;
     }
     if (
-      /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId)
-      && /:(inference-profile|application-inference-profile)\//i.test(modelId)
-      && modelId.toLowerCase().includes('claude')
+      /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) &&
+      /:(inference-profile|application-inference-profile)\//i.test(modelId) &&
+      modelId.toLowerCase().includes("claude")
     ) {
       return true;
     }
@@ -243,7 +246,7 @@ function hasBedrockModelId(modelIds: readonly string[]): boolean {
  */
 export function isBedrock(): boolean {
   // Primary signal: Claude Code's own env var
-  if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
 
@@ -277,7 +280,7 @@ export function isProviderSpecificModelId(modelId: string): boolean {
     return true;
   }
   // Vertex AI prefixed format
-  if (modelId.toLowerCase().startsWith('vertex_ai/')) {
+  if (modelId.toLowerCase().startsWith("vertex_ai/")) {
     return true;
   }
   return false;
@@ -305,7 +308,9 @@ export function hasExtendedContextSuffix(modelId: string): boolean {
  * like `[1m]` that the sub-agent runtime cannot handle.
  */
 export function isSubagentSafeModelId(modelId: string): boolean {
-  return isProviderSpecificModelId(modelId) && !hasExtendedContextSuffix(modelId);
+  return (
+    isProviderSpecificModelId(modelId) && !hasExtendedContextSuffix(modelId)
+  );
 }
 
 /**
@@ -318,7 +323,7 @@ export function isSubagentSafeModelId(modelId: string): boolean {
  * expects full Vertex model paths.
  */
 export function isVertexAI(): boolean {
-  if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
+  if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
 
@@ -327,13 +332,15 @@ export function isVertexAI(): boolean {
 }
 
 function hasVertexModelId(modelIds: readonly string[]): boolean {
-  return modelIds.some((modelId) => modelId.toLowerCase().startsWith('vertex_ai/'));
+  return modelIds.some((modelId) =>
+    modelId.toLowerCase().startsWith("vertex_ai/"),
+  );
 }
 
 function hasNonClaudeModelId(modelIds: readonly string[]): boolean {
   for (const modelId of modelIds) {
     const lower = modelId.toLowerCase();
-    if (!lower.includes('claude') && !CLAUDE_TIER_ALIASES.has(lower)) {
+    if (!lower.includes("claude") && !CLAUDE_TIER_ALIASES.has(lower)) {
       return true;
     }
   }
@@ -354,7 +361,7 @@ function hasNonClaudeModelId(modelIds: readonly string[]): boolean {
  */
 export function isNonClaudeProvider(): boolean {
   // Explicit opt-in: user has already set forceInherit via env var
-  if (process.env.OMC_ROUTING_FORCE_INHERIT === 'true') {
+  if (process.env.OMC_ROUTING_FORCE_INHERIT === "true") {
     return true;
   }
 
@@ -378,16 +385,18 @@ export function isNonClaudeProvider(): boolean {
   }
 
   // Custom base URL suggests a proxy/gateway (CC Switch, LiteLLM, OneAPI, etc.)
-  const baseUrl = process.env.ANTHROPIC_BASE_URL || '';
+  const baseUrl = process.env.ANTHROPIC_BASE_URL || "";
   if (baseUrl) {
     // Validate URL for SSRF protection
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`,
+      );
       // Treat invalid URLs as non-Claude to prevent potential SSRF
       return true;
     }
-    if (!baseUrl.includes('anthropic.com')) {
+    if (!baseUrl.includes("anthropic.com")) {
       return true;
     }
   }
@@ -402,35 +411,37 @@ export function isNonClaudeProvider(): boolean {
  * OMC routing, not proof that every delegated agent should drop its model.
  */
 export function shouldAutoForceInherit(): boolean {
-  if (process.env.OMC_ROUTING_FORCE_INHERIT === 'true') {
+  if (process.env.OMC_ROUTING_FORCE_INHERIT === "true") {
     return true;
   }
 
-  if (process.env.CLAUDE_CODE_USE_BEDROCK === '1') {
+  if (process.env.CLAUDE_CODE_USE_BEDROCK === "1") {
     return true;
   }
 
-  if (process.env.CLAUDE_CODE_USE_VERTEX === '1') {
+  if (process.env.CLAUDE_CODE_USE_VERTEX === "1") {
     return true;
   }
 
   const directModelValues = getDirectProviderDetectionModelEnvValues();
   if (
-    hasBedrockModelId(directModelValues)
-    || hasVertexModelId(directModelValues)
-    || hasNonClaudeModelId(directModelValues)
+    hasBedrockModelId(directModelValues) ||
+    hasVertexModelId(directModelValues) ||
+    hasNonClaudeModelId(directModelValues)
   ) {
     return true;
   }
 
-  const baseUrl = process.env.ANTHROPIC_BASE_URL || '';
+  const baseUrl = process.env.ANTHROPIC_BASE_URL || "";
   if (baseUrl) {
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`,
+      );
       return true;
     }
-    if (!baseUrl.includes('anthropic.com')) {
+    if (!baseUrl.includes("anthropic.com")) {
       return true;
     }
   }

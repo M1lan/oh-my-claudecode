@@ -3,21 +3,21 @@
  * Central module for all platform-specific code.
  */
 
-import * as path from 'path';
-import { readFileSync } from 'fs';
+import * as path from "path";
+import { readFileSync } from "fs";
 
 export const PLATFORM = process.platform;
 
 export function isWindows(): boolean {
-  return PLATFORM === 'win32';
+  return PLATFORM === "win32";
 }
 
 export function isMacOS(): boolean {
-  return PLATFORM === 'darwin';
+  return PLATFORM === "darwin";
 }
 
 export function isLinux(): boolean {
-  return PLATFORM === 'linux';
+  return PLATFORM === "linux";
 }
 
 export function isUnix(): boolean {
@@ -42,12 +42,12 @@ export function isWSL(): boolean {
     return true;
   }
   try {
-    const procVersion = readFileSync('/proc/version', 'utf8');
-    return procVersion.toLowerCase().includes('microsoft');
+    const procVersion = readFileSync("/proc/version", "utf8");
+    return procVersion.toLowerCase().includes("microsoft");
   } catch {
     return false;
   }
 }
 
 // Re-exports
-export * from './process-utils.js';
+export * from "./process-utils.js";
