@@ -15,7 +15,6 @@ import {
   mkdtempSync,
   writeFileSync,
   readFileSync,
-  readdirSync,
   rmSync,
   symlinkSync,
 } from "fs";

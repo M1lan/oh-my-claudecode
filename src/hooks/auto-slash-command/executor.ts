@@ -22,10 +22,7 @@ import {
   parseFrontmatterAliases,
   stripOptionalQuotes,
 } from "../../utils/frontmatter.js";
-import {
-  formatOmcCliInvocation,
-  rewriteOmcCliInvocations,
-} from "../../utils/omc-cli-rendering.js";
+import { rewriteOmcCliInvocations } from "../../utils/omc-cli-rendering.js";
 import {
   parseSkillPipelineMetadata,
   renderSkillPipelineGuidance,
