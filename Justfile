@@ -42,6 +42,7 @@ alias tc  := test-changed
 alias tf  := test-file
 alias l   := lint
 alias lf  := lint-fix
+alias ff  := fmt-fix
 alias f   := fmt
 alias fc  := fmt-check
 alias c   := check
@@ -105,7 +106,7 @@ _info-project:
 [group('meta')]
 doctor:
     #!/usr/bin/env bash
-    set -uo pipefail
+    set -euo pipefail
     miss=0
     require() {
         if command -v "$1" >/dev/null 2>&1; then
@@ -154,12 +155,13 @@ doctor:
 # Count recipes by group (useful for Justfile gardening)
 [group('meta')]
 recipes:
-    @printf 'recipes: %s\n' "$(just --summary 2>/dev/null | tr ' ' '\n' | grep -c .)"
-    @printf 'groups:  %s\n' "$(just --groups 2>/dev/null | tail -n +2 | grep -c .)"
+    @printf 'recipes: %s\n' "$(just --summary 2>/dev/null | tr ' ' '\n' | rg -c '.')"
+    @printf 'groups:  %s\n' "$(just --groups 2>/dev/null | tail -n +2 | rg -c '.')"
     @printf 'aliases: %s\n' "$(rg -c '^alias\s' Justfile 2>/dev/null || echo 0)"
     @echo
-    @just --groups | tail -n +2 | sed 's/^[[:space:]]*//' | while read -r g; do \
-        count=$(just --list 2>/dev/null | sed -n "/\[$g\]/,/^$/p" | tail -n +2 | grep -c '^[[:space:]]*[a-z]'); \
+    @just --groups | tail -n +2 | rg -o '\S+' | while read -r g; do \
+        count=$(just --list 2>/dev/null | awk -v g="$g" \
+            'BEGIN{pat="\\[" g "\\]"} $0 ~ pat && NF==1 {f=1;next} /^$/{f=0} f && /^[[:space:]]+[a-z]/{c++} END{print c+0}'); \
         printf '  %-12s %s\n' "$g" "$count recipes"; \
     done
 
@@ -386,6 +388,10 @@ lint-fix:
 fmt:
     {{PM}} run format
 
+# Apply all auto-fixes (prettier + eslint --fix)
+[group('lint')]
+fmt-fix: fmt lint-fix
+
 # Check prettier formatting (CI gate; does not modify files)
 [group('lint')]
 fmt-check:
@@ -424,10 +430,10 @@ typoscheck:
 # Find unused exports / dead code (knip if installed; else hint)
 [group('lint')]
 deadcode:
-    @if command -v knip >/dev/null 2>&1; then \
-        knip; \
-    elif pnpm exec knip --version >/dev/null 2>&1; then \
+    @if pnpm exec knip --version >/dev/null 2>&1; then \
         pnpm exec knip; \
+    elif command -v knip >/dev/null 2>&1; then \
+        knip; \
     else \
         echo "knip not installed -- {{PM}} add -D knip"; \
     fi
@@ -451,7 +457,7 @@ verify-fast: fmt-check typecheck lint test-run
 
 # Full pre-push gate -- run before opening a PR
 [group('verify')]
-verify: fmt-check lint typecheck test-run mdlint shellcheck typoscheck
+verify: fmt-check typecheck lint test-run mdlint shellcheck typoscheck
     @echo
     @echo "═══════════════════════════════════════"
     @echo "  verify: ALL GREEN  ✓"
@@ -794,6 +800,7 @@ menu:
         '── LINT & FORMAT ──' \
         '* lint                    -- eslint src' \
         '* fmt                     -- prettier write' \
+        '* fmt-fix                 -- prettier + eslint --fix' \
         '  lint-fix                -- eslint --fix' \
         '  fmt-check               -- prettier check' \
         '  typecheck               -- tsc --noEmit' \
@@ -846,9 +853,10 @@ menu:
         '  info                    -- versions' \
         '  doctor                  -- diagnose toolchain' \
         '  recipes                 -- recipe count' \
-        | fzf --preview='just --show {2} 2>/dev/null || echo "(section header)"' \
+        | fzf --preview='just --show "$(echo {} | tr -d "*" | awk "{print \$1}")" 2>/dev/null || echo "(section header)"' \
               --header='oh-my-claudecode -- pick a recipe' || true)
     [[ -z "${choice:-}" ]] && exit 0
-    recipe=$(echo "$choice" | awk '{print $2}')
+    recipe=$(echo "$choice" | tr -d '*' | awk '{print $1}')
     [[ -z "${recipe:-}" || "${recipe:-}" == "──" ]] && exit 0
     just "$recipe"
+
