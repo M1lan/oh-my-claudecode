@@ -98,17 +98,17 @@ Use the `claude mcp add` command to configure each MCP server. The CLI automatic
 
 ### Context7 Configuration:
 ```bash
-claude mcp add context7 -- npx -y @upstash/context7-mcp
+claude mcp add context7 -- pnpm dlx @upstash/context7-mcp
 ```
 
 ### Exa Web Search Configuration:
 ```bash
-claude mcp add -e EXA_API_KEY=<user-provided-key> exa -- npx -y exa-mcp-server
+claude mcp add -e EXA_API_KEY=<user-provided-key> exa -- pnpm dlx exa-mcp-server
 ```
 
 ### Filesystem Configuration:
 ```bash
-claude mcp add filesystem -- npx -y @modelcontextprotocol/server-filesystem <allowed-directories>
+claude mcp add filesystem -- pnpm dlx @modelcontextprotocol/server-filesystem <allowed-directories>
 ```
 
 ### GitHub Configuration:
@@ -157,7 +157,7 @@ USAGE TIPS:
 
 TROUBLESHOOTING:
 - If MCP servers don't appear, run `claude mcp list` to check status
-- Ensure you have Node.js 18+ installed for npx-based servers
+- Ensure you have Node.js 18+ installed for pnpm-based servers
 - For GitHub Docker option, ensure Docker is installed and running
 - Run /oh-my-claudecode:omc-doctor to diagnose issues
 
@@ -174,7 +174,7 @@ If user selects "Custom":
 Ask for:
 1. Server name (identifier)
 2. Transport type: `stdio` (default) or `http`
-3. For stdio: Command and arguments (e.g., `npx my-mcp-server`)
+3. For stdio: Command and arguments (e.g., `pnpm dlx my-mcp-server`)
 4. For http: URL (e.g., `https://example.com/mcp`)
 5. Environment variables (optional, key=value pairs)
 6. HTTP headers (optional, for http transport only)
@@ -226,7 +226,7 @@ This remains advisory prompt context, not runtime enforcement.
 
 ### MCP Server Not Loading
 - Ensure Node.js 18+ is installed
-- Check that npx is available in PATH
+- Check that pnpm is available in PATH
 - Run `claude mcp list` to verify server status
 - Check server logs for errors
 

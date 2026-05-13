@@ -4,7 +4,7 @@
  * Runs each agent benchmark sequentially and optionally saves/compares baselines.
  *
  * Usage:
- *   npx tsx benchmarks/run-all.ts [options]
+ *   pnpm exec tsx benchmarks/run-all.ts [options]
  *
  * Options:
  *   --save-baseline      Save results as a new baseline
@@ -255,7 +255,7 @@ async function main(): Promise<void> {
 
     try {
       execSync(
-        `npx tsx ${benchmark.script} ${passArgs}`,
+        `pnpm exec tsx ${benchmark.script} ${passArgs}`,
         {
           stdio: 'inherit',
           cwd: resolve(BENCHMARKS_DIR, '..'),

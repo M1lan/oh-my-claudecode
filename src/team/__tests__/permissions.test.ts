@@ -108,7 +108,7 @@ describe("permissions", () => {
         workerName: "worker1",
         allowedPaths: [],
         deniedPaths: [],
-        allowedCommands: ["pnpm test", "tsc", "npx vitest"],
+        allowedCommands: ["pnpm test", "tsc", "pnpm exec vitest"],
         maxFileSize: Infinity,
       };
       expect(isCommandAllowed(perms, "pnpm test")).toBe(true);

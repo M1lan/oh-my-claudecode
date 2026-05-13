@@ -409,7 +409,7 @@ ${clr('After running:', c.cyan)}
   console.log(clr('\n🔄 Sync Metadata', c.cyan));
   if (!dryRun) {
     try {
-      execSync('npx tsx scripts/sync-metadata.ts', { cwd: ROOT, stdio: 'inherit' });
+      execSync('pnpm exec tsx scripts/sync-metadata.ts', { cwd: ROOT, stdio: 'inherit' });
     } catch {
       console.log(`  ${clr('⚠', c.yellow)} sync-metadata had warnings (non-fatal)`);
     }

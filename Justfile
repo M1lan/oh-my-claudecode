@@ -79,8 +79,8 @@ _info-runtime:
     @printf '%-10s %s\n' \
         "node"      "$(node -v 2>/dev/null               || echo '(missing)')" \
         "{{PM}}"    "$({{PM}} -v 2>/dev/null             || echo '(missing)')" \
-        "tsc"       "$(npx -y -p typescript tsc --version 2>/dev/null || echo '(via npx)')" \
-        "vitest"    "$(npx -y vitest --version 2>/dev/null            || echo '(missing)')" \
+        "tsc"       "$(pnpm exec tsc --version 2>/dev/null || echo '(not installed)')" \
+        "vitest"    "$(pnpm exec vitest --version 2>/dev/null            || echo '(missing)')" \
         "just"      "$(just --version 2>/dev/null        || echo '?')"
 
 [private]
@@ -200,12 +200,12 @@ build-fast: build-ts
 # Compile TypeScript only (no bundling, no doc compose)
 [group('build')]
 build-ts:
-    npx tsc
+    pnpm exec tsc
 
 # Type-check without emitting
 [group('build')]
 typecheck:
-    npx tsc --noEmit
+    pnpm exec tsc --noEmit
 
 # Build the unified CLI bundle
 [group('build')]
@@ -321,17 +321,17 @@ test-run *args:
 # Only run tests for files changed since last commit (vitest --changed)
 [group('test')]
 test-changed:
-    npx vitest run --changed
+    pnpm exec vitest run --changed
 
 # Run tests in files matching a glob pattern (use 'tf <glob>')
 [group('test')]
 test-file pattern:
-    npx vitest run "{{pattern}}"
+    pnpm exec vitest run "{{pattern}}"
 
 # Run tests whose test name matches a substring (vitest -t)
 [group('test')]
 test-filter pattern:
-    npx vitest run -t "{{pattern}}"
+    pnpm exec vitest run -t "{{pattern}}"
 
 # Run vitest with the interactive UI
 [group('test')]
@@ -379,7 +379,7 @@ lint:
 # Run eslint with auto-fix
 [group('lint')]
 lint-fix:
-    npx eslint src --fix
+    pnpm exec eslint src --fix
 
 # Apply prettier formatting
 [group('lint')]
@@ -389,7 +389,7 @@ fmt:
 # Check prettier formatting (CI gate; does not modify files)
 [group('lint')]
 fmt-check:
-    npx prettier --check "src/**/*.ts"
+    pnpm exec prettier --check "src/**/*.ts"
 
 # Lint markdown via rumdl (no-op when rumdl is missing)
 [group('lint')]
@@ -426,8 +426,8 @@ typoscheck:
 deadcode:
     @if command -v knip >/dev/null 2>&1; then \
         knip; \
-    elif npx --no-install knip --version >/dev/null 2>&1; then \
-        npx knip; \
+    elif pnpm exec knip --version >/dev/null 2>&1; then \
+        pnpm exec knip; \
     else \
         echo "knip not installed -- {{PM}} add -D knip"; \
     fi

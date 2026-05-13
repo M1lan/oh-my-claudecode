@@ -252,7 +252,7 @@ pnpm test -- delegation-enforcer
 Run demo:
 
 ```bash
-npx tsx examples/delegation-enforcer-demo.ts
+pnpm exec tsx examples/delegation-enforcer-demo.ts
 ```
 
 ## Benefits

@@ -144,8 +144,8 @@ describe("unified MCP registry sync", () => {
     const settings = {
       mcpServers: {
         filesystem: {
-          command: "npx",
-          args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+          command: "pnpm",
+          args: ["dlx", "@modelcontextprotocol/server-filesystem", "/tmp"],
         },
       },
     };
@@ -159,8 +159,8 @@ describe("unified MCP registry sync", () => {
       JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), "utf-8")),
     ).toEqual({
       filesystem: {
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+        command: "pnpm",
+        args: ["dlx", "@modelcontextprotocol/server-filesystem", "/tmp"],
         timeout: 15,
       },
     });
@@ -362,8 +362,8 @@ describe("unified MCP registry sync", () => {
         args: ["mcp-atlassian"],
       },
       storybook_local: {
-        command: "npx",
-        args: ["-y", "@storybook/mcp"],
+        command: "pnpm",
+        args: ["dlx", "@storybook/mcp"],
         timeout: 15,
       },
     };
@@ -388,8 +388,8 @@ describe("unified MCP registry sync", () => {
         {
           atlassian: { command: "uvx", args: ["mcp-atlassian"] },
           storybook_local: {
-            command: "npx",
-            args: ["-y", "@storybook/mcp"],
+            command: "pnpm",
+            args: ["dlx", "@storybook/mcp"],
             timeout: 15,
           },
         },

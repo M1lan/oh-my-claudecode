@@ -1,7 +1,7 @@
 /**
  * Manual tests for delegation categories
  *
- * Run with: npx tsx src/features/delegation-categories/test-categories.ts
+ * Run with: pnpm exec tsx src/features/delegation-categories/test-categories.ts
  */
 
 import {

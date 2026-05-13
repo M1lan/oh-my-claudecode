@@ -122,7 +122,7 @@ function isLauncherBackedMcpCommand(
   args: readonly string[],
 ): boolean {
   const base = launcherCommandBasename(command);
-  if (base === "npx" || base === "uvx") {
+  if (base === "pnpm" || base === "uvx") {
     return true;
   }
 

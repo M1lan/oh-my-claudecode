@@ -232,7 +232,7 @@ Categories are a **semantic layer** that maps to the underlying tier system. The
 Run the test suite:
 
 ```bash
-npx tsx src/features/delegation-categories/test-categories.ts
+pnpm exec tsx src/features/delegation-categories/test-categories.ts
 ```
 
 Tests cover:

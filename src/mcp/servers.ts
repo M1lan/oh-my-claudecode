@@ -21,8 +21,8 @@ export interface McpServerConfig {
  */
 export function createExaServer(apiKey?: string): McpServerConfig {
   return {
-    command: "npx",
-    args: ["-y", "exa-mcp-server"],
+    command: "pnpm",
+    args: ["dlx", "exa-mcp-server"],
     env: apiKey ? { EXA_API_KEY: apiKey } : undefined,
   };
 }
@@ -33,8 +33,8 @@ export function createExaServer(apiKey?: string): McpServerConfig {
  */
 export function createContext7Server(): McpServerConfig {
   return {
-    command: "npx",
-    args: ["-y", "@upstash/context7-mcp"],
+    command: "pnpm",
+    args: ["dlx", "@upstash/context7-mcp"],
   };
 }
 
@@ -44,8 +44,8 @@ export function createContext7Server(): McpServerConfig {
  */
 export function createPlaywrightServer(): McpServerConfig {
   return {
-    command: "npx",
-    args: ["-y", "@playwright/mcp@latest"],
+    command: "pnpm",
+    args: ["dlx", "@playwright/mcp@latest"],
   };
 }
 
@@ -57,8 +57,8 @@ export function createFilesystemServer(
   allowedPaths: string[],
 ): McpServerConfig {
   return {
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-filesystem", ...allowedPaths],
+    command: "pnpm",
+    args: ["dlx", "@modelcontextprotocol/server-filesystem", ...allowedPaths],
   };
 }
 
@@ -68,8 +68,8 @@ export function createFilesystemServer(
  */
 export function createMemoryServer(): McpServerConfig {
   return {
-    command: "npx",
-    args: ["-y", "@modelcontextprotocol/server-memory"],
+    command: "pnpm",
+    args: ["dlx", "@modelcontextprotocol/server-memory"],
   };
 }
 

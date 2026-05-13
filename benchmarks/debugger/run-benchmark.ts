@@ -5,7 +5,7 @@
  * against the old build-fixer prompt to measure diagnostic quality.
  *
  * Usage:
- *   npx tsx benchmarks/debugger/run-benchmark.ts [options]
+ *   pnpm exec tsx benchmarks/debugger/run-benchmark.ts [options]
  *
  * Options:
  *   --agent <name>       Run a single agent variant only

@@ -306,8 +306,8 @@ export function runTypeCheck(directory: string): {
     return { success: true, message: "TypeScript not installed" };
   }
 
-  // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npx.cmd (CVE-2024-27980). #2721
-  const tscResult = spawnSync("npx", ["tsc", "--noEmit"], {
+  // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
+  const tscResult = spawnSync("pnpm", ["exec", "tsc", "--noEmit"], {
     cwd: directory,
     stdio: "pipe",
     shell: process.platform === "win32",

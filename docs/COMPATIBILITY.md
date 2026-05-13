@@ -192,13 +192,13 @@ Located at `~/.claude/claude_desktop_config.json`:
 {
   "mcpServers": {
     "filesystem": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/"],
+      "command": "pnpm",
+      "args": ["dlx", "@modelcontextprotocol/server-filesystem", "/"],
       "enabled": true
     },
     "web": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-web"],
+      "command": "pnpm",
+      "args": ["dlx", "@modelcontextprotocol/server-web"],
       "enabled": true
     }
   }
@@ -277,7 +277,7 @@ Plugins can define MCP servers in their manifest:
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `command` | string | Yes | Command to run server (e.g., "node", "npx") |
+| `command` | string | Yes | Command to run server (e.g., "node", "pnpm") |
 | `args` | string[] | No | Command arguments |
 | `env` | object | No | Environment variables to pass to server |
 | `enabled` | boolean | No | Whether server connects on init (default: true) |
@@ -920,7 +920,7 @@ for (const path of paths) {
 **Problem:** `bridge.connect()` times out.
 
 **Checklist:**
-- Server command is correct (e.g., `npx`, `node`)
+- Server command is correct (e.g., `pnpm`, `node`)
 - Command is executable and in PATH
 - Arguments are valid
 - Server implements MCP protocol (JSON-RPC 2.0)

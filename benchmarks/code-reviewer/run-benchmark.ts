@@ -5,7 +5,7 @@
  * against the old quality-reviewer prompt to measure review quality.
  *
  * Usage:
- *   npx tsx benchmarks/code-reviewer/run-benchmark.ts [options]
+ *   pnpm exec tsx benchmarks/code-reviewer/run-benchmark.ts [options]
  *
  * Options:
  *   --agent <name>       Run a single agent variant only

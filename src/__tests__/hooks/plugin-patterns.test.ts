@@ -308,7 +308,7 @@ describe("runLint", () => {
 describe("win32 spawn hardening (#2721)", () => {
   // Node 20.12+ / 18.20+ / 21.7+ rejects direct .cmd/.bat spawns via
   // spawnSync/execFileSync on Windows (CVE-2024-27980). The three callers
-  // below spawn pnpm / npx, which resolve to pnpm.cmd / npx.cmd on Windows, so
+  // below spawn pnpm, which resolves to pnpm.cmd on Windows, so
   // each one needs shell:true gated on win32. CI is Ubuntu-only, so static
   // source assertions are the only regression guard.
   //
@@ -326,24 +326,24 @@ describe("win32 spawn hardening (#2721)", () => {
     "index.ts",
   );
 
-  it('runTypeCheck spawnSync("npx", …) must pass shell:true on win32', () => {
+  it('runTypeCheck spawnSync("pnpm", …) must pass shell:true on win32', () => {
     const src = readFileSync(sourcePath, "utf-8");
     expect(src).toMatch(
-      /spawnSync\('npx', \['tsc', '--noEmit'\], \{[^}]*?shell:\s*process\.platform === 'win32'[^}]*?\}\s*\);/,
+      /spawnSync\(['"]pnpm['"], \[['"]exec['"], ['"]tsc['"], ['"]--noEmit['"]\], \{[^}]*?shell:\s*process\.platform === ['"]win32['"][^}]*?\}\s*\);/,
     );
   });
 
   it('runTests execFileSync("pnpm test", …) must pass shell:true on win32', () => {
     const src = readFileSync(sourcePath, "utf-8");
     expect(src).toMatch(
-      /execFileSync\('pnpm', \['test'\], \{[^}]*?shell:\s*process\.platform === 'win32'[^}]*?\}\s*\);/,
+      /execFileSync\(['"]pnpm['"], \[['"]test['"]\], \{[^}]*?shell:\s*process\.platform === ['"]win32['"][^}]*?\}\s*\);/,
     );
   });
 
   it('runLint execFileSync("pnpm run lint", …) must pass shell:true on win32', () => {
     const src = readFileSync(sourcePath, "utf-8");
     expect(src).toMatch(
-      /execFileSync\('pnpm', \['run', 'lint'\], \{[^}]*?shell:\s*process\.platform === 'win32'[^}]*?\}\s*\);/,
+      /execFileSync\(['"]pnpm['"], \[['"]run['"], ['"]lint['"]\], \{[^}]*?shell:\s*process\.platform === ['"]win32['"][^}]*?\}\s*\);/,
     );
   });
 });

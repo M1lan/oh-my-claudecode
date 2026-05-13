@@ -955,7 +955,7 @@ const WELL_SPECIFIED_SIGNALS: RegExp[] = [
   // "in <specific-path>" pattern
   /\bin\s+[\w/.-]+\.(?:ts|js|py|go|rs|java|tsx|jsx)\b/,
   // Test runner commands (explicit test target)
-  /\b(?:npm\s+test|npx\s+(?:vitest|jest)|pytest|cargo\s+test|go\s+test|make\s+test)\b/i,
+  /\b(?:npm\s+test|pnpm\s+(?:test|exec\s+(?:vitest|jest))|pytest|cargo\s+test|go\s+test|make\s+test)\b/i,
 ];
 
 /**
