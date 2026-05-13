@@ -17,21 +17,21 @@
  * each call picks up the isolated config dir.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdtempSync, rmSync, readdirSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { existsSync, mkdtempSync, rmSync, readdirSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 const ORIG_ENV = { ...process.env };
 let testDir: string;
 
 async function freshInstaller() {
   vi.resetModules();
-  return await import('../index.js');
+  return await import("../index.js");
 }
 
 beforeEach(() => {
-  testDir = mkdtempSync(join(tmpdir(), 'omc-pdm-'));
+  testDir = mkdtempSync(join(tmpdir(), "omc-pdm-"));
   // Force a clean, isolated config dir for every test
   process.env.CLAUDE_CONFIG_DIR = testDir;
   // Avoid plugin auto-detection from the developer's real ~/.claude
@@ -47,11 +47,13 @@ afterEach(() => {
   Object.assign(process.env, ORIG_ENV);
   try {
     rmSync(testDir, { recursive: true, force: true });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 });
 
-describe('install() with pluginDirMode option', () => {
-  it('1. pluginDirMode=true → does NOT create agents/ or skills/ in configDir', async () => {
+describe("install() with pluginDirMode option", () => {
+  it("1. pluginDirMode=true → does NOT create agents/ or skills/ in configDir", async () => {
     const { install } = await freshInstaller();
     const result = install({
       verbose: false,
@@ -61,14 +63,14 @@ describe('install() with pluginDirMode option', () => {
 
     expect(result.installedAgents).toEqual([]);
     expect(result.installedSkills).toEqual([]);
-    expect(existsSync(join(testDir, 'agents'))).toBe(false);
+    expect(existsSync(join(testDir, "agents"))).toBe(false);
     // Either skills/ does not exist OR it's empty (depending on plugin-detection state)
-    if (existsSync(join(testDir, 'skills'))) {
-      expect(readdirSync(join(testDir, 'skills'))).toEqual([]);
+    if (existsSync(join(testDir, "skills"))) {
+      expect(readdirSync(join(testDir, "skills"))).toEqual([]);
     }
   });
 
-  it('3. neither flag nor env var → existing behavior copies legacy agents/skills', async () => {
+  it("3. neither flag nor env var → existing behavior copies legacy agents/skills", async () => {
     const { install, hasEnabledOmcPlugin } = await freshInstaller();
     const result = install({
       verbose: false,
@@ -80,11 +82,11 @@ describe('install() with pluginDirMode option', () => {
     // legacy agents to have been written.
     if (!hasEnabledOmcPlugin()) {
       expect(result.installedAgents.length).toBeGreaterThan(0);
-      expect(existsSync(join(testDir, 'agents'))).toBe(true);
+      expect(existsSync(join(testDir, "agents"))).toBe(true);
     }
   });
 
-  it('4. noPlugin + pluginDirMode → noPlugin wins, skills are copied', async () => {
+  it("4. noPlugin + pluginDirMode → noPlugin wins, skills are copied", async () => {
     const { install } = await freshInstaller();
     const result = install({
       verbose: false,
@@ -95,7 +97,7 @@ describe('install() with pluginDirMode option', () => {
 
     // noPlugin forces bundled skill install regardless of pluginDirMode
     expect(result.installedSkills.length).toBeGreaterThan(0);
-    expect(existsSync(join(testDir, 'skills'))).toBe(true);
+    expect(existsSync(join(testDir, "skills"))).toBe(true);
   });
 });
 
@@ -105,8 +107,8 @@ describe('install() with pluginDirMode option', () => {
 // They used to be re-implemented inline here as a `resolvePluginDirMode`
 // helper, which drifted from the production logic in src/cli/index.ts.
 
-describe('5. real OMC plugin enabled → existing skip behavior unchanged', () => {
-  it('hasEnabledOmcPlugin() result drives skip independently of pluginDirMode', async () => {
+describe("5. real OMC plugin enabled → existing skip behavior unchanged", () => {
+  it("hasEnabledOmcPlugin() result drives skip independently of pluginDirMode", async () => {
     // We can't reliably toggle the host's settings.json from inside a unit test,
     // so we just assert the install() call short-circuits identically when both
     // (a) pluginDirMode=true and (b) host plugin detection says skip — i.e. no
@@ -118,8 +120,8 @@ describe('5. real OMC plugin enabled → existing skip behavior unchanged', () =
       pluginDirMode: true,
     });
     expect(result.installedAgents).toEqual([]);
-    if (existsSync(join(testDir, 'skills'))) {
-      expect(readdirSync(join(testDir, 'skills'))).toEqual([]);
+    if (existsSync(join(testDir, "skills"))) {
+      expect(readdirSync(join(testDir, "skills"))).toEqual([]);
     }
   });
 });

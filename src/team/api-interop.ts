@@ -341,9 +341,7 @@ function isRuntimeV2Config(config: unknown): config is { workers: unknown[] } {
   );
 }
 
-function isLegacyRuntimeConfig(
-  config: unknown,
-): config is {
+function isLegacyRuntimeConfig(config: unknown): config is {
   tmuxSession?: string;
   leaderPaneId?: string | null;
   tmuxOwnsWindow?: boolean;

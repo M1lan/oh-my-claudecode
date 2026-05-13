@@ -5,7 +5,7 @@ export interface MatchResult {
   skillId: string;
   confidence: number; // 0-100
   matchedTriggers: string[];
-  matchType: 'exact' | 'fuzzy' | 'pattern' | 'semantic';
+  matchType: "exact" | "fuzzy" | "pattern" | "semantic";
   context: MatchContext;
 }
 
@@ -32,7 +32,7 @@ interface MatchOptions {
 export function matchSkills(
   prompt: string,
   skills: SkillInput[],
-  options: MatchOptions = {}
+  options: MatchOptions = {},
 ): MatchResult[] {
   const { threshold = 30, maxResults = 10 } = options;
   const trimmedPrompt = prompt.trim();
@@ -51,7 +51,7 @@ export function matchSkills(
     const matches: Array<{
       trigger: string;
       score: number;
-      type: MatchResult['matchType'];
+      type: MatchResult["matchType"];
     }> = [];
 
     for (const trigger of allTriggers) {
@@ -59,21 +59,21 @@ export function matchSkills(
 
       // 1. Exact match (highest confidence)
       if (normalizedPrompt.includes(normalizedTrigger)) {
-        matches.push({ trigger, score: 100, type: 'exact' });
+        matches.push({ trigger, score: 100, type: "exact" });
         continue;
       }
 
       // 2. Pattern match (regex/glob-like patterns)
       const patternScore = patternMatch(normalizedPrompt, normalizedTrigger);
       if (patternScore > 0) {
-        matches.push({ trigger, score: patternScore, type: 'pattern' });
+        matches.push({ trigger, score: patternScore, type: "pattern" });
         continue;
       }
 
       // 3. Fuzzy match (Levenshtein distance)
       const fuzzyScore = fuzzyMatch(normalizedPrompt, normalizedTrigger);
       if (fuzzyScore >= 60) {
-        matches.push({ trigger, score: fuzzyScore, type: 'fuzzy' });
+        matches.push({ trigger, score: fuzzyScore, type: "fuzzy" });
       }
     }
 
@@ -110,11 +110,14 @@ export function fuzzyMatch(text: string, pattern: string): number {
   if (!text.trim() || !pattern.trim()) return 0;
 
   // Check if pattern is a substring first (partial match bonus)
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
   for (const word of words) {
     if (word === pattern) return 100;
-    if (word.length > 0 && pattern.length > 0 &&
-        (word.includes(pattern) || pattern.includes(word))) {
+    if (
+      word.length > 0 &&
+      pattern.length > 0 &&
+      (word.includes(pattern) || pattern.includes(word))
+    ) {
       return 80;
     }
   }
@@ -158,7 +161,7 @@ function levenshteinDistance(str1: string, str2: string): number {
           Math.min(
             dp[i - 1][j], // deletion
             dp[i][j - 1], // insertion
-            dp[i - 1][j - 1] // substitution
+            dp[i - 1][j - 1], // substitution
           );
       }
     }
@@ -173,10 +176,10 @@ function levenshteinDistance(str1: string, str2: string): number {
  */
 function patternMatch(text: string, pattern: string): number {
   // Check for glob-like patterns
-  if (pattern.includes('*')) {
-    const regexPattern = pattern.replace(/\*/g, '.*');
+  if (pattern.includes("*")) {
+    const regexPattern = pattern.replace(/\*/g, ".*");
     try {
-      const regex = new RegExp(regexPattern, 'i');
+      const regex = new RegExp(regexPattern, "i");
       if (regex.test(text)) {
         return 85; // High confidence for pattern match
       }
@@ -191,7 +194,7 @@ function patternMatch(text: string, pattern: string): number {
   if (regexMatch) {
     try {
       const [, regexPattern, flags] = regexMatch;
-      const regex = new RegExp(regexPattern, flags || 'i');
+      const regex = new RegExp(regexPattern, flags || "i");
       if (regex.test(text)) {
         return 90; // Very high confidence for explicit regex match
       }
@@ -223,7 +226,7 @@ export function extractContext(prompt: string): MatchContext {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedErrors.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
@@ -239,23 +242,23 @@ export function extractContext(prompt: string): MatchContext {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedFiles.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
 
   // Pattern detection
   const codePatterns = [
-    { pattern: /\basync\b.*\bawait\b/gi, name: 'async/await' },
-    { pattern: /\bpromise\b/gi, name: 'promise' },
-    { pattern: /\bcallback\b/gi, name: 'callback' },
-    { pattern: /\bregex\b|\bregular expression\b/gi, name: 'regex' },
-    { pattern: /\bapi\b/gi, name: 'api' },
-    { pattern: /\btest\b.*\b(unit|integration|e2e)\b/gi, name: 'testing' },
-    { pattern: /\b(typescript|ts)\b/gi, name: 'typescript' },
-    { pattern: /\b(javascript|js)\b/gi, name: 'javascript' },
-    { pattern: /\breact\b/gi, name: 'react' },
-    { pattern: /\bgit\b/gi, name: 'git' },
+    { pattern: /\basync\b.*\bawait\b/gi, name: "async/await" },
+    { pattern: /\bpromise\b/gi, name: "promise" },
+    { pattern: /\bcallback\b/gi, name: "callback" },
+    { pattern: /\bregex\b|\bregular expression\b/gi, name: "regex" },
+    { pattern: /\bapi\b/gi, name: "api" },
+    { pattern: /\btest\b.*\b(unit|integration|e2e)\b/gi, name: "testing" },
+    { pattern: /\b(typescript|ts)\b/gi, name: "typescript" },
+    { pattern: /\b(javascript|js)\b/gi, name: "javascript" },
+    { pattern: /\breact\b/gi, name: "react" },
+    { pattern: /\bgit\b/gi, name: "git" },
   ];
 
   for (const { pattern, name } of codePatterns) {
@@ -278,7 +281,7 @@ export function extractContext(prompt: string): MatchContext {
 export function calculateConfidence(
   matches: number,
   total: number,
-  matchType: string
+  matchType: string,
 ): number {
   if (total === 0) return 0;
 

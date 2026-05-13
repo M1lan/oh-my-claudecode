@@ -35,16 +35,16 @@ export function adaptPromptForHaiku(basePrompt: string): string {
 function condensePrompt(prompt: string): string {
   // Remove common filler phrases
   const condensed = prompt
-    .replace(/please\s+/gi, '')
-    .replace(/could you\s+/gi, '')
-    .replace(/i would like you to\s+/gi, '')
-    .replace(/i need you to\s+/gi, '')
-    .replace(/can you\s+/gi, '')
-    .replace(/would you\s+/gi, '')
-    .replace(/i want you to\s+/gi, '')
-    .replace(/make sure to\s+/gi, '')
-    .replace(/be sure to\s+/gi, '')
-    .replace(/don't forget to\s+/gi, '')
+    .replace(/please\s+/gi, "")
+    .replace(/could you\s+/gi, "")
+    .replace(/i would like you to\s+/gi, "")
+    .replace(/i need you to\s+/gi, "")
+    .replace(/can you\s+/gi, "")
+    .replace(/would you\s+/gi, "")
+    .replace(/i want you to\s+/gi, "")
+    .replace(/make sure to\s+/gi, "")
+    .replace(/be sure to\s+/gi, "")
+    .replace(/don't forget to\s+/gi, "")
     .trim();
 
   return condensed;
@@ -144,11 +144,14 @@ OUTPUT:
 /**
  * Create minimal documentation prompt
  */
-export function createDocPrompt(target: string, requirements: string[]): string {
+export function createDocPrompt(
+  target: string,
+  requirements: string[],
+): string {
   return `DOCUMENT: ${target}
 
 INCLUDE:
-${requirements.map(r => `- ${r}`).join('\n')}
+${requirements.map((r) => `- ${r}`).join("\n")}
 
 FORMAT: Markdown
 VERIFY: Code examples work`;

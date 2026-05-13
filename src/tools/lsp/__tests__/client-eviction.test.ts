@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
 // Mock the servers module before importing client
-vi.mock('../servers.js', () => ({
+vi.mock("../servers.js", () => ({
   getServerForFile: vi.fn(),
   commandExists: vi.fn(() => true),
 }));
 
 // We need to mock LspClient.connect and LspClient.disconnect
 // by intercepting the spawn call and the class itself
-vi.mock('child_process', () => ({
+vi.mock("child_process", () => ({
   spawn: vi.fn(() => {
     const proc = {
       stdin: { write: vi.fn() },
@@ -22,8 +22,8 @@ vi.mock('child_process', () => ({
   }),
 }));
 
-import { IDLE_TIMEOUT_MS } from '../client.js';
-import { getServerForFile } from '../servers.js';
+import { IDLE_TIMEOUT_MS } from "../client.js";
+import { getServerForFile } from "../servers.js";
 
 const mockGetServerForFile = vi.mocked(getServerForFile);
 
@@ -42,8 +42,8 @@ const mockDisconnect = vi.fn<() => Promise<void>>();
 const mockConnect = vi.fn<() => Promise<void>>();
 
 // Mock the LspClient class constructor
-vi.mock('../client.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('../client.js')>();
+vi.mock("../client.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../client.js")>();
 
   // Create a mock LspClient class
   class MockLspClient {
@@ -52,7 +52,10 @@ vi.mock('../client.js', async (importOriginal) => {
     hover = vi.fn();
     definition = vi.fn();
     references = vi.fn();
-    constructor(public workspaceRoot: string, public serverConfig: unknown) {}
+    constructor(
+      public workspaceRoot: string,
+      public serverConfig: unknown,
+    ) {}
   }
 
   // Re-create the LspClientManager with the mock LspClient
@@ -81,7 +84,7 @@ vi.resetModules();
 // We test the exported lspClientManager + disconnectAll through the public API,
 // mocking getServerForFile and the LspClient prototype methods.
 
-describe('LspClientManager eviction and disconnectAll', () => {
+describe("LspClientManager eviction and disconnectAll", () => {
   // We'll use a different strategy: create a standalone test module
   // that constructs LspClientManager instances directly.
   // Since the class is not exported, we'll test via the module-level exports.
@@ -96,11 +99,11 @@ describe('LspClientManager eviction and disconnectAll', () => {
     mockConnect.mockResolvedValue(undefined);
 
     mockGetServerForFile.mockReturnValue({
-      name: 'test-server',
-      command: 'test-lsp',
+      name: "test-server",
+      command: "test-lsp",
       args: [],
-      extensions: ['.ts'],
-      installHint: 'pnpm install test-lsp',
+      extensions: [".ts"],
+      installHint: "pnpm install test-lsp",
     });
 
     // Dynamically import to get fresh module state
@@ -108,12 +111,12 @@ describe('LspClientManager eviction and disconnectAll', () => {
     vi.resetModules();
 
     // Re-apply mocks after resetModules
-    vi.doMock('../servers.js', () => ({
+    vi.doMock("../servers.js", () => ({
       getServerForFile: mockGetServerForFile,
       commandExists: vi.fn(() => true),
     }));
 
-    vi.doMock('child_process', () => ({
+    vi.doMock("child_process", () => ({
       spawn: vi.fn(() => ({
         stdin: { write: vi.fn() },
         stdout: { on: vi.fn() },
@@ -134,13 +137,13 @@ describe('LspClientManager eviction and disconnectAll', () => {
   // eviction logic by directly creating a minimal manager that mirrors the
   // real implementation. This is a focused unit test approach.
 
-  describe('In-flight protection', () => {
-    it('should block eviction while a request is in flight', async () => {
+  describe("In-flight protection", () => {
+    it("should block eviction while a request is in flight", async () => {
       // Create a minimal manager that mirrors LspClientManager behavior
       const manager = createTestManager();
 
       // Simulate getting a client
-      const key = 'workspace:/test-lsp';
+      const key = "workspace:/test-lsp";
       const mockClient = createMockClient();
       manager._clients.set(key, mockClient);
       manager._lastUsed.set(key, Date.now());
@@ -159,9 +162,9 @@ describe('LspClientManager eviction and disconnectAll', () => {
       expect(mockClient.disconnect).not.toHaveBeenCalled();
     });
 
-    it('should evict client after in-flight request completes and idle timeout elapses', async () => {
+    it("should evict client after in-flight request completes and idle timeout elapses", async () => {
       const manager = createTestManager();
-      const key = 'workspace:/test-lsp';
+      const key = "workspace:/test-lsp";
       const mockClient = createMockClient();
       manager._clients.set(key, mockClient);
 
@@ -195,9 +198,9 @@ describe('LspClientManager eviction and disconnectAll', () => {
       expect(mockClient.disconnect).toHaveBeenCalledOnce();
     });
 
-    it('should track multiple concurrent in-flight requests', async () => {
+    it("should track multiple concurrent in-flight requests", async () => {
       const manager = createTestManager();
-      const key = 'workspace:/test-lsp';
+      const key = "workspace:/test-lsp";
       const mockClient = createMockClient();
       manager._clients.set(key, mockClient);
       manager._lastUsed.set(key, Date.now());
@@ -224,10 +227,10 @@ describe('LspClientManager eviction and disconnectAll', () => {
     });
   });
 
-  describe('runWithClientLease integration', () => {
-    it('should protect client during async operation', async () => {
+  describe("runWithClientLease integration", () => {
+    it("should protect client during async operation", async () => {
       const manager = createTestManager();
-      const key = 'workspace:/test-lsp';
+      const key = "workspace:/test-lsp";
       const mockClient = createMockClient();
       manager._clients.set(key, mockClient);
       manager._lastUsed.set(key, Date.now());
@@ -239,7 +242,10 @@ describe('LspClientManager eviction and disconnectAll', () => {
       });
 
       // Start a lease (simulated)
-      manager._inFlightCount.set(key, (manager._inFlightCount.get(key) || 0) + 1);
+      manager._inFlightCount.set(
+        key,
+        (manager._inFlightCount.get(key) || 0) + 1,
+      );
       manager._lastUsed.set(key, Date.now());
 
       // Advance past timeout while "in flight"
@@ -267,8 +273,8 @@ describe('LspClientManager eviction and disconnectAll', () => {
     });
   });
 
-  describe('disconnectAll resilience', () => {
-    it('should continue disconnecting when one client throws', async () => {
+  describe("disconnectAll resilience", () => {
+    it("should continue disconnecting when one client throws", async () => {
       const manager = createTestManager();
 
       const client1 = createMockClient();
@@ -276,14 +282,14 @@ describe('LspClientManager eviction and disconnectAll', () => {
       const client3 = createMockClient();
 
       // Client 2 will throw on disconnect
-      client2.disconnect.mockRejectedValue(new Error('connection reset'));
+      client2.disconnect.mockRejectedValue(new Error("connection reset"));
 
-      manager._clients.set('key1', client1);
-      manager._clients.set('key2', client2);
-      manager._clients.set('key3', client3);
-      manager._lastUsed.set('key1', Date.now());
-      manager._lastUsed.set('key2', Date.now());
-      manager._lastUsed.set('key3', Date.now());
+      manager._clients.set("key1", client1);
+      manager._clients.set("key2", client2);
+      manager._clients.set("key3", client3);
+      manager._lastUsed.set("key1", Date.now());
+      manager._lastUsed.set("key2", Date.now());
+      manager._lastUsed.set("key3", Date.now());
 
       // disconnectAll should not throw
       await expect(manager.disconnectAll()).resolves.toBeUndefined();
@@ -294,18 +300,18 @@ describe('LspClientManager eviction and disconnectAll', () => {
       expect(client3.disconnect).toHaveBeenCalledOnce();
     });
 
-    it('should clear all maps after disconnectAll even with failures', async () => {
+    it("should clear all maps after disconnectAll even with failures", async () => {
       const manager = createTestManager();
 
       const client1 = createMockClient();
       const client2 = createMockClient();
-      client1.disconnect.mockRejectedValue(new Error('timeout'));
+      client1.disconnect.mockRejectedValue(new Error("timeout"));
 
-      manager._clients.set('key1', client1);
-      manager._clients.set('key2', client2);
-      manager._lastUsed.set('key1', Date.now());
-      manager._lastUsed.set('key2', Date.now());
-      manager._inFlightCount.set('key1', 3);
+      manager._clients.set("key1", client1);
+      manager._clients.set("key2", client2);
+      manager._lastUsed.set("key1", Date.now());
+      manager._lastUsed.set("key2", Date.now());
+      manager._inFlightCount.set("key1", 3);
 
       await manager.disconnectAll();
 
@@ -315,25 +321,25 @@ describe('LspClientManager eviction and disconnectAll', () => {
       expect(manager._inFlightCount.size).toBe(0);
     });
 
-    it('should log warnings for failed disconnects', async () => {
+    it("should log warnings for failed disconnects", async () => {
       const manager = createTestManager();
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
       const client1 = createMockClient();
-      client1.disconnect.mockRejectedValue(new Error('broken pipe'));
+      client1.disconnect.mockRejectedValue(new Error("broken pipe"));
 
-      manager._clients.set('broken-key', client1);
-      manager._lastUsed.set('broken-key', Date.now());
+      manager._clients.set("broken-key", client1);
+      manager._lastUsed.set("broken-key", Date.now());
 
       await manager.disconnectAll();
 
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('broken-key')
+        expect.stringContaining("broken-key"),
       );
       warnSpy.mockRestore();
     });
 
-    it('should stop the idle timer on disconnectAll', async () => {
+    it("should stop the idle timer on disconnectAll", async () => {
       const manager = createTestManager();
       // The timer is running by default
       expect(manager._idleTimer).not.toBeNull();
@@ -367,7 +373,7 @@ function createTestManager() {
   const idleTimer: ReturnType<typeof setInterval> | null = setInterval(() => {
     // no-op for testing; we call triggerEviction manually
   }, 60_000);
-  if (idleTimer && typeof idleTimer === 'object' && 'unref' in idleTimer) {
+  if (idleTimer && typeof idleTimer === "object" && "unref" in idleTimer) {
     idleTimer.unref();
   }
 
@@ -404,15 +410,17 @@ function createTestManager() {
 
       const entries = Array.from(this._clients.entries());
       const results = await Promise.allSettled(
-        entries.map(([, client]) => client.disconnect())
+        entries.map(([, client]) => client.disconnect()),
       );
 
       // Log any per-client failures
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        if (result.status === 'rejected') {
+        if (result.status === "rejected") {
           const key = entries[i][0];
-          console.warn(`LSP disconnectAll: failed to disconnect client "${key}": ${result.reason}`);
+          console.warn(
+            `LSP disconnectAll: failed to disconnect client "${key}": ${result.reason}`,
+          );
         }
       }
 

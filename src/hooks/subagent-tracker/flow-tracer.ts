@@ -5,7 +5,7 @@
  * for the /trace feature. All functions are best-effort (never throw).
  */
 
-import { appendReplayEvent } from './session-replay.js';
+import { appendReplayEvent } from "./session-replay.js";
 
 /**
  * Record a hook fire event
@@ -14,11 +14,11 @@ export function recordHookFire(
   directory: string,
   sessionId: string,
   hookName: string,
-  hookEvent: string
+  hookEvent: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'hook_fire',
+    agent: "system",
+    event: "hook_fire",
     hook: hookName,
     hook_event: hookEvent,
   });
@@ -34,11 +34,11 @@ export function recordHookResult(
   hookEvent: string,
   durationMs: number,
   contextInjected: boolean,
-  contextLength?: number
+  contextLength?: number,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'hook_result',
+    agent: "system",
+    event: "hook_result",
     hook: hookName,
     hook_event: hookEvent,
     duration_ms: durationMs,
@@ -53,11 +53,11 @@ export function recordHookResult(
 export function recordKeywordDetected(
   directory: string,
   sessionId: string,
-  keyword: string
+  keyword: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'keyword_detected',
+    agent: "system",
+    event: "keyword_detected",
     keyword,
   });
 }
@@ -69,11 +69,11 @@ export function recordSkillActivated(
   directory: string,
   sessionId: string,
   skillName: string,
-  source: string
+  source: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'skill_activated',
+    agent: "system",
+    event: "skill_activated",
     skill_name: skillName,
     skill_source: source,
   });
@@ -85,11 +85,11 @@ export function recordSkillActivated(
 export function recordSkillInvoked(
   directory: string,
   sessionId: string,
-  skillName: string
+  skillName: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'skill_invoked',
+    agent: "system",
+    event: "skill_invoked",
     skill_name: skillName,
   });
 }
@@ -101,11 +101,11 @@ export function recordModeChange(
   directory: string,
   sessionId: string,
   fromMode: string,
-  toMode: string
+  toMode: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: 'system',
-    event: 'mode_change',
+    agent: "system",
+    event: "mode_change",
     mode_from: fromMode,
     mode_to: toMode,
   });

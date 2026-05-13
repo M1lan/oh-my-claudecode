@@ -5,6 +5,7 @@ export interface SkillPipelineMetadata {
   nextSkill?: string;
   nextSkillArgs?: string;
   handoff?: string;
+  handoffRequiresApproval?: boolean;
 }
 
 function normalizeSkillReference(
@@ -56,8 +57,20 @@ export function parseSkillPipelineMetadata(
     undefined;
   const handoff =
     stripOptionalQuotes(frontmatter.handoff ?? "").trim() || undefined;
+  const handoffPolicy = stripOptionalQuotes(frontmatter["handoff-policy"] ?? "")
+    .trim()
+    .toLowerCase();
+  const handoffRequiresApproval =
+    handoffPolicy === "approval-required" ||
+    handoffPolicy === "requires-approval";
 
-  if (steps.length === 0 && !nextSkill && !nextSkillArgs && !handoff) {
+  if (
+    steps.length === 0 &&
+    !nextSkill &&
+    !nextSkillArgs &&
+    !handoff &&
+    !handoffRequiresApproval
+  ) {
     return undefined;
   }
 
@@ -66,6 +79,7 @@ export function parseSkillPipelineMetadata(
     nextSkill,
     nextSkillArgs,
     handoff,
+    handoffRequiresApproval: handoffRequiresApproval || undefined,
   };
 }
 
@@ -119,7 +133,13 @@ export function renderSkillPipelineGuidance(
   lines.push("");
 
   if (pipeline.nextSkill) {
-    lines.push("When this stage completes:");
+    if (pipeline.handoffRequiresApproval) {
+      lines.push(
+        "When this stage completes: stop with the handoff artifact marked `pending approval`. Do not invoke the next skill until the user gives explicit approval in the current turn or structured approval UI.",
+      );
+    } else {
+      lines.push("When this stage completes:");
+    }
     if (pipeline.handoff) {
       lines.push(
         `1. Write or update the handoff artifact at \`${pipeline.handoff}\`.`,
@@ -132,11 +152,21 @@ export function renderSkillPipelineGuidance(
     lines.push(
       "2. Carry forward the concrete output, decisions made, and remaining risks or assumptions.",
     );
-    lines.push(`3. Invoke ${nextInvocation}.`);
+    if (pipeline.handoffRequiresApproval) {
+      lines.push(`3. After explicit approval only, invoke ${nextInvocation}.`);
+    } else {
+      lines.push(`3. Invoke ${nextInvocation}.`);
+    }
   } else {
-    lines.push(
-      "This is the terminal stage in the declared skill pipeline. Do not hand off to another skill unless the user explicitly asks.",
-    );
+    if (pipeline.handoffRequiresApproval) {
+      lines.push(
+        "This stage is approval-gated. Stop after producing the handoff artifact and do not hand off to another skill unless the user explicitly approves that next step.",
+      );
+    } else {
+      lines.push(
+        "This is the terminal stage in the declared skill pipeline. Do not hand off to another skill unless the user explicitly asks.",
+      );
+    }
   }
 
   return lines.join("\n");

@@ -12,7 +12,7 @@ export interface BridgeMeta {
 
 export interface PythonEnvInfo {
   pythonPath: string;
-  type: 'venv';
+  type: "venv";
 }
 
 export interface LockInfo {
@@ -65,12 +65,12 @@ export interface ResetResult {
 
 export interface InterruptResult {
   status: string;
-  terminatedBy?: 'SIGINT' | 'SIGTERM' | 'SIGKILL' | 'graceful';
+  terminatedBy?: "SIGINT" | "SIGTERM" | "SIGKILL" | "graceful";
   terminationTimeMs?: number;
 }
 
 export interface PythonReplInput {
-  action: 'execute' | 'interrupt' | 'reset' | 'get_state';
+  action: "execute" | "interrupt" | "reset" | "get_state";
   researchSessionID: string;
   code?: string;
   executionLabel?: string;
@@ -81,14 +81,14 @@ export interface PythonReplInput {
 
 // JSON-RPC types
 export interface JsonRpcRequest {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: string;
   method: string;
   params?: Record<string, unknown>;
 }
 
 export interface JsonRpcResponse {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: string;
   result?: unknown;
   error?: {

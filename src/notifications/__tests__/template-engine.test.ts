@@ -151,8 +151,12 @@ describe("computed variables", () => {
   });
 
   it("duration handles zero/undefined as unknown", () => {
-    expect(computeTemplateVariables(makePayload({ durationMs: 0 })).duration).toBe("unknown");
-    expect(computeTemplateVariables(makePayload({ durationMs: undefined })).duration).toBe("unknown");
+    expect(
+      computeTemplateVariables(makePayload({ durationMs: 0 })).duration,
+    ).toBe("unknown");
+    expect(
+      computeTemplateVariables(makePayload({ durationMs: undefined })).duration,
+    ).toBe("unknown");
   });
 
   it("time formats timestamp", () => {
@@ -354,28 +358,40 @@ describe("default template parity with formatter.ts", () => {
   it("session-start matches formatSessionStart", () => {
     const p = { ...fullPayload, event: "session-start" as const };
     const fromFormatter = formatSessionStart(p);
-    const fromTemplate = interpolateTemplate(getDefaultTemplate("session-start"), p);
+    const fromTemplate = interpolateTemplate(
+      getDefaultTemplate("session-start"),
+      p,
+    );
     expect(fromTemplate).toBe(fromFormatter);
   });
 
   it("session-stop matches formatSessionStop", () => {
     const p = { ...fullPayload, event: "session-stop" as const };
     const fromFormatter = formatSessionStop(p);
-    const fromTemplate = interpolateTemplate(getDefaultTemplate("session-stop"), p);
+    const fromTemplate = interpolateTemplate(
+      getDefaultTemplate("session-stop"),
+      p,
+    );
     expect(fromTemplate).toBe(fromFormatter);
   });
 
   it("session-end matches formatSessionEnd", () => {
     const p = { ...fullPayload, event: "session-end" as const };
     const fromFormatter = formatSessionEnd(p);
-    const fromTemplate = interpolateTemplate(getDefaultTemplate("session-end"), p);
+    const fromTemplate = interpolateTemplate(
+      getDefaultTemplate("session-end"),
+      p,
+    );
     expect(fromTemplate).toBe(fromFormatter);
   });
 
   it("session-idle matches formatSessionIdle", () => {
     const p = { ...fullPayload, event: "session-idle" as const };
     const fromFormatter = formatSessionIdle(p);
-    const fromTemplate = interpolateTemplate(getDefaultTemplate("session-idle"), p);
+    const fromTemplate = interpolateTemplate(
+      getDefaultTemplate("session-idle"),
+      p,
+    );
     expect(fromTemplate).toBe(fromFormatter);
   });
 
@@ -520,7 +536,9 @@ describe("reply channel template variables", () => {
   });
 
   it("validates replyChannel, replyTarget, replyThread as known variables", () => {
-    const result = validateTemplate("{{replyChannel}} {{replyTarget}} {{replyThread}}");
+    const result = validateTemplate(
+      "{{replyChannel}} {{replyTarget}} {{replyThread}}",
+    );
     expect(result.valid).toBe(true);
     expect(result.unknownVars).toEqual([]);
   });
@@ -530,7 +548,9 @@ describe("reply channel template variables", () => {
     const without = makePayload();
 
     const template = "{{#if replyChannel}}Channel: {{replyChannel}}{{/if}}";
-    expect(interpolateTemplate(template, withChannel)).toBe("Channel: #general");
+    expect(interpolateTemplate(template, withChannel)).toBe(
+      "Channel: #general",
+    );
     expect(interpolateTemplate(template, without)).toBe("");
   });
 });

@@ -7,21 +7,21 @@
  * Ported from oh-my-opencode's think-mode hook.
  */
 
-import type { ThinkingConfig } from './types.js';
+import type { ThinkingConfig } from "./types.js";
 import {
   CLAUDE_FAMILY_DEFAULTS,
   CLAUDE_FAMILY_HIGH_VARIANTS,
   getClaudeHighVariantFromModel,
-} from '../../config/models.js';
+} from "../../config/models.js";
 
 /**
  * Extract provider prefix from model ID.
  * Custom providers may use prefixes like vertex_ai/, openai/.
  */
 function extractModelPrefix(modelId: string): { prefix: string; base: string } {
-  const slashIndex = modelId.indexOf('/');
+  const slashIndex = modelId.indexOf("/");
   if (slashIndex === -1) {
-    return { prefix: '', base: modelId };
+    return { prefix: "", base: modelId };
   }
   return {
     prefix: modelId.slice(0, slashIndex + 1),
@@ -34,7 +34,7 @@ function extractModelPrefix(modelId: string): { prefix: string; base: string } {
  * Handles version numbers like 4.5 → 4-5.
  */
 function normalizeModelId(modelId: string): string {
-  return modelId.replace(/\.(\d+)/g, '-$1');
+  return modelId.replace(/\.(\d+)/g, "-$1");
 }
 
 /**
@@ -47,16 +47,16 @@ const HIGH_VARIANT_MAP: Record<string, string> = {
   [CLAUDE_FAMILY_DEFAULTS.OPUS]: CLAUDE_FAMILY_HIGH_VARIANTS.OPUS,
   [CLAUDE_FAMILY_DEFAULTS.HAIKU]: CLAUDE_FAMILY_HIGH_VARIANTS.HAIKU,
   // GPT-4
-  'gpt-4': 'gpt-4-high',
-  'gpt-4-turbo': 'gpt-4-turbo-high',
-  'gpt-4o': 'gpt-4o-high',
+  "gpt-4": "gpt-4-high",
+  "gpt-4-turbo": "gpt-4-turbo-high",
+  "gpt-4o": "gpt-4o-high",
   // GPT-5
-  'gpt-5': 'gpt-5-high',
-  'gpt-5-mini': 'gpt-5-mini-high',
+  "gpt-5": "gpt-5-high",
+  "gpt-5-mini": "gpt-5-mini-high",
   // Gemini
-  'gemini-2-pro': 'gemini-2-pro-high',
-  'gemini-3-pro': 'gemini-3-pro-high',
-  'gemini-3-flash': 'gemini-3-flash-high',
+  "gemini-2-pro": "gemini-2-pro-high",
+  "gemini-3-pro": "gemini-3-pro-high",
+  "gemini-3-flash": "gemini-3-flash-high",
 };
 
 /** Set of models already in high variant */
@@ -68,14 +68,14 @@ const ALREADY_HIGH: Set<string> = new Set(Object.values(HIGH_VARIANT_MAP));
 export const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
   anthropic: {
     thinking: {
-      type: 'enabled',
+      type: "enabled",
       budgetTokens: 64000,
     },
     maxTokens: 128000,
   },
-  'amazon-bedrock': {
+  "amazon-bedrock": {
     reasoningConfig: {
-      type: 'enabled',
+      type: "enabled",
       budgetTokens: 32000,
     },
     maxTokens: 64000,
@@ -84,13 +84,13 @@ export const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
     providerOptions: {
       google: {
         thinkingConfig: {
-          thinkingLevel: 'HIGH',
+          thinkingLevel: "HIGH",
         },
       },
     },
   },
   openai: {
-    reasoning_effort: 'high',
+    reasoning_effort: "high",
   },
 };
 
@@ -98,10 +98,10 @@ export const THINKING_CONFIGS: Record<string, ThinkingConfig> = {
  * Models capable of thinking mode by provider.
  */
 const THINKING_CAPABLE_MODELS: Record<string, readonly string[]> = {
-  anthropic: ['claude'],
-  'amazon-bedrock': ['claude', 'anthropic'],
-  google: ['gemini-2', 'gemini-3'],
-  openai: ['gpt-4', 'gpt-5', 'o1', 'o3'],
+  anthropic: ["claude"],
+  "amazon-bedrock": ["claude", "anthropic"],
+  google: ["gemini-2", "gemini-3"],
+  openai: ["gpt-4", "gpt-5", "o1", "o3"],
 };
 
 /**
@@ -113,7 +113,7 @@ export function getHighVariant(modelId: string): string | null {
   const { prefix, base } = extractModelPrefix(normalized);
 
   // Check if already high variant
-  if (ALREADY_HIGH.has(base) || base.endsWith('-high')) {
+  if (ALREADY_HIGH.has(base) || base.endsWith("-high")) {
     return null;
   }
 
@@ -135,7 +135,7 @@ export function getHighVariant(modelId: string): string | null {
 export function isAlreadyHighVariant(modelId: string): boolean {
   const normalized = normalizeModelId(modelId);
   const { base } = extractModelPrefix(normalized);
-  return ALREADY_HIGH.has(base) || base.endsWith('-high');
+  return ALREADY_HIGH.has(base) || base.endsWith("-high");
 }
 
 /**
@@ -143,12 +143,16 @@ export function isAlreadyHighVariant(modelId: string): boolean {
  */
 function resolveProvider(providerId: string, modelId: string): string {
   // GitHub Copilot is a proxy - infer actual provider from model name
-  if (providerId === 'github-copilot') {
+  if (providerId === "github-copilot") {
     const modelLower = modelId.toLowerCase();
-    if (modelLower.includes('claude')) return 'anthropic';
-    if (modelLower.includes('gemini')) return 'google';
-    if (modelLower.includes('gpt') || modelLower.includes('o1') || modelLower.includes('o3')) {
-      return 'openai';
+    if (modelLower.includes("claude")) return "anthropic";
+    if (modelLower.includes("gemini")) return "google";
+    if (
+      modelLower.includes("gpt") ||
+      modelLower.includes("o1") ||
+      modelLower.includes("o3")
+    ) {
+      return "openai";
     }
   }
   return providerId;
@@ -157,7 +161,9 @@ function resolveProvider(providerId: string, modelId: string): string {
 /**
  * Check if provider has thinking configuration.
  */
-function isThinkingProvider(provider: string): provider is keyof typeof THINKING_CONFIGS {
+function isThinkingProvider(
+  provider: string,
+): provider is keyof typeof THINKING_CONFIGS {
   return provider in THINKING_CONFIGS;
 }
 
@@ -167,7 +173,7 @@ function isThinkingProvider(provider: string): provider is keyof typeof THINKING
  */
 export function getThinkingConfig(
   providerId: string,
-  modelId: string
+  modelId: string,
 ): ThinkingConfig | null {
   const normalized = normalizeModelId(modelId);
   const { base } = extractModelPrefix(normalized);
@@ -192,7 +198,7 @@ export function getThinkingConfig(
   // Check capability using base model name
   const baseLower = base.toLowerCase();
   const isCapable = capablePatterns.some((pattern) =>
-    baseLower.includes(pattern.toLowerCase())
+    baseLower.includes(pattern.toLowerCase()),
   );
 
   return isCapable ? config : null;
@@ -205,7 +211,7 @@ export function getThinkingConfig(
 export function getClaudeThinkingConfig(budgetTokens: number = 64000) {
   return {
     thinking: {
-      type: 'enabled' as const,
+      type: "enabled" as const,
       budgetTokens,
     },
     maxTokens: 128000,

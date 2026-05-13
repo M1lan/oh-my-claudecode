@@ -4,18 +4,18 @@
  * Renders context window usage display.
  */
 
-import type { HudLabels, HudThresholds } from '../types.js';
-import { DEFAULT_HUD_LABELS } from '../types.js';
-import { RESET } from '../colors.js';
+import type { HudLabels, HudThresholds } from "../types.js";
+import { DEFAULT_HUD_LABELS } from "../types.js";
+import { RESET } from "../colors.js";
 
-const GREEN = '\x1b[32m';
-const YELLOW = '\x1b[33m';
-const RED = '\x1b[31m';
-const DIM = '\x1b[2m';
+const GREEN = "\x1b[32m";
+const YELLOW = "\x1b[33m";
+const RED = "\x1b[31m";
+const DIM = "\x1b[2m";
 const CONTEXT_DISPLAY_HYSTERESIS = 2;
 const CONTEXT_DISPLAY_STATE_TTL_MS = 5_000;
 
-type ContextSeverity = 'normal' | 'warning' | 'compact' | 'critical';
+type ContextSeverity = "normal" | "warning" | "compact" | "critical";
 
 let lastDisplayedPercent: number | null = null;
 let lastDisplayedSeverity: ContextSeverity | null = null;
@@ -31,15 +31,15 @@ function getContextSeverity(
   thresholds: HudThresholds,
 ): ContextSeverity {
   if (safePercent >= thresholds.contextCritical) {
-    return 'critical';
+    return "critical";
   }
   if (safePercent >= thresholds.contextCompactSuggestion) {
-    return 'compact';
+    return "compact";
   }
   if (safePercent >= thresholds.contextWarning) {
-    return 'warning';
+    return "warning";
   }
-  return 'normal';
+  return "normal";
 }
 
 function getContextDisplayStyle(
@@ -49,14 +49,14 @@ function getContextDisplayStyle(
   const severity = getContextSeverity(safePercent, thresholds);
 
   switch (severity) {
-    case 'critical':
-      return { color: RED, suffix: ' CRITICAL' };
-    case 'compact':
-      return { color: YELLOW, suffix: ' COMPRESS?' };
-    case 'warning':
-      return { color: YELLOW, suffix: '' };
+    case "critical":
+      return { color: RED, suffix: " CRITICAL" };
+    case "compact":
+      return { color: YELLOW, suffix: " COMPRESS?" };
+    case "warning":
+      return { color: YELLOW, suffix: "" };
     default:
-      return { color: GREEN, suffix: '' };
+      return { color: GREEN, suffix: "" };
   }
 }
 
@@ -92,9 +92,9 @@ export function getStableContextDisplayPercent(
   }
 
   if (
-    lastDisplayedPercent === null
-    || lastDisplayedSeverity === null
-    || now - lastDisplayUpdatedAt > CONTEXT_DISPLAY_STATE_TTL_MS
+    lastDisplayedPercent === null ||
+    lastDisplayedSeverity === null ||
+    now - lastDisplayUpdatedAt > CONTEXT_DISPLAY_STATE_TTL_MS
   ) {
     lastDisplayedPercent = safePercent;
     lastDisplayedSeverity = severity;
@@ -109,7 +109,9 @@ export function getStableContextDisplayPercent(
     return safePercent;
   }
 
-  if (Math.abs(safePercent - lastDisplayedPercent) <= CONTEXT_DISPLAY_HYSTERESIS) {
+  if (
+    Math.abs(safePercent - lastDisplayedPercent) <= CONTEXT_DISPLAY_HYSTERESIS
+  ) {
     lastDisplayUpdatedAt = now;
     return lastDisplayedPercent;
   }
@@ -129,9 +131,13 @@ export function renderContext(
   percent: number,
   thresholds: HudThresholds,
   displayScope?: string | null,
-  labels: Pick<HudLabels, 'context'> = DEFAULT_HUD_LABELS,
+  labels: Pick<HudLabels, "context"> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
+  const safePercent = getStableContextDisplayPercent(
+    percent,
+    thresholds,
+    displayScope,
+  );
   const { color, suffix } = getContextDisplayStyle(safePercent, thresholds);
 
   return `${labels.context}:${color}${safePercent}%${suffix}${RESET}`;
@@ -147,13 +153,17 @@ export function renderContextWithBar(
   thresholds: HudThresholds,
   barWidth: number = 10,
   displayScope?: string | null,
-  labels: Pick<HudLabels, 'context'> = DEFAULT_HUD_LABELS,
+  labels: Pick<HudLabels, "context"> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
+  const safePercent = getStableContextDisplayPercent(
+    percent,
+    thresholds,
+    displayScope,
+  );
   const filled = Math.round((safePercent / 100) * barWidth);
   const empty = barWidth - filled;
 
   const { color, suffix } = getContextDisplayStyle(safePercent, thresholds);
-  const bar = `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET}`;
+  const bar = `${color}${"█".repeat(filled)}${DIM}${"░".repeat(empty)}${RESET}`;
   return `${labels.context}:[${bar}]${color}${safePercent}%${suffix}${RESET}`;
 }

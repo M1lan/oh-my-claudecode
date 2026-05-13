@@ -292,7 +292,9 @@ describe("team/followup-planner", () => {
       expect(result!.launchCommand).toBe(
         'omx team ".omx/plans/ralplan-capture-page-ui-draft-v7.md"',
       );
-      expect(result!.hint.sourcePath).toContain(join(".omx", "plans", "prd-capture-page-ui-draft.md"));
+      expect(result!.hint.sourcePath).toContain(
+        join(".omx", "plans", "prd-capture-page-ui-draft.md"),
+      );
     });
   });
 });

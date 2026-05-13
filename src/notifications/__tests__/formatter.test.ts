@@ -69,7 +69,10 @@ describe("formatNotification routing", () => {
   });
 
   it("should route session-start correctly", () => {
-    const result = formatNotification({ ...basePayload, event: "session-start" });
+    const result = formatNotification({
+      ...basePayload,
+      event: "session-start",
+    });
     expect(result).toContain("# Session Started");
   });
 
@@ -79,12 +82,18 @@ describe("formatNotification routing", () => {
   });
 
   it("should route session-stop correctly", () => {
-    const result = formatNotification({ ...basePayload, event: "session-stop" });
+    const result = formatNotification({
+      ...basePayload,
+      event: "session-stop",
+    });
     expect(result).toContain("# Session Continuing");
   });
 
   it("should route ask-user-question correctly", () => {
-    const result = formatNotification({ ...basePayload, event: "ask-user-question" });
+    const result = formatNotification({
+      ...basePayload,
+      event: "ask-user-question",
+    });
     expect(result).toContain("# Input Needed");
   });
 
@@ -195,7 +204,9 @@ describe("parseTmuxTail", () => {
   });
 
   it("caps output at 15 meaningful lines by default, returning the LAST 15", () => {
-    const input = Array.from({ length: 25 }, (_, i) => `line ${i + 1}`).join("\n");
+    const input = Array.from({ length: 25 }, (_, i) => `line ${i + 1}`).join(
+      "\n",
+    );
     const result = parseTmuxTail(input);
     const lines = result.split("\n");
     expect(lines).toHaveLength(15);
@@ -204,7 +215,9 @@ describe("parseTmuxTail", () => {
   });
 
   it("respects custom maxLines parameter", () => {
-    const input = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join("\n");
+    const input = Array.from({ length: 20 }, (_, i) => `line ${i + 1}`).join(
+      "\n",
+    );
     const result = parseTmuxTail(input, 5);
     const lines = result.split("\n");
     expect(lines).toHaveLength(5);
@@ -372,7 +385,7 @@ describe("parseTmuxTail noise filters", () => {
 
   it("drops usage/help source text that would otherwise trip error alerts", () => {
     const input = [
-      'Usage: psm review <ref>',
+      "Usage: psm review <ref>",
       'if [[ "$tmux_status" == "error" ]]; then',
       'log_error "Usage: psm fix <ref>"',
     ].join("\n");
@@ -397,7 +410,7 @@ describe("parseTmuxTail noise filters", () => {
       "diff --git a/src/app.ts b/src/app.ts",
       '+ throw new Error("worker_notify_failed");',
       '+ const payload = { status: "failed", error: "claim_conflict" };',
-      '@@ -10,4 +10,4 @@',
+      "@@ -10,4 +10,4 @@",
     ].join("\n");
 
     expect(parseTmuxTail(input)).toBe("");
@@ -471,7 +484,7 @@ describe("parseTmuxTail noise filters", () => {
     const input = [
       "const alertPattern = /error|fail|conflict|blocked/i;",
       "matcher: new RegExp('worker_notify_failed|claim_conflict')",
-      'src/alert-monitor.ts:88: const alertPattern = /error|fail|conflict|blocked/i;',
+      "src/alert-monitor.ts:88: const alertPattern = /error|fail|conflict|blocked/i;",
     ].join("\n");
 
     expect(parseTmuxTail(input)).toBe("");

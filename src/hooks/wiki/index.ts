@@ -18,9 +18,9 @@ export type {
   WikiLintReport,
   WikiCategory,
   WikiConfig,
-} from './types.js';
+} from "./types.js";
 
-export { WIKI_SCHEMA_VERSION, DEFAULT_WIKI_CONFIG } from './types.js';
+export { WIKI_SCHEMA_VERSION, DEFAULT_WIKI_CONFIG } from "./types.js";
 
 // Storage
 export {
@@ -43,9 +43,9 @@ export {
   deletePageUnsafe,
   updateIndexUnsafe,
   appendLogUnsafe,
-} from './storage.js';
+} from "./storage.js";
 
 // Operations
-export { ingestKnowledge } from './ingest.js';
-export { queryWiki, tokenize } from './query.js';
-export { lintWiki } from './lint.js';
+export { ingestKnowledge } from "./ingest.js";
+export { queryWiki, tokenize } from "./query.js";
+export { lintWiki } from "./lint.js";

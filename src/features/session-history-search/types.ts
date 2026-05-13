@@ -15,7 +15,11 @@ export interface SessionHistoryMatch {
   timestamp?: string;
   projectPath?: string;
   sourcePath: string;
-  sourceType: 'project-transcript' | 'legacy-transcript' | 'omc-session-summary' | 'omc-session-replay';
+  sourceType:
+    | "project-transcript"
+    | "legacy-transcript"
+    | "omc-session-summary"
+    | "omc-session-replay";
   line: number;
   role?: string;
   entryType?: string;
@@ -25,7 +29,7 @@ export interface SessionHistoryMatch {
 export interface SessionHistorySearchReport {
   query: string;
   scope: {
-    mode: 'current' | 'project' | 'all';
+    mode: "current" | "project" | "all";
     project?: string;
     workingDirectory?: string;
     since?: string;

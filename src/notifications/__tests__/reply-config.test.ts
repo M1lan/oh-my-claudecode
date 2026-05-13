@@ -242,9 +242,8 @@ describe("reply config", () => {
       },
     });
 
-    const { getNotificationConfig, getReplyListenerPlatformConfig } = await import(
-      "../config.js"
-    );
+    const { getNotificationConfig, getReplyListenerPlatformConfig } =
+      await import("../config.js");
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
 

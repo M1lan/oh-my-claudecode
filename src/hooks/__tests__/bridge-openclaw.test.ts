@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { _openclaw, processHook, resetSkipHooksCache, type HookInput } from "../bridge.js";
+import {
+  _openclaw,
+  processHook,
+  resetSkipHooksCache,
+  type HookInput,
+} from "../bridge.js";
 
 describe("_openclaw.wake", () => {
   afterEach(() => {
@@ -24,12 +29,17 @@ describe("_openclaw.wake", () => {
     vi.stubEnv("OMC_OPENCLAW", "1");
 
     // Mock the dynamic import of openclaw/index.js
-    const mockWakeOpenClaw = vi.fn().mockResolvedValue({ gateway: "test", success: true });
+    const mockWakeOpenClaw = vi
+      .fn()
+      .mockResolvedValue({ gateway: "test", success: true });
     vi.doMock("../../openclaw/index.js", () => ({
       wakeOpenClaw: mockWakeOpenClaw,
     }));
 
-    _openclaw.wake("session-start", { sessionId: "sid-1", projectPath: "/home/user/project" });
+    _openclaw.wake("session-start", {
+      sessionId: "sid-1",
+      projectPath: "/home/user/project",
+    });
 
     // Give the microtask queue time to process the dynamic import
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -41,9 +51,9 @@ describe("_openclaw.wake", () => {
     vi.stubEnv("OMC_OPENCLAW", "1");
     vi.resetModules();
 
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.doMock("../../openclaw/index.js", () => ({
-      wakeOpenClaw: vi.fn().mockRejectedValue(new Error('gateway down')),
+      wakeOpenClaw: vi.fn().mockRejectedValue(new Error("gateway down")),
     }));
 
     const { _openclaw: freshOpenClaw } = await import("../bridge.js");
@@ -52,12 +62,16 @@ describe("_openclaw.wake", () => {
       freshOpenClaw.wake("session-start", { sessionId: "sid-1" });
     }).not.toThrow();
 
-    for (let attempt = 0; attempt < 20 && warnSpy.mock.calls.length === 0; attempt += 1) {
+    for (
+      let attempt = 0;
+      attempt < 20 && warnSpy.mock.calls.length === 0;
+      attempt += 1
+    ) {
       await new Promise((resolve) => setTimeout(resolve, 10));
     }
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[omc] hooks.bridge openclaw wake failed for session-start: gateway down',
+      "[omc] hooks.bridge openclaw wake failed for session-start: gateway down",
     );
 
     vi.doUnmock("../../openclaw/index.js");
@@ -80,11 +94,19 @@ describe("_openclaw.wake", () => {
     // These should all be callable without type errors (no-op since OMC_OPENCLAW not set)
     expect(() => _openclaw.wake("session-start", {})).not.toThrow();
     expect(() => _openclaw.wake("session-end", {})).not.toThrow();
-    expect(() => _openclaw.wake("pre-tool-use", { toolName: "Bash" })).not.toThrow();
-    expect(() => _openclaw.wake("post-tool-use", { toolName: "Bash" })).not.toThrow();
+    expect(() =>
+      _openclaw.wake("pre-tool-use", { toolName: "Bash" }),
+    ).not.toThrow();
+    expect(() =>
+      _openclaw.wake("post-tool-use", { toolName: "Bash" }),
+    ).not.toThrow();
     expect(() => _openclaw.wake("stop", {})).not.toThrow();
-    expect(() => _openclaw.wake("keyword-detector", { prompt: "hello" })).not.toThrow();
-    expect(() => _openclaw.wake("ask-user-question", { question: "what?" })).not.toThrow();
+    expect(() =>
+      _openclaw.wake("keyword-detector", { prompt: "hello" }),
+    ).not.toThrow();
+    expect(() =>
+      _openclaw.wake("ask-user-question", { question: "what?" }),
+    ).not.toThrow();
   });
 
   it("passes context fields through to wakeOpenClaw", async () => {
@@ -95,7 +117,11 @@ describe("_openclaw.wake", () => {
       wakeOpenClaw: mockWakeOpenClaw,
     }));
 
-    const context = { sessionId: "sid-123", projectPath: "/home/user/project", toolName: "Read" };
+    const context = {
+      sessionId: "sid-123",
+      projectPath: "/home/user/project",
+      toolName: "Read",
+    };
     _openclaw.wake("pre-tool-use", context);
 
     // Wait for async import
@@ -175,7 +201,9 @@ describe("bridge-level regression tests", () => {
         question: "What should I do next?",
       }),
     );
-    expect(wakeSpy.mock.calls.some((call) => call[0] === "pre-tool-use")).toBe(false);
+    expect(wakeSpy.mock.calls.some((call) => call[0] === "pre-tool-use")).toBe(
+      false,
+    );
 
     wakeSpy.mockRestore();
   });

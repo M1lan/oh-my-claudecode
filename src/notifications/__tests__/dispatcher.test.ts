@@ -1066,9 +1066,7 @@ describe("dispatchNotifications", () => {
     );
     expect(result.anySuccess).toBe(true);
     const call = vi.mocked(fetch).mock.calls[0];
-    expect(call[0]).toBe(
-      "https://hooks.slack.com/services/T00/B00/override",
-    );
+    expect(call[0]).toBe("https://hooks.slack.com/services/T00/B00/override");
   });
 
   it("uses discord-bot platform config", async () => {

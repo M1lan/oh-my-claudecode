@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EventEmitter } from 'events';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { EventEmitter } from "events";
 
-const CLAUDE_CONFIG_DIR = '/tmp/test-claude';
+const CLAUDE_CONFIG_DIR = "/tmp/test-claude";
 const CACHE_PATH = `${CLAUDE_CONFIG_DIR}/plugins/oh-my-claudecode/.usage-cache-zai.json`;
 const LOCK_PATH = `${CACHE_PATH}.lock`;
 
@@ -9,7 +9,9 @@ function createFsMock(initialFiles: Record<string, string>) {
   const files = new Map(Object.entries(initialFiles));
   const directories = new Set<string>([CLAUDE_CONFIG_DIR]);
 
-  const existsSync = vi.fn((path: string) => files.has(String(path)) || directories.has(String(path)));
+  const existsSync = vi.fn(
+    (path: string) => files.has(String(path)) || directories.has(String(path)),
+  );
   const readFileSync = vi.fn((path: string) => {
     const content = files.get(String(path));
     if (content == null) throw new Error(`ENOENT: ${path}`);
@@ -28,10 +30,10 @@ function createFsMock(initialFiles: Record<string, string>) {
     const normalized = String(path);
     if (files.has(normalized)) {
       const err = new Error(`EEXIST: ${normalized}`) as NodeJS.ErrnoException;
-      err.code = 'EEXIST';
+      err.code = "EEXIST";
       throw err;
     }
-    files.set(normalized, '');
+    files.set(normalized, "");
     return 1;
   });
   const statSync = vi.fn((path: string) => {
@@ -61,30 +63,30 @@ function createFsMock(initialFiles: Record<string, string>) {
   };
 }
 
-describe('getUsage lock failure fallback', () => {
+describe("getUsage lock failure fallback", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
-    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/v1';
-    process.env.ANTHROPIC_AUTH_TOKEN = 'test-token';
+    process.env.ANTHROPIC_BASE_URL = "https://api.z.ai/v1";
+    process.env.ANTHROPIC_AUTH_TOKEN = "test-token";
   });
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    vi.unmock('../../utils/config-dir.js');
-    vi.unmock('../../utils/ssrf-guard.js');
-    vi.unmock('fs');
-    vi.unmock('child_process');
-    vi.unmock('https');
+    vi.unmock("../../utils/config-dir.js");
+    vi.unmock("../../utils/ssrf-guard.js");
+    vi.unmock("fs");
+    vi.unmock("child_process");
+    vi.unmock("https");
   });
 
-  it('returns stale cache without throwing when lock acquisition fails', async () => {
+  it("returns stale cache without throwing when lock acquisition fails", async () => {
     const expiredCache = JSON.stringify({
       timestamp: Date.now() - 91_000,
-      source: 'zai',
+      source: "zai",
       data: {
         fiveHourPercent: 11,
         fiveHourResetsAt: null,
@@ -104,25 +106,29 @@ describe('getUsage lock failure fallback', () => {
       return originalKill.call(process, pid, signal);
     }) as typeof process.kill;
 
-    vi.doMock('../../utils/config-dir.js', () => ({
+    vi.doMock("../../utils/config-dir.js", () => ({
       getClaudeConfigDir: () => CLAUDE_CONFIG_DIR,
     }));
-    vi.doMock('../../utils/ssrf-guard.js', () => ({
+    vi.doMock("../../utils/ssrf-guard.js", () => ({
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
-    vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+    vi.doMock("child_process", async () => ({
+      ...(await vi.importActual<typeof import("child_process")>(
+        "child_process",
+      )),
       execSync: vi.fn(),
     }));
-    vi.doMock('fs', () => fsModule);
-    vi.doMock('https', () => ({
+    vi.doMock("fs", () => fsModule);
+    vi.doMock("https", () => ({
       default: {
         request: vi.fn(),
       },
     }));
 
-    const { getUsage } = await import('../../hud/usage-api.js');
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const { getUsage } = await import("../../hud/usage-api.js");
+    const httpsModule = (await import("https")) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     // Should NOT throw, should return stale data
     const result = await getUsage();
@@ -139,7 +145,7 @@ describe('getUsage lock failure fallback', () => {
     process.kill = originalKill;
   });
 
-  it('returns error result when lock fails and no stale cache exists', async () => {
+  it("returns error result when lock fails and no stale cache exists", async () => {
     // No cache file at all, lock held by another process
     const { fsModule } = createFsMock({
       [LOCK_PATH]: JSON.stringify({ pid: 999999, timestamp: Date.now() }),
@@ -151,24 +157,26 @@ describe('getUsage lock failure fallback', () => {
       return originalKill.call(process, pid, signal);
     }) as typeof process.kill;
 
-    vi.doMock('../../utils/config-dir.js', () => ({
+    vi.doMock("../../utils/config-dir.js", () => ({
       getClaudeConfigDir: () => CLAUDE_CONFIG_DIR,
     }));
-    vi.doMock('../../utils/ssrf-guard.js', () => ({
+    vi.doMock("../../utils/ssrf-guard.js", () => ({
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
-    vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+    vi.doMock("child_process", async () => ({
+      ...(await vi.importActual<typeof import("child_process")>(
+        "child_process",
+      )),
       execSync: vi.fn(),
     }));
-    vi.doMock('fs', () => fsModule);
-    vi.doMock('https', () => ({
+    vi.doMock("fs", () => fsModule);
+    vi.doMock("https", () => ({
       default: {
         request: vi.fn(),
       },
     }));
 
-    const { getUsage } = await import('../../hud/usage-api.js');
+    const { getUsage } = await import("../../hud/usage-api.js");
 
     // Should NOT throw, should return error result
     const result = await getUsage();
@@ -180,30 +188,30 @@ describe('getUsage lock failure fallback', () => {
   });
 });
 
-describe('getUsage lock behavior', () => {
+describe("getUsage lock behavior", () => {
   const originalEnv = { ...process.env };
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     process.env = { ...originalEnv };
-    process.env.ANTHROPIC_BASE_URL = 'https://api.z.ai/v1';
-    process.env.ANTHROPIC_AUTH_TOKEN = 'test-token';
+    process.env.ANTHROPIC_BASE_URL = "https://api.z.ai/v1";
+    process.env.ANTHROPIC_AUTH_TOKEN = "test-token";
   });
 
   afterEach(() => {
     process.env = { ...originalEnv };
-    vi.unmock('../../utils/config-dir.js');
-    vi.unmock('../../utils/ssrf-guard.js');
-    vi.unmock('fs');
-    vi.unmock('child_process');
-    vi.unmock('https');
+    vi.unmock("../../utils/config-dir.js");
+    vi.unmock("../../utils/ssrf-guard.js");
+    vi.unmock("fs");
+    vi.unmock("child_process");
+    vi.unmock("https");
   });
 
-  it('acquires lock before API call when cache is expired', async () => {
+  it("acquires lock before API call when cache is expired", async () => {
     const expiredCache = JSON.stringify({
       timestamp: Date.now() - 91_000,
-      source: 'zai',
+      source: "zai",
       data: {
         fiveHourPercent: 12,
         fiveHourResetsAt: null,
@@ -213,49 +221,67 @@ describe('getUsage lock behavior', () => {
     const { files, fsModule } = createFsMock({ [CACHE_PATH]: expiredCache });
     let requestSawLock = false;
 
-    vi.doMock('../../utils/config-dir.js', () => ({
+    vi.doMock("../../utils/config-dir.js", () => ({
       getClaudeConfigDir: () => CLAUDE_CONFIG_DIR,
     }));
-    vi.doMock('../../utils/ssrf-guard.js', () => ({
+    vi.doMock("../../utils/ssrf-guard.js", () => ({
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
-    vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+    vi.doMock("child_process", async () => ({
+      ...(await vi.importActual<typeof import("child_process")>(
+        "child_process",
+      )),
       execSync: vi.fn(),
     }));
-    vi.doMock('fs', () => fsModule);
-    vi.doMock('https', () => ({
+    vi.doMock("fs", () => fsModule);
+    vi.doMock("https", () => ({
       default: {
-        request: vi.fn((options: Record<string, unknown>, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-          requestSawLock = files.has(LOCK_PATH);
+        request: vi.fn(
+          (
+            options: Record<string, unknown>,
+            callback: (res: EventEmitter & { statusCode?: number }) => void,
+          ) => {
+            requestSawLock = files.has(LOCK_PATH);
 
-          const req = new EventEmitter() as EventEmitter & {
-            destroy: () => void;
-            end: () => void;
-          };
-          req.destroy = vi.fn();
-          req.end = () => {
-            setTimeout(() => {
-              const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-              res.statusCode = 200;
-              callback(res);
-              res.emit('data', JSON.stringify({
-                data: {
-                  limits: [
-                    { type: 'TOKENS_LIMIT', percentage: 67, nextResetTime: Date.now() + 3_600_000 },
-                  ],
-                },
-              }));
-              res.emit('end');
-            }, 10);
-          };
-          return req;
-        }),
+            const req = new EventEmitter() as EventEmitter & {
+              destroy: () => void;
+              end: () => void;
+            };
+            req.destroy = vi.fn();
+            req.end = () => {
+              setTimeout(() => {
+                const res = new EventEmitter() as EventEmitter & {
+                  statusCode?: number;
+                };
+                res.statusCode = 200;
+                callback(res);
+                res.emit(
+                  "data",
+                  JSON.stringify({
+                    data: {
+                      limits: [
+                        {
+                          type: "TOKENS_LIMIT",
+                          percentage: 67,
+                          nextResetTime: Date.now() + 3_600_000,
+                        },
+                      ],
+                    },
+                  }),
+                );
+                res.emit("end");
+              }, 10);
+            };
+            return req;
+          },
+        ),
       },
     }));
 
-    const { getUsage } = await import('../../hud/usage-api.js');
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const { getUsage } = await import("../../hud/usage-api.js");
+    const httpsModule = (await import("https")) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     const [first, second] = await Promise.all([getUsage(), getUsage()]);
 

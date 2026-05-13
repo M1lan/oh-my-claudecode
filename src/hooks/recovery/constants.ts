@@ -4,42 +4,51 @@
  * Constants, messages, and patterns for all recovery mechanisms.
  */
 
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import { getDataDir } from '../../utils/paths.js';
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { getDataDir } from "../../utils/paths.js";
 
 /**
  * Get the Claude Code storage directory
  */
 function getClaudeCodeStorageDir(): string {
-  return join(getDataDir(), 'claude-code', 'storage');
+  return join(getDataDir(), "claude-code", "storage");
 }
 
 export const CLAUDE_CODE_STORAGE = getClaudeCodeStorageDir();
-export const MESSAGE_STORAGE = join(CLAUDE_CODE_STORAGE, 'message');
-export const PART_STORAGE = join(CLAUDE_CODE_STORAGE, 'part');
+export const MESSAGE_STORAGE = join(CLAUDE_CODE_STORAGE, "message");
+export const PART_STORAGE = join(CLAUDE_CODE_STORAGE, "part");
 
 /**
  * Debug logging configuration
  */
 export const DEBUG =
-  process.env.RECOVERY_DEBUG === '1' ||
-  process.env.CONTEXT_LIMIT_RECOVERY_DEBUG === '1' ||
-  process.env.SESSION_RECOVERY_DEBUG === '1';
+  process.env.RECOVERY_DEBUG === "1" ||
+  process.env.CONTEXT_LIMIT_RECOVERY_DEBUG === "1" ||
+  process.env.SESSION_RECOVERY_DEBUG === "1";
 
-export const DEBUG_FILE = join(tmpdir(), 'recovery-debug.log');
+export const DEBUG_FILE = join(tmpdir(), "recovery-debug.log");
 
 /**
  * Part type sets for categorization
  */
-export const THINKING_TYPES = new Set(['thinking', 'redacted_thinking', 'reasoning']);
-export const META_TYPES = new Set(['step-start', 'step-finish']);
-export const CONTENT_TYPES = new Set(['text', 'tool', 'tool_use', 'tool_result']);
+export const THINKING_TYPES = new Set([
+  "thinking",
+  "redacted_thinking",
+  "reasoning",
+]);
+export const META_TYPES = new Set(["step-start", "step-finish"]);
+export const CONTENT_TYPES = new Set([
+  "text",
+  "tool",
+  "tool_use",
+  "tool_result",
+]);
 
 /**
  * Placeholder text for empty content
  */
-export const PLACEHOLDER_TEXT = '[user interrupted]';
+export const PLACEHOLDER_TEXT = "[user interrupted]";
 
 /**
  * ============================================================================
@@ -144,14 +153,14 @@ export const TOKEN_LIMIT_PATTERNS = [
  * Keywords indicating token limit errors
  */
 export const TOKEN_LIMIT_KEYWORDS = [
-  'prompt is too long',
-  'is too long',
-  'context_length_exceeded',
-  'max_tokens',
-  'token limit',
-  'context length',
-  'too many tokens',
-  'non-empty content',
+  "prompt is too long",
+  "is too long",
+  "context_length_exceeded",
+  "max_tokens",
+  "token limit",
+  "context length",
+  "too many tokens",
+  "non-empty content",
 ];
 
 /**
@@ -164,11 +173,11 @@ export const TOKEN_LIMIT_KEYWORDS = [
  * Known Edit tool error patterns that indicate the AI made a mistake
  */
 export const EDIT_ERROR_PATTERNS = [
-  'oldString and newString must be different',
-  'oldString not found',
-  'oldString found multiple times',
-  'old_string not found',
-  'old_string and new_string must be different',
+  "oldString and newString must be different",
+  "oldString not found",
+  "oldString found multiple times",
+  "old_string not found",
+  "old_string and new_string must be different",
 ] as const;
 
 /**
@@ -199,28 +208,28 @@ DO NOT attempt another edit until you've read and verified the file state.
  */
 export const RECOVERY_MESSAGES = {
   tool_result_missing: {
-    title: 'Tool Crash Recovery',
-    message: 'Injecting cancelled tool results...',
+    title: "Tool Crash Recovery",
+    message: "Injecting cancelled tool results...",
   },
   thinking_block_order: {
-    title: 'Thinking Block Recovery',
-    message: 'Fixing message structure...',
+    title: "Thinking Block Recovery",
+    message: "Fixing message structure...",
   },
   thinking_disabled_violation: {
-    title: 'Thinking Strip Recovery',
-    message: 'Stripping thinking blocks...',
+    title: "Thinking Strip Recovery",
+    message: "Stripping thinking blocks...",
   },
   empty_content: {
-    title: 'Empty Content Recovery',
-    message: 'Adding placeholder content...',
+    title: "Empty Content Recovery",
+    message: "Adding placeholder content...",
   },
   context_window_limit: {
-    title: 'Context Window Limit',
-    message: 'Context limit reached - recovery required',
+    title: "Context Window Limit",
+    message: "Context limit reached - recovery required",
   },
   edit_error: {
-    title: 'Edit Error',
-    message: 'Edit operation failed - corrective action needed',
+    title: "Edit Error",
+    message: "Edit operation failed - corrective action needed",
   },
 } as const;
 
@@ -228,15 +237,15 @@ export const RECOVERY_MESSAGES = {
  * Recovery error patterns
  */
 export const ERROR_PATTERNS = {
-  tool_result_missing: ['tool_use', 'tool_result'],
+  tool_result_missing: ["tool_use", "tool_result"],
   thinking_block_order: [
-    'thinking',
-    'first block',
-    'must start with',
-    'preceeding',
-    'final block',
-    'cannot be thinking',
+    "thinking",
+    "first block",
+    "must start with",
+    "preceeding",
+    "final block",
+    "cannot be thinking",
   ],
-  thinking_disabled_violation: ['thinking is disabled', 'cannot contain'],
-  empty_content: ['empty', 'content', 'message'],
+  thinking_disabled_violation: ["thinking is disabled", "cannot contain"],
+  empty_content: ["empty", "content", "message"],
 } as const;

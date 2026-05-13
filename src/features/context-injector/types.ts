@@ -13,22 +13,22 @@
  * Each source registers context that will be merged and injected together.
  */
 export type ContextSourceType =
-  | 'keyword-detector'
-  | 'rules-injector'
-  | 'directory-agents'
-  | 'directory-readme'
-  | 'boulder-state'
-  | 'session-context'
-  | 'learner'
-  | 'beads'
-  | 'project-memory'
-  | 'custom';
+  | "keyword-detector"
+  | "rules-injector"
+  | "directory-agents"
+  | "directory-readme"
+  | "boulder-state"
+  | "session-context"
+  | "learner"
+  | "beads"
+  | "project-memory"
+  | "custom";
 
 /**
  * Priority levels for context ordering.
  * Higher priority contexts appear first in the merged output.
  */
-export type ContextPriority = 'critical' | 'high' | 'normal' | 'low';
+export type ContextPriority = "critical" | "high" | "normal" | "low";
 
 /**
  * A single context entry registered by a source.
@@ -106,7 +106,7 @@ export interface OutputPart {
 /**
  * Injection strategy for context.
  */
-export type InjectionStrategy = 'prepend' | 'append' | 'wrap';
+export type InjectionStrategy = "prepend" | "append" | "wrap";
 
 /**
  * Result of an injection operation.

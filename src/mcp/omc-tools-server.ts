@@ -26,9 +26,7 @@ interface ToolDef {
   description: string;
   category?: ToolCategory;
   schema: Record<string, unknown>;
-  handler: (
-    args: unknown,
-  ) => Promise<{
+  handler: (args: unknown) => Promise<{
     content: Array<{ type: "text"; text: string }>;
     isError?: boolean;
   }>;

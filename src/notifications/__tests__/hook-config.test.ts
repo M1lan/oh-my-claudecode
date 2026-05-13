@@ -43,7 +43,9 @@ describe("hook-config reader", () => {
     resetHookConfigCache();
     try {
       rmSync(TEST_DIR, { recursive: true, force: true });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   });
 
   // -----------------------------------------------------------------------
@@ -153,7 +155,9 @@ describe("hook-config reader", () => {
     });
 
     it("returns null when hookConfig is null", () => {
-      expect(resolveEventTemplate(null as any, "session-start", "discord")).toBeNull();
+      expect(
+        resolveEventTemplate(null as any, "session-start", "discord"),
+      ).toBeNull();
     });
 
     it("returns event template when no platform override", () => {
@@ -169,15 +173,15 @@ describe("hook-config reader", () => {
     });
 
     it("returns defaultTemplate when event has no template", () => {
-      expect(
-        resolveEventTemplate(baseConfig, "session-start", "discord"),
-      ).toBe("Global: {{event}}");
+      expect(resolveEventTemplate(baseConfig, "session-start", "discord")).toBe(
+        "Global: {{event}}",
+      );
     });
 
     it("returns defaultTemplate when event is not in config", () => {
-      expect(
-        resolveEventTemplate(baseConfig, "session-idle", "discord"),
-      ).toBe("Global: {{event}}");
+      expect(resolveEventTemplate(baseConfig, "session-idle", "discord")).toBe(
+        "Global: {{event}}",
+      );
     });
 
     it("returns null when no template at any level", () => {
@@ -186,7 +190,9 @@ describe("hook-config reader", () => {
         enabled: true,
         events: { "session-end": { enabled: true } },
       };
-      expect(resolveEventTemplate(minimal, "session-end", "discord")).toBeNull();
+      expect(
+        resolveEventTemplate(minimal, "session-end", "discord"),
+      ).toBeNull();
     });
   });
 

@@ -7,14 +7,14 @@
 export const TEAM_PIPELINE_SCHEMA_VERSION = 1;
 
 export type TeamPipelinePhase =
-  | 'team-plan'
-  | 'team-prd'
-  | 'team-exec'
-  | 'team-verify'
-  | 'team-fix'
-  | 'complete'
-  | 'failed'
-  | 'cancelled';
+  | "team-plan"
+  | "team-prd"
+  | "team-exec"
+  | "team-verify"
+  | "team-fix"
+  | "complete"
+  | "failed"
+  | "cancelled";
 
 export interface TeamPhaseHistoryEntry {
   phase: TeamPipelinePhase;
@@ -50,7 +50,7 @@ export interface TeamPipelineCancel {
 
 export interface TeamPipelineState {
   schema_version: number;
-  mode: 'team';
+  mode: "team";
   active: boolean;
   session_id: string;
   project_path: string;

@@ -14,8 +14,8 @@ import type {
   ProjectContext,
   TaskType,
   ComponentRole,
-  DecompositionStrategy
-} from './types.js';
+  DecompositionStrategy,
+} from "./types.js";
 
 // Re-export types
 export type {
@@ -28,15 +28,15 @@ export type {
   TaskType,
   ComponentRole,
   FileOwnership,
-  DecompositionStrategy
-} from './types.js';
+  DecompositionStrategy,
+} from "./types.js";
 
 /**
  * Main entry point: decompose a task into parallelizable subtasks
  */
 export async function decomposeTask(
   task: string,
-  projectContext: ProjectContext = { rootDir: process.cwd() }
+  projectContext: ProjectContext = { rootDir: process.cwd() },
 ): Promise<DecompositionResult> {
   // Step 1: Analyze the task
   const analysis = analyzeTask(task, projectContext);
@@ -66,7 +66,7 @@ export async function decomposeTask(
     sharedFiles,
     executionOrder,
     strategy: explainStrategy(analysis, components),
-    warnings
+    warnings,
   };
 }
 
@@ -75,7 +75,7 @@ export async function decomposeTask(
  */
 export function analyzeTask(
   task: string,
-  context: ProjectContext
+  context: ProjectContext,
 ): TaskAnalysis {
   const lower = task.toLowerCase();
 
@@ -108,7 +108,7 @@ export function analyzeTask(
     areas,
     technologies,
     filePatterns,
-    dependencies
+    dependencies,
   };
 }
 
@@ -117,21 +117,21 @@ export function analyzeTask(
  */
 export function identifyComponents(
   analysis: TaskAnalysis,
-  context: ProjectContext
+  context: ProjectContext,
 ): Component[] {
   if (!analysis.isParallelizable) {
     // Single component for non-parallelizable tasks
     return [
       {
-        id: 'main',
-        name: 'Main Task',
-        role: 'module',
+        id: "main",
+        name: "Main Task",
+        role: "module",
         description: analysis.task,
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: analysis.technologies
-      }
+        technologies: analysis.technologies,
+      },
     ];
   }
 
@@ -148,7 +148,7 @@ export function identifyComponents(
 export function generateSubtasks(
   components: Component[],
   analysis: TaskAnalysis,
-  context: ProjectContext
+  context: ProjectContext,
 ): Subtask[] {
   return components.map((component) => {
     const subtask: Subtask = {
@@ -160,13 +160,13 @@ export function generateSubtasks(
         componentId: component.id,
         patterns: [],
         files: [],
-        potentialConflicts: []
+        potentialConflicts: [],
       },
       blockedBy: component.dependencies,
       agentType: selectAgentType(component),
       modelTier: selectModelTier(component),
       acceptanceCriteria: generateAcceptanceCriteria(component, analysis),
-      verification: generateVerificationSteps(component, analysis)
+      verification: generateVerificationSteps(component, analysis),
     };
 
     return subtask;
@@ -179,7 +179,7 @@ export function generateSubtasks(
 export function assignFileOwnership(
   subtasks: Subtask[],
   sharedFiles: SharedFile[],
-  context: ProjectContext
+  context: ProjectContext,
 ): void {
   const assignments = new Map<string, Set<string>>();
 
@@ -223,23 +223,23 @@ export function assignFileOwnership(
  */
 export function identifySharedFiles(
   components: Component[],
-  context: ProjectContext
+  context: ProjectContext,
 ): SharedFile[] {
   const sharedFiles: SharedFile[] = [];
 
   // Common shared files
   const commonShared = [
-    'package.json',
-    'tsconfig.json',
-    'package-lock.json',
-    'yarn.lock',
-    'pnpm-lock.yaml',
-    'README.md',
-    '.gitignore',
-    '.env',
-    '.env.example',
-    'docker-compose.yml',
-    'Dockerfile'
+    "package.json",
+    "tsconfig.json",
+    "package-lock.json",
+    "yarn.lock",
+    "pnpm-lock.yaml",
+    "README.md",
+    ".gitignore",
+    ".env",
+    ".env.example",
+    "docker-compose.yml",
+    "Dockerfile",
   ];
 
   for (const file of commonShared) {
@@ -248,20 +248,23 @@ export function identifySharedFiles(
     if (sharedBy.length > 0) {
       sharedFiles.push({
         pattern: file,
-        reason: 'Common configuration file',
+        reason: "Common configuration file",
         sharedBy,
-        requiresOrchestration: true
+        requiresOrchestration: true,
       });
     }
   }
 
   // Detect framework-specific shared files
-  if (context.technologies?.includes('react') || context.technologies?.includes('next')) {
+  if (
+    context.technologies?.includes("react") ||
+    context.technologies?.includes("next")
+  ) {
     sharedFiles.push({
-      pattern: 'src/types/**',
-      reason: 'Shared TypeScript types',
+      pattern: "src/types/**",
+      reason: "Shared TypeScript types",
       sharedBy: components.map((c) => c.id),
-      requiresOrchestration: false
+      requiresOrchestration: false,
     });
   }
 
@@ -274,15 +277,15 @@ export function identifySharedFiles(
 
 function detectTaskType(task: string): TaskType {
   if (
-    task.includes('fullstack') ||
-    task.includes('full stack') ||
-    (task.includes('frontend') && task.includes('backend'))
+    task.includes("fullstack") ||
+    task.includes("full stack") ||
+    (task.includes("frontend") && task.includes("backend"))
   ) {
-    return 'fullstack-app';
+    return "fullstack-app";
   }
 
-  if (task.includes('refactor') || task.includes('restructure')) {
-    return 'refactoring';
+  if (task.includes("refactor") || task.includes("restructure")) {
+    return "refactoring";
   }
 
   // Require 2+ distinct signals to classify as bug-fix, to avoid false positives
@@ -299,42 +302,42 @@ function detectTaskType(task: string): TaskType {
   ];
   const bugFixMatches = bugFixSignals.filter((re) => re.test(task)).length;
   if (bugFixMatches >= 2) {
-    return 'bug-fix';
+    return "bug-fix";
   }
 
   if (
-    task.includes('feature') ||
-    task.includes('add') ||
-    task.includes('implement')
+    task.includes("feature") ||
+    task.includes("add") ||
+    task.includes("implement")
   ) {
-    return 'feature';
+    return "feature";
   }
 
-  if (task.includes('test') || task.includes('testing')) {
-    return 'testing';
+  if (task.includes("test") || task.includes("testing")) {
+    return "testing";
   }
 
-  if (task.includes('document') || task.includes('docs')) {
-    return 'documentation';
+  if (task.includes("document") || task.includes("docs")) {
+    return "documentation";
   }
 
   if (
-    task.includes('deploy') ||
-    task.includes('infra') ||
-    task.includes('ci/cd')
+    task.includes("deploy") ||
+    task.includes("infra") ||
+    task.includes("ci/cd")
   ) {
-    return 'infrastructure';
+    return "infrastructure";
   }
 
-  if (task.includes('migrate') || task.includes('migration')) {
-    return 'migration';
+  if (task.includes("migrate") || task.includes("migration")) {
+    return "migration";
   }
 
-  if (task.includes('optimize') || task.includes('performance')) {
-    return 'optimization';
+  if (task.includes("optimize") || task.includes("performance")) {
+    return "optimization";
   }
 
-  return 'unknown';
+  return "unknown";
 }
 
 function estimateComplexity(task: string, type: TaskType): number {
@@ -342,16 +345,16 @@ function estimateComplexity(task: string, type: TaskType): number {
 
   // Task type complexity
   const typeComplexity: Record<TaskType, number> = {
-    'fullstack-app': 0.9,
+    "fullstack-app": 0.9,
     refactoring: 0.7,
-    'bug-fix': 0.4,
+    "bug-fix": 0.4,
     feature: 0.6,
     testing: 0.5,
     documentation: 0.3,
     infrastructure: 0.8,
     migration: 0.8,
     optimization: 0.7,
-    unknown: 0.5
+    unknown: 0.5,
   };
 
   score = typeComplexity[type];
@@ -362,15 +365,15 @@ function estimateComplexity(task: string, type: TaskType): number {
 
   // Complexity keywords
   const complexKeywords = [
-    'multiple',
-    'complex',
-    'advanced',
-    'integrate',
-    'system',
-    'architecture',
-    'scalable',
-    'real-time',
-    'distributed'
+    "multiple",
+    "complex",
+    "advanced",
+    "integrate",
+    "system",
+    "architecture",
+    "scalable",
+    "real-time",
+    "distributed",
   ];
 
   for (const keyword of complexKeywords) {
@@ -386,13 +389,13 @@ function extractAreas(task: string, _type: TaskType): string[] {
   const areas: string[] = [];
 
   const areaKeywords: Record<string, string[]> = {
-    frontend: ['frontend', 'ui', 'react', 'vue', 'angular', 'component'],
-    backend: ['backend', 'server', 'api', 'endpoint', 'service'],
-    database: ['database', 'db', 'schema', 'migration', 'model'],
-    auth: ['auth', 'authentication', 'login', 'user'],
-    testing: ['test', 'testing', 'spec', 'unit test'],
-    docs: ['document', 'docs', 'readme', 'guide'],
-    config: ['config', 'setup', 'environment']
+    frontend: ["frontend", "ui", "react", "vue", "angular", "component"],
+    backend: ["backend", "server", "api", "endpoint", "service"],
+    database: ["database", "db", "schema", "migration", "model"],
+    auth: ["auth", "authentication", "login", "user"],
+    testing: ["test", "testing", "spec", "unit test"],
+    docs: ["document", "docs", "readme", "guide"],
+    config: ["config", "setup", "environment"],
   };
 
   for (const [area, keywords] of Object.entries(areaKeywords)) {
@@ -401,33 +404,30 @@ function extractAreas(task: string, _type: TaskType): string[] {
     }
   }
 
-  return areas.length > 0 ? areas : ['main'];
+  return areas.length > 0 ? areas : ["main"];
 }
 
-function extractTechnologies(
-  task: string,
-  context: ProjectContext
-): string[] {
+function extractTechnologies(task: string, context: ProjectContext): string[] {
   const techs: string[] = [];
 
   const techKeywords = [
-    'react',
-    'vue',
-    'angular',
-    'next',
-    'nuxt',
-    'express',
-    'fastify',
-    'nest',
-    'typescript',
-    'javascript',
-    'node',
-    'postgres',
-    'mysql',
-    'mongodb',
-    'redis',
-    'docker',
-    'kubernetes'
+    "react",
+    "vue",
+    "angular",
+    "next",
+    "nuxt",
+    "express",
+    "fastify",
+    "nest",
+    "typescript",
+    "javascript",
+    "node",
+    "postgres",
+    "mysql",
+    "mongodb",
+    "redis",
+    "docker",
+    "kubernetes",
   ];
 
   for (const tech of techKeywords) {
@@ -455,33 +455,33 @@ function extractFilePatterns(task: string, _context: ProjectContext): string[] {
   }
 
   // Common directory patterns
-  if (task.includes('src')) patterns.push('src/**');
-  if (task.includes('test')) patterns.push('**/*.test.ts');
-  if (task.includes('component')) patterns.push('**/components/**');
+  if (task.includes("src")) patterns.push("src/**");
+  if (task.includes("test")) patterns.push("**/*.test.ts");
+  if (task.includes("component")) patterns.push("**/components/**");
 
   return patterns;
 }
 
 function analyzeDependencies(
   areas: string[],
-  _type: TaskType
+  _type: TaskType,
 ): Array<{ from: string; to: string }> {
   const deps: Array<{ from: string; to: string }> = [];
 
   // Common dependencies
-  if (areas.includes('frontend') && areas.includes('backend')) {
-    deps.push({ from: 'frontend', to: 'backend' });
+  if (areas.includes("frontend") && areas.includes("backend")) {
+    deps.push({ from: "frontend", to: "backend" });
   }
 
-  if (areas.includes('backend') && areas.includes('database')) {
-    deps.push({ from: 'backend', to: 'database' });
+  if (areas.includes("backend") && areas.includes("database")) {
+    deps.push({ from: "backend", to: "database" });
   }
 
-  if (areas.includes('testing')) {
+  if (areas.includes("testing")) {
     // Testing depends on everything else
     for (const area of areas) {
-      if (area !== 'testing') {
-        deps.push({ from: 'testing', to: area });
+      if (area !== "testing") {
+        deps.push({ from: "testing", to: area });
       }
     }
   }
@@ -491,13 +491,13 @@ function analyzeDependencies(
 
 function selectStrategy(analysis: TaskAnalysis): DecompositionStrategy {
   switch (analysis.type) {
-    case 'fullstack-app':
+    case "fullstack-app":
       return fullstackStrategy;
-    case 'refactoring':
+    case "refactoring":
       return refactoringStrategy;
-    case 'bug-fix':
+    case "bug-fix":
       return bugFixStrategy;
-    case 'feature':
+    case "feature":
       return featureStrategy;
     default:
       return defaultStrategy;
@@ -509,80 +509,83 @@ function selectStrategy(analysis: TaskAnalysis): DecompositionStrategy {
 // ============================================================================
 
 const fullstackStrategy: DecompositionStrategy = {
-  name: 'Fullstack App',
-  applicableTypes: ['fullstack-app'],
+  name: "Fullstack App",
+  applicableTypes: ["fullstack-app"],
   decompose: (analysis, _context) => {
     const components: Component[] = [];
 
     // Frontend component
-    if (analysis.areas.includes('frontend') || analysis.areas.includes('ui')) {
+    if (analysis.areas.includes("frontend") || analysis.areas.includes("ui")) {
       // Only depend on backend if a backend component is also being created
-      const frontendDeps = (analysis.areas.includes('backend') || analysis.areas.includes('api')) ? ['backend'] : [];
+      const frontendDeps =
+        analysis.areas.includes("backend") || analysis.areas.includes("api")
+          ? ["backend"]
+          : [];
       components.push({
-        id: 'frontend',
-        name: 'Frontend',
-        role: 'frontend',
-        description: 'Frontend UI and components',
+        id: "frontend",
+        name: "Frontend",
+        role: "frontend",
+        description: "Frontend UI and components",
         canParallelize: true,
         dependencies: frontendDeps,
         effort: 0.4,
         technologies: analysis.technologies.filter((t) =>
-          ['react', 'vue', 'angular', 'next'].includes(t)
-        )
+          ["react", "vue", "angular", "next"].includes(t),
+        ),
       });
     }
 
     // Backend component
-    if (analysis.areas.includes('backend') || analysis.areas.includes('api')) {
+    if (analysis.areas.includes("backend") || analysis.areas.includes("api")) {
       components.push({
-        id: 'backend',
-        name: 'Backend',
-        role: 'backend',
-        description: 'Backend API and business logic',
+        id: "backend",
+        name: "Backend",
+        role: "backend",
+        description: "Backend API and business logic",
         canParallelize: true,
-        dependencies: analysis.areas.includes('database') ? ['database'] : [],
+        dependencies: analysis.areas.includes("database") ? ["database"] : [],
         effort: 0.4,
         technologies: analysis.technologies.filter((t) =>
-          ['express', 'fastify', 'nest', 'node'].includes(t)
-        )
+          ["express", "fastify", "nest", "node"].includes(t),
+        ),
       });
     }
 
     // Database component
-    if (analysis.areas.includes('database')) {
+    if (analysis.areas.includes("database")) {
       components.push({
-        id: 'database',
-        name: 'Database',
-        role: 'database',
-        description: 'Database schema and migrations',
+        id: "database",
+        name: "Database",
+        role: "database",
+        description: "Database schema and migrations",
         canParallelize: true,
         dependencies: [],
         effort: 0.2,
         technologies: analysis.technologies.filter((t) =>
-          ['postgres', 'mysql', 'mongodb'].includes(t)
-        )
+          ["postgres", "mysql", "mongodb"].includes(t),
+        ),
       });
     }
 
     // Shared component
     components.push({
-      id: 'shared',
-      name: 'Shared',
-      role: 'shared',
-      description: 'Shared types, utilities, and configuration',
+      id: "shared",
+      name: "Shared",
+      role: "shared",
+      description: "Shared types, utilities, and configuration",
       canParallelize: true,
       dependencies: [],
       effort: 0.2,
-      technologies: []
+      technologies: [],
     });
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const refactoringStrategy: DecompositionStrategy = {
-  name: 'Refactoring',
-  applicableTypes: ['refactoring'],
+  name: "Refactoring",
+  applicableTypes: ["refactoring"],
   decompose: (analysis, _context) => {
     const components: Component[] = [];
 
@@ -591,44 +594,44 @@ const refactoringStrategy: DecompositionStrategy = {
       components.push({
         id: area,
         name: `Refactor ${area}`,
-        role: 'module',
+        role: "module",
         description: `Refactor ${area} module`,
         canParallelize: true,
         dependencies: [],
         effort: analysis.complexity / analysis.areas.length,
-        technologies: []
+        technologies: [],
       });
     }
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const bugFixStrategy: DecompositionStrategy = {
-  name: 'Bug Fix',
-  applicableTypes: ['bug-fix'],
+  name: "Bug Fix",
+  applicableTypes: ["bug-fix"],
   decompose: (analysis, _context) => {
     // Bug fixes usually not parallelizable
     const components: Component[] = [
       {
-        id: 'bugfix',
-        name: 'Fix Bug',
-        role: 'module',
+        id: "bugfix",
+        name: "Fix Bug",
+        role: "module",
         description: analysis.task,
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: []
-      }
+        technologies: [],
+      },
     ];
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const featureStrategy: DecompositionStrategy = {
-  name: 'Feature',
-  applicableTypes: ['feature'],
+  name: "Feature",
+  applicableTypes: ["feature"],
   decompose: (analysis, _context) => {
     const components: Component[] = [];
 
@@ -642,33 +645,33 @@ const featureStrategy: DecompositionStrategy = {
         canParallelize: true,
         dependencies: [],
         effort: analysis.complexity / analysis.areas.length,
-        technologies: []
+        technologies: [],
       });
     }
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const defaultStrategy: DecompositionStrategy = {
-  name: 'Default',
+  name: "Default",
   applicableTypes: [],
   decompose: (analysis, _context) => {
     const components: Component[] = [
       {
-        id: 'main',
-        name: 'Main Task',
-        role: 'module',
+        id: "main",
+        name: "Main Task",
+        role: "module",
         description: analysis.task,
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: []
-      }
+        technologies: [],
+      },
     ];
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 // ============================================================================
@@ -678,7 +681,7 @@ const defaultStrategy: DecompositionStrategy = {
 function generatePromptForComponent(
   component: Component,
   analysis: TaskAnalysis,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string {
   let prompt = `${component.description}\n\n`;
 
@@ -687,7 +690,7 @@ function generatePromptForComponent(
   prompt += `- Component Role: ${component.role}\n`;
 
   if (component.technologies.length > 0) {
-    prompt += `- Technologies: ${component.technologies.join(', ')}\n`;
+    prompt += `- Technologies: ${component.technologies.join(", ")}\n`;
   }
 
   prompt += `\nYour responsibilities:\n`;
@@ -697,7 +700,7 @@ function generatePromptForComponent(
   prompt += `4. Update documentation as needed\n`;
 
   if (component.dependencies.length > 0) {
-    prompt += `\nDependencies: This component depends on ${component.dependencies.join(', ')} completing first.\n`;
+    prompt += `\nDependencies: This component depends on ${component.dependencies.join(", ")} completing first.\n`;
   }
 
   return prompt;
@@ -705,50 +708,50 @@ function generatePromptForComponent(
 
 function selectAgentType(component: Component): string {
   const roleToAgent: Record<ComponentRole, string> = {
-    frontend: 'oh-my-claudecode:designer',
-    backend: 'oh-my-claudecode:executor',
-    database: 'oh-my-claudecode:executor',
-    api: 'oh-my-claudecode:executor',
-    ui: 'oh-my-claudecode:designer',
-    shared: 'oh-my-claudecode:executor',
-    testing: 'oh-my-claudecode:qa-tester',
-    docs: 'oh-my-claudecode:writer',
-    config: 'oh-my-claudecode:executor',
-    module: 'oh-my-claudecode:executor'
+    frontend: "oh-my-claudecode:designer",
+    backend: "oh-my-claudecode:executor",
+    database: "oh-my-claudecode:executor",
+    api: "oh-my-claudecode:executor",
+    ui: "oh-my-claudecode:designer",
+    shared: "oh-my-claudecode:executor",
+    testing: "oh-my-claudecode:qa-tester",
+    docs: "oh-my-claudecode:writer",
+    config: "oh-my-claudecode:executor",
+    module: "oh-my-claudecode:executor",
   };
 
-  return roleToAgent[component.role] || 'oh-my-claudecode:executor';
+  return roleToAgent[component.role] || "oh-my-claudecode:executor";
 }
 
-function selectModelTier(component: Component): 'low' | 'medium' | 'high' {
-  if (component.effort < 0.3) return 'low';
-  if (component.effort < 0.7) return 'medium';
-  return 'high';
+function selectModelTier(component: Component): "low" | "medium" | "high" {
+  if (component.effort < 0.3) return "low";
+  if (component.effort < 0.7) return "medium";
+  return "high";
 }
 
 function generateAcceptanceCriteria(
   component: Component,
-  _analysis: TaskAnalysis
+  _analysis: TaskAnalysis,
 ): string[] {
   const criteria: string[] = [];
 
   criteria.push(`${component.name} implementation is complete`);
-  criteria.push('Code compiles without errors');
-  criteria.push('Tests pass');
+  criteria.push("Code compiles without errors");
+  criteria.push("Tests pass");
 
-  if (component.role === 'frontend' || component.role === 'ui') {
-    criteria.push('UI components render correctly');
-    criteria.push('Responsive design works on all screen sizes');
+  if (component.role === "frontend" || component.role === "ui") {
+    criteria.push("UI components render correctly");
+    criteria.push("Responsive design works on all screen sizes");
   }
 
-  if (component.role === 'backend' || component.role === 'api') {
-    criteria.push('API endpoints return expected responses');
-    criteria.push('Error handling is implemented');
+  if (component.role === "backend" || component.role === "api") {
+    criteria.push("API endpoints return expected responses");
+    criteria.push("Error handling is implemented");
   }
 
-  if (component.role === 'database') {
-    criteria.push('Database schema is correct');
-    criteria.push('Migrations run successfully');
+  if (component.role === "database") {
+    criteria.push("Database schema is correct");
+    criteria.push("Migrations run successfully");
   }
 
   return criteria;
@@ -756,20 +759,20 @@ function generateAcceptanceCriteria(
 
 function generateVerificationSteps(
   component: Component,
-  _analysis: TaskAnalysis
+  _analysis: TaskAnalysis,
 ): string[] {
   const steps: string[] = [];
 
-  steps.push('Run the project type check command');
-  steps.push('Run the project lint command');
-  steps.push('Run the project test command');
+  steps.push("Run the project type check command");
+  steps.push("Run the project lint command");
+  steps.push("Run the project test command");
 
-  if (component.role === 'frontend' || component.role === 'ui') {
-    steps.push('Visual inspection of UI components');
+  if (component.role === "frontend" || component.role === "ui") {
+    steps.push("Visual inspection of UI components");
   }
 
-  if (component.role === 'backend' || component.role === 'api') {
-    steps.push('Test API endpoints with curl or Postman');
+  if (component.role === "backend" || component.role === "api") {
+    steps.push("Test API endpoints with curl or Postman");
   }
 
   return steps;
@@ -777,35 +780,35 @@ function generateVerificationSteps(
 
 function inferFilePatterns(
   component: Component,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string[] {
   const patterns: string[] = [];
 
   switch (component.role) {
-    case 'frontend':
-    case 'ui':
-      patterns.push('src/components/**', 'src/pages/**', 'src/styles/**');
+    case "frontend":
+    case "ui":
+      patterns.push("src/components/**", "src/pages/**", "src/styles/**");
       break;
 
-    case 'backend':
-    case 'api':
-      patterns.push('src/api/**', 'src/routes/**', 'src/controllers/**');
+    case "backend":
+    case "api":
+      patterns.push("src/api/**", "src/routes/**", "src/controllers/**");
       break;
 
-    case 'database':
-      patterns.push('src/db/**', 'src/models/**', 'migrations/**');
+    case "database":
+      patterns.push("src/db/**", "src/models/**", "migrations/**");
       break;
 
-    case 'shared':
-      patterns.push('src/types/**', 'src/utils/**', 'src/lib/**');
+    case "shared":
+      patterns.push("src/types/**", "src/utils/**", "src/lib/**");
       break;
 
-    case 'testing':
-      patterns.push('**/*.test.ts', '**/*.spec.ts', 'tests/**');
+    case "testing":
+      patterns.push("**/*.test.ts", "**/*.spec.ts", "tests/**");
       break;
 
-    case 'docs':
-      patterns.push('docs/**', '*.md');
+    case "docs":
+      patterns.push("docs/**", "*.md");
       break;
 
     default:
@@ -817,7 +820,7 @@ function inferFilePatterns(
 
 function inferSpecificFiles(
   _component: Component,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string[] {
   const files: string[] = [];
 
@@ -864,7 +867,7 @@ function calculateExecutionOrder(subtasks: Subtask[]): string[][] {
 
 function validateDecomposition(
   subtasks: Subtask[],
-  sharedFiles: SharedFile[]
+  sharedFiles: SharedFile[],
 ): string[] {
   const warnings: string[] = [];
 
@@ -885,7 +888,7 @@ function validateDecomposition(
       const isShared = sharedFiles.some((sf) => sf.pattern === pattern);
       if (!isShared) {
         warnings.push(
-          `Pattern "${pattern}" is owned by multiple subtasks: ${owners.join(', ')}`
+          `Pattern "${pattern}" is owned by multiple subtasks: ${owners.join(", ")}`,
         );
       }
     }
@@ -904,9 +907,12 @@ function validateDecomposition(
   return warnings;
 }
 
-function explainStrategy(analysis: TaskAnalysis, components: Component[]): string {
+function explainStrategy(
+  analysis: TaskAnalysis,
+  components: Component[],
+): string {
   let explanation = `Task Type: ${analysis.type}\n`;
-  explanation += `Parallelizable: ${analysis.isParallelizable ? 'Yes' : 'No'}\n`;
+  explanation += `Parallelizable: ${analysis.isParallelizable ? "Yes" : "No"}\n`;
   explanation += `Components: ${components.length}\n\n`;
 
   if (analysis.isParallelizable) {

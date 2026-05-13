@@ -1,15 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
 // ── hooks.json timeout validation ──────────────────────────────────────────
 
-describe('SessionEnd hook timeout (issue #1700)', () => {
-  it('hooks.json SessionEnd timeout is at least 30 seconds', () => {
+describe("SessionEnd hook timeout (issue #1700)", () => {
+  it("hooks.json SessionEnd timeout is at least 30 seconds", () => {
     // Read from the repository root hooks.json
-    const hooksJsonPath = path.resolve(__dirname, '../../../../hooks/hooks.json');
-    const hooksJson = JSON.parse(fs.readFileSync(hooksJsonPath, 'utf-8'));
+    const hooksJsonPath = path.resolve(
+      __dirname,
+      "../../../../hooks/hooks.json",
+    );
+    const hooksJson = JSON.parse(fs.readFileSync(hooksJsonPath, "utf-8"));
 
     const sessionEndEntries = hooksJson.hooks.SessionEnd;
     expect(sessionEndEntries).toBeDefined();
@@ -25,30 +28,30 @@ describe('SessionEnd hook timeout (issue #1700)', () => {
 
 // ── fire-and-forget notification behavior ──────────────────────────────────
 
-vi.mock('../callbacks.js', () => ({
+vi.mock("../callbacks.js", () => ({
   triggerStopCallbacks: vi.fn(async () => {
     // Simulate a slow notification (2s) — should not block session end
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }),
 }));
 
-vi.mock('../../../notifications/index.js', () => ({
+vi.mock("../../../notifications/index.js", () => ({
   notify: vi.fn(async () => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
   }),
 }));
 
-vi.mock('../../../features/auto-update.js', () => ({
+vi.mock("../../../features/auto-update.js", () => ({
   getOMCConfig: vi.fn(() => ({})),
 }));
 
-vi.mock('../../../notifications/config.js', () => ({
+vi.mock("../../../notifications/config.js", () => ({
   buildConfigFromEnv: vi.fn(() => null),
   getEnabledPlatforms: vi.fn(() => []),
   getNotificationConfig: vi.fn(() => null),
 }));
 
-vi.mock('../../../tools/python-repl/bridge-manager.js', () => ({
+vi.mock("../../../tools/python-repl/bridge-manager.js", () => ({
   cleanupBridgeSessions: vi.fn(async () => ({
     requestedSessions: 0,
     foundSessions: 0,
@@ -57,27 +60,27 @@ vi.mock('../../../tools/python-repl/bridge-manager.js', () => ({
   })),
 }));
 
-vi.mock('../../../openclaw/index.js', () => ({
-  wakeOpenClaw: vi.fn().mockResolvedValue({ gateway: 'test', success: true }),
+vi.mock("../../../openclaw/index.js", () => ({
+  wakeOpenClaw: vi.fn().mockResolvedValue({ gateway: "test", success: true }),
 }));
 
-import { processSessionEnd } from '../index.js';
-import { triggerStopCallbacks } from '../callbacks.js';
+import { processSessionEnd } from "../index.js";
+import { triggerStopCallbacks } from "../callbacks.js";
 
-describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
+describe("SessionEnd fire-and-forget notifications (issue #1700)", () => {
   let tmpDir: string;
   let transcriptPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-session-end-timeout-'));
-    transcriptPath = path.join(tmpDir, 'transcript.jsonl');
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "omc-session-end-timeout-"));
+    transcriptPath = path.join(tmpDir, "transcript.jsonl");
     fs.writeFileSync(
       transcriptPath,
       JSON.stringify({
-        type: 'assistant',
-        message: { content: [{ type: 'text', text: 'done' }] },
+        type: "assistant",
+        message: { content: [{ type: "text", text: "done" }] },
       }),
-      'utf-8',
+      "utf-8",
     );
     vi.clearAllMocks();
   });
@@ -87,16 +90,16 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
     vi.restoreAllMocks();
   });
 
-  it('processSessionEnd completes well before slow notifications finish', async () => {
+  it("processSessionEnd completes well before slow notifications finish", async () => {
     const start = Date.now();
 
     await processSessionEnd({
-      session_id: 'timeout-test-1',
+      session_id: "timeout-test-1",
       transcript_path: transcriptPath,
       cwd: tmpDir,
-      permission_mode: 'default',
-      hook_event_name: 'SessionEnd',
-      reason: 'clear',
+      permission_mode: "default",
+      hook_event_name: "SessionEnd",
+      reason: "clear",
     });
 
     const elapsed = Date.now() - start;

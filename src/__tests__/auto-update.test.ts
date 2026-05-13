@@ -44,6 +44,7 @@ import {
   performUpdate,
   shouldBlockStandaloneUpdateInCurrentSession,
   syncPluginCache,
+  fetchLatestRelease,
 } from "../features/auto-update.js";
 
 const mockedExecSync = vi.mocked(execSync);
@@ -60,6 +61,8 @@ const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
   process,
   "platform",
 );
+const originalGhToken = process.env.GH_TOKEN;
+const originalGithubToken = process.env.GITHUB_TOKEN;
 
 function mockPlatform(platform: NodeJS.Platform): void {
   Object.defineProperty(process, "platform", {
@@ -71,6 +74,8 @@ function mockPlatform(platform: NodeJS.Platform): void {
 describe("auto-update reconciliation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.GH_TOKEN;
+    delete process.env.GITHUB_TOKEN;
     mockedCpSync.mockImplementation(() => undefined);
     mockedExistsSync.mockReturnValue(true);
     mockedIsProjectScopedPlugin.mockReturnValue(false);
@@ -80,7 +85,7 @@ describe("auto-update reconciliation", () => {
           return JSON.stringify({
             version: "4.1.5",
             installedAt: "2026-02-09T00:00:00.000Z",
-            installMethod: "pnpm",
+            installMethod: "npm",
           });
         }
         return "";
@@ -107,9 +112,156 @@ describe("auto-update reconciliation", () => {
     vi.unstubAllGlobals();
     delete process.env.OMC_UPDATE_RECONCILE;
     delete process.env.CLAUDE_PLUGIN_ROOT;
+    if (originalGhToken === undefined) {
+      delete process.env.GH_TOKEN;
+    } else {
+      process.env.GH_TOKEN = originalGhToken;
+    }
+    if (originalGithubToken === undefined) {
+      delete process.env.GITHUB_TOKEN;
+    } else {
+      process.env.GITHUB_TOKEN = originalGithubToken;
+    }
     if (originalPlatformDescriptor) {
       Object.defineProperty(process, "platform", originalPlatformDescriptor);
     }
+  });
+
+  it("fetches latest release without Authorization when no GitHub token is configured", async () => {
+    const release = {
+      tag_name: "v4.1.5",
+      name: "4.1.5",
+      published_at: "2026-02-09T00:00:00.000Z",
+      html_url: "https://example.com/release",
+      body: "notes",
+      prerelease: false,
+      draft: false,
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => release,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(fetchLatestRelease()).resolves.toEqual(release);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/releases/latest"),
+      {
+        headers: {
+          Accept: "application/vnd.github.v3+json",
+          "User-Agent": "oh-my-claudecode-updater",
+        },
+      },
+    );
+  });
+
+  it("uses GITHUB_TOKEN for latest release requests when GH_TOKEN is absent", async () => {
+    process.env.GITHUB_TOKEN = "github-token-value";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({
+        tag_name: "v4.1.5",
+        name: "4.1.5",
+        published_at: "2026-02-09T00:00:00.000Z",
+        html_url: "https://example.com/release",
+        body: "notes",
+        prerelease: false,
+        draft: false,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchLatestRelease();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/releases/latest"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer github-token-value",
+        }),
+      }),
+    );
+  });
+
+  it("prefers GH_TOKEN over GITHUB_TOKEN for latest release requests", async () => {
+    process.env.GH_TOKEN = "gh-token-value";
+    process.env.GITHUB_TOKEN = "github-token-value";
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      statusText: "OK",
+      json: async () => ({
+        tag_name: "v4.1.5",
+        name: "4.1.5",
+        published_at: "2026-02-09T00:00:00.000Z",
+        html_url: "https://example.com/release",
+        body: "notes",
+        prerelease: false,
+        draft: false,
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await fetchLatestRelease();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining("/releases/latest"),
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer gh-token-value",
+        }),
+      }),
+    );
+  });
+
+  it("adds a helpful rate-limit hint for unauthenticated 403 release responses", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        headers: new Headers({
+          "x-ratelimit-remaining": "0",
+          "x-ratelimit-reset": "1893456000",
+        }),
+        text: async () =>
+          JSON.stringify({ message: "API rate limit exceeded" }),
+      }),
+    );
+
+    await expect(fetchLatestRelease()).rejects.toThrow(
+      /GitHub API rate limit exceeded.*Set GH_TOKEN or GITHUB_TOKEN.*2030-01-01T00:00:00.000Z/,
+    );
+  });
+
+  it("does not leak a configured token in token-authenticated 403 errors", async () => {
+    process.env.GH_TOKEN = "super-secret-token";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 403,
+        statusText: "Forbidden",
+        headers: new Headers({
+          "x-ratelimit-remaining": "0",
+        }),
+        text: async () =>
+          JSON.stringify({ message: "API rate limit exceeded" }),
+      }),
+    );
+
+    await expect(fetchLatestRelease()).rejects.toThrow(
+      /configured GitHub token appears to be rate limited/,
+    );
+    await expect(fetchLatestRelease()).rejects.not.toThrow(
+      /super-secret-token/,
+    );
   });
 
   it("reconciles runtime state without re-injecting settings hooks", () => {
@@ -186,7 +338,7 @@ describe("auto-update reconciliation", () => {
           return JSON.stringify({
             version: "4.1.5",
             installedAt: "2026-02-09T00:00:00.000Z",
-            installMethod: "pnpm",
+            installMethod: "npm",
           });
         }
         if (normalized.endsWith("/plugins/installed_plugins.json")) {
@@ -273,7 +425,7 @@ describe("auto-update reconciliation", () => {
     const versionedCacheRoot = `${cacheRoot}/4.9.0`;
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === "pnpm root -g") {
+      if (command === "npm root -g") {
         return "/usr/lib/node_modules\n";
       }
       return "";
@@ -292,7 +444,7 @@ describe("auto-update reconciliation", () => {
           return JSON.stringify({
             version: "4.1.5",
             installedAt: "2026-02-09T00:00:00.000Z",
-            installMethod: "pnpm",
+            installMethod: "npm",
           });
         }
         return "";
@@ -320,7 +472,7 @@ describe("auto-update reconciliation", () => {
 
     expect(result).toEqual({ synced: true, skipped: false, errors: [] });
     expect(mockedExecSync).toHaveBeenCalledWith(
-      "pnpm root -g",
+      "npm root -g",
       expect.objectContaining({
         encoding: "utf-8",
         stdio: "pipe",
@@ -367,7 +519,7 @@ describe("auto-update reconciliation", () => {
 
     expect(result).toEqual({ synced: false, skipped: true, errors: [] });
     expect(mockedExecSync).not.toHaveBeenCalledWith(
-      "pnpm root -g",
+      "npm root -g",
       expect.anything(),
     );
     expect(mockedCpSync).not.toHaveBeenCalled();
@@ -387,7 +539,7 @@ describe("auto-update reconciliation", () => {
     const versionedCacheRoot = `${cacheRoot}/4.9.0`;
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === "pnpm root -g") {
+      if (command === "npm root -g") {
         return "/usr/lib/node_modules\n";
       }
       return "";
@@ -406,7 +558,7 @@ describe("auto-update reconciliation", () => {
           return JSON.stringify({
             version: "4.1.5",
             installedAt: "2026-02-09T00:00:00.000Z",
-            installMethod: "pnpm",
+            installMethod: "npm",
           });
         }
         return "";
@@ -490,7 +642,7 @@ describe("auto-update reconciliation", () => {
           return JSON.stringify({
             version: "4.1.5",
             installedAt: "2026-02-09T00:00:00.000Z",
-            installMethod: "pnpm",
+            installMethod: "npm",
           });
         }
         if (normalized.endsWith("/plugins/installed_plugins.json")) {
@@ -580,10 +732,10 @@ describe("auto-update reconciliation", () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === "pnpm add -g oh-my-claude-sisyphus@latest") {
+      if (command === "npm install -g oh-my-claude-sisyphus@latest") {
         return "";
       }
-      if (command === "pnpm root -g") {
+      if (command === "npm root -g") {
         return "/usr/lib/node_modules\n";
       }
       return "";
@@ -609,14 +761,14 @@ describe("auto-update reconciliation", () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      "pnpm add -g oh-my-claude-sisyphus@latest",
+      "npm install -g oh-my-claude-sisyphus@latest",
       expect.any(Object),
     );
   });
 
   it("runs reconciliation as part of performUpdate without plugin hook reinjection", async () => {
     // Set env var so performUpdate takes the direct reconciliation path
-    // (simulates being in the re-exec'd process after pnpm install)
+    // (simulates being in the re-exec'd process after npm install)
     process.env.OMC_UPDATE_RECONCILE = "1";
     process.env.CLAUDE_PLUGIN_ROOT = join(
       CLAUDE_CONFIG_DIR,
@@ -649,7 +801,7 @@ describe("auto-update reconciliation", () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      "pnpm add -g oh-my-claude-sisyphus@latest",
+      "npm install -g oh-my-claude-sisyphus@latest",
       expect.any(Object),
     );
     expect(mockedInstall).toHaveBeenCalledWith({
@@ -950,7 +1102,7 @@ describe("auto-update reconciliation", () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === "pnpm add -g oh-my-claude-sisyphus@latest") {
+      if (command === "npm install -g oh-my-claude-sisyphus@latest") {
         return "";
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -958,9 +1110,9 @@ describe("auto-update reconciliation", () => {
 
     mockedExecFileSync.mockImplementation((command: string) => {
       if (command === "where.exe") {
-        return "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd\r\n";
+        return "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n";
       }
-      if (command === "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd") {
+      if (command === "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd") {
         return "";
       }
       throw new Error(`Unexpected execFileSync command: ${command}`);
@@ -970,7 +1122,7 @@ describe("auto-update reconciliation", () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      "pnpm add -g oh-my-claude-sisyphus@latest",
+      "npm install -g oh-my-claude-sisyphus@latest",
       expect.objectContaining({
         windowsHide: true,
       }),
@@ -988,7 +1140,7 @@ describe("auto-update reconciliation", () => {
     );
     expect(mockedExecFileSync).toHaveBeenNthCalledWith(
       2,
-      "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd",
+      "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd",
       ["update-reconcile"],
       expect.objectContaining({
         encoding: "utf-8",
@@ -1037,12 +1189,12 @@ describe("auto-update reconciliation", () => {
     mockedExecSync.mockReturnValue("");
     mockedExecFileSync.mockImplementation((command: string) => {
       if (command === "where.exe") {
-        return "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd\r\n";
+        return "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd\r\n";
       }
-      if (command === "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd") {
+      if (command === "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd") {
         const error = Object.assign(
           new Error(
-            "spawnSync C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd ENOENT",
+            "spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT",
           ),
           {
             code: "ENOENT",
@@ -1060,11 +1212,11 @@ describe("auto-update reconciliation", () => {
       "Updated to 4.1.6, but runtime reconciliation failed",
     );
     expect(result.errors).toEqual([
-      "spawnSync C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd ENOENT",
+      "spawnSync C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd ENOENT",
     ]);
     expect(mockedExecFileSync).toHaveBeenNthCalledWith(
       2,
-      "C:\\Users\\bellman\\AppData\\Roaming\\pnpm\\omc.cmd",
+      "C:\\Users\\bellman\\AppData\\Roaming\\npm\\omc.cmd",
       ["update-reconcile"],
       expect.objectContaining({
         shell: true,

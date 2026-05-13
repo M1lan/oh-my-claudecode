@@ -467,7 +467,7 @@ export async function startTeamJob(
     cwd: input.cwd,
   };
 
-  const child = spawn("node", [runtimeCliPath], {
+  const child = spawn(process.execPath, [runtimeCliPath], {
     env: {
       ...process.env,
       OMC_JOB_ID: jobId,

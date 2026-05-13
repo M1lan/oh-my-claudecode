@@ -12,11 +12,8 @@ import {
   type WikiPage,
   type WikiConfig,
   DEFAULT_WIKI_CONFIG,
-} from './types.js';
-import {
-  readAllPages,
-  appendLog,
-} from './storage.js';
+} from "./types.js";
+import { readAllPages, appendLog } from "./storage.js";
 
 /**
  * Run health checks on the wiki.
@@ -33,10 +30,13 @@ import {
  * @param config - Wiki configuration (uses defaults if not provided)
  * @returns Lint report with issues and stats
  */
-export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG): WikiLintReport {
+export function lintWiki(
+  root: string,
+  config: WikiConfig = DEFAULT_WIKI_CONFIG,
+): WikiLintReport {
   const pages = readAllPages(root);
   const issues: WikiLintIssue[] = [];
-  const pageFilenames = new Set(pages.map(p => p.filename));
+  const pageFilenames = new Set(pages.map((p) => p.filename));
 
   // Build incoming link map
   const incomingLinks = new Map<string, Set<string>>();
@@ -52,11 +52,14 @@ export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG)
 
   for (const page of pages) {
     // 1. Orphan detection — no incoming links from other pages
-    if (!incomingLinks.has(page.filename) || incomingLinks.get(page.filename)!.size === 0) {
+    if (
+      !incomingLinks.has(page.filename) ||
+      incomingLinks.get(page.filename)!.size === 0
+    ) {
       issues.push({
         page: page.filename,
-        severity: 'info',
-        type: 'orphan',
+        severity: "info",
+        type: "orphan",
         message: `No other pages link to "${page.frontmatter.title}"`,
       });
     }
@@ -67,8 +70,8 @@ export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG)
       const daysSince = Math.floor((now - updatedAt) / (24 * 60 * 60 * 1000));
       issues.push({
         page: page.filename,
-        severity: 'warning',
-        type: 'stale',
+        severity: "warning",
+        type: "stale",
         message: `"${page.frontmatter.title}" not updated in ${daysSince} days`,
       });
     }
@@ -78,31 +81,31 @@ export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG)
       if (!pageFilenames.has(link)) {
         issues.push({
           page: page.filename,
-          severity: 'error',
-          type: 'broken-ref',
+          severity: "error",
+          type: "broken-ref",
           message: `Broken link to "${link}" from "${page.frontmatter.title}"`,
         });
       }
     }
 
     // 4. Low confidence
-    if (page.frontmatter.confidence === 'low') {
+    if (page.frontmatter.confidence === "low") {
       issues.push({
         page: page.filename,
-        severity: 'info',
-        type: 'low-confidence',
+        severity: "info",
+        type: "low-confidence",
         message: `"${page.frontmatter.title}" has low confidence — consider verifying or removing`,
       });
     }
 
     // 5. Oversized pages
-    const contentSize = Buffer.byteLength(page.content, 'utf-8');
+    const contentSize = Buffer.byteLength(page.content, "utf-8");
     if (contentSize > config.maxPageSize) {
       const sizeKB = (contentSize / 1024).toFixed(1);
       issues.push({
         page: page.filename,
-        severity: 'warning',
-        type: 'oversized',
+        severity: "warning",
+        type: "oversized",
         message: `"${page.frontmatter.title}" is ${sizeKB}KB — consider splitting into smaller pages`,
       });
     }
@@ -114,19 +117,22 @@ export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG)
   // Build stats
   const stats = {
     totalPages: pages.length,
-    orphanCount: issues.filter(i => i.type === 'orphan').length,
-    staleCount: issues.filter(i => i.type === 'stale').length,
-    brokenRefCount: issues.filter(i => i.type === 'broken-ref').length,
-    lowConfidenceCount: issues.filter(i => i.type === 'low-confidence').length,
-    oversizedCount: issues.filter(i => i.type === 'oversized').length,
-    contradictionCount: issues.filter(i => i.type === 'structural-contradiction').length,
+    orphanCount: issues.filter((i) => i.type === "orphan").length,
+    staleCount: issues.filter((i) => i.type === "stale").length,
+    brokenRefCount: issues.filter((i) => i.type === "broken-ref").length,
+    lowConfidenceCount: issues.filter((i) => i.type === "low-confidence")
+      .length,
+    oversizedCount: issues.filter((i) => i.type === "oversized").length,
+    contradictionCount: issues.filter(
+      (i) => i.type === "structural-contradiction",
+    ).length,
   };
 
   // Log the lint operation
   appendLog(root, {
     timestamp: new Date().toISOString(),
-    operation: 'lint',
-    pagesAffected: [...new Set(issues.map(i => i.page))],
+    operation: "lint",
+    pagesAffected: [...new Set(issues.map((i) => i.page))],
     summary: `Lint: ${issues.length} issues (${stats.orphanCount} orphan, ${stats.staleCount} stale, ${stats.brokenRefCount} broken, ${stats.contradictionCount} contradictions)`,
   });
 
@@ -140,11 +146,14 @@ export function lintWiki(root: string, config: WikiConfig = DEFAULT_WIKI_CONFIG)
  *
  * NOTE: Semantic contradiction detection requires LLM integration (v2).
  */
-function detectStructuralContradictions(pages: WikiPage[], issues: WikiLintIssue[]): void {
+function detectStructuralContradictions(
+  pages: WikiPage[],
+  issues: WikiLintIssue[],
+): void {
   // Group by slug prefix (first segment before first hyphen-separated word boundary)
   const slugGroups = new Map<string, WikiPage[]>();
   for (const page of pages) {
-    const prefix = page.filename.split('-').slice(0, 2).join('-');
+    const prefix = page.filename.split("-").slice(0, 2).join("-");
     if (!slugGroups.has(prefix)) slugGroups.set(prefix, []);
     slugGroups.get(prefix)!.push(page);
   }
@@ -153,13 +162,17 @@ function detectStructuralContradictions(pages: WikiPage[], issues: WikiLintIssue
     if (group.length < 2) continue;
 
     // Check for conflicting confidence on same topic
-    const confidences = new Set(group.map(p => p.frontmatter.confidence));
-    if (confidences.size > 1 && confidences.has('high') && confidences.has('low')) {
-      const titles = group.map(p => `"${p.frontmatter.title}"`).join(', ');
+    const confidences = new Set(group.map((p) => p.frontmatter.confidence));
+    if (
+      confidences.size > 1 &&
+      confidences.has("high") &&
+      confidences.has("low")
+    ) {
+      const titles = group.map((p) => `"${p.frontmatter.title}"`).join(", ");
       issues.push({
         page: group[0].filename,
-        severity: 'warning',
-        type: 'structural-contradiction',
+        severity: "warning",
+        type: "structural-contradiction",
         message: `Conflicting confidence levels for related pages: ${titles}`,
       });
     }
@@ -177,9 +190,9 @@ function detectStructuralContradictions(pages: WikiPage[], issues: WikiLintIssue
       if (categories.size > 1) {
         issues.push({
           page: group[0].filename,
-          severity: 'info',
-          type: 'structural-contradiction',
-          message: `Tag "${tag}" appears in pages with different categories: ${[...categories].join(', ')}`,
+          severity: "info",
+          type: "structural-contradiction",
+          message: `Tag "${tag}" appears in pages with different categories: ${[...categories].join(", ")}`,
         });
         break; // One contradiction per group is enough
       }

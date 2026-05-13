@@ -10,9 +10,15 @@
  * - Learnings captured for future iterations
  */
 
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import { getOmcRoot } from '../../lib/worktree-paths.js';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  mkdirSync,
+} from "fs";
+import { join } from "path";
+import { getOmcRoot } from "../../lib/worktree-paths.js";
 
 // ============================================================================
 // Types
@@ -51,9 +57,9 @@ export interface ProgressLog {
 // Constants
 // ============================================================================
 
-export const PROGRESS_FILENAME = 'progress.txt';
-export const PATTERNS_HEADER = '## Codebase Patterns';
-export const ENTRY_SEPARATOR = '---';
+export const PROGRESS_FILENAME = "progress.txt";
+export const PATTERNS_HEADER = "## Codebase Patterns";
+export const ENTRY_SEPARATOR = "---";
 
 // ============================================================================
 // File Operations
@@ -100,7 +106,7 @@ export function readProgressRaw(directory: string): string | null {
   }
 
   try {
-    return readFileSync(progressPath, 'utf-8');
+    return readFileSync(progressPath, "utf-8");
   } catch {
     return null;
   }
@@ -110,22 +116,22 @@ export function readProgressRaw(directory: string): string | null {
  * Parse progress.txt content into structured format
  */
 export function parseProgress(content: string): ProgressLog {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const patterns: CodebasePattern[] = [];
   const entries: ProgressEntry[] = [];
-  let startedAt = '';
+  let startedAt = "";
 
   let inPatterns = false;
   let currentEntry: Partial<ProgressEntry> | null = null;
-  let currentSection = '';
+  let currentSection = "";
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
 
     // Check for started timestamp
-    if (trimmed.startsWith('Started:')) {
-      startedAt = trimmed.replace('Started:', '').trim();
+    if (trimmed.startsWith("Started:")) {
+      startedAt = trimmed.replace("Started:", "").trim();
       continue;
     }
 
@@ -142,14 +148,14 @@ export function parseProgress(content: string): ProgressLog {
         entries.push(currentEntry as ProgressEntry);
       }
       currentEntry = null;
-      currentSection = '';
+      currentSection = "";
       continue;
     }
 
     // Parse patterns
-    if (inPatterns && trimmed.startsWith('-')) {
+    if (inPatterns && trimmed.startsWith("-")) {
       patterns.push({
-        pattern: trimmed.slice(1).trim()
+        pattern: trimmed.slice(1).trim(),
       });
       continue;
     }
@@ -165,27 +171,30 @@ export function parseProgress(content: string): ProgressLog {
         storyId: headerMatch[2],
         implementation: [],
         filesChanged: [],
-        learnings: []
+        learnings: [],
       };
-      currentSection = '';
+      currentSection = "";
       continue;
     }
 
     // Parse sections within entry
     if (currentEntry) {
-      if (trimmed.toLowerCase().includes('learnings')) {
-        currentSection = 'learnings';
+      if (trimmed.toLowerCase().includes("learnings")) {
+        currentSection = "learnings";
         continue;
       }
-      if (trimmed.toLowerCase().includes('files changed') || trimmed.toLowerCase().includes('files:')) {
-        currentSection = 'files';
+      if (
+        trimmed.toLowerCase().includes("files changed") ||
+        trimmed.toLowerCase().includes("files:")
+      ) {
+        currentSection = "files";
         continue;
       }
-      if (trimmed.startsWith('-') || trimmed.startsWith('*')) {
+      if (trimmed.startsWith("-") || trimmed.startsWith("*")) {
         const item = trimmed.slice(1).trim();
-        if (currentSection === 'learnings') {
+        if (currentSection === "learnings") {
           (currentEntry.learnings ??= []).push(item);
-        } else if (currentSection === 'files') {
+        } else if (currentSection === "files") {
           (currentEntry.filesChanged ??= []).push(item);
         } else {
           (currentEntry.implementation ??= []).push(item);
@@ -202,7 +211,7 @@ export function parseProgress(content: string): ProgressLog {
   return {
     patterns,
     entries,
-    startedAt
+    startedAt,
   };
 }
 
@@ -261,7 +270,7 @@ ${ENTRY_SEPARATOR}
  */
 export function appendProgress(
   directory: string,
-  entry: Omit<ProgressEntry, 'timestamp'>
+  entry: Omit<ProgressEntry, "timestamp">,
 ): boolean {
   let progressPath = findProgressPath(directory);
 
@@ -274,44 +283,44 @@ export function appendProgress(
   }
 
   const now = new Date().toISOString();
-  const dateStr = now.split('T')[0];
-  const timeStr = now.split('T')[1].slice(0, 5);
+  const dateStr = now.split("T")[0];
+  const timeStr = now.split("T")[1].slice(0, 5);
 
   const lines: string[] = [
-    '',
+    "",
     `## [${dateStr} ${timeStr}] - ${entry.storyId}`,
-    ''
+    "",
   ];
 
   if (entry.implementation.length > 0) {
-    lines.push('**What was implemented:**');
-    entry.implementation.forEach(item => {
+    lines.push("**What was implemented:**");
+    entry.implementation.forEach((item) => {
       lines.push(`- ${item}`);
     });
-    lines.push('');
+    lines.push("");
   }
 
   if (entry.filesChanged.length > 0) {
-    lines.push('**Files changed:**');
-    entry.filesChanged.forEach(file => {
+    lines.push("**Files changed:**");
+    entry.filesChanged.forEach((file) => {
       lines.push(`- ${file}`);
     });
-    lines.push('');
+    lines.push("");
   }
 
   if (entry.learnings.length > 0) {
-    lines.push('**Learnings for future iterations:**');
-    entry.learnings.forEach(learning => {
+    lines.push("**Learnings for future iterations:**");
+    entry.learnings.forEach((learning) => {
       lines.push(`- ${learning}`);
     });
-    lines.push('');
+    lines.push("");
   }
 
   lines.push(ENTRY_SEPARATOR);
-  lines.push('');
+  lines.push("");
 
   try {
-    appendFileSync(progressPath, lines.join('\n'));
+    appendFileSync(progressPath, lines.join("\n"));
     return true;
   } catch {
     return false;
@@ -322,7 +331,11 @@ export function appendProgress(
  * Add a codebase pattern to the patterns section
  * @param retryCount - Internal retry counter to prevent infinite recursion
  */
-export function addPattern(directory: string, pattern: string, retryCount: number = 0): boolean {
+export function addPattern(
+  directory: string,
+  pattern: string,
+  retryCount: number = 0,
+): boolean {
   // Guard against infinite recursion
   if (retryCount > 1) {
     return false;
@@ -339,10 +352,10 @@ export function addPattern(directory: string, pattern: string, retryCount: numbe
   }
 
   try {
-    let content = readFileSync(progressPath, 'utf-8');
+    let content = readFileSync(progressPath, "utf-8");
 
     // Remove placeholder if present (do this FIRST before calculating positions)
-    content = content.replace('(No patterns discovered yet)\n', '');
+    content = content.replace("(No patterns discovered yet)\n", "");
 
     // Find the patterns section and add the new pattern
     const patternsSectionStart = content.indexOf(PATTERNS_HEADER);
@@ -377,13 +390,16 @@ export function getPatterns(directory: string): string[] {
     return [];
   }
 
-  return progress.patterns.map(p => p.pattern);
+  return progress.patterns.map((p) => p.pattern);
 }
 
 /**
  * Get recent learnings for context injection
  */
-export function getRecentLearnings(directory: string, limit: number = 5): string[] {
+export function getRecentLearnings(
+  directory: string,
+  limit: number = 5,
+): string[] {
   const progress = readProgress(directory);
   if (!progress) {
     return [];
@@ -410,59 +426,57 @@ export function formatPatternsForContext(directory: string): string {
   const patterns = getPatterns(directory);
 
   if (patterns.length === 0) {
-    return '';
+    return "";
   }
 
   const lines = [
-    '<codebase-patterns>',
-    '',
-    '## Known Patterns from Previous Iterations',
-    ''
+    "<codebase-patterns>",
+    "",
+    "## Known Patterns from Previous Iterations",
+    "",
   ];
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     lines.push(`- ${pattern}`);
   });
 
-  lines.push('');
-  lines.push('</codebase-patterns>');
-  lines.push('');
+  lines.push("");
+  lines.push("</codebase-patterns>");
+  lines.push("");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
  * Format recent progress for context injection
  */
-export function formatProgressForContext(directory: string, limit: number = 3): string {
+export function formatProgressForContext(
+  directory: string,
+  limit: number = 3,
+): string {
   const progress = readProgress(directory);
   if (!progress || progress.entries.length === 0) {
-    return '';
+    return "";
   }
 
   const recent = progress.entries.slice(-limit);
 
-  const lines = [
-    '<recent-progress>',
-    '',
-    '## Recent Progress',
-    ''
-  ];
+  const lines = ["<recent-progress>", "", "## Recent Progress", ""];
 
   for (const entry of recent) {
     lines.push(`### ${entry.storyId} (${entry.timestamp})`);
     if (entry.implementation.length > 0) {
-      entry.implementation.forEach(item => {
+      entry.implementation.forEach((item) => {
         lines.push(`- ${item}`);
       });
     }
-    lines.push('');
+    lines.push("");
   }
 
-  lines.push('</recent-progress>');
-  lines.push('');
+  lines.push("</recent-progress>");
+  lines.push("");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -472,27 +486,27 @@ export function formatLearningsForContext(directory: string): string {
   const learnings = getRecentLearnings(directory, 10);
 
   if (learnings.length === 0) {
-    return '';
+    return "";
   }
 
   const lines = [
-    '<learnings>',
-    '',
-    '## Learnings from Previous Iterations',
-    ''
+    "<learnings>",
+    "",
+    "## Learnings from Previous Iterations",
+    "",
   ];
 
   // Deduplicate learnings
   const unique = [...new Set(learnings)];
-  unique.forEach(learning => {
+  unique.forEach((learning) => {
     lines.push(`- ${learning}`);
   });
 
-  lines.push('');
-  lines.push('</learnings>');
-  lines.push('');
+  lines.push("");
+  lines.push("</learnings>");
+  lines.push("");
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 /**
@@ -504,8 +518,8 @@ export function getProgressContext(directory: string): string {
   const recent = formatProgressForContext(directory, 2);
 
   if (!patterns && !learnings && !recent) {
-    return '';
+    return "";
   }
 
-  return [patterns, learnings, recent].filter(Boolean).join('\n');
+  return [patterns, learnings, recent].filter(Boolean).join("\n");
 }

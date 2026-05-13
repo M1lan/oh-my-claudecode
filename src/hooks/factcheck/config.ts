@@ -5,10 +5,10 @@
  * and deep merge over sensible defaults.
  */
 
-import { homedir } from 'os';
-import { loadConfig } from '../../config/loader.js';
-import { getClaudeConfigDir } from '../../utils/config-dir.js';
-import type { GuardsConfig, FactcheckPolicy, SentinelPolicy } from './types.js';
+import { homedir } from "os";
+import { loadConfig } from "../../config/loader.js";
+import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import type { GuardsConfig, FactcheckPolicy, SentinelPolicy } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Defaults
@@ -16,12 +16,20 @@ import type { GuardsConfig, FactcheckPolicy, SentinelPolicy } from './types.js';
 
 const DEFAULT_FACTCHECK_POLICY: FactcheckPolicy = {
   enabled: false,
-  mode: 'quick',
+  mode: "quick",
   strict_project_patterns: [],
-  forbidden_path_prefixes: ['${CLAUDE_CONFIG_DIR}/plugins/cache/omc/'],
-  forbidden_path_substrings: ['/.omc/', '.omc-config.json'],
+  forbidden_path_prefixes: ["${CLAUDE_CONFIG_DIR}/plugins/cache/omc/"],
+  forbidden_path_substrings: ["/.omc/", ".omc-config.json"],
   readonly_command_prefixes: [
-    'ls ', 'cat ', 'find ', 'grep ', 'head ', 'tail ', 'stat ', 'echo ', 'wc ',
+    "ls ",
+    "cat ",
+    "find ",
+    "grep ",
+    "head ",
+    "tail ",
+    "stat ",
+    "echo ",
+    "wc ",
   ],
   warn_on_cwd_mismatch: true,
   enforce_cwd_parity_in_quick: false,
@@ -32,9 +40,9 @@ const DEFAULT_FACTCHECK_POLICY: FactcheckPolicy = {
 const DEFAULT_SENTINEL_POLICY: SentinelPolicy = {
   enabled: false,
   readiness: {
-    min_pass_rate: 0.60,
-    max_timeout_rate: 0.10,
-    max_warn_plus_fail_rate: 0.40,
+    min_pass_rate: 0.6,
+    max_timeout_rate: 0.1,
+    max_warn_plus_fail_rate: 0.4,
     min_reason_coverage_rate: 0.95,
   },
 };
@@ -64,13 +72,13 @@ export function expandTokens(value: string, workspace?: string): string {
  * Recursively expand tokens in string values within an object or array.
  */
 function expandTokensDeep<T>(obj: T, workspace?: string): T {
-  if (typeof obj === 'string') {
+  if (typeof obj === "string") {
     return expandTokens(obj, workspace) as unknown as T;
   }
   if (Array.isArray(obj)) {
-    return obj.map(item => expandTokensDeep(item, workspace)) as unknown as T;
+    return obj.map((item) => expandTokensDeep(item, workspace)) as unknown as T;
   }
-  if (typeof obj === 'object' && obj !== null) {
+  if (typeof obj === "object" && obj !== null) {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       result[key] = expandTokensDeep(value, workspace);
@@ -139,7 +147,7 @@ export function shouldUseStrictMode(
 ): boolean {
   for (const pattern of patterns) {
     const regex = new RegExp(
-      '^' + pattern.replace(/\*/g, '.*').replace(/\?/g, '.') + '$',
+      "^" + pattern.replace(/\*/g, ".*").replace(/\?/g, ".") + "$",
     );
     if (regex.test(projectName)) {
       return true;

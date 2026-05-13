@@ -225,12 +225,16 @@ schema
   });
 
   it("caps aggregated context across multiple files", () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "omc-loader-context-aggregate-"));
+    const tempDir = mkdtempSync(
+      join(tmpdir(), "omc-loader-context-aggregate-"),
+    );
 
     try {
       const fileA = join(tempDir, "AGENTS.md");
       const fileB = join(tempDir, "nested", "CLAUDE.md");
-      require("node:fs").mkdirSync(join(tempDir, "nested"), { recursive: true });
+      require("node:fs").mkdirSync(join(tempDir, "nested"), {
+        recursive: true,
+      });
       const largeSection = `# oh-my-claudecode - Intelligent Multi-Agent Orchestration
 
 <guidance_schema_contract>schema</guidance_schema_contract>
@@ -249,7 +253,7 @@ ${"- keep this\n".repeat(900)}
 
       expect(loaded.length).toBeLessThanOrEqual(12000);
       expect(loaded).toContain(`## Context from ${fileA}`);
-      expect(loaded).toContain('startup context budget');
+      expect(loaded).toContain("startup context budget");
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -407,7 +411,9 @@ describe("company context configuration", () => {
 
     expect(schema.properties?.companyContext).toBeDefined();
     expect(schema.properties?.companyContext?.properties?.tool).toBeDefined();
-    expect(schema.properties?.companyContext?.properties?.onError).toBeDefined();
+    expect(
+      schema.properties?.companyContext?.properties?.onError,
+    ).toBeDefined();
   });
 });
 
@@ -470,7 +476,9 @@ describe("team.roleRouting (Option E)", () => {
       writeFileSync(
         join(claudeDir, "omc.jsonc"),
         JSON.stringify({
-          team: { roleRouting: { critic: { provider: "claude", model: "HIGH" } } },
+          team: {
+            roleRouting: { critic: { provider: "claude", model: "HIGH" } },
+          },
         }),
       );
       process.env.OMC_TEAM_ROLE_OVERRIDES = JSON.stringify({
@@ -485,7 +493,9 @@ describe("team.roleRouting (Option E)", () => {
   });
 
   it("OMC_TEAM_ROLE_OVERRIDES with invalid JSON is ignored with warning", () => {
-    const consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const consoleWarnSpy = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => {});
     try {
       process.env.OMC_TEAM_ROLE_OVERRIDES = "{not valid json";
       const config = loadConfig();
@@ -530,7 +540,9 @@ describe("team.roleRouting (Option E)", () => {
         }),
       );
       process.chdir(tempDir);
-      expect(() => loadConfig()).toThrow(/orchestrator: key "provider" is not allowed/);
+      expect(() => loadConfig()).toThrow(
+        /orchestrator: key "provider" is not allowed/,
+      );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -604,7 +616,9 @@ describe("team.roleRouting (Option E)", () => {
       writeFileSync(
         join(claudeDir, "omc.jsonc"),
         JSON.stringify({
-          team: { roleRouting: { "totally-fake-role": { provider: "claude" } } },
+          team: {
+            roleRouting: { "totally-fake-role": { provider: "claude" } },
+          },
         }),
       );
       process.chdir(tempDir);
@@ -638,15 +652,21 @@ describe("delegation routing deprecation warnings", () => {
     loadConfig();
 
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("delegationRouting to Codex/Gemini is deprecated"),
+      expect.stringContaining(
+        "delegationRouting to Codex/Gemini is deprecated",
+      ),
     );
     expect(consoleWarnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Use /team for Codex/Gemini CLI workers instead."),
+      expect.stringContaining(
+        "Use /team for Codex/Gemini CLI workers instead.",
+      ),
     );
   });
 
   it("warns when project config uses deprecated delegation role provider", () => {
-    const tempDir = mkdtempSync(join(tmpdir(), "omc-delegation-routing-warning-"));
+    const tempDir = mkdtempSync(
+      join(tmpdir(), "omc-delegation-routing-warning-"),
+    );
 
     try {
       const claudeDir = join(tempDir, ".claude");
@@ -670,7 +690,9 @@ describe("delegation routing deprecation warnings", () => {
       loadConfig();
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining("delegationRouting to Codex/Gemini is deprecated"),
+        expect.stringContaining(
+          "delegationRouting to Codex/Gemini is deprecated",
+        ),
       );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });

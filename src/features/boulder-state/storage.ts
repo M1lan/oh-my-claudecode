@@ -70,7 +70,7 @@ export function appendSessionId(
   sessionId: string,
 ): BoulderState | null {
   const filePath = getBoulderFilePath(directory);
-  const lockPath = filePath + '.lock';
+  const lockPath = filePath + ".lock";
   return withFileLockSync(lockPath, () => {
     const state = readBoulderState(directory);
     if (!state) return null;

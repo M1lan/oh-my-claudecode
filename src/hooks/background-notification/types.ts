@@ -5,7 +5,7 @@
  * Adapted from oh-my-opencode's background-notification hook.
  */
 
-import type { BackgroundTask } from '../../features/background-agent/index.js';
+import type { BackgroundTask } from "../../features/background-agent/index.js";
 
 /**
  * Configuration for background notification hook

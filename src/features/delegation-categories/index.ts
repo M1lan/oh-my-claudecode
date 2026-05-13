@@ -25,59 +25,63 @@ import type {
   ResolvedCategory,
   CategoryContext,
   ThinkingBudget,
-} from './types.js';
-import type { ComplexityTier } from '../model-routing/types.js';
+} from "./types.js";
+import type { ComplexityTier } from "../model-routing/types.js";
 
 /**
  * Category configuration definitions
  */
 export const CATEGORY_CONFIGS: Record<DelegationCategory, CategoryConfig> = {
-  'visual-engineering': {
-    tier: 'HIGH',
+  "visual-engineering": {
+    tier: "HIGH",
     temperature: 0.7,
-    thinkingBudget: 'high',
-    description: 'UI/visual reasoning, frontend work, design systems',
-    promptAppend: 'Focus on visual design, user experience, and aesthetic quality. Consider accessibility, responsive design, and visual hierarchy.',
+    thinkingBudget: "high",
+    description: "UI/visual reasoning, frontend work, design systems",
+    promptAppend:
+      "Focus on visual design, user experience, and aesthetic quality. Consider accessibility, responsive design, and visual hierarchy.",
   },
-  'ultrabrain': {
-    tier: 'HIGH',
+  ultrabrain: {
+    tier: "HIGH",
     temperature: 0.3,
-    thinkingBudget: 'max',
-    description: 'Complex reasoning, architecture decisions, deep debugging',
-    promptAppend: 'Think deeply and systematically. Consider all edge cases, implications, and long-term consequences. Reason through the problem step by step.',
+    thinkingBudget: "max",
+    description: "Complex reasoning, architecture decisions, deep debugging",
+    promptAppend:
+      "Think deeply and systematically. Consider all edge cases, implications, and long-term consequences. Reason through the problem step by step.",
   },
-  'artistry': {
-    tier: 'MEDIUM',
+  artistry: {
+    tier: "MEDIUM",
     temperature: 0.9,
-    thinkingBudget: 'medium',
-    description: 'Creative writing, novel approaches, innovative solutions',
-    promptAppend: 'Be creative and explore unconventional solutions. Think outside the box while maintaining practical feasibility.',
+    thinkingBudget: "medium",
+    description: "Creative writing, novel approaches, innovative solutions",
+    promptAppend:
+      "Be creative and explore unconventional solutions. Think outside the box while maintaining practical feasibility.",
   },
-  'quick': {
-    tier: 'LOW',
+  quick: {
+    tier: "LOW",
     temperature: 0.1,
-    thinkingBudget: 'low',
-    description: 'Simple lookups, straightforward tasks, basic operations',
-    promptAppend: 'Be concise and efficient. Focus on accuracy and speed.',
+    thinkingBudget: "low",
+    description: "Simple lookups, straightforward tasks, basic operations",
+    promptAppend: "Be concise and efficient. Focus on accuracy and speed.",
   },
-  'writing': {
-    tier: 'MEDIUM',
+  writing: {
+    tier: "MEDIUM",
     temperature: 0.5,
-    thinkingBudget: 'medium',
-    description: 'Documentation, technical writing, content creation',
-    promptAppend: 'Focus on clarity, completeness, and proper structure. Use appropriate technical terminology while remaining accessible.',
+    thinkingBudget: "medium",
+    description: "Documentation, technical writing, content creation",
+    promptAppend:
+      "Focus on clarity, completeness, and proper structure. Use appropriate technical terminology while remaining accessible.",
   },
-  'unspecified-low': {
-    tier: 'LOW',
+  "unspecified-low": {
+    tier: "LOW",
     temperature: 0.3,
-    thinkingBudget: 'low',
-    description: 'Default for simple tasks when category is not specified',
+    thinkingBudget: "low",
+    description: "Default for simple tasks when category is not specified",
   },
-  'unspecified-high': {
-    tier: 'HIGH',
+  "unspecified-high": {
+    tier: "HIGH",
     temperature: 0.5,
-    thinkingBudget: 'high',
-    description: 'Default for complex tasks when category is not specified',
+    thinkingBudget: "high",
+    description: "Default for complex tasks when category is not specified",
   },
 };
 
@@ -103,30 +107,84 @@ export const THINKING_BUDGET_TOKENS: Record<ThinkingBudget, number> = {
  * instructions while model-routing independently selects the appropriate model tier.
  */
 const CATEGORY_KEYWORDS: Record<DelegationCategory, string[]> = {
-  'visual-engineering': [
-    'ui', 'ux', 'design', 'frontend', 'component', 'style', 'css', 'visual',
-    'layout', 'responsive', 'interface', 'dashboard', 'form', 'button',
-    'theme', 'color', 'typography', 'animation', 'interactive',
+  "visual-engineering": [
+    "ui",
+    "ux",
+    "design",
+    "frontend",
+    "component",
+    "style",
+    "css",
+    "visual",
+    "layout",
+    "responsive",
+    "interface",
+    "dashboard",
+    "form",
+    "button",
+    "theme",
+    "color",
+    "typography",
+    "animation",
+    "interactive",
   ],
-  'ultrabrain': [
-    'architecture', 'design pattern', 'refactor', 'optimize', 'debug',
-    'root cause', 'analyze', 'investigate', 'complex', 'system',
-    'performance', 'scalability', 'concurrency', 'race condition',
+  ultrabrain: [
+    "architecture",
+    "design pattern",
+    "refactor",
+    "optimize",
+    "debug",
+    "root cause",
+    "analyze",
+    "investigate",
+    "complex",
+    "system",
+    "performance",
+    "scalability",
+    "concurrency",
+    "race condition",
   ],
-  'artistry': [
-    'creative', 'innovative', 'novel', 'unique', 'original',
-    'brainstorm', 'ideate', 'explore', 'imagine', 'unconventional',
+  artistry: [
+    "creative",
+    "innovative",
+    "novel",
+    "unique",
+    "original",
+    "brainstorm",
+    "ideate",
+    "explore",
+    "imagine",
+    "unconventional",
   ],
-  'quick': [
-    'find', 'search', 'locate', 'list', 'show', 'get', 'fetch',
-    'where is', 'what is', 'display', 'print', 'lookup',
+  quick: [
+    "find",
+    "search",
+    "locate",
+    "list",
+    "show",
+    "get",
+    "fetch",
+    "where is",
+    "what is",
+    "display",
+    "print",
+    "lookup",
   ],
-  'writing': [
-    'document', 'readme', 'comment', 'explain', 'describe',
-    'write', 'draft', 'article', 'guide', 'tutorial', 'docs',
+  writing: [
+    "document",
+    "readme",
+    "comment",
+    "explain",
+    "describe",
+    "write",
+    "draft",
+    "article",
+    "guide",
+    "tutorial",
+    "docs",
   ],
-  'unspecified-low': [],
-  'unspecified-high': [],
+  "unspecified-low": [],
+  "unspecified-high": [],
 };
 
 /**
@@ -135,7 +193,9 @@ const CATEGORY_KEYWORDS: Record<DelegationCategory, string[]> = {
  * @param category - The category to resolve
  * @returns Resolved category with configuration
  */
-export function resolveCategory(category: DelegationCategory): ResolvedCategory {
+export function resolveCategory(
+  category: DelegationCategory,
+): ResolvedCategory {
   const config = CATEGORY_CONFIGS[category];
   if (!config) {
     throw new Error(`Unknown delegation category: ${category}`);
@@ -153,7 +213,9 @@ export function resolveCategory(category: DelegationCategory): ResolvedCategory 
  * @param category - String to check
  * @returns True if valid category
  */
-export function isValidCategory(category: string): category is DelegationCategory {
+export function isValidCategory(
+  category: string,
+): category is DelegationCategory {
   return category in CATEGORY_CONFIGS;
 }
 
@@ -182,16 +244,18 @@ export function getCategoryDescription(category: DelegationCategory): string {
  * @param taskPrompt - The task description
  * @returns Best matching category or null
  */
-export function detectCategoryFromPrompt(taskPrompt: string): DelegationCategory | null {
+export function detectCategoryFromPrompt(
+  taskPrompt: string,
+): DelegationCategory | null {
   const lowerPrompt = taskPrompt.toLowerCase();
   const scores: Record<DelegationCategory, number> = {
-    'visual-engineering': 0,
-    'ultrabrain': 0,
-    'artistry': 0,
-    'quick': 0,
-    'writing': 0,
-    'unspecified-low': 0,
-    'unspecified-high': 0,
+    "visual-engineering": 0,
+    ultrabrain: 0,
+    artistry: 0,
+    quick: 0,
+    writing: 0,
+    "unspecified-low": 0,
+    "unspecified-high": 0,
   };
 
   // Score each category based on keyword matches
@@ -208,7 +272,7 @@ export function detectCategoryFromPrompt(taskPrompt: string): DelegationCategory
   let bestCategory: DelegationCategory | null = null;
 
   for (const category of getAllCategories()) {
-    if (category.startsWith('unspecified-')) continue;
+    if (category.startsWith("unspecified-")) continue;
 
     if (scores[category] > maxScore) {
       maxScore = scores[category];
@@ -233,7 +297,8 @@ export function detectCategoryFromPrompt(taskPrompt: string): DelegationCategory
 export function getCategoryForTask(context: CategoryContext): ResolvedCategory {
   // Explicit tier bypasses categories
   if (context.explicitTier) {
-    const category: DelegationCategory = context.explicitTier === 'LOW' ? 'unspecified-low' : 'unspecified-high';
+    const category: DelegationCategory =
+      context.explicitTier === "LOW" ? "unspecified-low" : "unspecified-high";
     return resolveCategory(category);
   }
 
@@ -249,7 +314,7 @@ export function getCategoryForTask(context: CategoryContext): ResolvedCategory {
   }
 
   // Default to medium tier
-  return resolveCategory('unspecified-high');
+  return resolveCategory("unspecified-high");
 }
 
 /**
@@ -278,7 +343,9 @@ export function getCategoryTemperature(category: DelegationCategory): number {
  * @param category - Delegation category
  * @returns Thinking budget level
  */
-export function getCategoryThinkingBudget(category: DelegationCategory): ThinkingBudget {
+export function getCategoryThinkingBudget(
+  category: DelegationCategory,
+): ThinkingBudget {
   return CATEGORY_CONFIGS[category].thinkingBudget;
 }
 
@@ -288,7 +355,9 @@ export function getCategoryThinkingBudget(category: DelegationCategory): Thinkin
  * @param category - Delegation category
  * @returns Token budget
  */
-export function getCategoryThinkingBudgetTokens(category: DelegationCategory): number {
+export function getCategoryThinkingBudgetTokens(
+  category: DelegationCategory,
+): number {
   const budget = CATEGORY_CONFIGS[category].thinkingBudget;
   return THINKING_BUDGET_TOKENS[budget];
 }
@@ -300,7 +369,7 @@ export function getCategoryThinkingBudgetTokens(category: DelegationCategory): n
  * @returns Prompt appendix or empty string
  */
 export function getCategoryPromptAppend(category: DelegationCategory): string {
-  return CATEGORY_CONFIGS[category].promptAppend || '';
+  return CATEGORY_CONFIGS[category].promptAppend || "";
 }
 
 /**
@@ -312,7 +381,7 @@ export function getCategoryPromptAppend(category: DelegationCategory): string {
  */
 export function enhancePromptWithCategory(
   taskPrompt: string,
-  category: DelegationCategory
+  category: DelegationCategory,
 ): string {
   const config = CATEGORY_CONFIGS[category];
 
@@ -330,4 +399,4 @@ export type {
   ResolvedCategory,
   CategoryContext,
   ThinkingBudget,
-} from './types.js';
+} from "./types.js";

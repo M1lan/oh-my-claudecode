@@ -24,7 +24,10 @@ import type { OpenClawHookEvent, OpenClawContext } from "../types.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function ctx(projectPath: string, extra: Partial<OpenClawContext> = {}): OpenClawContext {
+function ctx(
+  projectPath: string,
+  extra: Partial<OpenClawContext> = {},
+): OpenClawContext {
   return { projectPath, ...extra };
 }
 
@@ -61,19 +64,18 @@ afterEach(() => {
 describe("isObsoleteAfterTerminalState", () => {
   const tmux = "my-tmux";
 
-  function makeState(
-    terminalEvent: "stop" | "session-end",
-    offsetMs: number,
-  ) {
+  function makeState(terminalEvent: "stop" | "session-end", offsetMs: number) {
     const scope = `${projectDir}::${tmux}`;
-    const prefix = terminalEvent === "stop" ? "session.stopped" : "session.finished";
+    const prefix =
+      terminalEvent === "stop" ? "session.stopped" : "session.finished";
     const lastSeenAt = new Date(Date.now() - offsetMs).toISOString();
     return {
       updatedAt: lastSeenAt,
       records: {
         [`${prefix}::${scope}`]: {
           event: terminalEvent as OpenClawHookEvent,
-          routeKey: terminalEvent === "stop" ? "session.idle" : "session.finished",
+          routeKey:
+            terminalEvent === "stop" ? "session.idle" : "session.finished",
           tmuxSession: tmux,
           lastSeenAt,
           count: 1,
@@ -85,55 +87,113 @@ describe("isObsoleteAfterTerminalState", () => {
   it("returns false for events other than session-start and stop", () => {
     const state = makeState("session-end", 100);
     const nowMs = Date.now();
-    for (const event of ["keyword-detector", "pre-tool-use", "post-tool-use", "ask-user-question"] as OpenClawHookEvent[]) {
-      expect(isObsoleteAfterTerminalState(event, state, tmux, projectDir, nowMs)).toBe(false);
+    for (const event of [
+      "keyword-detector",
+      "pre-tool-use",
+      "post-tool-use",
+      "ask-user-question",
+    ] as OpenClawHookEvent[]) {
+      expect(
+        isObsoleteAfterTerminalState(event, state, tmux, projectDir, nowMs),
+      ).toBe(false);
     }
   });
 
   it("returns false when state has no terminal record", () => {
     const emptyState = { updatedAt: new Date().toISOString(), records: {} };
     const nowMs = Date.now();
-    expect(isObsoleteAfterTerminalState("session-start", emptyState, tmux, projectDir, nowMs)).toBe(false);
-    expect(isObsoleteAfterTerminalState("stop", emptyState, tmux, projectDir, nowMs)).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState(
+        "session-start",
+        emptyState,
+        tmux,
+        projectDir,
+        nowMs,
+      ),
+    ).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState("stop", emptyState, tmux, projectDir, nowMs),
+    ).toBe(false);
   });
 
   it("session-start is obsolete when session.finished is within the suppression window", () => {
     const state = makeState("session-end", 1_000); // 1 second ago
     const nowMs = Date.now();
-    expect(isObsoleteAfterTerminalState("session-start", state, tmux, projectDir, nowMs)).toBe(true);
+    expect(
+      isObsoleteAfterTerminalState(
+        "session-start",
+        state,
+        tmux,
+        projectDir,
+        nowMs,
+      ),
+    ).toBe(true);
   });
 
   it("session-start is obsolete when session.stopped is within the suppression window", () => {
     const state = makeState("stop", 1_000); // 1 second ago
     const nowMs = Date.now();
-    expect(isObsoleteAfterTerminalState("session-start", state, tmux, projectDir, nowMs)).toBe(true);
+    expect(
+      isObsoleteAfterTerminalState(
+        "session-start",
+        state,
+        tmux,
+        projectDir,
+        nowMs,
+      ),
+    ).toBe(true);
   });
 
   it("stop is obsolete when session.finished is within the suppression window", () => {
     const state = makeState("session-end", 1_000);
     const nowMs = Date.now();
-    expect(isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs)).toBe(true);
+    expect(
+      isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs),
+    ).toBe(true);
   });
 
   it("stop is NOT suppressed by session.stopped alone (only by session.finished)", () => {
     const state = makeState("stop", 1_000);
     const nowMs = Date.now();
     // stop after stop is handled by normal burst dedupe, not terminal-state guard
-    expect(isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs)).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs),
+    ).toBe(false);
   });
 
   it("returns false when the terminal record is older than the suppression window", () => {
-    const state = makeState("session-end", TERMINAL_STATE_SUPPRESSION_WINDOW_MS + 5_000);
+    const state = makeState(
+      "session-end",
+      TERMINAL_STATE_SUPPRESSION_WINDOW_MS + 5_000,
+    );
     const nowMs = Date.now();
-    expect(isObsoleteAfterTerminalState("session-start", state, tmux, projectDir, nowMs)).toBe(false);
-    expect(isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs)).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState(
+        "session-start",
+        state,
+        tmux,
+        projectDir,
+        nowMs,
+      ),
+    ).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState("stop", state, tmux, projectDir, nowMs),
+    ).toBe(false);
   });
 
   it("uses scope isolation — terminal record for a different tmux session does not suppress", () => {
     const state = makeState("session-end", 100);
     const nowMs = Date.now();
     // Different tmux session name
-    expect(isObsoleteAfterTerminalState("session-start", state, "other-tmux", projectDir, nowMs)).toBe(false);
+    expect(
+      isObsoleteAfterTerminalState(
+        "session-start",
+        state,
+        "other-tmux",
+        projectDir,
+        nowMs,
+      ),
+    ).toBe(false);
   });
 
   it("uses scope isolation — terminal record for a different projectPath does not suppress", () => {
@@ -141,7 +201,15 @@ describe("isObsoleteAfterTerminalState", () => {
     try {
       const state = makeState("session-end", 100);
       const nowMs = Date.now();
-      expect(isObsoleteAfterTerminalState("session-start", state, tmux, otherDir, nowMs)).toBe(false);
+      expect(
+        isObsoleteAfterTerminalState(
+          "session-start",
+          state,
+          tmux,
+          otherDir,
+          nowMs,
+        ),
+      ).toBe(false);
     } finally {
       rmSync(otherDir, { recursive: true, force: true });
     }
@@ -196,7 +264,12 @@ describe("shouldCollapseOpenClawBurst — terminal-state suppression", () => {
     // Without a tmux session, no suppression occurs
     const context = ctx(projectDir);
     const signal = buildOpenClawSignal("session-start", context);
-    const result = shouldCollapseOpenClawBurst("session-start", signal, context, undefined);
+    const result = shouldCollapseOpenClawBurst(
+      "session-start",
+      signal,
+      context,
+      undefined,
+    );
     expect(result).toBe(false);
   });
 
@@ -258,7 +331,12 @@ describe("shouldCollapseOpenClawBurst — terminal-state suppression", () => {
 
     const context = ctx(projectDir, { prompt: "ralph do something" });
     const signal = buildOpenClawSignal("keyword-detector", context);
-    const result = shouldCollapseOpenClawBurst("keyword-detector", signal, context, tmux);
+    const result = shouldCollapseOpenClawBurst(
+      "keyword-detector",
+      signal,
+      context,
+      tmux,
+    );
     // keyword-detector has no descriptor for this scope, so it passes through
     expect(result).toBe(false);
   });

@@ -4,7 +4,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readFileSync,
+} from "fs";
 import { tmpdir } from "os";
 import { join, dirname } from "path";
 import {
@@ -39,7 +46,7 @@ describe("idle notification cooldown (issue #842)", () => {
       const cooldownPath = join(stateDir, "idle-notif-cooldown.json");
       writeFileSync(
         cooldownPath,
-        JSON.stringify({ lastSentAt: new Date().toISOString() })
+        JSON.stringify({ lastSentAt: new Date().toISOString() }),
       );
       expect(shouldSendIdleNotification(stateDir)).toBe(false);
     });
@@ -70,18 +77,19 @@ describe("idle notification cooldown (issue #842)", () => {
         stateDir,
         "sessions",
         sessionId,
-        "idle-notif-cooldown.json"
+        "idle-notif-cooldown.json",
       );
       mkdirSync(dirname(cooldownPath), { recursive: true });
       writeFileSync(
         cooldownPath,
-        JSON.stringify({ lastSentAt: new Date().toISOString() })
+        JSON.stringify({ lastSentAt: new Date().toISOString() }),
       );
 
       expect(shouldSendIdleNotification(stateDir, sessionId)).toBe(false);
-      expect(shouldSendIdleNotification(stateDir, "different-session")).toBe(true);
+      expect(shouldSendIdleNotification(stateDir, "different-session")).toBe(
+        true,
+      );
     });
-
 
     it("suppresses repeated zero-backlog notifications across follow-up sessions when the global repo snapshot is unchanged", () => {
       const globalCooldownPath = join(stateDir, "idle-notif-cooldown.json");
@@ -92,10 +100,12 @@ describe("idle notification cooldown (issue #842)", () => {
           lastSentAt: past,
           repoSignature: zeroBacklogState.signature,
           backlogZero: true,
-        })
+        }),
       );
 
-      expect(shouldSendIdleNotification(stateDir, "fresh-session", zeroBacklogState)).toBe(false);
+      expect(
+        shouldSendIdleNotification(stateDir, "fresh-session", zeroBacklogState),
+      ).toBe(false);
     });
 
     it("re-enables zero-backlog notifications across follow-up sessions when the repo snapshot changes", () => {
@@ -106,10 +116,16 @@ describe("idle notification cooldown (issue #842)", () => {
           lastSentAt: new Date().toISOString(),
           repoSignature: zeroBacklogState.signature,
           backlogZero: true,
-        })
+        }),
       );
 
-      expect(shouldSendIdleNotification(stateDir, "fresh-session", changedBacklogState)).toBe(true);
+      expect(
+        shouldSendIdleNotification(
+          stateDir,
+          "fresh-session",
+          changedBacklogState,
+        ),
+      ).toBe(true);
     });
 
     it("suppresses repeated zero-backlog notifications when repo state has not changed", () => {
@@ -121,10 +137,12 @@ describe("idle notification cooldown (issue #842)", () => {
           lastSentAt: past,
           repoSignature: zeroBacklogState.signature,
           backlogZero: true,
-        })
+        }),
       );
 
-      expect(shouldSendIdleNotification(stateDir, undefined, zeroBacklogState)).toBe(false);
+      expect(
+        shouldSendIdleNotification(stateDir, undefined, zeroBacklogState),
+      ).toBe(false);
     });
 
     it("bypasses cooldown immediately when repo state changes", () => {
@@ -135,10 +153,12 @@ describe("idle notification cooldown (issue #842)", () => {
           lastSentAt: new Date().toISOString(),
           repoSignature: zeroBacklogState.signature,
           backlogZero: true,
-        })
+        }),
       );
 
-      expect(shouldSendIdleNotification(stateDir, undefined, changedBacklogState)).toBe(true);
+      expect(
+        shouldSendIdleNotification(stateDir, undefined, changedBacklogState),
+      ).toBe(true);
     });
   });
 
@@ -152,7 +172,10 @@ describe("idle notification cooldown (issue #842)", () => {
       recordIdleNotificationSent(stateDir);
 
       expect(existsSync(cooldownPath)).toBe(true);
-      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<string, unknown>;
+      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       expect(typeof data.lastSentAt).toBe("string");
       const ts = new Date(data.lastSentAt as string).getTime();
       expect(Number.isFinite(ts)).toBe(true);
@@ -166,9 +189,12 @@ describe("idle notification cooldown (issue #842)", () => {
 
       recordIdleNotificationSent(stateDir);
 
-      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<string, unknown>;
+      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       expect(new Date(data.lastSentAt as string).getTime()).toBeGreaterThan(
-        new Date(old).getTime()
+        new Date(old).getTime(),
       );
     });
 
@@ -178,7 +204,9 @@ describe("idle notification cooldown (issue #842)", () => {
 
       recordIdleNotificationSent(deepStateDir);
 
-      expect(existsSync(join(deepStateDir, "idle-notif-cooldown.json"))).toBe(true);
+      expect(existsSync(join(deepStateDir, "idle-notif-cooldown.json"))).toBe(
+        true,
+      );
     });
 
     it("writes to session-scoped path when sessionId is provided", () => {
@@ -187,16 +215,17 @@ describe("idle notification cooldown (issue #842)", () => {
         stateDir,
         "sessions",
         sessionId,
-        "idle-notif-cooldown.json"
+        "idle-notif-cooldown.json",
       );
       expect(existsSync(cooldownPath)).toBe(false);
 
       recordIdleNotificationSent(stateDir, sessionId);
 
       expect(existsSync(cooldownPath)).toBe(true);
-      expect(existsSync(join(stateDir, "idle-notif-cooldown.json"))).toBe(false);
+      expect(existsSync(join(stateDir, "idle-notif-cooldown.json"))).toBe(
+        false,
+      );
     });
-
 
     it("mirrors zero-backlog metadata to the global cooldown path for follow-up sessions", () => {
       const sessionId = "session-xyz";
@@ -204,7 +233,7 @@ describe("idle notification cooldown (issue #842)", () => {
         stateDir,
         "sessions",
         sessionId,
-        "idle-notif-cooldown.json"
+        "idle-notif-cooldown.json",
       );
       const globalCooldownPath = join(stateDir, "idle-notif-cooldown.json");
 
@@ -213,8 +242,12 @@ describe("idle notification cooldown (issue #842)", () => {
       expect(existsSync(sessionCooldownPath)).toBe(true);
       expect(existsSync(globalCooldownPath)).toBe(true);
 
-      const sessionData = JSON.parse(readFileSync(sessionCooldownPath, "utf-8")) as Record<string, unknown>;
-      const globalData = JSON.parse(readFileSync(globalCooldownPath, "utf-8")) as Record<string, unknown>;
+      const sessionData = JSON.parse(
+        readFileSync(sessionCooldownPath, "utf-8"),
+      ) as Record<string, unknown>;
+      const globalData = JSON.parse(
+        readFileSync(globalCooldownPath, "utf-8"),
+      ) as Record<string, unknown>;
       expect(sessionData.repoSignature).toBe(zeroBacklogState.signature);
       expect(globalData.repoSignature).toBe(zeroBacklogState.signature);
       expect(sessionData.backlogZero).toBe(true);
@@ -226,7 +259,10 @@ describe("idle notification cooldown (issue #842)", () => {
 
       recordIdleNotificationSent(stateDir, undefined, zeroBacklogState);
 
-      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<string, unknown>;
+      const data = JSON.parse(readFileSync(cooldownPath, "utf-8")) as Record<
+        string,
+        unknown
+      >;
       expect(data.repoSignature).toBe(zeroBacklogState.signature);
       expect(data.backlogZero).toBe(true);
     });

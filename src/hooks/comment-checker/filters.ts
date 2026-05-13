@@ -6,16 +6,16 @@
  * Adapted from oh-my-opencode's comment-checker hook.
  */
 
-import { BDD_KEYWORDS, TYPE_CHECKER_PREFIXES } from './constants.js';
-import type { CommentInfo, FilterResult, CommentFilter } from './types.js';
+import { BDD_KEYWORDS, TYPE_CHECKER_PREFIXES } from "./constants.js";
+import type { CommentInfo, FilterResult, CommentFilter } from "./types.js";
 
 /**
  * Filter for shebang comments (#!/usr/bin/env ...)
  */
 export function filterShebangComments(comment: CommentInfo): FilterResult {
   const text = comment.text.trim();
-  if (text.startsWith('#!') && comment.lineNumber === 1) {
-    return { shouldSkip: true, reason: 'shebang' };
+  if (text.startsWith("#!") && comment.lineNumber === 1) {
+    return { shouldSkip: true, reason: "shebang" };
   }
   return { shouldSkip: false };
 }
@@ -39,7 +39,7 @@ export function filterBddComments(comment: CommentInfo): FilterResult {
     if (text.includes(keyword)) {
       // More lenient check for keywords anywhere in comment
       const words = text.split(/\s+/);
-      if (words.some(w => BDD_KEYWORDS.has(w.replace(/[^a-z&]/g, '')))) {
+      if (words.some((w) => BDD_KEYWORDS.has(w.replace(/[^a-z&]/g, "")))) {
         return { shouldSkip: true, reason: `BDD keyword detected` };
       }
     }
@@ -79,20 +79,20 @@ export function filterDocstringComments(_comment: CommentInfo): FilterResult {
 export function filterCopyrightComments(comment: CommentInfo): FilterResult {
   const text = comment.text.toLowerCase();
   const copyrightPatterns = [
-    'copyright',
-    'license',
-    'licensed under',
-    'spdx-license-identifier',
-    'all rights reserved',
-    'mit license',
-    'apache license',
-    'gnu general public',
-    'bsd license',
+    "copyright",
+    "license",
+    "licensed under",
+    "spdx-license-identifier",
+    "all rights reserved",
+    "mit license",
+    "apache license",
+    "gnu general public",
+    "bsd license",
   ];
 
   for (const pattern of copyrightPatterns) {
     if (text.includes(pattern)) {
-      return { shouldSkip: true, reason: 'copyright/license' };
+      return { shouldSkip: true, reason: "copyright/license" };
     }
   }
 
@@ -104,7 +104,7 @@ export function filterCopyrightComments(comment: CommentInfo): FilterResult {
  */
 export function filterTodoComments(comment: CommentInfo): FilterResult {
   const text = comment.text.toUpperCase();
-  const todoPatterns = ['TODO', 'FIXME', 'HACK', 'XXX', 'NOTE', 'REVIEW'];
+  const todoPatterns = ["TODO", "FIXME", "HACK", "XXX", "NOTE", "REVIEW"];
 
   for (const pattern of todoPatterns) {
     if (text.includes(pattern)) {

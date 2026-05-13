@@ -9,7 +9,7 @@
 /**
  * Type of comment detected
  */
-export type CommentType = 'line' | 'block' | 'docstring';
+export type CommentType = "line" | "block" | "docstring";
 
 /**
  * Information about a detected comment
@@ -44,7 +44,7 @@ export interface PendingCall {
   /** Multiple edits (for MultiEdit tool) */
   edits?: Array<{ old_string: string; new_string: string }>;
   /** Tool that triggered this check */
-  tool: 'write' | 'edit' | 'multiedit';
+  tool: "write" | "edit" | "multiedit";
   /** Session ID */
   sessionId: string;
   /** Timestamp of the call */

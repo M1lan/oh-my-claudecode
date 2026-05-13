@@ -4,19 +4,19 @@
  * Loads and caches skills from disk.
  */
 
-import { readFileSync } from 'fs';
-import { createHash } from 'crypto';
-import { relative, normalize } from 'path';
-import { findSkillFiles } from './finder.js';
-import { parseSkillFile } from './parser.js';
-import { DEBUG_ENABLED } from './constants.js';
-import type { LearnedSkill, SkillMetadata } from './types.js';
+import { readFileSync } from "fs";
+import { createHash } from "crypto";
+import { relative, normalize } from "path";
+import { findSkillFiles } from "./finder.js";
+import { parseSkillFile } from "./parser.js";
+import { DEBUG_ENABLED } from "./constants.js";
+import type { LearnedSkill, SkillMetadata } from "./types.js";
 
 /**
  * Create SHA-256 hash of content.
  */
 function createContentHash(content: string): string {
-  return createHash('sha256').update(content).digest('hex').slice(0, 16);
+  return createHash("sha256").update(content).digest("hex").slice(0, 16);
 }
 
 /**
@@ -29,18 +29,22 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
 
   for (const candidate of candidates) {
     try {
-      const rawContent = readFileSync(candidate.path, 'utf-8');
+      const rawContent = readFileSync(candidate.path, "utf-8");
       const { metadata, content, valid, errors } = parseSkillFile(rawContent);
 
       if (!valid) {
         if (DEBUG_ENABLED) {
-          console.warn(`Invalid skill file ${candidate.path}: ${errors.join(', ')}`);
+          console.warn(
+            `Invalid skill file ${candidate.path}: ${errors.join(", ")}`,
+          );
         }
         continue;
       }
 
       const skillId = metadata.id!;
-      const relativePath = normalize(relative(candidate.sourceDir, candidate.path));
+      const relativePath = normalize(
+        relative(candidate.sourceDir, candidate.path),
+      );
 
       const skill: LearnedSkill = {
         path: candidate.path,
@@ -49,7 +53,7 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
         metadata: metadata as SkillMetadata,
         content,
         contentHash: createContentHash(content),
-        priority: candidate.scope === 'project' ? 1 : 0,
+        priority: candidate.scope === "project" ? 1 : 0,
       };
 
       // Project skills override user skills with same ID
@@ -71,9 +75,12 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
 /**
  * Load a specific skill by ID.
  */
-export function loadSkillById(skillId: string, projectRoot: string | null): LearnedSkill | null {
+export function loadSkillById(
+  skillId: string,
+  projectRoot: string | null,
+): LearnedSkill | null {
   const skills = loadAllSkills(projectRoot);
-  return skills.find(s => s.metadata.id === skillId) || null;
+  return skills.find((s) => s.metadata.id === skillId) || null;
 }
 
 /**
@@ -82,12 +89,12 @@ export function loadSkillById(skillId: string, projectRoot: string | null): Lear
 export function findMatchingSkills(
   message: string,
   projectRoot: string | null,
-  limit: number = 5
+  limit: number = 5,
 ): LearnedSkill[] {
   const skills = loadAllSkills(projectRoot);
   const messageLower = message.toLowerCase();
 
-  const scored = skills.map(skill => {
+  const scored = skills.map((skill) => {
     let score = 0;
     let hasMatch = false;
 
@@ -126,8 +133,8 @@ export function findMatchingSkills(
   });
 
   return scored
-    .filter(s => s.score > 0)
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map(s => s.skill);
+    .map((s) => s.skill);
 }

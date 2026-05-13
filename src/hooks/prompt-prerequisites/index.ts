@@ -1,5 +1,9 @@
 import { isAbsolute, relative } from "node:path";
-import { clearModeStateFile, readModeState, writeModeState } from "../../lib/mode-state-io.js";
+import {
+  clearModeStateFile,
+  readModeState,
+  writeModeState,
+} from "../../lib/mode-state-io.js";
 import type { PluginConfig } from "../../shared/types.js";
 
 export type PromptPrerequisiteSectionKind =
@@ -87,7 +91,12 @@ function isLikelyPath(value: string): boolean {
   if (value.includes("://")) return false;
   // Require an explicit path prefix to avoid false positives on
   // slash-separated English words like "read/write", "input/output".
-  if (value.startsWith("./") || value.startsWith("../") || value.startsWith("/")) return true;
+  if (
+    value.startsWith("./") ||
+    value.startsWith("../") ||
+    value.startsWith("/")
+  )
+    return true;
   // For bare relative paths (e.g. "src/foo.ts"), require a recognisable
   // file extension in the last segment to distinguish from natural language.
   const lastSegment = value.split("/").pop() || "";
@@ -102,17 +111,30 @@ export function getPromptPrerequisiteConfig(
   return {
     enabled: raw?.enabled !== false,
     sectionNames: {
-      memory: dedupe([...(raw?.sectionNames?.memory ?? []), ...DEFAULT_SECTION_NAMES.memory]),
-      skills: dedupe([...(raw?.sectionNames?.skills ?? []), ...DEFAULT_SECTION_NAMES.skills]),
+      memory: dedupe([
+        ...(raw?.sectionNames?.memory ?? []),
+        ...DEFAULT_SECTION_NAMES.memory,
+      ]),
+      skills: dedupe([
+        ...(raw?.sectionNames?.skills ?? []),
+        ...DEFAULT_SECTION_NAMES.skills,
+      ]),
       verifyFirst: dedupe([
         ...(raw?.sectionNames?.verifyFirst ?? []),
         ...DEFAULT_SECTION_NAMES.verifyFirst,
       ]),
-      context: dedupe([...(raw?.sectionNames?.context ?? []), ...DEFAULT_SECTION_NAMES.context]),
+      context: dedupe([
+        ...(raw?.sectionNames?.context ?? []),
+        ...DEFAULT_SECTION_NAMES.context,
+      ]),
     },
-    blockingTools: dedupe(raw?.blockingTools?.length ? raw.blockingTools : DEFAULT_BLOCKING_TOOLS),
+    blockingTools: dedupe(
+      raw?.blockingTools?.length ? raw.blockingTools : DEFAULT_BLOCKING_TOOLS,
+    ),
     executionKeywords: dedupe(
-      raw?.executionKeywords?.length ? raw.executionKeywords : DEFAULT_EXECUTION_KEYWORDS,
+      raw?.executionKeywords?.length
+        ? raw.executionKeywords
+        : DEFAULT_EXECUTION_KEYWORDS,
     ),
   };
 }
@@ -148,9 +170,10 @@ export function parsePromptPrerequisiteSections(
     }
 
     const start = match.index + match[0].length;
-    const end = index + 1 < matches.length && matches[index + 1].index !== undefined
-      ? matches[index + 1].index!
-      : promptText.length;
+    const end =
+      index + 1 < matches.length && matches[index + 1].index !== undefined
+        ? matches[index + 1].index!
+        : promptText.length;
     const content = promptText.slice(start, end).trim();
     if (!content) {
       continue;
@@ -159,8 +182,12 @@ export function parsePromptPrerequisiteSections(
     sections.push({ kind, heading, content });
   }
 
-  const requiredToolCalls = dedupe(sections.flatMap((section) => extractRequiredToolCalls(section.content)));
-  const requiredFilePaths = dedupe(sections.flatMap((section) => extractFilePaths(section.content)));
+  const requiredToolCalls = dedupe(
+    sections.flatMap((section) => extractRequiredToolCalls(section.content)),
+  );
+  const requiredFilePaths = dedupe(
+    sections.flatMap((section) => extractFilePaths(section.content)),
+  );
 
   return {
     sections,
@@ -177,7 +204,11 @@ export function extractRequiredToolCalls(content: string): string[] {
   if (/\bproject_memory_read\b/i.test(content)) {
     required.push("project_memory_read");
   }
-  if (/\bsupermemory(?:\s+|_)?search\b|\bmcp__supermemory__search\b/i.test(content)) {
+  if (
+    /\bsupermemory(?:\s+|_)?search\b|\bmcp__supermemory__search\b/i.test(
+      content,
+    )
+  ) {
     required.push("supermemory.search");
   }
   return required;
@@ -207,14 +238,21 @@ export function shouldEnforcePromptPrerequisites(
     return false;
   }
 
-  return parseResult.requiredToolCalls.length > 0 || parseResult.requiredFilePaths.length > 0;
+  return (
+    parseResult.requiredToolCalls.length > 0 ||
+    parseResult.requiredFilePaths.length > 0
+  );
 }
 
 export function readPromptPrerequisiteState(
   directory: string,
   sessionId?: string,
 ): PromptPrerequisiteState | null {
-  return readModeState<PromptPrerequisiteState>(STATE_MODE, directory, sessionId);
+  return readModeState<PromptPrerequisiteState>(
+    STATE_MODE,
+    directory,
+    sessionId,
+  );
 }
 
 export function clearPromptPrerequisiteState(
@@ -230,7 +268,10 @@ export function activatePromptPrerequisiteState(
   executionKeywords: string[],
   parseResult: PromptPrerequisiteParseResult,
 ): PromptPrerequisiteState | null {
-  if (parseResult.requiredToolCalls.length === 0 && parseResult.requiredFilePaths.length === 0) {
+  if (
+    parseResult.requiredToolCalls.length === 0 &&
+    parseResult.requiredFilePaths.length === 0
+  ) {
     clearPromptPrerequisiteState(directory, sessionId);
     return null;
   }
@@ -248,7 +289,12 @@ export function activatePromptPrerequisiteState(
     updated_at: now,
   };
 
-  return writeModeState(STATE_MODE, state as unknown as Record<string, unknown>, directory, sessionId)
+  return writeModeState(
+    STATE_MODE,
+    state as unknown as Record<string, unknown>,
+    directory,
+    sessionId,
+  )
     ? state
     : null;
 }
@@ -256,12 +302,14 @@ export function activatePromptPrerequisiteState(
 export function buildPromptPrerequisiteReminder(
   state: PromptPrerequisiteState,
 ): string {
-  const toolList = state.required_tool_calls.length > 0
-    ? state.required_tool_calls.map((tool) => `- Call \`${tool}\``).join("\n")
-    : "";
-  const fileList = state.required_file_paths.length > 0
-    ? state.required_file_paths.map((path) => `- Read \`${path}\``).join("\n")
-    : "";
+  const toolList =
+    state.required_tool_calls.length > 0
+      ? state.required_tool_calls.map((tool) => `- Call \`${tool}\``).join("\n")
+      : "";
+  const fileList =
+    state.required_file_paths.length > 0
+      ? state.required_file_paths.map((path) => `- Read \`${path}\``).join("\n")
+      : "";
 
   return `<system-reminder>
 [BLOCKING PREREQUISITE GATE]
@@ -284,7 +332,10 @@ export function isPromptPrerequisiteBlockingTool(
   return Boolean(toolName && config.blockingTools.includes(toolName));
 }
 
-function matchesToolRequirement(toolName: string | undefined, requiredTool: string): boolean {
+function matchesToolRequirement(
+  toolName: string | undefined,
+  requiredTool: string,
+): boolean {
   if (!toolName) {
     return false;
   }
@@ -292,19 +343,30 @@ function matchesToolRequirement(toolName: string | undefined, requiredTool: stri
   const normalizedTool = toolName.toLowerCase();
   switch (requiredTool) {
     case "notepad_read":
-      return normalizedTool === "notepad_read" || normalizedTool.endsWith("__notepad_read");
+      return (
+        normalizedTool === "notepad_read" ||
+        normalizedTool.endsWith("__notepad_read")
+      );
     case "project_memory_read":
-      return normalizedTool === "project_memory_read" || normalizedTool.endsWith("__project_memory_read");
+      return (
+        normalizedTool === "project_memory_read" ||
+        normalizedTool.endsWith("__project_memory_read")
+      );
     case "supermemory.search":
-      return normalizedTool === "supermemory_search"
-        || normalizedTool === "supermemory.search"
-        || /supermemory.*search/i.test(toolName);
+      return (
+        normalizedTool === "supermemory_search" ||
+        normalizedTool === "supermemory.search" ||
+        /supermemory.*search/i.test(toolName)
+      );
     default:
       return normalizedTool === requiredTool.toLowerCase();
   }
 }
 
-function extractReadFilePath(toolName: string | undefined, toolInput: unknown): string | null {
+function extractReadFilePath(
+  toolName: string | undefined,
+  toolInput: unknown,
+): string | null {
   if ((toolName || "").toLowerCase() !== "read") {
     return null;
   }
@@ -315,7 +377,9 @@ function extractReadFilePath(toolName: string | undefined, toolInput: unknown): 
 
   const input = toolInput as Record<string, unknown>;
   const filePath = input.file_path ?? input.path;
-  return typeof filePath === "string" && filePath.trim().length > 0 ? filePath.trim() : null;
+  return typeof filePath === "string" && filePath.trim().length > 0
+    ? filePath.trim()
+    : null;
 }
 
 export function recordPromptPrerequisiteProgress(
@@ -333,8 +397,14 @@ export function recordPromptPrerequisiteProgress(
   let fileSatisfied: string | null = null;
 
   for (const requiredTool of state.required_tool_calls) {
-    if (!state.completed_tool_calls.includes(requiredTool) && matchesToolRequirement(toolName, requiredTool)) {
-      state.completed_tool_calls = dedupe([...state.completed_tool_calls, requiredTool]);
+    if (
+      !state.completed_tool_calls.includes(requiredTool) &&
+      matchesToolRequirement(toolName, requiredTool)
+    ) {
+      state.completed_tool_calls = dedupe([
+        ...state.completed_tool_calls,
+        requiredTool,
+      ]);
       toolSatisfied = requiredTool;
     }
   }
@@ -343,9 +413,17 @@ export function recordPromptPrerequisiteProgress(
   if (readPath) {
     for (const requiredPath of state.required_file_paths) {
       const normalizedRead = normalizePath(readPath);
-      const relativeRead = isAbsolute(normalizedRead) ? relative(directory, normalizedRead) : normalizedRead;
-      if (!state.completed_file_paths.includes(requiredPath) && (relativeRead === requiredPath || normalizedRead === requiredPath)) {
-        state.completed_file_paths = dedupe([...state.completed_file_paths, requiredPath]);
+      const relativeRead = isAbsolute(normalizedRead)
+        ? relative(directory, normalizedRead)
+        : normalizedRead;
+      if (
+        !state.completed_file_paths.includes(requiredPath) &&
+        (relativeRead === requiredPath || normalizedRead === requiredPath)
+      ) {
+        state.completed_file_paths = dedupe([
+          ...state.completed_file_paths,
+          requiredPath,
+        ]);
         fileSatisfied = requiredPath;
       }
     }
@@ -357,13 +435,19 @@ export function recordPromptPrerequisiteProgress(
   const remainingFilePaths = state.required_file_paths.filter(
     (requiredPath) => !state.completed_file_paths.includes(requiredPath),
   );
-  const isComplete = remainingToolCalls.length === 0 && remainingFilePaths.length === 0;
+  const isComplete =
+    remainingToolCalls.length === 0 && remainingFilePaths.length === 0;
 
   if (isComplete) {
     clearPromptPrerequisiteState(directory, sessionId);
   } else if (toolSatisfied || fileSatisfied) {
     state.updated_at = new Date().toISOString();
-    writeModeState(STATE_MODE, state as unknown as Record<string, unknown>, directory, sessionId);
+    writeModeState(
+      STATE_MODE,
+      state as unknown as Record<string, unknown>,
+      directory,
+      sessionId,
+    );
   }
 
   return {
@@ -393,12 +477,14 @@ export function buildPromptPrerequisiteDenyReason(
   toolName: string | undefined,
 ): string {
   const remaining = getRemainingPromptPrerequisites(state);
-  const toolBits = remaining.remainingToolCalls.length > 0
-    ? `Missing tool calls: ${remaining.remainingToolCalls.join(", ")}.`
-    : "";
-  const fileBits = remaining.remainingFilePaths.length > 0
-    ? `Missing file reads: ${remaining.remainingFilePaths.join(", ")}.`
-    : "";
+  const toolBits =
+    remaining.remainingToolCalls.length > 0
+      ? `Missing tool calls: ${remaining.remainingToolCalls.join(", ")}.`
+      : "";
+  const fileBits =
+    remaining.remainingFilePaths.length > 0
+      ? `Missing file reads: ${remaining.remainingFilePaths.join(", ")}.`
+      : "";
 
   return `[PROMPT PREREQUISITES] Blocking ${toolName || "tool"} until prompt prerequisites are completed. ${toolBits} ${fileBits}`.trim();
 }

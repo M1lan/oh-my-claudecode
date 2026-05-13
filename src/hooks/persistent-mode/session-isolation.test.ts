@@ -7,15 +7,15 @@ import { checkPersistentModes } from "./index.js";
 import { activateUltrawork, deactivateUltrawork } from "../ultrawork/index.js";
 
 function writePendingTodo(tempDir: string, content: string): void {
-  mkdirSync(join(tempDir, '.claude'), { recursive: true });
+  mkdirSync(join(tempDir, ".claude"), { recursive: true });
   writeFileSync(
-    join(tempDir, '.claude', 'todos.json'),
+    join(tempDir, ".claude", "todos.json"),
     JSON.stringify({
       todos: [
         {
           content,
-          status: 'pending',
-          priority: 'high',
+          status: "pending",
+          priority: "high",
         },
       ],
     }),
@@ -27,7 +27,7 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), "persistent-mode-test-"));
-    execSync('git init', { cwd: tempDir });
+    execSync("git init", { cwd: tempDir });
   });
 
   afterEach(() => {
@@ -85,14 +85,18 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       mkdirSync(sessionDir, { recursive: true });
       writeFileSync(
         join(sessionDir, "ultrawork-state.json"),
-        JSON.stringify({
-          active: true,
-          started_at: new Date().toISOString(),
-          original_prompt: "Session-scoped task",
-          session_id: sessionId,
-          reinforcement_count: 0,
-          last_checked_at: new Date().toISOString(),
-        }, null, 2)
+        JSON.stringify(
+          {
+            active: true,
+            started_at: new Date().toISOString(),
+            original_prompt: "Session-scoped task",
+            session_id: sessionId,
+            reinforcement_count: 0,
+            last_checked_at: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -109,14 +113,18 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       mkdirSync(sessionDirB, { recursive: true });
       writeFileSync(
         join(sessionDirB, "ultrawork-state.json"),
-        JSON.stringify({
-          active: true,
-          started_at: new Date().toISOString(),
-          original_prompt: "Session B task",
-          session_id: sessionB,
-          reinforcement_count: 0,
-          last_checked_at: new Date().toISOString(),
-        }, null, 2)
+        JSON.stringify(
+          {
+            active: true,
+            started_at: new Date().toISOString(),
+            original_prompt: "Session B task",
+            session_id: sessionB,
+            reinforcement_count: 0,
+            last_checked_at: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
       );
 
       // Session A should NOT be blocked by Session B's state
@@ -287,7 +295,7 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
           {
             active: true,
             requested_at: new Date().toISOString(),
-            source: "test"
+            source: "test",
           },
           null,
           2,
@@ -379,7 +387,7 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       expect(output.decision).toBe("block");
       expect(output.reason).toContain("AUTOPILOT");
-      expect(output.reason).not.toContain('/oh-my-claudecode:cancel');
+      expect(output.reason).not.toContain("/oh-my-claudecode:cancel");
     });
 
     it("should include cancel guidance only for session-owned autopilot state", () => {
@@ -407,7 +415,7 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
       });
 
       expect(output.decision).toBe("block");
-      expect(output.reason).toContain('/oh-my-claudecode:cancel');
+      expect(output.reason).toContain("/oh-my-claudecode:cancel");
       expect(output.reason).toContain("this session's autopilot state files");
     });
   });
@@ -509,8 +517,8 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       const output = runPersistentModeScript({
         directory: tempDir,
-        sessionId: correctSession,  // This should be used
-        session_id: wrongSession,   // This should be ignored
+        sessionId: correctSession, // This should be used
+        session_id: wrongSession, // This should be ignored
       });
 
       expect(output.decision).toBe("block");
@@ -524,8 +532,8 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       const output = runPersistentModeScript({
         directory: tempDir,
-        session_id: correctSession,  // This should be used
-        sessionid: wrongSession,     // This should be ignored
+        session_id: correctSession, // This should be used
+        sessionid: wrongSession, // This should be ignored
       });
 
       expect(output.decision).toBe("block");
@@ -539,8 +547,8 @@ describe("Persistent Mode Session Isolation (Issue #311)", () => {
 
       const output = runPersistentModeScript({
         directory: tempDir,
-        sessionId: correctSession,  // This should be used
-        sessionid: wrongSession,    // This should be ignored
+        sessionId: correctSession, // This should be used
+        sessionid: wrongSession, // This should be ignored
       });
 
       expect(output.decision).toBe("block");

@@ -34,10 +34,13 @@ describe("SlackSocketClient", () => {
 
     originalWebSocket = globalThis.WebSocket;
     // Must use regular function (not arrow) so `new WebSocket()` returns mockWsInstance
-    (globalThis as unknown as Record<string, unknown>).WebSocket = Object.assign(
-      vi.fn(function () { return mockWsInstance; }),
-      { OPEN: 1, CLOSED: 3, CONNECTING: 0, CLOSING: 2 },
-    );
+    (globalThis as unknown as Record<string, unknown>).WebSocket =
+      Object.assign(
+        vi.fn(function () {
+          return mockWsInstance;
+        }),
+        { OPEN: 1, CLOSED: 3, CONNECTING: 0, CLOSING: 2 },
+      );
 
     // Mock fetch
     originalFetch = globalThis.fetch;
@@ -49,7 +52,8 @@ describe("SlackSocketClient", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    (globalThis as unknown as Record<string, unknown>).WebSocket = originalWebSocket;
+    (globalThis as unknown as Record<string, unknown>).WebSocket =
+      originalWebSocket;
     (globalThis as unknown as Record<string, unknown>).fetch = originalFetch;
   });
 
@@ -75,7 +79,9 @@ describe("SlackSocketClient", () => {
         "https://slack.com/api/apps.connections.open",
         expect.objectContaining({ method: "POST" }),
       );
-      expect(globalThis.WebSocket).toHaveBeenCalledWith("wss://test.slack.com/link");
+      expect(globalThis.WebSocket).toHaveBeenCalledWith(
+        "wss://test.slack.com/link",
+      );
     });
 
     it("registers all four event listeners on WebSocket", async () => {
@@ -152,7 +158,9 @@ describe("SlackSocketClient", () => {
 
       // Advance past any reconnect delay — fetch should NOT be called again
       await vi.advanceTimersByTimeAsync(120_000);
-      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCallCount);
+      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(
+        fetchCallCount,
+      );
     });
 
     it("is safe to call before start()", () => {
@@ -199,7 +207,9 @@ describe("SlackSocketClient", () => {
 
       // Advance past any reconnect delay — fetch should NOT be called again
       await vi.advanceTimersByTimeAsync(120_000);
-      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCallCount);
+      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(
+        fetchCallCount,
+      );
     });
   });
 

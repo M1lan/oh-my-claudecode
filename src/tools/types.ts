@@ -40,9 +40,7 @@ export interface ToolDefinition<T extends z.ZodRawShape> {
   category?: ToolCategory;
   annotations?: ToolAnnotations;
   schema: T;
-  handler: (
-    args: z.infer<z.ZodObject<T>>,
-  ) => Promise<{
+  handler: (args: z.infer<z.ZodObject<T>>) => Promise<{
     content: Array<{ type: "text"; text: string }>;
     isError?: boolean;
   }>;

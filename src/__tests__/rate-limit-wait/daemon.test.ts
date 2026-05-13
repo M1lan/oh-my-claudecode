@@ -2,25 +2,29 @@
  * Tests for daemon.ts
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, existsSync, rmSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdirSync, writeFileSync, existsSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
 import {
   readDaemonState,
   isDaemonRunning,
   getDaemonStatus,
   formatDaemonState,
   shouldResumeBlockedPanesOnStatusChange,
-} from '../../features/rate-limit-wait/daemon.js';
-import type { DaemonState, DaemonConfig, RateLimitStatus } from '../../features/rate-limit-wait/types.js';
+} from "../../features/rate-limit-wait/daemon.js";
+import type {
+  DaemonState,
+  DaemonConfig,
+  RateLimitStatus,
+} from "../../features/rate-limit-wait/types.js";
 
-describe('daemon', () => {
-  const testDir = join(tmpdir(), 'omc-daemon-test-' + Date.now());
+describe("daemon", () => {
+  const testDir = join(tmpdir(), "omc-daemon-test-" + Date.now());
   const testConfig: DaemonConfig = {
-    stateFilePath: join(testDir, 'state.json'),
-    pidFilePath: join(testDir, 'daemon.pid'),
-    logFilePath: join(testDir, 'daemon.log'),
+    stateFilePath: join(testDir, "state.json"),
+    pidFilePath: join(testDir, "daemon.pid"),
+    logFilePath: join(testDir, "daemon.log"),
     pollIntervalMs: 1000,
   };
 
@@ -36,18 +40,18 @@ describe('daemon', () => {
     }
   });
 
-  describe('readDaemonState', () => {
-    it('should return null when state file does not exist', () => {
+  describe("readDaemonState", () => {
+    it("should return null when state file does not exist", () => {
       const state = readDaemonState(testConfig);
       expect(state).toBeNull();
     });
 
-    it('should read and parse state file', () => {
+    it("should read and parse state file", () => {
       const testState: DaemonState = {
         isRunning: true,
         pid: 1234,
-        startedAt: new Date('2024-01-01T00:00:00Z'),
-        lastPollAt: new Date('2024-01-01T00:01:00Z'),
+        startedAt: new Date("2024-01-01T00:00:00Z"),
+        lastPollAt: new Date("2024-01-01T00:01:00Z"),
         rateLimitStatus: {
           fiveHourLimited: false,
           weeklyLimited: false,
@@ -58,7 +62,7 @@ describe('daemon', () => {
           monthlyResetsAt: null,
           nextResetAt: null,
           timeUntilResetMs: null,
-          lastCheckedAt: new Date('2024-01-01T00:01:00Z'),
+          lastCheckedAt: new Date("2024-01-01T00:01:00Z"),
         },
         blockedPanes: [],
         resumedPaneIds: [],
@@ -79,8 +83,8 @@ describe('daemon', () => {
       expect(state!.startedAt).toBeInstanceOf(Date);
     });
 
-    it('should handle invalid JSON gracefully', () => {
-      writeFileSync(testConfig.stateFilePath!, 'invalid json{');
+    it("should handle invalid JSON gracefully", () => {
+      writeFileSync(testConfig.stateFilePath!, "invalid json{");
 
       const state = readDaemonState(testConfig);
 
@@ -88,15 +92,15 @@ describe('daemon', () => {
     });
   });
 
-  describe('isDaemonRunning', () => {
-    it('should return false when PID file does not exist', () => {
+  describe("isDaemonRunning", () => {
+    it("should return false when PID file does not exist", () => {
       const running = isDaemonRunning(testConfig);
       expect(running).toBe(false);
     });
 
-    it('should return false for stale PID file', () => {
+    it("should return false for stale PID file", () => {
       // Write a PID that definitely doesn't exist
-      writeFileSync(testConfig.pidFilePath!, '999999');
+      writeFileSync(testConfig.pidFilePath!, "999999");
 
       const running = isDaemonRunning(testConfig);
 
@@ -105,7 +109,7 @@ describe('daemon', () => {
       expect(existsSync(testConfig.pidFilePath!)).toBe(false);
     });
 
-    it('should return true for current process PID', () => {
+    it("should return true for current process PID", () => {
       // Write current process PID
       writeFileSync(testConfig.pidFilePath!, String(process.pid));
 
@@ -115,15 +119,15 @@ describe('daemon', () => {
     });
   });
 
-  describe('getDaemonStatus', () => {
-    it('should return not started status', () => {
+  describe("getDaemonStatus", () => {
+    it("should return not started status", () => {
       const result = getDaemonStatus(testConfig);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Daemon has never been started');
+      expect(result.message).toBe("Daemon has never been started");
     });
 
-    it('should return not running status when state exists but no PID', () => {
+    it("should return not running status when state exists but no PID", () => {
       const testState: DaemonState = {
         isRunning: false,
         pid: null,
@@ -142,11 +146,11 @@ describe('daemon', () => {
       const result = getDaemonStatus(testConfig);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Daemon is not running');
+      expect(result.message).toBe("Daemon is not running");
       expect(result.state).toBeDefined();
     });
 
-    it('should return running status when PID file exists with valid PID', () => {
+    it("should return running status when PID file exists with valid PID", () => {
       const testState: DaemonState = {
         isRunning: true,
         pid: process.pid,
@@ -166,13 +170,13 @@ describe('daemon', () => {
       const result = getDaemonStatus(testConfig);
 
       expect(result.success).toBe(true);
-      expect(result.message).toBe('Daemon is running');
+      expect(result.message).toBe("Daemon is running");
       expect(result.state).toBeDefined();
     });
   });
 
-  describe('formatDaemonState', () => {
-    it('should format running daemon state', () => {
+  describe("formatDaemonState", () => {
+    it("should format running daemon state", () => {
       const state: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -199,15 +203,15 @@ describe('daemon', () => {
 
       const output = formatDaemonState(state);
 
-      expect(output).toContain('Daemon running');
-      expect(output).toContain('PID: 1234');
-      expect(output).toContain('Not rate limited');
-      expect(output).toContain('Resume attempts: 10');
-      expect(output).toContain('Successful: 8');
-      expect(output).toContain('Errors: 2');
+      expect(output).toContain("Daemon running");
+      expect(output).toContain("PID: 1234");
+      expect(output).toContain("Not rate limited");
+      expect(output).toContain("Resume attempts: 10");
+      expect(output).toContain("Successful: 8");
+      expect(output).toContain("Errors: 2");
     });
 
-    it('should format rate limited state', () => {
+    it("should format rate limited state", () => {
       const state: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -234,10 +238,10 @@ describe('daemon', () => {
 
       const output = formatDaemonState(state);
 
-      expect(output).toContain('5-hour limit reached');
+      expect(output).toContain("5-hour limit reached");
     });
 
-    it('should format state with blocked panes', () => {
+    it("should format state with blocked panes", () => {
       const state: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -246,10 +250,10 @@ describe('daemon', () => {
         rateLimitStatus: null,
         blockedPanes: [
           {
-            id: '%0',
-            session: 'main',
+            id: "%0",
+            session: "main",
             windowIndex: 0,
-            windowName: 'dev',
+            windowName: "dev",
             paneIndex: 0,
             isActive: true,
             analysis: {
@@ -270,10 +274,10 @@ describe('daemon', () => {
 
       const output = formatDaemonState(state);
 
-      expect(output).toContain('Found 1 blocked');
+      expect(output).toContain("Found 1 blocked");
     });
 
-    it('should format state with last error', () => {
+    it("should format state with last error", () => {
       const state: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -285,15 +289,15 @@ describe('daemon', () => {
         totalResumeAttempts: 0,
         successfulResumes: 0,
         errorCount: 1,
-        lastError: 'Test error message',
+        lastError: "Test error message",
       };
 
       const output = formatDaemonState(state);
 
-      expect(output).toContain('Last error: Test error message');
+      expect(output).toContain("Last error: Test error message");
     });
 
-    it('should format not running state', () => {
+    it("should format not running state", () => {
       const state: DaemonState = {
         isRunning: false,
         pid: null,
@@ -309,12 +313,14 @@ describe('daemon', () => {
 
       const output = formatDaemonState(state);
 
-      expect(output).toContain('Daemon not running');
+      expect(output).toContain("Daemon not running");
     });
   });
 
-  describe('resume guard', () => {
-    function createRateLimitStatus(overrides: Partial<RateLimitStatus> = {}): RateLimitStatus {
+  describe("resume guard", () => {
+    function createRateLimitStatus(
+      overrides: Partial<RateLimitStatus> = {},
+    ): RateLimitStatus {
       return {
         fiveHourLimited: false,
         weeklyLimited: false,
@@ -325,49 +331,53 @@ describe('daemon', () => {
         monthlyResetsAt: null,
         nextResetAt: null,
         timeUntilResetMs: null,
-        lastCheckedAt: new Date('2026-04-20T00:00:00.000Z'),
+        lastCheckedAt: new Date("2026-04-20T00:00:00.000Z"),
         ...overrides,
       };
     }
 
-    it('does not resume blocked panes when a limited state becomes degraded stale-cache 429', () => {
+    it("does not resume blocked panes when a limited state becomes degraded stale-cache 429", () => {
       const previousStatus = createRateLimitStatus({
         fiveHourLimited: true,
         isLimited: true,
         fiveHourPercent: 100,
-        fiveHourResetsAt: new Date('2026-04-20T01:00:00.000Z'),
-        nextResetAt: new Date('2026-04-20T01:00:00.000Z'),
+        fiveHourResetsAt: new Date("2026-04-20T01:00:00.000Z"),
+        nextResetAt: new Date("2026-04-20T01:00:00.000Z"),
         timeUntilResetMs: 3_600_000,
       });
       const degradedStatus = createRateLimitStatus({
         fiveHourPercent: 83,
         weeklyPercent: 57,
-        apiErrorReason: 'rate_limited',
+        apiErrorReason: "rate_limited",
         usingStaleData: true,
       });
 
-      expect(shouldResumeBlockedPanesOnStatusChange(previousStatus, degradedStatus)).toBe(false);
+      expect(
+        shouldResumeBlockedPanesOnStatusChange(previousStatus, degradedStatus),
+      ).toBe(false);
     });
 
-    it('resumes blocked panes when a limited state becomes a clean non-limited status', () => {
+    it("resumes blocked panes when a limited state becomes a clean non-limited status", () => {
       const previousStatus = createRateLimitStatus({
         weeklyLimited: true,
         isLimited: true,
         weeklyPercent: 100,
-        weeklyResetsAt: new Date('2026-04-21T00:00:00.000Z'),
-        nextResetAt: new Date('2026-04-21T00:00:00.000Z'),
+        weeklyResetsAt: new Date("2026-04-21T00:00:00.000Z"),
+        nextResetAt: new Date("2026-04-21T00:00:00.000Z"),
         timeUntilResetMs: 86_400_000,
       });
       const clearedStatus = createRateLimitStatus({
         weeklyPercent: 42,
       });
 
-      expect(shouldResumeBlockedPanesOnStatusChange(previousStatus, clearedStatus)).toBe(true);
+      expect(
+        shouldResumeBlockedPanesOnStatusChange(previousStatus, clearedStatus),
+      ).toBe(true);
     });
   });
 
-  describe('security: file permissions', () => {
-    it('should create state file with restrictive permissions', () => {
+  describe("security: file permissions", () => {
+    it("should create state file with restrictive permissions", () => {
       const testState: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -388,7 +398,7 @@ describe('daemon', () => {
       expect(state).not.toBeNull();
     });
 
-    it('should not store sensitive data in state file', () => {
+    it("should not store sensitive data in state file", () => {
       const testState: DaemonState = {
         isRunning: true,
         pid: 1234,
@@ -416,15 +426,15 @@ describe('daemon', () => {
       writeFileSync(testConfig.stateFilePath!, JSON.stringify(testState));
 
       // Verify no tokens or credentials in state file
-      const { readFileSync } = require('fs');
-      const content = readFileSync(testConfig.stateFilePath!, 'utf-8');
+      const { readFileSync } = require("fs");
+      const content = readFileSync(testConfig.stateFilePath!, "utf-8");
 
       // State should not contain sensitive fields
-      expect(content).not.toContain('accessToken');
-      expect(content).not.toContain('apiKey');
-      expect(content).not.toContain('password');
-      expect(content).not.toContain('secret');
-      expect(content).not.toContain('credential');
+      expect(content).not.toContain("accessToken");
+      expect(content).not.toContain("apiKey");
+      expect(content).not.toContain("password");
+      expect(content).not.toContain("secret");
+      expect(content).not.toContain("credential");
     });
   });
 });

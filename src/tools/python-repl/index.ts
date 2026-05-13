@@ -5,10 +5,10 @@
  * tool invocations, session locking, and structured output markers.
  */
 
-import { pythonReplSchema, pythonReplHandler } from './tool.js';
+import { pythonReplSchema, pythonReplHandler } from "./tool.js";
 
 export const pythonReplTool = {
-  name: 'python_repl',
+  name: "python_repl",
   description: `Execute Python code in a persistent REPL environment with variable persistence across invocations.
 
 Actions:
@@ -31,9 +31,9 @@ Use this instead of Bash heredocs when you need:
 - Any workflow benefiting from Python state persistence`,
 
   schema: pythonReplSchema,
-  handler: pythonReplHandler
+  handler: pythonReplHandler,
 };
 
 // Re-export types for convenience
-export * from './types.js';
-export { pythonReplSchema, pythonReplHandler } from './tool.js';
+export * from "./types.js";
+export { pythonReplSchema, pythonReplHandler } from "./tool.js";

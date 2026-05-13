@@ -4,10 +4,10 @@
  * Handles configuration loading and validation.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
-import { join } from 'path';
-import { getClaudeConfigDir } from '../../utils/config-dir.js';
-import { DEBUG_ENABLED } from './constants.js';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
+import { join } from "path";
+import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import { DEBUG_ENABLED } from "./constants.js";
 
 export interface LearnerConfig {
   /** Feature enabled/disabled */
@@ -60,7 +60,7 @@ const DEFAULT_CONFIG: LearnerConfig = {
   },
 };
 
-const CONFIG_PATH = join(getClaudeConfigDir(), 'omc', 'learner.json');
+const CONFIG_PATH = join(getClaudeConfigDir(), "omc", "learner.json");
 
 /**
  * Load configuration from disk.
@@ -71,12 +71,12 @@ export function loadConfig(): LearnerConfig {
   }
 
   try {
-    const content = readFileSync(CONFIG_PATH, 'utf-8');
+    const content = readFileSync(CONFIG_PATH, "utf-8");
     const loaded = JSON.parse(content);
     return mergeConfig(DEFAULT_CONFIG, loaded);
   } catch (error) {
     if (DEBUG_ENABLED) {
-      console.error('[learner] Error loading config:', error);
+      console.error("[learner] Error loading config:", error);
     }
     return DEFAULT_CONFIG;
   }
@@ -89,7 +89,7 @@ export function saveConfig(config: Partial<LearnerConfig>): boolean {
   const merged = mergeConfig(DEFAULT_CONFIG, config);
 
   try {
-    const dir = join(getClaudeConfigDir(), 'omc');
+    const dir = join(getClaudeConfigDir(), "omc");
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
     }
@@ -97,7 +97,7 @@ export function saveConfig(config: Partial<LearnerConfig>): boolean {
     return true;
   } catch (error) {
     if (DEBUG_ENABLED) {
-      console.error('[learner] Error saving config:', error);
+      console.error("[learner] Error saving config:", error);
     }
     return false;
   }
@@ -108,7 +108,7 @@ export function saveConfig(config: Partial<LearnerConfig>): boolean {
  */
 function mergeConfig(
   defaults: LearnerConfig,
-  partial: Partial<LearnerConfig>
+  partial: Partial<LearnerConfig>,
 ): LearnerConfig {
   return {
     enabled: partial.enabled ?? defaults.enabled,
@@ -131,7 +131,7 @@ function mergeConfig(
  * Get a specific config value.
  */
 export function getConfigValue<K extends keyof LearnerConfig>(
-  key: K
+  key: K,
 ): LearnerConfig[K] {
   const config = loadConfig();
   return config[key];
@@ -142,7 +142,7 @@ export function getConfigValue<K extends keyof LearnerConfig>(
  */
 export function setConfigValue<K extends keyof LearnerConfig>(
   key: K,
-  value: LearnerConfig[K]
+  value: LearnerConfig[K],
 ): boolean {
   const config = loadConfig();
   config[key] = value;

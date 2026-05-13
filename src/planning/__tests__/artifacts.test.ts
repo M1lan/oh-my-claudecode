@@ -113,7 +113,9 @@ describe("planning/artifacts", () => {
       expect(result.prdPaths).toHaveLength(1);
       expect(result.prdPaths[0]).toContain(join(".omx", "plans", "prd-omx.md"));
       expect(result.testSpecPaths).toHaveLength(1);
-      expect(result.testSpecPaths[0]).toContain(join(".omx", "plans", "test-spec-omx.md"));
+      expect(result.testSpecPaths[0]).toContain(
+        join(".omx", "plans", "test-spec-omx.md"),
+      );
     });
 
     it("prefers the lexicographically latest artifact name across .omc and .omx plan roots", () => {
@@ -144,9 +146,9 @@ describe("planning/artifacts", () => {
 
   describe("artifact names", () => {
     it("formats canonical artifact timestamps without milliseconds", () => {
-      expect(planningArtifactTimestamp(new Date("2026-05-02T08:09:10.456Z"))).toBe(
-        "20260502T080910Z",
-      );
+      expect(
+        planningArtifactTimestamp(new Date("2026-05-02T08:09:10.456Z")),
+      ).toBe("20260502T080910Z");
     });
 
     it("selects exact timestamped test specs for timestamped PRDs", () => {
@@ -154,7 +156,9 @@ describe("planning/artifacts", () => {
       const matching = join(plansDir, "test-spec-20260502T080910Z-alpha.md");
       const stale = join(plansDir, "test-spec-alpha.md");
 
-      expect(selectMatchingTestSpecsForPrd(prdPath, [stale, matching])).toEqual([matching]);
+      expect(selectMatchingTestSpecsForPrd(prdPath, [stale, matching])).toEqual(
+        [matching],
+      );
     });
   });
 
@@ -373,7 +377,6 @@ describe("planning/artifacts", () => {
       expect(isPlanningComplete(readPlanningArtifacts(testDir))).toBe(true);
     });
 
-
     it("uses the latest artifacts when older ones were valid", () => {
       writeValidArtifacts("prd-aaa.md", "test-spec-aaa.md");
       writeFileSync(
@@ -523,7 +526,9 @@ describe("planning/artifacts", () => {
         ].join("\n"),
       );
 
-      expect(readApprovedExecutionLaunchHint(testDir, "team", { task: "ship it" })).toBeNull();
+      expect(
+        readApprovedExecutionLaunchHint(testDir, "team", { task: "ship it" }),
+      ).toBeNull();
       const result = readApprovedExecutionLaunchHint(testDir, "team", {
         task: "ship it",
         command: secondCommand,
@@ -590,9 +595,15 @@ describe("planning/artifacts", () => {
       const result = readApprovedExecutionLaunchHint(testDir, "team");
 
       expect(result).not.toBeNull();
-      expect(result!.task).toBe(".omx/plans/ralplan-capture-page-ui-draft-v7.md");
-      expect(result!.command).toBe('omx team ".omx/plans/ralplan-capture-page-ui-draft-v7.md"');
-      expect(result!.sourcePath).toContain(join(".omx", "plans", "prd-feature.md"));
+      expect(result!.task).toBe(
+        ".omx/plans/ralplan-capture-page-ui-draft-v7.md",
+      );
+      expect(result!.command).toBe(
+        'omx team ".omx/plans/ralplan-capture-page-ui-draft-v7.md"',
+      );
+      expect(result!.sourcePath).toContain(
+        join(".omx", "plans", "prd-feature.md"),
+      );
     });
 
     it("detects --linked-ralph flag", () => {

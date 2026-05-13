@@ -69,9 +69,7 @@ describe("readHudConfig", () => {
     it("reads callCountsFormat from settings.json", () => {
       mockExistsSync.mockImplementation((path) => {
         const s = String(path);
-        return /[\/]Users[\/]testuser[\/]\.claude[\/]settings\.json$/.test(
-          s,
-        );
+        return /[\/]Users[\/]testuser[\/]\.claude[\/]settings\.json$/.test(s);
       });
       mockReadFileSync.mockReturnValue(
         JSON.stringify({
@@ -408,11 +406,7 @@ describe("layout config round-trip", () => {
 
     const config = readHudConfig();
 
-    expect(config.elementOrder).toEqual([
-      "contextBar",
-      "omcLabel",
-      "session",
-    ]);
+    expect(config.elementOrder).toEqual(["contextBar", "omcLabel", "session"]);
   });
 
   it("readHudConfig preserves layout from settings.json", () => {

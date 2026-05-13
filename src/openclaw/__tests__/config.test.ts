@@ -147,7 +147,9 @@ describe("resolveGateway", () => {
     const result = resolveGateway(validConfig, "session-start");
     expect(result).not.toBeNull();
     expect(result!.gatewayName).toBe("my-gateway");
-    expect((result!.gateway as { url: string }).url).toBe("https://example.com/wake");
+    expect((result!.gateway as { url: string }).url).toBe(
+      "https://example.com/wake",
+    );
     expect(result!.instruction).toBe("Session started for {{projectName}}");
   });
 
@@ -194,7 +196,11 @@ describe("resolveGateway", () => {
     const result = resolveGateway(configWithCommand, "session-start");
     expect(result).not.toBeNull();
     expect(result!.gatewayName).toBe("cmd-gateway");
-    expect(result!.gateway).toEqual({ type: "command", command: "echo {{instruction}}", timeout: 5000 });
+    expect(result!.gateway).toEqual({
+      type: "command",
+      command: "echo {{instruction}}",
+      timeout: 5000,
+    });
     expect(result!.instruction).toBe("Session started");
   });
 

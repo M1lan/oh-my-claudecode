@@ -4,9 +4,13 @@
  * Integrates skill detection into the message flow.
  */
 
-import { detectExtractableMoment, shouldPromptExtraction, generateExtractionPrompt } from './detector.js';
-import { isLearnerEnabled } from './index.js';
-import type { DetectionResult } from './detector.js';
+import {
+  detectExtractableMoment,
+  shouldPromptExtraction,
+  generateExtractionPrompt,
+} from "./detector.js";
+import { isLearnerEnabled } from "./index.js";
+import type { DetectionResult } from "./detector.js";
 
 /**
  * Configuration for detection behavior.
@@ -59,7 +63,7 @@ export function processResponseForDetection(
   assistantMessage: string,
   userMessage: string | undefined,
   sessionId: string,
-  config: Partial<DetectionConfig> = {}
+  config: Partial<DetectionConfig> = {},
 ): string | null {
   const mergedConfig = { ...DEFAULT_CONFIG, ...config };
 

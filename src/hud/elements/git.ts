@@ -4,12 +4,12 @@
  * Renders git repository name and branch information.
  */
 
-import { execSync } from 'node:child_process';
-import { realpathSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
-import { dim, cyan, green, red } from '../colors.js';
-import type { HudLabels } from '../types.js';
-import { DEFAULT_HUD_LABELS } from '../types.js';
+import { execSync } from "node:child_process";
+import { realpathSync } from "node:fs";
+import { resolve, basename } from "node:path";
+import { dim, cyan, green, red } from "../colors.js";
+import type { HudLabels } from "../types.js";
+import { DEFAULT_HUD_LABELS } from "../types.js";
 
 const CACHE_TTL_MS = 30_000;
 
@@ -64,12 +64,12 @@ export function getGitRepoName(cwd?: string): string | null {
 
   let result: string | null = null;
   try {
-    const url = execSync('git remote get-url origin', {
+    const url = execSync("git remote get-url origin", {
       cwd,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       timeout: 1000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
 
     if (!url) {
@@ -77,8 +77,9 @@ export function getGitRepoName(cwd?: string): string | null {
     } else {
       // Extract repo name from URL
       // Handles: https://github.com/user/repo.git, git@github.com:user/repo.git
-      const match = url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+?)(?:\.git)?$/);
-      result = match ? match[1].replace(/\.git$/, '') : null;
+      const match =
+        url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+?)(?:\.git)?$/);
+      result = match ? match[1].replace(/\.git$/, "") : null;
     }
   } catch {
     result = null;
@@ -103,12 +104,12 @@ export function getGitBranch(cwd?: string): string | null {
 
   let result: string | null = null;
   try {
-    const branch = execSync('git branch --show-current', {
+    const branch = execSync("git branch --show-current", {
       cwd,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       timeout: 1000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
 
     result = branch || null;
@@ -137,22 +138,34 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
 
   const execOpts = {
     cwd,
-    encoding: 'utf-8' as BufferEncoding,
+    encoding: "utf-8" as BufferEncoding,
     timeout: 1000,
-    stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
-    shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+    stdio: ["pipe", "pipe", "pipe"] as ["pipe", "pipe", "pipe"],
+    shell: process.platform === "win32" ? "cmd.exe" : undefined,
   };
 
   let result: WorktreeDetection = { isWorktree: false, worktreeName: null };
   try {
-    const gitDir = (execSync('git rev-parse --git-dir', execOpts) as string).trim();
-    const gitCommonDir = (execSync('git rev-parse --git-common-dir', execOpts) as string).trim();
+    const gitDir = (
+      execSync("git rev-parse --git-dir", execOpts) as string
+    ).trim();
+    const gitCommonDir = (
+      execSync("git rev-parse --git-common-dir", execOpts) as string
+    ).trim();
 
     // Canonicalize via realpathSync to handle symlinked repo paths
     let resolvedGitDir = resolve(key, gitDir);
     let resolvedCommonDir = resolve(key, gitCommonDir);
-    try { resolvedGitDir = realpathSync(resolvedGitDir); } catch { /* use resolved */ }
-    try { resolvedCommonDir = realpathSync(resolvedCommonDir); } catch { /* use resolved */ }
+    try {
+      resolvedGitDir = realpathSync(resolvedGitDir);
+    } catch {
+      /* use resolved */
+    }
+    try {
+      resolvedCommonDir = realpathSync(resolvedCommonDir);
+    } catch {
+      /* use resolved */
+    }
 
     if (resolvedGitDir !== resolvedCommonDir) {
       // Extract worktree name from gitDir path (e.g. /repo/.git/worktrees/my-wt → my-wt)
@@ -162,7 +175,10 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
     // Not in a git repo or command failed
   }
 
-  worktreeCache.set(key, { value: result, expiresAt: Date.now() + CACHE_TTL_MS });
+  worktreeCache.set(key, {
+    value: result,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
   return result;
 }
 
@@ -175,7 +191,7 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
 export function renderGitRepo(cwd?: string): string | null {
   const repo = getGitRepoName(cwd);
   if (!repo) return null;
-  return `${dim('repo:')}${cyan(repo)}`;
+  return `${dim("repo:")}${cyan(repo)}`;
 }
 
 /**
@@ -192,10 +208,10 @@ export function renderGitBranch(cwd?: string): string | null {
 
   const wtInfo = getWorktreeInfo(cwd);
   if (wtInfo.isWorktree && wtInfo.worktreeName) {
-    return `${dim('branch:')}${cyan(branch)} ${dim('(wt:')}${cyan(wtInfo.worktreeName)}${dim(')')}`;
+    return `${dim("branch:")}${cyan(branch)} ${dim("(wt:")}${cyan(wtInfo.worktreeName)}${dim(")")}`;
   }
 
-  return `${dim('branch:')}${cyan(branch)}`;
+  return `${dim("branch:")}${cyan(branch)}`;
 }
 
 /**
@@ -215,18 +231,22 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
 
   let result: GitStatusCounts | null = null;
   try {
-    const output = execSync('git --no-optional-locks status --porcelain -b', {
+    const output = execSync("git --no-optional-locks status --porcelain -b", {
       cwd,
-      encoding: 'utf-8',
+      encoding: "utf-8",
       timeout: 1000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+      stdio: ["pipe", "pipe", "pipe"],
+      shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
 
-    let staged = 0, modified = 0, untracked = 0, ahead = 0, behind = 0;
+    let staged = 0,
+      modified = 0,
+      untracked = 0,
+      ahead = 0,
+      behind = 0;
 
     if (output) {
-      const lines = output.split('\n');
+      const lines = output.split("\n");
 
       // Parse branch line for ahead/behind: ## main...origin/main [ahead 3, behind 1]
       const branchLine = lines[0];
@@ -241,11 +261,11 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
         const idx = line[0];
         const wt = line[1];
 
-        if (idx === '?') {
+        if (idx === "?") {
           untracked++;
         } else {
-          if (idx !== ' ' && idx !== '?') staged++;
-          if (wt === 'M' || wt === 'D') modified++;
+          if (idx !== " " && idx !== "?") staged++;
+          if (wt === "M" || wt === "D") modified++;
         }
       }
     }
@@ -268,13 +288,22 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
  */
 export function renderGitStatus(
   cwd?: string,
-  labels: Pick<HudLabels, 'staged' | 'modified' | 'untracked' | 'ahead' | 'behind'> = DEFAULT_HUD_LABELS,
+  labels: Pick<
+    HudLabels,
+    "staged" | "modified" | "untracked" | "ahead" | "behind"
+  > = DEFAULT_HUD_LABELS,
 ): string | null {
   const counts = getGitStatusCounts(cwd);
   if (!counts) return null;
 
   const { staged, modified, untracked, ahead, behind } = counts;
-  if (staged === 0 && modified === 0 && untracked === 0 && ahead === 0 && behind === 0) {
+  if (
+    staged === 0 &&
+    modified === 0 &&
+    untracked === 0 &&
+    ahead === 0 &&
+    behind === 0
+  ) {
     return null;
   }
 
@@ -285,5 +314,5 @@ export function renderGitStatus(
   if (ahead > 0) parts.push(`${green(labels.ahead)}${ahead}`);
   if (behind > 0) parts.push(`${red(labels.behind)}${behind}`);
 
-  return parts.join(' ');
+  return parts.join(" ");
 }

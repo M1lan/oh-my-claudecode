@@ -1,23 +1,36 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import * as readline from 'readline';
-import { triggerStopCallbacks } from './callbacks.js';
-import { getOMCConfig } from '../../features/auto-update.js';
-import { buildConfigFromEnv, getEnabledPlatforms, getNotificationConfig } from '../../notifications/config.js';
-import { notify } from '../../notifications/index.js';
-import type { NotificationPlatform } from '../../notifications/types.js';
-import { cleanupBridgeSessions } from '../../tools/python-repl/bridge-manager.js';
-import { resolveToWorktreeRoot, getOmcRoot, validateSessionId, isValidTranscriptPath, resolveSessionStatePath } from '../../lib/worktree-paths.js';
-import { SESSION_END_MODE_STATE_FILES, SESSION_METRICS_MODE_FILES } from '../../lib/mode-names.js';
-import { clearModeStateFile, readModeState } from '../../lib/mode-state-io.js';
+import * as fs from "fs";
+import * as path from "path";
+import * as readline from "readline";
+import { triggerStopCallbacks } from "./callbacks.js";
+import { getOMCConfig } from "../../features/auto-update.js";
+import {
+  buildConfigFromEnv,
+  getEnabledPlatforms,
+  getNotificationConfig,
+} from "../../notifications/config.js";
+import { notify } from "../../notifications/index.js";
+import type { NotificationPlatform } from "../../notifications/types.js";
+import { cleanupBridgeSessions } from "../../tools/python-repl/bridge-manager.js";
+import {
+  resolveToWorktreeRoot,
+  getOmcRoot,
+  validateSessionId,
+  isValidTranscriptPath,
+  resolveSessionStatePath,
+} from "../../lib/worktree-paths.js";
+import {
+  SESSION_END_MODE_STATE_FILES,
+  SESSION_METRICS_MODE_FILES,
+} from "../../lib/mode-names.js";
+import { clearModeStateFile, readModeState } from "../../lib/mode-state-io.js";
 
 export interface SessionEndInput {
   session_id: string;
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: 'SessionEnd';
-  reason: 'clear' | 'logout' | 'prompt_input_exit' | 'other';
+  hook_event_name: "SessionEnd";
+  reason: "clear" | "logout" | "prompt_input_exit" | "other";
 }
 
 export interface SessionMetrics {
@@ -41,20 +54,23 @@ interface SessionOwnedTeamCleanupResult {
   failed: Array<{ teamName: string; error: string }>;
 }
 
-type LegacyStopCallbackPlatform = 'file' | 'telegram' | 'discord';
-const SESSION_STARTED_MARKER_FILE = 'session-started.json';
+type LegacyStopCallbackPlatform = "file" | "telegram" | "discord";
+const SESSION_STARTED_MARKER_FILE = "session-started.json";
 
 function hasExplicitNotificationConfig(profileName?: string): boolean {
   const config = getOMCConfig();
 
   if (profileName) {
     const profile = config.notificationProfiles?.[profileName];
-    if (profile && typeof profile.enabled === 'boolean') {
+    if (profile && typeof profile.enabled === "boolean") {
       return true;
     }
   }
 
-  if (config.notifications && typeof config.notifications.enabled === 'boolean') {
+  if (
+    config.notifications &&
+    typeof config.notifications.enabled === "boolean"
+  ) {
     return true;
   }
 
@@ -62,16 +78,16 @@ function hasExplicitNotificationConfig(profileName?: string): boolean {
 }
 
 function getLegacyPlatformsCoveredByNotifications(
-  enabledPlatforms: NotificationPlatform[]
+  enabledPlatforms: NotificationPlatform[],
 ): LegacyStopCallbackPlatform[] {
   const overlappingPlatforms: LegacyStopCallbackPlatform[] = [];
 
-  if (enabledPlatforms.includes('telegram')) {
-    overlappingPlatforms.push('telegram');
+  if (enabledPlatforms.includes("telegram")) {
+    overlappingPlatforms.push("telegram");
   }
 
-  if (enabledPlatforms.includes('discord')) {
-    overlappingPlatforms.push('discord');
+  if (enabledPlatforms.includes("discord")) {
+    overlappingPlatforms.push("discord");
   }
 
   return overlappingPlatforms;
@@ -80,20 +96,32 @@ function getLegacyPlatformsCoveredByNotifications(
 /**
  * Read agent tracking to get spawn/completion counts
  */
-function getAgentCounts(directory: string): { spawned: number; completed: number } {
-  const trackingPath = path.join(getOmcRoot(directory), 'state', 'subagent-tracking.json');
+function getAgentCounts(directory: string): {
+  spawned: number;
+  completed: number;
+} {
+  const trackingPath = path.join(
+    getOmcRoot(directory),
+    "state",
+    "subagent-tracking.json",
+  );
 
   if (!fs.existsSync(trackingPath)) {
     return { spawned: 0, completed: 0 };
   }
 
   try {
-    const content = fs.readFileSync(trackingPath, 'utf-8');
+    const content = fs.readFileSync(trackingPath, "utf-8");
     const tracking = JSON.parse(content);
 
-    interface AgentTrackingEntry { status: string }
+    interface AgentTrackingEntry {
+      status: string;
+    }
     const spawned = tracking.agents?.length || 0;
-    const completed = tracking.agents?.filter((a: AgentTrackingEntry) => a.status === 'completed').length || 0;
+    const completed =
+      tracking.agents?.filter(
+        (a: AgentTrackingEntry) => a.status === "completed",
+      ).length || 0;
 
     return { spawned, completed };
   } catch (_error) {
@@ -105,7 +133,7 @@ function getAgentCounts(directory: string): { spawned: number; completed: number
  * Detect which modes were used during the session
  */
 function getModesUsed(directory: string): string[] {
-  const stateDir = path.join(getOmcRoot(directory), 'state');
+  const stateDir = path.join(getOmcRoot(directory), "state");
   const modes: string[] = [];
 
   if (!fs.existsSync(stateDir)) {
@@ -137,14 +165,19 @@ function getModesUsed(directory: string): string[] {
  * duration reflects the full session span (e.g. autopilot started before
  * ultrawork).
  */
-export function getSessionStartTime(directory: string, sessionId?: string): string | undefined {
-  const stateDir = path.join(getOmcRoot(directory), 'state');
+export function getSessionStartTime(
+  directory: string,
+  sessionId?: string,
+): string | undefined {
+  const stateDir = path.join(getOmcRoot(directory), "state");
 
   if (!fs.existsSync(stateDir)) {
     return undefined;
   }
 
-  const stateFiles = fs.readdirSync(stateDir).filter(f => f.endsWith('.json'));
+  const stateFiles = fs
+    .readdirSync(stateDir)
+    .filter((f) => f.endsWith(".json"));
 
   let matchedStartTime: string | undefined;
   let matchedEpoch = Infinity;
@@ -154,7 +187,7 @@ export function getSessionStartTime(directory: string, sessionId?: string): stri
   for (const file of stateFiles) {
     try {
       const statePath = path.join(stateDir, file);
-      const content = fs.readFileSync(statePath, 'utf-8');
+      const content = fs.readFileSync(statePath, "utf-8");
       const state = JSON.parse(content);
 
       if (!state.started_at) {
@@ -191,7 +224,10 @@ export function getSessionStartTime(directory: string, sessionId?: string): stri
 /**
  * Record session metrics
  */
-export function recordSessionMetrics(directory: string, input: SessionEndInput): SessionMetrics {
+export function recordSessionMetrics(
+  directory: string,
+  input: SessionEndInput,
+): SessionMetrics {
   const endedAt = new Date().toISOString();
   const startedAt = getSessionStartTime(directory, input.session_id);
   const { spawned, completed } = getAgentCounts(directory);
@@ -231,7 +267,10 @@ export function recordSessionMetrics(directory: string, input: SessionEndInput):
  *   sessions keep their live state. When omitted (e.g. legacy callers
  *   or tests), the previous behavior is preserved for compatibility.
  */
-export function cleanupTransientState(directory: string, endingSessionId?: string): number {
+export function cleanupTransientState(
+  directory: string,
+  endingSessionId?: string,
+): number {
   let filesRemoved = 0;
   const omcDir = getOmcRoot(directory);
 
@@ -240,7 +279,7 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
   }
 
   // Remove transient agent tracking
-  const trackingPath = path.join(omcDir, 'state', 'subagent-tracking.json');
+  const trackingPath = path.join(omcDir, "state", "subagent-tracking.json");
   if (fs.existsSync(trackingPath)) {
     try {
       fs.unlinkSync(trackingPath);
@@ -251,7 +290,7 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
   }
 
   // Clean stale checkpoints (older than 24 hours)
-  const checkpointsDir = path.join(omcDir, 'checkpoints');
+  const checkpointsDir = path.join(omcDir, "checkpoints");
   if (fs.existsSync(checkpointsDir)) {
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
@@ -282,7 +321,7 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
 
         if (entry.isDirectory()) {
           removeTmpFiles(fullPath);
-        } else if (entry.name.endsWith('.tmp')) {
+        } else if (entry.name.endsWith(".tmp")) {
           fs.unlinkSync(fullPath);
           filesRemoved++;
         }
@@ -295,7 +334,7 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
   removeTmpFiles(omcDir);
 
   // Remove transient state files that accumulate across sessions
-  const stateDir = path.join(omcDir, 'state');
+  const stateDir = path.join(omcDir, "state");
   if (fs.existsSync(stateDir)) {
     const transientPatterns = [
       /^agent-replay-.*\.jsonl$/,
@@ -309,7 +348,7 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
     try {
       const stateFiles = fs.readdirSync(stateDir);
       for (const file of stateFiles) {
-        if (transientPatterns.some(p => p.test(file))) {
+        if (transientPatterns.some((p) => p.test(file))) {
           try {
             fs.unlinkSync(path.join(stateDir, file));
             filesRemoved++;
@@ -324,15 +363,12 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
 
     // Clean up cancel signal files, stale per-session transient caches,
     // and empty session directories.
-    const sessionsDir = path.join(stateDir, 'sessions');
+    const sessionsDir = path.join(stateDir, "sessions");
     if (fs.existsSync(sessionsDir)) {
       // Patterns that are safe to delete across every session dir:
       // these are short-lived markers/breakers that do not represent
       // live per-session state an active concurrent session is reading.
-      const crossSessionSafePatterns = [
-        /^cancel-signal/,
-        /stop-breaker/,
-      ];
+      const crossSessionSafePatterns = [/^cancel-signal/, /stop-breaker/];
       // Patterns that must only be deleted from the session that is
       // actually ending — deleting them from a still-running session
       // would reintroduce cross-session interference.
@@ -342,9 +378,9 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
         /^hud-stdin-cache\.json$/,
       ];
       const isEndingSession = (sid: string): boolean =>
-        typeof endingSessionId === 'string'
-        && endingSessionId.length > 0
-        && sid === endingSessionId;
+        typeof endingSessionId === "string" &&
+        endingSessionId.length > 0 &&
+        sid === endingSessionId;
       try {
         const sessionDirs = fs.readdirSync(sessionsDir);
         for (const sid of sessionDirs) {
@@ -359,11 +395,13 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
 
             const sessionFiles = fs.readdirSync(sessionDir);
             for (const file of sessionFiles) {
-              if (activePatterns.some(p => p.test(file))) {
+              if (activePatterns.some((p) => p.test(file))) {
                 try {
                   fs.unlinkSync(path.join(sessionDir, file));
                   filesRemoved++;
-                } catch (_error) { /* ignore */ }
+                } catch (_error) {
+                  /* ignore */
+                }
               }
             }
 
@@ -373,8 +411,10 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
               try {
                 fs.rmdirSync(sessionDir);
                 filesRemoved++;
-              } catch (_error) { /* ignore */ }
+              } catch (_error) {
+                /* ignore */
               }
+            }
           } catch (_error) {
             // Ignore per-session errors
           }
@@ -393,20 +433,26 @@ export function cleanupTransientState(directory: string, endingSessionId?: strin
  * Imported from the shared mode-names module (issue #1058).
  */
 
-const PYTHON_REPL_TOOL_NAMES = new Set(['python_repl', 'mcp__t__python_repl']);
+const PYTHON_REPL_TOOL_NAMES = new Set(["python_repl", "mcp__t__python_repl"]);
 
 /**
  * Extract python_repl research session IDs from transcript JSONL.
  * These sessions are terminated on SessionEnd to prevent bridge leaks.
  */
-export async function extractPythonReplSessionIdsFromTranscript(transcriptPath: string): Promise<string[]> {
+export async function extractPythonReplSessionIdsFromTranscript(
+  transcriptPath: string,
+): Promise<string[]> {
   // Security: validate transcript path is within allowed directories
-  if (!transcriptPath || !isValidTranscriptPath(transcriptPath) || !fs.existsSync(transcriptPath)) {
+  if (
+    !transcriptPath ||
+    !isValidTranscriptPath(transcriptPath) ||
+    !fs.existsSync(transcriptPath)
+  ) {
     return [];
   }
 
   const sessionIds = new Set<string>();
-  const stream = fs.createReadStream(transcriptPath, { encoding: 'utf-8' });
+  const stream = fs.createReadStream(transcriptPath, { encoding: "utf-8" });
   const rl = readline.createInterface({
     input: stream,
     crlfDelay: Infinity,
@@ -438,12 +484,16 @@ export async function extractPythonReplSessionIdsFromTranscript(transcriptPath: 
           input?: { researchSessionID?: unknown };
         };
 
-        if (toolUse.type !== 'tool_use' || !toolUse.name || !PYTHON_REPL_TOOL_NAMES.has(toolUse.name)) {
+        if (
+          toolUse.type !== "tool_use" ||
+          !toolUse.name ||
+          !PYTHON_REPL_TOOL_NAMES.has(toolUse.name)
+        ) {
           continue;
         }
 
         const sessionId = toolUse.input?.researchSessionID;
-        if (typeof sessionId === 'string' && sessionId.trim().length > 0) {
+        if (typeof sessionId === "string" && sessionId.trim().length > 0) {
           sessionIds.add(sessionId.trim());
         }
       }
@@ -467,10 +517,13 @@ export async function extractPythonReplSessionIdsFromTranscript(transcriptPath: 
  * @param sessionId - Optional session ID to match. Only cleans states belonging to this session.
  * @returns Object with counts of files removed and modes cleaned
  */
-export function cleanupModeStates(directory: string, sessionId?: string): { filesRemoved: number; modesCleaned: string[] } {
+export function cleanupModeStates(
+  directory: string,
+  sessionId?: string,
+): { filesRemoved: number; modesCleaned: string[] } {
   let filesRemoved = 0;
   const modesCleaned: string[] = [];
-  const stateDir = path.join(getOmcRoot(directory), 'state');
+  const stateDir = path.join(getOmcRoot(directory), "state");
 
   if (!fs.existsSync(stateDir)) {
     return { filesRemoved, modesCleaned };
@@ -478,11 +531,13 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
 
   for (const { file, mode } of SESSION_END_MODE_STATE_FILES) {
     const localPath = path.join(stateDir, file);
-    const sessionPath = sessionId ? resolveSessionStatePath(mode, sessionId, directory) : undefined;
+    const sessionPath = sessionId
+      ? resolveSessionStatePath(mode, sessionId, directory)
+      : undefined;
 
     try {
       // For JSON files, check if active before removing
-      if (file.endsWith('.json')) {
+      if (file.endsWith(".json")) {
         const sessionState = sessionId
           ? readModeState<Record<string, unknown>>(mode, directory, sessionId)
           : null;
@@ -490,7 +545,7 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
         let shouldCleanup = sessionState?.active === true;
 
         if (!shouldCleanup && fs.existsSync(localPath)) {
-          const content = fs.readFileSync(localPath, 'utf-8');
+          const content = fs.readFileSync(localPath, "utf-8");
           const state = JSON.parse(content);
 
           // Only clean if marked as active AND belongs to this session
@@ -508,7 +563,9 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
 
         if (shouldCleanup) {
           const hadLocalPath = fs.existsSync(localPath);
-          const hadSessionPath = Boolean(sessionPath && fs.existsSync(sessionPath));
+          const hadSessionPath = Boolean(
+            sessionPath && fs.existsSync(sessionPath),
+          );
 
           if (clearModeStateFile(mode, directory, sessionId)) {
             if (hadLocalPath && !fs.existsSync(localPath)) {
@@ -546,15 +603,22 @@ export function cleanupModeStates(directory: string, sessionId?: string): { file
  * and whose id contains the sessionId. When sessionId is omitted, removes all
  * session-sourced missions.
  */
-export function cleanupMissionState(directory: string, sessionId?: string): number {
-  const missionStatePath = path.join(getOmcRoot(directory), 'state', 'mission-state.json');
+export function cleanupMissionState(
+  directory: string,
+  sessionId?: string,
+): number {
+  const missionStatePath = path.join(
+    getOmcRoot(directory),
+    "state",
+    "mission-state.json",
+  );
 
   if (!fs.existsSync(missionStatePath)) {
     return 0;
   }
 
   try {
-    const content = fs.readFileSync(missionStatePath, 'utf-8');
+    const content = fs.readFileSync(missionStatePath, "utf-8");
     const parsed = JSON.parse(content) as {
       updatedAt?: string;
       missions?: Array<Record<string, unknown>>;
@@ -567,11 +631,11 @@ export function cleanupMissionState(directory: string, sessionId?: string): numb
     const before = parsed.missions.length;
     parsed.missions = parsed.missions.filter((mission) => {
       // Keep non-session missions (e.g., team missions handled by state_clear)
-      if (mission.source !== 'session') return true;
+      if (mission.source !== "session") return true;
 
       // If sessionId provided, only remove missions for this session
       if (sessionId) {
-        const missionId = typeof mission.id === 'string' ? mission.id : '';
+        const missionId = typeof mission.id === "string" ? mission.id : "";
         return !missionId.includes(sessionId);
       }
 
@@ -591,7 +655,10 @@ export function cleanupMissionState(directory: string, sessionId?: string): numb
   }
 }
 
-function cleanupSessionStartedMarker(directory: string, sessionId: string): void {
+function cleanupSessionStartedMarker(
+  directory: string,
+  sessionId: string,
+): void {
   try {
     validateSessionId(sessionId);
   } catch {
@@ -599,7 +666,13 @@ function cleanupSessionStartedMarker(directory: string, sessionId: string): void
   }
 
   try {
-    const markerPath = path.join(getOmcRoot(directory), 'state', 'sessions', sessionId, SESSION_STARTED_MARKER_FILE);
+    const markerPath = path.join(
+      getOmcRoot(directory),
+      "state",
+      "sessions",
+      sessionId,
+      SESSION_STARTED_MARKER_FILE,
+    );
     if (fs.existsSync(markerPath)) {
       fs.unlinkSync(markerPath);
     }
@@ -608,28 +681,37 @@ function cleanupSessionStartedMarker(directory: string, sessionId: string): void
   }
 }
 
-function extractTeamNameFromState(state: Record<string, unknown> | null): string | null {
-  if (!state || typeof state !== 'object') return null;
+function extractTeamNameFromState(
+  state: Record<string, unknown> | null,
+): string | null {
+  if (!state || typeof state !== "object") return null;
   const rawTeamName = state.team_name ?? state.teamName;
-  return typeof rawTeamName === 'string' && rawTeamName.trim() !== ''
+  return typeof rawTeamName === "string" && rawTeamName.trim() !== ""
     ? rawTeamName.trim()
     : null;
 }
 
-async function findSessionOwnedTeams(directory: string, sessionId: string): Promise<string[]> {
+async function findSessionOwnedTeams(
+  directory: string,
+  sessionId: string,
+): Promise<string[]> {
   const teamNames = new Set<string>();
-  const teamState = readModeState<Record<string, unknown>>('team', directory, sessionId);
+  const teamState = readModeState<Record<string, unknown>>(
+    "team",
+    directory,
+    sessionId,
+  );
   const stateTeamName = extractTeamNameFromState(teamState);
   if (stateTeamName) {
     teamNames.add(stateTeamName);
   }
 
-  const teamRoot = path.join(getOmcRoot(directory), 'state', 'team');
+  const teamRoot = path.join(getOmcRoot(directory), "state", "team");
   if (!fs.existsSync(teamRoot)) {
     return [...teamNames];
   }
 
-  const { teamReadManifest } = await import('../../team/team-ops.js');
+  const { teamReadManifest } = await import("../../team/team-ops.js");
 
   try {
     const entries = fs.readdirSync(teamRoot, { withFileTypes: true });
@@ -652,7 +734,10 @@ async function findSessionOwnedTeams(directory: string, sessionId: string): Prom
   return [...teamNames];
 }
 
-async function cleanupSessionOwnedTeams(directory: string, sessionId: string): Promise<SessionOwnedTeamCleanupResult> {
+async function cleanupSessionOwnedTeams(
+  directory: string,
+  sessionId: string,
+): Promise<SessionOwnedTeamCleanupResult> {
   const attempted: string[] = [];
   const cleaned: string[] = [];
   const failed: Array<{ teamName: string; error: string }> = [];
@@ -662,22 +747,26 @@ async function cleanupSessionOwnedTeams(directory: string, sessionId: string): P
     return { attempted, cleaned, failed };
   }
 
-  const { teamReadConfig, teamCleanup } = await import('../../team/team-ops.js');
-  const { shutdownTeamV2 } = await import('../../team/runtime-v2.js');
-  const { shutdownTeam } = await import('../../team/runtime.js');
+  const { teamReadConfig, teamCleanup } =
+    await import("../../team/team-ops.js");
+  const { shutdownTeamV2 } = await import("../../team/runtime-v2.js");
+  const { shutdownTeam } = await import("../../team/runtime.js");
 
   for (const teamName of teamNames) {
     attempted.push(teamName);
     try {
-      const config = await teamReadConfig(teamName, directory) as unknown;
-      if (!config || typeof config !== 'object') {
+      const config = (await teamReadConfig(teamName, directory)) as unknown;
+      if (!config || typeof config !== "object") {
         await teamCleanup(teamName, directory);
         cleaned.push(teamName);
         continue;
       }
 
       if (Array.isArray((config as { workers?: unknown[] }).workers)) {
-        await shutdownTeamV2(teamName, directory, { force: true, timeoutMs: 0 });
+        await shutdownTeamV2(teamName, directory, {
+          force: true,
+          timeoutMs: 0,
+        });
         cleaned.push(teamName);
         continue;
       }
@@ -688,13 +777,25 @@ async function cleanupSessionOwnedTeams(directory: string, sessionId: string): P
           leaderPaneId?: string | null;
           tmuxOwnsWindow?: boolean;
         };
-        const sessionName = typeof legacyConfig.tmuxSession === 'string' && legacyConfig.tmuxSession.trim() !== ''
-          ? legacyConfig.tmuxSession.trim()
-          : `omc-team-${teamName}`;
-        const leaderPaneId = typeof legacyConfig.leaderPaneId === 'string' && legacyConfig.leaderPaneId.trim() !== ''
-          ? legacyConfig.leaderPaneId.trim()
-          : undefined;
-        await shutdownTeam(teamName, sessionName, directory, 0, undefined, leaderPaneId, legacyConfig.tmuxOwnsWindow === true);
+        const sessionName =
+          typeof legacyConfig.tmuxSession === "string" &&
+          legacyConfig.tmuxSession.trim() !== ""
+            ? legacyConfig.tmuxSession.trim()
+            : `omc-team-${teamName}`;
+        const leaderPaneId =
+          typeof legacyConfig.leaderPaneId === "string" &&
+          legacyConfig.leaderPaneId.trim() !== ""
+            ? legacyConfig.leaderPaneId.trim()
+            : undefined;
+        await shutdownTeam(
+          teamName,
+          sessionName,
+          directory,
+          0,
+          undefined,
+          leaderPaneId,
+          legacyConfig.tmuxOwnsWindow === true,
+        );
         cleaned.push(teamName);
         continue;
       }
@@ -715,8 +816,11 @@ async function cleanupSessionOwnedTeams(directory: string, sessionId: string): P
 /**
  * Export session summary to .omc/sessions/
  */
-export function exportSessionSummary(directory: string, metrics: SessionMetrics): void {
-  const sessionsDir = path.join(getOmcRoot(directory), 'sessions');
+export function exportSessionSummary(
+  directory: string,
+  metrics: SessionMetrics,
+): void {
+  const sessionsDir = path.join(getOmcRoot(directory), "sessions");
 
   // Create sessions directory if it doesn't exist
   if (!fs.existsSync(sessionsDir)) {
@@ -735,7 +839,7 @@ export function exportSessionSummary(directory: string, metrics: SessionMetrics)
   const sessionFile = path.join(sessionsDir, `${metrics.session_id}.json`);
 
   try {
-    fs.writeFileSync(sessionFile, JSON.stringify(metrics, null, 2), 'utf-8');
+    fs.writeFileSync(sessionFile, JSON.stringify(metrics, null, 2), "utf-8");
   } catch (_error) {
     // Ignore write errors
   }
@@ -744,7 +848,9 @@ export function exportSessionSummary(directory: string, metrics: SessionMetrics)
 /**
  * Process session end
  */
-export async function processSessionEnd(input: SessionEndInput): Promise<HookOutput> {
+export async function processSessionEnd(
+  input: SessionEndInput,
+): Promise<HookOutput> {
   // Normalize cwd to the git worktree root so .omc/state/ is always resolved
   // from the repo root, even when Claude Code is running from a subdirectory (issue #891).
   const directory = resolveToWorktreeRoot(input.cwd);
@@ -777,7 +883,9 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
   // Clean up Python REPL bridge sessions used in this transcript (#641).
   // Best-effort only: session end should not fail because cleanup fails.
   try {
-    const pythonSessionIds = await extractPythonReplSessionIdsFromTranscript(input.transcript_path);
+    const pythonSessionIds = await extractPythonReplSessionIdsFromTranscript(
+      input.transcript_path,
+    );
     if (pythonSessionIds.length > 0) {
       await cleanupBridgeSessions(pythonSessionIds);
     }
@@ -788,11 +896,12 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
   const profileName = process.env.OMC_NOTIFY_PROFILE;
   const notificationConfig = getNotificationConfig(profileName);
   const shouldUseNewNotificationSystem = Boolean(
-    notificationConfig && hasExplicitNotificationConfig(profileName)
+    notificationConfig && hasExplicitNotificationConfig(profileName),
   );
-  const enabledNotificationPlatforms = shouldUseNewNotificationSystem && notificationConfig
-    ? getEnabledPlatforms(notificationConfig, 'session-end')
-    : [];
+  const enabledNotificationPlatforms =
+    shouldUseNewNotificationSystem && notificationConfig
+      ? getEnabledPlatforms(notificationConfig, "session-end")
+      : [];
 
   // Fire-and-forget: notifications and reply-listener cleanup are non-critical
   // and should not count against the SessionEnd hook timeout (#1700).
@@ -804,14 +913,22 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
   // config already covers Discord/Telegram, skip the overlapping legacy callback
   // path so session-end is only dispatched once per platform.
   fireAndForget.push(
-    triggerStopCallbacks(metrics, {
-      session_id: input.session_id,
-      cwd: input.cwd,
-    }, {
-      skipPlatforms: shouldUseNewNotificationSystem
-        ? getLegacyPlatformsCoveredByNotifications(enabledNotificationPlatforms)
-        : [],
-    }).catch(() => { /* notification failures must not block session end */ }),
+    triggerStopCallbacks(
+      metrics,
+      {
+        session_id: input.session_id,
+        cwd: input.cwd,
+      },
+      {
+        skipPlatforms: shouldUseNewNotificationSystem
+          ? getLegacyPlatformsCoveredByNotifications(
+              enabledNotificationPlatforms,
+            )
+          : [],
+      },
+    ).catch(() => {
+      /* notification failures must not block session end */
+    }),
   );
 
   // Trigger the new notification system when session-end notifications come
@@ -819,7 +936,7 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
   // are already handled above and must not be dispatched twice.
   if (shouldUseNewNotificationSystem) {
     fireAndForget.push(
-      notify('session-end', {
+      notify("session-end", {
         sessionId: input.session_id,
         projectPath: input.cwd,
         durationMs: metrics.duration_ms,
@@ -829,7 +946,9 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
         reason: metrics.reason,
         timestamp: metrics.ended_at,
         profileName,
-      }).catch(() => { /* notification failures must not block session end */ }),
+      }).catch(() => {
+        /* notification failures must not block session end */
+      }),
     );
   }
 
@@ -837,8 +956,10 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
   fireAndForget.push(
     (async () => {
       try {
-        const { removeSession, loadAllMappings } = await import('../../notifications/session-registry.js');
-        const { stopReplyListener } = await import('../../notifications/reply-listener.js');
+        const { removeSession, loadAllMappings } =
+          await import("../../notifications/session-registry.js");
+        const { stopReplyListener } =
+          await import("../../notifications/reply-listener.js");
 
         // Remove this session's message mappings
         removeSession(input.session_id);
@@ -867,6 +988,8 @@ export async function processSessionEnd(input: SessionEndInput): Promise<HookOut
 /**
  * Main hook entry point
  */
-export async function handleSessionEnd(input: SessionEndInput): Promise<HookOutput> {
+export async function handleSessionEnd(
+  input: SessionEndInput,
+): Promise<HookOutput> {
   return processSessionEnd(input);
 }

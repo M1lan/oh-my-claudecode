@@ -1,6 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { interpolateInstruction, wakeGateway, shellEscapeArg, isCommandGateway, wakeCommandGateway } from "../dispatcher.js";
-import type { OpenClawGatewayConfig, OpenClawPayload, OpenClawCommandGatewayConfig } from "../types.js";
+import {
+  interpolateInstruction,
+  wakeGateway,
+  shellEscapeArg,
+  isCommandGateway,
+  wakeCommandGateway,
+} from "../dispatcher.js";
+import type {
+  OpenClawGatewayConfig,
+  OpenClawPayload,
+  OpenClawCommandGatewayConfig,
+} from "../types.js";
 
 // Mock child_process so wakeCommandGateway's dynamic import resolves to our mock
 vi.mock("child_process", () => ({
@@ -36,26 +46,23 @@ describe("interpolateInstruction", () => {
   });
 
   it("leaves unknown {{vars}} as-is", () => {
-    const result = interpolateInstruction(
-      "Hello {{unknown}} world",
-      { projectName: "myproject" },
-    );
+    const result = interpolateInstruction("Hello {{unknown}} world", {
+      projectName: "myproject",
+    });
     expect(result).toBe("Hello {{unknown}} world");
   });
 
   it("replaces multiple occurrences of the same variable", () => {
-    const result = interpolateInstruction(
-      "{{event}} happened: {{event}}",
-      { event: "session-start" },
-    );
+    const result = interpolateInstruction("{{event}} happened: {{event}}", {
+      event: "session-start",
+    });
     expect(result).toBe("session-start happened: session-start");
   });
 
   it("handles undefined variable value by leaving placeholder", () => {
-    const result = interpolateInstruction(
-      "Tool: {{toolName}}",
-      { toolName: undefined },
-    );
+    const result = interpolateInstruction("Tool: {{toolName}}", {
+      toolName: undefined,
+    });
     expect(result).toBe("Tool: {{toolName}}");
   });
 
@@ -144,7 +151,11 @@ describe("wakeGateway", () => {
   });
 
   it("sends correct JSON body with Content-Type header", async () => {
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result.success).toBe(true);
     expect(fetch).toHaveBeenCalledOnce();
     const call = vi.mocked(fetch).mock.calls[0];
@@ -191,7 +202,11 @@ describe("wakeGateway", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: true, status: 201 }),
     );
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result).toEqual({
       gateway: "my-gateway",
       success: true,
@@ -204,7 +219,11 @@ describe("wakeGateway", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 404 }),
     );
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result).toEqual({
       gateway: "my-gateway",
       success: false,
@@ -218,7 +237,11 @@ describe("wakeGateway", () => {
       "fetch",
       vi.fn().mockResolvedValue({ ok: false, status: 500 }),
     );
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result.success).toBe(false);
     expect(result.statusCode).toBe(500);
     expect(result.error).toBe("HTTP 500");
@@ -229,7 +252,11 @@ describe("wakeGateway", () => {
       "fetch",
       vi.fn().mockRejectedValue(new Error("Network failure")),
     );
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result).toEqual({
       gateway: "my-gateway",
       success: false,
@@ -240,16 +267,28 @@ describe("wakeGateway", () => {
   it("handles timeout errors gracefully", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockRejectedValue(new DOMException("The operation was aborted", "AbortError")),
+      vi
+        .fn()
+        .mockRejectedValue(
+          new DOMException("The operation was aborted", "AbortError"),
+        ),
     );
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result.success).toBe(false);
     expect(result.gateway).toBe("my-gateway");
   });
 
   it("handles non-Error thrown values gracefully", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue("string error"));
-    const result = await wakeGateway("my-gateway", baseGatewayConfig, basePayload);
+    const result = await wakeGateway(
+      "my-gateway",
+      baseGatewayConfig,
+      basePayload,
+    );
     expect(result.success).toBe(false);
     expect(result.error).toBe("Unknown error");
   });
@@ -313,7 +352,10 @@ describe("shellEscapeArg", () => {
 
 describe("isCommandGateway", () => {
   it("returns true for a config with type: command", () => {
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo test" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo test",
+    };
     expect(isCommandGateway(config)).toBe(true);
   });
 
@@ -323,7 +365,10 @@ describe("isCommandGateway", () => {
   });
 
   it("returns false for a config with type: http", () => {
-    const config: OpenClawGatewayConfig = { type: "http", url: "https://example.com" };
+    const config: OpenClawGatewayConfig = {
+      type: "http",
+      url: "https://example.com",
+    };
     expect(isCommandGateway(config)).toBe(false);
   });
 });
@@ -337,7 +382,12 @@ describe("wakeCommandGateway", () => {
     execFileMock = vi.mocked(cp.execFile);
     // Default: simulate successful execution — promisify calls execFile with a callback
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], _opts: unknown, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         cb(null, { stdout: "", stderr: "" });
       },
     );
@@ -348,18 +398,29 @@ describe("wakeCommandGateway", () => {
   });
 
   it("returns success result with the gateway name on successful execution", async () => {
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+    };
     const result = await wakeCommandGateway("test", config, {});
     expect(result).toEqual({ gateway: "test", success: true });
   });
 
   it("returns failure result with error message when execFile calls back with an error", async () => {
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], _opts: unknown, cb: (err: Error) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (err: Error) => void,
+      ) => {
         cb(new Error("Command failed: exit code 1"));
       },
     );
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "false" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "false",
+    };
     const result = await wakeCommandGateway("test", config, {});
     expect(result.gateway).toBe("test");
     expect(result.success).toBe(false);
@@ -369,7 +430,12 @@ describe("wakeCommandGateway", () => {
   it("interpolates {{instruction}} variable with shell escaping", async () => {
     let capturedArgs: string[] = [];
     execFileMock.mockImplementation(
-      (_cmd: string, args: string[], _opts: unknown, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedArgs = args;
         cb(null, { stdout: "", stderr: "" });
       },
@@ -378,7 +444,9 @@ describe("wakeCommandGateway", () => {
       type: "command",
       command: "notify {{instruction}}",
     };
-    const result = await wakeCommandGateway("test", config, { instruction: "hello world" });
+    const result = await wakeCommandGateway("test", config, {
+      instruction: "hello world",
+    });
     expect(result.success).toBe(true);
     // The interpolated command is passed as the -c argument to sh
     expect(capturedArgs[1]).toContain("'hello world'");
@@ -387,7 +455,12 @@ describe("wakeCommandGateway", () => {
   it("leaves unresolved {{variables}} as-is in the command", async () => {
     let capturedArgs: string[] = [];
     execFileMock.mockImplementation(
-      (_cmd: string, args: string[], _opts: unknown, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedArgs = args;
         cb(null, { stdout: "", stderr: "" });
       },
@@ -404,13 +477,21 @@ describe("wakeCommandGateway", () => {
     let capturedCmd = "";
     let capturedArgs: string[] = [];
     execFileMock.mockImplementation(
-      (cmd: string, args: string[], _opts: unknown, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        cmd: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedCmd = cmd;
         capturedArgs = args;
         cb(null, { stdout: "", stderr: "" });
       },
     );
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+    };
     await wakeCommandGateway("gw", config, {});
     expect(capturedCmd).toBe("sh");
     expect(capturedArgs[0]).toBe("-c");
@@ -419,13 +500,21 @@ describe("wakeCommandGateway", () => {
   it("exposes normalized payload and signal env vars to command gateways", async () => {
     let capturedOpts: Record<string, unknown> = {};
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], opts: Record<string, unknown>, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        opts: Record<string, unknown>,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedOpts = opts;
         cb(null, { stdout: "", stderr: "" });
       },
     );
 
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+    };
     await wakeCommandGateway(
       "test",
       config,
@@ -448,12 +537,20 @@ describe("wakeCommandGateway", () => {
   it("uses the default timeout of 10000ms when config.timeout is not specified", async () => {
     let capturedOpts: Record<string, unknown> = {};
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], opts: Record<string, unknown>, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        opts: Record<string, unknown>,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedOpts = opts;
         cb(null, { stdout: "", stderr: "" });
       },
     );
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+    };
     await wakeCommandGateway("gw", config, {});
     expect(capturedOpts.timeout).toBe(10_000);
   });
@@ -461,23 +558,40 @@ describe("wakeCommandGateway", () => {
   it("uses custom timeout from config when specified", async () => {
     let capturedOpts: Record<string, unknown> = {};
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], opts: Record<string, unknown>, cb: (err: null, result: { stdout: string; stderr: string }) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        opts: Record<string, unknown>,
+        cb: (err: null, result: { stdout: string; stderr: string }) => void,
+      ) => {
         capturedOpts = opts;
         cb(null, { stdout: "", stderr: "" });
       },
     );
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello", timeout: 3000 };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+      timeout: 3000,
+    };
     await wakeCommandGateway("gw", config, {});
     expect(capturedOpts.timeout).toBe(3000);
   });
 
   it("returns failure with Unknown error message when a non-Error value is thrown", async () => {
     execFileMock.mockImplementation(
-      (_cmd: string, _args: string[], _opts: unknown, cb: (err: string) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
+        cb: (err: string) => void,
+      ) => {
         cb("some string error");
       },
     );
-    const config: OpenClawCommandGatewayConfig = { type: "command", command: "echo hello" };
+    const config: OpenClawCommandGatewayConfig = {
+      type: "command",
+      command: "echo hello",
+    };
     const result = await wakeCommandGateway("gw", config, {});
     expect(result.success).toBe(false);
     expect(result.error).toBe("Unknown error");

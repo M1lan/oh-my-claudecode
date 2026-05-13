@@ -96,7 +96,10 @@ export function getStatePath(name: string, location: StateLocation): string {
 /**
  * Get legacy paths for a state file (for migration)
  */
-export function getLegacyPaths(name: string, location: StateLocation = StateLocation.LOCAL): string[] {
+export function getLegacyPaths(
+  name: string,
+  location: StateLocation = StateLocation.LOCAL,
+): string[] {
   const legacyPaths = [...(LEGACY_LOCATIONS[name] || [])];
 
   if (location === StateLocation.GLOBAL) {

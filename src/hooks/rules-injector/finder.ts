@@ -6,28 +6,25 @@
  * Ported from oh-my-opencode's rules-injector hook.
  */
 
-import {
-  existsSync,
-  readdirSync,
-  realpathSync,
-  statSync,
-} from 'fs';
-import { dirname, join, relative } from 'path';
+import { existsSync, readdirSync, realpathSync, statSync } from "fs";
+import { dirname, join, relative } from "path";
 import {
   GITHUB_INSTRUCTIONS_PATTERN,
   PROJECT_MARKERS,
   PROJECT_RULE_FILES,
   PROJECT_RULE_SUBDIRS,
   RULE_EXTENSIONS,
-} from './constants.js';
-import { getClaudeConfigDir } from '../../utils/config-dir.js';
-import type { RuleFileCandidate } from './types.js';
+} from "./constants.js";
+import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import type { RuleFileCandidate } from "./types.js";
 
 /**
  * Check if a directory is a GitHub instructions directory.
  */
 function isGitHubInstructionsDir(dir: string): boolean {
-  return dir.includes('.github/instructions') || dir.endsWith('.github/instructions');
+  return (
+    dir.includes(".github/instructions") || dir.endsWith(".github/instructions")
+  );
 }
 
 /**
@@ -111,7 +108,7 @@ function safeRealpathSync(filePath: string): string {
 export function calculateDistance(
   rulePath: string,
   currentFile: string,
-  projectRoot: string | null
+  projectRoot: string | null,
 ): number {
   if (!projectRoot) {
     return 9999;
@@ -125,7 +122,7 @@ export function calculateDistance(
     const currentRel = relative(projectRoot, currentDir);
 
     // Handle paths outside project root
-    if (ruleRel.startsWith('..') || currentRel.startsWith('..')) {
+    if (ruleRel.startsWith("..") || currentRel.startsWith("..")) {
       return 9999;
     }
 
@@ -157,7 +154,7 @@ export function calculateDistance(
  */
 export function findRuleFiles(
   projectRoot: string | null,
-  currentFile: string
+  currentFile: string,
 ): RuleFileCandidate[] {
   const candidates: RuleFileCandidate[] = [];
   const seenRealPaths = new Set<string>();
@@ -223,7 +220,7 @@ export function findRuleFiles(
   }
 
   // Search user-level rule directory
-  const userRuleDir = join(getClaudeConfigDir(), 'rules');
+  const userRuleDir = join(getClaudeConfigDir(), "rules");
   const userFiles: string[] = [];
   findRuleFilesRecursive(userRuleDir, userFiles);
 

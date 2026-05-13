@@ -1,26 +1,26 @@
-import { execSync } from 'child_process';
-import { createReadStream, existsSync, readdirSync, statSync } from 'fs';
-import { dirname, join, normalize, resolve } from 'path';
-import { createInterface } from 'readline';
+import { execSync } from "child_process";
+import { createReadStream, existsSync, readdirSync, statSync } from "fs";
+import { dirname, join, normalize, resolve } from "path";
+import { createInterface } from "readline";
 import {
   resolveToWorktreeRoot,
   validateSessionId,
   validateWorkingDirectory,
   getOmcRoot,
-} from '../../lib/worktree-paths.js';
-import { getClaudeConfigDir } from '../../utils/config-dir.js';
+} from "../../lib/worktree-paths.js";
+import { getClaudeConfigDir } from "../../utils/config-dir.js";
 import type {
   SessionHistoryMatch,
   SessionHistorySearchOptions,
   SessionHistorySearchReport,
-} from './types.js';
+} from "./types.js";
 
 const DEFAULT_LIMIT = 10;
 const DEFAULT_CONTEXT_CHARS = 120;
 
 interface SearchTarget {
   filePath: string;
-  sourceType: SessionHistoryMatch['sourceType'];
+  sourceType: SessionHistoryMatch["sourceType"];
 }
 
 interface SearchableEntry {
@@ -34,7 +34,7 @@ interface SearchableEntry {
 }
 
 function compactWhitespace(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function normalizeForSearch(value: string, caseSensitive: boolean): string {
@@ -67,15 +67,15 @@ function parseSinceSpec(since?: string): number | undefined {
 }
 
 function encodeProjectPath(projectPath: string): string {
-  return projectPath.replace(/[/\\.]/g, '-');
+  return projectPath.replace(/[/\\.]/g, "-");
 }
 
 function getMainRepoRoot(projectRoot: string): string | null {
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', {
+    const gitCommonDir = execSync("git rev-parse --git-common-dir", {
       cwd: projectRoot,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"],
     }).trim();
     const absoluteCommonDir = resolve(projectRoot, gitCommonDir);
     const mainRepoRoot = dirname(absoluteCommonDir);
@@ -86,7 +86,7 @@ function getMainRepoRoot(projectRoot: string): string | null {
 }
 
 function getClaudeWorktreeParent(projectRoot: string): string | null {
-  const marker = `${normalize('/.claude/worktrees/')}`;
+  const marker = `${normalize("/.claude/worktrees/")}`;
   const normalizedRoot = normalize(projectRoot);
   const idx = normalizedRoot.indexOf(marker);
   if (idx === -1) return null;
@@ -116,7 +116,10 @@ function listJsonlFiles(rootDir: string): string[] {
         stack.push(fullPath);
         continue;
       }
-      if (entry.isFile() && (entry.name.endsWith('.jsonl') || entry.name.endsWith('.json'))) {
+      if (
+        entry.isFile() &&
+        (entry.name.endsWith(".jsonl") || entry.name.endsWith(".json"))
+      ) {
         files.push(fullPath);
       }
     }
@@ -152,28 +155,28 @@ function buildCurrentProjectTargets(projectRoot: string): SearchTarget[] {
   const targets: SearchTarget[] = [];
 
   for (const root of projectRoots) {
-    const encodedDir = join(claudeDir, 'projects', encodeProjectPath(root));
+    const encodedDir = join(claudeDir, "projects", encodeProjectPath(root));
     for (const filePath of listJsonlFiles(encodedDir)) {
-      targets.push({ filePath, sourceType: 'project-transcript' });
+      targets.push({ filePath, sourceType: "project-transcript" });
     }
   }
 
-  const legacyTranscriptsDir = join(claudeDir, 'transcripts');
+  const legacyTranscriptsDir = join(claudeDir, "transcripts");
   for (const filePath of listJsonlFiles(legacyTranscriptsDir)) {
-    targets.push({ filePath, sourceType: 'legacy-transcript' });
+    targets.push({ filePath, sourceType: "legacy-transcript" });
   }
 
   const omcRoot = getOmcRoot(projectRoot);
-  const sessionSummariesDir = join(omcRoot, 'sessions');
+  const sessionSummariesDir = join(omcRoot, "sessions");
   for (const filePath of listJsonlFiles(sessionSummariesDir)) {
-    targets.push({ filePath, sourceType: 'omc-session-summary' });
+    targets.push({ filePath, sourceType: "omc-session-summary" });
   }
 
-  const replayDir = join(omcRoot, 'state');
+  const replayDir = join(omcRoot, "state");
   if (existsSync(replayDir)) {
     for (const filePath of listJsonlFiles(replayDir)) {
-      if (filePath.includes('agent-replay-') && filePath.endsWith('.jsonl')) {
-        targets.push({ filePath, sourceType: 'omc-session-replay' });
+      if (filePath.includes("agent-replay-") && filePath.endsWith(".jsonl")) {
+        targets.push({ filePath, sourceType: "omc-session-replay" });
       }
     }
   }
@@ -185,18 +188,21 @@ function buildAllProjectTargets(): SearchTarget[] {
   const claudeDir = getClaudeConfigDir();
   const targets: SearchTarget[] = [];
 
-  for (const filePath of listJsonlFiles(join(claudeDir, 'projects'))) {
-    targets.push({ filePath, sourceType: 'project-transcript' });
+  for (const filePath of listJsonlFiles(join(claudeDir, "projects"))) {
+    targets.push({ filePath, sourceType: "project-transcript" });
   }
 
-  for (const filePath of listJsonlFiles(join(claudeDir, 'transcripts'))) {
-    targets.push({ filePath, sourceType: 'legacy-transcript' });
+  for (const filePath of listJsonlFiles(join(claudeDir, "transcripts"))) {
+    targets.push({ filePath, sourceType: "legacy-transcript" });
   }
 
   return uniqueSortedTargets(targets);
 }
 
-function isWithinProject(projectPath: string | undefined, projectRoots: string[]): boolean {
+function isWithinProject(
+  projectPath: string | undefined,
+  projectRoots: string[],
+): boolean {
   if (!projectPath) {
     return false;
   }
@@ -204,12 +210,18 @@ function isWithinProject(projectPath: string | undefined, projectRoots: string[]
   const normalizedProjectPath = normalize(resolve(projectPath));
   return projectRoots.some((root) => {
     const normalizedRoot = normalize(resolve(root));
-    return normalizedProjectPath === normalizedRoot || normalizedProjectPath.startsWith(`${normalizedRoot}/`);
+    return (
+      normalizedProjectPath === normalizedRoot ||
+      normalizedProjectPath.startsWith(`${normalizedRoot}/`)
+    );
   });
 }
 
-function matchesProjectFilter(projectPath: string | undefined, projectFilter: string | undefined): boolean {
-  if (!projectFilter || projectFilter === 'all') {
+function matchesProjectFilter(
+  projectPath: string | undefined,
+  projectFilter: string | undefined,
+): boolean {
+  if (!projectFilter || projectFilter === "all") {
     return true;
   }
 
@@ -226,7 +238,7 @@ function stringLeaves(value: unknown, maxLeaves: number = 24): string[] {
 
   while (stack.length > 0 && leaves.length < maxLeaves) {
     const current = stack.pop();
-    if (typeof current === 'string') {
+    if (typeof current === "string") {
       const compacted = compactWhitespace(current);
       if (compacted.length > 0) {
         leaves.push(compacted);
@@ -237,7 +249,7 @@ function stringLeaves(value: unknown, maxLeaves: number = 24): string[] {
       stack.push(...current);
       continue;
     }
-    if (current && typeof current === 'object') {
+    if (current && typeof current === "object") {
       stack.push(...Object.values(current));
     }
   }
@@ -250,27 +262,33 @@ function extractTranscriptTexts(entry: Record<string, unknown>): string[] {
   const message = entry.message as Record<string, unknown> | undefined;
   const content = message?.content;
 
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     texts.push(content);
   } else if (Array.isArray(content)) {
     for (const block of content) {
-      if (!block || typeof block !== 'object') continue;
+      if (!block || typeof block !== "object") continue;
       const record = block as Record<string, unknown>;
-      const blockType = typeof record.type === 'string' ? record.type : undefined;
+      const blockType =
+        typeof record.type === "string" ? record.type : undefined;
 
-      if ((blockType === 'text' || blockType === 'thinking' || blockType === 'reasoning') && typeof record.text === 'string') {
+      if (
+        (blockType === "text" ||
+          blockType === "thinking" ||
+          blockType === "reasoning") &&
+        typeof record.text === "string"
+      ) {
         texts.push(record.text);
         continue;
       }
 
-      if (blockType === 'tool_result') {
+      if (blockType === "tool_result") {
         texts.push(...stringLeaves(record.content));
         continue;
       }
 
-      if (blockType === 'tool_use') {
-        const toolName = typeof record.name === 'string' ? record.name : 'tool';
-        const inputText = stringLeaves(record.input).join(' ');
+      if (blockType === "tool_use") {
+        const toolName = typeof record.name === "string" ? record.name : "tool";
+        const inputText = stringLeaves(record.input).join(" ");
         if (inputText) {
           texts.push(`${toolName} ${inputText}`);
         }
@@ -281,20 +299,23 @@ function extractTranscriptTexts(entry: Record<string, unknown>): string[] {
   return texts;
 }
 
-function buildTranscriptEntry(entry: Record<string, unknown>): SearchableEntry | null {
+function buildTranscriptEntry(
+  entry: Record<string, unknown>,
+): SearchableEntry | null {
   const texts = extractTranscriptTexts(entry);
   if (texts.length === 0) {
     return null;
   }
 
   const message = entry.message as Record<string, unknown> | undefined;
-  const sessionId = typeof entry.sessionId === 'string'
-    ? entry.sessionId
-    : typeof entry.session_id === 'string'
-      ? entry.session_id
-      : typeof message?.sessionId === 'string'
-        ? message.sessionId
-        : undefined;
+  const sessionId =
+    typeof entry.sessionId === "string"
+      ? entry.sessionId
+      : typeof entry.session_id === "string"
+        ? entry.session_id
+        : typeof message?.sessionId === "string"
+          ? message.sessionId
+          : undefined;
 
   if (!sessionId) {
     return null;
@@ -302,21 +323,26 @@ function buildTranscriptEntry(entry: Record<string, unknown>): SearchableEntry |
 
   return {
     sessionId,
-    agentId: typeof entry.agentId === 'string' ? entry.agentId : undefined,
-    timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : undefined,
-    projectPath: typeof entry.cwd === 'string' ? entry.cwd : undefined,
-    role: typeof message?.role === 'string' ? message.role : undefined,
-    entryType: typeof entry.type === 'string' ? entry.type : undefined,
+    agentId: typeof entry.agentId === "string" ? entry.agentId : undefined,
+    timestamp:
+      typeof entry.timestamp === "string" ? entry.timestamp : undefined,
+    projectPath: typeof entry.cwd === "string" ? entry.cwd : undefined,
+    role: typeof message?.role === "string" ? message.role : undefined,
+    entryType: typeof entry.type === "string" ? entry.type : undefined,
     texts,
   };
 }
 
-function buildJsonArtifactEntry(entry: Record<string, unknown>, sourceType: SearchTarget['sourceType']): SearchableEntry | null {
-  const sessionId = typeof entry.session_id === 'string'
-    ? entry.session_id
-    : typeof entry.sessionId === 'string'
-      ? entry.sessionId
-      : undefined;
+function buildJsonArtifactEntry(
+  entry: Record<string, unknown>,
+  sourceType: SearchTarget["sourceType"],
+): SearchableEntry | null {
+  const sessionId =
+    typeof entry.session_id === "string"
+      ? entry.session_id
+      : typeof entry.sessionId === "string"
+        ? entry.sessionId
+        : undefined;
 
   if (!sessionId) {
     return null;
@@ -327,38 +353,56 @@ function buildJsonArtifactEntry(entry: Record<string, unknown>, sourceType: Sear
     return null;
   }
 
-  const timestamp = typeof entry.ended_at === 'string'
-    ? entry.ended_at
-    : typeof entry.started_at === 'string'
-      ? entry.started_at
-      : typeof entry.timestamp === 'string'
-        ? entry.timestamp
-        : undefined;
+  const timestamp =
+    typeof entry.ended_at === "string"
+      ? entry.ended_at
+      : typeof entry.started_at === "string"
+        ? entry.started_at
+        : typeof entry.timestamp === "string"
+          ? entry.timestamp
+          : undefined;
 
-  const entryType = sourceType === 'omc-session-summary' ? 'session-summary' : 'session-replay';
+  const entryType =
+    sourceType === "omc-session-summary" ? "session-summary" : "session-replay";
 
   return {
     sessionId,
     timestamp,
-    projectPath: typeof entry.cwd === 'string' ? entry.cwd : undefined,
+    projectPath: typeof entry.cwd === "string" ? entry.cwd : undefined,
     entryType,
     texts,
   };
 }
 
-function buildSearchableEntry(entry: Record<string, unknown>, sourceType: SearchTarget['sourceType']): SearchableEntry | null {
-  if (sourceType === 'project-transcript' || sourceType === 'legacy-transcript' || sourceType === 'omc-session-replay') {
-    return buildTranscriptEntry(entry) ?? (sourceType === 'omc-session-replay' ? buildJsonArtifactEntry(entry, sourceType) : null);
+function buildSearchableEntry(
+  entry: Record<string, unknown>,
+  sourceType: SearchTarget["sourceType"],
+): SearchableEntry | null {
+  if (
+    sourceType === "project-transcript" ||
+    sourceType === "legacy-transcript" ||
+    sourceType === "omc-session-replay"
+  ) {
+    return (
+      buildTranscriptEntry(entry) ??
+      (sourceType === "omc-session-replay"
+        ? buildJsonArtifactEntry(entry, sourceType)
+        : null)
+    );
   }
 
-  if (sourceType === 'omc-session-summary') {
+  if (sourceType === "omc-session-summary") {
     return buildJsonArtifactEntry(entry, sourceType);
   }
 
   return null;
 }
 
-function findMatchIndex(text: string, query: string, caseSensitive: boolean): number {
+function findMatchIndex(
+  text: string,
+  query: string,
+  caseSensitive: boolean,
+): number {
   const haystack = normalizeForSearch(text, caseSensitive);
   const needle = normalizeForSearch(query, caseSensitive);
   const directIndex = haystack.indexOf(needle);
@@ -375,7 +419,11 @@ function findMatchIndex(text: string, query: string, caseSensitive: boolean): nu
   return -1;
 }
 
-function createExcerpt(text: string, matchIndex: number, contextChars: number): string {
+function createExcerpt(
+  text: string,
+  matchIndex: number,
+  contextChars: number,
+): string {
   const compacted = compactWhitespace(text);
   if (compacted.length <= contextChars * 2) {
     return compacted;
@@ -384,15 +432,17 @@ function createExcerpt(text: string, matchIndex: number, contextChars: number): 
   const safeIndex = Math.max(0, matchIndex);
   const start = Math.max(0, safeIndex - contextChars);
   const end = Math.min(compacted.length, safeIndex + contextChars);
-  const prefix = start > 0 ? '…' : '';
-  const suffix = end < compacted.length ? '…' : '';
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < compacted.length ? "…" : "";
   return `${prefix}${compacted.slice(start, end).trim()}${suffix}`;
 }
 
-function buildScopeMode(project: string | undefined): 'current' | 'project' | 'all' {
-  if (!project || project === 'current') return 'current';
-  if (project === 'all') return 'all';
-  return 'project';
+function buildScopeMode(
+  project: string | undefined,
+): "current" | "project" | "all" {
+  if (!project || project === "current") return "current";
+  if (project === "all") return "all";
+  return "project";
 }
 
 async function collectMatchesFromFile(
@@ -408,21 +458,50 @@ async function collectMatchesFromFile(
   },
 ): Promise<SessionHistoryMatch[]> {
   const matches: SessionHistoryMatch[] = [];
-  const fileMtime = existsSync(target.filePath) ? statSync(target.filePath).mtimeMs : 0;
+  const fileMtime = existsSync(target.filePath)
+    ? statSync(target.filePath).mtimeMs
+    : 0;
 
-  if (target.sourceType === 'omc-session-summary' && target.filePath.endsWith('.json')) {
+  if (
+    target.sourceType === "omc-session-summary" &&
+    target.filePath.endsWith(".json")
+  ) {
     try {
-      const payload = JSON.parse(await import('fs/promises').then((fs) => fs.readFile(target.filePath, 'utf-8')));
-      const entry = buildSearchableEntry(payload as Record<string, unknown>, target.sourceType);
+      const payload = JSON.parse(
+        await import("fs/promises").then((fs) =>
+          fs.readFile(target.filePath, "utf-8"),
+        ),
+      );
+      const entry = buildSearchableEntry(
+        payload as Record<string, unknown>,
+        target.sourceType,
+      );
       if (!entry) return [];
       if (options.sessionId && entry.sessionId !== options.sessionId) return [];
-      if (options.projectRoots && options.projectRoots.length > 0 && !isWithinProject(entry.projectPath, options.projectRoots)) return [];
-      if (!matchesProjectFilter(entry.projectPath, options.projectFilter)) return [];
-      const entryEpoch = entry.timestamp ? Date.parse(entry.timestamp) : fileMtime;
-      if (options.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < options.sinceEpoch) return [];
+      if (
+        options.projectRoots &&
+        options.projectRoots.length > 0 &&
+        !isWithinProject(entry.projectPath, options.projectRoots)
+      )
+        return [];
+      if (!matchesProjectFilter(entry.projectPath, options.projectFilter))
+        return [];
+      const entryEpoch = entry.timestamp
+        ? Date.parse(entry.timestamp)
+        : fileMtime;
+      if (
+        options.sinceEpoch &&
+        Number.isFinite(entryEpoch) &&
+        entryEpoch < options.sinceEpoch
+      )
+        return [];
 
       for (const text of entry.texts) {
-        const matchIndex = findMatchIndex(text, options.query, options.caseSensitive);
+        const matchIndex = findMatchIndex(
+          text,
+          options.query,
+          options.caseSensitive,
+        );
         if (matchIndex < 0) continue;
         matches.push({
           sessionId: entry.sessionId,
@@ -443,7 +522,7 @@ async function collectMatchesFromFile(
     return matches;
   }
 
-  const stream = createReadStream(target.filePath, { encoding: 'utf-8' });
+  const stream = createReadStream(target.filePath, { encoding: "utf-8" });
   const reader = createInterface({ input: stream, crlfDelay: Infinity });
   let line = 0;
 
@@ -462,14 +541,31 @@ async function collectMatchesFromFile(
       const entry = buildSearchableEntry(parsed, target.sourceType);
       if (!entry) continue;
       if (options.sessionId && entry.sessionId !== options.sessionId) continue;
-      if (options.projectRoots && options.projectRoots.length > 0 && !isWithinProject(entry.projectPath, options.projectRoots)) continue;
-      if (!matchesProjectFilter(entry.projectPath, options.projectFilter)) continue;
+      if (
+        options.projectRoots &&
+        options.projectRoots.length > 0 &&
+        !isWithinProject(entry.projectPath, options.projectRoots)
+      )
+        continue;
+      if (!matchesProjectFilter(entry.projectPath, options.projectFilter))
+        continue;
 
-      const entryEpoch = entry.timestamp ? Date.parse(entry.timestamp) : fileMtime;
-      if (options.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < options.sinceEpoch) continue;
+      const entryEpoch = entry.timestamp
+        ? Date.parse(entry.timestamp)
+        : fileMtime;
+      if (
+        options.sinceEpoch &&
+        Number.isFinite(entryEpoch) &&
+        entryEpoch < options.sinceEpoch
+      )
+        continue;
 
       for (const text of entry.texts) {
-        const matchIndex = findMatchIndex(text, options.query, options.caseSensitive);
+        const matchIndex = findMatchIndex(
+          text,
+          options.query,
+          options.caseSensitive,
+        );
         if (matchIndex < 0) continue;
         matches.push({
           sessionId: entry.sessionId,
@@ -497,9 +593,9 @@ async function collectMatchesFromFile(
 export async function searchSessionHistory(
   rawOptions: SessionHistorySearchOptions,
 ): Promise<SessionHistorySearchReport> {
-  const query = compactWhitespace(rawOptions.query || '');
+  const query = compactWhitespace(rawOptions.query || "");
   if (!query) {
-    throw new Error('Query cannot be empty');
+    throw new Error("Query cannot be empty");
   }
 
   if (rawOptions.sessionId) {
@@ -507,22 +603,32 @@ export async function searchSessionHistory(
   }
 
   const limit = Math.max(1, rawOptions.limit ?? DEFAULT_LIMIT);
-  const contextChars = Math.max(20, rawOptions.contextChars ?? DEFAULT_CONTEXT_CHARS);
+  const contextChars = Math.max(
+    20,
+    rawOptions.contextChars ?? DEFAULT_CONTEXT_CHARS,
+  );
   const caseSensitive = rawOptions.caseSensitive ?? false;
   const sinceEpoch = parseSinceSpec(rawOptions.since);
-  const workingDirectory = validateWorkingDirectory(rawOptions.workingDirectory);
+  const workingDirectory = validateWorkingDirectory(
+    rawOptions.workingDirectory,
+  );
   const currentProjectRoot = resolveToWorktreeRoot(workingDirectory);
   const scopeMode = buildScopeMode(rawOptions.project);
-  const projectFilter = scopeMode === 'project' ? rawOptions.project : undefined;
+  const projectFilter =
+    scopeMode === "project" ? rawOptions.project : undefined;
 
   const currentProjectRoots = [currentProjectRoot]
     .concat(getMainRepoRoot(currentProjectRoot) ?? [])
     .concat(getClaudeWorktreeParent(currentProjectRoot) ?? [])
-    .filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
+    .filter(
+      (value, index, arr): value is string =>
+        Boolean(value) && arr.indexOf(value) === index,
+    );
 
-  const targets = scopeMode === 'all'
-    ? buildAllProjectTargets()
-    : buildCurrentProjectTargets(currentProjectRoot);
+  const targets =
+    scopeMode === "all"
+      ? buildAllProjectTargets()
+      : buildCurrentProjectTargets(currentProjectRoot);
 
   const allMatches: SessionHistoryMatch[] = [];
   for (const target of targets) {
@@ -533,7 +639,7 @@ export async function searchSessionHistory(
       sinceEpoch,
       sessionId: rawOptions.sessionId,
       projectFilter,
-      projectRoots: scopeMode === 'current' ? currentProjectRoots : undefined,
+      projectRoots: scopeMode === "current" ? currentProjectRoots : undefined,
     });
     allMatches.push(...fileMatches);
   }
@@ -565,4 +671,4 @@ export type {
   SessionHistoryMatch,
   SessionHistorySearchOptions,
   SessionHistorySearchReport,
-} from './types.js';
+} from "./types.js";

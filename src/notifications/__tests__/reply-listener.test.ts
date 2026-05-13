@@ -57,11 +57,11 @@ describe("reply-listener", () => {
 
       const result = sanitizeReplyInput(input);
 
-      expect(result).toContain('hello world');
-      expect(result).toContain('\\`cmd\\`');
-      expect(result).toContain('\\$(sub)');
-      expect(result).toContain('\\${var}');
-      expect(result).not.toContain('\x00');
+      expect(result).toContain("hello world");
+      expect(result).toContain("\\`cmd\\`");
+      expect(result).toContain("\\$(sub)");
+      expect(result).toContain("\\${var}");
+      expect(result).not.toContain("\x00");
     });
   });
 
@@ -73,7 +73,9 @@ describe("reply-listener", () => {
         content: "reply text",
       };
 
-      expect((messageWithoutReference as any).message_reference).toBeUndefined();
+      expect(
+        (messageWithoutReference as any).message_reference,
+      ).toBeUndefined();
     });
 
     it("requires message_reference.message_id", () => {
@@ -149,7 +151,7 @@ describe("reply-listener", () => {
       expect(timestamps.length).toBe(maxPerMinute);
 
       // 11th message should be rejected
-      const filtered = timestamps.filter(t => now - t < windowMs);
+      const filtered = timestamps.filter((t) => now - t < windowMs);
       expect(filtered.length).toBe(maxPerMinute);
     });
 
@@ -159,10 +161,13 @@ describe("reply-listener", () => {
       const now = Date.now();
 
       // Simulate sliding window
-      let timestamps = Array.from({ length: maxPerMinute }, (_, i) => now - i * 1000);
+      let timestamps = Array.from(
+        { length: maxPerMinute },
+        (_, i) => now - i * 1000,
+      );
 
       // Remove old timestamps
-      timestamps = timestamps.filter(t => now - t < windowMs);
+      timestamps = timestamps.filter((t) => now - t < windowMs);
 
       // Check if can proceed (would be false if at limit)
       const canProceed = timestamps.length < maxPerMinute;
@@ -200,7 +205,7 @@ describe("reply-listener", () => {
       const platform = "discord";
       const text = "user message";
 
-      const prefix = config.includePrefix ? `[reply:${platform}] ` : '';
+      const prefix = config.includePrefix ? `[reply:${platform}] ` : "";
       const result = prefix + text;
 
       expect(result).toBe("[reply:discord] user message");
@@ -211,7 +216,7 @@ describe("reply-listener", () => {
       const platform = "telegram";
       const text = "user message";
 
-      const prefix = config.includePrefix ? `[reply:${platform}] ` : '';
+      const prefix = config.includePrefix ? `[reply:${platform}] ` : "";
       const result = prefix + text;
 
       expect(result).toBe("user message");
@@ -312,13 +317,11 @@ describe("reply-listener", () => {
     });
 
     it("uses minimal env allowlist for daemon", () => {
-      const allowlist = [
-        'PATH', 'HOME', 'TMUX', 'TMUX_PANE', 'TERM',
-      ];
+      const allowlist = ["PATH", "HOME", "TMUX", "TMUX_PANE", "TERM"];
 
       // Only allowlisted vars should be passed to daemon
-      expect(allowlist.includes('PATH')).toBe(true);
-      expect(allowlist.includes('ANTHROPIC_API_KEY')).toBe(false);
+      expect(allowlist.includes("PATH")).toBe(true);
+      expect(allowlist.includes("ANTHROPIC_API_KEY")).toBe(false);
     });
 
     it("resolves daemon module path through helper for bootstrap compatibility", () => {
@@ -332,7 +335,6 @@ describe("reply-listener", () => {
       expect(source).toContain("resolveDaemonModulePath");
       expect(source).toContain("['notifications', 'reply-listener.js']");
     });
-
   });
 
   describe("Injection feedback", () => {
@@ -443,7 +445,9 @@ describe("reply-listener", () => {
 
       // Confirmation/feedback code is inside "if (success)" blocks
       // The else blocks only increment error counters
-      const successBlocks = source.match(/if \(success\) \{[\s\S]*?messagesInjected/g);
+      const successBlocks = source.match(
+        /if \(success\) \{[\s\S]*?messagesInjected/g,
+      );
       expect(successBlocks).not.toBeNull();
       expect(successBlocks!.length).toBe(4); // one for Discord, one for Telegram, one for Slack inline, one for processSlackSocketMessage
     });
@@ -452,15 +456,17 @@ describe("reply-listener", () => {
   describe("Injection feedback mention", () => {
     it("prefixes Discord feedback with mention when discordMention is set", () => {
       const mention = "<@123456789012345678>";
-      const mentionPrefix = mention ? `${mention} ` : '';
+      const mentionPrefix = mention ? `${mention} ` : "";
       const content = `${mentionPrefix}Injected into Claude Code session.`;
 
-      expect(content).toBe("<@123456789012345678> Injected into Claude Code session.");
+      expect(content).toBe(
+        "<@123456789012345678> Injected into Claude Code session.",
+      );
     });
 
     it("omits mention prefix when discordMention is undefined", () => {
       const mention: string | undefined = undefined;
-      const mentionPrefix = mention ? `${mention} ` : '';
+      const mentionPrefix = mention ? `${mention} ` : "";
       const content = `${mentionPrefix}Injected into Claude Code session.`;
 
       expect(content).toBe("Injected into Claude Code session.");
@@ -563,7 +569,8 @@ describe("reply-listener", () => {
     it("rejects all users when authorizedSlackUserIds is empty (fail-closed)", () => {
       const authorizedSlackUserIds: string[] = [];
       // When empty, ALL messages should be rejected (fail-closed, matching Discord behavior)
-      const shouldReject = !authorizedSlackUserIds || authorizedSlackUserIds.length === 0;
+      const shouldReject =
+        !authorizedSlackUserIds || authorizedSlackUserIds.length === 0;
       expect(shouldReject).toBe(true);
     });
 

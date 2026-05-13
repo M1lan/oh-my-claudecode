@@ -30,7 +30,7 @@ export type {
   RoutingConfig,
   RoutingRule,
   PromptAdaptationStrategy,
-} from './types.js';
+} from "./types.js";
 
 export {
   TIER_MODELS,
@@ -39,7 +39,7 @@ export {
   AGENT_CATEGORY_TIERS,
   COMPLEXITY_KEYWORDS,
   TIER_PROMPT_STRATEGIES,
-} from './types.js';
+} from "./types.js";
 
 // Re-export signal extraction
 export {
@@ -47,7 +47,7 @@ export {
   extractStructuralSignals,
   extractContextSignals,
   extractAllSignals,
-} from './signals.js';
+} from "./signals.js";
 
 // Re-export scoring
 export {
@@ -56,7 +56,7 @@ export {
   scoreToTier,
   getScoreBreakdown,
   calculateConfidence,
-} from './scorer.js';
+} from "./scorer.js";
 
 // Re-export rules
 export {
@@ -65,7 +65,7 @@ export {
   getMatchingRules,
   createRule,
   mergeRules,
-} from './rules.js';
+} from "./rules.js";
 
 // Re-export router
 export {
@@ -78,7 +78,7 @@ export {
   canEscalate,
   explainRouting,
   quickTierForAgent,
-} from './router.js';
+} from "./router.js";
 
 // Re-export prompt adaptations
 export {
@@ -89,11 +89,11 @@ export {
   createDelegationPrompt,
   getTaskInstructions,
   TIER_TASK_INSTRUCTIONS,
-} from './prompts/index.js';
+} from "./prompts/index.js";
 
 // Local imports for routeAndAdaptTask convenience function
-import { routeWithEscalation } from './router.js';
-import { adaptPromptForTier } from './prompts/index.js';
+import { routeWithEscalation } from "./router.js";
+import { adaptPromptForTier } from "./prompts/index.js";
 
 /**
  * Convenience function to route and adapt prompt in one call
@@ -101,8 +101,8 @@ import { adaptPromptForTier } from './prompts/index.js';
 export function routeAndAdaptTask(
   taskPrompt: string,
   agentType?: string,
-  previousFailures?: number
-): { decision: import('./types.js').RoutingDecision; adaptedPrompt: string } {
+  previousFailures?: number,
+): { decision: import("./types.js").RoutingDecision; adaptedPrompt: string } {
   const decision = routeWithEscalation({
     taskPrompt,
     agentType,

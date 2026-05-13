@@ -9,9 +9,9 @@
  * - Text inputs are sanitized to prevent command injection
  */
 
-import { tmuxExec, tmuxSpawn } from '../../cli/tmux-utils.js';
-import { getNewPaneTail } from './pane-fresh-capture.js';
-import type { TmuxPane, PaneAnalysisResult, BlockedPane } from './types.js';
+import { tmuxExec, tmuxSpawn } from "../../cli/tmux-utils.js";
+import { getNewPaneTail } from "./pane-fresh-capture.js";
+import type { TmuxPane, PaneAnalysisResult, BlockedPane } from "./types.js";
 
 /**
  * Validate tmux pane ID format to prevent command injection
@@ -72,13 +72,13 @@ const WEEKLY_RATE_LIMIT_PATTERN =
  * messages from producing false-positive "weekly / assistant / conversation" hits.
  */
 const GIT_OUTPUT_LINE_PATTERNS: RegExp[] = [
-  /^commit\s+[0-9a-f]{6,40}\b/,         // git log commit hash
-  /^Author:\s+\S/,                        // git log author
-  /^Date:\s+\S/,                          // git log date
-  /^Merge:\s+[0-9a-f]{6,}/,              // git log merge line
-  /^diff\s+--git\s+a\//,                 // git diff header
-  /^(?:---|\+\+\+)\s+[ab]\//,            // git diff file paths
-  /^@@\s+-\d+/,                           // git diff hunk header
+  /^commit\s+[0-9a-f]{6,40}\b/, // git log commit hash
+  /^Author:\s+\S/, // git log author
+  /^Date:\s+\S/, // git log date
+  /^Merge:\s+[0-9a-f]{6,}/, // git log merge line
+  /^diff\s+--git\s+a\//, // git diff header
+  /^(?:---|\+\+\+)\s+[ab]\//, // git diff file paths
+  /^@@\s+-\d+/, // git diff hunk header
 ];
 
 /**
@@ -88,16 +88,18 @@ const GIT_OUTPUT_LINE_PATTERNS: RegExp[] = [
  */
 function stripGitOutputLines(content: string): string {
   return content
-    .split('\n')
-    .filter(line => !GIT_OUTPUT_LINE_PATTERNS.some(p => p.test(line.trimStart())))
-    .join('\n');
+    .split("\n")
+    .filter(
+      (line) => !GIT_OUTPUT_LINE_PATTERNS.some((p) => p.test(line.trimStart())),
+    )
+    .join("\n");
 }
 
 /** Patterns that indicate the pane is waiting for user input */
 const WAITING_PATTERNS = [
-  /\[\d+\]/,              // Menu selection prompt like [1], [2], [3]
-  /^\s*❯?\s*\d+\.\s/m,     // Menu selection prompt like "❯ 1. ..." or "  2. ..."
-  /continue\?/i,           // Continue prompt
+  /\[\d+\]/, // Menu selection prompt like [1], [2], [3]
+  /^\s*❯?\s*\d+\.\s/m, // Menu selection prompt like "❯ 1. ..." or "  2. ..."
+  /continue\?/i, // Continue prompt
   /press enter/i,
   /waiting for/i,
   /select an option/i,
@@ -111,7 +113,11 @@ const WAITING_PATTERNS = [
  */
 export function isTmuxAvailable(): boolean {
   try {
-    const result = tmuxSpawn(['-V'], { stripTmux: true, stdio: 'pipe', timeout: 3000 });
+    const result = tmuxSpawn(["-V"], {
+      stripTmux: true,
+      stdio: "pipe",
+      timeout: 3000,
+    });
     return result.status === 0;
   } catch {
     return false;
@@ -135,23 +141,24 @@ export function listTmuxPanes(): TmuxPane[] {
 
   try {
     // Format: session_name:window_index.pane_index pane_id pane_active window_name pane_title
-    const format = '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_active} #{window_name} #{pane_title}';
-    const result = tmuxExec(['list-panes', '-a', '-F', format], {
+    const format =
+      "#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_active} #{window_name} #{pane_title}";
+    const result = tmuxExec(["list-panes", "-a", "-F", format], {
       stripTmux: true,
       timeout: 5000,
     });
 
     const panes: TmuxPane[] = [];
 
-    for (const line of result.trim().split('\n')) {
+    for (const line of result.trim().split("\n")) {
       if (!line.trim()) continue;
 
-      const parts = line.split(' ');
+      const parts = line.split(" ");
       if (parts.length < 4) continue;
 
       const [location, paneId, activeStr, windowName, ...titleParts] = parts;
-      const [sessionWindow, paneIndexStr] = location.split('.');
-      const [session, windowIndexStr] = sessionWindow.split(':');
+      const [sessionWindow, paneIndexStr] = location.split(".");
+      const [session, windowIndexStr] = sessionWindow.split(":");
 
       panes.push({
         id: paneId,
@@ -159,14 +166,14 @@ export function listTmuxPanes(): TmuxPane[] {
         windowIndex: parseInt(windowIndexStr, 10),
         windowName,
         paneIndex: parseInt(paneIndexStr, 10),
-        title: titleParts.join(' ') || undefined,
-        isActive: activeStr === '1',
+        title: titleParts.join(" ") || undefined,
+        isActive: activeStr === "1",
       });
     }
 
     return panes;
   } catch (error) {
-    console.error('[TmuxDetector] Error listing panes:', error);
+    console.error("[TmuxDetector] Error listing panes:", error);
     return [];
   }
 }
@@ -191,10 +198,10 @@ export function isPaneAlive(paneId: string): boolean {
   }
   try {
     const result = tmuxExec(
-      ['display-message', '-t', paneId, '-p', '#{pane_dead}'],
-      { stripTmux: true, stdio: 'pipe', timeout: 3000 },
+      ["display-message", "-t", paneId, "-p", "#{pane_dead}"],
+      { stripTmux: true, stdio: "pipe", timeout: 3000 },
     );
-    return result.trim() === '0';
+    return result.trim() === "0";
   } catch {
     // pane gone or session dead — treat as not alive
     return false;
@@ -209,13 +216,13 @@ export function isPaneAlive(paneId: string): boolean {
  */
 export function capturePaneContent(paneId: string, lines = 15): string {
   if (!isTmuxAvailable()) {
-    return '';
+    return "";
   }
 
   // Validate pane ID to prevent command injection
   if (!isValidPaneId(paneId)) {
     console.error(`[TmuxDetector] Invalid pane ID format: ${paneId}`);
-    return '';
+    return "";
   }
 
   // Validate lines is a reasonable positive integer
@@ -223,14 +230,17 @@ export function capturePaneContent(paneId: string, lines = 15): string {
 
   try {
     // Capture the last N lines from the pane
-    const result = tmuxExec(['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`], {
-      stripTmux: true,
-      timeout: 5000,
-    });
+    const result = tmuxExec(
+      ["capture-pane", "-t", paneId, "-p", "-S", `-${safeLines}`],
+      {
+        stripTmux: true,
+        timeout: 5000,
+      },
+    );
     return result;
   } catch (error) {
     console.error(`[TmuxDetector] Error capturing pane ${paneId}:`, error);
-    return '';
+    return "";
   }
 }
 
@@ -253,27 +263,29 @@ export function analyzePaneContent(content: string): PaneAnalysisResult {
 
   // Check for Claude Code indicators
   const hasClaudeCode = CLAUDE_CODE_PATTERNS.some((pattern) =>
-    pattern.test(cleanedContent)
+    pattern.test(cleanedContent),
   );
 
   // Check for rate limit messages
   const rateLimitMatches = RATE_LIMIT_PATTERNS.filter((pattern) =>
-    pattern.test(cleanedContent)
+    pattern.test(cleanedContent),
   );
   const hasRateLimitMessage = rateLimitMatches.length > 0;
 
   // Check if waiting for user input
-  const isWaiting = WAITING_PATTERNS.some((pattern) => pattern.test(cleanedContent));
+  const isWaiting = WAITING_PATTERNS.some((pattern) =>
+    pattern.test(cleanedContent),
+  );
 
   // Determine rate limit type
-  let rateLimitType: 'five_hour' | 'weekly' | 'unknown' | undefined;
+  let rateLimitType: "five_hour" | "weekly" | "unknown" | undefined;
   if (hasRateLimitMessage) {
     if (/5[- ]?hour/i.test(cleanedContent)) {
-      rateLimitType = 'five_hour';
+      rateLimitType = "five_hour";
     } else if (WEEKLY_RATE_LIMIT_PATTERN.test(cleanedContent)) {
-      rateLimitType = 'weekly';
+      rateLimitType = "weekly";
     } else {
-      rateLimitType = 'unknown';
+      rateLimitType = "unknown";
     }
   }
 
@@ -306,7 +318,10 @@ export function analyzePaneContent(content: string): PaneAnalysisResult {
  *                   rate-limit messages from re-alerting after blockers are resolved.
  *                   When omitted, falls back to a plain capturePaneContent call.
  */
-export function scanForBlockedPanes(lines = 15, stateDir?: string): BlockedPane[] {
+export function scanForBlockedPanes(
+  lines = 15,
+  stateDir?: string,
+): BlockedPane[] {
   const panes = listTmuxPanes();
   const blocked: BlockedPane[] = [];
 
@@ -357,7 +372,7 @@ export function sendResumeSequence(paneId: string): boolean {
 
   try {
     // Send "1" to select the first option (typically "Continue" or similar)
-    tmuxExec(['send-keys', '-t', paneId, '1', 'Enter'], {
+    tmuxExec(["send-keys", "-t", paneId, "1", "Enter"], {
       stripTmux: true,
       timeout: 2000,
     });
@@ -366,7 +381,10 @@ export function sendResumeSequence(paneId: string): boolean {
     // Note: In real usage, we should verify the pane state changed
     return true;
   } catch (error) {
-    console.error(`[TmuxDetector] Error sending resume to pane ${paneId}:`, error);
+    console.error(
+      `[TmuxDetector] Error sending resume to pane ${paneId}:`,
+      error,
+    );
     return false;
   }
 }
@@ -374,7 +392,11 @@ export function sendResumeSequence(paneId: string): boolean {
 /**
  * Send custom text to a tmux pane
  */
-export function sendToPane(paneId: string, text: string, pressEnter = true): boolean {
+export function sendToPane(
+  paneId: string,
+  text: string,
+  pressEnter = true,
+): boolean {
   if (!isTmuxAvailable()) {
     return false;
   }
@@ -388,13 +410,13 @@ export function sendToPane(paneId: string, text: string, pressEnter = true): boo
   try {
     const sanitizedText = sanitizeForTmux(text);
     // Send text with -l flag (literal) to avoid key interpretation issues in TUI apps
-    tmuxExec(['send-keys', '-t', paneId, '-l', sanitizedText], {
+    tmuxExec(["send-keys", "-t", paneId, "-l", sanitizedText], {
       stripTmux: true,
       timeout: 2000,
     });
     // Send Enter as a separate command so it is interpreted as a key press
     if (pressEnter) {
-      tmuxExec(['send-keys', '-t', paneId, 'Enter'], {
+      tmuxExec(["send-keys", "-t", paneId, "Enter"], {
         stripTmux: true,
         timeout: 2000,
       });
@@ -411,26 +433,28 @@ export function sendToPane(paneId: string, text: string, pressEnter = true): boo
  */
 export function formatBlockedPanesSummary(blockedPanes: BlockedPane[]): string {
   if (blockedPanes.length === 0) {
-    return 'No blocked Claude Code sessions detected.';
+    return "No blocked Claude Code sessions detected.";
   }
 
   const lines: string[] = [
     `Found ${blockedPanes.length} blocked Claude Code session(s):`,
-    '',
+    "",
   ];
 
   for (const pane of blockedPanes) {
     const location = `${pane.session}:${pane.windowIndex}.${pane.paneIndex}`;
     const confidence = Math.round(pane.analysis.confidence * 100);
-    const limitType = pane.analysis.rateLimitType || 'unknown';
+    const limitType = pane.analysis.rateLimitType || "unknown";
     const status = pane.resumeAttempted
       ? pane.resumeSuccessful
-        ? ' [RESUMED]'
-        : ' [RESUME FAILED]'
-      : '';
+        ? " [RESUMED]"
+        : " [RESUME FAILED]"
+      : "";
 
-    lines.push(`  • ${location} (${pane.id}) - ${limitType} limit, ${confidence}% confidence${status}`);
+    lines.push(
+      `  • ${location} (${pane.id}) - ${limitType} limit, ${confidence}% confidence${status}`,
+    );
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

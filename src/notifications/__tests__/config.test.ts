@@ -119,7 +119,9 @@ describe("validateSlackMention", () => {
   });
 
   it("accepts subteam mention", () => {
-    expect(validateSlackMention("<!subteam^S1234567890>")).toBe("<!subteam^S1234567890>");
+    expect(validateSlackMention("<!subteam^S1234567890>")).toBe(
+      "<!subteam^S1234567890>",
+    );
   });
 
   it("rejects arbitrary text", () => {
@@ -167,7 +169,9 @@ describe("validateSlackMention", () => {
   });
 
   it("accepts minimum-length subteam ID", () => {
-    expect(validateSlackMention("<!subteam^S12345678>")).toBe("<!subteam^S12345678>");
+    expect(validateSlackMention("<!subteam^S12345678>")).toBe(
+      "<!subteam^S12345678>",
+    );
   });
 
   it("rejects too-short subteam ID", () => {
@@ -185,7 +189,9 @@ describe("validateSlackChannel", () => {
   });
 
   it("accepts channel name with hyphens and underscores", () => {
-    expect(validateSlackChannel("#my-alerts_channel")).toBe("#my-alerts_channel");
+    expect(validateSlackChannel("#my-alerts_channel")).toBe(
+      "#my-alerts_channel",
+    );
   });
 
   it("accepts channel ID format (C prefix)", () => {
@@ -355,7 +361,10 @@ describe("buildConfigFromEnv", () => {
   });
 
   it("builds discord webhook config from env var", () => {
-    vi.stubEnv("OMC_DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/test");
+    vi.stubEnv(
+      "OMC_DISCORD_WEBHOOK_URL",
+      "https://discord.com/api/webhooks/test",
+    );
     const config = buildConfigFromEnv();
     expect(config!.discord).toEqual({
       enabled: true,
@@ -376,7 +385,10 @@ describe("buildConfigFromEnv", () => {
   });
 
   it("builds slack config from env var", () => {
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
     const config = buildConfigFromEnv();
     expect(config!.slack).toEqual({
       enabled: true,
@@ -386,21 +398,30 @@ describe("buildConfigFromEnv", () => {
   });
 
   it("builds slack config with mention from env var", () => {
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
     vi.stubEnv("OMC_SLACK_MENTION", "<@U1234567890>");
     const config = buildConfigFromEnv();
     expect(config!.slack!.mention).toBe("<@U1234567890>");
   });
 
   it("trims whitespace from slack mention env var", () => {
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
     vi.stubEnv("OMC_SLACK_MENTION", "  <!channel>  ");
     const config = buildConfigFromEnv();
     expect(config!.slack!.mention).toBe("<!channel>");
   });
 
   it("rejects invalid slack mention format in env var", () => {
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
     vi.stubEnv("OMC_SLACK_MENTION", "@everyone");
     const config = buildConfigFromEnv();
     expect(config!.slack!.mention).toBeUndefined();
@@ -488,7 +509,10 @@ describe("getNotificationConfig - deep merge", () => {
     vi.stubEnv("OMC_DISCORD_NOTIFIER_CHANNEL", "channel-123");
     vi.stubEnv("OMC_TELEGRAM_BOT_TOKEN", "456:tg");
     vi.stubEnv("OMC_TELEGRAM_CHAT_ID", "chat-789");
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
 
     const config = buildConfigFromEnv();
     expect(config).not.toBeNull();
@@ -501,7 +525,10 @@ describe("getNotificationConfig - deep merge", () => {
   it("mention from env is shared across discord-bot and discord webhook", () => {
     vi.stubEnv("OMC_DISCORD_NOTIFIER_BOT_TOKEN", "bot-token");
     vi.stubEnv("OMC_DISCORD_NOTIFIER_CHANNEL", "channel-123");
-    vi.stubEnv("OMC_DISCORD_WEBHOOK_URL", "https://discord.com/api/webhooks/test");
+    vi.stubEnv(
+      "OMC_DISCORD_WEBHOOK_URL",
+      "https://discord.com/api/webhooks/test",
+    );
     vi.stubEnv("OMC_DISCORD_MENTION", "<@12345678901234567>");
 
     const config = buildConfigFromEnv();

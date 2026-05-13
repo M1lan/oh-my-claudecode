@@ -50,7 +50,7 @@ export interface ThinkModeInput {
  */
 export interface ClaudeThinkingConfig {
   thinking: {
-    type: 'enabled' | 'disabled';
+    type: "enabled" | "disabled";
     budgetTokens: number;
   };
   maxTokens?: number;

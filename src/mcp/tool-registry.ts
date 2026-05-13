@@ -40,9 +40,7 @@ export interface ToolDef {
     openWorldHint?: boolean;
   };
   schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>;
-  handler: (
-    args: unknown,
-  ) => Promise<{
+  handler: (args: unknown) => Promise<{
     content: Array<{ type: "text"; text: string }>;
     isError?: boolean;
   }>;

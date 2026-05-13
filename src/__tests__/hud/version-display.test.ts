@@ -1,12 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { render } from '../../hud/render.js';
-import { DEFAULT_HUD_CONFIG } from '../../hud/types.js';
-import type { HudRenderContext, HudConfig } from '../../hud/types.js';
+import { describe, it, expect } from "vitest";
+import { render } from "../../hud/render.js";
+import { DEFAULT_HUD_CONFIG } from "../../hud/types.js";
+import type { HudRenderContext, HudConfig } from "../../hud/types.js";
 
-function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRenderContext {
+function createMinimalContext(
+  overrides: Partial<HudRenderContext> = {},
+): HudRenderContext {
   return {
     contextPercent: 30,
-    modelName: 'claude-sonnet-4.6',
+    modelName: "claude-sonnet-4.6",
     ralph: null,
     ultrawork: null,
     prd: null,
@@ -14,7 +16,7 @@ function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRen
     activeAgents: [],
     todos: [],
     backgroundTasks: [],
-    cwd: '/tmp/test',
+    cwd: "/tmp/test",
     lastSkill: null,
     rateLimitsResult: null,
     customBuckets: null,
@@ -34,7 +36,9 @@ function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRen
   };
 }
 
-function createMinimalConfig(overrides: Partial<HudConfig['elements']> = {}): HudConfig {
+function createMinimalConfig(
+  overrides: Partial<HudConfig["elements"]> = {},
+): HudConfig {
   return {
     ...DEFAULT_HUD_CONFIG,
     elements: {
@@ -58,61 +62,73 @@ function createMinimalConfig(overrides: Partial<HudConfig['elements']> = {}): Hu
   };
 }
 
-describe('HUD version display and update notification', () => {
-  describe('OMC label without version', () => {
-    it('renders [OMC] when omcVersion is null', async () => {
+describe("HUD version display and update notification", () => {
+  describe("OMC label without version", () => {
+    it("renders [OMC] when omcVersion is null", async () => {
       const ctx = createMinimalContext({ omcVersion: null });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
-      expect(output).toContain('[OMC]');
-      expect(output).not.toContain('#');
+      expect(output).toContain("[OMC]");
+      expect(output).not.toContain("#");
     });
   });
 
-  describe('OMC label with version', () => {
-    it('renders [OMC#X.Y.Z] when omcVersion is set', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10' });
+  describe("OMC label with version", () => {
+    it("renders [OMC#X.Y.Z] when omcVersion is set", async () => {
+      const ctx = createMinimalContext({ omcVersion: "4.1.10" });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
-      expect(output).toContain('[OMC#4.1.10]');
+      expect(output).toContain("[OMC#4.1.10]");
     });
 
-    it('renders version without update notice when updateAvailable is null', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: null });
+    it("renders version without update notice when updateAvailable is null", async () => {
+      const ctx = createMinimalContext({
+        omcVersion: "4.1.10",
+        updateAvailable: null,
+      });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
-      expect(output).toContain('[OMC#4.1.10]');
-      expect(output).not.toContain('->');
-      expect(output).not.toContain('omc update');
-    });
-  });
-
-  describe('update notification', () => {
-    it('renders update notification when updateAvailable is set', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
-      const config = createMinimalConfig();
-      const output = await render(ctx, config);
-      expect(output).toContain('[OMC#4.1.10]');
-      expect(output).toContain('-> 4.2.0');
-      expect(output).toContain('omc update');
-    });
-
-    it('renders update notification without version when omcVersion is null', async () => {
-      const ctx = createMinimalContext({ omcVersion: null, updateAvailable: '4.2.0' });
-      const config = createMinimalConfig();
-      const output = await render(ctx, config);
-      expect(output).toContain('[OMC]');
-      expect(output).toContain('-> 4.2.0');
+      expect(output).toContain("[OMC#4.1.10]");
+      expect(output).not.toContain("->");
+      expect(output).not.toContain("omc update");
     });
   });
 
-  describe('omcLabel disabled', () => {
-    it('does not render OMC label when omcLabel is false', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+  describe("update notification", () => {
+    it("renders update notification when updateAvailable is set", async () => {
+      const ctx = createMinimalContext({
+        omcVersion: "4.1.10",
+        updateAvailable: "4.2.0",
+      });
+      const config = createMinimalConfig();
+      const output = await render(ctx, config);
+      expect(output).toContain("[OMC#4.1.10]");
+      expect(output).toContain("-> 4.2.0");
+      expect(output).toContain("omc update");
+    });
+
+    it("renders update notification without version when omcVersion is null", async () => {
+      const ctx = createMinimalContext({
+        omcVersion: null,
+        updateAvailable: "4.2.0",
+      });
+      const config = createMinimalConfig();
+      const output = await render(ctx, config);
+      expect(output).toContain("[OMC]");
+      expect(output).toContain("-> 4.2.0");
+    });
+  });
+
+  describe("omcLabel disabled", () => {
+    it("does not render OMC label when omcLabel is false", async () => {
+      const ctx = createMinimalContext({
+        omcVersion: "4.1.10",
+        updateAvailable: "4.2.0",
+      });
       const config = createMinimalConfig({ omcLabel: false });
       const output = await render(ctx, config);
-      expect(output).not.toContain('[OMC');
-      expect(output).not.toContain('omc update');
+      expect(output).not.toContain("[OMC");
+      expect(output).not.toContain("omc update");
     });
   });
 });

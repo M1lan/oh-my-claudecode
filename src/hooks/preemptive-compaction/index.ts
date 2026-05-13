@@ -11,9 +11,9 @@
  * This version injects warning messages to prompt manual compaction.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { tmpdir } from 'os';
+import * as fs from "fs";
+import * as path from "path";
+import { tmpdir } from "os";
 
 import {
   DEFAULT_THRESHOLD,
@@ -24,14 +24,14 @@ import {
   CHARS_PER_TOKEN,
   CONTEXT_WARNING_MESSAGE,
   CONTEXT_CRITICAL_MESSAGE,
-} from './constants.js';
+} from "./constants.js";
 import type {
   ContextUsageResult,
   PreemptiveCompactionConfig,
-} from './types.js';
+} from "./types.js";
 
-const DEBUG = process.env.PREEMPTIVE_COMPACTION_DEBUG === '1';
-const DEBUG_FILE = path.join(tmpdir(), 'preemptive-compaction-debug.log');
+const DEBUG = process.env.PREEMPTIVE_COMPACTION_DEBUG === "1";
+const DEBUG_FILE = path.join(tmpdir(), "preemptive-compaction-debug.log");
 
 /**
  * Rapid-fire debounce window (ms).
@@ -53,9 +53,9 @@ function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [preemptive-compaction] ${args
       .map((a) =>
-        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+        typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
       )
-      .join(' ')}\n`;
+      .join(" ")}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
 }
@@ -109,7 +109,7 @@ export function estimateTokens(text: string): number {
  */
 export function analyzeContextUsage(
   content: string,
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ): ContextUsageResult {
   const warningThreshold = config?.warningThreshold ?? DEFAULT_THRESHOLD;
   const criticalThreshold = config?.criticalThreshold ?? CRITICAL_THRESHOLD;
@@ -121,11 +121,11 @@ export function analyzeContextUsage(
   const isWarning = usageRatio >= warningThreshold;
   const isCritical = usageRatio >= criticalThreshold;
 
-  let action: 'none' | 'warn' | 'compact' = 'none';
+  let action: "none" | "warn" | "compact" = "none";
   if (isCritical) {
-    action = 'compact';
+    action = "compact";
   } else if (isWarning) {
-    action = 'warn';
+    action = "warn";
   }
 
   return {
@@ -158,7 +158,7 @@ function getSessionState(sessionId: string) {
  */
 function shouldShowWarning(
   sessionId: string,
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ): boolean {
   const state = getSessionState(sessionId);
   const cooldownMs = config?.cooldownMs ?? COMPACTION_COOLDOWN_MS;
@@ -168,7 +168,7 @@ function shouldShowWarning(
 
   // Check cooldown
   if (now - state.lastWarningTime < cooldownMs) {
-    debugLog('skipping warning - cooldown active', {
+    debugLog("skipping warning - cooldown active", {
       sessionId,
       elapsed: now - state.lastWarningTime,
       cooldown: cooldownMs,
@@ -178,7 +178,7 @@ function shouldShowWarning(
 
   // Check max warnings
   if (state.warningCount >= maxWarnings) {
-    debugLog('skipping warning - max reached', {
+    debugLog("skipping warning - max reached", {
       sessionId,
       warningCount: state.warningCount,
       maxWarnings,
@@ -205,9 +205,9 @@ function recordWarning(sessionId: string): void {
  * when approaching the context limit.
  */
 export function createPreemptiveCompactionHook(
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ) {
-  debugLog('createPreemptiveCompactionHook called', { config });
+  debugLog("createPreemptiveCompactionHook called", { config });
 
   if (config?.enabled === false) {
     return {
@@ -239,7 +239,14 @@ export function createPreemptiveCompactionHook(
 
       // Only check after tools that produce large outputs
       const toolLower = input.tool_name.toLowerCase();
-      const largeOutputTools = ['read', 'grep', 'glob', 'bash', 'webfetch', 'task'];
+      const largeOutputTools = [
+        "read",
+        "grep",
+        "glob",
+        "bash",
+        "webfetch",
+        "task",
+      ];
       if (!largeOutputTools.includes(toolLower)) {
         return null;
       }
@@ -250,7 +257,7 @@ export function createPreemptiveCompactionHook(
       const now = Date.now();
       const lastAnalysis = lastAnalysisTime.get(input.session_id) ?? 0;
       if (now - lastAnalysis < RAPID_FIRE_DEBOUNCE_MS) {
-        debugLog('skipping analysis - rapid-fire debounce active', {
+        debugLog("skipping analysis - rapid-fire debounce active", {
           sessionId: input.session_id,
           elapsed: now - lastAnalysis,
           debounceMs: RAPID_FIRE_DEBOUNCE_MS,
@@ -270,7 +277,7 @@ export function createPreemptiveCompactionHook(
       const state = getSessionState(input.session_id);
       state.estimatedTokens += responseTokens;
 
-      debugLog('tracking tool output', {
+      debugLog("tracking tool output", {
         tool: toolLower,
         responseTokens,
         cumulativeTokens: state.estimatedTokens,
@@ -278,8 +285,8 @@ export function createPreemptiveCompactionHook(
 
       // Check if approaching limit
       const usage = analyzeContextUsage(
-        'x'.repeat(state.estimatedTokens * CHARS_PER_TOKEN),
-        config
+        "x".repeat(state.estimatedTokens * CHARS_PER_TOKEN),
+        config,
       );
 
       if (!usage.isWarning) {
@@ -292,7 +299,7 @@ export function createPreemptiveCompactionHook(
 
       recordWarning(input.session_id);
 
-      debugLog('injecting context warning', {
+      debugLog("injecting context warning", {
         sessionId: input.session_id,
         usageRatio: usage.usageRatio,
         isCritical: usage.isCritical,
@@ -315,7 +322,7 @@ export function createPreemptiveCompactionHook(
 
       // Reset warning count on stop (conversation might continue later)
       if (state.warningCount > 0) {
-        debugLog('resetting warning count on stop', {
+        debugLog("resetting warning count on stop", {
           sessionId: input.session_id,
           previousCount: state.warningCount,
         });
@@ -362,7 +369,7 @@ export function clearRapidFireDebounce(sessionId: string): void {
 export type {
   ContextUsageResult,
   PreemptiveCompactionConfig,
-} from './types.js';
+} from "./types.js";
 
 export { RAPID_FIRE_DEBOUNCE_MS };
 
@@ -375,4 +382,4 @@ export {
   CHARS_PER_TOKEN,
   CONTEXT_WARNING_MESSAGE,
   CONTEXT_CRITICAL_MESSAGE,
-} from './constants.js';
+} from "./constants.js";

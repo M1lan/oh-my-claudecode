@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { parseSkillFile, generateSkillFrontmatter } from '../../hooks/learner/parser.js';
+import { describe, it, expect } from "vitest";
+import {
+  parseSkillFile,
+  generateSkillFrontmatter,
+} from "../../hooks/learner/parser.js";
 
-describe('Skill Parser', () => {
-  it('should parse valid skill frontmatter', () => {
+describe("Skill Parser", () => {
+  it("should parse valid skill frontmatter", () => {
     const content = `---
 id: "test-skill-001"
 name: "Test Skill"
@@ -24,13 +27,13 @@ This is the skill content.
     const result = parseSkillFile(content);
 
     expect(result.valid).toBe(true);
-    expect(result.metadata.id).toBe('test-skill-001');
-    expect(result.metadata.name).toBe('Test Skill');
-    expect(result.metadata.triggers).toEqual(['test', 'demo']);
-    expect(result.content).toContain('Test Skill Content');
+    expect(result.metadata.id).toBe("test-skill-001");
+    expect(result.metadata.name).toBe("Test Skill");
+    expect(result.metadata.triggers).toEqual(["test", "demo"]);
+    expect(result.content).toContain("Test Skill Content");
   });
 
-  it('should reject skill without required fields', () => {
+  it("should reject skill without required fields", () => {
     const content = `---
 name: "Incomplete Skill"
 ---
@@ -41,29 +44,29 @@ Content without required fields.
     const result = parseSkillFile(content);
 
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Missing required field: description');
-    expect(result.errors).toContain('Missing required field: triggers');
+    expect(result.errors).toContain("Missing required field: description");
+    expect(result.errors).toContain("Missing required field: triggers");
   });
 
-  it('should generate valid frontmatter', () => {
+  it("should generate valid frontmatter", () => {
     const metadata = {
-      id: 'gen-skill-001',
-      name: 'Generated Skill',
-      description: 'A generated skill',
-      source: 'extracted' as const,
-      createdAt: '2024-01-19T12:00:00Z',
-      triggers: ['generate', 'create'],
-      tags: ['automation'],
+      id: "gen-skill-001",
+      name: "Generated Skill",
+      description: "A generated skill",
+      source: "extracted" as const,
+      createdAt: "2024-01-19T12:00:00Z",
+      triggers: ["generate", "create"],
+      tags: ["automation"],
     };
 
     const frontmatter = generateSkillFrontmatter(metadata);
 
     expect(frontmatter).toContain('id: "gen-skill-001"');
-    expect(frontmatter).toContain('triggers:');
+    expect(frontmatter).toContain("triggers:");
     expect(frontmatter).toContain('  - "generate"');
   });
 
-  it('should reject content without frontmatter', () => {
+  it("should reject content without frontmatter", () => {
     const content = `# Just content
 
 No frontmatter here.
@@ -72,10 +75,10 @@ No frontmatter here.
     const result = parseSkillFile(content);
 
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain('Missing YAML frontmatter');
+    expect(result.errors).toContain("Missing YAML frontmatter");
   });
 
-  it('should handle inline array triggers', () => {
+  it("should handle inline array triggers", () => {
     const content = `---
 id: "inline-array"
 name: "Inline Array Skill"
@@ -90,6 +93,6 @@ Content
     const result = parseSkillFile(content);
 
     expect(result.valid).toBe(true);
-    expect(result.metadata.triggers).toEqual(['alpha', 'beta', 'gamma']);
+    expect(result.metadata.triggers).toEqual(["alpha", "beta", "gamma"]);
   });
 });

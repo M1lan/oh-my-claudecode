@@ -5,10 +5,19 @@
  * until the QA goal is met or max cycles reached.
  */
 
-import { readRalphState } from '../ralph/index.js';
-import { writeModeState, readModeState, clearModeStateFile } from '../../lib/mode-state-io.js';
+import { readRalphState } from "../ralph/index.js";
+import {
+  writeModeState,
+  readModeState,
+  clearModeStateFile,
+} from "../../lib/mode-state-io.js";
 
-export type UltraQAGoalType = 'tests' | 'build' | 'lint' | 'typecheck' | 'custom';
+export type UltraQAGoalType =
+  | "tests"
+  | "build"
+  | "lint"
+  | "typecheck"
+  | "custom";
 
 export interface UltraQAState {
   /** Whether the loop is currently active */
@@ -44,7 +53,12 @@ export interface UltraQAResult {
   /** Number of cycles taken */
   cycles: number;
   /** Reason for exit */
-  reason: 'goal_met' | 'max_cycles' | 'same_failure' | 'env_error' | 'cancelled';
+  reason:
+    | "goal_met"
+    | "max_cycles"
+    | "same_failure"
+    | "env_error"
+    | "cancelled";
   /** Diagnosis message if failed */
   diagnosis?: string;
 }
@@ -52,32 +66,49 @@ export interface UltraQAResult {
 const DEFAULT_MAX_CYCLES = 5;
 const SAME_FAILURE_THRESHOLD = 3;
 
-
 /**
  * Read UltraQA state from disk
  */
-export function readUltraQAState(directory: string, sessionId?: string): UltraQAState | null {
-  return readModeState<UltraQAState>('ultraqa', directory, sessionId);
+export function readUltraQAState(
+  directory: string,
+  sessionId?: string,
+): UltraQAState | null {
+  return readModeState<UltraQAState>("ultraqa", directory, sessionId);
 }
 
 /**
  * Write UltraQA state to disk
  */
-export function writeUltraQAState(directory: string, state: UltraQAState, sessionId?: string): boolean {
-  return writeModeState('ultraqa', state as unknown as Record<string, unknown>, directory, sessionId);
+export function writeUltraQAState(
+  directory: string,
+  state: UltraQAState,
+  sessionId?: string,
+): boolean {
+  return writeModeState(
+    "ultraqa",
+    state as unknown as Record<string, unknown>,
+    directory,
+    sessionId,
+  );
 }
 
 /**
  * Clear UltraQA state
  */
-export function clearUltraQAState(directory: string, sessionId?: string): boolean {
-  return clearModeStateFile('ultraqa', directory, sessionId);
+export function clearUltraQAState(
+  directory: string,
+  sessionId?: string,
+): boolean {
+  return clearModeStateFile("ultraqa", directory, sessionId);
 }
 
 /**
  * Check if Ralph Loop is active (mutual exclusion check)
  */
-export function isRalphLoopActive(directory: string, sessionId?: string): boolean {
+export function isRalphLoopActive(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const ralphState = readRalphState(directory, sessionId);
   return ralphState !== null && ralphState.active === true;
 }
@@ -90,13 +121,14 @@ export function startUltraQA(
   directory: string,
   goalType: UltraQAGoalType,
   sessionId: string,
-  options?: UltraQAOptions
+  options?: UltraQAOptions,
 ): { success: boolean; error?: string } {
   // Mutual exclusion check: cannot start UltraQA if Ralph Loop is active
   if (isRalphLoopActive(directory, sessionId)) {
     return {
       success: false,
-      error: 'Cannot start UltraQA while Ralph Loop is active. Cancel Ralph Loop first with /oh-my-claudecode:cancel.'
+      error:
+        "Cannot start UltraQA while Ralph Loop is active. Cancel Ralph Loop first with /oh-my-claudecode:cancel.",
     };
   }
 
@@ -109,7 +141,7 @@ export function startUltraQA(
     failures: [],
     started_at: new Date().toISOString(),
     session_id: sessionId,
-    project_path: directory
+    project_path: directory,
   };
 
   const written = writeUltraQAState(directory, state, sessionId);
@@ -122,12 +154,12 @@ export function startUltraQA(
 export function recordFailure(
   directory: string,
   failureDescription: string,
-  sessionId?: string
+  sessionId?: string,
 ): { state: UltraQAState | null; shouldExit: boolean; reason?: string } {
   const state = readUltraQAState(directory, sessionId);
 
   if (!state || !state.active) {
-    return { state: null, shouldExit: true, reason: 'not_active' };
+    return { state: null, shouldExit: true, reason: "not_active" };
   }
 
   // Add failure to array
@@ -136,12 +168,14 @@ export function recordFailure(
   // Check for repeated same failure
   const recentFailures = state.failures.slice(-SAME_FAILURE_THRESHOLD);
   if (recentFailures.length >= SAME_FAILURE_THRESHOLD) {
-    const allSame = recentFailures.every(f => normalizeFailure(f) === normalizeFailure(recentFailures[0]));
+    const allSame = recentFailures.every(
+      (f) => normalizeFailure(f) === normalizeFailure(recentFailures[0]),
+    );
     if (allSame) {
       return {
         state,
         shouldExit: true,
-        reason: `Same failure detected ${SAME_FAILURE_THRESHOLD} times: ${recentFailures[0]}`
+        reason: `Same failure detected ${SAME_FAILURE_THRESHOLD} times: ${recentFailures[0]}`,
       };
     }
   }
@@ -154,7 +188,7 @@ export function recordFailure(
     return {
       state,
       shouldExit: true,
-      reason: `Max cycles (${state.max_cycles}) reached`
+      reason: `Max cycles (${state.max_cycles}) reached`,
     };
   }
 
@@ -165,7 +199,10 @@ export function recordFailure(
 /**
  * Mark UltraQA as successful
  */
-export function completeUltraQA(directory: string, sessionId?: string): UltraQAResult | null {
+export function completeUltraQA(
+  directory: string,
+  sessionId?: string,
+): UltraQAResult | null {
   const state = readUltraQAState(directory, sessionId);
 
   if (!state) {
@@ -175,7 +212,7 @@ export function completeUltraQA(directory: string, sessionId?: string): UltraQAR
   const result: UltraQAResult = {
     success: true,
     cycles: state.cycle,
-    reason: 'goal_met'
+    reason: "goal_met",
   };
 
   clearUltraQAState(directory, sessionId);
@@ -187,9 +224,9 @@ export function completeUltraQA(directory: string, sessionId?: string): UltraQAR
  */
 export function stopUltraQA(
   directory: string,
-  reason: 'max_cycles' | 'same_failure' | 'env_error',
+  reason: "max_cycles" | "same_failure" | "env_error",
   diagnosis: string,
-  sessionId?: string
+  sessionId?: string,
 ): UltraQAResult | null {
   const state = readUltraQAState(directory, sessionId);
 
@@ -201,7 +238,7 @@ export function stopUltraQA(
     success: false,
     cycles: state.cycle,
     reason,
-    diagnosis
+    diagnosis,
   };
 
   clearUltraQAState(directory, sessionId);
@@ -221,10 +258,10 @@ export function cancelUltraQA(directory: string, sessionId?: string): boolean {
 function normalizeFailure(failure: string): string {
   // Remove timestamps, line numbers, and other variable parts
   return failure
-    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, '') // ISO timestamps
-    .replace(/:\d+:\d+/g, '') // line:col numbers
-    .replace(/\d+ms/g, '') // timing
-    .replace(/\s+/g, ' ')
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, "") // ISO timestamps
+    .replace(/:\d+:\d+/g, "") // line:col numbers
+    .replace(/\d+ms/g, "") // timing
+    .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
 }
@@ -234,16 +271,16 @@ function normalizeFailure(failure: string): string {
  */
 export function getGoalCommand(goalType: UltraQAGoalType): string {
   switch (goalType) {
-    case 'tests':
-      return '# Run the project test command (e.g., pnpm test, pytest, go test ./..., cargo test)';
-    case 'build':
-      return '# Run the project build command (e.g., pnpm run build, go build ./..., cargo build)';
-    case 'lint':
-      return '# Run the project lint command (e.g., pnpm run lint, ruff check ., golangci-lint run)';
-    case 'typecheck':
-      return '# Run the project type check command (e.g., tsc --noEmit, mypy ., cargo check)';
-    case 'custom':
-      return '# Custom command based on goal pattern';
+    case "tests":
+      return "# Run the project test command (e.g., pnpm test, pytest, go test ./..., cargo test)";
+    case "build":
+      return "# Run the project build command (e.g., pnpm run build, go build ./..., cargo build)";
+    case "lint":
+      return "# Run the project lint command (e.g., pnpm run lint, ruff check ., golangci-lint run)";
+    case "typecheck":
+      return "# Run the project type check command (e.g., tsc --noEmit, mypy ., cargo check)";
+    case "custom":
+      return "# Custom command based on goal pattern";
   }
 }
 
@@ -253,7 +290,7 @@ export function getGoalCommand(goalType: UltraQAGoalType): string {
 export function formatProgressMessage(
   cycle: number,
   maxCycles: number,
-  status: string
+  status: string,
 ): string {
   return `[ULTRAQA Cycle ${cycle}/${maxCycles}] ${status}`;
 }

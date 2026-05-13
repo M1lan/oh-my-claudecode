@@ -1,14 +1,17 @@
-import { existsSync, readFileSync, unlinkSync } from 'fs';
-import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
-import { ensureSessionStateDir, resolveSessionStatePath } from '../../lib/worktree-paths.js';
-import { readCanonicalTeamStateCandidate } from '../team-canonical-state.js';
+import { existsSync, readFileSync, unlinkSync } from "fs";
+import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
+import {
+  ensureSessionStateDir,
+  resolveSessionStatePath,
+} from "../../lib/worktree-paths.js";
+import { readCanonicalTeamStateCandidate } from "../team-canonical-state.js";
 import type {
   TeamPipelineState,
   TeamPipelinePhase,
   TeamTransitionResult,
   TeamPhaseHistoryEntry,
-} from './types.js';
-import { TEAM_PIPELINE_SCHEMA_VERSION } from './types.js';
+} from "./types.js";
+import { TEAM_PIPELINE_SCHEMA_VERSION } from "./types.js";
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -18,29 +21,36 @@ function getTeamStatePath(directory: string, sessionId?: string): string {
   if (!sessionId) {
     return `${directory}/.omc/state/team-state.json`;
   }
-  return resolveSessionStatePath('team', sessionId, directory);
+  return resolveSessionStatePath("team", sessionId, directory);
 }
 
 function isTerminalTeamPipelineState(state: TeamPipelineState): boolean {
-  return state.phase === 'complete' || state.phase === 'failed' || state.phase === 'cancelled';
+  return (
+    state.phase === "complete" ||
+    state.phase === "failed" ||
+    state.phase === "cancelled"
+  );
 }
 
 function synthesizeCanonicalTeamPipelineState(
   directory: string,
   candidate: NonNullable<ReturnType<typeof readCanonicalTeamStateCandidate>>,
 ): TeamPipelineState {
-  const now = candidate.updatedAt || candidate.startedAt || new Date().toISOString();
+  const now =
+    candidate.updatedAt || candidate.startedAt || new Date().toISOString();
   return {
     schema_version: TEAM_PIPELINE_SCHEMA_VERSION,
-    mode: 'team',
+    mode: "team",
     active: candidate.active,
     session_id: candidate.sessionId,
     project_path: candidate.leaderCwd ?? directory,
     phase: candidate.stage,
-    phase_history: [{
-      phase: candidate.stage,
-      entered_at: candidate.startedAt || now,
-    }],
+    phase_history: [
+      {
+        phase: candidate.stage,
+        entered_at: candidate.startedAt || now,
+      },
+    ],
     iteration: 1,
     max_iterations: 25,
     artifacts: {
@@ -67,24 +77,24 @@ function synthesizeCanonicalTeamPipelineState(
     },
     started_at: candidate.startedAt || now,
     updated_at: candidate.updatedAt || now,
-    completed_at: candidate.active ? null : (candidate.updatedAt || now),
+    completed_at: candidate.active ? null : candidate.updatedAt || now,
   };
 }
 
 export function initTeamPipelineState(
   directory: string,
   sessionId: string,
-  options?: Partial<Pick<TeamPipelineState, 'project_path' | 'max_iterations'>>
+  options?: Partial<Pick<TeamPipelineState, "project_path" | "max_iterations">>,
 ): TeamPipelineState {
   const ts = nowIso();
   return {
     schema_version: TEAM_PIPELINE_SCHEMA_VERSION,
-    mode: 'team',
+    mode: "team",
     active: true,
     session_id: sessionId,
     project_path: options?.project_path ?? directory,
-    phase: 'team-plan',
-    phase_history: [{ phase: 'team-plan', entered_at: ts }],
+    phase: "team-plan",
+    phase_history: [{ phase: "team-plan", entered_at: ts }],
     iteration: 1,
     max_iterations: options?.max_iterations ?? 25,
     artifacts: {
@@ -115,7 +125,10 @@ export function initTeamPipelineState(
   };
 }
 
-export function readTeamPipelineState(directory: string, sessionId?: string): TeamPipelineState | null {
+export function readTeamPipelineState(
+  directory: string,
+  sessionId?: string,
+): TeamPipelineState | null {
   if (!sessionId) {
     return null;
   }
@@ -124,9 +137,13 @@ export function readTeamPipelineState(directory: string, sessionId?: string): Te
   const statePath = getTeamStatePath(directory, sessionId);
   if (existsSync(statePath)) {
     try {
-      const content = readFileSync(statePath, 'utf-8');
+      const content = readFileSync(statePath, "utf-8");
       const state = JSON.parse(content) as TeamPipelineState;
-      if (state && typeof state === 'object' && (!state.session_id || state.session_id === sessionId)) {
+      if (
+        state &&
+        typeof state === "object" &&
+        (!state.session_id || state.session_id === sessionId)
+      ) {
         coarseState = state;
         if (state.active === true && !isTerminalTeamPipelineState(state)) {
           return state;
@@ -145,7 +162,11 @@ export function readTeamPipelineState(directory: string, sessionId?: string): Te
   return coarseState;
 }
 
-export function writeTeamPipelineState(directory: string, state: TeamPipelineState, sessionId?: string): boolean {
+export function writeTeamPipelineState(
+  directory: string,
+  state: TeamPipelineState,
+  sessionId?: string,
+): boolean {
   if (!sessionId) {
     return false;
   }
@@ -156,7 +177,7 @@ export function writeTeamPipelineState(directory: string, state: TeamPipelineSta
     const next: TeamPipelineState = {
       ...state,
       session_id: sessionId,
-      mode: 'team',
+      mode: "team",
       schema_version: TEAM_PIPELINE_SCHEMA_VERSION,
       updated_at: nowIso(),
     };
@@ -167,7 +188,10 @@ export function writeTeamPipelineState(directory: string, state: TeamPipelineSta
   }
 }
 
-export function clearTeamPipelineState(directory: string, sessionId?: string): boolean {
+export function clearTeamPipelineState(
+  directory: string,
+  sessionId?: string,
+): boolean {
   if (!sessionId) {
     return false;
   }
@@ -190,7 +214,7 @@ export function markTeamPhase(
 ): TeamTransitionResult {
   // Idempotent: if already in target phase, return success without mutating state.
   // Exception: team-fix -> team-fix is a retry increment and must not short-circuit.
-  if (state.phase === nextPhase && nextPhase !== 'team-fix') {
+  if (state.phase === nextPhase && nextPhase !== "team-fix") {
     return { ok: true, state };
   }
 
@@ -205,12 +229,16 @@ export function markTeamPhase(
 
   updated.phase_history = [...updated.phase_history, historyEntry];
 
-  if (nextPhase === 'complete' || nextPhase === 'failed' || nextPhase === 'cancelled') {
+  if (
+    nextPhase === "complete" ||
+    nextPhase === "failed" ||
+    nextPhase === "cancelled"
+  ) {
     updated.active = false;
     updated.completed_at = nowIso();
   }
 
-  if (nextPhase === 'team-fix') {
+  if (nextPhase === "team-fix") {
     updated.fix_loop = {
       ...updated.fix_loop,
       attempt: updated.fix_loop.attempt + 1,
@@ -222,20 +250,22 @@ export function markTeamPhase(
   if (updated.fix_loop.attempt > updated.fix_loop.max_attempts) {
     const failed = {
       ...updated,
-      phase: 'failed' as const,
+      phase: "failed" as const,
       active: false,
       completed_at: nowIso(),
       updated_at: nowIso(),
       fix_loop: {
         ...updated.fix_loop,
-        last_failure_reason: updated.fix_loop.last_failure_reason ?? 'fix-loop-max-attempts-exceeded',
+        last_failure_reason:
+          updated.fix_loop.last_failure_reason ??
+          "fix-loop-max-attempts-exceeded",
       },
       phase_history: [
         ...updated.phase_history,
         {
-          phase: 'failed' as const,
+          phase: "failed" as const,
           entered_at: nowIso(),
-          reason: 'fix-loop-max-attempts-exceeded',
+          reason: "fix-loop-max-attempts-exceeded",
         },
       ],
     };
@@ -243,7 +273,7 @@ export function markTeamPhase(
     return {
       ok: false,
       state: failed,
-      reason: 'Fix loop exceeded max_attempts',
+      reason: "Fix loop exceeded max_attempts",
     };
   }
 

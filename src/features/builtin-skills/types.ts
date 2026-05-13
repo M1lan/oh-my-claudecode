@@ -6,7 +6,7 @@
  * Adapted from oh-my-opencode's builtin-skills feature.
  */
 
-import type { SkillPipelineMetadata } from '../../utils/skill-pipeline.js';
+import type { SkillPipelineMetadata } from "../../utils/skill-pipeline.js";
 
 /**
  * Configuration for MCP server integration with a skill

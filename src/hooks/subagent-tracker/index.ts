@@ -17,10 +17,13 @@ import {
   unlinkSync,
 } from "fs";
 import { join } from "path";
-import { getOmcRoot } from '../../lib/worktree-paths.js';
-import { recordAgentStart, recordAgentStop } from './session-replay.js';
-import { recordMissionAgentStart, recordMissionAgentStop } from '../../hud/mission-board.js';
-import { isProcessAlive } from '../../platform/index.js';
+import { getOmcRoot } from "../../lib/worktree-paths.js";
+import { recordAgentStart, recordAgentStop } from "./session-replay.js";
+import {
+  recordMissionAgentStart,
+  recordMissionAgentStop,
+} from "../../hud/mission-board.js";
+import { isProcessAlive } from "../../platform/index.js";
 
 // ============================================================================
 // Types
@@ -165,7 +168,9 @@ function syncSleep(ms: number): void {
   } catch {
     // Main thread: Atomics.wait throws on Node <22
     const waitUntil = Date.now() + ms;
-    while (Date.now() < waitUntil) { /* spin */ }
+    while (Date.now() < waitUntil) {
+      /* spin */
+    }
   }
 }
 
@@ -214,14 +219,24 @@ export function mergeTrackerStates(
   }
 
   // Counters: take max to avoid double-counting
-  const total_spawned = Math.max(diskState.total_spawned, pendingState.total_spawned);
-  const total_completed = Math.max(diskState.total_completed, pendingState.total_completed);
-  const total_failed = Math.max(diskState.total_failed, pendingState.total_failed);
+  const total_spawned = Math.max(
+    diskState.total_spawned,
+    pendingState.total_spawned,
+  );
+  const total_completed = Math.max(
+    diskState.total_completed,
+    pendingState.total_completed,
+  );
+  const total_failed = Math.max(
+    diskState.total_failed,
+    pendingState.total_failed,
+  );
 
   // Timestamp: take the latest
   const diskTime = new Date(diskState.last_updated).getTime();
   const pendingTime = new Date(pendingState.last_updated).getTime();
-  const last_updated = diskTime > pendingTime ? diskState.last_updated : pendingState.last_updated;
+  const last_updated =
+    diskTime > pendingTime ? diskState.last_updated : pendingState.last_updated;
 
   return {
     agents: Array.from(agentMap.values()),
@@ -240,7 +255,11 @@ export function mergeTrackerStates(
  * Acquire file lock with timeout and stale lock detection
  */
 function acquireLock(directory: string): boolean {
-  const lockPath = join(getOmcRoot(directory), "state", "subagent-tracker.lock");
+  const lockPath = join(
+    getOmcRoot(directory),
+    "state",
+    "subagent-tracker.lock",
+  );
   const lockDir = join(getOmcRoot(directory), "state");
 
   if (!existsSync(lockDir)) {
@@ -315,7 +334,11 @@ function acquireLock(directory: string): boolean {
  * Release file lock
  */
 function releaseLock(directory: string): void {
-  const lockPath = join(getOmcRoot(directory), "state", "subagent-tracker.lock");
+  const lockPath = join(
+    getOmcRoot(directory),
+    "state",
+    "subagent-tracker.lock",
+  );
   try {
     unlinkSync(lockPath);
   } catch {
@@ -400,7 +423,10 @@ function writeTrackingStateImmediate(
  * Execute the flush: lock -> re-read disk -> merge -> write -> unlock.
  * Returns true on success, false if lock could not be acquired.
  */
-export function executeFlush(directory: string, pendingState: SubagentTrackingState): boolean {
+export function executeFlush(
+  directory: string,
+  pendingState: SubagentTrackingState,
+): boolean {
   if (!acquireLock(directory)) {
     return false;
   }
@@ -579,7 +605,9 @@ export function processSubagentStart(input: SubagentStartInput): HookOutput {
     const parentMode = detectParentMode(input.cwd);
     const startedAt = new Date().toISOString();
     const taskDescription = input.prompt?.substring(0, 200); // Truncate for storage
-    const existingAgent = state.agents.find((agent) => agent.agent_id === input.agent_id);
+    const existingAgent = state.agents.find(
+      (agent) => agent.agent_id === input.agent_id,
+    );
     const isDuplicateRunningStart = existingAgent?.status === "running";
     let trackedAgent: SubagentInfo;
 
@@ -622,8 +650,18 @@ export function processSubagentStart(input: SubagentStartInput): HookOutput {
     if (!isDuplicateRunningStart) {
       // Record to session replay JSONL for /trace
       try {
-        recordAgentStart(input.cwd, input.session_id, input.agent_id, input.agent_type, input.prompt, parentMode, input.model);
-      } catch { /* best-effort */ }
+        recordAgentStart(
+          input.cwd,
+          input.session_id,
+          input.agent_id,
+          input.agent_type,
+          input.prompt,
+          parentMode,
+          input.model,
+        );
+      } catch {
+        /* best-effort */
+      }
 
       try {
         recordMissionAgentStart(input.cwd, {
@@ -634,7 +672,9 @@ export function processSubagentStart(input: SubagentStartInput): HookOutput {
           taskDescription: input.prompt,
           at: trackedAgent.started_at,
         });
-      } catch { /* best-effort */ }
+      } catch {
+        /* best-effort */
+      }
     }
 
     // Check for stale agents
@@ -720,20 +760,39 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
     // Record to session replay JSONL for /trace
     // Fix: SDK doesn't populate agent_type in SubagentStop, so use tracked state
     try {
-      const trackedAgent = agentIndex !== -1 ? state.agents[agentIndex] : undefined;
-      const agentType = trackedAgent?.agent_type || input.agent_type || 'unknown';
-      recordAgentStop(input.cwd, input.session_id, input.agent_id, agentType, succeeded, trackedAgent?.duration_ms);
-    } catch { /* best-effort */ }
+      const trackedAgent =
+        agentIndex !== -1 ? state.agents[agentIndex] : undefined;
+      const agentType =
+        trackedAgent?.agent_type || input.agent_type || "unknown";
+      recordAgentStop(
+        input.cwd,
+        input.session_id,
+        input.agent_id,
+        agentType,
+        succeeded,
+        trackedAgent?.duration_ms,
+      );
+    } catch {
+      /* best-effort */
+    }
 
     try {
       recordMissionAgentStop(input.cwd, {
         sessionId: input.session_id,
         agentId: input.agent_id,
         success: succeeded,
-        outputSummary: agentIndex !== -1 ? state.agents[agentIndex]?.output_summary : input.output,
-        at: agentIndex !== -1 ? state.agents[agentIndex]?.completed_at : new Date().toISOString(),
+        outputSummary:
+          agentIndex !== -1
+            ? state.agents[agentIndex]?.output_summary
+            : input.output,
+        at:
+          agentIndex !== -1
+            ? state.agents[agentIndex]?.completed_at
+            : new Date().toISOString(),
       });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
 
     const runningCount = state.agents.filter(
       (a) => a.status === "running",
@@ -1338,7 +1397,8 @@ export function updateTokenUsage(
         agent.token_usage.output_tokens += tokens.output_tokens;
       if (tokens.cache_read_tokens !== undefined)
         agent.token_usage.cache_read_tokens += tokens.cache_read_tokens;
-      if (tokens.cost_usd !== undefined) agent.token_usage.cost_usd += tokens.cost_usd;
+      if (tokens.cost_usd !== undefined)
+        agent.token_usage.cost_usd += tokens.cost_usd;
       writeTrackingState(directory, state);
     }
   } finally {

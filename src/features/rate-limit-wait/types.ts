@@ -5,7 +5,7 @@
  * Reference: https://github.com/EvanOman/cc-wait
  */
 
-import type { UsageErrorReason } from '../../hud/types.js';
+import type { UsageErrorReason } from "../../hud/types.js";
 
 export interface RateLimitStatus {
   /** Whether rate limited on 5-hour window */
@@ -65,7 +65,7 @@ export interface PaneAnalysisResult {
   /** Whether the pane appears blocked (waiting for input) */
   isBlocked: boolean;
   /** Detected rate limit type if any */
-  rateLimitType?: 'five_hour' | 'weekly' | 'unknown';
+  rateLimitType?: "five_hour" | "weekly" | "unknown";
   /** Confidence level (0-1) */
   confidence: number;
 }
@@ -133,7 +133,7 @@ export interface ResumeResult {
 }
 
 export interface DaemonCommand {
-  action: 'start' | 'stop' | 'status' | 'detect';
+  action: "start" | "stop" | "status" | "detect";
   options?: DaemonConfig;
 }
 

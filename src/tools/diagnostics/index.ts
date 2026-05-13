@@ -6,18 +6,22 @@
  * 2. Fallback: LSP iteration (when tsc not available)
  */
 
-import { existsSync } from 'fs';
-import { join } from 'path';
-import { runTscDiagnostics, TscDiagnostic, TscResult } from './tsc-runner.js';
-import { runLspAggregatedDiagnostics, LspDiagnosticWithFile, LspAggregationResult } from './lsp-aggregator.js';
-import { formatDiagnostics } from '../lsp/utils.js';
+import { existsSync } from "fs";
+import { join } from "path";
+import { runTscDiagnostics, TscDiagnostic, TscResult } from "./tsc-runner.js";
+import {
+  runLspAggregatedDiagnostics,
+  LspDiagnosticWithFile,
+  LspAggregationResult,
+} from "./lsp-aggregator.js";
+import { formatDiagnostics } from "../lsp/utils.js";
 
 export const LSP_DIAGNOSTICS_WAIT_MS = 300;
 
-export type DiagnosticsStrategy = 'tsc' | 'lsp' | 'auto';
+export type DiagnosticsStrategy = "tsc" | "lsp" | "auto";
 
 export interface DirectoryDiagnosticResult {
-  strategy: 'tsc' | 'lsp';
+  strategy: "tsc" | "lsp";
   success: boolean;
   errorCount: number;
   warningCount: number;
@@ -33,21 +37,21 @@ export interface DirectoryDiagnosticResult {
  */
 export async function runDirectoryDiagnostics(
   directory: string,
-  strategy: DiagnosticsStrategy = 'auto'
+  strategy: DiagnosticsStrategy = "auto",
 ): Promise<DirectoryDiagnosticResult> {
-  const tsconfigPath = join(directory, 'tsconfig.json');
+  const tsconfigPath = join(directory, "tsconfig.json");
   const hasTsconfig = existsSync(tsconfigPath);
 
   // Determine which strategy to use
-  let useStrategy: 'tsc' | 'lsp';
-  if (strategy === 'auto') {
-    useStrategy = hasTsconfig ? 'tsc' : 'lsp';
+  let useStrategy: "tsc" | "lsp";
+  if (strategy === "auto") {
+    useStrategy = hasTsconfig ? "tsc" : "lsp";
   } else {
     useStrategy = strategy;
   }
 
   // Run diagnostics based on strategy
-  if (useStrategy === 'tsc' && hasTsconfig) {
+  if (useStrategy === "tsc" && hasTsconfig) {
     return formatTscResult(runTscDiagnostics(directory));
   } else {
     return formatLspResult(await runLspAggregatedDiagnostics(directory));
@@ -58,12 +62,12 @@ export async function runDirectoryDiagnostics(
  * Format tsc results into standard format
  */
 function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
+  let diagnostics = "";
+  let summary = "";
 
   if (result.diagnostics.length === 0) {
-    diagnostics = 'No diagnostics found. All files are clean!';
-    summary = 'TypeScript check passed: 0 errors, 0 warnings';
+    diagnostics = "No diagnostics found. All files are clean!";
+    summary = "TypeScript check passed: 0 errors, 0 warnings";
   } else {
     // Group diagnostics by file
     const byFile = new Map<string, TscDiagnostic[]>();
@@ -84,26 +88,28 @@ function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
       fileOutputs.push(fileOutput);
     }
 
-    diagnostics = fileOutputs.join('\n');
-    summary = `TypeScript check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings`;
+    diagnostics = fileOutputs.join("\n");
+    summary = `TypeScript check ${result.success ? "passed" : "failed"}: ${result.errorCount} errors, ${result.warningCount} warnings`;
   }
 
   return {
-    strategy: 'tsc',
+    strategy: "tsc",
     success: result.success,
     errorCount: result.errorCount,
     warningCount: result.warningCount,
     diagnostics,
-    summary
+    summary,
   };
 }
 
 /**
  * Format LSP aggregation results into standard format
  */
-function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
+function formatLspResult(
+  result: LspAggregationResult,
+): DirectoryDiagnosticResult {
+  let diagnostics = "";
+  let summary = "";
 
   if (result.diagnostics.length === 0) {
     diagnostics = `Checked ${result.filesChecked} files. No diagnostics found!`;
@@ -121,26 +127,29 @@ function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResul
     // Format each file's diagnostics
     const fileOutputs: string[] = [];
     for (const [file, items] of byFile) {
-      const diags = items.map(i => i.diagnostic);
+      const diags = items.map((i) => i.diagnostic);
       fileOutputs.push(`${file}:\n${formatDiagnostics(diags, file)}`);
     }
 
-    diagnostics = fileOutputs.join('\n\n');
-    summary = `LSP check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked} files)`;
+    diagnostics = fileOutputs.join("\n\n");
+    summary = `LSP check ${result.success ? "passed" : "failed"}: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked} files)`;
   }
 
   return {
-    strategy: 'lsp',
+    strategy: "lsp",
     success: result.success,
     errorCount: result.errorCount,
     warningCount: result.warningCount,
     diagnostics,
-    summary
+    summary,
   };
 }
 
 // Re-export types for convenience
-export type { TscDiagnostic, TscResult } from './tsc-runner.js';
-export type { LspDiagnosticWithFile, LspAggregationResult } from './lsp-aggregator.js';
-export { runTscDiagnostics } from './tsc-runner.js';
-export { runLspAggregatedDiagnostics } from './lsp-aggregator.js';
+export type { TscDiagnostic, TscResult } from "./tsc-runner.js";
+export type {
+  LspDiagnosticWithFile,
+  LspAggregationResult,
+} from "./lsp-aggregator.js";
+export { runTscDiagnostics } from "./tsc-runner.js";
+export { runLspAggregatedDiagnostics } from "./lsp-aggregator.js";

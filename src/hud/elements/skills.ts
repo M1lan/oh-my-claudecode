@@ -4,12 +4,16 @@
  * Renders active skills badge (ultrawork, ralph mode indicators).
  */
 
-import type { UltraworkStateForHud, RalphStateForHud, SkillInvocation } from '../types.js';
-import { RESET, cyan } from '../colors.js';
-import { truncateToWidth } from '../../utils/string-width.js';
+import type {
+  UltraworkStateForHud,
+  RalphStateForHud,
+  SkillInvocation,
+} from "../types.js";
+import { RESET, cyan } from "../colors.js";
+import { truncateToWidth } from "../../utils/string-width.js";
 
-const MAGENTA = '\x1b[35m';
-const BRIGHT_MAGENTA = '\x1b[95m';
+const MAGENTA = "\x1b[35m";
+const BRIGHT_MAGENTA = "\x1b[95m";
 
 /**
  * Truncate string to max visual width with ellipsis.
@@ -25,7 +29,7 @@ function truncate(str: string, maxWidth: number): string {
  * For non-namespaced skills, returns the name unchanged.
  */
 function getSkillDisplayName(skillName: string): string {
-  return skillName.split(':').pop() || skillName;
+  return skillName.split(":").pop() || skillName;
 }
 
 /**
@@ -34,11 +38,12 @@ function getSkillDisplayName(skillName: string): string {
 function isActiveMode(
   skillName: string,
   ultrawork: UltraworkStateForHud | null,
-  ralph: RalphStateForHud | null
+  ralph: RalphStateForHud | null,
 ): boolean {
-  if (skillName === 'ultrawork' && ultrawork?.active) return true;
-  if (skillName === 'ralph' && ralph?.active) return true;
-  if (skillName === 'ultrawork+ralph' && ultrawork?.active && ralph?.active) return true;
+  if (skillName === "ultrawork" && ultrawork?.active) return true;
+  if (skillName === "ralph" && ralph?.active) return true;
+  if (skillName === "ultrawork+ralph" && ultrawork?.active && ralph?.active)
+    return true;
   return false;
 }
 
@@ -51,7 +56,7 @@ function isActiveMode(
 export function renderSkills(
   ultrawork: UltraworkStateForHud | null,
   ralph: RalphStateForHud | null,
-  lastSkill?: SkillInvocation | null
+  lastSkill?: SkillInvocation | null,
 ): string | null {
   const parts: string[] = [];
 
@@ -67,23 +72,25 @@ export function renderSkills(
 
   // Last skill (if different from active mode)
   if (lastSkill && !isActiveMode(lastSkill.name, ultrawork, ralph)) {
-    const argsDisplay = lastSkill.args ? `(${truncate(lastSkill.args, 15)})` : '';
+    const argsDisplay = lastSkill.args
+      ? `(${truncate(lastSkill.args, 15)})`
+      : "";
     const displayName = getSkillDisplayName(lastSkill.name);
     parts.push(cyan(`skill:${displayName}${argsDisplay}`));
   }
 
-  return parts.length > 0 ? parts.join(' ') : null;
+  return parts.length > 0 ? parts.join(" ") : null;
 }
 
 /**
  * Render last skill standalone (when activeSkills is disabled but lastSkill is enabled).
  */
 export function renderLastSkill(
-  lastSkill: SkillInvocation | null
+  lastSkill: SkillInvocation | null,
 ): string | null {
   if (!lastSkill) return null;
 
-  const argsDisplay = lastSkill.args ? `(${truncate(lastSkill.args, 15)})` : '';
+  const argsDisplay = lastSkill.args ? `(${truncate(lastSkill.args, 15)})` : "";
   const displayName = getSkillDisplayName(lastSkill.name);
   return cyan(`skill:${displayName}${argsDisplay}`);
 }
@@ -95,7 +102,7 @@ export function renderLastSkill(
  */
 export function renderSkillsWithReinforcement(
   ultrawork: UltraworkStateForHud | null,
-  ralph: RalphStateForHud | null
+  ralph: RalphStateForHud | null,
 ): string | null {
   if (!ultrawork?.active && !ralph?.active) {
     return null;
@@ -105,13 +112,15 @@ export function renderSkillsWithReinforcement(
 
   if (ultrawork?.active) {
     const reinforcement =
-      ultrawork.reinforcementCount > 0 ? `(r${ultrawork.reinforcementCount})` : '';
+      ultrawork.reinforcementCount > 0
+        ? `(r${ultrawork.reinforcementCount})`
+        : "";
     parts.push(`ultrawork${reinforcement}`);
   }
 
   if (ralph?.active) {
-    parts.push('ralph');
+    parts.push("ralph");
   }
 
-  return `${MAGENTA}${parts.join('-')}${RESET}`;
+  return `${MAGENTA}${parts.join("-")}${RESET}`;
 }

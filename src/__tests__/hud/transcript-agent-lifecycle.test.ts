@@ -29,7 +29,11 @@ function createTempTranscript(lines: unknown[]): string {
   const dir = mkdtempSync(join(tmpdir(), "omc-hud-agent-lifecycle-"));
   tempDirs.push(dir);
   const p = join(dir, "transcript.jsonl");
-  writeFileSync(p, `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`, "utf8");
+  writeFileSync(
+    p,
+    `${lines.map((l) => JSON.stringify(l)).join("\n")}\n`,
+    "utf8",
+  );
   return p;
 }
 
@@ -66,7 +70,12 @@ describe("HUD transcript — agent lifecycle", () => {
               {
                 type: "tool_result",
                 tool_use_id: "toolu_fg_001",
-                content: [{ type: "text", text: "Here are the results of exploring X..." }],
+                content: [
+                  {
+                    type: "text",
+                    text: "Here are the results of exploring X...",
+                  },
+                ],
               },
             ],
           },
@@ -75,7 +84,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const fg = result.agents.find((a) => a.id === "toolu_fg_001");
       expect(fg).toBeDefined();
       expect(fg?.status).toBe("completed");
@@ -97,7 +108,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_use",
                 id: "toolu_fg_quote",
                 name: "Task",
-                input: { subagent_type: "Explore", description: "Investigate stuck agents" },
+                input: {
+                  subagent_type: "Explore",
+                  description: "Investigate stuck agents",
+                },
               },
             ],
           },
@@ -127,7 +141,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const agent = result.agents.find((a) => a.id === "toolu_fg_quote");
       expect(agent).toBeDefined();
       expect(agent?.status).toBe("completed");
@@ -144,7 +160,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_use",
                 id: "toolu_bg_001",
                 name: "Task",
-                input: { subagent_type: "Explore", description: "Long-running scan" },
+                input: {
+                  subagent_type: "Explore",
+                  description: "Long-running scan",
+                },
               },
             ],
           },
@@ -174,7 +193,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const agent = result.agents.find((a) => a.id === "toolu_bg_001");
       expect(agent).toBeDefined();
       expect(agent?.status).toBe("running");
@@ -193,7 +214,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_use",
                 id: "toolu_bg_str",
                 name: "Task",
-                input: { subagent_type: "general-purpose", description: "Check PR status" },
+                input: {
+                  subagent_type: "general-purpose",
+                  description: "Check PR status",
+                },
               },
             ],
           },
@@ -207,7 +231,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_result",
                 tool_use_id: "toolu_bg_str",
                 content: [
-                  { type: "text", text: "Async agent launched successfully.\nagentId: bgjob001\n" },
+                  {
+                    type: "text",
+                    text: "Async agent launched successfully.\nagentId: bgjob001\n",
+                  },
                 ],
               },
             ],
@@ -232,7 +259,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const agent = result.agents.find((a) => a.id === "toolu_bg_str");
       expect(agent).toBeDefined();
       expect(agent?.status).toBe("completed");
@@ -263,7 +292,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_result",
                 tool_use_id: "toolu_bg_nested",
                 content: [
-                  { type: "text", text: "Async agent launched successfully.\nagentId: nestedjob\n" },
+                  {
+                    type: "text",
+                    text: "Async agent launched successfully.\nagentId: nestedjob\n",
+                  },
                 ],
               },
             ],
@@ -292,7 +324,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const agent = result.agents.find((a) => a.id === "toolu_bg_nested");
       expect(agent).toBeDefined();
       expect(agent?.status).toBe("completed");
@@ -309,7 +343,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_use",
                 id: "toolu_legacy",
                 name: "Task",
-                input: { subagent_type: "Explore", description: "Legacy format" },
+                input: {
+                  subagent_type: "Explore",
+                  description: "Legacy format",
+                },
               },
             ],
           },
@@ -323,7 +360,10 @@ describe("HUD transcript — agent lifecycle", () => {
                 type: "tool_result",
                 tool_use_id: "toolu_legacy",
                 content: [
-                  { type: "text", text: "Async agent launched successfully.\nagentId: legacy1\n" },
+                  {
+                    type: "text",
+                    text: "Async agent launched successfully.\nagentId: legacy1\n",
+                  },
                 ],
               },
             ],
@@ -341,7 +381,9 @@ describe("HUD transcript — agent lifecycle", () => {
 
       // Disable stale-agent GC so the test is deterministic regardless of
       // the wall-clock delta between the fixture timestamps and test run time.
-      const result = await parseTranscript(transcriptPath, { staleTaskThresholdMinutes: 10 ** 9 });
+      const result = await parseTranscript(transcriptPath, {
+        staleTaskThresholdMinutes: 10 ** 9,
+      });
       const agent = result.agents.find((a) => a.id === "toolu_legacy");
       expect(agent).toBeDefined();
       expect(agent?.status).toBe("completed");

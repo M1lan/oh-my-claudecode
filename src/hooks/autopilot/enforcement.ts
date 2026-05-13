@@ -154,7 +154,7 @@ export function detectAnySignal(sessionId: string): AutopilotSignal | null {
 const AWAITING_CONFIRMATION_TTL_MS = 2 * 60 * 1000;
 
 function isAwaitingConfirmation(state: unknown): boolean {
-  if (!state || typeof state !== 'object') {
+  if (!state || typeof state !== "object") {
     return false;
   }
 
@@ -164,8 +164,9 @@ function isAwaitingConfirmation(state: unknown): boolean {
   }
 
   const setAt =
-    (typeof stateRecord.awaiting_confirmation_set_at === 'string' && stateRecord.awaiting_confirmation_set_at) ||
-    (typeof stateRecord.started_at === 'string' && stateRecord.started_at) ||
+    (typeof stateRecord.awaiting_confirmation_set_at === "string" &&
+      stateRecord.awaiting_confirmation_set_at) ||
+    (typeof stateRecord.started_at === "string" && stateRecord.started_at) ||
     null;
 
   if (!setAt) {
@@ -181,7 +182,8 @@ function isAwaitingConfirmation(state: unknown): boolean {
 }
 
 function isOrphanedRoutingEchoState(state: AutopilotState): boolean {
-  const phase = typeof state.phase === "string" ? state.phase.trim().toLowerCase() : "";
+  const phase =
+    typeof state.phase === "string" ? state.phase.trim().toLowerCase() : "";
   if (phase && phase !== "unspecified") return false;
 
   const stateRecord = state as unknown as Record<string, unknown>;
@@ -195,7 +197,9 @@ function isOrphanedRoutingEchoState(state: AutopilotState): boolean {
     .join("\n")
     .trim();
 
-  return /^\[MAGIC KEYWORDS?(?: DETECTED)?:\s*AUTOPILOT\s*\]\s*$/i.test(promptText);
+  return /^\[MAGIC KEYWORDS?(?: DETECTED)?:\s*AUTOPILOT\s*\]\s*$/i.test(
+    promptText,
+  );
 }
 
 /**
@@ -575,7 +579,7 @@ function detectPipelineSignal(sessionId: string, signal: string): boolean {
     join(claudeDir, "transcripts", `${sessionId}.md`),
   ];
 
-  const escaped = signal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const escaped = signal.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const pattern = new RegExp(escaped, "i");
 
   for (const transcriptPath of possiblePaths) {

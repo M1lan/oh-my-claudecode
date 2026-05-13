@@ -5,24 +5,24 @@
  * Categories provide semantic grouping with tier, temperature, and thinking budget.
  */
 
-import type { ComplexityTier } from '../model-routing/types.js';
+import type { ComplexityTier } from "../model-routing/types.js";
 
 /**
  * Semantic categories for delegation that map to complexity tiers + configuration
  */
 export type DelegationCategory =
-  | 'visual-engineering'
-  | 'ultrabrain'
-  | 'artistry'
-  | 'quick'
-  | 'writing'
-  | 'unspecified-low'
-  | 'unspecified-high';
+  | "visual-engineering"
+  | "ultrabrain"
+  | "artistry"
+  | "quick"
+  | "writing"
+  | "unspecified-low"
+  | "unspecified-high";
 
 /**
  * Thinking budget levels
  */
-export type ThinkingBudget = 'low' | 'medium' | 'high' | 'max';
+export type ThinkingBudget = "low" | "medium" | "high" | "max";
 
 /**
  * Configuration for a delegation category

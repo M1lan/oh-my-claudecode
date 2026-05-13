@@ -3,11 +3,18 @@
  * Incrementally learns from PostToolUse events
  */
 
-import { loadProjectMemory, saveProjectMemory, withProjectMemoryLock } from './storage.js';
-import { BUILD_COMMAND_PATTERNS, TEST_COMMAND_PATTERNS } from './constants.js';
-import { CustomNote } from './types.js';
-import { trackAccess } from './hot-path-tracker.js';
-import { detectDirectivesFromMessage, addDirective } from './directive-detector.js';
+import {
+  loadProjectMemory,
+  saveProjectMemory,
+  withProjectMemoryLock,
+} from "./storage.js";
+import { BUILD_COMMAND_PATTERNS, TEST_COMMAND_PATTERNS } from "./constants.js";
+import { CustomNote } from "./types.js";
+import { trackAccess } from "./hot-path-tracker.js";
+import {
+  detectDirectivesFromMessage,
+  addDirective,
+} from "./directive-detector.js";
 
 /**
  * Per-projectRoot async mutex to prevent concurrent load-modify-save races.
@@ -26,7 +33,7 @@ function withMutex<T>(projectRoot: string, fn: () => Promise<T>): Promise<T> {
   // Store the chain tail without the result so callers don't chain errors forward
   const tail = next.then(
     () => {},
-    () => {}
+    () => {},
   );
   writeMutexes.set(projectRoot, tail);
   return next;
@@ -46,7 +53,7 @@ export async function learnFromToolOutput(
   toolInput: any,
   toolOutput: unknown,
   projectRoot: string,
-  userMessage?: string
+  userMessage?: string,
 ): Promise<void> {
   return withMutex(projectRoot, async () => {
     // Cross-process file lock for safe concurrent access
@@ -60,19 +67,29 @@ export async function learnFromToolOutput(
       let updated = false;
 
       // Track file accesses from Read/Edit/Write tools
-      if (toolName === 'Read' || toolName === 'Edit' || toolName === 'Write') {
+      if (toolName === "Read" || toolName === "Edit" || toolName === "Write") {
         const filePath = toolInput?.file_path || toolInput?.filePath;
         if (filePath) {
-          memory.hotPaths = trackAccess(memory.hotPaths, filePath, projectRoot, 'file');
+          memory.hotPaths = trackAccess(
+            memory.hotPaths,
+            filePath,
+            projectRoot,
+            "file",
+          );
           updated = true;
         }
       }
 
       // Track directory accesses from Glob/Grep
-      if (toolName === 'Glob' || toolName === 'Grep') {
+      if (toolName === "Glob" || toolName === "Grep") {
         const dirPath = toolInput?.path;
         if (dirPath) {
-          memory.hotPaths = trackAccess(memory.hotPaths, dirPath, projectRoot, 'directory');
+          memory.hotPaths = trackAccess(
+            memory.hotPaths,
+            dirPath,
+            projectRoot,
+            "directory",
+          );
           updated = true;
         }
       }
@@ -81,29 +98,34 @@ export async function learnFromToolOutput(
       if (userMessage) {
         const detectedDirectives = detectDirectivesFromMessage(userMessage);
         for (const directive of detectedDirectives) {
-          memory.userDirectives = addDirective(memory.userDirectives, directive);
+          memory.userDirectives = addDirective(
+            memory.userDirectives,
+            directive,
+          );
           updated = true;
         }
       }
 
       // Learn from Bash commands
-      if (toolName !== 'Bash') {
+      if (toolName !== "Bash") {
         if (updated) {
           await saveProjectMemory(projectRoot, memory);
         }
         return;
       }
 
-      const command = toolInput?.command || '';
+      const command = toolInput?.command || "";
       if (!command) {
         return;
       }
 
       try {
-
         // Detect and store build commands
         if (isBuildCommand(command)) {
-          if (!memory.build.buildCommand || memory.build.buildCommand !== command) {
+          if (
+            !memory.build.buildCommand ||
+            memory.build.buildCommand !== command
+          ) {
             memory.build.buildCommand = command;
             updated = true;
           }
@@ -111,7 +133,10 @@ export async function learnFromToolOutput(
 
         // Detect and store test commands
         if (isTestCommand(command)) {
-          if (!memory.build.testCommand || memory.build.testCommand !== command) {
+          if (
+            !memory.build.testCommand ||
+            memory.build.testCommand !== command
+          ) {
             memory.build.testCommand = command;
             updated = true;
           }
@@ -123,7 +148,7 @@ export async function learnFromToolOutput(
           for (const hint of hints) {
             // Only add if not already present
             const exists = memory.customNotes.some(
-              n => n.category === hint.category && n.content === hint.content
+              (n) => n.category === hint.category && n.content === hint.content,
             );
             if (!exists) {
               memory.customNotes.push(hint);
@@ -143,7 +168,7 @@ export async function learnFromToolOutput(
         }
       } catch (error) {
         // Silently fail
-        console.error('Error learning from tool output:', error);
+        console.error("Error learning from tool output:", error);
       }
     });
   });
@@ -153,14 +178,14 @@ export async function learnFromToolOutput(
  * Check if command is a build command
  */
 function isBuildCommand(command: string): boolean {
-  return BUILD_COMMAND_PATTERNS.some(pattern => pattern.test(command));
+  return BUILD_COMMAND_PATTERNS.some((pattern) => pattern.test(command));
 }
 
 /**
  * Check if command is a test command
  */
 function isTestCommand(command: string): boolean {
-  return TEST_COMMAND_PATTERNS.some(pattern => pattern.test(command));
+  return TEST_COMMAND_PATTERNS.some((pattern) => pattern.test(command));
 }
 
 /**
@@ -168,7 +193,7 @@ function isTestCommand(command: string): boolean {
  * Returns custom notes to add to project memory
  */
 function extractEnvironmentHints(output: unknown): CustomNote[] {
-  if (typeof output !== 'string') {
+  if (typeof output !== "string") {
     return [];
   }
 
@@ -180,8 +205,8 @@ function extractEnvironmentHints(output: unknown): CustomNote[] {
   if (nodeMatch) {
     hints.push({
       timestamp,
-      source: 'learned',
-      category: 'runtime',
+      source: "learned",
+      category: "runtime",
       content: `Node.js ${nodeMatch[1]}`,
     });
   }
@@ -191,8 +216,8 @@ function extractEnvironmentHints(output: unknown): CustomNote[] {
   if (pythonMatch) {
     hints.push({
       timestamp,
-      source: 'learned',
-      category: 'runtime',
+      source: "learned",
+      category: "runtime",
       content: `Python ${pythonMatch[1]}`,
     });
   }
@@ -202,32 +227,37 @@ function extractEnvironmentHints(output: unknown): CustomNote[] {
   if (rustMatch) {
     hints.push({
       timestamp,
-      source: 'learned',
-      category: 'runtime',
+      source: "learned",
+      category: "runtime",
       content: `Rust ${rustMatch[1]}`,
     });
   }
 
   // Detect missing dependencies (common error patterns)
-  if (output.includes('Cannot find module') || output.includes('ModuleNotFoundError')) {
+  if (
+    output.includes("Cannot find module") ||
+    output.includes("ModuleNotFoundError")
+  ) {
     const moduleMatch = output.match(/Cannot find module ['"]([^'"]+)['"]/);
     if (moduleMatch) {
       hints.push({
         timestamp,
-        source: 'learned',
-        category: 'dependency',
+        source: "learned",
+        category: "dependency",
         content: `Missing dependency: ${moduleMatch[1]}`,
       });
     }
   }
 
   // Detect environment variable requirements
-  const envMatch = output.match(/(?:Missing|Required)\s+(?:environment\s+)?(?:variable|env):\s*([A-Z_][A-Z0-9_]*)/i);
+  const envMatch = output.match(
+    /(?:Missing|Required)\s+(?:environment\s+)?(?:variable|env):\s*([A-Z_][A-Z0-9_]*)/i,
+  );
   if (envMatch) {
     hints.push({
       timestamp,
-      source: 'learned',
-      category: 'env',
+      source: "learned",
+      category: "env",
       content: `Requires env var: ${envMatch[1]}`,
     });
   }
@@ -245,7 +275,7 @@ function extractEnvironmentHints(output: unknown): CustomNote[] {
 export async function addCustomNote(
   projectRoot: string,
   category: string,
-  content: string
+  content: string,
 ): Promise<void> {
   return withMutex(projectRoot, async () => {
     // Cross-process file lock for safe concurrent access
@@ -258,7 +288,7 @@ export async function addCustomNote(
 
         memory.customNotes.push({
           timestamp: Date.now(),
-          source: 'manual',
+          source: "manual",
           category,
           content,
         });
@@ -270,7 +300,7 @@ export async function addCustomNote(
 
         await saveProjectMemory(projectRoot, memory);
       } catch (error) {
-        console.error('Error adding custom note:', error);
+        console.error("Error adding custom note:", error);
       }
     });
   });

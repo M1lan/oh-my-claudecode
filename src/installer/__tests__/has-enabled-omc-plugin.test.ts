@@ -14,26 +14,29 @@
  * surface.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 
 const ORIG_ENV = { ...process.env };
 let testDir: string;
 
 async function freshInstaller() {
   vi.resetModules();
-  return await import('../index.js');
+  return await import("../index.js");
 }
 
 function writeSettings(content: object): void {
   mkdirSync(testDir, { recursive: true });
-  writeFileSync(join(testDir, 'settings.json'), JSON.stringify(content, null, 2));
+  writeFileSync(
+    join(testDir, "settings.json"),
+    JSON.stringify(content, null, 2),
+  );
 }
 
 beforeEach(() => {
-  testDir = mkdtempSync(join(tmpdir(), 'omc-has-enabled-'));
+  testDir = mkdtempSync(join(tmpdir(), "omc-has-enabled-"));
   process.env.CLAUDE_CONFIG_DIR = testDir;
   delete process.env.CLAUDE_PLUGIN_ROOT;
   delete process.env.OMC_PLUGIN_ROOT;
@@ -46,92 +49,94 @@ afterEach(() => {
   Object.assign(process.env, ORIG_ENV);
   try {
     rmSync(testDir, { recursive: true, force: true });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 });
 
-describe('hasEnabledOmcPlugin', () => {
-  describe('CLAUDE_PLUGIN_ROOT short-circuit (highest priority)', () => {
-    it('returns true when CLAUDE_PLUGIN_ROOT is set, even with no settings.json', async () => {
-      process.env.CLAUDE_PLUGIN_ROOT = '/some/plugin/root';
+describe("hasEnabledOmcPlugin", () => {
+  describe("CLAUDE_PLUGIN_ROOT short-circuit (highest priority)", () => {
+    it("returns true when CLAUDE_PLUGIN_ROOT is set, even with no settings.json", async () => {
+      process.env.CLAUDE_PLUGIN_ROOT = "/some/plugin/root";
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
   });
 
-  describe('Modern Claude Code 1.x format (`enabledPlugins`)', () => {
-    it('returns true when enabledPlugins.oh-my-claudecode@omc is true', async () => {
+  describe("Modern Claude Code 1.x format (`enabledPlugins`)", () => {
+    it("returns true when enabledPlugins.oh-my-claudecode@omc is true", async () => {
       writeSettings({
         enabledPlugins: {
-          'oh-my-claudecode@omc': true,
-          'unrelated-plugin@foo': true,
+          "oh-my-claudecode@omc": true,
+          "unrelated-plugin@foo": true,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns true for any pluginId substring matching oh-my-claudecode', async () => {
+    it("returns true for any pluginId substring matching oh-my-claudecode", async () => {
       writeSettings({
         enabledPlugins: {
-          'oh-my-claudecode-fork@somerepo': true,
+          "oh-my-claudecode-fork@somerepo": true,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns false when enabledPlugins.oh-my-claudecode@omc is explicitly false', async () => {
+    it("returns false when enabledPlugins.oh-my-claudecode@omc is explicitly false", async () => {
       writeSettings({
         enabledPlugins: {
-          'oh-my-claudecode@omc': false,
+          "oh-my-claudecode@omc": false,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });
 
-    it('returns false when enabledPlugins has no oh-my-claudecode entry', async () => {
+    it("returns false when enabledPlugins has no oh-my-claudecode entry", async () => {
       writeSettings({
         enabledPlugins: {
-          'unrelated-plugin@foo': true,
+          "unrelated-plugin@foo": true,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });
 
-    it('handles enabledPlugins as an array of plugin id strings', async () => {
+    it("handles enabledPlugins as an array of plugin id strings", async () => {
       writeSettings({
-        enabledPlugins: ['oh-my-claudecode@omc', 'other'],
+        enabledPlugins: ["oh-my-claudecode@omc", "other"],
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
   });
 
-  describe('Legacy `plugins` field (backward compatibility)', () => {
-    it('returns true when plugins.oh-my-claudecode@omc is true', async () => {
+  describe("Legacy `plugins` field (backward compatibility)", () => {
+    it("returns true when plugins.oh-my-claudecode@omc is true", async () => {
       writeSettings({
         plugins: {
-          'oh-my-claudecode@omc': true,
+          "oh-my-claudecode@omc": true,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns true when plugins is an array with oh-my-claudecode entry', async () => {
+    it("returns true when plugins is an array with oh-my-claudecode entry", async () => {
       writeSettings({
-        plugins: ['oh-my-claudecode'],
+        plugins: ["oh-my-claudecode"],
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns false when legacy plugins entry is explicitly false', async () => {
+    it("returns false when legacy plugins entry is explicitly false", async () => {
       writeSettings({
         plugins: {
-          'oh-my-claudecode@omc': false,
+          "oh-my-claudecode@omc": false,
         },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
@@ -139,52 +144,52 @@ describe('hasEnabledOmcPlugin', () => {
     });
   });
 
-  describe('Mixed format support', () => {
-    it('matches oh-my-claudecode in EITHER enabledPlugins or plugins', async () => {
+  describe("Mixed format support", () => {
+    it("matches oh-my-claudecode in EITHER enabledPlugins or plugins", async () => {
       // settings has both fields; enabledPlugins is empty, plugins has the entry
       writeSettings({
-        enabledPlugins: { 'unrelated@foo': true },
-        plugins: { 'oh-my-claudecode@omc': true },
+        enabledPlugins: { "unrelated@foo": true },
+        plugins: { "oh-my-claudecode@omc": true },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns true when modern enabledPlugins has the entry but legacy plugins does not', async () => {
+    it("returns true when modern enabledPlugins has the entry but legacy plugins does not", async () => {
       writeSettings({
-        enabledPlugins: { 'oh-my-claudecode@omc': true },
-        plugins: { 'unrelated@foo': true },
+        enabledPlugins: { "oh-my-claudecode@omc": true },
+        plugins: { "unrelated@foo": true },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(true);
     });
 
-    it('returns false when neither field has an enabled OMC entry', async () => {
+    it("returns false when neither field has an enabled OMC entry", async () => {
       writeSettings({
-        enabledPlugins: { 'unrelated@foo': true },
-        plugins: { 'another@bar': true },
+        enabledPlugins: { "unrelated@foo": true },
+        plugins: { "another@bar": true },
       });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });
   });
 
-  describe('Defensive paths', () => {
-    it('returns false when settings.json does not exist', async () => {
+  describe("Defensive paths", () => {
+    it("returns false when settings.json does not exist", async () => {
       // testDir was created by mkdtempSync but no settings.json was written
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });
 
-    it('returns false when settings.json is malformed JSON', async () => {
+    it("returns false when settings.json is malformed JSON", async () => {
       mkdirSync(testDir, { recursive: true });
-      writeFileSync(join(testDir, 'settings.json'), '{ this is not valid json');
+      writeFileSync(join(testDir, "settings.json"), "{ this is not valid json");
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });
 
-    it('returns false when settings.json has neither field', async () => {
-      writeSettings({ env: {}, model: 'opus' });
+    it("returns false when settings.json has neither field", async () => {
+      writeSettings({ env: {}, model: "opus" });
       const { hasEnabledOmcPlugin } = await freshInstaller();
       expect(hasEnabledOmcPlugin()).toBe(false);
     });

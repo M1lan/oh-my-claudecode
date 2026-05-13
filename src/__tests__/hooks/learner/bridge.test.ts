@@ -19,7 +19,10 @@ import {
 } from "fs";
 import { join } from "path";
 import { contextCollector } from "../../../features/context-injector/index.js";
-import { processMessageForSkills, clearSkillSession } from "../../../hooks/learner/index.js";
+import {
+  processMessageForSkills,
+  clearSkillSession,
+} from "../../../hooks/learner/index.js";
 import { tmpdir } from "os";
 import {
   findSkillFiles,
@@ -315,7 +318,9 @@ ${giantBody}`,
       expect(pending.merged).toContain("Compact descriptors only");
       expect(pending.merged).toContain("Alpha Skill summary");
       expect(pending.merged).toContain("Load instructions:");
-      expect(pending.merged).not.toContain("Sensitive full body content. Sensitive full body content. Sensitive full body content.");
+      expect(pending.merged).not.toContain(
+        "Sensitive full body content. Sensitive full body content. Sensitive full body content.",
+      );
       expect(pending.merged.length).toBeLessThanOrEqual(3000);
     });
 

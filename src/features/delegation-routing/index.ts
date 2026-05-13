@@ -6,14 +6,14 @@
  */
 
 // Main resolver
-export { resolveDelegation, parseFallbackChain } from './resolver.js';
+export { resolveDelegation, parseFallbackChain } from "./resolver.js";
 
 // Types and constants
 export {
   DEFAULT_DELEGATION_CONFIG,
   ROLE_CATEGORY_DEFAULTS,
   isDelegationEnabled,
-} from './types.js';
+} from "./types.js";
 
 // Re-export shared types for convenience
 export type {
@@ -23,4 +23,4 @@ export type {
   DelegationRoutingConfig,
   DelegationDecision,
   ResolveDelegationOptions,
-} from '../../shared/types.js';
+} from "../../shared/types.js";

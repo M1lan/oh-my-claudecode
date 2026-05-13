@@ -11,8 +11,8 @@ import type {
   ContextSignals,
   ComplexitySignals,
   RoutingContext,
-} from './types.js';
-import { COMPLEXITY_KEYWORDS } from './types.js';
+} from "./types.js";
+import { COMPLEXITY_KEYWORDS } from "./types.js";
 
 /**
  * Extract lexical signals from task prompt
@@ -20,14 +20,20 @@ import { COMPLEXITY_KEYWORDS } from './types.js';
  */
 export function extractLexicalSignals(prompt: string): LexicalSignals {
   const lowerPrompt = prompt.toLowerCase();
-  const words = prompt.split(/\s+/).filter(w => w.length > 0);
+  const words = prompt.split(/\s+/).filter((w) => w.length > 0);
 
   return {
     wordCount: words.length,
     filePathCount: countFilePaths(prompt),
     codeBlockCount: countCodeBlocks(prompt),
-    hasArchitectureKeywords: hasKeywords(lowerPrompt, COMPLEXITY_KEYWORDS.architecture),
-    hasDebuggingKeywords: hasKeywords(lowerPrompt, COMPLEXITY_KEYWORDS.debugging),
+    hasArchitectureKeywords: hasKeywords(
+      lowerPrompt,
+      COMPLEXITY_KEYWORDS.architecture,
+    ),
+    hasDebuggingKeywords: hasKeywords(
+      lowerPrompt,
+      COMPLEXITY_KEYWORDS.debugging,
+    ),
     hasSimpleKeywords: hasKeywords(lowerPrompt, COMPLEXITY_KEYWORDS.simple),
     hasRiskKeywords: hasKeywords(lowerPrompt, COMPLEXITY_KEYWORDS.risk),
     questionDepth: detectQuestionDepth(lowerPrompt),
@@ -71,7 +77,7 @@ export function extractContextSignals(context: RoutingContext): ContextSignals {
  */
 export function extractAllSignals(
   prompt: string,
-  context: RoutingContext
+  context: RoutingContext,
 ): ComplexitySignals {
   return {
     lexical: extractLexicalSignals(prompt),
@@ -88,9 +94,9 @@ export function extractAllSignals(
 function countFilePaths(prompt: string): number {
   // Match common file path patterns
   const patterns = [
-    /(?:^|\s)[.\/~]?(?:[\w-]+\/)+[\w.-]+\.\w+/gm,  // Unix-style paths
-    /`[^`]+\.\w+`/g,  // Backtick-quoted files
-    /['"][^'"]+\.\w+['"]/g,  // Quoted files
+    /(?:^|\s)[.\/~]?(?:[\w-]+\/)+[\w.-]+\.\w+/gm, // Unix-style paths
+    /`[^`]+\.\w+`/g, // Backtick-quoted files
+    /['"][^'"]+\.\w+['"]/g, // Quoted files
   ];
 
   let count = 0;
@@ -107,7 +113,9 @@ function countFilePaths(prompt: string): number {
  */
 function countCodeBlocks(prompt: string): number {
   const fencedBlocks = (prompt.match(/```[\s\S]*?```/g) || []).length;
-  const indentedBlocks = (prompt.match(/(?:^|\n)(?:\s{4}|\t)[^\n]+(?:\n(?:\s{4}|\t)[^\n]+)*/g) || []).length;
+  const indentedBlocks = (
+    prompt.match(/(?:^|\n)(?:\s{4}|\t)[^\n]+(?:\n(?:\s{4}|\t)[^\n]+)*/g) || []
+  ).length;
   return fencedBlocks + Math.floor(indentedBlocks / 2);
 }
 
@@ -115,27 +123,31 @@ function countCodeBlocks(prompt: string): number {
  * Check if prompt contains any of the keywords
  */
 function hasKeywords(prompt: string, keywords: string[]): boolean {
-  return keywords.some(kw => prompt.includes(kw));
+  return keywords.some((kw) => prompt.includes(kw));
 }
 
 /**
  * Detect question depth
  * 'why' questions require deeper reasoning than 'what' or 'where'
  */
-function detectQuestionDepth(prompt: string): 'why' | 'how' | 'what' | 'where' | 'none' {
-  if (/\bwhy\b.*\?|\bwhy\s+(is|are|does|do|did|would|should|can)/i.test(prompt)) {
-    return 'why';
+function detectQuestionDepth(
+  prompt: string,
+): "why" | "how" | "what" | "where" | "none" {
+  if (
+    /\bwhy\b.*\?|\bwhy\s+(is|are|does|do|did|would|should|can)/i.test(prompt)
+  ) {
+    return "why";
   }
   if (/\bhow\b.*\?|\bhow\s+(do|does|can|should|would|to)/i.test(prompt)) {
-    return 'how';
+    return "how";
   }
   if (/\bwhat\b.*\?|\bwhat\s+(is|are|does|do)/i.test(prompt)) {
-    return 'what';
+    return "what";
   }
   if (/\bwhere\b.*\?|\bwhere\s+(is|are|does|do|can)/i.test(prompt)) {
-    return 'where';
+    return "where";
   }
-  return 'none';
+  return "none";
 }
 
 /**
@@ -150,7 +162,7 @@ function detectImplicitRequirements(prompt: string): boolean {
     /\bclean up\b/,
     /\brefactor\b(?!.*(?:to|by|into))/,
   ];
-  return vaguePatterns.some(p => p.test(prompt));
+  return vaguePatterns.some((p) => p.test(prompt));
 }
 
 /**
@@ -192,7 +204,7 @@ function detectCrossFileDependencies(prompt: string): boolean {
     /whole.*system/i,
   ];
 
-  return crossFileIndicators.some(p => p.test(prompt));
+  return crossFileIndicators.some((p) => p.test(prompt));
 }
 
 /**
@@ -209,15 +221,15 @@ function detectTestRequirements(prompt: string): boolean {
     /unit test/i,
     /integration test/i,
   ];
-  return testIndicators.some(p => p.test(prompt));
+  return testIndicators.some((p) => p.test(prompt));
 }
 
 /**
  * Detect domain specificity
  */
 function detectDomain(
-  prompt: string
-): 'generic' | 'frontend' | 'backend' | 'infrastructure' | 'security' {
+  prompt: string,
+): "generic" | "frontend" | "backend" | "infrastructure" | "security" {
   const domains: Record<string, RegExp[]> = {
     frontend: [
       /\b(react|vue|angular|svelte|css|html|jsx|tsx|component|ui|ux|styling|tailwind|sass|scss)\b/i,
@@ -238,12 +250,12 @@ function detectDomain(
   };
 
   for (const [domain, patterns] of Object.entries(domains)) {
-    if (patterns.some(p => p.test(prompt))) {
-      return domain as 'frontend' | 'backend' | 'infrastructure' | 'security';
+    if (patterns.some((p) => p.test(prompt))) {
+      return domain as "frontend" | "backend" | "infrastructure" | "security";
     }
   }
 
-  return 'generic';
+  return "generic";
 }
 
 /**
@@ -260,13 +272,15 @@ function detectExternalKnowledge(prompt: string): boolean {
     /\bhow does.*work\b/i,
     /\bbest practice/i,
   ];
-  return externalIndicators.some(p => p.test(prompt));
+  return externalIndicators.some((p) => p.test(prompt));
 }
 
 /**
  * Assess reversibility of changes
  */
-function assessReversibility(prompt: string): 'easy' | 'moderate' | 'difficult' {
+function assessReversibility(
+  prompt: string,
+): "easy" | "moderate" | "difficult" {
   const difficultIndicators = [
     /\bmigrat/i,
     /\bproduction\b/i,
@@ -285,15 +299,15 @@ function assessReversibility(prompt: string): 'easy' | 'moderate' | 'difficult' 
     /\bchange.*schema/i,
   ];
 
-  if (difficultIndicators.some(p => p.test(prompt))) return 'difficult';
-  if (moderateIndicators.some(p => p.test(prompt))) return 'moderate';
-  return 'easy';
+  if (difficultIndicators.some((p) => p.test(prompt))) return "difficult";
+  if (moderateIndicators.some((p) => p.test(prompt))) return "moderate";
+  return "easy";
 }
 
 /**
  * Assess impact scope of changes
  */
-function assessImpactScope(prompt: string): 'local' | 'module' | 'system-wide' {
+function assessImpactScope(prompt: string): "local" | "module" | "system-wide" {
   const systemWideIndicators = [
     /\bentire\b/i,
     /\ball\s+(?:files|components|modules)/i,
@@ -313,11 +327,11 @@ function assessImpactScope(prompt: string): 'local' | 'module' | 'system-wide' {
     /\blayer/i,
   ];
 
-  if (systemWideIndicators.some(p => p.test(prompt))) return 'system-wide';
+  if (systemWideIndicators.some((p) => p.test(prompt))) return "system-wide";
 
   // Check for multiple files (indicates module-level at least)
-  if (countFilePaths(prompt) >= 3) return 'module';
-  if (moduleIndicators.some(p => p.test(prompt))) return 'module';
+  if (countFilePaths(prompt) >= 3) return "module";
+  if (moduleIndicators.some((p) => p.test(prompt))) return "module";
 
-  return 'local';
+  return "local";
 }

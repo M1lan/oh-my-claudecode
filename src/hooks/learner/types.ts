@@ -20,7 +20,7 @@ export interface SkillMetadata {
   /** When the skill was created */
   createdAt: string;
   /** Source: 'extracted' | 'promoted' | 'manual' */
-  source: 'extracted' | 'promoted' | 'manual';
+  source: "extracted" | "promoted" | "manual";
   /** Original session ID if extracted */
   sessionId?: string;
   /** Quality score (0-100) */
@@ -30,7 +30,7 @@ export interface SkillMetadata {
   /** Tags for categorization */
   tags?: string[];
   /** Trigger matching strategy for skill injection */
-  matching?: 'exact' | 'fuzzy';
+  matching?: "exact" | "fuzzy";
   /** Preferred model hint for skill execution */
   model?: string;
   /** Preferred agent hint for skill execution */
@@ -46,7 +46,7 @@ export interface LearnedSkill {
   /** Path relative to skills directory */
   relativePath: string;
   /** Whether from user directories (~/.omc/skills or ~/.claude/skills/omc-learned) or project (.omc/skills) */
-  scope: 'user' | 'project';
+  scope: "user" | "project";
   /** Parsed frontmatter metadata */
   metadata: SkillMetadata;
   /** Skill content (the actual instructions) */
@@ -66,7 +66,7 @@ export interface SkillFileCandidate {
   /** Real path after symlink resolution */
   realPath: string;
   /** Scope: user or project */
-  scope: 'user' | 'project';
+  scope: "user" | "project";
   /** The root directory this skill was found in (for accurate relative path computation) */
   sourceDir: string;
 }
@@ -98,7 +98,7 @@ export interface SkillExtractionRequest {
   /** Optional tags */
   tags?: string[];
   /** Target scope: user or project */
-  targetScope: 'user' | 'project';
+  targetScope: "user" | "project";
 }
 
 /**

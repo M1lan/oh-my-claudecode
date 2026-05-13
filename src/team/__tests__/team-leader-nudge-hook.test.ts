@@ -1,15 +1,15 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'fs/promises';
-import { dirname, join } from 'path';
-import { tmpdir } from 'os';
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "fs/promises";
+import { dirname, join } from "path";
+import { tmpdir } from "os";
 
-import { maybeNudgeLeader } from '../../hooks/team-leader-nudge-hook.js';
+import { maybeNudgeLeader } from "../../hooks/team-leader-nudge-hook.js";
 
-describe('team leader nudge hook', () => {
+describe("team leader nudge hook", () => {
   let cwd: string;
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), 'omc-team-leader-nudge-'));
+    cwd = await mkdtemp(join(tmpdir(), "omc-team-leader-nudge-"));
   });
 
   afterEach(async () => {
@@ -17,20 +17,28 @@ describe('team leader nudge hook', () => {
     vi.restoreAllMocks();
   });
 
-  async function writeJson(relativePath: string, value: unknown): Promise<void> {
+  async function writeJson(
+    relativePath: string,
+    value: unknown,
+  ): Promise<void> {
     const fullPath = join(cwd, relativePath);
     await mkdir(dirname(fullPath), { recursive: true });
-    await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
+    await writeFile(fullPath, JSON.stringify(value, null, 2), "utf-8");
   }
 
   async function seedTeamState(options: {
     taskStatuses: string[];
-    workerStates: Array<{ name: string; state: string; alive?: boolean; lastTurnAt?: string }>;
+    workerStates: Array<{
+      name: string;
+      state: string;
+      alive?: boolean;
+      lastTurnAt?: string;
+    }>;
   }): Promise<void> {
-    const teamRoot = '.omc/state/team/demo-team';
+    const teamRoot = ".omc/state/team/demo-team";
     await writeJson(`${teamRoot}/config.json`, {
       workers: options.workerStates.map((worker) => ({ name: worker.name })),
-      leader_pane_id: '%1',
+      leader_pane_id: "%1",
     });
 
     for (const worker of options.workerStates) {
@@ -51,20 +59,20 @@ describe('team leader nudge hook', () => {
     }
   }
 
-  it('nudges leader to reuse current team when workers are idle with active tasks', async () => {
+  it("nudges leader to reuse current team when workers are idle with active tasks", async () => {
     await seedTeamState({
-      taskStatuses: ['pending', 'blocked'],
+      taskStatuses: ["pending", "blocked"],
       workerStates: [
-        { name: 'worker-1', state: 'idle' },
-        { name: 'worker-2', state: 'done' },
+        { name: "worker-1", state: "idle" },
+        { name: "worker-2", state: "done" },
       ],
     });
 
     const sent: string[] = [];
     const result = await maybeNudgeLeader({
       cwd,
-      stateDir: join(cwd, '.omc', 'state'),
-      teamName: 'demo-team',
+      stateDir: join(cwd, ".omc", "state"),
+      teamName: "demo-team",
       tmux: {
         async sendKeys(_target, text) {
           sent.push(text);
@@ -73,26 +81,27 @@ describe('team leader nudge hook', () => {
     });
 
     expect(result.nudged).toBe(true);
-    expect(result.reason).toContain('all_alive_workers_idle');
-    expect(sent[0]).toContain('reuse-current-team');
+    expect(result.reason).toContain("all_alive_workers_idle");
+    expect(sent[0]).toContain("reuse-current-team");
 
-    const eventsRaw = await readFile(join(cwd, '.omc', 'state', 'team', 'demo-team', 'events.jsonl'), 'utf-8');
+    const eventsRaw = await readFile(
+      join(cwd, ".omc", "state", "team", "demo-team", "events.jsonl"),
+      "utf-8",
+    );
     expect(eventsRaw).toContain('"next_action":"reuse-current-team"');
   });
 
-  it('nudges leader to shut down when all tasks are terminal', async () => {
+  it("nudges leader to shut down when all tasks are terminal", async () => {
     await seedTeamState({
-      taskStatuses: ['completed', 'completed'],
-      workerStates: [
-        { name: 'worker-1', state: 'idle' },
-      ],
+      taskStatuses: ["completed", "completed"],
+      workerStates: [{ name: "worker-1", state: "idle" }],
     });
 
     const sent: string[] = [];
     const result = await maybeNudgeLeader({
       cwd,
-      stateDir: join(cwd, '.omc', 'state'),
-      teamName: 'demo-team',
+      stateDir: join(cwd, ".omc", "state"),
+      teamName: "demo-team",
       tmux: {
         async sendKeys(_target, text) {
           sent.push(text);
@@ -101,7 +110,7 @@ describe('team leader nudge hook', () => {
     });
 
     expect(result.nudged).toBe(true);
-    expect(result.reason).toContain('all_tasks_terminal');
-    expect(sent[0]).toContain('shutdown');
+    expect(result.reason).toContain("all_tasks_terminal");
+    expect(sent[0]).toContain("shutdown");
   });
 });

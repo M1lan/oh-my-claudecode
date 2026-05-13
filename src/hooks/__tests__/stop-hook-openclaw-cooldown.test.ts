@@ -6,7 +6,9 @@ import * as path from "path";
 
 // Mock persistent-mode so we can control shouldSendIdleNotification
 vi.mock("../persistent-mode/index.js", () => ({
-  checkPersistentModes: vi.fn().mockResolvedValue({ mode: "none", message: "" }),
+  checkPersistentModes: vi
+    .fn()
+    .mockResolvedValue({ mode: "none", message: "" }),
   createHookOutput: vi.fn().mockReturnValue({ continue: true }),
   shouldWakeOpenClawOnStop: vi.fn().mockReturnValue(true),
   shouldSendIdleNotification: vi.fn().mockReturnValue(false), // cooldown ACTIVE — gate closed
@@ -19,7 +21,12 @@ vi.mock("../todo-continuation/index.js", () => ({
   isAuthenticationError: vi.fn().mockReturnValue(false),
 }));
 
-import { _openclaw, processHook, resetSkipHooksCache, type HookInput } from "../bridge.js";
+import {
+  _openclaw,
+  processHook,
+  resetSkipHooksCache,
+  type HookInput,
+} from "../bridge.js";
 import * as persistentMode from "../persistent-mode/index.js";
 
 describe("stop hook OpenClaw cooldown bypass (issue #1120)", () => {
@@ -78,7 +85,9 @@ describe("stop hook OpenClaw cooldown bypass (issue #1120)", () => {
     await processHook("persistent-mode", input);
 
     // OpenClaw stop should NOT fire for user aborts
-    const stopCall = wakeSpy.mock.calls.find((call: unknown[]) => call[0] === "stop");
+    const stopCall = wakeSpy.mock.calls.find(
+      (call: unknown[]) => call[0] === "stop",
+    );
     expect(stopCall).toBeUndefined();
 
     wakeSpy.mockRestore();
@@ -96,7 +105,9 @@ describe("stop hook OpenClaw cooldown bypass (issue #1120)", () => {
 
     await processHook("persistent-mode", input);
 
-    const stopCall = wakeSpy.mock.calls.find((call: unknown[]) => call[0] === "stop");
+    const stopCall = wakeSpy.mock.calls.find(
+      (call: unknown[]) => call[0] === "stop",
+    );
     expect(stopCall).toBeUndefined();
 
     wakeSpy.mockRestore();

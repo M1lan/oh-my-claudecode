@@ -10,12 +10,12 @@
  * Status of a background task
  */
 export type BackgroundTaskStatus =
-  | 'queued'      // Waiting for concurrency slot
-  | 'pending'     // @deprecated Use 'queued' instead. Kept for backward compatibility.
-  | 'running'
-  | 'completed'
-  | 'error'
-  | 'cancelled';
+  | "queued" // Waiting for concurrency slot
+  | "pending" // @deprecated Use 'queued' instead. Kept for backward compatibility.
+  | "running"
+  | "completed"
+  | "error"
+  | "cancelled";
 
 /**
  * Progress tracking for a background task

@@ -61,7 +61,13 @@ describe("Custom Integration Validation", () => {
         id: "",
         type: "webhook",
         enabled: true,
-        config: { url: "https://example.com", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "https://example.com",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: ["session-end"],
       } as CustomIntegration;
 
@@ -75,13 +81,19 @@ describe("Custom Integration Validation", () => {
         id: "my/webhook",
         type: "webhook",
         enabled: true,
-        config: { url: "https://example.com", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "https://example.com",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: ["session-end"],
       };
 
       const result = validateCustomIntegration(integration);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes("alphanumeric"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("alphanumeric"))).toBe(true);
     });
 
     it("rejects HTTP URLs for webhooks (requires HTTPS)", () => {
@@ -89,13 +101,19 @@ describe("Custom Integration Validation", () => {
         id: "insecure-webhook",
         type: "webhook",
         enabled: true,
-        config: { url: "http://example.com/webhook", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "http://example.com/webhook",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: ["session-end"],
       };
 
       const result = validateCustomIntegration(integration);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes("HTTPS"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("HTTPS"))).toBe(true);
     });
 
     it("allows HTTP for localhost", () => {
@@ -103,7 +121,13 @@ describe("Custom Integration Validation", () => {
         id: "local-webhook",
         type: "webhook",
         enabled: true,
-        config: { url: "http://localhost:3000/webhook", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "http://localhost:3000/webhook",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: ["session-end"],
       };
 
@@ -116,7 +140,13 @@ describe("Custom Integration Validation", () => {
         id: "loopback-webhook",
         type: "webhook",
         enabled: true,
-        config: { url: "http://127.0.0.1:8787/hook", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "http://127.0.0.1:8787/hook",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: ["session-end"],
       };
 
@@ -135,7 +165,7 @@ describe("Custom Integration Validation", () => {
 
       const result = validateCustomIntegration(integration);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes("spaces"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("spaces"))).toBe(true);
     });
 
     it("rejects CLI command with shell metacharacters", () => {
@@ -156,13 +186,19 @@ describe("Custom Integration Validation", () => {
         id: "bad-args",
         type: "cli",
         enabled: true,
-        config: { command: "curl", args: ["-d", "data;rm -rf /"], timeout: 5000 },
+        config: {
+          command: "curl",
+          args: ["-d", "data;rm -rf /"],
+          timeout: 5000,
+        },
         events: ["session-end"],
       };
 
       const result = validateCustomIntegration(integration);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes("metacharacters"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("metacharacters"))).toBe(
+        true,
+      );
     });
 
     it("allows shell metacharacters inside template syntax", () => {
@@ -170,13 +206,19 @@ describe("Custom Integration Validation", () => {
         id: "template-args",
         type: "cli",
         enabled: true,
-        config: { command: "curl", args: ["-d", "data={{complex;value}}"], timeout: 5000 },
+        config: {
+          command: "curl",
+          args: ["-d", "data={{complex;value}}"],
+          timeout: 5000,
+        },
         events: ["session-end"],
       };
 
       const result = validateCustomIntegration(integration);
       // Should be valid because metacharacters are inside {{template}}
-      expect(result.errors).not.toContain(expect.stringContaining("metacharacters"));
+      expect(result.errors).not.toContain(
+        expect.stringContaining("metacharacters"),
+      );
     });
 
     it("rejects timeout outside bounds", () => {
@@ -184,13 +226,19 @@ describe("Custom Integration Validation", () => {
         id: "bad-timeout",
         type: "webhook",
         enabled: true,
-        config: { url: "https://example.com", method: "POST", headers: {}, bodyTemplate: "", timeout: 100 },
+        config: {
+          url: "https://example.com",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 100,
+        },
         events: ["session-end"],
       };
 
       const result = validateCustomIntegration(integration);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes("Timeout"))).toBe(true);
+      expect(result.errors.some((e) => e.includes("Timeout"))).toBe(true);
     });
 
     it("rejects integration without events", () => {
@@ -198,7 +246,13 @@ describe("Custom Integration Validation", () => {
         id: "no-events",
         type: "webhook",
         enabled: true,
-        config: { url: "https://example.com", method: "POST", headers: {}, bodyTemplate: "", timeout: 10000 },
+        config: {
+          url: "https://example.com",
+          method: "POST",
+          headers: {},
+          bodyTemplate: "",
+          timeout: 10000,
+        },
         events: [],
       };
 
@@ -211,8 +265,20 @@ describe("Custom Integration Validation", () => {
   describe("checkDuplicateIds", () => {
     it("returns empty array when no duplicates", () => {
       const integrations: CustomIntegration[] = [
-        { id: "webhook-1", type: "webhook", enabled: true, config: {} as any, events: [] },
-        { id: "webhook-2", type: "webhook", enabled: true, config: {} as any, events: [] },
+        {
+          id: "webhook-1",
+          type: "webhook",
+          enabled: true,
+          config: {} as any,
+          events: [],
+        },
+        {
+          id: "webhook-2",
+          type: "webhook",
+          enabled: true,
+          config: {} as any,
+          events: [],
+        },
       ];
 
       const duplicates = checkDuplicateIds(integrations);
@@ -221,8 +287,20 @@ describe("Custom Integration Validation", () => {
 
     it("detects duplicate IDs", () => {
       const integrations: CustomIntegration[] = [
-        { id: "webhook-1", type: "webhook", enabled: true, config: {} as any, events: [] },
-        { id: "webhook-1", type: "cli", enabled: true, config: {} as any, events: [] },
+        {
+          id: "webhook-1",
+          type: "webhook",
+          enabled: true,
+          config: {} as any,
+          events: [],
+        },
+        {
+          id: "webhook-1",
+          type: "cli",
+          enabled: true,
+          config: {} as any,
+          events: [],
+        },
       ];
 
       const duplicates = checkDuplicateIds(integrations);
@@ -281,7 +359,9 @@ describe("Presets", () => {
     it("contains openclaw preset", () => {
       expect(CUSTOM_INTEGRATION_PRESETS.openclaw).toBeDefined();
       expect(CUSTOM_INTEGRATION_PRESETS.openclaw.type).toBe("webhook");
-      expect(CUSTOM_INTEGRATION_PRESETS.openclaw.defaultConfig.method).toBe("POST");
+      expect(CUSTOM_INTEGRATION_PRESETS.openclaw.defaultConfig.method).toBe(
+        "POST",
+      );
     });
 
     it("contains n8n preset", () => {
@@ -327,7 +407,10 @@ describe("Template Interpolation", () => {
     };
 
     const template = "Session {{sessionId}} for {{projectName}} {{event}}";
-    const result = interpolateTemplate(template, payload as NotificationPayload);
+    const result = interpolateTemplate(
+      template,
+      payload as NotificationPayload,
+    );
 
     expect(result).toBe("Session abc123 for my-project session-end");
   });
@@ -338,7 +421,10 @@ describe("Template Interpolation", () => {
     };
 
     const template = "Session {{sessionId}} unknown {{unknownVar}}";
-    const result = interpolateTemplate(template, payload as NotificationPayload);
+    const result = interpolateTemplate(
+      template,
+      payload as NotificationPayload,
+    );
 
     // Unknown variables are replaced with empty string
     expect(result).toBe("Session abc123 unknown");

@@ -8,31 +8,31 @@
  * Ported from oh-my-opencode's rules-injector hook.
  */
 
-import { readFileSync } from 'fs';
-import { isAbsolute, relative, resolve } from 'path';
-import { findProjectRoot, findRuleFiles } from './finder.js';
+import { readFileSync } from "fs";
+import { isAbsolute, relative, resolve } from "path";
+import { findProjectRoot, findRuleFiles } from "./finder.js";
 import {
   createContentHash,
   isDuplicateByContentHash,
   isDuplicateByRealPath,
   shouldApplyRule,
-} from './matcher.js';
-import { parseRuleFrontmatter } from './parser.js';
+} from "./matcher.js";
+import { parseRuleFrontmatter } from "./parser.js";
 import {
   clearInjectedRules,
   loadInjectedRules,
   saveInjectedRules,
-} from './storage.js';
-import { TRACKED_TOOLS } from './constants.js';
-import type { RuleToInject } from './types.js';
+} from "./storage.js";
+import { TRACKED_TOOLS } from "./constants.js";
+import type { RuleToInject } from "./types.js";
 
 // Re-export all submodules
-export * from './types.js';
-export * from './constants.js';
-export * from './finder.js';
-export * from './parser.js';
-export * from './matcher.js';
-export * from './storage.js';
+export * from "./types.js";
+export * from "./constants.js";
+export * from "./finder.js";
+export * from "./parser.js";
+export * from "./matcher.js";
+export * from "./storage.js";
 
 /**
  * Session cache for injected rules.
@@ -69,7 +69,7 @@ export function createRulesInjectorHook(workingDirectory: string) {
    */
   function processFilePathForRules(
     filePath: string,
-    sessionId: string
+    sessionId: string,
   ): RuleToInject[] {
     const resolved = resolveFilePath(filePath);
     if (!resolved) return [];
@@ -84,20 +84,21 @@ export function createRulesInjectorHook(workingDirectory: string) {
       if (isDuplicateByRealPath(candidate.realPath, cache.realPaths)) continue;
 
       try {
-        const rawContent = readFileSync(candidate.path, 'utf-8');
+        const rawContent = readFileSync(candidate.path, "utf-8");
         const { metadata, body } = parseRuleFrontmatter(rawContent);
 
         let matchReason: string;
         if (candidate.isSingleFile) {
-          matchReason = 'copilot-instructions (always apply)';
+          matchReason = "copilot-instructions (always apply)";
         } else {
           const matchResult = shouldApplyRule(metadata, resolved, projectRoot);
           if (!matchResult.applies) continue;
-          matchReason = matchResult.reason ?? 'matched';
+          matchReason = matchResult.reason ?? "matched";
         }
 
         const contentHash = createContentHash(body);
-        if (isDuplicateByContentHash(contentHash, cache.contentHashes)) continue;
+        if (isDuplicateByContentHash(contentHash, cache.contentHashes))
+          continue;
 
         const relativePath = projectRoot
           ? relative(projectRoot, candidate.path)
@@ -130,9 +131,9 @@ export function createRulesInjectorHook(workingDirectory: string) {
    * Format rules for injection into output.
    */
   function formatRulesForInjection(rules: RuleToInject[]): string {
-    if (rules.length === 0) return '';
+    if (rules.length === 0) return "";
 
-    let output = '';
+    let output = "";
     for (const rule of rules) {
       output += `\n\n[Rule: ${rule.relativePath}]\n[Match: ${rule.matchReason}]\n${rule.content}`;
     }
@@ -146,10 +147,10 @@ export function createRulesInjectorHook(workingDirectory: string) {
     processToolExecution: (
       toolName: string,
       filePath: string,
-      sessionId: string
+      sessionId: string,
     ): string => {
       if (!TRACKED_TOOLS.includes(toolName.toLowerCase())) {
-        return '';
+        return "";
       }
 
       const rules = processFilePathForRules(filePath, sessionId);
@@ -170,16 +171,20 @@ export function createRulesInjectorHook(workingDirectory: string) {
 
       for (const candidate of ruleFileCandidates) {
         try {
-          const rawContent = readFileSync(candidate.path, 'utf-8');
+          const rawContent = readFileSync(candidate.path, "utf-8");
           const { metadata, body } = parseRuleFrontmatter(rawContent);
 
           let matchReason: string;
           if (candidate.isSingleFile) {
-            matchReason = 'copilot-instructions (always apply)';
+            matchReason = "copilot-instructions (always apply)";
           } else {
-            const matchResult = shouldApplyRule(metadata, resolved, projectRoot);
+            const matchResult = shouldApplyRule(
+              metadata,
+              resolved,
+              projectRoot,
+            );
             if (!matchResult.applies) continue;
-            matchReason = matchResult.reason ?? 'matched';
+            matchReason = matchResult.reason ?? "matched";
           }
 
           const relativePath = projectRoot
@@ -220,7 +225,10 @@ export function createRulesInjectorHook(workingDirectory: string) {
 /**
  * Get rules for a file path (simple utility function).
  */
-export function getRulesForPath(filePath: string, workingDirectory?: string): RuleToInject[] {
+export function getRulesForPath(
+  filePath: string,
+  workingDirectory?: string,
+): RuleToInject[] {
   const cwd = workingDirectory || process.cwd();
   const hook = createRulesInjectorHook(cwd);
   return hook.getRulesForFile(filePath);

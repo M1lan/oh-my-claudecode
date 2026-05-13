@@ -1,14 +1,14 @@
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import { getClaudeConfigDir } from '../../utils/config-dir.js';
-import { atomicWriteJson } from '../../lib/atomic-write.js';
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import { atomicWriteJson } from "../../lib/atomic-write.js";
 
 export interface InvocationConfig {
   enabled: boolean;
-  confidenceThreshold: number;  // Default: 80
-  maxAutoInvokes: number;       // Per session, default: 3
-  cooldownMs: number;           // Between invokes, default: 30000
+  confidenceThreshold: number; // Default: 80
+  maxAutoInvokes: number; // Per session, default: 3
+  cooldownMs: number; // Between invokes, default: 30000
 }
 
 export interface InvocationRecord {
@@ -17,8 +17,8 @@ export interface InvocationRecord {
   timestamp: number;
   confidence: number;
   prompt: string;
-  wasSuccessful: boolean | null;  // null = unknown
-  feedbackScore: number | null;   // User rating if provided
+  wasSuccessful: boolean | null; // null = unknown
+  feedbackScore: number | null; // User rating if provided
 }
 
 export interface AutoInvokeState {
@@ -39,25 +39,28 @@ const DEFAULT_CONFIG: InvocationConfig = {
  * Load auto-invocation config from ~/.claude/.omc-config.json
  */
 export function loadInvocationConfig(): InvocationConfig {
-  const configPath = path.join(getClaudeConfigDir(), '.omc-config.json');
+  const configPath = path.join(getClaudeConfigDir(), ".omc-config.json");
 
   try {
     if (!fs.existsSync(configPath)) {
       return { ...DEFAULT_CONFIG };
     }
 
-    const configFile = fs.readFileSync(configPath, 'utf-8');
+    const configFile = fs.readFileSync(configPath, "utf-8");
     const config = JSON.parse(configFile);
 
     // Merge with defaults
     return {
       enabled: config.autoInvoke?.enabled ?? DEFAULT_CONFIG.enabled,
-      confidenceThreshold: config.autoInvoke?.confidenceThreshold ?? DEFAULT_CONFIG.confidenceThreshold,
-      maxAutoInvokes: config.autoInvoke?.maxAutoInvokes ?? DEFAULT_CONFIG.maxAutoInvokes,
+      confidenceThreshold:
+        config.autoInvoke?.confidenceThreshold ??
+        DEFAULT_CONFIG.confidenceThreshold,
+      maxAutoInvokes:
+        config.autoInvoke?.maxAutoInvokes ?? DEFAULT_CONFIG.maxAutoInvokes,
       cooldownMs: config.autoInvoke?.cooldownMs ?? DEFAULT_CONFIG.cooldownMs,
     };
   } catch (error) {
-    console.error('[auto-invoke] Failed to load config:', error);
+    console.error("[auto-invoke] Failed to load config:", error);
     return { ...DEFAULT_CONFIG };
   }
 }
@@ -80,7 +83,7 @@ export function initAutoInvoke(sessionId: string): AutoInvokeState {
 export function shouldAutoInvoke(
   state: AutoInvokeState,
   skillId: string,
-  confidence: number
+  confidence: number,
 ): boolean {
   const { config, invocations, lastInvokeTime } = state;
 
@@ -106,7 +109,7 @@ export function shouldAutoInvoke(
   }
 
   // Check if this skill was already invoked in this session
-  const alreadyInvoked = invocations.some(inv => inv.skillId === skillId);
+  const alreadyInvoked = invocations.some((inv) => inv.skillId === skillId);
   if (alreadyInvoked) {
     return false;
   }
@@ -119,7 +122,7 @@ export function shouldAutoInvoke(
  */
 export function recordInvocation(
   state: AutoInvokeState,
-  record: Omit<InvocationRecord, 'timestamp'>
+  record: Omit<InvocationRecord, "timestamp">,
 ): void {
   state.invocations.push({
     ...record,
@@ -134,12 +137,12 @@ export function recordInvocation(
 export function updateInvocationSuccess(
   state: AutoInvokeState,
   skillId: string,
-  wasSuccessful: boolean
+  wasSuccessful: boolean,
 ): void {
   // Update the most recent invocation of this skill
   const invocation = [...state.invocations]
     .reverse()
-    .find(inv => inv.skillId === skillId);
+    .find((inv) => inv.skillId === skillId);
 
   if (invocation) {
     invocation.wasSuccessful = wasSuccessful;
@@ -182,13 +185,21 @@ export function getInvocationStats(state: AutoInvokeState): {
 } {
   const { invocations } = state;
 
-  const successful = invocations.filter(inv => inv.wasSuccessful === true).length;
-  const failed = invocations.filter(inv => inv.wasSuccessful === false).length;
-  const unknown = invocations.filter(inv => inv.wasSuccessful === null).length;
+  const successful = invocations.filter(
+    (inv) => inv.wasSuccessful === true,
+  ).length;
+  const failed = invocations.filter(
+    (inv) => inv.wasSuccessful === false,
+  ).length;
+  const unknown = invocations.filter(
+    (inv) => inv.wasSuccessful === null,
+  ).length;
 
-  const averageConfidence = invocations.length > 0
-    ? invocations.reduce((sum, inv) => sum + inv.confidence, 0) / invocations.length
-    : 0;
+  const averageConfidence =
+    invocations.length > 0
+      ? invocations.reduce((sum, inv) => sum + inv.confidence, 0) /
+        invocations.length
+      : 0;
 
   return {
     total: invocations.length,
@@ -203,7 +214,12 @@ export function getInvocationStats(state: AutoInvokeState): {
  * Save invocation history to disk for analytics
  */
 export function saveInvocationHistory(state: AutoInvokeState): void {
-  const historyDir = path.join(os.homedir(), '.omc', 'analytics', 'invocations');
+  const historyDir = path.join(
+    os.homedir(),
+    ".omc",
+    "analytics",
+    "invocations",
+  );
   const historyFile = path.join(historyDir, `${state.sessionId}.json`);
 
   // Use atomic write to prevent corruption from concurrent sessions (Bug #11 fix)
@@ -212,21 +228,23 @@ export function saveInvocationHistory(state: AutoInvokeState): void {
     config: state.config,
     invocations: state.invocations,
     stats: getInvocationStats(state),
-  }).catch(error => {
-    console.error('[auto-invoke] Failed to save invocation history:', error);
+  }).catch((error) => {
+    console.error("[auto-invoke] Failed to save invocation history:", error);
   });
 }
 
 /**
  * Load invocation history from disk
  */
-export function loadInvocationHistory(sessionId: string): AutoInvokeState | null {
+export function loadInvocationHistory(
+  sessionId: string,
+): AutoInvokeState | null {
   const historyFile = path.join(
     os.homedir(),
-    '.omc',
-    'analytics',
-    'invocations',
-    `${sessionId}.json`
+    ".omc",
+    "analytics",
+    "invocations",
+    `${sessionId}.json`,
   );
 
   try {
@@ -234,17 +252,20 @@ export function loadInvocationHistory(sessionId: string): AutoInvokeState | null
       return null;
     }
 
-    const data = JSON.parse(fs.readFileSync(historyFile, 'utf-8'));
+    const data = JSON.parse(fs.readFileSync(historyFile, "utf-8"));
     return {
       sessionId: data.sessionId,
       config: data.config,
       invocations: data.invocations,
-      lastInvokeTime: data.invocations.length > 0
-        ? Math.max(...data.invocations.map((inv: InvocationRecord) => inv.timestamp))
-        : 0,
+      lastInvokeTime:
+        data.invocations.length > 0
+          ? Math.max(
+              ...data.invocations.map((inv: InvocationRecord) => inv.timestamp),
+            )
+          : 0,
     };
   } catch (error) {
-    console.error('[auto-invoke] Failed to load invocation history:', error);
+    console.error("[auto-invoke] Failed to load invocation history:", error);
     return null;
   }
 }
@@ -256,9 +277,19 @@ export function getAggregatedStats(): {
   totalSessions: number;
   totalInvocations: number;
   successRate: number;
-  topSkills: Array<{ skillId: string; skillName: string; count: number; successRate: number }>;
+  topSkills: Array<{
+    skillId: string;
+    skillName: string;
+    count: number;
+    successRate: number;
+  }>;
 } {
-  const historyDir = path.join(os.homedir(), '.omc', 'analytics', 'invocations');
+  const historyDir = path.join(
+    os.homedir(),
+    ".omc",
+    "analytics",
+    "invocations",
+  );
 
   try {
     if (!fs.existsSync(historyDir)) {
@@ -270,16 +301,25 @@ export function getAggregatedStats(): {
       };
     }
 
-    const files = fs.readdirSync(historyDir).filter(f => f.endsWith('.json'));
+    const files = fs.readdirSync(historyDir).filter((f) => f.endsWith(".json"));
     const allInvocations: InvocationRecord[] = [];
-    const skillStats = new Map<string, { name: string; total: number; successful: number }>();
+    const skillStats = new Map<
+      string,
+      { name: string; total: number; successful: number }
+    >();
 
     for (const file of files) {
-      const data = JSON.parse(fs.readFileSync(path.join(historyDir, file), 'utf-8'));
+      const data = JSON.parse(
+        fs.readFileSync(path.join(historyDir, file), "utf-8"),
+      );
       allInvocations.push(...data.invocations);
 
       for (const inv of data.invocations as InvocationRecord[]) {
-        const existing = skillStats.get(inv.skillId) || { name: inv.skillName, total: 0, successful: 0 };
+        const existing = skillStats.get(inv.skillId) || {
+          name: inv.skillName,
+          total: 0,
+          successful: 0,
+        };
         existing.total++;
         if (inv.wasSuccessful === true) {
           existing.successful++;
@@ -288,15 +328,20 @@ export function getAggregatedStats(): {
       }
     }
 
-    const successful = allInvocations.filter(inv => inv.wasSuccessful === true).length;
-    const withKnownStatus = allInvocations.filter(inv => inv.wasSuccessful !== null).length;
+    const successful = allInvocations.filter(
+      (inv) => inv.wasSuccessful === true,
+    ).length;
+    const withKnownStatus = allInvocations.filter(
+      (inv) => inv.wasSuccessful !== null,
+    ).length;
 
     const topSkills = Array.from(skillStats.entries())
       .map(([skillId, stats]) => ({
         skillId,
         skillName: stats.name,
         count: stats.total,
-        successRate: stats.total > 0 ? (stats.successful / stats.total) * 100 : 0,
+        successRate:
+          stats.total > 0 ? (stats.successful / stats.total) * 100 : 0,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
@@ -304,11 +349,12 @@ export function getAggregatedStats(): {
     return {
       totalSessions: files.length,
       totalInvocations: allInvocations.length,
-      successRate: withKnownStatus > 0 ? (successful / withKnownStatus) * 100 : 0,
+      successRate:
+        withKnownStatus > 0 ? (successful / withKnownStatus) * 100 : 0,
       topSkills,
     };
   } catch (error) {
-    console.error('[auto-invoke] Failed to get aggregated stats:', error);
+    console.error("[auto-invoke] Failed to get aggregated stats:", error);
     return {
       totalSessions: 0,
       totalInvocations: 0,

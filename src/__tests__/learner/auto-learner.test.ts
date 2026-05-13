@@ -1,10 +1,10 @@
 /**
  * Auto-Learner Module Tests
- * 
+ *
  * Comprehensive QA tests for the auto-learner module.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from "vitest";
 import {
   initAutoLearner,
   recordPattern,
@@ -13,42 +13,44 @@ import {
   getSuggestedSkills,
   type AutoLearnerState,
   type PatternDetection,
-} from '../../hooks/learner/auto-learner.js';
+} from "../../hooks/learner/auto-learner.js";
 
-describe('Auto-Learner Module', () => {
+describe("Auto-Learner Module", () => {
   // Test Case 1: State Initialization
-  describe('1. State Initialization', () => {
-    it('initAutoLearner creates correct initial state', () => {
-      const state = initAutoLearner('test-session-123');
-      
+  describe("1. State Initialization", () => {
+    it("initAutoLearner creates correct initial state", () => {
+      const state = initAutoLearner("test-session-123");
+
       expect(state).toBeDefined();
-      expect(state.sessionId).toBe('test-session-123');
+      expect(state.sessionId).toBe("test-session-123");
       expect(state.patterns).toBeInstanceOf(Map);
       expect(state.suggestedSkills).toBeInstanceOf(Array);
     });
 
-    it('verifies empty patterns map', () => {
-      const state = initAutoLearner('test-session');
+    it("verifies empty patterns map", () => {
+      const state = initAutoLearner("test-session");
       expect(state.patterns.size).toBe(0);
     });
 
-    it('verifies empty suggestedSkills array', () => {
-      const state = initAutoLearner('test-session');
+    it("verifies empty suggestedSkills array", () => {
+      const state = initAutoLearner("test-session");
       expect(state.suggestedSkills).toHaveLength(0);
     });
   });
 
   // Test Case 2: Pattern Recording
-  describe('2. Pattern Recording', () => {
+  describe("2. Pattern Recording", () => {
     let state: AutoLearnerState;
 
     beforeEach(() => {
-      state = initAutoLearner('test-session');
+      state = initAutoLearner("test-session");
     });
 
-    it('recordPattern records a valid problem-solution pair', () => {
-      const problem = 'TypeError: Cannot read properties of undefined when accessing user.name';
-      const solution = 'Check if user object exists before accessing properties. Use optional chaining: user?.name';
+    it("recordPattern records a valid problem-solution pair", () => {
+      const problem =
+        "TypeError: Cannot read properties of undefined when accessing user.name";
+      const solution =
+        "Check if user object exists before accessing properties. Use optional chaining: user?.name";
 
       const pattern = recordPattern(state, problem, solution);
 
@@ -58,9 +60,10 @@ describe('Auto-Learner Module', () => {
       expect(pattern!.occurrences).toBe(1);
     });
 
-    it('content hashing provides deduplication', () => {
-      const problem = 'Error: Module not found';
-      const solution = 'Install the missing dependency with pnpm add package-name';
+    it("content hashing provides deduplication", () => {
+      const problem = "Error: Module not found";
+      const solution =
+        "Install the missing dependency with pnpm add package-name";
 
       // Record same pattern twice
       const pattern1 = recordPattern(state, problem, solution);
@@ -72,9 +75,10 @@ describe('Auto-Learner Module', () => {
       expect(state.patterns.size).toBe(1);
     });
 
-    it('occurrence counting increments on duplicate patterns', () => {
-      const problem = 'Error: ENOENT: no such file or directory';
-      const solution = 'The file path is incorrect. Verify the path exists or create the directory first.';
+    it("occurrence counting increments on duplicate patterns", () => {
+      const problem = "Error: ENOENT: no such file or directory";
+      const solution =
+        "The file path is incorrect. Verify the path exists or create the directory first.";
 
       recordPattern(state, problem, solution);
       const pattern = recordPattern(state, problem, solution);
@@ -82,16 +86,16 @@ describe('Auto-Learner Module', () => {
       expect(pattern!.occurrences).toBe(2);
     });
 
-    it('records multiple different patterns separately', () => {
+    it("records multiple different patterns separately", () => {
       recordPattern(
         state,
-        'Error: Module not found react',
-        'Install react with: pnpm add react'
+        "Error: Module not found react",
+        "Install react with: pnpm add react",
       );
       recordPattern(
         state,
-        'TypeError: undefined is not a function',
-        'Check if the function exists before calling it'
+        "TypeError: undefined is not a function",
+        "Check if the function exists before calling it",
       );
 
       expect(state.patterns.size).toBe(2);
@@ -99,49 +103,59 @@ describe('Auto-Learner Module', () => {
   });
 
   // Test Case 3: Trigger Extraction
-  describe('3. Trigger Extraction', () => {
-    it('extractTriggers extracts error messages', () => {
-      const problem = 'Got this error: TypeError: Cannot read properties of undefined';
-      const solution = 'Check for null/undefined values';
+  describe("3. Trigger Extraction", () => {
+    it("extractTriggers extracts error messages", () => {
+      const problem =
+        "Got this error: TypeError: Cannot read properties of undefined";
+      const solution = "Check for null/undefined values";
 
       const triggers = extractTriggers(problem, solution);
 
-      expect(triggers.some(t => t.toLowerCase().includes('cannot read'))).toBe(true);
+      expect(
+        triggers.some((t) => t.toLowerCase().includes("cannot read")),
+      ).toBe(true);
     });
 
-    it('extractTriggers extracts file paths', () => {
-      const problem = 'Issue in src/components/Button.tsx when rendering';
-      const solution = 'Fixed the import path in the component';
+    it("extractTriggers extracts file paths", () => {
+      const problem = "Issue in src/components/Button.tsx when rendering";
+      const solution = "Fixed the import path in the component";
 
       const triggers = extractTriggers(problem, solution);
 
-      expect(triggers.some(t => t.includes('Button.tsx'))).toBe(true);
+      expect(triggers.some((t) => t.includes("Button.tsx"))).toBe(true);
     });
 
-    it('extractTriggers extracts technical terms', () => {
-      const problem = 'The React component does not render properly in TypeScript';
-      const solution = 'Add proper type annotations for the props interface';
+    it("extractTriggers extracts technical terms", () => {
+      const problem =
+        "The React component does not render properly in TypeScript";
+      const solution = "Add proper type annotations for the props interface";
 
       const triggers = extractTriggers(problem, solution);
 
       // Should extract capitalized terms like React or TypeScript
-      const hasReact = triggers.some(t => t.toLowerCase() === 'react');
-      const hasTypeScript = triggers.some(t => t.toLowerCase() === 'typescript');
-      
+      const hasReact = triggers.some((t) => t.toLowerCase() === "react");
+      const hasTypeScript = triggers.some(
+        (t) => t.toLowerCase() === "typescript",
+      );
+
       expect(hasReact || hasTypeScript).toBe(true);
     });
 
-    it('extracts high-value keywords when present', () => {
-      const problem = 'The application crashed with an error';
-      const solution = 'Fixed the bug by adding null checks';
+    it("extracts high-value keywords when present", () => {
+      const problem = "The application crashed with an error";
+      const solution = "Fixed the bug by adding null checks";
 
       const triggers = extractTriggers(problem, solution);
 
       // Should include high-value keywords
-      expect(triggers.some(t => ['error', 'crash', 'fix', 'bug'].includes(t.toLowerCase()))).toBe(true);
+      expect(
+        triggers.some((t) =>
+          ["error", "crash", "fix", "bug"].includes(t.toLowerCase()),
+        ),
+      ).toBe(true);
     });
 
-    it('limits triggers to maximum of 10', () => {
+    it("limits triggers to maximum of 10", () => {
       const problem = `
         Error: Module 'react' not found in /src/components/App.tsx
         Also found TypeError in /src/utils/helper.ts
@@ -161,18 +175,19 @@ describe('Auto-Learner Module', () => {
   });
 
   // Test Case 4: Skill Worthiness Scoring
-  describe('4. Skill Worthiness Scoring', () => {
-    it('calculateSkillWorthiness returns score in valid range', () => {
+  describe("4. Skill Worthiness Scoring", () => {
+    it("calculateSkillWorthiness returns score in valid range", () => {
       const pattern: PatternDetection = {
-        id: 'test-1',
-        problem: 'Error: Cannot connect to database',
-        solution: 'Check database connection string and ensure the server is running',
+        id: "test-1",
+        problem: "Error: Cannot connect to database",
+        solution:
+          "Check database connection string and ensure the server is running",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error', 'database'],
-        suggestedTags: ['debugging'],
+        suggestedTriggers: ["error", "database"],
+        suggestedTags: ["debugging"],
       };
 
       const score = calculateSkillWorthiness(pattern);
@@ -181,29 +196,31 @@ describe('Auto-Learner Module', () => {
       expect(score).toBeLessThanOrEqual(100);
     });
 
-    it('high-value keywords boost the score', () => {
+    it("high-value keywords boost the score", () => {
       const basePattern: PatternDetection = {
-        id: 'test-base',
-        problem: 'Issue with the component rendering',
-        solution: 'Updated the state management logic in the component to properly handle updates',
+        id: "test-base",
+        problem: "Issue with the component rendering",
+        solution:
+          "Updated the state management logic in the component to properly handle updates",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['component'],
+        suggestedTriggers: ["component"],
         suggestedTags: [],
       };
 
       const boostedPattern: PatternDetection = {
-        id: 'test-boosted',
-        problem: 'Error: Crash when component renders, bug in state',
-        solution: 'Fixed the bug by adding proper error handling. The workaround was to use a try-catch block.',
+        id: "test-boosted",
+        problem: "Error: Crash when component renders, bug in state",
+        solution:
+          "Fixed the bug by adding proper error handling. The workaround was to use a try-catch block.",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error', 'crash', 'fix', 'bug', 'workaround'],
-        suggestedTags: ['debugging'],
+        suggestedTriggers: ["error", "crash", "fix", "bug", "workaround"],
+        suggestedTags: ["debugging"],
       };
 
       const baseScore = calculateSkillWorthiness(basePattern);
@@ -212,23 +229,26 @@ describe('Auto-Learner Module', () => {
       expect(boostedScore).toBeGreaterThan(baseScore);
     });
 
-    it('generic patterns receive penalties', () => {
+    it("generic patterns receive penalties", () => {
       const specificPattern: PatternDetection = {
-        id: 'test-specific',
-        problem: 'Error: ECONNREFUSED when connecting to localhost:5432 in /src/db/connection.ts',
-        solution: 'The PostgreSQL server was not running. Start it with: sudo systemctl start postgresql',
+        id: "test-specific",
+        problem:
+          "Error: ECONNREFUSED when connecting to localhost:5432 in /src/db/connection.ts",
+        solution:
+          "The PostgreSQL server was not running. Start it with: sudo systemctl start postgresql",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error', 'postgresql', 'connection.ts'],
-        suggestedTags: ['database'],
+        suggestedTriggers: ["error", "postgresql", "connection.ts"],
+        suggestedTags: ["database"],
       };
 
       const genericPattern: PatternDetection = {
-        id: 'test-generic',
-        problem: 'Something is not working correctly in the app',
-        solution: 'Try again after restarting. Check the docs and google it if problem persists. Look at the error message.',
+        id: "test-generic",
+        problem: "Something is not working correctly in the app",
+        solution:
+          "Try again after restarting. Check the docs and google it if problem persists. Look at the error message.",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
@@ -243,22 +263,23 @@ describe('Auto-Learner Module', () => {
       expect(specificScore).toBeGreaterThan(genericScore);
     });
 
-    it('multiple occurrences boost the score', () => {
+    it("multiple occurrences boost the score", () => {
       const singleOccurrence: PatternDetection = {
-        id: 'test-single',
-        problem: 'Error: Port 3000 already in use',
-        solution: 'Kill the process using the port: lsof -ti:3000 | xargs kill -9',
+        id: "test-single",
+        problem: "Error: Port 3000 already in use",
+        solution:
+          "Kill the process using the port: lsof -ti:3000 | xargs kill -9",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error', 'port'],
+        suggestedTriggers: ["error", "port"],
         suggestedTags: [],
       };
 
       const multipleOccurrences: PatternDetection = {
         ...singleOccurrence,
-        id: 'test-multiple',
+        id: "test-multiple",
         occurrences: 5,
       };
 
@@ -268,22 +289,22 @@ describe('Auto-Learner Module', () => {
       expect(multipleScore).toBeGreaterThan(singleScore);
     });
 
-    it('longer solutions score higher than very short ones', () => {
+    it("longer solutions score higher than very short ones", () => {
       const shortSolution: PatternDetection = {
-        id: 'test-short',
-        problem: 'Error in the application configuration',
-        solution: 'Fixed the config file settings.',
+        id: "test-short",
+        problem: "Error in the application configuration",
+        solution: "Fixed the config file settings.",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error'],
+        suggestedTriggers: ["error"],
         suggestedTags: [],
       };
 
       const detailedSolution: PatternDetection = {
-        id: 'test-detailed',
-        problem: 'Error in the application configuration loading',
+        id: "test-detailed",
+        problem: "Error in the application configuration loading",
         solution: `The configuration file was missing the required DATABASE_URL environment variable. 
                    To fix this, add DATABASE_URL=postgresql://user:pass@localhost:5432/dbname to your .env file.
                    Also ensure the .env file is in the project root and not gitignored accidentally.
@@ -292,7 +313,7 @@ describe('Auto-Learner Module', () => {
         occurrences: 1,
         firstSeen: Date.now(),
         lastSeen: Date.now(),
-        suggestedTriggers: ['error', 'configuration'],
+        suggestedTriggers: ["error", "configuration"],
         suggestedTags: [],
       };
 
@@ -304,16 +325,17 @@ describe('Auto-Learner Module', () => {
   });
 
   // Test Case 5: Suggestion Threshold
-  describe('5. Suggestion Threshold', () => {
+  describe("5. Suggestion Threshold", () => {
     let state: AutoLearnerState;
 
     beforeEach(() => {
-      state = initAutoLearner('test-session');
+      state = initAutoLearner("test-session");
     });
 
-    it('getSuggestedSkills filters by threshold', () => {
+    it("getSuggestedSkills filters by threshold", () => {
       // Add a high-quality pattern that should be suggested
-      const highQualityProblem = 'Error: ENOENT no such file /src/config/database.ts when loading config';
+      const highQualityProblem =
+        "Error: ENOENT no such file /src/config/database.ts when loading config";
       const highQualitySolution = `
         The database configuration file was missing. Fixed by:
         1. Creating the missing config file
@@ -321,28 +343,29 @@ describe('Auto-Learner Module', () => {
         3. Setting up environment variable fallbacks
         This resolved the ENOENT error and made the app work properly.
       `;
-      
+
       // Record it multiple times to boost occurrences
       recordPattern(state, highQualityProblem, highQualitySolution);
       recordPattern(state, highQualityProblem, highQualitySolution);
       recordPattern(state, highQualityProblem, highQualitySolution);
 
       // Add a low-quality pattern that shouldn't be suggested
-      const lowQualityProblem = 'Problem with app';
-      const lowQualitySolution = 'Try again or restart';
+      const lowQualityProblem = "Problem with app";
+      const lowQualitySolution = "Try again or restart";
 
       recordPattern(state, lowQualityProblem, lowQualitySolution);
 
       const suggestions = getSuggestedSkills(state, 70);
 
       // Only high-quality patterns should pass the threshold
-      expect(suggestions.every(s => s.confidence >= 70)).toBe(true);
+      expect(suggestions.every((s) => s.confidence >= 70)).toBe(true);
     });
 
-    it('verifies default threshold of 70', () => {
+    it("verifies default threshold of 70", () => {
       // Create a pattern that should be around the threshold
-      const problem = 'Error: Module react not found in /src/App.tsx';
-      const solution = 'Install the missing dependency: pnpm add react. The fix resolved the import error in the component.';
+      const problem = "Error: Module react not found in /src/App.tsx";
+      const solution =
+        "Install the missing dependency: pnpm add react. The fix resolved the import error in the component.";
 
       // Record multiple times to boost score
       for (let i = 0; i < 3; i++) {
@@ -353,29 +376,33 @@ describe('Auto-Learner Module', () => {
       const suggestions = getSuggestedSkills(state);
 
       // All returned suggestions should meet the default threshold
-      suggestions.forEach(s => {
+      suggestions.forEach((s) => {
         expect(s.confidence).toBeGreaterThanOrEqual(70);
       });
     });
 
-    it('higher threshold returns fewer suggestions', () => {
+    it("higher threshold returns fewer suggestions", () => {
       // Add multiple patterns with varying quality
       const patterns = [
         {
-          problem: 'Error: ENOENT crash reading /src/db/config.ts - bug in loader',
-          solution: 'Fixed the bug by creating the missing configuration file. Added workaround for path resolution. The solution involved proper error handling.',
+          problem:
+            "Error: ENOENT crash reading /src/db/config.ts - bug in loader",
+          solution:
+            "Fixed the bug by creating the missing configuration file. Added workaround for path resolution. The solution involved proper error handling.",
         },
         {
-          problem: 'Error: Connection failed to database server',
-          solution: 'Verified the database server was running and fixed the connection string configuration.',
+          problem: "Error: Connection failed to database server",
+          solution:
+            "Verified the database server was running and fixed the connection string configuration.",
         },
         {
-          problem: 'Warning: Component missing key prop',
-          solution: 'Added unique key prop to list items in the React component.',
+          problem: "Warning: Component missing key prop",
+          solution:
+            "Added unique key prop to list items in the React component.",
         },
       ];
 
-      patterns.forEach(p => {
+      patterns.forEach((p) => {
         recordPattern(state, p.problem, p.solution);
         recordPattern(state, p.problem, p.solution); // Record twice for boost
       });
@@ -383,23 +410,26 @@ describe('Auto-Learner Module', () => {
       const lowThresholdSuggestions = getSuggestedSkills(state, 50);
       const highThresholdSuggestions = getSuggestedSkills(state, 90);
 
-      expect(lowThresholdSuggestions.length).toBeGreaterThanOrEqual(highThresholdSuggestions.length);
+      expect(lowThresholdSuggestions.length).toBeGreaterThanOrEqual(
+        highThresholdSuggestions.length,
+      );
     });
 
-    it('returns suggestions sorted by confidence descending', () => {
+    it("returns suggestions sorted by confidence descending", () => {
       // Add patterns with varying quality
       const patterns = [
         {
-          problem: 'Error: ENOENT no such file in /src/config.ts - crash',
-          solution: 'Fixed by creating missing file and adding proper error handling. The bug was in the loader module.',
+          problem: "Error: ENOENT no such file in /src/config.ts - crash",
+          solution:
+            "Fixed by creating missing file and adding proper error handling. The bug was in the loader module.",
         },
         {
-          problem: 'TypeError: Cannot read property of undefined in component',
-          solution: 'Added null checks before accessing properties.',
+          problem: "TypeError: Cannot read property of undefined in component",
+          solution: "Added null checks before accessing properties.",
         },
       ];
 
-      patterns.forEach(p => {
+      patterns.forEach((p) => {
         for (let i = 0; i < 3; i++) {
           recordPattern(state, p.problem, p.solution);
         }
@@ -409,85 +439,95 @@ describe('Auto-Learner Module', () => {
 
       // Verify sorted by confidence descending
       for (let i = 1; i < suggestions.length; i++) {
-        expect(suggestions[i - 1].confidence).toBeGreaterThanOrEqual(suggestions[i].confidence);
+        expect(suggestions[i - 1].confidence).toBeGreaterThanOrEqual(
+          suggestions[i].confidence,
+        );
       }
     });
   });
 
   // Test Case 6: Edge Cases
-  describe('6. Edge Cases', () => {
+  describe("6. Edge Cases", () => {
     let state: AutoLearnerState;
 
     beforeEach(() => {
-      state = initAutoLearner('test-session');
+      state = initAutoLearner("test-session");
     });
 
-    it('handles empty problem string', () => {
-      const result = recordPattern(state, '', 'Some solution text here for testing');
+    it("handles empty problem string", () => {
+      const result = recordPattern(
+        state,
+        "",
+        "Some solution text here for testing",
+      );
       expect(result).toBeNull();
     });
 
-    it('handles empty solution string', () => {
-      const result = recordPattern(state, 'Error: Some problem occurred', '');
+    it("handles empty solution string", () => {
+      const result = recordPattern(state, "Error: Some problem occurred", "");
       expect(result).toBeNull();
     });
 
-    it('handles both empty problem and solution', () => {
-      const result = recordPattern(state, '', '');
+    it("handles both empty problem and solution", () => {
+      const result = recordPattern(state, "", "");
       expect(result).toBeNull();
     });
 
-    it('handles very short content (below minimum)', () => {
-      const result = recordPattern(state, 'Short', 'Also short');
+    it("handles very short content (below minimum)", () => {
+      const result = recordPattern(state, "Short", "Also short");
       expect(result).toBeNull();
     });
 
-    it('handles whitespace-only input', () => {
-      const result = recordPattern(state, '   \n\t   ', '   \n\t   ');
+    it("handles whitespace-only input", () => {
+      const result = recordPattern(state, "   \n\t   ", "   \n\t   ");
       expect(result).toBeNull();
     });
 
-    it('extracts no triggers from generic text', () => {
+    it("extracts no triggers from generic text", () => {
       const triggers = extractTriggers(
-        'something happened',
-        'did something to fix it'
+        "something happened",
+        "did something to fix it",
       );
 
       // May still extract some keywords but should be minimal
       expect(triggers.length).toBeLessThanOrEqual(10);
     });
 
-    it('handles null/undefined gracefully in recordPattern', () => {
+    it("handles null/undefined gracefully in recordPattern", () => {
       // TypeScript would normally prevent this, but test runtime behavior
-      const result1 = recordPattern(state, null as any, 'solution');
-      const result2 = recordPattern(state, 'problem', undefined as any);
+      const result1 = recordPattern(state, null as any, "solution");
+      const result2 = recordPattern(state, "problem", undefined as any);
 
       expect(result1).toBeNull();
       expect(result2).toBeNull();
     });
 
-    it('handles special characters in problem/solution', () => {
-      const problem = 'Error: Path contains special chars: /path/to/file<>:"|?*.ts';
-      const solution = 'Escape or remove special characters: path.replace(/[<>:"|?*]/g, "_")';
+    it("handles special characters in problem/solution", () => {
+      const problem =
+        'Error: Path contains special chars: /path/to/file<>:"|?*.ts';
+      const solution =
+        'Escape or remove special characters: path.replace(/[<>:"|?*]/g, "_")';
 
       const pattern = recordPattern(state, problem, solution);
 
       expect(pattern).not.toBeNull();
-      expect(pattern!.problem).toContain('special chars');
+      expect(pattern!.problem).toContain("special chars");
     });
 
-    it('handles Unicode content', () => {
-      const problem = 'Error: 文件未找到 - File not found in 日本語パス/コンポーネント.tsx';
-      const solution = 'The file path contained CJK characters. Fixed by using proper encoding.';
+    it("handles Unicode content", () => {
+      const problem =
+        "Error: 文件未找到 - File not found in 日本語パス/コンポーネント.tsx";
+      const solution =
+        "The file path contained CJK characters. Fixed by using proper encoding.";
 
       const pattern = recordPattern(state, problem, solution);
 
       expect(pattern).not.toBeNull();
     });
 
-    it('handles extremely long content', () => {
-      const longProblem = 'Error: ' + 'A'.repeat(5000);
-      const longSolution = 'Fix: ' + 'B'.repeat(5000);
+    it("handles extremely long content", () => {
+      const longProblem = "Error: " + "A".repeat(5000);
+      const longSolution = "Fix: " + "B".repeat(5000);
 
       const pattern = recordPattern(state, longProblem, longSolution);
 
@@ -495,11 +535,11 @@ describe('Auto-Learner Module', () => {
       expect(pattern!.id).toBeDefined();
     });
 
-    it('pattern with no extractable triggers gets penalty', () => {
+    it("pattern with no extractable triggers gets penalty", () => {
       const pattern: PatternDetection = {
-        id: 'test-no-triggers',
-        problem: 'Something went wrong somewhere.',
-        solution: 'Did some things to make it better.',
+        id: "test-no-triggers",
+        problem: "Something went wrong somewhere.",
+        solution: "Did some things to make it better.",
         confidence: 0,
         occurrences: 1,
         firstSeen: Date.now(),
@@ -516,14 +556,15 @@ describe('Auto-Learner Module', () => {
   });
 
   // Test Case 7: Integration - Full Workflow
-  describe('7. Integration - Full Workflow', () => {
-    it('complete workflow from init to suggestions', () => {
+  describe("7. Integration - Full Workflow", () => {
+    it("complete workflow from init to suggestions", () => {
       // Initialize
-      const state = initAutoLearner('integration-test-session');
+      const state = initAutoLearner("integration-test-session");
       expect(state.patterns.size).toBe(0);
 
       // Record high-quality pattern multiple times
-      const problem = 'Error: ECONNREFUSED connecting to localhost:5432 in /src/db/client.ts';
+      const problem =
+        "Error: ECONNREFUSED connecting to localhost:5432 in /src/db/client.ts";
       const solution = `
         The PostgreSQL database server was not running. Fixed by:
         1. Starting the database: sudo systemctl start postgresql
@@ -541,7 +582,7 @@ describe('Auto-Learner Module', () => {
 
       // Get suggestions
       const suggestions = getSuggestedSkills(state, 60);
-      
+
       // Should have at least one suggestion if quality is high enough
       if (suggestions.length > 0) {
         expect(suggestions[0].problem).toBe(problem.trim());
@@ -552,71 +593,72 @@ describe('Auto-Learner Module', () => {
 });
 
 // Additional Security Tests
-describe('Security Tests', () => {
+describe("Security Tests", () => {
   let state: AutoLearnerState;
 
   beforeEach(() => {
-    state = initAutoLearner('security-test');
+    state = initAutoLearner("security-test");
   });
 
-  it('does not expose hash internals in pattern ID', () => {
+  it("does not expose hash internals in pattern ID", () => {
     const pattern = recordPattern(
       state,
-      'Error: sensitive database password issue in /etc/passwd',
-      'Fixed by updating the credentials in the config file'
+      "Error: sensitive database password issue in /etc/passwd",
+      "Fixed by updating the credentials in the config file",
     );
 
     // Pattern ID should be a truncated hash, not exposing content
     expect(pattern!.id.length).toBe(16); // SHA-256 truncated to 16 hex chars
-    expect(pattern!.id).not.toContain('password');
-    expect(pattern!.id).not.toContain('passwd');
+    expect(pattern!.id).not.toContain("password");
+    expect(pattern!.id).not.toContain("passwd");
   });
 
-  it('handles injection-like content safely', () => {
-    const problem = 'Error: SQL injection detected: \'; DROP TABLE users; --';
-    const solution = 'Use parameterized queries: db.query("SELECT * FROM users WHERE id = $1", [userId])';
+  it("handles injection-like content safely", () => {
+    const problem = "Error: SQL injection detected: '; DROP TABLE users; --";
+    const solution =
+      'Use parameterized queries: db.query("SELECT * FROM users WHERE id = $1", [userId])';
 
     const pattern = recordPattern(state, problem, solution);
 
     expect(pattern).not.toBeNull();
     // Content is stored as-is (not evaluated), which is safe for a data structure
-    expect(pattern!.problem).toContain('DROP TABLE');
+    expect(pattern!.problem).toContain("DROP TABLE");
   });
 
-  it('handles path traversal strings safely', () => {
-    const problem = 'Error reading file: ../../../etc/shadow';
-    const solution = 'Validate and sanitize file paths before reading';
+  it("handles path traversal strings safely", () => {
+    const problem = "Error reading file: ../../../etc/shadow";
+    const solution = "Validate and sanitize file paths before reading";
 
     const pattern = recordPattern(state, problem, solution);
 
     // Pattern is stored, not executed
     expect(pattern).not.toBeNull();
-    expect(pattern!.problem).toContain('../../../etc/shadow');
+    expect(pattern!.problem).toContain("../../../etc/shadow");
   });
 
-  it('handles prototype pollution attempt in content', () => {
-    const problem = 'Error: __proto__.polluted = true causes issues';
-    const solution = 'Use Object.create(null) or Map instead of plain objects';
+  it("handles prototype pollution attempt in content", () => {
+    const problem = "Error: __proto__.polluted = true causes issues";
+    const solution = "Use Object.create(null) or Map instead of plain objects";
 
     const pattern = recordPattern(state, problem, solution);
 
     expect(pattern).not.toBeNull();
     // Verify Map-based storage is safe from prototype pollution
-    expect((state.patterns as any).__proto__).not.toHaveProperty('polluted');
+    expect((state.patterns as any).__proto__).not.toHaveProperty("polluted");
   });
 });
 
 // Performance Tests
-describe('Performance Tests', () => {
-  it('handles 1000 patterns without significant slowdown', () => {
-    const state = initAutoLearner('perf-test');
+describe("Performance Tests", () => {
+  it("handles 1000 patterns without significant slowdown", () => {
+    const state = initAutoLearner("perf-test");
     const start = Date.now();
 
     for (let i = 0; i < 1000; i++) {
       recordPattern(
         state,
         `Error number ${i}: Something failed in /src/file${i}.ts`,
-        `Fixed error ${i} by applying the correct solution with proper error handling and verification`
+        `Fixed error ${i} by applying the correct solution with proper error handling and verification`,
       );
     }
 
@@ -627,15 +669,15 @@ describe('Performance Tests', () => {
     expect(elapsed).toBeLessThan(5000);
   });
 
-  it('deduplication with 1000 identical patterns is efficient', () => {
-    const state = initAutoLearner('dedup-perf-test');
+  it("deduplication with 1000 identical patterns is efficient", () => {
+    const state = initAutoLearner("dedup-perf-test");
     const start = Date.now();
 
     for (let i = 0; i < 1000; i++) {
       recordPattern(
         state,
-        'Error: The same error occurs every time in /src/main.ts',
-        'Apply the same fix: restart the server and check the configuration'
+        "Error: The same error occurs every time in /src/main.ts",
+        "Apply the same fix: restart the server and check the configuration",
       );
     }
 
@@ -650,11 +692,11 @@ describe('Performance Tests', () => {
     expect(elapsed).toBeLessThan(3000);
   });
 
-  it('extractTriggers handles very large text efficiently', () => {
-    const largeText = 'Error: ' + 'word '.repeat(10000);
+  it("extractTriggers handles very large text efficiently", () => {
+    const largeText = "Error: " + "word ".repeat(10000);
     const start = Date.now();
 
-    const triggers = extractTriggers(largeText, 'solution text');
+    const triggers = extractTriggers(largeText, "solution text");
 
     const elapsed = Date.now() - start;
 

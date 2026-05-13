@@ -5,10 +5,10 @@
  * Supports OSC 8 terminal hyperlinks for supported terminals (iTerm2, WezTerm, etc.)
  */
 
-import { homedir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
-import { dim } from '../colors.js';
-import type { CwdFormat } from '../types.js';
+import { homedir } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { dim } from "../colors.js";
+import type { CwdFormat } from "../types.js";
 
 /**
  * Wrap text in an OSC 8 terminal hyperlink.
@@ -25,7 +25,7 @@ function osc8Link(url: string, text: string): string {
  */
 function pathToFileUrl(absPath: string): string {
   // Normalize backslashes on Windows
-  const normalized = absPath.replace(/\\/g, '/');
+  const normalized = absPath.replace(/\\/g, "/");
   // Windows absolute path (e.g. C:/...)
   if (/^[A-Za-z]:\//.test(normalized)) {
     return `file:///${normalized}`;
@@ -43,25 +43,23 @@ function pathToFileUrl(absPath: string): string {
  */
 export function renderCwd(
   cwd: string | undefined,
-  format: CwdFormat = 'relative',
-  useHyperlinks = false
+  format: CwdFormat = "relative",
+  useHyperlinks = false,
 ): string | null {
   if (!cwd) return null;
 
   let displayPath: string;
 
   switch (format) {
-    case 'relative': {
+    case "relative": {
       const home = homedir();
-      displayPath = cwd.startsWith(home)
-        ? '~' + cwd.slice(home.length)
-        : cwd;
+      displayPath = cwd.startsWith(home) ? "~" + cwd.slice(home.length) : cwd;
       break;
     }
-    case 'absolute':
+    case "absolute":
       displayPath = cwd;
       break;
-    case 'folder': {
+    case "folder": {
       // Show "parent/leaf" instead of just "leaf" to disambiguate common
       // directory names like src/, test/, docs/, packages/core, apps/web.
       const parent = basename(dirname(cwd));

@@ -5,7 +5,7 @@
  * to help Claude recover gracefully.
  */
 
-import * as fs from 'fs';
+import * as fs from "fs";
 import {
   TOKEN_LIMIT_PATTERNS,
   TOKEN_LIMIT_KEYWORDS,
@@ -15,23 +15,23 @@ import {
   RECOVERY_FAILED_MESSAGE,
   DEBUG,
   DEBUG_FILE,
-} from './constants.js';
-import { RETRY_CONFIG } from './types.js';
+} from "./constants.js";
+import { RETRY_CONFIG } from "./types.js";
 import type {
   ParsedTokenLimitError,
   RetryState,
   TruncateState,
   RecoveryResult,
   RecoveryConfig,
-} from './types.js';
+} from "./types.js";
 
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [context-window-recovery] ${args
       .map((a) =>
-        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+        typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
       )
-      .join(' ')}\n`;
+      .join(" ")}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
 }
@@ -103,7 +103,7 @@ function isTokenLimitError(text: string): boolean {
  * Extract token counts from error message
  */
 function extractTokensFromMessage(
-  message: string
+  message: string,
 ): { current: number; max: number } | null {
   for (const pattern of TOKEN_LIMIT_PATTERNS) {
     const match = message.match(pattern);
@@ -133,15 +133,15 @@ function extractMessageIndex(text: string): number | undefined {
  * Parse an error to detect if it's a token limit error
  */
 export function parseTokenLimitError(
-  err: unknown
+  err: unknown,
 ): ParsedTokenLimitError | null {
   // Handle string errors
-  if (typeof err === 'string') {
-    if (err.toLowerCase().includes('non-empty content')) {
+  if (typeof err === "string") {
+    if (err.toLowerCase().includes("non-empty content")) {
       return {
         currentTokens: 0,
         maxTokens: 0,
-        errorType: 'non-empty content',
+        errorType: "non-empty content",
         messageIndex: extractMessageIndex(err),
       };
     }
@@ -150,14 +150,14 @@ export function parseTokenLimitError(
       return {
         currentTokens: tokens?.current ?? 0,
         maxTokens: tokens?.max ?? 0,
-        errorType: 'token_limit_exceeded_string',
+        errorType: "token_limit_exceeded_string",
       };
     }
     return null;
   }
 
   // Handle non-object errors
-  if (!err || typeof err !== 'object') return null;
+  if (!err || typeof err !== "object") return null;
 
   const errObj = err as Record<string, unknown>;
 
@@ -170,22 +170,22 @@ export function parseTokenLimitError(
   const errorData = errObj.error as Record<string, unknown> | undefined;
   const nestedError = errorData?.error as Record<string, unknown> | undefined;
 
-  if (typeof responseBody === 'string') textSources.push(responseBody);
-  if (typeof errorMessage === 'string') textSources.push(errorMessage);
-  if (typeof errorData?.message === 'string')
+  if (typeof responseBody === "string") textSources.push(responseBody);
+  if (typeof errorMessage === "string") textSources.push(errorMessage);
+  if (typeof errorData?.message === "string")
     textSources.push(errorData.message as string);
-  if (typeof errObj.body === 'string') textSources.push(errObj.body as string);
-  if (typeof errObj.details === 'string')
+  if (typeof errObj.body === "string") textSources.push(errObj.body as string);
+  if (typeof errObj.details === "string")
     textSources.push(errObj.details as string);
-  if (typeof errObj.reason === 'string')
+  if (typeof errObj.reason === "string")
     textSources.push(errObj.reason as string);
-  if (typeof errObj.description === 'string')
+  if (typeof errObj.description === "string")
     textSources.push(errObj.description as string);
-  if (typeof nestedError?.message === 'string')
+  if (typeof nestedError?.message === "string")
     textSources.push(nestedError.message as string);
-  if (typeof dataObj?.message === 'string')
+  if (typeof dataObj?.message === "string")
     textSources.push(dataObj.message as string);
-  if (typeof dataObj?.error === 'string')
+  if (typeof dataObj?.error === "string")
     textSources.push(dataObj.error as string);
 
   // Try JSON stringification if no text sources found
@@ -200,14 +200,14 @@ export function parseTokenLimitError(
     }
   }
 
-  const combinedText = textSources.join(' ');
+  const combinedText = textSources.join(" ");
   if (!isTokenLimitError(combinedText)) return null;
 
   // Try to parse structured response body
-  if (typeof responseBody === 'string') {
+  if (typeof responseBody === "string") {
     try {
       interface AnthropicErrorData {
-        type: 'error';
+        type: "error";
         error: {
           type: string;
           message: string;
@@ -226,7 +226,7 @@ export function parseTokenLimitError(
         if (dataMatch) {
           try {
             const jsonData: AnthropicErrorData = JSON.parse(dataMatch[1]);
-            const message = jsonData.error?.message || '';
+            const message = jsonData.error?.message || "";
             const tokens = extractTokensFromMessage(message);
 
             if (tokens) {
@@ -234,7 +234,7 @@ export function parseTokenLimitError(
                 currentTokens: tokens.current,
                 maxTokens: tokens.max,
                 requestId: jsonData.request_id,
-                errorType: jsonData.error?.type || 'token_limit_exceeded',
+                errorType: jsonData.error?.type || "token_limit_exceeded",
               };
             }
           } catch {
@@ -246,13 +246,13 @@ export function parseTokenLimitError(
       // Check for Bedrock-style errors
       const bedrockJson = JSON.parse(responseBody);
       if (
-        typeof bedrockJson.message === 'string' &&
+        typeof bedrockJson.message === "string" &&
         isTokenLimitError(bedrockJson.message)
       ) {
         return {
           currentTokens: 0,
           maxTokens: 0,
-          errorType: 'bedrock_input_too_long',
+          errorType: "bedrock_input_too_long",
         };
       }
     } catch {
@@ -267,17 +267,17 @@ export function parseTokenLimitError(
       return {
         currentTokens: tokens.current,
         maxTokens: tokens.max,
-        errorType: 'token_limit_exceeded',
+        errorType: "token_limit_exceeded",
       };
     }
   }
 
   // Check for non-empty content error
-  if (combinedText.toLowerCase().includes('non-empty content')) {
+  if (combinedText.toLowerCase().includes("non-empty content")) {
     return {
       currentTokens: 0,
       maxTokens: 0,
-      errorType: 'non-empty content',
+      errorType: "non-empty content",
       messageIndex: extractMessageIndex(combinedText),
     };
   }
@@ -287,7 +287,7 @@ export function parseTokenLimitError(
     return {
       currentTokens: 0,
       maxTokens: 0,
-      errorType: 'token_limit_exceeded_unknown',
+      errorType: "token_limit_exceeded_unknown",
     };
   }
 
@@ -333,7 +333,7 @@ function getSessionState(sessionId: string): SessionState {
 function generateRecoveryMessage(
   parsed: ParsedTokenLimitError | null,
   state: SessionState,
-  config?: RecoveryConfig
+  config?: RecoveryConfig,
 ): { message?: string; errorType?: string } {
   // Use custom message if provided
   if (config?.customMessages?.context_window_limit) {
@@ -344,10 +344,10 @@ function generateRecoveryMessage(
   }
 
   // Handle non-empty content error
-  if (parsed?.errorType?.includes('non-empty content')) {
+  if (parsed?.errorType?.includes("non-empty content")) {
     return {
       message: NON_EMPTY_CONTENT_RECOVERY_MESSAGE,
-      errorType: 'non-empty content',
+      errorType: "non-empty content",
     };
   }
 
@@ -358,7 +358,7 @@ function generateRecoveryMessage(
   if (state.retryState.attempt > RETRY_CONFIG.maxAttempts) {
     return {
       message: RECOVERY_FAILED_MESSAGE,
-      errorType: 'recovery_exhausted',
+      errorType: "recovery_exhausted",
     };
   }
 
@@ -377,13 +377,13 @@ function generateRecoveryMessage(
 
     return {
       message,
-      errorType: parsed?.errorType || 'token_limit_exceeded',
+      errorType: parsed?.errorType || "token_limit_exceeded",
     };
   }
 
   return {
     message: CONTEXT_LIMIT_SHORT_MESSAGE,
-    errorType: parsed?.errorType || 'token_limit_exceeded',
+    errorType: parsed?.errorType || "token_limit_exceeded",
   };
 }
 
@@ -393,7 +393,7 @@ function generateRecoveryMessage(
 export function handleContextWindowRecovery(
   sessionId: string,
   error: unknown,
-  config?: RecoveryConfig
+  config?: RecoveryConfig,
 ): RecoveryResult {
   const parsed = parseTokenLimitError(error);
 
@@ -404,7 +404,7 @@ export function handleContextWindowRecovery(
     };
   }
 
-  debugLog('detected token limit error', { sessionId, parsed });
+  debugLog("detected token limit error", { sessionId, parsed });
 
   // GC stale session state on every context window exhaustion event
   gcSessionStates();

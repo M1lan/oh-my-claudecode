@@ -1,4 +1,6 @@
-export function saveAndClear(keys: readonly string[]): Record<string, string | undefined> {
+export function saveAndClear(
+  keys: readonly string[],
+): Record<string, string | undefined> {
   const saved: Record<string, string | undefined> = {};
   for (const key of keys) {
     saved[key] = process.env[key];

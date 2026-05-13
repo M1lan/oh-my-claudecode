@@ -65,11 +65,15 @@ function summarizeSkillContent(content: string): string {
     .split(/\r?\n/)
     .map((line) => line.replace(/^#+\s*/, "").trim())
     .find((line) => line && !line.startsWith("---"));
-  return compactText(firstUsefulLine || content.replace(/\s+/g, " ").trim(), 240);
+  return compactText(
+    firstUsefulLine || content.replace(/\s+/g, " ").trim(),
+    240,
+  );
 }
 
 function formatSkillDescriptor(skill: LearnedSkill): string {
-  const summary = skill.metadata.description || summarizeSkillContent(skill.content);
+  const summary =
+    skill.metadata.description || summarizeSkillContent(skill.content);
   const lines = [
     `### ${skill.metadata.name}`,
     `**Path:** ${skill.path}`,
@@ -98,7 +102,8 @@ function formatSkillsForContext(skills: LearnedSkill[]): string {
     "",
   ].join("\n");
   const footer = "\n</learner>";
-  const budget = MAX_LEARNED_SKILLS_CONTEXT_CHARS - header.length - footer.length;
+  const budget =
+    MAX_LEARNED_SKILLS_CONTEXT_CHARS - header.length - footer.length;
   const descriptors: string[] = [];
   let used = 0;
 

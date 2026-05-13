@@ -1,13 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   processHook,
   resetSkipHooksCache,
   sanitizeHookOutputForSerialization,
   type HookInput,
   type HookType,
-} from '../bridge.js';
+} from "../bridge.js";
 
-describe('processHook - Environment Kill-Switches', () => {
+describe("processHook - Environment Kill-Switches", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
@@ -24,174 +24,177 @@ describe('processHook - Environment Kill-Switches', () => {
     resetSkipHooksCache();
   });
 
-  describe('DISABLE_OMC flag', () => {
-    it('should return continue:true when DISABLE_OMC=1', async () => {
-      process.env.DISABLE_OMC = '1';
+  describe("DISABLE_OMC flag", () => {
+    it("should return continue:true when DISABLE_OMC=1", async () => {
+      process.env.DISABLE_OMC = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test prompt',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "test prompt",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       expect(result).toEqual({ continue: true });
     });
 
-    it('should return continue:true when DISABLE_OMC=true (string)', async () => {
-      process.env.DISABLE_OMC = 'true';
+    it("should return continue:true when DISABLE_OMC=true (string)", async () => {
+      process.env.DISABLE_OMC = "true";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test prompt',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "test prompt",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('persistent-mode', input);
+      const result = await processHook("persistent-mode", input);
 
       expect(result).toEqual({ continue: true });
     });
 
-    it('should process normally when DISABLE_OMC is not set', async () => {
+    it("should process normally when DISABLE_OMC is not set", async () => {
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'hello world',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "hello world",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       // Should process normally (keyword-detector returns continue:true for non-keyword prompts)
       expect(result.continue).toBe(true);
       // No message because 'hello world' doesn't contain keywords
     });
 
-    it('should process normally when DISABLE_OMC=false', async () => {
-      process.env.DISABLE_OMC = 'false';
+    it("should process normally when DISABLE_OMC=false", async () => {
+      process.env.DISABLE_OMC = "false";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'hello world',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "hello world",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       // Should process normally (not disabled)
       expect(result.continue).toBe(true);
     });
   });
 
-  describe('OMC_SKIP_HOOKS flag', () => {
-    it('should skip single hook type when specified', async () => {
-      process.env.OMC_SKIP_HOOKS = 'pre-tool-use';
+  describe("OMC_SKIP_HOOKS flag", () => {
+    it("should skip single hook type when specified", async () => {
+      process.env.OMC_SKIP_HOOKS = "pre-tool-use";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        toolName: 'Write',
-        toolInput: { file_path: '/test/file.ts', content: 'test' },
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        toolName: "Write",
+        toolInput: { file_path: "/test/file.ts", content: "test" },
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('pre-tool-use', input);
+      const result = await processHook("pre-tool-use", input);
 
       expect(result).toEqual({ continue: true });
     });
 
-    it('should skip multiple hook types when comma-separated', async () => {
-      process.env.OMC_SKIP_HOOKS = 'pre-tool-use,persistent-mode';
+    it("should skip multiple hook types when comma-separated", async () => {
+      process.env.OMC_SKIP_HOOKS = "pre-tool-use,persistent-mode";
 
       const preToolInput: HookInput = {
-        sessionId: 'test-session',
-        toolName: 'Write',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        toolName: "Write",
+        directory: "/tmp/test",
       };
 
       const persistentModeInput: HookInput = {
-        sessionId: 'test-session',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        directory: "/tmp/test",
       };
 
-      const preToolResult = await processHook('pre-tool-use', preToolInput);
-      const persistentResult = await processHook('persistent-mode', persistentModeInput);
+      const preToolResult = await processHook("pre-tool-use", preToolInput);
+      const persistentResult = await processHook(
+        "persistent-mode",
+        persistentModeInput,
+      );
 
       expect(preToolResult).toEqual({ continue: true });
       expect(persistentResult).toEqual({ continue: true });
     });
 
-    it('should handle whitespace in OMC_SKIP_HOOKS', async () => {
-      process.env.OMC_SKIP_HOOKS = ' pre-tool-use , persistent-mode ';
+    it("should handle whitespace in OMC_SKIP_HOOKS", async () => {
+      process.env.OMC_SKIP_HOOKS = " pre-tool-use , persistent-mode ";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        toolName: 'Write',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        toolName: "Write",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('pre-tool-use', input);
+      const result = await processHook("pre-tool-use", input);
 
       expect(result).toEqual({ continue: true });
     });
 
-    it('should process normally when hook type is not in skip list', async () => {
-      process.env.OMC_SKIP_HOOKS = 'persistent-mode';
+    it("should process normally when hook type is not in skip list", async () => {
+      process.env.OMC_SKIP_HOOKS = "persistent-mode";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'hello world',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "hello world",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       // Should process normally (keyword-detector not in skip list)
       expect(result.continue).toBe(true);
     });
 
-    it('should process normally when OMC_SKIP_HOOKS is empty', async () => {
-      process.env.OMC_SKIP_HOOKS = '';
+    it("should process normally when OMC_SKIP_HOOKS is empty", async () => {
+      process.env.OMC_SKIP_HOOKS = "";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'hello world',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "hello world",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       expect(result.continue).toBe(true);
     });
   });
 
-  describe('Combined flags', () => {
-    it('should respect DISABLE_OMC even if OMC_SKIP_HOOKS is set', async () => {
-      process.env.DISABLE_OMC = '1';
-      process.env.OMC_SKIP_HOOKS = 'keyword-detector';
+  describe("Combined flags", () => {
+    it("should respect DISABLE_OMC even if OMC_SKIP_HOOKS is set", async () => {
+      process.env.DISABLE_OMC = "1";
+      process.env.OMC_SKIP_HOOKS = "keyword-detector";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
       };
 
-      const result = await processHook('keyword-detector', input);
+      const result = await processHook("keyword-detector", input);
 
       // DISABLE_OMC takes precedence
       expect(result).toEqual({ continue: true });
     });
   });
 
-  describe('Performance', () => {
-    it('should have no performance impact when flags are not set', async () => {
+  describe("Performance", () => {
+    it("should have no performance impact when flags are not set", async () => {
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'hello world',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "hello world",
+        directory: "/tmp/test",
       };
 
       const start = Date.now();
-      await processHook('keyword-detector', input);
+      await processHook("keyword-detector", input);
       const duration = Date.now() - start;
 
       // Should complete in under 500ms (generous threshold for CI environments)
@@ -199,17 +202,17 @@ describe('processHook - Environment Kill-Switches', () => {
       expect(duration).toBeLessThan(500);
     });
 
-    it('should have minimal overhead when DISABLE_OMC=1', async () => {
-      process.env.DISABLE_OMC = '1';
+    it("should have minimal overhead when DISABLE_OMC=1", async () => {
+      process.env.DISABLE_OMC = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
       };
 
       const start = Date.now();
-      await processHook('keyword-detector', input);
+      await processHook("keyword-detector", input);
       const duration = Date.now() - start;
 
       // Should be even faster when disabled (immediate return)
@@ -217,36 +220,36 @@ describe('processHook - Environment Kill-Switches', () => {
     });
   });
 
-  describe('All hook types', () => {
+  describe("All hook types", () => {
     // Ensure this list stays in sync with HookType.
     // NOTE: `satisfies HookType[]` catches invalid values (typos, removed types),
     // but does NOT enforce exhaustiveness -- if a new HookType variant is added,
     // TypeScript will not error here until a test exercises the missing variant.
     const hookTypes: HookType[] = [
-      'keyword-detector',
-      'stop-continuation',
-      'ralph',
-      'persistent-mode',
-      'session-start',
-      'session-end',
-      'pre-tool-use',
-      'post-tool-use',
-      'autopilot',
-      'subagent-start',
-      'subagent-stop',
-      'pre-compact',
-      'setup-init',
-      'setup-maintenance',
-      'permission-request'
+      "keyword-detector",
+      "stop-continuation",
+      "ralph",
+      "persistent-mode",
+      "session-start",
+      "session-end",
+      "pre-tool-use",
+      "post-tool-use",
+      "autopilot",
+      "subagent-start",
+      "subagent-stop",
+      "pre-compact",
+      "setup-init",
+      "setup-maintenance",
+      "permission-request",
     ] satisfies HookType[];
 
-    it('should disable all hook types when DISABLE_OMC=1', async () => {
-      process.env.DISABLE_OMC = '1';
+    it("should disable all hook types when DISABLE_OMC=1", async () => {
+      process.env.DISABLE_OMC = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test'
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
       };
 
       for (const hookType of hookTypes) {
@@ -256,191 +259,200 @@ describe('processHook - Environment Kill-Switches', () => {
     });
   });
 
-  describe('Bedrock/Vertex model deny on Agent tool (issue #1415)', () => {
-    it('should deny Agent calls with model param when forceInherit is enabled', async () => {
-      process.env.CLAUDE_CODE_USE_BEDROCK = '1';
+  describe("Bedrock/Vertex model deny on Agent tool (issue #1415)", () => {
+    it("should deny Agent calls with model param when forceInherit is enabled", async () => {
+      process.env.CLAUDE_CODE_USE_BEDROCK = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName: 'Agent',
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
+        toolName: "Agent",
         toolInput: {
-          description: 'Test agent',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
-          model: 'sonnet',
+          description: "Test agent",
+          prompt: "Do something",
+          subagent_type: "oh-my-claudecode:executor",
+          model: "sonnet",
         },
       };
 
-      const result = await processHook('pre-tool-use', input);
-      expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
-      expect(output.permissionDecision).toBe('deny');
-      expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
-      expect(output.permissionDecisionReason).toContain('Agent');
+      const result = await processHook("pre-tool-use", input);
+      expect(result).toHaveProperty("hookSpecificOutput");
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
+      expect(output.permissionDecision).toBe("deny");
+      expect(output.permissionDecisionReason).toContain("MODEL ROUTING");
+      expect(output.permissionDecisionReason).toContain("Agent");
     });
 
-    it('should deny Task calls with model param when forceInherit is enabled', async () => {
-      process.env.CLAUDE_CODE_USE_BEDROCK = '1';
+    it("should deny Task calls with model param when forceInherit is enabled", async () => {
+      process.env.CLAUDE_CODE_USE_BEDROCK = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName: 'Task',
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
+        toolName: "Task",
         toolInput: {
-          description: 'Test task',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
-          model: 'opus',
+          description: "Test task",
+          prompt: "Do something",
+          subagent_type: "oh-my-claudecode:executor",
+          model: "opus",
         },
       };
 
-      const result = await processHook('pre-tool-use', input);
-      expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
-      expect(output.permissionDecision).toBe('deny');
-      expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
-      expect(output.permissionDecisionReason).toContain('Task');
+      const result = await processHook("pre-tool-use", input);
+      expect(result).toHaveProperty("hookSpecificOutput");
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
+      expect(output.permissionDecision).toBe("deny");
+      expect(output.permissionDecisionReason).toContain("MODEL ROUTING");
+      expect(output.permissionDecisionReason).toContain("Task");
     });
 
-    it('should allow Agent calls without model param on Bedrock', async () => {
-      process.env.CLAUDE_CODE_USE_BEDROCK = '1';
+    it("should allow Agent calls without model param on Bedrock", async () => {
+      process.env.CLAUDE_CODE_USE_BEDROCK = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName: 'Agent',
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
+        toolName: "Agent",
         toolInput: {
-          description: 'Test agent',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
+          description: "Test agent",
+          prompt: "Do something",
+          subagent_type: "oh-my-claudecode:executor",
         },
       };
 
-      const result = await processHook('pre-tool-use', input);
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown> | undefined;
-      expect(output?.permissionDecision).not.toBe('deny');
+      const result = await processHook("pre-tool-use", input);
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown> | undefined;
+      expect(output?.permissionDecision).not.toBe("deny");
     });
 
-    it('should deny lowercase agent calls with model param when forceInherit is enabled', async () => {
-      process.env.CLAUDE_CODE_USE_BEDROCK = '1';
+    it("should deny lowercase agent calls with model param when forceInherit is enabled", async () => {
+      process.env.CLAUDE_CODE_USE_BEDROCK = "1";
 
       const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName: 'agent',
+        sessionId: "test-session",
+        prompt: "test",
+        directory: "/tmp/test",
+        toolName: "agent",
         toolInput: {
-          description: 'Test agent',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
-          model: 'sonnet',
+          description: "Test agent",
+          prompt: "Do something",
+          subagent_type: "oh-my-claudecode:executor",
+          model: "sonnet",
         },
       };
 
-      const result = await processHook('pre-tool-use', input);
-      expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
-      expect(output.permissionDecision).toBe('deny');
-      expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
-    });
-  });
-
-  describe('post-tool-use delegation completion handling', () => {
-    it.each(['Task', 'Agent'])('should surface verification reminder for %s completions', async (toolName) => {
-      const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName,
-        toolInput: {
-          description: 'Test agent',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
-        },
-        toolOutput: 'done',
-      };
-
-      const result = await processHook('post-tool-use', input);
-
-      expect(result.continue).toBe(true);
-      expect(result.message).toContain('MANDATORY VERIFICATION - SUBAGENTS LIE');
-      expect(result.message).toContain('done');
+      const result = await processHook("pre-tool-use", input);
+      expect(result).toHaveProperty("hookSpecificOutput");
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
+      expect(output.permissionDecision).toBe("deny");
+      expect(output.permissionDecisionReason).toContain("MODEL ROUTING");
     });
   });
 
-  describe('sanitizeHookOutputForSerialization', () => {
-    it('drops empty top-level message fields', () => {
+  describe("post-tool-use delegation completion handling", () => {
+    it.each(["Task", "Agent"])(
+      "should surface verification reminder for %s completions",
+      async (toolName) => {
+        const input: HookInput = {
+          sessionId: "test-session",
+          prompt: "test",
+          directory: "/tmp/test",
+          toolName,
+          toolInput: {
+            description: "Test agent",
+            prompt: "Do something",
+            subagent_type: "oh-my-claudecode:executor",
+          },
+          toolOutput: "done",
+        };
+
+        const result = await processHook("post-tool-use", input);
+
+        expect(result.continue).toBe(true);
+        expect(result.message).toContain(
+          "MANDATORY VERIFICATION - SUBAGENTS LIE",
+        );
+        expect(result.message).toContain("done");
+      },
+    );
+  });
+
+  describe("sanitizeHookOutputForSerialization", () => {
+    it("drops empty top-level message fields", () => {
       expect(
         sanitizeHookOutputForSerialization({
           continue: true,
-          message: '   ',
+          message: "   ",
         }),
       ).toEqual({ continue: true });
     });
 
-    it('drops empty hook additionalContext and systemMessage fields', () => {
+    it("drops empty hook additionalContext and systemMessage fields", () => {
       expect(
         sanitizeHookOutputForSerialization({
           continue: true,
-          systemMessage: '\n\t',
+          systemMessage: "\n\t",
           hookSpecificOutput: {
-            hookEventName: 'PostToolUse',
-            additionalContext: '   ',
+            hookEventName: "PostToolUse",
+            additionalContext: "   ",
           },
         }),
       ).toEqual({
         continue: true,
         hookSpecificOutput: {
-          hookEventName: 'PostToolUse',
+          hookEventName: "PostToolUse",
         },
       });
     });
 
-    it('preserves non-text hook metadata while stripping empty injected text', () => {
+    it("preserves non-text hook metadata while stripping empty injected text", () => {
       expect(
         sanitizeHookOutputForSerialization({
           continue: true,
           hookSpecificOutput: {
-            hookEventName: 'PreToolUse',
-            additionalContext: '',
-            permissionDecision: 'deny',
-            permissionDecisionReason: 'Need confirmation',
+            hookEventName: "PreToolUse",
+            additionalContext: "",
+            permissionDecision: "deny",
+            permissionDecisionReason: "Need confirmation",
           },
         }),
       ).toEqual({
         continue: true,
         hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: 'Need confirmation',
+          hookEventName: "PreToolUse",
+          permissionDecision: "deny",
+          permissionDecisionReason: "Need confirmation",
         },
       });
     });
 
-    it('preserves explicit /ralplan startup additionalContext under hookSpecificOutput', () => {
+    it("preserves explicit /ralplan startup additionalContext under hookSpecificOutput", () => {
       expect(
         sanitizeHookOutputForSerialization({
           continue: true,
           hookSpecificOutput: {
-            hookEventName: 'UserPromptSubmit',
+            hookEventName: "UserPromptSubmit",
             additionalContext:
-              '[RALPLAN INIT] Explicit /ralplan invoke detected during UserPromptSubmit.\n' +
-              'Proceed immediately with the consensus planning workflow for:\n' +
-              '/oh-my-claudecode:ralplan issue #2622',
+              "[RALPLAN INIT] Explicit /ralplan invoke detected during UserPromptSubmit.\n" +
+              "Proceed immediately with the consensus planning workflow for:\n" +
+              "/oh-my-claudecode:ralplan issue #2622",
           },
         }),
       ).toEqual({
         continue: true,
         hookSpecificOutput: {
-          hookEventName: 'UserPromptSubmit',
+          hookEventName: "UserPromptSubmit",
           additionalContext:
-            '[RALPLAN INIT] Explicit /ralplan invoke detected during UserPromptSubmit.\n' +
-            'Proceed immediately with the consensus planning workflow for:\n' +
-            '/oh-my-claudecode:ralplan issue #2622',
+            "[RALPLAN INIT] Explicit /ralplan invoke detected during UserPromptSubmit.\n" +
+            "Proceed immediately with the consensus planning workflow for:\n" +
+            "/oh-my-claudecode:ralplan issue #2622",
         },
       });
     });

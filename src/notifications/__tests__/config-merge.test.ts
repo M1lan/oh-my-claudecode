@@ -271,7 +271,10 @@ describe("getNotificationConfig - file + env deep merge", () => {
       }),
     );
     vi.stubEnv("OMC_DISCORD_MENTION", "<@12345678901234567>");
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
 
     const config = getNotificationConfig();
     expect(config!["discord-bot"]!.mention).toBe("<@12345678901234567>");
@@ -292,7 +295,10 @@ describe("getNotificationConfig - file + env deep merge", () => {
         },
       }),
     );
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
 
     const config = getNotificationConfig();
     expect(config!["discord-bot"]!.mention).toBe("<@12345678901234567>");
@@ -313,7 +319,10 @@ describe("getNotificationConfig - file + env deep merge", () => {
         },
       }),
     );
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/test");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/test",
+    );
 
     const config = getNotificationConfig();
     expect(config!["discord-bot"]!.mention).toBeUndefined();
@@ -350,7 +359,10 @@ describe("getNotificationConfig - file + env deep merge", () => {
         },
       }),
     );
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/env-slack");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/env-slack",
+    );
 
     const config = getNotificationConfig();
     expect(config).not.toBeNull();
@@ -360,7 +372,9 @@ describe("getNotificationConfig - file + env deep merge", () => {
     );
     // Env slack merged in
     expect(config!.slack).toBeDefined();
-    expect(config!.slack!.webhookUrl).toBe("https://hooks.slack.com/services/env-slack");
+    expect(config!.slack!.webhookUrl).toBe(
+      "https://hooks.slack.com/services/env-slack",
+    );
     expect(config!.slack!.enabled).toBe(true);
   });
 
@@ -377,10 +391,15 @@ describe("getNotificationConfig - file + env deep merge", () => {
         },
       }),
     );
-    vi.stubEnv("OMC_SLACK_WEBHOOK_URL", "https://hooks.slack.com/services/env-url");
+    vi.stubEnv(
+      "OMC_SLACK_WEBHOOK_URL",
+      "https://hooks.slack.com/services/env-url",
+    );
 
     const config = getNotificationConfig();
-    expect(config!.slack!.webhookUrl).toBe("https://hooks.slack.com/services/file-url");
+    expect(config!.slack!.webhookUrl).toBe(
+      "https://hooks.slack.com/services/file-url",
+    );
   });
 
   it("env slack mention fills missing mention in file slack config", () => {

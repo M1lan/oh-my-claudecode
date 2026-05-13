@@ -11,7 +11,7 @@
  * - Uses `claude -p` for summarization
  */
 
-import { dim } from '../colors.js';
+import { dim } from "../colors.js";
 
 export interface SessionSummaryState {
   summary: string;
@@ -27,5 +27,5 @@ export function renderSessionSummary(
   summaryState: SessionSummaryState | null,
 ): string | null {
   if (!summaryState?.summary) return null;
-  return dim('summary:') + summaryState.summary;
+  return dim("summary:") + summaryState.summary;
 }

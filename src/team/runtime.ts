@@ -975,6 +975,7 @@ export async function spawnWorkerForTask(
       runtime.sessionName,
       paneId,
       generateTriggerMessage(runtime.teamName, workerNameValue),
+      1,
     );
     if (!notified) {
       await killWorkerPane(runtime, workerNameValue, paneId);

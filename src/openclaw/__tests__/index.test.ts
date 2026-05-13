@@ -18,9 +18,12 @@ vi.mock("../../notifications/tmux.js", () => ({
   getCurrentTmuxSession: () => mockGetCurrentTmuxSession(),
 }));
 
-const mockGetNewPaneTail = vi.fn<(paneId: string, stateDir: string, maxLines?: number) => string>(() => "");
+const mockGetNewPaneTail = vi.fn<
+  (paneId: string, stateDir: string, maxLines?: number) => string
+>(() => "");
 vi.mock("../../features/rate-limit-wait/pane-fresh-capture.js", () => ({
-  getNewPaneTail: (paneId: string, stateDir: string, maxLines?: number) => mockGetNewPaneTail(paneId, stateDir, maxLines),
+  getNewPaneTail: (paneId: string, stateDir: string, maxLines?: number) =>
+    mockGetNewPaneTail(paneId, stateDir, maxLines),
 }));
 
 // Mock config and dispatcher modules
@@ -33,12 +36,21 @@ vi.mock("../config.js", () => ({
 vi.mock("../dispatcher.js", () => ({
   wakeGateway: vi.fn(),
   wakeCommandGateway: vi.fn(),
-  isCommandGateway: vi.fn((config: { type?: string }) => config?.type === "command"),
-  shellEscapeArg: vi.fn((value: string) => "'" + value.replace(/'/g, "'\\''") + "'"),
-  interpolateInstruction: vi.fn((template: string, vars: Record<string, string | undefined>) => {
-    // Simple implementation for tests
-    return template.replace(/\{\{(\w+)\}\}/g, (match: string, key: string) => vars[key] ?? match);
-  }),
+  isCommandGateway: vi.fn(
+    (config: { type?: string }) => config?.type === "command",
+  ),
+  shellEscapeArg: vi.fn(
+    (value: string) => "'" + value.replace(/'/g, "'\\''") + "'",
+  ),
+  interpolateInstruction: vi.fn(
+    (template: string, vars: Record<string, string | undefined>) => {
+      // Simple implementation for tests
+      return template.replace(
+        /\{\{(\w+)\}\}/g,
+        (match: string, key: string) => vars[key] ?? match,
+      );
+    },
+  ),
 }));
 
 import { wakeOpenClaw } from "../index.js";
@@ -145,7 +157,9 @@ describe("wakeOpenClaw", () => {
     );
     const payload = vi.mocked(wakeGateway).mock.calls[0]?.[2];
     expect(payload.tmuxTail).toBe(parseTmuxTail(freshContent, 15));
-    expect(payload.tmuxTail).toBe("RuntimeError: boom\nBLOCKED: runtime failure");
+    expect(payload.tmuxTail).toBe(
+      "RuntimeError: boom\nBLOCKED: runtime failure",
+    );
   });
 
   it("omits tmuxTail from stop payload when pane has no new lines", async () => {
@@ -165,7 +179,9 @@ describe("wakeOpenClaw", () => {
   it("uses a single timestamp in both template variables and payload", async () => {
     // Spy on Date.prototype.toISOString to track calls
     const mockTimestamp = "2026-02-25T12:00:00.000Z";
-    const dateSpy = vi.spyOn(Date.prototype, "toISOString").mockReturnValue(mockTimestamp);
+    const dateSpy = vi
+      .spyOn(Date.prototype, "toISOString")
+      .mockReturnValue(mockTimestamp);
 
     await wakeOpenClaw("session-start", { projectPath: "/home/user/project" });
 
@@ -207,7 +223,15 @@ describe("wakeOpenClaw", () => {
 
     // Should only have these known keys (no extra properties)
     const contextKeys = Object.keys(payloadContext);
-    const allowedKeys = ["sessionId", "projectPath", "toolName", "prompt", "contextSummary", "reason", "question"];
+    const allowedKeys = [
+      "sessionId",
+      "projectPath",
+      "toolName",
+      "prompt",
+      "contextSummary",
+      "reason",
+      "question",
+    ];
     for (const key of contextKeys) {
       expect(allowedKeys).toContain(key);
     }
@@ -257,7 +281,11 @@ describe("wakeOpenClaw", () => {
   });
 
   it("returns the wakeGateway result on success", async () => {
-    const mockResult = { gateway: "my-gateway", success: true, statusCode: 200 };
+    const mockResult = {
+      gateway: "my-gateway",
+      success: true,
+      statusCode: 200,
+    };
     vi.mocked(wakeGateway).mockResolvedValue(mockResult);
 
     const result = await wakeOpenClaw("session-start", {});
@@ -265,7 +293,12 @@ describe("wakeOpenClaw", () => {
   });
 
   it("returns the wakeGateway result on failure", async () => {
-    const mockResult = { gateway: "my-gateway", success: false, error: "HTTP 500", statusCode: 500 };
+    const mockResult = {
+      gateway: "my-gateway",
+      success: false,
+      error: "HTTP 500",
+      statusCode: 500,
+    };
     vi.mocked(wakeGateway).mockResolvedValue(mockResult);
 
     const result = await wakeOpenClaw("session-start", {});
@@ -292,13 +325,19 @@ describe("wakeOpenClaw", () => {
   });
 
   it("routes to wakeCommandGateway for command gateways and does not call wakeGateway", async () => {
-    const commandGateway = { type: "command" as const, command: "echo {{instruction}}" };
+    const commandGateway = {
+      type: "command" as const,
+      command: "echo {{instruction}}",
+    };
     vi.mocked(resolveGateway).mockReturnValue({
       gatewayName: "cmd-gw",
       gateway: commandGateway,
       instruction: "hello",
     });
-    vi.mocked(wakeCommandGateway).mockResolvedValue({ gateway: "cmd-gw", success: true });
+    vi.mocked(wakeCommandGateway).mockResolvedValue({
+      gateway: "cmd-gw",
+      success: true,
+    });
 
     const result = await wakeOpenClaw("session-start", { sessionId: "sid-1" });
 
@@ -322,22 +361,32 @@ describe("wakeOpenClaw", () => {
       gateway: { type: "command" as const, command: "echo test" },
       instruction: "test",
     });
-    vi.mocked(wakeCommandGateway).mockRejectedValue(new Error("Command exploded"));
+    vi.mocked(wakeCommandGateway).mockRejectedValue(
+      new Error("Command exploded"),
+    );
 
     const result = await wakeOpenClaw("session-start", {});
     expect(result).toBeNull();
   });
 
   it("passes the interpolated instruction as the instruction variable to wakeCommandGateway", async () => {
-    const commandGateway = { type: "command" as const, command: "notify {{instruction}}" };
+    const commandGateway = {
+      type: "command" as const,
+      command: "notify {{instruction}}",
+    };
     vi.mocked(resolveGateway).mockReturnValue({
       gatewayName: "cmd-gw",
       gateway: commandGateway,
       instruction: "Session started for {{projectName}}",
     });
-    vi.mocked(wakeCommandGateway).mockResolvedValue({ gateway: "cmd-gw", success: true });
+    vi.mocked(wakeCommandGateway).mockResolvedValue({
+      gateway: "cmd-gw",
+      success: true,
+    });
 
-    await wakeOpenClaw("session-start", { projectPath: "/home/user/myproject" });
+    await wakeOpenClaw("session-start", {
+      projectPath: "/home/user/myproject",
+    });
 
     expect(wakeCommandGateway).toHaveBeenCalledOnce();
     const call = vi.mocked(wakeCommandGateway).mock.calls[0];
@@ -374,13 +423,19 @@ describe("wakeOpenClaw", () => {
   });
 
   it("passes payloadJson and signalRouteKey to command gateways for PR creation", async () => {
-    const commandGateway = { type: "command" as const, command: "notify {{signalRouteKey}} {{payloadJson}}" };
+    const commandGateway = {
+      type: "command" as const,
+      command: "notify {{signalRouteKey}} {{payloadJson}}",
+    };
     vi.mocked(resolveGateway).mockReturnValue({
       gatewayName: "cmd-gw",
       gateway: commandGateway,
       instruction: "Create PR",
     });
-    vi.mocked(wakeCommandGateway).mockResolvedValue({ gateway: "cmd-gw", success: true });
+    vi.mocked(wakeCommandGateway).mockResolvedValue({
+      gateway: "cmd-gw",
+      success: true,
+    });
 
     await wakeOpenClaw("post-tool-use", {
       sessionId: "sid-1",
@@ -392,8 +447,12 @@ describe("wakeOpenClaw", () => {
 
     const variables = vi.mocked(wakeCommandGateway).mock.calls[0][2];
     expect(variables.signalRouteKey).toBe("pull-request.created");
-    expect(variables.payloadJson).toContain('"routeKey":"pull-request.created"');
-    expect(variables.payloadJson).toContain('"prUrl":"https://github.com/example/repo/pull/1500"');
+    expect(variables.payloadJson).toContain(
+      '"routeKey":"pull-request.created"',
+    );
+    expect(variables.payloadJson).toContain(
+      '"prUrl":"https://github.com/example/repo/pull/1500"',
+    );
   });
 });
 
@@ -469,13 +528,19 @@ describe("reply channel context", () => {
     vi.stubEnv("OPENCLAW_REPLY_TARGET", "@bot");
     vi.stubEnv("OPENCLAW_REPLY_THREAD", "thread-123");
 
-    const commandGateway = { type: "command" as const, command: "notify {{replyChannel}} {{replyTarget}} {{replyThread}}" };
+    const commandGateway = {
+      type: "command" as const,
+      command: "notify {{replyChannel}} {{replyTarget}} {{replyThread}}",
+    };
     vi.mocked(resolveGateway).mockReturnValue({
       gatewayName: "cmd-gw",
       gateway: commandGateway,
       instruction: "test",
     });
-    vi.mocked(wakeCommandGateway).mockResolvedValue({ gateway: "cmd-gw", success: true });
+    vi.mocked(wakeCommandGateway).mockResolvedValue({
+      gateway: "cmd-gw",
+      success: true,
+    });
 
     await wakeOpenClaw("session-start", { sessionId: "sid-1" });
 
@@ -499,7 +564,6 @@ describe("reply channel context", () => {
     expect(payload.channel).toBe("#from-context");
   });
 });
-
 
 describe("burst dedupe for attached multi-pane sessions", () => {
   let projectDir: string;

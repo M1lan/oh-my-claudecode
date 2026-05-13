@@ -9,7 +9,7 @@ export interface WisdomEntry {
   content: string;
 }
 
-export type WisdomCategory = 'learnings' | 'decisions' | 'issues' | 'problems';
+export type WisdomCategory = "learnings" | "decisions" | "issues" | "problems";
 
 export interface PlanWisdom {
   planName: string;

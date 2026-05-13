@@ -33,7 +33,8 @@ import {
 export * from "./types.js";
 export * from "./constants.js";
 
-const SYNTHETIC_THINKING_CONTENT = "[Synthetic thinking block inserted to preserve message structure]";
+const SYNTHETIC_THINKING_CONTENT =
+  "[Synthetic thinking block inserted to preserve message structure]";
 
 function isContentPartType(type: string): boolean {
   return (CONTENT_PART_TYPES as readonly string[]).includes(type);

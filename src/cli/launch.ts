@@ -120,6 +120,7 @@ export function prepareOmcLaunchConfigDir(
     "projects",
     "rules",
     "skills",
+    "themes",
     OMC_CONFIG_FILE_REL,
     ".omc-version.json",
     ".omc-silent-update.json",
@@ -813,7 +814,7 @@ export async function launchCommand(args: string[]): Promise<void> {
     console.error(
       "[omc] Error: claude CLI not found. Install Claude Code first:",
     );
-    console.error("  pnpm add -g @anthropic-ai/claude-code");
+    console.error("  npm install -g @anthropic-ai/claude-code");
     process.exit(1);
   }
 

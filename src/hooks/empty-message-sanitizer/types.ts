@@ -34,7 +34,7 @@ export interface MessageInfo {
   /** Message identifier */
   id: string;
   /** Message role (user, assistant) */
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   /** Session ID */
   sessionID?: string;
   /** Additional properties */

@@ -7,14 +7,23 @@
  * Ported from oh-my-opencode's think-mode hook.
  */
 
-import { detectThinkKeyword, extractPromptText, detectUltrathinkKeyword } from './detector.js';
-import { getHighVariant, isAlreadyHighVariant, getThinkingConfig, getClaudeThinkingConfig } from './switcher.js';
-import type { ThinkModeState, ThinkModeInput } from './types.js';
+import {
+  detectThinkKeyword,
+  extractPromptText,
+  detectUltrathinkKeyword,
+} from "./detector.js";
+import {
+  getHighVariant,
+  isAlreadyHighVariant,
+  getThinkingConfig,
+  getClaudeThinkingConfig,
+} from "./switcher.js";
+import type { ThinkModeState, ThinkModeInput } from "./types.js";
 
 // Re-export all submodules
-export * from './detector.js';
-export * from './switcher.js';
-export * from './types.js';
+export * from "./detector.js";
+export * from "./switcher.js";
+export * from "./types.js";
 
 /** Session state storage for think mode */
 const thinkModeState = new Map<string, ThinkModeState>();
@@ -29,7 +38,9 @@ export function clearThinkModeState(sessionId: string): void {
 /**
  * Get the current think mode state for a session.
  */
-export function getThinkModeState(sessionId: string): ThinkModeState | undefined {
+export function getThinkModeState(
+  sessionId: string,
+): ThinkModeState | undefined {
   return thinkModeState.get(sessionId);
 }
 
@@ -47,7 +58,7 @@ export function isThinkModeActive(sessionId: string): boolean {
  */
 export function processThinkMode(
   sessionId: string,
-  promptText: string
+  promptText: string,
 ): ThinkModeState {
   const state: ThinkModeState = {
     requested: false,
@@ -75,7 +86,7 @@ export function createThinkModeHook() {
      */
     processChatParams: (
       sessionId: string,
-      input: ThinkModeInput
+      input: ThinkModeInput,
     ): ThinkModeState => {
       const promptText = extractPromptText(input.parts);
 
@@ -107,7 +118,10 @@ export function createThinkModeHook() {
       }
 
       const highVariant = getHighVariant(currentModel.modelId);
-      const thinkingConfig = getThinkingConfig(currentModel.providerId, currentModel.modelId);
+      const thinkingConfig = getThinkingConfig(
+        currentModel.providerId,
+        currentModel.modelId,
+      );
 
       if (highVariant) {
         input.message.model = {

@@ -5,19 +5,20 @@
  * They verify the full flow from detection to resume.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, rmSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
-import type { DaemonState } from '../../features/rate-limit-wait/types.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { mkdirSync, rmSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import type { DaemonState } from "../../features/rate-limit-wait/types.js";
 
 // Mock modules
-vi.mock('../../hud/usage-api.js', () => ({
+vi.mock("../../hud/usage-api.js", () => ({
   getUsage: vi.fn(),
 }));
 
-vi.mock('child_process', async () => {
-  const actual = await vi.importActual<typeof import('child_process')>('child_process');
+vi.mock("child_process", async () => {
+  const actual =
+    await vi.importActual<typeof import("child_process")>("child_process");
   return {
     ...actual,
     execSync: vi.fn(),
@@ -26,18 +27,18 @@ vi.mock('child_process', async () => {
   };
 });
 
-import { getUsage } from '../../hud/usage-api.js';
-import { execSync, spawnSync } from 'child_process';
+import { getUsage } from "../../hud/usage-api.js";
+import { execSync, spawnSync } from "child_process";
 import {
   checkRateLimitStatus,
   analyzePaneContent,
   scanForBlockedPanes,
   formatDaemonState,
   shouldMonitorBlockedPanes,
-} from '../../features/rate-limit-wait/index.js';
+} from "../../features/rate-limit-wait/index.js";
 
-describe('Rate Limit Wait Integration Tests', () => {
-  const testDir = join(tmpdir(), 'omc-integration-test-' + Date.now());
+describe("Rate Limit Wait Integration Tests", () => {
+  const testDir = join(tmpdir(), "omc-integration-test-" + Date.now());
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -52,8 +53,8 @@ describe('Rate Limit Wait Integration Tests', () => {
     }
   });
 
-  describe('Scenario: Rate limit detection and tracking', () => {
-    it('should detect when 5-hour limit is reached', async () => {
+  describe("Scenario: Rate limit detection and tracking", () => {
+    it("should detect when 5-hour limit is reached", async () => {
       // Simulate rate limit API response
       vi.mocked(getUsage).mockResolvedValue({
         rateLimits: {
@@ -76,7 +77,7 @@ describe('Rate Limit Wait Integration Tests', () => {
       expect(status!.timeUntilResetMs).toBeLessThanOrEqual(3600000);
     });
 
-    it('should detect when weekly limit is reached', async () => {
+    it("should detect when weekly limit is reached", async () => {
       vi.mocked(getUsage).mockResolvedValue({
         rateLimits: {
           fiveHourPercent: 50,
@@ -96,7 +97,7 @@ describe('Rate Limit Wait Integration Tests', () => {
       expect(status!.weeklyLimited).toBe(true);
     });
 
-    it('should handle transition from limited to not limited', async () => {
+    it("should handle transition from limited to not limited", async () => {
       // First call: limited
       vi.mocked(getUsage).mockResolvedValueOnce({
         rateLimits: {
@@ -128,7 +129,7 @@ describe('Rate Limit Wait Integration Tests', () => {
       expect(clearedStatus!.isLimited).toBe(false);
     });
 
-    it('should not classify transient usage-api 429 with stale cached usage as pane-blocking', async () => {
+    it("should not classify transient usage-api 429 with stale cached usage as pane-blocking", async () => {
       vi.mocked(getUsage).mockResolvedValue({
         rateLimits: {
           fiveHourPercent: 83,
@@ -138,19 +139,19 @@ describe('Rate Limit Wait Integration Tests', () => {
           monthlyPercent: 0,
           monthlyResetsAt: null,
         },
-        error: 'rate_limited',
+        error: "rate_limited",
       });
 
       const status = await checkRateLimitStatus();
 
       expect(status).not.toBeNull();
       expect(status!.isLimited).toBe(false);
-      expect(status!.apiErrorReason).toBe('rate_limited');
+      expect(status!.apiErrorReason).toBe("rate_limited");
       expect(status!.usingStaleData).toBe(true);
       expect(shouldMonitorBlockedPanes(status)).toBe(false);
     });
 
-    it('should keep true quota exhaustion pane-blocking even when reported from stale cached usage', async () => {
+    it("should keep true quota exhaustion pane-blocking even when reported from stale cached usage", async () => {
       vi.mocked(getUsage).mockResolvedValue({
         rateLimits: {
           fiveHourPercent: 100,
@@ -160,21 +161,21 @@ describe('Rate Limit Wait Integration Tests', () => {
           monthlyPercent: 0,
           monthlyResetsAt: null,
         },
-        error: 'rate_limited',
+        error: "rate_limited",
       });
 
       const status = await checkRateLimitStatus();
 
       expect(status).not.toBeNull();
       expect(status!.isLimited).toBe(true);
-      expect(status!.apiErrorReason).toBe('rate_limited');
+      expect(status!.apiErrorReason).toBe("rate_limited");
       expect(status!.usingStaleData).toBe(true);
       expect(shouldMonitorBlockedPanes(status)).toBe(true);
     });
   });
 
-  describe('Scenario: tmux pane analysis accuracy', () => {
-    it('should correctly identify Claude Code rate limit message', () => {
+  describe("Scenario: tmux pane analysis accuracy", () => {
+    it("should correctly identify Claude Code rate limit message", () => {
       const realWorldContent = `
 ╭─────────────────────────────────────────────────────────────────╮
 │  Claude Code                                                     │
@@ -196,11 +197,11 @@ What would you like to do?
       expect(result.hasClaudeCode).toBe(true);
       expect(result.hasRateLimitMessage).toBe(true);
       expect(result.isBlocked).toBe(true);
-      expect(result.rateLimitType).toBe('five_hour');
+      expect(result.rateLimitType).toBe("five_hour");
       expect(result.confidence).toBeGreaterThanOrEqual(0.8);
     });
 
-    it('should correctly identify weekly rate limit message', () => {
+    it("should correctly identify weekly rate limit message", () => {
       const weeklyLimitContent = `
 Claude Code v1.0.0
 
@@ -220,10 +221,10 @@ Enter choice: `;
       expect(result.hasClaudeCode).toBe(true);
       expect(result.hasRateLimitMessage).toBe(true);
       expect(result.isBlocked).toBe(true);
-      expect(result.rateLimitType).toBe('weekly');
+      expect(result.rateLimitType).toBe("weekly");
     });
 
-    it('should NOT flag normal Claude Code output as blocked', () => {
+    it("should NOT flag normal Claude Code output as blocked", () => {
       const normalContent = `
 Claude Code
 
@@ -245,7 +246,7 @@ Just describe what you need!
       expect(result.isBlocked).toBe(false);
     });
 
-    it('should NOT flag unrelated rate limit messages', () => {
+    it("should NOT flag unrelated rate limit messages", () => {
       const unrelatedContent = `
 $ curl https://api.github.com/users/test
 {
@@ -261,7 +262,7 @@ $ `;
       expect(result.isBlocked).toBe(false); // No Claude context
     });
 
-    it('should handle edge case: old rate limit message scrolled up', () => {
+    it("should handle edge case: old rate limit message scrolled up", () => {
       // Only last 15 lines should be analyzed
       // Rate limit message from earlier should be ignored if not in recent content
       const scrolledContent = `
@@ -284,41 +285,41 @@ Assistant: I can help with more tasks.
     });
   });
 
-  describe('Scenario: Full daemon state lifecycle', () => {
-    it('should format daemon state correctly for user display', () => {
+  describe("Scenario: Full daemon state lifecycle", () => {
+    it("should format daemon state correctly for user display", () => {
       const state: DaemonState = {
         isRunning: true,
         pid: 12345,
-        startedAt: new Date('2024-01-01T10:00:00Z'),
-        lastPollAt: new Date('2024-01-01T10:05:00Z'),
+        startedAt: new Date("2024-01-01T10:00:00Z"),
+        lastPollAt: new Date("2024-01-01T10:05:00Z"),
         rateLimitStatus: {
           fiveHourLimited: true,
           weeklyLimited: false,
           monthlyLimited: false,
           isLimited: true,
-          fiveHourResetsAt: new Date('2024-01-01T15:00:00Z'),
+          fiveHourResetsAt: new Date("2024-01-01T15:00:00Z"),
           weeklyResetsAt: null,
           monthlyResetsAt: null,
-          nextResetAt: new Date('2024-01-01T15:00:00Z'),
+          nextResetAt: new Date("2024-01-01T15:00:00Z"),
           timeUntilResetMs: 3600000,
-          lastCheckedAt: new Date('2024-01-01T10:05:00Z'),
+          lastCheckedAt: new Date("2024-01-01T10:05:00Z"),
         },
         blockedPanes: [
           {
-            id: '%0',
-            session: 'dev',
+            id: "%0",
+            session: "dev",
             windowIndex: 0,
-            windowName: 'claude',
+            windowName: "claude",
             paneIndex: 0,
             isActive: true,
             analysis: {
               hasClaudeCode: true,
               hasRateLimitMessage: true,
               isBlocked: true,
-              rateLimitType: 'five_hour',
+              rateLimitType: "five_hour",
               confidence: 0.95,
             },
-            firstDetectedAt: new Date('2024-01-01T10:01:00Z'),
+            firstDetectedAt: new Date("2024-01-01T10:01:00Z"),
             resumeAttempted: false,
           },
         ],
@@ -331,14 +332,14 @@ Assistant: I can help with more tasks.
       const output = formatDaemonState(state);
 
       // Verify key information is present
-      expect(output).toContain('Daemon running');
-      expect(output).toContain('12345');
-      expect(output).toContain('5-hour limit');
-      expect(output).toContain('Found 1 blocked');
-      expect(output).toContain('%0');
+      expect(output).toContain("Daemon running");
+      expect(output).toContain("12345");
+      expect(output).toContain("5-hour limit");
+      expect(output).toContain("Found 1 blocked");
+      expect(output).toContain("%0");
     });
 
-    it('should track resume attempts correctly', () => {
+    it("should track resume attempts correctly", () => {
       const stateAfterResume: DaemonState = {
         isRunning: true,
         pid: 12345,
@@ -357,7 +358,7 @@ Assistant: I can help with more tasks.
           lastCheckedAt: new Date(),
         },
         blockedPanes: [],
-        resumedPaneIds: ['%0', '%1'],
+        resumedPaneIds: ["%0", "%1"],
         totalResumeAttempts: 2,
         successfulResumes: 2,
         errorCount: 0,
@@ -365,34 +366,37 @@ Assistant: I can help with more tasks.
 
       const output = formatDaemonState(stateAfterResume);
 
-      expect(output).toContain('Resume attempts: 2');
-      expect(output).toContain('Successful: 2');
-      expect(output).toContain('Not rate limited');
+      expect(output).toContain("Resume attempts: 2");
+      expect(output).toContain("Successful: 2");
+      expect(output).toContain("Not rate limited");
     });
   });
 
-  describe('Scenario: Error handling and edge cases', () => {
-    it('should handle OAuth credentials not available', async () => {
-      vi.mocked(getUsage).mockResolvedValue({ rateLimits: null, error: 'no_credentials' });
+  describe("Scenario: Error handling and edge cases", () => {
+    it("should handle OAuth credentials not available", async () => {
+      vi.mocked(getUsage).mockResolvedValue({
+        rateLimits: null,
+        error: "no_credentials",
+      });
 
       const status = await checkRateLimitStatus();
 
       expect(status).toBeNull();
     });
 
-    it('should handle API timeout gracefully', async () => {
-      vi.mocked(getUsage).mockRejectedValue(new Error('ETIMEDOUT'));
+    it("should handle API timeout gracefully", async () => {
+      vi.mocked(getUsage).mockRejectedValue(new Error("ETIMEDOUT"));
 
       const status = await checkRateLimitStatus();
 
       expect(status).toBeNull();
     });
 
-    it('should handle tmux not installed', () => {
+    it("should handle tmux not installed", () => {
       vi.mocked(spawnSync).mockReturnValue({
         status: 1,
-        stdout: '',
-        stderr: 'tmux: command not found',
+        stdout: "",
+        stderr: "tmux: command not found",
         signal: null,
         pid: 0,
         output: [],
@@ -403,17 +407,19 @@ Assistant: I can help with more tasks.
       expect(blocked).toEqual([]);
     });
 
-    it('should handle malformed tmux output', () => {
+    it("should handle malformed tmux output", () => {
       vi.mocked(spawnSync).mockReturnValue({
         status: 0,
-        stdout: '/usr/bin/tmux',
-        stderr: '',
+        stdout: "/usr/bin/tmux",
+        stderr: "",
         signal: null,
         pid: 1234,
         output: [],
       });
 
-      vi.mocked(execSync).mockReturnValue('malformed output without proper format');
+      vi.mocked(execSync).mockReturnValue(
+        "malformed output without proper format",
+      );
 
       // Should not throw, just return empty
       const blocked = scanForBlockedPanes();
@@ -421,8 +427,8 @@ Assistant: I can help with more tasks.
     });
   });
 
-  describe('Scenario: Confidence scoring', () => {
-    it('should give higher confidence for multiple indicators', () => {
+  describe("Scenario: Confidence scoring", () => {
+    it("should give higher confidence for multiple indicators", () => {
       const highConfidenceContent = `
 Claude Code
 Rate limit reached
@@ -442,7 +448,7 @@ rate limit
       expect(highResult.confidence).toBeGreaterThan(lowResult.confidence);
     });
 
-    it('should require minimum confidence to mark as blocked', () => {
+    it("should require minimum confidence to mark as blocked", () => {
       const ambiguousContent = `
 some claude reference
 limit mentioned

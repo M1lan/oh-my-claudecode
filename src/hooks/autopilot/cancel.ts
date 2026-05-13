@@ -9,11 +9,15 @@ import {
   readAutopilotState,
   clearAutopilotState,
   writeAutopilotState,
-  getAutopilotStateAge
-} from './state.js';
-import { clearRalphState, clearLinkedUltraworkState, readRalphState } from '../ralph/index.js';
-import { clearUltraQAState, readUltraQAState } from '../ultraqa/index.js';
-import type { AutopilotState } from './types.js';
+  getAutopilotStateAge,
+} from "./state.js";
+import {
+  clearRalphState,
+  clearLinkedUltraworkState,
+  readRalphState,
+} from "../ralph/index.js";
+import { clearUltraQAState, readUltraQAState } from "../ultraqa/index.js";
+import type { AutopilotState } from "./types.js";
 
 export interface CancelResult {
   success: boolean;
@@ -25,20 +29,23 @@ export interface CancelResult {
  * Cancel autopilot and clean up all related state
  * Progress is preserved for potential resume
  */
-export function cancelAutopilot(directory: string, sessionId?: string): CancelResult {
+export function cancelAutopilot(
+  directory: string,
+  sessionId?: string,
+): CancelResult {
   const state = readAutopilotState(directory, sessionId);
 
   if (!state) {
     return {
       success: false,
-      message: 'No active autopilot session found'
+      message: "No active autopilot session found",
     };
   }
 
   if (!state.active) {
     return {
       success: false,
-      message: 'Autopilot is not currently active'
+      message: "Autopilot is not currently active",
     };
   }
 
@@ -56,14 +63,14 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
       } else {
         clearLinkedUltraworkState(directory);
       }
-      cleanedUp.push('ultrawork');
+      cleanedUp.push("ultrawork");
     }
     if (sessionId) {
       clearRalphState(directory, sessionId);
     } else {
       clearRalphState(directory);
     }
-    cleanedUp.push('ralph');
+    cleanedUp.push("ralph");
   }
 
   // Clean up any active UltraQA state
@@ -76,34 +83,36 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
     } else {
       clearUltraQAState(directory);
     }
-    cleanedUp.push('ultraqa');
+    cleanedUp.push("ultraqa");
   }
 
   // Mark autopilot as inactive but preserve state for resume
   state.active = false;
   writeAutopilotState(directory, state, sessionId);
 
-  const cleanupMsg = cleanedUp.length > 0
-    ? ` Cleaned up: ${cleanedUp.join(', ')}.`
-    : '';
+  const cleanupMsg =
+    cleanedUp.length > 0 ? ` Cleaned up: ${cleanedUp.join(", ")}.` : "";
 
   return {
     success: true,
     message: `Autopilot cancelled at phase: ${state.phase}.${cleanupMsg} Progress preserved for resume.`,
-    preservedState: state
+    preservedState: state,
   };
 }
 
 /**
  * Fully clear autopilot state (no preserve)
  */
-export function clearAutopilot(directory: string, sessionId?: string): CancelResult {
+export function clearAutopilot(
+  directory: string,
+  sessionId?: string,
+): CancelResult {
   const state = readAutopilotState(directory, sessionId);
 
   if (!state) {
     return {
       success: true,
-      message: 'No autopilot state to clear'
+      message: "No autopilot state to clear",
     };
   }
 
@@ -142,7 +151,7 @@ export function clearAutopilot(directory: string, sessionId?: string): CancelRes
 
   return {
     success: true,
-    message: 'Autopilot state cleared completely'
+    message: "Autopilot state cleared completely",
   };
 }
 
@@ -158,7 +167,10 @@ export const STALE_STATE_MAX_AGE_MS = 60 * 60 * 1000;
  * - Rejects stale states older than STALE_STATE_MAX_AGE_MS
  * - Auto-cleans stale state files to prevent future false positives
  */
-export function canResumeAutopilot(directory: string, sessionId?: string): {
+export function canResumeAutopilot(
+  directory: string,
+  sessionId?: string,
+): {
   canResume: boolean;
   state?: AutopilotState;
   resumePhase?: string;
@@ -170,7 +182,7 @@ export function canResumeAutopilot(directory: string, sessionId?: string): {
   }
 
   // Cannot resume terminal states
-  if (state.phase === 'complete' || state.phase === 'failed') {
+  if (state.phase === "complete" || state.phase === "failed") {
     return { canResume: false, state, resumePhase: state.phase };
   }
 
@@ -192,14 +204,17 @@ export function canResumeAutopilot(directory: string, sessionId?: string): {
   return {
     canResume: true,
     state,
-    resumePhase: state.phase
+    resumePhase: state.phase,
   };
 }
 
 /**
  * Resume a paused autopilot session
  */
-export function resumeAutopilot(directory: string, sessionId?: string): {
+export function resumeAutopilot(
+  directory: string,
+  sessionId?: string,
+): {
   success: boolean;
   message: string;
   state?: AutopilotState;
@@ -209,7 +224,7 @@ export function resumeAutopilot(directory: string, sessionId?: string): {
   if (!canResume || !state) {
     return {
       success: false,
-      message: 'No autopilot session available to resume'
+      message: "No autopilot session available to resume",
     };
   }
 
@@ -220,14 +235,14 @@ export function resumeAutopilot(directory: string, sessionId?: string): {
   if (!writeAutopilotState(directory, state, sessionId)) {
     return {
       success: false,
-      message: 'Failed to update autopilot state'
+      message: "Failed to update autopilot state",
     };
   }
 
   return {
     success: true,
     message: `Resuming autopilot at phase: ${state.phase}`,
-    state
+    state,
   };
 }
 
@@ -239,24 +254,18 @@ export function formatCancelMessage(result: CancelResult): string {
     return `[AUTOPILOT] ${result.message}`;
   }
 
-  const lines: string[] = [
-    '',
-    '[AUTOPILOT CANCELLED]',
-    '',
-    result.message,
-    ''
-  ];
+  const lines: string[] = ["", "[AUTOPILOT CANCELLED]", "", result.message, ""];
 
   if (result.preservedState) {
     const state = result.preservedState;
-    lines.push('Progress Summary:');
+    lines.push("Progress Summary:");
     lines.push(`- Phase reached: ${state.phase}`);
     lines.push(`- Files created: ${state.execution.files_created.length}`);
     lines.push(`- Files modified: ${state.execution.files_modified.length}`);
     lines.push(`- Agents used: ${state.total_agents_spawned}`);
-    lines.push('');
-    lines.push('Run /autopilot to resume from where you left off.');
+    lines.push("");
+    lines.push("Run /autopilot to resume from where you left off.");
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

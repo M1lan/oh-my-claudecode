@@ -14,19 +14,12 @@ export const HOOK_NAME = "thinking-block-validator";
 /**
  * Part types that are considered "content" (non-thinking)
  */
-export const CONTENT_PART_TYPES = [
-  "tool",
-  "tool_use",
-  "text"
-] as const;
+export const CONTENT_PART_TYPES = ["tool", "tool_use", "text"] as const;
 
 /**
  * Part types that are considered "thinking"
  */
-export const THINKING_PART_TYPES = [
-  "thinking",
-  "reasoning"
-] as const;
+export const THINKING_PART_TYPES = ["thinking", "reasoning"] as const;
 
 /**
  * Model patterns that support extended thinking
@@ -37,7 +30,7 @@ export const THINKING_MODEL_PATTERNS = [
   "-high",
   "claude-sonnet-4",
   "claude-opus-4",
-  "claude-3"
+  "claude-3",
 ] as const;
 
 /**
@@ -53,4 +46,5 @@ export const SYNTHETIC_THINKING_ID_PREFIX = "prt_0000000000_synthetic_thinking";
 /**
  * Error message that this hook prevents
  */
-export const PREVENTED_ERROR = "Expected thinking/redacted_thinking but found tool_use";
+export const PREVENTED_ERROR =
+  "Expected thinking/redacted_thinking but found tool_use";

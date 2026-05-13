@@ -9,25 +9,27 @@
  * comment detection directly in TypeScript.
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
-import { tmpdir } from 'os';
+import * as fs from "fs";
+import * as path from "path";
+import { tmpdir } from "os";
 import {
   HOOK_MESSAGE_HEADER,
   LINE_COMMENT_PATTERNS,
   EXTENSION_TO_LANGUAGE,
-} from './constants.js';
-import { applyFilters } from './filters.js';
-import type { CommentInfo, CommentCheckResult, PendingCall } from './types.js';
+} from "./constants.js";
+import { applyFilters } from "./filters.js";
+import type { CommentInfo, CommentCheckResult, PendingCall } from "./types.js";
 
-const DEBUG = process.env.COMMENT_CHECKER_DEBUG === '1';
-const DEBUG_FILE = path.join(tmpdir(), 'comment-checker-debug.log');
+const DEBUG = process.env.COMMENT_CHECKER_DEBUG === "1";
+const DEBUG_FILE = path.join(tmpdir(), "comment-checker-debug.log");
 
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [comment-checker] ${args
-      .map((a) => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)))
-      .join(' ')}\n`;
+      .map((a) =>
+        typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
+      )
+      .join(" ")}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
 }
@@ -46,13 +48,13 @@ function getLanguageFromPath(filePath: string): string | undefined {
 function detectComments(content: string, filePath: string): CommentInfo[] {
   const language = getLanguageFromPath(filePath);
   if (!language) {
-    debugLog('unsupported language for:', filePath);
+    debugLog("unsupported language for:", filePath);
     return [];
   }
 
   const pattern = LINE_COMMENT_PATTERNS[language];
   if (!pattern) {
-    debugLog('no pattern for language:', language);
+    debugLog("no pattern for language:", language);
     return [];
   }
 
@@ -68,20 +70,20 @@ function detectComments(content: string, filePath: string): CommentInfo[] {
 
     // Calculate line number
     const beforeMatch = content.substring(0, matchStart);
-    const lineNumber = beforeMatch.split('\n').length;
+    const lineNumber = beforeMatch.split("\n").length;
 
     // Determine comment type
-    let commentType: 'line' | 'block' | 'docstring' = 'line';
+    let commentType: "line" | "block" | "docstring" = "line";
     let isDocstring = false;
 
-    if (matchText.startsWith('/*') || matchText.startsWith('<!--')) {
-      commentType = 'block';
+    if (matchText.startsWith("/*") || matchText.startsWith("<!--")) {
+      commentType = "block";
     } else if (
       matchText.startsWith("'''") ||
       matchText.startsWith('"""') ||
-      matchText.startsWith('=begin')
+      matchText.startsWith("=begin")
     ) {
-      commentType = 'docstring';
+      commentType = "docstring";
       isDocstring = true;
     }
 
@@ -102,7 +104,7 @@ function detectComments(content: string, filePath: string): CommentInfo[] {
  */
 function extractCommentsFromContent(
   content: string,
-  filePath: string
+  filePath: string,
 ): CommentInfo[] {
   return detectComments(content, filePath);
 }
@@ -113,7 +115,7 @@ function extractCommentsFromContent(
 function extractCommentsFromEdit(
   newString: string,
   filePath: string,
-  oldString?: string
+  oldString?: string,
 ): CommentInfo[] {
   // Only check comments that are newly added
   const newComments = detectComments(newString, filePath);
@@ -134,7 +136,7 @@ function extractCommentsFromEdit(
  */
 function formatCommentMessage(comments: CommentInfo[]): string {
   if (comments.length === 0) {
-    return '';
+    return "";
   }
 
   const grouped = new Map<string, CommentInfo[]>();
@@ -149,8 +151,8 @@ function formatCommentMessage(comments: CommentInfo[]): string {
   for (const [filePath, fileComments] of grouped) {
     message += `\nFile: ${filePath}\n`;
     for (const comment of fileComments) {
-      const typeLabel = comment.isDocstring ? 'docstring' : comment.commentType;
-      message += `  Line ${comment.lineNumber} (${typeLabel}): ${comment.text.substring(0, 100)}${comment.text.length > 100 ? '...' : ''}\n`;
+      const typeLabel = comment.isDocstring ? "docstring" : comment.commentType;
+      message += `  Line ${comment.lineNumber} (${typeLabel}): ${comment.text.substring(0, 100)}${comment.text.length > 100 ? "..." : ""}\n`;
     }
   }
 
@@ -165,7 +167,7 @@ export function checkForComments(
   content?: string,
   oldString?: string,
   newString?: string,
-  edits?: Array<{ old_string: string; new_string: string }>
+  edits?: Array<{ old_string: string; new_string: string }>,
 ): CommentCheckResult {
   let allComments: CommentInfo[] = [];
 
@@ -181,7 +183,7 @@ export function checkForComments(
       const editComments = extractCommentsFromEdit(
         edit.new_string,
         filePath,
-        edit.old_string
+        edit.old_string,
       );
       allComments.push(...editComments);
     }
@@ -191,7 +193,7 @@ export function checkForComments(
   const flaggedComments = applyFilters(allComments);
 
   debugLog(
-    `found ${allComments.length} comments, ${flaggedComments.length} flagged after filtering`
+    `found ${allComments.length} comments, ${flaggedComments.length} flagged after filtering`,
   );
 
   if (flaggedComments.length === 0) {
@@ -232,7 +234,7 @@ const pendingCalls = new Map<string, PendingCall>();
  * a message prompting Claude to justify or remove unnecessary comments.
  */
 export function createCommentCheckerHook(config?: CommentCheckerConfig) {
-  debugLog('createCommentCheckerHook called', { config });
+  debugLog("createCommentCheckerHook called", { config });
 
   return {
     /**
@@ -246,9 +248,9 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
       const toolLower = input.tool_name.toLowerCase();
 
       if (
-        toolLower !== 'write' &&
-        toolLower !== 'edit' &&
-        toolLower !== 'multiedit'
+        toolLower !== "write" &&
+        toolLower !== "edit" &&
+        toolLower !== "multiedit"
       ) {
         return null;
       }
@@ -272,7 +274,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
       // Generate a call ID based on session and timestamp
       const callId = `${input.session_id}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-      debugLog('registering pendingCall:', {
+      debugLog("registering pendingCall:", {
         callId,
         filePath,
         tool: toolLower,
@@ -284,7 +286,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
         oldString,
         newString,
         edits,
-        tool: toolLower as 'write' | 'edit' | 'multiedit',
+        tool: toolLower as "write" | "edit" | "multiedit",
         sessionId: input.session_id,
         timestamp: Date.now(),
       });
@@ -304,9 +306,9 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
       const toolLower = input.tool_name.toLowerCase();
 
       if (
-        toolLower !== 'write' &&
-        toolLower !== 'edit' &&
-        toolLower !== 'multiedit'
+        toolLower !== "write" &&
+        toolLower !== "edit" &&
+        toolLower !== "multiedit"
       ) {
         return null;
       }
@@ -343,7 +345,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
           edits: input.tool_input.edits as
             | Array<{ old_string: string; new_string: string }>
             | undefined,
-          tool: toolLower as 'write' | 'edit' | 'multiedit',
+          tool: toolLower as "write" | "edit" | "multiedit",
           sessionId: input.session_id,
           timestamp: Date.now(),
         };
@@ -357,13 +359,13 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
       if (input.tool_response) {
         const responseLower = input.tool_response.toLowerCase();
         const isToolFailure =
-          responseLower.includes('error:') ||
-          responseLower.includes('failed to') ||
-          responseLower.includes('could not') ||
-          responseLower.startsWith('error');
+          responseLower.includes("error:") ||
+          responseLower.includes("failed to") ||
+          responseLower.includes("could not") ||
+          responseLower.startsWith("error");
 
         if (isToolFailure) {
-          debugLog('skipping due to tool failure in response');
+          debugLog("skipping due to tool failure in response");
           return null;
         }
       }
@@ -374,11 +376,11 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
         pendingCall.content,
         pendingCall.oldString,
         pendingCall.newString,
-        pendingCall.edits
+        pendingCall.edits,
       );
 
       if (result.hasComments && result.message) {
-        debugLog('detected comments, returning message');
+        debugLog("detected comments, returning message");
         return config?.customPrompt || result.message;
       }
 
@@ -388,10 +390,10 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
 }
 
 // Re-export types
-export type { CommentInfo, CommentCheckResult, PendingCall } from './types.js';
+export type { CommentInfo, CommentCheckResult, PendingCall } from "./types.js";
 
 // Re-export filters
-export { applyFilters } from './filters.js';
+export { applyFilters } from "./filters.js";
 
 // Re-export constants
 export {
@@ -400,4 +402,4 @@ export {
   HOOK_MESSAGE_HEADER,
   LINE_COMMENT_PATTERNS,
   EXTENSION_TO_LANGUAGE,
-} from './constants.js';
+} from "./constants.js";

@@ -19,8 +19,13 @@ import {
 } from "fs";
 import { promises as fsPromises } from "fs";
 import { join } from "path";
-import { getOmcRoot } from '../../lib/worktree-paths.js';
-import { initJobDb, getActiveJobs, getRecentJobs, getJobStats } from '../../lib/job-state-db.js';
+import { getOmcRoot } from "../../lib/worktree-paths.js";
+import {
+  initJobDb,
+  getActiveJobs,
+  getRecentJobs,
+  getJobStats,
+} from "../../lib/job-state-db.js";
 
 // ============================================================================
 // Types
@@ -52,9 +57,26 @@ export interface CompactCheckpoint {
   };
   wisdom_exported: boolean;
   background_jobs?: {
-    active: Array<{ jobId: string; provider: string; model: string; agentRole: string; spawnedAt: string }>;
-    recent: Array<{ jobId: string; provider: string; status: string; agentRole: string; completedAt?: string }>;
-    stats: { total: number; active: number; completed: number; failed: number } | null;
+    active: Array<{
+      jobId: string;
+      provider: string;
+      model: string;
+      agentRole: string;
+      spawnedAt: string;
+    }>;
+    recent: Array<{
+      jobId: string;
+      provider: string;
+      status: string;
+      agentRole: string;
+      completedAt?: string;
+    }>;
+    stats: {
+      total: number;
+      active: number;
+      completed: number;
+      failed: number;
+    } | null;
   };
 }
 
@@ -274,9 +296,26 @@ function readTodoSummary(directory: string): {
  * Queries .omc/state/jobs.db for Codex/Gemini job statuses
  */
 async function getActiveJobsSummary(directory: string): Promise<{
-  activeJobs: Array<{ jobId: string; provider: string; model: string; agentRole: string; spawnedAt: string }>;
-  recentJobs: Array<{ jobId: string; provider: string; status: string; agentRole: string; completedAt?: string }>;
-  stats: { total: number; active: number; completed: number; failed: number } | null;
+  activeJobs: Array<{
+    jobId: string;
+    provider: string;
+    model: string;
+    agentRole: string;
+    spawnedAt: string;
+  }>;
+  recentJobs: Array<{
+    jobId: string;
+    provider: string;
+    status: string;
+    agentRole: string;
+    completedAt?: string;
+  }>;
+  stats: {
+    total: number;
+    active: number;
+    completed: number;
+    failed: number;
+  } | null;
 }> {
   try {
     const dbReady = await initJobDb(directory);
@@ -288,19 +327,21 @@ async function getActiveJobsSummary(directory: string): Promise<{
     const recent = getRecentJobs(undefined, 5 * 60 * 1000, directory); // Last 5 minutes
 
     // Filter recent to only completed/failed (not active ones which are already listed)
-    const recentCompleted = recent.filter(j => j.status === 'completed' || j.status === 'failed');
+    const recentCompleted = recent.filter(
+      (j) => j.status === "completed" || j.status === "failed",
+    );
 
     const stats = getJobStats(directory);
 
     return {
-      activeJobs: active.map(j => ({
+      activeJobs: active.map((j) => ({
         jobId: j.jobId,
         provider: j.provider,
         model: j.model,
         agentRole: j.agentRole,
         spawnedAt: j.spawnedAt,
       })),
-      recentJobs: recentCompleted.slice(0, 10).map(j => ({
+      recentJobs: recentCompleted.slice(0, 10).map((j) => ({
         jobId: j.jobId,
         provider: j.provider,
         status: j.status,
@@ -310,7 +351,7 @@ async function getActiveJobsSummary(directory: string): Promise<{
       stats,
     };
   } catch (error) {
-    console.error('[PreCompact] Error reading job state DB:', error);
+    console.error("[PreCompact] Error reading job state DB:", error);
     return { activeJobs: [], recentJobs: [], stats: null };
   }
 }
@@ -409,8 +450,12 @@ export function formatCompactSummary(checkpoint: CompactCheckpoint): string {
     if (jobs.active.length > 0) {
       lines.push("### Currently Running");
       for (const job of jobs.active) {
-        const age = Math.round((Date.now() - new Date(job.spawnedAt).getTime()) / 1000);
-        lines.push(`- **${job.jobId}** ${job.provider}/${job.model} (${job.agentRole}) - ${age}s ago`);
+        const age = Math.round(
+          (Date.now() - new Date(job.spawnedAt).getTime()) / 1000,
+        );
+        lines.push(
+          `- **${job.jobId}** ${job.provider}/${job.model} (${job.agentRole}) - ${age}s ago`,
+        );
       }
       lines.push("");
     }
@@ -418,14 +463,18 @@ export function formatCompactSummary(checkpoint: CompactCheckpoint): string {
     if (jobs.recent.length > 0) {
       lines.push("### Recently Completed");
       for (const job of jobs.recent) {
-        const icon = job.status === 'completed' ? 'OK' : 'FAIL';
-        lines.push(`- **${job.jobId}** [${icon}] ${job.provider} (${job.agentRole})`);
+        const icon = job.status === "completed" ? "OK" : "FAIL";
+        lines.push(
+          `- **${job.jobId}** [${icon}] ${job.provider} (${job.agentRole})`,
+        );
       }
       lines.push("");
     }
 
     if (jobs.stats) {
-      lines.push(`**Job Stats:** ${jobs.stats.active} active, ${jobs.stats.completed} completed, ${jobs.stats.failed} failed (${jobs.stats.total} total)`);
+      lines.push(
+        `**Job Stats:** ${jobs.stats.active} active, ${jobs.stats.completed} completed, ${jobs.stats.failed} failed (${jobs.stats.total} total)`,
+      );
       lines.push("");
     }
   }

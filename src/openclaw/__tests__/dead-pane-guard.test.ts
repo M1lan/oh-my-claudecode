@@ -11,7 +11,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { join } from "path";
 
 // Hoisted mock for the delta-capture function used inside wakeOpenClaw.
-const mockGetNewPaneTail = vi.fn<(paneId: string, stateDir: string, maxLines?: number) => string>(() => "");
+const mockGetNewPaneTail = vi.fn<
+  (paneId: string, stateDir: string, maxLines?: number) => string
+>(() => "");
 
 vi.mock("../../features/rate-limit-wait/pane-fresh-capture.js", () => ({
   getNewPaneTail: (paneId: string, stateDir: string, maxLines?: number) =>
@@ -62,9 +64,21 @@ const TEST_CONFIG: OpenClawConfig = {
     "test-gw": { url: "https://example.com/hook", method: "POST" },
   },
   hooks: {
-    stop: { gateway: "test-gw", instruction: "Stopped: {{tmuxTail}}", enabled: true },
-    "session-end": { gateway: "test-gw", instruction: "Ended: {{tmuxTail}}", enabled: true },
-    "session-start": { gateway: "test-gw", instruction: "Started", enabled: true },
+    stop: {
+      gateway: "test-gw",
+      instruction: "Stopped: {{tmuxTail}}",
+      enabled: true,
+    },
+    "session-end": {
+      gateway: "test-gw",
+      instruction: "Ended: {{tmuxTail}}",
+      enabled: true,
+    },
+    "session-start": {
+      gateway: "test-gw",
+      instruction: "Started",
+      enabled: true,
+    },
   },
 };
 
@@ -92,7 +106,10 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     mockGetNewPaneTail.mockReset();
     mockGetNewPaneTail.mockReturnValue("");
     vi.mocked(wakeGateway).mockReset();
-    vi.mocked(wakeGateway).mockResolvedValue({ gateway: "test-gw", success: true });
+    vi.mocked(wakeGateway).mockResolvedValue({
+      gateway: "test-gw",
+      success: true,
+    });
   });
 
   afterEach(() => {
@@ -112,7 +129,11 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     });
 
     expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
-    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [string, unknown, { tmuxTail?: string }];
+    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
+      string,
+      unknown,
+      { tmuxTail?: string },
+    ];
     expect(payload.tmuxTail).toBeUndefined();
   });
 
@@ -125,13 +146,20 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     });
 
     expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
-    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [string, unknown, { tmuxTail?: string }];
+    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
+      string,
+      unknown,
+      { tmuxTail?: string },
+    ];
     expect(payload.tmuxTail).toBe("live output line");
   });
 
   it("skips capture for session-end when pane has no new lines", async () => {
     mockGetNewPaneTail.mockReturnValue("");
-    vi.mocked(resolveGateway).mockReturnValue({ ...RESOLVED_GW, instruction: "Ended: {{tmuxTail}}" });
+    vi.mocked(resolveGateway).mockReturnValue({
+      ...RESOLVED_GW,
+      instruction: "Ended: {{tmuxTail}}",
+    });
 
     await wakeOpenClaw("session-end", {
       sessionId: "sid-end-dead",
@@ -139,12 +167,19 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     });
 
     expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
-    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [string, unknown, { tmuxTail?: string }];
+    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
+      string,
+      unknown,
+      { tmuxTail?: string },
+    ];
     expect(payload.tmuxTail).toBeUndefined();
   });
 
   it("does not call getNewPaneTail for session-start (non-stop event)", async () => {
-    vi.mocked(resolveGateway).mockReturnValue({ ...RESOLVED_GW, instruction: "Started" });
+    vi.mocked(resolveGateway).mockReturnValue({
+      ...RESOLVED_GW,
+      instruction: "Started",
+    });
 
     await wakeOpenClaw("session-start", {
       sessionId: "sid-start",
@@ -182,7 +217,11 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
-    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [string, unknown, { tmuxTail?: string }];
+    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
+      string,
+      unknown,
+      { tmuxTail?: string },
+    ];
     expect(payload.tmuxTail).toBeUndefined();
   });
 
@@ -194,7 +233,11 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
-    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [string, unknown, { tmuxTail?: string }];
+    const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
+      string,
+      unknown,
+      { tmuxTail?: string },
+    ];
     expect(payload.tmuxTail).toBe("pre-captured content");
   });
 });

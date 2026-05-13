@@ -4,10 +4,10 @@
  * Promotes learnings from ralph-progress to full skills.
  */
 
-import { readProgress } from '../ralph/index.js';
-import { writeSkill } from './writer.js';
-import type { SkillExtractionRequest } from './types.js';
-import type { WriteSkillResult } from './writer.js';
+import { readProgress } from "../ralph/index.js";
+import { writeSkill } from "./writer.js";
+import type { SkillExtractionRequest } from "./types.js";
+import type { WriteSkillResult } from "./writer.js";
 
 export interface PromotionCandidate {
   /** The learning text */
@@ -25,13 +25,28 @@ export interface PromotionCandidate {
  */
 function extractTriggers(text: string): string[] {
   const technicalKeywords = [
-    'react', 'typescript', 'javascript', 'python', 'api', 'database',
-    'testing', 'debugging', 'performance', 'async', 'state', 'component',
-    'error', 'validation', 'authentication', 'cache', 'query', 'mutation',
+    "react",
+    "typescript",
+    "javascript",
+    "python",
+    "api",
+    "database",
+    "testing",
+    "debugging",
+    "performance",
+    "async",
+    "state",
+    "component",
+    "error",
+    "validation",
+    "authentication",
+    "cache",
+    "query",
+    "mutation",
   ];
 
   const textLower = text.toLowerCase();
-  return technicalKeywords.filter(kw => textLower.includes(kw));
+  return technicalKeywords.filter((kw) => textLower.includes(kw));
 }
 
 /**
@@ -39,7 +54,7 @@ function extractTriggers(text: string): string[] {
  */
 export function getPromotionCandidates(
   directory: string,
-  limit: number = 10
+  limit: number = 10,
 ): PromotionCandidate[] {
   const progress = readProgress(directory);
   if (!progress) {
@@ -66,7 +81,9 @@ export function getPromotionCandidates(
   }
 
   // Sort by number of triggers (more specific = better candidate)
-  return candidates.sort((a, b) => b.suggestedTriggers.length - a.suggestedTriggers.length);
+  return candidates.sort(
+    (a, b) => b.suggestedTriggers.length - a.suggestedTriggers.length,
+  );
 }
 
 /**
@@ -76,13 +93,15 @@ export function promoteLearning(
   candidate: PromotionCandidate,
   skillName: string,
   additionalTriggers: string[],
-  targetScope: 'user' | 'project',
-  projectRoot: string | null
+  targetScope: "user" | "project",
+  projectRoot: string | null,
 ): WriteSkillResult {
   const request: SkillExtractionRequest = {
     problem: `Learning from ${candidate.storyId}: ${candidate.learning.slice(0, 100)}...`,
     solution: candidate.learning,
-    triggers: [...new Set([...candidate.suggestedTriggers, ...additionalTriggers])],
+    triggers: [
+      ...new Set([...candidate.suggestedTriggers, ...additionalTriggers]),
+    ],
     targetScope,
   };
 
@@ -96,28 +115,32 @@ export function listPromotableLearnings(directory: string): string {
   const candidates = getPromotionCandidates(directory);
 
   if (candidates.length === 0) {
-    return 'No promotion candidates found in ralph-progress learnings.';
+    return "No promotion candidates found in ralph-progress learnings.";
   }
 
   const lines = [
-    '# Promotion Candidates',
-    '',
-    'The following learnings from ralph-progress could be promoted to skills:',
-    '',
+    "# Promotion Candidates",
+    "",
+    "The following learnings from ralph-progress could be promoted to skills:",
+    "",
   ];
 
   candidates.forEach((candidate, index) => {
-    lines.push(`## ${index + 1}. From ${candidate.storyId} (${candidate.timestamp})`);
-    lines.push('');
+    lines.push(
+      `## ${index + 1}. From ${candidate.storyId} (${candidate.timestamp})`,
+    );
+    lines.push("");
     lines.push(candidate.learning);
-    lines.push('');
+    lines.push("");
     if (candidate.suggestedTriggers.length > 0) {
-      lines.push(`**Suggested triggers:** ${candidate.suggestedTriggers.join(', ')}`);
+      lines.push(
+        `**Suggested triggers:** ${candidate.suggestedTriggers.join(", ")}`,
+      );
     }
-    lines.push('');
-    lines.push('---');
-    lines.push('');
+    lines.push("");
+    lines.push("---");
+    lines.push("");
   });
 
-  return lines.join('\n');
+  return lines.join("\n");
 }

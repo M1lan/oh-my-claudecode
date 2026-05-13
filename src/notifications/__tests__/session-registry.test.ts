@@ -24,7 +24,12 @@ import {
   type SessionMapping,
 } from "../session-registry.js";
 
-const SESSION_REGISTRY_MODULE_PATH = join(process.cwd(), "src", "notifications", "session-registry.ts");
+const SESSION_REGISTRY_MODULE_PATH = join(
+  process.cwd(),
+  "src",
+  "notifications",
+  "session-registry.ts",
+);
 
 let testDir: string;
 let REGISTRY_PATH: string;
@@ -47,16 +52,18 @@ registerMessage(mapping);
     });
 
     let stderr = "";
-    child.stderr.on("data", chunk => {
+    child.stderr.on("data", (chunk) => {
       stderr += chunk.toString();
     });
 
     child.on("error", reject);
-    child.on("exit", code => {
+    child.on("exit", (code) => {
       if (code === 0) {
         resolve();
       } else {
-        reject(new Error(stderr || `child exited with code ${code ?? "unknown"}`));
+        reject(
+          new Error(stderr || `child exited with code ${code ?? "unknown"}`),
+        );
       }
     });
   });
@@ -192,7 +199,7 @@ describe("session-registry", () => {
       const registerPromise = registerMessageInChildProcess(mapping);
 
       // Give child process time to start and attempt lock acquisition.
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(existsSync(REGISTRY_PATH)).toBe(false);
 
       // Release lock, then registerMessage should proceed.
@@ -202,7 +209,7 @@ describe("session-registry", () => {
       await registerPromise;
 
       const loaded = loadAllMappings();
-      expect(loaded.some(m => m.messageId === "contended")).toBe(true);
+      expect(loaded.some((m) => m.messageId === "contended")).toBe(true);
     });
 
     it("retries across lock-timeout windows and eventually appends", async () => {
@@ -220,7 +227,7 @@ describe("session-registry", () => {
 
       const registerPromise = registerMessageInChildProcess(mapping);
 
-      await new Promise(resolve => setTimeout(resolve, 2300));
+      await new Promise((resolve) => setTimeout(resolve, 2300));
       expect(existsSync(REGISTRY_PATH)).toBe(false);
       expect(existsSync(LOCK_PATH)).toBe(true);
 
@@ -230,7 +237,7 @@ describe("session-registry", () => {
       await registerPromise;
 
       const loaded = loadAllMappings();
-      expect(loaded.some(m => m.messageId === "timeout-retry")).toBe(true);
+      expect(loaded.some((m) => m.messageId === "timeout-retry")).toBe(true);
     });
 
     it("does not reap stale lock when owner pid is still alive", async () => {
@@ -258,7 +265,7 @@ describe("session-registry", () => {
 
       const registerPromise = registerMessageInChildProcess(mapping);
 
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
       expect(existsSync(LOCK_PATH)).toBe(true);
       expect(existsSync(REGISTRY_PATH)).toBe(false);
 
@@ -267,7 +274,7 @@ describe("session-registry", () => {
       await registerPromise;
 
       const loaded = loadAllMappings();
-      expect(loaded.some(m => m.messageId === "alive-owner")).toBe(true);
+      expect(loaded.some((m) => m.messageId === "alive-owner")).toBe(true);
     });
 
     it("reaps stale lock when owner pid is not alive", () => {
@@ -295,7 +302,7 @@ describe("session-registry", () => {
       registerMessage(mapping);
 
       const loaded = loadAllMappings();
-      expect(loaded.some(m => m.messageId === "dead-owner")).toBe(true);
+      expect(loaded.some((m) => m.messageId === "dead-owner")).toBe(true);
       expect(existsSync(LOCK_PATH)).toBe(false);
     });
   });

@@ -54,12 +54,19 @@ describe("getNotificationConfig - named profiles", () => {
       JSON.stringify({
         notifications: {
           enabled: true,
-          slack: { enabled: true, webhookUrl: "https://hooks.slack.com/default" },
+          slack: {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/default",
+          },
         },
         notificationProfiles: {
           work: {
             enabled: true,
-            telegram: { enabled: true, botToken: "work-token", chatId: "work-chat" },
+            telegram: {
+              enabled: true,
+              botToken: "work-token",
+              chatId: "work-chat",
+            },
           },
         },
       }),
@@ -80,12 +87,18 @@ describe("getNotificationConfig - named profiles", () => {
       JSON.stringify({
         notifications: {
           enabled: true,
-          slack: { enabled: true, webhookUrl: "https://hooks.slack.com/default" },
+          slack: {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/default",
+          },
         },
         notificationProfiles: {
           ops: {
             enabled: true,
-            discord: { enabled: true, webhookUrl: "https://discord.com/api/webhooks/ops" },
+            discord: {
+              enabled: true,
+              webhookUrl: "https://discord.com/api/webhooks/ops",
+            },
           },
         },
       }),
@@ -93,7 +106,9 @@ describe("getNotificationConfig - named profiles", () => {
 
     const config = getNotificationConfig();
     expect(config).not.toBeNull();
-    expect(config!.discord!.webhookUrl).toBe("https://discord.com/api/webhooks/ops");
+    expect(config!.discord!.webhookUrl).toBe(
+      "https://discord.com/api/webhooks/ops",
+    );
     expect(config!.slack).toBeUndefined();
   });
 
@@ -109,7 +124,11 @@ describe("getNotificationConfig - named profiles", () => {
           },
           "arg-profile": {
             enabled: true,
-            telegram: { enabled: true, botToken: "arg-token", chatId: "arg-chat" },
+            telegram: {
+              enabled: true,
+              botToken: "arg-token",
+              chatId: "arg-chat",
+            },
           },
         },
       }),
@@ -128,7 +147,10 @@ describe("getNotificationConfig - named profiles", () => {
       JSON.stringify({
         notifications: {
           enabled: true,
-          slack: { enabled: true, webhookUrl: "https://hooks.slack.com/default" },
+          slack: {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/default",
+          },
         },
         notificationProfiles: {
           work: {
@@ -157,7 +179,11 @@ describe("getNotificationConfig - named profiles", () => {
       JSON.stringify({
         notifications: {
           enabled: true,
-          telegram: { enabled: true, botToken: "default-tk", chatId: "default-ch" },
+          telegram: {
+            enabled: true,
+            botToken: "default-tk",
+            chatId: "default-ch",
+          },
         },
       }),
     );
@@ -194,7 +220,10 @@ describe("getNotificationConfig - named profiles", () => {
         notificationProfiles: {
           work: {
             enabled: true,
-            discord: { enabled: true, webhookUrl: "https://discord.com/api/webhooks/work" },
+            discord: {
+              enabled: true,
+              webhookUrl: "https://discord.com/api/webhooks/work",
+            },
           },
         },
       }),
@@ -203,7 +232,9 @@ describe("getNotificationConfig - named profiles", () => {
     const config = getNotificationConfig("work");
     expect(config).not.toBeNull();
     // Profile's discord preserved
-    expect(config!.discord!.webhookUrl).toBe("https://discord.com/api/webhooks/work");
+    expect(config!.discord!.webhookUrl).toBe(
+      "https://discord.com/api/webhooks/work",
+    );
     // Env telegram merged in
     expect(config!.telegram).toBeDefined();
     expect(config!.telegram!.botToken).toBe("env-tg-token");
@@ -240,7 +271,10 @@ describe("getNotificationConfig - named profiles", () => {
           },
           personal: {
             enabled: true,
-            slack: { enabled: true, webhookUrl: "https://hooks.slack.com/personal" },
+            slack: {
+              enabled: true,
+              webhookUrl: "https://hooks.slack.com/personal",
+            },
           },
         },
       }),
@@ -251,7 +285,9 @@ describe("getNotificationConfig - named profiles", () => {
     expect(workConfig!.slack).toBeUndefined();
 
     const personalConfig = getNotificationConfig("personal");
-    expect(personalConfig!.slack!.webhookUrl).toBe("https://hooks.slack.com/personal");
+    expect(personalConfig!.slack!.webhookUrl).toBe(
+      "https://hooks.slack.com/personal",
+    );
     expect(personalConfig!.telegram).toBeUndefined();
   });
 
@@ -284,7 +320,10 @@ describe("getNotificationConfig - named profiles", () => {
       JSON.stringify({
         notifications: {
           enabled: true,
-          slack: { enabled: true, webhookUrl: "https://hooks.slack.com/default" },
+          slack: {
+            enabled: true,
+            webhookUrl: "https://hooks.slack.com/default",
+          },
         },
         notificationProfiles: {
           work: {

@@ -8,11 +8,11 @@
  * Security: pane IDs are validated before use in shell commands.
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
-import { join } from 'path';
-import { tmuxExec } from '../../cli/tmux-utils.js';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { join } from "path";
+import { tmuxExec } from "../../cli/tmux-utils.js";
 
-const STATE_FILE = 'pane-tail-positions.json';
+const STATE_FILE = "pane-tail-positions.json";
 
 /** Default maximum new lines to surface per capture. */
 const DEFAULT_MAX_LINES = 15;
@@ -28,8 +28,12 @@ function readPaneTailState(stateDir: string): PaneTailState {
   const path = join(stateDir, STATE_FILE);
   try {
     if (existsSync(path)) {
-      const parsed = JSON.parse(readFileSync(path, 'utf-8')) as unknown;
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      const parsed = JSON.parse(readFileSync(path, "utf-8")) as unknown;
+      if (
+        typeof parsed === "object" &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
         return parsed as PaneTailState;
       }
     }
@@ -42,7 +46,9 @@ function readPaneTailState(stateDir: string): PaneTailState {
 function writePaneTailState(stateDir: string, state: PaneTailState): void {
   try {
     mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, STATE_FILE), JSON.stringify(state), { mode: 0o600 });
+    writeFileSync(join(stateDir, STATE_FILE), JSON.stringify(state), {
+      mode: 0o600,
+    });
   } catch {
     // best-effort — never block alert path on write failure
   }
@@ -55,17 +61,17 @@ function writePaneTailState(stateDir: string, state: PaneTailState): void {
 export function getPaneHistorySize(paneId: string): number | null {
   try {
     const raw = tmuxExec(
-      ['display-message', '-t', paneId, '-p', '#{pane_dead} #{history_size}'],
+      ["display-message", "-t", paneId, "-p", "#{pane_dead} #{history_size}"],
       { stripTmux: true, timeout: 3000 },
     ).trim();
 
     const parts = raw.split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
       const [paneDeadRaw, historySizeRaw] = parts;
-      if (paneDeadRaw === '1') {
+      if (paneDeadRaw === "1") {
         return null;
       }
-      const n = parseInt(historySizeRaw ?? '', 10);
+      const n = parseInt(historySizeRaw ?? "", 10);
       return Number.isFinite(n) && n >= 0 ? n : null;
     }
 
@@ -84,11 +90,11 @@ function capturePaneLines(paneId: string, lines: number): string {
   try {
     const safeLines = Math.max(1, Math.min(500, Math.floor(lines)));
     return tmuxExec(
-      ['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`],
+      ["capture-pane", "-t", paneId, "-p", "-S", `-${safeLines}`],
       { stripTmux: true, timeout: 5000 },
     );
   } catch {
-    return '';
+    return "";
   }
 }
 
@@ -114,13 +120,13 @@ export function getNewPaneTail(
   maxLines: number = DEFAULT_MAX_LINES,
 ): string {
   if (!isValidPaneId(paneId)) {
-    return '';
+    return "";
   }
 
   const currentSize = getPaneHistorySize(paneId);
   if (currentSize === null) {
     // Pane gone or tmux unavailable — silently skip rather than replay stale content.
-    return '';
+    return "";
   }
 
   const state = readPaneTailState(stateDir);
@@ -139,7 +145,7 @@ export function getNewPaneTail(
   const newLines = currentSize - lastSize;
   if (newLines <= 0) {
     // No new output since last scan — stale, suppress.
-    return '';
+    return "";
   }
 
   // Emit only the delta, capped at maxLines to bound payload size.

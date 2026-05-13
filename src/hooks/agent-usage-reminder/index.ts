@@ -15,14 +15,18 @@ import {
   loadAgentUsageState,
   saveAgentUsageState,
   clearAgentUsageState,
-} from './storage.js';
-import { TARGET_TOOLS, AGENT_TOOLS, REMINDER_MESSAGE } from './constants.js';
-import type { AgentUsageState } from './types.js';
+} from "./storage.js";
+import { TARGET_TOOLS, AGENT_TOOLS, REMINDER_MESSAGE } from "./constants.js";
+import type { AgentUsageState } from "./types.js";
 
 // Re-export types and utilities
-export { loadAgentUsageState, saveAgentUsageState, clearAgentUsageState } from './storage.js';
-export { TARGET_TOOLS, AGENT_TOOLS, REMINDER_MESSAGE } from './constants.js';
-export type { AgentUsageState } from './types.js';
+export {
+  loadAgentUsageState,
+  saveAgentUsageState,
+  clearAgentUsageState,
+} from "./storage.js";
+export { TARGET_TOOLS, AGENT_TOOLS, REMINDER_MESSAGE } from "./constants.js";
+export type { AgentUsageState } from "./types.js";
 
 interface ToolExecuteInput {
   tool: string;
@@ -108,7 +112,7 @@ export function createAgentUsageReminderHook() {
     const props = event.properties as Record<string, unknown> | undefined;
 
     // Clean up state when session is deleted
-    if (event.type === 'session.deleted') {
+    if (event.type === "session.deleted") {
       const sessionInfo = props?.info as { id?: string } | undefined;
       if (sessionInfo?.id) {
         resetState(sessionInfo.id);
@@ -116,7 +120,7 @@ export function createAgentUsageReminderHook() {
     }
 
     // Clean up state when session is compacted
-    if (event.type === 'session.compacted') {
+    if (event.type === "session.compacted") {
       const sessionID = (props?.sessionID ??
         (props?.info as { id?: string } | undefined)?.id) as string | undefined;
       if (sessionID) {
@@ -126,7 +130,7 @@ export function createAgentUsageReminderHook() {
   };
 
   return {
-    'tool.execute.after': toolExecuteAfter,
+    "tool.execute.after": toolExecuteAfter,
     event: eventHandler,
   };
 }

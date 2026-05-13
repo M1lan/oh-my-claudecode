@@ -5,7 +5,11 @@ import {
   isEventAllowedByVerbosity,
   shouldIncludeTmuxTail,
 } from "../config.js";
-import type { NotificationConfig, VerbosityLevel, NotificationEvent } from "../types.js";
+import type {
+  NotificationConfig,
+  VerbosityLevel,
+  NotificationEvent,
+} from "../types.js";
 
 describe("getVerbosity", () => {
   const baseConfig: NotificationConfig = {
@@ -91,7 +95,9 @@ describe("isEventAllowedByVerbosity", () => {
     });
 
     it("blocks ask-user-question", () => {
-      expect(isEventAllowedByVerbosity("minimal", "ask-user-question")).toBe(false);
+      expect(isEventAllowedByVerbosity("minimal", "ask-user-question")).toBe(
+        false,
+      );
     });
 
     it("blocks agent-call", () => {
@@ -107,7 +113,9 @@ describe("isEventAllowedByVerbosity", () => {
     });
 
     it("blocks ask-user-question", () => {
-      expect(isEventAllowedByVerbosity("session", "ask-user-question")).toBe(false);
+      expect(isEventAllowedByVerbosity("session", "ask-user-question")).toBe(
+        false,
+      );
     });
 
     it("blocks agent-call", () => {
@@ -127,7 +135,9 @@ describe("isEventAllowedByVerbosity", () => {
     });
 
     it("blocks ask-user-question", () => {
-      expect(isEventAllowedByVerbosity("agent", "ask-user-question")).toBe(false);
+      expect(isEventAllowedByVerbosity("agent", "ask-user-question")).toBe(
+        false,
+      );
     });
   });
 

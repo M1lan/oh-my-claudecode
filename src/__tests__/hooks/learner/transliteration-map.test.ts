@@ -104,7 +104,7 @@ describe("expandTriggers", () => {
       expect(result).toContain("딥파이프");
     });
 
-    it('does NOT expand generic dev-* triggers (native Korean, removed)', () => {
+    it("does NOT expand generic dev-* triggers (native Korean, removed)", () => {
       expect(expandTriggers(["pipeline-cycle"])).toEqual(["pipeline-cycle"]);
       expect(expandTriggers(["dev-pipeline"])).toEqual(["dev-pipeline"]);
       expect(expandTriggers(["dev-cycle"])).toEqual(["dev-cycle"]);

@@ -5,15 +5,27 @@
  * Project skills override user skills with same ID.
  */
 
-import { existsSync, readdirSync, realpathSync, mkdirSync } from 'fs';
-import { join, normalize, sep } from 'path';
-import { USER_SKILLS_DIR, PROJECT_SKILLS_SUBDIR, PROJECT_AGENT_SKILLS_SUBDIR, SKILL_EXTENSION, DEBUG_ENABLED, GLOBAL_SKILLS_DIR, MAX_RECURSION_DEPTH } from './constants.js';
-import type { SkillFileCandidate } from './types.js';
+import { existsSync, readdirSync, realpathSync, mkdirSync } from "fs";
+import { join, normalize, sep } from "path";
+import {
+  USER_SKILLS_DIR,
+  PROJECT_SKILLS_SUBDIR,
+  PROJECT_AGENT_SKILLS_SUBDIR,
+  SKILL_EXTENSION,
+  DEBUG_ENABLED,
+  GLOBAL_SKILLS_DIR,
+  MAX_RECURSION_DEPTH,
+} from "./constants.js";
+import type { SkillFileCandidate } from "./types.js";
 
 /**
  * Recursively find all skill files in a directory.
  */
-function findSkillFilesRecursive(dir: string, results: string[], depth: number = 0): void {
+function findSkillFilesRecursive(
+  dir: string,
+  results: string[],
+  depth: number = 0,
+): void {
   if (!existsSync(dir)) return;
   if (depth > MAX_RECURSION_DEPTH) return;
 
@@ -30,7 +42,7 @@ function findSkillFilesRecursive(dir: string, results: string[], depth: number =
     }
   } catch (error) {
     if (DEBUG_ENABLED) {
-      console.error('[learner] Error scanning directory:', error);
+      console.error("[learner] Error scanning directory:", error);
     }
   }
 }
@@ -53,8 +65,10 @@ function safeRealpathSync(filePath: string): string {
 function isWithinBoundary(realPath: string, boundary: string): boolean {
   const normalizedReal = normalize(realPath);
   const normalizedBoundary = normalize(safeRealpathSync(boundary));
-  return normalizedReal === normalizedBoundary ||
-         normalizedReal.startsWith(normalizedBoundary + sep);
+  return (
+    normalizedReal === normalizedBoundary ||
+    normalizedReal.startsWith(normalizedBoundary + sep)
+  );
 }
 
 /**
@@ -63,14 +77,14 @@ function isWithinBoundary(realPath: string, boundary: string): boolean {
  */
 export function findSkillFiles(
   projectRoot: string | null,
-  options?: { scope?: 'project' | 'user' | 'all' }
+  options?: { scope?: "project" | "user" | "all" },
 ): SkillFileCandidate[] {
   const candidates: SkillFileCandidate[] = [];
   const seenRealPaths = new Set<string>();
-  const scope = options?.scope ?? 'all';
+  const scope = options?.scope ?? "all";
 
   // 1. Search project-level skills (if scope allows)
-  if (projectRoot && (scope === 'project' || scope === 'all')) {
+  if (projectRoot && (scope === "project" || scope === "all")) {
     const projectSkillDirs = [
       join(projectRoot, PROJECT_SKILLS_SUBDIR),
       join(projectRoot, PROJECT_AGENT_SKILLS_SUBDIR),
@@ -86,7 +100,7 @@ export function findSkillFiles(
         // Symlink boundary check
         if (!isWithinBoundary(realPath, projectSkillsDir)) {
           if (DEBUG_ENABLED) {
-            console.warn('[learner] Symlink escape blocked:', filePath);
+            console.warn("[learner] Symlink escape blocked:", filePath);
           }
           continue;
         }
@@ -95,7 +109,7 @@ export function findSkillFiles(
         candidates.push({
           path: filePath,
           realPath,
-          scope: 'project',
+          scope: "project",
           sourceDir: projectSkillsDir,
         });
       }
@@ -103,7 +117,7 @@ export function findSkillFiles(
   }
 
   // 2. Search user-level skills from both directories (if scope allows)
-  if (scope === 'user' || scope === 'all') {
+  if (scope === "user" || scope === "all") {
     const userDirs = [GLOBAL_SKILLS_DIR, USER_SKILLS_DIR];
 
     for (const userDir of userDirs) {
@@ -116,7 +130,7 @@ export function findSkillFiles(
         // Symlink boundary check
         if (!isWithinBoundary(realPath, userDir)) {
           if (DEBUG_ENABLED) {
-            console.warn('[learner] Symlink escape blocked:', filePath);
+            console.warn("[learner] Symlink escape blocked:", filePath);
           }
           continue;
         }
@@ -125,7 +139,7 @@ export function findSkillFiles(
         candidates.push({
           path: filePath,
           realPath,
-          scope: 'user',
+          scope: "user",
           sourceDir: userDir,
         });
       }
@@ -138,13 +152,17 @@ export function findSkillFiles(
 /**
  * Get skills directory path for a scope.
  */
-export function getSkillsDir(scope: 'user' | 'project', projectRoot?: string, sourceDir?: string): string {
+export function getSkillsDir(
+  scope: "user" | "project",
+  projectRoot?: string,
+  sourceDir?: string,
+): string {
   if (sourceDir) return sourceDir;
-  if (scope === 'user') {
+  if (scope === "user") {
     return USER_SKILLS_DIR;
   }
   if (!projectRoot) {
-    throw new Error('Project root is required for project-scoped skills');
+    throw new Error("Project root is required for project-scoped skills");
   }
   return join(projectRoot, PROJECT_SKILLS_SUBDIR);
 }
@@ -152,7 +170,10 @@ export function getSkillsDir(scope: 'user' | 'project', projectRoot?: string, so
 /**
  * Ensure skills directory exists.
  */
-export function ensureSkillsDir(scope: 'user' | 'project', projectRoot?: string): boolean {
+export function ensureSkillsDir(
+  scope: "user" | "project",
+  projectRoot?: string,
+): boolean {
   const dir = getSkillsDir(scope, projectRoot);
 
   if (existsSync(dir)) {
@@ -164,7 +185,7 @@ export function ensureSkillsDir(scope: 'user' | 'project', projectRoot?: string)
     return true;
   } catch (error) {
     if (DEBUG_ENABLED) {
-      console.error('[learner] Error creating skills directory:', error);
+      console.error("[learner] Error creating skills directory:", error);
     }
     return false;
   }

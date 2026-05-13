@@ -243,8 +243,8 @@ export function syncPluginCache(verbose: boolean = false): {
   }
 
   try {
-    const pnpmRoot = String(
-      execSync("pnpm root -g", {
+    const npmRoot = String(
+      execSync("npm root -g", {
         encoding: "utf-8",
         stdio: "pipe",
         timeout: 10000,
@@ -252,11 +252,11 @@ export function syncPluginCache(verbose: boolean = false): {
       }) ?? "",
     ).trim();
 
-    if (!pnpmRoot) {
-      throw new Error("pnpm root -g returned an empty path");
+    if (!npmRoot) {
+      throw new Error("npm root -g returned an empty path");
     }
 
-    const sourceRoot = join(pnpmRoot, "oh-my-claude-sisyphus");
+    const sourceRoot = join(npmRoot, "oh-my-claude-sisyphus");
     const packageJsonPath = join(sourceRoot, "package.json");
     const packageJsonRaw = String(readFileSync(packageJsonPath, "utf-8") ?? "");
     const packageMetadata = JSON.parse(packageJsonRaw) as { version?: unknown };
@@ -480,8 +480,8 @@ export interface VersionMetadata {
   lastCheckAt?: string;
   /** Git commit hash if installed from source */
   commitHash?: string;
-  /** Installation method: 'script' | 'pnpm' | 'source' */
-  installMethod: "script" | "pnpm" | "source";
+  /** Installation method: 'script' | 'npm' | 'source' */
+  installMethod: "script" | "npm" | "source";
 }
 
 /**
@@ -530,10 +530,10 @@ export interface UpdateReconcileResult {
  */
 export function getInstalledVersion(): VersionMetadata | null {
   if (!existsSync(VERSION_FILE)) {
-    // Try to detect version from package.json if installed via pnpm
+    // Try to detect version from package.json if installed via npm
     try {
       // Check if we can find the package in node_modules
-      const result = execSync("pnpm list -g oh-my-claude-sisyphus --json", {
+      const result = execSync("npm list -g oh-my-claude-sisyphus --json", {
         encoding: "utf-8",
         timeout: 5000,
         stdio: "pipe",
@@ -543,11 +543,11 @@ export function getInstalledVersion(): VersionMetadata | null {
         return {
           version: data.dependencies["oh-my-claude-sisyphus"].version,
           installedAt: new Date().toISOString(),
-          installMethod: "pnpm",
+          installMethod: "npm",
         };
       }
     } catch {
-      // Not installed via pnpm or command failed
+      // Not installed via npm or command failed
     }
     return null;
   }
@@ -583,15 +583,88 @@ export function updateLastCheckTime(): void {
   }
 }
 
+function getGitHubUpdateToken(): string | null {
+  const token =
+    process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
+  return token || null;
+}
+
+function getGitHubReleaseHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github.v3+json",
+    "User-Agent": "oh-my-claudecode-updater",
+  };
+
+  const token = getGitHubUpdateToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return headers;
+}
+
+function getHeader(response: Response, name: string): string | null {
+  return (
+    response.headers?.get(name) ??
+    response.headers?.get(name.toLowerCase()) ??
+    null
+  );
+}
+
+function formatRateLimitReset(resetHeader: string | null): string | null {
+  if (!resetHeader) {
+    return null;
+  }
+
+  const resetSeconds = Number.parseInt(resetHeader, 10);
+  if (!Number.isFinite(resetSeconds) || resetSeconds <= 0) {
+    return null;
+  }
+
+  return new Date(resetSeconds * 1000).toISOString();
+}
+
+async function formatGitHubReleaseFetchError(
+  response: Response,
+  usedToken: boolean,
+): Promise<string> {
+  let body = "";
+  try {
+    body = await response.text();
+  } catch {
+    body = "";
+  }
+
+  const remaining = getHeader(response, "x-ratelimit-remaining");
+  const resetAt = formatRateLimitReset(
+    getHeader(response, "x-ratelimit-reset"),
+  );
+  const bodyLooksRateLimited = /rate limit|api rate limit|secondary rate/i.test(
+    body,
+  );
+  const isRateLimited =
+    response.status === 429 ||
+    (response.status === 403 && (remaining === "0" || bodyLooksRateLimited));
+
+  if (!isRateLimited) {
+    return `Failed to fetch release info: ${response.status} ${response.statusText}`;
+  }
+
+  const retrySuffix = resetAt ? ` Try again after ${resetAt}.` : "";
+  const authHint = usedToken
+    ? "The configured GitHub token appears to be rate limited; verify the token or try again later."
+    : "Set GH_TOKEN or GITHUB_TOKEN to use authenticated GitHub API requests and increase rate limits.";
+
+  return `Failed to fetch release info: GitHub API rate limit exceeded (${response.status} ${response.statusText}). ${authHint}${retrySuffix}`;
+}
+
 /**
  * Fetch the latest release from GitHub
  */
 export async function fetchLatestRelease(): Promise<ReleaseInfo> {
+  const usedToken = getGitHubUpdateToken() !== null;
   const response = await fetch(`${GITHUB_API_URL}/releases/latest`, {
-    headers: {
-      Accept: "application/vnd.github.v3+json",
-      "User-Agent": "oh-my-claudecode-updater",
-    },
+    headers: getGitHubReleaseHeaders(),
   });
 
   if (response.status === 404) {
@@ -619,9 +692,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
   }
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch release info: ${response.status} ${response.statusText}`,
-    );
+    throw new Error(await formatGitHubReleaseFetchError(response, usedToken));
   }
 
   return (await response.json()) as ReleaseInfo;
@@ -825,7 +896,7 @@ export async function performUpdate(options?: {
   const previousVersion = installed?.version ?? null;
 
   try {
-    // Block pnpm update only from active Claude Code/plugin sessions.
+    // Block npm update only from active Claude Code/plugin sessions.
     // Standalone terminals may inherit CLAUDE_PLUGIN_ROOT and should still update.
     if (shouldBlockStandaloneUpdateInCurrentSession() && !options?.standalone) {
       return {
@@ -833,7 +904,7 @@ export async function performUpdate(options?: {
         previousVersion,
         newVersion: "unknown",
         message:
-          'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force pnpm update.',
+          'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force npm update.',
       };
     }
 
@@ -841,12 +912,12 @@ export async function performUpdate(options?: {
     const release = await fetchLatestRelease();
     const newVersion = release.tag_name.replace(/^v/, "");
 
-    // Use pnpm for updates on all platforms (install.sh was removed)
+    // Use npm for updates on all platforms (install.sh was removed)
     try {
-      execSync("pnpm add -g oh-my-claude-sisyphus@latest", {
+      execSync("npm install -g oh-my-claude-sisyphus@latest", {
         encoding: "utf-8",
         stdio: options?.verbose ? "inherit" : "pipe",
-        timeout: 120000, // 2 minute timeout for pnpm
+        timeout: 120000, // 2 minute timeout for npm
         ...(process.platform === "win32" ? { windowsHide: true } : {}),
       });
 
@@ -858,7 +929,7 @@ export async function performUpdate(options?: {
 
       syncPluginCache(options?.verbose ?? false);
 
-      // CRITICAL FIX: After pnpm updates the global package, the current process
+      // CRITICAL FIX: After npm updates the global package, the current process
       // still has OLD code loaded in memory. We must re-exec to run reconciliation
       // with the NEW code. Otherwise, installOmc() runs OLD logic against NEW files.
       if (!process.env.OMC_UPDATE_RECONCILE) {
@@ -904,7 +975,7 @@ export async function performUpdate(options?: {
         saveVersionMetadata({
           version: newVersion,
           installedAt: new Date().toISOString(),
-          installMethod: "pnpm",
+          installMethod: "npm",
           lastCheckAt: new Date().toISOString(),
         });
 
@@ -938,12 +1009,12 @@ export async function performUpdate(options?: {
           message: "Reconciliation completed successfully",
         };
       }
-    } catch (pnpmError) {
+    } catch (npmError) {
       throw new Error(
-        "Auto-update via pnpm failed. Please run manually:\n" +
-          "  pnpm add -g oh-my-claude-sisyphus@latest\n" +
+        "Auto-update via npm failed. Please run manually:\n" +
+          "  npm install -g oh-my-claude-sisyphus@latest\n" +
           "Or use: /plugin install oh-my-claudecode\n" +
-          `Error: ${pnpmError instanceof Error ? pnpmError.message : pnpmError}`,
+          `Error: ${npmError instanceof Error ? npmError.message : npmError}`,
       );
     }
   } catch (error) {

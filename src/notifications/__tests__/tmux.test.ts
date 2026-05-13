@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../../cli/tmux-utils.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../../cli/tmux-utils.js")>();
+  const actual =
+    await importOriginal<typeof import("../../cli/tmux-utils.js")>();
   return { ...actual, tmuxShell: vi.fn() };
 });
 
@@ -39,13 +40,13 @@ describe("getCurrentTmuxSession", () => {
     process.env.TMUX_PANE = "%3";
 
     mockTmuxShell.mockReturnValueOnce(
-      "%0 main\n%1 main\n%2 background\n%3 my-detached-session\n"
+      "%0 main\n%1 main\n%2 background\n%3 my-detached-session\n",
     );
 
     expect(getCurrentTmuxSession()).toBe("my-detached-session");
     expect(mockTmuxShell).toHaveBeenCalledWith(
       "list-panes -a -F '#{pane_id} #{session_name}'",
-      expect.objectContaining({ timeout: 3000 })
+      expect.objectContaining({ timeout: 3000 }),
     );
   });
 
@@ -68,7 +69,7 @@ describe("getCurrentTmuxSession", () => {
     expect(getCurrentTmuxSession()).toBe("fallback-session");
     expect(mockTmuxShell).toHaveBeenCalledWith(
       "display-message -p '#S'",
-      expect.objectContaining({ timeout: 3000 })
+      expect.objectContaining({ timeout: 3000 }),
     );
   });
 
@@ -172,7 +173,7 @@ describe("getTeamTmuxSessions", () => {
 
   it("returns sessions matching the team prefix", () => {
     mockTmuxShell.mockReturnValueOnce(
-      "omc-team-myteam-worker1\nomc-team-myteam-worker2\nother-session\n"
+      "omc-team-myteam-worker1\nomc-team-myteam-worker2\nother-session\n",
     );
     expect(getTeamTmuxSessions("myteam")).toEqual(["worker1", "worker2"]);
   });
