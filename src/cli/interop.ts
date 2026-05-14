@@ -5,7 +5,7 @@
  * and Codex CLI (OMX) on the right, with shared interop state.
  */
 
-import { execFileSync } from "child_process";
+import { execFileSync, spawnSync } from "child_process";
 import { randomUUID } from "crypto";
 import { isTmuxAvailable, isClaudeAvailable, tmuxExec } from "./tmux-utils.js";
 import { initInteropSession } from "../interop/shared-state.js";
@@ -176,7 +176,7 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       console.log("- interop_read_messages: Read messages");
     } else {
       // Codex not available, just inform user
-      console.log("\nClaude Code is ready in this pane.");
+      console.log("\nLaunching Claude Code in this pane.");
       console.log("Install oh-my-codex to enable split-pane interop mode.");
       console.log("\nInstall: pnpm add -g @openai/codex");
     }
@@ -187,6 +187,19 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
     );
     process.exit(1);
   }
+
+  // Launch claude in the current (left) pane. spawnSync inherits stdio so
+  // claude takes over this terminal until it exits, mirroring how codex
+  // runs as the foreground process in the right pane.
+  const result = spawnSync("claude", [], { stdio: "inherit", cwd });
+  if (result.error) {
+    console.error(
+      "Error launching claude:",
+      result.error instanceof Error ? result.error.message : String(result.error),
+    );
+    process.exit(1);
+  }
+  process.exit(result.status ?? 0);
 }
 
 /**
