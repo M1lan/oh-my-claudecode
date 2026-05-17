@@ -17,10 +17,11 @@ You are the OMC Doctor - diagnose and fix installation issues.
 ```bash
 # Get installed and latest versions (cross-platform)
 node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));console.log('Installed:',v.length?v[v.length-1]:'(none)')}catch{console.log('Installed: (none)')}"
-pnpm view oh-my-claudecode version 2>/dev/null || echo "Latest: (unavailable)"
+npm view oh-my-claude-sisyphus version 2>/dev/null || echo "Latest: (unavailable)"
 ```
 
 **Diagnosis**:
+
 - If no version installed: CRITICAL - plugin not installed
 - If INSTALLED != LATEST: WARN - outdated plugin
 - If multiple versions exist: WARN - stale cache
@@ -28,11 +29,13 @@ pnpm view oh-my-claudecode version 2>/dev/null || echo "Latest: (unavailable)"
 ### Step 2: Check for Legacy Hooks in settings.json
 
 Read both `${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json` (profile-level) and `./.claude/settings.json` (project-level) and check if there's a `"hooks"` key with entries like:
+
 - `bash ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/keyword-detector.sh`
 - `bash ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/persistent-mode.sh`
 - `bash ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/session-start.sh`
 
 **Diagnosis**:
+
 - If found: CRITICAL - legacy hooks causing duplicates
 
 ### Step 3: Check for Legacy Bash Hook Scripts
@@ -42,6 +45,7 @@ ls -la "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/hooks/*.sh 2>/dev/null
 ```
 
 **Diagnosis**:
+
 - If `keyword-detector.sh`, `persistent-mode.sh`, `session-start.sh`, or `stop-continuation.sh` exist: WARN - legacy scripts (can cause confusion)
 
 ### Step 4: Check CLAUDE.md
@@ -67,6 +71,7 @@ grep -o "CLAUDE-[^ )]*\.md" "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/CLAUDE.md" 2>/d
 ```
 
 **Diagnosis**:
+
 - If CLAUDE.md missing: CRITICAL - CLAUDE.md not configured
 - If `<!-- OMC:START -->` found in CLAUDE.md: OK
 - If `<!-- OMC:START -->` found in a companion file (e.g. `CLAUDE-omc.md`): OK - file-split pattern detected
@@ -89,6 +94,7 @@ fi
 ```
 
 **Diagnosis**:
+
 - If Ruby is found: OK - Ralph dependency present
 - If Ruby is missing: WARN - Ralph workflows may fail until Ruby is installed
 
@@ -100,6 +106,7 @@ node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=pro
 ```
 
 **Diagnosis**:
+
 - If > 1 version: WARN - multiple cached versions (cleanup recommended)
 
 ### Step 7: Check for Legacy Curl-Installed Content
@@ -119,6 +126,7 @@ ls -la "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/skills/ 2>/dev/null
 ```
 
 **Diagnosis**:
+
 - If `~/.claude/agents/` exists with files matching plugin agent names: WARN - legacy agents (now provided by plugin)
 - If `~/.claude/commands/` exists with files matching plugin command names: WARN - legacy commands (now provided by plugin)
 - If `~/.claude/skills/` exists with files matching plugin skill names: WARN - legacy skills (now provided by plugin)
@@ -176,9 +184,11 @@ If issues found, ask user: "Would you like me to fix these issues automatically?
 If yes, apply fixes:
 
 ### Fix: Legacy Hooks in settings.json
+
 Remove the `"hooks"` section from `${CLAUDE_CONFIG_DIR:-~/.claude}/settings.json` (keep other settings intact)
 
 ### Fix: Legacy Bash Scripts
+
 ```bash
 rm -f "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/hooks/keyword-detector.sh
 rm -f "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/hooks/persistent-mode.sh
@@ -187,19 +197,23 @@ rm -f "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/hooks/stop-continuation.sh
 ```
 
 ### Fix: Outdated Plugin
+
 ```bash
 # Clear plugin cache (cross-platform)
 node -e "const p=require('path'),f=require('fs'),d=process.env.CLAUDE_CONFIG_DIR||p.join(require('os').homedir(),'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{f.rmSync(b,{recursive:true,force:true});console.log('Plugin cache cleared. Restart Claude Code to fetch latest version.')}catch{console.log('No plugin cache found')}"
 ```
 
 ### Fix: Stale Cache (multiple versions)
+
 ```bash
 # Keep only latest version (cross-platform)
 node -e "const p=require('path'),f=require('fs'),h=require('os').homedir(),d=process.env.CLAUDE_CONFIG_DIR||p.join(h,'.claude'),b=p.join(d,'plugins','cache','omc','oh-my-claudecode');try{const v=f.readdirSync(b).filter(x=>/^\d/.test(x)).sort((a,c)=>a.localeCompare(c,void 0,{numeric:true}));v.slice(0,-1).forEach(x=>f.rmSync(p.join(b,x),{recursive:true,force:true}));console.log('Removed',v.length-1,'old version(s)')}catch(e){console.log('No cache to clean')}"
 ```
 
 ### Fix: Missing/Outdated CLAUDE.md
+
 Fetch latest from GitHub and write to `${CLAUDE_CONFIG_DIR:-~/.claude}/CLAUDE.md`:
+
 ```
 WebFetch(url: "https://raw.githubusercontent.com/Yeachan-Heo/oh-my-claudecode/main/docs/CLAUDE.md", prompt: "Return the complete raw markdown content exactly as-is")
 ```
@@ -227,4 +241,5 @@ rm -rf "${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/skills
 ## Post-Fix
 
 After applying fixes, inform user:
+
 > Fixes applied. **Restart Claude Code** for changes to take effect.

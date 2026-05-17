@@ -195,7 +195,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   if (result.error) {
     console.error(
       "Error launching claude:",
-      result.error instanceof Error ? result.error.message : String(result.error),
+      result.error instanceof Error
+        ? result.error.message
+        : String(result.error),
     );
     process.exit(1);
   }

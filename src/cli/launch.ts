@@ -56,7 +56,11 @@ function hasOmcMarkers(path: string): boolean {
   );
 }
 
-function ensureMirroredPath(sourcePath: string, targetPath: string): void {
+function ensureMirroredPath(
+  sourcePath: string,
+  targetPath: string,
+  options: { allowCopyFallback?: boolean } = {},
+): void {
   if (!existsSync(sourcePath)) return;
 
   try {
@@ -81,6 +85,10 @@ function ensureMirroredPath(sourcePath: string, targetPath: string): void {
 
     symlinkSync(sourcePath, targetPath, "file");
   } catch {
+    if (options.allowCopyFallback === false) {
+      return;
+    }
+
     const sourceStat = lstatSync(sourcePath);
     if (sourceStat.isDirectory()) {
       cpSync(sourcePath, targetPath, { recursive: true });
@@ -127,10 +135,12 @@ export function prepareOmcLaunchConfigDir(
     "keybindings.json",
     "settings.json",
     "settings.local.json",
+    ".credentials.json",
   ]) {
     ensureMirroredPath(
       join(baseConfigDir, entry),
       join(runtimeConfigDir, basename(entry)),
+      { allowCopyFallback: entry !== ".credentials.json" },
     );
   }
 

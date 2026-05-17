@@ -45,6 +45,7 @@ import { doctorTeamRoutingCommand } from "./commands/doctor-team-routing.js";
 import { sessionSearchCommand } from "./commands/session-search.js";
 import { teamCommand } from "./commands/team.js";
 import { ralphthonCommand } from "./commands/ralphthon.js";
+import { ultragoalCommand, ULTRAGOAL_HELP } from "./commands/ultragoal.js";
 import {
   teleportCommand,
   teleportListCommand,
@@ -860,7 +861,7 @@ program
   .option("-c, --check", "Only check for updates, do not install")
   .option("-f, --force", "Force reinstall even if up to date")
   .option("-q, --quiet", "Suppress output except for errors")
-  .option("--standalone", "Force pnpm update even in plugin context")
+  .option("--standalone", "Force npm update even in plugin context")
   .option(
     "--clean",
     "Purge old plugin cache versions immediately (bypass 24h grace period)",
@@ -872,7 +873,7 @@ Examples:
   $ omc update                   Check and install updates
   $ omc update --check           Only check, don't install
   $ omc update --force           Force reinstall
-  $ omc update --standalone      Force pnpm update in plugin context`,
+  $ omc update --standalone      Force npm update in plugin context`,
   )
   .action(async (options) => {
     if (!options.quiet) {
@@ -969,7 +970,7 @@ Examples:
 
 /**
  * Update reconcile command - Internal command for post-update reconciliation
- * Called automatically after pnpm install to ensure hooks/settings are updated with NEW code
+ * Called automatically after npm install to ensure hooks/settings are updated with NEW code
  */
 program
   .command("update-reconcile")
@@ -1686,11 +1687,11 @@ Examples:
   });
 
 /**
- * Postinstall command - Silent install for pnpm postinstall hook
+ * Postinstall command - Silent install for npm postinstall hook
  */
 program
   .command("postinstall", { hidden: true })
-  .description("Run post-install setup (called automatically by pnpm)")
+  .description("Run post-install setup (called automatically by npm)")
   .action(async () => {
     // Silent install - only show errors
     const result = installOmc({
@@ -1710,7 +1711,7 @@ program
         ),
       );
     } else {
-      // Don't fail the pnpm install, just warn
+      // Don't fail the npm install, just warn
       console.warn(
         chalk.yellow("⚠ Could not complete OMC setup:"),
         result.message,
@@ -1819,6 +1820,29 @@ program
   .argument("[args...]", "ralphthon arguments")
   .action(async (args: string[]) => {
     await ralphthonCommand(args);
+  });
+
+/**
+ * Ultragoal command - Durable repo-native multi-goal workflow with Claude /goal handoff
+ *
+ * Writes plan/ledger artifacts under .omc/ultragoal/ and prints model-facing
+ * handoff text that tells the active Claude agent when to invoke /goal,
+ * checkpoint progress, and gate final completion behind ai-slop-cleaner +
+ * verification + $code-review evidence. The shell cannot mutate the Claude
+ * session /goal directive; this command only persists durable state.
+ */
+program
+  .command("ultragoal")
+  .description(
+    "Durable repo-native multi-goal workflow with Claude Code /goal handoff (see omc ultragoal help)",
+  )
+  .helpOption(false)
+  .allowUnknownOption(true)
+  .allowExcessArguments(true)
+  .argument("[args...]", "ultragoal subcommand arguments")
+  .addHelpText("after", `\n${ULTRAGOAL_HELP}`)
+  .action(async (args: string[]) => {
+    await ultragoalCommand(args);
   });
 
 /**
