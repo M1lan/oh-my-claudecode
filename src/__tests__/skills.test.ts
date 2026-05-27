@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   mkdirSync,
@@ -14,6 +15,19 @@ import {
   listBuiltinSkillNames,
   clearSkillsCache,
 } from "../features/builtin-skills/skills.js";
+||||||| 90f19265
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { createBuiltinSkills, getBuiltinSkill, listBuiltinSkillNames, clearSkillsCache } from '../features/builtin-skills/skills.js';
+=======
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { createBuiltinSkills, getBuiltinSkill, listBuiltinSkillNames, clearSkillsCache, renderBundledSkillBody } from '../features/builtin-skills/skills.js';
+>>>>>>> main
 
 describe("Builtin Skills", () => {
   const originalPluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
@@ -477,9 +491,19 @@ describe("Builtin Skills", () => {
       }
     });
 
+<<<<<<< HEAD
     it("loads deep-interview ambiguityThreshold from settings before state init and updates the announcement copy", () => {
       const profileDir = mkdtempSync(join(tmpdir(), "omc-skill-profile-"));
       const projectDir = mkdtempSync(join(tmpdir(), "omc-skill-project-"));
+||||||| 90f19265
+    it('loads deep-interview ambiguityThreshold from settings before state init and updates the announcement copy', () => {
+      const profileDir = mkdtempSync(join(tmpdir(), 'omc-skill-profile-'));
+      const projectDir = mkdtempSync(join(tmpdir(), 'omc-skill-project-'));
+=======
+    it('loads deep-interview ambiguityThreshold source before state init and updates the first-line marker', () => {
+      const profileDir = mkdtempSync(join(tmpdir(), 'omc-skill-profile-'));
+      const projectDir = mkdtempSync(join(tmpdir(), 'omc-skill-project-'));
+>>>>>>> main
       tempDirs.push(profileDir, projectDir);
 
       process.env.CLAUDE_CONFIG_DIR = profileDir;
@@ -503,15 +527,37 @@ describe("Builtin Skills", () => {
 
       const skill = getBuiltinSkill("deep-interview");
       expect(skill).toBeDefined();
+<<<<<<< HEAD
       expect(skill?.template).toContain("Load runtime settings");
       expect(skill?.template).toContain(
         "Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`",
       );
+||||||| 90f19265
+      expect(skill?.template).toContain('Load runtime settings');
+      expect(skill?.template).toContain('Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`');
+=======
+      expect(skill?.template).toContain('Phase 0: Resolve Ambiguity Threshold (blocking prerequisite)');
+      expect(skill?.template).toContain('Deep Interview threshold: 12% (source: ./.claude/settings.json)');
+>>>>>>> main
       expect(skill?.template).toContain('"threshold": 0.12,');
+<<<<<<< HEAD
       expect(skill?.template).toContain("drops below 12%.");
       expect(skill?.template?.indexOf("Load runtime settings")).toBeLessThan(
         skill?.template?.indexOf("Initialize state") ??
           Number.POSITIVE_INFINITY,
+||||||| 90f19265
+      expect(skill?.template).toContain('drops below 12%.');
+      expect(skill?.template?.indexOf('Load runtime settings')).toBeLessThan(
+        skill?.template?.indexOf('Initialize state') ?? Number.POSITIVE_INFINITY,
+=======
+      expect(skill?.template).toContain('"threshold_source": "./.claude/settings.json",');
+      expect(skill?.template).toContain('drops below 12%.');
+      expect(skill?.template).toContain('- Threshold Source: ./.claude/settings.json');
+      expect(skill?.template).not.toContain('3.5. **Load runtime settings** from `~/.claude/settings.json`');
+      expect(skill?.template).toContain('settings files were read, threshold was resolved');
+      expect(skill?.template?.indexOf('Phase 0: Resolve Ambiguity Threshold')).toBeLessThan(
+        skill?.template?.indexOf('Initialize state') ?? Number.POSITIVE_INFINITY,
+>>>>>>> main
       );
     });
 
@@ -531,11 +577,20 @@ describe("Builtin Skills", () => {
         }),
       );
 
+<<<<<<< HEAD
       const first = getBuiltinSkill("deep-interview");
       expect(first?.template).toContain(
         "Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`",
       );
+||||||| 90f19265
+      const first = getBuiltinSkill('deep-interview');
+      expect(first?.template).toContain('Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`');
+=======
+      const first = getBuiltinSkill('deep-interview');
+      expect(first?.template).toContain('Deep Interview threshold: 12% (source: ./.claude/settings.json)');
+>>>>>>> main
       expect(first?.template).toContain('"threshold": 0.12,');
+      expect(first?.template).toContain('"threshold_source": "./.claude/settings.json",');
 
       writeFileSync(
         join(projectDir, ".claude", "settings.json"),
@@ -544,14 +599,29 @@ describe("Builtin Skills", () => {
         }),
       );
 
+<<<<<<< HEAD
       const second = getBuiltinSkill("deep-interview");
       expect(second?.template).toContain(
         "Resolve `omc.deepInterview.ambiguityThreshold` into `0.33`",
       );
+||||||| 90f19265
+      const second = getBuiltinSkill('deep-interview');
+      expect(second?.template).toContain('Resolve `omc.deepInterview.ambiguityThreshold` into `0.33`');
+=======
+      const second = getBuiltinSkill('deep-interview');
+      expect(second?.template).toContain('Deep Interview threshold: 33% (source: ./.claude/settings.json)');
+>>>>>>> main
       expect(second?.template).toContain('"threshold": 0.33,');
+<<<<<<< HEAD
       expect(second?.template).not.toContain(
         "Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`",
       );
+||||||| 90f19265
+      expect(second?.template).not.toContain('Resolve `omc.deepInterview.ambiguityThreshold` into `0.12`');
+=======
+      expect(second?.template).toContain('"threshold_source": "./.claude/settings.json",');
+      expect(second?.template).not.toContain('Deep Interview threshold: 12%');
+>>>>>>> main
       expect(second?.template).not.toContain('"threshold": 0.12,');
     });
 
@@ -574,8 +644,16 @@ describe("Builtin Skills", () => {
       const t = skill!.template;
 
       // Previously-fixed references (regression guard)
+      expect(t).toContain('Deep Interview threshold: 15% (source: [$CLAUDE_CONFIG_DIR|~/.claude]/settings.json)');
       expect(t).toContain('"threshold": 0.15,');
+<<<<<<< HEAD
       expect(t).toContain("drops below 15%.");
+||||||| 90f19265
+      expect(t).toContain('drops below 15%.');
+=======
+      expect(t).toContain('"threshold_source": "[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json",');
+      expect(t).toContain('drops below 15%.');
+>>>>>>> main
 
       expect(t).toContain("resolved threshold for this run"); // Purpose/Execution_Policy
       expect(t).toContain("Gate: ≤15% ambiguity"); // ASCII pipeline diagram
@@ -592,6 +670,7 @@ describe("Builtin Skills", () => {
       expect(t).not.toContain('"ambiguityThreshold": 0.2,');
     });
 
+<<<<<<< HEAD
     it("ships a config-aware deep-interview SKILL.md for native skill-loader paths (issue #2723)", () => {
       const raw = readFileSync(
         join(originalCwd, "skills", "deep-interview", "SKILL.md"),
@@ -601,9 +680,39 @@ describe("Builtin Skills", () => {
       expect(raw).toContain(
         "Read `[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json` and `./.claude/settings.json`",
       );
+||||||| 90f19265
+    it('ships a config-aware deep-interview SKILL.md for native skill-loader paths (issue #2723)', () => {
+      const raw = readFileSync(join(originalCwd, 'skills', 'deep-interview', 'SKILL.md'), 'utf-8');
+      expect(raw).toContain('Load runtime settings');
+      expect(raw).toContain('Read `[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json` and `./.claude/settings.json`');
+=======
+    it('ships a config-aware deep-interview SKILL.md for native skill-loader paths (issues #2723, #3030)', () => {
+      const raw = readFileSync(join(originalCwd, 'skills', 'deep-interview', 'SKILL.md'), 'utf-8');
+      expect(raw).toContain('Native Plugin Invocation Guard (Issue #3030)');
+      expect(raw).toContain('`/oh-my-claudecode:deep-interview` or `Skill("oh-my-claudecode:deep-interview")`');
+      expect(raw).toContain('The user-facing preferred invocation is `/deep-interview`');
+      expect(raw).toContain('do not recommend or advertise `/oh-my-claudecode:deep-interview`');
+      expect(raw).toContain('Phase 0 below remains blocking');
+      expect(raw).toContain('must resolve `omc.deepInterview.ambiguityThreshold` from settings');
+      expect(raw).toContain('Phase 0: Resolve Ambiguity Threshold (blocking prerequisite)');
+      expect(raw).toContain('User settings: `[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json`');
+      expect(raw).toContain('Project settings: `./.claude/settings.json`');
+>>>>>>> main
       expect(raw).toContain('"threshold": <resolvedThreshold>,');
+<<<<<<< HEAD
       expect(raw).toContain("ambiguity drops below <resolvedThresholdPercent>");
       expect(raw).toContain("Gate: ≤<resolvedThresholdPercent> ambiguity");
+||||||| 90f19265
+      expect(raw).toContain('ambiguity drops below <resolvedThresholdPercent>');
+      expect(raw).toContain('Gate: ≤<resolvedThresholdPercent> ambiguity');
+=======
+      expect(raw).toContain('"threshold_source": "<resolvedThresholdSource>",');
+      expect(raw).toContain('Deep Interview threshold: <resolvedThresholdPercent> (source: <resolvedThresholdSource>)');
+      expect(raw).toContain('- Threshold Source: <resolvedThresholdSource>');
+      expect(raw).toContain('settings files were read, threshold was resolved');
+      expect(raw).toContain('ambiguity drops below <resolvedThresholdPercent>');
+      expect(raw).toContain('Gate: ≤<resolvedThresholdPercent> ambiguity');
+>>>>>>> main
       expect(raw).toContain('"ambiguityThreshold": <resolvedThreshold>,');
       expect(raw).toContain("At or below the resolved threshold");
       expect(raw).toContain(
@@ -662,9 +771,54 @@ describe("Builtin Skills", () => {
       expect(raw).not.toContain("ambiguity ≤ 20%");
     });
 
+<<<<<<< HEAD
     it("loads deep-dive ambiguityThreshold from deep-interview settings before state init and updates threshold copy", () => {
       const profileDir = mkdtempSync(join(tmpdir(), "omc-deep-dive-profile-"));
       const projectDir = mkdtempSync(join(tmpdir(), "omc-deep-dive-project-"));
+||||||| 90f19265
+    it('loads deep-dive ambiguityThreshold from deep-interview settings before state init and updates threshold copy', () => {
+      const profileDir = mkdtempSync(join(tmpdir(), 'omc-deep-dive-profile-'));
+      const projectDir = mkdtempSync(join(tmpdir(), 'omc-deep-dive-project-'));
+=======
+    it('applies deep-interview runtime settings for plugin-qualified rendered skill names (issue #3030)', () => {
+      const profileDir = mkdtempSync(join(tmpdir(), 'omc-skill-3030-'));
+      tempDirs.push(profileDir);
+
+      process.env.CLAUDE_CONFIG_DIR = profileDir;
+      writeFileSync(
+        join(profileDir, 'settings.json'),
+        JSON.stringify({ omc: { deepInterview: { ambiguityThreshold: 0.17 } } }),
+      );
+      clearSkillsCache();
+
+      const rendered = renderBundledSkillBody(
+        'oh-my-claudecode:deep-interview',
+        [
+          'State:',
+          '"threshold": 0.2,',
+          'Announcement: We\'ll proceed to execution once ambiguity drops below 20%.',
+          'Diagram: Gate: ≤20% ambiguity',
+          'Advanced: ambiguity ≤ 20%',
+          '"ambiguityThreshold": 0.2,',
+        ].join('\n'),
+      );
+
+      expect(rendered).toContain('"threshold": 0.17,');
+      expect(rendered).toContain('drops below 17%.');
+      expect(rendered).toContain('Gate: ≤17% ambiguity');
+      expect(rendered).toContain('ambiguity ≤ 17%');
+      expect(rendered).toContain('"ambiguityThreshold": 0.17,');
+      expect(rendered).not.toContain('"threshold": 0.2,');
+      expect(rendered).not.toContain('drops below 20%.');
+      expect(rendered).not.toContain('Gate: ≤20% ambiguity');
+      expect(rendered).not.toContain('ambiguity ≤ 20%');
+      expect(rendered).not.toContain('"ambiguityThreshold": 0.2,');
+    });
+
+    it('loads deep-dive ambiguityThreshold from deep-interview settings before state init and updates threshold copy', () => {
+      const profileDir = mkdtempSync(join(tmpdir(), 'omc-deep-dive-profile-'));
+      const projectDir = mkdtempSync(join(tmpdir(), 'omc-deep-dive-project-'));
+>>>>>>> main
       tempDirs.push(profileDir, projectDir);
 
       process.env.CLAUDE_CONFIG_DIR = profileDir;

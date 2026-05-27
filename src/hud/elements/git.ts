@@ -4,12 +4,28 @@
  * Renders git repository name and branch information.
  */
 
+<<<<<<< HEAD
 import { execSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { resolve, basename } from "node:path";
 import { dim, cyan, green, red } from "../colors.js";
 import type { HudLabels } from "../types.js";
 import { DEFAULT_HUD_LABELS } from "../types.js";
+||||||| 90f19265
+import { execSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { resolve, basename } from 'node:path';
+import { dim, cyan, green, red } from '../colors.js';
+import type { HudLabels } from '../types.js';
+import { DEFAULT_HUD_LABELS } from '../types.js';
+=======
+import { execFileSync } from 'node:child_process';
+import { realpathSync } from 'node:fs';
+import { resolve, basename } from 'node:path';
+import { dim, cyan, green, red } from '../colors.js';
+import type { HudLabels } from '../types.js';
+import { DEFAULT_HUD_LABELS } from '../types.js';
+>>>>>>> main
 
 const CACHE_TTL_MS = 30_000;
 
@@ -35,6 +51,16 @@ const repoCache = new Map<string, CacheEntry<string | null>>();
 const branchCache = new Map<string, CacheEntry<string | null>>();
 const worktreeCache = new Map<string, CacheEntry<WorktreeDetection>>();
 const statusCache = new Map<string, CacheEntry<GitStatusCounts | null>>();
+
+function git(args: string[], cwd?: string): string {
+  return execFileSync('git', args, {
+    cwd,
+    encoding: 'utf-8',
+    timeout: 1000,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+  }).trim();
+}
 
 /**
  * Clear all git caches. Call in tests beforeEach to ensure a clean slate.
@@ -64,6 +90,7 @@ export function getGitRepoName(cwd?: string): string | null {
 
   let result: string | null = null;
   try {
+<<<<<<< HEAD
     const url = execSync("git remote get-url origin", {
       cwd,
       encoding: "utf-8",
@@ -71,6 +98,17 @@ export function getGitRepoName(cwd?: string): string | null {
       stdio: ["pipe", "pipe", "pipe"],
       shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
+||||||| 90f19265
+    const url = execSync('git remote get-url origin', {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 1000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+    }).trim();
+=======
+    const url = git(['remote', 'get-url', 'origin'], cwd);
+>>>>>>> main
 
     if (!url) {
       result = null;
@@ -104,6 +142,7 @@ export function getGitBranch(cwd?: string): string | null {
 
   let result: string | null = null;
   try {
+<<<<<<< HEAD
     const branch = execSync("git branch --show-current", {
       cwd,
       encoding: "utf-8",
@@ -111,6 +150,17 @@ export function getGitBranch(cwd?: string): string | null {
       stdio: ["pipe", "pipe", "pipe"],
       shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
+||||||| 90f19265
+    const branch = execSync('git branch --show-current', {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 1000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+    }).trim();
+=======
+    const branch = git(['branch', '--show-current'], cwd);
+>>>>>>> main
 
     result = branch || null;
   } catch {
@@ -136,6 +186,7 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
     return cached.value;
   }
 
+<<<<<<< HEAD
   const execOpts = {
     cwd,
     encoding: "utf-8" as BufferEncoding,
@@ -144,14 +195,33 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
     shell: process.platform === "win32" ? "cmd.exe" : undefined,
   };
 
+||||||| 90f19265
+  const execOpts = {
+    cwd,
+    encoding: 'utf-8' as BufferEncoding,
+    timeout: 1000,
+    stdio: ['pipe', 'pipe', 'pipe'] as ['pipe', 'pipe', 'pipe'],
+    shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+  };
+
+=======
+>>>>>>> main
   let result: WorktreeDetection = { isWorktree: false, worktreeName: null };
   try {
+<<<<<<< HEAD
     const gitDir = (
       execSync("git rev-parse --git-dir", execOpts) as string
     ).trim();
     const gitCommonDir = (
       execSync("git rev-parse --git-common-dir", execOpts) as string
     ).trim();
+||||||| 90f19265
+    const gitDir = (execSync('git rev-parse --git-dir', execOpts) as string).trim();
+    const gitCommonDir = (execSync('git rev-parse --git-common-dir', execOpts) as string).trim();
+=======
+    const gitDir = git(['rev-parse', '--git-dir'], cwd);
+    const gitCommonDir = git(['rev-parse', '--git-common-dir'], cwd);
+>>>>>>> main
 
     // Canonicalize via realpathSync to handle symlinked repo paths
     let resolvedGitDir = resolve(key, gitDir);
@@ -231,6 +301,7 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
 
   let result: GitStatusCounts | null = null;
   try {
+<<<<<<< HEAD
     const output = execSync("git --no-optional-locks status --porcelain -b", {
       cwd,
       encoding: "utf-8",
@@ -238,6 +309,17 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
       stdio: ["pipe", "pipe", "pipe"],
       shell: process.platform === "win32" ? "cmd.exe" : undefined,
     }).trim();
+||||||| 90f19265
+    const output = execSync('git --no-optional-locks status --porcelain -b', {
+      cwd,
+      encoding: 'utf-8',
+      timeout: 1000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+    }).trim();
+=======
+    const output = git(['--no-optional-locks', 'status', '--porcelain', '-b'], cwd);
+>>>>>>> main
 
     let staged = 0,
       modified = 0,

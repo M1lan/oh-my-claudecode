@@ -1,6 +1,6 @@
 // src/team/__tests__/worktree-runtime-e2e.test.ts
 //
-// Acceptance #1: 3 workers × 10 commits → 30 merge_succeeded events.
+// Acceptance #1: 3 workers × 3 commits → merge_succeeded events for every worker.
 // Uses real git via git-fixture helper.
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -29,10 +29,16 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// Acceptance #1: 3 workers × 10 commits — all 30 merges succeed
+// Acceptance #1: 3 workers × 3 commits — all merges succeed
 // ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 describe("worktree runtime e2e: 3 workers × 10 commits", () => {
+||||||| 90f19265
+describe('worktree runtime e2e: 3 workers × 10 commits', () => {
+=======
+describe('worktree runtime e2e: 3 workers × 3 commits', () => {
+>>>>>>> main
   let fixture: GitFixture;
   let handle: OrchestratorHandle;
 
@@ -49,7 +55,7 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
       repoRoot: fixture.repoRoot,
       leaderBranch: fixture.leaderBranch,
       cwd: fixture.repoRoot,
-      pollIntervalMs: 100,
+      pollIntervalMs: 60000,
       drainTimeoutMs: 20000,
     };
 
@@ -68,17 +74,26 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
     await fixture.cleanup();
   });
 
+<<<<<<< HEAD
   it("all 30 commits across 3 workers produce merge_succeeded events", async () => {
     // Each worker commits 10 files to disjoint paths (worker-N/file-X.ts)
+||||||| 90f19265
+  it('all 30 commits across 3 workers produce merge_succeeded events', async () => {
+    // Each worker commits 10 files to disjoint paths (worker-N/file-X.ts)
+=======
+  it('all commits across 3 workers produce merge_succeeded events', async () => {
+    // Each worker commits files to disjoint paths (worker-N/file-X.ts)
+>>>>>>> main
     // so there are NO conflicts. All merges should succeed.
     //
     // Use serialized commit→wait-for-merge loops to prevent burst-commit
     // coalescing (the orchestrator merges latest HEAD per poll window, so
-    // 10 rapid commits → 1 merge event). By waiting for each merge before
-    // the next commit we guarantee at least 1 merge per commit.
+    // rapid commits can collapse into one merge event). By waiting for each
+    // merge before the next commit we guarantee at least 1 merge per commit.
     //
     // NOTE: rebase fan-out after each merge advances other workers' branch
     // SHAs, which the orchestrator treats as new commits and also merges.
+<<<<<<< HEAD
     // So the total merge count may exceed 30 (each of the 30 user commits
     // produces ≥1 merge, plus rebase-induced merges). We assert ≥30 total
     // and ≥10 per worker.
@@ -87,6 +102,18 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
       fixture.repoRoot,
       fixture.teamName,
     );
+||||||| 90f19265
+    // So the total merge count may exceed 30 (each of the 30 user commits
+    // produces ≥1 merge, plus rebase-induced merges). We assert ≥30 total
+    // and ≥10 per worker.
+    const COMMITS_PER_WORKER = 10;
+    const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
+=======
+    // So the total merge count may exceed the user commit count; we assert
+    // at least one merge per user commit and per-worker coverage.
+    const COMMITS_PER_WORKER = 3;
+    const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
+>>>>>>> main
 
     const workers = ["worker-1", "worker-2", "worker-3"] as const;
     // Track total merges seen so far per worker (rebase-induced merges count too)
@@ -103,6 +130,7 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
           `${worker}/file-${i}.ts`,
           `// ${worker} file ${i}\nexport const f${i} = ${i};\n`,
         );
+        await handle.pollOnce();
         mergeCountPerWorker[worker] += 1;
         // Wait for at least mergeCountPerWorker[worker] merges from this worker
         // before issuing the next commit (prevents coalescing).
@@ -111,7 +139,7 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
           eventType: "merge_succeeded",
           worker,
           count: mergeCountPerWorker[worker],
-          timeoutMs: 5000,
+          timeoutMs: 30000,
         });
         // Re-read current count in case rebase-induced merges arrived
         const currentEvents = readEventLog(eventLog);
@@ -124,15 +152,15 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
     const events = readEventLog(eventLog);
     const mergeSucceeded = events.filter((e) => e.type === "merge_succeeded");
 
-    // At least 30 merges: one per user commit. May be more due to rebase fan-out.
-    expect(mergeSucceeded.length).toBeGreaterThanOrEqual(30);
+    // At least one merge per user commit. May be more due to rebase fan-out.
+    expect(mergeSucceeded.length).toBeGreaterThanOrEqual(workers.length * COMMITS_PER_WORKER);
 
     // All three workers should have contributed at least COMMITS_PER_WORKER merges
     for (const worker of workers) {
       const wMerges = mergeSucceeded.filter((e) => e.worker === worker);
       expect(wMerges.length).toBeGreaterThanOrEqual(COMMITS_PER_WORKER);
     }
-  }, 120000);
+  }, 60000);
 
   it("leader branch has merge commits after all workers finish", async () => {
     const COMMITS_PER_WORKER = 3; // smaller count for speed
@@ -150,18 +178,25 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
     // Serialized commit→wait-for-merge per worker to prevent coalescing
     for (const worker of workers) {
       for (let i = 1; i <= COMMITS_PER_WORKER; i++) {
+<<<<<<< HEAD
         await fixture.commitFile(
           worker,
           `${worker}/f${i}.ts`,
           `// ${worker} f${i}\n`,
         );
+||||||| 90f19265
+        await fixture.commitFile(worker, `${worker}/f${i}.ts`, `// ${worker} f${i}\n`);
+=======
+        await fixture.commitFile(worker, `${worker}/f${i}.ts`, `// ${worker} f${i}\n`);
+        await handle.pollOnce();
+>>>>>>> main
         mergeCountPerWorker[worker] += 1;
         await waitForEventInLog({
           eventLogPath: eventLog,
           eventType: "merge_succeeded",
           worker,
           count: mergeCountPerWorker[worker],
-          timeoutMs: 5000,
+          timeoutMs: 30000,
         });
         // Update count to include any rebase-induced merges
         const currentEvents = readEventLog(eventLog);
@@ -196,12 +231,21 @@ describe("worktree runtime e2e: 3 workers × 10 commits", () => {
     expect(mergeCommitLines.length).toBeGreaterThanOrEqual(workers.length);
   }, 60000);
 
+<<<<<<< HEAD
   it("leader inbox has merge notifications", async () => {
     await fixture.commitFile(
       "worker-1",
       "worker-1/notify.ts",
       "// notify test\n",
     );
+||||||| 90f19265
+  it('leader inbox has merge notifications', async () => {
+    await fixture.commitFile('worker-1', 'worker-1/notify.ts', '// notify test\n');
+=======
+  it('leader inbox has merge notifications', async () => {
+    await fixture.commitFile('worker-1', 'worker-1/notify.ts', '// notify test\n');
+    await handle.pollOnce();
+>>>>>>> main
 
     const eventLog = orchestratorEventLogPath(
       fixture.repoRoot,

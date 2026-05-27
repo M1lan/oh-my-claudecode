@@ -9,6 +9,7 @@ type ExecFileCallback = (
 const mockedCalls = vi.hoisted(() => ({
   execFileArgs: [] as string[][],
   splitCount: 0,
+  newSplitStdouts: [] as string[],
 }));
 
 vi.mock("child_process", async (importOriginal) => {
@@ -41,7 +42,21 @@ vi.mock("child_process", async (importOriginal) => {
       return { stdout: `%50${mockedCalls.splitCount}\n`, stderr: "" };
     }
 
+<<<<<<< HEAD
     return { stdout: "", stderr: "" };
+||||||| 90f19265
+    return { stdout: '', stderr: '' };
+=======
+    if (args[0] === 'new-split') {
+      mockedCalls.splitCount += 1;
+      return {
+        stdout: mockedCalls.newSplitStdouts.shift() ?? `cmux-worker-${mockedCalls.splitCount}\n`,
+        stderr: '',
+      };
+    }
+
+    return { stdout: '', stderr: '' };
+>>>>>>> main
   };
 
   const parseTmuxShellCmd = (cmd: string): string[] | null => {
@@ -131,6 +146,7 @@ describe("createTeamSession context resolution", () => {
   beforeEach(() => {
     mockedCalls.execFileArgs = [];
     mockedCalls.splitCount = 0;
+    mockedCalls.newSplitStdouts = [];
   });
 
   afterEach(() => {
@@ -150,21 +166,51 @@ describe("createTeamSession context resolution", () => {
         args[0] === "new-session" && args.includes("-d") && args.includes("-P"),
     );
     expect(detachedCreateCall).toBeDefined();
+<<<<<<< HEAD
     expect(session.leaderPaneId).toBe("%91");
     expect(session.sessionName).toBe("omc-team-race-team-detached:0");
+||||||| 90f19265
+    expect(session.leaderPaneId).toBe('%91');
+    expect(session.sessionName).toBe('omc-team-race-team-detached:0');
+=======
+    expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-t', 'omc-team-race-team-detached', 'set-clipboard', 'on']);
+    expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-at', 'omc-team-race-team-detached', 'terminal-features', ',*:clipboard']);
+    expect(session.leaderPaneId).toBe('%91');
+    expect(session.sessionName).toBe('omc-team-race-team-detached:0');
+>>>>>>> main
     expect(session.workerPaneIds).toEqual([]);
     expect(session.sessionMode).toBe("detached-session");
   });
 
+<<<<<<< HEAD
   it("uses a detached tmux session when running inside cmux", async () => {
     vi.stubEnv("TMUX", "");
     vi.stubEnv("TMUX_PANE", "");
     vi.stubEnv("CMUX_SURFACE_ID", "cmux-surface");
+||||||| 90f19265
+  it('uses a detached tmux session when running inside cmux', async () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('TMUX_PANE', '');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
+=======
+  it('uses native cmux splits instead of a detached tmux session when running inside cmux', async () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('TMUX_PANE', '');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-leader');
+    vi.stubEnv('CMUX_WORKSPACE_ID', 'workspace-1');
+>>>>>>> main
 
+<<<<<<< HEAD
     const session = await createTeamSession("race-team", 1, "/tmp", {
       newWindow: true,
     });
+||||||| 90f19265
+    const session = await createTeamSession('race-team', 1, '/tmp', { newWindow: true });
+=======
+    const session = await createTeamSession('race-team', 2, '/tmp', { newWindow: true });
+>>>>>>> main
 
+<<<<<<< HEAD
     expect(
       mockedCalls.execFileArgs.some((args) => args[0] === "new-window"),
     ).toBe(false);
@@ -173,7 +219,25 @@ describe("createTeamSession context resolution", () => {
         args[0] === "new-session" && args.includes("-d") && args.includes("-P"),
     );
     expect(detachedCreateCall).toBeDefined();
+||||||| 90f19265
+    expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-window')).toBe(false);
+    const detachedCreateCall = mockedCalls.execFileArgs.find((args) =>
+      args[0] === 'new-session' && args.includes('-d') && args.includes('-P'),
+    );
+    expect(detachedCreateCall).toBeDefined();
+=======
+    expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-window')).toBe(false);
+    expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-session' && args.includes('-d'))).toBe(false);
+    expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'right', '--surface', 'cmux-leader', '--workspace', 'workspace-1']);
+    expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'down', '--surface', 'cmux-worker-1', '--workspace', 'workspace-1']);
+    expect(session.leaderPaneId).toBe('cmux-leader');
+    expect(session.sessionName).toBe('cmux:workspace-1');
+    expect(session.workerPaneIds).toEqual(['cmux-worker-1', 'cmux-worker-2']);
+    expect(session.sessionMode).toBe('split-pane');
+  });
+>>>>>>> main
 
+<<<<<<< HEAD
     const firstSplitCall = mockedCalls.execFileArgs.find(
       (args) => args[0] === "split-window",
     );
@@ -184,6 +248,31 @@ describe("createTeamSession context resolution", () => {
     expect(session.sessionName).toBe("omc-team-race-team-detached:0");
     expect(session.workerPaneIds).toEqual(["%501"]);
     expect(session.sessionMode).toBe("detached-session");
+||||||| 90f19265
+    const firstSplitCall = mockedCalls.execFileArgs.find((args) => args[0] === 'split-window');
+    expect(firstSplitCall).toEqual(expect.arrayContaining(['split-window', '-h', '-t', '%91']));
+    expect(session.leaderPaneId).toBe('%91');
+    expect(session.sessionName).toBe('omc-team-race-team-detached:0');
+    expect(session.workerPaneIds).toEqual(['%501']);
+    expect(session.sessionMode).toBe('detached-session');
+=======
+  it('parses documented cmux new-split OK output without using OK as a surface', async () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('TMUX_PANE', '');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-leader');
+    vi.stubEnv('CMUX_WORKSPACE_ID', 'workspace-1');
+    mockedCalls.newSplitStdouts = [
+      '  OK   cmux-worker-1   workspace-1\n',
+      '\nOK\tcmux-worker-2\tworkspace-1  \n',
+    ];
+
+    const session = await createTeamSession('race-team', 2, '/tmp', { newWindow: true });
+
+    expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'right', '--surface', 'cmux-leader', '--workspace', 'workspace-1']);
+    expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'down', '--surface', 'cmux-worker-1', '--workspace', 'workspace-1']);
+    expect(mockedCalls.execFileArgs).not.toContainEqual(expect.arrayContaining(['--surface', 'OK']));
+    expect(session.workerPaneIds).toEqual(['cmux-worker-1', 'cmux-worker-2']);
+>>>>>>> main
   });
 
   it("anchors context to TMUX_PANE to avoid focus races", async () => {
@@ -196,6 +285,8 @@ describe("createTeamSession context resolution", () => {
       (args) => args[0] === "new-session",
     );
     expect(detachedCreateCall).toBeUndefined();
+    expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-t', 'omx', 'set-clipboard', 'on']);
+    expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-at', 'omx', 'terminal-features', ',*:clipboard']);
 
     const targetedContextCall = mockedCalls.execFileArgs.find(
       (args) =>

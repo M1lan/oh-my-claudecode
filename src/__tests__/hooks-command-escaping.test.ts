@@ -1,13 +1,37 @@
+<<<<<<< HEAD
 import { describe, it, expect } from "vitest";
 import { execFileSync } from "child_process";
 import { readFileSync } from "fs";
 import { join } from "path";
+||||||| 90f19265
+import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'child_process';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+=======
+import { describe, it, expect } from 'vitest';
+import { execFileSync } from 'child_process';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+>>>>>>> main
 
 interface HooksConfig {
   hooks?: Record<string, Array<{ hooks?: Array<{ command?: string }> }>>;
 }
 
+<<<<<<< HEAD
 const hooksJsonPath = join(__dirname, "..", "..", "hooks", "hooks.json");
+||||||| 90f19265
+const hooksJsonPath = join(__dirname, '..', '..', 'hooks', 'hooks.json');
+=======
+interface HookCommandEntry {
+  event: string;
+  command: string;
+}
+
+const hooksJsonPath = join(__dirname, '..', '..', 'hooks', 'hooks.json');
+>>>>>>> main
 
 function expandHookCommandArgv(command: string, pluginRoot: string): string[] {
   const shellScript =
@@ -26,6 +50,7 @@ function expandHookCommandArgv(command: string, pluginRoot: string): string[] {
   ) as string[];
 }
 
+<<<<<<< HEAD
 function getHookCommands(): string[] {
   const raw = JSON.parse(readFileSync(hooksJsonPath, "utf-8")) as HooksConfig;
   return Object.values(raw.hooks ?? {})
@@ -33,14 +58,53 @@ function getHookCommands(): string[] {
     .flatMap((group) => group.hooks ?? [])
     .map((hook) => hook.command)
     .filter((command): command is string => typeof command === "string");
+||||||| 90f19265
+function getHookCommands(): string[] {
+  const raw = JSON.parse(readFileSync(hooksJsonPath, 'utf-8')) as HooksConfig;
+  return Object.values(raw.hooks ?? {})
+    .flatMap(groups => groups)
+    .flatMap(group => group.hooks ?? [])
+    .map(hook => hook.command)
+    .filter((command): command is string => typeof command === 'string');
+=======
+function getHookCommands(): HookCommandEntry[] {
+  const raw = JSON.parse(readFileSync(hooksJsonPath, 'utf-8')) as HooksConfig;
+  return Object.entries(raw.hooks ?? {}).flatMap(([event, groups]) =>
+    groups.flatMap(group =>
+      (group.hooks ?? [])
+        .map(hook => hook.command)
+        .filter((command): command is string => typeof command === 'string')
+        .map(command => ({ event, command })),
+    ),
+  );
+>>>>>>> main
 }
 
+<<<<<<< HEAD
 describe("hooks.json command escaping", () => {
   it("uses shell-expanded CLAUDE_PLUGIN_ROOT segments instead of pre-expanded ${...} placeholders", () => {
     for (const command of getHookCommands()) {
       expect(command).toContain('"$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs');
       expect(command).not.toContain("${CLAUDE_PLUGIN_ROOT}/scripts/run.cjs");
       expect(command).not.toContain("${CLAUDE_PLUGIN_ROOT}/scripts/");
+||||||| 90f19265
+describe('hooks.json command escaping', () => {
+  it('uses shell-expanded CLAUDE_PLUGIN_ROOT segments instead of pre-expanded ${...} placeholders', () => {
+    for (const command of getHookCommands()) {
+      expect(command).toContain('"$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs');
+      expect(command).not.toContain('${CLAUDE_PLUGIN_ROOT}/scripts/run.cjs');
+      expect(command).not.toContain('${CLAUDE_PLUGIN_ROOT}/scripts/');
+=======
+describe('hooks.json command escaping', () => {
+  it('uses portable hook commands without absolute /bin/sh or pre-expanded ${...} placeholders', () => {
+    for (const { command } of getHookCommands()) {
+      expect(command).toMatch(/^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs "\$CLAUDE_PLUGIN_ROOT"\/scripts\/[^\s]+/);
+      expect(command).not.toContain('find-node.sh');
+      expect(command).not.toMatch(/^sh /);
+      expect(command).not.toContain('/bin/sh');
+      expect(command).not.toContain('${CLAUDE_PLUGIN_ROOT}/scripts/run.cjs');
+      expect(command).not.toContain('${CLAUDE_PLUGIN_ROOT}/scripts/');
+>>>>>>> main
     }
   });
 
@@ -48,10 +112,10 @@ describe("hooks.json command escaping", () => {
     const pluginRoot =
       "/c/Users/First Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10";
 
-    for (const command of getHookCommands()) {
+    for (const { command } of getHookCommands()) {
       const argv = expandHookCommandArgv(command, pluginRoot);
 
-      expect(argv[0]).toMatch(/(^|[/\\])node(?:\.exe)?$/);
+      expect(argv[0]).toBe('node');
       expect(argv[1]).toBe(`${pluginRoot}/scripts/run.cjs`);
       expect(argv[2]).toContain(`${pluginRoot}/scripts/`);
       expect(argv[1]).toContain("First Last");
@@ -60,6 +124,37 @@ describe("hooks.json command escaping", () => {
       expect(argv).not.toContain(
         "Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10/scripts/run.cjs",
       );
+    }
+  });
+
+  it('find-node bootstrap can execute when node is absent from PATH', () => {
+    const homeDir = mkdtempSync(join(tmpdir(), 'omc-hook-node-path-'));
+    const configDir = join(homeDir, '.claude');
+
+    try {
+      execFileSync('/bin/mkdir', ['-p', configDir]);
+      writeFileSync(
+        join(configDir, '.omc-config.json'),
+        JSON.stringify({ nodeBinary: process.execPath }),
+        'utf-8',
+      );
+
+      const stdout = execFileSync('/bin/sh', [
+        join(process.cwd(), 'scripts', 'find-node.sh'),
+        '-e',
+        "process.stdout.write('ok')",
+      ], {
+        encoding: 'utf-8',
+        env: {
+          HOME: homeDir,
+          CLAUDE_CONFIG_DIR: configDir,
+          PATH: '/usr/bin:/bin',
+        },
+      });
+
+      expect(stdout).toBe('ok');
+    } finally {
+      rmSync(homeDir, { recursive: true, force: true });
     }
   });
 });

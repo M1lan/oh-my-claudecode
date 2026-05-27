@@ -15,8 +15,17 @@ describe("HUD Default Configuration", () => {
       expect(DEFAULT_HUD_CONFIG.elements.gitBranch).toBe(false);
     });
 
+<<<<<<< HEAD
     it("should have model disabled by default for backward compatibility", () => {
       expect(DEFAULT_HUD_CONFIG.elements.model).toBe(false);
+||||||| 90f19265
+    it('should have model disabled by default for backward compatibility', () => {
+      expect(DEFAULT_HUD_CONFIG.elements.model).toBe(false);
+=======
+    it('should enable model display by default when Claude Code provides reliable metadata', () => {
+      expect(DEFAULT_HUD_CONFIG.elements.model).toBe(true);
+      expect(DEFAULT_HUD_CONFIG.elements.modelFormat).toBe('versioned');
+>>>>>>> main
     });
 
     it("should use text format for thinking indicator by default", () => {
@@ -61,7 +70,20 @@ describe("HUD Default Configuration", () => {
       expect(PRESET_CONFIGS.dense.gitRepo).toBe(true);
     });
 
+<<<<<<< HEAD
     it("should have gitRepo disabled in minimal, focused, and opencode presets", () => {
+||||||| 90f19265
+    it('should have gitRepo disabled in minimal, focused, and opencode presets', () => {
+=======
+    it('should enable model display in all presets while render omits unavailable models', () => {
+      presets.forEach(preset => {
+        expect(PRESET_CONFIGS[preset].model).toBe(true);
+        expect(PRESET_CONFIGS[preset].modelFormat).toBe('versioned');
+      });
+    });
+
+    it('should have gitRepo disabled in minimal, focused, and opencode presets', () => {
+>>>>>>> main
       expect(PRESET_CONFIGS.minimal.gitRepo).toBe(false);
       expect(PRESET_CONFIGS.focused.gitRepo).toBe(false);
       expect(PRESET_CONFIGS.opencode.gitRepo).toBe(false);
@@ -78,6 +100,7 @@ describe("HUD Default Configuration", () => {
       expect(PRESET_CONFIGS.minimal.gitBranch).toBe(false);
     });
 
+<<<<<<< HEAD
     it("should have model disabled in all presets", () => {
       presets.forEach((preset) => {
         expect(PRESET_CONFIGS[preset].model).toBe(false);
@@ -86,6 +109,19 @@ describe("HUD Default Configuration", () => {
 
     it("should keep token usage display disabled in all presets", () => {
       presets.forEach((preset) => {
+||||||| 90f19265
+    it('should have model disabled in all presets', () => {
+      presets.forEach(preset => {
+        expect(PRESET_CONFIGS[preset].model).toBe(false);
+      });
+    });
+
+    it('should keep token usage display disabled in all presets', () => {
+      presets.forEach(preset => {
+=======
+    it('should keep token usage display disabled in all presets', () => {
+      presets.forEach(preset => {
+>>>>>>> main
         expect(PRESET_CONFIGS[preset].showTokens).toBe(false);
       });
     });

@@ -82,6 +82,7 @@ describe("setup-progress.sh", () => {
     const originalConfig = '{\n  "existing": true\n}\n';
     writeFileSync(configPath, originalConfig);
 
+<<<<<<< HEAD
     const result = spawnSync(
       "/usr/bin/bash",
       [SCRIPT_PATH, "complete", "v9.9.9"],
@@ -94,11 +95,36 @@ describe("setup-progress.sh", () => {
           PATH: binDir,
         },
         encoding: "utf-8",
+||||||| 90f19265
+    const result = spawnSync('/usr/bin/bash', [SCRIPT_PATH, 'complete', 'v9.9.9'], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        HOME: homeRoot,
+        CLAUDE_CONFIG_DIR: configDir,
+        PATH: binDir,
+=======
+    const result = spawnSync('/bin/bash', [SCRIPT_PATH, 'complete', 'v9.9.9'], {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        HOME: homeRoot,
+        CLAUDE_CONFIG_DIR: configDir,
+        PATH: binDir,
+>>>>>>> main
       },
     );
 
     expect(result.status).not.toBe(0);
+<<<<<<< HEAD
     expect(result.stderr).toContain("jq is required");
     expect(readFileSync(configPath, "utf-8")).toBe(originalConfig);
+||||||| 90f19265
+    expect(result.stderr).toContain('jq is required');
+    expect(readFileSync(configPath, 'utf-8')).toBe(originalConfig);
+=======
+    expect(`${result.stderr ?? ''}${result.stdout ?? ''}`).toContain('jq is required');
+    expect(readFileSync(configPath, 'utf-8')).toBe(originalConfig);
+>>>>>>> main
   });
 });

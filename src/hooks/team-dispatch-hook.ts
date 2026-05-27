@@ -416,6 +416,14 @@ function paneIsBootstrapping(captured: string): boolean {
   );
 }
 
+function paneLineLooksLikeIdlePrompt(line: string): boolean {
+  // Claude Code can render its idle input prompt inside a box/left gutter
+  // (for example "│ ❯"). Treat that as ready while still requiring the prompt
+  // glyph to be at the visual start of the line, not embedded in arbitrary
+  // output text.
+  return /^\s*(?:[│┃║▌▐▏▕╎┆┊]\s*)?[›>❯]\s*/u.test(line);
+}
+
 function paneLooksReady(captured: string): boolean {
   const content = safeString(captured).trimEnd();
   if (content === "") return false;
@@ -424,6 +432,7 @@ function paneLooksReady(captured: string): boolean {
     .map((line) => line.replace(/\r/g, "").trimEnd())
     .filter((line) => line.trim() !== "");
   if (paneIsBootstrapping(content)) return false;
+<<<<<<< HEAD
   const lastLine = lines.length > 0 ? lines[lines.length - 1]! : "";
   if (/^\s*[›>❯]\s*/u.test(lastLine)) return true;
   const hasCodexPromptLine = lines.some((line) => /^\s*›\s*/u.test(line));
@@ -446,6 +455,29 @@ function resolveWorkerCliForRequest(
     if (workerCli === "claude") return "claude";
   }
   return "codex";
+||||||| 90f19265
+  const lastLine = lines.length > 0 ? lines[lines.length - 1]! : '';
+  if (/^\s*[›>❯]\s*/u.test(lastLine)) return true;
+  const hasCodexPromptLine = lines.some((line) => /^\s*›\s*/u.test(line));
+  const hasClaudePromptLine = lines.some((line) => /^\s*❯\s*/u.test(line));
+  if (hasCodexPromptLine || hasClaudePromptLine) return true;
+  return false;
+}
+
+function resolveWorkerCliForRequest(request: DispatchRequest, config: TeamConfig): string {
+  const workers = Array.isArray(config.workers) ? config.workers : [];
+  const idx = Number.isFinite(request.worker_index) ? Number(request.worker_index) : null;
+  if (idx !== null) {
+    const worker = workers.find((c) => Number(c.index) === idx);
+    const workerCli = safeString(worker?.worker_cli).trim().toLowerCase();
+    if (workerCli === 'claude') return 'claude';
+  }
+  return 'codex';
+=======
+  const lastLine = lines.length > 0 ? lines[lines.length - 1]! : '';
+  if (paneLineLooksLikeIdlePrompt(lastLine)) return true;
+  return lines.some(paneLineLooksLikeIdlePrompt);
+>>>>>>> main
 }
 
 async function defaultInjector(
@@ -469,11 +501,24 @@ async function defaultInjector(
     /* best effort */
   }
 
+<<<<<<< HEAD
   const submitKeyPresses =
     resolveWorkerCliForRequest(request, config) === "claude" ? 1 : 2;
   const attemptCountAtStart = Number.isFinite(request.attempt_count)
     ? Math.max(0, Math.floor(request.attempt_count))
     : 0;
+||||||| 90f19265
+  const submitKeyPresses = resolveWorkerCliForRequest(request, config) === 'claude' ? 1 : 2;
+  const attemptCountAtStart = Number.isFinite(request.attempt_count) ? Math.max(0, Math.floor(request.attempt_count)) : 0;
+=======
+  // Claude Code v2.1.x sometimes swallows a single Enter during TUI state
+  // transitions (input-handler bind race) — same root cause documented at
+  // runtime-v2.ts:788-793 for the startup path. Send 2 Enters here too so
+  // the dispatch path does not stall with the trigger text typed but never
+  // submitted.
+  const submitKeyPresses = 2;
+  const attemptCountAtStart = Number.isFinite(request.attempt_count) ? Math.max(0, Math.floor(request.attempt_count)) : 0;
+>>>>>>> main
 
   let preCaptureHasTrigger = false;
   if (attemptCountAtStart >= 1) {

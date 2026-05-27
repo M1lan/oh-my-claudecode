@@ -11,6 +11,7 @@ import {
   writeStdinCache,
   readStdinCache,
   getContextPercent,
+  getModelId,
   getModelName,
   getRateLimitsFromStdin,
   stabilizeContextPercent,
@@ -35,6 +36,7 @@ import { render } from "./render.js";
 import { detectApiKeySource } from "./elements/api-key-source.js";
 import { refreshMissionBoardState } from "./mission-board.js";
 import { sanitizeOutput } from "./sanitize.js";
+import { estimatePayloadFromTranscriptPath } from "./payload-estimate.js";
 import type {
   HudRenderContext,
   RateLimits,
@@ -51,11 +53,10 @@ import {
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
 import { access, readFile } from "fs/promises";
 import { join, basename, dirname } from "path";
-import { homedir } from "os";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
 import { getOmcRoot } from "../lib/worktree-paths.js";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { getClaudeConfigDir, getUpdateCheckCachePath } from "../utils/config-dir.js";
 
 /**
  * Extract session ID (UUID) from a transcript path.
@@ -401,7 +402,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     }
     // Async file read to avoid blocking event loop (Issue #1273)
     try {
-      const updateCacheFile = join(homedir(), ".omc", "update-check.json");
+      const updateCacheFile = getUpdateCheckCachePath();
       await access(updateCacheFile);
       const content = await readFile(updateCacheFile, "utf-8");
       const cached = JSON.parse(content);
@@ -451,6 +452,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       ? await refreshMissionBoardState(cwd, config.missionBoard)
       : null;
     const contextPercent = getContextPercent(stdin);
+    const payloadEstimate = estimatePayloadFromTranscriptPath(resolvedTranscriptPath);
 
     // Read subscription info for enterprise detection (best-effort).
     // Rate-limit rendering must not depend on this metadata being present.
@@ -472,6 +474,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       contextPercent,
       contextDisplayScope: currentSessionId ?? cwd,
       modelName: getModelName(stdin),
+      modelId: getModelId(stdin),
       ralph,
       ultrawork,
       prd,
@@ -507,6 +510,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
         : null,
       sessionSummary,
       lastToolName: transcriptData.lastToolName,
+      payloadEstimate,
     };
 
     // Debug: log data if OMC_DEBUG is set
@@ -521,7 +525,10 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       );
     }
 
-    // autoCompact: write trigger file when context exceeds threshold
+    // autoCompact: write trigger file when token context exceeds threshold.
+    // Payload pressure is warning-only for now because statusline hooks can
+    // estimate from local transcript artifacts but do not receive Claude Code's
+    // exact serialized API request body.
     // A companion hook can read this file to inject a /compact suggestion.
     if (
       config.contextLimitWarning.autoCompact &&

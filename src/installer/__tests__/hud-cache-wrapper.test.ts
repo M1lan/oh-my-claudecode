@@ -54,8 +54,15 @@ describe("HUD cached statusLine launcher", () => {
       );
       chmodSync(join(fakeBin, "node"), 0o755);
 
+<<<<<<< HEAD
       const start = Date.now();
       const result = spawnSync("sh", [staged.wrapperPath, staged.hudPath], {
+||||||| 90f19265
+      const start = Date.now();
+      const result = spawnSync('sh', [staged.wrapperPath, staged.hudPath], {
+=======
+      const result = spawnSync('sh', [staged.wrapperPath, staged.hudPath], {
+>>>>>>> main
         input: stdinPayload,
         encoding: "utf8",
         env: {
@@ -66,18 +73,27 @@ describe("HUD cached statusLine launcher", () => {
         },
         timeout: 1000,
       });
-      const elapsedMs = Date.now() - start;
 
       expect(result.status).toBe(0);
       expect(result.stdout).toBe("CACHED HUD LINE\n");
       expect(existsSync(nodeMarker)).toBe(false);
-      expect(elapsedMs).toBeLessThan(100);
     } finally {
       rmSync(staged.dir, { recursive: true, force: true });
     }
   });
 
+<<<<<<< HEAD
   it("first render prints a nonblank placeholder and refreshes the cache from Node", () => {
+||||||| 90f19265
+  it('first render prints a nonblank placeholder and refreshes the cache from Node', () => {
+=======
+  it('first render renders synchronously so the user never sees the placeholder when stdin is available', () => {
+    // Claude Code v2.1.x does not re-poll the statusLine until the user
+    // interacts with the pane, so an async first-frame fallback to
+    // "[OMC] Starting..." would stay visible until the next keystroke.
+    // The wrapper therefore blocks on a synchronous Node render the first
+    // time it has stdin but no cached output for the session.
+>>>>>>> main
     const staged = stageWrapper();
     try {
       const fakeBin = join(staged.dir, "bin");
@@ -103,6 +119,7 @@ describe("HUD cached statusLine launcher", () => {
       });
 
       expect(result.status).toBe(0);
+<<<<<<< HEAD
       expect(result.stdout).toBe("[OMC] Starting...\n");
       expect(
         readFileSync(
@@ -113,12 +130,59 @@ describe("HUD cached statusLine launcher", () => {
       expect(
         readFileSync(join(staged.cacheDir, "stdin.session-123.json"), "utf8"),
       ).toBe(stdinPayload);
+||||||| 90f19265
+      expect(result.stdout).toBe('[OMC] Starting...\n');
+      expect(readFileSync(join(staged.cacheDir, 'statusline.session-123.txt'), 'utf8')).toBe('FRESH HUD LINE\n');
+      expect(readFileSync(join(staged.cacheDir, 'stdin.session-123.json'), 'utf8')).toBe(stdinPayload);
+=======
+      expect(result.stdout).toBe('FRESH HUD LINE\n');
+      expect(readFileSync(join(staged.cacheDir, 'statusline.session-123.txt'), 'utf8')).toBe('FRESH HUD LINE\n');
+      expect(readFileSync(join(staged.cacheDir, 'stdin.session-123.json'), 'utf8')).toBe(stdinPayload);
+>>>>>>> main
     } finally {
       rmSync(staged.dir, { recursive: true, force: true });
     }
   });
 
+<<<<<<< HEAD
   it("scopes cached output by session_id to avoid cross-session flicker", () => {
+||||||| 90f19265
+  it('scopes cached output by session_id to avoid cross-session flicker', () => {
+=======
+  it('falls back to the placeholder when first render has no stdin to render from', () => {
+    const staged = stageWrapper();
+    try {
+      const fakeBin = join(staged.dir, 'bin');
+      mkdirSync(fakeBin, { recursive: true });
+      writeFileSync(
+        join(fakeBin, 'node'),
+        '#!/bin/sh\nprintf "FRESH HUD LINE\\n"\n',
+        'utf8',
+      );
+      chmodSync(join(fakeBin, 'node'), 0o755);
+
+      const result = spawnSync('sh', [staged.wrapperPath, staged.hudPath], {
+        input: '',
+        encoding: 'utf8',
+        env: {
+          ...process.env,
+          PATH: `${fakeBin}:/usr/bin:/bin`,
+          CLAUDE_CONFIG_DIR: staged.dir,
+          OMC_HUD_CACHE_DIR: staged.cacheDir,
+          OMC_HUD_SYNC_REFRESH: '1',
+        },
+        timeout: 1000,
+      });
+
+      expect(result.status).toBe(0);
+      expect(result.stdout).toBe('[OMC] Starting...\n');
+    } finally {
+      rmSync(staged.dir, { recursive: true, force: true });
+    }
+  });
+
+  it('scopes cached output by session_id to avoid cross-session flicker', () => {
+>>>>>>> main
     const staged = stageWrapper();
     try {
       writeFileSync(

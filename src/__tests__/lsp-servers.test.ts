@@ -8,8 +8,16 @@ import {
 describe("LSP Server Configurations", () => {
   const serverKeys = Object.keys(LSP_SERVERS);
 
+<<<<<<< HEAD
   it("should have 19 configured servers", () => {
     expect(serverKeys).toHaveLength(19);
+||||||| 90f19265
+  it('should have 19 configured servers', () => {
+    expect(serverKeys).toHaveLength(19);
+=======
+  it('should have 20 configured servers', () => {
+    expect(serverKeys).toHaveLength(20);
+>>>>>>> main
   });
 
   it.each(serverKeys)('server "%s" should have valid config', (key) => {
@@ -43,6 +51,7 @@ describe("LSP Server Configurations", () => {
 
 describe("getServerForFile", () => {
   const cases: [string, string][] = [
+<<<<<<< HEAD
     ["app.ts", "TypeScript Language Server"],
     ["app.py", "Python Language Server (ty)"],
     ["main.rs", "Rust Analyzer"],
@@ -72,6 +81,68 @@ describe("getServerForFile", () => {
     ["defs.vh", "Verible Verilog Language Server"],
     ["top.sv", "Verible Verilog Language Server"],
     ["pkg.svh", "Verible Verilog Language Server"],
+||||||| 90f19265
+    ['app.ts', 'TypeScript Language Server'],
+    ['app.py', 'Python Language Server (ty)'],
+    ['main.rs', 'Rust Analyzer'],
+    ['main.go', 'gopls'],
+    ['main.c', 'clangd'],
+    ['App.java', 'Eclipse JDT Language Server'],
+    ['data.json', 'JSON Language Server'],
+    ['index.html', 'HTML Language Server'],
+    ['style.css', 'CSS Language Server'],
+    ['config.yaml', 'YAML Language Server'],
+    ['index.php', 'PHP Language Server (Intelephense)'],
+    ['template.phtml', 'PHP Language Server (Intelephense)'],
+    ['app.rb', 'Ruby Language Server (Solargraph)'],
+    ['Rakefile.rake', 'Ruby Language Server (Solargraph)'],
+    ['test.gemspec', 'Ruby Language Server (Solargraph)'],
+    ['init.lua', 'Lua Language Server'],
+    ['Main.kt', 'Kotlin Language Server'],
+    ['build.gradle.kts', 'Kotlin Language Server'],
+    ['app.ex', 'ElixirLS'],
+    ['test.exs', 'ElixirLS'],
+    ['page.heex', 'ElixirLS'],
+    ['template.eex', 'ElixirLS'],
+    ['Program.cs', 'OmniSharp'],
+    ['main.dart', 'Dart Analysis Server'],
+    ['view.erb', 'Ruby Language Server (Solargraph)'],
+    ['counter.v', 'Verible Verilog Language Server'],
+    ['defs.vh', 'Verible Verilog Language Server'],
+    ['top.sv', 'Verible Verilog Language Server'],
+    ['pkg.svh', 'Verible Verilog Language Server'],
+=======
+    ['app.ts', 'TypeScript Language Server'],
+    ['app.py', 'Python Language Server (ty)'],
+    ['main.rs', 'Rust Analyzer'],
+    ['main.go', 'gopls'],
+    ['main.c', 'clangd'],
+    ['App.java', 'Eclipse JDT Language Server'],
+    ['data.json', 'JSON Language Server'],
+    ['index.html', 'HTML Language Server'],
+    ['style.css', 'CSS Language Server'],
+    ['App.vue', 'Vue Language Server (Volar)'],
+    ['config.yaml', 'YAML Language Server'],
+    ['index.php', 'PHP Language Server (Intelephense)'],
+    ['template.phtml', 'PHP Language Server (Intelephense)'],
+    ['app.rb', 'Ruby Language Server (Solargraph)'],
+    ['Rakefile.rake', 'Ruby Language Server (Solargraph)'],
+    ['test.gemspec', 'Ruby Language Server (Solargraph)'],
+    ['init.lua', 'Lua Language Server'],
+    ['Main.kt', 'Kotlin Language Server'],
+    ['build.gradle.kts', 'Kotlin Language Server'],
+    ['app.ex', 'ElixirLS'],
+    ['test.exs', 'ElixirLS'],
+    ['page.heex', 'ElixirLS'],
+    ['template.eex', 'ElixirLS'],
+    ['Program.cs', 'OmniSharp'],
+    ['main.dart', 'Dart Analysis Server'],
+    ['view.erb', 'Ruby Language Server (Solargraph)'],
+    ['counter.v', 'Verible Verilog Language Server'],
+    ['defs.vh', 'Verible Verilog Language Server'],
+    ['top.sv', 'Verible Verilog Language Server'],
+    ['pkg.svh', 'Verible Verilog Language Server'],
+>>>>>>> main
   ];
 
   it.each(cases)('should resolve "%s" to "%s"', (file, expectedName) => {
@@ -87,6 +158,7 @@ describe("getServerForFile", () => {
 
 describe("getServerForLanguage", () => {
   const cases: [string, string][] = [
+<<<<<<< HEAD
     ["typescript", "TypeScript Language Server"],
     ["javascript", "TypeScript Language Server"],
     ["python", "Python Language Server (ty)"],
@@ -100,6 +172,36 @@ describe("getServerForLanguage", () => {
     ["html", "HTML Language Server"],
     ["css", "CSS Language Server"],
     ["yaml", "YAML Language Server"],
+||||||| 90f19265
+    ['typescript', 'TypeScript Language Server'],
+    ['javascript', 'TypeScript Language Server'],
+    ['python', 'Python Language Server (ty)'],
+    ['rust', 'Rust Analyzer'],
+    ['go', 'gopls'],
+    ['golang', 'gopls'],
+    ['c', 'clangd'],
+    ['cpp', 'clangd'],
+    ['java', 'Eclipse JDT Language Server'],
+    ['json', 'JSON Language Server'],
+    ['html', 'HTML Language Server'],
+    ['css', 'CSS Language Server'],
+    ['yaml', 'YAML Language Server'],
+=======
+    ['typescript', 'TypeScript Language Server'],
+    ['javascript', 'TypeScript Language Server'],
+    ['python', 'Python Language Server (ty)'],
+    ['rust', 'Rust Analyzer'],
+    ['go', 'gopls'],
+    ['golang', 'gopls'],
+    ['c', 'clangd'],
+    ['cpp', 'clangd'],
+    ['java', 'Eclipse JDT Language Server'],
+    ['json', 'JSON Language Server'],
+    ['html', 'HTML Language Server'],
+    ['css', 'CSS Language Server'],
+    ['vue', 'Vue Language Server (Volar)'],
+    ['yaml', 'YAML Language Server'],
+>>>>>>> main
     // New languages
     ["php", "PHP Language Server (Intelephense)"],
     ["phtml", "PHP Language Server (Intelephense)"],

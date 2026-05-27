@@ -717,6 +717,7 @@ describe("ralplan standalone stop enforcement", () => {
   );
 
   it.each([
+<<<<<<< HEAD
     [{ current_phase: undefined, phase: "aborted" }, "aborted"],
     [{ current_phase: undefined, status: "terminated" }, "terminated"],
     [{ current_phase: undefined, phase: "handoff:ralph" }, "handoff:ralph"],
@@ -725,6 +726,26 @@ describe("ralplan standalone stop enforcement", () => {
     async (overrides, _label) => {
       const sessionId = "session-ralplan-terminal-alias";
       const tempDir = makeTempProject();
+||||||| 90f19265
+    ['aborted'],
+    ['terminated'],
+    ['canceled'],
+    ['handoff'],
+  ])('allows stop when ralplan current_phase is %s', async (phase) => {
+    const sessionId = `session-ralplan-terminal-${phase}`;
+    const tempDir = makeTempProject();
+=======
+    ['aborted'],
+    ['terminated'],
+    ['canceled'],
+    ['handoff'],
+    ['pending_approval'],
+    ['pending approval'],
+    ['awaiting_approval'],
+  ])('allows stop when ralplan current_phase is %s', async (phase) => {
+    const sessionId = `session-ralplan-terminal-${phase.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    const tempDir = makeTempProject();
+>>>>>>> main
 
       try {
         writeRalplanState(tempDir, sessionId, overrides);
@@ -738,8 +759,73 @@ describe("ralplan standalone stop enforcement", () => {
     },
   );
 
+<<<<<<< HEAD
   it("returns mode=ralplan on circuit breaker path", async () => {
     const sessionId = "session-ralplan-breaker-mode";
+||||||| 90f19265
+  it.each([
+    [{ current_phase: undefined, phase: 'aborted' }, 'aborted'],
+    [{ current_phase: undefined, status: 'terminated' }, 'terminated'],
+    [{ current_phase: undefined, phase: 'handoff:ralph' }, 'handoff:ralph'],
+  ])('allows stop when ralplan terminal state is written via aliases: %s', async (overrides, _label) => {
+    const sessionId = 'session-ralplan-terminal-alias';
+    const tempDir = makeTempProject();
+
+    try {
+      writeRalplanState(tempDir, sessionId, overrides);
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(false);
+      expect(result.mode).toBe('ralplan');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns mode=ralplan on circuit breaker path', async () => {
+    const sessionId = 'session-ralplan-breaker-mode';
+=======
+  it.each([
+    [{ current_phase: undefined, phase: 'aborted' }, 'aborted'],
+    [{ current_phase: undefined, status: 'terminated' }, 'terminated'],
+    [{ current_phase: undefined, phase: 'handoff:ralph' }, 'handoff:ralph'],
+  ])('allows stop when ralplan terminal state is written via aliases: %s', async (overrides, _label) => {
+    const sessionId = 'session-ralplan-terminal-alias';
+    const tempDir = makeTempProject();
+
+    try {
+      writeRalplanState(tempDir, sessionId, overrides);
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(false);
+      expect(result.mode).toBe('ralplan');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+
+  it('reinforces active ralplan as read-only planning after compact continuation', async () => {
+    const sessionId = 'session-ralplan-compact-readonly';
+    const tempDir = makeTempProject();
+
+    try {
+      writeRalplanState(tempDir, sessionId, { current_phase: 'ralplan' });
+
+      const result = await checkPersistentModes(sessionId, tempDir);
+      expect(result.shouldBlock).toBe(true);
+      expect(result.mode).toBe('ralplan');
+      expect(result.message).toContain('read-only/planning mode');
+      expect(result.message).toContain('require explicit user approval before execution');
+      expect(result.message).not.toContain('implement the plan');
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('returns mode=ralplan on circuit breaker path', async () => {
+    const sessionId = 'session-ralplan-breaker-mode';
+>>>>>>> main
     const tempDir = makeTempProject();
 
     try {

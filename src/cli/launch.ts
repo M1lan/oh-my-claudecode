@@ -14,12 +14,28 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
+<<<<<<< HEAD
 } from "fs";
 import { homedir } from "os";
 import { basename, join } from "path";
 import { resolvePluginDirArg } from "../lib/plugin-dir.js";
 import { stripRetiredTeamMcpServers } from "../installer/mcp-registry.js";
 import { getClaudeConfigDir } from "../utils/config-dir.js";
+||||||| 90f19265
+} from 'fs';
+import { homedir } from 'os';
+import { basename, join } from 'path';
+import { resolvePluginDirArg } from '../lib/plugin-dir.js';
+import { stripRetiredTeamMcpServers } from '../installer/mcp-registry.js';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+=======
+} from 'fs';
+import { homedir } from 'os';
+import { basename, dirname, join } from 'path';
+import { resolvePluginDirArg } from '../lib/plugin-dir.js';
+import { stripRetiredTeamMcpServers } from '../installer/mcp-registry.js';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+>>>>>>> main
 import {
   resolveLaunchPolicy,
   buildTmuxSessionName,
@@ -31,9 +47,20 @@ import {
   isTmuxAvailable,
   quoteShellArg,
   tmuxExec,
+<<<<<<< HEAD
 } from "./tmux-utils.js";
 import { OMC_PLUGIN_ROOT_ENV } from "../lib/env-vars.js";
 import { OMC_CONFIG_FILE_REL } from "../lib/paths.js";
+||||||| 90f19265
+} from './tmux-utils.js';
+import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
+import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
+=======
+} from './tmux-utils.js';
+import { configureTmuxClipboardForCurrentSession, configureTmuxClipboardForSession } from './tmux-clipboard.js';
+import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
+import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
+>>>>>>> main
 
 // Flag mapping
 const MADMAX_FLAG = "--madmax";
@@ -98,10 +125,43 @@ function ensureMirroredPath(
   }
 }
 
+<<<<<<< HEAD
 export function prepareOmcLaunchConfigDir(
   baseConfigDir = getClaudeConfigDir(),
 ): string {
   const companionPath = join(baseConfigDir, "CLAUDE-omc.md");
+||||||| 90f19265
+export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()): string {
+  const companionPath = join(baseConfigDir, 'CLAUDE-omc.md');
+=======
+function isJsonObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readJsonObject(path: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(readFileSync(path, 'utf-8')) as unknown;
+    return isJsonObject(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function refreshRuntimeClaudeJsonMcpServers(baseConfigDir: string, runtimeClaudeJsonPath: string): void {
+  const sourceClaudeJsonPath = join(dirname(baseConfigDir), '.claude.json');
+  const sourceClaudeJson = readJsonObject(sourceClaudeJsonPath);
+  if (!sourceClaudeJson || !isJsonObject(sourceClaudeJson.mcpServers)) {
+    return;
+  }
+
+  const runtimeClaudeJson = readJsonObject(runtimeClaudeJsonPath) ?? {};
+  runtimeClaudeJson.mcpServers = sourceClaudeJson.mcpServers;
+  writeFileSync(runtimeClaudeJsonPath, JSON.stringify(runtimeClaudeJson, null, 2));
+}
+
+export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()): string {
+  const companionPath = join(baseConfigDir, 'CLAUDE-omc.md');
+>>>>>>> main
   if (!hasOmcMarkers(companionPath)) {
     return baseConfigDir;
   }
@@ -117,7 +177,14 @@ export function prepareOmcLaunchConfigDir(
   if (preservedClaudeJson) {
     writeFileSync(runtimeClaudeJsonPath, preservedClaudeJson);
   }
+<<<<<<< HEAD
   copyFileSync(companionPath, join(runtimeConfigDir, "CLAUDE.md"));
+||||||| 90f19265
+  copyFileSync(companionPath, join(runtimeConfigDir, 'CLAUDE.md'));
+=======
+  refreshRuntimeClaudeJsonMcpServers(baseConfigDir, runtimeClaudeJsonPath);
+  copyFileSync(companionPath, join(runtimeConfigDir, 'CLAUDE.md'));
+>>>>>>> main
 
   for (const entry of [
     "agents",
@@ -547,7 +614,11 @@ export function runClaude(
  * Launches Claude in current pane
  */
 function runClaudeInsideTmux(cwd: string, args: string[]): void {
-  // Enable mouse scrolling in the current tmux session (non-fatal if it fails)
+  // Enable OSC 52 clipboard forwarding and mouse scrolling in the current tmux session (non-fatal if unsupported).
+  try {
+    configureTmuxClipboardForCurrentSession({ stdio: 'ignore' });
+  } catch { /* non-fatal — user's tmux may not support these options */ }
+
   try {
     tmuxExec(["set-option", "mouse", "on"], { stdio: "ignore" });
   } catch {
@@ -652,10 +723,22 @@ function runClaudeOutsideTmux(
   }
 
   try {
+<<<<<<< HEAD
     tmuxExec(["set-option", "-t", sessionName, "mouse", "on"], {
       stripTmux: true,
       stdio: "ignore",
     });
+||||||| 90f19265
+    tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], { stripTmux: true, stdio: 'ignore' });
+=======
+    configureTmuxClipboardForSession(sessionName, { stripTmux: true, stdio: 'ignore' });
+  } catch {
+    /* non-fatal — user's tmux may not support these options */
+  }
+
+  try {
+    tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], { stripTmux: true, stdio: 'ignore' });
+>>>>>>> main
   } catch {
     /* non-fatal — user's tmux may not support these options */
   }

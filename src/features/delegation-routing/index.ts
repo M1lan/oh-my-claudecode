@@ -6,7 +6,18 @@
  */
 
 // Main resolver
+<<<<<<< HEAD
 export { resolveDelegation, parseFallbackChain } from "./resolver.js";
+||||||| 90f19265
+export { resolveDelegation, parseFallbackChain } from './resolver.js';
+=======
+export {
+  resolveDelegation,
+  parseFallbackChain,
+  isDeprecatedMcpProvider,
+  DEPRECATED_MCP_PROVIDER_WARNING,
+} from './resolver.js';
+>>>>>>> main
 
 // Types and constants
 export {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   mkdtempSync,
@@ -10,6 +11,19 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
+||||||| 90f19265
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { execFileSync } from 'node:child_process';
+=======
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, normalize } from 'node:path';
+import { execFileSync } from 'node:child_process';
+>>>>>>> main
 
 const RESOLVER = join(
   process.cwd(),
@@ -111,10 +125,20 @@ describe("self-improve path scoping helpers", () => {
       encoding: "utf-8",
     });
 
+<<<<<<< HEAD
     expect(output).toContain(
       `Settings: ${join(scopedConfigDir, "settings.json")}`,
     );
     expect(output).toContain("All checks passed");
+||||||| 90f19265
+    expect(output).toContain(`Settings: ${join(scopedConfigDir, 'settings.json')}`);
+    expect(output).toContain('All checks passed');
+=======
+    const expectedSettings = normalize(join(scopedConfigDir, 'settings.json')).replace(/^\/private(?=\/var\/)/, '');
+    const normalizedOutput = normalize(output).replace(/^Settings: \/private(?=\/var\/)/m, 'Settings: ');
+    expect(normalizedOutput).toContain(`Settings: ${expectedSettings}`);
+    expect(output).toContain('All checks passed');
+>>>>>>> main
   });
 
   it("validate.sh errors when multiple scoped topics exist without an explicit selector", () => {

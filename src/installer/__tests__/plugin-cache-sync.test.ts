@@ -19,6 +19,7 @@ function writeFile(path: string, content: string): void {
 
 function writePayloadTree(root: string, version = "9.9.9-test"): void {
   mkdirSync(root, { recursive: true });
+<<<<<<< HEAD
   writeFile(
     join(root, "dist", "lib", "worktree-paths.js"),
     "export const test = true;\n",
@@ -41,6 +42,36 @@ function writePayloadTree(root: string, version = "9.9.9-test"): void {
     join(root, "package.json"),
     JSON.stringify({ name: "oh-my-claude-sisyphus", version }, null, 2),
   );
+||||||| 90f19265
+  writeFile(join(root, 'dist', 'lib', 'worktree-paths.js'), 'export const test = true;\n');
+  writeFile(join(root, 'bridge', 'cli.cjs'), 'console.log("bridge");\n');
+  writeFile(join(root, 'hooks', 'hooks.json'), '{}\n');
+  writeFile(join(root, 'scripts', 'run.cjs'), 'console.log("run");\n');
+  writeFile(join(root, 'skills', 'plan', 'SKILL.md'), '# plan\n');
+  writeFile(join(root, 'agents', 'executor.md'), '# executor\n');
+  writeFile(join(root, 'templates', 'deliverables.json'), '{}\n');
+  writeFile(join(root, 'docs', 'CLAUDE.md'), '# docs\n');
+  writeFile(join(root, '.claude-plugin', 'plugin.json'), '{"name":"oh-my-claudecode"}\n');
+  writeFile(join(root, '.mcp.json'), '{}\n');
+  writeFile(join(root, 'README.md'), '# readme\n');
+  writeFile(join(root, 'LICENSE'), 'MIT\n');
+  writeFile(join(root, 'package.json'), JSON.stringify({ name: 'oh-my-claude-sisyphus', version }, null, 2));
+=======
+  writeFile(join(root, 'dist', 'lib', 'worktree-paths.js'), 'export const test = true;\n');
+  writeFile(join(root, 'bridge', 'cli.cjs'), 'console.log("bridge");\n');
+  writeFile(join(root, 'hooks', 'hooks.json'), '{}\n');
+  writeFile(join(root, 'scripts', 'run.cjs'), 'console.log("run");\n');
+  writeFile(join(root, 'skills', 'plan', 'SKILL.md'), '# plan\n');
+  writeFile(join(root, 'agents', 'executor.md'), '# executor\n');
+  writeFile(join(root, 'commands', 'omc-setup.md'), 'Read skills/omc-setup/SKILL.md and pass $ARGUMENTS.\n');
+  writeFile(join(root, 'templates', 'deliverables.json'), '{}\n');
+  writeFile(join(root, 'docs', 'CLAUDE.md'), '# docs\n');
+  writeFile(join(root, '.claude-plugin', 'plugin.json'), '{"name":"oh-my-claudecode"}\n');
+  writeFile(join(root, '.mcp.json'), '{}\n');
+  writeFile(join(root, 'README.md'), '# readme\n');
+  writeFile(join(root, 'LICENSE'), 'MIT\n');
+  writeFile(join(root, 'package.json'), JSON.stringify({ name: 'oh-my-claude-sisyphus', version }, null, 2));
+>>>>>>> main
 }
 
 async function freshInstaller() {
@@ -122,6 +153,7 @@ describe("syncInstalledPluginPayload", () => {
     expect(result.errors).toEqual([]);
     expect(result.sourceRoot).toBe(sourceRoot);
     expect(result.targetRoots).toEqual([cacheRoot]);
+<<<<<<< HEAD
     expect(existsSync(join(cacheRoot, "package.json"))).toBe(true);
     expect(existsSync(join(cacheRoot, "skills", "plan", "SKILL.md"))).toBe(
       true,
@@ -132,6 +164,20 @@ describe("syncInstalledPluginPayload", () => {
       JSON.parse(readFileSync(join(cacheRoot, "package.json"), "utf-8"))
         .version,
     ).toBe("9.9.9-test");
+||||||| 90f19265
+    expect(existsSync(join(cacheRoot, 'package.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'skills', 'plan', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'hooks', 'hooks.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'scripts', 'run.cjs'))).toBe(true);
+    expect(JSON.parse(readFileSync(join(cacheRoot, 'package.json'), 'utf-8')).version).toBe('9.9.9-test');
+=======
+    expect(existsSync(join(cacheRoot, 'package.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'skills', 'plan', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'hooks', 'hooks.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'scripts', 'run.cjs'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'commands', 'omc-setup.md'))).toBe(true);
+    expect(JSON.parse(readFileSync(join(cacheRoot, 'package.json'), 'utf-8')).version).toBe('9.9.9-test');
+>>>>>>> main
   });
 
   it("repairs incomplete cache installs during setup before plugin-provided file detection runs", async () => {
@@ -198,12 +244,25 @@ describe("syncInstalledPluginPayload", () => {
     expect(installer.hasPluginProvidedAgentFiles()).toBe(true);
     expect(installer.hasPluginProvidedSkillFiles()).toBe(true);
     expect(installer.hasPluginProvidedHookFiles()).toBe(true);
+<<<<<<< HEAD
     expect(existsSync(join(cacheRoot, "package.json"))).toBe(true);
     expect(existsSync(join(cacheRoot, "skills", "plan", "SKILL.md"))).toBe(
       true,
     );
     expect(existsSync(join(cacheRoot, "hooks", "hooks.json"))).toBe(true);
     expect(existsSync(join(cacheRoot, "scripts", "run.cjs"))).toBe(true);
+||||||| 90f19265
+    expect(existsSync(join(cacheRoot, 'package.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'skills', 'plan', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'hooks', 'hooks.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'scripts', 'run.cjs'))).toBe(true);
+=======
+    expect(existsSync(join(cacheRoot, 'package.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'skills', 'plan', 'SKILL.md'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'hooks', 'hooks.json'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'scripts', 'run.cjs'))).toBe(true);
+    expect(existsSync(join(cacheRoot, 'commands', 'omc-setup.md'))).toBe(true);
+>>>>>>> main
   });
 
   it("rejects cache install roots that escape the cache directory via .. segments", async () => {

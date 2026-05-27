@@ -69,6 +69,7 @@ import {
   resolveClaudeWorkerModel,
 } from "./model-contract.js";
 import {
+<<<<<<< HEAD
   createTeamSession,
   spawnWorkerInPane,
   sendToWorker,
@@ -82,6 +83,15 @@ import {
   type WorkerPaneLiveness,
   type TeamSessionMode,
 } from "./tmux-session.js";
+||||||| 90f19265
+  createTeamSession, spawnWorkerInPane, sendToWorker, killTeamSession,
+  waitForPaneReady, paneHasActiveTask, paneLooksReady, applyMainVerticalLayout, getWorkerLiveness, type WorkerPaneConfig, type WorkerPaneLiveness, type TeamSessionMode,
+} from './tmux-session.js';
+=======
+  createTeamSession, spawnWorkerInPane, sendToWorker, killTeamSession,
+  waitForPaneReady, paneHasActiveTask, paneLooksReady, applyMainVerticalLayout, getWorkerLiveness, captureTeamPane, sendTeamPaneKey, type WorkerPaneConfig, type WorkerPaneLiveness, type TeamSessionMode,
+} from './tmux-session.js';
+>>>>>>> main
 import {
   composeInitialInbox,
   ensureWorkerStateDir,
@@ -422,6 +432,7 @@ async function getWorkerPaneLiveness(
 }
 
 async function captureWorkerPane(paneId: string | undefined): Promise<string> {
+<<<<<<< HEAD
   if (!paneId) return "";
   try {
     const result = await tmuxExecAsync([
@@ -436,6 +447,18 @@ async function captureWorkerPane(paneId: string | undefined): Promise<string> {
   } catch {
     return "";
   }
+||||||| 90f19265
+  if (!paneId) return '';
+  try {
+    const result = await tmuxExecAsync(['capture-pane', '-t', paneId, '-p', '-S', '-80']);
+    return result.stdout ?? '';
+  } catch {
+    return '';
+  }
+=======
+  if (!paneId) return '';
+  return captureTeamPane(paneId);
+>>>>>>> main
 }
 
 function isFreshTimestamp(
@@ -948,14 +971,43 @@ async function spawnV2Worker(
     };
   }
 
+<<<<<<< HEAD
   if (opts.agentType === "claude") {
     const settled = await waitForWorkerStartupEvidence(
+||||||| 90f19265
+  if (opts.agentType === 'claude') {
+    const settled = await waitForWorkerStartupEvidence(
+=======
+  if (opts.agentType === 'claude') {
+    let settled = await waitForWorkerStartupEvidence(
+>>>>>>> main
       opts.teamName,
       opts.workerName,
       opts.taskId,
       opts.cwd,
       6,
     );
+    // Claude Code v2.1.x sometimes swallows the Enter key sent immediately
+    // after a fresh pane reports ready — the TUI is still binding input
+    // handlers, so the dispatch message lands in the input buffer but is
+    // never submitted. By the time the evidence wait above finishes, the
+    // TUI is reliably accepting input. Resubmit Enter directly (the prompt
+    // is still sitting in the input buffer) and re-check evidence. Bounded
+    // retries so a truly hung worker still fails fast.
+    for (let attempt = 1; !settled && attempt <= 4; attempt++) {
+      try {
+        await sendTeamPaneKey(paneId, 'Enter');
+      } catch {
+        break;
+      }
+      settled = await waitForWorkerStartupEvidence(
+        opts.teamName,
+        opts.workerName,
+        opts.taskId,
+        opts.cwd,
+        12,
+      );
+    }
     if (!settled) {
       return {
         paneId,

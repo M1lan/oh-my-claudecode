@@ -13,6 +13,7 @@
  * worker changes.
  */
 
+<<<<<<< HEAD
 import {
   existsSync,
   readFileSync,
@@ -30,6 +31,22 @@ import {
 } from "./fs-utils.js";
 import { sanitizeName } from "./tmux-session.js";
 import { withFileLockSync } from "../lib/file-lock.js";
+||||||| 90f19265
+import { existsSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { atomicWriteJson, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import { sanitizeName } from './tmux-session.js';
+import { withFileLockSync } from '../lib/file-lock.js';
+=======
+import { existsSync, realpathSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { atomicWriteJson, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import { validateWorktreeRemovalTarget } from '../lib/worktree-cleanup-safety.js';
+import { sanitizeName } from './tmux-session.js';
+import { withFileLockSync } from '../lib/file-lock.js';
+>>>>>>> main
 
 export type TeamWorktreeMode = "disabled" | "detached" | "named";
 
@@ -146,18 +163,50 @@ function assertCleanLeaderWorktree(repoRoot: string): void {
   }
 }
 
+<<<<<<< HEAD
 function getRegisteredWorktreeBranch(
   repoRoot: string,
   wtPath: string,
 ): string | undefined {
+||||||| 90f19265
+function getRegisteredWorktreeBranch(repoRoot: string, wtPath: string): string | undefined {
+=======
+function canonicalPathForComparison(path: string): string {
   try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+function getRegisteredWorktreeBranch(repoRoot: string, wtPath: string): string | undefined {
+>>>>>>> main
+  try {
+<<<<<<< HEAD
     const output = git(repoRoot, ["worktree", "list", "--porcelain"]);
     const resolvedWtPath = resolve(wtPath);
+||||||| 90f19265
+    const output = git(repoRoot, ['worktree', 'list', '--porcelain']);
+    const resolvedWtPath = resolve(wtPath);
+=======
+    const output = git(repoRoot, ['worktree', 'list', '--porcelain']);
+    const resolvedWtPath = canonicalPathForComparison(wtPath);
+>>>>>>> main
     let currentMatches = false;
+<<<<<<< HEAD
     for (const line of output.split("\n")) {
       if (line.startsWith("worktree ")) {
         currentMatches =
           resolve(line.slice("worktree ".length).trim()) === resolvedWtPath;
+||||||| 90f19265
+    for (const line of output.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        currentMatches = resolve(line.slice('worktree '.length).trim()) === resolvedWtPath;
+=======
+    for (const line of output.split('\n')) {
+      if (line.startsWith('worktree ')) {
+        currentMatches = canonicalPathForComparison(line.slice('worktree '.length).trim()) === resolvedWtPath;
+>>>>>>> main
         continue;
       }
       if (!currentMatches) continue;
@@ -176,6 +225,7 @@ function getRegisteredWorktreeBranch(
 
 function isRegisteredWorktreePath(repoRoot: string, wtPath: string): boolean {
   try {
+<<<<<<< HEAD
     const output = git(repoRoot, ["worktree", "list", "--porcelain"]);
     const resolvedWtPath = resolve(wtPath);
     return output
@@ -185,6 +235,19 @@ function isRegisteredWorktreePath(repoRoot: string, wtPath: string): boolean {
           line.startsWith("worktree ") &&
           resolve(line.slice("worktree ".length).trim()) === resolvedWtPath,
       );
+||||||| 90f19265
+    const output = git(repoRoot, ['worktree', 'list', '--porcelain']);
+    const resolvedWtPath = resolve(wtPath);
+    return output.split('\n').some(line => (
+      line.startsWith('worktree ') && resolve(line.slice('worktree '.length).trim()) === resolvedWtPath
+    ));
+=======
+    const output = git(repoRoot, ['worktree', 'list', '--porcelain']);
+    const resolvedWtPath = canonicalPathForComparison(wtPath);
+    return output.split('\n').some(line => (
+      line.startsWith('worktree ') && canonicalPathForComparison(line.slice('worktree '.length).trim()) === resolvedWtPath
+    ));
+>>>>>>> main
   } catch {
     return false;
   }
@@ -721,6 +784,12 @@ export function checkWorkerWorktreeRemovalSafety(
 
   if (!existsSync(wtPath)) return;
 
+  validateWorktreeRemovalTarget({
+    candidatePath: wtPath,
+    expectedRoots: [join(repoRoot, '.omc', 'team', sanitizeName(teamName), 'worktrees')],
+    mainRepoRoots: [repoRoot],
+  });
+
   let ignoreRootAgents = false;
   if (backup) {
     const agentsPath = join(wtPath, "AGENTS.md");
@@ -841,8 +910,14 @@ export function removeWorkerWorktree(
       /* branch may not exist */
     }
 
-    // If a stale plain directory remains and it is not a registered worktree, remove it.
+    // If a stale plain directory remains and it is not a registered worktree, remove it
+    // only after the shared path guard proves it is an OMC team worktree child.
     if (existsSync(wtPath) && !isRegisteredWorktreePath(repoRoot, wtPath)) {
+      validateWorktreeRemovalTarget({
+        candidatePath: wtPath,
+        expectedRoots: [join(repoRoot, '.omc', 'team', sanitizeName(teamName), 'worktrees')],
+        mainRepoRoots: [repoRoot],
+      });
       rmSync(wtPath, { recursive: true, force: true });
     }
 

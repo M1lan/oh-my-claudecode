@@ -84,7 +84,14 @@ describe("HUD watch mode initialization", () => {
       writeStdinCache: vi.fn(),
       readStdinCache: vi.fn(() => stdin),
       getContextPercent: vi.fn(() => 12),
+<<<<<<< HEAD
       getModelName: vi.fn(() => "claude-test"),
+||||||| 90f19265
+      getModelName: vi.fn(() => 'claude-test'),
+=======
+      getModelId: vi.fn(() => 'claude-test'),
+      getModelName: vi.fn(() => 'claude-test'),
+>>>>>>> main
       getRateLimitsFromStdin: vi.fn((value) => {
         const fiveHour = value.rate_limits?.five_hour?.used_percentage;
         const sevenDay = value.rate_limits?.seven_day?.used_percentage;

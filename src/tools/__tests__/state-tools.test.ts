@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   mkdirSync,
@@ -9,6 +10,17 @@ import {
 } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+||||||| 90f19265
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync, existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+=======
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync, existsSync } from 'fs';
+import { tmpdir } from 'os';
+import { dirname, join } from 'path';
+>>>>>>> main
 import {
   stateReadTool,
   stateWriteTool,
@@ -1274,11 +1286,60 @@ describe("state-tools", () => {
       }
     });
 
+<<<<<<< HEAD
     it("should discover and clear session-scoped autopilot state when no session_id is provided", async () => {
       const sessionId = "missing-env-autopilot-session";
       const stateDir = join(TEST_DIR, ".omc", "state");
       const sessionDir = join(stateDir, "sessions", sessionId);
       const autopilotPath = join(sessionDir, "autopilot-state.json");
+||||||| 90f19265
+    it('should discover and clear session-scoped autopilot state when no session_id is provided', async () => {
+      const sessionId = 'missing-env-autopilot-session';
+      const stateDir = join(TEST_DIR, '.omc', 'state');
+      const sessionDir = join(stateDir, 'sessions', sessionId);
+      const autopilotPath = join(sessionDir, 'autopilot-state.json');
+=======
+    it('clears workingDirectory-local ralph state when centralized OMC_STATE_DIR lookup misses', async () => {
+      const previous = process.env.OMC_STATE_DIR;
+      const sessionId = 'worktree-local-ralph-clear-session';
+      const centralRoot = join(TEST_DIR, 'central-state-root');
+      const localStatePath = join(TEST_DIR, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json');
+      process.env.OMC_STATE_DIR = centralRoot;
+      try {
+        mkdirSync(dirname(localStatePath), { recursive: true });
+        writeFileSync(
+          localStatePath,
+          JSON.stringify({
+            active: true,
+            session_id: sessionId,
+            iteration: 2,
+          }),
+        );
+
+        const result = await stateClearTool.handler({
+          mode: 'ralph',
+          session_id: sessionId,
+          workingDirectory: TEST_DIR,
+        });
+
+        expect(result.content[0].text).toContain('Successfully cleared state for mode: ralph');
+        expect(result.content[0].text).toContain('workingDirectory-local state file');
+        expect(existsSync(localStatePath)).toBe(false);
+      } finally {
+        if (previous === undefined) {
+          delete process.env.OMC_STATE_DIR;
+        } else {
+          process.env.OMC_STATE_DIR = previous;
+        }
+      }
+    });
+
+    it('should discover and clear session-scoped autopilot state when no session_id is provided', async () => {
+      const sessionId = 'missing-env-autopilot-session';
+      const stateDir = join(TEST_DIR, '.omc', 'state');
+      const sessionDir = join(stateDir, 'sessions', sessionId);
+      const autopilotPath = join(sessionDir, 'autopilot-state.json');
+>>>>>>> main
       mkdirSync(sessionDir, { recursive: true });
       writeFileSync(
         autopilotPath,

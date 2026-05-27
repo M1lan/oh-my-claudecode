@@ -27,11 +27,18 @@ import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { OMC_PLUGIN_ROOT_ENV } from "../../lib/env-vars.js";
 
+<<<<<<< HEAD
 const CACHE_STUB_MARKER = "FROM_CACHE_STUB_99_99_99";
+||||||| 90f19265
+const CACHE_STUB_MARKER = 'FROM_CACHE_STUB_99_99_99';
+=======
+const CACHE_STUB_MARKER = 'FROM_CACHE_TEST_STUB';
+const CACHE_STUB_VERSION = '0.0.0-test-stub';
+>>>>>>> main
 
 /**
  * Build an isolated CLAUDE_CONFIG_DIR with a stub HUD at
- * `<configDir>/plugins/cache/omc/oh-my-claudecode/99.99.99/dist/hud/index.js`.
+ * `<configDir>/plugins/cache/omc/oh-my-claudecode/0.0.0-test-stub/dist/hud/index.js`.
  * Used to pin the cache-fallback step (step 2 in the wrapper) so tests can
  * assert the wrapper actually executed that branch instead of accidentally
  * matching a globally-installed pnpm fallback (step 4).
@@ -40,6 +47,7 @@ function makeStubConfigDir(rootDir: string): string {
   const configDir = join(rootDir, "isolated-config");
   const stubDir = join(
     configDir,
+<<<<<<< HEAD
     "plugins",
     "cache",
     "omc",
@@ -47,6 +55,11 @@ function makeStubConfigDir(rootDir: string): string {
     "99.99.99",
     "dist",
     "hud",
+||||||| 90f19265
+    'plugins', 'cache', 'omc', 'oh-my-claudecode', '99.99.99', 'dist', 'hud',
+=======
+    'plugins', 'cache', 'omc', 'oh-my-claudecode', CACHE_STUB_VERSION, 'dist', 'hud',
+>>>>>>> main
   );
   mkdirSync(stubDir, { recursive: true });
   writeFileSync(
@@ -377,5 +390,11 @@ describe("HUD wrapper — OMC_PLUGIN_ROOT resolution", () => {
 describe("HUD wrapper — fixture sanity", () => {
   it("the template txt file exists in the repo", () => {
     expect(existsSync(TEMPLATE_TXT)).toBe(true);
+  });
+
+  it('cache fallback fixture does not look like a real stable release version', () => {
+    expect(CACHE_STUB_VERSION).toBe('0.0.0-test-stub');
+    expect(CACHE_STUB_VERSION).not.toMatch(/^\d+\.\d+\.\d+$/);
+    expect(CACHE_STUB_MARKER).not.toMatch(/\d+\.\d+\.\d+/);
   });
 });

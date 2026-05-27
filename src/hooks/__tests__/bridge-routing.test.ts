@@ -1494,10 +1494,23 @@ $ ultrawork search the codebase`,
           }),
         );
 
+<<<<<<< HEAD
         const result = await processHook("session-start", {
+||||||| 90f19265
+        const result = await processHook('session-start', {
+=======
+        const previousTestBootId = process.env.OMC_TEST_BOOT_ID;
+        process.env.OMC_TEST_BOOT_ID = 'current-test-boot-id';
+        const result = await processHook('session-start', {
+>>>>>>> main
           sessionId: currentSessionId,
           directory: tempDir,
         } as HookInput);
+        if (previousTestBootId === undefined) {
+          delete process.env.OMC_TEST_BOOT_ID;
+        } else {
+          process.env.OMC_TEST_BOOT_ID = previousTestBootId;
+        }
 
         expect(result.continue).toBe(true);
         expect(existsSync(join(staleSessionDir, "ralph-state.json"))).toBe(

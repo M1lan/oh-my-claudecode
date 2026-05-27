@@ -1120,6 +1120,7 @@ export function getInstalledOmcPluginRoots(): string[] {
 }
 
 const PLUGIN_SYNC_PAYLOAD = [
+<<<<<<< HEAD
   "dist",
   "bridge",
   "hooks",
@@ -1133,6 +1134,36 @@ const PLUGIN_SYNC_PAYLOAD = [
   "README.md",
   "LICENSE",
   "package.json",
+||||||| 90f19265
+  'dist',
+  'bridge',
+  'hooks',
+  'scripts',
+  'skills',
+  'agents',
+  'templates',
+  'docs',
+  '.claude-plugin',
+  '.mcp.json',
+  'README.md',
+  'LICENSE',
+  'package.json',
+=======
+  'dist',
+  'bridge',
+  'hooks',
+  'scripts',
+  'skills',
+  'agents',
+  'commands',
+  'templates',
+  'docs',
+  '.claude-plugin',
+  '.mcp.json',
+  'README.md',
+  'LICENSE',
+  'package.json',
+>>>>>>> main
 ] as const;
 
 function countPluginSyncPayloadEntries(root: string): number {

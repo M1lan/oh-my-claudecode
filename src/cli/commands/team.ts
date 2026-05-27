@@ -13,6 +13,7 @@ import {
   resolveTeamApiOperation,
   executeTeamApiOperation,
   type TeamApiOperation,
+<<<<<<< HEAD
 } from "../../team/api-interop.js";
 import { inferDelegationPlanForTeamTask } from "../../team/delegation-evidence.js";
 import type { CliAgentType } from "../../team/model-contract.js";
@@ -21,6 +22,25 @@ import { loadConfig } from "../../config/loader.js";
 import { existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join } from "node:path";
+||||||| 90f19265
+} from '../../team/api-interop.js';
+import { inferDelegationPlanForTeamTask } from '../../team/delegation-evidence.js';
+import type { CliAgentType } from '../../team/model-contract.js';
+import type { TeamTaskDelegationPlan } from '../../team/types.js';
+import { loadConfig } from '../../config/loader.js';
+import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join } from 'node:path';
+=======
+} from '../../team/api-interop.js';
+import { inferDelegationPlanForTeamTask } from '../../team/delegation-evidence.js';
+import type { CliAgentType } from '../../team/model-contract.js';
+import type { TeamTaskDelegationPlan } from '../../team/types.js';
+import { loadConfig } from '../../config/loader.js';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmuxExec } from '../tmux-utils.js';
+>>>>>>> main
 
 const HELP_TOKENS = new Set(["--help", "-h", "help"]);
 const MIN_WORKER_COUNT = 1;
@@ -346,7 +366,13 @@ function isTeamStateLive(config: { tmux_session?: string } | null): boolean {
     typeof config?.tmux_session === "string" ? config.tmux_session.trim() : "";
   if (!target) return false;
   try {
+<<<<<<< HEAD
     execFileSync("tmux", ["has-session", "-t", target], { stdio: "ignore" });
+||||||| 90f19265
+    execFileSync('tmux', ['has-session', '-t', target], { stdio: 'ignore' });
+=======
+    tmuxExec(['has-session', '-t', target], { stdio: 'ignore' });
+>>>>>>> main
     return true;
   } catch {
     return false;

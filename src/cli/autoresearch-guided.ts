@@ -31,6 +31,7 @@ import {
 import {
   runAutoresearchSetupSession,
   type AutoresearchSetupSessionInput,
+<<<<<<< HEAD
 } from "./autoresearch-setup-session.js";
 import {
   buildTmuxShellCommand,
@@ -40,6 +41,14 @@ import {
   tmuxExec,
   wrapWithLoginShell,
 } from "./tmux-utils.js";
+||||||| 90f19265
+} from './autoresearch-setup-session.js';
+import { buildTmuxShellCommand, buildTmuxShellCommandWithEnv, isTmuxAvailable, quoteShellArg, tmuxExec, wrapWithLoginShell } from './tmux-utils.js';
+=======
+} from './autoresearch-setup-session.js';
+import { buildTmuxShellCommand, buildTmuxShellCommandWithEnv, isTmuxAvailable, quoteShellArg, tmuxExec, wrapWithLoginShell } from './tmux-utils.js';
+import { configureTmuxClipboardForSession } from './tmux-clipboard.js';
+>>>>>>> main
 
 const CLAUDE_BYPASS_FLAG = "--dangerously-skip-permissions";
 const AUTORESEARCH_SETUP_SLASH_COMMAND = "/deep-interview --autoresearch";
@@ -451,10 +460,19 @@ export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
   ]);
   const wrappedCommand = wrapWithLoginShell(command);
 
+<<<<<<< HEAD
   tmuxExec(
     ["new-session", "-d", "-s", sessionName, "-c", repoRoot, wrappedCommand],
     { stripTmux: true, stdio: "ignore" },
   );
+||||||| 90f19265
+  tmuxExec(['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand], { stripTmux: true, stdio: 'ignore' });
+=======
+  tmuxExec(['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand], { stripTmux: true, stdio: 'ignore' });
+  try {
+    configureTmuxClipboardForSession(sessionName, { stripTmux: true, stdio: 'ignore' });
+  } catch { /* non-fatal — older tmux builds may not support these options */ }
+>>>>>>> main
   assertTmuxSessionAvailable(sessionName);
 
   console.log("\nAutoresearch launched in background tmux session.");
@@ -542,6 +560,9 @@ export function spawnAutoresearchSetupTmux(repoRoot: string): void {
     ],
     { stripTmux: true },
   ).trim();
+  try {
+    configureTmuxClipboardForSession(sessionName, { stripTmux: true, stdio: 'ignore' });
+  } catch { /* non-fatal — older tmux builds may not support these options */ }
 
   assertTmuxSessionAvailable(sessionName);
 

@@ -323,6 +323,7 @@ export async function waitForEventInLog(opts: WaitForEventOpts): Promise<void> {
   while (Date.now() < deadline) {
     if (existsSync(eventLogPath)) {
       try {
+<<<<<<< HEAD
         const raw = readFileSync(eventLogPath, "utf-8");
         if (
           raw.includes(eventType) &&
@@ -330,6 +331,14 @@ export async function waitForEventInLog(opts: WaitForEventOpts): Promise<void> {
         ) {
           return;
         }
+||||||| 90f19265
+        const raw = readFileSync(eventLogPath, 'utf-8');
+        if (raw.includes(eventType) && (worker === undefined || raw.includes(worker))) {
+          return;
+        }
+=======
+        const raw = readFileSync(eventLogPath, 'utf-8');
+>>>>>>> main
         const lines = raw
           .split("\n")
           .filter((l: string) => l.trim().length > 0);

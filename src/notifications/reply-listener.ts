@@ -16,6 +16,7 @@
  * Follows the daemon pattern from src/features/rate-limit-wait/daemon.ts
  */
 
+<<<<<<< HEAD
 import {
   existsSync,
   mkdirSync,
@@ -33,6 +34,24 @@ import { spawn } from "child_process";
 import { request as httpsRequest } from "https";
 import { resolveDaemonModulePath } from "../utils/daemon-module-path.js";
 import { getGlobalOmcStateRoot } from "../utils/paths.js";
+||||||| 90f19265
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync, statSync, appendFileSync, renameSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import { request as httpsRequest } from 'https';
+import { resolveDaemonModulePath } from '../utils/daemon-module-path.js';
+import { getGlobalOmcStateRoot } from '../utils/paths.js';
+=======
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync, statSync, appendFileSync, renameSync } from 'fs';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+import { spawn } from 'child_process';
+import { tmuxExec } from '../cli/tmux-utils.js';
+import { request as httpsRequest } from 'https';
+import { resolveDaemonModulePath } from '../utils/daemon-module-path.js';
+import { getGlobalOmcStateRoot } from '../utils/paths.js';
+>>>>>>> main
 import {
   capturePaneContent,
   sendToPane,
@@ -42,11 +61,26 @@ import {
   lookupByMessageId,
   removeMessagesByPane,
   pruneStale,
+<<<<<<< HEAD
 } from "./session-registry.js";
 import type { ReplyConfig } from "./types.js";
 import { parseMentionAllowedMentions } from "./config.js";
 import { redactTokens } from "./redact.js";
 import { isProcessAlive } from "../platform/index.js";
+||||||| 90f19265
+} from './session-registry.js';
+import type { ReplyConfig } from './types.js';
+import { parseMentionAllowedMentions } from './config.js';
+import { redactTokens } from './redact.js';
+import { isProcessAlive } from '../platform/index.js';
+=======
+  type SessionMapping,
+} from './session-registry.js';
+import type { ReplyConfig } from './types.js';
+import { parseMentionAllowedMentions } from './config.js';
+import { redactTokens } from './redact.js';
+import { isProcessAlive } from '../platform/index.js';
+>>>>>>> main
 import {
   validateSlackMessage,
   SlackConnectionStateTracker,
@@ -393,11 +427,62 @@ class RateLimiter {
  *
  * Returns true if injection succeeded, false otherwise.
  */
+export type ReplyInjectionStep =
+  | { kind: 'literal'; value: string }
+  | { kind: 'key'; value: string };
+
+export function buildReplyInjectionSteps(
+  text: string,
+  platform: string,
+  config: Pick<ReplyListenerDaemonConfig, 'includePrefix' | 'maxMessageLength'>,
+  mapping?: Pick<SessionMapping, 'event' | 'askUserQuestionOptionCount' | 'askUserQuestionAllowOther'>,
+): ReplyInjectionStep[] {
+  const prefix = config.includePrefix ? `[reply:${platform}] ` : '';
+  const sanitized = sanitizeReplyInput(prefix + text);
+  const truncated = sanitized.slice(0, config.maxMessageLength);
+
+  if (
+    mapping?.event === 'ask-user-question' &&
+    mapping.askUserQuestionAllowOther !== false &&
+    Number.isFinite(mapping.askUserQuestionOptionCount)
+  ) {
+    const optionCount = Math.max(0, Math.floor(mapping.askUserQuestionOptionCount ?? 0));
+    return [
+      ...Array.from({ length: optionCount }, () => ({ kind: 'key' as const, value: 'Down' })),
+      { kind: 'key', value: 'Enter' },
+      { kind: 'literal', value: truncated },
+      { kind: 'key', value: 'Enter' },
+    ];
+  }
+
+  return [
+    { kind: 'literal', value: truncated },
+    { kind: 'key', value: 'Enter' },
+  ];
+}
+
+function sendReplyInjectionSteps(paneId: string, steps: ReplyInjectionStep[]): boolean {
+  try {
+    for (const step of steps) {
+      if (step.kind === 'literal') {
+        tmuxExec(['send-keys', '-t', paneId, '-l', step.value], { stripTmux: true, timeout: 2000 });
+      } else {
+        tmuxExec(['send-keys', '-t', paneId, step.value], { stripTmux: true, timeout: 2000 });
+      }
+    }
+    return true;
+  } catch (error) {
+    log(`ERROR: Failed to send reply injection steps to pane ${paneId}: ${error instanceof Error ? error.message : String(error)}`);
+    return false;
+  }
+}
+
 function injectReply(
   paneId: string,
   text: string,
   platform: string,
   config: ReplyListenerDaemonConfig,
+  mapping?: SessionMapping,
 ): boolean {
   // 1. Verify pane has content (non-empty pane = active session per registry)
   const content = capturePaneContent(paneId, 15);
@@ -410,22 +495,31 @@ function injectReply(
     return false;
   }
 
+<<<<<<< HEAD
   // 2. Build prefixed text if configured
   const prefix = config.includePrefix ? `[reply:${platform}] ` : "";
+||||||| 90f19265
+  // 2. Build prefixed text if configured
+  const prefix = config.includePrefix ? `[reply:${platform}] ` : '';
+=======
+  const steps = buildReplyInjectionSteps(text, platform, config, mapping);
+  const preview = steps.find((step) => step.kind === 'literal')?.value ?? '';
+>>>>>>> main
 
-  // 3. Sanitize the reply text
-  const sanitized = sanitizeReplyInput(prefix + text);
-
-  // 4. Truncate to max length
-  const truncated = sanitized.slice(0, config.maxMessageLength);
-
-  // 5. Inject via sendToPane (which applies its own sanitizeForTmux)
-  const success = sendToPane(paneId, truncated, true);
+  const success = mapping?.event === 'ask-user-question'
+    ? sendReplyInjectionSteps(paneId, steps)
+    : sendToPane(paneId, preview, true);
 
   if (success) {
+<<<<<<< HEAD
     log(
       `Injected reply from ${platform} into pane ${paneId}: "${truncated.slice(0, 50)}${truncated.length > 50 ? "..." : ""}"`,
     );
+||||||| 90f19265
+    log(`Injected reply from ${platform} into pane ${paneId}: "${truncated.slice(0, 50)}${truncated.length > 50 ? '...' : ''}"`);
+=======
+    log(`Injected reply from ${platform} into pane ${paneId}: "${preview.slice(0, 50)}${preview.length > 50 ? '...' : ''}"`);
+>>>>>>> main
   } else {
     log(`ERROR: Failed to inject reply into pane ${paneId}`);
   }
@@ -545,12 +639,18 @@ async function pollDiscord(
       writeDaemonState(state);
 
       // Inject reply
+<<<<<<< HEAD
       const success = injectReply(
         mapping.tmuxPaneId,
         msg.content,
         "discord",
         config,
       );
+||||||| 90f19265
+      const success = injectReply(mapping.tmuxPaneId, msg.content, 'discord', config);
+=======
+      const success = injectReply(mapping.tmuxPaneId, msg.content, 'discord', config, mapping);
+>>>>>>> main
       if (success) {
         state.messagesInjected++;
 
@@ -728,7 +828,13 @@ async function pollTelegram(
       writeDaemonState(state);
 
       // Inject reply
+<<<<<<< HEAD
       const success = injectReply(mapping.tmuxPaneId, text, "telegram", config);
+||||||| 90f19265
+      const success = injectReply(mapping.tmuxPaneId, text, 'telegram', config);
+=======
+      const success = injectReply(mapping.tmuxPaneId, text, 'telegram', config, mapping);
+>>>>>>> main
       if (success) {
         state.messagesInjected++;
 
@@ -869,12 +975,14 @@ async function pollLoop(): Promise<void> {
 
             // Find target pane for injection
             let targetPaneId: string | null = null;
+            let targetMapping: SessionMapping | undefined;
 
             // Thread replies: look up parent message in session registry
             if (event.thread_ts && event.thread_ts !== event.ts) {
               const mapping = lookupByMessageId("slack-bot", event.thread_ts);
               if (mapping) {
                 targetPaneId = mapping.tmuxPaneId;
+                targetMapping = mapping;
               }
             }
 
@@ -887,12 +995,18 @@ async function pollLoop(): Promise<void> {
             }
 
             // Inject reply
+<<<<<<< HEAD
             const success = injectReply(
               targetPaneId,
               event.text,
               "slack",
               config,
             );
+||||||| 90f19265
+            const success = injectReply(targetPaneId, event.text, 'slack', config);
+=======
+            const success = injectReply(targetPaneId, event.text, 'slack', config, targetMapping);
+>>>>>>> main
             if (success) {
               state.messagesInjected++;
               writeDaemonState(state);

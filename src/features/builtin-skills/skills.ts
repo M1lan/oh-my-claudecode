@@ -135,6 +135,7 @@ function readDeepInterviewThresholdFromSettings(path: string): number | null {
     : null;
 }
 
+<<<<<<< HEAD
 function getDeepInterviewAmbiguityThreshold(): number {
   const profileThreshold = readDeepInterviewThresholdFromSettings(
     join(getClaudeConfigDir(), "settings.json"),
@@ -147,6 +148,33 @@ function getDeepInterviewAmbiguityThreshold(): number {
     profileThreshold ??
     DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD
   );
+||||||| 90f19265
+function getDeepInterviewAmbiguityThreshold(): number {
+  const profileThreshold = readDeepInterviewThresholdFromSettings(join(getClaudeConfigDir(), 'settings.json'));
+  const projectThreshold = readDeepInterviewThresholdFromSettings(join(process.cwd(), '.claude', 'settings.json'));
+  return projectThreshold ?? profileThreshold ?? DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD;
+=======
+type DeepInterviewThresholdResolution = {
+  threshold: number;
+  source: string;
+};
+
+function getDeepInterviewAmbiguityThresholdResolution(): DeepInterviewThresholdResolution {
+  const profileSettingsPath = join(getClaudeConfigDir(), 'settings.json');
+  const projectSettingsPath = join(process.cwd(), '.claude', 'settings.json');
+  const profileThreshold = readDeepInterviewThresholdFromSettings(profileSettingsPath);
+  const projectThreshold = readDeepInterviewThresholdFromSettings(projectSettingsPath);
+
+  if (projectThreshold !== null) {
+    return { threshold: projectThreshold, source: './.claude/settings.json' };
+  }
+
+  if (profileThreshold !== null) {
+    return { threshold: profileThreshold, source: '[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json' };
+  }
+
+  return { threshold: DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD, source: 'default' };
+>>>>>>> main
 }
 
 function formatThresholdPercent(threshold: number): string {
@@ -207,16 +235,32 @@ function readSkillBodyOverride(
 }
 
 function applyDeepInterviewRuntimeSettings(template: string): string {
-  const threshold = getDeepInterviewAmbiguityThreshold();
+  const { threshold, source } = getDeepInterviewAmbiguityThresholdResolution();
   const percent = formatThresholdPercent(threshold);
 
   const withResolvedPlaceholders = template
+<<<<<<< HEAD
     .replaceAll("<resolvedThreshold>", `${threshold}`)
     .replaceAll("<resolvedThresholdPercent>", percent);
+||||||| 90f19265
+    .replaceAll('<resolvedThreshold>', `${threshold}`)
+    .replaceAll('<resolvedThresholdPercent>', percent);
+=======
+    .replaceAll('<resolvedThreshold>', `${threshold}`)
+    .replaceAll('<resolvedThresholdPercent>', percent)
+    .replaceAll('<resolvedThresholdSource>', source);
+>>>>>>> main
 
+<<<<<<< HEAD
   const withRuntimeSettings = withResolvedPlaceholders.includes(
     "3.5. **Load runtime settings**:",
   )
+||||||| 90f19265
+  const withRuntimeSettings = withResolvedPlaceholders.includes('3.5. **Load runtime settings**:')
+=======
+  const withRuntimeSettings = withResolvedPlaceholders.includes('3.5. **Load runtime settings**:')
+    || withResolvedPlaceholders.includes('## Phase 0: Resolve Ambiguity Threshold')
+>>>>>>> main
     ? withResolvedPlaceholders
     : withResolvedPlaceholders.replace(
         '4. **Initialize state** via `state_write(mode="deep-interview")`:',
@@ -246,12 +290,29 @@ function applyDeepInterviewRuntimeSettings(template: string): string {
   );
 }
 
+<<<<<<< HEAD
 export function renderBundledSkillBody(
   skillName: string,
   body: string,
 ): string {
+||||||| 90f19265
+export function renderBundledSkillBody(skillName: string, body: string): string {
+=======
+function normalizeSkillNameForRuntimeRendering(skillName: string): string {
+  return skillName.trim().toLowerCase().replace(/^oh-my-claudecode:/, '').replace(/^omc:/, '');
+}
+
+export function renderBundledSkillBody(skillName: string, body: string): string {
+  const normalizedSkillName = normalizeSkillNameForRuntimeRendering(skillName);
+>>>>>>> main
   const rewrittenBody = rewriteOmcCliInvocations(body.trim());
+<<<<<<< HEAD
   return skillName === "deep-interview" || skillName === "deep-dive"
+||||||| 90f19265
+  return skillName === 'deep-interview' || skillName === 'deep-dive'
+=======
+  return normalizedSkillName === 'deep-interview' || normalizedSkillName === 'deep-dive'
+>>>>>>> main
     ? applyDeepInterviewRuntimeSettings(rewrittenBody)
     : rewrittenBody;
 }
@@ -382,7 +443,7 @@ let cachedSkillsKey: string | null = null;
 
 function getBuiltinSkillsCacheKey(): string {
   return JSON.stringify({
-    deepInterviewAmbiguityThreshold: getDeepInterviewAmbiguityThreshold(),
+    deepInterviewAmbiguityThreshold: getDeepInterviewAmbiguityThresholdResolution(),
   });
 }
 

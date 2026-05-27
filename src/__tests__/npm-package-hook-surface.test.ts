@@ -4,8 +4,17 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, normalize, relative } from "node:path";
 
 const PACKAGE_ROOT = process.cwd();
+<<<<<<< HEAD
 const HOOKS_JSON_PATH = join(PACKAGE_ROOT, "hooks", "hooks.json");
 const SCRIPTS_ROOT = join(PACKAGE_ROOT, "scripts");
+||||||| 90f19265
+const HOOKS_JSON_PATH = join(PACKAGE_ROOT, 'hooks', 'hooks.json');
+const SCRIPTS_ROOT = join(PACKAGE_ROOT, 'scripts');
+=======
+const HOOKS_JSON_PATH = join(PACKAGE_ROOT, 'hooks', 'hooks.json');
+const PLUGIN_JSON_PATH = join(PACKAGE_ROOT, '.claude-plugin', 'plugin.json');
+const SCRIPTS_ROOT = join(PACKAGE_ROOT, 'scripts');
+>>>>>>> main
 
 type HookCommandConfig = {
   command?: string;
@@ -28,9 +37,37 @@ type NpmPackDryRunResult = {
   files?: NpmPackDryRunEntry[];
 };
 
+<<<<<<< HEAD
 const LOCAL_IMPORT_RE =
   /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
+||||||| 90f19265
+const LOCAL_IMPORT_RE = /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
+=======
+type PluginJson = {
+  hooks?: unknown;
+};
+
+function referencesStandardHooksManifest(value: unknown): boolean {
+  if (typeof value === 'string') {
+    const normalized = value.replace(/\\/g, '/');
+    return normalized === './hooks/hooks.json' || normalized === 'hooks/hooks.json';
+  }
+
+  if (Array.isArray(value)) {
+    return value.some(referencesStandardHooksManifest);
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.values(value).some(referencesStandardHooksManifest);
+  }
+
+  return false;
+}
+
+const LOCAL_IMPORT_RE = /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
+>>>>>>> main
 const PLUGIN_SCRIPT_RE = /"\$CLAUDE_PLUGIN_ROOT"\/(scripts\/[^\s"]+)/g;
+let packedFilesCache: Set<string> | null = null;
 
 function listHookScriptEntries(): string[] {
   const hooksJson = JSON.parse(
@@ -110,18 +147,53 @@ function collectRequiredScriptFiles(
 }
 
 function getPackedFiles(): Set<string> {
+<<<<<<< HEAD
   const stdout = execFileSync("pnpm", ["pack", "--dry-run", "--json"], {
+||||||| 90f19265
+  const stdout = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+=======
+  if (packedFilesCache) {
+    return packedFilesCache;
+  }
+
+  const stdout = execFileSync('npm', ['pack', '--dry-run', '--json'], {
+>>>>>>> main
     cwd: PACKAGE_ROOT,
     encoding: "utf-8",
   });
 
   const results = JSON.parse(stdout) as NpmPackDryRunResult[];
+<<<<<<< HEAD
   return new Set((results[0]?.files ?? []).map((file) => file.path));
+||||||| 90f19265
+  return new Set((results[0]?.files ?? []).map(file => file.path));
+=======
+  packedFilesCache = new Set((results[0]?.files ?? []).map(file => file.path));
+  return packedFilesCache;
+>>>>>>> main
 }
 
+<<<<<<< HEAD
 describe("pnpm package hook surface regression", () => {
   it("packs hooks.json, hook entry scripts, and their local script dependencies", () => {
     const requiredFiles = new Set<string>(["hooks/hooks.json"]);
+||||||| 90f19265
+describe('npm package hook surface regression', () => {
+  it('packs hooks.json, hook entry scripts, and their local script dependencies', () => {
+    const requiredFiles = new Set<string>(['hooks/hooks.json']);
+=======
+describe('npm package hook surface regression', () => {
+  it('does not explicitly reference the auto-loaded standard hooks manifest from plugin.json', () => {
+    const pluginJson = JSON.parse(readFileSync(PLUGIN_JSON_PATH, 'utf-8')) as PluginJson;
+    expect(referencesStandardHooksManifest(pluginJson.hooks)).toBe(false);
+
+    const packedFiles = getPackedFiles();
+    expect(packedFiles.has('.claude-plugin/plugin.json')).toBe(true);
+  });
+
+  it('packs hooks.json, hook entry scripts, and their local script dependencies', () => {
+    const requiredFiles = new Set<string>(['hooks/hooks.json']);
+>>>>>>> main
 
     for (const entryRelPath of listHookScriptEntries()) {
       for (const file of collectRequiredScriptFiles(entryRelPath)) {

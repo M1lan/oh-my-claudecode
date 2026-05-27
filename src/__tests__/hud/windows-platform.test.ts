@@ -14,7 +14,7 @@ const packageRoot = join(__dirname, "..", "..", "..");
  * 1. Checking bridge NODE_PATH separator uses platform-aware logic
  * 2. Mocking process.platform to test Windows code paths
  * 3. Verifying ASCII fallback for emoji on Windows
- * 4. Verifying shell option for git execSync on Windows
+ * 4. Verifying git HUD uses shell-free execFileSync argv on Windows
  * 5. Verifying safe mode auto-enable on Windows
  *
  * Related: GitHub Issue #739
@@ -31,10 +31,18 @@ function getSeparator(platform: string): string {
   return isWin32(platform) ? ";" : ":";
 }
 
+<<<<<<< HEAD
 function getShellOption(platform: string): string | undefined {
   return isWin32(platform) ? "cmd.exe" : undefined;
 }
 
+||||||| 90f19265
+function getShellOption(platform: string): string | undefined {
+  return isWin32(platform) ? 'cmd.exe' : undefined;
+}
+
+=======
+>>>>>>> main
 function getSafeMode(configSafeMode: boolean, platform: string): boolean {
   return configSafeMode !== false && (configSafeMode || isWin32(platform));
 }
@@ -198,10 +206,18 @@ describe("Windows HUD Platform Fixes (#739)", () => {
   });
 
   // =========================================================================
-  // P1: Git shell option on Windows
+  // P1: Git execFileSync argv on Windows
   // =========================================================================
+<<<<<<< HEAD
   describe("P1: Git execSync shell option", () => {
     it("git.ts should use conditional shell option", () => {
+||||||| 90f19265
+  describe('P1: Git execSync shell option', () => {
+    it('git.ts should use conditional shell option', () => {
+=======
+  describe('P1: Git shell-free execFileSync on Windows', () => {
+    it('git.ts should call git via execFileSync argv with windowsHide', () => {
+>>>>>>> main
       const content = readFileSync(
         join(packageRoot, "src", "hud", "elements", "git.ts"),
         "utf-8",
@@ -209,18 +225,47 @@ describe("Windows HUD Platform Fixes (#739)", () => {
       expect(content).toContain(
         "shell: process.platform === 'win32' ? 'cmd.exe' : undefined",
       );
+<<<<<<< HEAD
     });
+||||||| 90f19265
+      expect(content).toContain("shell: process.platform === 'win32' ? 'cmd.exe' : undefined");
+    });
+=======
+>>>>>>> main
 
+<<<<<<< HEAD
     it("shell option logic should produce cmd.exe on win32", () => {
       expect(getShellOption("win32")).toBe("cmd.exe");
     });
+||||||| 90f19265
+    it('shell option logic should produce cmd.exe on win32', () => {
+      expect(getShellOption('win32')).toBe('cmd.exe');
+    });
+=======
+      expect(content).toContain("import { execFileSync } from 'node:child_process'");
+      expect(content).toContain("execFileSync('git', args, {");
+      expect(content).toContain('windowsHide: true');
+>>>>>>> main
 
+<<<<<<< HEAD
     it("shell option logic should produce undefined on darwin", () => {
       expect(getShellOption("darwin")).toBeUndefined();
     });
 
     it("shell option logic should produce undefined on linux", () => {
       expect(getShellOption("linux")).toBeUndefined();
+||||||| 90f19265
+    it('shell option logic should produce undefined on darwin', () => {
+      expect(getShellOption('darwin')).toBeUndefined();
+    });
+
+    it('shell option logic should produce undefined on linux', () => {
+      expect(getShellOption('linux')).toBeUndefined();
+=======
+      expect(content).not.toContain("shell: process.platform === 'win32' ? 'cmd.exe' : undefined");
+      expect(content).not.toContain('cmd.exe');
+      expect(content).not.toContain('execSync');
+>>>>>>> main
     });
   });
 

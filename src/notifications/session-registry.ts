@@ -99,6 +99,9 @@ export interface SessionMapping {
   event: string;
   createdAt: string; // ISO timestamp
   projectPath?: string;
+  /** AskUserQuestion metadata used to target the Other/free-text field for mobile replies. */
+  askUserQuestionOptionCount?: number;
+  askUserQuestionAllowOther?: boolean;
 }
 
 // ============================================================================

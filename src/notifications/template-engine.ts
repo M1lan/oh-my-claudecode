@@ -12,6 +12,7 @@ import { basename } from "path";
 /** Set of known template variables for validation */
 const KNOWN_VARIABLES = new Set<string>([
   // Raw payload fields
+<<<<<<< HEAD
   "event",
   "sessionId",
   "message",
@@ -37,6 +38,23 @@ const KNOWN_VARIABLES = new Set<string>([
   "replyChannel",
   "replyTarget",
   "replyThread",
+||||||| 90f19265
+  "event", "sessionId", "message", "timestamp", "tmuxSession",
+  "projectPath", "projectName", "modesUsed", "contextSummary",
+  "durationMs", "agentsSpawned", "agentsCompleted",
+  "reason", "activeMode", "iteration", "maxIterations",
+  "question", "incompleteTasks", "agentName", "agentType",
+  "tmuxTail", "tmuxPaneId",
+  "replyChannel", "replyTarget", "replyThread",
+=======
+  "event", "sessionId", "message", "timestamp", "tmuxSession",
+  "projectPath", "projectName", "modesUsed", "contextSummary",
+  "durationMs", "agentsSpawned", "agentsCompleted",
+  "reason", "activeMode", "iteration", "maxIterations",
+  "question", "questionOptions", "incompleteTasks", "agentName", "agentType",
+  "tmuxTail", "tmuxPaneId",
+  "replyChannel", "replyTarget", "replyThread",
+>>>>>>> main
   // Computed variables
   "duration",
   "time",
@@ -134,6 +152,16 @@ export function computeTemplateVariables(
   vars.maxIterations =
     payload.maxIterations != null ? String(payload.maxIterations) : "";
   vars.question = payload.question || "";
+  vars.questionOptions = payload.askUserQuestionPrompts?.map((prompt) => {
+    const optionLines = prompt.options.map((option, index) => {
+      const description = option.description ? ` — ${option.description}` : "";
+      return `${index + 1}. ${option.label}${description}`;
+    });
+    if (prompt.allowOther !== false) {
+      optionLines.push(`${prompt.options.length + 1}. ${prompt.otherLabel || "Other"} — reply with free text`);
+    }
+    return optionLines.join("\n");
+  }).filter(Boolean).join("\n\n") || "";
   // incompleteTasks: undefined/null → "" (so {{#if}} is falsy when unset)
   // 0 → "0" (distinguishable from unset; templates can display "0 incomplete tasks")
   vars.incompleteTasks =

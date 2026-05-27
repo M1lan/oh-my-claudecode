@@ -7,6 +7,7 @@
  * Claude Code UI bug #17088 (false "hook error" labels on MSYS2/Git Bash)
  * is avoided.
  */
+<<<<<<< HEAD
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   mkdtempSync,
@@ -18,6 +19,24 @@ import {
 import { join } from "path";
 import { tmpdir } from "os";
 import { patchHooksJsonForWindows } from "../index.js";
+||||||| 90f19265
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { patchHooksJsonForWindows } from '../index.js';
+=======
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+import { tmpdir } from 'os';
+import { patchHooksJsonForWindows } from '../index.js';
+>>>>>>> main
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const repoRoot = join(__dirname, '..', '..', '..', '..');
 
 /** Minimal hooks.json structure matching the plugin's format. */
 function makeHooksJson(commands: string[]): object {
@@ -63,7 +82,52 @@ describe("patchHooksJsonForWindows", () => {
     );
   });
 
+<<<<<<< HEAD
   it("preserves trailing arguments (e.g. subagent-tracker start)", () => {
+||||||| 90f19265
+  it('preserves trailing arguments (e.g. subagent-tracker start)', () => {
+=======
+  it('replaces current portable sh+find-node+run.cjs commands with the run.cjs wrapper', () => {
+    const original = makeHooksJson([
+      'sh "$CLAUDE_PLUGIN_ROOT"/scripts/find-node.sh "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
+    ]);
+    writeFileSync(hooksJsonPath, JSON.stringify(original, null, 2));
+
+    patchHooksJsonForWindows(pluginRoot);
+
+    const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
+    const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
+    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs');
+  });
+
+  it('replaces current quoted /bin/sh+find-node+run.cjs commands with the run.cjs wrapper', () => {
+    const original = makeHooksJson([
+      '"/bin/sh" "$CLAUDE_PLUGIN_ROOT"/scripts/find-node.sh "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
+    ]);
+    writeFileSync(hooksJsonPath, JSON.stringify(original, null, 2));
+
+    patchHooksJsonForWindows(pluginRoot);
+
+    const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
+    const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
+    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs');
+  });
+
+  it('preserves trailing arguments for current quoted /bin/sh+find-node+run.cjs commands', () => {
+    const original = makeHooksJson([
+      '"/bin/sh" "$CLAUDE_PLUGIN_ROOT"/scripts/find-node.sh "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start',
+    ]);
+    writeFileSync(hooksJsonPath, JSON.stringify(original, null, 2));
+
+    patchHooksJsonForWindows(pluginRoot);
+
+    const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
+    const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
+    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start');
+  });
+
+  it('preserves trailing arguments (e.g. subagent-tracker start)', () => {
+>>>>>>> main
     const original = makeHooksJson([
       'sh "${CLAUDE_PLUGIN_ROOT}/scripts/find-node.sh" "${CLAUDE_PLUGIN_ROOT}/scripts/subagent-tracker.mjs" start',
     ]);
@@ -133,7 +197,42 @@ describe("patchHooksJsonForWindows", () => {
     );
   });
 
+<<<<<<< HEAD
   it("is a no-op when hooks.json does not exist", () => {
+||||||| 90f19265
+  it('is a no-op when hooks.json does not exist', () => {
+=======
+  it('patches every sh/find-node command in the bundled hooks manifest, including Stop and UserPromptSubmit', () => {
+    copyFileSync(join(repoRoot, 'hooks', 'hooks.json'), hooksJsonPath);
+
+    patchHooksJsonForWindows(pluginRoot);
+
+    const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8')) as {
+      hooks: Record<string, Array<{ hooks: Array<{ command?: string }> }>>;
+    };
+    const commands = Object.entries(patched.hooks).flatMap(([event, groups]) =>
+      groups.flatMap(group =>
+        group.hooks
+          .map(hook => hook.command)
+          .filter((command): command is string => typeof command === 'string')
+          .map(command => ({ event, command })),
+      ),
+    );
+
+    expect(commands.length).toBeGreaterThan(0);
+    for (const { event, command } of commands) {
+      expect(command, event).toMatch(/^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs /);
+      expect(command, event).not.toContain('find-node.sh');
+      expect(command, event).not.toContain('/bin/sh');
+      expect(command, event).not.toMatch(/^sh /);
+    }
+
+    expect(commands.some(({ event }) => event === 'Stop')).toBe(true);
+    expect(commands.some(({ event }) => event === 'UserPromptSubmit')).toBe(true);
+  });
+
+  it('is a no-op when hooks.json does not exist', () => {
+>>>>>>> main
     // Should not throw
     expect(() => patchHooksJsonForWindows(pluginRoot)).not.toThrow();
   });

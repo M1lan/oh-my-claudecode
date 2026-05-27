@@ -3,8 +3,17 @@ import * as fs from "fs";
 import * as path from "path";
 
 // Hoist test state dir so it's available inside vi.mock factories
+<<<<<<< HEAD
 const { TEST_STATE_DIR } = vi.hoisted(() => ({
   TEST_STATE_DIR: "/tmp/omc-cache-test-state",
+||||||| 90f19265
+const { TEST_STATE_DIR } = vi.hoisted(() => ({
+  TEST_STATE_DIR: '/tmp/omc-cache-test-state',
+=======
+const { TEST_STATE_DIR, TEST_WORKTREE_ROOT } = vi.hoisted(() => ({
+  TEST_STATE_DIR: '/tmp/omc-cache-test-state',
+  TEST_WORKTREE_ROOT: '/tmp/omc-cache-test-worktree',
+>>>>>>> main
 }));
 
 vi.mock("../../../lib/atomic-write.js", () => ({
@@ -18,8 +27,16 @@ vi.mock("../../../lib/worktree-paths.js", () => ({
   OmcPaths: {
     STATE: TEST_STATE_DIR,
   },
+<<<<<<< HEAD
   getWorktreeRoot: () => "/",
   validateWorkingDirectory: () => "/",
+||||||| 90f19265
+  getWorktreeRoot: () => '/',
+  validateWorkingDirectory: () => '/',
+=======
+  getWorktreeRoot: () => TEST_WORKTREE_ROOT,
+  validateWorkingDirectory: () => '/',
+>>>>>>> main
 }));
 
 // Import after mocks are set up (vi.mock is hoisted)
@@ -39,6 +56,7 @@ describe("state-manager cache", () => {
 
   beforeEach(() => {
     fs.mkdirSync(TEST_STATE_DIR, { recursive: true });
+    fs.mkdirSync(TEST_WORKTREE_ROOT, { recursive: true });
     clearStateCache();
     consoleWarnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
   });
@@ -48,9 +66,18 @@ describe("state-manager cache", () => {
     clearStateCache();
     try {
       fs.rmSync(TEST_STATE_DIR, { recursive: true, force: true });
+<<<<<<< HEAD
     } catch {
       /* best-effort */
     }
+||||||| 90f19265
+    } catch { /* best-effort */ }
+=======
+    } catch { /* best-effort */ }
+    try {
+      fs.rmSync(TEST_WORKTREE_ROOT, { recursive: true, force: true });
+    } catch { /* best-effort */ }
+>>>>>>> main
   });
 
   function writeStateToDisk(name: string, data: unknown) {
@@ -59,9 +86,27 @@ describe("state-manager cache", () => {
     return filePath;
   }
 
+<<<<<<< HEAD
   describe("cache immutability", () => {
     it("should return independent clones - mutating returned data does NOT corrupt cache", () => {
       writeStateToDisk("test-mode", { active: true, value: "original" });
+||||||| 90f19265
+  describe('cache immutability', () => {
+    it('should return independent clones - mutating returned data does NOT corrupt cache', () => {
+      writeStateToDisk('test-mode', { active: true, value: 'original' });
+=======
+  function writeLegacyStateToDisk(name: string, data: unknown) {
+    const legacyDir = path.join(TEST_WORKTREE_ROOT, '.omc', 'state');
+    fs.mkdirSync(legacyDir, { recursive: true });
+    const filePath = path.join(legacyDir, `${name}.json`);
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+    return filePath;
+  }
+
+  describe('cache immutability', () => {
+    it('should return independent clones - mutating returned data does NOT corrupt cache', () => {
+      writeStateToDisk('test-mode', { active: true, value: 'original' });
+>>>>>>> main
 
       // First read populates the cache
       const result1 = readState("test-mode", StateLocation.LOCAL);
@@ -115,6 +160,40 @@ describe("state-manager cache", () => {
         fs.readFileSync(path.join(TEST_STATE_DIR, "stale-mode.json"), "utf-8"),
       );
       expect(diskContent.active).toBe(true);
+    });
+
+    it('should warn on malformed standard state and fall through to legacy only when enabled', () => {
+      const standardPath = path.join(TEST_STATE_DIR, 'boulder.json');
+      fs.writeFileSync(standardPath, '{ malformed standard json', 'utf-8');
+      const legacyPath = writeLegacyStateToDisk('boulder', {
+        active: true,
+        source: 'legacy',
+      });
+
+      const result = readState('boulder', StateLocation.LOCAL, { checkLegacy: true });
+
+      expect(result.exists).toBe(true);
+      expect(result.foundAt).toBe(legacyPath);
+      expect(result.data).toEqual({ active: true, source: 'legacy' });
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to read state from ${standardPath}`),
+        expect.any(SyntaxError),
+      );
+    });
+
+    it('should report missing state with warning evidence when legacy JSON is malformed', () => {
+      const legacyPath = path.join(TEST_WORKTREE_ROOT, '.omc', 'state', 'boulder.json');
+      fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
+      fs.writeFileSync(legacyPath, '{ malformed legacy json', 'utf-8');
+
+      const result = readState('boulder', StateLocation.LOCAL, { checkLegacy: true });
+
+      expect(result.exists).toBe(false);
+      expect(result.legacyLocations).toEqual(['.omc/state/boulder.json']);
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(`Failed to read legacy state from ${legacyPath}`),
+        expect.any(SyntaxError),
+      );
     });
   });
 

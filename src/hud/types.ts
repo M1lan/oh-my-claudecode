@@ -4,11 +4,26 @@
  * Type definitions for the HUD state, configuration, and rendering.
  */
 
+<<<<<<< HEAD
 import type { AutopilotStateForHud } from "./elements/autopilot.js";
 import type { ApiKeySource } from "./elements/api-key-source.js";
 import type { SessionSummaryState } from "./elements/session-summary.js";
 import type { MissionBoardConfig, MissionBoardState } from "./mission-board.js";
 import { DEFAULT_MISSION_BOARD_CONFIG } from "./mission-board.js";
+||||||| 90f19265
+import type { AutopilotStateForHud } from './elements/autopilot.js';
+import type { ApiKeySource } from './elements/api-key-source.js';
+import type { SessionSummaryState } from './elements/session-summary.js';
+import type { MissionBoardConfig, MissionBoardState } from './mission-board.js';
+import { DEFAULT_MISSION_BOARD_CONFIG } from './mission-board.js';
+=======
+import type { AutopilotStateForHud } from './elements/autopilot.js';
+import type { ApiKeySource } from './elements/api-key-source.js';
+import type { SessionSummaryState } from './elements/session-summary.js';
+import type { PayloadEstimate } from './payload-estimate.js';
+import type { MissionBoardConfig, MissionBoardState } from './mission-board.js';
+import { DEFAULT_MISSION_BOARD_CONFIG } from './mission-board.js';
+>>>>>>> main
 
 // Re-export for convenience
 export type { AutopilotStateForHud, ApiKeySource, SessionSummaryState };
@@ -325,8 +340,11 @@ export interface HudRenderContext {
   /** Stable display scope for context smoothing (e.g. session/worktree key) */
   contextDisplayScope?: string | null;
 
-  /** Model display name */
-  modelName: string;
+  /** Model display name from Claude Code statusline stdin; null when unavailable */
+  modelName: string | null;
+
+  /** Raw model id from Claude Code statusline stdin; used when full model format is requested */
+  modelId?: string | null;
 
   /** Ralph loop state */
   ralph: RalphStateForHud | null;
@@ -417,6 +435,9 @@ export interface HudRenderContext {
 
   /** Name of the last tool called in this session */
   lastToolName?: string | null;
+
+  /** Best-effort local transcript-backed request payload pressure estimate. */
+  payloadEstimate?: PayloadEstimate | null;
 }
 
 // ============================================================================
@@ -482,6 +503,7 @@ export interface HudLabels {
   ralph: string;
   background: string;
   thinking: string;
+  model: string;
   staged: string;
   modified: string;
   untracked: string;
@@ -490,6 +512,7 @@ export interface HudLabels {
 }
 
 export const DEFAULT_HUD_LABELS: HudLabels = {
+<<<<<<< HEAD
   context: "ctx",
   tokens: "tok",
   tool: "T",
@@ -503,10 +526,41 @@ export const DEFAULT_HUD_LABELS: HudLabels = {
   untracked: "?",
   ahead: "⇡",
   behind: "⇣",
+||||||| 90f19265
+  context: 'ctx',
+  tokens: 'tok',
+  tool: 'T',
+  agent: 'A',
+  skill: 'S',
+  ralph: 'ralph',
+  background: 'bg',
+  thinking: 'thinking',
+  staged: '+',
+  modified: '!',
+  untracked: '?',
+  ahead: '⇡',
+  behind: '⇣',
+=======
+  context: 'ctx',
+  tokens: 'tok',
+  tool: 'T',
+  agent: 'A',
+  skill: 'S',
+  ralph: 'ralph',
+  background: 'bg',
+  thinking: 'thinking',
+  model: 'Model',
+  staged: '+',
+  modified: '!',
+  untracked: '?',
+  ahead: '⇡',
+  behind: '⇣',
+>>>>>>> main
 };
 
 export const HUD_LOCALE_LABELS: Record<HudLocale, HudLabels> = {
   en: DEFAULT_HUD_LABELS,
+<<<<<<< HEAD
   "zh-CN": {
     context: "上下文",
     tokens: "令牌",
@@ -521,6 +575,38 @@ export const HUD_LOCALE_LABELS: Record<HudLocale, HudLabels> = {
     untracked: "未跟踪",
     ahead: "领先",
     behind: "落后",
+||||||| 90f19265
+  'zh-CN': {
+    context: '上下文',
+    tokens: '令牌',
+    tool: '工具',
+    agent: '智能体',
+    skill: '技能',
+    ralph: '循环',
+    background: '后台',
+    thinking: '思考',
+    staged: '已暂存',
+    modified: '已修改',
+    untracked: '未跟踪',
+    ahead: '领先',
+    behind: '落后',
+=======
+  'zh-CN': {
+    context: '上下文',
+    tokens: '令牌',
+    tool: '工具',
+    agent: '智能体',
+    skill: '技能',
+    ralph: '循环',
+    background: '后台',
+    thinking: '思考',
+    model: '模型',
+    staged: '已暂存',
+    modified: '已修改',
+    untracked: '未跟踪',
+    ahead: '领先',
+    behind: '落后',
+>>>>>>> main
   },
 };
 
@@ -569,7 +655,14 @@ export interface HudElementConfig {
   model: boolean; // Show current model name
   modelFormat: ModelFormat; // Model name verbosity level
   omcLabel: boolean;
+<<<<<<< HEAD
   rateLimits: boolean; // Show 5h and weekly rate limits
+||||||| 90f19265
+  rateLimits: boolean;  // Show 5h and weekly rate limits
+=======
+  updateNotification?: boolean; // Show available-update prompt text in the OMC label
+  rateLimits: boolean;  // Show 5h and weekly rate limits
+>>>>>>> main
   ralph: boolean;
   autopilot: boolean;
   prdStory: boolean;
@@ -648,6 +741,7 @@ export interface LayoutConfig {
  * Used as fallback when no layout is configured.
  */
 export const DEFAULT_ELEMENT_ORDER: Required<LayoutConfig> = {
+<<<<<<< HEAD
   line1: [
     "hostname",
     "cwd",
@@ -657,7 +751,23 @@ export const DEFAULT_ELEMENT_ORDER: Required<LayoutConfig> = {
     "model",
     "apiKeySource",
     "profile",
+||||||| 90f19265
+  line1: ['hostname', 'cwd', 'gitRepo', 'gitBranch', 'gitStatus', 'model', 'apiKeySource', 'profile'],
+  main: [
+    'omcLabel', 'enterpriseCost', 'rateLimits', 'customBuckets', 'permission', 'thinking',
+    'promptTime', 'session', 'tokens', 'ralph', 'autopilot', 'prd',
+    'skills', 'lastSkill', 'contextBar', 'agents', 'background',
+    'callCounts', 'lastTool', 'sessionSummary',
+=======
+  line1: ['hostname', 'cwd', 'gitRepo', 'gitBranch', 'gitStatus', 'apiKeySource', 'profile'],
+  main: [
+    'omcLabel', 'model', 'enterpriseCost', 'rateLimits', 'customBuckets', 'permission', 'thinking',
+    'promptTime', 'session', 'tokens', 'ralph', 'autopilot', 'prd',
+    'skills', 'lastSkill', 'contextBar', 'agents', 'background',
+    'callCounts', 'lastTool', 'sessionSummary',
+>>>>>>> main
   ],
+<<<<<<< HEAD
   main: [
     "omcLabel",
     "enterpriseCost",
@@ -681,6 +791,11 @@ export const DEFAULT_ELEMENT_ORDER: Required<LayoutConfig> = {
     "sessionSummary",
   ],
   detail: ["missionBoard", "agents", "contextWarning", "todos"],
+||||||| 90f19265
+  detail: ['missionBoard', 'agents', 'contextWarning', 'todos'],
+=======
+  detail: ['missionBoard', 'agents', 'contextWarning', 'payloadWarning', 'todos'],
+>>>>>>> main
 };
 
 export interface HudConfig {
@@ -719,14 +834,37 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     cwd: false, // Disabled by default for backward compatibility
     cwdFormat: "relative",
     useHyperlinks: false,
+<<<<<<< HEAD
     gitRepo: false, // Disabled by default for backward compatibility
     gitBranch: false, // Disabled by default for backward compatibility
     gitStatus: false, // Disabled by default for backward compatibility
     gitInfoPosition: "above", // Git info above main HUD line (backward compatible)
     model: false, // Disabled by default for backward compatibility
     modelFormat: "short", // Short names by default for backward compatibility
+||||||| 90f19265
+    gitRepo: false,           // Disabled by default for backward compatibility
+    gitBranch: false,         // Disabled by default for backward compatibility
+    gitStatus: false,         // Disabled by default for backward compatibility
+    gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
+    model: false,             // Disabled by default for backward compatibility
+    modelFormat: 'short',     // Short names by default for backward compatibility
+=======
+    gitRepo: false,           // Disabled by default for backward compatibility
+    gitBranch: false,         // Disabled by default for backward compatibility
+    gitStatus: false,         // Disabled by default for backward compatibility
+    gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
+    model: true,              // Show only when Claude Code statusline stdin provides a model
+    modelFormat: 'versioned', // Preserve model version by default
+>>>>>>> main
     omcLabel: true,
+<<<<<<< HEAD
     rateLimits: true, // Show rate limits by default
+||||||| 90f19265
+    rateLimits: true,  // Show rate limits by default
+=======
+    updateNotification: true, // Preserve existing update prompt behavior by default
+    rateLimits: true,  // Show rate limits by default
+>>>>>>> main
     ralph: true,
     autopilot: true,
     prdStory: true,
@@ -782,10 +920,21 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     gitRepo: false,
     gitBranch: false,
     gitStatus: false,
+<<<<<<< HEAD
     gitInfoPosition: "above",
     model: false,
     modelFormat: "short",
+||||||| 90f19265
+    gitInfoPosition: 'above',
+    model: false,
+    modelFormat: 'short',
+=======
+    gitInfoPosition: 'above',
+    model: true,
+    modelFormat: 'versioned',
+>>>>>>> main
     omcLabel: true,
+    updateNotification: true,
     rateLimits: true,
     ralph: true,
     autopilot: true,
@@ -824,10 +973,21 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     gitRepo: false,
     gitBranch: true,
     gitStatus: true,
+<<<<<<< HEAD
     gitInfoPosition: "above",
     model: false,
     modelFormat: "short",
+||||||| 90f19265
+    gitInfoPosition: 'above',
+    model: false,
+    modelFormat: 'short',
+=======
+    gitInfoPosition: 'above',
+    model: true,
+    modelFormat: 'versioned',
+>>>>>>> main
     omcLabel: true,
+    updateNotification: true,
     rateLimits: true,
     ralph: true,
     autopilot: true,
@@ -866,10 +1026,21 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     gitRepo: true,
     gitBranch: true,
     gitStatus: true,
+<<<<<<< HEAD
     gitInfoPosition: "above",
     model: false,
     modelFormat: "short",
+||||||| 90f19265
+    gitInfoPosition: 'above',
+    model: false,
+    modelFormat: 'short',
+=======
+    gitInfoPosition: 'above',
+    model: true,
+    modelFormat: 'versioned',
+>>>>>>> main
     omcLabel: true,
+    updateNotification: true,
     rateLimits: true,
     ralph: true,
     autopilot: true,
@@ -908,10 +1079,21 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     gitRepo: false,
     gitBranch: true,
     gitStatus: false,
+<<<<<<< HEAD
     gitInfoPosition: "above",
     model: false,
     modelFormat: "short",
+||||||| 90f19265
+    gitInfoPosition: 'above',
+    model: false,
+    modelFormat: 'short',
+=======
+    gitInfoPosition: 'above',
+    model: true,
+    modelFormat: 'versioned',
+>>>>>>> main
     omcLabel: true,
+    updateNotification: true,
     rateLimits: false,
     ralph: true,
     autopilot: true,
@@ -950,10 +1132,21 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     gitRepo: true,
     gitBranch: true,
     gitStatus: true,
+<<<<<<< HEAD
     gitInfoPosition: "above",
     model: false,
     modelFormat: "short",
+||||||| 90f19265
+    gitInfoPosition: 'above',
+    model: false,
+    modelFormat: 'short',
+=======
+    gitInfoPosition: 'above',
+    model: true,
+    modelFormat: 'versioned',
+>>>>>>> main
     omcLabel: true,
+    updateNotification: true,
     rateLimits: true,
     ralph: true,
     autopilot: true,

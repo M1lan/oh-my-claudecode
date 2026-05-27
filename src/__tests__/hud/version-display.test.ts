@@ -94,12 +94,22 @@ describe("HUD version display and update notification", () => {
     });
   });
 
+<<<<<<< HEAD
   describe("update notification", () => {
     it("renders update notification when updateAvailable is set", async () => {
       const ctx = createMinimalContext({
         omcVersion: "4.1.10",
         updateAvailable: "4.2.0",
       });
+||||||| 90f19265
+  describe('update notification', () => {
+    it('renders update notification when updateAvailable is set', async () => {
+      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+=======
+  describe('update notification', () => {
+    it('renders update notification by default when updateAvailable is set', async () => {
+      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+>>>>>>> main
       const config = createMinimalConfig();
       const output = await render(ctx, config);
       expect(output).toContain("[OMC#4.1.10]");
@@ -107,11 +117,28 @@ describe("HUD version display and update notification", () => {
       expect(output).toContain("omc update");
     });
 
+<<<<<<< HEAD
     it("renders update notification without version when omcVersion is null", async () => {
       const ctx = createMinimalContext({
         omcVersion: null,
         updateAvailable: "4.2.0",
       });
+||||||| 90f19265
+    it('renders update notification without version when omcVersion is null', async () => {
+      const ctx = createMinimalContext({ omcVersion: null, updateAvailable: '4.2.0' });
+=======
+    it('keeps OMC version label but hides update notification when updateNotification is false', async () => {
+      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+      const config = createMinimalConfig({ updateNotification: false });
+      const output = await render(ctx, config);
+      expect(output).toContain('[OMC#4.1.10]');
+      expect(output).not.toContain('-> 4.2.0');
+      expect(output).not.toContain('omc update');
+    });
+
+    it('renders update notification without version when omcVersion is null', async () => {
+      const ctx = createMinimalContext({ omcVersion: null, updateAvailable: '4.2.0' });
+>>>>>>> main
       const config = createMinimalConfig();
       const output = await render(ctx, config);
       expect(output).toContain("[OMC]");

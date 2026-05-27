@@ -10,6 +10,7 @@ import type { NotificationPlatform } from "./types.js";
 /** Template variables available for interpolation in message templates. */
 export type TemplateVariable =
   // Raw payload fields
+<<<<<<< HEAD
   | "event"
   | "sessionId"
   | "message"
@@ -35,6 +36,23 @@ export type TemplateVariable =
   | "replyChannel"
   | "replyTarget"
   | "replyThread"
+||||||| 90f19265
+  | "event" | "sessionId" | "message" | "timestamp" | "tmuxSession"
+  | "projectPath" | "projectName" | "modesUsed" | "contextSummary"
+  | "durationMs" | "agentsSpawned" | "agentsCompleted"
+  | "reason" | "activeMode" | "iteration" | "maxIterations"
+  | "question" | "incompleteTasks" | "agentName" | "agentType"
+  | "tmuxTail" | "tmuxPaneId"
+  | "replyChannel" | "replyTarget" | "replyThread"
+=======
+  | "event" | "sessionId" | "message" | "timestamp" | "tmuxSession"
+  | "projectPath" | "projectName" | "modesUsed" | "contextSummary"
+  | "durationMs" | "agentsSpawned" | "agentsCompleted"
+  | "reason" | "activeMode" | "iteration" | "maxIterations"
+  | "question" | "questionOptions" | "incompleteTasks" | "agentName" | "agentType"
+  | "tmuxTail" | "tmuxPaneId"
+  | "replyChannel" | "replyTarget" | "replyThread"
+>>>>>>> main
   // Computed variables (derived from payload, not direct fields)
   | "duration" // human-readable from durationMs (e.g., "5m 23s")
   | "time" // locale time string from timestamp

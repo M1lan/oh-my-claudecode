@@ -4,6 +4,7 @@ import { existsSync } from "fs";
 import { tmuxExecAsync } from "../cli/tmux-utils.js";
 import type { CliAgentType } from "./model-contract.js";
 import {
+<<<<<<< HEAD
   buildWorkerArgv,
   resolveValidatedBinaryPath,
   getWorkerEnv as getModelWorkerEnv,
@@ -12,6 +13,17 @@ import {
   resolveClaudeWorkerModel,
 } from "./model-contract.js";
 import { validateTeamName } from "./team-name.js";
+||||||| 90f19265
+  createTeamSession, spawnWorkerInPane, sendToWorker,
+  isWorkerAlive, killTeamSession, resolveSplitPaneWorkerPaneIds, waitForPaneReady, applyMainVerticalLayout,
+  type TeamSession, type WorkerPaneConfig,
+} from './tmux-session.js';
+=======
+  createTeamSession, spawnWorkerInPane, sendToWorker,
+  isWorkerAlive, killTeamSession, resolveSplitPaneWorkerPaneIds, waitForPaneReady, applyMainVerticalLayout, killTeamPane,
+  type TeamSession, type WorkerPaneConfig,
+} from './tmux-session.js';
+>>>>>>> main
 import {
   createTeamSession,
   spawnWorkerInPane,
@@ -998,7 +1010,13 @@ export async function killWorkerPane(
   paneId: string,
 ): Promise<void> {
   try {
+<<<<<<< HEAD
     await tmuxExecAsync(["kill-pane", "-t", paneId]);
+||||||| 90f19265
+    await tmuxExecAsync(['kill-pane', '-t', paneId]);
+=======
+    await killTeamPane(paneId);
+>>>>>>> main
   } catch {
     // idempotent: pane may already be gone
   }

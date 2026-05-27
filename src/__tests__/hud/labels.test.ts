@@ -110,6 +110,7 @@ function createConfig(labels = DEFAULT_HUD_LABELS): HudConfig {
     },
     layout: {
       line1: [],
+<<<<<<< HEAD
       main: [
         "thinking",
         "tokens",
@@ -118,6 +119,11 @@ function createConfig(labels = DEFAULT_HUD_LABELS): HudConfig {
         "background",
         "callCounts",
       ],
+||||||| 90f19265
+      main: ['thinking', 'tokens', 'ralph', 'contextBar', 'background', 'callCounts'],
+=======
+      main: ['thinking', 'model', 'tokens', 'ralph', 'contextBar', 'background', 'callCounts'],
+>>>>>>> main
       detail: [],
     },
   };
@@ -160,11 +166,26 @@ describe("HUD labels", () => {
       unknown: "ignored",
     } as Record<string, unknown>);
 
+<<<<<<< HEAD
     expect(labels.context).toBe("CTX自定义");
     expect(labels.tool).toBe("工具自定义");
     expect(labels.agent).toBe("智能体");
     expect(labels.tokens).toBe("令牌");
     expect("unknown" in labels).toBe(false);
+||||||| 90f19265
+    expect(labels.context).toBe('CTX自定义');
+    expect(labels.tool).toBe('工具自定义');
+    expect(labels.agent).toBe('智能体');
+    expect(labels.tokens).toBe('令牌');
+    expect('unknown' in labels).toBe(false);
+=======
+    expect(labels.context).toBe('CTX自定义');
+    expect(labels.tool).toBe('工具自定义');
+    expect(labels.agent).toBe('智能体');
+    expect(labels.tokens).toBe('令牌');
+    expect(labels.model).toBe('模型');
+    expect('unknown' in labels).toBe(false);
+>>>>>>> main
   });
 
   it("ignores invalid locale and unsupported label keys in settings.json", () => {
@@ -194,11 +215,28 @@ describe("HUD labels", () => {
       await render(createContext(), createConfig(labels)),
     );
 
+<<<<<<< HEAD
     expect(output).toContain("思考");
     expect(output).toContain("令牌:i1.5k/o987");
     expect(output).toContain("循环:3/10");
     expect(output).toContain("上下文:67%");
     expect(output).toContain("后台:1/5");
     expect(output).toContain("工具:5 智能体:3 技能:2");
+||||||| 90f19265
+    expect(output).toContain('思考');
+    expect(output).toContain('令牌:i1.5k/o987');
+    expect(output).toContain('循环:3/10');
+    expect(output).toContain('上下文:67%');
+    expect(output).toContain('后台:1/5');
+    expect(output).toContain('工具:5 智能体:3 技能:2');
+=======
+    expect(output).toContain('思考');
+    expect(output).toContain('令牌:i1.5k/o987');
+    expect(output).toContain('循环:3/10');
+    expect(output).toContain('上下文:67%');
+    expect(output).toContain('后台:1/5');
+    expect(output).toContain('工具:5 智能体:3 技能:2');
+    expect(output).toContain('模型: Sonnet 4.5');
+>>>>>>> main
   });
 });
