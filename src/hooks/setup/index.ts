@@ -7,25 +7,11 @@
  * - maintenance: Prune old state files, cleanup orphaned state, vacuum SQLite
  */
 
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  statSync,
-  lstatSync,
-  unlinkSync,
-  readFileSync,
-  readlinkSync,
-  writeFileSync,
-  appendFileSync,
-  symlinkSync,
-  copyFileSync,
-  renameSync,
-} from "fs";
-import { join } from "path";
+import { existsSync, mkdirSync, readdirSync, statSync, lstatSync, unlinkSync, readFileSync, readlinkSync, writeFileSync, appendFileSync, symlinkSync, copyFileSync, renameSync } from 'fs';
+import { join } from 'path';
 
-import { registerBeadsContext } from "../beads-context/index.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import { registerBeadsContext } from '../beads-context/index.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
 
 // ============================================================================
 // Types
@@ -36,8 +22,8 @@ export interface SetupInput {
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: "Setup";
-  trigger: "init" | "maintenance";
+  hook_event_name: 'Setup';
+  trigger: 'init' | 'maintenance';
 }
 
 export interface SetupResult {
@@ -50,7 +36,7 @@ export interface SetupResult {
 export interface HookOutput {
   continue: boolean;
   hookSpecificOutput: {
-    hookEventName: "Setup";
+    hookEventName: 'Setup';
     additionalContext: string;
   };
 }
@@ -60,14 +46,16 @@ export interface HookOutput {
 // ============================================================================
 
 const REQUIRED_DIRECTORIES = [
-  ".omc/state",
-  ".omc/logs",
-  ".omc/notepads",
-  ".omc/state/checkpoints",
-  ".omc/plans",
+  '.omc/state',
+  '.omc/logs',
+  '.omc/notepads',
+  '.omc/state/checkpoints',
+  '.omc/plans',
 ];
 
-const CONFIG_FILES = [".omc-config.json"];
+const CONFIG_FILES = [
+  '.omc-config.json',
+];
 
 const DEFAULT_STATE_MAX_AGE_DAYS = 7;
 
@@ -107,7 +95,7 @@ export function validateConfigFiles(directory: string): string[] {
     if (existsSync(fullPath)) {
       try {
         // Try to read to ensure it's valid
-        readFileSync(fullPath, "utf-8");
+        readFileSync(fullPath, 'utf-8');
         validated.push(fullPath);
       } catch {
         // Silently skip if unreadable
@@ -129,7 +117,7 @@ export function setEnvironmentVariables(): string[] {
     try {
       const envContent = `export OMC_INITIALIZED=true\n`;
       appendFileSync(process.env.CLAUDE_ENV_FILE, envContent);
-      envVars.push("OMC_INITIALIZED");
+      envVars.push('OMC_INITIALIZED');
     } catch {
       // Silently fail if can't write
     }
@@ -160,11 +148,11 @@ export function setEnvironmentVariables(): string[] {
  * the function is safe to call on every init (idempotent after first patch).
  */
 export function patchHooksJsonForWindows(pluginRoot: string): void {
-  const hooksJsonPath = join(pluginRoot, "hooks", "hooks.json");
+  const hooksJsonPath = join(pluginRoot, 'hooks', 'hooks.json');
   if (!existsSync(hooksJsonPath)) return;
 
   try {
-    const content = readFileSync(hooksJsonPath, "utf-8");
+    const content = readFileSync(hooksJsonPath, 'utf-8');
     const data = JSON.parse(content) as {
       hooks?: Record<string, Array<{ hooks?: Array<{ command?: string }> }>>;
     };
@@ -184,16 +172,8 @@ export function patchHooksJsonForWindows(pluginRoot: string): void {
     for (const groups of Object.values(data.hooks ?? {})) {
       for (const group of groups) {
         for (const hook of group.hooks ?? []) {
-<<<<<<< HEAD
-          if (typeof hook.command === "string") {
-            const m = hook.command.match(pattern);
-||||||| 90f19265
-          if (typeof hook.command === 'string') {
-            const m = hook.command.match(pattern);
-=======
           if (typeof hook.command === 'string') {
             const m = hook.command.match(currentPattern) ?? hook.command.match(legacyPattern);
->>>>>>> main
             if (m) {
               hook.command = `node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/${m[1]}${m[2]}`;
               patched = true;
@@ -204,7 +184,7 @@ export function patchHooksJsonForWindows(pluginRoot: string): void {
     }
 
     if (patched) {
-      writeFileSync(hooksJsonPath, JSON.stringify(data, null, 2) + "\n");
+      writeFileSync(hooksJsonPath, JSON.stringify(data, null, 2) + '\n');
     }
   } catch {
     // Non-fatal: hooks.json patching is best-effort
@@ -224,10 +204,10 @@ export function patchHooksJsonForWindows(pluginRoot: string): void {
  * Falls back to copy if symlink is unavailable on the platform.
  */
 export function ensureStdinSymlink(pluginRoot: string): void {
-  const libDstDir = join(getClaudeConfigDir(), "hooks/lib");
-  const libSrc = join(pluginRoot, "templates/hooks/lib");
-  const stdinSrc = join(libSrc, "stdin.mjs");
-  const stdinDst = join(libDstDir, "stdin.mjs");
+  const libDstDir = join(getClaudeConfigDir(), 'hooks/lib');
+  const libSrc = join(pluginRoot, 'templates/hooks/lib');
+  const stdinSrc = join(libSrc, 'stdin.mjs');
+  const stdinDst = join(libDstDir, 'stdin.mjs');
 
   // Ensure destination directory exists
   if (!existsSync(libDstDir)) {
@@ -256,15 +236,11 @@ export function ensureStdinSymlink(pluginRoot: string): void {
   }
 
   // Safe replace: try to create a new symlink first, only remove old after success
-  const tmpDst = stdinDst + ".tmp";
+  const tmpDst = stdinDst + '.tmp';
 
   try {
     // Remove any stale temp file first (e.g. from crash or failed previous run)
-    try {
-      unlinkSync(tmpDst);
-    } catch {
-      /* ignore if didn't exist */
-    }
+    try { unlinkSync(tmpDst); } catch { /* ignore if didn't exist */ }
     // Create new symlink with temp name first
     symlinkSync(stdinSrc, tmpDst);
 
@@ -317,7 +293,7 @@ export async function processSetupInit(input: SetupInput): Promise<HookOutput> {
   // MSYS2/Git Bash, mislabeling every successful hook as an error (issue #899).
   // find-node.sh is only needed on Unix for nvm/fnm PATH discovery.
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     if (pluginRoot) {
       patchHooksJsonForWindows(pluginRoot);
     }
@@ -357,18 +333,16 @@ export async function processSetupInit(input: SetupInput): Promise<HookOutput> {
     `OMC initialized:`,
     `- ${result.directories_created.length} directories created`,
     `- ${result.configs_validated.length} configs validated`,
-    result.env_vars_set.length > 0
-      ? `- Environment variables set: ${result.env_vars_set.join(", ")}`
-      : null,
+    result.env_vars_set.length > 0 ? `- Environment variables set: ${result.env_vars_set.join(', ')}` : null,
     result.errors.length > 0 ? `- Errors: ${result.errors.length}` : null,
   ]
     .filter(Boolean)
-    .join("\n");
+    .join('\n');
 
   return {
     continue: true,
     hookSpecificOutput: {
-      hookEventName: "Setup",
+      hookEventName: 'Setup',
       additionalContext: context,
     },
   };
@@ -381,11 +355,8 @@ export async function processSetupInit(input: SetupInput): Promise<HookOutput> {
 /**
  * Prune old state files from .omc/state directory
  */
-export function pruneOldStateFiles(
-  directory: string,
-  maxAgeDays: number = DEFAULT_STATE_MAX_AGE_DAYS,
-): number {
-  const stateDir = join(directory, ".omc/state");
+export function pruneOldStateFiles(directory: string, maxAgeDays: number = DEFAULT_STATE_MAX_AGE_DAYS): number {
+  const stateDir = join(directory, '.omc/state');
   if (!existsSync(stateDir)) {
     return 0;
   }
@@ -413,13 +384,13 @@ export function pruneOldStateFiles(
           // Inactive (cancelled/completed) mode states should be pruned
           // to prevent stale state reuse across sessions (issue #609).
           const modeStateFiles = [
-            "autopilot-state.json",
-            "ralph-state.json",
-            "ultrawork-state.json",
+            'autopilot-state.json',
+            'ralph-state.json',
+            'ultrawork-state.json',
           ];
           if (modeStateFiles.includes(file)) {
             try {
-              const content = readFileSync(filePath, "utf-8");
+              const content = readFileSync(filePath, 'utf-8');
               const state = JSON.parse(content);
               if (state.active === true) {
                 continue; // Skip active mode states
@@ -448,7 +419,7 @@ export function pruneOldStateFiles(
  * Clean up orphaned state files (state files without corresponding active sessions)
  */
 export function cleanupOrphanedState(directory: string): number {
-  const stateDir = join(directory, ".omc/state");
+  const stateDir = join(directory, '.omc/state');
   if (!existsSync(stateDir)) {
     return 0;
   }
@@ -487,12 +458,11 @@ export function cleanupOrphanedState(directory: string): number {
   return cleanedCount;
 }
 
+
 /**
  * Process setup maintenance trigger
  */
-export async function processSetupMaintenance(
-  input: SetupInput,
-): Promise<HookOutput> {
+export async function processSetupMaintenance(input: SetupInput): Promise<HookOutput> {
   const result: SetupResult = {
     directories_created: [],
     configs_validated: [],
@@ -516,21 +486,19 @@ export async function processSetupMaintenance(
   const context = [
     `OMC maintenance completed:`,
     prunedFiles > 0 ? `- ${prunedFiles} old state files pruned` : null,
-    orphanedCleaned > 0
-      ? `- ${orphanedCleaned} orphaned state files cleaned`
-      : null,
+    orphanedCleaned > 0 ? `- ${orphanedCleaned} orphaned state files cleaned` : null,
     result.errors.length > 0 ? `- Errors: ${result.errors.length}` : null,
     prunedFiles === 0 && orphanedCleaned === 0 && result.errors.length === 0
-      ? "- No maintenance needed"
+      ? '- No maintenance needed'
       : null,
   ]
     .filter(Boolean)
-    .join("\n");
+    .join('\n');
 
   return {
     continue: true,
     hookSpecificOutput: {
-      hookEventName: "Setup",
+      hookEventName: 'Setup',
       additionalContext: context,
     },
   };
@@ -544,15 +512,15 @@ export async function processSetupMaintenance(
  * Process setup hook based on trigger type
  */
 export async function processSetup(input: SetupInput): Promise<HookOutput> {
-  if (input.trigger === "init") {
+  if (input.trigger === 'init') {
     return processSetupInit(input);
-  } else if (input.trigger === "maintenance") {
+  } else if (input.trigger === 'maintenance') {
     return processSetupMaintenance(input);
   } else {
     return {
       continue: true,
       hookSpecificOutput: {
-        hookEventName: "Setup",
+        hookEventName: 'Setup',
         additionalContext: `Unknown trigger: ${input.trigger}`,
       },
     };

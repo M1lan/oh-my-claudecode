@@ -1,25 +1,14 @@
-import { execFileSync } from "child_process";
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  symlinkSync,
-  unlinkSync,
-  writeFileSync,
-} from "fs";
-import { mkdir, writeFile } from "fs/promises";
-import { join, relative, resolve, sep } from "path";
-import { homedir } from "os";
-import { createInterface } from "readline/promises";
-import {
-  type AutoresearchKeepPolicy,
-  parseSandboxContract,
-  slugifyMissionName,
-} from "../autoresearch/contracts.js";
+import { execFileSync } from 'child_process';
+import { existsSync, lstatSync, mkdirSync, symlinkSync, unlinkSync, writeFileSync } from 'fs';
+import { mkdir, writeFile } from 'fs/promises';
+import { join, relative, resolve, sep } from 'path';
+import { homedir } from 'os';
+import { createInterface } from 'readline/promises';
+import { type AutoresearchKeepPolicy, parseSandboxContract, slugifyMissionName } from '../autoresearch/contracts.js';
 import {
   AUTORESEARCH_SETUP_CONFIDENCE_THRESHOLD,
   type AutoresearchSetupHandoff,
-} from "../autoresearch/setup-contract.js";
+} from '../autoresearch/setup-contract.js';
 import {
   buildMissionContent,
   buildSandboxContent,
@@ -27,31 +16,16 @@ import {
   type AutoresearchSeedInputs,
   isLaunchReadyEvaluatorCommand,
   writeAutoresearchDeepInterviewArtifacts,
-} from "./autoresearch-intake.js";
+} from './autoresearch-intake.js';
 import {
   runAutoresearchSetupSession,
   type AutoresearchSetupSessionInput,
-<<<<<<< HEAD
-} from "./autoresearch-setup-session.js";
-import {
-  buildTmuxShellCommand,
-  buildTmuxShellCommandWithEnv,
-  isTmuxAvailable,
-  quoteShellArg,
-  tmuxExec,
-  wrapWithLoginShell,
-} from "./tmux-utils.js";
-||||||| 90f19265
-} from './autoresearch-setup-session.js';
-import { buildTmuxShellCommand, buildTmuxShellCommandWithEnv, isTmuxAvailable, quoteShellArg, tmuxExec, wrapWithLoginShell } from './tmux-utils.js';
-=======
 } from './autoresearch-setup-session.js';
 import { buildTmuxShellCommand, buildTmuxShellCommandWithEnv, isTmuxAvailable, quoteShellArg, tmuxExec, wrapWithLoginShell } from './tmux-utils.js';
 import { configureTmuxClipboardForSession } from './tmux-clipboard.js';
->>>>>>> main
 
-const CLAUDE_BYPASS_FLAG = "--dangerously-skip-permissions";
-const AUTORESEARCH_SETUP_SLASH_COMMAND = "/deep-interview --autoresearch";
+const CLAUDE_BYPASS_FLAG = '--dangerously-skip-permissions';
+const AUTORESEARCH_SETUP_SLASH_COMMAND = '/deep-interview --autoresearch';
 
 export interface InitAutoresearchOptions {
   topic: string;
@@ -73,15 +47,10 @@ export interface AutoresearchQuestionIO {
 
 export interface GuidedAutoresearchSetupDeps {
   createPromptInterface?: typeof createInterface;
-  runSetupSession?: (
-    input: AutoresearchSetupSessionInput,
-  ) => AutoresearchSetupHandoff;
+  runSetupSession?: (input: AutoresearchSetupSessionInput) => AutoresearchSetupHandoff;
 }
 
-type QuestionInterface = {
-  question(prompt: string): Promise<string>;
-  close(): void;
-};
+type QuestionInterface = { question(prompt: string): Promise<string>; close(): void };
 
 function createQuestionIO(): AutoresearchQuestionIO {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -95,51 +64,33 @@ function createQuestionIO(): AutoresearchQuestionIO {
   };
 }
 
-async function askQuestion(
-  rl: QuestionInterface,
-  prompt: string,
-): Promise<string> {
+async function askQuestion(rl: QuestionInterface, prompt: string): Promise<string> {
   return (await rl.question(prompt)).trim();
 }
 
-async function promptWithDefault(
-  io: AutoresearchQuestionIO,
-  prompt: string,
-  currentValue?: string,
-): Promise<string> {
-  const suffix = currentValue?.trim() ? ` [${currentValue.trim()}]` : "";
+async function promptWithDefault(io: AutoresearchQuestionIO, prompt: string, currentValue?: string): Promise<string> {
+  const suffix = currentValue?.trim() ? ` [${currentValue.trim()}]` : '';
   const answer = await io.question(`${prompt}${suffix}\n> `);
-  return answer.trim() || currentValue?.trim() || "";
+  return answer.trim() || currentValue?.trim() || '';
 }
 
-async function promptAction(
-  io: AutoresearchQuestionIO,
-  launchReady: boolean,
-): Promise<"launch" | "refine"> {
-  const answer = (
-    await io.question(
-      `\nNext step [launch/refine further] (default: ${launchReady ? "launch" : "refine further"})\n> `,
-    )
-  )
-    .trim()
-    .toLowerCase();
+async function promptAction(io: AutoresearchQuestionIO, launchReady: boolean): Promise<'launch' | 'refine'> {
+  const answer = (await io.question(`\nNext step [launch/refine further] (default: ${launchReady ? 'launch' : 'refine further'})\n> `)).trim().toLowerCase();
   if (!answer) {
-    return launchReady ? "launch" : "refine";
+    return launchReady ? 'launch' : 'refine';
   }
-  if (answer === "launch") {
-    return "launch";
+  if (answer === 'launch') {
+    return 'launch';
   }
-  if (answer === "refine further" || answer === "refine" || answer === "r") {
-    return "refine";
+  if (answer === 'refine further' || answer === 'refine' || answer === 'r') {
+    return 'refine';
   }
   throw new Error('Please choose either "launch" or "refine further".');
 }
 
 function ensureLaunchReadyEvaluator(command: string): void {
   if (!isLaunchReadyEvaluatorCommand(command)) {
-    throw new Error(
-      "Evaluator command is still a placeholder/template. Refine further before launch.",
-    );
+    throw new Error('Evaluator command is still a placeholder/template. Refine further before launch.');
   }
 }
 
@@ -150,15 +101,13 @@ export async function materializeAutoresearchDeepInterviewResult(
   return initAutoresearchMission(result.compileTarget);
 }
 
-export async function initAutoresearchMission(
-  opts: InitAutoresearchOptions,
-): Promise<InitAutoresearchResult> {
-  const missionsRoot = join(opts.repoRoot, "missions");
+export async function initAutoresearchMission(opts: InitAutoresearchOptions): Promise<InitAutoresearchResult> {
+  const missionsRoot = join(opts.repoRoot, 'missions');
   const missionDir = join(missionsRoot, opts.slug);
 
   const rel = relative(missionsRoot, missionDir);
-  if (!rel || rel === ".." || rel.startsWith(`..${sep}`)) {
-    throw new Error("Invalid slug: resolves outside missions/ directory.");
+  if (!rel || rel === '..' || rel.startsWith(`..${sep}`)) {
+    throw new Error('Invalid slug: resolves outside missions/ directory.');
   }
 
   if (existsSync(missionDir)) {
@@ -168,64 +117,52 @@ export async function initAutoresearchMission(
   await mkdir(missionDir, { recursive: true });
 
   const missionContent = buildMissionContent(opts.topic);
-  const sandboxContent = buildSandboxContent(
-    opts.evaluatorCommand,
-    opts.keepPolicy,
-  );
+  const sandboxContent = buildSandboxContent(opts.evaluatorCommand, opts.keepPolicy);
   parseSandboxContract(sandboxContent);
 
-  await writeFile(join(missionDir, "mission.md"), missionContent, "utf-8");
-  await writeFile(join(missionDir, "sandbox.md"), sandboxContent, "utf-8");
+  await writeFile(join(missionDir, 'mission.md'), missionContent, 'utf-8');
+  await writeFile(join(missionDir, 'sandbox.md'), sandboxContent, 'utf-8');
 
   return { missionDir, slug: opts.slug };
 }
 
-export function parseInitArgs(
-  args: readonly string[],
-): Partial<InitAutoresearchOptions> {
+export function parseInitArgs(args: readonly string[]): Partial<InitAutoresearchOptions> {
   const result: Partial<InitAutoresearchOptions> = {};
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
-    if (arg === "--topic" && next) {
+    if ((arg === '--topic') && next) {
       result.topic = next;
       i++;
-    } else if ((arg === "--evaluator" || arg === "--eval") && next) {
+    } else if ((arg === '--evaluator' || arg === '--eval') && next) {
       result.evaluatorCommand = next;
       i++;
-    } else if (arg === "--keep-policy" && next) {
+    } else if ((arg === '--keep-policy') && next) {
       const normalized = next.trim().toLowerCase();
-      if (normalized !== "pass_only" && normalized !== "score_improvement") {
-        throw new Error(
-          "--keep-policy must be one of: score_improvement, pass_only",
-        );
+      if (normalized !== 'pass_only' && normalized !== 'score_improvement') {
+        throw new Error('--keep-policy must be one of: score_improvement, pass_only');
       }
       result.keepPolicy = normalized;
       i++;
-    } else if (arg === "--slug" && next) {
+    } else if ((arg === '--slug') && next) {
       result.slug = slugifyMissionName(next);
       i++;
-    } else if (arg.startsWith("--topic=")) {
-      result.topic = arg.slice("--topic=".length);
-    } else if (arg.startsWith("--evaluator=") || arg.startsWith("--eval=")) {
-      result.evaluatorCommand = arg.startsWith("--evaluator=")
-        ? arg.slice("--evaluator=".length)
-        : arg.slice("--eval=".length);
-    } else if (arg.startsWith("--keep-policy=")) {
-      const normalized = arg
-        .slice("--keep-policy=".length)
-        .trim()
-        .toLowerCase();
-      if (normalized !== "pass_only" && normalized !== "score_improvement") {
-        throw new Error(
-          "--keep-policy must be one of: score_improvement, pass_only",
-        );
+    } else if (arg.startsWith('--topic=')) {
+      result.topic = arg.slice('--topic='.length);
+    } else if (arg.startsWith('--evaluator=') || arg.startsWith('--eval=')) {
+      result.evaluatorCommand = arg.startsWith('--evaluator=')
+        ? arg.slice('--evaluator='.length)
+        : arg.slice('--eval='.length);
+    } else if (arg.startsWith('--keep-policy=')) {
+      const normalized = arg.slice('--keep-policy='.length).trim().toLowerCase();
+      if (normalized !== 'pass_only' && normalized !== 'score_improvement') {
+        throw new Error('--keep-policy must be one of: score_improvement, pass_only');
       }
       result.keepPolicy = normalized;
-    } else if (arg.startsWith("--slug=")) {
-      result.slug = slugifyMissionName(arg.slice("--slug=".length));
-    } else if (arg.startsWith("--")) {
-      throw new Error(`Unknown init flag: ${arg.split("=")[0]}`);
+    } else if (arg.startsWith('--slug=')) {
+      result.slug = slugifyMissionName(arg.slice('--slug='.length));
+    } else if (arg.startsWith('--')) {
+      throw new Error(`Unknown init flag: ${arg.split('=')[0]}`);
     }
   }
   return result;
@@ -237,51 +174,32 @@ export async function runAutoresearchNoviceBridge(
   io: AutoresearchQuestionIO = createQuestionIO(),
 ): Promise<InitAutoresearchResult> {
   if (!process.stdin.isTTY) {
-    throw new Error(
-      "Guided setup requires an interactive terminal. Use <mission-dir> or init --topic/--evaluator/--keep-policy/--slug for non-interactive use.",
-    );
+    throw new Error('Guided setup requires an interactive terminal. Use <mission-dir> or init --topic/--evaluator/--keep-policy/--slug for non-interactive use.');
   }
 
-  let topic = seedInputs.topic?.trim() || "";
-  let evaluatorCommand = seedInputs.evaluatorCommand?.trim() || "";
-  let keepPolicy: AutoresearchKeepPolicy =
-    seedInputs.keepPolicy || "score_improvement";
-  let slug = seedInputs.slug?.trim() || "";
+  let topic = seedInputs.topic?.trim() || '';
+  let evaluatorCommand = seedInputs.evaluatorCommand?.trim() || '';
+  let keepPolicy: AutoresearchKeepPolicy = seedInputs.keepPolicy || 'score_improvement';
+  let slug = seedInputs.slug?.trim() || '';
 
   try {
     while (true) {
-      topic = await promptWithDefault(io, "Research topic/goal", topic);
+      topic = await promptWithDefault(io, 'Research topic/goal', topic);
       if (!topic) {
-        throw new Error("Research topic is required.");
+        throw new Error('Research topic is required.');
       }
 
-      const evaluatorIntent = await promptWithDefault(
-        io,
-        "\nHow should OMC judge success? Describe it in plain language",
-        topic,
-      );
+      const evaluatorIntent = await promptWithDefault(io, '\nHow should OMC judge success? Describe it in plain language', topic);
       evaluatorCommand = await promptWithDefault(
         io,
-        "\nEvaluator command (leave placeholder to refine further; must output {pass:boolean, score?:number} JSON before launch)",
-        evaluatorCommand ||
-          `TODO replace with evaluator command for: ${evaluatorIntent}`,
+        '\nEvaluator command (leave placeholder to refine further; must output {pass:boolean, score?:number} JSON before launch)',
+        evaluatorCommand || `TODO replace with evaluator command for: ${evaluatorIntent}`,
       );
 
-      const keepPolicyInput = await promptWithDefault(
-        io,
-        "\nKeep policy [score_improvement/pass_only]",
-        keepPolicy,
-      );
-      keepPolicy =
-        keepPolicyInput.trim().toLowerCase() === "pass_only"
-          ? "pass_only"
-          : "score_improvement";
+      const keepPolicyInput = await promptWithDefault(io, '\nKeep policy [score_improvement/pass_only]', keepPolicy);
+      keepPolicy = keepPolicyInput.trim().toLowerCase() === 'pass_only' ? 'pass_only' : 'score_improvement';
 
-      slug = await promptWithDefault(
-        io,
-        "\nMission slug",
-        slug || slugifyMissionName(topic),
-      );
+      slug = await promptWithDefault(io, '\nMission slug', slug || slugifyMissionName(topic));
       slug = slugifyMissionName(slug);
 
       const deepInterview = await writeAutoresearchDeepInterviewArtifacts({
@@ -294,12 +212,10 @@ export async function runAutoresearchNoviceBridge(
       });
 
       console.log(`\nDraft saved: ${deepInterview.draftArtifactPath}`);
-      console.log(
-        `Launch readiness: ${deepInterview.launchReady ? "ready" : deepInterview.blockedReasons.join(" ")}`,
-      );
+      console.log(`Launch readiness: ${deepInterview.launchReady ? 'ready' : deepInterview.blockedReasons.join(' ')}`);
 
       const action = await promptAction(io, deepInterview.launchReady);
-      if (action === "refine") {
+      if (action === 'refine') {
         continue;
       }
 
@@ -323,30 +239,22 @@ export async function guidedAutoresearchSetupInference(
   deps: GuidedAutoresearchSetupDeps = {},
 ): Promise<InitAutoresearchResult> {
   if (!process.stdin.isTTY) {
-    throw new Error(
-      "Guided setup requires an interactive terminal. Use --mission, --eval/--sandbox, --keep-policy, and --slug flags for non-interactive use.",
-    );
+    throw new Error('Guided setup requires an interactive terminal. Use --mission, --eval/--sandbox, --keep-policy, and --slug flags for non-interactive use.');
   }
 
   const makeInterface = deps.createPromptInterface ?? createInterface;
   const runSetupSession = deps.runSetupSession ?? runAutoresearchSetupSession;
-  const rl = makeInterface({
-    input: process.stdin,
-    output: process.stdout,
-  }) as QuestionInterface;
+  const rl = makeInterface({ input: process.stdin, output: process.stdout }) as QuestionInterface;
 
   try {
-    const topic = await askQuestion(
-      rl,
-      "What should autoresearch improve or prove for this repo?\n> ",
-    );
+    const topic = await askQuestion(rl, 'What should autoresearch improve or prove for this repo?\n> ');
     if (!topic) {
-      throw new Error("Research mission is required.");
+      throw new Error('Research mission is required.');
     }
 
     const explicitEvaluator = await askQuestion(
       rl,
-      "\nOptional evaluator command (leave blank and OMC will infer one if confidence is high)\n> ",
+      '\nOptional evaluator command (leave blank and OMC will infer one if confidence is high)\n> ',
     );
 
     const clarificationAnswers: string[] = [];
@@ -355,9 +263,7 @@ export async function guidedAutoresearchSetupInference(
       handoff = runSetupSession({
         repoRoot,
         missionText: topic,
-        ...(explicitEvaluator
-          ? { explicitEvaluatorCommand: explicitEvaluator }
-          : {}),
+        ...(explicitEvaluator ? { explicitEvaluatorCommand: explicitEvaluator } : {}),
         clarificationAnswers,
       });
 
@@ -365,14 +271,11 @@ export async function guidedAutoresearchSetupInference(
         break;
       }
 
-      const question =
-        handoff.clarificationQuestion ??
-        "I need one more detail before launch. What should the evaluator command verify?";
+      const question = handoff.clarificationQuestion
+        ?? 'I need one more detail before launch. What should the evaluator command verify?';
       const answer = await askQuestion(rl, `\n${question}\n> `);
       if (!answer) {
-        throw new Error(
-          "Autoresearch setup requires clarification before launch.",
-        );
+        throw new Error('Autoresearch setup requires clarification before launch.');
       }
       clarificationAnswers.push(answer);
     }
@@ -404,78 +307,57 @@ export function checkTmuxAvailable(): boolean {
 }
 
 function resolveMissionRepoRoot(missionDir: string): string {
-  return execFileSync("git", ["rev-parse", "--show-toplevel"], {
+  return execFileSync('git', ['rev-parse', '--show-toplevel'], {
     cwd: missionDir,
-    encoding: "utf-8",
-    stdio: ["ignore", "pipe", "pipe"],
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
   }).trim();
 }
 
 function assertTmuxSessionAvailable(sessionName: string): void {
   try {
-    tmuxExec(["has-session", "-t", sessionName], {
-      stripTmux: true,
-      stdio: "ignore",
-    });
+    tmuxExec(['has-session', '-t', sessionName], { stripTmux: true, stdio: 'ignore' });
   } catch {
     throw new Error(
-      `tmux session "${sessionName}" did not stay available after launch. ` +
-        "Check the mission command, login-shell environment, and tmux logs, then try again.",
+      `tmux session "${sessionName}" did not stay available after launch. `
+      + 'Check the mission command, login-shell environment, and tmux logs, then try again.',
     );
   }
 }
 
 export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
   if (!checkTmuxAvailable()) {
-    throw new Error(
-      "tmux is required for background autoresearch execution. Install tmux and try again.",
-    );
+    throw new Error('tmux is required for background autoresearch execution. Install tmux and try again.');
   }
 
   const sessionName = `omc-autoresearch-${slug}`;
 
   try {
-    tmuxExec(["has-session", "-t", sessionName], {
-      stripTmux: true,
-      stdio: "ignore",
-    });
+    tmuxExec(['has-session', '-t', sessionName], { stripTmux: true, stdio: 'ignore' });
     throw new Error(
-      `tmux session "${sessionName}" already exists.\n` +
-        `  Attach: tmux attach -t ${sessionName}\n` +
-        `  Kill:   tmux kill-session -t ${sessionName}`,
+      `tmux session "${sessionName}" already exists.\n`
+      + `  Attach: tmux attach -t ${sessionName}\n`
+      + `  Kill:   tmux kill-session -t ${sessionName}`,
     );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (message.includes("already exists")) {
+    if (message.includes('already exists')) {
       throw error;
     }
   }
 
   const repoRoot = resolveMissionRepoRoot(missionDir);
-  const omcPath = resolve(join(__dirname, "..", "..", "bin", "omc.js"));
-  const command = buildTmuxShellCommand(process.execPath, [
-    omcPath,
-    "autoresearch",
-    missionDir,
-  ]);
+  const omcPath = resolve(join(__dirname, '..', '..', 'bin', 'omc.js'));
+  const command = buildTmuxShellCommand(process.execPath, [omcPath, 'autoresearch', missionDir]);
   const wrappedCommand = wrapWithLoginShell(command);
 
-<<<<<<< HEAD
-  tmuxExec(
-    ["new-session", "-d", "-s", sessionName, "-c", repoRoot, wrappedCommand],
-    { stripTmux: true, stdio: "ignore" },
-  );
-||||||| 90f19265
-  tmuxExec(['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand], { stripTmux: true, stdio: 'ignore' });
-=======
   tmuxExec(['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand], { stripTmux: true, stdio: 'ignore' });
   try {
     configureTmuxClipboardForSession(sessionName, { stripTmux: true, stdio: 'ignore' });
   } catch { /* non-fatal — older tmux builds may not support these options */ }
->>>>>>> main
   assertTmuxSessionAvailable(sessionName);
 
-  console.log("\nAutoresearch launched in background tmux session.");
+  console.log('\nAutoresearch launched in background tmux session.');
   console.log(`  Session:  ${sessionName}`);
   console.log(`  Mission:  ${missionDir}`);
   console.log(`  Attach:   tmux attach -t ${sessionName}`);
@@ -491,26 +373,16 @@ function ensureSymlink(target: string, linkPath: string): void {
   } catch {
     // missing path is fine
   }
-  symlinkSync(target, linkPath, "dir");
+  symlinkSync(target, linkPath, 'dir');
 }
 
-export function prepareAutoresearchSetupCodexHome(
-  repoRoot: string,
-  sessionName: string,
-): string {
-  const baseCodexHome =
-    process.env.CODEX_HOME?.trim() || join(homedir(), ".codex");
-  const tempCodexHome = join(
-    repoRoot,
-    ".omx",
-    "tmp",
-    sessionName,
-    "codex-home",
-  );
+export function prepareAutoresearchSetupCodexHome(repoRoot: string, sessionName: string): string {
+  const baseCodexHome = process.env.CODEX_HOME?.trim() || join(homedir(), '.codex');
+  const tempCodexHome = join(repoRoot, '.omx', 'tmp', sessionName, 'codex-home');
 
   mkdirSync(tempCodexHome, { recursive: true });
 
-  for (const dirName of ["skills", "commands"]) {
+  for (const dirName of ['skills', 'commands']) {
     const sourceDir = join(baseCodexHome, dirName);
     if (existsSync(sourceDir)) {
       ensureSymlink(sourceDir, join(tempCodexHome, dirName));
@@ -518,9 +390,9 @@ export function prepareAutoresearchSetupCodexHome(
   }
 
   writeFileSync(
-    join(tempCodexHome, ".omx-config.json"),
+    join(tempCodexHome, '.omx-config.json'),
     `${JSON.stringify({ autoNudge: { enabled: false } }, null, 2)}\n`,
-    "utf-8",
+    'utf-8',
   );
 
   return tempCodexHome;
@@ -532,32 +404,15 @@ export function buildAutoresearchSetupSlashCommand(): string {
 
 export function spawnAutoresearchSetupTmux(repoRoot: string): void {
   if (!checkTmuxAvailable()) {
-    throw new Error(
-      "tmux is required for autoresearch setup. Install tmux and try again.",
-    );
+    throw new Error('tmux is required for autoresearch setup. Install tmux and try again.');
   }
 
   const sessionName = `omc-autoresearch-setup-${Date.now().toString(36)}`;
   const codexHome = prepareAutoresearchSetupCodexHome(repoRoot, sessionName);
-  const claudeCommand = buildTmuxShellCommandWithEnv(
-    "claude",
-    [CLAUDE_BYPASS_FLAG],
-    { CODEX_HOME: codexHome },
-  );
+  const claudeCommand = buildTmuxShellCommandWithEnv('claude', [CLAUDE_BYPASS_FLAG], { CODEX_HOME: codexHome });
   const wrappedClaudeCommand = wrapWithLoginShell(claudeCommand);
   const paneId = tmuxExec(
-    [
-      "new-session",
-      "-d",
-      "-P",
-      "-F",
-      "#{pane_id}",
-      "-s",
-      sessionName,
-      "-c",
-      repoRoot,
-      wrappedClaudeCommand,
-    ],
+    ['new-session', '-d', '-P', '-F', '#{pane_id}', '-s', sessionName, '-c', repoRoot, wrappedClaudeCommand],
     { stripTmux: true },
   ).trim();
   try {
@@ -567,21 +422,15 @@ export function spawnAutoresearchSetupTmux(repoRoot: string): void {
   assertTmuxSessionAvailable(sessionName);
 
   if (paneId) {
-    tmuxExec(
-      ["send-keys", "-t", paneId, "-l", buildAutoresearchSetupSlashCommand()],
-      { stripTmux: true, stdio: "ignore" },
-    );
-    tmuxExec(["send-keys", "-t", paneId, "Enter"], {
-      stripTmux: true,
-      stdio: "ignore",
-    });
+    tmuxExec(['send-keys', '-t', paneId, '-l', buildAutoresearchSetupSlashCommand()], { stripTmux: true, stdio: 'ignore' });
+    tmuxExec(['send-keys', '-t', paneId, 'Enter'], { stripTmux: true, stdio: 'ignore' });
   }
 
-  console.log("\nAutoresearch setup launched in background Claude session.");
+  console.log('\nAutoresearch setup launched in background Claude session.');
   console.log(`  Session:  ${sessionName}`);
   console.log(`  Starter:  ${buildAutoresearchSetupSlashCommand()}`);
   console.log(`  CODEX_HOME: ${quoteShellArg(codexHome)}`);
   console.log(`  Attach:   tmux attach -t ${sessionName}`);
 }
 
-export { buildAutoresearchSetupPrompt } from "./autoresearch-setup-session.js";
+export { buildAutoresearchSetupPrompt } from './autoresearch-setup-session.js';

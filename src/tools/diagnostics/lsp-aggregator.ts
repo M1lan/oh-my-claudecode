@@ -5,25 +5,11 @@
  * and collect LSP diagnostics for each.
  */
 
-<<<<<<< HEAD
-import { readdirSync, statSync } from "fs";
-import { join, extname } from "path";
-import { lspClientManager } from "../lsp/index.js";
-import type { Diagnostic } from "../lsp/index.js";
-import { LSP_DIAGNOSTICS_WAIT_MS } from "./index.js";
-||||||| 90f19265
-import { readdirSync, statSync } from 'fs';
-import { join, extname } from 'path';
-import { lspClientManager } from '../lsp/index.js';
-import type { Diagnostic } from '../lsp/index.js';
-import { LSP_DIAGNOSTICS_WAIT_MS } from './index.js';
-=======
 import { readdirSync, statSync } from 'fs';
 import { join, extname } from 'path';
 import { lspClientManager, getServerForFile } from '../lsp/index.js';
 import type { Diagnostic } from '../lsp/index.js';
 import { LSP_DIAGNOSTICS_WAIT_MS } from './index.js';
->>>>>>> main
 
 export interface LspDiagnosticWithFile {
   file: string;
@@ -43,11 +29,7 @@ export interface LspAggregationResult {
 /**
  * Recursively find files with given extensions
  */
-function findFiles(
-  directory: string,
-  extensions: string[],
-  ignoreDirs: string[] = [],
-): string[] {
+function findFiles(directory: string, extensions: string[], ignoreDirs: string[] = []): string[] {
   const results: string[] = [];
   const ignoreDirSet = new Set(ignoreDirs);
 
@@ -95,15 +77,10 @@ function findFiles(
  */
 export async function runLspAggregatedDiagnostics(
   directory: string,
-  extensions: string[] = [".ts", ".tsx", ".js", ".jsx"],
+  extensions: string[] = ['.ts', '.tsx', '.js', '.jsx']
 ): Promise<LspAggregationResult> {
   // Find all matching files
-  const files = findFiles(directory, extensions, [
-    "node_modules",
-    "dist",
-    "build",
-    ".git",
-  ]);
+  const files = findFiles(directory, extensions, ['node_modules', 'dist', 'build', '.git']);
 
   const allDiagnostics: LspDiagnosticWithFile[] = [];
   let filesChecked = 0;
@@ -134,7 +111,7 @@ export async function runLspAggregatedDiagnostics(
         for (const diagnostic of diagnostics) {
           allDiagnostics.push({
             file,
-            diagnostic,
+            diagnostic
           });
         }
 
@@ -155,22 +132,10 @@ export async function runLspAggregatedDiagnostics(
   }
 
   // Count errors and warnings
-<<<<<<< HEAD
-  const errorCount = allDiagnostics.filter(
-    (d) => d.diagnostic.severity === 1,
-  ).length;
-  const warningCount = allDiagnostics.filter(
-    (d) => d.diagnostic.severity === 2,
-  ).length;
-||||||| 90f19265
-  const errorCount = allDiagnostics.filter(d => d.diagnostic.severity === 1).length;
-  const warningCount = allDiagnostics.filter(d => d.diagnostic.severity === 2).length;
-=======
   const errorCount = allDiagnostics.filter(d => d.diagnostic.severity === 1).length;
   const warningCount = allDiagnostics.filter(d => d.diagnostic.severity === 2).length;
   const installHints = Array.from(installHintSet);
   const allFilesSkipped = filesChecked === 0 && files.length > 0;
->>>>>>> main
 
   return {
     success: errorCount === 0 && !allFilesSkipped,
@@ -178,12 +143,7 @@ export async function runLspAggregatedDiagnostics(
     errorCount,
     warningCount,
     filesChecked,
-<<<<<<< HEAD
-||||||| 90f19265
-    filesChecked
-=======
     skippedFiles,
     installHints,
->>>>>>> main
   };
 }

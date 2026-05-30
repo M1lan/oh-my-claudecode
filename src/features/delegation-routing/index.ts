@@ -6,25 +6,19 @@
  */
 
 // Main resolver
-<<<<<<< HEAD
-export { resolveDelegation, parseFallbackChain } from "./resolver.js";
-||||||| 90f19265
-export { resolveDelegation, parseFallbackChain } from './resolver.js';
-=======
 export {
   resolveDelegation,
   parseFallbackChain,
   isDeprecatedMcpProvider,
   DEPRECATED_MCP_PROVIDER_WARNING,
 } from './resolver.js';
->>>>>>> main
 
 // Types and constants
 export {
   DEFAULT_DELEGATION_CONFIG,
   ROLE_CATEGORY_DEFAULTS,
   isDelegationEnabled,
-} from "./types.js";
+} from './types.js';
 
 // Re-export shared types for convenience
 export type {
@@ -34,4 +28,4 @@ export type {
   DelegationRoutingConfig,
   DelegationDecision,
   ResolveDelegationOptions,
-} from "../../shared/types.js";
+} from '../../shared/types.js';

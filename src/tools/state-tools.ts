@@ -374,19 +374,11 @@ function getStateClearCheckedPaths(
     paths.add(legacyPath);
   }
 
-<<<<<<< HEAD
-  const sessionIds = sessionId
-    ? [sessionId, ...listSessionIds(root)]
-    : listSessionIds(root);
-||||||| 90f19265
-  const sessionIds = sessionId ? [sessionId, ...listSessionIds(root)] : listSessionIds(root);
-=======
   for (const localPath of getWorkingDirectoryLocalStateClearCandidates(mode, root, sessionId)) {
     paths.add(localPath);
   }
 
   const sessionIds = sessionId ? [sessionId, ...listSessionIds(root)] : listSessionIds(root);
->>>>>>> main
   for (const sid of new Set(sessionIds)) {
     paths.add(
       MODE_CONFIGS[mode as ExecutionMode]
@@ -969,27 +961,6 @@ export const stateClearTool: ToolDefinition<{
         writeSessionCancelSignal(root, sessionId, mode);
 
         if (MODE_CONFIGS[mode as ExecutionMode]) {
-<<<<<<< HEAD
-          const success = clearModeState(
-            mode as ExecutionMode,
-            root,
-            sessionId,
-          );
-          const sessionCleanup = clearSessionOwnedStateCandidates(
-            mode,
-            root,
-            sessionId,
-          );
-          const legacyCleanup = clearLegacyStateCandidates(
-            mode,
-            root,
-            sessionId,
-          );
-||||||| 90f19265
-          const success = clearModeState(mode as ExecutionMode, root, sessionId);
-          const sessionCleanup = clearSessionOwnedStateCandidates(mode, root, sessionId);
-          const legacyCleanup = clearLegacyStateCandidates(mode, root, sessionId);
-=======
           const success = clearModeState(mode as ExecutionMode, root, sessionId);
           const sessionCleanup = clearSessionOwnedStateCandidates(mode, root, sessionId);
           const legacyCleanup = clearLegacyStateCandidates(mode, root, sessionId);
@@ -1000,7 +971,6 @@ export const stateClearTool: ToolDefinition<{
           const workingDirectoryLocalCleanup = shouldUseLocalFallback
             ? clearWorkingDirectoryLocalStateCandidates(mode, root, sessionId)
             : { cleared: 0, hadFailure: false, paths: [] as string[] };
->>>>>>> main
           let ownerSessionId: string | undefined;
           let ownerSessionCleanup = {
             cleared: 0,
@@ -1267,23 +1237,9 @@ export const stateClearTool: ToolDefinition<{
           ownerSessionCleanup.cleared +
           ownerLegacyCleanup.cleared +
           runtimeCleanup.cleared;
-<<<<<<< HEAD
-        const hadFailure =
-          legacyCleanup.hadFailure ||
-          sessionCleanup.hadFailure ||
-          completedSessionCleanup.hadFailure ||
-          ownerSessionCleanup.hadFailure ||
-          ownerLegacyCleanup.hadFailure ||
-          runtimeCleanup.hadFailure;
-||||||| 90f19265
-        const hadFailure = legacyCleanup.hadFailure || sessionCleanup.hadFailure ||
-          completedSessionCleanup.hadFailure || ownerSessionCleanup.hadFailure ||
-          ownerLegacyCleanup.hadFailure || runtimeCleanup.hadFailure;
-=======
         const hadFailure = legacyCleanup.hadFailure || sessionCleanup.hadFailure ||
           workingDirectoryLocalCleanup.hadFailure || completedSessionCleanup.hadFailure || ownerSessionCleanup.hadFailure ||
           ownerLegacyCleanup.hadFailure || runtimeCleanup.hadFailure;
->>>>>>> main
         if (!ownerSessionId && clearedStateOrArtifacts === 0 && !hadFailure) {
           return {
             content: [

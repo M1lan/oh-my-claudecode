@@ -9,61 +9,47 @@
  * Adapted from oh-my-opencode's builtin-skills feature.
  */
 
-import { existsSync, readdirSync, readFileSync } from "fs";
-import {
-  join,
-  dirname,
-  basename,
-  resolve,
-  relative,
-  isAbsolute,
-  win32,
-} from "path";
-import { fileURLToPath } from "url";
-import type { BuiltinSkill } from "./types.js";
-import {
-  parseFrontmatter,
-  parseFrontmatterAliases,
-} from "../../utils/frontmatter.js";
-import { rewriteOmcCliInvocations } from "../../utils/omc-cli-rendering.js";
-import {
-  parseSkillPipelineMetadata,
-  renderSkillPipelineGuidance,
-} from "../../utils/skill-pipeline.js";
-import { renderSkillResourcesGuidance } from "../../utils/skill-resources.js";
-import { renderSkillRuntimeGuidance } from "./runtime-guidance.js";
-import { isSkininthegamebrosUser } from "../../utils/skininthegamebros-user.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join, dirname, basename, resolve, relative, isAbsolute, win32 } from 'path';
+import { fileURLToPath } from 'url';
+import type { BuiltinSkill } from './types.js';
+import { parseFrontmatter, parseFrontmatterAliases } from '../../utils/frontmatter.js';
+import { rewriteOmcCliInvocations } from '../../utils/omc-cli-rendering.js';
+import { parseSkillPipelineMetadata, renderSkillPipelineGuidance } from '../../utils/skill-pipeline.js';
+import { renderSkillResourcesGuidance } from '../../utils/skill-resources.js';
+import { renderSkillRuntimeGuidance } from './runtime-guidance.js';
+import { isSkininthegamebrosUser } from '../../utils/skininthegamebros-user.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
 
 function getPackageDir(): string {
-  if (typeof __dirname !== "undefined" && __dirname) {
+  if (typeof __dirname !== 'undefined' && __dirname) {
     const currentDirName = basename(__dirname);
     const parentDirName = basename(dirname(__dirname));
     const grandparentDirName = basename(dirname(dirname(__dirname)));
 
-    if (currentDirName === "bridge") {
-      return join(__dirname, "..");
+    if (currentDirName === 'bridge') {
+      return join(__dirname, '..');
     }
 
     if (
-      currentDirName === "builtin-skills" &&
-      parentDirName === "features" &&
-      (grandparentDirName === "src" || grandparentDirName === "dist")
+      currentDirName === 'builtin-skills'
+      && parentDirName === 'features'
+      && (grandparentDirName === 'src' || grandparentDirName === 'dist')
     ) {
-      return join(__dirname, "..", "..", "..");
+      return join(__dirname, '..', '..', '..');
     }
   }
 
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    return join(__dirname, "..", "..", "..");
+    return join(__dirname, '..', '..', '..');
   } catch {
     return process.cwd();
   }
 }
 
-const SKILLS_DIR = join(getPackageDir(), "skills");
+const SKILLS_DIR = join(getPackageDir(), 'skills');
 
 /**
  * Claude Code native commands that must not be shadowed by OMC skill short names.
@@ -71,19 +57,23 @@ const SKILLS_DIR = join(getPackageDir(), "skills");
  * to avoid overriding built-in /review, /plan, /security-review etc.
  */
 const CC_NATIVE_COMMANDS = new Set([
-  "review",
-  "plan",
-  "security-review",
-  "init",
-  "doctor",
-  "help",
-  "config",
-  "clear",
-  "compact",
-  "memory",
+  'review',
+  'plan',
+  'security-review',
+  'init',
+  'doctor',
+  'help',
+  'config',
+  'clear',
+  'compact',
+  'memory',
 ]);
 
-const SKININTHEGAMEBROS_ONLY_SKILLS = new Set(["remember", "verify", "debug"]);
+const SKININTHEGAMEBROS_ONLY_SKILLS = new Set([
+  'remember',
+  'verify',
+  'debug',
+]);
 
 const DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD = 0.2;
 
@@ -100,9 +90,9 @@ function readJsonObject(path: string): Record<string, unknown> | null {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(path, "utf-8"));
-    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+    const parsed = JSON.parse(readFileSync(path, 'utf-8'));
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, unknown>
       : null;
   } catch {
     return null;
@@ -112,48 +102,21 @@ function readJsonObject(path: string): Record<string, unknown> | null {
 function readDeepInterviewThresholdFromSettings(path: string): number | null {
   const settings = readJsonObject(path);
   const omc = settings?.omc;
-  if (!omc || typeof omc !== "object" || Array.isArray(omc)) {
+  if (!omc || typeof omc !== 'object' || Array.isArray(omc)) {
     return null;
   }
 
   const deepInterview = (omc as Record<string, unknown>).deepInterview;
-  if (
-    !deepInterview ||
-    typeof deepInterview !== "object" ||
-    Array.isArray(deepInterview)
-  ) {
+  if (!deepInterview || typeof deepInterview !== 'object' || Array.isArray(deepInterview)) {
     return null;
   }
 
-  const threshold = (deepInterview as Record<string, unknown>)
-    .ambiguityThreshold;
-  return typeof threshold === "number" &&
-    Number.isFinite(threshold) &&
-    threshold >= 0 &&
-    threshold <= 1
+  const threshold = (deepInterview as Record<string, unknown>).ambiguityThreshold;
+  return typeof threshold === 'number' && Number.isFinite(threshold) && threshold >= 0 && threshold <= 1
     ? threshold
     : null;
 }
 
-<<<<<<< HEAD
-function getDeepInterviewAmbiguityThreshold(): number {
-  const profileThreshold = readDeepInterviewThresholdFromSettings(
-    join(getClaudeConfigDir(), "settings.json"),
-  );
-  const projectThreshold = readDeepInterviewThresholdFromSettings(
-    join(process.cwd(), ".claude", "settings.json"),
-  );
-  return (
-    projectThreshold ??
-    profileThreshold ??
-    DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD
-  );
-||||||| 90f19265
-function getDeepInterviewAmbiguityThreshold(): number {
-  const profileThreshold = readDeepInterviewThresholdFromSettings(join(getClaudeConfigDir(), 'settings.json'));
-  const projectThreshold = readDeepInterviewThresholdFromSettings(join(process.cwd(), '.claude', 'settings.json'));
-  return projectThreshold ?? profileThreshold ?? DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD;
-=======
 type DeepInterviewThresholdResolution = {
   threshold: number;
   source: string;
@@ -174,45 +137,29 @@ function getDeepInterviewAmbiguityThresholdResolution(): DeepInterviewThresholdR
   }
 
   return { threshold: DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD, source: 'default' };
->>>>>>> main
 }
 
 function formatThresholdPercent(threshold: number): string {
-  return `${(threshold * 100).toFixed(2).replace(/\.?0+$/, "")}%`;
+  return `${(threshold * 100).toFixed(2).replace(/\.?0+$/, '')}%`;
 }
 
 function pathLooksWindows(value: string): boolean {
-  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("\\\\");
+  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\');
 }
 
-export function isPathInsideOrEqual(
-  parentPath: string,
-  candidatePath: string,
-): boolean {
-  const pathApi =
-    pathLooksWindows(parentPath) || pathLooksWindows(candidatePath)
-      ? win32
-      : { relative, isAbsolute };
+export function isPathInsideOrEqual(parentPath: string, candidatePath: string): boolean {
+  const pathApi = pathLooksWindows(parentPath) || pathLooksWindows(candidatePath) ? win32 : { relative, isAbsolute };
   const rel = pathApi.relative(parentPath, candidatePath);
-  return rel === "" || (!rel.startsWith("..") && !pathApi.isAbsolute(rel));
+  return rel === '' || (!rel.startsWith('..') && !pathApi.isAbsolute(rel));
 }
 
-function getFrontmatterString(
-  metadata: Record<string, unknown>,
-  key: string,
-): string | null {
+function getFrontmatterString(metadata: Record<string, unknown>, key: string): string | null {
   const value = metadata[key];
-  return typeof value === "string" && value.trim().length > 0
-    ? value.trim()
-    : null;
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-function readSkillBodyOverride(
-  skillPath: string,
-  metadata: Record<string, unknown>,
-  fallbackBody: string,
-): string {
-  const bodyPath = getFrontmatterString(metadata, "omc-full-body");
+function readSkillBodyOverride(skillPath: string, metadata: Record<string, unknown>, fallbackBody: string): string {
+  const bodyPath = getFrontmatterString(metadata, 'omc-full-body');
   if (!bodyPath) {
     return fallbackBody;
   }
@@ -226,7 +173,7 @@ function readSkillBodyOverride(
   }
 
   try {
-    const fullContent = readFileSync(resolvedBodyPath, "utf-8");
+    const fullContent = readFileSync(resolvedBodyPath, 'utf-8');
     const { body } = parseFrontmatter(fullContent);
     return body;
   } catch {
@@ -239,80 +186,44 @@ function applyDeepInterviewRuntimeSettings(template: string): string {
   const percent = formatThresholdPercent(threshold);
 
   const withResolvedPlaceholders = template
-<<<<<<< HEAD
-    .replaceAll("<resolvedThreshold>", `${threshold}`)
-    .replaceAll("<resolvedThresholdPercent>", percent);
-||||||| 90f19265
-    .replaceAll('<resolvedThreshold>', `${threshold}`)
-    .replaceAll('<resolvedThresholdPercent>', percent);
-=======
     .replaceAll('<resolvedThreshold>', `${threshold}`)
     .replaceAll('<resolvedThresholdPercent>', percent)
     .replaceAll('<resolvedThresholdSource>', source);
->>>>>>> main
 
-<<<<<<< HEAD
-  const withRuntimeSettings = withResolvedPlaceholders.includes(
-    "3.5. **Load runtime settings**:",
-  )
-||||||| 90f19265
-  const withRuntimeSettings = withResolvedPlaceholders.includes('3.5. **Load runtime settings**:')
-=======
   const withRuntimeSettings = withResolvedPlaceholders.includes('3.5. **Load runtime settings**:')
     || withResolvedPlaceholders.includes('## Phase 0: Resolve Ambiguity Threshold')
->>>>>>> main
     ? withResolvedPlaceholders
     : withResolvedPlaceholders.replace(
+      '4. **Initialize state** via `state_write(mode="deep-interview")`:',
+      [
+        `3.5. **Load runtime settings** from \`~/.claude/settings.json\` and \`./.claude/settings.json\` before state init (project overrides profile). For this run, use \`ambiguityThreshold = ${threshold}\`.`,
         '4. **Initialize state** via `state_write(mode="deep-interview")`:',
-        [
-          `3.5. **Load runtime settings** from \`~/.claude/settings.json\` and \`./.claude/settings.json\` before state init (project overrides profile). For this run, use \`ambiguityThreshold = ${threshold}\`.`,
-          '4. **Initialize state** via `state_write(mode="deep-interview")`:',
-        ].join("\n"),
-      );
+      ].join('\n'),
+    );
 
-  return (
-    withRuntimeSettings
-      .replace('"threshold": 0.2,', `"threshold": ${threshold},`)
-      .replace(
-        "We'll proceed to execution once ambiguity drops below 20%.",
-        `We'll proceed to execution once ambiguity drops below ${percent}.`,
-      )
-      // Fix #2545: replace remaining hardcoded 20%/0.2 references that conflict with runtime threshold injection
-      .replace("(default: 20%)", `(default: ${percent})`)
-      .replace("(default 0.2)", `(default ${threshold})`)
-      .replace(
-        '"ambiguityThreshold": 0.2,',
-        `"ambiguityThreshold": ${threshold},`,
-      )
-      .replace("Gate: ≤20% ambiguity", `Gate: ≤${percent} ambiguity`)
-      .replace("(threshold: 20%).", `(threshold: ${percent}).`)
-      .replace("ambiguity ≤ 20%", `ambiguity ≤ ${percent}`)
-  );
+  return withRuntimeSettings
+    .replace('"threshold": 0.2,', `"threshold": ${threshold},`)
+    .replace(
+      'We\'ll proceed to execution once ambiguity drops below 20%.',
+      `We'll proceed to execution once ambiguity drops below ${percent}.`,
+    )
+    // Fix #2545: replace remaining hardcoded 20%/0.2 references that conflict with runtime threshold injection
+    .replace('(default: 20%)', `(default: ${percent})`)
+    .replace('(default 0.2)', `(default ${threshold})`)
+    .replace('"ambiguityThreshold": 0.2,', `"ambiguityThreshold": ${threshold},`)
+    .replace('Gate: ≤20% ambiguity', `Gate: ≤${percent} ambiguity`)
+    .replace('(threshold: 20%).', `(threshold: ${percent}).`)
+    .replace('ambiguity ≤ 20%', `ambiguity ≤ ${percent}`);
 }
 
-<<<<<<< HEAD
-export function renderBundledSkillBody(
-  skillName: string,
-  body: string,
-): string {
-||||||| 90f19265
-export function renderBundledSkillBody(skillName: string, body: string): string {
-=======
 function normalizeSkillNameForRuntimeRendering(skillName: string): string {
   return skillName.trim().toLowerCase().replace(/^oh-my-claudecode:/, '').replace(/^omc:/, '');
 }
 
 export function renderBundledSkillBody(skillName: string, body: string): string {
   const normalizedSkillName = normalizeSkillNameForRuntimeRendering(skillName);
->>>>>>> main
   const rewrittenBody = rewriteOmcCliInvocations(body.trim());
-<<<<<<< HEAD
-  return skillName === "deep-interview" || skillName === "deep-dive"
-||||||| 90f19265
-  return skillName === 'deep-interview' || skillName === 'deep-dive'
-=======
   return normalizedSkillName === 'deep-interview' || normalizedSkillName === 'deep-dive'
->>>>>>> main
     ? applyDeepInterviewRuntimeSettings(rewrittenBody)
     : rewrittenBody;
 }
@@ -320,12 +231,9 @@ export function renderBundledSkillBody(skillName: string, body: string): string 
 /**
  * Load a single skill from a SKILL.md file
  */
-function loadSkillFromFile(
-  skillPath: string,
-  skillName: string,
-): BuiltinSkill[] {
+function loadSkillFromFile(skillPath: string, skillName: string): BuiltinSkill[] {
   try {
-    const content = readFileSync(skillPath, "utf-8");
+    const content = readFileSync(skillPath, 'utf-8');
     const { metadata, body } = parseFrontmatter(content);
     const resolvedName = metadata.name || skillName;
     const safePrimaryName = toSafeSkillName(resolvedName);
@@ -337,20 +245,14 @@ function loadSkillFromFile(
       renderSkillRuntimeGuidance(safePrimaryName),
       renderSkillPipelineGuidance(safePrimaryName, pipeline),
       renderSkillResourcesGuidance(skillPath),
-    ]
-      .filter((section) => section.trim().length > 0)
-      .join("\n\n");
+    ].filter((section) => section.trim().length > 0).join('\n\n');
 
     const safeAliases = Array.from(
       new Set(
         parseFrontmatterAliases(metadata.aliases)
           .map((alias: string) => toSafeSkillName(alias))
-          .filter(
-            (alias: string) =>
-              alias.length > 0 &&
-              alias.toLowerCase() !== safePrimaryName.toLowerCase(),
-          ),
-      ),
+          .filter((alias: string) => alias.length > 0 && alias.toLowerCase() !== safePrimaryName.toLowerCase())
+      )
     );
 
     const allNames = [safePrimaryName, ...safeAliases];
@@ -367,16 +269,15 @@ function loadSkillFromFile(
         aliases: name === safePrimaryName ? safeAliases : undefined,
         aliasOf: name === safePrimaryName ? undefined : safePrimaryName,
         deprecatedAlias: name === safePrimaryName ? undefined : true,
-        deprecationMessage:
-          name === safePrimaryName
-            ? undefined
-            : `Skill alias "${name}" is deprecated. Use "${safePrimaryName}" instead.`,
-        description: metadata.description || "",
+        deprecationMessage: name === safePrimaryName
+          ? undefined
+          : `Skill alias "${name}" is deprecated. Use "${safePrimaryName}" instead.`,
+        description: metadata.description || '',
         template,
         // Optional fields from frontmatter
         model: metadata.model,
         agent: metadata.agent,
-        argumentHint: metadata["argument-hint"],
+        argumentHint: metadata['argument-hint'],
         pipeline: name === safePrimaryName ? pipeline : undefined,
       });
     }
@@ -399,26 +300,22 @@ function loadSkillsFromDirectory(): BuiltinSkill[] {
   const seenNames = new Set<string>();
 
   try {
-    const entries = readdirSync(SKILLS_DIR, { withFileTypes: true }).sort(
-      (a, b) => {
+    const entries = readdirSync(SKILLS_DIR, { withFileTypes: true })
+      .sort((a, b) => {
         // Public canonical skill-making surface must claim its deprecated
         // learner alias before the legacy compatibility skill is encountered.
-        if (a.name === "skillify") return -1;
-        if (b.name === "skillify") return 1;
+        if (a.name === 'skillify') return -1;
+        if (b.name === 'skillify') return 1;
         return a.name.localeCompare(b.name);
-      },
-    );
+      });
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      if (
-        SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) &&
-        !isSkininthegamebrosUser()
-      ) {
+      if (SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) && !isSkininthegamebrosUser()) {
         continue;
       }
 
-      const skillPath = join(SKILLS_DIR, entry.name, "SKILL.md");
+      const skillPath = join(SKILLS_DIR, entry.name, 'SKILL.md');
       if (existsSync(skillPath)) {
         const skillEntries = loadSkillFromFile(skillPath, entry.name);
         for (const skill of skillEntries) {
@@ -467,7 +364,7 @@ export function createBuiltinSkills(): BuiltinSkill[] {
  */
 export function getBuiltinSkill(name: string): BuiltinSkill | undefined {
   const skills = createBuiltinSkills();
-  return skills.find((s) => s.name.toLowerCase() === name.toLowerCase());
+  return skills.find(s => s.name.toLowerCase() === name.toLowerCase());
 }
 
 export interface ListBuiltinSkillNamesOptions {
@@ -477,9 +374,7 @@ export interface ListBuiltinSkillNamesOptions {
 /**
  * List all builtin skill names
  */
-export function listBuiltinSkillNames(
-  options?: ListBuiltinSkillNamesOptions,
-): string[] {
+export function listBuiltinSkillNames(options?: ListBuiltinSkillNamesOptions): string[] {
   const { includeAliases = false } = options ?? {};
   const skills = createBuiltinSkills();
   if (includeAliases) {

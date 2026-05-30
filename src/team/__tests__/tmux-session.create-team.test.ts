@@ -1,10 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-type ExecFileCallback = (
-  error: Error | null,
-  stdout: string,
-  stderr: string,
-) => void;
+type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void;
 
 const mockedCalls = vi.hoisted(() => ({
   execFileArgs: [] as string[][],
@@ -12,41 +8,36 @@ const mockedCalls = vi.hoisted(() => ({
   newSplitStdouts: [] as string[],
 }));
 
-vi.mock("child_process", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("child_process")>();
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
   const runMockExec = (args: string[]): { stdout: string; stderr: string } => {
     mockedCalls.execFileArgs.push(args);
 
-    if (args[0] === "new-session") {
-      return { stdout: "omc-team-race-team-detached:0 %91\n", stderr: "" };
+    if (args[0] === 'new-session') {
+      return { stdout: 'omc-team-race-team-detached:0 %91\n', stderr: '' };
     }
 
-    if (args[0] === "new-window") {
-      return { stdout: "omx:5 %99\n", stderr: "" };
+    if (args[0] === 'new-window') {
+      return { stdout: 'omx:5 %99\n', stderr: '' };
     }
 
-    if (args[0] === "display-message" && args.includes("#S:#I #{pane_id}")) {
-      return { stdout: "fallback:2 %42\n", stderr: "" };
+    if (args[0] === 'display-message' && args.includes('#S:#I #{pane_id}')) {
+      return { stdout: 'fallback:2 %42\n', stderr: '' };
     }
 
-    if (args[0] === "display-message" && args.includes("#S:#I")) {
-      return { stdout: "omx:4\n", stderr: "" };
+    if (args[0] === 'display-message' && args.includes('#S:#I')) {
+      return { stdout: 'omx:4\n', stderr: '' };
     }
 
-    if (args[0] === "display-message" && args.includes("#{window_width}")) {
-      return { stdout: "160\n", stderr: "" };
+    if (args[0] === 'display-message' && args.includes('#{window_width}')) {
+      return { stdout: '160\n', stderr: '' };
     }
 
-    if (args[0] === "split-window") {
+    if (args[0] === 'split-window') {
       mockedCalls.splitCount += 1;
-      return { stdout: `%50${mockedCalls.splitCount}\n`, stderr: "" };
+      return { stdout: `%50${mockedCalls.splitCount}\n`, stderr: '' };
     }
 
-<<<<<<< HEAD
-    return { stdout: "", stderr: "" };
-||||||| 90f19265
-    return { stdout: '', stderr: '' };
-=======
     if (args[0] === 'new-split') {
       mockedCalls.splitCount += 1;
       return {
@@ -56,7 +47,6 @@ vi.mock("child_process", async (importOriginal) => {
     }
 
     return { stdout: '', stderr: '' };
->>>>>>> main
   };
 
   const parseTmuxShellCmd = (cmd: string): string[] | null => {
@@ -71,37 +61,28 @@ vi.mock("child_process", async (importOriginal) => {
     });
   };
 
-  const execFileMock = vi.fn(
-    (_cmd: string, args: string[], cb: ExecFileCallback) => {
-      const { stdout, stderr } = runMockExec(args);
-      cb(null, stdout, stderr);
-      return {} as never;
-    },
-  );
-
-  const promisifyCustom = Symbol.for("nodejs.util.promisify.custom");
-  (execFileMock as unknown as Record<symbol, unknown>)[promisifyCustom] =
-    async (_cmd: string, args: string[]) => runMockExec(args);
-
-  type ExecCallback = (
-    error: Error | null,
-    stdout: string,
-    stderr: string,
-  ) => void;
-  const execMock = vi.fn((cmd: string, cb: ExecCallback) => {
-    const args = parseTmuxShellCmd(cmd);
-    const { stdout, stderr } = args
-      ? runMockExec(args)
-      : { stdout: "", stderr: "" };
+  const execFileMock = vi.fn((_cmd: string, args: string[], cb: ExecFileCallback) => {
+    const { stdout, stderr } = runMockExec(args);
     cb(null, stdout, stderr);
     return {} as never;
   });
-  (execMock as unknown as Record<symbol, unknown>)[promisifyCustom] = async (
-    cmd: string,
-  ) => {
+
+  const promisifyCustom = Symbol.for('nodejs.util.promisify.custom');
+  (execFileMock as unknown as Record<symbol, unknown>)[promisifyCustom] =
+    async (_cmd: string, args: string[]) => runMockExec(args);
+
+  type ExecCallback = (error: Error | null, stdout: string, stderr: string) => void;
+  const execMock = vi.fn((cmd: string, cb: ExecCallback) => {
     const args = parseTmuxShellCmd(cmd);
-    return args ? runMockExec(args) : { stdout: "", stderr: "" };
-  };
+    const { stdout, stderr } = args ? runMockExec(args) : { stdout: '', stderr: '' };
+    cb(null, stdout, stderr);
+    return {} as never;
+  });
+  (execMock as unknown as Record<symbol, unknown>)[promisifyCustom] =
+    async (cmd: string) => {
+      const args = parseTmuxShellCmd(cmd);
+      return args ? runMockExec(args) : { stdout: '', stderr: '' };
+    };
 
   return {
     ...actual,
@@ -110,39 +91,36 @@ vi.mock("child_process", async (importOriginal) => {
   };
 });
 
-import {
-  createTeamSession,
-  detectTeamMultiplexerContext,
-} from "../tmux-session.js";
+import { createTeamSession, detectTeamMultiplexerContext } from '../tmux-session.js';
 
-describe("detectTeamMultiplexerContext", () => {
+describe('detectTeamMultiplexerContext', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
 
-  it("returns tmux when TMUX is present", () => {
-    vi.stubEnv("TMUX", "/tmp/tmux-1000/default,1,1");
-    vi.stubEnv("CMUX_SURFACE_ID", "cmux-surface");
+  it('returns tmux when TMUX is present', () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-1000/default,1,1');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
 
-    expect(detectTeamMultiplexerContext()).toBe("tmux");
+    expect(detectTeamMultiplexerContext()).toBe('tmux');
   });
 
-  it("returns cmux when CMUX_SURFACE_ID is present without TMUX", () => {
-    vi.stubEnv("TMUX", "");
-    vi.stubEnv("CMUX_SURFACE_ID", "cmux-surface");
+  it('returns cmux when CMUX_SURFACE_ID is present without TMUX', () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
 
-    expect(detectTeamMultiplexerContext()).toBe("cmux");
+    expect(detectTeamMultiplexerContext()).toBe('cmux');
   });
 
-  it("returns none when neither tmux nor cmux markers are present", () => {
-    vi.stubEnv("TMUX", "");
-    vi.stubEnv("CMUX_SURFACE_ID", "");
+  it('returns none when neither tmux nor cmux markers are present', () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('CMUX_SURFACE_ID', '');
 
-    expect(detectTeamMultiplexerContext()).toBe("none");
+    expect(detectTeamMultiplexerContext()).toBe('none');
   });
 });
 
-describe("createTeamSession context resolution", () => {
+describe('createTeamSession context resolution', () => {
   beforeEach(() => {
     mockedCalls.execFileArgs = [];
     mockedCalls.splitCount = 0;
@@ -154,78 +132,33 @@ describe("createTeamSession context resolution", () => {
     vi.restoreAllMocks();
   });
 
-  it("creates a detached session when running outside tmux", async () => {
-    vi.stubEnv("TMUX", "");
-    vi.stubEnv("TMUX_PANE", "");
-    vi.stubEnv("CMUX_SURFACE_ID", "");
+  it('creates a detached session when running outside tmux', async () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('TMUX_PANE', '');
+    vi.stubEnv('CMUX_SURFACE_ID', '');
 
-    const session = await createTeamSession("race-team", 0, "/tmp");
+    const session = await createTeamSession('race-team', 0, '/tmp');
 
-    const detachedCreateCall = mockedCalls.execFileArgs.find(
-      (args) =>
-        args[0] === "new-session" && args.includes("-d") && args.includes("-P"),
+    const detachedCreateCall = mockedCalls.execFileArgs.find((args) =>
+      args[0] === 'new-session' && args.includes('-d') && args.includes('-P'),
     );
     expect(detachedCreateCall).toBeDefined();
-<<<<<<< HEAD
-    expect(session.leaderPaneId).toBe("%91");
-    expect(session.sessionName).toBe("omc-team-race-team-detached:0");
-||||||| 90f19265
-    expect(session.leaderPaneId).toBe('%91');
-    expect(session.sessionName).toBe('omc-team-race-team-detached:0');
-=======
     expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-t', 'omc-team-race-team-detached', 'set-clipboard', 'on']);
     expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-at', 'omc-team-race-team-detached', 'terminal-features', ',*:clipboard']);
     expect(session.leaderPaneId).toBe('%91');
     expect(session.sessionName).toBe('omc-team-race-team-detached:0');
->>>>>>> main
     expect(session.workerPaneIds).toEqual([]);
-    expect(session.sessionMode).toBe("detached-session");
+    expect(session.sessionMode).toBe('detached-session');
   });
 
-<<<<<<< HEAD
-  it("uses a detached tmux session when running inside cmux", async () => {
-    vi.stubEnv("TMUX", "");
-    vi.stubEnv("TMUX_PANE", "");
-    vi.stubEnv("CMUX_SURFACE_ID", "cmux-surface");
-||||||| 90f19265
-  it('uses a detached tmux session when running inside cmux', async () => {
-    vi.stubEnv('TMUX', '');
-    vi.stubEnv('TMUX_PANE', '');
-    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
-=======
   it('uses native cmux splits instead of a detached tmux session when running inside cmux', async () => {
     vi.stubEnv('TMUX', '');
     vi.stubEnv('TMUX_PANE', '');
     vi.stubEnv('CMUX_SURFACE_ID', 'cmux-leader');
     vi.stubEnv('CMUX_WORKSPACE_ID', 'workspace-1');
->>>>>>> main
 
-<<<<<<< HEAD
-    const session = await createTeamSession("race-team", 1, "/tmp", {
-      newWindow: true,
-    });
-||||||| 90f19265
-    const session = await createTeamSession('race-team', 1, '/tmp', { newWindow: true });
-=======
     const session = await createTeamSession('race-team', 2, '/tmp', { newWindow: true });
->>>>>>> main
 
-<<<<<<< HEAD
-    expect(
-      mockedCalls.execFileArgs.some((args) => args[0] === "new-window"),
-    ).toBe(false);
-    const detachedCreateCall = mockedCalls.execFileArgs.find(
-      (args) =>
-        args[0] === "new-session" && args.includes("-d") && args.includes("-P"),
-    );
-    expect(detachedCreateCall).toBeDefined();
-||||||| 90f19265
-    expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-window')).toBe(false);
-    const detachedCreateCall = mockedCalls.execFileArgs.find((args) =>
-      args[0] === 'new-session' && args.includes('-d') && args.includes('-P'),
-    );
-    expect(detachedCreateCall).toBeDefined();
-=======
     expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-window')).toBe(false);
     expect(mockedCalls.execFileArgs.some((args) => args[0] === 'new-session' && args.includes('-d'))).toBe(false);
     expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'right', '--surface', 'cmux-leader', '--workspace', 'workspace-1']);
@@ -235,27 +168,7 @@ describe("createTeamSession context resolution", () => {
     expect(session.workerPaneIds).toEqual(['cmux-worker-1', 'cmux-worker-2']);
     expect(session.sessionMode).toBe('split-pane');
   });
->>>>>>> main
 
-<<<<<<< HEAD
-    const firstSplitCall = mockedCalls.execFileArgs.find(
-      (args) => args[0] === "split-window",
-    );
-    expect(firstSplitCall).toEqual(
-      expect.arrayContaining(["split-window", "-h", "-t", "%91"]),
-    );
-    expect(session.leaderPaneId).toBe("%91");
-    expect(session.sessionName).toBe("omc-team-race-team-detached:0");
-    expect(session.workerPaneIds).toEqual(["%501"]);
-    expect(session.sessionMode).toBe("detached-session");
-||||||| 90f19265
-    const firstSplitCall = mockedCalls.execFileArgs.find((args) => args[0] === 'split-window');
-    expect(firstSplitCall).toEqual(expect.arrayContaining(['split-window', '-h', '-t', '%91']));
-    expect(session.leaderPaneId).toBe('%91');
-    expect(session.sessionName).toBe('omc-team-race-team-detached:0');
-    expect(session.workerPaneIds).toEqual(['%501']);
-    expect(session.sessionMode).toBe('detached-session');
-=======
   it('parses documented cmux new-split OK output without using OK as a surface', async () => {
     vi.stubEnv('TMUX', '');
     vi.stubEnv('TMUX_PANE', '');
@@ -272,87 +185,56 @@ describe("createTeamSession context resolution", () => {
     expect(mockedCalls.execFileArgs).toContainEqual(['new-split', 'down', '--surface', 'cmux-worker-1', '--workspace', 'workspace-1']);
     expect(mockedCalls.execFileArgs).not.toContainEqual(expect.arrayContaining(['--surface', 'OK']));
     expect(session.workerPaneIds).toEqual(['cmux-worker-1', 'cmux-worker-2']);
->>>>>>> main
   });
 
-  it("anchors context to TMUX_PANE to avoid focus races", async () => {
-    vi.stubEnv("TMUX", "/tmp/tmux-1000/default,1,1");
-    vi.stubEnv("TMUX_PANE", "%732");
+  it('anchors context to TMUX_PANE to avoid focus races', async () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-1000/default,1,1');
+    vi.stubEnv('TMUX_PANE', '%732');
 
-    const session = await createTeamSession("race-team", 1, "/tmp");
+    const session = await createTeamSession('race-team', 1, '/tmp');
 
-    const detachedCreateCall = mockedCalls.execFileArgs.find(
-      (args) => args[0] === "new-session",
-    );
+    const detachedCreateCall = mockedCalls.execFileArgs.find((args) => args[0] === 'new-session');
     expect(detachedCreateCall).toBeUndefined();
     expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-t', 'omx', 'set-clipboard', 'on']);
     expect(mockedCalls.execFileArgs).toContainEqual(['set-option', '-at', 'omx', 'terminal-features', ',*:clipboard']);
 
-    const targetedContextCall = mockedCalls.execFileArgs.find(
-      (args) =>
-        args[0] === "display-message" &&
-        args[1] === "-p" &&
-        args[2] === "-t" &&
-        args[3] === "%732" &&
-        args[4] === "#S:#I",
+    const targetedContextCall = mockedCalls.execFileArgs.find((args) =>
+      args[0] === 'display-message'
+      && args[1] === '-p'
+      && args[2] === '-t'
+      && args[3] === '%732'
+      && args[4] === '#S:#I',
     );
     expect(targetedContextCall).toBeDefined();
 
-    const fallbackContextCall = mockedCalls.execFileArgs.find(
-      (args) =>
-        args[0] === "display-message" && args.includes("#S:#I #{pane_id}"),
+    const fallbackContextCall = mockedCalls.execFileArgs.find((args) =>
+      args[0] === 'display-message' && args.includes('#S:#I #{pane_id}'),
     );
     expect(fallbackContextCall).toBeUndefined();
 
-    const firstSplitCall = mockedCalls.execFileArgs.find(
-      (args) => args[0] === "split-window",
-    );
-    expect(firstSplitCall).toEqual(
-      expect.arrayContaining(["split-window", "-h", "-t", "%732"]),
-    );
-    expect(session.leaderPaneId).toBe("%732");
-    expect(session.sessionName).toBe("omx:4");
-    expect(session.workerPaneIds).toEqual(["%501"]);
-    expect(session.sessionMode).toBe("split-pane");
+    const firstSplitCall = mockedCalls.execFileArgs.find((args) => args[0] === 'split-window');
+    expect(firstSplitCall).toEqual(expect.arrayContaining(['split-window', '-h', '-t', '%732']));
+    expect(session.leaderPaneId).toBe('%732');
+    expect(session.sessionName).toBe('omx:4');
+    expect(session.workerPaneIds).toEqual(['%501']);
+    expect(session.sessionMode).toBe('split-pane');
   });
 
-  it("creates a dedicated tmux window when requested", async () => {
-    vi.stubEnv("TMUX", "/tmp/tmux-1000/default,1,1");
-    vi.stubEnv("TMUX_PANE", "%732");
+  it('creates a dedicated tmux window when requested', async () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-1000/default,1,1');
+    vi.stubEnv('TMUX_PANE', '%732');
 
-    const session = await createTeamSession("race-team", 1, "/tmp", {
-      newWindow: true,
-    });
+    const session = await createTeamSession('race-team', 1, '/tmp', { newWindow: true });
 
-    const newWindowCall = mockedCalls.execFileArgs.find(
-      (args) => args[0] === "new-window",
-    );
-    expect(newWindowCall).toEqual(
-      expect.arrayContaining([
-        "new-window",
-        "-d",
-        "-P",
-        "-t",
-        "omx",
-        "-n",
-        "omc-race-team",
-      ]),
-    );
+    const newWindowCall = mockedCalls.execFileArgs.find((args) => args[0] === 'new-window');
+    expect(newWindowCall).toEqual(expect.arrayContaining(['new-window', '-d', '-P', '-t', 'omx', '-n', 'omc-race-team']));
 
-    const firstSplitCall = mockedCalls.execFileArgs.find(
-      (args) => args[0] === "split-window",
-    );
-    expect(firstSplitCall).toEqual(
-      expect.arrayContaining(["split-window", "-h", "-t", "%99"]),
-    );
-    expect(
-      mockedCalls.execFileArgs.some(
-        (args) => args[0] === "select-pane" && args.includes("%99"),
-      ),
-    ).toBe(false);
-    expect(session.leaderPaneId).toBe("%99");
-    expect(session.sessionName).toBe("omx:5");
-    expect(session.workerPaneIds).toEqual(["%501"]);
-    expect(session.sessionMode).toBe("dedicated-window");
+    const firstSplitCall = mockedCalls.execFileArgs.find((args) => args[0] === 'split-window');
+    expect(firstSplitCall).toEqual(expect.arrayContaining(['split-window', '-h', '-t', '%99']));
+    expect(mockedCalls.execFileArgs.some((args) => args[0] === 'select-pane' && args.includes('%99'))).toBe(false);
+    expect(session.leaderPaneId).toBe('%99');
+    expect(session.sessionName).toBe('omx:5');
+    expect(session.workerPaneIds).toEqual(['%501']);
+    expect(session.sessionMode).toBe('dedicated-window');
   });
 });

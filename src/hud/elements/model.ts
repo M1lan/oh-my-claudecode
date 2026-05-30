@@ -4,19 +4,9 @@
  * Renders the current model name.
  */
 
-<<<<<<< HEAD
-import { cyan } from "../colors.js";
-import { truncateToWidth } from "../../utils/string-width.js";
-import type { ModelFormat } from "../types.js";
-||||||| 90f19265
-import { cyan } from '../colors.js';
-import { truncateToWidth } from '../../utils/string-width.js';
-import type { ModelFormat } from '../types.js';
-=======
 import { cyan } from '../colors.js';
 import { truncateToWidth } from '../../utils/string-width.js';
 import { DEFAULT_HUD_LABELS, type HudLabels, type ModelFormat } from '../types.js';
->>>>>>> main
 
 /**
  * Extract version from a model ID string.
@@ -38,9 +28,7 @@ function extractVersion(modelId: string): string | null {
   }
 
   // Match display name patterns like "Sonnet 4.5", "Opus 4.7"
-  const displayMatch = modelId.match(
-    /(?:opus|sonnet|haiku)\s+(\d+(?:\.\d+)?)/i,
-  );
+  const displayMatch = modelId.match(/(?:opus|sonnet|haiku)\s+(\d+(?:\.\d+)?)/i);
   if (displayMatch) return displayMatch[1];
 
   return null;
@@ -50,29 +38,26 @@ function extractVersion(modelId: string): string | null {
  * Format model name for display.
  * Converts model IDs to friendly names based on the requested format.
  */
-export function formatModelName(
-  modelId: string | null | undefined,
-  format: ModelFormat = "short",
-): string | null {
+export function formatModelName(modelId: string | null | undefined, format: ModelFormat = 'short'): string | null {
   if (!modelId) return null;
 
-  if (format === "full") {
+  if (format === 'full') {
     return truncateToWidth(modelId, 40);
   }
 
   const id = modelId.toLowerCase();
   let shortName: string | null = null;
 
-  if (id.includes("opus")) shortName = "Opus";
-  else if (id.includes("sonnet")) shortName = "Sonnet";
-  else if (id.includes("haiku")) shortName = "Haiku";
+  if (id.includes('opus')) shortName = 'Opus';
+  else if (id.includes('sonnet')) shortName = 'Sonnet';
+  else if (id.includes('haiku')) shortName = 'Haiku';
 
   if (!shortName) {
     // Return original if not recognized (CJK-aware truncation)
     return truncateToWidth(modelId, 20);
   }
 
-  if (format === "versioned") {
+  if (format === 'versioned') {
     const version = extractVersion(id);
     if (version) return `${shortName} ${version}`;
   }
@@ -85,14 +70,8 @@ export function formatModelName(
  */
 export function renderModel(
   modelId: string | null | undefined,
-<<<<<<< HEAD
-  format: ModelFormat = "short",
-||||||| 90f19265
-export function renderModel(modelId: string | null | undefined, format: ModelFormat = 'short'): string | null {
-=======
   format: ModelFormat = 'versioned',
   labels: Pick<HudLabels, 'model'> = DEFAULT_HUD_LABELS,
->>>>>>> main
 ): string | null {
   const name = formatModelName(modelId, format);
   if (!name) return null;

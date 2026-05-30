@@ -1,23 +1,11 @@
-import { describe, it, expect } from "vitest";
-import {
-  LSP_SERVERS,
-  getServerForFile,
-  getServerForLanguage,
-} from "../tools/lsp/servers.js";
+import { describe, it, expect } from 'vitest';
+import { LSP_SERVERS, getServerForFile, getServerForLanguage } from '../tools/lsp/servers.js';
 
-describe("LSP Server Configurations", () => {
+describe('LSP Server Configurations', () => {
   const serverKeys = Object.keys(LSP_SERVERS);
 
-<<<<<<< HEAD
-  it("should have 19 configured servers", () => {
-    expect(serverKeys).toHaveLength(19);
-||||||| 90f19265
-  it('should have 19 configured servers', () => {
-    expect(serverKeys).toHaveLength(19);
-=======
   it('should have 20 configured servers', () => {
     expect(serverKeys).toHaveLength(20);
->>>>>>> main
   });
 
   it.each(serverKeys)('server "%s" should have valid config', (key) => {
@@ -29,19 +17,17 @@ describe("LSP Server Configurations", () => {
     expect(config.installHint).toBeTruthy();
   });
 
-  it("kotlin should use stdio and an extended initialize timeout", () => {
-    expect(LSP_SERVERS.kotlin.args).toContain("--stdio");
+  it('kotlin should use stdio and an extended initialize timeout', () => {
+    expect(LSP_SERVERS.kotlin.args).toContain('--stdio');
     expect(LSP_SERVERS.kotlin.initializeTimeoutMs).toBeGreaterThan(15_000);
   });
 
-  it("should have no duplicate extension mappings across servers", () => {
+  it('should have no duplicate extension mappings across servers', () => {
     const seen = new Map<string, string>();
     for (const [key, config] of Object.entries(LSP_SERVERS)) {
       for (const ext of config.extensions) {
         if (seen.has(ext)) {
-          throw new Error(
-            `Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`,
-          );
+          throw new Error(`Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`);
         }
         seen.set(ext, key);
       }
@@ -49,69 +35,8 @@ describe("LSP Server Configurations", () => {
   });
 });
 
-describe("getServerForFile", () => {
+describe('getServerForFile', () => {
   const cases: [string, string][] = [
-<<<<<<< HEAD
-    ["app.ts", "TypeScript Language Server"],
-    ["app.py", "Python Language Server (ty)"],
-    ["main.rs", "Rust Analyzer"],
-    ["main.go", "gopls"],
-    ["main.c", "clangd"],
-    ["App.java", "Eclipse JDT Language Server"],
-    ["data.json", "JSON Language Server"],
-    ["index.html", "HTML Language Server"],
-    ["style.css", "CSS Language Server"],
-    ["config.yaml", "YAML Language Server"],
-    ["index.php", "PHP Language Server (Intelephense)"],
-    ["template.phtml", "PHP Language Server (Intelephense)"],
-    ["app.rb", "Ruby Language Server (Solargraph)"],
-    ["Rakefile.rake", "Ruby Language Server (Solargraph)"],
-    ["test.gemspec", "Ruby Language Server (Solargraph)"],
-    ["init.lua", "Lua Language Server"],
-    ["Main.kt", "Kotlin Language Server"],
-    ["build.gradle.kts", "Kotlin Language Server"],
-    ["app.ex", "ElixirLS"],
-    ["test.exs", "ElixirLS"],
-    ["page.heex", "ElixirLS"],
-    ["template.eex", "ElixirLS"],
-    ["Program.cs", "OmniSharp"],
-    ["main.dart", "Dart Analysis Server"],
-    ["view.erb", "Ruby Language Server (Solargraph)"],
-    ["counter.v", "Verible Verilog Language Server"],
-    ["defs.vh", "Verible Verilog Language Server"],
-    ["top.sv", "Verible Verilog Language Server"],
-    ["pkg.svh", "Verible Verilog Language Server"],
-||||||| 90f19265
-    ['app.ts', 'TypeScript Language Server'],
-    ['app.py', 'Python Language Server (ty)'],
-    ['main.rs', 'Rust Analyzer'],
-    ['main.go', 'gopls'],
-    ['main.c', 'clangd'],
-    ['App.java', 'Eclipse JDT Language Server'],
-    ['data.json', 'JSON Language Server'],
-    ['index.html', 'HTML Language Server'],
-    ['style.css', 'CSS Language Server'],
-    ['config.yaml', 'YAML Language Server'],
-    ['index.php', 'PHP Language Server (Intelephense)'],
-    ['template.phtml', 'PHP Language Server (Intelephense)'],
-    ['app.rb', 'Ruby Language Server (Solargraph)'],
-    ['Rakefile.rake', 'Ruby Language Server (Solargraph)'],
-    ['test.gemspec', 'Ruby Language Server (Solargraph)'],
-    ['init.lua', 'Lua Language Server'],
-    ['Main.kt', 'Kotlin Language Server'],
-    ['build.gradle.kts', 'Kotlin Language Server'],
-    ['app.ex', 'ElixirLS'],
-    ['test.exs', 'ElixirLS'],
-    ['page.heex', 'ElixirLS'],
-    ['template.eex', 'ElixirLS'],
-    ['Program.cs', 'OmniSharp'],
-    ['main.dart', 'Dart Analysis Server'],
-    ['view.erb', 'Ruby Language Server (Solargraph)'],
-    ['counter.v', 'Verible Verilog Language Server'],
-    ['defs.vh', 'Verible Verilog Language Server'],
-    ['top.sv', 'Verible Verilog Language Server'],
-    ['pkg.svh', 'Verible Verilog Language Server'],
-=======
     ['app.ts', 'TypeScript Language Server'],
     ['app.py', 'Python Language Server (ty)'],
     ['main.rs', 'Rust Analyzer'],
@@ -142,7 +67,6 @@ describe("getServerForFile", () => {
     ['defs.vh', 'Verible Verilog Language Server'],
     ['top.sv', 'Verible Verilog Language Server'],
     ['pkg.svh', 'Verible Verilog Language Server'],
->>>>>>> main
   ];
 
   it.each(cases)('should resolve "%s" to "%s"', (file, expectedName) => {
@@ -151,42 +75,13 @@ describe("getServerForFile", () => {
     expect(server!.name).toBe(expectedName);
   });
 
-  it("should return null for unknown extensions", () => {
-    expect(getServerForFile("file.xyz")).toBeNull();
+  it('should return null for unknown extensions', () => {
+    expect(getServerForFile('file.xyz')).toBeNull();
   });
 });
 
-describe("getServerForLanguage", () => {
+describe('getServerForLanguage', () => {
   const cases: [string, string][] = [
-<<<<<<< HEAD
-    ["typescript", "TypeScript Language Server"],
-    ["javascript", "TypeScript Language Server"],
-    ["python", "Python Language Server (ty)"],
-    ["rust", "Rust Analyzer"],
-    ["go", "gopls"],
-    ["golang", "gopls"],
-    ["c", "clangd"],
-    ["cpp", "clangd"],
-    ["java", "Eclipse JDT Language Server"],
-    ["json", "JSON Language Server"],
-    ["html", "HTML Language Server"],
-    ["css", "CSS Language Server"],
-    ["yaml", "YAML Language Server"],
-||||||| 90f19265
-    ['typescript', 'TypeScript Language Server'],
-    ['javascript', 'TypeScript Language Server'],
-    ['python', 'Python Language Server (ty)'],
-    ['rust', 'Rust Analyzer'],
-    ['go', 'gopls'],
-    ['golang', 'gopls'],
-    ['c', 'clangd'],
-    ['cpp', 'clangd'],
-    ['java', 'Eclipse JDT Language Server'],
-    ['json', 'JSON Language Server'],
-    ['html', 'HTML Language Server'],
-    ['css', 'CSS Language Server'],
-    ['yaml', 'YAML Language Server'],
-=======
     ['typescript', 'TypeScript Language Server'],
     ['javascript', 'TypeScript Language Server'],
     ['python', 'Python Language Server (ty)'],
@@ -201,65 +96,59 @@ describe("getServerForLanguage", () => {
     ['css', 'CSS Language Server'],
     ['vue', 'Vue Language Server (Volar)'],
     ['yaml', 'YAML Language Server'],
->>>>>>> main
     // New languages
-    ["php", "PHP Language Server (Intelephense)"],
-    ["phtml", "PHP Language Server (Intelephense)"],
-    ["ruby", "Ruby Language Server (Solargraph)"],
-    ["rb", "Ruby Language Server (Solargraph)"],
-    ["rake", "Ruby Language Server (Solargraph)"],
-    ["gemspec", "Ruby Language Server (Solargraph)"],
-    ["lua", "Lua Language Server"],
-    ["kotlin", "Kotlin Language Server"],
-    ["kt", "Kotlin Language Server"],
-    ["kts", "Kotlin Language Server"],
-    ["elixir", "ElixirLS"],
-    ["ex", "ElixirLS"],
-    ["exs", "ElixirLS"],
-    ["heex", "ElixirLS"],
-    ["eex", "ElixirLS"],
-    ["csharp", "OmniSharp"],
-    ["erb", "Ruby Language Server (Solargraph)"],
-    ["c#", "OmniSharp"],
-    ["cs", "OmniSharp"],
-    ["dart", "Dart Analysis Server"],
-    ["flutter", "Dart Analysis Server"],
-    ["verilog", "Verible Verilog Language Server"],
-    ["systemverilog", "Verible Verilog Language Server"],
-    ["sv", "Verible Verilog Language Server"],
-    ["v", "Verible Verilog Language Server"],
+    ['php', 'PHP Language Server (Intelephense)'],
+    ['phtml', 'PHP Language Server (Intelephense)'],
+    ['ruby', 'Ruby Language Server (Solargraph)'],
+    ['rb', 'Ruby Language Server (Solargraph)'],
+    ['rake', 'Ruby Language Server (Solargraph)'],
+    ['gemspec', 'Ruby Language Server (Solargraph)'],
+    ['lua', 'Lua Language Server'],
+    ['kotlin', 'Kotlin Language Server'],
+    ['kt', 'Kotlin Language Server'],
+    ['kts', 'Kotlin Language Server'],
+    ['elixir', 'ElixirLS'],
+    ['ex', 'ElixirLS'],
+    ['exs', 'ElixirLS'],
+    ['heex', 'ElixirLS'],
+    ['eex', 'ElixirLS'],
+    ['csharp', 'OmniSharp'],
+    ['erb', 'Ruby Language Server (Solargraph)'],
+    ['c#', 'OmniSharp'],
+    ['cs', 'OmniSharp'],
+    ['dart', 'Dart Analysis Server'],
+    ['flutter', 'Dart Analysis Server'],
+    ['verilog', 'Verible Verilog Language Server'],
+    ['systemverilog', 'Verible Verilog Language Server'],
+    ['sv', 'Verible Verilog Language Server'],
+    ['v', 'Verible Verilog Language Server'],
   ];
 
-  it.each(cases)(
-    'should resolve language "%s" to "%s"',
-    (lang, expectedName) => {
-      const server = getServerForLanguage(lang);
-      expect(server).not.toBeNull();
-      expect(server!.name).toBe(expectedName);
-    },
-  );
-
-  it("should be case-insensitive", () => {
-    expect(getServerForLanguage("PHP")?.name).toBe(
-      "PHP Language Server (Intelephense)",
-    );
-    expect(getServerForLanguage("Kotlin")?.name).toBe("Kotlin Language Server");
+  it.each(cases)('should resolve language "%s" to "%s"', (lang, expectedName) => {
+    const server = getServerForLanguage(lang);
+    expect(server).not.toBeNull();
+    expect(server!.name).toBe(expectedName);
   });
 
-  it("should return null for unknown languages", () => {
-    expect(getServerForLanguage("brainfuck")).toBeNull();
+  it('should be case-insensitive', () => {
+    expect(getServerForLanguage('PHP')?.name).toBe('PHP Language Server (Intelephense)');
+    expect(getServerForLanguage('Kotlin')?.name).toBe('Kotlin Language Server');
+  });
+
+  it('should return null for unknown languages', () => {
+    expect(getServerForLanguage('brainfuck')).toBeNull();
   });
 });
 
-describe("OmniSharp command casing", () => {
-  it("should use lowercase command for cross-platform compatibility", () => {
-    expect(LSP_SERVERS.csharp.command).toBe("omnisharp");
+describe('OmniSharp command casing', () => {
+  it('should use lowercase command for cross-platform compatibility', () => {
+    expect(LSP_SERVERS.csharp.command).toBe('omnisharp');
   });
 });
 
-describe("Python server selection", () => {
-  it("should invoke ty via its LSP subcommand", () => {
-    expect(LSP_SERVERS.python.command).toBe("ty");
-    expect(LSP_SERVERS.python.args).toEqual(["server"]);
+describe('Python server selection', () => {
+  it('should invoke ty via its LSP subcommand', () => {
+    expect(LSP_SERVERS.python.command).toBe('ty');
+    expect(LSP_SERVERS.python.args).toEqual(['server']);
   });
 });

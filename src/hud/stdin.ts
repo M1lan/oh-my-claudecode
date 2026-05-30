@@ -5,21 +5,15 @@
  * Based on claude-hud reference implementation.
  */
 
-import {
-  existsSync,
-  readFileSync,
-  statSync,
-  writeFileSync,
-  mkdirSync,
-} from "fs";
-import { dirname, join } from "path";
+import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'fs';
+import { dirname, join } from 'path';
 import {
   getSessionStateDir,
   getWorktreeRoot,
   listSessionIds,
   resolveOmcPath,
-} from "../lib/worktree-paths.js";
-import type { RateLimits, StatuslineStdin } from "./types.js";
+} from '../lib/worktree-paths.js';
+import type { RateLimits, StatuslineStdin } from './types.js';
 
 const TRANSIENT_CONTEXT_PERCENT_TOLERANCE = 3;
 
@@ -32,10 +26,7 @@ const TRANSIENT_CONTEXT_PERCENT_TOLERANCE = 3;
  * Claude Code populates `CLAUDE_SESSION_ID` first; `CLAUDECODE_SESSION_ID`
  * is a legacy / compatibility alias for the same value.
  */
-const SESSION_ID_ENV_VARS = [
-  "CLAUDE_SESSION_ID",
-  "CLAUDECODE_SESSION_ID",
-] as const;
+const SESSION_ID_ENV_VARS = ['CLAUDE_SESSION_ID', 'CLAUDECODE_SESSION_ID'] as const;
 
 /**
  * Normalize an env value to a session-id candidate.
@@ -70,14 +61,14 @@ function getStdinCachePath(): string {
     const candidate = normalizeCandidate(process.env[envVar]);
     if (!candidate) continue;
     try {
-      return join(getSessionStateDir(candidate, root), "hud-stdin-cache.json");
+      return join(getSessionStateDir(candidate, root), 'hud-stdin-cache.json');
     } catch {
       // Invalid session id — try the next candidate.
     }
   }
   // Legacy flat path must also resolve through the shared OMC-root helper so
   // `OMC_STATE_DIR`-backed deployments land on the same directory as writers.
-  return resolveOmcPath("state/hud-stdin-cache.json", root);
+  return resolveOmcPath('state/hud-stdin-cache.json', root);
 }
 
 /**
@@ -116,7 +107,7 @@ export function readStdinCache(): StatuslineStdin | null {
   const tryRead = (p: string): StatuslineStdin | null => {
     try {
       if (!existsSync(p)) return null;
-      return JSON.parse(readFileSync(p, "utf-8")) as StatuslineStdin;
+      return JSON.parse(readFileSync(p, 'utf-8')) as StatuslineStdin;
     } catch {
       return null;
     }
@@ -127,7 +118,7 @@ export function readStdinCache(): StatuslineStdin | null {
 
   // If the scoped path already *is* the legacy flat path (no session id
   // was available), there's no further lookup to try.
-  const legacyPath = resolveOmcPath("state/hud-stdin-cache.json", root);
+  const legacyPath = resolveOmcPath('state/hud-stdin-cache.json', root);
   if (scopedPath !== legacyPath) {
     return null;
   }
@@ -159,7 +150,7 @@ function readMostRecentSessionCache(root: string): StatuslineStdin | null {
   for (const sid of sessionIds) {
     let candidate: string;
     try {
-      candidate = join(getSessionStateDir(sid, root), "hud-stdin-cache.json");
+      candidate = join(getSessionStateDir(sid, root), 'hud-stdin-cache.json');
     } catch {
       continue;
     }
@@ -176,7 +167,7 @@ function readMostRecentSessionCache(root: string): StatuslineStdin | null {
   }
   if (!bestPath) return null;
   try {
-    return JSON.parse(readFileSync(bestPath, "utf-8")) as StatuslineStdin;
+    return JSON.parse(readFileSync(bestPath, 'utf-8')) as StatuslineStdin;
   } catch {
     return null;
   }
@@ -199,13 +190,13 @@ export async function readStdin(): Promise<StatuslineStdin | null> {
   const chunks: string[] = [];
 
   try {
-    process.stdin.setEncoding("utf8");
+    process.stdin.setEncoding('utf8');
 
     for await (const chunk of process.stdin) {
       chunks.push(chunk as string);
     }
 
-    const raw = chunks.join("");
+    const raw = chunks.join('');
     if (!raw.trim()) {
       return null;
     }
@@ -232,20 +223,16 @@ function parseResetDate(value: number | string | undefined): Date | null {
     return null;
   }
 
-  const numericValue =
-    typeof value === "number"
-      ? value
-      : typeof value === "string" && value.trim() !== ""
-        ? Number(value)
-        : Number.NaN;
+  const numericValue = typeof value === 'number'
+    ? value
+    : (typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN);
   if (Number.isFinite(numericValue)) {
-    const millis =
-      Math.abs(numericValue) < 1e12 ? numericValue * 1000 : numericValue;
+    const millis = Math.abs(numericValue) < 1e12 ? numericValue * 1000 : numericValue;
     const date = new Date(millis);
     return Number.isNaN(date.getTime()) ? null : date;
   }
 
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? null : date;
   }
@@ -269,25 +256,17 @@ function getTotalInputTokens(stdin: StatuslineStdin): number {
   return stdin.context_window?.total_input_tokens ?? 0;
 }
 
-function getRoundedNativeContextPercent(
-  stdin: StatuslineStdin | null | undefined,
-): number | null {
+function getRoundedNativeContextPercent(stdin: StatuslineStdin | null | undefined): number | null {
   const nativePercent = stdin?.context_window?.used_percentage;
-  if (typeof nativePercent !== "number" || Number.isNaN(nativePercent)) {
+  if (typeof nativePercent !== 'number' || Number.isNaN(nativePercent)) {
     return null;
   }
   return Math.min(100, Math.max(0, Math.round(nativePercent)));
 }
 
-function getPositiveNativeContextPercent(
-  stdin: StatuslineStdin | null | undefined,
-): number | null {
+function getPositiveNativeContextPercent(stdin: StatuslineStdin | null | undefined): number | null {
   const nativePercent = stdin?.context_window?.used_percentage;
-  if (
-    typeof nativePercent !== "number" ||
-    Number.isNaN(nativePercent) ||
-    nativePercent <= 0
-  ) {
+  if (typeof nativePercent !== 'number' || Number.isNaN(nativePercent) || nativePercent <= 0) {
     return null;
   }
   return Math.min(100, Math.max(0, Math.round(nativePercent)));
@@ -303,9 +282,7 @@ function getManualContextPercent(stdin: StatuslineStdin): number | null {
   return Math.min(100, Math.round((totalTokens / size) * 100));
 }
 
-function getPositiveManualContextPercent(
-  stdin: StatuslineStdin,
-): number | null {
+function getPositiveManualContextPercent(stdin: StatuslineStdin): number | null {
   const manualPercent = getManualContextPercent(stdin);
   return manualPercent !== null && manualPercent > 0 ? manualPercent : null;
 }
@@ -324,16 +301,10 @@ function getTotalInputContextPercent(stdin: StatuslineStdin): number | null {
   return Math.min(100, Math.round((totalInputTokens / size) * 100));
 }
 
-function isSameContextStream(
-  current: StatuslineStdin,
-  previous: StatuslineStdin,
-): boolean {
-  return (
-    current.cwd === previous.cwd &&
-    current.transcript_path === previous.transcript_path &&
-    current.context_window?.context_window_size ===
-      previous.context_window?.context_window_size
-  );
+function isSameContextStream(current: StatuslineStdin, previous: StatuslineStdin): boolean {
+  return current.cwd === previous.cwd
+    && current.transcript_path === previous.transcript_path
+    && current.context_window?.context_window_size === previous.context_window?.context_window_size;
 }
 
 /**
@@ -358,16 +329,13 @@ export function stabilizeContextPercent(
     return stdin;
   }
 
-  const fallbackPercent =
-    getPositiveManualContextPercent(stdin) ??
-    getTotalInputContextPercent(stdin);
+  const fallbackPercent = getPositiveManualContextPercent(stdin) ?? getTotalInputContextPercent(stdin);
   if (fallbackPercent === null && getRoundedNativeContextPercent(stdin) === 0) {
     return stdin;
   }
   if (
-    fallbackPercent !== null &&
-    Math.abs(fallbackPercent - previousNativePercent) >
-      TRANSIENT_CONTEXT_PERCENT_TOLERANCE
+    fallbackPercent !== null
+    && Math.abs(fallbackPercent - previousNativePercent) > TRANSIENT_CONTEXT_PERCENT_TOLERANCE
   ) {
     return stdin;
   }
@@ -376,8 +344,7 @@ export function stabilizeContextPercent(
     ...stdin,
     context_window: {
       ...stdin.context_window,
-      used_percentage:
-        previousStdin.context_window?.used_percentage ?? previousNativePercent,
+      used_percentage: previousStdin.context_window?.used_percentage ?? previousNativePercent,
     },
   };
 }
@@ -390,19 +357,17 @@ export function stabilizeContextPercent(
  */
 export function getContextPercent(stdin: StatuslineStdin): number {
   return (
-    getPositiveNativeContextPercent(stdin) ??
-    getPositiveManualContextPercent(stdin) ??
-    getTotalInputContextPercent(stdin) ??
-    0
+    getPositiveNativeContextPercent(stdin)
+    ?? getPositiveManualContextPercent(stdin)
+    ?? getTotalInputContextPercent(stdin)
+    ?? 0
   );
 }
 
 /**
  * Convert Claude Code stdin rate_limits into the existing HUD RateLimits shape.
  */
-export function getRateLimitsFromStdin(
-  stdin: StatuslineStdin,
-): RateLimits | null {
+export function getRateLimitsFromStdin(stdin: StatuslineStdin): RateLimits | null {
   const fiveHour = stdin.rate_limits?.five_hour?.used_percentage;
   const sevenDay = stdin.rate_limits?.seven_day?.used_percentage;
 
@@ -424,13 +389,6 @@ export function getRateLimitsFromStdin(
  * Returns null when Claude Code does not provide model metadata so the HUD
  * omits the model instead of guessing or showing a fake placeholder.
  */
-<<<<<<< HEAD
-export function getModelName(stdin: StatuslineStdin): string {
-  return stdin.model?.display_name ?? stdin.model?.id ?? "Unknown";
-||||||| 90f19265
-export function getModelName(stdin: StatuslineStdin): string {
-  return stdin.model?.display_name ?? stdin.model?.id ?? 'Unknown';
-=======
 export function getModelId(stdin: StatuslineStdin): string | null {
   const modelId = stdin.model?.id?.trim();
   return modelId || null;
@@ -439,5 +397,4 @@ export function getModelId(stdin: StatuslineStdin): string | null {
 export function getModelName(stdin: StatuslineStdin): string | null {
   const displayName = stdin.model?.display_name?.trim();
   return displayName || getModelId(stdin);
->>>>>>> main
 }

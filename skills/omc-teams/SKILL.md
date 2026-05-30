@@ -35,25 +35,11 @@ Spawn N CLI worker processes in tmux panes to execute tasks in parallel. Support
 
 ## Requirements
 
-<<<<<<< HEAD
 - **tmux binary** must be installed and discoverable (`command -v tmux`)
 - **Classic tmux session optional** for in-place pane splitting (`$TMUX` set). Inside cmux or a plain terminal, `omc team` falls back to a detached tmux session instead of splitting the current surface.
 - **claude** CLI: `pnpm add -g @anthropic-ai/claude-code`
 - **codex** CLI: `pnpm add -g @openai/codex`
 - **gemini** CLI: `pnpm add -g @google/gemini-cli`
-||||||| 90f19265
-- **tmux binary** must be installed and discoverable (`command -v tmux`)
-- **Classic tmux session optional** for in-place pane splitting (`$TMUX` set). Inside cmux or a plain terminal, `omc team` falls back to a detached tmux session instead of splitting the current surface.
-- **claude** CLI: `npm install -g @anthropic-ai/claude-code`
-- **codex** CLI: `npm install -g @openai/codex`
-- **gemini** CLI: `npm install -g @google/gemini-cli`
-=======
-- **tmux binary** must be installed and discoverable (`command -v tmux`) when running from a plain terminal; classic tmux sessions reuse the current tmux surface.
-- **cmux surface optional** for in-place native splits (`CMUX_SURFACE_ID` set without `$TMUX`). Plain terminals still use the detached tmux fallback.
-- **claude** CLI: `npm install -g @anthropic-ai/claude-code`
-- **codex** CLI: `npm install -g @openai/codex`
-- **gemini** CLI: `npm install -g @google/gemini-cli`
->>>>>>> main
 
 ## Workflow
 

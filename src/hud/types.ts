@@ -4,26 +4,12 @@
  * Type definitions for the HUD state, configuration, and rendering.
  */
 
-<<<<<<< HEAD
-import type { AutopilotStateForHud } from "./elements/autopilot.js";
-import type { ApiKeySource } from "./elements/api-key-source.js";
-import type { SessionSummaryState } from "./elements/session-summary.js";
-import type { MissionBoardConfig, MissionBoardState } from "./mission-board.js";
-import { DEFAULT_MISSION_BOARD_CONFIG } from "./mission-board.js";
-||||||| 90f19265
-import type { AutopilotStateForHud } from './elements/autopilot.js';
-import type { ApiKeySource } from './elements/api-key-source.js';
-import type { SessionSummaryState } from './elements/session-summary.js';
-import type { MissionBoardConfig, MissionBoardState } from './mission-board.js';
-import { DEFAULT_MISSION_BOARD_CONFIG } from './mission-board.js';
-=======
 import type { AutopilotStateForHud } from './elements/autopilot.js';
 import type { ApiKeySource } from './elements/api-key-source.js';
 import type { SessionSummaryState } from './elements/session-summary.js';
 import type { PayloadEstimate } from './payload-estimate.js';
 import type { MissionBoardConfig, MissionBoardState } from './mission-board.js';
 import { DEFAULT_MISSION_BOARD_CONFIG } from './mission-board.js';
->>>>>>> main
 
 // Re-export for convenience
 export type { AutopilotStateForHud, ApiKeySource, SessionSummaryState };
@@ -38,7 +24,7 @@ export interface BackgroundTask {
   agentType?: string;
   startedAt: string;
   completedAt?: string;
-  status: "running" | "completed" | "failed";
+  status: 'running' | 'completed' | 'failed';
   startTime?: string; // Alias for compatibility
   exitCode?: number; // For tracking abnormal termination
 }
@@ -102,7 +88,7 @@ export interface StatuslineStdin {
 
 export interface TodoItem {
   content: string;
-  status: "pending" | "in_progress" | "completed";
+  status: 'pending' | 'in_progress' | 'completed';
   activeForm?: string;
 }
 
@@ -111,7 +97,7 @@ export interface ActiveAgent {
   type: string;
   model?: string;
   description?: string;
-  status: "running" | "completed";
+  status: 'running' | 'completed';
   startTime: Date;
   endTime?: Date;
 }
@@ -123,8 +109,8 @@ export interface SkillInvocation {
 }
 
 export interface PendingPermission {
-  toolName: string; // "Edit", "Bash", etc. (proxy_ prefix stripped)
-  targetSummary: string; // "src/main.ts" or "pnpm install"
+  toolName: string;       // "Edit", "Bash", etc. (proxy_ prefix stripped)
+  targetSummary: string;  // "src/main.ts" or "npm install"
   timestamp: Date;
 }
 
@@ -136,7 +122,7 @@ export interface ThinkingState {
 export interface SessionHealth {
   durationMinutes: number;
   messageCount: number;
-  health: "healthy" | "warning" | "critical";
+  health: 'healthy' | 'warning' | 'critical';
 }
 
 export interface LastRequestTokenUsage {
@@ -183,6 +169,7 @@ export interface PrdStateForHud {
   completed: number;
   total: number;
 }
+
 
 // ============================================================================
 // Render Context
@@ -240,13 +227,7 @@ export interface RateLimits {
  * - 'auth': Authentication failure (token expired, refresh failed)
  * - 'no_credentials': No OAuth credentials available (expected for API key users)
  */
-export type UsageErrorReason =
-  | "network"
-  | "timeout"
-  | "http"
-  | "auth"
-  | "no_credentials"
-  | "rate_limited";
+export type UsageErrorReason = 'network' | 'timeout' | 'http' | 'auth' | 'no_credentials' | 'rate_limited';
 
 /**
  * Result of fetching usage data from the API.
@@ -270,7 +251,7 @@ export interface UsageResult {
  * Set omcHud.rateLimitsProvider.type = 'custom' to enable.
  */
 export interface RateLimitsProviderConfig {
-  type: "custom";
+  type: 'custom';
   /** Shell command string or argv array to execute */
   command: string | string[];
   /** Execution timeout in milliseconds (default: 800) */
@@ -283,27 +264,24 @@ export interface RateLimitsProviderConfig {
 
 /** Usage expressed as a 0-100 percent value */
 export interface BucketUsagePercent {
-  type: "percent";
+  type: 'percent';
   value: number;
 }
 
 /** Usage expressed as consumed credits vs. limit */
 export interface BucketUsageCredit {
-  type: "credit";
+  type: 'credit';
   used: number;
   limit: number;
 }
 
 /** Usage expressed as a pre-formatted string (resetsAt always hidden) */
 export interface BucketUsageString {
-  type: "string";
+  type: 'string';
   value: string;
 }
 
-export type CustomBucketUsage =
-  | BucketUsagePercent
-  | BucketUsageCredit
-  | BucketUsageString;
+export type CustomBucketUsage = BucketUsagePercent | BucketUsageCredit | BucketUsageString;
 
 /** A single rate limit bucket returned by the custom provider command */
 export interface CustomBucket {
@@ -444,7 +422,7 @@ export interface HudRenderContext {
 // Configuration
 // ============================================================================
 
-export type HudPreset = "minimal" | "focused" | "full" | "opencode" | "dense";
+export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense';
 
 /**
  * Agent display format options:
@@ -456,14 +434,7 @@ export type HudPreset = "minimal" | "focused" | "full" | "opencode" | "dense";
  * - tasks: [analyzing code, searching...] (just descriptions - most readable)
  * - multiline: Multi-line display with full agent details on separate lines
  */
-export type AgentsFormat =
-  | "count"
-  | "codes"
-  | "codes-duration"
-  | "detailed"
-  | "descriptions"
-  | "tasks"
-  | "multiline";
+export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks' | 'multiline';
 
 /**
  * Thinking indicator format options:
@@ -472,7 +443,7 @@ export type AgentsFormat =
  * - face: 🤔 (thinking face emoji)
  * - text: "thinking" (full text)
  */
-export type ThinkingFormat = "bubble" | "brain" | "face" | "text";
+export type ThinkingFormat = 'bubble' | 'brain' | 'face' | 'text';
 
 /**
  * CWD path format options:
@@ -480,7 +451,7 @@ export type ThinkingFormat = "bubble" | "brain" | "face" | "text";
  * - absolute: /Users/dat/workspace/dotfiles (full path)
  * - folder: dotfiles (folder name only)
  */
-export type CwdFormat = "relative" | "absolute" | "folder";
+export type CwdFormat = 'relative' | 'absolute' | 'folder';
 
 /**
  * Model name format options:
@@ -488,11 +459,11 @@ export type CwdFormat = "relative" | "absolute" | "folder";
  * - versioned: 'Opus 4.7', 'Sonnet 4.5', 'Haiku 4.5'
  * - full: raw model ID like 'claude-opus-4-7-20260416'
  */
-export type ModelFormat = "short" | "versioned" | "full";
+export type ModelFormat = 'short' | 'versioned' | 'full';
 
-export type CallCountsFormat = "auto" | "emoji" | "ascii";
+export type CallCountsFormat = 'auto' | 'emoji' | 'ascii';
 
-export type HudLocale = "en" | "zh-CN";
+export type HudLocale = 'en' | 'zh-CN';
 
 export interface HudLabels {
   context: string;
@@ -512,35 +483,6 @@ export interface HudLabels {
 }
 
 export const DEFAULT_HUD_LABELS: HudLabels = {
-<<<<<<< HEAD
-  context: "ctx",
-  tokens: "tok",
-  tool: "T",
-  agent: "A",
-  skill: "S",
-  ralph: "ralph",
-  background: "bg",
-  thinking: "thinking",
-  staged: "+",
-  modified: "!",
-  untracked: "?",
-  ahead: "⇡",
-  behind: "⇣",
-||||||| 90f19265
-  context: 'ctx',
-  tokens: 'tok',
-  tool: 'T',
-  agent: 'A',
-  skill: 'S',
-  ralph: 'ralph',
-  background: 'bg',
-  thinking: 'thinking',
-  staged: '+',
-  modified: '!',
-  untracked: '?',
-  ahead: '⇡',
-  behind: '⇣',
-=======
   context: 'ctx',
   tokens: 'tok',
   tool: 'T',
@@ -555,42 +497,10 @@ export const DEFAULT_HUD_LABELS: HudLabels = {
   untracked: '?',
   ahead: '⇡',
   behind: '⇣',
->>>>>>> main
 };
 
 export const HUD_LOCALE_LABELS: Record<HudLocale, HudLabels> = {
   en: DEFAULT_HUD_LABELS,
-<<<<<<< HEAD
-  "zh-CN": {
-    context: "上下文",
-    tokens: "令牌",
-    tool: "工具",
-    agent: "智能体",
-    skill: "技能",
-    ralph: "循环",
-    background: "后台",
-    thinking: "思考",
-    staged: "已暂存",
-    modified: "已修改",
-    untracked: "未跟踪",
-    ahead: "领先",
-    behind: "落后",
-||||||| 90f19265
-  'zh-CN': {
-    context: '上下文',
-    tokens: '令牌',
-    tool: '工具',
-    agent: '智能体',
-    skill: '技能',
-    ralph: '循环',
-    background: '后台',
-    thinking: '思考',
-    staged: '已暂存',
-    modified: '已修改',
-    untracked: '未跟踪',
-    ahead: '领先',
-    behind: '落后',
-=======
   'zh-CN': {
     context: '上下文',
     tokens: '令牌',
@@ -606,7 +516,6 @@ export const HUD_LOCALE_LABELS: Record<HudLocale, HudLabels> = {
     untracked: '未跟踪',
     ahead: '领先',
     behind: '落后',
->>>>>>> main
   },
 };
 
@@ -615,18 +524,18 @@ export const HUD_LABEL_KEYS = Object.freeze(
 );
 
 export function isHudLocale(value: unknown): value is HudLocale {
-  return value === "en" || value === "zh-CN";
+  return value === 'en' || value === 'zh-CN';
 }
 
 export function sanitizeHudLabels(
   labels: Partial<Record<keyof HudLabels, unknown>> | undefined,
 ): Partial<HudLabels> {
-  if (!labels || typeof labels !== "object") return {};
+  if (!labels || typeof labels !== 'object') return {};
 
   const sanitized: Partial<HudLabels> = {};
   for (const key of HUD_LABEL_KEYS) {
     const value = labels[key];
-    if (typeof value === "string" && value.length > 0) {
+    if (typeof value === 'string' && value.length > 0) {
       sanitized[key] = value;
     }
   }
@@ -645,24 +554,18 @@ export function resolveHudLabels(
 }
 
 export interface HudElementConfig {
-  cwd: boolean; // Show working directory
-  cwdFormat: CwdFormat; // Path display format
-  useHyperlinks?: boolean; // Wrap cwd/paths in OSC 8 terminal hyperlinks (clickable in supported terminals)
-  gitRepo: boolean; // Show git repository name
-  gitBranch: boolean; // Show git branch
-  gitStatus: boolean; // Show git working tree status (+staged !modified ?untracked ⇡ahead ⇣behind)
-  gitInfoPosition: "above" | "below"; // Position of git info relative to main HUD line
-  model: boolean; // Show current model name
-  modelFormat: ModelFormat; // Model name verbosity level
+  cwd: boolean;              // Show working directory
+  cwdFormat: CwdFormat;      // Path display format
+  useHyperlinks?: boolean;   // Wrap cwd/paths in OSC 8 terminal hyperlinks (clickable in supported terminals)
+  gitRepo: boolean;          // Show git repository name
+  gitBranch: boolean;        // Show git branch
+  gitStatus: boolean;        // Show git working tree status (+staged !modified ?untracked ⇡ahead ⇣behind)
+  gitInfoPosition: 'above' | 'below';  // Position of git info relative to main HUD line
+  model: boolean;            // Show current model name
+  modelFormat: ModelFormat;   // Model name verbosity level
   omcLabel: boolean;
-<<<<<<< HEAD
-  rateLimits: boolean; // Show 5h and weekly rate limits
-||||||| 90f19265
-  rateLimits: boolean;  // Show 5h and weekly rate limits
-=======
   updateNotification?: boolean; // Show available-update prompt text in the OMC label
   rateLimits: boolean;  // Show 5h and weekly rate limits
->>>>>>> main
   ralph: boolean;
   autopilot: boolean;
   prdStory: boolean;
@@ -671,31 +574,31 @@ export interface HudElementConfig {
   contextBar: boolean;
   agents: boolean;
   agentsFormat: AgentsFormat;
-  agentsMaxLines: number; // Max agent detail lines for multiline format (default: 5)
+  agentsMaxLines: number;  // Max agent detail lines for multiline format (default: 5)
   backgroundTasks: boolean;
   todos: boolean;
-  permissionStatus: boolean; // Show pending permission indicator
-  thinking: boolean; // Show extended thinking indicator
-  thinkingFormat: ThinkingFormat; // Thinking indicator format
-  apiKeySource: boolean; // Show API key source (project/global/env)
-  hostname: boolean; // Show machine hostname (useful for multi-host SSH workflows)
-  profile: boolean; // Show active profile name (from CLAUDE_CONFIG_DIR)
-  missionBoard?: boolean; // Show opt-in mission board above existing HUD detail lines
-  promptTime: boolean; // Show last prompt submission time (HH:MM:SS)
-  sessionHealth: boolean; // Show session health/duration
-  showSessionDuration?: boolean; // Show session:19m duration display (default: true if sessionHealth is true)
-  showHealthIndicator?: boolean; // Show 🟢/🟡/🔴 health indicator (default: true if sessionHealth is true)
-  showTokens?: boolean; // Show last-request token usage when enabled (tok:i1.2k/o340)
-  enterpriseMode?: boolean; // Explicit override for enterprise mode (undefined = auto-detect)
-  showEnterpriseCost?: boolean; // Whether to render enterprise billing cost (default: true when enterprise)
-  useBars: boolean; // Show visual progress bars instead of/alongside percentages
-  showCallCounts?: boolean; // Show tool/agent/skill call counts on the right of the status line (default: true)
+  permissionStatus: boolean;  // Show pending permission indicator
+  thinking: boolean;          // Show extended thinking indicator
+  thinkingFormat: ThinkingFormat;  // Thinking indicator format
+  apiKeySource: boolean;       // Show API key source (project/global/env)
+  hostname: boolean;           // Show machine hostname (useful for multi-host SSH workflows)
+  profile: boolean;            // Show active profile name (from CLAUDE_CONFIG_DIR)
+  missionBoard?: boolean;      // Show opt-in mission board above existing HUD detail lines
+  promptTime: boolean;        // Show last prompt submission time (HH:MM:SS)
+  sessionHealth: boolean;     // Show session health/duration
+  showSessionDuration?: boolean;  // Show session:19m duration display (default: true if sessionHealth is true)
+  showHealthIndicator?: boolean;  // Show 🟢/🟡/🔴 health indicator (default: true if sessionHealth is true)
+  showTokens?: boolean;           // Show last-request token usage when enabled (tok:i1.2k/o340)
+  enterpriseMode?: boolean;       // Explicit override for enterprise mode (undefined = auto-detect)
+  showEnterpriseCost?: boolean;   // Whether to render enterprise billing cost (default: true when enterprise)
+  useBars: boolean;           // Show visual progress bars instead of/alongside percentages
+  showCallCounts?: boolean;   // Show tool/agent/skill call counts on the right of the status line (default: true)
   callCountsFormat?: CallCountsFormat; // Controls call count icon rendering: auto (platform default), emoji, or ascii
-  showLastTool?: boolean; // Show name of last tool called (tool:Read)
-  sessionSummary: boolean; // Show AI-generated session summary (<20 chars) - generated every 10 turns via claude -p
-  maxOutputLines: number; // Max total output lines to prevent input field shrinkage
-  safeMode: boolean; // Strip ANSI codes and use ASCII-only output to prevent terminal rendering corruption (Issue #346).
-  // Default true. Set to false to explicitly disable even on Windows (e.g. Windows Terminal with ANSI support).
+  showLastTool?: boolean;      // Show name of last tool called (tool:Read)
+  sessionSummary: boolean;    // Show AI-generated session summary (<20 chars) - generated every 10 turns via claude -p
+  maxOutputLines: number;     // Max total output lines to prevent input field shrinkage
+  safeMode: boolean;          // Strip ANSI codes and use ASCII-only output to prevent terminal rendering corruption (Issue #346).
+                              // Default true. Set to false to explicitly disable even on Windows (e.g. Windows Terminal with ANSI support).
 }
 
 export interface HudThresholds {
@@ -741,61 +644,14 @@ export interface LayoutConfig {
  * Used as fallback when no layout is configured.
  */
 export const DEFAULT_ELEMENT_ORDER: Required<LayoutConfig> = {
-<<<<<<< HEAD
-  line1: [
-    "hostname",
-    "cwd",
-    "gitRepo",
-    "gitBranch",
-    "gitStatus",
-    "model",
-    "apiKeySource",
-    "profile",
-||||||| 90f19265
-  line1: ['hostname', 'cwd', 'gitRepo', 'gitBranch', 'gitStatus', 'model', 'apiKeySource', 'profile'],
-  main: [
-    'omcLabel', 'enterpriseCost', 'rateLimits', 'customBuckets', 'permission', 'thinking',
-    'promptTime', 'session', 'tokens', 'ralph', 'autopilot', 'prd',
-    'skills', 'lastSkill', 'contextBar', 'agents', 'background',
-    'callCounts', 'lastTool', 'sessionSummary',
-=======
   line1: ['hostname', 'cwd', 'gitRepo', 'gitBranch', 'gitStatus', 'apiKeySource', 'profile'],
   main: [
     'omcLabel', 'model', 'enterpriseCost', 'rateLimits', 'customBuckets', 'permission', 'thinking',
     'promptTime', 'session', 'tokens', 'ralph', 'autopilot', 'prd',
     'skills', 'lastSkill', 'contextBar', 'agents', 'background',
     'callCounts', 'lastTool', 'sessionSummary',
->>>>>>> main
   ],
-<<<<<<< HEAD
-  main: [
-    "omcLabel",
-    "enterpriseCost",
-    "rateLimits",
-    "customBuckets",
-    "permission",
-    "thinking",
-    "promptTime",
-    "session",
-    "tokens",
-    "ralph",
-    "autopilot",
-    "prd",
-    "skills",
-    "lastSkill",
-    "contextBar",
-    "agents",
-    "background",
-    "callCounts",
-    "lastTool",
-    "sessionSummary",
-  ],
-  detail: ["missionBoard", "agents", "contextWarning", "todos"],
-||||||| 90f19265
-  detail: ['missionBoard', 'agents', 'contextWarning', 'todos'],
-=======
   detail: ['missionBoard', 'agents', 'contextWarning', 'payloadWarning', 'todos'],
->>>>>>> main
 };
 
 export interface HudConfig {
@@ -819,7 +675,7 @@ export interface HudConfig {
   /** Optional maximum width (columns) for statusline output. */
   maxWidth?: number;
   /** Controls maxWidth behavior: truncate with ellipsis (default) or wrap at " | " HUD element boundaries. */
-  wrapMode?: "truncate" | "wrap";
+  wrapMode?: 'truncate' | 'wrap';
   /** Optional element ordering. Overrides default order when set. Presets still control on/off. */
   layout?: LayoutConfig;
 }
@@ -827,74 +683,52 @@ export interface HudConfig {
 export const DEFAULT_HUD_USAGE_POLL_INTERVAL_MS = 90 * 1000;
 
 export const DEFAULT_HUD_CONFIG: HudConfig = {
-  preset: "focused",
-  locale: "en",
+  preset: 'focused',
+  locale: 'en',
   labels: DEFAULT_HUD_LABELS,
   elements: {
-    cwd: false, // Disabled by default for backward compatibility
-    cwdFormat: "relative",
+    cwd: false,               // Disabled by default for backward compatibility
+    cwdFormat: 'relative',
     useHyperlinks: false,
-<<<<<<< HEAD
-    gitRepo: false, // Disabled by default for backward compatibility
-    gitBranch: false, // Disabled by default for backward compatibility
-    gitStatus: false, // Disabled by default for backward compatibility
-    gitInfoPosition: "above", // Git info above main HUD line (backward compatible)
-    model: false, // Disabled by default for backward compatibility
-    modelFormat: "short", // Short names by default for backward compatibility
-||||||| 90f19265
-    gitRepo: false,           // Disabled by default for backward compatibility
-    gitBranch: false,         // Disabled by default for backward compatibility
-    gitStatus: false,         // Disabled by default for backward compatibility
-    gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
-    model: false,             // Disabled by default for backward compatibility
-    modelFormat: 'short',     // Short names by default for backward compatibility
-=======
     gitRepo: false,           // Disabled by default for backward compatibility
     gitBranch: false,         // Disabled by default for backward compatibility
     gitStatus: false,         // Disabled by default for backward compatibility
     gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
     model: true,              // Show only when Claude Code statusline stdin provides a model
     modelFormat: 'versioned', // Preserve model version by default
->>>>>>> main
     omcLabel: true,
-<<<<<<< HEAD
-    rateLimits: true, // Show rate limits by default
-||||||| 90f19265
-    rateLimits: true,  // Show rate limits by default
-=======
     updateNotification: true, // Preserve existing update prompt behavior by default
     rateLimits: true,  // Show rate limits by default
->>>>>>> main
     ralph: true,
     autopilot: true,
     prdStory: true,
     activeSkills: true,
     contextBar: true,
     agents: true,
-    agentsFormat: "multiline", // Multi-line for rich agent visualization
+    agentsFormat: 'multiline', // Multi-line for rich agent visualization
     agentsMaxLines: 5, // Show up to 5 agent detail lines
     backgroundTasks: true,
     todos: true,
     lastSkill: true,
-    permissionStatus: false, // Disabled: heuristic-based, causes false positives
+    permissionStatus: false,  // Disabled: heuristic-based, causes false positives
     thinking: true,
-    thinkingFormat: "text", // Text format for backward compatibility
+    thinkingFormat: 'text',   // Text format for backward compatibility
     apiKeySource: false, // Disabled by default
     hostname: false,
-    profile: true, // Show profile name when CLAUDE_CONFIG_DIR is set
-    missionBoard: false, // Opt-in mission board for whole-run progress tracking
-    promptTime: true, // Show last prompt time by default
+    profile: true,  // Show profile name when CLAUDE_CONFIG_DIR is set
+    missionBoard: false,  // Opt-in mission board for whole-run progress tracking
+    promptTime: true,  // Show last prompt time by default
     sessionHealth: true,
     showSessionDuration: true,
     showHealthIndicator: true,
     showTokens: false,
-    useBars: false, // Disabled by default for backwards compatibility
-    showCallCounts: true, // Show tool/agent/skill call counts by default (Issue #710)
-    callCountsFormat: "auto", // Preserve platform-based emoji/ASCII defaults unless explicitly overridden
+    useBars: false,  // Disabled by default for backwards compatibility
+    showCallCounts: true,  // Show tool/agent/skill call counts by default (Issue #710)
+    callCountsFormat: 'auto',  // Preserve platform-based emoji/ASCII defaults unless explicitly overridden
     showLastTool: false,
     sessionSummary: false, // Disabled by default - opt-in AI-generated session summary
     maxOutputLines: 4,
-    safeMode: true, // Enabled by default to prevent terminal rendering corruption (Issue #346)
+    safeMode: true,  // Enabled by default to prevent terminal rendering corruption (Issue #346)
   },
   thresholds: {
     contextWarning: 70,
@@ -909,30 +743,20 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
   },
   missionBoard: DEFAULT_MISSION_BOARD_CONFIG,
   usageApiPollIntervalMs: DEFAULT_HUD_USAGE_POLL_INTERVAL_MS,
-  wrapMode: "truncate",
+  wrapMode: 'truncate',
 };
 
 export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   minimal: {
     cwd: false,
-    cwdFormat: "folder",
+    cwdFormat: 'folder',
     useHyperlinks: false,
     gitRepo: false,
     gitBranch: false,
     gitStatus: false,
-<<<<<<< HEAD
-    gitInfoPosition: "above",
-    model: false,
-    modelFormat: "short",
-||||||| 90f19265
-    gitInfoPosition: 'above',
-    model: false,
-    modelFormat: 'short',
-=======
     gitInfoPosition: 'above',
     model: true,
     modelFormat: 'versioned',
->>>>>>> main
     omcLabel: true,
     updateNotification: true,
     rateLimits: true,
@@ -943,13 +767,13 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     lastSkill: true,
     contextBar: false,
     agents: true,
-    agentsFormat: "count",
+    agentsFormat: 'count',
     agentsMaxLines: 0,
     backgroundTasks: false,
     todos: true,
     permissionStatus: false,
     thinking: false,
-    thinkingFormat: "text",
+    thinkingFormat: 'text',
     apiKeySource: false,
     hostname: false,
     profile: true,
@@ -968,24 +792,14 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   focused: {
     cwd: false,
-    cwdFormat: "relative",
+    cwdFormat: 'relative',
     useHyperlinks: false,
     gitRepo: false,
     gitBranch: true,
     gitStatus: true,
-<<<<<<< HEAD
-    gitInfoPosition: "above",
-    model: false,
-    modelFormat: "short",
-||||||| 90f19265
-    gitInfoPosition: 'above',
-    model: false,
-    modelFormat: 'short',
-=======
     gitInfoPosition: 'above',
     model: true,
     modelFormat: 'versioned',
->>>>>>> main
     omcLabel: true,
     updateNotification: true,
     rateLimits: true,
@@ -996,13 +810,13 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     lastSkill: true,
     contextBar: true,
     agents: true,
-    agentsFormat: "multiline",
+    agentsFormat: 'multiline',
     agentsMaxLines: 3,
     backgroundTasks: true,
     todos: true,
     permissionStatus: false,
     thinking: true,
-    thinkingFormat: "text",
+    thinkingFormat: 'text',
     apiKeySource: false,
     hostname: false,
     profile: true,
@@ -1021,24 +835,14 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   full: {
     cwd: false,
-    cwdFormat: "relative",
+    cwdFormat: 'relative',
     useHyperlinks: false,
     gitRepo: true,
     gitBranch: true,
     gitStatus: true,
-<<<<<<< HEAD
-    gitInfoPosition: "above",
-    model: false,
-    modelFormat: "short",
-||||||| 90f19265
-    gitInfoPosition: 'above',
-    model: false,
-    modelFormat: 'short',
-=======
     gitInfoPosition: 'above',
     model: true,
     modelFormat: 'versioned',
->>>>>>> main
     omcLabel: true,
     updateNotification: true,
     rateLimits: true,
@@ -1049,13 +853,13 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     lastSkill: true,
     contextBar: true,
     agents: true,
-    agentsFormat: "multiline",
+    agentsFormat: 'multiline',
     agentsMaxLines: 10,
     backgroundTasks: true,
     todos: true,
     permissionStatus: false,
     thinking: true,
-    thinkingFormat: "text",
+    thinkingFormat: 'text',
     apiKeySource: true,
     hostname: false,
     profile: true,
@@ -1074,24 +878,14 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   opencode: {
     cwd: false,
-    cwdFormat: "relative",
+    cwdFormat: 'relative',
     useHyperlinks: false,
     gitRepo: false,
     gitBranch: true,
     gitStatus: false,
-<<<<<<< HEAD
-    gitInfoPosition: "above",
-    model: false,
-    modelFormat: "short",
-||||||| 90f19265
-    gitInfoPosition: 'above',
-    model: false,
-    modelFormat: 'short',
-=======
     gitInfoPosition: 'above',
     model: true,
     modelFormat: 'versioned',
->>>>>>> main
     omcLabel: true,
     updateNotification: true,
     rateLimits: false,
@@ -1102,13 +896,13 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     lastSkill: true,
     contextBar: true,
     agents: true,
-    agentsFormat: "codes",
+    agentsFormat: 'codes',
     agentsMaxLines: 0,
     backgroundTasks: false,
     todos: true,
     permissionStatus: false,
     thinking: true,
-    thinkingFormat: "text",
+    thinkingFormat: 'text',
     apiKeySource: false,
     hostname: false,
     profile: true,
@@ -1127,24 +921,14 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
   },
   dense: {
     cwd: false,
-    cwdFormat: "relative",
+    cwdFormat: 'relative',
     useHyperlinks: false,
     gitRepo: true,
     gitBranch: true,
     gitStatus: true,
-<<<<<<< HEAD
-    gitInfoPosition: "above",
-    model: false,
-    modelFormat: "short",
-||||||| 90f19265
-    gitInfoPosition: 'above',
-    model: false,
-    modelFormat: 'short',
-=======
     gitInfoPosition: 'above',
     model: true,
     modelFormat: 'versioned',
->>>>>>> main
     omcLabel: true,
     updateNotification: true,
     rateLimits: true,
@@ -1155,13 +939,13 @@ export const PRESET_CONFIGS: Record<HudPreset, Partial<HudElementConfig>> = {
     lastSkill: true,
     contextBar: true,
     agents: true,
-    agentsFormat: "multiline",
+    agentsFormat: 'multiline',
     agentsMaxLines: 5,
     backgroundTasks: true,
     todos: true,
     permissionStatus: false,
     thinking: true,
-    thinkingFormat: "text",
+    thinkingFormat: 'text',
     apiKeySource: true,
     hostname: false,
     profile: true,

@@ -149,26 +149,11 @@ Auto-generated scaffold has:
   acceptanceCriteria: ["Implementation is complete", "Code compiles without errors"]
 
 After refinement:
-<<<<<<< HEAD
   acceptanceCriteria: [
     "Legacy --no-prd text is stripped from the Ralph working prompt",
     "Ralph startup still creates or validates prd.json when legacy --no-prd text is present",
     "TypeScript compiles with no errors (pnpm run build)"
   ]
-||||||| 90f19265
-  acceptanceCriteria: [
-    "Legacy --no-prd text is stripped from the Ralph working prompt",
-    "Ralph startup still creates or validates prd.json when legacy --no-prd text is present",
-    "TypeScript compiles with no errors (npm run build)"
-  ]
-=======
-acceptanceCriteria: [
-"Legacy --no-prd text is stripped from the Ralph working prompt",
-"Ralph startup still creates or validates prd.json when legacy --no-prd text is present",
-"TypeScript compiles with no errors (npm run build)"
-]
-
->>>>>>> main
 ```
 Why good: Generic criteria replaced with specific, testable criteria.
 </Good>

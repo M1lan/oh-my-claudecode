@@ -105,21 +105,9 @@ function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
 /**
  * Format LSP aggregation results into standard format
  */
-<<<<<<< HEAD
-function formatLspResult(
-  result: LspAggregationResult,
-): DirectoryDiagnosticResult {
-  let diagnostics = "";
-  let summary = "";
-||||||| 90f19265
-function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResult {
-  let diagnostics = '';
-  let summary = '';
-=======
 export function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResult {
   let diagnostics = '';
   let summary = '';
->>>>>>> main
 
   if (result.diagnostics.length === 0 && result.installHints.length === 0 && result.skippedFiles.length === 0) {
     diagnostics = `Checked ${result.filesChecked} files. No diagnostics found!`;
@@ -153,36 +141,14 @@ export function formatLspResult(result: LspAggregationResult): DirectoryDiagnost
       parts.push(fileOutputs.join('\n\n'));
     }
 
-<<<<<<< HEAD
-    // Format each file's diagnostics
-    const fileOutputs: string[] = [];
-    for (const [file, items] of byFile) {
-      const diags = items.map((i) => i.diagnostic);
-      fileOutputs.push(`${file}:\n${formatDiagnostics(diags, file)}`);
-||||||| 90f19265
-    // Format each file's diagnostics
-    const fileOutputs: string[] = [];
-    for (const [file, items] of byFile) {
-      const diags = items.map(i => i.diagnostic);
-      fileOutputs.push(`${file}:\n${formatDiagnostics(diags, file)}`);
-=======
     if (hasSkips) {
       parts.push(`Skipped ${result.skippedFiles.length} file(s) due to missing or unregistered language servers.`);
->>>>>>> main
     }
 
-<<<<<<< HEAD
-    diagnostics = fileOutputs.join("\n\n");
-    summary = `LSP check ${result.success ? "passed" : "failed"}: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked} files)`;
-||||||| 90f19265
-    diagnostics = fileOutputs.join('\n\n');
-    summary = `LSP check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked} files)`;
-=======
     diagnostics = parts.join('\n\n');
     summary = hasSkips
       ? `LSP check incomplete: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked}/${result.filesChecked + result.skippedFiles.length} files checked)`
       : `LSP check ${result.success ? 'passed' : 'failed'}: ${result.errorCount} errors, ${result.warningCount} warnings (${result.filesChecked} files)`;
->>>>>>> main
   }
 
   return {
