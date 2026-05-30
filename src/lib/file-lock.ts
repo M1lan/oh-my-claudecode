@@ -112,22 +112,11 @@ function tryAcquireSync(
       0o600,
     );
     try {
-      const payload = JSON.stringify({
-        pid: process.pid,
-        timestamp: Date.now(),
-      });
+      const payload = JSON.stringify({ pid: process.pid, timestamp: Date.now() });
       writeSync(fd, payload, null, "utf-8");
     } catch (writeErr) {
-      try {
-        closeSync(fd);
-      } catch {
-        /* already closed */
-      }
-      try {
-        unlinkSync(lockPath);
-      } catch {
-        /* best effort */
-      }
+      try { closeSync(fd); } catch { /* already closed */ }
+      try { unlinkSync(lockPath); } catch { /* best effort */ }
       throw writeErr;
     }
     return { fd, path: lockPath };
@@ -153,22 +142,11 @@ function tryAcquireSync(
             0o600,
           );
           try {
-            const payload = JSON.stringify({
-              pid: process.pid,
-              timestamp: Date.now(),
-            });
+            const payload = JSON.stringify({ pid: process.pid, timestamp: Date.now() });
             writeSync(fd, payload, null, "utf-8");
           } catch (writeErr) {
-            try {
-              closeSync(fd);
-            } catch {
-              /* already closed */
-            }
-            try {
-              unlinkSync(lockPath);
-            } catch {
-              /* best effort */
-            }
+            try { closeSync(fd); } catch { /* already closed */ }
+            try { unlinkSync(lockPath); } catch { /* best effort */ }
             throw writeErr;
           }
           return { fd, path: lockPath };
@@ -213,9 +191,7 @@ export function acquireFileLockSync(
     } catch {
       // Main thread: Atomics.wait throws — brief spin instead (capped at retryDelayMs)
       const waitUntil = Date.now() + waitMs;
-      while (Date.now() < waitUntil) {
-        /* spin */
-      }
+      while (Date.now() < waitUntil) { /* spin */ }
     }
     const retryHandle = tryAcquireSync(lockPath, staleLockMs);
     if (retryHandle) return retryHandle;

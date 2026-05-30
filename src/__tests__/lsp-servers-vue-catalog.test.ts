@@ -16,7 +16,7 @@ describe('Vue LSP catalog entry', () => {
       command: 'vue-language-server',
       args: ['--stdio'],
       extensions: ['.vue'],
-      installHint: 'npm install -g @vue/language-server',
+      installHint: 'pnpm add -g @vue/language-server',
       installed: false
     });
 
@@ -25,6 +25,6 @@ describe('Vue LSP catalog entry', () => {
     expect(text).toContain('### Not Installed:');
     expect(text).toContain('- Vue Language Server (Volar) (vue-language-server)');
     expect(text).toContain('Extensions: .vue');
-    expect(text).toContain('Install: npm install -g @vue/language-server');
+    expect(text).toContain('Install: pnpm add -g @vue/language-server');
   });
 });

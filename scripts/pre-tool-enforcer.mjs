@@ -804,7 +804,7 @@ function generateMessage(toolName, todoStatus, modeActive = false) {
 
   const messages = {
     TodoWrite: `${todoStatus}Mark todos in_progress BEFORE starting, completed IMMEDIATELY after finishing.`,
-    Bash: `${todoStatus}Use parallel execution for independent tasks. Use run_in_background for long operations (pnpm install, builds, tests).`,
+    Bash: `${todoStatus}Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests).`,
     Edit: `${todoStatus}Verify changes work after editing. Test functionality before marking complete.`,
     Write: `${todoStatus}Verify changes work after editing. Test functionality before marking complete.`,
     Read: `${todoStatus}Read multiple files in parallel when possible for faster analysis.`,

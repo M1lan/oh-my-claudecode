@@ -1,28 +1,21 @@
-import * as net from "net";
-import { randomUUID } from "crypto";
-import type { JsonRpcRequest, JsonRpcResponse } from "./types.js";
+import * as net from 'net';
+import { randomUUID } from 'crypto';
+import type { JsonRpcRequest, JsonRpcResponse } from './types.js';
 
 /**
  * Custom error types for socket communication
  */
 export class SocketConnectionError extends Error {
-  constructor(
-    message: string,
-    public readonly socketPath: string,
-    public readonly originalError?: Error,
-  ) {
+  constructor(message: string, public readonly socketPath: string, public readonly originalError?: Error) {
     super(message);
-    this.name = "SocketConnectionError";
+    this.name = 'SocketConnectionError';
   }
 }
 
 export class SocketTimeoutError extends Error {
-  constructor(
-    message: string,
-    public readonly timeoutMs: number,
-  ) {
+  constructor(message: string, public readonly timeoutMs: number) {
     super(message);
-    this.name = "SocketTimeoutError";
+    this.name = 'SocketTimeoutError';
   }
 }
 
@@ -30,10 +23,10 @@ export class JsonRpcError extends Error {
   constructor(
     message: string,
     public readonly code: number,
-    public readonly data?: unknown,
+    public readonly data?: unknown
   ) {
     super(message);
-    this.name = "JsonRpcError";
+    this.name = 'JsonRpcError';
   }
 }
 
@@ -64,19 +57,19 @@ export async function sendSocketRequest<T>(
   socketPath: string,
   method: string,
   params?: Record<string, unknown>,
-  timeout: number = 60000,
+  timeout: number = 60000
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = randomUUID();
     const request: JsonRpcRequest = {
-      jsonrpc: "2.0",
+      jsonrpc: '2.0',
       id,
       method,
       params: params ?? {},
     };
 
-    const requestLine = JSON.stringify(request) + "\n";
-    let responseBuffer = "";
+    const requestLine = JSON.stringify(request) + '\n';
+    let responseBuffer = '';
     let timedOut = false;
     let settled = false;
     const MAX_RESPONSE_SIZE = 2 * 1024 * 1024; // 2MB
@@ -86,12 +79,10 @@ export async function sendSocketRequest<T>(
       timedOut = true;
       settled = true;
       socket.destroy();
-      reject(
-        new SocketTimeoutError(
-          `Request timeout after ${timeout}ms for method "${method}"`,
-          timeout,
-        ),
-      );
+      reject(new SocketTimeoutError(
+        `Request timeout after ${timeout}ms for method "${method}"`,
+        timeout
+      ));
     }, timeout);
 
     // Cleanup helper
@@ -103,24 +94,24 @@ export async function sendSocketRequest<T>(
 
     // Create socket connection (TCP fallback when socketPath is "tcp:<port>")
     let socket: net.Socket;
-    if (socketPath.startsWith("tcp:")) {
+    if (socketPath.startsWith('tcp:')) {
       const port = parseInt(socketPath.slice(4), 10);
       if (isNaN(port) || port <= 0 || port > 65535) {
         reject(new Error(`Invalid TCP port in socketPath: "${socketPath}"`));
         return;
       }
-      socket = net.createConnection({ host: "127.0.0.1", port });
+      socket = net.createConnection({ host: '127.0.0.1', port });
     } else {
       socket = net.createConnection({ path: socketPath });
     }
 
     // Connection established - send request
-    socket.on("connect", () => {
+    socket.on('connect', () => {
       socket.write(requestLine);
     });
 
     // Receive data
-    socket.on("data", (chunk: Buffer) => {
+    socket.on('data', (chunk: Buffer) => {
       responseBuffer += chunk.toString();
 
       // Prevent memory exhaustion from huge responses
@@ -128,17 +119,15 @@ export async function sendSocketRequest<T>(
         if (!settled) {
           settled = true;
           cleanup();
-          reject(
-            new Error(
-              `Response exceeded maximum size of ${MAX_RESPONSE_SIZE} bytes`,
-            ),
-          );
+          reject(new Error(
+            `Response exceeded maximum size of ${MAX_RESPONSE_SIZE} bytes`
+          ));
         }
         return;
       }
 
       // Check for complete newline-delimited response
-      const newlineIndex = responseBuffer.indexOf("\n");
+      const newlineIndex = responseBuffer.indexOf('\n');
       if (newlineIndex !== -1) {
         const jsonLine = responseBuffer.slice(0, newlineIndex);
         cleanup();
@@ -147,66 +136,43 @@ export async function sendSocketRequest<T>(
           const response = JSON.parse(jsonLine) as JsonRpcResponse;
 
           // Validate JSON-RPC 2.0 response format
-          if (response.jsonrpc !== "2.0") {
-            if (!settled) {
-              settled = true;
-              reject(
-                new Error(
-                  `Invalid JSON-RPC version: expected "2.0", got "${response.jsonrpc}"`,
-                ),
-              );
-            }
+          if (response.jsonrpc !== '2.0') {
+            if (!settled) { settled = true; reject(new Error(
+              `Invalid JSON-RPC version: expected "2.0", got "${response.jsonrpc}"`
+            )); }
             return;
           }
 
           // Validate response ID matches request
           if (response.id !== id) {
-            if (!settled) {
-              settled = true;
-              reject(
-                new Error(
-                  `Response ID mismatch: expected "${id}", got "${response.id}"`,
-                ),
-              );
-            }
+            if (!settled) { settled = true; reject(new Error(
+              `Response ID mismatch: expected "${id}", got "${response.id}"`
+            )); }
             return;
           }
 
           // Handle error response
           if (response.error) {
-            if (!settled) {
-              settled = true;
-              reject(
-                new JsonRpcError(
-                  response.error.message,
-                  response.error.code,
-                  response.error.data,
-                ),
-              );
-            }
+            if (!settled) { settled = true; reject(new JsonRpcError(
+              response.error.message,
+              response.error.code,
+              response.error.data
+            )); }
             return;
           }
 
           // Success - return result
-          if (!settled) {
-            settled = true;
-            resolve(response.result as T);
-          }
+          if (!settled) { settled = true; resolve(response.result as T); }
         } catch (e) {
-          if (!settled) {
-            settled = true;
-            reject(
-              new Error(
-                `Failed to parse JSON-RPC response: ${(e as Error).message}`,
-              ),
-            );
-          }
+          if (!settled) { settled = true; reject(new Error(
+            `Failed to parse JSON-RPC response: ${(e as Error).message}`
+          )); }
         }
       }
     });
 
     // Handle connection errors
-    socket.on("error", (err: NodeJS.ErrnoException) => {
+    socket.on('error', (err: NodeJS.ErrnoException) => {
       if (timedOut) {
         return; // Timeout already handled
       }
@@ -216,35 +182,29 @@ export async function sendSocketRequest<T>(
       cleanup();
 
       // Provide specific error messages for common cases
-      if (err.code === "ENOENT") {
-        reject(
-          new SocketConnectionError(
-            `Socket does not exist at path: ${socketPath}`,
-            socketPath,
-            err,
-          ),
-        );
-      } else if (err.code === "ECONNREFUSED") {
-        reject(
-          new SocketConnectionError(
-            `Connection refused - server not listening at: ${socketPath}`,
-            socketPath,
-            err,
-          ),
-        );
+      if (err.code === 'ENOENT') {
+        reject(new SocketConnectionError(
+          `Socket does not exist at path: ${socketPath}`,
+          socketPath,
+          err
+        ));
+      } else if (err.code === 'ECONNREFUSED') {
+        reject(new SocketConnectionError(
+          `Connection refused - server not listening at: ${socketPath}`,
+          socketPath,
+          err
+        ));
       } else {
-        reject(
-          new SocketConnectionError(
-            `Socket connection error: ${err.message}`,
-            socketPath,
-            err,
-          ),
-        );
+        reject(new SocketConnectionError(
+          `Socket connection error: ${err.message}`,
+          socketPath,
+          err
+        ));
       }
     });
 
     // Handle connection close
-    socket.on("close", () => {
+    socket.on('close', () => {
       if (timedOut) {
         return; // Timeout already handled
       }
@@ -252,13 +212,11 @@ export async function sendSocketRequest<T>(
       settled = true;
 
       // If we haven't received a complete response, this is an error
-      if (responseBuffer.indexOf("\n") === -1) {
+      if (responseBuffer.indexOf('\n') === -1) {
         cleanup();
-        reject(
-          new Error(
-            `Socket closed without sending complete response (method: "${method}")`,
-          ),
-        );
+        reject(new Error(
+          `Socket closed without sending complete response (method: "${method}")`
+        ));
       }
     });
   });

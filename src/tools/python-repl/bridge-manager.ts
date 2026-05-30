@@ -8,30 +8,19 @@
  * - PID reuse detection via process identity verification
  */
 
-import { spawn, ChildProcess, execSync } from "child_process";
-import * as fs from "fs";
-import * as fsPromises from "fs/promises";
-import * as path from "path";
-import { fileURLToPath } from "url";
-import { execFile } from "child_process";
-import { promisify } from "util";
+import { spawn, ChildProcess, execSync } from 'child_process';
+import * as fs from 'fs';
+import * as fsPromises from 'fs/promises';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 
-import { BridgeMeta, PythonEnvInfo } from "./types.js";
-import {
-  getRuntimeDir,
-  getSessionDir,
-  getBridgeSocketPath,
-  getBridgeMetaPath,
-  getBridgePortPath,
-  getSessionLockPath,
-} from "./paths.js";
-import { isPythonSandboxEnabled } from "../../lib/security-config.js";
-import {
-  atomicWriteJson,
-  safeReadJson,
-  ensureDirSync,
-} from "../../lib/atomic-write.js";
-import { getProcessStartTime, isProcessAlive } from "../../platform/index.js";
+import { BridgeMeta, PythonEnvInfo } from './types.js';
+import { getRuntimeDir, getSessionDir, getBridgeSocketPath, getBridgeMetaPath, getBridgePortPath, getSessionLockPath } from './paths.js';
+import { isPythonSandboxEnabled } from '../../lib/security-config.js';
+import { atomicWriteJson, safeReadJson, ensureDirSync } from '../../lib/atomic-write.js';
+import { getProcessStartTime, isProcessAlive } from '../../platform/index.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -49,7 +38,7 @@ const SIGTERM_GRACE_MS = 2500; // 2.5 seconds for SIGTERM
 
 export interface EscalationResult {
   terminated: boolean;
-  terminatedBy?: "SIGINT" | "SIGTERM" | "SIGKILL";
+  terminatedBy?: 'SIGINT' | 'SIGTERM' | 'SIGKILL';
   terminationTimeMs?: number;
 }
 
@@ -94,10 +83,8 @@ function getBridgeScriptPath(): string {
   if (process.env.OMC_BRIDGE_SCRIPT) {
     const override = path.resolve(process.env.OMC_BRIDGE_SCRIPT);
     const overrideBasename = path.basename(override);
-    if (overrideBasename !== "gyoshu_bridge.py") {
-      throw new Error(
-        `OMC_BRIDGE_SCRIPT must point to gyoshu_bridge.py, got: ${overrideBasename}`,
-      );
+    if (overrideBasename !== 'gyoshu_bridge.py') {
+      throw new Error(`OMC_BRIDGE_SCRIPT must point to gyoshu_bridge.py, got: ${overrideBasename}`);
     }
     if (!fs.existsSync(override)) {
       throw new Error(`OMC_BRIDGE_SCRIPT file not found: ${override}`);
@@ -113,23 +100,23 @@ function getBridgeScriptPath(): string {
       const __filename = fileURLToPath(import.meta.url);
       moduleDir = path.dirname(__filename);
     } else {
-      throw new Error("import.meta.url is empty");
+      throw new Error('import.meta.url is empty');
     }
   } catch {
     // Fallback for CJS context (bundled MCP server)
     // In CJS bundle, __dirname points to the bundle's directory
-    moduleDir = typeof __dirname !== "undefined" ? __dirname : process.cwd();
+    moduleDir = typeof __dirname !== 'undefined' ? __dirname : process.cwd();
   }
 
   // From src/tools/python-repl/ -> ../../.. -> package root -> bridge/
   // Or from bridge/ (CJS bundle) -> bridge/
-  const packageRoot = path.resolve(moduleDir, "..", "..", "..");
-  const bridgePath = path.join(packageRoot, "bridge", "gyoshu_bridge.py");
+  const packageRoot = path.resolve(moduleDir, '..', '..', '..');
+  const bridgePath = path.join(packageRoot, 'bridge', 'gyoshu_bridge.py');
 
   // If that doesn't exist, try relative to moduleDir (for bundled CJS)
   if (!fs.existsSync(bridgePath)) {
     // In bundled CJS, moduleDir is the bridge/ directory itself
-    const bundledBridgePath = path.join(moduleDir, "gyoshu_bridge.py");
+    const bundledBridgePath = path.join(moduleDir, 'gyoshu_bridge.py');
     if (fs.existsSync(bundledBridgePath)) {
       return bundledBridgePath;
     }
@@ -147,13 +134,13 @@ function getBridgeScriptPath(): string {
  * Returns null if no .venv is found.
  */
 function detectExistingPythonEnv(projectRoot: string): PythonEnvInfo | null {
-  const isWindows = process.platform === "win32";
-  const binDir = isWindows ? "Scripts" : "bin";
-  const pythonExe = isWindows ? "python.exe" : "python";
-  const venvPython = path.join(projectRoot, ".venv", binDir, pythonExe);
+  const isWindows = process.platform === 'win32';
+  const binDir = isWindows ? 'Scripts' : 'bin';
+  const pythonExe = isWindows ? 'python.exe' : 'python';
+  const venvPython = path.join(projectRoot, '.venv', binDir, pythonExe);
 
   if (fs.existsSync(venvPython)) {
-    return { pythonPath: venvPython, type: "venv" };
+    return { pythonPath: venvPython, type: 'venv' };
   }
   return null;
 }
@@ -162,9 +149,7 @@ function detectExistingPythonEnv(projectRoot: string): PythonEnvInfo | null {
  * Ensure a Python environment is available for the project.
  * Currently requires an existing .venv - does not auto-create.
  */
-async function ensurePythonEnvironment(
-  projectRoot: string,
-): Promise<PythonEnvInfo> {
+async function ensurePythonEnvironment(projectRoot: string): Promise<PythonEnvInfo> {
   const existing = detectExistingPythonEnv(projectRoot);
   if (existing) {
     return existing;
@@ -172,17 +157,17 @@ async function ensurePythonEnvironment(
 
   // Fallback: try system python3
   try {
-    await execFileAsync("python3", ["--version"]);
+    await execFileAsync('python3', ['--version']);
     // type is 'venv' because PythonEnvInfo only supports 'venv'; this is a system fallback
-    return { pythonPath: "python3", type: "venv" };
+    return { pythonPath: 'python3', type: 'venv' };
   } catch {
     // python3 not available
   }
 
   throw new Error(
-    "No Python environment found. Create a virtual environment first:\n" +
-      "  python -m venv .venv\n" +
-      "  .venv/bin/pip install pandas numpy matplotlib",
+    'No Python environment found. Create a virtual environment first:\n' +
+      '  python -m venv .venv\n' +
+      '  .venv/bin/pip install pandas numpy matplotlib'
   );
 }
 
@@ -199,9 +184,7 @@ async function ensurePythonEnvironment(
  * - Start time was recorded but doesn't match (PID reused)
  * - Start time was recorded but cannot be retrieved (fail-closed)
  */
-export async function verifyProcessIdentity(
-  meta: BridgeMeta,
-): Promise<boolean> {
+export async function verifyProcessIdentity(meta: BridgeMeta): Promise<boolean> {
   // Basic alive check first
   if (!isProcessAlive(meta.pid)) {
     return false;
@@ -230,7 +213,7 @@ export async function verifyProcessIdentity(
 // =============================================================================
 
 /** Whether the current platform lacks AF_UNIX (e.g. Windows CPython). */
-const USE_TCP_FALLBACK = process.platform === "win32";
+const USE_TCP_FALLBACK = process.platform === 'win32';
 
 /**
  * Check if a path points to a Unix socket.
@@ -262,7 +245,7 @@ function isBridgeReady(socketPath: string, sessionId: string): boolean {
 function readTcpPort(sessionId: string): number | undefined {
   const portPath = getBridgePortPath(sessionId);
   try {
-    const content = fs.readFileSync(portPath, "utf-8").trim();
+    const content = fs.readFileSync(portPath, 'utf-8').trim();
     const port = parseInt(content, 10);
     if (Number.isFinite(port) && port > 0 && port <= 65535) {
       return port;
@@ -308,21 +291,20 @@ function safeUnlinkPortFile(sessionId: string): void {
  * Validate that parsed JSON matches BridgeMeta schema.
  */
 function isValidBridgeMeta(data: unknown): data is BridgeMeta {
-  if (typeof data !== "object" || data === null) return false;
+  if (typeof data !== 'object' || data === null) return false;
   const obj = data as Record<string, unknown>;
 
   return (
-    typeof obj.pid === "number" &&
+    typeof obj.pid === 'number' &&
     Number.isInteger(obj.pid) &&
     obj.pid > 0 &&
-    typeof obj.socketPath === "string" &&
-    typeof obj.startedAt === "string" &&
-    typeof obj.sessionId === "string" &&
-    typeof obj.pythonEnv === "object" &&
+    typeof obj.socketPath === 'string' &&
+    typeof obj.startedAt === 'string' &&
+    typeof obj.sessionId === 'string' &&
+    typeof obj.pythonEnv === 'object' &&
     obj.pythonEnv !== null &&
-    typeof (obj.pythonEnv as Record<string, unknown>).pythonPath === "string" &&
-    (obj.processStartTime === undefined ||
-      typeof obj.processStartTime === "number")
+    typeof (obj.pythonEnv as Record<string, unknown>).pythonPath === 'string' &&
+    (obj.processStartTime === undefined || typeof obj.processStartTime === 'number')
   );
 }
 
@@ -335,16 +317,15 @@ function isValidBridgeMeta(data: unknown): data is BridgeMeta {
  * Cross-platform: Uses taskkill /T on Windows, negative PID on Unix.
  */
 function killProcessGroup(pid: number, signal: NodeJS.Signals): boolean {
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     // On Windows, use taskkill with /T for tree kill
     try {
-      const force = signal === "SIGKILL";
-      const args = force ? "/F /T" : "/T";
-      execSync(`taskkill ${args} /PID ${pid}`, {
-        stdio: "ignore",
-        timeout: 5000,
-        windowsHide: true,
-      });
+      const force = signal === 'SIGKILL';
+      const args = force ? '/F /T' : '/T';
+      execSync(
+        `taskkill ${args} /PID ${pid}`,
+        { stdio: 'ignore', timeout: 5000, windowsHide: true }
+      );
       return true;
     } catch {
       return false;
@@ -378,7 +359,7 @@ function killProcessGroup(pid: number, signal: NodeJS.Signals): boolean {
  */
 export async function spawnBridgeServer(
   sessionId: string,
-  projectDir?: string,
+  projectDir?: string
 ): Promise<BridgeMeta> {
   const sessionDir = getSessionDir(sessionId);
   ensureDirSync(sessionDir);
@@ -404,13 +385,13 @@ export async function spawnBridgeServer(
   const bridgeArgs = [bridgePath, socketPath];
 
   const proc: ChildProcess = spawn(pythonEnv.pythonPath, bridgeArgs, {
-    stdio: ["ignore", "ignore", "pipe"],
+    stdio: ['ignore', 'ignore', 'pipe'],
     cwd: effectiveProjectDir,
     env: {
       ...process.env,
-      PYTHONUNBUFFERED: "1",
+      PYTHONUNBUFFERED: '1',
       OMC_PARENT_PID: String(process.pid),
-      ...(isPythonSandboxEnabled() ? { OMC_PYTHON_SANDBOX: "1" } : {}),
+      ...(isPythonSandboxEnabled() ? { OMC_PYTHON_SANDBOX: '1' } : {}),
     },
     detached: true,
   });
@@ -419,15 +400,14 @@ export async function spawnBridgeServer(
 
   // Capture stderr for error reporting (capped at 64KB)
   const MAX_STDERR_CHARS = 64 * 1024;
-  let stderrBuffer = "";
+  let stderrBuffer = '';
   let stderrTruncated = false;
 
-  proc.stderr?.on("data", (chunk: Buffer) => {
+  proc.stderr?.on('data', (chunk: Buffer) => {
     if (stderrTruncated) return;
     const text = chunk.toString();
     if (stderrBuffer.length + text.length > MAX_STDERR_CHARS) {
-      stderrBuffer =
-        stderrBuffer.slice(0, MAX_STDERR_CHARS - 20) + "\n...[truncated]";
+      stderrBuffer = stderrBuffer.slice(0, MAX_STDERR_CHARS - 20) + '\n...[truncated]';
       stderrTruncated = true;
     } else {
       stderrBuffer += text;
@@ -436,7 +416,7 @@ export async function spawnBridgeServer(
 
   // Track early process exit so we can short-circuit the socket poll
   let procExitCode: number | null = null;
-  proc.on("exit", (code) => {
+  proc.on('exit', (code) => {
     procExitCode = code ?? 1;
   });
 
@@ -446,11 +426,7 @@ export async function spawnBridgeServer(
     // Short-circuit: process exited before creating the socket/port file
     if (procExitCode !== null) {
       // Clean up any non-socket file that might exist (poisoning attempt)
-      if (
-        !USE_TCP_FALLBACK &&
-        fs.existsSync(socketPath) &&
-        !isSocket(socketPath)
-      ) {
+      if (!USE_TCP_FALLBACK && fs.existsSync(socketPath) && !isSocket(socketPath)) {
         safeUnlinkSocket(socketPath);
       }
       if (USE_TCP_FALLBACK) {
@@ -458,22 +434,18 @@ export async function spawnBridgeServer(
       }
       throw new Error(
         `Bridge process exited with code ${procExitCode} before creating socket. ` +
-          `Stderr: ${stderrBuffer || "(empty)"}`,
+          `Stderr: ${stderrBuffer || '(empty)'}`
       );
     }
 
     if (Date.now() - startTime > BRIDGE_SPAWN_TIMEOUT_MS) {
       // Kill the process on timeout
       if (proc.pid) {
-        killProcessGroup(proc.pid, "SIGKILL");
+        killProcessGroup(proc.pid, 'SIGKILL');
       }
 
       // Clean up any non-socket file that might exist (poisoning attempt)
-      if (
-        !USE_TCP_FALLBACK &&
-        fs.existsSync(socketPath) &&
-        !isSocket(socketPath)
-      ) {
+      if (!USE_TCP_FALLBACK && fs.existsSync(socketPath) && !isSocket(socketPath)) {
         safeUnlinkSocket(socketPath);
       }
       if (USE_TCP_FALLBACK) {
@@ -482,29 +454,27 @@ export async function spawnBridgeServer(
 
       throw new Error(
         `Bridge failed to create socket in ${BRIDGE_SPAWN_TIMEOUT_MS}ms. ` +
-          `Stderr: ${stderrBuffer || "(empty)"}`,
+          `Stderr: ${stderrBuffer || '(empty)'}`
       );
     }
     await sleep(100);
   }
 
   // Get process start time for PID reuse detection
-  const processStartTime = proc.pid
-    ? await getProcessStartTime(proc.pid)
-    : undefined;
+  const processStartTime = proc.pid ? await getProcessStartTime(proc.pid) : undefined;
 
   // On Windows (TCP fallback), read the port and encode as tcp:PORT
   let effectiveSocketPath = socketPath;
   if (USE_TCP_FALLBACK) {
     const port = readTcpPort(sessionId);
     if (port === undefined) {
-      throw new Error("Bridge created port file but content is invalid");
+      throw new Error('Bridge created port file but content is invalid');
     }
     effectiveSocketPath = `tcp:${port}`;
   }
 
   if (proc.pid === undefined) {
-    throw new Error("Bridge process failed to spawn: pid is undefined");
+    throw new Error('Bridge process failed to spawn: pid is undefined');
   }
 
   const meta: BridgeMeta = {
@@ -541,10 +511,7 @@ export async function spawnBridgeServer(
  * @param projectDir - Optional project directory (defaults to cwd)
  * @returns BridgeMeta for the active bridge
  */
-export async function ensureBridge(
-  sessionId: string,
-  projectDir?: string,
-): Promise<BridgeMeta> {
+export async function ensureBridge(sessionId: string, projectDir?: string): Promise<BridgeMeta> {
   const metaPath = getBridgeMetaPath(sessionId);
   const expectedSocketPath = getBridgeSocketPath(sessionId);
 
@@ -559,7 +526,7 @@ export async function ensureBridge(
 
     // Security validation 2: Anti-hijack - verify socket path is expected
     // TCP meta uses "tcp:<port>" encoding which won't match the raw socket path; skip for TCP.
-    const isTcpMeta = meta.socketPath.startsWith("tcp:");
+    const isTcpMeta = meta.socketPath.startsWith('tcp:');
     if (!isTcpMeta && meta.socketPath !== expectedSocketPath) {
       await deleteBridgeMeta(sessionId);
       return spawnBridgeServer(sessionId, projectDir);
@@ -569,7 +536,7 @@ export async function ensureBridge(
     const stillOurs = await verifyProcessIdentity(meta);
     if (stillOurs) {
       // Security validation 4: Socket/port check
-      if (meta.socketPath.startsWith("tcp:")) {
+      if (meta.socketPath.startsWith('tcp:')) {
         // TCP mode - port file existence confirms bridge is ready
         if (fs.existsSync(getBridgePortPath(sessionId))) {
           return meta;
@@ -580,7 +547,7 @@ export async function ensureBridge(
 
       // Socket/port missing or wrong type - kill the orphan process
       try {
-        process.kill(meta.pid, "SIGKILL");
+        process.kill(meta.pid, 'SIGKILL');
       } catch {
         // Process might already be dead
       }
@@ -612,7 +579,7 @@ export async function ensureBridge(
  */
 export async function killBridgeWithEscalation(
   sessionId: string,
-  options?: { gracePeriodMs?: number },
+  options?: { gracePeriodMs?: number }
 ): Promise<EscalationResult> {
   const gracePeriod = options?.gracePeriodMs ?? DEFAULT_GRACE_PERIOD_MS;
   const startTime = Date.now();
@@ -652,20 +619,20 @@ export async function killBridgeWithEscalation(
     return false;
   };
 
-  let terminatedBy: "SIGINT" | "SIGTERM" | "SIGKILL" = "SIGINT";
+  let terminatedBy: 'SIGINT' | 'SIGTERM' | 'SIGKILL' = 'SIGINT';
 
   // Stage 1: SIGINT
-  killProcessGroup(meta.pid, "SIGINT");
+  killProcessGroup(meta.pid, 'SIGINT');
 
   if (!(await waitForExit(gracePeriod))) {
     // Stage 2: SIGTERM
-    terminatedBy = "SIGTERM";
-    killProcessGroup(meta.pid, "SIGTERM");
+    terminatedBy = 'SIGTERM';
+    killProcessGroup(meta.pid, 'SIGTERM');
 
     if (!(await waitForExit(SIGTERM_GRACE_MS))) {
       // Stage 3: SIGKILL
-      terminatedBy = "SIGKILL";
-      killProcessGroup(meta.pid, "SIGKILL");
+      terminatedBy = 'SIGKILL';
+      killProcessGroup(meta.pid, 'SIGKILL');
       await waitForExit(1000); // Brief wait for SIGKILL
     }
   }
@@ -676,7 +643,7 @@ export async function killBridgeWithEscalation(
 
   const sessionDir = getSessionDir(sessionId);
   const socketPath = meta.socketPath;
-  if (socketPath.startsWith("tcp:")) {
+  if (socketPath.startsWith('tcp:')) {
     safeUnlinkPortFile(sessionId);
   } else if (socketPath.startsWith(sessionDir)) {
     safeUnlinkSocket(socketPath);
@@ -694,7 +661,7 @@ export async function killBridgeWithEscalation(
  * Used by session-end to terminate bridges created during the ending session.
  */
 export async function cleanupBridgeSessions(
-  sessionIds: Iterable<string>,
+  sessionIds: Iterable<string>
 ): Promise<BridgeSessionCleanupResult> {
   const uniqueSessionIds = [...new Set(Array.from(sessionIds).filter(Boolean))];
 
@@ -713,10 +680,7 @@ export async function cleanupBridgeSessions(
       const portPath = getBridgePortPath(sessionId);
       const lockPath = getSessionLockPath(sessionId);
       const hasArtifacts =
-        fs.existsSync(metaPath) ||
-        fs.existsSync(socketPath) ||
-        fs.existsSync(portPath) ||
-        fs.existsSync(lockPath);
+        fs.existsSync(metaPath) || fs.existsSync(socketPath) || fs.existsSync(portPath) || fs.existsSync(lockPath);
 
       if (!hasArtifacts) {
         continue;
@@ -790,15 +754,12 @@ export async function cleanupStaleBridges(): Promise<StaleBridgeCleanupResult> {
     // Paths are constructed directly here instead of using getBridgeMetaPath/etc
     // because entry.name is the short hash from the directory listing, not the
     // original sessionId that the path helpers expect.
-    const metaPath = path.join(sessionDir, "bridge_meta.json");
-    const socketPath = path.join(sessionDir, "bridge.sock");
-    const portPath = path.join(sessionDir, "bridge.port");
-    const lockPath = path.join(sessionDir, "session.lock");
+    const metaPath = path.join(sessionDir, 'bridge_meta.json');
+    const socketPath = path.join(sessionDir, 'bridge.sock');
+    const portPath = path.join(sessionDir, 'bridge.port');
+    const lockPath = path.join(sessionDir, 'session.lock');
     const hasArtifacts =
-      fs.existsSync(metaPath) ||
-      fs.existsSync(socketPath) ||
-      fs.existsSync(portPath) ||
-      fs.existsSync(lockPath);
+      fs.existsSync(metaPath) || fs.existsSync(socketPath) || fs.existsSync(portPath) || fs.existsSync(lockPath);
 
     if (!hasArtifacts) {
       continue;
@@ -873,9 +834,7 @@ export async function cleanupStaleBridges(): Promise<StaleBridgeCleanupResult> {
         result.filesRemoved++;
       }
     } catch (error) {
-      result.errors.push(
-        `sessionDir=${sessionDir}: ${(error as Error).message}`,
-      );
+      result.errors.push(`sessionDir=${sessionDir}: ${(error as Error).message}`);
     }
   }
 
@@ -906,7 +865,7 @@ async function removeFileIfExists(filePath: string): Promise<boolean> {
     await fsPromises.unlink(filePath);
     return true;
   } catch (error: any) {
-    if (error?.code === "ENOENT") {
+    if (error?.code === 'ENOENT') {
       return false;
     }
     throw error;
