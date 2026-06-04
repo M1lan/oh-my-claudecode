@@ -154,8 +154,7 @@ const TEAM_STAGE_ALIASES: Record<string, string> = {
 };
 
 const BACKGROUND_AGENT_ID_PATTERN = /agentId:\s*([a-zA-Z0-9_-]+)/;
-const BACKGROUND_BASH_ID_PATTERN =
-  /(?:background (?:bash )?(?:command|process|task).*?(?:id|ID)|bash_id|task_id)[:=]\s*([a-zA-Z0-9_-]+)/i;
+const BACKGROUND_BASH_ID_PATTERN = /(?:background (?:bash )?(?:command|process|task).*?(?:id|ID)|bash_id|task_id)[:=]\s*([a-zA-Z0-9_-]+)/i;
 const TASK_OUTPUT_ID_PATTERN = /<task_id>([^<]+)<\/task_id>/i;
 const TASK_OUTPUT_STATUS_PATTERN = /<status>([^<]+)<\/status>/i;
 const SAFE_SESSION_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/;
@@ -167,8 +166,7 @@ const MODE_CONFIRMATION_SKILL_MAP: Record<string, string[]> = {
 };
 
 const SESSION_START_CONTEXT_BUDGET = 6000;
-const SESSION_START_OMISSION_NOTICE =
-  "[Additional SessionStart context omitted to preserve the 6000-character aggregate budget.]";
+const SESSION_START_OMISSION_NOTICE = '[Additional SessionStart context omitted to preserve the 6000-character aggregate budget.]';
 const SESSION_STARTED_MARKER_FILE = "session-started.json";
 const LINUX_BOOT_ID_PATH = "/proc/sys/kernel/random/boot_id";
 
@@ -202,14 +200,8 @@ function buildSessionStartAdditionalContext(messages: string[]): string {
   ];
   const ordered = messages
     .map((message, index) => {
-      const priority = priorityOrder.findIndex((pattern) =>
-        pattern.test(message),
-      );
-      return {
-        message,
-        index,
-        priority: priority === -1 ? priorityOrder.length + index : priority,
-      };
+      const priority = priorityOrder.findIndex((pattern) => pattern.test(message));
+      return { message, index, priority: priority === -1 ? priorityOrder.length + index : priority };
     })
     .sort((a, b) => a.priority - b.priority || a.index - b.index)
     .map((entry) => entry.message);
@@ -218,20 +210,13 @@ function buildSessionStartAdditionalContext(messages: string[]): string {
   const selected: string[] = [];
   for (const message of ordered) {
     const separatorLength = selected.length > 0 ? 1 : 0;
-    if (
-      used + separatorLength + message.length >
-      SESSION_START_CONTEXT_BUDGET
-    ) {
-      const remainingBudget =
-        SESSION_START_CONTEXT_BUDGET - used - separatorLength;
+    if (used + separatorLength + message.length > SESSION_START_CONTEXT_BUDGET) {
+      const remainingBudget = SESSION_START_CONTEXT_BUDGET - used - separatorLength;
       if (remainingBudget > 0) {
         selected.push(
           remainingBudget > 120
             ? compactBudgetedText(message, remainingBudget)
-            : compactBudgetedText(
-                SESSION_START_OMISSION_NOTICE,
-                remainingBudget,
-              ),
+            : compactBudgetedText(SESSION_START_OMISSION_NOTICE, remainingBudget),
         );
       }
       break;
@@ -260,14 +245,8 @@ function sessionStateDir(directory: string, sessionId: string): string {
   return join(getOmcRoot(directory), "state", "sessions", sessionId);
 }
 
-function sessionStartedMarkerPath(
-  directory: string,
-  sessionId: string,
-): string {
-  return join(
-    sessionStateDir(directory, sessionId),
-    SESSION_STARTED_MARKER_FILE,
-  );
+function sessionStartedMarkerPath(directory: string, sessionId: string): string {
+  return join(sessionStateDir(directory, sessionId), SESSION_STARTED_MARKER_FILE);
 }
 
 function readJsonObject(filePath: string): Record<string, unknown> | null {
@@ -275,17 +254,14 @@ function readJsonObject(filePath: string): Record<string, unknown> | null {
     if (!existsSync(filePath)) return null;
     const parsed = JSON.parse(readFileSync(filePath, "utf-8"));
     return parsed && typeof parsed === "object" && !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
+      ? parsed as Record<string, unknown>
       : null;
   } catch {
     return null;
   }
 }
 
-function writeSessionStartedMarker(
-  directory: string,
-  sessionId?: string,
-): void {
+function writeSessionStartedMarker(directory: string, sessionId?: string): void {
   if (!sessionId || !SAFE_SESSION_ID_PATTERN.test(sessionId)) return;
 
   try {
@@ -302,23 +278,16 @@ function writeSessionStartedMarker(
       // later SessionStart hooks to falsely clean live session state.
       boot_id: readLinuxBootId(),
     };
-    writeFileSync(
-      sessionStartedMarkerPath(directory, sessionId),
-      JSON.stringify(marker, null, 2),
-      {
-        encoding: "utf-8",
-        mode: 0o600,
-      },
-    );
+    writeFileSync(sessionStartedMarkerPath(directory, sessionId), JSON.stringify(marker, null, 2), {
+      encoding: "utf-8",
+      mode: 0o600,
+    });
   } catch {
     // SessionStart markers are best-effort and must never block startup.
   }
 }
 
-function removeSessionStartedMarker(
-  directory: string,
-  sessionId?: string,
-): void {
+function removeSessionStartedMarker(directory: string, sessionId?: string): void {
   if (!sessionId || !SAFE_SESSION_ID_PATTERN.test(sessionId)) return;
 
   try {
@@ -332,15 +301,10 @@ function removeSessionStartedMarker(
 }
 
 function hasSessionEndSummary(directory: string, sessionId: string): boolean {
-  return existsSync(
-    join(getOmcRoot(directory), "sessions", `${sessionId}.json`),
-  );
+  return existsSync(join(getOmcRoot(directory), "sessions", `${sessionId}.json`));
 }
 
-function cleanupSessionModeStateFiles(
-  directory: string,
-  sessionId: string,
-): void {
+function cleanupSessionModeStateFiles(directory: string, sessionId: string): void {
   const dir = sessionStateDir(directory, sessionId);
 
   for (const { file } of SESSION_END_MODE_STATE_FILES) {
@@ -360,15 +324,8 @@ function cleanupSessionModeStateFiles(
   }
 }
 
-function cleanupMissionStateForSession(
-  directory: string,
-  sessionId: string,
-): void {
-  const missionStatePath = join(
-    getOmcRoot(directory),
-    "state",
-    "mission-state.json",
-  );
+function cleanupMissionStateForSession(directory: string, sessionId: string): void {
+  const missionStatePath = join(getOmcRoot(directory), "state", "mission-state.json");
   const parsed = readJsonObject(missionStatePath) as {
     updatedAt?: string;
     missions?: Array<Record<string, unknown>>;
@@ -405,8 +362,7 @@ function cleanupMissionStateForSession(
  * durable leftovers, such as markers from a previous OS boot.
  */
 function hasDurableAbandonmentEvidence(marker: SessionStartedMarker): boolean {
-  const storedBootId =
-    typeof marker.boot_id === "string" ? marker.boot_id : undefined;
+  const storedBootId = typeof marker.boot_id === "string" ? marker.boot_id : undefined;
   const currentBootId = readLinuxBootId();
   if (storedBootId && currentBootId && storedBootId !== currentBootId) {
     return true;
@@ -418,10 +374,7 @@ function hasDurableAbandonmentEvidence(marker: SessionStartedMarker): boolean {
   return false;
 }
 
-async function reconcileAbandonedSessionStarts(
-  directory: string,
-  currentSessionId?: string,
-): Promise<void> {
+async function reconcileAbandonedSessionStarts(directory: string, currentSessionId?: string): Promise<void> {
   const sessionsDir = join(getOmcRoot(directory), "state", "sessions");
   if (!existsSync(sessionsDir)) return;
 
@@ -433,11 +386,7 @@ async function reconcileAbandonedSessionStarts(
   }
 
   for (const sessionId of entries) {
-    if (
-      !SAFE_SESSION_ID_PATTERN.test(sessionId) ||
-      sessionId === currentSessionId
-    )
-      continue;
+    if (!SAFE_SESSION_ID_PATTERN.test(sessionId) || sessionId === currentSessionId) continue;
 
     const markerPath = sessionStartedMarkerPath(directory, sessionId);
     const marker = readJsonObject(markerPath) as SessionStartedMarker | null;
@@ -471,21 +420,17 @@ async function reconcileAbandonedSessionStarts(
   }
 }
 
+
 function getExtraField(input: HookInput, key: string): unknown {
   return (input as Record<string, unknown>)[key];
 }
 
 function getHookToolUseId(input: HookInput): string | undefined {
   const value = getExtraField(input, "tool_use_id");
-  return typeof value === "string" && value.trim().length > 0
-    ? value
-    : undefined;
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
-function getHookContextString(
-  input: HookInput,
-  ...keys: string[]
-): string | undefined {
+function getHookContextString(input: HookInput, ...keys: string[]): string | undefined {
   for (const key of keys) {
     const value = getExtraField(input, key);
     if (typeof value === "string" && value.trim().length > 0) {
@@ -515,27 +460,20 @@ function bashLaunchIsBackgroundPending(toolOutput: unknown): boolean {
   }
 
   const normalized = toolOutput.toLowerCase();
-  return (
-    normalized.includes("running in the background") ||
-    normalized.includes("started in the background") ||
-    normalized.includes("background command") ||
-    normalized.includes("background process") ||
-    Boolean(extractBackgroundBashId(toolOutput))
-  );
+  return normalized.includes("running in the background")
+    || normalized.includes("started in the background")
+    || normalized.includes("background command")
+    || normalized.includes("background process")
+    || Boolean(extractBackgroundBashId(toolOutput));
 }
 
-function parseTaskOutputLifecycle(
-  toolOutput: unknown,
-): { taskId: string; status: string } | null {
+function parseTaskOutputLifecycle(toolOutput: unknown): { taskId: string; status: string } | null {
   if (typeof toolOutput !== "string") {
     return null;
   }
 
   const taskId = toolOutput.match(TASK_OUTPUT_ID_PATTERN)?.[1]?.trim();
-  const status = toolOutput
-    .match(TASK_OUTPUT_STATUS_PATTERN)?.[1]
-    ?.trim()
-    .toLowerCase();
+  const status = toolOutput.match(TASK_OUTPUT_STATUS_PATTERN)?.[1]?.trim().toLowerCase();
   if (!taskId || !status) {
     return null;
   }
@@ -564,14 +502,8 @@ function getSessionStateDir(directory: string, sessionId?: string): string {
   return stateDir;
 }
 
-function getScheduledWakeupStatePath(
-  directory: string,
-  sessionId?: string,
-): string {
-  return join(
-    getSessionStateDir(directory, sessionId),
-    "scheduled-wakeup-state.json",
-  );
+function getScheduledWakeupStatePath(directory: string, sessionId?: string): string {
+  return join(getSessionStateDir(directory, sessionId), "scheduled-wakeup-state.json");
 }
 
 function parseWakeupDueAt(toolInput: unknown): string | undefined {
@@ -580,23 +512,15 @@ function parseWakeupDueAt(toolInput: unknown): string | undefined {
   }
 
   const input = toolInput as Record<string, unknown>;
-  const absolute =
-    input.due_at ??
-    input.wakeup_at ??
-    input.scheduled_for ??
-    input.deadline_at ??
-    input.at;
+  const absolute = input.due_at ?? input.wakeup_at ?? input.scheduled_for ?? input.deadline_at ?? input.at;
   if (typeof absolute === "string") {
     const parsed = new Date(absolute).getTime();
     if (Number.isFinite(parsed)) return new Date(parsed).toISOString();
   }
 
-  const delaySeconds =
-    input.seconds ?? input.delay_seconds ?? input.delaySeconds;
+  const delaySeconds = input.seconds ?? input.delay_seconds ?? input.delaySeconds;
   if (typeof delaySeconds === "number" && Number.isFinite(delaySeconds)) {
-    return new Date(
-      Date.now() + Math.max(0, delaySeconds) * 1000,
-    ).toISOString();
+    return new Date(Date.now() + Math.max(0, delaySeconds) * 1000).toISOString();
   }
 
   const delayMs = input.milliseconds ?? input.delay_ms ?? input.delayMs;
@@ -604,22 +528,15 @@ function parseWakeupDueAt(toolInput: unknown): string | undefined {
     return new Date(Date.now() + Math.max(0, delayMs)).toISOString();
   }
 
-  const delayMinutes =
-    input.minutes ?? input.delay_minutes ?? input.delayMinutes;
+  const delayMinutes = input.minutes ?? input.delay_minutes ?? input.delayMinutes;
   if (typeof delayMinutes === "number" && Number.isFinite(delayMinutes)) {
-    return new Date(
-      Date.now() + Math.max(0, delayMinutes) * 60_000,
-    ).toISOString();
+    return new Date(Date.now() + Math.max(0, delayMinutes) * 60_000).toISOString();
   }
 
   return undefined;
 }
 
-function recordScheduledWakeup(
-  directory: string,
-  sessionId: string | undefined,
-  toolInput: unknown,
-): void {
+function recordScheduledWakeup(directory: string, sessionId: string | undefined, toolInput: unknown): void {
   try {
     const statePath = getScheduledWakeupStatePath(directory, sessionId);
     mkdirSync(dirname(statePath), { recursive: true });
@@ -643,21 +560,14 @@ function recordScheduledWakeup(
   }
 }
 
-function getModeStatePaths(
-  directory: string,
-  modeName: string,
-  sessionId?: string,
-): string[] {
+function getModeStatePaths(directory: string, modeName: string, sessionId?: string): string[] {
   const stateDir = join(getOmcRoot(directory), "state");
-  const safeSessionId =
-    typeof sessionId === "string" && SAFE_SESSION_ID_PATTERN.test(sessionId)
-      ? sessionId
-      : undefined;
+  const safeSessionId = typeof sessionId === "string" && SAFE_SESSION_ID_PATTERN.test(sessionId)
+    ? sessionId
+    : undefined;
 
   return [
-    safeSessionId
-      ? join(stateDir, "sessions", safeSessionId, `${modeName}-state.json`)
-      : null,
+    safeSessionId ? join(stateDir, "sessions", safeSessionId, `${modeName}-state.json`) : null,
     join(stateDir, `${modeName}-state.json`),
   ].filter((statePath): statePath is string => Boolean(statePath));
 }
@@ -674,10 +584,7 @@ function updateModeAwaitingConfirmation(
     }
 
     try {
-      const state = JSON.parse(readFileSync(statePath, "utf-8")) as Record<
-        string,
-        unknown
-      >;
+      const state = JSON.parse(readFileSync(statePath, "utf-8")) as Record<string, unknown>;
       if (!state || typeof state !== "object") {
         continue;
       }
@@ -711,11 +618,7 @@ function markModeAwaitingConfirmation(
   }
 }
 
-function confirmSkillModeStates(
-  directory: string,
-  skillName: string,
-  sessionId?: string,
-): void {
+function confirmSkillModeStates(directory: string, skillName: string, sessionId?: string): void {
   for (const modeName of MODE_CONFIRMATION_SKILL_MAP[skillName] ?? []) {
     updateModeAwaitingConfirmation(directory, modeName, sessionId, false);
   }
@@ -738,20 +641,10 @@ function getSkillInvocationArgs(toolInput: unknown): string {
     input.input,
   ];
 
-  return (
-    candidates
-      .find(
-        (value): value is string =>
-          typeof value === "string" && value.trim().length > 0,
-      )
-      ?.trim() ?? ""
-  );
+  return candidates.find((value): value is string => typeof value === "string" && value.trim().length > 0)?.trim() ?? "";
 }
 
-function isConsensusPlanningSkillInvocation(
-  skillName: string | null,
-  toolInput: unknown,
-): boolean {
+function isConsensusPlanningSkillInvocation(skillName: string | null, toolInput: unknown): boolean {
   if (!skillName) {
     return false;
   }
@@ -764,9 +657,7 @@ function isConsensusPlanningSkillInvocation(
     return false;
   }
 
-  return getSkillInvocationArgs(toolInput)
-    .toLowerCase()
-    .includes("--consensus");
+  return getSkillInvocationArgs(toolInput).toLowerCase().includes("--consensus");
 }
 
 function activateRalplanState(directory: string, sessionId?: string): void {
@@ -784,11 +675,7 @@ function activateRalplanState(directory: string, sessionId?: string): void {
 }
 
 function deactivateRalplanState(directory: string, sessionId?: string): void {
-  const state = readModeState<Record<string, unknown>>(
-    "ralplan",
-    directory,
-    sessionId,
-  );
+  const state = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
   if (!state) {
     return;
   }
@@ -828,11 +715,7 @@ function deactivateRalplanState(directory: string, sessionId?: string): void {
 }
 
 function seedRalplanStartupState(directory: string, sessionId?: string): void {
-  const existingState = readModeState<Record<string, unknown>>(
-    "ralplan",
-    directory,
-    sessionId,
-  );
+  const existingState = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
   if (existingState?.active === true) {
     if (existingState.awaiting_confirmation === true) {
       markModeAwaitingConfirmation(directory, sessionId, "ralplan");
@@ -849,13 +732,9 @@ async function seedAutopilotStartupState(
   prompt: string,
   sessionId?: string,
 ): Promise<void> {
-  const { readAutopilotState, writeAutopilotState, DEFAULT_CONFIG } =
-    await import("./autopilot/index.js");
+  const { readAutopilotState, writeAutopilotState, DEFAULT_CONFIG } = await import("./autopilot/index.js");
   const existingState = readAutopilotState(directory, sessionId);
-  const existingAutopilotRecord = existingState as unknown as Record<
-    string,
-    unknown
-  > | null;
+  const existingAutopilotRecord = existingState as unknown as Record<string, unknown> | null;
 
   if (existingState?.active === true) {
     if (existingAutopilotRecord?.awaiting_confirmation === true) {
@@ -1353,15 +1232,10 @@ function getPromptText(input: HookInput): string {
 }
 
 function isExplicitAskSlashInvocation(promptText: string): boolean {
-  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini)\b/i.test(
-    promptText,
-  );
+  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini|grok)\b/i.test(promptText);
 }
 
-function activateRalplanStartupState(
-  directory: string,
-  sessionId?: string,
-): void {
+function activateRalplanStartupState(directory: string, sessionId?: string): void {
   const now = new Date().toISOString();
   writeModeState(
     "ralplan",
@@ -1689,20 +1563,11 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
     }
   }
 
-  const promptPrerequisiteParse = parsePromptPrerequisiteSections(
-    promptText,
-    promptPrerequisiteConfig,
-  );
+  const promptPrerequisiteParse = parsePromptPrerequisiteSections(promptText, promptPrerequisiteConfig);
   const executionKeywords = fullKeywords.filter((keywordType) =>
     promptPrerequisiteConfig.executionKeywords.includes(keywordType),
   );
-  if (
-    shouldEnforcePromptPrerequisites(
-      executionKeywords,
-      promptPrerequisiteParse,
-      promptPrerequisiteConfig,
-    )
-  ) {
+  if (shouldEnforcePromptPrerequisites(executionKeywords, promptPrerequisiteParse, promptPrerequisiteConfig)) {
     const state = activatePromptPrerequisiteState(
       directory,
       sessionId,
@@ -1753,16 +1618,15 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
 
         // Activate ralph state which also auto-activates ultrawork
         const hook = createRalphLoopHook(directory);
-        const started = hook.startLoop(sessionId, cleanPrompt, {
-          ...(criticMode ? { criticMode } : {}),
-        });
+        const started = hook.startLoop(
+          sessionId,
+          cleanPrompt,
+          {
+            ...(criticMode ? { criticMode } : {}),
+          },
+        );
         if (started) {
-          markModeAwaitingConfirmation(
-            directory,
-            sessionId,
-            "ralph",
-            "ultrawork",
-          );
+          markModeAwaitingConfirmation(directory, sessionId, 'ralph', 'ultrawork');
         }
 
         messages.push(RALPH_MESSAGE);
@@ -1775,7 +1639,7 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
         // Activate persistent ultrawork state
         const activated = activateUltrawork(promptText, sessionId, directory);
         if (activated) {
-          markModeAwaitingConfirmation(directory, sessionId, "ultrawork");
+          markModeAwaitingConfirmation(directory, sessionId, 'ultrawork');
         }
         messages.push(
           getUltraworkMessage(
@@ -1828,12 +1692,10 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
 
       case "codex":
       case "gemini": {
-        const teamStartCommand = formatOmcCliInvocation(
-          `team start --agent ${keywordType} --count N --task "<task from user message>"`,
-        );
+        const teamStartCommand = formatOmcCliInvocation(`team start --agent ${keywordType} --count N --task "<task from user message>"`);
         messages.push(
           `[MAGIC KEYWORD: team]\n` +
-            `User intent: delegate to ${keywordType} CLI workers via ${formatOmcCliInvocation("team")}.\n` +
+            `User intent: delegate to ${keywordType} CLI workers via ${formatOmcCliInvocation('team')}.\n` +
             `Agent type: ${keywordType}. Parse N from user message (default 1).\n` +
             `Invoke: ${teamStartCommand}`,
         );
@@ -1960,8 +1822,7 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
         // Per-session cooldown: prevent notification spam when the session idles repeatedly.
         // Uses session-scoped state so one session does not suppress another.
         const stateDir = join(getOmcRoot(directory), "state");
-        const { getIdleNotificationRepoState } =
-          await import("./persistent-mode/idle-repo-state.js");
+        const { getIdleNotificationRepoState } = await import("./persistent-mode/idle-repo-state.js");
         const idleRepoState = getIdleNotificationRepoState(directory);
         if (shouldWakeOpenClawOnStop(stateDir, sessionId, idleRepoState)) {
           _openclaw.wake("stop", { sessionId, projectPath: directory });
@@ -2147,11 +2008,7 @@ Treat this as prior-session context only. Prioritize the user's newest request, 
 `);
   }
 
-  const ralplanState = readModeState<Record<string, unknown>>(
-    "ralplan",
-    directory,
-    sessionId,
-  );
+  const ralplanState = readModeState<Record<string, unknown>>("ralplan", directory, sessionId);
   if (ralplanState?.active === true && ralplanState.session_id === sessionId) {
     const ralplanPhase =
       typeof ralplanState.current_phase === "string"
@@ -2427,9 +2284,7 @@ export const _openclaw = {
       `hooks.bridge openclaw wake failed for ${event}`,
     );
     import("../openclaw/index.js")
-      .then(({ wakeOpenClaw }) =>
-        wakeOpenClaw(event, context).catch(logOpenClawWakeFailure),
-      )
+      .then(({ wakeOpenClaw }) => wakeOpenClaw(event, context).catch(logOpenClawWakeFailure))
       .catch(logOpenClawWakeFailure);
   },
 };
@@ -2500,23 +2355,17 @@ function processPreToolUse(input: HookInput): HookOutput {
   // Check blocking BEFORE recording progress — otherwise a denied tool
   // (e.g. Edit) that also matches a prerequisite would have its progress
   // persisted even though the tool never actually executed.
-  const promptPrerequisiteState = readPromptPrerequisiteState(
-    directory,
-    input.sessionId,
-  );
+  const promptPrerequisiteState = readPromptPrerequisiteState(directory, input.sessionId);
   if (
-    promptPrerequisiteState?.active &&
-    isPromptPrerequisiteBlockingTool(input.toolName, promptPrerequisiteConfig)
+    promptPrerequisiteState?.active
+    && isPromptPrerequisiteBlockingTool(input.toolName, promptPrerequisiteConfig)
   ) {
     return {
       continue: true,
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
         permissionDecision: "deny",
-        permissionDecisionReason: buildPromptPrerequisiteDenyReason(
-          promptPrerequisiteState,
-          input.toolName,
-        ),
+        permissionDecisionReason: buildPromptPrerequisiteDenyReason(promptPrerequisiteState, input.toolName),
       },
     } as HookOutput & { hookSpecificOutput: Record<string, unknown> };
   }
@@ -2662,12 +2511,7 @@ function processPreToolUse(input: HookInput): HookOutput {
       // the Stop hook can fire. The previous fire-and-forget .then() raced with
       // the Stop hook in short-lived processes.
       try {
-        writeSkillActiveState(
-          directory,
-          skillName,
-          input.sessionId,
-          rawSkillName,
-        );
+        writeSkillActiveState(directory, skillName, input.sessionId, rawSkillName);
         confirmSkillModeStates(directory, skillName, input.sessionId);
         if (isConsensusPlanningSkillInvocation(skillName, input.toolInput)) {
           activateRalplanState(directory, input.sessionId);
@@ -2781,8 +2625,8 @@ function processPreToolUse(input: HookInput): HookOutput {
 
     if (toolInput?.description) {
       const taskId =
-        getHookToolUseId(input) ??
-        `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        getHookToolUseId(input)
+        ?? `task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       addBackgroundTask(
         taskId,
         toolInput.description,
@@ -2806,8 +2650,8 @@ function processPreToolUse(input: HookInput): HookOutput {
 
     if (toolInput?.run_in_background === true && toolInput.command) {
       const taskId =
-        getHookToolUseId(input) ??
-        `bash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        getHookToolUseId(input)
+        ?? `bash-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       addBackgroundTask(
         taskId,
         toolInput.command,
@@ -2904,11 +2748,8 @@ function getInvokedSkillName(toolInput: unknown): string | null {
 function getRawSkillName(toolInput: unknown): string | undefined {
   if (!toolInput || typeof toolInput !== "object") return undefined;
   const input = toolInput as Record<string, unknown>;
-  const raw =
-    input.skill ?? input.skill_name ?? input.skillName ?? input.command ?? null;
-  return typeof raw === "string" && raw.trim().length > 0
-    ? raw.trim()
-    : undefined;
+  const raw = input.skill ?? input.skill_name ?? input.skillName ?? input.command ?? null;
+  return typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
 }
 
 async function processPostToolUse(input: HookInput): Promise<HookOutput> {
@@ -2921,8 +2762,11 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
   if (toolName === "skill") {
     const skillName = getInvokedSkillName(input.toolInput);
     if (skillName === "ralph") {
-      const { createRalphLoopHook, detectCriticModeFlag, stripCriticModeFlag } =
-        await import("./ralph/index.js");
+      const {
+        createRalphLoopHook,
+        detectCriticModeFlag,
+        stripCriticModeFlag,
+      } = await import("./ralph/index.js");
       const rawPrompt =
         typeof input.prompt === "string" && input.prompt.trim().length > 0
           ? input.prompt
@@ -2932,9 +2776,13 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
       const cleanPrompt = stripCriticModeFlag(rawPrompt);
 
       const hook = createRalphLoopHook(directory);
-      hook.startLoop(input.sessionId, cleanPrompt, {
-        ...(criticMode ? { criticMode } : {}),
-      });
+      hook.startLoop(
+        input.sessionId,
+        cleanPrompt,
+        {
+          ...(criticMode ? { criticMode } : {}),
+        },
+      );
     }
 
     // Clear skill-active state on skill completion to prevent false-blocking.
@@ -2942,17 +2790,12 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
     // Guard: only clear if the completing skill owns the active state.
     // When a parent skill (e.g. omc-setup) invokes a child skill (e.g. mcp-setup),
     // the child's PostToolUse fires first — we must not delete the parent's state.
-    const { clearSkillActiveState, readSkillActiveState } =
-      await import("./skill-state/index.js");
+    const { clearSkillActiveState, readSkillActiveState } = await import("./skill-state/index.js");
     const currentState = readSkillActiveState(directory, input.sessionId);
     const completingSkill = (getInvokedSkillName(input.toolInput) ?? "")
       .toLowerCase()
       .replace(/^oh-my-claudecode:/, "");
-    if (
-      !currentState ||
-      !currentState.active ||
-      currentState.skill_name === completingSkill
-    ) {
+    if (!currentState || !currentState.active || currentState.skill_name === completingSkill) {
       clearSkillActiveState(directory, input.sessionId);
     }
     // Workflow-slot ledger: tombstone the canonical workflow slot when its
@@ -3000,12 +2843,7 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
 
     if (asyncAgentId) {
       if (toolUseId) {
-        remapBackgroundTaskId(
-          toolUseId,
-          asyncAgentId,
-          directory,
-          input.sessionId,
-        );
+        remapBackgroundTaskId(toolUseId, asyncAgentId, directory, input.sessionId);
       } else if (description) {
         remapMostRecentMatchingBackgroundTaskId(
           description,
@@ -3045,12 +2883,7 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
 
       if (backgroundBashId) {
         if (toolUseId) {
-          remapBackgroundTaskId(
-            toolUseId,
-            backgroundBashId,
-            directory,
-            input.sessionId,
-          );
+          remapBackgroundTaskId(toolUseId, backgroundBashId, directory, input.sessionId);
         } else if (command) {
           remapMostRecentMatchingBackgroundTaskId(
             command,
@@ -3088,13 +2921,13 @@ async function processPostToolUse(input: HookInput): Promise<HookOutput> {
   if (input.toolName === "TaskOutput") {
     const taskOutput = parseTaskOutputLifecycle(input.toolOutput);
     if (taskOutput) {
-      completeBackgroundTask(
-        taskOutput.taskId,
-        directory,
-        taskOutputDidFail(taskOutput.status),
-        input.sessionId,
-      );
-    }
+    completeBackgroundTask(
+      taskOutput.taskId,
+      directory,
+      taskOutputDidFail(taskOutput.status),
+      input.sessionId,
+    );
+  }
   }
 
   // Wake OpenClaw gateway for post-tool-use (non-blocking, fires for all tools).
@@ -3146,10 +2979,7 @@ async function processAutopilot(input: HookInput): Promise<HookOutput> {
   };
 
   const phasePrompt = getPhasePrompt(state.phase, context);
-  const runtimeInsight = formatAutopilotRuntimeInsight(
-    directory,
-    input.sessionId,
-  );
+  const runtimeInsight = formatAutopilotRuntimeInsight(directory, input.sessionId);
 
   if (phasePrompt || runtimeInsight) {
     const detailParts = [runtimeInsight, phasePrompt].filter(Boolean);
@@ -3408,11 +3238,7 @@ export async function processHook(
 
       case "code-simplifier": {
         const directory = input.directory ?? process.cwd();
-        const stateDir = join(
-          resolveToWorktreeRoot(directory),
-          ".omc",
-          "state",
-        );
+        const stateDir = join(getOmcRoot(directory), "state");
         const { processCodeSimplifier } =
           await import("./code-simplifier/index.js");
         const result = processCodeSimplifier(directory, stateDir);

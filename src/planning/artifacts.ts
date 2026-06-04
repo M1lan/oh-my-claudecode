@@ -9,6 +9,7 @@
 
 import { readdirSync, readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { getOmcRoot } from "../lib/worktree-paths.js";
 import {
   comparePlanningArtifactPaths,
   selectLatestPlanningArtifactPath,
@@ -76,7 +77,7 @@ function hasRequiredSections(markdown: string, headings: string[]): boolean {
 }
 
 function getPlansDirCandidates(cwd: string): string[] {
-  return [join(cwd, ".omc", "plans"), join(cwd, ".omx", "plans")];
+  return [join(getOmcRoot(cwd), "plans"), join(cwd, ".omx", "plans")];
 }
 
 function sortArtifactPathsDescending(paths: string[]): string[] {

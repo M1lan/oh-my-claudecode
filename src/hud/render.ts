@@ -5,12 +5,9 @@
  */
 
 import type { HudRenderContext, HudConfig, LayoutConfig } from "./types.js";
-import {
-  DEFAULT_HUD_CONFIG,
-  DEFAULT_ELEMENT_ORDER,
-  DEFAULT_HUD_LABELS,
-} from "./types.js";
+import { DEFAULT_HUD_CONFIG, DEFAULT_ELEMENT_ORDER, DEFAULT_HUD_LABELS } from "./types.js";
 import { bold, dim } from "./colors.js";
+import { isRuntimePackageLocal } from "../lib/version.js";
 import { stringWidth, getCharWidth } from "../utils/string-width.js";
 import { renderRalph } from "./elements/ralph.js";
 import {
@@ -37,11 +34,8 @@ import { renderPromptTime } from "./elements/prompt-time.js";
 import { renderAutopilot } from "./elements/autopilot.js";
 import { renderCwd } from "./elements/cwd.js";
 import { renderHostname } from "./elements/hostname.js";
-import {
-  renderGitRepo,
-  renderGitBranch,
-  renderGitStatus,
-} from "./elements/git.js";
+import { renderGitRepo, renderGitBranch, renderGitStatus } from "./elements/git.js";
+import { renderMultiRepo } from "./elements/multi-repo.js";
 import { renderModel } from "./elements/model.js";
 import { renderApiKeySource } from "./elements/api-key-source.js";
 import { renderCallCounts } from "./elements/call-counts.js";
@@ -263,19 +257,30 @@ export async function render(
     if (cwdElement) rendered.set("cwd", cwdElement);
   }
 
-  if (enabledElements.gitRepo) {
-    const gitRepoElement = renderGitRepo(context.cwd);
-    if (gitRepoElement) rendered.set("gitRepo", gitRepoElement);
-  }
+  // Multi-repo parent dir: replace the per-repo chips with a single
+  // workspace summary. When cwd is itself a git repo, renderMultiRepo
+  // returns null and the normal git elements take over.
+  const multiRepoElement = enabledElements.gitRepo
+    ? renderMultiRepo(context.cwd)
+    : null;
 
-  if (enabledElements.gitBranch) {
-    const gitBranchElement = renderGitBranch(context.cwd);
-    if (gitBranchElement) rendered.set("gitBranch", gitBranchElement);
-  }
+  if (multiRepoElement) {
+    rendered.set("gitRepo", multiRepoElement);
+  } else {
+    if (enabledElements.gitRepo) {
+      const gitRepoElement = renderGitRepo(context.cwd);
+      if (gitRepoElement) rendered.set("gitRepo", gitRepoElement);
+    }
 
-  if (enabledElements.gitStatus) {
-    const gitStatusElement = renderGitStatus(context.cwd, hudLabels);
-    if (gitStatusElement) rendered.set("gitStatus", gitStatusElement);
+    if (enabledElements.gitBranch) {
+      const gitBranchElement = renderGitBranch(context.cwd);
+      if (gitBranchElement) rendered.set("gitBranch", gitBranchElement);
+    }
+
+    if (enabledElements.gitStatus) {
+      const gitStatusElement = renderGitStatus(context.cwd, hudLabels);
+      if (gitStatusElement) rendered.set("gitStatus", gitStatusElement);
+    }
   }
 
   const modelSource = enabledElements.modelFormat === 'full'
@@ -302,7 +307,10 @@ export async function render(
   // -- main-group elements (default: main statusline) --
 
   if (enabledElements.omcLabel) {
-    const versionTag = context.omcVersion ? `#${context.omcVersion}` : "";
+    const localSuffix = isRuntimePackageLocal() ? "L" : "";
+    const versionTag = context.omcVersion
+      ? `#${context.omcVersion}${localSuffix}`
+      : (localSuffix ? `#${localSuffix}` : "");
     if (enabledElements.updateNotification !== false && context.updateAvailable) {
       rendered.set(
         "omcLabel",
@@ -315,11 +323,12 @@ export async function render(
 
   // Determine effective enterprise mode before rendering limits: only real
   // enterprise accounts replace token-window limits with enterprise cost.
-  const isEnterprise =
-    enabledElements.enterpriseMode !== undefined
-      ? enabledElements.enterpriseMode
-      : (context.subscriptionType ?? "").toLowerCase() === "enterprise" ||
-        /claude_zero/i.test(context.rateLimitTier ?? "");
+  const isEnterprise = enabledElements.enterpriseMode !== undefined
+    ? enabledElements.enterpriseMode
+    : (
+        (context.subscriptionType ?? '').toLowerCase() === 'enterprise' ||
+        /claude_zero/i.test(context.rateLimitTier ?? '')
+      );
 
   // Rate limits (5h and weekly) - data takes priority over error indicator.
   // Enterprise cost data only replaces token-window limits for accounts that
@@ -329,11 +338,7 @@ export async function render(
   const enterpriseCostReplacesRateLimits =
     isEnterprise &&
     context.rateLimitsResult?.rateLimits?.enterpriseSpentUsd !== undefined;
-  if (
-    enabledElements.rateLimits &&
-    context.rateLimitsResult &&
-    !enterpriseCostReplacesRateLimits
-  ) {
+  if (enabledElements.rateLimits && context.rateLimitsResult && !enterpriseCostReplacesRateLimits) {
     if (context.rateLimitsResult.rateLimits) {
       const stale = context.rateLimitsResult.stale;
       const limits = enabledElements.useBars
@@ -485,7 +490,7 @@ export async function render(
       context.toolCallCount,
       context.agentCallCount,
       context.skillCallCount,
-      enabledElements.callCountsFormat ?? "auto",
+      enabledElements.callCountsFormat ?? 'auto',
       hudLabels,
     );
     if (counts) rendered.set("callCounts", counts);
@@ -507,10 +512,7 @@ export async function render(
     context.missionBoard &&
     (config.missionBoard?.enabled ?? config.elements.missionBoard ?? false)
   ) {
-    const mbLines = renderMissionBoard(
-      context.missionBoard,
-      config.missionBoard,
-    );
+    const mbLines = renderMissionBoard(context.missionBoard, config.missionBoard);
     if (mbLines.length > 0) renderedDetail.set("missionBoard", mbLines);
   }
 
@@ -537,10 +539,7 @@ export async function render(
     line1: safeArray(config.layout?.line1, DEFAULT_ELEMENT_ORDER.line1),
     // `layout.main` remains the advanced authoritative layout control.
     // `elementOrder` is a narrow convenience alias for the main HUD line only.
-    main: safeArray(
-      config.layout?.main,
-      buildMainElementOrder(config.elementOrder),
-    ),
+    main: safeArray(config.layout?.main, buildMainElementOrder(config.elementOrder)),
     detail: safeArray(config.layout?.detail, DEFAULT_ELEMENT_ORDER.detail),
   };
 

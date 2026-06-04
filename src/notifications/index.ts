@@ -113,6 +113,7 @@ import { getCurrentTmuxSession } from "./tmux.js";
 import { getHookConfig, resolveEventTemplate } from "./hook-config.js";
 import { interpolateTemplate } from "./template-engine.js";
 import { basename, join } from "path";
+import { getOmcRoot } from "../lib/worktree-paths.js";
 
 /**
  * High-level notification function.
@@ -126,13 +127,10 @@ import { basename, join } from "path";
  */
 export async function notify(
   event: NotificationEvent,
-  data: Partial<NotificationPayload> & {
-    sessionId: string;
-    profileName?: string;
-  },
+  data: Partial<NotificationPayload> & { sessionId: string; profileName?: string },
 ): Promise<DispatchResult | null> {
   // OMC_NOTIFY=0 suppresses all CCNotifier events (set by `omc --notify false`)
-  if (process.env.OMC_NOTIFY === "0") {
+  if (process.env.OMC_NOTIFY === '0') {
     return null;
   }
 
@@ -185,34 +183,27 @@ export async function notify(
       incompleteTasks: data.incompleteTasks,
       agentName: data.agentName,
       agentType: data.agentType,
-      replyChannel:
-        data.replyChannel ?? process.env.OPENCLAW_REPLY_CHANNEL ?? undefined,
-      replyTarget:
-        data.replyTarget ?? process.env.OPENCLAW_REPLY_TARGET ?? undefined,
-      replyThread:
-        data.replyThread ?? process.env.OPENCLAW_REPLY_THREAD ?? undefined,
+      replyChannel: data.replyChannel ?? process.env.OPENCLAW_REPLY_CHANNEL ?? undefined,
+      replyTarget: data.replyTarget ?? process.env.OPENCLAW_REPLY_TARGET ?? undefined,
+      replyThread: data.replyThread ?? process.env.OPENCLAW_REPLY_THREAD ?? undefined,
     };
 
     // Capture tmux tail for events that benefit from it
     if (
       shouldIncludeTmuxTail(verbosity) &&
       payload.tmuxPaneId &&
-      (event === "session-idle" ||
-        event === "session-end" ||
-        event === "session-stop")
+      (event === "session-idle" || event === "session-end" || event === "session-stop")
     ) {
       try {
-        const { capturePaneContent } =
-          await import("../features/rate-limit-wait/tmux-detector.js");
-        const { getNewPaneTail } =
-          await import("../features/rate-limit-wait/pane-fresh-capture.js");
+        const { capturePaneContent } = await import(
+          "../features/rate-limit-wait/tmux-detector.js"
+        );
+        const { getNewPaneTail } = await import(
+          "../features/rate-limit-wait/pane-fresh-capture.js"
+        );
         const tailLines = getTmuxTailLines(config);
         const rawTail = payload.projectPath
-          ? getNewPaneTail(
-              payload.tmuxPaneId,
-              join(payload.projectPath, ".omc", "state"),
-              tailLines,
-            )
+          ? getNewPaneTail(payload.tmuxPaneId, join(getOmcRoot(payload.projectPath), "state"), tailLines)
           : capturePaneContent(payload.tmuxPaneId, tailLines);
         if (rawTail) {
           payload.tmuxTail = rawTail;
@@ -233,12 +224,7 @@ export async function notify(
       const hookConfig = getHookConfig();
       if (hookConfig?.enabled) {
         const platforms: NotificationPlatform[] = [
-          "discord",
-          "discord-bot",
-          "telegram",
-          "slack",
-          "slack-bot",
-          "webhook",
+          "discord", "discord-bot", "telegram", "slack", "slack-bot", "webhook",
         ];
         const map = new Map<NotificationPlatform, string>();
         for (const platform of platforms) {
@@ -258,10 +244,7 @@ export async function notify(
 
     // Dispatch to all enabled platforms
     const result = await dispatchNotifications(
-      config,
-      event,
-      payload,
-      platformMessages,
+      config, event, payload, platformMessages,
     );
 
     // NEW: Register message IDs for reply correlation
@@ -272,9 +255,7 @@ export async function notify(
           if (
             r.success &&
             r.messageId &&
-            (r.platform === "discord-bot" ||
-              r.platform === "telegram" ||
-              r.platform === "slack-bot")
+            (r.platform === "discord-bot" || r.platform === "telegram" || r.platform === "slack-bot")
           ) {
             registerMessage({
               platform: r.platform,

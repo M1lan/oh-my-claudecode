@@ -3,7 +3,7 @@
  * Detects and extracts user directives from messages and tool outputs
  */
 
-import { UserDirective } from "./types.js";
+import { UserDirective } from './types.js';
 
 /**
  * Patterns that indicate user directives
@@ -43,7 +43,7 @@ const DIRECTIVE_PATTERNS = [
  */
 export function detectDirectivesFromMessage(message: string): UserDirective[] {
   const directives: UserDirective[] = [];
-  const lines = message.split("\n");
+  const lines = message.split('\n');
 
   for (const line of lines) {
     for (const pattern of DIRECTIVE_PATTERNS) {
@@ -56,8 +56,8 @@ export function detectDirectivesFromMessage(message: string): UserDirective[] {
             timestamp: Date.now(),
             directive: directive,
             context: line.trim(),
-            source: "explicit",
-            priority: isPriorityDirective(line) ? "high" : "normal",
+            source: 'explicit',
+            priority: isPriorityDirective(line) ? 'high' : 'normal',
           });
         }
       }
@@ -71,17 +71,8 @@ export function detectDirectivesFromMessage(message: string): UserDirective[] {
  * Check if directive is high priority
  */
 function isPriorityDirective(text: string): boolean {
-  const priorityKeywords = [
-    "must",
-    "critical",
-    "important",
-    "always",
-    "never",
-    "requirement",
-  ];
-  return priorityKeywords.some((keyword) =>
-    text.toLowerCase().includes(keyword),
-  );
+  const priorityKeywords = ['must', 'critical', 'important', 'always', 'never', 'requirement'];
+  return priorityKeywords.some(keyword => text.toLowerCase().includes(keyword));
 }
 
 /**
@@ -89,7 +80,7 @@ function isPriorityDirective(text: string): boolean {
  */
 export function inferDirectiveFromPattern(
   commandHistory: string[],
-  threshold: number = 3,
+  threshold: number = 3
 ): UserDirective | null {
   // Look for repeated command patterns
   const commandCounts = new Map<string, number>();
@@ -101,7 +92,7 @@ export function inferDirectiveFromPattern(
 
   // Find most common pattern
   let maxCount = 0;
-  let mostCommon = "";
+  let mostCommon = '';
 
   for (const [cmd, count] of commandCounts.entries()) {
     if (count > maxCount) {
@@ -115,8 +106,8 @@ export function inferDirectiveFromPattern(
       timestamp: Date.now(),
       directive: `User frequently runs: ${mostCommon}`,
       context: `Pattern detected from ${maxCount} executions`,
-      source: "inferred",
-      priority: "normal",
+      source: 'inferred',
+      priority: 'normal',
     };
   }
 
@@ -135,61 +126,61 @@ function normalizeCommand(cmd: string): string {
  * Add directive if not duplicate
  */
 export function addDirective(
-  directives: UserDirective[],
-  newDirective: UserDirective,
+  directives: UserDirective[] | null | undefined,
+  newDirective: UserDirective
 ): UserDirective[] {
+  const directiveList = Array.isArray(directives) ? directives : [];
+
   // Check for duplicates
-  const isDuplicate = directives.some(
-    (d) => d.directive.toLowerCase() === newDirective.directive.toLowerCase(),
+  const isDuplicate = directiveList.some(d =>
+    d.directive.toLowerCase() === newDirective.directive.toLowerCase()
   );
 
   if (!isDuplicate) {
-    directives.push(newDirective);
+    directiveList.push(newDirective);
 
     // Keep only most recent 20 directives
-    if (directives.length > 20) {
-      directives.sort((a, b) => {
+    if (directiveList.length > 20) {
+      directiveList.sort((a, b) => {
         // Sort by priority first, then by timestamp
         if (a.priority !== b.priority) {
-          return a.priority === "high" ? -1 : 1;
+          return a.priority === 'high' ? -1 : 1;
         }
         return b.timestamp - a.timestamp;
       });
-      directives.splice(20);
+      directiveList.splice(20);
     }
   }
 
-  return directives;
+  return directiveList;
 }
 
 /**
  * Format directives for context injection
  */
-export function formatDirectivesForContext(
-  directives: UserDirective[],
-): string {
-  if (directives.length === 0) return "";
+export function formatDirectivesForContext(directives: UserDirective[]): string {
+  if (directives.length === 0) return '';
 
-  const lines = ["**User Directives (Must Follow):**"];
+  const lines = ['**User Directives (Must Follow):**'];
 
   // Group by priority
-  const highPriority = directives.filter((d) => d.priority === "high");
-  const normalPriority = directives.filter((d) => d.priority === "normal");
+  const highPriority = directives.filter(d => d.priority === 'high');
+  const normalPriority = directives.filter(d => d.priority === 'normal');
 
   if (highPriority.length > 0) {
-    lines.push("");
-    lines.push("🔴 **Critical:**");
+    lines.push('');
+    lines.push('🔴 **Critical:**');
     for (const d of highPriority) {
       lines.push(`- ${d.directive}`);
     }
   }
 
   if (normalPriority.length > 0) {
-    lines.push("");
+    lines.push('');
     for (const d of normalPriority) {
       lines.push(`- ${d.directive}`);
     }
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

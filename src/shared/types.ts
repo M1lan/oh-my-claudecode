@@ -293,6 +293,7 @@ export interface ExternalModelsDefaults {
   provider?: ExternalModelProvider;
   codexModel?: string;
   geminiModel?: string;
+  grokModel?: string;
 }
 
 /**
@@ -394,56 +395,56 @@ export interface ResolveDelegationOptions {
 
 /** Canonical role names accepted in `team.roleRouting` (source of truth). */
 export const CANONICAL_TEAM_ROLES = [
-  "orchestrator",
-  "planner",
-  "analyst",
-  "architect",
-  "executor",
-  "debugger",
-  "critic",
-  "code-reviewer",
-  "security-reviewer",
-  "test-engineer",
-  "designer",
-  "writer",
-  "code-simplifier",
-  "explore",
-  "document-specialist",
+  'orchestrator',
+  'planner',
+  'analyst',
+  'architect',
+  'executor',
+  'debugger',
+  'critic',
+  'code-reviewer',
+  'security-reviewer',
+  'test-engineer',
+  'designer',
+  'writer',
+  'code-simplifier',
+  'explore',
+  'document-specialist',
 ] as const;
 
-export type CanonicalTeamRole = (typeof CANONICAL_TEAM_ROLES)[number];
+export type CanonicalTeamRole = typeof CANONICAL_TEAM_ROLES[number];
 
 /** Provider for /team role routing. */
-export type TeamRoleProvider = "claude" | "codex" | "gemini";
+export type TeamRoleProvider = 'claude' | 'codex' | 'gemini' | 'grok';
 
 /** Tier name accepted in role-assignment `model` field. */
-export type TeamRoleTier = "HIGH" | "MEDIUM" | "LOW";
+export type TeamRoleTier = 'HIGH' | 'MEDIUM' | 'LOW';
 
 /** Known agent names derived from `buildDefaultConfig().agents` keys in src/config/loader.ts. */
 export const KNOWN_AGENT_NAMES = [
-  "omc",
-  "explore",
-  "analyst",
-  "planner",
-  "architect",
-  "debugger",
-  "executor",
-  "verifier",
-  "securityReviewer",
-  "codeReviewer",
-  "testEngineer",
-  "designer",
-  "writer",
-  "qaTester",
-  "scientist",
-  "tracer",
-  "gitMaster",
-  "codeSimplifier",
-  "critic",
-  "documentSpecialist",
+  'omc',
+  'explore',
+  'analyst',
+  'planner',
+  'architect',
+  'debugger',
+  'executor',
+  'verifier',
+  'securityReviewer',
+  'codeReviewer',
+  'testEngineer',
+  'designer',
+  'writer',
+  'qaTester',
+  'scientist',
+  'tracer',
+  'gitMaster',
+  'codeSimplifier',
+  'critic',
+  'documentSpecialist',
 ] as const;
 
-export type KnownAgentName = (typeof KNOWN_AGENT_NAMES)[number];
+export type KnownAgentName = typeof KNOWN_AGENT_NAMES[number];
 
 /** User-facing per-role spec in `team.roleRouting`. */
 export interface TeamRoleAssignmentSpec {
@@ -454,10 +455,10 @@ export interface TeamRoleAssignmentSpec {
 }
 
 /** Orchestrator is pinned to claude; only `model` is user-configurable. */
-export type OrchestratorSpec = Pick<TeamRoleAssignmentSpec, "model">;
+export type OrchestratorSpec = Pick<TeamRoleAssignmentSpec, 'model'>;
 
 /** Cost mode reserved for future downgrade behavior (no implementation yet). */
-export type TeamCostMode = "normal" | "downgrade";
+export type TeamCostMode = 'normal' | 'downgrade';
 
 /** Ops-level knobs for `/team`. */
 export interface TeamOpsConfig {
@@ -467,7 +468,7 @@ export interface TeamOpsConfig {
   shutdownTimeoutMs?: number;
   costMode?: TeamCostMode;
   /** Opt-in native team worker worktrees. Disabled unless explicitly set. */
-  worktreeMode?: "disabled" | "off" | "detached" | "branch" | "named";
+  worktreeMode?: 'disabled' | 'off' | 'detached' | 'branch' | 'named';
 }
 
 /** `team` config block in PluginConfig. */

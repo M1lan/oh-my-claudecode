@@ -35,6 +35,7 @@ const __dirname = dirname(__filename);
 const { readStdin } = await import(pathToFileURL(join(__dirname, 'lib', 'stdin.mjs')).href);
 const { atomicWriteFileSync } = await import(pathToFileURL(join(__dirname, 'lib', 'atomic-write.mjs')).href);
 const { getClaudeConfigDir } = await import(pathToFileURL(join(__dirname, 'lib', 'config-dir.mjs')).href);
+const { resolveSessionStatePathsForHook } = await import(pathToFileURL(join(__dirname, 'lib', 'state-root.mjs')).href);
 
 
 const _omcRoot = process.env.CLAUDE_PLUGIN_ROOT || join(__dirname, '..');
@@ -145,7 +146,7 @@ function extractPrompt(input) {
 }
 
 function isExplicitAskSlashInvocation(prompt) {
-  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini)\b/i.test(prompt);
+  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini|grok)\b/i.test(prompt);
 }
 
 // Sanitize text to prevent false positives from code blocks, XML tags, URLs, and file paths
@@ -329,7 +330,7 @@ function stripPastedCommandPayloads(text) {
 const INFORMATIONAL_INTENT_PATTERNS = [
   /\b(?:what(?:'s|\s+is)|what\s+are|how\s+(?:to|do\s+i)\s+use|explain|explanation|tell\s+me\s+about|describe)\b/i,
   /(?:뭐야|뭔데|무엇(?:이야|인가요)?|어떻게|설명(?!서\s*(?:작성|만들|생성|추가|업데이트|수정|편집|쓰))|사용법|알려\s?줘|알려줄래|소개해?\s?줘|소개\s*부탁|설명해\s?줘|뭐가\s*달라|어떤\s*기능|기능\s*(?:알려|설명|뭐)|방법\s*(?:알려|설명|뭐))/u,
-  /(?:とは|って何|使い方|説明)/u,
+  /(?:とは|って何|使い方|説明|(?:について|に関して)[^\n]{0,24}(?:教えて|説明|知りたい))/u,
   /(?:什么是|什麼是|怎(?:么|樣)用|如何使用|解释|說明|说明)/u,
 ];
 const INFORMATIONAL_CONTEXT_WINDOW = 80;
@@ -540,9 +541,42 @@ function hasDiagnosticIntentNearKeyword(context, keyword) {
     new RegExp(`\\b${escaped}\\b[^\\n]{0,48}\\b(?:keeps?\\s+(?:looping|re-?running)|has\\s+(?:a\\s+)?(?:bug|issue|problem|error)|is\\s+(?:stuck|broken|failing)|loop(?:ing)?)\\b`, 'i'),
     new RegExp(`\\b(?:bug|issue|problem|error)\\b[^\\n]{0,16}\\b(?:with|in)\\s+\\b${escaped}\\b`, 'i'),
     new RegExp(`${escaped}.{0,14}(?:자꾸|계속).{0,14}(?:재실행|반복|루프|멈추)`, 'u'),
+    // Japanese: repeated-failure complaint — direct mirror of the Korean 자꾸/계속 line above
+    // (frequency adverb + problem verb). No P2 subject-particle pattern / no work-request escape: Korean parity.
+    new RegExp(`${escaped}[^\\n]{0,16}(?:また|何度も|ずっと|頻繁|繰り返|いつも)[^\\n]{0,16}(?:失敗|エラー|ループ|止ま|落ち|再実行|動かな|フリーズ|壊れ|クラッシュ|こけ|暴走|無限)`, 'u'),
   ];
 
   return patterns.some((pattern) => pattern.test(context));
+}
+
+function isRalphUltraworkMetaOrBanterContext(context, keywordText) {
+  const normalizedKeyword = (keywordText || '').toLowerCase().replace(/\s+/g, '');
+  if (!['ralph', '랄프', 'ラルフ', 'ultrawork', 'ulw', 'uw', '울트라워크', 'ウルトラワーク'].includes(normalizedKeyword)) {
+    return false;
+  }
+
+  const currentKeywordAliases = normalizedKeyword === 'ralph' || normalizedKeyword === '랄프' || normalizedKeyword === 'ラルフ'
+    ? ['랄프', 'ラルフ']
+    : ['울트라워크', 'ウルトラワーク'];
+  const currentKeywordPattern = currentKeywordAliases.join('|');
+  const imperativeVerbPattern = '켜|켜줘|실행|시작|돌려|돌려줘|써|써줘|사용해|진행해';
+  const koreanImperativePatterns = [
+    new RegExp(`(?:${currentKeywordPattern})[^?？\n]{0,16}(?:${imperativeVerbPattern})`, 'u'),
+    new RegExp(`(?:${imperativeVerbPattern})[^?？\n]{0,16}(?:${currentKeywordPattern})`, 'u'),
+  ];
+  if (koreanImperativePatterns.some((pattern) => pattern.test(context))) {
+    return false;
+  }
+
+  const metaOrBanterPatterns = [
+    /[?？].{0,12}(?:ㅋ{1,}|ㅎ{1,}|lol|lmao)/iu,
+    /(?:ㅋ{1,}|ㅎ{1,}|lol|lmao).{0,40}[?？]/iu,
+    /(?:ralph|랄프|ultrawork|ulw|uw|울트라워크).{0,40}(?:라도|줘야\s*해|쥐어\s*줘야\s*해|해야\s*해).{0,20}[?？]/iu,
+    /(?:관계|관련|연관|차이|비교).{0,40}(?:뭐|무엇|어떻게|설명|알려|궁금|인가|야|냐|니|까|[?？])/u,
+    /(?:뭐|무엇|어떻게|설명|알려|궁금).{0,40}(?:관계|관련|연관|차이|비교)/u,
+  ];
+
+  return metaOrBanterPatterns.some((pattern) => pattern.test(context));
 }
 
 function isInformationalKeywordContext(text, position, keywordLength, keywordText) {
@@ -557,6 +591,9 @@ function isInformationalKeywordContext(text, position, keywordLength, keywordTex
   if (keywordText) {
     if (hasActivationIntentNearKeyword(context, keywordText)) {
       return false;
+    }
+    if (isRalphUltraworkMetaOrBanterContext(context, keywordText)) {
+      return true;
     }
     if (hasDiagnosticIntentNearKeyword(context, keywordText)) {
       return true;
@@ -636,7 +673,7 @@ function hasActionableRalplanKeyword(text, pattern) {
 // Create state file for a mode
 const SESSION_ID_ALLOWLIST = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/;
 
-function activateState(directory, prompt, stateName, sessionId) {
+async function activateState(directory, prompt, stateName, sessionId) {
   const now = new Date().toISOString();
   // Sanitize prompt BEFORE writing to state: prevents pasted system echoes
   // and oversized blobs from being persisted and re-emitted by Stop hook.
@@ -673,15 +710,13 @@ function activateState(directory, prompt, stateName, sessionId) {
   }
 
   // Write to session-scoped local path when sessionId is available (must match persistent-mode.mjs reads)
-  const stateDir = join(directory, '.omc', 'state');
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
-  const targetDir = safeSessionId
-    ? join(stateDir, 'sessions', safeSessionId)
-    : stateDir;
+  const { writePath } = await resolveSessionStatePathsForHook(directory, stateName, safeSessionId || undefined);
+  const targetDir = join(writePath, '..');
 
   try {
     if (!existsSync(targetDir)) mkdirSync(targetDir, { recursive: true });
-    atomicWriteFileSync(join(targetDir, `${stateName}-state.json`), JSON.stringify(state, null, 2));
+    atomicWriteFileSync(writePath, JSON.stringify(state, null, 2));
   } catch {}
 
   // Also write to global fallback
@@ -695,9 +730,9 @@ function activateState(directory, prompt, stateName, sessionId) {
 /**
  * Clear state files for cancel operation
  */
-function clearStateFiles(directory, modeNames) {
+async function clearStateFiles(directory, modeNames) {
   for (const name of modeNames) {
-    const localPath = join(directory, '.omc', 'state', `${name}-state.json`);
+    const { writePath: localPath } = await resolveSessionStatePathsForHook(directory, name, undefined);
     const globalPath = join(homedir(), '.omc', 'state', `${name}-state.json`);
     try { if (existsSync(localPath)) unlinkSync(localPath); } catch {}
     try { if (existsSync(globalPath)) unlinkSync(globalPath); } catch {}
@@ -708,17 +743,16 @@ function clearStateFiles(directory, modeNames) {
  * Link ralph and team state files for composition.
  * Updates both state files to reference each other.
  */
-function linkRalphTeam(directory, sessionId) {
-  const getStatePath = (modeName) => {
-    if (sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId)) {
-      return join(directory, '.omc', 'state', 'sessions', sessionId, `${modeName}-state.json`);
-    }
-    return join(directory, '.omc', 'state', `${modeName}-state.json`);
+async function linkRalphTeam(directory, sessionId) {
+  const safeSessionId = sessionId && /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,255}$/.test(sessionId) ? sessionId : undefined;
+  const getStatePath = async (modeName) => {
+    const { writePath } = await resolveSessionStatePathsForHook(directory, modeName, safeSessionId);
+    return writePath;
   };
 
   // Update ralph state with linked_team
   try {
-    const ralphPath = getStatePath('ralph');
+    const ralphPath = await getStatePath('ralph');
     if (existsSync(ralphPath)) {
       const state = JSON.parse(readFileSync(ralphPath, 'utf-8'));
       state.linked_team = true;
@@ -728,7 +762,7 @@ function linkRalphTeam(directory, sessionId) {
 
   // Update team state with linked_ralph
   try {
-    const teamPath = getStatePath('team');
+    const teamPath = await getStatePath('team');
     if (existsSync(teamPath)) {
       const state = JSON.parse(readFileSync(teamPath, 'utf-8'));
       state.linked_ralph = true;
@@ -921,12 +955,12 @@ async function main() {
     }
 
     // Ralph keywords
-    if (hasActionableKeyword(cleanPrompt, /\b(ralph)\b|(랄프)(?!로렌)/i)) {
+    if (hasActionableKeyword(cleanPrompt, /\b(ralph)\b|(랄프)(?!로렌)|(ラルフ)(?!・?ローレン)/i)) {
       matches.push({ name: 'ralph', args: '' });
     }
 
     // Autopilot keywords
-    if (hasActionableKeyword(cleanPrompt, /\b(autopilot|auto[\s-]?pilot|fullsend|full\s+auto)\b|(오토파일럿)/i)) {
+    if (hasActionableKeyword(cleanPrompt, /\b(autopilot|auto[\s-]?pilot|fullsend|full\s+auto)\b|(오토파일럿)|(オートパイロット)/i)) {
       matches.push({ name: 'autopilot', args: '' });
     }
 
@@ -934,7 +968,7 @@ async function main() {
     // This prevents infinite spawning when Claude workers receive prompts containing "team".
 
     // Ultrawork keywords
-    if (hasActionableKeyword(cleanPrompt, /\b(ultrawork|ulw)\b|(울트라워크)/i)) {
+    if (hasActionableKeyword(cleanPrompt, /\b(ultrawork|ulw)\b|(울트라워크)|(ウルトラワーク)/i)) {
       matches.push({ name: 'ultrawork', args: '' });
     }
 
@@ -945,7 +979,7 @@ async function main() {
     }
 
     // Ralplan keyword
-    if (hasActionableRalplanKeyword(cleanPrompt, /\b(ralplan)\b|(랄플랜)/i)) {
+    if (hasActionableRalplanKeyword(cleanPrompt, /\b(ralplan)\b|(랄플랜)|(ラルプラン)/i)) {
       matches.push({ name: 'ralplan', args: '' });
     }
 
@@ -986,7 +1020,7 @@ async function main() {
     }
 
     // Ultrathink keywords
-    if (hasActionableKeyword(cleanPrompt, /\b(ultrathink)\b|(울트라씽크)/i)) {
+    if (hasActionableKeyword(cleanPrompt, /\b(ultrathink)\b|(울트라씽크)|(ウルトラシンク)/i)) {
       matches.push({ name: 'ultrathink', args: '' });
     }
 
@@ -1023,7 +1057,7 @@ async function main() {
 
     // Handle cancel specially - clear states and emit
     if (resolved.length > 0 && resolved[0].name === 'cancel') {
-      clearStateFiles(directory, ['ralph', 'autopilot', 'ultrawork']);
+      await clearStateFiles(directory, ['ralph', 'autopilot', 'ultrawork']);
       console.log(JSON.stringify(createHookOutput(createSkillInvocation('cancel', prompt))));
       return;
     }
@@ -1032,14 +1066,14 @@ async function main() {
     const sessionId = data.sessionId || data.session_id || data.sessionid || '';
     const stateModes = resolved.filter(m => ['ralph', 'autopilot', 'ultrawork'].includes(m.name));
     for (const mode of stateModes) {
-      activateState(directory, prompt, mode.name, sessionId);
+      await activateState(directory, prompt, mode.name, sessionId);
     }
 
     // Special: Ralph with ultrawork (ralph always includes ultrawork)
     const hasRalph = resolved.some(m => m.name === 'ralph');
     const hasUltrawork = resolved.some(m => m.name === 'ultrawork');
     if (hasRalph && !hasUltrawork) {
-      activateState(directory, prompt, 'ultrawork', sessionId);
+      await activateState(directory, prompt, 'ultrawork', sessionId);
     }
 
     const additionalContextParts = [];

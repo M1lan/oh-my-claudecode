@@ -2,54 +2,31 @@
  * Tests for Project Memory Storage
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import fs from "fs/promises";
-import path from "path";
-import os from "os";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs/promises';
+import path from 'path';
+import os from 'os';
 import {
   loadProjectMemory,
   saveProjectMemory,
   shouldRescan,
   deleteProjectMemory,
   getMemoryPath,
-} from "../storage.js";
-import { ProjectMemory } from "../types.js";
-import { SCHEMA_VERSION } from "../constants.js";
-import { getProjectIdentifier } from "../../../lib/worktree-paths.js";
+} from '../storage.js';
+import { formatContextSummary, formatFullContext } from '../formatter.js';
+import { ProjectMemory } from '../types.js';
+import { SCHEMA_VERSION } from '../constants.js';
+import { getProjectIdentifier } from '../../../lib/worktree-paths.js';
 
 // Helper to create base memory with all required fields
-const createBaseMemory = (
-  projectRoot: string,
-  overrides: Partial<ProjectMemory> = {},
-): ProjectMemory => ({
+const createBaseMemory = (projectRoot: string, overrides: Partial<ProjectMemory> = {}): ProjectMemory => ({
   version: SCHEMA_VERSION,
   lastScanned: Date.now(),
   projectRoot,
-  techStack: {
-    languages: [],
-    frameworks: [],
-    packageManager: null,
-    runtime: null,
-  },
-  build: {
-    buildCommand: null,
-    testCommand: null,
-    lintCommand: null,
-    devCommand: null,
-    scripts: {},
-  },
-  conventions: {
-    namingStyle: null,
-    importStyle: null,
-    testPattern: null,
-    fileOrganization: null,
-  },
-  structure: {
-    isMonorepo: false,
-    workspaces: [],
-    mainDirectories: [],
-    gitBranches: null,
-  },
+  techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+  build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+  conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+  structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
   customNotes: [],
   directoryMap: {},
   hotPaths: [],
@@ -57,14 +34,14 @@ const createBaseMemory = (
   ...overrides,
 });
 
-describe("Project Memory Storage", () => {
+describe('Project Memory Storage', () => {
   let tempDir: string;
   let projectRoot: string;
 
   beforeEach(async () => {
     // Create temporary directory
     delete process.env.OMC_STATE_DIR;
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "project-memory-test-"));
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'project-memory-test-'));
     projectRoot = tempDir;
   });
 
@@ -74,29 +51,19 @@ describe("Project Memory Storage", () => {
     await fs.rm(tempDir, { recursive: true, force: true });
   });
 
-  describe("getMemoryPath", () => {
-    it("should return correct memory file path", () => {
+  describe('getMemoryPath', () => {
+    it('should return correct memory file path', () => {
       const memoryPath = getMemoryPath(projectRoot);
-      expect(memoryPath).toBe(
-        path.join(projectRoot, ".omc", "project-memory.json"),
-      );
+      expect(memoryPath).toBe(path.join(projectRoot, '.omc', 'project-memory.json'));
     });
 
-    it("should return centralized memory file path when OMC_STATE_DIR is set", async () => {
-      const stateDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), "project-memory-state-"),
-      );
+    it('should return centralized memory file path when OMC_STATE_DIR is set', async () => {
+      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), 'project-memory-state-'));
       try {
         process.env.OMC_STATE_DIR = stateDir;
 
         const memoryPath = getMemoryPath(projectRoot);
-        expect(memoryPath).toBe(
-          path.join(
-            stateDir,
-            getProjectIdentifier(projectRoot),
-            "project-memory.json",
-          ),
-        );
+        expect(memoryPath).toBe(path.join(stateDir, getProjectIdentifier(projectRoot), 'project-memory.json'));
       } finally {
         delete process.env.OMC_STATE_DIR;
         await fs.rm(stateDir, { recursive: true, force: true });
@@ -104,25 +71,18 @@ describe("Project Memory Storage", () => {
     });
   });
 
-  describe("saveProjectMemory", () => {
-    it("should create .omc directory and save memory file", async () => {
+  describe('saveProjectMemory', () => {
+    it('should create .omc directory and save memory file', async () => {
       const memory = createBaseMemory(projectRoot, {
         techStack: {
-          languages: [
-            {
-              name: "TypeScript",
-              version: "5.0.0",
-              confidence: "high",
-              markers: ["tsconfig.json"],
-            },
-          ],
+          languages: [{ name: 'TypeScript', version: '5.0.0', confidence: 'high', markers: ['tsconfig.json'] }],
           frameworks: [],
-          packageManager: "pnpm",
+          packageManager: 'pnpm',
           runtime: null,
         },
         build: {
-          buildCommand: "pnpm build",
-          testCommand: "pnpm test",
+          buildCommand: 'pnpm build',
+          testCommand: 'pnpm test',
           lintCommand: null,
           devCommand: null,
           scripts: {},
@@ -145,7 +105,7 @@ describe("Project Memory Storage", () => {
       await saveProjectMemory(projectRoot, memory);
 
       // Verify .omc directory exists
-      const omcDir = path.join(projectRoot, ".omc");
+      const omcDir = path.join(projectRoot, '.omc');
       const omcStat = await fs.stat(omcDir);
       expect(omcStat.isDirectory()).toBe(true);
 
@@ -155,139 +115,79 @@ describe("Project Memory Storage", () => {
       expect(memoryStat.isFile()).toBe(true);
 
       // Verify content
-      const content = await fs.readFile(memoryPath, "utf-8");
+      const content = await fs.readFile(memoryPath, 'utf-8');
       const parsed = JSON.parse(content);
       expect(parsed.version).toBe(SCHEMA_VERSION);
       expect(parsed.projectRoot).toBe(projectRoot);
     });
 
-    it("should save to centralized state dir without creating local .omc when OMC_STATE_DIR is set", async () => {
-      const stateDir = await fs.mkdtemp(
-        path.join(os.tmpdir(), "project-memory-state-"),
-      );
+    it('should save to centralized state dir without creating local .omc when OMC_STATE_DIR is set', async () => {
+      const stateDir = await fs.mkdtemp(path.join(os.tmpdir(), 'project-memory-state-'));
       try {
         process.env.OMC_STATE_DIR = stateDir;
 
         const memory = createBaseMemory(projectRoot, {
-          techStack: {
-            languages: [],
-            frameworks: [],
-            packageManager: null,
-            runtime: null,
-          },
-          build: {
-            buildCommand: null,
-            testCommand: null,
-            lintCommand: null,
-            devCommand: null,
-            scripts: {},
-          },
-          conventions: {
-            namingStyle: null,
-            importStyle: null,
-            testPattern: null,
-            fileOrganization: null,
-          },
-          structure: {
-            isMonorepo: false,
-            workspaces: [],
-            mainDirectories: [],
-            gitBranches: null,
-          },
+          techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+          build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+          conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+          structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
           customNotes: [],
         });
 
         await saveProjectMemory(projectRoot, memory);
 
-        const centralizedPath = path.join(
-          stateDir,
-          getProjectIdentifier(projectRoot),
-          "project-memory.json",
-        );
-        const centralizedContent = await fs.readFile(centralizedPath, "utf-8");
+        const centralizedPath = path.join(stateDir, getProjectIdentifier(projectRoot), 'project-memory.json');
+        const centralizedContent = await fs.readFile(centralizedPath, 'utf-8');
         expect(JSON.parse(centralizedContent).projectRoot).toBe(projectRoot);
-        await expect(
-          fs.access(path.join(projectRoot, ".omc", "project-memory.json")),
-        ).rejects.toThrow();
+        await expect(fs.access(path.join(projectRoot, '.omc', 'project-memory.json'))).rejects.toThrow();
       } finally {
         delete process.env.OMC_STATE_DIR;
         await fs.rm(stateDir, { recursive: true, force: true });
       }
     });
 
-    it("should overwrite existing memory file", async () => {
+    it('should overwrite existing memory file', async () => {
       const memory1 = createBaseMemory(projectRoot, {
-        techStack: {
-          languages: [],
-          frameworks: [],
-          packageManager: null,
-          runtime: null,
-        },
-        build: {
-          buildCommand: null,
-          testCommand: null,
-          lintCommand: null,
-          devCommand: null,
-          scripts: {},
-        },
-        conventions: {
-          namingStyle: null,
-          importStyle: null,
-          testPattern: null,
-          fileOrganization: null,
-        },
-        structure: {
-          isMonorepo: false,
-          workspaces: [],
-          mainDirectories: [],
-          gitBranches: null,
-        },
+        techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+        build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+        conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+        structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
         customNotes: [],
       });
 
       await saveProjectMemory(projectRoot, memory1);
 
-      const memory2 = {
-        ...memory1,
-        techStack: { ...memory1.techStack, packageManager: "yarn" },
-      };
+      const memory2 = { ...memory1, techStack: { ...memory1.techStack, packageManager: 'yarn' } };
       await saveProjectMemory(projectRoot, memory2);
 
       const loaded = await loadProjectMemory(projectRoot);
-      expect(loaded?.techStack.packageManager).toBe("yarn");
+      expect(loaded?.techStack.packageManager).toBe('yarn');
     });
   });
 
-  describe("loadProjectMemory", () => {
-    it("should return null if memory file does not exist", async () => {
+  describe('loadProjectMemory', () => {
+    it('should return null if memory file does not exist', async () => {
       const memory = await loadProjectMemory(projectRoot);
       expect(memory).toBeNull();
     });
 
-    it("should load existing memory file", async () => {
+    it('should load existing memory file', async () => {
       const original = createBaseMemory(projectRoot, {
         techStack: {
-          languages: [
-            {
-              name: "Rust",
-              version: "1.70.0",
-              confidence: "high",
-              markers: ["Cargo.toml"],
-            },
-          ],
+          languages: [{ name: 'Rust', version: '1.70.0', confidence: 'high', markers: ['Cargo.toml'] }],
           frameworks: [],
-          packageManager: "cargo",
+          packageManager: 'cargo',
           runtime: null,
         },
         build: {
-          buildCommand: "cargo build",
-          testCommand: "cargo test",
-          lintCommand: "cargo clippy",
+          buildCommand: 'cargo build',
+          testCommand: 'cargo test',
+          lintCommand: 'cargo clippy',
           devCommand: null,
           scripts: {},
         },
         conventions: {
-          namingStyle: "snake_case",
+          namingStyle: 'snake_case',
           importStyle: null,
           testPattern: null,
           fileOrganization: null,
@@ -295,7 +195,7 @@ describe("Project Memory Storage", () => {
         structure: {
           isMonorepo: false,
           workspaces: [],
-          mainDirectories: ["src"],
+          mainDirectories: ['src'],
           gitBranches: null,
         },
       });
@@ -305,106 +205,99 @@ describe("Project Memory Storage", () => {
 
       expect(loaded).not.toBeNull();
       expect(loaded?.version).toBe(SCHEMA_VERSION);
-      expect(loaded?.techStack.languages[0].name).toBe("Rust");
-      expect(loaded?.build.buildCommand).toBe("cargo build");
+      expect(loaded?.techStack.languages[0].name).toBe('Rust');
+      expect(loaded?.build.buildCommand).toBe('cargo build');
     });
 
-    it("should return null for invalid JSON", async () => {
+    it('should normalize missing runtime list fields when loading minimal persisted memory', async () => {
+      const memoryPath = getMemoryPath(projectRoot);
+      await fs.mkdir(path.dirname(memoryPath), { recursive: true });
+
+      const {
+        customNotes: _customNotes,
+        userDirectives: _userDirectives,
+        hotPaths: _hotPaths,
+        ...minimalPersistedMemory
+      } = createBaseMemory(projectRoot, {
+        techStack: {
+          languages: [
+            {
+              name: 'TypeScript',
+              version: null,
+              confidence: 'high',
+              markers: ['tsconfig.json'],
+            },
+          ],
+          frameworks: [],
+          packageManager: 'npm',
+          runtime: null,
+        },
+      });
+
+      await fs.writeFile(
+        memoryPath,
+        JSON.stringify(minimalPersistedMemory),
+        'utf-8',
+      );
+
+      const loaded = await loadProjectMemory(projectRoot);
+
+      expect(loaded).not.toBeNull();
+      expect(loaded?.customNotes).toEqual([]);
+      expect(loaded?.userDirectives).toEqual([]);
+      expect(loaded?.hotPaths).toEqual([]);
+      expect(() => formatContextSummary(loaded!)).not.toThrow();
+      expect(() => formatFullContext(loaded!)).not.toThrow();
+    });
+
+    it('should return null for invalid JSON', async () => {
       // Create .omc directory
-      const omcDir = path.join(projectRoot, ".omc");
+      const omcDir = path.join(projectRoot, '.omc');
       await fs.mkdir(omcDir, { recursive: true });
 
       // Write invalid JSON
       const memoryPath = getMemoryPath(projectRoot);
-      await fs.writeFile(memoryPath, "invalid json", "utf-8");
+      await fs.writeFile(memoryPath, 'invalid json', 'utf-8');
 
       const memory = await loadProjectMemory(projectRoot);
       expect(memory).toBeNull();
     });
 
-    it("should return null for memory with missing required fields", async () => {
+    it('should return null for memory with missing required fields', async () => {
       // Create .omc directory
-      const omcDir = path.join(projectRoot, ".omc");
+      const omcDir = path.join(projectRoot, '.omc');
       await fs.mkdir(omcDir, { recursive: true });
 
       // Write incomplete memory
       const memoryPath = getMemoryPath(projectRoot);
-      await fs.writeFile(
-        memoryPath,
-        JSON.stringify({ version: SCHEMA_VERSION }),
-        "utf-8",
-      );
+      await fs.writeFile(memoryPath, JSON.stringify({ version: SCHEMA_VERSION }), 'utf-8');
 
       const memory = await loadProjectMemory(projectRoot);
       expect(memory).toBeNull();
     });
   });
 
-  describe("shouldRescan", () => {
-    it("should return true if memory is older than 24 hours", () => {
+  describe('shouldRescan', () => {
+    it('should return true if memory is older than 24 hours', () => {
       const oldTimestamp = Date.now() - 25 * 60 * 60 * 1000; // 25 hours ago
-      const memory = createBaseMemory(projectRoot, {
-        lastScanned: oldTimestamp,
-        techStack: {
-          languages: [],
-          frameworks: [],
-          packageManager: null,
-          runtime: null,
-        },
-        build: {
-          buildCommand: null,
-          testCommand: null,
-          lintCommand: null,
-          devCommand: null,
-          scripts: {},
-        },
-        conventions: {
-          namingStyle: null,
-          importStyle: null,
-          testPattern: null,
-          fileOrganization: null,
-        },
-        structure: {
-          isMonorepo: false,
-          workspaces: [],
-          mainDirectories: [],
-          gitBranches: null,
-        },
+      const memory = createBaseMemory(projectRoot, { lastScanned: oldTimestamp,
+        techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+        build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+        conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+        structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
         customNotes: [],
       });
 
       expect(shouldRescan(memory)).toBe(true);
     });
 
-    it("should return false if memory is recent", () => {
+    it('should return false if memory is recent', () => {
       const recentTimestamp = Date.now() - 1 * 60 * 60 * 1000; // 1 hour ago
-      const memory = createBaseMemory(projectRoot, {
-        lastScanned: recentTimestamp,
-        techStack: {
-          languages: [],
-          frameworks: [],
-          packageManager: null,
-          runtime: null,
-        },
-        build: {
-          buildCommand: null,
-          testCommand: null,
-          lintCommand: null,
-          devCommand: null,
-          scripts: {},
-        },
-        conventions: {
-          namingStyle: null,
-          importStyle: null,
-          testPattern: null,
-          fileOrganization: null,
-        },
-        structure: {
-          isMonorepo: false,
-          workspaces: [],
-          mainDirectories: [],
-          gitBranches: null,
-        },
+      const memory = createBaseMemory(projectRoot, { lastScanned: recentTimestamp,
+        techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+        build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+        conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+        structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
         customNotes: [],
       });
 
@@ -412,34 +305,13 @@ describe("Project Memory Storage", () => {
     });
   });
 
-  describe("deleteProjectMemory", () => {
-    it("should delete memory file if it exists", async () => {
+  describe('deleteProjectMemory', () => {
+    it('should delete memory file if it exists', async () => {
       const memory = createBaseMemory(projectRoot, {
-        techStack: {
-          languages: [],
-          frameworks: [],
-          packageManager: null,
-          runtime: null,
-        },
-        build: {
-          buildCommand: null,
-          testCommand: null,
-          lintCommand: null,
-          devCommand: null,
-          scripts: {},
-        },
-        conventions: {
-          namingStyle: null,
-          importStyle: null,
-          testPattern: null,
-          fileOrganization: null,
-        },
-        structure: {
-          isMonorepo: false,
-          workspaces: [],
-          mainDirectories: [],
-          gitBranches: null,
-        },
+        techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
+        build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
+        conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
+        structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
         customNotes: [],
       });
 
@@ -450,7 +322,7 @@ describe("Project Memory Storage", () => {
       expect(loaded).toBeNull();
     });
 
-    it("should not throw error if memory file does not exist", async () => {
+    it('should not throw error if memory file does not exist', async () => {
       await expect(deleteProjectMemory(projectRoot)).resolves.not.toThrow();
     });
   });

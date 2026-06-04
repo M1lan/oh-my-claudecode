@@ -516,7 +516,7 @@ function normalizePhaseValue(value) {
     : "";
 }
 
-function isUltragoalTerminalState(state, directory) {
+function isUltragoalTerminalState(state, omcRoot) {
   if (!state || typeof state !== "object") return false;
   if (state.active === false) return true;
   if (typeof state.completed_at === "string" && state.completed_at.length > 0) return true;
@@ -525,7 +525,7 @@ function isUltragoalTerminalState(state, directory) {
   const phase = normalizePhaseValue(state.current_phase ?? state.phase ?? state.status);
   if (phase && ULTRAGOAL_TERMINAL_PHASES.has(phase)) return true;
 
-  const plan = readJsonFile(join(directory, ".omc", "ultragoal", "goals.json"));
+  const plan = readJsonFile(join(omcRoot, "ultragoal", "goals.json"));
   if (!plan || typeof plan !== "object") return false;
   if (plan.aggregateCompletion?.status === "complete") return true;
   if (!Array.isArray(plan.goals) || plan.goals.length === 0) return false;
@@ -535,7 +535,7 @@ function isUltragoalTerminalState(state, directory) {
   });
 }
 
-function getUltragoalObjective(state, directory) {
+function getUltragoalObjective(state, omcRoot) {
   const candidates = [
     state?.claude_goal_objective,
     state?.claudeGoalObjective,
@@ -550,7 +550,7 @@ function getUltragoalObjective(state, directory) {
   for (const value of candidates) {
     if (typeof value === "string" && value.trim()) return value.trim();
   }
-  const plan = readJsonFile(join(directory, ".omc", "ultragoal", "goals.json"));
+  const plan = readJsonFile(join(omcRoot, "ultragoal", "goals.json"));
   if (typeof plan?.claudeObjective === "string" && plan.claudeObjective.trim()) return plan.claudeObjective.trim();
   if (typeof plan?.aggregateCompletion?.objective === "string" && plan.aggregateCompletion.objective.trim()) {
     return plan.aggregateCompletion.objective.trim();
@@ -636,7 +636,7 @@ function countIncompleteTasks(sessionId) {
   return count;
 }
 
-function countIncompleteTodos(sessionId, projectDir) {
+async function countIncompleteTodos(sessionId, projectDir) {
   let count = 0;
 
   // Session-specific todos only (no global scan)
@@ -666,8 +666,9 @@ function countIncompleteTodos(sessionId, projectDir) {
   }
 
   // Project-local todos only
+  const omcRoot = await resolveOmcStateRoot(projectDir);
   for (const path of [
-    join(projectDir, ".omc", "todos.json"),
+    join(omcRoot, "todos.json"),
     join(projectDir, ".claude", "todos.json"),
   ]) {
     try {
@@ -885,6 +886,14 @@ async function main() {
       data = JSON.parse(input);
     } catch {}
 
+    // Claude Code sets stop_hook_active when a Stop hook is already running.
+    // Never emit another decision:block in that re-entrant path: doing so trips
+    // Claude Code's safety override for repeatedly blocked Stop hooks.
+    if (data.stop_hook_active === true) {
+      console.log(JSON.stringify({ continue: true, suppressOutput: true }));
+      return;
+    }
+
     const directory = data.cwd || data.directory || process.cwd();
     const sessionIdRaw = data.sessionId || data.session_id || data.sessionid || "";
     const sessionId = sanitizeSessionId(sessionIdRaw);
@@ -996,7 +1005,7 @@ async function main() {
 
     // Count incomplete items (session-specific + project-local only)
     const taskCount = countIncompleteTasks(sessionId);
-    const todoCount = countIncompleteTodos(sessionId, directory);
+    const todoCount = await countIncompleteTodos(sessionId, directory);
     const totalIncomplete = taskCount + todoCount;
 
     // Priority 1: Ralph Loop (explicit persistence mode)
@@ -1088,7 +1097,7 @@ async function main() {
       const sessionMatches = hasValidSessionId
         ? ultragoal.state.session_id === sessionId
         : !ultragoal.state.session_id || ultragoal.state.session_id === sessionId;
-      if (sessionMatches && !isUltragoalTerminalState(ultragoal.state, directory)) {
+      if (sessionMatches && !isUltragoalTerminalState(ultragoal.state, omcRoot)) {
         const newCount = (ultragoal.state.reinforcement_count || 0) + 1;
         const maxReinforcements = ultragoal.state.max_reinforcements || 50;
 
@@ -1109,7 +1118,7 @@ async function main() {
         writeJsonFile(ultragoal.path, ultragoal.state);
 
         let reason = `[ULTRAGOAL #${newCount}/${maxReinforcements}] Ultragoal mode is active. Continue the durable goal workflow, keep the matching Claude /goal active, and checkpoint .omc/ultragoal/ledger.jsonl before stopping. When all ultragoal stories are complete and the final quality gate passes, run /oh-my-claudecode:cancel to cleanly exit.`;
-        const objective = getUltragoalObjective(ultragoal.state, directory);
+        const objective = getUltragoalObjective(ultragoal.state, omcRoot);
         if (objective) reason += `\nClaude /goal objective: ${objective}`;
         if (errorGuidance) {
           reason = errorGuidance + reason;

@@ -3,17 +3,13 @@
  * Handles loading and saving project memory to the resolved project-memory.json path.
  */
 
-import fs from "fs/promises";
-import path from "path";
-import { ProjectMemory } from "./types.js";
-import { CACHE_EXPIRY_MS } from "./constants.js";
-import { atomicWriteJson } from "../../lib/atomic-write.js";
-import { getWorktreeProjectMemoryPath } from "../../lib/worktree-paths.js";
-import {
-  lockPathFor,
-  withFileLock,
-  type FileLockOptions,
-} from "../../lib/file-lock.js";
+import fs from 'fs/promises';
+import path from 'path';
+import type { ProjectMemory } from './types.js';
+import { CACHE_EXPIRY_MS } from './constants.js';
+import { atomicWriteJson } from '../../lib/atomic-write.js';
+import { getWorktreeProjectMemoryPath } from '../../lib/worktree-paths.js';
+import { lockPathFor, withFileLock, type FileLockOptions } from '../../lib/file-lock.js';
 
 /**
  * Get the path to the project memory file
@@ -23,16 +19,28 @@ export function getMemoryPath(projectRoot: string): string {
 }
 
 /**
+ * Normalize persisted project memory into the current runtime shape.
+ * Older/minimal project-memory.json files may not contain list fields that
+ * read-only context and compaction paths iterate over.
+ */
+export function normalizeProjectMemory(memory: ProjectMemory): ProjectMemory {
+  return {
+    ...memory,
+    customNotes: Array.isArray(memory.customNotes) ? memory.customNotes : [],
+    userDirectives: Array.isArray(memory.userDirectives) ? memory.userDirectives : [],
+    hotPaths: Array.isArray(memory.hotPaths) ? memory.hotPaths : [],
+  };
+}
+
+/**
  * Load project memory from disk
  * Returns null if file doesn't exist or is invalid
  */
-export async function loadProjectMemory(
-  projectRoot: string,
-): Promise<ProjectMemory | null> {
+export async function loadProjectMemory(projectRoot: string): Promise<ProjectMemory | null> {
   const memoryPath = getMemoryPath(projectRoot);
 
   try {
-    const content = await fs.readFile(memoryPath, "utf-8");
+    const content = await fs.readFile(memoryPath, 'utf-8');
     const memory: ProjectMemory = JSON.parse(content);
 
     // Basic validation
@@ -40,7 +48,7 @@ export async function loadProjectMemory(
       return null;
     }
 
-    return memory;
+    return normalizeProjectMemory(memory);
   } catch (_error) {
     // File doesn't exist or invalid JSON
     return null;
@@ -51,10 +59,7 @@ export async function loadProjectMemory(
  * Save project memory to disk
  * Creates .omc directory if it doesn't exist
  */
-export async function saveProjectMemory(
-  projectRoot: string,
-  memory: ProjectMemory,
-): Promise<void> {
+export async function saveProjectMemory(projectRoot: string, memory: ProjectMemory): Promise<void> {
   const memoryPath = getMemoryPath(projectRoot);
   const omcDir = path.dirname(memoryPath);
 
@@ -66,7 +71,7 @@ export async function saveProjectMemory(
     await atomicWriteJson(memoryPath, memory);
   } catch (error) {
     // Silently fail - we don't want to break the session
-    console.error("Failed to save project memory:", error);
+    console.error('Failed to save project memory:', error);
   }
 }
 

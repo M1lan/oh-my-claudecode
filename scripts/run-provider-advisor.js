@@ -3,11 +3,13 @@ import { spawnSync } from 'child_process';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 import process from 'process';
+import { resolveOmcStateRoot } from './lib/state-root.mjs';
 
 const PROVIDER_BINARIES = {
   claude: 'claude',
   codex: 'codex',
   gemini: 'gemini',
+  grok: 'grok',
 };
 const SHOULD_USE_WINDOWS_SHELL = process.platform === 'win32';
 
@@ -16,6 +18,8 @@ const SHOULD_USE_WINDOWS_SHELL = process.platform === 'win32';
  * - claude: `claude -p <prompt>`
  * - codex: `codex exec --dangerously-bypass-approvals-and-sandbox <prompt>`
  * - gemini: `gemini -p <prompt> --yolo`
+ * - grok: `grok -p <prompt> --always-approve` (headless mode takes the prompt
+ *   as an arg; grok's stdin is reserved for ACP JSON-RPC, never the prompt)
  */
 function buildProviderArgs(provider, prompt, { pipePromptViaStdin = false } = {}) {
   if (provider === 'codex') {
@@ -23,6 +27,11 @@ function buildProviderArgs(provider, prompt, { pipePromptViaStdin = false } = {}
   }
   if (provider === 'gemini') {
     return pipePromptViaStdin ? ['--yolo'] : ['-p', prompt, '--yolo'];
+  }
+  if (provider === 'grok') {
+    // Grok's headless mode always takes the prompt as a `-p` arg; its stdin is
+    // for ACP JSON-RPC, not the prompt, so it never uses the stdin pipe path.
+    return ['-p', prompt, '--always-approve'];
   }
   return ['-p', prompt];
 }
@@ -43,8 +52,8 @@ const ASK_ORIGINAL_TASK_ENV = 'OMC_ASK_ORIGINAL_TASK';
 const ASK_ORIGINAL_TASK_ENV_ALIAS = 'OMX_ASK_ORIGINAL_TASK';
 
 function usage() {
-  console.error('Usage: omc ask <claude|codex|gemini> "<prompt>"');
-  console.error('Legacy direct usage: node scripts/run-provider-advisor.js <claude|codex|gemini> <prompt...>');
+  console.error('Usage: omc ask <claude|codex|gemini|grok> "<prompt>"');
+  console.error('Legacy direct usage: node scripts/run-provider-advisor.js <claude|codex|gemini|grok> <prompt...>');
   console.error('                 or: node scripts/run-provider-advisor.js claude --print "<prompt>"');
   console.error('                 or: node scripts/run-provider-advisor.js gemini --prompt "<prompt>"');
 }
@@ -178,7 +187,7 @@ function resolveOriginalTask(prompt) {
 
 async function writeArtifact({ provider, originalTask, finalPrompt, rawOutput, exitCode }) {
   const root = process.cwd();
-  const artifactDir = join(root, '.omc', 'artifacts', 'ask');
+  const artifactDir = join(await resolveOmcStateRoot(root), 'artifacts', 'ask');
   const slug = slugify(originalTask);
   const timestamp = timestampToken();
   const artifactPath = join(artifactDir, `${provider}-${slug}-${timestamp}.md`);

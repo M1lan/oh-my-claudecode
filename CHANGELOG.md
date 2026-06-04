@@ -1,32 +1,45 @@
-# oh-my-claudecode v4.14.4: Native Windows hook manifest hotfix
+# oh-my-claudecode v4.14.5: Japanese katakana keyword, add Grok Build, full multi-repo workspace
 
 ## Release Notes
 
-Hotfix release for the native Windows hook regression still present in the published v4.14.3 marketplace package.
+Release with **4 new features**, **1 security improvement**, **5 bug fixes**, **2 other changes** across **48 merged PRs**.
 
 ### Highlights
 
-- Ships plugin `hooks/hooks.json` with direct `node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs ...` commands for every hook event, so native Windows no longer invokes `sh`, `/bin/sh`, or `find-node.sh` from the manifest. (#3121, #3124)
-- Preserves macOS/Linux setup-cache repair to `find-node.sh` for non-interactive shells where nvm/fnm may not expose `node` on PATH. (#3124)
-- Keeps doctor coverage for stale Windows plugin manifests and tightens test isolation so user/global MCP registry state cannot create false conflict failures in focused checks.
+- **feat(keyword-detector): Japanese katakana keyword detection (with 〜について教えて informational guard)** (#3193)
+- **feat(team): add Grok Build as a team worker + ask provider** (#3159)
+- **feat(multi-repo): full multi-repo workspace support**
+- **feat: persist ultragoal and enforce Claude goal activation** (#3102)
+- **fix(security): enforce directory boundary in isTrustedPrefix (CLI trusted-path)** (#3152)
+
+### New Features
+
+- **feat(keyword-detector): Japanese katakana keyword detection (with 〜について教えて informational guard)** (#3193)
+- **feat(team): add Grok Build as a team worker + ask provider** (#3159)
+- **feat(multi-repo): full multi-repo workspace support**
+- **feat: persist ultragoal and enforce Claude goal activation** (#3102)
+
+### Security & Hardening
+
+- **fix(security): enforce directory boundary in isTrustedPrefix (CLI trusted-path)** (#3152)
 
 ### Bug Fixes
 
-- **Fix native Windows plugin hook manifest commands** (#3124)
-- **Keep ralplan compact continuation read-only** (dev-only follow-up after v4.14.3)
+- **fix(plugin): keep source hooks manifest direct-node** (#3201)
+- **fix(multi-repo): validate team .omc paths against getOmcRoot, not the sub-repo**
+- **fix(ci): make the full test suite green on Linux after the dev merge**
+- **fix(multi-repo): accept repo subdirs as cwd; stop workspace search at $HOME**
+- **fix(multi-repo): route dev-merged paths through getOmcRoot/resolveOmcStateRoot**
 
-### Install / Update
+### Documentation
 
-```bash
-npm install -g oh-my-claude-sisyphus@4.14.4
-```
+- **docs: add model × agent compatibility matrix (#3092)** (#3092)
 
-Or reinstall/update the Claude plugin from the marketplace when v4.14.4 appears.
+### Other Changes
 
-**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.14.3...v4.14.4
+- **ci: use gajae self-hosted linux runner** (#3180)
+- **chore(models): bump built-in Opus HIGH default to Claude Opus 4.8** (#3175)
 
-## Contributors
+### Stats
 
-Thank you to all contributors who made this release possible!
-
-@Yeachan-Heo
+- **48 PRs merged** | **4 new features** | **5 bug fixes** | **1 security/hardening improvement** | **2 other changes**
