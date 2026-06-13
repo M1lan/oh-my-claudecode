@@ -1116,7 +1116,7 @@ export async function performUpdate(options?: {
           success: false,
           previousVersion,
           newVersion,
-          message: `Updated to ${newVersion}, but failed to restore global ${CLAUDE_CODE_NPM_PACKAGE}`,
+          message: `Updated to ${newVersion}, but failed to restore global ${CLAUDE_CODE_PACKAGE}`,
           errors: [restoreError instanceof Error ? restoreError.message : String(restoreError)],
         };
       }

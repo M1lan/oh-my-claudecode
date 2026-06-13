@@ -195,7 +195,7 @@ If you installed OMC via pnpm, upgrade with the published package name:
 pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
-> **Package naming note:** the repo, plugin, and commands are branded **oh-my-claudecode**, but the published npm package name remains `oh-my-claude-sisyphus`. npm installs expose both `oh-my-claudecode` and `omc`; examples prefer `omc` for brevity.
+> **Package naming note:** the repo, plugin, and commands are branded **oh-my-claudecode**, but the published package name remains `oh-my-claude-sisyphus`. Global installs expose both `oh-my-claudecode` and `omc`; examples prefer `omc` for brevity.
 
 If you installed OMC via the Claude Code marketplace/plugin flow, update with:
 
