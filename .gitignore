@@ -35,3 +35,4 @@ pnpm-workspace.yaml
 
 __pycache__/
 *.py[cod]
+.forks/
