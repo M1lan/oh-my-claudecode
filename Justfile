@@ -13,9 +13,8 @@
 #   just fzf              # interactive recipe picker (just --choose powered)
 #   just menu             # curated categorized launcher
 #
-# Package manager: defaults to `pnpm` (canonical, declared in
-# package.json#packageManager). Override per invocation with
-# `PM=npm just <recipe>` if you must.
+# Package manager: pnpm only (canonical, declared in
+# package.json#packageManager). npm and yarn are not supported.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set dotenv-load := false
@@ -25,8 +24,8 @@ set ignore-comments := true
 export FORCE_COLOR := "1"
 export NODE_OPTIONS := env_var_or_default("NODE_OPTIONS", "--enable-source-maps")
 
-# Single-source-of-truth package manager. Defaults to pnpm; override with PM=npm.
-PM := env_var_or_default("PM", "pnpm")
+# Single-source-of-truth package manager: pnpm only.
+PM := "pnpm"
 
 # Editor for *-edit / pick / search / notepad recipes.
 EDITOR_CMD := env_var_or_default("EDITOR", "vim")

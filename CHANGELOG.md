@@ -42,7 +42,7 @@ Patch release with **1 new feature**, **8 bug fixes**, and **3 hardening/quality
 ### Install / Update
 
 ```bash
-npm install -g oh-my-claude-sisyphus@4.14.6
+pnpm add -g oh-my-claude-sisyphus@4.14.6
 ```
 
 Or reinstall the plugin:

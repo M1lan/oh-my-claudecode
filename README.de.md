@@ -68,7 +68,7 @@ Aktivieren Sie Claude Code native Teams in `~/.claude/settings.json`:
 
 > Wenn Teams deaktiviert sind, warnt OMC Sie und fällt auf Ausführung ohne Team zurück, wenn möglich.
 
-> **Hinweis: Paketbenennung** — Das Projekt nutzt die Marke **oh-my-claudecode** (Repo, Plugin, Befehle), aber das npm-Paket wird als [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) veröffentlicht. Wenn Sie die CLI-Tools über npm/bun installieren, verwenden Sie `npm install -g oh-my-claude-sisyphus`.
+> **Hinweis: Paketbenennung** — Das Projekt nutzt die Marke **oh-my-claudecode** (Repo, Plugin, Befehle), aber das npm-Paket wird als [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) veröffentlicht. Wenn Sie die CLI-Tools über pnpm/bun installieren, verwenden Sie `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Aktualisierung
 
@@ -313,8 +313,8 @@ OMC kann optional externe AI-Anbieter für Kreuzvalidierung und Design-Konsisten
 
 | Anbieter                                                  | Installation                        | Was es ermöglicht                                |
 | --------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Design-Review, UI-Konsistenz (1M Token Kontext)  |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Architekturvalidierung, Code-Review-Gegenprüfung |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Design-Review, UI-Konsistenz (1M Token Kontext)  |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Architekturvalidierung, Code-Review-Gegenprüfung |
 
 **Kosten:** 3 Pro-Pläne (Claude + Gemini + ChatGPT) decken alles für ca. $60/Monat ab.
 

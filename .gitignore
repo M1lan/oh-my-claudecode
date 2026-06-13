@@ -33,6 +33,11 @@ dist/
 bridge/
 pnpm-workspace.yaml
 
+# pnpm is the only supported package manager — never commit npm/yarn lockfiles
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+
 __pycache__/
 *.py[cod]
 .forks/

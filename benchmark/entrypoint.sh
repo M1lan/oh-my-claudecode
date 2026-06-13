@@ -28,7 +28,7 @@ if [ "$RUN_MODE" = "omc" ]; then
         echo "Installing OMC from mounted source..."
         cd /workspace/omc-source && pnpm install && pnpm link
     else
-        echo "Installing OMC from npm..."
+        echo "Installing OMC from the registry..."
         pnpm add -g oh-my-claudecode
     fi
 

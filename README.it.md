@@ -68,7 +68,7 @@ Abilita i team nativi di Claude Code in `~/.claude/settings.json`:
 
 > Se i team sono disabilitati, OMC ti avviserà e passerà all'esecuzione senza Team quando possibile.
 
-> **Nota: Nome del pacchetto** — Il progetto utilizza il brand **oh-my-claudecode** (repo, plugin, comandi), ma il pacchetto npm è pubblicato come [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Se installi gli strumenti CLI tramite npm/bun, usa `npm install -g oh-my-claude-sisyphus`.
+> **Nota: Nome del pacchetto** — Il progetto utilizza il brand **oh-my-claudecode** (repo, plugin, comandi), ma il pacchetto npm è pubblicato come [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Se installi gli strumenti CLI tramite pnpm/bun, usa `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Aggiornamento
 
@@ -304,8 +304,8 @@ OMC può opzionalmente orchestrare provider AI esterni per la validazione incroc
 
 | Provider                                                  | Installazione                       | Cosa abilita                                                         |
 | --------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------- |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Revisione del design, coerenza UI (contesto di 1M token)             |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Validazione dell'architettura, verifica incrociata della code review |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Revisione del design, coerenza UI (contesto di 1M token)             |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Validazione dell'architettura, verifica incrociata della code review |
 
 **Costo:** 3 piani Pro (Claude + Gemini + ChatGPT) coprono tutto per circa $60/mese.
 

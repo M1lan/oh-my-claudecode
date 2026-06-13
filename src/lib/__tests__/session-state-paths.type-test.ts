@@ -8,7 +8,7 @@
  * expected error (e.g. because someone weakens the brand), tsc will fail
  * the build.
  *
- * Run via `npx tsc --noEmit` (covered by `npm run build`). This file is
+ * Run via `pnpm exec tsc --noEmit` (covered by `pnpm run build`). This file is
  * skipped by vitest because it has no `describe`/`it` and no runtime
  * assertions.
  */

@@ -102,7 +102,7 @@ Codex + Gemini を一つのコマンドで使うには **`/ccg`** スキルを�
 
 ワーカーはオンデマンドで起動し、タスク完了後に終了します — アイドルリソースの無駄なし。`codex` / `gemini` CLI のインストールとアクティブな tmux セッションが必要です。
 
-> **注意: パッケージ名について** — プロジェクトのブランド名は **oh-my-claudecode**（リポジトリ、プラグイン、コマンド）ですが、npmパッケージは [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) として公開されています。npm/bunでCLIツールをインストールする場合は `npm install -g oh-my-claude-sisyphus` を使用してください。
+> **注意: パッケージ名について** — プロジェクトのブランド名は **oh-my-claudecode**（リポジトリ、プラグイン、コマンド）ですが、npmパッケージは [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) として公開されています。pnpm/bunでCLIツールをインストールする場合は `pnpm add -g oh-my-claude-sisyphus` を使用してください。
 
 ### アップデート
 
@@ -357,8 +357,8 @@ OMC はクロスバリデーションとデザイン一貫性のために、外�
 
 | プロバイダー | インストール | 機能 |
 |-------------|-------------|------|
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | デザインレビュー、UI 一貫性（1M トークンコンテキスト）|
-| [Codex CLI](https://github.com/openai/codex) | `npm install -g @openai/codex` | アーキテクチャ検証、コードレビュークロスチェック |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | デザインレビュー、UI 一貫性（1M トークンコンテキスト）|
+| [Codex CLI](https://github.com/openai/codex) | `pnpm add -g @openai/codex` | アーキテクチャ検証、コードレビュークロスチェック |
 
 **コスト：** 3つの Pro プラン（Claude + Gemini + ChatGPT）で月額約 $60 ですべてをカバーできます。
 

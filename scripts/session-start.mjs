@@ -766,7 +766,7 @@ async function checkHudInstallation(retryCount = 0) {
               const latestVersionDir = join(pluginCacheBase, versions[0]);
               return {
                 installed: false,
-                reason: `HUD plugin cache is not built. Run: cd "${latestVersionDir}" && npm install && npm run build`,
+                reason: `HUD plugin cache is not built. Run: cd "${latestVersionDir}" && pnpm install && pnpm run build`,
               };
             }
           }

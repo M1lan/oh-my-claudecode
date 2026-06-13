@@ -68,7 +68,7 @@ Activez les teams natifs de Claude Code dans `~/.claude/settings.json` :
 
 > Si les teams sont désactivés, OMC vous avertira et basculera vers une exécution sans Team lorsque possible.
 
-> **Note : Nom du package** — Le projet utilise la marque **oh-my-claudecode** (repo, plugin, commandes), mais le package npm est publié sous le nom [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si vous installez les outils CLI via npm/bun, utilisez `npm install -g oh-my-claude-sisyphus`.
+> **Note : Nom du package** — Le projet utilise la marque **oh-my-claudecode** (repo, plugin, commandes), mais le package npm est publié sous le nom [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si vous installez les outils CLI via pnpm/bun, utilisez `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Mise à jour
 
@@ -313,8 +313,8 @@ OMC peut optionnellement orchestrer des fournisseurs d'IA externes pour la valid
 
 | Fournisseur                                               | Installation                        | Ce que ça apporte                                              |
 | --------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------- |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Revue de design, cohérence UI (contexte de 1M tokens)          |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Validation d'architecture, vérification croisée de code review |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Revue de design, cohérence UI (contexte de 1M tokens)          |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Validation d'architecture, vérification croisée de code review |
 
 **Coût :** 3 plans Pro (Claude + Gemini + ChatGPT) couvrent tout pour environ 60 $/mois.
 

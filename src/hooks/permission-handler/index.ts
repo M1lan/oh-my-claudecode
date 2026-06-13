@@ -32,9 +32,8 @@ export interface HookOutput {
 
 const SAFE_PATTERNS = [
   /^git (status|diff|log|branch|show|fetch)/,
-  /^npm run (lint|build|check|typecheck)/,
+  // pnpm is the only supported package manager (npm/yarn intentionally excluded)
   /^pnpm (lint|build|check|typecheck|run (lint|build|check|typecheck))/,
-  /^yarn (lint|build|check|typecheck|run (lint|build|check|typecheck))/,
   /^tsc( |$)/,
   /^gh (issue|pr) (view|list|status)\b/,
   /^eslint /,

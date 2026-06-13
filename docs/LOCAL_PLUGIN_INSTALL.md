@@ -108,7 +108,7 @@ claude --plugin-dir /path/to/oh-my-claudecode
 omc setup --plugin-dir-mode
 ```
 
-Or use the npm CLI shim (`omc`, or `oh-my-claudecode` if you prefer the long alias) which handles `--plugin-dir` automatically:
+Or use the CLI shim (`omc`, or `oh-my-claudecode` if you prefer the long alias) which handles `--plugin-dir` automatically:
 
 ```bash
 omc --plugin-dir /path/to/oh-my-claudecode setup --plugin-dir-mode

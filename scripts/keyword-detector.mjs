@@ -1280,7 +1280,7 @@ async function main() {
     let tracer = null;
     try { tracer = await import('../dist/hooks/subagent-tracker/flow-tracer.js'); } catch { /* silent */ }
 
-    // Import follow-up planner modules (best-effort — requires npm run build)
+    // Import follow-up planner modules (best-effort — requires pnpm run build)
     let followupPlanner = null;
     let planningArtifacts = null;
     try {
