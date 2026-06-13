@@ -544,20 +544,22 @@ function resolveTranscriptPath(transcriptPath, cwd) {
 }
 
 // ---------------------------------------------------------------------------
-// Hard guard: npm/npx are banned in this project — pnpm only.
-// Detects npm/npx invoked as an actual command in a Bash tool call so the
-// hook can deny it. Matches across shell separators (; & | && || newline ())
-// and tolerates leading env-assignments and wrapper prefixes
-// (sudo/command/exec/env/time/nice/nohup) plus absolute/relative paths and
-// Windows .cmd/.exe suffixes. Substring uses inside other words (e.g. pnpm,
-// npm-run-all as an argument, paths like ./npm-cache) are NOT matched because
-// only the resolved command basename of each segment is inspected.
+// Hard guard: npm/npx/yarn are banned in this project — pnpm only.
+// Detects a banned package manager invoked as an actual command in a Bash tool
+// call so the hook can deny it. Matches across shell separators
+// (; & | && || newline ()) and tolerates leading env-assignments and wrapper
+// prefixes (sudo/command/exec/env/time/nice/nohup) plus absolute/relative
+// paths and Windows .cmd/.exe suffixes. Substring uses inside other words
+// (e.g. pnpm, npm-run-all as an argument, paths like ./npm-cache) are NOT
+// matched because only the resolved command basename of each segment is
+// inspected.
 // ---------------------------------------------------------------------------
 const NPM_GUARD_WRAPPER_PREFIXES = new Set([
   'sudo', 'command', 'exec', 'env', 'time', 'nice', 'nohup', 'builtin',
 ]);
+const BANNED_PACKAGE_MANAGERS = new Set(['npm', 'npx', 'yarn']);
 
-function detectBlockedNpmCommand(command) {
+function detectBlockedPackageManager(command) {
   if (typeof command !== 'string' || !command) return null;
   const segments = command.split(/&&|\|\||[;&|\n()]/);
   for (const rawSegment of segments) {
@@ -575,7 +577,7 @@ function detectBlockedNpmCommand(command) {
       .split(/[/\\]/)
       .pop()
       .replace(/\.(cmd|exe|ps1)$/i, '');
-    if (base === 'npm' || base === 'npx') return base;
+    if (BANNED_PACKAGE_MANAGERS.has(base)) return base;
   }
   return null;
 }
@@ -1243,12 +1245,12 @@ async function main() {
     try { data = JSON.parse(input); } catch {}
     recordToolInvocation(data, directory);
 
-    // ── Hard guard: npm/npx are banned — pnpm only. Deny before anything runs. ──
+    // ── Hard guard: npm/npx/yarn are banned — pnpm only. Deny before anything runs. ──
     if (toolName === 'Bash') {
       const bashInput = data.toolInput || data.tool_input || {};
-      const blockedNpm = detectBlockedNpmCommand(bashInput.command);
-      if (blockedNpm) {
-        const replacement = blockedNpm === 'npx'
+      const blockedPm = detectBlockedPackageManager(bashInput.command);
+      if (blockedPm) {
+        const replacement = blockedPm === 'npx'
           ? 'Use `pnpm dlx <pkg>` (or `pnpm exec <pkg>` for a local bin) instead of `npx`.'
           : 'Use `pnpm` instead: `pnpm install`, `pnpm add <pkg>`, `pnpm add -g <pkg>`, `pnpm run <script>`.';
         console.log(JSON.stringify({
@@ -1256,7 +1258,7 @@ async function main() {
           hookSpecificOutput: {
             hookEventName: 'PreToolUse',
             permissionDecision: 'deny',
-            permissionDecisionReason: `[PNPM ONLY] \`${blockedNpm}\` is banned in this project. ${replacement} npm/npx must never be used here.`,
+            permissionDecisionReason: `[PNPM ONLY] \`${blockedPm}\` is banned in this project. ${replacement} npm/npx/yarn must never be used here.`,
           },
         }));
         return;

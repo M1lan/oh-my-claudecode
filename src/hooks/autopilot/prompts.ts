@@ -253,7 +253,7 @@ Run UltraQA cycles until build/lint/tests pass.
 ### QA Sequence
 
 1. **Build**: Run the project's build command:
-   - JavaScript/TypeScript: \`pnpm run build\` (or yarn equivalent)
+   - JavaScript/TypeScript: \`pnpm run build\`
    - Python: \`python -m build\` (if applicable)
    - Go: \`go build ./...\`
    - Rust: \`cargo build\`

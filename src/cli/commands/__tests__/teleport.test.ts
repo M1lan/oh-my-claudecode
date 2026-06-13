@@ -130,7 +130,7 @@ describe('teleportCommand', () => {
     );
 
     const installCalls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls.filter(
-      ([cmd]) => cmd === 'npm' || cmd === 'pnpm' || cmd === 'yarn',
+      ([cmd]) => cmd === 'pnpm',
     );
     expect(installCalls).toHaveLength(0);
   });
@@ -171,13 +171,12 @@ describe('teleportCommand', () => {
     expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
   });
 
-  it('falls back to yarn install when parent package.json cannot be read', async () => {
+  it('falls back to pnpm install when parent package.json cannot be read', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     (existsSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
       if (typeof target !== 'string') return false;
       if (target === '/root/issue') return true;
       if (target.includes('/issue/repo-')) return false;
-      if (target === '/repo/yarn.lock') return true;
       if (target === '/repo/node_modules') return true;
       return false;
     });
@@ -191,7 +190,7 @@ describe('teleportCommand', () => {
     await teleportCommand('#1', { worktreePath: '/root' });
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('could not read package.json'));
-    expect(execFileSync).toHaveBeenCalledWith('yarn', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
   });
 });
 

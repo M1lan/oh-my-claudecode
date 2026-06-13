@@ -2152,7 +2152,7 @@ describe('pre-tool-enforcer force-agent-delegation enforcement', () => {
   });
 });
 
-describe('pre-tool-enforcer npm/npx hard guard (pnpm only)', () => {
+describe('pre-tool-enforcer npm/npx/yarn hard guard (pnpm only)', () => {
   let tempDir: string;
 
   beforeEach(() => {
@@ -2181,6 +2181,12 @@ describe('pre-tool-enforcer npm/npx hard guard (pnpm only)', () => {
     '/opt/homebrew/bin/npm install',
     'npx tsc --noEmit',
     'env npx prettier --write .',
+    'yarn',
+    'yarn install',
+    'yarn add lodash',
+    'yarn run build',
+    'pnpm build && yarn test',
+    '/usr/local/bin/yarn install',
   ])('denies Bash command %j', (command) => {
     const output = runPreToolEnforcer({
       tool_name: 'Bash',
@@ -2197,6 +2203,7 @@ describe('pre-tool-enforcer npm/npx hard guard (pnpm only)', () => {
     'pnpm dlx tsc',
     'echo "npm is banned"',
     'rg npm package.json',
+    'rg yarn package.json',
     'cat ./npm-cache/info',
     'node scripts/build.mjs',
   ])('allows Bash command %j', (command) => {

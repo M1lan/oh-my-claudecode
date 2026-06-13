@@ -493,7 +493,6 @@ function isSafeTargetedVitestCommand(tokens: string[], cwd: string): boolean {
   const supportedPrefixes: string[][] = [
     ["vitest", "run"],
     ["pnpm", "vitest", "run"],
-    ["yarn", "vitest", "run"],
   ];
 
   const matchedPrefix = supportedPrefixes.find((prefix) =>
@@ -516,11 +515,8 @@ function isSafeTargetedPackageManagerTestCommand(
   cwd: string,
 ): boolean {
   const supportedPrefixes: string[][] = [
-    ["npm", "test", "--", "--run"],
-    ["npm", "run", "test", "--", "--run"],
     ["pnpm", "test", "--", "--run"],
     ["pnpm", "run", "test", "--", "--run"],
-    ["yarn", "test", "--run"],
   ];
 
   const matchedPrefix = supportedPrefixes.find((prefix) =>
