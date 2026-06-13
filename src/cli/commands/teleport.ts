@@ -36,7 +36,6 @@ const PACKAGE_JSON_NAME = 'package.json';
 const PACKAGE_MANAGER_LOCKFILES = {
   pnpm: 'pnpm-lock.yaml',
   yarn: 'yarn.lock',
-  npm: 'package-lock.json',
 } as const;
 
 type SupportedPackageManager = keyof typeof PACKAGE_MANAGER_LOCKFILES;
@@ -62,15 +61,15 @@ function detectPackageManager(parentRepoRoot: string, worktreePath: string): Sup
     try {
       const parsed = JSON.parse(packageJsonText) as { packageManager?: string };
       const packageManager = parsed.packageManager?.split('@')[0];
-      if (packageManager === 'pnpm' || packageManager === 'yarn' || packageManager === 'npm') {
+      if (packageManager === 'pnpm' || packageManager === 'yarn') {
         return packageManager;
       }
     } catch {
-      // Ignore and fall back to npm.
+      // Ignore and fall back to pnpm.
     }
   }
 
-  return 'npm';
+  return 'pnpm';
 }
 
 function symlinkNodeModules(parentRepoRoot: string, worktreePath: string): boolean {
@@ -87,7 +86,6 @@ function symlinkNodeModules(parentRepoRoot: string, worktreePath: string): boole
 
 function installDependencies(worktreePath: string, packageManager: SupportedPackageManager): void {
   const argsByManager: Record<SupportedPackageManager, string[]> = {
-    npm: ['install'],
     pnpm: ['install'],
     yarn: ['install'],
   };

@@ -2151,3 +2151,69 @@ describe('pre-tool-enforcer force-agent-delegation enforcement', () => {
     expect(String(hookOutput.permissionDecisionReason)).toContain('Investigation budget');
   });
 });
+
+describe('pre-tool-enforcer npm/npx hard guard (pnpm only)', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-npm-guard-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function denyReason(output: Record<string, unknown>): string {
+    const hookOutput = (output.hookSpecificOutput as Record<string, unknown>) || {};
+    return hookOutput.permissionDecision === 'deny'
+      ? String(hookOutput.permissionDecisionReason)
+      : '';
+  }
+
+  it.each([
+    'npm install',
+    'npm ci',
+    'npm run build',
+    'sudo npm install -g something',
+    'FOO=bar npm test',
+    'cd /tmp && npm install',
+    'pnpm build || npm install',
+    '/opt/homebrew/bin/npm install',
+    'npx tsc --noEmit',
+    'env npx prettier --write .',
+  ])('denies Bash command %j', (command) => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Bash',
+      toolInput: { command },
+      cwd: tempDir,
+    });
+    const reason = denyReason(output);
+    expect(reason).toContain('[PNPM ONLY]');
+  });
+
+  it.each([
+    'pnpm install',
+    'pnpm add -g @anthropic-ai/claude-code',
+    'pnpm dlx tsc',
+    'echo "npm is banned"',
+    'rg npm package.json',
+    'cat ./npm-cache/info',
+    'node scripts/build.mjs',
+  ])('allows Bash command %j', (command) => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Bash',
+      toolInput: { command },
+      cwd: tempDir,
+    });
+    expect(denyReason(output)).toBe('');
+  });
+
+  it('does not guard non-Bash tools that merely mention npm', () => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Write',
+      toolInput: { file_path: join(tempDir, 'notes.txt'), content: 'npm install everything' },
+      cwd: tempDir,
+    });
+    expect(denyReason(output)).toBe('');
+  });
+});

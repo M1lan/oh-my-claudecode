@@ -543,6 +543,43 @@ function resolveTranscriptPath(transcriptPath, cwd) {
   return transcriptPath;
 }
 
+// ---------------------------------------------------------------------------
+// Hard guard: npm/npx are banned in this project — pnpm only.
+// Detects npm/npx invoked as an actual command in a Bash tool call so the
+// hook can deny it. Matches across shell separators (; & | && || newline ())
+// and tolerates leading env-assignments and wrapper prefixes
+// (sudo/command/exec/env/time/nice/nohup) plus absolute/relative paths and
+// Windows .cmd/.exe suffixes. Substring uses inside other words (e.g. pnpm,
+// npm-run-all as an argument, paths like ./npm-cache) are NOT matched because
+// only the resolved command basename of each segment is inspected.
+// ---------------------------------------------------------------------------
+const NPM_GUARD_WRAPPER_PREFIXES = new Set([
+  'sudo', 'command', 'exec', 'env', 'time', 'nice', 'nohup', 'builtin',
+]);
+
+function detectBlockedNpmCommand(command) {
+  if (typeof command !== 'string' || !command) return null;
+  const segments = command.split(/&&|\|\||[;&|\n()]/);
+  for (const rawSegment of segments) {
+    let tokens = rawSegment.trim().split(/\s+/).filter(Boolean);
+    // Strip leading VAR=value assignments and benign wrapper prefixes.
+    while (
+      tokens.length > 0 &&
+      (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]) ||
+        NPM_GUARD_WRAPPER_PREFIXES.has(tokens[0]))
+    ) {
+      tokens = tokens.slice(1);
+    }
+    if (tokens.length === 0) continue;
+    const base = tokens[0]
+      .split(/[/\\]/)
+      .pop()
+      .replace(/\.(cmd|exe|ps1)$/i, '');
+    if (base === 'npm' || base === 'npx') return base;
+  }
+  return null;
+}
+
 // Simple JSON field extraction
 function extractJsonField(input, field, defaultValue = '') {
   try {
@@ -1205,6 +1242,26 @@ async function main() {
     let data = {};
     try { data = JSON.parse(input); } catch {}
     recordToolInvocation(data, directory);
+
+    // ── Hard guard: npm/npx are banned — pnpm only. Deny before anything runs. ──
+    if (toolName === 'Bash') {
+      const bashInput = data.toolInput || data.tool_input || {};
+      const blockedNpm = detectBlockedNpmCommand(bashInput.command);
+      if (blockedNpm) {
+        const replacement = blockedNpm === 'npx'
+          ? 'Use `pnpm dlx <pkg>` (or `pnpm exec <pkg>` for a local bin) instead of `npx`.'
+          : 'Use `pnpm` instead: `pnpm install`, `pnpm add <pkg>`, `pnpm add -g <pkg>`, `pnpm run <script>`.';
+        console.log(JSON.stringify({
+          continue: true,
+          hookSpecificOutput: {
+            hookEventName: 'PreToolUse',
+            permissionDecision: 'deny',
+            permissionDecisionReason: `[PNPM ONLY] \`${blockedNpm}\` is banned in this project. ${replacement} npm/npx must never be used here.`,
+          },
+        }));
+        return;
+      }
+    }
 
     // Activate skill state when Skill tool is invoked (issue #1033)
     // Writes skill-active-state.json so the persistent-mode Stop hook can

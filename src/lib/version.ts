@@ -51,13 +51,13 @@ export function getRuntimePackageVersion(): string {
 
 /**
  * Detect whether OMC is running from a local fork / dev install rather
- * than from the npm-published package.
+ * than from the published package.
  *
  * Signals (any one triggers "local"):
  *  - A `.git/` directory exists at the package root (dev clone)
  *  - The resolved package directory is reached via a symlink/junction
- *    (e.g. `npm link`, or a manual junction in `~/.claude/plugins/marketplaces/`)
- *  - A `src/` directory exists at the package root — the npm-published
+ *    (e.g. `pnpm link`, or a manual junction in `~/.claude/plugins/marketplaces/`)
+ *  - A `src/` directory exists at the package root — the published
  *    package ships only `dist/`. The presence of `src/` proves the
  *    payload came from a fork (e.g. Claude Code's plugin cache copied
  *    the full repo through a marketplace junction).
@@ -88,11 +88,11 @@ export function isRuntimePackageLocal(): boolean {
     if (existsSync(join(pkgRoot, '.git'))) return true;
 
     // Signal 2: a src/ directory at the package root means the payload
-    // came from a fork — the npm-published package only ships dist/.
+    // came from a fork — the published package only ships dist/.
     if (existsSync(join(pkgRoot, 'src'))) return true;
 
     // Signal 3: realpath differs from the path we walked to — the package
-    // was reached via a symlink or junction (`npm link`, manual junction).
+    // was reached via a symlink or junction (`pnpm link`, manual junction).
     try {
       const real = realpathSync(pkgRoot);
       // Normalize separators for cross-platform comparison

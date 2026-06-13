@@ -57,7 +57,7 @@ describe('teleportCommand', () => {
       if (typeof target !== 'string') return false;
       if (target === '/root/issue') return true;
       if (target.includes('/issue/repo-')) return false;
-      if (target === '/repo/package-lock.json') return true;
+      if (target === '/repo/pnpm-lock.yaml') return true;
       if (target === '/repo/node_modules') return true;
       return false;
     });
@@ -149,7 +149,7 @@ describe('teleportCommand', () => {
 
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('package.json differs'));
     expect(symlinkSync).not.toHaveBeenCalled();
-    expect(execFileSync).toHaveBeenCalledWith('npm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
   });
 
   it('falls back to pnpm install when symlinking is disabled in config', async () => {
