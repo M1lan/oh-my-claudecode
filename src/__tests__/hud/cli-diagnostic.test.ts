@@ -92,6 +92,18 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
       detectApiKeySource: vi.fn(() => null),
     }));
     vi.doMock('../../hud/mission-board.js', () => ({
+      // Static mock keeps index.js fully isolated. Mirrors the real
+      // DEFAULT_MISSION_BOARD_CONFIG (mission-board.ts:155-170) that
+      // types.ts:790 consumes at module-eval time. Avoid importActual:
+      // it pulls the real module through the partial worktree-paths mock
+      // and was a source of nondeterministic test failures.
+      DEFAULT_MISSION_BOARD_CONFIG: {
+        enabled: false,
+        maxMissions: 2,
+        maxAgentsPerMission: 3,
+        maxTimelineEvents: 3,
+        persistCompletedForMinutes: 20,
+      },
       refreshMissionBoardState: vi.fn(async () => null),
     }));
     vi.doMock('../../hud/sanitize.js', () => ({

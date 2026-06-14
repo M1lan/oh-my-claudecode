@@ -611,5 +611,11 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
 // Export for programmatic use (e.g., omc hud --watch loop)
 export { main };
 
-// Auto-run (unconditional so dynamic import() via omc-hud.mjs wrapper works correctly)
-main();
+// Auto-run (unconditional so dynamic import() via omc-hud.mjs wrapper works correctly).
+// Skipped under Vitest: tests import this module to invoke `main` explicitly, and an
+// unawaited auto-run here would float a concurrent main() that races across tests
+// (corrupting console spies and intermittently bypassing module mocks). VITEST is set
+// only by the test runner, so production (omc-hud.mjs import) still auto-runs.
+if (!process.env.VITEST) {
+  main();
+}
