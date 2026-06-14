@@ -1,4 +1,4 @@
-import type { TeamConfig, WorkerInfo } from "./types.js";
+import type { TeamConfig, WorkerInfo } from './types.js';
 
 export interface WorkerCanonicalizationResult {
   workers: WorkerInfo[];
@@ -6,7 +6,7 @@ export interface WorkerCanonicalizationResult {
 }
 
 function hasText(value: string | undefined): boolean {
-  return typeof value === "string" && value.trim().length > 0;
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function hasAssignedTasks(worker: WorkerInfo): boolean {
@@ -17,9 +17,9 @@ function hasAssignedTasks(worker: WorkerInfo): boolean {
 
 function workerPriority(worker: WorkerInfo): number {
   if (hasText(worker.pane_id)) return 4;
-  if (typeof worker.pid === "number" && Number.isFinite(worker.pid)) return 3;
+  if (typeof worker.pid === 'number' && Number.isFinite(worker.pid)) return 3;
   if (hasAssignedTasks(worker)) return 2;
-  if (typeof worker.index === "number" && worker.index > 0) return 1;
+  if (typeof worker.index === 'number' && worker.index > 0) return 1;
   return 0;
 }
 
@@ -30,8 +30,8 @@ function mergeAssignedTasks(
   const merged: string[] = [];
   for (const taskId of [...(primary ?? []), ...(secondary ?? [])]) {
     if (
-      typeof taskId !== "string" ||
-      taskId.trim() === "" ||
+      typeof taskId !== 'string' ||
+      taskId.trim() === '' ||
       merged.includes(taskId)
     )
       continue;
@@ -51,7 +51,7 @@ function backfillBoolean(
   primary: boolean | undefined,
   secondary: boolean | undefined,
 ): boolean | undefined {
-  return typeof primary === "boolean" ? primary : secondary;
+  return typeof primary === 'boolean' ? primary : secondary;
 }
 
 function backfillNumber(
@@ -60,7 +60,7 @@ function backfillNumber(
   predicate?: (value: number) => boolean,
 ): number | undefined {
   const isUsable = (value: number | undefined): value is number =>
-    typeof value === "number" &&
+    typeof value === 'number' &&
     Number.isFinite(value) &&
     (predicate ? predicate(value) : true);
   return isUsable(primary)
@@ -92,7 +92,7 @@ export function canonicalizeWorkers(
   const duplicateNames = new Set<string>();
 
   for (const worker of workers) {
-    const name = typeof worker.name === "string" ? worker.name.trim() : "";
+    const name = typeof worker.name === 'string' ? worker.name.trim() : '';
     if (!name) continue;
 
     const normalized: WorkerInfo = {
@@ -126,7 +126,7 @@ export function canonicalizeWorkers(
       worker_cli: backfillText(
         winner.worker_cli,
         loser.worker_cli,
-      ) as WorkerInfo["worker_cli"],
+      ) as WorkerInfo['worker_cli'],
       working_dir: backfillText(winner.working_dir, loser.working_dir),
       worktree_repo_root: backfillText(
         winner.worktree_repo_root,
@@ -162,7 +162,7 @@ export function canonicalizeTeamConfigWorkers(config: TeamConfig): TeamConfig {
   const { workers, duplicateNames } = canonicalizeWorkers(config.workers ?? []);
   if (duplicateNames.length > 0) {
     console.warn(
-      `[team] canonicalized duplicate worker entries: ${duplicateNames.join(", ")}`,
+      `[team] canonicalized duplicate worker entries: ${duplicateNames.join(', ')}`,
     );
   }
   return {

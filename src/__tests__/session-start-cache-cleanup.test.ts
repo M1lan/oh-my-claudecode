@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, lstatSync, readlinkSync, readdirSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  lstatSync,
+  readlinkSync,
+  readdirSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -25,7 +34,14 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
   beforeEach(() => {
     tmpDir = mkdtempSync(join(tmpdir(), 'omc-cache-test-'));
     fakeHome = join(tmpDir, 'home');
-    fakeCacheBase = join(fakeHome, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    fakeCacheBase = join(
+      fakeHome,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     fakeProject = join(tmpDir, 'project');
 
     // Create fake project directory with .omc
@@ -46,7 +62,10 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
     mkdirSync(join(versionDir, 'scripts'), { recursive: true });
     writeFileSync(join(versionDir, 'scripts', 'run.cjs'), '// stub');
     writeFileSync(join(versionDir, 'scripts', 'session-start.mjs'), '// stub');
-    writeFileSync(join(versionDir, 'package.json'), JSON.stringify({ version }));
+    writeFileSync(
+      join(versionDir, 'package.json'),
+      JSON.stringify({ version }),
+    );
     return versionDir;
   }
 
@@ -82,9 +101,18 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
   function createExternalPluginRoot(version: string) {
     const externalRoot = join(tmpDir, 'external-plugin-root');
     mkdirSync(join(externalRoot, 'dist', 'notifications'), { recursive: true });
-    writeFileSync(join(externalRoot, 'package.json'), JSON.stringify({ version }));
-    writeFileSync(join(externalRoot, 'dist', 'notifications', 'index.js'), 'export async function notify() {}\n');
-    writeFileSync(join(externalRoot, 'dist', 'notifications', 'reply-listener.js'), 'export async function buildDaemonConfig() { return null; }\nexport function startReplyListener() {}\n');
+    writeFileSync(
+      join(externalRoot, 'package.json'),
+      JSON.stringify({ version }),
+    );
+    writeFileSync(
+      join(externalRoot, 'dist', 'notifications', 'index.js'),
+      'export async function notify() {}\n',
+    );
+    writeFileSync(
+      join(externalRoot, 'dist', 'notifications', 'reply-listener.js'),
+      'export async function buildDaemonConfig() { return null; }\nexport function startReplyListener() {}\n',
+    );
     return externalRoot;
   }
 
@@ -93,12 +121,15 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
     const externalRoot = createExternalPluginRoot('4.14.4');
     const updateCache = join(fakeHome, '.claude', '.omc', 'update-check.json');
     mkdirSync(join(fakeHome, '.claude', '.omc'), { recursive: true });
-    writeFileSync(updateCache, JSON.stringify({
-      timestamp: Date.now(),
-      latestVersion: '4.14.5',
-      currentVersion: '4.14.4',
-      updateAvailable: true,
-    }));
+    writeFileSync(
+      updateCache,
+      JSON.stringify({
+        timestamp: Date.now(),
+        latestVersion: '4.14.5',
+        currentVersion: '4.14.4',
+        updateAvailable: true,
+      }),
+    );
 
     const output = runSessionStart({ CLAUDE_PLUGIN_ROOT: externalRoot });
     const parsed = JSON.parse(output);
@@ -112,14 +143,19 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
     createFakeVersion('4.14.5');
     const updateCache = join(fakeHome, '.claude', '.omc', 'update-check.json');
     mkdirSync(join(fakeHome, '.claude', '.omc'), { recursive: true });
-    writeFileSync(updateCache, JSON.stringify({
-      timestamp: Date.now(),
-      latestVersion: '4.14.5',
-      currentVersion: '4.14.4',
-      updateAvailable: true,
-    }));
+    writeFileSync(
+      updateCache,
+      JSON.stringify({
+        timestamp: Date.now(),
+        latestVersion: '4.14.5',
+        currentVersion: '4.14.4',
+        updateAvailable: true,
+      }),
+    );
 
-    const output = runSessionStart({ CLAUDE_PLUGIN_ROOT: join(fakeCacheBase, '4.14.4') });
+    const output = runSessionStart({
+      CLAUDE_PLUGIN_ROOT: join(fakeCacheBase, '4.14.4'),
+    });
     const parsed = JSON.parse(output);
 
     expect(parsed.systemMessage).toBeUndefined();
@@ -186,8 +222,12 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
     runSessionStart();
 
     // 4.4.3 and 4.4.2: real directories
-    expect(lstatSync(join(fakeCacheBase, '4.4.3')).isSymbolicLink()).toBe(false);
-    expect(lstatSync(join(fakeCacheBase, '4.4.2')).isSymbolicLink()).toBe(false);
+    expect(lstatSync(join(fakeCacheBase, '4.4.3')).isSymbolicLink()).toBe(
+      false,
+    );
+    expect(lstatSync(join(fakeCacheBase, '4.4.2')).isSymbolicLink()).toBe(
+      false,
+    );
 
     // 4.4.1 and 4.4.0: symlinks to 4.4.3
     expect(lstatSync(join(fakeCacheBase, '4.4.1')).isSymbolicLink()).toBe(true);
@@ -213,8 +253,12 @@ describe('session-start.mjs — plugin cache cleanup uses symlinks', () => {
     expect(readlinkSync(join(fakeCacheBase, '4.4.1'))).toBe('4.4.3');
 
     // 4.4.3 and 4.4.2 remain as real directories
-    expect(lstatSync(join(fakeCacheBase, '4.4.3')).isSymbolicLink()).toBe(false);
-    expect(lstatSync(join(fakeCacheBase, '4.4.2')).isSymbolicLink()).toBe(false);
+    expect(lstatSync(join(fakeCacheBase, '4.4.3')).isSymbolicLink()).toBe(
+      false,
+    );
+    expect(lstatSync(join(fakeCacheBase, '4.4.2')).isSymbolicLink()).toBe(
+      false,
+    );
   });
 
   it('with only 1 version, no cleanup is needed', () => {

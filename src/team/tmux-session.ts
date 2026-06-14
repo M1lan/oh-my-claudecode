@@ -15,10 +15,18 @@ import { join, basename, isAbsolute, win32 } from 'path';
 import fs from 'fs/promises';
 import { validateTeamName } from './team-name.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
-import { tmuxExec, tmuxExecAsync, tmuxShell, tmuxCmdAsync } from '../cli/tmux-utils.js';
-import { configureTmuxClipboardForSession, configureTmuxClipboardForSessionAsync } from '../cli/tmux-clipboard.js';
+import {
+  tmuxExec,
+  tmuxExecAsync,
+  tmuxShell,
+  tmuxCmdAsync,
+} from '../cli/tmux-utils.js';
+import {
+  configureTmuxClipboardForSession,
+  configureTmuxClipboardForSessionAsync,
+} from '../cli/tmux-clipboard.js';
 
-const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const execFileAsync = promisify(execFile);
 
 const TMUX_SESSION_PREFIX = 'omc-team';
@@ -38,11 +46,15 @@ export function detectTeamMultiplexerContext(
  * Tmux panes run bash in this environment, not cmd.exe.
  */
 export function isUnixLikeOnWindows(): boolean {
-  return process.platform === 'win32' &&
-    !!(process.env.MSYSTEM || process.env.MINGW_PREFIX);
+  return (
+    process.platform === 'win32' &&
+    !!(process.env.MSYSTEM || process.env.MINGW_PREFIX)
+  );
 }
 
-export async function applyMainVerticalLayout(teamTarget: string): Promise<void> {
+export async function applyMainVerticalLayout(
+  teamTarget: string,
+): Promise<void> {
   try {
     await tmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
   } catch {
@@ -51,12 +63,22 @@ export async function applyMainVerticalLayout(teamTarget: string): Promise<void>
 
   try {
     const widthResult = await tmuxCmdAsync([
-      'display-message', '-p', '-t', teamTarget, '#{window_width}',
+      'display-message',
+      '-p',
+      '-t',
+      teamTarget,
+      '#{window_width}',
     ]);
     const width = parseInt(widthResult.stdout.trim(), 10);
     if (Number.isFinite(width) && width >= 40) {
       const half = String(Math.floor(width / 2));
-      await tmuxExecAsync(['set-window-option', '-t', teamTarget, 'main-pane-width', half]);
+      await tmuxExecAsync([
+        'set-window-option',
+        '-t',
+        teamTarget,
+        'main-pane-width',
+        half,
+      ]);
       await tmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
     }
   } catch {
@@ -64,36 +86,56 @@ export async function applyMainVerticalLayout(teamTarget: string): Promise<void>
   }
 }
 
-
 function isCmuxContext(): boolean {
   return detectTeamMultiplexerContext() === 'cmux';
 }
 
 function isCmuxSurfaceTarget(value: string | undefined): value is string {
-  return isCmuxContext() && typeof value === 'string' && value.trim().length > 0 && !value.trim().startsWith('%');
+  return (
+    isCmuxContext() &&
+    typeof value === 'string' &&
+    value.trim().length > 0 &&
+    !value.trim().startsWith('%')
+  );
 }
 
-async function cmuxExecAsync(args: string[]): Promise<{ stdout: string; stderr: string }> {
+async function cmuxExecAsync(
+  args: string[],
+): Promise<{ stdout: string; stderr: string }> {
   const result = await execFileAsync('cmux', args, { encoding: 'utf-8' });
   return {
-    stdout: typeof result.stdout === 'string' ? result.stdout : String(result.stdout ?? ''),
-    stderr: typeof result.stderr === 'string' ? result.stderr : String(result.stderr ?? ''),
+    stdout:
+      typeof result.stdout === 'string'
+        ? result.stdout
+        : String(result.stdout ?? ''),
+    stderr:
+      typeof result.stderr === 'string'
+        ? result.stderr
+        : String(result.stderr ?? ''),
   };
 }
 
 function parseCmuxSurfaceId(output: string): string {
   const trimmed = output.trim();
-  const uuidMatch = trimmed.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+  const uuidMatch = trimmed.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+  );
   if (uuidMatch) return uuidMatch[0];
   const tokens = trimmed.split(/\s+/).filter(Boolean);
   const token = tokens[0] === 'OK' ? tokens[1] : tokens[0];
-  if (!token) throw new Error(`Failed to resolve cmux surface id: "${trimmed}"`);
+  if (!token)
+    throw new Error(`Failed to resolve cmux surface id: "${trimmed}"`);
   return token;
 }
 
-async function cmuxSplitSurface(targetSurfaceId: string, direction: 'right' | 'down', _cwd: string): Promise<string> {
+async function cmuxSplitSurface(
+  targetSurfaceId: string,
+  direction: 'right' | 'down',
+  _cwd: string,
+): Promise<string> {
   const args = ['new-split', direction, '--surface', targetSurfaceId];
-  if (process.env.CMUX_WORKSPACE_ID) args.push('--workspace', process.env.CMUX_WORKSPACE_ID);
+  if (process.env.CMUX_WORKSPACE_ID)
+    args.push('--workspace', process.env.CMUX_WORKSPACE_ID);
   const result = await cmuxExecAsync(args);
   return parseCmuxSurfaceId(result.stdout);
 }
@@ -102,12 +144,20 @@ async function cmuxSendSurface(surfaceId: string, text: string): Promise<void> {
   await cmuxExecAsync(['send', '--surface', surfaceId, text]);
 }
 
-async function cmuxSendSurfaceKey(surfaceId: string, key: string): Promise<void> {
+async function cmuxSendSurfaceKey(
+  surfaceId: string,
+  key: string,
+): Promise<void> {
   await cmuxExecAsync(['send-key', '--surface', surfaceId, key]);
 }
 
 async function cmuxCaptureSurface(surfaceId: string): Promise<string> {
-  const result = await cmuxExecAsync(['capture-pane', '--surface', surfaceId, '--scrollback']);
+  const result = await cmuxExecAsync([
+    'capture-pane',
+    '--surface',
+    surfaceId,
+    '--scrollback',
+  ]);
   return result.stdout;
 }
 
@@ -115,7 +165,10 @@ async function cmuxCloseSurface(surfaceId: string): Promise<void> {
   await cmuxExecAsync(['close-surface', '--surface', surfaceId]);
 }
 
-export type TeamSessionMode = 'split-pane' | 'dedicated-window' | 'detached-session';
+export type TeamSessionMode =
+  | 'split-pane'
+  | 'dedicated-window'
+  | 'detached-session';
 
 export interface TeamSession {
   sessionName: string;
@@ -149,7 +202,10 @@ export function getDefaultShell(): string {
   const shell = process.env.SHELL || '/bin/bash';
   // Validate that the shell supports our launch script syntax.
   // Unsupported shells (tcsh, csh, etc.) fall back to /bin/sh.
-  const name = basename(shell.replace(/\\/g, '/')).replace(/\.(exe|cmd|bat)$/i, '');
+  const name = basename(shell.replace(/\\/g, '/')).replace(
+    /\.(exe|cmd|bat)$/i,
+    '',
+  );
   if (!SUPPORTED_POSIX_SHELLS.has(name)) {
     return '/bin/sh';
   }
@@ -162,13 +218,18 @@ export interface WorkerLaunchSpec {
   rcFile: string | null;
 }
 
-const ZSH_CANDIDATES = ['/bin/zsh', '/usr/bin/zsh', '/usr/local/bin/zsh', '/opt/homebrew/bin/zsh'];
+const ZSH_CANDIDATES = [
+  '/bin/zsh',
+  '/usr/bin/zsh',
+  '/usr/local/bin/zsh',
+  '/opt/homebrew/bin/zsh',
+];
 const BASH_CANDIDATES = ['/bin/bash', '/usr/bin/bash'];
 
 function pathEntries(envPath: string | undefined): string[] {
   return (envPath ?? '')
     .split(process.platform === 'win32' ? ';' : ':')
-    .map(entry => entry.trim())
+    .map((entry) => entry.trim())
     .filter(Boolean);
 }
 
@@ -177,7 +238,9 @@ function pathCandidateNames(candidatePath: string): string[] {
   const bare = base.replace(/\.(exe|cmd|bat)$/i, '');
 
   if (process.platform === 'win32') {
-    return Array.from(new Set([`${bare}.exe`, `${bare}.cmd`, `${bare}.bat`, bare]));
+    return Array.from(
+      new Set([`${bare}.exe`, `${bare}.cmd`, `${bare}.bat`, bare]),
+    );
   }
 
   return Array.from(new Set([base, bare]));
@@ -194,7 +257,10 @@ function resolveShellFromPath(candidatePath: string): string | null {
 }
 
 /** Try a list of shell paths; return first existing path or PATH-discovered binary with its rcFile, or null */
-export function resolveShellFromCandidates(paths: string[], rcFile: string): WorkerLaunchSpec | null {
+export function resolveShellFromCandidates(
+  paths: string[],
+  rcFile: string,
+): WorkerLaunchSpec | null {
   for (const p of paths) {
     if (existsSync(p)) return { shell: p, rcFile };
 
@@ -205,9 +271,14 @@ export function resolveShellFromCandidates(paths: string[], rcFile: string): Wor
 }
 
 /** Check if shellPath is a supported shell (zsh/bash) that exists on disk */
-export function resolveSupportedShellAffinity(shellPath?: string): WorkerLaunchSpec | null {
+export function resolveSupportedShellAffinity(
+  shellPath?: string,
+): WorkerLaunchSpec | null {
   if (!shellPath) return null;
-  const name = basename(shellPath.replace(/\\/g, '/')).replace(/\.(exe|cmd|bat)$/i, '');
+  const name = basename(shellPath.replace(/\\/g, '/')).replace(
+    /\.(exe|cmd|bat)$/i,
+    '',
+  );
   if (name !== 'zsh' && name !== 'bash') return null;
   if (!existsSync(shellPath)) return null;
   const home = process.env.HOME ?? '';
@@ -250,29 +321,37 @@ export function buildWorkerLaunchSpec(shellPath?: string): WorkerLaunchSpec {
   return { shell: '/bin/sh', rcFile: null };
 }
 
-
 function commandFingerprint(value: string): string {
   return createHash('sha256').update(value).digest('hex').slice(0, 12);
 }
 
 function redactWorkerStartCommandForLog(command: string): string {
-  return command
-    // POSIX env assignments in the generated launch command.
-    .replace(/\b([A-Za-z_][A-Za-z0-9_]*)='[^']*'/g, "$1='<redacted>'")
-    // Windows cmd env assignments.
-    .replace(/set "([A-Za-z_][A-Za-z0-9_]*)=[^"]*"/g, 'set "$1=<redacted>"')
-    // PowerShell env assignments.
-    .replace(/\$env:([A-Za-z_][A-Za-z0-9_]*)='[^']*'/g, "$env:$1='<redacted>'")
-    // Sensitive CLI flags that may appear in launchArgs.
-    .replace(
-      /(--?[A-Za-z0-9_-]*(?:api[-_]?key|token|secret|password|credential|auth)[A-Za-z0-9_-]*)(?:=|\s+)(?:'[^']*'|"[^"]*"|\S+)/gi,
-      '$1=<redacted>',
-    );
+  return (
+    command
+      // POSIX env assignments in the generated launch command.
+      .replace(/\b([A-Za-z_][A-Za-z0-9_]*)='[^']*'/g, "$1='<redacted>'")
+      // Windows cmd env assignments.
+      .replace(/set "([A-Za-z_][A-Za-z0-9_]*)=[^"]*"/g, 'set "$1=<redacted>"')
+      // PowerShell env assignments.
+      .replace(
+        /\$env:([A-Za-z_][A-Za-z0-9_]*)='[^']*'/g,
+        "$env:$1='<redacted>'",
+      )
+      // Sensitive CLI flags that may appear in launchArgs.
+      .replace(
+        /(--?[A-Za-z0-9_-]*(?:api[-_]?key|token|secret|password|credential|auth)[A-Za-z0-9_-]*)(?:=|\s+)(?:'[^']*'|"[^"]*"|\S+)/gi,
+        '$1=<redacted>',
+      )
+  );
 }
 
 function workerStartCommandPreview(command: string, maxLength = 180): string {
-  const redacted = redactWorkerStartCommandForLog(command).replace(/\s+/g, ' ').trim();
-  return redacted.length > maxLength ? `${redacted.slice(0, maxLength)}…` : redacted;
+  const redacted = redactWorkerStartCommandForLog(command)
+    .replace(/\s+/g, ' ')
+    .trim();
+  return redacted.length > maxLength
+    ? `${redacted.slice(0, maxLength)}…`
+    : redacted;
 }
 
 function logWorkerSpawnDiagnostic(message: string): void {
@@ -280,9 +359,13 @@ function logWorkerSpawnDiagnostic(message: string): void {
 }
 
 function paneCurrentCommandLooksReady(command: string): boolean {
-  const normalized = basename(command.replace(/\\/g, '/')).replace(/\.(exe|cmd|bat)$/i, '').toLowerCase();
-  return SUPPORTED_POSIX_SHELLS.has(normalized)
-    || ['cmd', 'powershell', 'pwsh', 'nu', 'elvish'].includes(normalized);
+  const normalized = basename(command.replace(/\\/g, '/'))
+    .replace(/\.(exe|cmd|bat)$/i, '')
+    .toLowerCase();
+  return (
+    SUPPORTED_POSIX_SHELLS.has(normalized) ||
+    ['cmd', 'powershell', 'pwsh', 'nu', 'elvish'].includes(normalized)
+  );
 }
 
 export interface WaitForShellReadyOptions {
@@ -290,24 +373,40 @@ export interface WaitForShellReadyOptions {
   pollIntervalMs?: number;
 }
 
-async function waitForShellReady(paneId: string, opts: WaitForShellReadyOptions = {}): Promise<boolean> {
+async function waitForShellReady(
+  paneId: string,
+  opts: WaitForShellReadyOptions = {},
+): Promise<boolean> {
   if (isCmuxSurfaceTarget(paneId)) return true;
-  const envTimeout = Number.parseInt(process.env.OMC_TEAM_SHELL_READY_TIMEOUT_MS ?? '', 10);
-  const timeoutMs = Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
-    ? Number(opts.timeoutMs)
-    : (Number.isFinite(envTimeout) && envTimeout > 0 ? envTimeout : 5_000);
-  const pollIntervalMs = Number.isFinite(opts.pollIntervalMs) && (opts.pollIntervalMs ?? 0) > 0
-    ? Number(opts.pollIntervalMs)
-    : 50;
+  const envTimeout = Number.parseInt(
+    process.env.OMC_TEAM_SHELL_READY_TIMEOUT_MS ?? '',
+    10,
+  );
+  const timeoutMs =
+    Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
+      ? Number(opts.timeoutMs)
+      : Number.isFinite(envTimeout) && envTimeout > 0
+        ? envTimeout
+        : 5_000;
+  const pollIntervalMs =
+    Number.isFinite(opts.pollIntervalMs) && (opts.pollIntervalMs ?? 0) > 0
+      ? Number(opts.pollIntervalMs)
+      : 50;
 
   const deadline = Date.now() + timeoutMs;
   let lastStatus = '';
   while (Date.now() < deadline) {
     try {
-      const result = await tmuxCmdAsync([
-        'display-message', '-p', '-t', paneId,
-        '#{pane_dead} #{pane_current_command}',
-      ], { timeout: 1000 });
+      const result = await tmuxCmdAsync(
+        [
+          'display-message',
+          '-p',
+          '-t',
+          paneId,
+          '#{pane_dead} #{pane_current_command}',
+        ],
+        { timeout: 1000 },
+      );
       lastStatus = result.stdout.trim();
       const [dead, ...commandParts] = lastStatus.split(/\s+/);
       if (dead === '1') return false;
@@ -327,7 +426,10 @@ async function waitForShellReady(paneId: string, opts: WaitForShellReadyOptions 
   return false;
 }
 
-async function verifyWorkerStartCommandDelivered(paneId: string, startCmd: string): Promise<boolean> {
+async function verifyWorkerStartCommandDelivered(
+  paneId: string,
+  startCmd: string,
+): Promise<boolean> {
   if (isCmuxSurfaceTarget(paneId)) return true;
   const expected = normalizeTmuxCapture(startCmd);
   for (let attempt = 1; attempt <= 5; attempt++) {
@@ -351,9 +453,11 @@ function escapeForPowerShellSingleQuotedString(value: string): string {
 function isNativeWindowsPsmuxPowerShellPane(): boolean {
   // psmux sets PSMUX_SESSION in panes. Native psmux defaults to PowerShell,
   // while MSYS/Git Bash psmux panes still need the POSIX branch below.
-  return process.platform === 'win32' &&
+  return (
+    process.platform === 'win32' &&
     !isUnixLikeOnWindows() &&
-    !!process.env.PSMUX_SESSION;
+    !!process.env.PSMUX_SESSION
+  );
 }
 
 function shellNameFromPath(shellPath: string): string {
@@ -381,10 +485,14 @@ function assertSafeLaunchBinary(launchBinary: string): void {
     throw new Error('Invalid launchBinary: value cannot be empty');
   }
   if (launchBinary !== launchBinary.trim()) {
-    throw new Error('Invalid launchBinary: value cannot have leading/trailing whitespace');
+    throw new Error(
+      'Invalid launchBinary: value cannot have leading/trailing whitespace',
+    );
   }
   if (DANGEROUS_LAUNCH_BINARY_CHARS.test(launchBinary)) {
-    throw new Error('Invalid launchBinary: contains dangerous shell metacharacters');
+    throw new Error(
+      'Invalid launchBinary: contains dangerous shell metacharacters',
+    );
   }
   if (/\s/.test(launchBinary) && !isAbsoluteLaunchBinaryPath(launchBinary)) {
     throw new Error('Invalid launchBinary: paths with spaces must be absolute');
@@ -399,10 +507,12 @@ function getLaunchWords(config: WorkerPaneConfig): string[] {
   if (config.launchCmd) {
     throw new Error(
       'launchCmd is deprecated and has been removed for security reasons. ' +
-      'Use launchBinary + launchArgs instead.'
+        'Use launchBinary + launchArgs instead.',
     );
   }
-  throw new Error('Missing worker launch command. Provide launchBinary or launchCmd.');
+  throw new Error(
+    'Missing worker launch command. Provide launchBinary or launchCmd.',
+  );
 }
 
 export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
@@ -412,11 +522,10 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
   const shouldSourceRc = process.env.OMC_TEAM_NO_RC !== '1';
 
   if (isNativeWindowsPsmuxPowerShellPane()) {
-    const envStatements = Object.entries(config.envVars)
-      .map(([k, v]) => {
-        assertSafeEnvKey(k);
-        return `$env:${k}=${escapeForPowerShellSingleQuotedString(v)}`;
-      });
+    const envStatements = Object.entries(config.envVars).map(([k, v]) => {
+      assertSafeEnvKey(k);
+      return `$env:${k}=${escapeForPowerShellSingleQuotedString(v)}`;
+    });
     const launch = [
       '&',
       ...launchWords.map(escapeForPowerShellSingleQuotedString),
@@ -439,10 +548,12 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
   }
 
   if (config.launchBinary) {
-    const envAssignments = Object.entries(config.envVars).map(([key, value]) => {
-      assertSafeEnvKey(key);
-      return `${key}=${shellEscape(value)}`;
-    });
+    const envAssignments = Object.entries(config.envVars).map(
+      ([key, value]) => {
+        assertSafeEnvKey(key);
+        return `${key}=${shellEscape(value)}`;
+      },
+    );
 
     const shellName = shellNameFromPath(shell) || 'bash';
     const isFish = shellName === 'fish';
@@ -459,13 +570,15 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
     let script: string;
     if (isFish) {
       // Fish uses different syntax for conditionals and sourcing
-      script = shouldSourceRc && rcFile
-        ? `test -f ${shellEscape(rcFile)}; and source ${shellEscape(rcFile)}; ${execArgsCommand}`
-        : execArgsCommand;
+      script =
+        shouldSourceRc && rcFile
+          ? `test -f ${shellEscape(rcFile)}; and source ${shellEscape(rcFile)}; ${execArgsCommand}`
+          : execArgsCommand;
     } else {
-      script = shouldSourceRc && rcFile
-        ? `[ -f ${shellEscape(rcFile)} ] && . ${shellEscape(rcFile)}; ${execArgsCommand}`
-        : execArgsCommand;
+      script =
+        shouldSourceRc && rcFile
+          ? `[ -f ${shellEscape(rcFile)} ] && . ${shellEscape(rcFile)}; ${execArgsCommand}`
+          : execArgsCommand;
     }
 
     // Fish doesn't support combined -lc; use separate -l -c flags
@@ -509,7 +622,6 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
   }
 
   return `env ${envString} ${shell} -c "${sourceCmd}exec ${launchWords[0]}"`;
-
 }
 
 /** Validate tmux is available. Throws with install instructions if not. */
@@ -522,11 +634,11 @@ export function validateTmux(hasTmuxContext = false): void {
   } catch {
     throw new Error(
       'tmux is not available. Install it:\n' +
-      '  macOS: brew install tmux\n' +
-      '  Ubuntu/Debian: sudo apt-get install tmux\n' +
-      '  Fedora: sudo dnf install tmux\n' +
-      '  Arch: sudo pacman -S tmux\n' +
-      '  Windows: winget install psmux'
+        '  macOS: brew install tmux\n' +
+        '  Ubuntu/Debian: sudo apt-get install tmux\n' +
+        '  Fedora: sudo dnf install tmux\n' +
+        '  Arch: sudo pacman -S tmux\n' +
+        '  Windows: winget install psmux',
     );
   }
 }
@@ -535,10 +647,14 @@ export function validateTmux(hasTmuxContext = false): void {
 export function sanitizeName(name: string): string {
   const sanitized = name.replace(/[^a-zA-Z0-9-]/g, '');
   if (sanitized.length === 0) {
-    throw new Error(`Invalid name: "${name}" contains no valid characters (alphanumeric or hyphen)`);
+    throw new Error(
+      `Invalid name: "${name}" contains no valid characters (alphanumeric or hyphen)`,
+    );
   }
   if (sanitized.length < 2) {
-    throw new Error(`Invalid name: "${name}" too short after sanitization (minimum 2 characters)`);
+    throw new Error(
+      `Invalid name: "${name}" too short after sanitization (minimum 2 characters)`,
+    );
   }
   // Truncate to safe length for tmux session names
   return sanitized.slice(0, 50);
@@ -551,13 +667,23 @@ export function sessionName(teamName: string, workerName: string): string {
 
 /** @deprecated Use createTeamSession() instead for split-pane topology */
 /** Create a detached tmux session. Kills stale session with same name first. */
-export function createSession(teamName: string, workerName: string, workingDirectory?: string): string {
+export function createSession(
+  teamName: string,
+  workerName: string,
+  workingDirectory?: string,
+): string {
   const name = sessionName(teamName, workerName);
 
   // Kill existing session if present (stale from previous run)
   try {
-    tmuxExec(['kill-session', '-t', name], { stripTmux: true, stdio: 'pipe', timeout: 5000 });
-  } catch { /* ignore — session may not exist */ }
+    tmuxExec(['kill-session', '-t', name], {
+      stripTmux: true,
+      stdio: 'pipe',
+      timeout: 5000,
+    });
+  } catch {
+    /* ignore — session may not exist */
+  }
 
   // Create detached session with reasonable terminal size
   const args = ['new-session', '-d', '-s', name, '-x', '200', '-y', '50'];
@@ -566,8 +692,14 @@ export function createSession(teamName: string, workerName: string, workingDirec
   }
   tmuxExec(args, { stripTmux: true, stdio: 'pipe', timeout: 5000 });
   try {
-    configureTmuxClipboardForSession(name, { stripTmux: true, stdio: 'pipe', timeout: 5000 });
-  } catch { /* non-fatal — older tmux builds may not support these options */ }
+    configureTmuxClipboardForSession(name, {
+      stripTmux: true,
+      stdio: 'pipe',
+      timeout: 5000,
+    });
+  } catch {
+    /* non-fatal — older tmux builds may not support these options */
+  }
 
   return name;
 }
@@ -577,8 +709,14 @@ export function createSession(teamName: string, workerName: string, workingDirec
 export function killSession(teamName: string, workerName: string): void {
   const name = sessionName(teamName, workerName);
   try {
-    tmuxExec(['kill-session', '-t', name], { stripTmux: true, stdio: 'pipe', timeout: 5000 });
-  } catch { /* ignore — session may not exist */ }
+    tmuxExec(['kill-session', '-t', name], {
+      stripTmux: true,
+      stdio: 'pipe',
+      timeout: 5000,
+    });
+  } catch {
+    /* ignore — session may not exist */
+  }
 }
 
 /** @deprecated Use isWorkerAlive() with pane ID instead */
@@ -586,7 +724,11 @@ export function killSession(teamName: string, workerName: string): void {
 export function isSessionAlive(teamName: string, workerName: string): boolean {
   const name = sessionName(teamName, workerName);
   try {
-    tmuxExec(['has-session', '-t', name], { stripTmux: true, stdio: 'pipe', timeout: 5000 });
+    tmuxExec(['has-session', '-t', name], {
+      stripTmux: true,
+      stdio: 'pipe',
+      timeout: 5000,
+    });
     return true;
   } catch {
     return false;
@@ -601,11 +743,14 @@ export function listActiveSessions(teamName: string): string[] {
     // MSYS2/Git Bash from stripping curly braces in execFileSync args.
     // All arguments here are hardcoded constants, not user input.
     const output = tmuxShell("list-sessions -F '#{session_name}'", {
-      timeout: 5000, stdio: ['pipe', 'pipe', 'pipe']
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
-    return output.trim().split('\n')
-      .filter(s => s.startsWith(prefix))
-      .map(s => s.slice(prefix.length));
+    return output
+      .trim()
+      .split('\n')
+      .filter((s) => s.startsWith(prefix))
+      .map((s) => s.slice(prefix.length));
   } catch {
     return [];
   }
@@ -625,14 +770,17 @@ function quoteBridgeShellArg(value: string): string {
 export function spawnBridgeInSession(
   tmuxSession: string,
   bridgeScriptPath: string,
-  configFilePath: string
+  configFilePath: string,
 ): void {
   const cmd = [process.execPath, bridgeScriptPath, '--config', configFilePath]
     .map(quoteBridgeShellArg)
     .join(' ');
-  tmuxExec(['send-keys', '-t', tmuxSession, cmd, 'Enter'], { stripTmux: true, stdio: 'pipe', timeout: 5000 });
+  tmuxExec(['send-keys', '-t', tmuxSession, cmd, 'Enter'], {
+    stripTmux: true,
+    stdio: 'pipe',
+    timeout: 5000,
+  });
 }
-
 
 /**
  * Create a tmux team topology for a team leader/worker layout.
@@ -675,7 +823,9 @@ export async function createTeamSession(
   if (inCmux) {
     const cmuxLeaderSurface = (process.env.CMUX_SURFACE_ID ?? '').trim();
     if (!cmuxLeaderSurface) {
-      throw new Error('CMUX_SURFACE_ID is required to create a cmux team session');
+      throw new Error(
+        'CMUX_SURFACE_ID is required to create a cmux team session',
+      );
     }
     sessionAndWindow = `cmux:${process.env.CMUX_WORKSPACE_ID || 'workspace'}`;
     leaderPaneId = cmuxLeaderSurface;
@@ -684,15 +834,26 @@ export async function createTeamSession(
     // Backward-compatible fallback: create an isolated detached tmux session
     // so workflows can run when launched outside any multiplexer.
     const detachedSessionName = `${TMUX_SESSION_PREFIX}-${sanitizeName(teamName)}-${Date.now().toString(36)}`;
-    const detachedResult = await tmuxExecAsync([
-      'new-session', '-d', '-P', '-F', '#S:0 #{pane_id}',
-      '-s', detachedSessionName,
-      '-c', cwd,
-    ], { stripTmux: true });
+    const detachedResult = await tmuxExecAsync(
+      [
+        'new-session',
+        '-d',
+        '-P',
+        '-F',
+        '#S:0 #{pane_id}',
+        '-s',
+        detachedSessionName,
+        '-c',
+        cwd,
+      ],
+      { stripTmux: true },
+    );
     const detachedLine = detachedResult.stdout.trim();
     const detachedMatch = detachedLine.match(/^(\S+)\s+(%\d+)$/);
     if (!detachedMatch) {
-      throw new Error(`Failed to create detached tmux session: "${detachedLine}"`);
+      throw new Error(
+        `Failed to create detached tmux session: "${detachedLine}"`,
+      );
     }
     sessionAndWindow = detachedMatch[1];
     leaderPaneId = detachedMatch[2];
@@ -701,7 +862,11 @@ export async function createTeamSession(
   if (inTmux && envPaneId) {
     try {
       const targetedContextResult = await tmuxExecAsync([
-        'display-message', '-p', '-t', envPaneId, '#S:#I',
+        'display-message',
+        '-p',
+        '-t',
+        envPaneId,
+        '#S:#I',
       ]);
       sessionAndWindow = targetedContextResult.stdout.trim();
     } catch {
@@ -713,7 +878,9 @@ export async function createTeamSession(
   if (!sessionAndWindow || !leaderPaneId) {
     // Fallback when TMUX_PANE is unavailable/invalid.
     const contextResult = await tmuxCmdAsync([
-      'display-message', '-p', '#S:#I #{pane_id}',
+      'display-message',
+      '-p',
+      '#S:#I #{pane_id}',
     ]);
     const contextLine = contextResult.stdout.trim();
     const contextMatch = contextLine.match(/^(\S+)\s+(%\d+)$/);
@@ -728,10 +895,17 @@ export async function createTeamSession(
     const targetSession = sessionAndWindow.split(':')[0] ?? sessionAndWindow;
     const windowName = `omc-${sanitizeName(teamName)}`.slice(0, 32);
     const newWindowResult = await tmuxExecAsync([
-      'new-window', '-d', '-P', '-F', '#S:#I #{pane_id}',
-      '-t', targetSession,
-      '-n', windowName,
-      '-c', cwd,
+      'new-window',
+      '-d',
+      '-P',
+      '-F',
+      '#S:#I #{pane_id}',
+      '-t',
+      targetSession,
+      '-n',
+      windowName,
+      '-c',
+      cwd,
     ]);
     const newWindowLine = newWindowResult.stdout.trim();
     const newWindowMatch = newWindowLine.match(/^(\S+)\s+(%\d+)$/);
@@ -759,15 +933,30 @@ export async function createTeamSession(
   if (workerCount <= 0) {
     if (!inCmux) {
       try {
-        await tmuxExecAsync(['set-option', '-t', resolvedSessionName, 'mouse', 'on']);
-      } catch { /* ignore */ }
+        await tmuxExecAsync([
+          'set-option',
+          '-t',
+          resolvedSessionName,
+          'mouse',
+          'on',
+        ]);
+      } catch {
+        /* ignore */
+      }
       if (sessionMode !== 'dedicated-window') {
         try {
           await tmuxExecAsync(['select-pane', '-t', leaderPaneId]);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }
     }
-    return { sessionName: teamTarget, leaderPaneId, workerPaneIds, sessionMode };
+    return {
+      sessionName: teamTarget,
+      leaderPaneId,
+      workerPaneIds,
+      sessionMode,
+    };
   }
 
   // Create worker panes: first via horizontal split off leader, rest stacked vertically on right.
@@ -781,9 +970,16 @@ export async function createTeamSession(
 
     const splitType = i === 0 ? '-h' : '-v';
     const splitResult = await tmuxCmdAsync([
-      'split-window', splitType, '-t', splitTarget,
-      '-d', '-P', '-F', '#{pane_id}',
-      '-c', cwd,
+      'split-window',
+      splitType,
+      '-t',
+      splitTarget,
+      '-d',
+      '-P',
+      '-F',
+      '#{pane_id}',
+      '-c',
+      cwd,
     ]);
     const paneId = splitResult.stdout.split('\n')[0]?.trim();
     if (paneId) {
@@ -795,16 +991,30 @@ export async function createTeamSession(
     await applyMainVerticalLayout(teamTarget);
 
     try {
-      await tmuxExecAsync(['set-option', '-t', resolvedSessionName, 'mouse', 'on']);
-    } catch { /* ignore */ }
+      await tmuxExecAsync([
+        'set-option',
+        '-t',
+        resolvedSessionName,
+        'mouse',
+        'on',
+      ]);
+    } catch {
+      /* ignore */
+    }
 
     if (sessionMode !== 'dedicated-window') {
       try {
         await tmuxExecAsync(['select-pane', '-t', leaderPaneId]);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
   }
-  await Promise.all(workerPaneIds.map((workerPaneId) => waitForShellReady(workerPaneId, { timeoutMs: 5_000 })));
+  await Promise.all(
+    workerPaneIds.map((workerPaneId) =>
+      waitForShellReady(workerPaneId, { timeoutMs: 5_000 }),
+    ),
+  );
 
   return { sessionName: teamTarget, leaderPaneId, workerPaneIds, sessionMode };
 }
@@ -817,7 +1027,7 @@ export async function createTeamSession(
 export async function spawnWorkerInPane(
   sessionName: string,
   paneId: string,
-  config: WorkerPaneConfig
+  config: WorkerPaneConfig,
 ): Promise<void> {
   validateTeamName(config.teamName);
   const startCmd = buildWorkerStartCommand(config);
@@ -826,7 +1036,7 @@ export async function spawnWorkerInPane(
 
   logWorkerSpawnDiagnostic(
     `worker start delivery begin session=${sessionName} pane=${paneId} ` +
-    `worker=${config.workerName} cmdSha=${fingerprint} cmdPreview=${JSON.stringify(preview)}`,
+      `worker=${config.workerName} cmdSha=${fingerprint} cmdPreview=${JSON.stringify(preview)}`,
   );
 
   if (isCmuxSurfaceTarget(paneId)) {
@@ -835,13 +1045,13 @@ export async function spawnWorkerInPane(
       await cmuxSendSurfaceKey(paneId, 'Enter');
       logWorkerSpawnDiagnostic(
         `worker start delivery sent session=${sessionName} pane=${paneId} ` +
-        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0`,
+          `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0`,
       );
       return;
     } catch (error) {
       logWorkerSpawnDiagnostic(
         `worker start delivery failed session=${sessionName} pane=${paneId} ` +
-        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
+          `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
       );
       throw error;
     }
@@ -852,24 +1062,25 @@ export async function spawnWorkerInPane(
     const reason = `worker_start_shell_not_ready:${config.workerName}:${paneId}:${fingerprint}`;
     logWorkerSpawnDiagnostic(
       `worker start delivery failed session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=not_attempted reason=shell_not_ready`,
+        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=not_attempted reason=shell_not_ready`,
     );
     throw new Error(reason);
   }
 
   try {
     // Use -l (literal) flag to prevent tmux key-name parsing of the command string.
-    const sendResult = await tmuxExecAsync([
-      'send-keys', '-t', paneId, '-l', startCmd
-    ], { timeout: 5000 });
+    const sendResult = await tmuxExecAsync(
+      ['send-keys', '-t', paneId, '-l', startCmd],
+      { timeout: 5000 },
+    );
     logWorkerSpawnDiagnostic(
       `worker start send-keys literal session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0 stderr=${JSON.stringify(sendResult.stderr.trim())}`,
+        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0 stderr=${JSON.stringify(sendResult.stderr.trim())}`,
     );
   } catch (error) {
     logWorkerSpawnDiagnostic(
       `worker start send-keys literal failed session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
+        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
     );
     throw error;
   }
@@ -879,21 +1090,24 @@ export async function spawnWorkerInPane(
     const reason = `worker_start_delivery_unverified:${config.workerName}:${paneId}:${fingerprint}`;
     logWorkerSpawnDiagnostic(
       `worker start delivery verification failed session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} cmdPreview=${JSON.stringify(preview)}`,
+        `worker=${config.workerName} cmdSha=${fingerprint} cmdPreview=${JSON.stringify(preview)}`,
     );
     throw new Error(reason);
   }
 
   try {
-    const enterResult = await tmuxExecAsync(['send-keys', '-t', paneId, 'Enter'], { timeout: 5000 });
+    const enterResult = await tmuxExecAsync(
+      ['send-keys', '-t', paneId, 'Enter'],
+      { timeout: 5000 },
+    );
     logWorkerSpawnDiagnostic(
       `worker start submit sent session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0 stderr=${JSON.stringify(enterResult.stderr.trim())}`,
+        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=0 stderr=${JSON.stringify(enterResult.stderr.trim())}`,
     );
   } catch (error) {
     logWorkerSpawnDiagnostic(
       `worker start submit failed session=${sessionName} pane=${paneId} ` +
-      `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
+        `worker=${config.workerName} cmdSha=${fingerprint} sendStatus=1 error=${JSON.stringify(error instanceof Error ? error.message : String(error))}`,
     );
     throw error;
   }
@@ -903,7 +1117,10 @@ function normalizeTmuxCapture(value: string): string {
   return value.replace(/\r/g, '').replace(/\s+/g, ' ').trim();
 }
 
-async function capturePaneAsync(paneId: string, opts: { joinWrappedLines?: boolean } = {}): Promise<string> {
+async function capturePaneAsync(
+  paneId: string,
+  opts: { joinWrappedLines?: boolean } = {},
+): Promise<string> {
   try {
     if (isCmuxSurfaceTarget(paneId)) {
       return await cmuxCaptureSurface(paneId);
@@ -922,7 +1139,10 @@ export async function captureTeamPane(paneId: string): Promise<string> {
   return capturePaneAsync(paneId);
 }
 
-export async function sendTeamPaneKey(paneId: string, key: string): Promise<void> {
+export async function sendTeamPaneKey(
+  paneId: string,
+  key: string,
+): Promise<void> {
   if (isCmuxSurfaceTarget(paneId)) {
     await cmuxSendSurfaceKey(paneId, key);
     return;
@@ -940,18 +1160,32 @@ export async function killTeamPane(paneId: string): Promise<void> {
 
 type PaneTrustPromptKind = 'directory' | 'codex_hooks';
 
-function detectPaneTrustPromptKind(captured: string): PaneTrustPromptKind | null {
-  const lines = captured.split('\n').map(l => l.replace(/\r/g, '').trim()).filter(l => l.length > 0);
+function detectPaneTrustPromptKind(
+  captured: string,
+): PaneTrustPromptKind | null {
+  const lines = captured
+    .split('\n')
+    .map((l) => l.replace(/\r/g, '').trim())
+    .filter((l) => l.length > 0);
   const tail = lines.slice(-12);
 
-  const hasDirectoryQuestion = tail.some(l => /Do you trust the contents of this directory\?/i.test(l));
-  const hasDirectoryChoices = tail.some(l => /Yes,\s*continue|No,\s*quit|Press enter to continue/i.test(l));
+  const hasDirectoryQuestion = tail.some((l) =>
+    /Do you trust the contents of this directory\?/i.test(l),
+  );
+  const hasDirectoryChoices = tail.some((l) =>
+    /Yes,\s*continue|No,\s*quit|Press enter to continue/i.test(l),
+  );
   if (hasDirectoryQuestion && hasDirectoryChoices) return 'directory';
 
-  const hasHookReview = tail.some(l => /Hooks need review/i.test(l));
-  const hasHookTrustChoice = tail.some(l => /Continue without trusting/i.test(l));
-  const hasHookConfirm = tail.some(l => /Press enter to confirm or esc to go back/i.test(l));
-  if (hasHookReview && hasHookTrustChoice && hasHookConfirm) return 'codex_hooks';
+  const hasHookReview = tail.some((l) => /Hooks need review/i.test(l));
+  const hasHookTrustChoice = tail.some((l) =>
+    /Continue without trusting/i.test(l),
+  );
+  const hasHookConfirm = tail.some((l) =>
+    /Press enter to confirm or esc to go back/i.test(l),
+  );
+  if (hasHookReview && hasHookTrustChoice && hasHookConfirm)
+    return 'codex_hooks';
 
   return null;
 }
@@ -973,10 +1207,11 @@ function paneHasClaudeStartupBanner(captured: string): boolean {
   // in the tail, the pane has finished bootstrapping and the banner is an
   // idle mode indicator, not a startup signal.
   if (lastPromptIndex >= 0) return false;
-  const lastStartupBannerIndex = lines.findLastIndex((line) =>
-    /bypass\s+permissions\s+on/i.test(line)
-    || /shift\+tab\s+to\s+cycle/i.test(line)
-    || /^⏵⏵\s+/.test(line),
+  const lastStartupBannerIndex = lines.findLastIndex(
+    (line) =>
+      /bypass\s+permissions\s+on/i.test(line) ||
+      /shift\+tab\s+to\s+cycle/i.test(line) ||
+      /^⏵⏵\s+/.test(line),
   );
   return lastStartupBannerIndex >= 0;
 }
@@ -987,20 +1222,32 @@ function paneIsBootstrapping(captured: string): boolean {
     .split('\n')
     .map((line) => line.replace(/\r/g, '').trim())
     .filter((line) => line.length > 0);
-  return lines.some((line) =>
-    /\b(loading|initializing|starting up)\b/i.test(line)
-    || /\bmodel:\s*loading\b/i.test(line)
-    || /\bconnecting\s+to\b/i.test(line),
+  return lines.some(
+    (line) =>
+      /\b(loading|initializing|starting up)\b/i.test(line) ||
+      /\bmodel:\s*loading\b/i.test(line) ||
+      /\bconnecting\s+to\b/i.test(line),
   );
 }
 
 export function paneHasActiveTask(captured: string): boolean {
-  const lines = captured.split('\n').map(l => l.replace(/\r/g, '').trim()).filter(l => l.length > 0);
+  const lines = captured
+    .split('\n')
+    .map((l) => l.replace(/\r/g, '').trim())
+    .filter((l) => l.length > 0);
   const tail = lines.slice(-40);
-  if (tail.some(l => /\b\d+\s+background terminal running\b/i.test(l))) return true;
-  if (tail.some(l => /esc to interrupt/i.test(l))) return true;
-  if (tail.some(l => /\bbackground terminal running\b/i.test(l))) return true;
-  if (tail.some(l => /^[·✻]\s+[A-Za-z][A-Za-z0-9''-]*(?:\s+[A-Za-z][A-Za-z0-9''-]*){0,3}(?:…|\.{3})$/u.test(l))) return true;
+  if (tail.some((l) => /\b\d+\s+background terminal running\b/i.test(l)))
+    return true;
+  if (tail.some((l) => /esc to interrupt/i.test(l))) return true;
+  if (tail.some((l) => /\bbackground terminal running\b/i.test(l))) return true;
+  if (
+    tail.some((l) =>
+      /^[·✻]\s+[A-Za-z][A-Za-z0-9''-]*(?:\s+[A-Za-z][A-Za-z0-9''-]*){0,3}(?:…|\.{3})$/u.test(
+        l,
+      ),
+    )
+  )
+    return true;
   return false;
 }
 
@@ -1017,8 +1264,8 @@ export function paneLooksReady(captured: string): boolean {
   if (content === '') return false;
   const lines = content
     .split('\n')
-    .map(line => line.replace(/\r/g, '').trimEnd())
-    .filter(line => line.trim() !== '');
+    .map((line) => line.replace(/\r/g, '').trimEnd())
+    .filter((line) => line.trim() !== '');
   if (lines.length === 0) return false;
   if (paneHasTrustPrompt(content)) return true;
   if (paneIsBootstrapping(content)) return false;
@@ -1035,15 +1282,22 @@ export interface WaitForPaneReadyOptions {
 
 export async function waitForPaneReady(
   paneId: string,
-  opts: WaitForPaneReadyOptions = {}
+  opts: WaitForPaneReadyOptions = {},
 ): Promise<boolean> {
-  const envTimeout = Number.parseInt(process.env.OMC_SHELL_READY_TIMEOUT_MS ?? '', 10);
-  const timeoutMs = Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
-    ? Number(opts.timeoutMs)
-    : (Number.isFinite(envTimeout) && envTimeout > 0 ? envTimeout : 30_000);
-  const pollIntervalMs = Number.isFinite(opts.pollIntervalMs) && (opts.pollIntervalMs ?? 0) > 0
-    ? Number(opts.pollIntervalMs)
-    : 250;
+  const envTimeout = Number.parseInt(
+    process.env.OMC_SHELL_READY_TIMEOUT_MS ?? '',
+    10,
+  );
+  const timeoutMs =
+    Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
+      ? Number(opts.timeoutMs)
+      : Number.isFinite(envTimeout) && envTimeout > 0
+        ? envTimeout
+        : 30_000;
+  const pollIntervalMs =
+    Number.isFinite(opts.pollIntervalMs) && (opts.pollIntervalMs ?? 0) > 0
+      ? Number(opts.pollIntervalMs)
+      : 250;
 
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -1056,7 +1310,7 @@ export async function waitForPaneReady(
 
   console.warn(
     `[tmux-session] waitForPaneReady: pane ${paneId} timed out after ${timeoutMs}ms ` +
-    `(set OMC_SHELL_READY_TIMEOUT_MS to tune)`
+      `(set OMC_SHELL_READY_TIMEOUT_MS to tune)`,
   );
   return false;
 }
@@ -1065,12 +1319,16 @@ function paneTailContainsLiteralLine(captured: string, text: string): boolean {
   return normalizeTmuxCapture(captured).includes(normalizeTmuxCapture(text));
 }
 
-async function paneInCopyMode(
-  paneId: string,
-): Promise<boolean> {
+async function paneInCopyMode(paneId: string): Promise<boolean> {
   if (isCmuxSurfaceTarget(paneId)) return false;
   try {
-    const result = await tmuxCmdAsync(['display-message', '-t', paneId, '-p', '#{pane_in_mode}']);
+    const result = await tmuxCmdAsync([
+      'display-message',
+      '-t',
+      paneId,
+      '-p',
+      '#{pane_in_mode}',
+    ]);
     return result.stdout.trim() === '1';
   } catch {
     return false;
@@ -1089,7 +1347,8 @@ export function shouldAttemptAdaptiveRetry(args: {
   if (args.paneInCopyMode) return false;
   if (!args.paneBusy) return false;
   if (typeof args.latestCapture !== 'string') return false;
-  if (!paneTailContainsLiteralLine(args.latestCapture, args.message)) return false;
+  if (!paneTailContainsLiteralLine(args.latestCapture, args.message))
+    return false;
   if (paneHasActiveTask(args.latestCapture)) return false;
   if (!paneLooksReady(args.latestCapture)) return false;
   return true;
@@ -1105,10 +1364,12 @@ export function shouldAttemptAdaptiveRetry(args: {
 export async function sendToWorker(
   _sessionName: string,
   paneId: string,
-  message: string
+  message: string,
 ): Promise<boolean> {
   if (message.length > 200) {
-    console.warn(`[tmux-session] sendToWorker: message rejected (${message.length} chars exceeds 200 char limit)`);
+    console.warn(
+      `[tmux-session] sendToWorker: message rejected (${message.length} chars exceeds 200 char limit)`,
+    );
     return false;
   }
   try {
@@ -1185,13 +1446,15 @@ export async function sendToWorker(
     // Adaptive fallback: for busy panes, retry once without interrupting active turns.
     const finalCapture = await capturePaneAsync(paneId);
     const paneModeBeforeAdaptiveRetry = await paneInCopyMode(paneId);
-    if (shouldAttemptAdaptiveRetry({
-      paneBusy,
-      latestCapture: finalCapture,
-      message,
-      paneInCopyMode: paneModeBeforeAdaptiveRetry,
-      retriesAttempted: 0,
-    })) {
+    if (
+      shouldAttemptAdaptiveRetry({
+        paneBusy,
+        latestCapture: finalCapture,
+        message,
+        paneInCopyMode: paneModeBeforeAdaptiveRetry,
+        retriesAttempted: 0,
+      })
+    ) {
       if (await paneInCopyMode(paneId)) {
         return false;
       }
@@ -1249,7 +1512,7 @@ export async function sendToWorker(
 export async function injectToLeaderPane(
   sessionName: string,
   leaderPaneId: string,
-  message: string
+  message: string,
 ): Promise<boolean> {
   const prefixed = `[OMC_TMUX_INJECT] ${message}`.slice(0, 200);
 
@@ -1263,9 +1526,11 @@ export async function injectToLeaderPane(
     const captured = await capturePaneAsync(leaderPaneId);
     if (paneHasActiveTask(captured)) {
       await tmuxExecAsync(['send-keys', '-t', leaderPaneId, 'C-c']);
-      await new Promise<void>(r => setTimeout(r, 250));
+      await new Promise<void>((r) => setTimeout(r, 250));
     }
-  } catch { /* best-effort */ }
+  } catch {
+    /* best-effort */
+  }
 
   return sendToWorker(sessionName, leaderPaneId, prefixed);
 }
@@ -1277,15 +1542,22 @@ export async function injectToLeaderPane(
 export type WorkerPaneLiveness = 'alive' | 'dead' | 'unknown';
 
 function isTmuxPaneNotFoundError(error: unknown): boolean {
-  const err = error as { stderr?: unknown; stdout?: unknown; message?: unknown } | null | undefined;
+  const err = error as
+    | { stderr?: unknown; stdout?: unknown; message?: unknown }
+    | null
+    | undefined;
   const text = [err?.stderr, err?.stdout, err?.message]
     .filter((part): part is string => typeof part === 'string')
     .join('\n')
     .toLowerCase();
-  return /can't find pane|can't find window|can't find session|no such pane|pane not found|unknown pane/.test(text);
+  return /can't find pane|can't find window|can't find session|no such pane|pane not found|unknown pane/.test(
+    text,
+  );
 }
 
-export async function getWorkerLiveness(paneId: string): Promise<WorkerPaneLiveness> {
+export async function getWorkerLiveness(
+  paneId: string,
+): Promise<WorkerPaneLiveness> {
   if (isCmuxSurfaceTarget(paneId)) {
     try {
       await cmuxCaptureSurface(paneId);
@@ -1297,7 +1569,11 @@ export async function getWorkerLiveness(paneId: string): Promise<WorkerPaneLiven
 
   try {
     const result = await tmuxCmdAsync([
-      'display-message', '-t', paneId, '-p', '#{pane_dead}'
+      'display-message',
+      '-t',
+      paneId,
+      '-p',
+      '#{pane_dead}',
     ]);
     return result.stdout.trim() === '0' ? 'alive' : 'dead';
   } catch (error) {
@@ -1323,32 +1599,53 @@ export async function killWorkerPanes(opts: {
 }): Promise<void> {
   const { paneIds, leaderPaneId, teamName, cwd, graceMs = 10_000 } = opts;
 
-  if (!paneIds.length) return;   // guard: nothing to kill
+  if (!paneIds.length) return; // guard: nothing to kill
 
   // 1. Write graceful shutdown sentinel
-  const shutdownPath = join(getOmcRoot(cwd), 'state', 'team', teamName, 'shutdown.json');
+  const shutdownPath = join(
+    getOmcRoot(cwd),
+    'state',
+    'team',
+    teamName,
+    'shutdown.json',
+  );
   try {
-    await fs.writeFile(shutdownPath, JSON.stringify({ requestedAt: Date.now() }));
-    const aliveChecks = await Promise.all(paneIds.map(id => isWorkerAlive(id)));
-    if (aliveChecks.some(alive => alive)) {
+    await fs.writeFile(
+      shutdownPath,
+      JSON.stringify({ requestedAt: Date.now() }),
+    );
+    const aliveChecks = await Promise.all(
+      paneIds.map((id) => isWorkerAlive(id)),
+    );
+    if (aliveChecks.some((alive) => alive)) {
       await sleep(graceMs);
     }
-  } catch { /* sentinel write failure is non-fatal */ }
+  } catch {
+    /* sentinel write failure is non-fatal */
+  }
 
   // 2. Force-kill each worker pane, guarding leader
   for (const paneId of paneIds) {
-    if (paneId === leaderPaneId) continue;   // GUARD — never kill leader
+    if (paneId === leaderPaneId) continue; // GUARD — never kill leader
     try {
       await killTeamPane(paneId);
-    } catch { /* pane already gone — OK */ }
+    } catch {
+      /* pane already gone — OK */
+    }
   }
 }
 
 function isPaneId(value: string | undefined): value is string {
-  return typeof value === 'string' && (/^%\d+$/.test(value.trim()) || isCmuxSurfaceTarget(value));
+  return (
+    typeof value === 'string' &&
+    (/^%\d+$/.test(value.trim()) || isCmuxSurfaceTarget(value))
+  );
 }
 
-function dedupeWorkerPaneIds(paneIds: Array<string | undefined>, leaderPaneId?: string): string[] {
+function dedupeWorkerPaneIds(
+  paneIds: Array<string | undefined>,
+  leaderPaneId?: string,
+): string[] {
   const unique = new Set<string>();
   for (const paneId of paneIds) {
     if (!isPaneId(paneId)) continue;
@@ -1368,9 +1665,18 @@ export async function resolveSplitPaneWorkerPaneIds(
   if (!sessionName.includes(':')) return resolved;
 
   try {
-    const paneResult = await tmuxCmdAsync(['list-panes', '-t', sessionName, '-F', '#{pane_id}']);
+    const paneResult = await tmuxCmdAsync([
+      'list-panes',
+      '-t',
+      sessionName,
+      '-F',
+      '#{pane_id}',
+    ]);
     return dedupeWorkerPaneIds(
-      [...resolved, ...paneResult.stdout.split('\n').map((paneId) => paneId.trim())],
+      [
+        ...resolved,
+        ...paneResult.stdout.split('\n').map((paneId) => paneId.trim()),
+      ],
       leaderPaneId,
     );
   } catch {
@@ -1392,8 +1698,9 @@ export async function killTeamSession(
   leaderPaneId?: string,
   options: { sessionMode?: TeamSessionMode } = {},
 ): Promise<void> {
-  const sessionMode = options.sessionMode
-    ?? (sessionName.includes(':') ? 'split-pane' : 'detached-session');
+  const sessionMode =
+    options.sessionMode ??
+    (sessionName.includes(':') ? 'split-pane' : 'detached-session');
 
   if (sessionMode === 'split-pane') {
     if (!workerPaneIds?.length) return;
@@ -1401,7 +1708,9 @@ export async function killTeamSession(
       if (id === leaderPaneId) continue;
       try {
         await killTeamPane(id);
-      } catch { /* already gone */ }
+      } catch {
+        /* already gone */
+      }
     }
     return;
   }
@@ -1417,7 +1726,10 @@ export async function killTeamSession(
 
   const sessionTarget = sessionName.split(':')[0] ?? sessionName;
 
-  if (process.env.OMC_TEAM_ALLOW_KILL_CURRENT_SESSION !== '1' && process.env.TMUX) {
+  if (
+    process.env.OMC_TEAM_ALLOW_KILL_CURRENT_SESSION !== '1' &&
+    process.env.TMUX
+  ) {
     try {
       const current = await tmuxCmdAsync(['display-message', '-p', '#S']);
       const currentSessionName = current.stdout.trim();
@@ -1434,5 +1746,4 @@ export async function killTeamSession(
   } catch {
     // Session may already be dead.
   }
-
 }

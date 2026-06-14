@@ -5,10 +5,10 @@
  * returns a list of mismatches. Ported from factcheck.py.
  */
 
-import { existsSync } from "fs";
-import { resolve } from "path";
-import type { FactcheckPolicy, Mismatch, FactcheckMode } from "./types.js";
-import { REQUIRED_FIELDS, REQUIRED_GATES } from "./types.js";
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import type { FactcheckPolicy, Mismatch, FactcheckMode } from './types.js';
+import { REQUIRED_FIELDS, REQUIRED_GATES } from './types.js';
 
 // ---------------------------------------------------------------------------
 // Schema validation
@@ -95,8 +95,8 @@ export function checkPaths(
     for (const prefix of policy.forbidden_path_prefixes) {
       if (pathStr.startsWith(prefix)) {
         out.push({
-          check: "H",
-          severity: "FAIL",
+          check: 'H',
+          severity: 'FAIL',
           detail: `Forbidden path prefix: ${pathStr}`,
         });
         prefixBlocked = true;
@@ -108,8 +108,8 @@ export function checkPaths(
       for (const fragment of policy.forbidden_path_substrings) {
         if (pathStr.includes(fragment)) {
           out.push({
-            check: "H",
-            severity: "FAIL",
+            check: 'H',
+            severity: 'FAIL',
             detail: `Forbidden path fragment: ${pathStr}`,
           });
           break;
@@ -119,8 +119,8 @@ export function checkPaths(
 
     if (!existsSync(pathStr)) {
       out.push({
-        check: "C",
-        severity: "FAIL",
+        check: 'C',
+        severity: 'FAIL',
         detail: `File not found: ${pathStr}`,
       });
     }
@@ -149,14 +149,14 @@ export function checkCommands(
     );
     if (!hitPrefix) continue;
 
-    const stripped = cmd.trim().replace(/^\(/, "");
+    const stripped = cmd.trim().replace(/^\(/, '');
     const isReadOnly = policy.readonly_command_prefixes.some((prefix) =>
       stripped.startsWith(prefix),
     );
     if (!isReadOnly) {
       out.push({
-        check: "H",
-        severity: "FAIL",
+        check: 'H',
+        severity: 'FAIL',
         detail: `Forbidden mutating command: ${cmd}`,
       });
     }
@@ -180,7 +180,7 @@ export function checkCwdParity(
 ): Mismatch | null {
   const enforceCwd =
     policy.warn_on_cwd_mismatch &&
-    (mode !== "quick" || policy.enforce_cwd_parity_in_quick);
+    (mode !== 'quick' || policy.enforce_cwd_parity_in_quick);
 
   if (!enforceCwd || !claimsCwd) return null;
 
@@ -188,9 +188,9 @@ export function checkCwdParity(
   const runtimeCwdCanonical = resolve(runtimeCwd);
 
   if (claimsCwdCanonical !== runtimeCwdCanonical) {
-    const severity = mode === "strict" ? "FAIL" : "WARN";
+    const severity = mode === 'strict' ? 'FAIL' : 'WARN';
     return {
-      check: "argv_parity",
+      check: 'argv_parity',
       severity,
       detail: `claims.cwd=${claimsCwdCanonical} runtime.cwd=${runtimeCwdCanonical}`,
     };

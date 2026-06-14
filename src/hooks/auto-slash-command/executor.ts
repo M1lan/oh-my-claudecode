@@ -18,12 +18,22 @@ import type {
   ExecuteResult,
 } from './types.js';
 import { resolveLiveData } from './live-data.js';
-import { parseFrontmatter, parseFrontmatterAliases, stripOptionalQuotes } from '../../utils/frontmatter.js';
+import {
+  parseFrontmatter,
+  parseFrontmatterAliases,
+  stripOptionalQuotes,
+} from '../../utils/frontmatter.js';
 import { rewriteOmcCliInvocations } from '../../utils/omc-cli-rendering.js';
-import { parseSkillPipelineMetadata, renderSkillPipelineGuidance } from '../../utils/skill-pipeline.js';
+import {
+  parseSkillPipelineMetadata,
+  renderSkillPipelineGuidance,
+} from '../../utils/skill-pipeline.js';
 import { renderSkillResourcesGuidance } from '../../utils/skill-resources.js';
 import { renderSkillRuntimeGuidance } from '../../features/builtin-skills/runtime-guidance.js';
-import { getSkillsDir, renderBundledSkillBody } from '../../features/builtin-skills/skills.js';
+import {
+  getSkillsDir,
+  renderBundledSkillBody,
+} from '../../features/builtin-skills/skills.js';
 
 /** Claude config directory */
 const CLAUDE_CONFIG_DIR = getClaudeConfigDir();
@@ -68,7 +78,7 @@ function getFrontmatterString(
  */
 function discoverCommandsFromDir(
   commandsDir: string,
-  scope: CommandScope
+  scope: CommandScope,
 ): CommandInfo[] {
   if (!existsSync(commandsDir)) {
     return [];
@@ -138,11 +148,16 @@ function discoverSkillsFromDir(skillsDir: string): CommandInfo[] {
 
         const rawName = getFrontmatterString(fm, 'name') || dir.name;
         const canonicalName = toSafeSkillName(rawName);
-        const aliases = Array.from(new Set(
-          parseFrontmatterAliases(fm.aliases)
-            .map((alias: string) => toSafeSkillName(alias))
-            .filter((alias: string) => alias.toLowerCase() !== canonicalName.toLowerCase())
-        ));
+        const aliases = Array.from(
+          new Set(
+            parseFrontmatterAliases(fm.aliases)
+              .map((alias: string) => toSafeSkillName(alias))
+              .filter(
+                (alias: string) =>
+                  alias.toLowerCase() !== canonicalName.toLowerCase(),
+              ),
+          ),
+        );
         const commandNames = [canonicalName, ...aliases];
         const description = getFrontmatterString(fm, 'description') || '';
         const argumentHint = getFrontmatterString(fm, 'argument-hint');
@@ -198,7 +213,10 @@ export function discoverAllCommands(): CommandInfo[] {
   const userSkillsDir = join(CLAUDE_CONFIG_DIR, 'skills');
 
   const userCommands = discoverCommandsFromDir(userCommandsDir, 'user');
-  const projectCommands = discoverCommandsFromDir(projectCommandsDir, 'project');
+  const projectCommands = discoverCommandsFromDir(
+    projectCommandsDir,
+    'project',
+  );
   const projectClaudeSkills = discoverSkillsFromDir(projectClaudeSkillsDir);
   const projectOmcSkills = discoverSkillsFromDir(projectOmcSkillsDir);
   const projectAgentSkills = discoverSkillsFromDir(projectAgentSkillsDir);
@@ -232,7 +250,7 @@ export function findCommand(commandName: string): CommandInfo | null {
   const allCommands = discoverAllCommands();
   return (
     allCommands.find(
-      (cmd) => cmd.name.toLowerCase() === commandName.toLowerCase()
+      (cmd) => cmd.name.toLowerCase() === commandName.toLowerCase(),
     ) ?? null
   );
 }
@@ -283,9 +301,10 @@ function renderDeepInterviewAutoresearchGuidance(args: string): string {
  */
 function formatCommandTemplate(cmd: CommandInfo, args: string): string {
   const sections: string[] = [];
-  const isDeepInterviewAutoresearch = cmd.scope === 'skill'
-    && cmd.metadata.name.toLowerCase() === 'deep-interview'
-    && hasInvocationFlag(args, '--autoresearch');
+  const isDeepInterviewAutoresearch =
+    cmd.scope === 'skill' &&
+    cmd.metadata.name.toLowerCase() === 'deep-interview' &&
+    hasInvocationFlag(args, '--autoresearch');
   const displayArgs = isDeepInterviewAutoresearch
     ? stripInvocationFlag(args, '--autoresearch')
     : args;
@@ -312,7 +331,7 @@ function formatCommandTemplate(cmd: CommandInfo, args: string): string {
 
   if (cmd.metadata.aliasOf) {
     sections.push(
-      `⚠️ **Deprecated Alias**: \`/${cmd.name}\` is deprecated and will be removed in a future release. Use \`/${cmd.metadata.aliasOf}\` instead.\n`
+      `⚠️ **Deprecated Alias**: \`/${cmd.name}\` is deprecated and will be removed in a future release. Use \`/${cmd.metadata.aliasOf}\` instead.\n`,
     );
   }
 
@@ -321,25 +340,35 @@ function formatCommandTemplate(cmd: CommandInfo, args: string): string {
   // Resolve arguments in content, then execute any live-data commands
   const resolvedContent = resolveArguments(cmd.content || '', displayArgs);
   const baseContent = resolveLiveData(resolvedContent);
-  const injectedContent = cmd.scope === 'skill'
-    ? renderBundledSkillBody(cmd.metadata.name, baseContent)
-    : rewriteOmcCliInvocations(baseContent);
-  const runtimeGuidance = cmd.scope === 'skill' && !isDeepInterviewAutoresearch
-    ? renderSkillRuntimeGuidance(cmd.metadata.name)
-    : '';
-  const pipelineGuidance = cmd.scope === 'skill' && !isDeepInterviewAutoresearch
-    ? renderSkillPipelineGuidance(cmd.metadata.name, cmd.metadata.pipeline)
-    : '';
-  const resourceGuidance = cmd.scope === 'skill' && cmd.path
-    ? renderSkillResourcesGuidance(cmd.path)
-    : '';
+  const injectedContent =
+    cmd.scope === 'skill'
+      ? renderBundledSkillBody(cmd.metadata.name, baseContent)
+      : rewriteOmcCliInvocations(baseContent);
+  const runtimeGuidance =
+    cmd.scope === 'skill' && !isDeepInterviewAutoresearch
+      ? renderSkillRuntimeGuidance(cmd.metadata.name)
+      : '';
+  const pipelineGuidance =
+    cmd.scope === 'skill' && !isDeepInterviewAutoresearch
+      ? renderSkillPipelineGuidance(cmd.metadata.name, cmd.metadata.pipeline)
+      : '';
+  const resourceGuidance =
+    cmd.scope === 'skill' && cmd.path
+      ? renderSkillResourcesGuidance(cmd.path)
+      : '';
   const invocationGuidance = isDeepInterviewAutoresearch
     ? renderDeepInterviewAutoresearchGuidance(args)
     : '';
   sections.push(
-    [injectedContent.trim(), invocationGuidance, runtimeGuidance, pipelineGuidance, resourceGuidance]
+    [
+      injectedContent.trim(),
+      invocationGuidance,
+      runtimeGuidance,
+      pipelineGuidance,
+      resourceGuidance,
+    ]
       .filter((section) => section.trim().length > 0)
-      .join('\n\n')
+      .join('\n\n'),
   );
 
   if (displayArgs && !cmd.content?.includes('$ARGUMENTS')) {

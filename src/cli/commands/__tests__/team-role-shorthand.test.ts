@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const runtimeV2Mocks = vi.hoisted(() => ({
   isRuntimeV2Enabled: vi.fn(() => true),
@@ -11,9 +11,9 @@ const agentUtilsMocks = vi.hoisted(() => ({
   loadAgentPrompt: vi.fn((role: string) => `prompt:${role}`),
 }));
 
-vi.mock("../../../team/runtime-v2.js", async (importOriginal) => {
+vi.mock('../../../team/runtime-v2.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../../../team/runtime-v2.js")>();
+    await importOriginal<typeof import('../../../team/runtime-v2.js')>();
   return {
     ...actual,
     isRuntimeV2Enabled: runtimeV2Mocks.isRuntimeV2Enabled,
@@ -23,11 +23,11 @@ vi.mock("../../../team/runtime-v2.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../../../agents/utils.js", () => ({
+vi.mock('../../../agents/utils.js', () => ({
   loadAgentPrompt: agentUtilsMocks.loadAgentPrompt,
 }));
 
-describe("teamCommand role-only shorthand", () => {
+describe('teamCommand role-only shorthand', () => {
   const originalCwd = process.cwd();
   let logSpy: ReturnType<typeof vi.spyOn>;
 
@@ -35,8 +35,8 @@ describe("teamCommand role-only shorthand", () => {
     runtimeV2Mocks.isRuntimeV2Enabled.mockReturnValue(true);
     runtimeV2Mocks.findActiveTeamsV2.mockResolvedValue([]);
     runtimeV2Mocks.startTeamV2.mockResolvedValue({
-      teamName: "fix-the-bug",
-      sessionName: "team-session",
+      teamName: 'fix-the-bug',
+      sessionName: 'team-session',
       config: { worker_count: 2 },
     });
     runtimeV2Mocks.monitorTeamV2.mockResolvedValue({
@@ -45,7 +45,7 @@ describe("teamCommand role-only shorthand", () => {
     agentUtilsMocks.loadAgentPrompt.mockImplementation(
       (role: string) => `prompt:${role}`,
     );
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
   });
 
   afterEach(() => {
@@ -54,63 +54,63 @@ describe("teamCommand role-only shorthand", () => {
     vi.clearAllMocks();
   });
 
-  it("routes `N:executor` through claude agent types plus executor worker roles", async () => {
-    const { teamCommand } = await import("../team.js");
+  it('routes `N:executor` through claude agent types plus executor worker roles', async () => {
+    const { teamCommand } = await import('../team.js');
 
-    await teamCommand(["2:executor", "fix the bug"]);
+    await teamCommand(['2:executor', 'fix the bug']);
 
-    expect(agentUtilsMocks.loadAgentPrompt).toHaveBeenCalledWith("executor");
+    expect(agentUtilsMocks.loadAgentPrompt).toHaveBeenCalledWith('executor');
     expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(
       expect.objectContaining({
         workerCount: 2,
-        agentTypes: ["claude", "claude"],
-        workerRoles: ["executor", "executor"],
-        roleName: "executor",
-        rolePrompt: "prompt:executor",
+        agentTypes: ['claude', 'claude'],
+        workerRoles: ['executor', 'executor'],
+        roleName: 'executor',
+        rolePrompt: 'prompt:executor',
         tasks: [
           {
-            subject: "Worker 1 (executor): fix the bug",
-            description: "fix the bug",
-            owner: "worker-1",
-            role: "executor",
+            subject: 'Worker 1 (executor): fix the bug',
+            description: 'fix the bug',
+            owner: 'worker-1',
+            role: 'executor',
           },
           {
-            subject: "Worker 2 (executor): fix the bug",
-            description: "fix the bug",
-            owner: "worker-2",
-            role: "executor",
+            subject: 'Worker 2 (executor): fix the bug',
+            description: 'fix the bug',
+            owner: 'worker-2',
+            role: 'executor',
           },
         ],
       }),
     );
   });
 
-  it("threads broad-task delegation evidence guards through teamCommand startup", async () => {
-    const { teamCommand } = await import("../team.js");
+  it('threads broad-task delegation evidence guards through teamCommand startup', async () => {
+    const { teamCommand } = await import('../team.js');
 
-    await teamCommand(["2:codex", "investigate flaky runtime behavior"]);
+    await teamCommand(['2:codex', 'investigate flaky runtime behavior']);
 
     expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(
       expect.objectContaining({
         workerCount: 2,
-        agentTypes: ["codex", "codex"],
+        agentTypes: ['codex', 'codex'],
         tasks: [
           expect.objectContaining({
-            subject: "Worker 1: investigate flaky runtime behavior",
-            description: "investigate flaky runtime behavior",
-            owner: "worker-1",
+            subject: 'Worker 1: investigate flaky runtime behavior',
+            description: 'investigate flaky runtime behavior',
+            owner: 'worker-1',
             delegation: expect.objectContaining({
-              mode: "auto",
+              mode: 'auto',
               required_parallel_probe: true,
               skip_allowed_reason_required: true,
             }),
           }),
           expect.objectContaining({
-            subject: "Worker 2: investigate flaky runtime behavior",
-            description: "investigate flaky runtime behavior",
-            owner: "worker-2",
+            subject: 'Worker 2: investigate flaky runtime behavior',
+            description: 'investigate flaky runtime behavior',
+            owner: 'worker-2',
             delegation: expect.objectContaining({
-              mode: "auto",
+              mode: 'auto',
               required_parallel_probe: true,
               skip_allowed_reason_required: true,
             }),

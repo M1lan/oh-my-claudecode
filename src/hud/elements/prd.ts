@@ -4,12 +4,12 @@
  * Renders current PRD story display.
  */
 
-import type { PrdStateForHud } from "../types.js";
-import { RESET } from "../colors.js";
+import type { PrdStateForHud } from '../types.js';
+import { RESET } from '../colors.js';
 
-const CYAN = "\x1b[36m";
-const GREEN = "\x1b[32m";
-const DIM = "\x1b[2m";
+const CYAN = '\x1b[36m';
+const GREEN = '\x1b[32m';
+const DIM = '\x1b[2m';
 
 /**
  * Render current PRD story.

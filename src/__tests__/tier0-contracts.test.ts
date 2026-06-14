@@ -1,25 +1,25 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearSkillsCache,
   createBuiltinSkills,
   getBuiltinSkill,
   listBuiltinSkillNames,
-} from "../features/builtin-skills/skills.js";
+} from '../features/builtin-skills/skills.js';
 
-vi.mock("../features/auto-update.js", () => ({
+vi.mock('../features/auto-update.js', () => ({
   isTeamEnabled: () => true,
 }));
 
-import { getPrimaryKeyword } from "../hooks/keyword-detector/index.js";
+import { getPrimaryKeyword } from '../hooks/keyword-detector/index.js';
 
-const TIER0_SKILLS = ["team", "ralph", "ultrawork", "autopilot"] as const;
+const TIER0_SKILLS = ['team', 'ralph', 'ultrawork', 'autopilot'] as const;
 
-describe("Tier-0 contract: skill aliases and canonical entrypoints", () => {
+describe('Tier-0 contract: skill aliases and canonical entrypoints', () => {
   beforeEach(() => {
     clearSkillsCache();
   });
 
-  it("keeps Tier-0 skills as canonical unprefixed names", () => {
+  it('keeps Tier-0 skills as canonical unprefixed names', () => {
     const names = listBuiltinSkillNames();
 
     for (const name of TIER0_SKILLS) {
@@ -28,14 +28,14 @@ describe("Tier-0 contract: skill aliases and canonical entrypoints", () => {
     }
   });
 
-  it("resolves Tier-0 skills case-insensitively", () => {
+  it('resolves Tier-0 skills case-insensitively', () => {
     for (const name of TIER0_SKILLS) {
       expect(getBuiltinSkill(name)?.name).toBe(name);
       expect(getBuiltinSkill(name.toUpperCase())?.name).toBe(name);
     }
   });
 
-  it("keeps Tier-0 skills unique in the loaded builtin catalog", () => {
+  it('keeps Tier-0 skills unique in the loaded builtin catalog', () => {
     const tier0Hits = createBuiltinSkills().filter((skill) =>
       TIER0_SKILLS.includes(skill.name as (typeof TIER0_SKILLS)[number]),
     );
@@ -45,17 +45,17 @@ describe("Tier-0 contract: skill aliases and canonical entrypoints", () => {
   });
 });
 
-describe("Tier-0 contract: keyword routing fidelity", () => {
-  it("routes canonical trigger words to their canonical mode types", () => {
+describe('Tier-0 contract: keyword routing fidelity', () => {
+  it('routes canonical trigger words to their canonical mode types', () => {
     // Team keyword detection disabled — team is now explicit-only via /team skill
     // to prevent infinite spawning in team workers
     const cases: Array<{
       prompt: string;
       expected: (typeof TIER0_SKILLS)[number];
     }> = [
-      { prompt: "autopilot build a dashboard", expected: "autopilot" },
-      { prompt: "ultrawork fix these lint errors", expected: "ultrawork" },
-      { prompt: "ralph finish this refactor", expected: "ralph" },
+      { prompt: 'autopilot build a dashboard', expected: 'autopilot' },
+      { prompt: 'ultrawork fix these lint errors', expected: 'ultrawork' },
+      { prompt: 'ralph finish this refactor', expected: 'ralph' },
     ];
 
     for (const { prompt, expected } of cases) {
@@ -63,7 +63,7 @@ describe("Tier-0 contract: keyword routing fidelity", () => {
     }
   });
 
-  it("team keyword is explicit-only (no auto-detection)", () => {
-    expect(getPrimaryKeyword("team 3:executor ship this feature")).toBeNull();
+  it('team keyword is explicit-only (no auto-detection)', () => {
+    expect(getPrimaryKeyword('team 3:executor ship this feature')).toBeNull();
   });
 });

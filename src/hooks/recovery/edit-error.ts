@@ -5,8 +5,8 @@
  * a recovery reminder to guide corrective action.
  */
 
-import { EDIT_ERROR_PATTERNS, EDIT_ERROR_REMINDER } from "./constants.js";
-import type { RecoveryResult } from "./types.js";
+import { EDIT_ERROR_PATTERNS, EDIT_ERROR_REMINDER } from './constants.js';
+import type { RecoveryResult } from './types.js';
 
 /**
  * Check if an output contains an edit error pattern
@@ -35,7 +35,7 @@ export function handleEditErrorRecovery(
   toolName: string,
   output: string,
 ): RecoveryResult {
-  if (toolName.toLowerCase() !== "edit") {
+  if (toolName.toLowerCase() !== 'edit') {
     return {
       attempted: false,
       success: false,
@@ -47,7 +47,7 @@ export function handleEditErrorRecovery(
       attempted: true,
       success: true,
       message: EDIT_ERROR_REMINDER,
-      errorType: "edit_error",
+      errorType: 'edit_error',
     };
   }
 
@@ -61,7 +61,7 @@ export function handleEditErrorRecovery(
  * Process edit tool output and inject recovery if needed.
  */
 export function processEditOutput(toolName: string, output: string): string {
-  if (toolName.toLowerCase() !== "edit") {
+  if (toolName.toLowerCase() !== 'edit') {
     return output;
   }
   return injectEditErrorRecovery(output);

@@ -6,7 +6,7 @@
 // Each merge: 1 worker commits 10 files × 100 LoC each → single merge into leader.
 // Latency is measured from commitFile() call to merge_succeeded event observed.
 
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 // node:fs and node:path imports removed — only used by git-fixture helpers
 
 import {
@@ -14,27 +14,27 @@ import {
   orchestratorEventLogPath,
   waitForEventInLog,
   type GitFixture,
-} from "./helpers/git-fixture.js";
+} from './helpers/git-fixture.js';
 import {
   startMergeOrchestrator,
   type OrchestratorConfig,
   type OrchestratorHandle,
-} from "../merge-orchestrator.js";
+} from '../merge-orchestrator.js';
 
 beforeAll(() => {
-  process.env.OMC_RUNTIME_V2 = "1";
+  process.env.OMC_RUNTIME_V2 = '1';
 });
 
 afterEach(() => {
-  process.env.OMC_RUNTIME_V2 = "1";
+  process.env.OMC_RUNTIME_V2 = '1';
 });
 
 // ---------------------------------------------------------------------------
 // Performance test: p95 merge latency < 2000ms over 50 sequential merges
 // ---------------------------------------------------------------------------
 
-describe.skipIf(process.env.CI === "1")(
-  "auto-merge perf: p95 < 2000ms over 50 sequential merges",
+describe.skipIf(process.env.CI === '1')(
+  'auto-merge perf: p95 < 2000ms over 50 sequential merges',
   () => {
     let fixture: GitFixture;
     let handle: OrchestratorHandle;
@@ -42,10 +42,10 @@ describe.skipIf(process.env.CI === "1")(
     beforeEach(async () => {
       fixture = await createGitFixture({
         workerCount: 1,
-        leaderBranchName: "omc-team-test-leader",
-        teamName: "perf-team",
+        leaderBranchName: 'omc-team-test-leader',
+        teamName: 'perf-team',
       });
-      process.env.OMC_RUNTIME_V2 = "1";
+      process.env.OMC_RUNTIME_V2 = '1';
 
       const config: OrchestratorConfig = {
         teamName: fixture.teamName,
@@ -58,7 +58,7 @@ describe.skipIf(process.env.CI === "1")(
       };
 
       handle = await startMergeOrchestrator(config);
-      await handle.registerWorker("worker-1");
+      await handle.registerWorker('worker-1');
     });
 
     afterEach(async () => {
@@ -70,7 +70,7 @@ describe.skipIf(process.env.CI === "1")(
       await fixture.cleanup();
     });
 
-    it("50 sequential merges complete with p95 latency < 2000ms", async () => {
+    it('50 sequential merges complete with p95 latency < 2000ms', async () => {
       const MERGE_COUNT = 50;
       const _FILES_PER_MERGE = 10; // documents intended scale; current loop creates 1 file per merge
       const LINES_PER_FILE = 100;
@@ -87,11 +87,11 @@ describe.skipIf(process.env.CI === "1")(
           Array.from(
             { length: LINES_PER_FILE },
             (_, i) => `export const m${m}f0l${i} = ${i + m};`,
-          ).join("\n") + "\n";
+          ).join('\n') + '\n';
 
         const startMs = Date.now();
         await fixture.commitFile(
-          "worker-1",
+          'worker-1',
           `perf/merge-${m}/file-0.ts`,
           content,
         );
@@ -99,8 +99,8 @@ describe.skipIf(process.env.CI === "1")(
         // Wait for this specific merge to complete (count=m means we now have m total)
         await waitForEventInLog({
           eventLogPath: eventLog,
-          eventType: "merge_succeeded",
-          worker: "worker-1",
+          eventType: 'merge_succeeded',
+          worker: 'worker-1',
           count: m,
           timeoutMs: 10000,
         });

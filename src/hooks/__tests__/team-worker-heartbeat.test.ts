@@ -7,44 +7,44 @@
  * Fix: VAL-SPLIT-001 — missing heartbeat must return fresh:false.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import {
   maybeNotifyLeaderAllWorkersIdle,
   type TmuxRunner,
-} from "../team-worker-hook.js";
+} from '../team-worker-hook.js';
 
-describe("team-worker-hook heartbeat missing file", () => {
+describe('team-worker-hook heartbeat missing file', () => {
   let tmpDir: string;
   let stateDir: string;
-  const teamName = "test-team";
-  const workerName = "worker-1";
+  const teamName = 'test-team';
+  const workerName = 'worker-1';
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "heartbeat-test-"));
-    stateDir = join(tmpDir, ".omc", "state");
+    tmpDir = mkdtempSync(join(tmpdir(), 'heartbeat-test-'));
+    stateDir = join(tmpDir, '.omc', 'state');
 
     // Set up minimal team config so readTeamWorkersForIdleCheck works
-    const teamDir = join(stateDir, "team", teamName);
+    const teamDir = join(stateDir, 'team', teamName);
     mkdirSync(teamDir, { recursive: true });
     writeFileSync(
-      join(teamDir, "config.json"),
+      join(teamDir, 'config.json'),
       JSON.stringify({
         workers: [{ name: workerName }],
-        tmux_session: "test-session",
-        leader_pane_id: "%99",
+        tmux_session: 'test-session',
+        leader_pane_id: '%99',
       }),
     );
 
     // Set up worker status as idle + fresh
-    const workerDir = join(teamDir, "workers", workerName);
+    const workerDir = join(teamDir, 'workers', workerName);
     mkdirSync(workerDir, { recursive: true });
     writeFileSync(
-      join(workerDir, "status.json"),
+      join(workerDir, 'status.json'),
       JSON.stringify({
-        state: "idle",
+        state: 'idle',
         updated_at: new Date().toISOString(),
       }),
     );
@@ -57,7 +57,7 @@ describe("team-worker-hook heartbeat missing file", () => {
     vi.restoreAllMocks();
   });
 
-  it("should NOT send all-workers-idle notification when heartbeat file is missing", async () => {
+  it('should NOT send all-workers-idle notification when heartbeat file is missing', async () => {
     const sendKeysCalls: Array<{ target: string; text: string }> = [];
     const mockTmux: TmuxRunner = {
       async sendKeys(target: string, text: string) {
@@ -77,11 +77,11 @@ describe("team-worker-hook heartbeat missing file", () => {
     expect(sendKeysCalls).toHaveLength(0);
   });
 
-  it("should send all-workers-idle notification when heartbeat file exists and is fresh", async () => {
+  it('should send all-workers-idle notification when heartbeat file exists and is fresh', async () => {
     // Create a fresh heartbeat file
-    const workerDir = join(stateDir, "team", teamName, "workers", workerName);
+    const workerDir = join(stateDir, 'team', teamName, 'workers', workerName);
     writeFileSync(
-      join(workerDir, "heartbeat.json"),
+      join(workerDir, 'heartbeat.json'),
       JSON.stringify({
         pid: process.pid,
         last_turn_at: new Date().toISOString(),
@@ -106,7 +106,7 @@ describe("team-worker-hook heartbeat missing file", () => {
 
     // With a fresh heartbeat file, the notification SHOULD fire
     expect(sendKeysCalls.length).toBeGreaterThan(0);
-    expect(sendKeysCalls[0]!.text).toContain("All");
-    expect(sendKeysCalls[0]!.text).toContain("idle");
+    expect(sendKeysCalls[0]!.text).toContain('All');
+    expect(sendKeysCalls[0]!.text).toContain('idle');
   });
 });

@@ -1,4 +1,4 @@
-import type { SkillPipelineMetadata } from "../../utils/skill-pipeline.js";
+import type { SkillPipelineMetadata } from '../../utils/skill-pipeline.js';
 
 /**
  * Auto Slash Command Types
@@ -48,7 +48,7 @@ export interface AutoSlashCommandResult {
 /**
  * Command scope indicating where it was discovered
  */
-export type CommandScope = "user" | "project" | "skill";
+export type CommandScope = 'user' | 'project' | 'skill';
 
 /**
  * Command metadata from frontmatter

@@ -15,48 +15,51 @@ import {
   getModelName,
   getRateLimitsFromStdin,
   stabilizeContextPercent,
-} from "./stdin.js";
-import { parseTranscript } from "./transcript.js";
+} from './stdin.js';
+import { parseTranscript } from './transcript.js';
 import {
   readHudState,
   readHudConfig,
   getRunningTasks,
   writeHudState,
   initializeHUDState,
-} from "./state.js";
+} from './state.js';
 import {
   readRalphStateForHud,
   readUltraworkStateForHud,
   readPrdStateForHud,
   readAutopilotStateForHud,
-} from "./omc-state.js";
-import { getUsage, getSubscriptionInfo } from "./usage-api.js";
-import { executeCustomProvider } from "./custom-rate-provider.js";
-import { render } from "./render.js";
-import { detectApiKeySource } from "./elements/api-key-source.js";
-import { refreshMissionBoardState } from "./mission-board.js";
-import { sanitizeOutput } from "./sanitize.js";
-import { estimatePayloadFromTranscriptPath } from "./payload-estimate.js";
+} from './omc-state.js';
+import { getUsage, getSubscriptionInfo } from './usage-api.js';
+import { executeCustomProvider } from './custom-rate-provider.js';
+import { render } from './render.js';
+import { detectApiKeySource } from './elements/api-key-source.js';
+import { refreshMissionBoardState } from './mission-board.js';
+import { sanitizeOutput } from './sanitize.js';
+import { estimatePayloadFromTranscriptPath } from './payload-estimate.js';
 import type {
   HudRenderContext,
   RateLimits,
   SessionHealth,
   SessionSummaryState,
   UsageResult,
-} from "./types.js";
-import { getRuntimePackageVersion } from "../lib/version.js";
-import { compareVersions } from "../features/auto-update.js";
+} from './types.js';
+import { getRuntimePackageVersion } from '../lib/version.js';
+import { compareVersions } from '../features/auto-update.js';
 import {
   resolveToWorktreeRoot,
   resolveTranscriptPath,
-} from "../lib/worktree-paths.js";
-import { writeFileSync, mkdirSync, existsSync, readFileSync } from "fs";
-import { access, readFile } from "fs/promises";
-import { join, basename, dirname } from "path";
-import { spawn } from "child_process";
-import { fileURLToPath } from "url";
-import { getOmcRoot } from "../lib/worktree-paths.js";
-import { getClaudeConfigDir, getUpdateCheckCachePath } from "../utils/config-dir.js";
+} from '../lib/worktree-paths.js';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { access, readFile } from 'fs/promises';
+import { join, basename, dirname } from 'path';
+import { spawn } from 'child_process';
+import { fileURLToPath } from 'url';
+import { getOmcRoot } from '../lib/worktree-paths.js';
+import {
+  getClaudeConfigDir,
+  getUpdateCheckCachePath,
+} from '../utils/config-dir.js';
 
 /**
  * Extract session ID (UUID) from a transcript path.
@@ -94,7 +97,7 @@ function readSessionSummary(
   const statePath = join(stateDir, `session-summary-${sessionId}.json`);
   if (!existsSync(statePath)) return null;
   try {
-    return JSON.parse(readFileSync(statePath, "utf-8"));
+    return JSON.parse(readFileSync(statePath, 'utf-8'));
   } catch {
     return null;
   }
@@ -160,27 +163,27 @@ function spawnSessionSummaryScript(
   const thisDir = dirname(fileURLToPath(import.meta.url));
   const scriptPath = join(
     thisDir,
-    "..",
-    "..",
-    "scripts",
-    "session-summary.mjs",
+    '..',
+    '..',
+    'scripts',
+    'session-summary.mjs',
   );
 
   if (!existsSync(scriptPath)) {
     if (process.env.OMC_DEBUG) {
-      console.error("[HUD] session-summary script not found:", scriptPath);
+      console.error('[HUD] session-summary script not found:', scriptPath);
     }
     return;
   }
 
   try {
     const child = spawn(
-      "node",
+      'node',
       [scriptPath, transcriptPath, stateDir, sessionId],
       {
-        stdio: "ignore",
+        stdio: 'ignore',
         detached: true,
-        env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: "session-summary" },
+        env: { ...process.env, CLAUDE_CODE_ENTRYPOINT: 'session-summary' },
       },
     );
     summaryProcessPid = child.pid ?? null;
@@ -189,7 +192,7 @@ function spawnSessionSummaryScript(
     summaryProcessPid = null;
     if (process.env.OMC_DEBUG) {
       console.error(
-        "[HUD] Failed to spawn session-summary:",
+        '[HUD] Failed to spawn session-summary:',
         error instanceof Error ? error.message : error,
       );
     }
@@ -205,9 +208,9 @@ async function calculateSessionHealth(
 ): Promise<SessionHealth | null> {
   const durationMs = sessionStart ? Date.now() - sessionStart.getTime() : 0;
   const durationMinutes = Math.floor(durationMs / 60_000);
-  let health: SessionHealth["health"] = "healthy";
-  if (durationMinutes > 120 || contextPercent > 85) health = "critical";
-  else if (durationMinutes > 60 || contextPercent > 70) health = "warning";
+  let health: SessionHealth['health'] = 'healthy';
+  if (durationMinutes > 120 || contextPercent > 85) health = 'critical';
+  else if (durationMinutes > 60 || contextPercent > 70) health = 'warning';
   return { durationMinutes, messageCount: 0, health };
 }
 
@@ -218,42 +221,42 @@ async function calculateSessionHealth(
 function showDiagnostic(): void {
   const version = getRuntimePackageVersion();
   const configDir = getClaudeConfigDir();
-  const hudScript = join(configDir, "hud", "omc-hud.mjs");
-  const settingsFile = join(configDir, "settings.json");
+  const hudScript = join(configDir, 'hud', 'omc-hud.mjs');
+  const settingsFile = join(configDir, 'settings.json');
 
   const hudExists = existsSync(hudScript);
   let statusLineOk = false;
   try {
-    const settings = JSON.parse(readFileSync(settingsFile, "utf-8"));
+    const settings = JSON.parse(readFileSync(settingsFile, 'utf-8'));
     const sl = settings.statusLine;
     if (
       sl &&
-      typeof sl === "object" &&
-      typeof (sl as Record<string, unknown>).command === "string"
+      typeof sl === 'object' &&
+      typeof (sl as Record<string, unknown>).command === 'string'
     ) {
       statusLineOk = (
         (sl as Record<string, unknown>).command as string
-      ).includes("omc-hud");
-    } else if (typeof sl === "string") {
-      statusLineOk = sl.includes("omc-hud");
+      ).includes('omc-hud');
+    } else if (typeof sl === 'string') {
+      statusLineOk = sl.includes('omc-hud');
     }
   } catch {
     /* settings.json missing or invalid */
   }
 
   const config = readHudConfig();
-  const preset = config.preset ?? "focused";
+  const preset = config.preset ?? 'focused';
 
   console.log(`[OMC] HUD v${version} | preset: ${preset}`);
-  console.log(`  HUD script:  ${hudExists ? "installed" : "MISSING"}`);
+  console.log(`  HUD script:  ${hudExists ? 'installed' : 'MISSING'}`);
   console.log(
-    `  statusLine:  ${statusLineOk ? "configured" : "NOT configured"}`,
+    `  statusLine:  ${statusLineOk ? 'configured' : 'NOT configured'}`,
   );
 
   if (!hudExists || !statusLineOk) {
-    console.log("  Run /oh-my-claudecode:hud setup to fix.");
+    console.log('  Run /oh-my-claudecode:hud setup to fix.');
   } else {
-    console.log("  HUD renders automatically inside Claude Code sessions.");
+    console.log('  HUD renders automatically inside Claude Code sessions.');
   }
 }
 
@@ -276,7 +279,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       stdin = previousStdinCache;
       if (!stdin) {
         // Cache not yet populated (first poll before statusline fires)
-        console.log("[OMC] Starting...");
+        console.log('[OMC] Starting...');
         return;
       }
     } else {
@@ -297,11 +300,11 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       const cols =
         process.stderr.columns ||
         process.stdout.columns ||
-        parseInt(process.env.COLUMNS ?? "0", 10) ||
+        parseInt(process.env.COLUMNS ?? '0', 10) ||
         0;
       if (cols > 0) {
         config.maxWidth = cols;
-        if (config.wrapMode === "truncate") config.wrapMode = "wrap";
+        if (config.wrapMode === 'truncate') config.wrapMode = 'wrap';
       }
     }
 
@@ -317,7 +320,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     });
 
     const currentSessionId = extractSessionIdFromPath(
-      resolvedTranscriptPath ?? stdin.transcript_path ?? "",
+      resolvedTranscriptPath ?? stdin.transcript_path ?? '',
     );
 
     // Initialize HUD state (cleanup stale/orphaned tasks)
@@ -381,7 +384,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
 
     // Fetch custom rate limit buckets (if configured)
     const customBuckets =
-      config.rateLimitsProvider?.type === "custom"
+      config.rateLimitsProvider?.type === 'custom'
         ? await executeCustomProvider(config.rateLimitsProvider)
         : null;
 
@@ -390,12 +393,12 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     let updateAvailable: string | null = null;
     try {
       omcVersion = getRuntimePackageVersion();
-      if (omcVersion === "unknown") omcVersion = null;
+      if (omcVersion === 'unknown') omcVersion = null;
     } catch (error) {
       // Ignore version detection errors
       if (process.env.OMC_DEBUG) {
         console.error(
-          "[HUD] Version detection error:",
+          '[HUD] Version detection error:',
           error instanceof Error ? error.message : error,
         );
       }
@@ -404,7 +407,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     try {
       const updateCacheFile = getUpdateCheckCachePath();
       await access(updateCacheFile);
-      const content = await readFile(updateCacheFile, "utf-8");
+      const content = await readFile(updateCacheFile, 'utf-8');
       const cached = JSON.parse(content);
       if (
         cached?.latestVersion &&
@@ -417,7 +420,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       // Ignore update cache read errors - expected if file doesn't exist yet
       if (process.env.OMC_DEBUG) {
         console.error(
-          "[HUD] Update cache read error:",
+          '[HUD] Update cache read error:',
           error instanceof Error ? error.message : error,
         );
       }
@@ -427,7 +430,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     let sessionSummary: SessionSummaryState | null = null;
     const sessionSummaryEnabled = config.elements.sessionSummary ?? false;
     if (sessionSummaryEnabled && resolvedTranscriptPath && currentSessionId) {
-      const omcStateDir = join(getOmcRoot(cwd), "state");
+      const omcStateDir = join(getOmcRoot(cwd), 'state');
       sessionSummary = readSessionSummary(omcStateDir, currentSessionId);
 
       // Debounce: only spawn script if cache is absent or older than 60 seconds.
@@ -452,7 +455,9 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       ? await refreshMissionBoardState(cwd, config.missionBoard)
       : null;
     const contextPercent = getContextPercent(stdin);
-    const payloadEstimate = estimatePayloadFromTranscriptPath(resolvedTranscriptPath);
+    const payloadEstimate = estimatePayloadFromTranscriptPath(
+      resolvedTranscriptPath,
+    );
 
     // Read subscription info for enterprise detection (best-effort).
     // Rate-limit rendering must not depend on this metadata being present.
@@ -479,7 +484,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       ultrawork,
       prd,
       autopilot,
-      activeAgents: transcriptData.agents.filter((a) => a.status === "running"),
+      activeAgents: transcriptData.agents.filter((a) => a.status === 'running'),
       todos: transcriptData.todos,
       backgroundTasks: getRunningTasks(hudState),
       cwd,
@@ -506,7 +511,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       subscriptionType: subscriptionInfo.subscriptionType,
       rateLimitTier: subscriptionInfo.rateLimitTier,
       profileName: process.env.CLAUDE_CONFIG_DIR
-        ? basename(process.env.CLAUDE_CONFIG_DIR).replace(/^\./, "")
+        ? basename(process.env.CLAUDE_CONFIG_DIR).replace(/^\./, '')
         : null,
       sessionSummary,
       lastToolName: transcriptData.lastToolName,
@@ -516,11 +521,11 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     // Debug: log data if OMC_DEBUG is set
     if (process.env.OMC_DEBUG) {
       console.error(
-        "[HUD DEBUG] stdin.context_window:",
+        '[HUD DEBUG] stdin.context_window:',
         JSON.stringify(stdin.context_window),
       );
       console.error(
-        "[HUD DEBUG] sessionHealth:",
+        '[HUD DEBUG] sessionHealth:',
         JSON.stringify(context.sessionHealth),
       );
     }
@@ -535,9 +540,9 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       context.contextPercent >= config.contextLimitWarning.threshold
     ) {
       try {
-        const omcStateDir = join(getOmcRoot(cwd), "state");
+        const omcStateDir = join(getOmcRoot(cwd), 'state');
         mkdirSync(omcStateDir, { recursive: true });
-        const triggerFile = join(omcStateDir, "compact-requested.json");
+        const triggerFile = join(omcStateDir, 'compact-requested.json');
         writeFileSync(
           triggerFile,
           JSON.stringify({
@@ -550,7 +555,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
         // Silent failure — don't break HUD rendering
         if (process.env.OMC_DEBUG) {
           console.error(
-            "[HUD] Auto-compact trigger write error:",
+            '[HUD] Auto-compact trigger write error:',
             error instanceof Error ? error.message : error,
           );
         }
@@ -570,7 +575,7 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
     // explicit false overrides platform detection: process.platform === 'win32'
     const useSafeMode =
       config.elements.safeMode !== false &&
-      (config.elements.safeMode || process.platform === "win32");
+      (config.elements.safeMode || process.platform === 'win32');
 
     if (useSafeMode) {
       output = sanitizeOutput(output);
@@ -578,25 +583,25 @@ async function main(watchMode = false, skipInit = false): Promise<void> {
       console.log(output);
     } else {
       // Replace spaces with non-breaking spaces for terminal alignment
-      const formattedOutput = output.replace(/ /g, "\u00A0");
+      const formattedOutput = output.replace(/ /g, '\u00A0');
       console.log(formattedOutput);
     }
   } catch (error) {
     // Distinguish installation errors from runtime errors
     const isInstallError =
       error instanceof Error &&
-      (error.message.includes("ENOENT") ||
-        error.message.includes("MODULE_NOT_FOUND") ||
-        error.message.includes("Cannot find module"));
+      (error.message.includes('ENOENT') ||
+        error.message.includes('MODULE_NOT_FOUND') ||
+        error.message.includes('Cannot find module'));
 
     if (isInstallError) {
-      console.log("[OMC] run /omc-setup to install properly");
+      console.log('[OMC] run /omc-setup to install properly');
     } else {
       // Output fallback message to stdout for status line visibility
-      console.log("[OMC] HUD error - check stderr");
+      console.log('[OMC] HUD error - check stderr');
       // Log actual runtime errors to stderr for debugging
       console.error(
-        "[OMC HUD Error]",
+        '[OMC HUD Error]',
         error instanceof Error ? error.message : error,
       );
     }

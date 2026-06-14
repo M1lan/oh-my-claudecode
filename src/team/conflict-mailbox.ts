@@ -9,8 +9,8 @@
 // This module is 100% pure (formatMergeConflictForLeader, formatRebaseConflictForWorker).
 // Delivery functions delegate to appendToLeaderInbox / appendToInbox respectively.
 
-import { appendToInbox } from "./worker-bootstrap.js";
-import { appendToLeaderInbox } from "./leader-inbox.js";
+import { appendToInbox } from './worker-bootstrap.js';
+import { appendToLeaderInbox } from './leader-inbox.js';
 
 // ---------------------------------------------------------------------------
 // Pure formatters
@@ -25,7 +25,7 @@ import { appendToLeaderInbox } from "./leader-inbox.js";
  * informative without enabling prompt injection.
  */
 function sanitizeConflictPath(path: string): string {
-  return path.replace(/[`\r\n]/g, "?");
+  return path.replace(/[`\r\n]/g, '?');
 }
 
 export interface MergeConflictArgs {
@@ -62,7 +62,7 @@ export function formatMergeConflictForLeader(args: MergeConflictArgs): string {
   } = args;
   const ts = new Date(observedAt).toISOString();
   const safeFiles = conflictingFiles.map(sanitizeConflictPath);
-  const fileList = safeFiles.map((f) => `- \`${f}\``).join("\n");
+  const fileList = safeFiles.map((f) => `- \`${f}\``).join('\n');
   return `### Merge conflict: ${workerName} → ${leaderBranch}
 
 **Worker branch:** \`${workerBranch}\`
@@ -78,7 +78,7 @@ ${fileList}
 \`\`\`sh
 git checkout ${leaderBranch} && git merge --no-ff ${workerBranch}
 # resolve conflicts in the files listed above
-git add ${safeFiles.join(" ")}
+git add ${safeFiles.join(' ')}
 git commit
 \`\`\`
 
@@ -103,7 +103,7 @@ export function formatRebaseConflictForWorker(
   } = args;
   const ts = new Date(observedAt).toISOString();
   const safeFiles = conflictingFiles.map(sanitizeConflictPath);
-  const fileList = safeFiles.map((f) => `- \`${f}\``).join("\n");
+  const fileList = safeFiles.map((f) => `- \`${f}\``).join('\n');
   return `### Rebase conflict: ${workerName} onto ${leaderBranch}
 
 **Worker branch:** \`${workerBranch}\`

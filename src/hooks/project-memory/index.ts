@@ -3,17 +3,17 @@
  * Main orchestrator for auto-detecting and injecting project context
  */
 
-import path from "path";
-import { contextCollector } from "../../features/context-injector/collector.js";
-import { findProjectRoot } from "../rules-injector/finder.js";
+import path from 'path';
+import { contextCollector } from '../../features/context-injector/collector.js';
+import { findProjectRoot } from '../rules-injector/finder.js';
 import {
   loadProjectMemory,
   saveProjectMemory,
   shouldRescan,
-} from "./storage.js";
-import { detectProjectEnvironment } from "./detector.js";
-import { formatContextSummary } from "./formatter.js";
-import type { ProjectMemory } from "./types.js";
+} from './storage.js';
+import { detectProjectEnvironment } from './detector.js';
+import { formatContextSummary } from './formatter.js';
+import type { ProjectMemory } from './types.js';
 
 /**
  * Rescan merge: `detected` is authoritative for schema-known fields so
@@ -27,8 +27,12 @@ function applyRescanMerge(
 ): ProjectMemory {
   const merged: ProjectMemory = {
     ...detected,
-    customNotes: Array.isArray(existing.customNotes) ? existing.customNotes : [],
-    userDirectives: Array.isArray(existing.userDirectives) ? existing.userDirectives : [],
+    customNotes: Array.isArray(existing.customNotes)
+      ? existing.customNotes
+      : [],
+    userDirectives: Array.isArray(existing.userDirectives)
+      ? existing.userDirectives
+      : [],
     hotPaths: Array.isArray(existing.hotPaths) ? existing.hotPaths : [],
   };
   for (const key of Object.keys(existing)) {
@@ -96,10 +100,10 @@ export async function registerProjectMemoryContext(
     }
 
     contextCollector.register(sessionId, {
-      id: "project-environment",
-      source: "project-memory",
+      id: 'project-environment',
+      source: 'project-memory',
       content,
-      priority: "high",
+      priority: 'high',
       metadata: {
         projectRoot,
         scopeKey,
@@ -111,7 +115,7 @@ export async function registerProjectMemoryContext(
     cache.add(cacheKey);
     return true;
   } catch (error) {
-    console.error("Error registering project memory context:", error);
+    console.error('Error registering project memory context:', error);
     return false;
   }
 }
@@ -131,13 +135,13 @@ export async function rescanProjectEnvironment(
 
 function getScopeKey(projectRoot: string, workingDirectory: string): string {
   const relative = path.relative(projectRoot, workingDirectory);
-  if (!relative || relative === "") {
-    return ".";
+  if (!relative || relative === '') {
+    return '.';
   }
 
-  const normalized = relative.replace(/\\/g, "/");
-  if (normalized.startsWith("..")) {
-    return ".";
+  const normalized = relative.replace(/\\/g, '/');
+  if (normalized.startsWith('..')) {
+    return '.';
   }
 
   return normalized;
@@ -147,23 +151,23 @@ export {
   loadProjectMemory,
   saveProjectMemory,
   withProjectMemoryLock,
-} from "./storage.js";
-export { detectProjectEnvironment } from "./detector.js";
-export { formatContextSummary, formatFullContext } from "./formatter.js";
-export { learnFromToolOutput, addCustomNote } from "./learner.js";
-export { processPreCompact } from "./pre-compact.js";
+} from './storage.js';
+export { detectProjectEnvironment } from './detector.js';
+export { formatContextSummary, formatFullContext } from './formatter.js';
+export { learnFromToolOutput, addCustomNote } from './learner.js';
+export { processPreCompact } from './pre-compact.js';
 export {
   mapDirectoryStructure,
   updateDirectoryAccess,
-} from "./directory-mapper.js";
+} from './directory-mapper.js';
 export {
   trackAccess,
   getTopHotPaths,
   decayHotPaths,
-} from "./hot-path-tracker.js";
+} from './hot-path-tracker.js';
 export {
   detectDirectivesFromMessage,
   addDirective,
   formatDirectivesForContext,
-} from "./directive-detector.js";
-export * from "./types.js";
+} from './directive-detector.js';
+export * from './types.js';

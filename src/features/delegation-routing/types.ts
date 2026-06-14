@@ -5,7 +5,7 @@
  * delegation-specific constants and helpers.
  */
 
-import type { DelegationRoutingConfig } from "../../shared/types.js";
+import type { DelegationRoutingConfig } from '../../shared/types.js';
 
 export type {
   DelegationProvider,
@@ -14,14 +14,14 @@ export type {
   DelegationRoutingConfig,
   DelegationDecision,
   ResolveDelegationOptions,
-} from "../../shared/types.js";
+} from '../../shared/types.js';
 
 /**
  * Default delegation routing configuration
  */
 export const DEFAULT_DELEGATION_CONFIG: DelegationRoutingConfig = {
   enabled: false,
-  defaultProvider: "claude",
+  defaultProvider: 'claude',
   roles: {},
 };
 
@@ -30,52 +30,52 @@ export const DEFAULT_DELEGATION_CONFIG: DelegationRoutingConfig = {
  */
 export const ROLE_CATEGORY_DEFAULTS: Record<string, string> = {
   // Exploration roles
-  explore: "explore",
-  "document-specialist": "document-specialist",
-  researcher: "document-specialist",
-  "tdd-guide": "test-engineer",
+  explore: 'explore',
+  'document-specialist': 'document-specialist',
+  researcher: 'document-specialist',
+  'tdd-guide': 'test-engineer',
 
   // Advisory roles (high complexity)
-  architect: "architect",
-  planner: "planner",
-  critic: "critic",
-  analyst: "analyst",
+  architect: 'architect',
+  planner: 'planner',
+  critic: 'critic',
+  analyst: 'analyst',
 
   // Implementation roles
-  executor: "executor",
+  executor: 'executor',
 
   // Review roles
-  "code-reviewer": "code-reviewer",
-  "security-reviewer": "security-reviewer",
+  'code-reviewer': 'code-reviewer',
+  'security-reviewer': 'security-reviewer',
 
   // Specialized roles
-  designer: "designer",
-  writer: "writer",
-  "qa-tester": "qa-tester",
-  debugger: "debugger",
-  scientist: "scientist",
-  "git-master": "executor",
-  "code-simplifier": "executor",
+  designer: 'designer',
+  writer: 'writer',
+  'qa-tester': 'qa-tester',
+  debugger: 'debugger',
+  scientist: 'scientist',
+  'git-master': 'executor',
+  'code-simplifier': 'executor',
 };
 
 /**
  * Deprecated role aliases mapped to canonical role names.
  */
 export const DEPRECATED_ROLE_ALIASES: Readonly<Record<string, string>> = {
-  researcher: "document-specialist",
-  "tdd-guide": "test-engineer",
-  "api-reviewer": "code-reviewer",
-  "performance-reviewer": "code-reviewer",
-  "dependency-expert": "document-specialist",
-  "quality-strategist": "code-reviewer",
-  vision: "document-specialist",
+  researcher: 'document-specialist',
+  'tdd-guide': 'test-engineer',
+  'api-reviewer': 'code-reviewer',
+  'performance-reviewer': 'code-reviewer',
+  'dependency-expert': 'document-specialist',
+  'quality-strategist': 'code-reviewer',
+  vision: 'document-specialist',
   // Consolidated agent aliases (agent consolidation PR)
-  "quality-reviewer": "code-reviewer",
-  "deep-executor": "executor",
-  "build-fixer": "debugger",
-  "harsh-critic": "critic",
+  'quality-reviewer': 'code-reviewer',
+  'deep-executor': 'executor',
+  'build-fixer': 'debugger',
+  'harsh-critic': 'critic',
   // User-friendly short alias for /team role routing (plan AC-4)
-  reviewer: "code-reviewer",
+  reviewer: 'code-reviewer',
 };
 
 /**

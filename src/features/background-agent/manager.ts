@@ -15,10 +15,10 @@ import {
   readFileSync,
   writeFileSync,
   unlinkSync,
-} from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
-import { ConcurrencyManager } from "./concurrency.js";
+} from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import { ConcurrencyManager } from './concurrency.js';
 import type {
   BackgroundTask,
   BackgroundTaskStatus,
@@ -27,7 +27,7 @@ import type {
   ResumeInput,
   TaskProgress,
   ResumeContext,
-} from "./types.js";
+} from './types.js';
 
 /** Default task timeout: 30 minutes */
 const DEFAULT_TASK_TTL_MS = 30 * 60 * 1000;
@@ -35,8 +35,8 @@ const DEFAULT_TASK_TTL_MS = 30 * 60 * 1000;
 /** Storage directory for task state */
 const BACKGROUND_TASKS_DIR = join(
   getClaudeConfigDir(),
-  ".omc",
-  "background-tasks",
+  '.omc',
+  'background-tasks',
 );
 
 /**
@@ -110,11 +110,11 @@ export class BackgroundManager {
       const files = readdirSync(BACKGROUND_TASKS_DIR) as string[];
 
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
+        if (!file.endsWith('.json')) continue;
 
         try {
           const path = join(BACKGROUND_TASKS_DIR, file);
-          const content = readFileSync(path, "utf-8");
+          const content = readFileSync(path, 'utf-8');
           const task = JSON.parse(content) as BackgroundTask;
 
           // Restore dates
@@ -179,9 +179,9 @@ export class BackgroundManager {
       const age = now - task.startedAt.getTime();
       if (
         age > ttl &&
-        (task.status === "running" || task.status === "queued")
+        (task.status === 'running' || task.status === 'queued')
       ) {
-        task.status = "error";
+        task.status = 'error';
         task.error = `Task timed out after ${Math.round(ttl / 60000)} minutes`;
         task.completedAt = new Date();
 
@@ -223,7 +223,7 @@ export class BackgroundManager {
 
     for (const task of this.tasks.values()) {
       // Only check running tasks (not queued, completed, etc.)
-      if (task.status !== "running") continue;
+      if (task.status !== 'running') continue;
 
       // Check last activity (progress.lastUpdate or startedAt as fallback)
       const lastActivity = task.progress?.lastUpdate ?? task.startedAt;
@@ -236,7 +236,7 @@ export class BackgroundManager {
         } else {
           // Default behavior: mark as error after 2x threshold with no activity
           if (timeSinceActivity > threshold * 2) {
-            task.status = "error";
+            task.status = 'error';
             task.error = `Task stale: no activity for ${Math.round(timeSinceActivity / 60000)} minutes`;
             task.completedAt = new Date();
 
@@ -261,10 +261,10 @@ export class BackgroundManager {
 
     // Count running and queued tasks for capacity check
     const runningTasks = Array.from(this.tasks.values()).filter(
-      (t) => t.status === "running",
+      (t) => t.status === 'running',
     );
     const queuedTasks = Array.from(this.tasks.values()).filter(
-      (t) => t.status === "queued",
+      (t) => t.status === 'queued',
     );
     const runningCount = runningTasks.length;
     const queuedCount = queuedTasks.length;
@@ -302,7 +302,7 @@ export class BackgroundManager {
       description: input.description,
       prompt: input.prompt,
       agent: input.agent,
-      status: "queued",
+      status: 'queued',
       queuedAt: new Date(),
       startedAt: new Date(), // Placeholder for backward compat, updated when running
       progress: {
@@ -321,7 +321,7 @@ export class BackgroundManager {
     await this.concurrencyManager.acquire(concurrencyKey);
 
     // Transition to RUNNING once slot acquired
-    task.status = "running";
+    task.status = 'running';
     task.startedAt = new Date();
     this.persistTask(task);
 
@@ -337,7 +337,7 @@ export class BackgroundManager {
       throw new Error(`Task not found for session: ${input.sessionId}`);
     }
 
-    existingTask.status = "running";
+    existingTask.status = 'running';
     existingTask.completedAt = undefined;
     existingTask.error = undefined;
     existingTask.parentSessionId = input.parentSessionId;
@@ -417,7 +417,7 @@ export class BackgroundManager {
    */
   getRunningTasks(): BackgroundTask[] {
     return Array.from(this.tasks.values()).filter(
-      (t) => t.status === "running",
+      (t) => t.status === 'running',
     );
   }
 
@@ -438,9 +438,9 @@ export class BackgroundManager {
     if (error) task.error = error;
 
     if (
-      status === "completed" ||
-      status === "error" ||
-      status === "cancelled"
+      status === 'completed' ||
+      status === 'error' ||
+      status === 'cancelled'
     ) {
       task.completedAt = new Date();
 
@@ -543,17 +543,17 @@ export class BackgroundManager {
   getStatusSummary(): string {
     const running = this.getRunningTasks();
     const queued = Array.from(this.tasks.values()).filter(
-      (t) => t.status === "queued",
+      (t) => t.status === 'queued',
     );
     const all = this.getAllTasks();
 
     if (all.length === 0) {
-      return "No background tasks.";
+      return 'No background tasks.';
     }
 
     const lines: string[] = [
       `Background Tasks: ${running.length} running, ${queued.length} queued, ${all.length} total`,
-      "",
+      '',
     ];
 
     for (const task of all) {
@@ -561,7 +561,7 @@ export class BackgroundManager {
       const status = task.status.toUpperCase();
       const progress = task.progress
         ? ` (${task.progress.toolCalls} tools)`
-        : "";
+        : '';
 
       lines.push(`  [${status}] ${task.description} - ${duration}${progress}`);
 
@@ -570,7 +570,7 @@ export class BackgroundManager {
       }
     }
 
-    return lines.join("\n");
+    return lines.join('\n');
   }
 
   /**

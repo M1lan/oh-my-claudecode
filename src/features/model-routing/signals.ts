@@ -11,8 +11,8 @@ import type {
   ContextSignals,
   ComplexitySignals,
   RoutingContext,
-} from "./types.js";
-import { COMPLEXITY_KEYWORDS } from "./types.js";
+} from './types.js';
+import { COMPLEXITY_KEYWORDS } from './types.js';
 
 /**
  * Extract lexical signals from task prompt
@@ -132,22 +132,22 @@ function hasKeywords(prompt: string, keywords: string[]): boolean {
  */
 function detectQuestionDepth(
   prompt: string,
-): "why" | "how" | "what" | "where" | "none" {
+): 'why' | 'how' | 'what' | 'where' | 'none' {
   if (
     /\bwhy\b.*\?|\bwhy\s+(is|are|does|do|did|would|should|can)/i.test(prompt)
   ) {
-    return "why";
+    return 'why';
   }
   if (/\bhow\b.*\?|\bhow\s+(do|does|can|should|would|to)/i.test(prompt)) {
-    return "how";
+    return 'how';
   }
   if (/\bwhat\b.*\?|\bwhat\s+(is|are|does|do)/i.test(prompt)) {
-    return "what";
+    return 'what';
   }
   if (/\bwhere\b.*\?|\bwhere\s+(is|are|does|do|can)/i.test(prompt)) {
-    return "where";
+    return 'where';
   }
-  return "none";
+  return 'none';
 }
 
 /**
@@ -229,7 +229,7 @@ function detectTestRequirements(prompt: string): boolean {
  */
 function detectDomain(
   prompt: string,
-): "generic" | "frontend" | "backend" | "infrastructure" | "security" {
+): 'generic' | 'frontend' | 'backend' | 'infrastructure' | 'security' {
   const domains: Record<string, RegExp[]> = {
     frontend: [
       /\b(react|vue|angular|svelte|css|html|jsx|tsx|component|ui|ux|styling|tailwind|sass|scss)\b/i,
@@ -251,11 +251,11 @@ function detectDomain(
 
   for (const [domain, patterns] of Object.entries(domains)) {
     if (patterns.some((p) => p.test(prompt))) {
-      return domain as "frontend" | "backend" | "infrastructure" | "security";
+      return domain as 'frontend' | 'backend' | 'infrastructure' | 'security';
     }
   }
 
-  return "generic";
+  return 'generic';
 }
 
 /**
@@ -280,7 +280,7 @@ function detectExternalKnowledge(prompt: string): boolean {
  */
 function assessReversibility(
   prompt: string,
-): "easy" | "moderate" | "difficult" {
+): 'easy' | 'moderate' | 'difficult' {
   const difficultIndicators = [
     /\bmigrat/i,
     /\bproduction\b/i,
@@ -299,15 +299,15 @@ function assessReversibility(
     /\bchange.*schema/i,
   ];
 
-  if (difficultIndicators.some((p) => p.test(prompt))) return "difficult";
-  if (moderateIndicators.some((p) => p.test(prompt))) return "moderate";
-  return "easy";
+  if (difficultIndicators.some((p) => p.test(prompt))) return 'difficult';
+  if (moderateIndicators.some((p) => p.test(prompt))) return 'moderate';
+  return 'easy';
 }
 
 /**
  * Assess impact scope of changes
  */
-function assessImpactScope(prompt: string): "local" | "module" | "system-wide" {
+function assessImpactScope(prompt: string): 'local' | 'module' | 'system-wide' {
   const systemWideIndicators = [
     /\bentire\b/i,
     /\ball\s+(?:files|components|modules)/i,
@@ -327,11 +327,11 @@ function assessImpactScope(prompt: string): "local" | "module" | "system-wide" {
     /\blayer/i,
   ];
 
-  if (systemWideIndicators.some((p) => p.test(prompt))) return "system-wide";
+  if (systemWideIndicators.some((p) => p.test(prompt))) return 'system-wide';
 
   // Check for multiple files (indicates module-level at least)
-  if (countFilePaths(prompt) >= 3) return "module";
-  if (moduleIndicators.some((p) => p.test(prompt))) return "module";
+  if (countFilePaths(prompt) >= 3) return 'module';
+  if (moduleIndicators.some((p) => p.test(prompt))) return 'module';
 
-  return "local";
+  return 'local';
 }

@@ -12,10 +12,10 @@ import {
   readFileSync,
   writeFileSync,
   unlinkSync,
-} from "fs";
-import { join } from "path";
-import { AGENT_USAGE_REMINDER_STORAGE } from "./constants.js";
-import type { AgentUsageState } from "./types.js";
+} from 'fs';
+import { join } from 'path';
+import { AGENT_USAGE_REMINDER_STORAGE } from './constants.js';
+import type { AgentUsageState } from './types.js';
 
 function getStoragePath(sessionID: string): string {
   return join(AGENT_USAGE_REMINDER_STORAGE, `${sessionID}.json`);
@@ -26,7 +26,7 @@ export function loadAgentUsageState(sessionID: string): AgentUsageState | null {
   if (!existsSync(filePath)) return null;
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     return JSON.parse(content) as AgentUsageState;
   } catch {
     return null;

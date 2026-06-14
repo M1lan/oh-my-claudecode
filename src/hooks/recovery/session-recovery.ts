@@ -5,7 +5,7 @@
  * Detects and fixes various error conditions that can cause session failures.
  */
 
-import { appendFileSync } from "node:fs";
+import { appendFileSync } from 'node:fs';
 import {
   findEmptyMessages,
   findEmptyMessageByIndex,
@@ -19,23 +19,23 @@ import {
   readParts,
   replaceEmptyTextParts,
   stripThinkingParts,
-} from "./storage.js";
+} from './storage.js';
 import {
   DEBUG,
   DEBUG_FILE,
   PLACEHOLDER_TEXT,
   RECOVERY_MESSAGES,
-} from "./constants.js";
-import type { MessageData, RecoveryResult, RecoveryConfig } from "./types.js";
+} from './constants.js';
+import type { MessageData, RecoveryResult, RecoveryConfig } from './types.js';
 
 /**
  * Recovery error types
  */
 export type RecoveryErrorType =
-  | "tool_result_missing"
-  | "thinking_block_order"
-  | "thinking_disabled_violation"
-  | "empty_content"
+  | 'tool_result_missing'
+  | 'thinking_block_order'
+  | 'thinking_disabled_violation'
+  | 'empty_content'
   | null;
 
 /**
@@ -45,9 +45,9 @@ function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [session-recovery] ${args
       .map((a) =>
-        typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
       )
-      .join(" ")}\n`;
+      .join(' ')}\n`;
     appendFileSync(DEBUG_FILE, msg);
   }
 }
@@ -56,8 +56,8 @@ function debugLog(...args: unknown[]): void {
  * Extract error message from various error formats
  */
 function getErrorMessage(error: unknown): string {
-  if (!error) return "";
-  if (typeof error === "string") return error.toLowerCase();
+  if (!error) return '';
+  if (typeof error === 'string') return error.toLowerCase();
 
   const errorObj = error as Record<string, unknown>;
   const paths = [
@@ -68,9 +68,9 @@ function getErrorMessage(error: unknown): string {
   ];
 
   for (const obj of paths) {
-    if (obj && typeof obj === "object") {
+    if (obj && typeof obj === 'object') {
       const msg = (obj as Record<string, unknown>).message;
-      if (typeof msg === "string" && msg.length > 0) {
+      if (typeof msg === 'string' && msg.length > 0) {
         return msg.toLowerCase();
       }
     }
@@ -79,7 +79,7 @@ function getErrorMessage(error: unknown): string {
   try {
     return JSON.stringify(error).toLowerCase();
   } catch {
-    return "";
+    return '';
   }
 }
 
@@ -98,34 +98,34 @@ function extractMessageIndex(error: unknown): number | null {
 export function detectErrorType(error: unknown): RecoveryErrorType {
   const message = getErrorMessage(error);
 
-  if (message.includes("tool_use") && message.includes("tool_result")) {
-    return "tool_result_missing";
+  if (message.includes('tool_use') && message.includes('tool_result')) {
+    return 'tool_result_missing';
   }
 
   if (
-    message.includes("thinking") &&
-    (message.includes("first block") ||
-      message.includes("must start with") ||
-      message.includes("preceeding") ||
-      message.includes("final block") ||
-      message.includes("cannot be thinking") ||
-      (message.includes("expected") && message.includes("found")))
+    message.includes('thinking') &&
+    (message.includes('first block') ||
+      message.includes('must start with') ||
+      message.includes('preceeding') ||
+      message.includes('final block') ||
+      message.includes('cannot be thinking') ||
+      (message.includes('expected') && message.includes('found')))
   ) {
-    return "thinking_block_order";
+    return 'thinking_block_order';
   }
 
   if (
-    message.includes("thinking is disabled") &&
-    message.includes("cannot contain")
+    message.includes('thinking is disabled') &&
+    message.includes('cannot contain')
   ) {
-    return "thinking_disabled_violation";
+    return 'thinking_disabled_violation';
   }
 
   if (
-    message.includes("empty") &&
-    (message.includes("content") || message.includes("message"))
+    message.includes('empty') &&
+    (message.includes('content') || message.includes('message'))
   ) {
-    return "empty_content";
+    return 'empty_content';
   }
 
   return null;
@@ -144,7 +144,7 @@ export function isRecoverableError(error: unknown): boolean {
 function extractToolUseIds(
   parts: Array<{ type: string; id?: string; callID?: string }>,
 ): string[] {
-  return parts.filter((p) => p.type === "tool_use" && !!p.id).map((p) => p.id!);
+  return parts.filter((p) => p.type === 'tool_use' && !!p.id).map((p) => p.id!);
 }
 
 /**
@@ -154,7 +154,7 @@ async function _recoverToolResultMissing(
   sessionID: string,
   failedAssistantMsg: MessageData,
 ): Promise<boolean> {
-  debugLog("recoverToolResultMissing", {
+  debugLog('recoverToolResultMissing', {
     sessionID,
     msgId: failedAssistantMsg.info?.id,
   });
@@ -164,11 +164,11 @@ async function _recoverToolResultMissing(
   if (parts.length === 0 && failedAssistantMsg.info?.id) {
     const storedParts = readParts(failedAssistantMsg.info.id);
     parts = storedParts.map((p) => ({
-      type: p.type === "tool" ? "tool_use" : p.type,
-      id: "callID" in p ? (p as { callID?: string }).callID : p.id,
-      name: "tool" in p ? (p as { tool?: string }).tool : undefined,
+      type: p.type === 'tool' ? 'tool_use' : p.type,
+      id: 'callID' in p ? (p as { callID?: string }).callID : p.id,
+      name: 'tool' in p ? (p as { tool?: string }).tool : undefined,
       input:
-        "state" in p
+        'state' in p
           ? (p as { state?: { input?: Record<string, unknown> } }).state?.input
           : undefined,
     }));
@@ -177,11 +177,11 @@ async function _recoverToolResultMissing(
   const toolUseIds = extractToolUseIds(parts);
 
   if (toolUseIds.length === 0) {
-    debugLog("No tool_use IDs found");
+    debugLog('No tool_use IDs found');
     return false;
   }
 
-  debugLog("Found tool_use IDs to inject results for", toolUseIds);
+  debugLog('Found tool_use IDs to inject results for', toolUseIds);
 
   // Note: In Claude Code's simplified architecture, we would need to
   // integrate with the actual session/tool system to inject tool results.
@@ -199,7 +199,7 @@ async function recoverThinkingBlockOrder(
   _failedAssistantMsg: MessageData,
   error: unknown,
 ): Promise<boolean> {
-  debugLog("recoverThinkingBlockOrder", { sessionID });
+  debugLog('recoverThinkingBlockOrder', { sessionID });
 
   const targetIndex = extractMessageIndex(error);
   if (targetIndex !== null) {
@@ -208,7 +208,7 @@ async function recoverThinkingBlockOrder(
       targetIndex,
     );
     if (targetMessageID) {
-      debugLog("Found target message by index", {
+      debugLog('Found target message by index', {
         targetIndex,
         targetMessageID,
       });
@@ -219,11 +219,11 @@ async function recoverThinkingBlockOrder(
   const orphanMessages = findMessagesWithOrphanThinking(sessionID);
 
   if (orphanMessages.length === 0) {
-    debugLog("No orphan thinking messages found");
+    debugLog('No orphan thinking messages found');
     return false;
   }
 
-  debugLog("Found orphan thinking messages", orphanMessages);
+  debugLog('Found orphan thinking messages', orphanMessages);
 
   let anySuccess = false;
   for (const messageID of orphanMessages) {
@@ -242,16 +242,16 @@ async function recoverThinkingDisabledViolation(
   sessionID: string,
   _failedAssistantMsg: MessageData,
 ): Promise<boolean> {
-  debugLog("recoverThinkingDisabledViolation", { sessionID });
+  debugLog('recoverThinkingDisabledViolation', { sessionID });
 
   const messagesWithThinking = findMessagesWithThinkingBlocks(sessionID);
 
   if (messagesWithThinking.length === 0) {
-    debugLog("No messages with thinking blocks found");
+    debugLog('No messages with thinking blocks found');
     return false;
   }
 
-  debugLog("Found messages with thinking blocks", messagesWithThinking);
+  debugLog('Found messages with thinking blocks', messagesWithThinking);
 
   let anySuccess = false;
   for (const messageID of messagesWithThinking) {
@@ -271,7 +271,7 @@ async function recoverEmptyContentMessage(
   failedAssistantMsg: MessageData,
   error: unknown,
 ): Promise<boolean> {
-  debugLog("recoverEmptyContentMessage", { sessionID });
+  debugLog('recoverEmptyContentMessage', { sessionID });
 
   const targetIndex = extractMessageIndex(error);
   const failedID = failedAssistantMsg.info?.id;
@@ -339,23 +339,23 @@ export async function handleSessionRecovery(
   failedMessage?: MessageData,
   config?: RecoveryConfig,
 ): Promise<RecoveryResult> {
-  debugLog("handleSessionRecovery", { sessionID, error });
+  debugLog('handleSessionRecovery', { sessionID, error });
 
   const errorType = detectErrorType(error);
   if (!errorType) {
-    debugLog("Not a recoverable error");
+    debugLog('Not a recoverable error');
     return {
       attempted: false,
       success: false,
     };
   }
 
-  debugLog("Detected recoverable error type", errorType);
+  debugLog('Detected recoverable error type', errorType);
 
   // tool_result_missing recovery is not possible without SDK client access —
   // return attempted: false so callers don't believe a recovery was tried.
-  if (errorType === "tool_result_missing") {
-    debugLog("tool_result_missing recovery not possible without SDK client");
+  if (errorType === 'tool_result_missing') {
+    debugLog('tool_result_missing recovery not possible without SDK client');
     return { attempted: false, success: false, errorType };
   }
 
@@ -364,18 +364,18 @@ export async function handleSessionRecovery(
     const failedMsg = failedMessage || { info: {}, parts: [] };
 
     switch (errorType) {
-      case "thinking_block_order":
+      case 'thinking_block_order':
         success = await recoverThinkingBlockOrder(sessionID, failedMsg, error);
         break;
-      case "thinking_disabled_violation":
+      case 'thinking_disabled_violation':
         success = await recoverThinkingDisabledViolation(sessionID, failedMsg);
         break;
-      case "empty_content":
+      case 'empty_content':
         success = await recoverEmptyContentMessage(sessionID, failedMsg, error);
         break;
     }
 
-    debugLog("Recovery result", { errorType, success });
+    debugLog('Recovery result', { errorType, success });
 
     const recoveryMessage =
       config?.customMessages?.[errorType] ||
@@ -389,7 +389,7 @@ export async function handleSessionRecovery(
       errorType,
     };
   } catch (err) {
-    debugLog("Recovery failed with error", err);
+    debugLog('Recovery failed with error', err);
     return {
       attempted: true,
       success: false,

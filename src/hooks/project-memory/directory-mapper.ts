@@ -3,54 +3,54 @@
  * Detects and maps project directory structure and purposes
  */
 
-import fs from "fs/promises";
-import path from "path";
-import { DirectoryInfo } from "./types.js";
+import fs from 'fs/promises';
+import path from 'path';
+import { DirectoryInfo } from './types.js';
 
 /**
  * Common directory purposes based on naming patterns
  */
 const DIRECTORY_PURPOSES: Record<string, string> = {
-  src: "Source code",
-  lib: "Library code",
-  app: "Application code",
-  components: "UI components",
-  pages: "Page components",
-  api: "API routes",
-  routes: "Route handlers",
-  controllers: "Controllers",
-  models: "Data models",
-  views: "View templates",
-  services: "Business logic services",
-  utils: "Utility functions",
-  helpers: "Helper functions",
-  middleware: "Middleware",
-  config: "Configuration files",
-  data: "Data files",
-  assets: "Static assets",
-  public: "Public files",
-  static: "Static files",
-  tests: "Test files",
-  test: "Test files",
-  __tests__: "Test files",
-  spec: "Test specifications",
-  docs: "Documentation",
-  examples: "Example code",
-  scripts: "Build/utility scripts",
-  bin: "Executable scripts",
-  dist: "Distribution/build output",
-  build: "Build output",
-  out: "Build output",
-  node_modules: "Dependencies",
-  vendor: "Third-party code",
-  types: "Type definitions",
-  typings: "Type definitions",
-  schemas: "Schema definitions",
-  migrations: "Database migrations",
-  seeds: "Database seeds",
-  fixtures: "Test fixtures",
-  mocks: "Mock data",
-  stubs: "Stub implementations",
+  src: 'Source code',
+  lib: 'Library code',
+  app: 'Application code',
+  components: 'UI components',
+  pages: 'Page components',
+  api: 'API routes',
+  routes: 'Route handlers',
+  controllers: 'Controllers',
+  models: 'Data models',
+  views: 'View templates',
+  services: 'Business logic services',
+  utils: 'Utility functions',
+  helpers: 'Helper functions',
+  middleware: 'Middleware',
+  config: 'Configuration files',
+  data: 'Data files',
+  assets: 'Static assets',
+  public: 'Public files',
+  static: 'Static files',
+  tests: 'Test files',
+  test: 'Test files',
+  __tests__: 'Test files',
+  spec: 'Test specifications',
+  docs: 'Documentation',
+  examples: 'Example code',
+  scripts: 'Build/utility scripts',
+  bin: 'Executable scripts',
+  dist: 'Distribution/build output',
+  build: 'Build output',
+  out: 'Build output',
+  node_modules: 'Dependencies',
+  vendor: 'Third-party code',
+  types: 'Type definitions',
+  typings: 'Type definitions',
+  schemas: 'Schema definitions',
+  migrations: 'Database migrations',
+  seeds: 'Database seeds',
+  fixtures: 'Test fixtures',
+  mocks: 'Mock data',
+  stubs: 'Stub implementations',
 };
 
 /**
@@ -68,7 +68,7 @@ export async function mapDirectoryStructure(
       if (!entry.isDirectory()) continue;
 
       // Skip hidden directories and common ignores
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
 
       const dirPath = path.join(projectRoot, entry.name);
       const relPath = entry.name;
@@ -94,7 +94,7 @@ export async function mapDirectoryStructure(
     // Also scan one level deeper for important patterns
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      if (entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
 
       const dirPath = path.join(projectRoot, entry.name);
 
@@ -154,7 +154,7 @@ async function getKeyFiles(dirPath: string, limit: number): Promise<string[]> {
     const files = entries
       .filter((e) => e.isFile())
       .map((e) => e.name)
-      .filter((name) => !name.startsWith("."))
+      .filter((name) => !name.startsWith('.'))
       .slice(0, limit);
     return files;
   } catch {

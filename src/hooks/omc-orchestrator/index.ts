@@ -8,12 +8,12 @@
  * Adapted from oh-my-opencode's omc-orchestrator hook for shell-based hooks.
  */
 
-import * as path from "path";
-import { execSync } from "child_process";
-import { getOmcRoot, getWorktreeRoot } from "../../lib/worktree-paths.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
-import { toForwardSlash } from "../../utils/paths.js";
-import { existsSync, readFileSync } from "fs";
+import * as path from 'path';
+import { execSync } from 'child_process';
+import { getOmcRoot, getWorktreeRoot } from '../../lib/worktree-paths.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import { toForwardSlash } from '../../utils/paths.js';
+import { existsSync, readFileSync } from 'fs';
 import {
   HOOK_NAME,
   ALLOWED_PATH_PATTERNS,
@@ -24,18 +24,18 @@ import {
   BOULDER_CONTINUATION_PROMPT,
   VERIFICATION_REMINDER,
   SINGLE_TASK_DIRECTIVE,
-} from "./constants.js";
+} from './constants.js';
 import {
   readBoulderState,
   getPlanProgress,
-} from "../../features/boulder-state/index.js";
-import { addWorkingMemoryEntry, setPriorityContext } from "../notepad/index.js";
-import { logAuditEntry } from "./audit.js";
+} from '../../features/boulder-state/index.js';
+import { addWorkingMemoryEntry, setPriorityContext } from '../notepad/index.js';
+import { logAuditEntry } from './audit.js';
 
 // Re-export constants
-export * from "./constants.js";
+export * from './constants.js';
 
-export type EnforcementLevel = "off" | "warn" | "strict";
+export type EnforcementLevel = 'off' | 'warn' | 'strict';
 
 // Config caching (30s TTL)
 let enforcementCache: {
@@ -69,19 +69,19 @@ function getEnforcementLevel(directory: string): EnforcementLevel {
     return enforcementCache.level;
   }
 
-  const localConfig = path.join(getOmcRoot(directory), "config.json");
-  const globalConfig = path.join(getClaudeConfigDir(), ".omc-config.json");
+  const localConfig = path.join(getOmcRoot(directory), 'config.json');
+  const globalConfig = path.join(getClaudeConfigDir(), '.omc-config.json');
 
-  let level: EnforcementLevel = "warn"; // Default
+  let level: EnforcementLevel = 'warn'; // Default
 
   for (const configPath of [localConfig, globalConfig]) {
     if (existsSync(configPath)) {
       try {
-        const content = readFileSync(configPath, "utf-8");
+        const content = readFileSync(configPath, 'utf-8');
         const config = JSON.parse(content);
         const configLevel =
           config.delegationEnforcementLevel ?? config.enforcementLevel;
-        if (["off", "warn", "strict"].includes(configLevel)) {
+        if (['off', 'warn', 'strict'].includes(configLevel)) {
           level = configLevel as EnforcementLevel;
           break; // Found valid level, stop searching
         }
@@ -123,7 +123,7 @@ interface GitFileStat {
   path: string;
   added: number;
   removed: number;
-  status: "modified" | "added" | "deleted";
+  status: 'modified' | 'added' | 'deleted';
 }
 
 /**
@@ -135,7 +135,7 @@ export function isAllowedPath(filePath: string, directory?: string): boolean {
   // then normalize to collapse .. segments, then ensure forward slashes.
   const normalized = toForwardSlash(path.normalize(toForwardSlash(filePath)));
   // Reject explicit traversal that escapes (e.g. "../foo")
-  if (normalized.startsWith("../") || normalized === "..") return false;
+  if (normalized.startsWith('../') || normalized === '..') return false;
   // Fast path: check relative patterns
   if (ALLOWED_PATH_PATTERNS.some((pattern) => pattern.test(normalized)))
     return true;
@@ -144,7 +144,7 @@ export function isAllowedPath(filePath: string, directory?: string): boolean {
     const relToConfigDir = path.relative(getClaudeConfigDir(), filePath);
     if (
       !relToConfigDir ||
-      (!relToConfigDir.startsWith("..") && !path.isAbsolute(relToConfigDir))
+      (!relToConfigDir.startsWith('..') && !path.isAbsolute(relToConfigDir))
     ) {
       return true;
     }
@@ -152,7 +152,7 @@ export function isAllowedPath(filePath: string, directory?: string): boolean {
     const root = directory ? getWorktreeRoot(directory) : getWorktreeRoot();
     if (root) {
       const rel = toForwardSlash(path.relative(root, filePath));
-      if (rel.startsWith("../") || rel === ".." || path.isAbsolute(rel))
+      if (rel.startsWith('../') || rel === '..' || path.isAbsolute(rel))
         return false;
       return ALLOWED_PATH_PATTERNS.some((pattern) => pattern.test(rel));
     }
@@ -178,7 +178,7 @@ export function isWriteEditTool(toolName: string): boolean {
 
 function isDelegationToolName(toolName: string): boolean {
   const normalizedToolName = toolName.toLowerCase();
-  return normalizedToolName === "task" || normalizedToolName === "agent";
+  return normalizedToolName === 'task' || normalizedToolName === 'agent';
 }
 
 /**
@@ -186,48 +186,48 @@ function isDelegationToolName(toolName: string): boolean {
  */
 export function getGitDiffStats(directory: string): GitFileStat[] {
   try {
-    const output = execSync("git diff --numstat HEAD", {
+    const output = execSync('git diff --numstat HEAD', {
       cwd: directory,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5000,
     }).trim();
 
     if (!output) return [];
 
-    const statusOutput = execSync("git status --porcelain", {
+    const statusOutput = execSync('git status --porcelain', {
       cwd: directory,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 5000,
     }).trim();
 
-    const statusMap = new Map<string, "modified" | "added" | "deleted">();
-    for (const line of statusOutput.split("\n")) {
+    const statusMap = new Map<string, 'modified' | 'added' | 'deleted'>();
+    for (const line of statusOutput.split('\n')) {
       if (!line) continue;
       const status = line.substring(0, 2).trim();
       const filePath = line.substring(3);
-      if (status === "A" || status === "??") {
-        statusMap.set(filePath, "added");
-      } else if (status === "D") {
-        statusMap.set(filePath, "deleted");
+      if (status === 'A' || status === '??') {
+        statusMap.set(filePath, 'added');
+      } else if (status === 'D') {
+        statusMap.set(filePath, 'deleted');
       } else {
-        statusMap.set(filePath, "modified");
+        statusMap.set(filePath, 'modified');
       }
     }
 
     const stats: GitFileStat[] = [];
-    for (const line of output.split("\n")) {
-      const parts = line.split("\t");
+    for (const line of output.split('\n')) {
+      const parts = line.split('\t');
       if (parts.length < 3) continue;
 
       const [addedStr, removedStr, path] = parts;
-      const added = addedStr === "-" ? 0 : parseInt(addedStr, 10);
-      const removed = removedStr === "-" ? 0 : parseInt(removedStr, 10);
+      const added = addedStr === '-' ? 0 : parseInt(addedStr, 10);
+      const removed = removedStr === '-' ? 0 : parseInt(removedStr, 10);
 
       stats.push({
         path,
         added,
         removed,
-        status: statusMap.get(path) ?? "modified",
+        status: statusMap.get(path) ?? 'modified',
       });
     }
 
@@ -242,39 +242,39 @@ export function getGitDiffStats(directory: string): GitFileStat[] {
  */
 export function formatFileChanges(stats: GitFileStat[]): string {
   if (stats.length === 0)
-    return "[FILE CHANGES SUMMARY]\nNo file changes detected.\n";
+    return '[FILE CHANGES SUMMARY]\nNo file changes detected.\n';
 
-  const modified = stats.filter((s) => s.status === "modified");
-  const added = stats.filter((s) => s.status === "added");
-  const deleted = stats.filter((s) => s.status === "deleted");
+  const modified = stats.filter((s) => s.status === 'modified');
+  const added = stats.filter((s) => s.status === 'added');
+  const deleted = stats.filter((s) => s.status === 'deleted');
 
-  const lines: string[] = ["[FILE CHANGES SUMMARY]"];
+  const lines: string[] = ['[FILE CHANGES SUMMARY]'];
 
   if (modified.length > 0) {
-    lines.push("Modified files:");
+    lines.push('Modified files:');
     for (const f of modified) {
       lines.push(`  ${f.path}  (+${f.added}, -${f.removed})`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   if (added.length > 0) {
-    lines.push("Created files:");
+    lines.push('Created files:');
     for (const f of added) {
       lines.push(`  ${f.path}  (+${f.added})`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   if (deleted.length > 0) {
-    lines.push("Deleted files:");
+    lines.push('Deleted files:');
     for (const f of deleted) {
       lines.push(`  ${f.path}  (-${f.removed})`);
     }
-    lines.push("");
+    lines.push('');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -364,20 +364,20 @@ function suggestAgentForFile(filePath: string): string {
   const ext = path.extname(filePath).toLowerCase();
 
   const suggestions: Record<string, string> = {
-    ".ts": "executor-low (simple) or executor (complex)",
-    ".tsx": "designer-low (simple) or designer (complex UI)",
-    ".js": "executor-low",
-    ".jsx": "designer-low",
-    ".py": "executor-low (simple) or executor (complex)",
-    ".vue": "designer",
-    ".svelte": "designer",
-    ".css": "designer-low",
-    ".scss": "designer-low",
-    ".md": "writer (documentation)",
-    ".json": "executor-low",
+    '.ts': 'executor-low (simple) or executor (complex)',
+    '.tsx': 'designer-low (simple) or designer (complex UI)',
+    '.js': 'executor-low',
+    '.jsx': 'designer-low',
+    '.py': 'executor-low (simple) or executor (complex)',
+    '.vue': 'designer',
+    '.svelte': 'designer',
+    '.css': 'designer-low',
+    '.scss': 'designer-low',
+    '.md': 'writer (documentation)',
+    '.json': 'executor-low',
   };
 
-  return suggestions[ext] || "executor";
+  return suggestions[ext] || 'executor';
 }
 
 /**
@@ -392,7 +392,7 @@ export function processOrchestratorPreTool(
   const enforcementLevel = getEnforcementLevel(directory);
 
   // Early exit if enforcement is off
-  if (enforcementLevel === "off") {
+  if (enforcementLevel === 'off') {
     return { continue: true };
   }
 
@@ -417,8 +417,8 @@ export function processOrchestratorPreTool(
       logAuditEntry({
         tool: toolName,
         filePath,
-        decision: "allowed",
-        reason: "allowed_path",
+        decision: 'allowed',
+        reason: 'allowed_path',
         enforcementLevel,
         sessionId,
       });
@@ -431,8 +431,8 @@ export function processOrchestratorPreTool(
   logAuditEntry({
     tool: toolName,
     filePath,
-    decision: enforcementLevel === "strict" ? "blocked" : "warned",
-    reason: isSource ? "source_file" : "other",
+    decision: enforcementLevel === 'strict' ? 'blocked' : 'warned',
+    reason: isSource ? 'source_file' : 'other',
     enforcementLevel,
     sessionId,
   });
@@ -440,14 +440,14 @@ export function processOrchestratorPreTool(
   // Build warning with agent suggestion
   const agentSuggestion = suggestAgentForFile(filePath);
   const warning =
-    ORCHESTRATOR_DELEGATION_REQUIRED.replace("$FILE_PATH", filePath) +
+    ORCHESTRATOR_DELEGATION_REQUIRED.replace('$FILE_PATH', filePath) +
     `\n\nSuggested agent: ${agentSuggestion}`;
 
   // Block if strict mode, warn otherwise
-  if (enforcementLevel === "strict") {
+  if (enforcementLevel === 'strict') {
     return {
       continue: false,
-      reason: "DELEGATION_REQUIRED",
+      reason: 'DELEGATION_REQUIRED',
       message: warning,
     };
   } else {
@@ -489,8 +489,8 @@ export function processOrchestratorPostTool(
   if (isDelegationToolName(toolName)) {
     // Check for background task launch
     const isBackgroundLaunch =
-      output.includes("Background task launched") ||
-      output.includes("Background task resumed");
+      output.includes('Background task launched') ||
+      output.includes('Background task resumed');
     if (isBackgroundLaunch) {
       return { continue: true };
     }

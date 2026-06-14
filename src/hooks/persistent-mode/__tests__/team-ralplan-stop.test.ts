@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -14,7 +20,7 @@ function makeTempProject(): string {
 function writeTeamPipelineState(
   tempDir: string,
   sessionId: string,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
@@ -29,21 +35,37 @@ function writeTeamPipelineState(
         session_id: sessionId,
         project_path: tempDir,
         phase: 'team-exec',
-        phase_history: [{ phase: 'team-exec', entered_at: new Date().toISOString() }],
+        phase_history: [
+          { phase: 'team-exec', entered_at: new Date().toISOString() },
+        ],
         iteration: 1,
         max_iterations: 25,
-        artifacts: { plan_path: null, prd_path: null, verify_report_path: null },
-        execution: { workers_total: 2, workers_active: 1, tasks_total: 5, tasks_completed: 2, tasks_failed: 0 },
+        artifacts: {
+          plan_path: null,
+          prd_path: null,
+          verify_report_path: null,
+        },
+        execution: {
+          workers_total: 2,
+          workers_active: 1,
+          tasks_total: 5,
+          tasks_completed: 2,
+          tasks_failed: 0,
+        },
         fix_loop: { attempt: 0, max_attempts: 3, last_failure_reason: null },
-        cancel: { requested: false, requested_at: null, preserve_for_resume: false },
+        cancel: {
+          requested: false,
+          requested_at: null,
+          preserve_for_resume: false,
+        },
         started_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         completed_at: null,
         ...overrides,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 
@@ -92,7 +114,7 @@ function writeCanonicalTeamState(
 function writeRalplanState(
   tempDir: string,
   sessionId: string,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
@@ -108,15 +130,12 @@ function writeRalplanState(
         ...overrides,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 
-function writeRalphState(
-  tempDir: string,
-  sessionId: string
-): void {
+function writeRalphState(tempDir: string, sessionId: string): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
 
@@ -135,8 +154,8 @@ function writeRalphState(
         linked_ultrawork: false,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 
@@ -144,14 +163,14 @@ function writeStopBreaker(
   tempDir: string,
   sessionId: string,
   name: string,
-  count: number
+  count: number,
 ): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
 
   writeFileSync(
     join(stateDir, `${name}-stop-breaker.json`),
-    JSON.stringify({ count, updated_at: new Date().toISOString() }, null, 2)
+    JSON.stringify({ count, updated_at: new Date().toISOString() }, null, 2),
   );
 }
 
@@ -167,8 +186,10 @@ function writeSubagentTrackingState(
       {
         agents,
         total_spawned: agents.length,
-        total_completed: agents.filter((agent) => agent.status === 'completed').length,
-        total_failed: agents.filter((agent) => agent.status === 'failed').length,
+        total_completed: agents.filter((agent) => agent.status === 'completed')
+          .length,
+        total_failed: agents.filter((agent) => agent.status === 'failed')
+          .length,
         last_updated: new Date().toISOString(),
       },
       null,
@@ -224,7 +245,12 @@ describe('team pipeline standalone stop enforcement', () => {
     const tempDir = makeTempProject();
 
     try {
-      writeCanonicalTeamState(tempDir, sessionId, 'canonical-team', 'executing');
+      writeCanonicalTeamState(
+        tempDir,
+        sessionId,
+        'canonical-team',
+        'executing',
+      );
 
       const result = await checkPersistentModes(sessionId, tempDir);
       expect(result.shouldBlock).toBe(true);
@@ -287,7 +313,6 @@ describe('team pipeline standalone stop enforcement', () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
-
 
   it('still blocks stop when team pipeline uses legacy stage state shape', async () => {
     const sessionId = 'session-team-stage-1';
@@ -441,7 +466,7 @@ describe('team pipeline standalone stop enforcement', () => {
         JSON.stringify({
           requested_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 30000).toISOString(),
-        })
+        }),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -473,7 +498,13 @@ describe('team pipeline standalone stop enforcement', () => {
     const tempDir = makeTempProject();
 
     try {
-      const activePhases = ['team-plan', 'team-prd', 'team-exec', 'team-verify', 'team-fix'];
+      const activePhases = [
+        'team-plan',
+        'team-prd',
+        'team-exec',
+        'team-verify',
+        'team-fix',
+      ];
       for (const phase of activePhases) {
         writeTeamPipelineState(tempDir, sessionId, { phase });
         // Reset breaker between checks
@@ -543,7 +574,6 @@ describe('ralplan standalone stop enforcement', () => {
       rmSync(tempDir, { recursive: true, force: true });
     }
   });
-
 
   it('respects session isolation', async () => {
     const sessionId = 'session-ralplan-iso-a';
@@ -695,21 +725,23 @@ describe('ralplan standalone stop enforcement', () => {
     [{ current_phase: undefined, phase: 'aborted' }, 'aborted'],
     [{ current_phase: undefined, status: 'terminated' }, 'terminated'],
     [{ current_phase: undefined, phase: 'handoff:ralph' }, 'handoff:ralph'],
-  ])('allows stop when ralplan terminal state is written via aliases: %s', async (overrides, _label) => {
-    const sessionId = 'session-ralplan-terminal-alias';
-    const tempDir = makeTempProject();
+  ])(
+    'allows stop when ralplan terminal state is written via aliases: %s',
+    async (overrides, _label) => {
+      const sessionId = 'session-ralplan-terminal-alias';
+      const tempDir = makeTempProject();
 
-    try {
-      writeRalplanState(tempDir, sessionId, overrides);
+      try {
+        writeRalplanState(tempDir, sessionId, overrides);
 
-      const result = await checkPersistentModes(sessionId, tempDir);
-      expect(result.shouldBlock).toBe(false);
-      expect(result.mode).toBe('ralplan');
-    } finally {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
-  });
-
+        const result = await checkPersistentModes(sessionId, tempDir);
+        expect(result.shouldBlock).toBe(false);
+        expect(result.mode).toBe('ralplan');
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    },
+  );
 
   it('reinforces active ralplan as read-only planning after compact continuation', async () => {
     const sessionId = 'session-ralplan-compact-readonly';
@@ -722,7 +754,9 @@ describe('ralplan standalone stop enforcement', () => {
       expect(result.shouldBlock).toBe(true);
       expect(result.mode).toBe('ralplan');
       expect(result.message).toContain('read-only/planning mode');
-      expect(result.message).toContain('require explicit user approval before execution');
+      expect(result.message).toContain(
+        'require explicit user approval before execution',
+      );
       expect(result.message).not.toContain('implement the plan');
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
@@ -758,8 +792,17 @@ describe('ralplan standalone stop enforcement', () => {
       expect(firstResult.mode).toBe('ralplan');
       expect(firstResult.message).toContain('deactivating stale ralplan state');
 
-      const statePath = join(tempDir, '.omc', 'state', 'sessions', sessionId, 'ralplan-state.json');
-      const persistedState = JSON.parse(readFileSync(statePath, 'utf-8')) as Record<string, unknown>;
+      const statePath = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'ralplan-state.json',
+      );
+      const persistedState = JSON.parse(
+        readFileSync(statePath, 'utf-8'),
+      ) as Record<string, unknown>;
       expect(persistedState.active).toBe(false);
       expect(persistedState.deactivated_reason).toBe('stop_breaker_exhausted');
 
@@ -821,8 +864,15 @@ describe('ralplan standalone stop enforcement', () => {
       ]);
 
       const staleUpdatedAt = new Date(now.getTime() - 10_000).toISOString();
-      const trackingPath = join(tempDir, '.omc', 'state', 'subagent-tracking-state.json');
-      const tracking = JSON.parse(readFileSync(trackingPath, 'utf-8')) as { last_updated?: string };
+      const trackingPath = join(
+        tempDir,
+        '.omc',
+        'state',
+        'subagent-tracking-state.json',
+      );
+      const tracking = JSON.parse(readFileSync(trackingPath, 'utf-8')) as {
+        last_updated?: string;
+      };
       tracking.last_updated = staleUpdatedAt;
       writeFileSync(trackingPath, JSON.stringify(tracking, null, 2));
 
@@ -882,7 +932,7 @@ describe('ralplan standalone stop enforcement', () => {
         JSON.stringify({
           requested_at: new Date().toISOString(),
           expires_at: new Date(Date.now() + 30000).toISOString(),
-        })
+        }),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -923,13 +973,17 @@ describe('team pipeline fail-open behavior', () => {
       mkdirSync(stateDir, { recursive: true });
       writeFileSync(
         join(stateDir, 'team-state.json'),
-        JSON.stringify({
-          schema_version: 1,
-          mode: 'team',
-          active: true,
-          session_id: sessionId,
-          started_at: new Date().toISOString(),
-        }, null, 2)
+        JSON.stringify(
+          {
+            schema_version: 1,
+            mode: 'team',
+            active: true,
+            session_id: sessionId,
+            started_at: new Date().toISOString(),
+          },
+          null,
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir);

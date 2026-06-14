@@ -20,7 +20,7 @@ import type {
   BackgroundTask,
   SessionState,
   PluginConfig,
-} from "../shared/types.js";
+} from '../shared/types.js';
 
 /**
  * Default maximum concurrent background tasks
@@ -113,9 +113,9 @@ export interface TaskExecutionDecision {
   /** Human-readable reason for the decision */
   reason: string;
   /** Estimated duration category */
-  estimatedDuration: "quick" | "medium" | "long" | "unknown";
+  estimatedDuration: 'quick' | 'medium' | 'long' | 'unknown';
   /** Confidence level of the decision */
-  confidence: "high" | "medium" | "low";
+  confidence: 'high' | 'medium' | 'low';
 }
 
 /**
@@ -139,8 +139,8 @@ export function shouldRunInBackground(
     return {
       runInBackground: false,
       reason: `At background task limit (${currentBackgroundCount}/${maxBackgroundTasks}). Wait for existing tasks or run blocking.`,
-      estimatedDuration: "unknown",
-      confidence: "high",
+      estimatedDuration: 'unknown',
+      confidence: 'high',
     };
   }
 
@@ -149,9 +149,9 @@ export function shouldRunInBackground(
     if (pattern.test(command)) {
       return {
         runInBackground: false,
-        reason: "Quick operation that should complete immediately.",
-        estimatedDuration: "quick",
-        confidence: "high",
+        reason: 'Quick operation that should complete immediately.',
+        estimatedDuration: 'quick',
+        confidence: 'high',
       };
     }
   }
@@ -162,9 +162,9 @@ export function shouldRunInBackground(
       return {
         runInBackground: true,
         reason:
-          "Long-running operation detected. Run in background to continue other work.",
-        estimatedDuration: "long",
-        confidence: "high",
+          'Long-running operation detected. Run in background to continue other work.',
+        estimatedDuration: 'long',
+        confidence: 'high',
       };
     }
   }
@@ -176,18 +176,18 @@ export function shouldRunInBackground(
   ) {
     return {
       runInBackground: true,
-      reason: "Complex command chain that may take time.",
-      estimatedDuration: "medium",
-      confidence: "medium",
+      reason: 'Complex command chain that may take time.',
+      estimatedDuration: 'medium',
+      confidence: 'medium',
     };
   }
 
   // Default: run blocking for unknown commands
   return {
     runInBackground: false,
-    reason: "Unknown command type. Running blocking for immediate feedback.",
-    estimatedDuration: "unknown",
-    confidence: "low",
+    reason: 'Unknown command type. Running blocking for immediate feedback.',
+    estimatedDuration: 'unknown',
+    confidence: 'low',
   };
 }
 
@@ -205,7 +205,7 @@ export interface BackgroundTaskManager {
   getTasks(): BackgroundTask[];
 
   /** Get tasks by status */
-  getTasksByStatus(status: BackgroundTask["status"]): BackgroundTask[];
+  getTasksByStatus(status: BackgroundTask['status']): BackgroundTask[];
 
   /** Get count of running tasks */
   getRunningCount(): number;
@@ -216,7 +216,7 @@ export interface BackgroundTaskManager {
   /** Update task status */
   updateTaskStatus(
     taskId: string,
-    status: BackgroundTask["status"],
+    status: BackgroundTask['status'],
     result?: string,
     error?: string,
   ): void;
@@ -253,7 +253,7 @@ export function createBackgroundTaskManager(
         id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         agentName,
         prompt,
-        status: "pending",
+        status: 'pending',
       };
       state.backgroundTasks.push(task);
       return task;
@@ -263,13 +263,13 @@ export function createBackgroundTaskManager(
       return [...state.backgroundTasks];
     },
 
-    getTasksByStatus(status: BackgroundTask["status"]): BackgroundTask[] {
+    getTasksByStatus(status: BackgroundTask['status']): BackgroundTask[] {
       return state.backgroundTasks.filter((t) => t.status === status);
     },
 
     getRunningCount(): number {
       return state.backgroundTasks.filter(
-        (t) => t.status === "running" || t.status === "pending",
+        (t) => t.status === 'running' || t.status === 'pending',
       ).length;
     },
 
@@ -279,7 +279,7 @@ export function createBackgroundTaskManager(
 
     updateTaskStatus(
       taskId: string,
-      status: BackgroundTask["status"],
+      status: BackgroundTask['status'],
       result?: string,
       error?: string,
     ): void {
@@ -292,11 +292,11 @@ export function createBackgroundTaskManager(
     },
 
     completeTask(taskId: string, result: string): void {
-      this.updateTaskStatus(taskId, "completed", result);
+      this.updateTaskStatus(taskId, 'completed', result);
     },
 
     failTask(taskId: string, error: string): void {
-      this.updateTaskStatus(taskId, "error", undefined, error);
+      this.updateTaskStatus(taskId, 'error', undefined, error);
     },
 
     pruneCompletedTasks(_maxAge: number = 5 * 60 * 1000): number {
@@ -304,7 +304,7 @@ export function createBackgroundTaskManager(
       // For now, just prune all completed/errored tasks
       const before = state.backgroundTasks.length;
       state.backgroundTasks = state.backgroundTasks.filter(
-        (t) => t.status !== "completed" && t.status !== "error",
+        (t) => t.status !== 'completed' && t.status !== 'error',
       );
       return before - state.backgroundTasks.length;
     },

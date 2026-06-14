@@ -10,9 +10,9 @@
  * Sensitive hooks use strict allowlists; others pass through unknown fields.
  */
 
-import { z } from "zod";
-import type { HookInput } from "./bridge.js";
-import { resolveTranscriptPath } from "../lib/worktree-paths.js";
+import { z } from 'zod';
+import type { HookInput } from './bridge.js';
+import { resolveTranscriptPath } from '../lib/worktree-paths.js';
 
 // --- Zod schemas for hook input validation ---
 
@@ -95,61 +95,61 @@ interface RawHookInput {
 
 /** Hooks where unknown fields are dropped (strict allowlist only) */
 const SENSITIVE_HOOKS = new Set([
-  "permission-request",
-  "setup-init",
-  "setup-maintenance",
-  "session-end",
+  'permission-request',
+  'setup-init',
+  'setup-maintenance',
+  'session-end',
 ]);
 
 /** All known camelCase field names the system uses (post-normalization) */
 const KNOWN_FIELDS = new Set([
   // Core normalized fields
-  "sessionId",
-  "toolName",
-  "toolInput",
-  "toolOutput",
-  "directory",
-  "prompt",
-  "message",
-  "parts",
-  "hookEventName",
+  'sessionId',
+  'toolName',
+  'toolInput',
+  'toolOutput',
+  'directory',
+  'prompt',
+  'message',
+  'parts',
+  'hookEventName',
   // Stop hook fields
-  "stop_reason",
-  "stopReason",
-  "user_requested",
-  "userRequested",
+  'stop_reason',
+  'stopReason',
+  'user_requested',
+  'userRequested',
   // Permission hook fields
-  "permission_mode",
-  "tool_use_id",
-  "transcript_path",
+  'permission_mode',
+  'tool_use_id',
+  'transcript_path',
   // Subagent fields
-  "agent_id",
-  "agent_name",
-  "agent_type",
-  "parent_session_id",
-  "agentName",
-  "model",
-  "model_id",
-  "modelId",
+  'agent_id',
+  'agent_name',
+  'agent_type',
+  'parent_session_id',
+  'agentName',
+  'model',
+  'model_id',
+  'modelId',
   // Common extra fields from Claude Code
-  "input",
-  "output",
-  "result",
-  "error",
-  "status",
+  'input',
+  'output',
+  'result',
+  'error',
+  'status',
   // Session-end fields
-  "reason",
+  'reason',
 ]);
 
 // --- Fast-path detection ---
 
 /** Typical camelCase keys that indicate already-normalized input */
-const CAMEL_CASE_MARKERS = new Set(["sessionId", "toolName", "directory"]);
+const CAMEL_CASE_MARKERS = new Set(['sessionId', 'toolName', 'directory']);
 
 /** Check if any key in the object contains an underscore (snake_case indicator) */
 function hasSnakeCaseKeys(obj: Record<string, unknown>): boolean {
   for (const key of Object.keys(obj)) {
-    if (key.includes("_")) return true;
+    if (key.includes('_')) return true;
   }
   return false;
 }
@@ -181,7 +181,7 @@ function isAlreadyCamelCase(obj: Record<string, unknown>): boolean {
  * @param hookType - Optional hook type for sensitivity-aware filtering
  */
 export function normalizeHookInput(raw: unknown, hookType?: string): HookInput {
-  if (typeof raw !== "object" || raw === null) {
+  if (typeof raw !== 'object' || raw === null) {
     return {};
   }
 
@@ -204,8 +204,8 @@ export function normalizeHookInput(raw: unknown, hookType?: string): HookInput {
       toolOutput: rawObj.toolOutput ?? rawObj.toolResponse,
       directory: rawObj.directory as string | undefined,
       prompt: rawObj.prompt as string | undefined,
-      message: rawObj.message as HookInput["message"],
-      parts: rawObj.parts as HookInput["parts"],
+      message: rawObj.message as HookInput['message'],
+      parts: rawObj.parts as HookInput['parts'],
       ...passthrough,
     } as HookInput;
   }
@@ -215,8 +215,8 @@ export function normalizeHookInput(raw: unknown, hookType?: string): HookInput {
   if (!parsed.success) {
     // Log validation issues but don't block - fall through to best-effort mapping
     console.error(
-      "[bridge-normalize] Zod validation warning:",
-      parsed.error.issues.map((i) => i.message).join(", "),
+      '[bridge-normalize] Zod validation warning:',
+      parsed.error.issues.map((i) => i.message).join(', '),
     );
   }
 
@@ -257,22 +257,22 @@ function filterPassthrough(
   hookType?: string,
 ): Record<string, unknown> {
   const MAPPED_KEYS = new Set([
-    "tool_name",
-    "toolName",
-    "tool_input",
-    "toolInput",
-    "tool_response",
-    "toolOutput",
-    "toolResponse",
-    "session_id",
-    "sessionId",
-    "cwd",
-    "directory",
-    "hook_event_name",
-    "hookEventName",
-    "prompt",
-    "message",
-    "parts",
+    'tool_name',
+    'toolName',
+    'tool_input',
+    'toolInput',
+    'tool_response',
+    'toolOutput',
+    'toolResponse',
+    'session_id',
+    'sessionId',
+    'cwd',
+    'directory',
+    'hook_event_name',
+    'hookEventName',
+    'prompt',
+    'message',
+    'parts',
   ]);
 
   const isSensitive = hookType != null && SENSITIVE_HOOKS.has(hookType);
@@ -292,7 +292,7 @@ function filterPassthrough(
       extra[key] = value;
       if (!KNOWN_FIELDS.has(key)) {
         console.error(
-          `[bridge-normalize] Unknown field "${key}" passed through for hook "${hookType ?? "unknown"}"`,
+          `[bridge-normalize] Unknown field "${key}" passed through for hook "${hookType ?? 'unknown'}"`,
         );
       }
     }

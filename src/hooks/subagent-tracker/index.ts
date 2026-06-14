@@ -19,13 +19,19 @@ import {
   mkdirSync,
   unlinkSync,
   readdirSync,
-} from "fs";
-import { dirname, join } from "path";
-import { getOmcRoot, resolveSessionStatePaths } from '../../lib/worktree-paths.js';
+} from 'fs';
+import { dirname, join } from 'path';
+import {
+  getOmcRoot,
+  resolveSessionStatePaths,
+} from '../../lib/worktree-paths.js';
 import { resolveSessionId } from '../../lib/session-id.js';
 import { withFileLockSync, lockPathFor } from '../../lib/file-lock.js';
 import { recordAgentStart, recordAgentStop } from './session-replay.js';
-import { recordMissionAgentStart, recordMissionAgentStop } from '../../hud/mission-board.js';
+import {
+  recordMissionAgentStart,
+  recordMissionAgentStop,
+} from '../../hud/mission-board.js';
 
 // ============================================================================
 // Types
@@ -38,7 +44,7 @@ export interface SubagentInfo {
   parent_mode: string; // 'autopilot' | 'ultrawork' | 'team' | 'ralph' | 'none'
   task_description?: string;
   file_ownership?: string[];
-  status: "running" | "completed" | "failed";
+  status: 'running' | 'completed' | 'failed';
   completed_at?: string;
   duration_ms?: number;
   output_summary?: string;
@@ -90,7 +96,7 @@ export interface SubagentStartInput {
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: "SubagentStart";
+  hook_event_name: 'SubagentStart';
   agent_id: string;
   agent_type: string;
   prompt?: string;
@@ -102,7 +108,7 @@ export interface SubagentStopInput {
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: "SubagentStop";
+  hook_event_name: 'SubagentStop';
   agent_id?: string;
   agent_type?: string;
   output?: string;
@@ -122,11 +128,11 @@ export interface HookOutput {
 }
 
 export interface AgentIntervention {
-  type: "timeout" | "deadlock" | "excessive_cost" | "file_conflict";
+  type: 'timeout' | 'deadlock' | 'excessive_cost' | 'file_conflict';
   agent_id: string;
   agent_type: string;
   reason: string;
-  suggested_action: "kill" | "restart" | "warn" | "skip";
+  suggested_action: 'kill' | 'restart' | 'warn' | 'skip';
   auto_execute: boolean;
 }
 
@@ -137,7 +143,7 @@ export const DEADLOCK_CHECK_THRESHOLD = 3;
 // Constants
 // ============================================================================
 
-const STATE_NAME = "subagent-tracking";
+const STATE_NAME = 'subagent-tracking';
 const STALE_THRESHOLD_MS = 5 * 60 * 1000;
 const MAX_COMPLETED_AGENTS = 100;
 const WRITE_DEBOUNCE_MS = 100;
@@ -157,7 +163,12 @@ const LOCK_OPTS = {
 // Each session gets its own slot so concurrent sessions don't overwrite each other.
 const pendingWrites = new Map<
   string,
-  { state: SubagentTrackingState; sessionId: string | undefined; directory: string; timeout: ReturnType<typeof setTimeout> }
+  {
+    state: SubagentTrackingState;
+    sessionId: string | undefined;
+    directory: string;
+    timeout: ReturnType<typeof setTimeout>;
+  }
 >();
 
 // Guard against duplicate concurrent flushes per write path
@@ -175,7 +186,9 @@ function syncSleep(ms: number): void {
   } catch {
     // Main thread: Atomics.wait throws on Node <22
     const waitUntil = Date.now() + ms;
-    while (Date.now() < waitUntil) { /* spin */ }
+    while (Date.now() < waitUntil) {
+      /* spin */
+    }
   }
 }
 
@@ -256,14 +269,24 @@ export function mergeTrackerStates(
   }
 
   // Counters: take max to avoid double-counting
-  const total_spawned = Math.max(diskState.total_spawned, pendingState.total_spawned);
-  const total_completed = Math.max(diskState.total_completed, pendingState.total_completed);
-  const total_failed = Math.max(diskState.total_failed, pendingState.total_failed);
+  const total_spawned = Math.max(
+    diskState.total_spawned,
+    pendingState.total_spawned,
+  );
+  const total_completed = Math.max(
+    diskState.total_completed,
+    pendingState.total_completed,
+  );
+  const total_failed = Math.max(
+    diskState.total_failed,
+    pendingState.total_failed,
+  );
 
   // Timestamp: take the latest
   const diskTime = new Date(diskState.last_updated).getTime();
   const pendingTime = new Date(pendingState.last_updated).getTime();
-  const last_updated = diskTime > pendingTime ? diskState.last_updated : pendingState.last_updated;
+  const last_updated =
+    diskTime > pendingTime ? diskState.last_updated : pendingState.last_updated;
 
   return {
     agents: Array.from(agentMap.values()),
@@ -284,7 +307,10 @@ export function mergeTrackerStates(
  *
  * @deprecated Use resolveWritePath / resolveReadPath for new code.
  */
-export function getStateFilePath(directory: string, sessionId?: string): string {
+export function getStateFilePath(
+  directory: string,
+  sessionId?: string,
+): string {
   const p = resolveWritePath(directory, sessionId);
   ensureParentDir(p);
   return p;
@@ -300,7 +326,10 @@ export function getStateFilePath(directory: string, sessionId?: string): string 
  * preserves backward-compat for callers that read without a session ID after state
  * was written exclusively to session-scoped paths.
  */
-export function readDiskState(directory: string, sessionId?: string): SubagentTrackingState {
+export function readDiskState(
+  directory: string,
+  sessionId?: string,
+): SubagentTrackingState {
   const empty = (): SubagentTrackingState => ({
     agents: [],
     total_spawned: 0,
@@ -312,9 +341,9 @@ export function readDiskState(directory: string, sessionId?: string): SubagentTr
   const readFile = (p: string): SubagentTrackingState | null => {
     if (!existsSync(p)) return null;
     try {
-      return JSON.parse(readFileSync(p, "utf-8")) as SubagentTrackingState;
+      return JSON.parse(readFileSync(p, 'utf-8')) as SubagentTrackingState;
     } catch (error) {
-      console.error("[SubagentTracker] Error reading disk state:", error);
+      console.error('[SubagentTracker] Error reading disk state:', error);
       return null;
     }
   };
@@ -344,7 +373,9 @@ export function readDiskState(directory: string, sessionId?: string): SubagentTr
     const normalizedName = `${STATE_NAME}-state.json`;
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      const sessionState = readFile(join(sessionsDir, entry.name, normalizedName));
+      const sessionState = readFile(
+        join(sessionsDir, entry.name, normalizedName),
+      );
       if (sessionState) {
         merged = mergeTrackerStates(merged, sessionState);
       }
@@ -368,7 +399,10 @@ export function readDiskState(directory: string, sessionId?: string): SubagentTr
  * — this preserves backward-compat for callers that wrote with a session ID (e.g. via a
  * hook) and then read back without one immediately afterward.
  */
-export function readTrackingState(directory: string, sessionId?: string): SubagentTrackingState {
+export function readTrackingState(
+  directory: string,
+  sessionId?: string,
+): SubagentTrackingState {
   // Pending writes are keyed by write path (session-scoped when sid present)
   const writePath = resolveWritePath(directory, sessionId);
   const pending = pendingWrites.get(writePath);
@@ -404,9 +438,9 @@ function writeTrackingStateImmediate(
   state.last_updated = new Date().toISOString();
 
   try {
-    writeFileSync(statePath, JSON.stringify(state, null, 2), "utf-8");
+    writeFileSync(statePath, JSON.stringify(state, null, 2), 'utf-8');
   } catch (error) {
-    console.error("[SubagentTracker] Error writing state:", error);
+    console.error('[SubagentTracker] Error writing state:', error);
   }
 }
 
@@ -425,12 +459,16 @@ export function executeFlush(
   const lockPath = lockPathFor(writePath);
 
   try {
-    withFileLockSync(lockPath, () => {
-      // Re-read latest disk state to avoid overwriting concurrent changes
-      const diskState = readDiskState(directory, sessionId);
-      const merged = mergeTrackerStates(diskState, pendingState);
-      writeTrackingStateImmediate(directory, merged, sessionId);
-    }, LOCK_OPTS);
+    withFileLockSync(
+      lockPath,
+      () => {
+        // Re-read latest disk state to avoid overwriting concurrent changes
+        const diskState = readDiskState(directory, sessionId);
+        const merged = mergeTrackerStates(diskState, pendingState);
+        writeTrackingStateImmediate(directory, merged, sessionId);
+      },
+      LOCK_OPTS,
+    );
     return true;
   } catch {
     return false;
@@ -509,7 +547,12 @@ export function writeTrackingState(
     }
   }, WRITE_DEBOUNCE_MS);
 
-  pendingWrites.set(writePath, { state, sessionId, directory: normalizedDir, timeout });
+  pendingWrites.set(writePath, {
+    state,
+    sessionId,
+    directory: normalizedDir,
+    timeout,
+  });
 }
 
 /**
@@ -524,10 +567,17 @@ export function flushPendingWrites(): void {
       // On lock failure, fall back to a direct write so tests with no
       // contention still persist state.
       if (!executeFlush(pending.directory, pending.state, pending.sessionId)) {
-        writeTrackingStateImmediate(pending.directory, pending.state, pending.sessionId);
+        writeTrackingStateImmediate(
+          pending.directory,
+          pending.state,
+          pending.sessionId,
+        );
       }
     } catch (error) {
-      console.error("[SubagentTracker] Error during flushPendingWrites:", error);
+      console.error(
+        '[SubagentTracker] Error during flushPendingWrites:',
+        error,
+      );
     }
   }
   pendingWrites.clear();
@@ -541,18 +591,18 @@ export function flushPendingWrites(): void {
  * Detect the current parent mode from state files
  */
 function detectParentMode(directory: string): string {
-  const stateDir = join(getOmcRoot(directory), "state");
+  const stateDir = join(getOmcRoot(directory), 'state');
 
   if (!existsSync(stateDir)) {
-    return "none";
+    return 'none';
   }
 
   // Check in order of specificity
   const modeFiles = [
-    { file: "autopilot-state.json", mode: "autopilot" },
-    { file: "ultrawork-state.json", mode: "ultrawork" },
-    { file: "ralph-state.json", mode: "ralph" },
-    { file: "team-state.json", mode: "team" },
+    { file: 'autopilot-state.json', mode: 'autopilot' },
+    { file: 'ultrawork-state.json', mode: 'ultrawork' },
+    { file: 'ralph-state.json', mode: 'ralph' },
+    { file: 'team-state.json', mode: 'team' },
   ];
 
   for (const { file, mode } of modeFiles) {
@@ -561,12 +611,12 @@ function detectParentMode(directory: string): string {
       {
         // JSON file check
         try {
-          const content = readFileSync(filePath, "utf-8");
+          const content = readFileSync(filePath, 'utf-8');
           const state = JSON.parse(content);
           if (
             state.active === true ||
-            state.status === "running" ||
-            state.status === "active"
+            state.status === 'running' ||
+            state.status === 'active'
           ) {
             return mode;
           }
@@ -577,7 +627,7 @@ function detectParentMode(directory: string): string {
     }
   }
 
-  return "none";
+  return 'none';
 }
 
 /**
@@ -587,7 +637,7 @@ export function getStaleAgents(state: SubagentTrackingState): SubagentInfo[] {
   const now = Date.now();
 
   return state.agents.filter((agent) => {
-    if (agent.status !== "running") {
+    if (agent.status !== 'running') {
       return false;
     }
 
@@ -612,82 +662,105 @@ export function processSubagentStart(input: SubagentStartInput): HookOutput {
   const lockPath = lockPathFor(writePath);
 
   try {
-    return withFileLockSync(lockPath, () => {
-      const state = readTrackingState(input.cwd, sessionId);
-      const parentMode = detectParentMode(input.cwd);
-      const startedAt = new Date().toISOString();
-      const taskDescription = input.prompt?.substring(0, 200); // Truncate for storage
-      const existingAgent = state.agents.find((agent) => agent.agent_id === input.agent_id);
-      const isDuplicateRunningStart = existingAgent?.status === "running";
-      let trackedAgent: SubagentInfo;
+    return withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(input.cwd, sessionId);
+        const parentMode = detectParentMode(input.cwd);
+        const startedAt = new Date().toISOString();
+        const taskDescription = input.prompt?.substring(0, 200); // Truncate for storage
+        const existingAgent = state.agents.find(
+          (agent) => agent.agent_id === input.agent_id,
+        );
+        const isDuplicateRunningStart = existingAgent?.status === 'running';
+        let trackedAgent: SubagentInfo;
 
-      if (existingAgent) {
-        existingAgent.agent_type = input.agent_type;
-        existingAgent.parent_mode = parentMode;
-        existingAgent.task_description = taskDescription;
-        existingAgent.model = input.model;
+        if (existingAgent) {
+          existingAgent.agent_type = input.agent_type;
+          existingAgent.parent_mode = parentMode;
+          existingAgent.task_description = taskDescription;
+          existingAgent.model = input.model;
 
-        if (existingAgent.status !== "running") {
-          existingAgent.status = "running";
-          existingAgent.started_at = startedAt;
-          existingAgent.completed_at = undefined;
-          existingAgent.duration_ms = undefined;
-          existingAgent.output_summary = undefined;
+          if (existingAgent.status !== 'running') {
+            existingAgent.status = 'running';
+            existingAgent.started_at = startedAt;
+            existingAgent.completed_at = undefined;
+            existingAgent.duration_ms = undefined;
+            existingAgent.output_summary = undefined;
+            state.total_spawned++;
+          }
+          trackedAgent = existingAgent;
+        } else {
+          // Create new agent entry
+          const agentInfo: SubagentInfo = {
+            agent_id: input.agent_id,
+            agent_type: input.agent_type,
+            started_at: startedAt,
+            parent_mode: parentMode,
+            task_description: taskDescription,
+            status: 'running',
+            model: input.model,
+          };
+
+          // Add to state
+          state.agents.push(agentInfo);
           state.total_spawned++;
+          trackedAgent = agentInfo;
         }
-        trackedAgent = existingAgent;
-      } else {
-        // Create new agent entry
-        const agentInfo: SubagentInfo = {
-          agent_id: input.agent_id,
-          agent_type: input.agent_type,
-          started_at: startedAt,
-          parent_mode: parentMode,
-          task_description: taskDescription,
-          status: "running",
-          model: input.model,
+
+        // Write updated state (debounced; outside lock scope intentionally — flush is fine)
+        writeTrackingState(input.cwd, state, sessionId);
+
+        if (!isDuplicateRunningStart) {
+          // Record to session replay JSONL for /trace
+          try {
+            recordAgentStart(
+              input.cwd,
+              input.session_id,
+              input.agent_id,
+              input.agent_type,
+              input.prompt,
+              parentMode,
+              input.model,
+            );
+          } catch {
+            /* best-effort */
+          }
+
+          try {
+            recordMissionAgentStart(
+              input.cwd,
+              {
+                sessionId: input.session_id,
+                agentId: input.agent_id,
+                agentType: input.agent_type,
+                parentMode,
+                taskDescription: input.prompt,
+                at: trackedAgent.started_at,
+              },
+              sessionId,
+            );
+          } catch {
+            /* best-effort */
+          }
+        }
+
+        // Check for stale agents
+        const staleAgents = getStaleAgents(state);
+
+        return {
+          continue: true,
+          hookSpecificOutput: {
+            hookEventName: 'SubagentStart',
+            additionalContext: `Agent ${input.agent_type} started (${input.agent_id})`,
+            agent_count: state.agents.filter((a) => a.status === 'running')
+              .length,
+            stale_agents: staleAgents.map((a) => a.agent_id),
+          },
         };
-
-        // Add to state
-        state.agents.push(agentInfo);
-        state.total_spawned++;
-        trackedAgent = agentInfo;
-      }
-
-      // Write updated state (debounced; outside lock scope intentionally — flush is fine)
-      writeTrackingState(input.cwd, state, sessionId);
-
-      if (!isDuplicateRunningStart) {
-        // Record to session replay JSONL for /trace
-        try {
-          recordAgentStart(input.cwd, input.session_id, input.agent_id, input.agent_type, input.prompt, parentMode, input.model);
-        } catch { /* best-effort */ }
-
-        try {
-          recordMissionAgentStart(input.cwd, {
-            sessionId: input.session_id,
-            agentId: input.agent_id,
-            agentType: input.agent_type,
-            parentMode,
-            taskDescription: input.prompt,
-            at: trackedAgent.started_at,
-          }, sessionId);
-        } catch { /* best-effort */ }
-      }
-
-      // Check for stale agents
-      const staleAgents = getStaleAgents(state);
-
-      return {
-        continue: true,
-        hookSpecificOutput: {
-          hookEventName: "SubagentStart",
-          additionalContext: `Agent ${input.agent_type} started (${input.agent_id})`,
-          agent_count: state.agents.filter((a) => a.status === "running").length,
-          stale_agents: staleAgents.map((a) => a.agent_id),
-        },
-      };
-    }, LOCK_OPTS);
+      },
+      LOCK_OPTS,
+    );
   } catch {
     return { continue: true }; // Fail gracefully if lock cannot be acquired
   }
@@ -703,85 +776,116 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
   const lockPath = lockPathFor(writePath);
 
   try {
-    return withFileLockSync(lockPath, () => {
-      const state = readTrackingState(input.cwd, sessionId);
+    return withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(input.cwd, sessionId);
 
-      // Find the agent
-      const agentIndex = state.agents.findIndex(
-        (a) => a.agent_id === input.agent_id,
-      );
-
-      // SDK does not provide `success` field, so default to 'completed' when undefined (Bug #1 fix)
-      const succeeded = input.success !== false;
-
-      if (agentIndex !== -1) {
-        const agent = state.agents[agentIndex];
-        agent.status = succeeded ? "completed" : "failed";
-        agent.completed_at = new Date().toISOString();
-
-        // Calculate duration
-        const startTime = new Date(agent.started_at).getTime();
-        const endTime = new Date(agent.completed_at).getTime();
-        agent.duration_ms = endTime - startTime;
-
-        // Store output summary (truncated)
-        if (input.output) {
-          agent.output_summary = input.output.substring(0, 500);
-        }
-
-        // Update counters
-        if (succeeded) {
-          state.total_completed++;
-        } else {
-          state.total_failed++;
-        }
-      }
-
-      // Evict oldest completed agents if over limit
-      const completedAgents = state.agents.filter(
-        (a) => a.status === "completed" || a.status === "failed",
-      );
-      if (completedAgents.length > MAX_COMPLETED_AGENTS) {
-        // Sort by completed_at and keep only the most recent
-        completedAgents.sort((a, b) => {
-          const timeA = a.completed_at ? new Date(a.completed_at).getTime() : 0;
-          const timeB = b.completed_at ? new Date(b.completed_at).getTime() : 0;
-          return timeB - timeA; // Newest first
-        });
-
-        const toRemove = new Set(
-          completedAgents.slice(MAX_COMPLETED_AGENTS).map((a) => a.agent_id),
+        // Find the agent
+        const agentIndex = state.agents.findIndex(
+          (a) => a.agent_id === input.agent_id,
         );
-        state.agents = state.agents.filter((a) => !toRemove.has(a.agent_id));
-      }
 
-      // Write updated state
-      writeTrackingState(input.cwd, state, sessionId);
+        // SDK does not provide `success` field, so default to 'completed' when undefined (Bug #1 fix)
+        const succeeded = input.success !== false;
 
-      if (input.agent_id) {
-        // Record to session replay JSONL for /trace
-        // Fix: SDK doesn't populate agent_type in SubagentStop, so use tracked state
-        try {
-          const trackedAgent = agentIndex !== -1 ? state.agents[agentIndex] : undefined;
-          const agentType = trackedAgent?.agent_type || input.agent_type || 'unknown';
-          recordAgentStop(input.cwd, input.session_id, input.agent_id, agentType, succeeded, trackedAgent?.duration_ms);
-        } catch { /* best-effort */ }
+        if (agentIndex !== -1) {
+          const agent = state.agents[agentIndex];
+          agent.status = succeeded ? 'completed' : 'failed';
+          agent.completed_at = new Date().toISOString();
 
-        try {
-          recordMissionAgentStop(input.cwd, {
-            sessionId: input.session_id,
-            agentId: input.agent_id,
-            success: succeeded,
-            outputSummary: agentIndex !== -1 ? state.agents[agentIndex]?.output_summary : input.output,
-            at: agentIndex !== -1 ? state.agents[agentIndex]?.completed_at : new Date().toISOString(),
-          }, sessionId);
-        } catch { /* best-effort */ }
-      }
-      return {
-        continue: true,
-        suppressOutput: true,
-      };
-    }, LOCK_OPTS);
+          // Calculate duration
+          const startTime = new Date(agent.started_at).getTime();
+          const endTime = new Date(agent.completed_at).getTime();
+          agent.duration_ms = endTime - startTime;
+
+          // Store output summary (truncated)
+          if (input.output) {
+            agent.output_summary = input.output.substring(0, 500);
+          }
+
+          // Update counters
+          if (succeeded) {
+            state.total_completed++;
+          } else {
+            state.total_failed++;
+          }
+        }
+
+        // Evict oldest completed agents if over limit
+        const completedAgents = state.agents.filter(
+          (a) => a.status === 'completed' || a.status === 'failed',
+        );
+        if (completedAgents.length > MAX_COMPLETED_AGENTS) {
+          // Sort by completed_at and keep only the most recent
+          completedAgents.sort((a, b) => {
+            const timeA = a.completed_at
+              ? new Date(a.completed_at).getTime()
+              : 0;
+            const timeB = b.completed_at
+              ? new Date(b.completed_at).getTime()
+              : 0;
+            return timeB - timeA; // Newest first
+          });
+
+          const toRemove = new Set(
+            completedAgents.slice(MAX_COMPLETED_AGENTS).map((a) => a.agent_id),
+          );
+          state.agents = state.agents.filter((a) => !toRemove.has(a.agent_id));
+        }
+
+        // Write updated state
+        writeTrackingState(input.cwd, state, sessionId);
+
+        if (input.agent_id) {
+          // Record to session replay JSONL for /trace
+          // Fix: SDK doesn't populate agent_type in SubagentStop, so use tracked state
+          try {
+            const trackedAgent =
+              agentIndex !== -1 ? state.agents[agentIndex] : undefined;
+            const agentType =
+              trackedAgent?.agent_type || input.agent_type || 'unknown';
+            recordAgentStop(
+              input.cwd,
+              input.session_id,
+              input.agent_id,
+              agentType,
+              succeeded,
+              trackedAgent?.duration_ms,
+            );
+          } catch {
+            /* best-effort */
+          }
+
+          try {
+            recordMissionAgentStop(
+              input.cwd,
+              {
+                sessionId: input.session_id,
+                agentId: input.agent_id,
+                success: succeeded,
+                outputSummary:
+                  agentIndex !== -1
+                    ? state.agents[agentIndex]?.output_summary
+                    : input.output,
+                at:
+                  agentIndex !== -1
+                    ? state.agents[agentIndex]?.completed_at
+                    : new Date().toISOString(),
+              },
+              sessionId,
+            );
+          } catch {
+            /* best-effort */
+          }
+        }
+        return {
+          continue: true,
+          suppressOutput: true,
+        };
+      },
+      LOCK_OPTS,
+    );
   } catch {
     return { continue: true }; // Fail gracefully if lock cannot be acquired
   }
@@ -794,37 +898,44 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
 /**
  * Cleanup stale agents (mark as failed)
  */
-export function cleanupStaleAgents(directory: string, sessionId?: string): number {
+export function cleanupStaleAgents(
+  directory: string,
+  sessionId?: string,
+): number {
   const writePath = resolveWritePath(directory, sessionId);
   ensureParentDir(writePath);
   const lockPath = lockPathFor(writePath);
 
   try {
-    return withFileLockSync(lockPath, () => {
-      const state = readTrackingState(directory, sessionId);
-      const staleAgents = getStaleAgents(state);
+    return withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(directory, sessionId);
+        const staleAgents = getStaleAgents(state);
 
-      if (staleAgents.length === 0) {
-        return 0;
-      }
-
-      for (const stale of staleAgents) {
-        const agentIndex = state.agents.findIndex(
-          (a) => a.agent_id === stale.agent_id,
-        );
-        if (agentIndex !== -1) {
-          state.agents[agentIndex].status = "failed";
-          state.agents[agentIndex].completed_at = new Date().toISOString();
-          state.agents[agentIndex].output_summary =
-            "Marked as stale - exceeded timeout";
-          state.total_failed++;
+        if (staleAgents.length === 0) {
+          return 0;
         }
-      }
 
-      writeTrackingState(directory, state, sessionId);
+        for (const stale of staleAgents) {
+          const agentIndex = state.agents.findIndex(
+            (a) => a.agent_id === stale.agent_id,
+          );
+          if (agentIndex !== -1) {
+            state.agents[agentIndex].status = 'failed';
+            state.agents[agentIndex].completed_at = new Date().toISOString();
+            state.agents[agentIndex].output_summary =
+              'Marked as stale - exceeded timeout';
+            state.total_failed++;
+          }
+        }
 
-      return staleAgents.length;
-    }, LOCK_OPTS);
+        writeTrackingState(directory, state, sessionId);
+
+        return staleAgents.length;
+      },
+      LOCK_OPTS,
+    );
   } catch {
     return 0; // Could not acquire lock
   }
@@ -842,15 +953,21 @@ export interface ActiveAgentSnapshot {
   lastUpdatedAt?: string;
 }
 
-export function getActiveAgentSnapshot(directory: string, sessionId?: string): ActiveAgentSnapshot {
+export function getActiveAgentSnapshot(
+  directory: string,
+  sessionId?: string,
+): ActiveAgentSnapshot {
   const state = readTrackingState(directory, sessionId);
   return {
-    count: state.agents.filter((a) => a.status === "running").length,
+    count: state.agents.filter((a) => a.status === 'running').length,
     lastUpdatedAt: state.last_updated,
   };
 }
 
-export function getActiveAgentCount(directory: string, sessionId?: string): number {
+export function getActiveAgentCount(
+  directory: string,
+  sessionId?: string,
+): number {
   return getActiveAgentSnapshot(directory, sessionId).count;
 }
 
@@ -869,15 +986,21 @@ export function getAgentsByType(
 /**
  * Get all running agents
  */
-export function getRunningAgents(directory: string, sessionId?: string): SubagentInfo[] {
+export function getRunningAgents(
+  directory: string,
+  sessionId?: string,
+): SubagentInfo[] {
   const state = readTrackingState(directory, sessionId);
-  return state.agents.filter((a) => a.status === "running");
+  return state.agents.filter((a) => a.status === 'running');
 }
 
 /**
  * Get tracking stats
  */
-export function getTrackingStats(directory: string, sessionId?: string): {
+export function getTrackingStats(
+  directory: string,
+  sessionId?: string,
+): {
   running: number;
   completed: number;
   failed: number;
@@ -885,7 +1008,7 @@ export function getTrackingStats(directory: string, sessionId?: string): {
 } {
   const state = readTrackingState(directory, sessionId);
   return {
-    running: state.agents.filter((a) => a.status === "running").length,
+    running: state.agents.filter((a) => a.status === 'running').length,
     completed: state.total_completed,
     failed: state.total_failed,
     total: state.total_spawned,
@@ -908,27 +1031,33 @@ export function recordToolUsage(
   const lockPath = lockPathFor(writePath);
 
   try {
-    withFileLockSync(lockPath, () => {
-      const state = readTrackingState(directory, sessionId);
-      const agent = state.agents.find(
-        (a) => a.agent_id === agentId && a.status === "running",
-      );
+    withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(directory, sessionId);
+        const agent = state.agents.find(
+          (a) => a.agent_id === agentId && a.status === 'running',
+        );
 
-      if (agent) {
-        if (!agent.tool_usage) agent.tool_usage = [];
-        // Keep last 50 tool usages per agent to prevent unbounded growth
-        if (agent.tool_usage.length >= 50) {
-          agent.tool_usage = agent.tool_usage.slice(-49);
+        if (agent) {
+          if (!agent.tool_usage) agent.tool_usage = [];
+          // Keep last 50 tool usages per agent to prevent unbounded growth
+          if (agent.tool_usage.length >= 50) {
+            agent.tool_usage = agent.tool_usage.slice(-49);
+          }
+          agent.tool_usage.push({
+            tool_name: toolName,
+            timestamp: new Date().toISOString(),
+            success,
+          });
+          writeTrackingState(directory, state, sessionId);
         }
-        agent.tool_usage.push({
-          tool_name: toolName,
-          timestamp: new Date().toISOString(),
-          success,
-        });
-        writeTrackingState(directory, state, sessionId);
-      }
-    }, LOCK_OPTS);
-  } catch { /* best-effort */ }
+      },
+      LOCK_OPTS,
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 /**
@@ -948,38 +1077,47 @@ export function recordToolUsageWithTiming(
   const lockPath = lockPathFor(writePath);
 
   try {
-    withFileLockSync(lockPath, () => {
-      const state = readTrackingState(directory, sessionId);
-      const agent = state.agents.find(
-        (a) => a.agent_id === agentId && a.status === "running",
-      );
+    withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(directory, sessionId);
+        const agent = state.agents.find(
+          (a) => a.agent_id === agentId && a.status === 'running',
+        );
 
-      if (agent) {
-        if (!agent.tool_usage) agent.tool_usage = [];
-        if (agent.tool_usage.length >= 50) {
-          agent.tool_usage = agent.tool_usage.slice(-49);
+        if (agent) {
+          if (!agent.tool_usage) agent.tool_usage = [];
+          if (agent.tool_usage.length >= 50) {
+            agent.tool_usage = agent.tool_usage.slice(-49);
+          }
+          agent.tool_usage.push({
+            tool_name: toolName,
+            timestamp: new Date().toISOString(),
+            duration_ms: durationMs,
+            success,
+          });
+          writeTrackingState(directory, state, sessionId);
         }
-        agent.tool_usage.push({
-          tool_name: toolName,
-          timestamp: new Date().toISOString(),
-          duration_ms: durationMs,
-          success,
-        });
-        writeTrackingState(directory, state, sessionId);
-      }
-    }, LOCK_OPTS);
-  } catch { /* best-effort */ }
+      },
+      LOCK_OPTS,
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 /**
  * Generate a formatted dashboard of all running agents
  * Used for debugging parallel agent execution in ultrawork mode
  */
-export function getAgentDashboard(directory: string, sessionId?: string): string {
+export function getAgentDashboard(
+  directory: string,
+  sessionId?: string,
+): string {
   const state = readTrackingState(directory, sessionId);
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
 
-  if (running.length === 0) return "";
+  if (running.length === 0) return '';
 
   const now = Date.now();
   const lines: string[] = [`Agent Dashboard (${running.length} active):`];
@@ -988,13 +1126,13 @@ export function getAgentDashboard(directory: string, sessionId?: string): string
     const elapsed = Math.round(
       (now - new Date(agent.started_at).getTime()) / 1000,
     );
-    const shortType = agent.agent_type.replace("oh-my-claudecode:", "");
+    const shortType = agent.agent_type.replace('oh-my-claudecode:', '');
     const toolCount = agent.tool_usage?.length || 0;
     const lastTool =
-      agent.tool_usage?.[agent.tool_usage.length - 1]?.tool_name || "-";
+      agent.tool_usage?.[agent.tool_usage.length - 1]?.tool_name || '-';
     const desc = agent.task_description
       ? ` "${agent.task_description.substring(0, 60)}"`
-      : "";
+      : '';
 
     lines.push(
       `  [${agent.agent_id.substring(0, 7)}] ${shortType} (${elapsed}s) tools:${toolCount} last:${lastTool}${desc}`,
@@ -1006,7 +1144,7 @@ export function getAgentDashboard(directory: string, sessionId?: string): string
     lines.push(`  ⚠ ${stale.length} stale agent(s) detected`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -1014,7 +1152,10 @@ export function getAgentDashboard(directory: string, sessionId?: string): string
  * Includes: performance metrics, token usage, file ownership, bottlenecks
  * For HUD integration and debugging parallel agent execution
  */
-export function getAgentObservatory(directory: string, sessionId?: string): {
+export function getAgentObservatory(
+  directory: string,
+  sessionId?: string,
+): {
   header: string;
   lines: string[];
   summary: {
@@ -1025,7 +1166,7 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
   };
 } {
   const state = readTrackingState(directory, sessionId);
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
   const efficiency = calculateParallelEfficiency(directory, sessionId);
   const interventions = suggestInterventions(directory, sessionId);
 
@@ -1037,7 +1178,7 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
     const elapsed = Math.round(
       (now - new Date(agent.started_at).getTime()) / 1000,
     );
-    const shortType = agent.agent_type.replace("oh-my-claudecode:", "");
+    const shortType = agent.agent_type.replace('oh-my-claudecode:', '');
     const toolCount = agent.tool_usage?.length || 0;
 
     // Token and cost info
@@ -1045,7 +1186,7 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
     totalCost += cost;
     const tokens = agent.token_usage
       ? `${Math.round((agent.token_usage.input_tokens + agent.token_usage.output_tokens) / 1000)}k`
-      : "-";
+      : '-';
 
     // Status indicator
     const stale = getStaleAgents(state).some(
@@ -1054,11 +1195,11 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
     const hasIntervention = interventions.some(
       (i) => i.agent_id === agent.agent_id,
     );
-    const status = stale ? "🔴" : hasIntervention ? "🟡" : "🟢";
+    const status = stale ? '🔴' : hasIntervention ? '🟡' : '🟢';
 
     // Bottleneck detection
     const perf = getAgentPerformance(directory, agent.agent_id, sessionId);
-    const bottleneck = perf?.bottleneck || "";
+    const bottleneck = perf?.bottleneck || '';
 
     // File ownership
     const files = agent.file_ownership?.length || 0;
@@ -1075,7 +1216,7 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
 
   // Add intervention warnings at the end
   for (const intervention of interventions.slice(0, 3)) {
-    const shortType = intervention.agent_type.replace("oh-my-claudecode:", "");
+    const shortType = intervention.agent_type.replace('oh-my-claudecode:', '');
     lines.push(`⚠ ${shortType}: ${intervention.reason}`);
   }
 
@@ -1101,10 +1242,13 @@ export function getAgentObservatory(directory: string, sessionId?: string): {
  * Suggest interventions for problematic agents
  * Checks for: stale agents, cost limit exceeded, file conflicts
  */
-export function suggestInterventions(directory: string, sessionId?: string): AgentIntervention[] {
+export function suggestInterventions(
+  directory: string,
+  sessionId?: string,
+): AgentIntervention[] {
   const state = readTrackingState(directory, sessionId);
   const interventions: AgentIntervention[] = [];
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
 
   // 1. Stale agent detection
   const stale = getStaleAgents(state);
@@ -1113,11 +1257,11 @@ export function suggestInterventions(directory: string, sessionId?: string): Age
       (Date.now() - new Date(agent.started_at).getTime()) / 1000 / 60,
     );
     interventions.push({
-      type: "timeout",
+      type: 'timeout',
       agent_id: agent.agent_id,
       agent_type: agent.agent_type,
       reason: `Agent running for ${elapsed}m (threshold: 5m)`,
-      suggested_action: "kill",
+      suggested_action: 'kill',
       auto_execute: elapsed > 10, // Auto-kill after 10 minutes
     });
   }
@@ -1126,11 +1270,11 @@ export function suggestInterventions(directory: string, sessionId?: string): Age
   for (const agent of running) {
     if (agent.token_usage && agent.token_usage.cost_usd > COST_LIMIT_USD) {
       interventions.push({
-        type: "excessive_cost",
+        type: 'excessive_cost',
         agent_id: agent.agent_id,
         agent_type: agent.agent_type,
         reason: `Cost $${agent.token_usage.cost_usd.toFixed(2)} exceeds limit $${COST_LIMIT_USD.toFixed(2)}`,
-        suggested_action: "warn",
+        suggested_action: 'warn',
         auto_execute: false,
       });
     }
@@ -1154,11 +1298,11 @@ export function suggestInterventions(directory: string, sessionId?: string): Age
       // Warn all but first agent (first one "owns" the file)
       for (let i = 1; i < agents.length; i++) {
         interventions.push({
-          type: "file_conflict",
+          type: 'file_conflict',
           agent_id: agents[i].id,
           agent_type: agents[i].type,
-          reason: `File conflict on ${file} with ${agents[0].type.replace("oh-my-claudecode:", "")}`,
-          suggested_action: "warn",
+          reason: `File conflict on ${file} with ${agents[0].type.replace('oh-my-claudecode:', '')}`,
+          suggested_action: 'warn',
           auto_execute: false,
         });
       }
@@ -1172,14 +1316,17 @@ export function suggestInterventions(directory: string, sessionId?: string): Age
  * Calculate parallel efficiency score (0-100)
  * 100 = all agents actively running, 0 = all stale/waiting
  */
-export function calculateParallelEfficiency(directory: string, sessionId?: string): {
+export function calculateParallelEfficiency(
+  directory: string,
+  sessionId?: string,
+): {
   score: number;
   active: number;
   stale: number;
   total: number;
 } {
   const state = readTrackingState(directory, sessionId);
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
   const stale = getStaleAgents(state);
 
   if (running.length === 0)
@@ -1210,39 +1357,51 @@ export function recordFileOwnership(
   const lockPath = lockPathFor(writePath);
 
   try {
-    withFileLockSync(lockPath, () => {
-      const state = readTrackingState(directory, sessionId);
-      const agent = state.agents.find(
-        (a) => a.agent_id === agentId && a.status === "running",
-      );
+    withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(directory, sessionId);
+        const agent = state.agents.find(
+          (a) => a.agent_id === agentId && a.status === 'running',
+        );
 
-      if (agent) {
-        if (!agent.file_ownership) agent.file_ownership = [];
-        // Normalize and deduplicate
-        const normalized = filePath.replace(directory, "").replace(/^\//, "").replace(/^\\/, "");
-        if (!agent.file_ownership.includes(normalized)) {
-          agent.file_ownership.push(normalized);
-          // Cap at 100 files per agent
-          if (agent.file_ownership.length > 100) {
-            agent.file_ownership = agent.file_ownership.slice(-100);
+        if (agent) {
+          if (!agent.file_ownership) agent.file_ownership = [];
+          // Normalize and deduplicate
+          const normalized = filePath
+            .replace(directory, '')
+            .replace(/^\//, '')
+            .replace(/^\\/, '');
+          if (!agent.file_ownership.includes(normalized)) {
+            agent.file_ownership.push(normalized);
+            // Cap at 100 files per agent
+            if (agent.file_ownership.length > 100) {
+              agent.file_ownership = agent.file_ownership.slice(-100);
+            }
+            writeTrackingState(directory, state, sessionId);
           }
-          writeTrackingState(directory, state, sessionId);
         }
-      }
-    }, LOCK_OPTS);
-  } catch { /* best-effort */ }
+      },
+      LOCK_OPTS,
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 /**
  * Check for file conflicts between running agents
  * Returns files being modified by more than one agent
  */
-export function detectFileConflicts(directory: string, sessionId?: string): Array<{
+export function detectFileConflicts(
+  directory: string,
+  sessionId?: string,
+): Array<{
   file: string;
   agents: string[];
 }> {
   const state = readTrackingState(directory, sessionId);
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
 
   const fileToAgents = new Map<string, string[]>();
 
@@ -1253,7 +1412,7 @@ export function detectFileConflicts(directory: string, sessionId?: string): Arra
       }
       fileToAgents
         .get(file)!
-        .push(agent.agent_type.replace("oh-my-claudecode:", ""));
+        .push(agent.agent_type.replace('oh-my-claudecode:', ''));
     }
   }
 
@@ -1270,13 +1429,16 @@ export function detectFileConflicts(directory: string, sessionId?: string): Arra
 /**
  * Get all file ownership for running agents
  */
-export function getFileOwnershipMap(directory: string, sessionId?: string): Map<string, string> {
+export function getFileOwnershipMap(
+  directory: string,
+  sessionId?: string,
+): Map<string, string> {
   const state = readTrackingState(directory, sessionId);
-  const running = state.agents.filter((a) => a.status === "running");
+  const running = state.agents.filter((a) => a.status === 'running');
   const map = new Map<string, string>();
 
   for (const agent of running) {
-    const shortType = agent.agent_type.replace("oh-my-claudecode:", "");
+    const shortType = agent.agent_type.replace('oh-my-claudecode:', '');
     for (const file of agent.file_ownership || []) {
       map.set(file, shortType);
     }
@@ -1349,10 +1511,13 @@ export function getAgentPerformance(
 /**
  * Get performance for all running agents
  */
-export function getAllAgentPerformance(directory: string, sessionId?: string): AgentPerformance[] {
+export function getAllAgentPerformance(
+  directory: string,
+  sessionId?: string,
+): AgentPerformance[] {
   const state = readTrackingState(directory, sessionId);
   return state.agents
-    .filter((a) => a.status === "running")
+    .filter((a) => a.status === 'running')
     .map((a) => getAgentPerformance(directory, a.agent_id, sessionId))
     .filter((p): p is AgentPerformance => p !== null);
 }
@@ -1371,30 +1536,37 @@ export function updateTokenUsage(
   const lockPath = lockPathFor(writePath);
 
   try {
-    withFileLockSync(lockPath, () => {
-      const state = readTrackingState(directory, sessionId);
-      const agent = state.agents.find((a) => a.agent_id === agentId);
+    withFileLockSync(
+      lockPath,
+      () => {
+        const state = readTrackingState(directory, sessionId);
+        const agent = state.agents.find((a) => a.agent_id === agentId);
 
-      if (agent) {
-        if (!agent.token_usage) {
-          agent.token_usage = {
-            input_tokens: 0,
-            output_tokens: 0,
-            cache_read_tokens: 0,
-            cost_usd: 0,
-          };
+        if (agent) {
+          if (!agent.token_usage) {
+            agent.token_usage = {
+              input_tokens: 0,
+              output_tokens: 0,
+              cache_read_tokens: 0,
+              cost_usd: 0,
+            };
+          }
+          if (tokens.input_tokens !== undefined)
+            agent.token_usage.input_tokens += tokens.input_tokens;
+          if (tokens.output_tokens !== undefined)
+            agent.token_usage.output_tokens += tokens.output_tokens;
+          if (tokens.cache_read_tokens !== undefined)
+            agent.token_usage.cache_read_tokens += tokens.cache_read_tokens;
+          if (tokens.cost_usd !== undefined)
+            agent.token_usage.cost_usd += tokens.cost_usd;
+          writeTrackingState(directory, state, sessionId);
         }
-        if (tokens.input_tokens !== undefined)
-          agent.token_usage.input_tokens += tokens.input_tokens;
-        if (tokens.output_tokens !== undefined)
-          agent.token_usage.output_tokens += tokens.output_tokens;
-        if (tokens.cache_read_tokens !== undefined)
-          agent.token_usage.cache_read_tokens += tokens.cache_read_tokens;
-        if (tokens.cost_usd !== undefined) agent.token_usage.cost_usd += tokens.cost_usd;
-        writeTrackingState(directory, state, sessionId);
-      }
-    }, LOCK_OPTS);
-  } catch { /* best-effort */ }
+      },
+      LOCK_OPTS,
+    );
+  } catch {
+    /* best-effort */
+  }
 }
 
 // ============================================================================
@@ -1422,13 +1594,16 @@ export async function handleSubagentStop(
 /**
  * Clear all tracking state (for testing or cleanup)
  */
-export function clearTrackingState(directory: string, sessionId?: string): void {
+export function clearTrackingState(
+  directory: string,
+  sessionId?: string,
+): void {
   const statePath = resolveWritePath(directory, sessionId);
   if (existsSync(statePath)) {
     try {
       unlinkSync(statePath);
     } catch (error) {
-      console.error("[SubagentTracker] Error clearing state:", error);
+      console.error('[SubagentTracker] Error clearing state:', error);
     }
   }
 }

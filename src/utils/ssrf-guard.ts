@@ -32,7 +32,7 @@ const BLOCKED_HOST_PATTERNS = [
 ];
 
 // Blocked URL schemes
-const ALLOWED_SCHEMES = ["https:", "http:"];
+const ALLOWED_SCHEMES = ['https:', 'http:'];
 
 /**
  * Validate a URL to prevent SSRF attacks
@@ -40,15 +40,15 @@ const ALLOWED_SCHEMES = ["https:", "http:"];
  * @returns SSRFValidationResult indicating if URL is safe
  */
 export function validateUrlForSSRF(urlString: string): SSRFValidationResult {
-  if (!urlString || typeof urlString !== "string") {
-    return { allowed: false, reason: "URL is empty or invalid" };
+  if (!urlString || typeof urlString !== 'string') {
+    return { allowed: false, reason: 'URL is empty or invalid' };
   }
 
   let parsed: URL;
   try {
     parsed = new URL(urlString);
   } catch {
-    return { allowed: false, reason: "Invalid URL format" };
+    return { allowed: false, reason: 'Invalid URL format' };
   }
 
   // Only allow http/https
@@ -99,16 +99,16 @@ export function validateUrlForSSRF(urlString: string): SSRFValidationResult {
   if (parsed.username || parsed.password) {
     return {
       allowed: false,
-      reason: "URLs with embedded credentials are not allowed",
+      reason: 'URLs with embedded credentials are not allowed',
     };
   }
 
   // Block specific dangerous paths that could access cloud metadata
   const dangerousPaths = [
-    "/metadata",
-    "/meta-data",
-    "/latest/meta-data",
-    "/computeMetadata",
+    '/metadata',
+    '/meta-data',
+    '/latest/meta-data',
+    '/computeMetadata',
   ];
   const pathLower = parsed.pathname.toLowerCase();
   for (const dangerous of dangerousPaths) {
@@ -140,13 +140,13 @@ export function validateAnthropicBaseUrl(
   try {
     parsed = new URL(urlString);
   } catch {
-    return { allowed: false, reason: "Invalid URL" };
+    return { allowed: false, reason: 'Invalid URL' };
   }
 
   // Log warning for HTTP (non-HTTPS) in production contexts
-  if (parsed.protocol === "http:") {
+  if (parsed.protocol === 'http:') {
     console.warn(
-      "[SSRF Guard] Warning: Using HTTP instead of HTTPS for ANTHROPIC_BASE_URL",
+      '[SSRF Guard] Warning: Using HTTP instead of HTTPS for ANTHROPIC_BASE_URL',
     );
   }
 

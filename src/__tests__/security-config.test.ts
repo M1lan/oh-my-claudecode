@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
   return {
     ...actual,
     existsSync: vi.fn(() => false),
-    readFileSync: vi.fn(() => "{}"),
+    readFileSync: vi.fn(() => '{}'),
   };
 });
 
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from 'fs';
 import {
   getSecurityConfig,
   clearSecurityConfigCache,
@@ -20,12 +20,12 @@ import {
   getHardMaxIterations,
   isRemoteMcpDisabled,
   isExternalLLMDisabled,
-} from "../lib/security-config.js";
+} from '../lib/security-config.js';
 
 const mockedExistsSync = vi.mocked(existsSync);
 const mockedReadFileSync = vi.mocked(readFileSync);
 
-describe("security-config", () => {
+describe('security-config', () => {
   const originalSecurity = process.env.OMC_SECURITY;
 
   afterEach(() => {
@@ -37,13 +37,13 @@ describe("security-config", () => {
     clearSecurityConfigCache();
   });
 
-  describe("defaults (no env var)", () => {
+  describe('defaults (no env var)', () => {
     beforeEach(() => {
       delete process.env.OMC_SECURITY;
       clearSecurityConfigCache();
     });
 
-    it("secure defaults for safe features, opt-in for others", () => {
+    it('secure defaults for safe features, opt-in for others', () => {
       const config = getSecurityConfig();
       expect(config.restrictToolPaths).toBe(false);
       expect(config.pythonSandbox).toBe(false);
@@ -56,7 +56,7 @@ describe("security-config", () => {
       expect(config.disableExternalLLM).toBe(false);
     });
 
-    it("convenience functions reflect defaults", () => {
+    it('convenience functions reflect defaults', () => {
       expect(isToolPathRestricted()).toBe(false);
       expect(isPythonSandboxEnabled()).toBe(false);
       expect(isProjectSkillsDisabled()).toBe(false);
@@ -67,13 +67,13 @@ describe("security-config", () => {
     });
   });
 
-  describe("OMC_SECURITY=strict", () => {
+  describe('OMC_SECURITY=strict', () => {
     beforeEach(() => {
-      process.env.OMC_SECURITY = "strict";
+      process.env.OMC_SECURITY = 'strict';
       clearSecurityConfigCache();
     });
 
-    it("all features enabled", () => {
+    it('all features enabled', () => {
       const config = getSecurityConfig();
       expect(config.restrictToolPaths).toBe(true);
       expect(config.pythonSandbox).toBe(true);
@@ -85,7 +85,7 @@ describe("security-config", () => {
       expect(config.disableExternalLLM).toBe(true);
     });
 
-    it("convenience functions return true/200", () => {
+    it('convenience functions return true/200', () => {
       expect(isToolPathRestricted()).toBe(true);
       expect(isPythonSandboxEnabled()).toBe(true);
       expect(isProjectSkillsDisabled()).toBe(true);
@@ -96,13 +96,13 @@ describe("security-config", () => {
     });
   });
 
-  describe("OMC_SECURITY with non-strict value", () => {
+  describe('OMC_SECURITY with non-strict value', () => {
     beforeEach(() => {
-      process.env.OMC_SECURITY = "relaxed";
+      process.env.OMC_SECURITY = 'relaxed';
       clearSecurityConfigCache();
     });
 
-    it("uses defaults", () => {
+    it('uses defaults', () => {
       const config = getSecurityConfig();
       expect(config.restrictToolPaths).toBe(false);
       expect(config.pythonSandbox).toBe(false);
@@ -111,8 +111,8 @@ describe("security-config", () => {
     });
   });
 
-  describe("caching", () => {
-    it("returns same object on repeated calls", () => {
+  describe('caching', () => {
+    it('returns same object on repeated calls', () => {
       delete process.env.OMC_SECURITY;
       clearSecurityConfigCache();
       const first = getSecurityConfig();
@@ -120,12 +120,12 @@ describe("security-config", () => {
       expect(first).toBe(second);
     });
 
-    it("clearSecurityConfigCache forces re-read", () => {
+    it('clearSecurityConfigCache forces re-read', () => {
       delete process.env.OMC_SECURITY;
       clearSecurityConfigCache();
       const first = getSecurityConfig();
 
-      process.env.OMC_SECURITY = "strict";
+      process.env.OMC_SECURITY = 'strict';
       clearSecurityConfigCache();
       const second = getSecurityConfig();
 
@@ -134,9 +134,9 @@ describe("security-config", () => {
     });
   });
 
-  describe("strict mode override protection", () => {
-    it("strict mode: config file with false overrides cannot relax security", () => {
-      process.env.OMC_SECURITY = "strict";
+  describe('strict mode override protection', () => {
+    it('strict mode: config file with false overrides cannot relax security', () => {
+      process.env.OMC_SECURITY = 'strict';
       // Simulate a malicious config file that tries to disable all security
       mockedExistsSync.mockReturnValue(true);
       mockedReadFileSync.mockReturnValue(
@@ -166,8 +166,8 @@ describe("security-config", () => {
       expect(config.hardMaxIterations).toBe(200);
     });
 
-    it("strict mode: config file can tighten hardMaxIterations below 200", () => {
-      process.env.OMC_SECURITY = "strict";
+    it('strict mode: config file can tighten hardMaxIterations below 200', () => {
+      process.env.OMC_SECURITY = 'strict';
       mockedExistsSync.mockReturnValue(true);
       mockedReadFileSync.mockReturnValue(
         JSON.stringify({
@@ -181,7 +181,7 @@ describe("security-config", () => {
       expect(config.hardMaxIterations).toBe(50);
     });
 
-    it("non-strict mode: config file overrides work normally", () => {
+    it('non-strict mode: config file overrides work normally', () => {
       delete process.env.OMC_SECURITY;
       mockedExistsSync.mockReturnValue(true);
       mockedReadFileSync.mockReturnValue(

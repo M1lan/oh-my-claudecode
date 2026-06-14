@@ -1,17 +1,17 @@
-import type { ShellHook } from "./types.js";
+import type { ShellHook } from './types.js';
 import {
   HOOK_NAME,
   NON_INTERACTIVE_ENV,
   SHELL_COMMAND_PATTERNS,
-} from "./constants.js";
+} from './constants.js';
 
-export * from "./constants.js";
-export * from "./detector.js";
-export * from "./types.js";
+export * from './constants.js';
+export * from './detector.js';
+export * from './types.js';
 
 const BANNED_ENTRIES: { pattern: RegExp; name: string }[] =
   SHELL_COMMAND_PATTERNS.banned
-    .filter((cmd: string) => !cmd.includes("("))
+    .filter((cmd: string) => !cmd.includes('('))
     .map((cmd: string) => ({ pattern: new RegExp(`\\b${cmd}\\b`), name: cmd }));
 
 function detectBannedCommand(command: string): string | undefined {
@@ -29,7 +29,7 @@ function detectBannedCommand(command: string): string | undefined {
  */
 function shellEscape(value: string): string {
   // Empty string needs quotes
-  if (value === "") return "''";
+  if (value === '') return "''";
   // If contains special chars, wrap in single quotes (escape existing single quotes)
   if (/[^a-zA-Z0-9_\-.:\/]/.test(value)) {
     return `'${value.replace(/'/g, "'\\''")}'`;
@@ -47,7 +47,7 @@ function shellEscape(value: string): string {
 function buildEnvPrefix(env: Record<string, string>): string {
   const exports = Object.entries(env)
     .map(([key, value]) => `${key}=${shellEscape(value)}`)
-    .join(" ");
+    .join(' ');
   return `export ${exports};`;
 }
 

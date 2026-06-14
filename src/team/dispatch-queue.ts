@@ -10,26 +10,26 @@
  * Mirrors OMX src/team/state/dispatch.ts behavior exactly.
  */
 
-import { randomUUID } from "crypto";
-import { existsSync } from "fs";
-import { mkdir, readFile, rm, stat, writeFile } from "fs/promises";
-import { dirname, join } from "path";
-import { TeamPaths, absPath } from "./state-paths.js";
-import { atomicWriteJson, ensureDirWithMode } from "./fs-utils.js";
-import { WORKER_NAME_SAFE_PATTERN } from "./contracts.js";
+import { randomUUID } from 'crypto';
+import { existsSync } from 'fs';
+import { mkdir, readFile, rm, stat, writeFile } from 'fs/promises';
+import { dirname, join } from 'path';
+import { TeamPaths, absPath } from './state-paths.js';
+import { atomicWriteJson, ensureDirWithMode } from './fs-utils.js';
+import { WORKER_NAME_SAFE_PATTERN } from './contracts.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type TeamDispatchRequestKind = "inbox" | "mailbox" | "nudge";
+export type TeamDispatchRequestKind = 'inbox' | 'mailbox' | 'nudge';
 export type TeamDispatchRequestStatus =
-  | "pending"
-  | "notified"
-  | "delivered"
-  | "failed";
+  | 'pending'
+  | 'notified'
+  | 'delivered'
+  | 'failed';
 export type TeamDispatchTransportPreference =
-  | "hook_preferred_with_fallback"
-  | "transport_direct"
-  | "prompt_stdin";
+  | 'hook_preferred_with_fallback'
+  | 'transport_direct'
+  | 'prompt_stdin';
 
 export interface TeamDispatchRequest {
   request_id: string;
@@ -68,7 +68,7 @@ export interface TeamDispatchRequestInput {
 
 // ── Lock constants ─────────────────────────────────────────────────────────
 
-const OMC_DISPATCH_LOCK_TIMEOUT_ENV = "OMC_TEAM_DISPATCH_LOCK_TIMEOUT_MS";
+const OMC_DISPATCH_LOCK_TIMEOUT_ENV = 'OMC_TEAM_DISPATCH_LOCK_TIMEOUT_MS';
 const DEFAULT_DISPATCH_LOCK_TIMEOUT_MS = 15_000;
 const MIN_DISPATCH_LOCK_TIMEOUT_MS = 1_000;
 const MAX_DISPATCH_LOCK_TIMEOUT_MS = 120_000;
@@ -85,15 +85,15 @@ function validateWorkerName(name: string): void {
 }
 
 function isDispatchKind(value: unknown): value is TeamDispatchRequestKind {
-  return value === "inbox" || value === "mailbox" || value === "nudge";
+  return value === 'inbox' || value === 'mailbox' || value === 'nudge';
 }
 
 function isDispatchStatus(value: unknown): value is TeamDispatchRequestStatus {
   return (
-    value === "pending" ||
-    value === "notified" ||
-    value === "delivered" ||
-    value === "failed"
+    value === 'pending' ||
+    value === 'notified' ||
+    value === 'delivered' ||
+    value === 'failed'
   );
 }
 
@@ -103,7 +103,7 @@ export function resolveDispatchLockTimeoutMs(
   env: NodeJS.ProcessEnv = process.env,
 ): number {
   const raw = env[OMC_DISPATCH_LOCK_TIMEOUT_ENV];
-  if (raw === undefined || raw === "") return DEFAULT_DISPATCH_LOCK_TIMEOUT_MS;
+  if (raw === undefined || raw === '') return DEFAULT_DISPATCH_LOCK_TIMEOUT_MS;
   const parsed = Number(raw);
   if (!Number.isFinite(parsed)) return DEFAULT_DISPATCH_LOCK_TIMEOUT_MS;
   return Math.max(
@@ -121,7 +121,7 @@ async function withDispatchLock<T>(
   if (!existsSync(root)) throw new Error(`Team ${teamName} not found`);
 
   const lockDir = absPath(cwd, TeamPaths.dispatchLockDir(teamName));
-  const ownerPath = join(lockDir, "owner");
+  const ownerPath = join(lockDir, 'owner');
   const ownerToken = `${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}`;
   const timeoutMs = resolveDispatchLockTimeoutMs(process.env);
   const deadline = Date.now() + timeoutMs;
@@ -133,7 +133,7 @@ async function withDispatchLock<T>(
     try {
       await mkdir(lockDir, { recursive: false });
       try {
-        await writeFile(ownerPath, ownerToken, "utf8");
+        await writeFile(ownerPath, ownerToken, 'utf8');
       } catch (error) {
         await rm(lockDir, { recursive: true, force: true });
         throw error;
@@ -141,7 +141,7 @@ async function withDispatchLock<T>(
       break;
     } catch (error) {
       const err = error as NodeJS.ErrnoException;
-      if (err.code !== "EEXIST") throw error;
+      if (err.code !== 'EEXIST') throw error;
 
       try {
         const info = await stat(lockDir);
@@ -172,7 +172,7 @@ async function withDispatchLock<T>(
     return await fn();
   } finally {
     try {
-      const currentOwner = await readFile(ownerPath, "utf8");
+      const currentOwner = await readFile(ownerPath, 'utf8');
       if (currentOwner.trim() === ownerToken) {
         await rm(lockDir, { recursive: true, force: true });
       }
@@ -191,7 +191,7 @@ async function readDispatchRequestsFromFile(
   const path = absPath(cwd, TeamPaths.dispatchRequests(teamName));
   try {
     if (!existsSync(path)) return [];
-    const raw = await readFile(path, "utf8");
+    const raw = await readFile(path, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) return [];
     return parsed
@@ -226,71 +226,71 @@ export function normalizeDispatchRequest(
   nowIso: string = new Date().toISOString(),
 ): TeamDispatchRequest | null {
   if (!isDispatchKind(raw.kind)) return null;
-  if (typeof raw.to_worker !== "string" || raw.to_worker.trim() === "")
+  if (typeof raw.to_worker !== 'string' || raw.to_worker.trim() === '')
     return null;
   if (
-    typeof raw.trigger_message !== "string" ||
-    raw.trigger_message.trim() === ""
+    typeof raw.trigger_message !== 'string' ||
+    raw.trigger_message.trim() === ''
   )
     return null;
 
-  const status = isDispatchStatus(raw.status) ? raw.status : "pending";
+  const status = isDispatchStatus(raw.status) ? raw.status : 'pending';
   return {
     request_id:
-      typeof raw.request_id === "string" && raw.request_id.trim() !== ""
+      typeof raw.request_id === 'string' && raw.request_id.trim() !== ''
         ? raw.request_id
         : randomUUID(),
     kind: raw.kind,
     team_name: teamName,
     to_worker: raw.to_worker,
     worker_index:
-      typeof raw.worker_index === "number" ? raw.worker_index : undefined,
+      typeof raw.worker_index === 'number' ? raw.worker_index : undefined,
     pane_id:
-      typeof raw.pane_id === "string" && raw.pane_id !== ""
+      typeof raw.pane_id === 'string' && raw.pane_id !== ''
         ? raw.pane_id
         : undefined,
     trigger_message: raw.trigger_message,
     message_id:
-      typeof raw.message_id === "string" && raw.message_id !== ""
+      typeof raw.message_id === 'string' && raw.message_id !== ''
         ? raw.message_id
         : undefined,
     inbox_correlation_key:
-      typeof raw.inbox_correlation_key === "string" &&
-      raw.inbox_correlation_key !== ""
+      typeof raw.inbox_correlation_key === 'string' &&
+      raw.inbox_correlation_key !== ''
         ? raw.inbox_correlation_key
         : undefined,
     transport_preference:
-      raw.transport_preference === "transport_direct" ||
-      raw.transport_preference === "prompt_stdin"
+      raw.transport_preference === 'transport_direct' ||
+      raw.transport_preference === 'prompt_stdin'
         ? raw.transport_preference
-        : "hook_preferred_with_fallback",
+        : 'hook_preferred_with_fallback',
     fallback_allowed: raw.fallback_allowed !== false,
     status,
     attempt_count: Number.isFinite(raw.attempt_count)
       ? Math.max(0, Math.floor(raw.attempt_count as number))
       : 0,
     created_at:
-      typeof raw.created_at === "string" && raw.created_at !== ""
+      typeof raw.created_at === 'string' && raw.created_at !== ''
         ? raw.created_at
         : nowIso,
     updated_at:
-      typeof raw.updated_at === "string" && raw.updated_at !== ""
+      typeof raw.updated_at === 'string' && raw.updated_at !== ''
         ? raw.updated_at
         : nowIso,
     notified_at:
-      typeof raw.notified_at === "string" && raw.notified_at !== ""
+      typeof raw.notified_at === 'string' && raw.notified_at !== ''
         ? raw.notified_at
         : undefined,
     delivered_at:
-      typeof raw.delivered_at === "string" && raw.delivered_at !== ""
+      typeof raw.delivered_at === 'string' && raw.delivered_at !== ''
         ? raw.delivered_at
         : undefined,
     failed_at:
-      typeof raw.failed_at === "string" && raw.failed_at !== ""
+      typeof raw.failed_at === 'string' && raw.failed_at !== ''
         ? raw.failed_at
         : undefined,
     last_reason:
-      typeof raw.last_reason === "string" && raw.last_reason !== ""
+      typeof raw.last_reason === 'string' && raw.last_reason !== ''
         ? raw.last_reason
         : undefined,
   };
@@ -302,17 +302,17 @@ function equivalentPendingDispatch(
   existing: TeamDispatchRequest,
   input: TeamDispatchRequestInput,
 ): boolean {
-  if (existing.status !== "pending") return false;
+  if (existing.status !== 'pending') return false;
   if (existing.kind !== input.kind) return false;
   if (existing.to_worker !== input.to_worker) return false;
 
-  if (input.kind === "mailbox") {
+  if (input.kind === 'mailbox') {
     return (
       Boolean(input.message_id) && existing.message_id === input.message_id
     );
   }
 
-  if (input.kind === "inbox" && input.inbox_correlation_key) {
+  if (input.kind === 'inbox' && input.inbox_correlation_key) {
     return existing.inbox_correlation_key === input.inbox_correlation_key;
   }
 
@@ -326,8 +326,8 @@ function canTransitionDispatchStatus(
   to: TeamDispatchRequestStatus,
 ): boolean {
   if (from === to) return true;
-  if (from === "pending" && (to === "notified" || to === "failed")) return true;
-  if (from === "notified" && (to === "delivered" || to === "failed"))
+  if (from === 'pending' && (to === 'notified' || to === 'failed')) return true;
+  if (from === 'notified' && (to === 'delivered' || to === 'failed'))
     return true;
   return false;
 }
@@ -344,10 +344,10 @@ export async function enqueueDispatchRequest(
       `Invalid dispatch request kind: ${String(requestInput.kind)}`,
     );
   if (
-    requestInput.kind === "mailbox" &&
-    (!requestInput.message_id || requestInput.message_id.trim() === "")
+    requestInput.kind === 'mailbox' &&
+    (!requestInput.message_id || requestInput.message_id.trim() === '')
   ) {
-    throw new Error("mailbox dispatch requests require message_id");
+    throw new Error('mailbox dispatch requests require message_id');
   }
   validateWorkerName(requestInput.to_worker);
 
@@ -364,14 +364,14 @@ export async function enqueueDispatchRequest(
       {
         request_id: randomUUID(),
         ...requestInput,
-        status: "pending",
+        status: 'pending',
         attempt_count: 0,
         created_at: nowIso,
         updated_at: nowIso,
       },
       nowIso,
     );
-    if (!request) throw new Error("failed_to_normalize_dispatch_request");
+    if (!request) throw new Error('failed_to_normalize_dispatch_request');
 
     requests.push(request);
     await writeDispatchRequestsToFile(teamName, requests, cwd);
@@ -396,7 +396,7 @@ export async function listDispatchRequests(
   if (opts.kind) filtered = filtered.filter((req) => req.kind === opts.kind);
   if (opts.to_worker)
     filtered = filtered.filter((req) => req.to_worker === opts.to_worker);
-  if (typeof opts.limit === "number" && opts.limit > 0)
+  if (typeof opts.limit === 'number' && opts.limit > 0)
     filtered = filtered.slice(0, opts.limit);
   return filtered;
 }
@@ -444,9 +444,9 @@ export async function transitionDispatchRequest(
       attempt_count: Math.max(0, nextAttemptCount),
       updated_at: nowIso,
     };
-    if (to === "notified") next.notified_at = patch.notified_at ?? nowIso;
-    if (to === "delivered") next.delivered_at = patch.delivered_at ?? nowIso;
-    if (to === "failed") next.failed_at = patch.failed_at ?? nowIso;
+    if (to === 'notified') next.notified_at = patch.notified_at ?? nowIso;
+    if (to === 'delivered') next.delivered_at = patch.delivered_at ?? nowIso;
+    if (to === 'failed') next.failed_at = patch.failed_at ?? nowIso;
 
     requests[index] = next;
     await writeDispatchRequestsToFile(teamName, requests, cwd);
@@ -462,13 +462,13 @@ export async function markDispatchRequestNotified(
 ): Promise<TeamDispatchRequest | null> {
   const current = await readDispatchRequest(teamName, requestId, cwd);
   if (!current) return null;
-  if (current.status === "notified" || current.status === "delivered")
+  if (current.status === 'notified' || current.status === 'delivered')
     return current;
   return await transitionDispatchRequest(
     teamName,
     requestId,
     current.status,
-    "notified",
+    'notified',
     patch,
     cwd,
   );
@@ -482,12 +482,12 @@ export async function markDispatchRequestDelivered(
 ): Promise<TeamDispatchRequest | null> {
   const current = await readDispatchRequest(teamName, requestId, cwd);
   if (!current) return null;
-  if (current.status === "delivered") return current;
+  if (current.status === 'delivered') return current;
   return await transitionDispatchRequest(
     teamName,
     requestId,
     current.status,
-    "delivered",
+    'delivered',
     patch,
     cwd,
   );

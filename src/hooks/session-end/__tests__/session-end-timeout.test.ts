@@ -8,7 +8,10 @@ import * as path from 'path';
 describe('SessionEnd hook timeout (issue #1700)', () => {
   it('hooks.json SessionEnd timeout is at least 30 seconds', () => {
     // Read from the repository root hooks.json
-    const hooksJsonPath = path.resolve(__dirname, '../../../../hooks/hooks.json');
+    const hooksJsonPath = path.resolve(
+      __dirname,
+      '../../../../hooks/hooks.json',
+    );
     const hooksJson = JSON.parse(fs.readFileSync(hooksJsonPath, 'utf-8'));
 
     const sessionEndEntries = hooksJson.hooks.SessionEnd;
@@ -73,14 +76,26 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-import { processSessionEnd, processSessionEndCleanupWorker, resolveSessionEndCleanupBudgetMs } from '../index.js';
+import {
+  processSessionEnd,
+  processSessionEndCleanupWorker,
+  resolveSessionEndCleanupBudgetMs,
+} from '../index.js';
 import { triggerStopCallbacks } from '../callbacks.js';
 import { cleanupBridgeSessions } from '../../../tools/python-repl/bridge-manager.js';
 
-function decodeSpawnedCleanupPayload(): { sessionId?: string; initialTeamNames?: string[] } {
-  const spawnArgs = (childProcessMocks.spawn.mock.calls as unknown as Array<[unknown, string[]]>)[0]?.[1];
-  const encodedPayload = spawnArgs?.[spawnArgs.indexOf('--omc-session-end-cleanup-worker') + 1];
-  return JSON.parse(Buffer.from(encodedPayload ?? '', 'base64url').toString('utf-8'));
+function decodeSpawnedCleanupPayload(): {
+  sessionId?: string;
+  initialTeamNames?: string[];
+} {
+  const spawnArgs = (
+    childProcessMocks.spawn.mock.calls as unknown as Array<[unknown, string[]]>
+  )[0]?.[1];
+  const encodedPayload =
+    spawnArgs?.[spawnArgs.indexOf('--omc-session-end-cleanup-worker') + 1];
+  return JSON.parse(
+    Buffer.from(encodedPayload ?? '', 'base64url').toString('utf-8'),
+  );
 }
 
 describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
@@ -106,7 +121,6 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
     vi.restoreAllMocks();
   });
 
-
   it('processSessionEnd captures session team state in the detached cleanup payload', async () => {
     const sessionId = 'timeout-test-team-payload';
     const cwd = process.cwd();
@@ -114,7 +128,11 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
     fs.mkdirSync(sessionDir, { recursive: true });
     fs.writeFileSync(
       path.join(sessionDir, 'team-state.json'),
-      JSON.stringify({ active: true, session_id: sessionId, team_name: 'payload-team' }),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'payload-team',
+      }),
       'utf-8',
     );
 
@@ -128,10 +146,12 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
         reason: 'clear',
       });
 
-      expect(decodeSpawnedCleanupPayload()).toEqual(expect.objectContaining({
-        sessionId,
-        initialTeamNames: ['payload-team'],
-      }));
+      expect(decodeSpawnedCleanupPayload()).toEqual(
+        expect.objectContaining({
+          sessionId,
+          initialTeamNames: ['payload-team'],
+        }),
+      );
     } finally {
       fs.rmSync(sessionDir, { recursive: true, force: true });
     }
@@ -160,7 +180,15 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
       transcriptPath,
       JSON.stringify({
         type: 'assistant',
-        message: { content: [{ type: 'tool_use', name: 'python_repl', input: { researchSessionID: 'py-worker' } }] },
+        message: {
+          content: [
+            {
+              type: 'tool_use',
+              name: 'python_repl',
+              input: { researchSessionID: 'py-worker' },
+            },
+          ],
+        },
       }),
       'utf-8',
     );
@@ -185,9 +213,21 @@ describe('SessionEnd fire-and-forget notifications (issue #1700)', () => {
 
   it('resolves bounded cleanup budget from env with sane defaults and cap', () => {
     expect(resolveSessionEndCleanupBudgetMs({})).toBe(2000);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: '250' })).toBe(250);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: '25000' })).toBe(10000);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: 'not-a-number' })).toBe(2000);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: '250',
+      }),
+    ).toBe(250);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: '25000',
+      }),
+    ).toBe(10000);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: 'not-a-number',
+      }),
+    ).toBe(2000);
   });
 
   it('processSessionEnd completes well before slow notifications finish', async () => {

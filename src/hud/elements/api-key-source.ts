@@ -9,12 +9,12 @@
  * Never displays the actual key value.
  */
 
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
-import { dim, cyan } from "../colors.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { dim, cyan } from '../colors.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
 
-export type ApiKeySource = "project" | "global" | "env";
+export type ApiKeySource = 'project' | 'global' | 'env';
 
 /**
  * Check whether a settings file defines ANTHROPIC_API_KEY in its env block.
@@ -22,11 +22,11 @@ export type ApiKeySource = "project" | "global" | "env";
 function settingsFileHasApiKey(filePath: string): boolean {
   try {
     if (!existsSync(filePath)) return false;
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     const settings = JSON.parse(content);
     const env = settings?.env;
-    if (typeof env !== "object" || env === null) return false;
-    return "ANTHROPIC_API_KEY" in env;
+    if (typeof env !== 'object' || env === null) return false;
+    return 'ANTHROPIC_API_KEY' in env;
   } catch {
     return false;
   }
@@ -46,16 +46,16 @@ function settingsFileHasApiKey(filePath: string): boolean {
 export function detectApiKeySource(cwd?: string): ApiKeySource | null {
   // 1. Project-level config
   if (cwd) {
-    const projectSettings = join(cwd, ".claude", "settings.local.json");
-    if (settingsFileHasApiKey(projectSettings)) return "project";
+    const projectSettings = join(cwd, '.claude', 'settings.local.json');
+    if (settingsFileHasApiKey(projectSettings)) return 'project';
   }
 
   // 2. Global config
-  const globalSettings = join(getClaudeConfigDir(), "settings.json");
-  if (settingsFileHasApiKey(globalSettings)) return "global";
+  const globalSettings = join(getClaudeConfigDir(), 'settings.json');
+  if (settingsFileHasApiKey(globalSettings)) return 'global';
 
   // 3. Environment variable
-  if (process.env.ANTHROPIC_API_KEY) return "env";
+  if (process.env.ANTHROPIC_API_KEY) return 'env';
 
   return null;
 }
@@ -67,5 +67,5 @@ export function detectApiKeySource(cwd?: string): ApiKeySource | null {
  */
 export function renderApiKeySource(source: ApiKeySource | null): string | null {
   if (!source) return null;
-  return `${dim("key:")}${cyan(source)}`;
+  return `${dim('key:')}${cyan(source)}`;
 }

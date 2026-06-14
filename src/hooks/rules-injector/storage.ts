@@ -12,10 +12,10 @@ import {
   readFileSync,
   writeFileSync,
   unlinkSync,
-} from "fs";
-import { join } from "path";
-import { RULES_INJECTOR_STORAGE } from "./constants.js";
-import type { InjectedRulesData } from "./types.js";
+} from 'fs';
+import { join } from 'path';
+import { RULES_INJECTOR_STORAGE } from './constants.js';
+import type { InjectedRulesData } from './types.js';
 
 /**
  * Get storage path for a session.
@@ -37,7 +37,7 @@ export function loadInjectedRules(sessionId: string): {
   }
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     const data: InjectedRulesData = JSON.parse(content);
     return {
       contentHashes: new Set(data.injectedHashes),

@@ -6,30 +6,30 @@
  * to provide a comprehensive health report for each worker.
  */
 
-import type { HeartbeatData } from "./types.js";
-import { listMcpWorkers } from "./team-registration.js";
-import { readHeartbeat, isWorkerAlive } from "./heartbeat.js";
-import { isSessionAlive, sanitizeName } from "./tmux-session.js";
-import { tmuxExec } from "../cli/tmux-utils.js";
+import type { HeartbeatData } from './types.js';
+import { listMcpWorkers } from './team-registration.js';
+import { readHeartbeat, isWorkerAlive } from './heartbeat.js';
+import { isSessionAlive, sanitizeName } from './tmux-session.js';
+import { tmuxExec } from '../cli/tmux-utils.js';
 
 /** Check if the shared split-pane session 'omc-team-{teamName}' exists (new tmux model). */
 function isSharedSessionAlive(teamName: string): boolean {
   const name = `omc-team-${sanitizeName(teamName)}`;
   try {
-    tmuxExec(["has-session", "-t", name], { stdio: "pipe", timeout: 5000 });
+    tmuxExec(['has-session', '-t', name], { stdio: 'pipe', timeout: 5000 });
     return true;
   } catch {
     return false;
   }
 }
-import { readAuditLog } from "./audit-log.js";
+import { readAuditLog } from './audit-log.js';
 
 export interface WorkerHealthReport {
   workerName: string;
   isAlive: boolean;
   tmuxSessionAlive: boolean;
   heartbeatAge: number | null; // milliseconds since last heartbeat
-  status: HeartbeatData["status"] | "dead" | "unknown";
+  status: HeartbeatData['status'] | 'dead' | 'unknown';
   consecutiveErrors: number;
   currentTaskId: string | null;
   totalTasksCompleted: number;
@@ -73,12 +73,12 @@ export function getWorkerHealthReports(
     }
 
     // Determine status
-    let status: WorkerHealthReport["status"] = "unknown";
+    let status: WorkerHealthReport['status'] = 'unknown';
     if (heartbeat) {
       status = heartbeat.status;
     }
     if (!alive && !tmuxAlive) {
-      status = "dead";
+      status = 'dead';
     }
 
     // Count tasks from audit log
@@ -89,8 +89,8 @@ export function getWorkerHealthReports(
         workerName: worker.name,
       });
       for (const event of auditEvents) {
-        if (event.eventType === "task_completed") totalTasksCompleted++;
-        if (event.eventType === "task_permanently_failed") totalTasksFailed++;
+        if (event.eventType === 'task_completed') totalTasksCompleted++;
+        if (event.eventType === 'task_permanently_failed') totalTasksFailed++;
       }
     } catch {
       /* audit log may not exist */
@@ -101,7 +101,7 @@ export function getWorkerHealthReports(
     try {
       const startEvents = readAuditLog(workingDirectory, teamName, {
         workerName: worker.name,
-        eventType: "bridge_start",
+        eventType: 'bridge_start',
       });
       if (startEvents.length > 0) {
         const lastStart = startEvents[startEvents.length - 1];
@@ -159,7 +159,7 @@ export function checkWorkerHealth(
       ? Math.round(
           (Date.now() - new Date(heartbeat.lastPollAt).getTime()) / 1000,
         )
-      : "unknown";
+      : 'unknown';
     return `Worker is dead: heartbeat stale for ${age}s, tmux session not found`;
   }
 
@@ -167,7 +167,7 @@ export function checkWorkerHealth(
     return `Heartbeat stale but tmux session exists — worker may be hung`;
   }
 
-  if (heartbeat?.status === "quarantined") {
+  if (heartbeat?.status === 'quarantined') {
     return `Worker self-quarantined after ${heartbeat.consecutiveErrors} consecutive errors`;
   }
 

@@ -5,26 +5,26 @@
  * based on message content triggers.
  */
 
-import { contextCollector } from "../../features/context-injector/index.js";
-import { loadAllSkills, findMatchingSkills } from "./loader.js";
-import { MAX_SKILLS_PER_SESSION } from "./constants.js";
-import { loadConfig } from "./config.js";
-import type { LearnedSkill } from "./types.js";
+import { contextCollector } from '../../features/context-injector/index.js';
+import { loadAllSkills, findMatchingSkills } from './loader.js';
+import { MAX_SKILLS_PER_SESSION } from './constants.js';
+import { loadConfig } from './config.js';
+import type { LearnedSkill } from './types.js';
 
 // Re-export submodules
-export * from "./types.js";
-export * from "./constants.js";
-export * from "./finder.js";
-export * from "./parser.js";
-export * from "./loader.js";
-export * from "./validator.js";
-export * from "./writer.js";
-export * from "./detector.js";
-export * from "./detection-hook.js";
-export * from "./promotion.js";
-export * from "./config.js";
-export * from "./matcher.js";
-export * from "./auto-invoke.js";
+export * from './types.js';
+export * from './constants.js';
+export * from './finder.js';
+export * from './parser.js';
+export * from './loader.js';
+export * from './validator.js';
+export * from './writer.js';
+export * from './detector.js';
+export * from './detection-hook.js';
+export * from './promotion.js';
+export * from './config.js';
+export * from './matcher.js';
+export * from './auto-invoke.js';
 // Note: auto-learner exports are renamed to avoid collision with ralph's recordPattern
 export {
   type PatternDetection,
@@ -35,7 +35,7 @@ export {
   getSuggestedSkills,
   patternToSkillMetadata,
   recordPattern as recordSkillPattern,
-} from "./auto-learner.js";
+} from './auto-learner.js';
 
 /**
  * Session cache for tracking injected skills.
@@ -54,19 +54,19 @@ const MAX_LEARNED_SKILL_DESCRIPTOR_CHARS = 1000;
 const MAX_LEARNED_SKILLS_CONTEXT_CHARS = 3000;
 
 function compactText(text: string, maxChars: number): string {
-  if (!text || maxChars <= 0) return "";
+  if (!text || maxChars <= 0) return '';
   if (text.length <= maxChars) return text;
-  if (maxChars === 1) return "…";
+  if (maxChars === 1) return '…';
   return `${text.slice(0, maxChars - 1).trimEnd()}…`;
 }
 
 function summarizeSkillContent(content: string): string {
   const firstUsefulLine = content
     .split(/\r?\n/)
-    .map((line) => line.replace(/^#+\s*/, "").trim())
-    .find((line) => line && !line.startsWith("---"));
+    .map((line) => line.replace(/^#+\s*/, '').trim())
+    .find((line) => line && !line.startsWith('---'));
   return compactText(
-    firstUsefulLine || content.replace(/\s+/g, " ").trim(),
+    firstUsefulLine || content.replace(/\s+/g, ' ').trim(),
     240,
   );
 }
@@ -77,31 +77,31 @@ function formatSkillDescriptor(skill: LearnedSkill): string {
   const lines = [
     `### ${skill.metadata.name}`,
     `**Path:** ${skill.path}`,
-    `**Triggers:** ${skill.metadata.triggers.join(", ")}`,
+    `**Triggers:** ${skill.metadata.triggers.join(', ')}`,
     skill.metadata.tags && skill.metadata.tags.length > 0
-      ? `**Tags:** ${skill.metadata.tags.join(", ")}`
-      : "",
+      ? `**Tags:** ${skill.metadata.tags.join(', ')}`
+      : '',
     `**Summary:** ${summary}`,
     `**Load instructions:** If this skill is needed, read ${skill.path} and follow the full instructions there.`,
   ].filter(Boolean);
-  return compactText(lines.join("\n"), MAX_LEARNED_SKILL_DESCRIPTOR_CHARS);
+  return compactText(lines.join('\n'), MAX_LEARNED_SKILL_DESCRIPTOR_CHARS);
 }
 
 /**
  * Format skills for context injection.
  */
 function formatSkillsForContext(skills: LearnedSkill[]): string {
-  if (skills.length === 0) return "";
+  if (skills.length === 0) return '';
 
   const header = [
-    "<learner>",
-    "",
-    "## Relevant Learned Skills",
-    "",
-    "Compact descriptors only; full learned skill bodies stay on disk to avoid prompt bloat.",
-    "",
-  ].join("\n");
-  const footer = "\n</learner>";
+    '<learner>',
+    '',
+    '## Relevant Learned Skills',
+    '',
+    'Compact descriptors only; full learned skill bodies stay on disk to avoid prompt bloat.',
+    '',
+  ].join('\n');
+  const footer = '\n</learner>';
   const budget =
     MAX_LEARNED_SKILLS_CONTEXT_CHARS - header.length - footer.length;
   const descriptors: string[] = [];
@@ -109,7 +109,7 @@ function formatSkillsForContext(skills: LearnedSkill[]): string {
 
   for (const skill of skills) {
     const descriptor = formatSkillDescriptor(skill);
-    const separator = descriptors.length > 0 ? "\n\n---\n\n" : "";
+    const separator = descriptors.length > 0 ? '\n\n---\n\n' : '';
     if (used + separator.length + descriptor.length > budget) {
       const omission = `${separator}[Additional learned skills omitted due to ${MAX_LEARNED_SKILLS_CONTEXT_CHARS}-character context budget; use skill metadata paths if needed.]`;
       const remainingBudget = budget - used;
@@ -122,7 +122,7 @@ function formatSkillsForContext(skills: LearnedSkill[]): string {
     used += separator.length + descriptor.length;
   }
 
-  return `${header}${descriptors.join("")}${footer}`;
+  return `${header}${descriptors.join('')}${footer}`;
 }
 
 /**
@@ -169,10 +169,10 @@ export function processMessageForSkills(
   // Register with context collector
   const content = formatSkillsForContext(newSkills);
   contextCollector.register(sessionId, {
-    id: "learner",
-    source: "learner",
+    id: 'learner',
+    source: 'learner',
     content,
-    priority: "normal",
+    priority: 'normal',
     metadata: {
       skillCount: newSkills.length,
       skillIds: newSkills.map((s) => s.metadata.id),

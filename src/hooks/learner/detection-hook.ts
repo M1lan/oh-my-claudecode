@@ -8,9 +8,9 @@ import {
   detectExtractableMoment,
   shouldPromptExtraction,
   generateExtractionPrompt,
-} from "./detector.js";
-import { isLearnerEnabled } from "./index.js";
-import type { DetectionResult } from "./detector.js";
+} from './detector.js';
+import { isLearnerEnabled } from './index.js';
+import type { DetectionResult } from './detector.js';
 
 /**
  * Configuration for detection behavior.

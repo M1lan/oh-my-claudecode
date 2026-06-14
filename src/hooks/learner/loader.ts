@@ -4,19 +4,19 @@
  * Loads and caches skills from disk.
  */
 
-import { readFileSync } from "fs";
-import { createHash } from "crypto";
-import { relative, normalize } from "path";
-import { findSkillFiles } from "./finder.js";
-import { parseSkillFile } from "./parser.js";
-import { DEBUG_ENABLED } from "./constants.js";
-import type { LearnedSkill, SkillMetadata } from "./types.js";
+import { readFileSync } from 'fs';
+import { createHash } from 'crypto';
+import { relative, normalize } from 'path';
+import { findSkillFiles } from './finder.js';
+import { parseSkillFile } from './parser.js';
+import { DEBUG_ENABLED } from './constants.js';
+import type { LearnedSkill, SkillMetadata } from './types.js';
 
 /**
  * Create SHA-256 hash of content.
  */
 function createContentHash(content: string): string {
-  return createHash("sha256").update(content).digest("hex").slice(0, 16);
+  return createHash('sha256').update(content).digest('hex').slice(0, 16);
 }
 
 /**
@@ -29,13 +29,13 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
 
   for (const candidate of candidates) {
     try {
-      const rawContent = readFileSync(candidate.path, "utf-8");
+      const rawContent = readFileSync(candidate.path, 'utf-8');
       const { metadata, content, valid, errors } = parseSkillFile(rawContent);
 
       if (!valid) {
         if (DEBUG_ENABLED) {
           console.warn(
-            `Invalid skill file ${candidate.path}: ${errors.join(", ")}`,
+            `Invalid skill file ${candidate.path}: ${errors.join(', ')}`,
           );
         }
         continue;
@@ -53,7 +53,7 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
         metadata: metadata as SkillMetadata,
         content,
         contentHash: createContentHash(content),
-        priority: candidate.scope === "project" ? 1 : 0,
+        priority: candidate.scope === 'project' ? 1 : 0,
       };
 
       // Project skills override user skills with same ID

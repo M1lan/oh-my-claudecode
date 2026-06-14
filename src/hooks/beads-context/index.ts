@@ -1,24 +1,24 @@
-import { contextCollector } from "../../features/context-injector/index.js";
-import { getOMCConfig } from "../../features/auto-update.js";
-import { BEADS_INSTRUCTIONS, BEADS_RUST_INSTRUCTIONS } from "./constants.js";
-import type { TaskTool, BeadsContextConfig } from "./types.js";
+import { contextCollector } from '../../features/context-injector/index.js';
+import { getOMCConfig } from '../../features/auto-update.js';
+import { BEADS_INSTRUCTIONS, BEADS_RUST_INSTRUCTIONS } from './constants.js';
+import type { TaskTool, BeadsContextConfig } from './types.js';
 
-export type { TaskTool, BeadsContextConfig } from "./types.js";
-export { BEADS_INSTRUCTIONS, BEADS_RUST_INSTRUCTIONS } from "./constants.js";
+export type { TaskTool, BeadsContextConfig } from './types.js';
+export { BEADS_INSTRUCTIONS, BEADS_RUST_INSTRUCTIONS } from './constants.js';
 
 /**
  * Instructions map for each task tool variant.
  */
-const INSTRUCTIONS_MAP: Record<Exclude<TaskTool, "builtin">, string> = {
+const INSTRUCTIONS_MAP: Record<Exclude<TaskTool, 'builtin'>, string> = {
   beads: BEADS_INSTRUCTIONS,
-  "beads-rust": BEADS_RUST_INSTRUCTIONS,
+  'beads-rust': BEADS_RUST_INSTRUCTIONS,
 };
 
 /**
  * Get beads instructions for the given tool variant.
  */
 export function getBeadsInstructions(
-  tool: Exclude<TaskTool, "builtin">,
+  tool: Exclude<TaskTool, 'builtin'>,
 ): string {
   const instructions = INSTRUCTIONS_MAP[tool];
   if (!instructions) {
@@ -33,7 +33,7 @@ export function getBeadsInstructions(
 export function getBeadsContextConfig(): BeadsContextConfig {
   const config = getOMCConfig();
   return {
-    taskTool: config.taskTool ?? "builtin",
+    taskTool: config.taskTool ?? 'builtin',
     injectInstructions: config.taskToolConfig?.injectInstructions ?? true,
     useMcp: config.taskToolConfig?.useMcp ?? false,
   };
@@ -46,12 +46,12 @@ export function getBeadsContextConfig(): BeadsContextConfig {
 export function registerBeadsContext(sessionId: string): boolean {
   const config = getBeadsContextConfig();
 
-  if (config.taskTool === "builtin" || !config.injectInstructions) {
+  if (config.taskTool === 'builtin' || !config.injectInstructions) {
     return false;
   }
 
   // Validate taskTool is a known value
-  if (!["beads", "beads-rust"].includes(config.taskTool)) {
+  if (!['beads', 'beads-rust'].includes(config.taskTool)) {
     // Unknown tool value - don't inject wrong instructions
     return false;
   }
@@ -59,10 +59,10 @@ export function registerBeadsContext(sessionId: string): boolean {
   const instructions = getBeadsInstructions(config.taskTool);
 
   contextCollector.register(sessionId, {
-    id: "beads-instructions",
-    source: "beads",
+    id: 'beads-instructions',
+    source: 'beads',
     content: instructions,
-    priority: "normal",
+    priority: 'normal',
   });
 
   return true;
@@ -72,5 +72,5 @@ export function registerBeadsContext(sessionId: string): boolean {
  * Clear beads context for a session.
  */
 export function clearBeadsContext(sessionId: string): void {
-  contextCollector.removeEntry(sessionId, "beads", "beads-instructions");
+  contextCollector.removeEntry(sessionId, 'beads', 'beads-instructions');
 }

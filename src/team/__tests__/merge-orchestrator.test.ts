@@ -4,16 +4,16 @@
 // spawn a real git process — the orchestrator's behaviour is fully driven by
 // the mocked exec*Sync surface.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   mkdtempSync,
   mkdirSync,
   rmSync,
   existsSync,
   readFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 // ---------------------------------------------------------------------------
 // Hoisted mock state (must be declared before vi.mock factories run).
@@ -61,33 +61,33 @@ const mocks = vi.hoisted(() => {
         for (const h of handlers) {
           if (h.match(args, opts?.cwd)) {
             const r = h.handler(args, opts?.cwd);
-            if (typeof r === "string") {
+            if (typeof r === 'string') {
               // Return a Buffer when no encoding requested, else a string.
               return opts?.encoding ? r : Buffer.from(r);
             }
-            if ("throwStatus" in r) {
+            if ('throwStatus' in r) {
               const err: NodeJS.ErrnoException & {
                 status?: number;
                 stdout?: string;
                 stderr?: string;
               } = new Error(
-                `git ${args.join(" ")} exited ${r.throwStatus}`,
+                `git ${args.join(' ')} exited ${r.throwStatus}`,
               ) as never;
               err.status = r.throwStatus;
-              err.stdout = r.stdout ?? "";
-              err.stderr = r.stderr ?? "";
+              err.stdout = r.stdout ?? '';
+              err.stderr = r.stderr ?? '';
               throw err;
             }
-            if ("throw" in r) {
-              throw new Error(r.message ?? `git ${args.join(" ")} failed`);
+            if ('throw' in r) {
+              throw new Error(r.message ?? `git ${args.join(' ')} failed`);
             }
-            if ("stdout" in r) {
+            if ('stdout' in r) {
               return opts?.encoding ? r.stdout : Buffer.from(r.stdout);
             }
           }
         }
         // Unhandled — return empty.
-        return opts?.encoding ? "" : Buffer.from("");
+        return opts?.encoding ? '' : Buffer.from('');
       },
     ),
     exec: vi.fn(),
@@ -96,7 +96,7 @@ const mocks = vi.hoisted(() => {
   };
 });
 
-vi.mock("node:child_process", () => ({
+vi.mock('node:child_process', () => ({
   execFileSync: mocks.execFileSync,
   exec: mocks.exec,
   execSync: mocks.execSync,
@@ -105,7 +105,7 @@ vi.mock("node:child_process", () => ({
 
 // Re-mount the same mock for the unprefixed module name (some callers import
 // 'child_process' rather than 'node:child_process').
-vi.mock("child_process", () => ({
+vi.mock('child_process', () => ({
   execFileSync: mocks.execFileSync,
   exec: mocks.exec,
   execSync: mocks.execSync,
@@ -120,24 +120,24 @@ import {
   startMergeOrchestrator,
   recoverFromRestart,
   type OrchestratorConfig,
-} from "../merge-orchestrator.js";
-import { sanitizeName } from "../tmux-session.js";
-import { atomicWriteJson } from "../fs-utils.js";
+} from '../merge-orchestrator.js';
+import { sanitizeName } from '../tmux-session.js';
+import { atomicWriteJson } from '../fs-utils.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function makeRepoRoot(): string {
-  const dir = mkdtempSync(join(tmpdir(), "merge-orchestrator-test-"));
+  const dir = mkdtempSync(join(tmpdir(), 'merge-orchestrator-test-'));
   return dir;
 }
 
 function defaultConfig(repoRoot: string): OrchestratorConfig {
   return {
-    teamName: "demo-team",
+    teamName: 'demo-team',
     repoRoot,
-    leaderBranch: "feat/integration",
+    leaderBranch: 'feat/integration',
     cwd: repoRoot,
     pollIntervalMs: 50,
     drainTimeoutMs: 500,
@@ -161,50 +161,50 @@ function on(
 function defaultHappyPath(_repoRoot: string, leaderBranch: string): void {
   // git worktree add — succeeds.
   on(
-    (args) => args[0] === "worktree" && args[1] === "add",
-    () => "",
+    (args) => args[0] === 'worktree' && args[1] === 'add',
+    () => '',
   );
   // git worktree list — return empty by default; caller can override before.
   on(
-    (args) => args[0] === "worktree" && args[1] === "list",
-    () => "",
+    (args) => args[0] === 'worktree' && args[1] === 'list',
+    () => '',
   );
   // git rev-parse refs/heads/{leaderBranch} — return a stable head sha.
   on(
     (args, _cwd) =>
-      args[0] === "rev-parse" && args[1] === `refs/heads/${leaderBranch}`,
-    () => "leader-head-sha\n",
+      args[0] === 'rev-parse' && args[1] === `refs/heads/${leaderBranch}`,
+    () => 'leader-head-sha\n',
   );
   // git fetch — succeed silently.
   on(
-    (args) => args[0] === "fetch",
-    () => "",
+    (args) => args[0] === 'fetch',
+    () => '',
   );
   // git reset --hard — succeed.
   on(
-    (args) => args[0] === "reset" && args[1] === "--hard",
-    () => "",
+    (args) => args[0] === 'reset' && args[1] === '--hard',
+    () => '',
   );
   // git diff-index --quiet HEAD --
   on(
-    (args) => args[0] === "diff-index",
-    () => "",
+    (args) => args[0] === 'diff-index',
+    () => '',
   );
   // git checkout
   on(
-    (args) => args[0] === "checkout",
-    () => "",
+    (args) => args[0] === 'checkout',
+    () => '',
   );
   // git merge-base
   on(
-    (args) => args[0] === "merge-base",
-    () => "merge-base-sha\n",
+    (args) => args[0] === 'merge-base',
+    () => 'merge-base-sha\n',
   );
 }
 
 beforeEach(() => {
   mocks.reset();
-  process.env.OMC_RUNTIME_V2 = "1";
+  process.env.OMC_RUNTIME_V2 = '1';
 });
 
 afterEach(() => {
@@ -215,11 +215,11 @@ afterEach(() => {
 // M3: branch-name guard
 // ---------------------------------------------------------------------------
 
-describe("M3 leader-branch guard", () => {
+describe('M3 leader-branch guard', () => {
   it('rejects "main"', async () => {
     const repoRoot = makeRepoRoot();
     try {
-      const cfg = { ...defaultConfig(repoRoot), leaderBranch: "main" };
+      const cfg = { ...defaultConfig(repoRoot), leaderBranch: 'main' };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(/main\/master/);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
@@ -229,7 +229,7 @@ describe("M3 leader-branch guard", () => {
   it('rejects "MAIN" (case-insensitive)', async () => {
     const repoRoot = makeRepoRoot();
     try {
-      const cfg = { ...defaultConfig(repoRoot), leaderBranch: "MAIN" };
+      const cfg = { ...defaultConfig(repoRoot), leaderBranch: 'MAIN' };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(/main\/master/);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
@@ -239,7 +239,7 @@ describe("M3 leader-branch guard", () => {
   it('rejects "master"', async () => {
     const repoRoot = makeRepoRoot();
     try {
-      const cfg = { ...defaultConfig(repoRoot), leaderBranch: "master" };
+      const cfg = { ...defaultConfig(repoRoot), leaderBranch: 'master' };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(/main\/master/);
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
@@ -251,7 +251,7 @@ describe("M3 leader-branch guard", () => {
     try {
       const cfg = {
         ...defaultConfig(repoRoot),
-        leaderBranch: "refs/heads/main",
+        leaderBranch: 'refs/heads/main',
       };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(/main\/master/);
     } finally {
@@ -259,7 +259,7 @@ describe("M3 leader-branch guard", () => {
     }
   });
 
-  it("accepts a feature branch", async () => {
+  it('accepts a feature branch', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -277,13 +277,13 @@ describe("M3 leader-branch guard", () => {
 // Branch-name flag-injection guard (validateBranchName)
 // ---------------------------------------------------------------------------
 
-describe("validateBranchName guard", () => {
-  it("rejects leader branch name that looks like a flag (--upload-pack=...)", async () => {
+describe('validateBranchName guard', () => {
+  it('rejects leader branch name that looks like a flag (--upload-pack=...)', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = {
         ...defaultConfig(repoRoot),
-        leaderBranch: "--upload-pack=evil",
+        leaderBranch: '--upload-pack=evil',
       };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(
         /Invalid branch name/,
@@ -293,10 +293,10 @@ describe("validateBranchName guard", () => {
     }
   });
 
-  it("rejects leader branch name starting with -e/payload", async () => {
+  it('rejects leader branch name starting with -e/payload', async () => {
     const repoRoot = makeRepoRoot();
     try {
-      const cfg = { ...defaultConfig(repoRoot), leaderBranch: "-e/payload" };
+      const cfg = { ...defaultConfig(repoRoot), leaderBranch: '-e/payload' };
       await expect(startMergeOrchestrator(cfg)).rejects.toThrow(
         /Invalid branch name/,
       );
@@ -310,8 +310,8 @@ describe("validateBranchName guard", () => {
 // M5: v2 gate
 // ---------------------------------------------------------------------------
 
-describe("M5 v2 gate", () => {
-  it("allows unset OMC_RUNTIME_V2 because runtime v2 is default-on", async () => {
+describe('M5 v2 gate', () => {
+  it('allows unset OMC_RUNTIME_V2 because runtime v2 is default-on', async () => {
     delete process.env.OMC_RUNTIME_V2;
     const repoRoot = makeRepoRoot();
     try {
@@ -324,8 +324,8 @@ describe("M5 v2 gate", () => {
     }
   });
 
-  it("throws when OMC_RUNTIME_V2=0", async () => {
-    process.env.OMC_RUNTIME_V2 = "0";
+  it('throws when OMC_RUNTIME_V2=0', async () => {
+    process.env.OMC_RUNTIME_V2 = '0';
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -340,8 +340,8 @@ describe("M5 v2 gate", () => {
 // SHA-change detection + merge driver
 // ---------------------------------------------------------------------------
 
-describe("commit watcher + auto-merge", () => {
-  it("detects a SHA change and triggers a merge", async () => {
+describe('commit watcher + auto-merge', () => {
+  it('detects a SHA change and triggers a merge', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -349,21 +349,21 @@ describe("commit watcher + auto-merge", () => {
 
       // Seed: worker branch HEAD reads as sha-A initially, then sha-B on the
       // next call.
-      const workerName = "alice";
+      const workerName = 'alice';
       const branchName = `omc-team/demo-team/${sanitizeName(workerName)}`;
       let revParseCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           revParseCount += 1;
-          return revParseCount === 1 ? "sha-A\n" : "sha-B\n";
+          return revParseCount === 1 ? 'sha-A\n' : 'sha-B\n';
         },
       );
       // merge-tree returns clean (exit 0).
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
@@ -374,7 +374,7 @@ describe("commit watcher + auto-merge", () => {
 
       const mergeAttempts = mocks.calls.filter(
         (c) =>
-          c.cmd === "git" && c.args[0] === "merge" && c.args[1] === "--no-ff",
+          c.cmd === 'git' && c.args[0] === 'merge' && c.args[1] === '--no-ff',
       );
       expect(mergeAttempts.length).toBeGreaterThanOrEqual(1);
 
@@ -384,26 +384,26 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("persists lastShas atomically after observing a change", async () => {
+  it('persists lastShas atomically after observing a change', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const workerName = "bob";
+      const workerName = 'bob';
       const branchName = `omc-team/demo-team/${sanitizeName(workerName)}`;
       let revParseCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           revParseCount += 1;
-          return revParseCount === 1 ? "seed-sha\n" : "next-sha\n";
+          return revParseCount === 1 ? 'seed-sha\n' : 'next-sha\n';
         },
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
@@ -413,14 +413,14 @@ describe("commit watcher + auto-merge", () => {
 
       const persistedPath = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "auto-merge-state.json",
+        'auto-merge-state.json',
       );
       expect(existsSync(persistedPath)).toBe(true);
-      const parsed = JSON.parse(readFileSync(persistedPath, "utf-8")) as {
+      const parsed = JSON.parse(readFileSync(persistedPath, 'utf-8')) as {
         lastShas: Record<string, string>;
       };
       expect(parsed.lastShas[workerName]).toMatch(/sha/);
@@ -431,56 +431,56 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("handles multiple workers independently", async () => {
+  it('handles multiple workers independently', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchA = `omc-team/demo-team/${sanitizeName("alice")}`;
-      const branchB = `omc-team/demo-team/${sanitizeName("bob")}`;
+      const branchA = `omc-team/demo-team/${sanitizeName('alice')}`;
+      const branchB = `omc-team/demo-team/${sanitizeName('bob')}`;
       let aCount = 0;
       let _bCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchA}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchA}`,
         () => {
           aCount += 1;
-          return aCount === 1 ? "a-sha-0\n" : "a-sha-1\n";
+          return aCount === 1 ? 'a-sha-0\n' : 'a-sha-1\n';
         },
       );
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchB}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchB}`,
         () => {
           _bCount += 1;
           // Bob never advances — stays at the same sha.
-          return "b-sha-0\n";
+          return 'b-sha-0\n';
         },
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.registerWorker("bob");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('bob');
 
       await new Promise((r) => setTimeout(r, 250));
 
       const mergeAttempts = mocks.calls.filter(
         (c) =>
-          c.cmd === "git" && c.args[0] === "merge" && c.args[1] === "--no-ff",
+          c.cmd === 'git' && c.args[0] === 'merge' && c.args[1] === '--no-ff',
       );
       // Alice's branch changed → at least one merge attempt; Bob never advanced.
       expect(mergeAttempts.length).toBeGreaterThanOrEqual(1);
       // Make sure bob never triggered a merge (only alice's branch was the merge arg).
       const aliceMerges = mergeAttempts.filter((c) =>
-        c.args.some((a) => a.includes("alice")),
+        c.args.some((a) => a.includes('alice')),
       );
       const bobMerges = mergeAttempts.filter((c) =>
-        c.args.some((a) => a.includes("bob")),
+        c.args.some((a) => a.includes('bob')),
       );
       expect(aliceMerges.length).toBeGreaterThanOrEqual(1);
       expect(bobMerges.length).toBe(0);
@@ -491,35 +491,35 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("runs preflight reset before each merge", async () => {
+  it('runs preflight reset before each merge', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchName = `omc-team/demo-team/${sanitizeName("alice")}`;
+      const branchName = `omc-team/demo-team/${sanitizeName('alice')}`;
       let count = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           count += 1;
-          return count === 1 ? "sha-A\n" : "sha-B\n";
+          return count === 1 ? 'sha-A\n' : 'sha-B\n';
         },
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
 
       await new Promise((r) => setTimeout(r, 200));
 
       const resetCalls = mocks.calls.filter(
         (c) =>
-          c.cmd === "git" && c.args[0] === "reset" && c.args[1] === "--hard",
+          c.cmd === 'git' && c.args[0] === 'reset' && c.args[1] === '--hard',
       );
       expect(resetCalls.length).toBeGreaterThanOrEqual(1);
 
@@ -529,7 +529,7 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("serialises concurrent merges via the mutex", async () => {
+  it('serialises concurrent merges via the mutex', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -537,34 +537,34 @@ describe("commit watcher + auto-merge", () => {
 
       // Both workers advance concurrently. Merges must not interleave —
       // each merge sequence is preflight-reset → merge-tree → checkout → merge.
-      const branchA = `omc-team/demo-team/${sanitizeName("alice")}`;
-      const branchB = `omc-team/demo-team/${sanitizeName("bob")}`;
+      const branchA = `omc-team/demo-team/${sanitizeName('alice')}`;
+      const branchB = `omc-team/demo-team/${sanitizeName('bob')}`;
       let aCount = 0;
       let bCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchA}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchA}`,
         () => {
           aCount += 1;
-          return aCount === 1 ? "a-0\n" : "a-1\n";
+          return aCount === 1 ? 'a-0\n' : 'a-1\n';
         },
       );
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchB}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchB}`,
         () => {
           bCount += 1;
-          return bCount === 1 ? "b-0\n" : "b-1\n";
+          return bCount === 1 ? 'b-0\n' : 'b-1\n';
         },
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.registerWorker("bob");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('bob');
 
       await new Promise((r) => setTimeout(r, 350));
 
@@ -572,13 +572,13 @@ describe("commit watcher + auto-merge", () => {
       // before the actual merge call. With a working mutex the pattern should
       // be: reset, [merge-tree, ...], merge, ...reset, [merge-tree...], merge.
       const sequence = mocks.calls
-        .filter((c) => c.cmd === "git")
+        .filter((c) => c.cmd === 'git')
         .map((c) => c.args[0]);
       // We don't assert exact ordering, but we DO assert that the number of
       // 'merge' (--no-ff) calls equals the number of preceding 'reset --hard'
       // calls (within tolerance) — i.e. one preflight per merge.
-      const merges = sequence.filter((s) => s === "merge").length;
-      const resets = sequence.filter((s) => s === "reset").length;
+      const merges = sequence.filter((s) => s === 'merge').length;
+      const resets = sequence.filter((s) => s === 'reset').length;
       expect(resets).toBeGreaterThanOrEqual(merges);
 
       await handle.drainAndStop();
@@ -587,56 +587,56 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("records merge_conflict event when checkMergeConflicts reports conflicts", async () => {
+  it('records merge_conflict event when checkMergeConflicts reports conflicts', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchName = `omc-team/demo-team/${sanitizeName("alice")}`;
+      const branchName = `omc-team/demo-team/${sanitizeName('alice')}`;
       let count = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           count += 1;
-          return count === 1 ? "old\n" : "new\n";
+          return count === 1 ? 'old\n' : 'new\n';
         },
       );
       // merge-tree returns conflict (exit 1 with stdout listing CONFLICT).
       on(
-        (args) => args[0] === "merge-tree",
+        (args) => args[0] === 'merge-tree',
         () => ({
           throwStatus: 1,
-          stdout: "CONFLICT (content): Merge conflict in foo.ts\nfoo\n",
+          stdout: 'CONFLICT (content): Merge conflict in foo.ts\nfoo\n',
         }),
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
 
       await new Promise((r) => setTimeout(r, 200));
 
       const eventLog = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "orchestrator-events.jsonl",
+        'orchestrator-events.jsonl',
       );
       expect(existsSync(eventLog)).toBe(true);
-      const lines = readFileSync(eventLog, "utf-8")
+      const lines = readFileSync(eventLog, 'utf-8')
         .trim()
-        .split("\n")
+        .split('\n')
         .map((l) => JSON.parse(l) as { type: string });
-      expect(lines.some((e) => e.type === "merge_conflict")).toBe(true);
+      expect(lines.some((e) => e.type === 'merge_conflict')).toBe(true);
 
       // No actual merge should have been invoked when conflicts are detected
       // pre-flight.
       const merges = mocks.calls.filter(
         (c) =>
-          c.cmd === "git" && c.args[0] === "merge" && c.args[1] === "--no-ff",
+          c.cmd === 'git' && c.args[0] === 'merge' && c.args[1] === '--no-ff',
       );
       expect(merges.length).toBe(0);
 
@@ -646,26 +646,26 @@ describe("commit watcher + auto-merge", () => {
     }
   });
 
-  it("backs off polling for chronically-failing workers", async () => {
+  it('backs off polling for chronically-failing workers', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchName = `omc-team/demo-team/${sanitizeName("alice")}`;
+      const branchName = `omc-team/demo-team/${sanitizeName('alice')}`;
       let count = 0;
       // Throw on every rev-parse for the worker branch.
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           count += 1;
-          return { throw: true, message: "rev-parse failed" };
+          return { throw: true, message: 'rev-parse failed' };
         },
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
 
       await new Promise((r) => setTimeout(r, 400));
 
@@ -688,8 +688,8 @@ describe("commit watcher + auto-merge", () => {
 // M1: existing-rebase short-circuit
 // ---------------------------------------------------------------------------
 
-describe("M1 existing-rebase short-circuit", () => {
-  it("skips rebase fan-out when .git/rebase-merge exists in the other worker worktree", async () => {
+describe('M1 existing-rebase short-circuit', () => {
+  it('skips rebase fan-out when .git/rebase-merge exists in the other worker worktree', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -698,60 +698,60 @@ describe("M1 existing-rebase short-circuit", () => {
       // Create a fake worktree dir with .git/rebase-merge for "bob".
       const bobWtPath = join(
         repoRoot,
-        ".omc",
-        "team",
+        '.omc',
+        'team',
         sanitizeName(cfg.teamName),
-        "worktrees",
-        sanitizeName("bob"),
+        'worktrees',
+        sanitizeName('bob'),
       );
-      mkdirSync(join(bobWtPath, ".git", "rebase-merge"), { recursive: true });
+      mkdirSync(join(bobWtPath, '.git', 'rebase-merge'), { recursive: true });
 
-      const branchA = `omc-team/demo-team/${sanitizeName("alice")}`;
-      const branchB = `omc-team/demo-team/${sanitizeName("bob")}`;
+      const branchA = `omc-team/demo-team/${sanitizeName('alice')}`;
+      const branchB = `omc-team/demo-team/${sanitizeName('bob')}`;
       let aCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchA}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchA}`,
         () => {
           aCount += 1;
-          return aCount === 1 ? "a-0\n" : "a-1\n";
+          return aCount === 1 ? 'a-0\n' : 'a-1\n';
         },
       );
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchB}`,
-        () => "b-0\n",
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchB}`,
+        () => 'b-0\n',
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.registerWorker("bob");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('bob');
 
       await new Promise((r) => setTimeout(r, 250));
 
       // No `git rebase` should have been invoked in bob's worktree.
       const rebaseCalls = mocks.calls.filter(
-        (c) => c.cmd === "git" && c.args[0] === "rebase" && c.cwd === bobWtPath,
+        (c) => c.cmd === 'git' && c.args[0] === 'rebase' && c.cwd === bobWtPath,
       );
       expect(rebaseCalls.length).toBe(0);
 
       // The skip event should be in the orchestrator event log.
       const eventLog = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "orchestrator-events.jsonl",
+        'orchestrator-events.jsonl',
       );
       const lines = existsSync(eventLog)
-        ? readFileSync(eventLog, "utf-8")
+        ? readFileSync(eventLog, 'utf-8')
             .trim()
-            .split("\n")
+            .split('\n')
             .map(
               (l) =>
                 JSON.parse(l) as {
@@ -764,9 +764,9 @@ describe("M1 existing-rebase short-circuit", () => {
       expect(
         lines.some(
           (e) =>
-            e.type === "rebase_skipped_in_progress" &&
-            e.worker === "bob" &&
-            e.reason === "rebase-already-in-progress",
+            e.type === 'rebase_skipped_in_progress' &&
+            e.worker === 'bob' &&
+            e.reason === 'rebase-already-in-progress',
         ),
       ).toBe(true);
 
@@ -781,8 +781,8 @@ describe("M1 existing-rebase short-circuit", () => {
 // M4: dirty-tree audit on rebase resolution
 // ---------------------------------------------------------------------------
 
-describe("M4 dirty-tree audit", () => {
-  it("appends an audit message when worker worktree is dirty after rebase resolution", async () => {
+describe('M4 dirty-tree audit', () => {
+  it('appends an audit message when worker worktree is dirty after rebase resolution', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -793,47 +793,47 @@ describe("M4 dirty-tree audit", () => {
       // simulate the worker resolving it. The status mock returns dirty files.
       const bobWtPath = join(
         repoRoot,
-        ".omc",
-        "team",
+        '.omc',
+        'team',
         sanitizeName(cfg.teamName),
-        "worktrees",
-        sanitizeName("bob"),
+        'worktrees',
+        sanitizeName('bob'),
       );
       mkdirSync(bobWtPath, { recursive: true });
 
-      const branchA = `omc-team/demo-team/${sanitizeName("alice")}`;
-      const branchB = `omc-team/demo-team/${sanitizeName("bob")}`;
+      const branchA = `omc-team/demo-team/${sanitizeName('alice')}`;
+      const branchB = `omc-team/demo-team/${sanitizeName('bob')}`;
       let aCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchA}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchA}`,
         () => {
           aCount += 1;
-          return aCount === 1 ? "a-0\n" : "a-1\n";
+          return aCount === 1 ? 'a-0\n' : 'a-1\n';
         },
       );
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchB}`,
-        () => "b-0\n",
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchB}`,
+        () => 'b-0\n',
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       // git rebase in bob's worktree: throw to simulate conflict.
       // Side-effect: drop a fake .git/rebase-merge dir to simulate rebase state.
       on(
         (args, cwd) =>
-          args[0] === "rebase" &&
+          args[0] === 'rebase' &&
           args[1] === cfg.leaderBranch &&
           cwd === bobWtPath,
         () => {
-          mkdirSync(join(bobWtPath, ".git", "rebase-merge"), {
+          mkdirSync(join(bobWtPath, '.git', 'rebase-merge'), {
             recursive: true,
           });
-          return { throw: true, message: "rebase conflict" };
+          return { throw: true, message: 'rebase conflict' };
         },
       );
       // git status --porcelain in bob's worktree:
@@ -842,27 +842,27 @@ describe("M4 dirty-tree audit", () => {
       let statusCount = 0;
       on(
         (args, cwd) =>
-          args[0] === "status" &&
-          args[1] === "--porcelain" &&
+          args[0] === 'status' &&
+          args[1] === '--porcelain' &&
           cwd === bobWtPath,
         () => {
           statusCount += 1;
           if (statusCount === 1) {
-            return "UU foo.ts\n";
+            return 'UU foo.ts\n';
           }
-          return " M scratch.txt\n M extra.md\n";
+          return ' M scratch.txt\n M extra.md\n';
         },
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.registerWorker("bob");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('bob');
 
       // Wait for the merge + rebase fan-out to fire.
       await new Promise((r) => setTimeout(r, 250));
 
       // Now simulate bob resolving the rebase by removing .git/rebase-merge.
-      rmSync(join(bobWtPath, ".git", "rebase-merge"), {
+      rmSync(join(bobWtPath, '.git', 'rebase-merge'), {
         recursive: true,
         force: true,
       });
@@ -873,17 +873,17 @@ describe("M4 dirty-tree audit", () => {
       // Inbox should contain the audit message.
       const inboxPath = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         cfg.teamName,
-        "workers",
-        "bob",
-        "inbox.md",
+        'workers',
+        'bob',
+        'inbox.md',
       );
       expect(existsSync(inboxPath)).toBe(true);
-      const inboxContent = readFileSync(inboxPath, "utf-8");
-      expect(inboxContent).toContain("Auto-commit audit");
+      const inboxContent = readFileSync(inboxPath, 'utf-8');
+      expect(inboxContent).toContain('Auto-commit audit');
       expect(inboxContent).toMatch(/scratch\.txt|extra\.md/);
 
       await handle.drainAndStop();
@@ -897,8 +897,8 @@ describe("M4 dirty-tree audit", () => {
 // recoverFromRestart (M6)
 // ---------------------------------------------------------------------------
 
-describe("M6 recoverFromRestart", () => {
-  it("loads persisted SHA state and reports orphaned rebases", async () => {
+describe('M6 recoverFromRestart', () => {
+  it('loads persisted SHA state and reports orphaned rebases', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -906,64 +906,64 @@ describe("M6 recoverFromRestart", () => {
       // Seed persisted state.
       const persistedPath = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "auto-merge-state.json",
+        'auto-merge-state.json',
       );
       mkdirSync(
-        join(repoRoot, ".omc", "state", "team", sanitizeName(cfg.teamName)),
+        join(repoRoot, '.omc', 'state', 'team', sanitizeName(cfg.teamName)),
         {
           recursive: true,
         },
       );
       atomicWriteJson(persistedPath, {
-        lastShas: { alice: "sha-1", bob: "sha-2" },
+        lastShas: { alice: 'sha-1', bob: 'sha-2' },
       });
 
       // Seed worktrees.json metadata.
       const worktreesMetaPath = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "worktrees.json",
+        'worktrees.json',
       );
       const aliceWtPath = join(
         repoRoot,
-        ".omc",
-        "team",
+        '.omc',
+        'team',
         sanitizeName(cfg.teamName),
-        "worktrees",
-        "alice",
+        'worktrees',
+        'alice',
       );
       const bobWtPath = join(
         repoRoot,
-        ".omc",
-        "team",
+        '.omc',
+        'team',
         sanitizeName(cfg.teamName),
-        "worktrees",
-        "bob",
+        'worktrees',
+        'bob',
       );
       mkdirSync(aliceWtPath, { recursive: true });
       mkdirSync(bobWtPath, { recursive: true });
       // Bob is mid-rebase.
-      mkdirSync(join(bobWtPath, ".git", "rebase-merge"), { recursive: true });
+      mkdirSync(join(bobWtPath, '.git', 'rebase-merge'), { recursive: true });
 
       atomicWriteJson(worktreesMetaPath, [
         {
           path: aliceWtPath,
-          branch: "omc-team/demo-team/alice",
-          workerName: "alice",
+          branch: 'omc-team/demo-team/alice',
+          workerName: 'alice',
           teamName: cfg.teamName,
           createdAt: new Date().toISOString(),
         },
         {
           path: bobWtPath,
-          branch: "omc-team/demo-team/bob",
-          workerName: "bob",
+          branch: 'omc-team/demo-team/bob',
+          workerName: 'bob',
           teamName: cfg.teamName,
           createdAt: new Date().toISOString(),
         },
@@ -971,22 +971,22 @@ describe("M6 recoverFromRestart", () => {
 
       const result = await recoverFromRestart(cfg);
       expect(result.persistedShasLoaded).toBe(2);
-      expect(result.orphanedRebases).toEqual(["bob"]);
+      expect(result.orphanedRebases).toEqual(['bob']);
 
       // Bob should have received the recovery message.
       const bobInbox = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         cfg.teamName,
-        "workers",
-        "bob",
-        "inbox.md",
+        'workers',
+        'bob',
+        'inbox.md',
       );
       expect(existsSync(bobInbox)).toBe(true);
-      const content = readFileSync(bobInbox, "utf-8");
-      expect(content).toContain("Runtime restart recovery");
+      const content = readFileSync(bobInbox, 'utf-8');
+      expect(content).toContain('Runtime restart recovery');
     } finally {
       rmSync(repoRoot, { recursive: true, force: true });
     }
@@ -997,8 +997,8 @@ describe("M6 recoverFromRestart", () => {
 // drainAndStop
 // ---------------------------------------------------------------------------
 
-describe("drainAndStop", () => {
-  it("returns no unmerged when all workers are up to date", async () => {
+describe('drainAndStop', () => {
+  it('returns no unmerged when all workers are up to date', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -1012,33 +1012,33 @@ describe("drainAndStop", () => {
     }
   });
 
-  it("audits unmerged workers when the drain timeout fires", async () => {
+  it('audits unmerged workers when the drain timeout fires', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = { ...defaultConfig(repoRoot), drainTimeoutMs: 50 };
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchName = `omc-team/demo-team/${sanitizeName("alice")}`;
+      const branchName = `omc-team/demo-team/${sanitizeName('alice')}`;
       // Alice has a SHA change on first poll, but the merge will conflict.
       let count = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
         () => {
           count += 1;
-          return count === 1 ? "old\n" : "new\n";
+          return count === 1 ? 'old\n' : 'new\n';
         },
       );
       on(
-        (args) => args[0] === "merge-tree",
+        (args) => args[0] === 'merge-tree',
         () => ({
           throwStatus: 1,
-          stdout: "CONFLICT (content): Merge conflict in foo.ts\n",
+          stdout: 'CONFLICT (content): Merge conflict in foo.ts\n',
         }),
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
 
       // Wait long enough for the watcher to observe the SHA change & try to merge.
       await new Promise((r) => setTimeout(r, 150));
@@ -1047,19 +1047,19 @@ describe("drainAndStop", () => {
       // Alice's lastObservedSha differs from lastMergedSha (merge conflict),
       // so she's reported as unmerged.
       expect(result.unmerged.length).toBeGreaterThanOrEqual(1);
-      expect(result.unmerged[0].workerName).toBe("alice");
+      expect(result.unmerged[0].workerName).toBe('alice');
 
       // Teardown audit row should have been written.
       const auditPath = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "teardown-audit.jsonl",
+        'teardown-audit.jsonl',
       );
       expect(existsSync(auditPath)).toBe(true);
-      const auditContent = readFileSync(auditPath, "utf-8");
+      const auditContent = readFileSync(auditPath, 'utf-8');
       expect(auditContent).toContain('"type":"unmerged_at_shutdown"');
       expect(auditContent).toContain('"worker":"alice"');
     } finally {
@@ -1072,25 +1072,25 @@ describe("drainAndStop", () => {
 // registerWorker / unregisterWorker
 // ---------------------------------------------------------------------------
 
-describe("worker registration", () => {
-  it("seeds lastSha from current HEAD on register", async () => {
+describe('worker registration', () => {
+  it('seeds lastSha from current HEAD on register', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchName = `omc-team/demo-team/${sanitizeName("alice")}`;
+      const branchName = `omc-team/demo-team/${sanitizeName('alice')}`;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchName}`,
-        () => "seeded-sha\n",
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchName}`,
+        () => 'seeded-sha\n',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
       const state = handle.getState();
-      expect(state.workers).toContain("alice");
-      expect(state.lastShas["alice"]).toBe("seeded-sha");
+      expect(state.workers).toContain('alice');
+      expect(state.lastShas['alice']).toBe('seeded-sha');
 
       await handle.drainAndStop();
     } finally {
@@ -1098,7 +1098,7 @@ describe("worker registration", () => {
     }
   });
 
-  it("is idempotent — registering twice is a no-op", async () => {
+  it('is idempotent — registering twice is a no-op', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -1106,13 +1106,13 @@ describe("worker registration", () => {
 
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1].startsWith("refs/heads/omc-team"),
-        () => "sha\n",
+          args[0] === 'rev-parse' && args[1].startsWith('refs/heads/omc-team'),
+        () => 'sha\n',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.registerWorker("alice");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('alice');
       expect(handle.getState().workers.length).toBe(1);
 
       await handle.drainAndStop();
@@ -1121,7 +1121,7 @@ describe("worker registration", () => {
     }
   });
 
-  it("unregisterWorker removes from state", async () => {
+  it('unregisterWorker removes from state', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = defaultConfig(repoRoot);
@@ -1129,13 +1129,13 @@ describe("worker registration", () => {
 
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1].startsWith("refs/heads/omc-team"),
-        () => "sha\n",
+          args[0] === 'rev-parse' && args[1].startsWith('refs/heads/omc-team'),
+        () => 'sha\n',
       );
 
       const handle = await startMergeOrchestrator(cfg);
-      await handle.registerWorker("alice");
-      await handle.unregisterWorker("alice");
+      await handle.registerWorker('alice');
+      await handle.unregisterWorker('alice');
       expect(handle.getState().workers).toEqual([]);
 
       await handle.drainAndStop();
@@ -1149,34 +1149,34 @@ describe("worker registration", () => {
 // FIX 5: drain race — fan-out is suppressed once `stopped` is set
 // ---------------------------------------------------------------------------
 
-describe("drainAndStop suppresses fan-out rebase", () => {
-  it("emits no rebase_triggered events for merges that complete during drain", async () => {
+describe('drainAndStop suppresses fan-out rebase', () => {
+  it('emits no rebase_triggered events for merges that complete during drain', async () => {
     const repoRoot = makeRepoRoot();
     try {
       const cfg = { ...defaultConfig(repoRoot), drainTimeoutMs: 500 };
       defaultHappyPath(repoRoot, cfg.leaderBranch);
 
-      const branchA = `omc-team/demo-team/${sanitizeName("alice")}`;
-      const branchB = `omc-team/demo-team/${sanitizeName("bob")}`;
+      const branchA = `omc-team/demo-team/${sanitizeName('alice')}`;
+      const branchB = `omc-team/demo-team/${sanitizeName('bob')}`;
       // Alice's branch advances during drain (lastObservedSha != lastMergedSha
       // when we call drainAndStop).
       let aliceCount = 0;
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchA}`,
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchA}`,
         () => {
           aliceCount += 1;
-          return aliceCount === 1 ? "a-0\n" : "a-1\n";
+          return aliceCount === 1 ? 'a-0\n' : 'a-1\n';
         },
       );
       on(
         (args) =>
-          args[0] === "rev-parse" && args[1] === `refs/heads/${branchB}`,
-        () => "b-0\n",
+          args[0] === 'rev-parse' && args[1] === `refs/heads/${branchB}`,
+        () => 'b-0\n',
       );
       on(
-        (args) => args[0] === "merge-tree",
-        () => "",
+        (args) => args[0] === 'merge-tree',
+        () => '',
       );
 
       // Use a long poll interval so the regular poller does not run a merge
@@ -1186,8 +1186,8 @@ describe("drainAndStop suppresses fan-out rebase", () => {
         ...cfg,
         pollIntervalMs: 10000,
       });
-      await handle.registerWorker("alice");
-      await handle.registerWorker("bob");
+      await handle.registerWorker('alice');
+      await handle.registerWorker('bob');
 
       // Force lastObservedSha to differ from lastMergedSha by triggering one
       // rev-parse cycle on alice.
@@ -1197,24 +1197,24 @@ describe("drainAndStop suppresses fan-out rebase", () => {
       // rebase_succeeded events emitted (fan-out is suppressed after stop).
       const eventLog = join(
         repoRoot,
-        ".omc",
-        "state",
-        "team",
+        '.omc',
+        'state',
+        'team',
         sanitizeName(cfg.teamName),
-        "orchestrator-events.jsonl",
+        'orchestrator-events.jsonl',
       );
       const lines = existsSync(eventLog)
-        ? readFileSync(eventLog, "utf-8")
+        ? readFileSync(eventLog, 'utf-8')
             .trim()
-            .split("\n")
+            .split('\n')
             .filter((l) => l.length > 0)
             .map((l) => JSON.parse(l) as { type: string; worker?: string })
         : [];
       const fanOutTypes = lines.filter(
         (e) =>
-          e.type === "rebase_triggered" ||
-          e.type === "rebase_succeeded" ||
-          e.type === "rebase_conflict",
+          e.type === 'rebase_triggered' ||
+          e.type === 'rebase_succeeded' ||
+          e.type === 'rebase_conflict',
       );
       expect(fanOutTypes).toEqual([]);
     } finally {

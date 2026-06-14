@@ -5,20 +5,20 @@
  * model instead of using OMC's per-agent model routing.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   routeTask,
   getModelForTask,
-} from "../features/model-routing/router.js";
+} from '../features/model-routing/router.js';
 import {
   enforceModel,
   processPreToolUse,
   type AgentInput,
-} from "../features/delegation-enforcer.js";
+} from '../features/delegation-enforcer.js';
 
 // Mock loadConfig to control forceInherit
-vi.mock("../config/loader.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../config/loader.js")>();
+vi.mock('../config/loader.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../config/loader.js')>();
   return {
     ...actual,
     loadConfig: vi.fn(() => ({
@@ -31,11 +31,11 @@ vi.mock("../config/loader.js", async (importOriginal) => {
   };
 });
 
-import { loadConfig, DEFAULT_CONFIG } from "../config/loader.js";
+import { loadConfig, DEFAULT_CONFIG } from '../config/loader.js';
 
 const mockedLoadConfig = vi.mocked(loadConfig);
 
-describe("routing.forceInherit (issue #1135)", () => {
+describe('routing.forceInherit (issue #1135)', () => {
   let originalEnv: string | undefined;
 
   beforeEach(() => {
@@ -51,159 +51,159 @@ describe("routing.forceInherit (issue #1135)", () => {
     }
   });
 
-  describe("routeTask with forceInherit", () => {
-    it("returns inherit model type when forceInherit is true", () => {
+  describe('routeTask with forceInherit', () => {
+    it('returns inherit model type when forceInherit is true', () => {
       const result = routeTask(
-        { taskPrompt: "Find all files", agentType: "explore" },
+        { taskPrompt: 'Find all files', agentType: 'explore' },
         {
           enabled: true,
-          defaultTier: "MEDIUM",
+          defaultTier: 'MEDIUM',
           forceInherit: true,
           escalationEnabled: false,
           maxEscalations: 0,
-          tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
         },
       );
 
-      expect(result.model).toBe("inherit");
-      expect(result.modelType).toBe("inherit");
+      expect(result.model).toBe('inherit');
+      expect(result.modelType).toBe('inherit');
       expect(result.reasons).toContain(
-        "forceInherit enabled: agents inherit parent model",
+        'forceInherit enabled: agents inherit parent model',
       );
       expect(result.confidence).toBe(1.0);
     });
 
-    it("bypasses agent-specific overrides when forceInherit is true", () => {
+    it('bypasses agent-specific overrides when forceInherit is true', () => {
       const result = routeTask(
-        { taskPrompt: "Design system architecture", agentType: "architect" },
+        { taskPrompt: 'Design system architecture', agentType: 'architect' },
         {
           enabled: true,
-          defaultTier: "MEDIUM",
+          defaultTier: 'MEDIUM',
           forceInherit: true,
           escalationEnabled: false,
           maxEscalations: 0,
-          tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
           agentOverrides: {
             architect: {
-              tier: "HIGH",
-              reason: "Advisory agent requires deep reasoning",
+              tier: 'HIGH',
+              reason: 'Advisory agent requires deep reasoning',
             },
           },
         },
       );
 
-      expect(result.model).toBe("inherit");
-      expect(result.modelType).toBe("inherit");
+      expect(result.model).toBe('inherit');
+      expect(result.modelType).toBe('inherit');
     });
 
-    it("bypasses complexity-based routing when forceInherit is true", () => {
+    it('bypasses complexity-based routing when forceInherit is true', () => {
       const result = routeTask(
         {
           taskPrompt:
-            "Refactor the entire authentication architecture with security review and data migration",
-          agentType: "executor",
+            'Refactor the entire authentication architecture with security review and data migration',
+          agentType: 'executor',
         },
         {
           enabled: true,
-          defaultTier: "MEDIUM",
+          defaultTier: 'MEDIUM',
           forceInherit: true,
           escalationEnabled: false,
           maxEscalations: 0,
-          tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
         },
       );
 
-      expect(result.model).toBe("inherit");
-      expect(result.modelType).toBe("inherit");
+      expect(result.model).toBe('inherit');
+      expect(result.modelType).toBe('inherit');
     });
 
-    it("routes normally when forceInherit is false", () => {
+    it('routes normally when forceInherit is false', () => {
       const result = routeTask(
-        { taskPrompt: "Find all files", agentType: "explore" },
+        { taskPrompt: 'Find all files', agentType: 'explore' },
         {
           enabled: true,
-          defaultTier: "MEDIUM",
+          defaultTier: 'MEDIUM',
           forceInherit: false,
           escalationEnabled: false,
           maxEscalations: 0,
-          tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
         },
       );
 
-      expect(result.model).not.toBe("inherit");
+      expect(result.model).not.toBe('inherit');
     });
 
-    it("routes normally when forceInherit is undefined", () => {
+    it('routes normally when forceInherit is undefined', () => {
       const result = routeTask(
-        { taskPrompt: "Find all files", agentType: "explore" },
+        { taskPrompt: 'Find all files', agentType: 'explore' },
         {
           enabled: true,
-          defaultTier: "MEDIUM",
+          defaultTier: 'MEDIUM',
           escalationEnabled: false,
           maxEscalations: 0,
-          tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
         },
       );
 
-      expect(result.model).not.toBe("inherit");
+      expect(result.model).not.toBe('inherit');
     });
   });
 
-  describe("getModelForTask with forceInherit", () => {
-    it("returns inherit for all agent types when forceInherit is true", () => {
+  describe('getModelForTask with forceInherit', () => {
+    it('returns inherit for all agent types when forceInherit is true', () => {
       const config = {
         enabled: true,
-        defaultTier: "MEDIUM" as const,
+        defaultTier: 'MEDIUM' as const,
         forceInherit: true,
         escalationEnabled: false,
         maxEscalations: 0,
-        tierModels: { LOW: "haiku", MEDIUM: "sonnet", HIGH: "opus" },
+        tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
       };
 
       const agents = [
-        "architect",
-        "executor",
-        "explore",
-        "writer",
-        "debugger",
-        "verifier",
+        'architect',
+        'executor',
+        'explore',
+        'writer',
+        'debugger',
+        'verifier',
       ];
       for (const agent of agents) {
-        const result = getModelForTask(agent, "test task", config);
-        expect(result.model).toBe("inherit");
+        const result = getModelForTask(agent, 'test task', config);
+        expect(result.model).toBe('inherit');
       }
     });
   });
 
-  describe("enforceModel with forceInherit", () => {
-    it("strips model when forceInherit is true", () => {
+  describe('enforceModel with forceInherit', () => {
+    it('strips model when forceInherit is true', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
       const input: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
-        model: "opus",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
+        model: 'opus',
       };
 
       const result = enforceModel(input);
 
       expect(result.modifiedInput.model).toBeUndefined();
       expect(result.injected).toBe(false);
-      expect(result.model).toBe("inherit");
+      expect(result.model).toBe('inherit');
     });
 
-    it("does not inject model when forceInherit is true and no model specified", () => {
+    it('does not inject model when forceInherit is true and no model specified', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
       const input: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
       };
 
       const result = enforceModel(input);
@@ -212,116 +212,116 @@ describe("routing.forceInherit (issue #1135)", () => {
       expect(result.injected).toBe(false);
     });
 
-    it("injects model normally when forceInherit is false", () => {
+    it('injects model normally when forceInherit is false', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: false },
       } as ReturnType<typeof loadConfig>);
 
       const input: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
       };
 
       const result = enforceModel(input);
 
-      expect(result.modifiedInput.model).toBe("sonnet");
+      expect(result.modifiedInput.model).toBe('sonnet');
       expect(result.injected).toBe(true);
     });
   });
 
-  describe("config defaults", () => {
-    it("DEFAULT_CONFIG has forceInherit set to false", () => {
+  describe('config defaults', () => {
+    it('DEFAULT_CONFIG has forceInherit set to false', () => {
       expect(DEFAULT_CONFIG.routing?.forceInherit).toBe(false);
     });
   });
 
-  describe("processPreToolUse with forceInherit", () => {
-    it("strips model from Task calls when forceInherit is true", () => {
+  describe('processPreToolUse with forceInherit', () => {
+    it('strips model from Task calls when forceInherit is true', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
       const toolInput: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
-        model: "opus",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
+        model: 'opus',
       };
 
-      const result = processPreToolUse("Task", toolInput);
+      const result = processPreToolUse('Task', toolInput);
       const modified = result.modifiedInput as AgentInput;
 
       expect(modified.model).toBeUndefined();
-      expect(modified.prompt).toBe("Do something");
-      expect(modified.subagent_type).toBe("oh-my-claudecode:executor");
+      expect(modified.prompt).toBe('Do something');
+      expect(modified.subagent_type).toBe('oh-my-claudecode:executor');
     });
 
-    it("strips model from Agent calls when forceInherit is true", () => {
+    it('strips model from Agent calls when forceInherit is true', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
       const toolInput: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
-        model: "opus",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
+        model: 'opus',
       };
 
-      const result = processPreToolUse("Agent", toolInput);
+      const result = processPreToolUse('Agent', toolInput);
       const modified = result.modifiedInput as AgentInput;
 
       expect(modified.model).toBeUndefined();
-      expect(modified.prompt).toBe("Do something");
-      expect(modified.subagent_type).toBe("oh-my-claudecode:executor");
+      expect(modified.prompt).toBe('Do something');
+      expect(modified.subagent_type).toBe('oh-my-claudecode:executor');
     });
 
-    it("strips model from lowercase agent calls when forceInherit is true", () => {
+    it('strips model from lowercase agent calls when forceInherit is true', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
       const toolInput: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
-        model: "opus",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
+        model: 'opus',
       };
 
-      const result = processPreToolUse("agent", toolInput);
+      const result = processPreToolUse('agent', toolInput);
       const modified = result.modifiedInput as AgentInput;
 
       expect(modified.model).toBeUndefined();
-      expect(modified.subagent_type).toBe("oh-my-claudecode:executor");
+      expect(modified.subagent_type).toBe('oh-my-claudecode:executor');
     });
 
-    it("does not strip model when forceInherit is false", () => {
+    it('does not strip model when forceInherit is false', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: false },
       } as ReturnType<typeof loadConfig>);
 
       const toolInput: AgentInput = {
-        description: "Test task",
-        prompt: "Do something",
-        subagent_type: "oh-my-claudecode:executor",
-        model: "haiku",
+        description: 'Test task',
+        prompt: 'Do something',
+        subagent_type: 'oh-my-claudecode:executor',
+        model: 'haiku',
       };
 
-      const result = processPreToolUse("Task", toolInput);
+      const result = processPreToolUse('Task', toolInput);
       const modified = result.modifiedInput as AgentInput;
 
       // Should preserve the explicit model (enforceModel preserves explicit)
-      expect(modified.model).toBe("haiku");
+      expect(modified.model).toBe('haiku');
     });
 
-    it("does not affect non-Task tool calls", () => {
+    it('does not affect non-Task tool calls', () => {
       mockedLoadConfig.mockReturnValue({
         routing: { forceInherit: true },
       } as ReturnType<typeof loadConfig>);
 
-      const toolInput = { command: "ls -la" };
-      const result = processPreToolUse("Bash", toolInput);
+      const toolInput = { command: 'ls -la' };
+      const result = processPreToolUse('Bash', toolInput);
 
       expect(result.modifiedInput).toEqual(toolInput);
     });

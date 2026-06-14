@@ -25,13 +25,13 @@ export type {
   SlackBotNotificationConfig,
   WebhookNotificationConfig,
   EventNotificationConfig,
-} from "./types.js";
+} from './types.js';
 export type {
   HookNotificationConfig,
   HookEventConfig,
   PlatformTemplateOverride,
   TemplateVariable,
-} from "./hook-config-types.js";
+} from './hook-config-types.js';
 
 export {
   dispatchNotifications,
@@ -41,7 +41,7 @@ export {
   sendSlack,
   sendSlackBot,
   sendWebhook,
-} from "./dispatcher.js";
+} from './dispatcher.js';
 export {
   formatNotification,
   formatSessionStart,
@@ -51,13 +51,13 @@ export {
   formatAskUserQuestion,
   formatAgentCall,
   parseTmuxTail,
-} from "./formatter.js";
+} from './formatter.js';
 export {
   getCurrentTmuxSession,
   getCurrentTmuxPaneId,
   getTeamTmuxSessions,
   formatTmuxInfo,
-} from "./tmux.js";
+} from './tmux.js';
 export {
   getNotificationConfig,
   isEventEnabled,
@@ -66,39 +66,39 @@ export {
   getTmuxTailLines,
   isEventAllowedByVerbosity,
   shouldIncludeTmuxTail,
-} from "./config.js";
+} from './config.js';
 export {
   getHookConfig,
   resolveEventTemplate,
   resetHookConfigCache,
   mergeHookConfigIntoNotificationConfig,
-} from "./hook-config.js";
+} from './hook-config.js';
 export {
   interpolateTemplate,
   getDefaultTemplate,
   validateTemplate,
   computeTemplateVariables,
-} from "./template-engine.js";
+} from './template-engine.js';
 export {
   verifySlackSignature,
   isTimestampValid,
   validateSlackEnvelope,
   validateSlackMessage,
   SlackConnectionStateTracker,
-} from "./slack-socket.js";
+} from './slack-socket.js';
 export type {
   SlackConnectionState,
   SlackValidationResult,
   SlackSocketEnvelope,
-} from "./slack-socket.js";
-export { redactTokens } from "./redact.js";
+} from './slack-socket.js';
+export { redactTokens } from './redact.js';
 
 import type {
   NotificationEvent,
   NotificationPlatform,
   NotificationPayload,
   DispatchResult,
-} from "./types.js";
+} from './types.js';
 import {
   getNotificationConfig,
   isEventEnabled,
@@ -106,14 +106,14 @@ import {
   getTmuxTailLines,
   isEventAllowedByVerbosity,
   shouldIncludeTmuxTail,
-} from "./config.js";
-import { formatNotification } from "./formatter.js";
-import { dispatchNotifications } from "./dispatcher.js";
-import { getCurrentTmuxSession } from "./tmux.js";
-import { getHookConfig, resolveEventTemplate } from "./hook-config.js";
-import { interpolateTemplate } from "./template-engine.js";
-import { basename, join } from "path";
-import { getOmcRoot } from "../lib/worktree-paths.js";
+} from './config.js';
+import { formatNotification } from './formatter.js';
+import { dispatchNotifications } from './dispatcher.js';
+import { getCurrentTmuxSession } from './tmux.js';
+import { getHookConfig, resolveEventTemplate } from './hook-config.js';
+import { interpolateTemplate } from './template-engine.js';
+import { basename, join } from 'path';
+import { getOmcRoot } from '../lib/worktree-paths.js';
 
 /**
  * High-level notification function.
@@ -127,7 +127,10 @@ import { getOmcRoot } from "../lib/worktree-paths.js";
  */
 export async function notify(
   event: NotificationEvent,
-  data: Partial<NotificationPayload> & { sessionId: string; profileName?: string },
+  data: Partial<NotificationPayload> & {
+    sessionId: string;
+    profileName?: string;
+  },
 ): Promise<DispatchResult | null> {
   // OMC_NOTIFY=0 suppresses all CCNotifier events (set by `omc --notify false`)
   if (process.env.OMC_NOTIFY === '0') {
@@ -145,8 +148,8 @@ export async function notify(
     // block, so do not let the default "session" verbosity silently drop it.
     const verbosity = getVerbosity(config);
     const isExplicitAskUserQuestionEvent =
-      event === "ask-user-question" &&
-      config.events?.["ask-user-question"]?.enabled === true;
+      event === 'ask-user-question' &&
+      config.events?.['ask-user-question']?.enabled === true;
     if (
       !isExplicitAskUserQuestionEvent &&
       !isEventAllowedByVerbosity(verbosity, event)
@@ -155,13 +158,13 @@ export async function notify(
     }
 
     // Get tmux pane ID
-    const { getCurrentTmuxPaneId } = await import("./tmux.js");
+    const { getCurrentTmuxPaneId } = await import('./tmux.js');
 
     // Build the full payload
     const payload: NotificationPayload = {
       event,
       sessionId: data.sessionId,
-      message: "", // Will be formatted below
+      message: '', // Will be formatted below
       timestamp: data.timestamp || new Date().toISOString(),
       tmuxSession: data.tmuxSession ?? getCurrentTmuxSession() ?? undefined,
       tmuxPaneId: data.tmuxPaneId ?? getCurrentTmuxPaneId() ?? undefined,
@@ -183,27 +186,34 @@ export async function notify(
       incompleteTasks: data.incompleteTasks,
       agentName: data.agentName,
       agentType: data.agentType,
-      replyChannel: data.replyChannel ?? process.env.OPENCLAW_REPLY_CHANNEL ?? undefined,
-      replyTarget: data.replyTarget ?? process.env.OPENCLAW_REPLY_TARGET ?? undefined,
-      replyThread: data.replyThread ?? process.env.OPENCLAW_REPLY_THREAD ?? undefined,
+      replyChannel:
+        data.replyChannel ?? process.env.OPENCLAW_REPLY_CHANNEL ?? undefined,
+      replyTarget:
+        data.replyTarget ?? process.env.OPENCLAW_REPLY_TARGET ?? undefined,
+      replyThread:
+        data.replyThread ?? process.env.OPENCLAW_REPLY_THREAD ?? undefined,
     };
 
     // Capture tmux tail for events that benefit from it
     if (
       shouldIncludeTmuxTail(verbosity) &&
       payload.tmuxPaneId &&
-      (event === "session-idle" || event === "session-end" || event === "session-stop")
+      (event === 'session-idle' ||
+        event === 'session-end' ||
+        event === 'session-stop')
     ) {
       try {
-        const { capturePaneContent } = await import(
-          "../features/rate-limit-wait/tmux-detector.js"
-        );
-        const { getNewPaneTail } = await import(
-          "../features/rate-limit-wait/pane-fresh-capture.js"
-        );
+        const { capturePaneContent } =
+          await import('../features/rate-limit-wait/tmux-detector.js');
+        const { getNewPaneTail } =
+          await import('../features/rate-limit-wait/pane-fresh-capture.js');
         const tailLines = getTmuxTailLines(config);
         const rawTail = payload.projectPath
-          ? getNewPaneTail(payload.tmuxPaneId, join(getOmcRoot(payload.projectPath), "state"), tailLines)
+          ? getNewPaneTail(
+              payload.tmuxPaneId,
+              join(getOmcRoot(payload.projectPath), 'state'),
+              tailLines,
+            )
           : capturePaneContent(payload.tmuxPaneId, tailLines);
         if (rawTail) {
           payload.tmuxTail = rawTail;
@@ -224,7 +234,12 @@ export async function notify(
       const hookConfig = getHookConfig();
       if (hookConfig?.enabled) {
         const platforms: NotificationPlatform[] = [
-          "discord", "discord-bot", "telegram", "slack", "slack-bot", "webhook",
+          'discord',
+          'discord-bot',
+          'telegram',
+          'slack',
+          'slack-bot',
+          'webhook',
         ];
         const map = new Map<NotificationPlatform, string>();
         for (const platform of platforms) {
@@ -244,32 +259,40 @@ export async function notify(
 
     // Dispatch to all enabled platforms
     const result = await dispatchNotifications(
-      config, event, payload, platformMessages,
+      config,
+      event,
+      payload,
+      platformMessages,
     );
 
     // NEW: Register message IDs for reply correlation
     if (result.anySuccess && payload.tmuxPaneId) {
       try {
-        const { registerMessage } = await import("./session-registry.js");
+        const { registerMessage } = await import('./session-registry.js');
         for (const r of result.results) {
           if (
             r.success &&
             r.messageId &&
-            (r.platform === "discord-bot" || r.platform === "telegram" || r.platform === "slack-bot")
+            (r.platform === 'discord-bot' ||
+              r.platform === 'telegram' ||
+              r.platform === 'slack-bot')
           ) {
             registerMessage({
               platform: r.platform,
               messageId: r.messageId,
               sessionId: payload.sessionId,
               tmuxPaneId: payload.tmuxPaneId,
-              tmuxSessionName: payload.tmuxSession || "",
+              tmuxSessionName: payload.tmuxSession || '',
               event: payload.event,
               createdAt: new Date().toISOString(),
               projectPath: payload.projectPath,
-              ...(payload.event === "ask-user-question" && payload.askUserQuestionPrompts?.[0]
+              ...(payload.event === 'ask-user-question' &&
+              payload.askUserQuestionPrompts?.[0]
                 ? {
-                    askUserQuestionOptionCount: payload.askUserQuestionPrompts[0].options.length,
-                    askUserQuestionAllowOther: payload.askUserQuestionPrompts[0].allowOther !== false,
+                    askUserQuestionOptionCount:
+                      payload.askUserQuestionPrompts[0].options.length,
+                    askUserQuestionAllowOther:
+                      payload.askUserQuestionPrompts[0].allowOther !== false,
                   }
                 : {}),
             });
@@ -284,7 +307,7 @@ export async function notify(
   } catch (error) {
     // Never let notification failures propagate to hooks
     console.error(
-      "[notifications] Error:",
+      '[notifications] Error:',
       error instanceof Error ? error.message : error,
     );
     return null;
@@ -302,13 +325,13 @@ export type {
   CliIntegrationConfig,
   CustomIntegrationsConfig,
   ExtendedNotificationConfig,
-} from "./types.js";
+} from './types.js';
 
 export {
   sendCustomWebhook,
   sendCustomCli,
   dispatchCustomIntegrations,
-} from "./dispatcher.js";
+} from './dispatcher.js';
 
 export {
   getCustomIntegrationsConfig,
@@ -316,7 +339,7 @@ export {
   hasCustomIntegrationsEnabled,
   detectLegacyOpenClawConfig,
   migrateLegacyOpenClawConfig,
-} from "./config.js";
+} from './config.js';
 
 export {
   CUSTOM_INTEGRATION_PRESETS,
@@ -325,18 +348,18 @@ export {
   isValidPreset,
   type PresetConfig,
   type PresetName,
-} from "./presets.js";
+} from './presets.js';
 
 export {
   TEMPLATE_VARIABLES,
   getVariablesForEvent,
   getVariableDocumentation,
   type TemplateVariableName,
-} from "./template-variables.js";
+} from './template-variables.js';
 
 export {
   validateCustomIntegration,
   checkDuplicateIds,
   sanitizeArgument,
   type ValidationResult,
-} from "./validation.js";
+} from './validation.js';

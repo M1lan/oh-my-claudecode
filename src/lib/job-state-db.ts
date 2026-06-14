@@ -14,11 +14,11 @@
  * - All functions return false/null on failure (no throws)
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "fs";
-import { join, resolve } from "path";
-import type BetterSqlite3 from "better-sqlite3";
-import type { JobStatus } from "../mcp/prompt-persistence.js";
-import { getOmcRoot } from "./worktree-paths.js";
+import { existsSync, mkdirSync, readdirSync, readFileSync } from 'fs';
+import { join, resolve } from 'path';
+import type BetterSqlite3 from 'better-sqlite3';
+import type { JobStatus } from '../mcp/prompt-persistence.js';
+import { getOmcRoot } from './worktree-paths.js';
 
 // Schema version - bump when adding migrations
 const DB_SCHEMA_VERSION = 1;
@@ -50,13 +50,13 @@ function getDb(cwd?: string): BetterSqlite3.Database | null {
   // Emit deprecation warning when multiple DBs are open and no cwd provided
   if (dbMap.size > 1) {
     console.warn(
-      "[job-state-db] DEPRECATED: getDb() called without explicit cwd while multiple DBs are open. Pass cwd explicitly.",
+      '[job-state-db] DEPRECATED: getDb() called without explicit cwd while multiple DBs are open. Pass cwd explicitly.',
     );
   }
   // Backward compat: use last initialized cwd
   if (_lastCwd) {
     console.warn(
-      "[job-state-db] DEPRECATED: using _lastCwd fallback. Pass cwd explicitly.",
+      '[job-state-db] DEPRECATED: using _lastCwd fallback. Pass cwd explicitly.',
     );
     return dbMap.get(_lastCwd) ?? null;
   }
@@ -71,14 +71,14 @@ function getDb(cwd?: string): BetterSqlite3.Database | null {
  * Get the database file path
  */
 function getDbPath(cwd: string): string {
-  return join(getOmcRoot(cwd), "state", "jobs.db");
+  return join(getOmcRoot(cwd), 'state', 'jobs.db');
 }
 
 /**
  * Ensure the state directory exists
  */
 function ensureStateDir(cwd: string): void {
-  const stateDir = join(getOmcRoot(cwd), "state");
+  const stateDir = join(getOmcRoot(cwd), 'state');
   if (!existsSync(stateDir)) {
     mkdirSync(stateDir, { recursive: true });
   }
@@ -89,10 +89,10 @@ function ensureStateDir(cwd: string): void {
  */
 function rowToJobStatus(row: Record<string, unknown>): JobStatus {
   return {
-    provider: row.provider as "codex" | "gemini",
+    provider: row.provider as 'codex' | 'gemini',
     jobId: row.job_id as string,
     slug: row.slug as string,
-    status: row.status as JobStatus["status"],
+    status: row.status as JobStatus['status'],
     pid: (row.pid as number) ?? undefined,
     promptFile: row.prompt_file as string,
     responseFile: row.response_file as string,
@@ -122,7 +122,7 @@ export async function initJobDb(cwd: string): Promise<boolean> {
     // Dynamic import of better-sqlite3 (may not be installed)
     if (!Database) {
       try {
-        const betterSqlite3 = await import("better-sqlite3");
+        const betterSqlite3 = await import('better-sqlite3');
         Database = betterSqlite3.default;
       } catch (importError: unknown) {
         const errorMessage =
@@ -130,11 +130,11 @@ export async function initJobDb(cwd: string): Promise<boolean> {
             ? importError.message
             : String(importError);
         console.error(
-          "[job-state-db] Failed to load better-sqlite3:",
+          '[job-state-db] Failed to load better-sqlite3:',
           errorMessage,
         );
         console.error(
-          "[job-state-db] Install with: pnpm install better-sqlite3",
+          '[job-state-db] Install with: pnpm install better-sqlite3',
         );
         return false;
       }
@@ -158,7 +158,7 @@ export async function initJobDb(cwd: string): Promise<boolean> {
     const db = new Database(dbPath);
 
     // Enable WAL mode for better concurrency (multiple MCP servers)
-    db.pragma("journal_mode = WAL");
+    db.pragma('journal_mode = WAL');
 
     // Create tables
     db.exec(`
@@ -207,16 +207,16 @@ export async function initJobDb(cwd: string): Promise<boolean> {
 
     // Set schema version
     const setVersion = db.prepare(
-      "INSERT OR REPLACE INTO schema_info (key, value) VALUES (?, ?)",
+      'INSERT OR REPLACE INTO schema_info (key, value) VALUES (?, ?)',
     );
-    setVersion.run("version", String(DB_SCHEMA_VERSION));
+    setVersion.run('version', String(DB_SCHEMA_VERSION));
 
     dbMap.set(resolvedCwd, db);
     _lastCwd = resolvedCwd;
 
     return true;
   } catch (error) {
-    console.error("[job-state-db] Failed to initialize database:", error);
+    console.error('[job-state-db] Failed to initialize database:', error);
     return false;
   }
 }
@@ -243,7 +243,7 @@ export function closeJobDb(cwd?: string): void {
   } else {
     if (dbMap.size > 0) {
       console.warn(
-        "[job-state-db] DEPRECATED: closeJobDb() called without cwd. Use closeAllJobDbs() for explicit intent.",
+        '[job-state-db] DEPRECATED: closeJobDb() called without cwd. Use closeAllJobDbs() for explicit intent.',
       );
     }
     // Close all connections
@@ -342,7 +342,7 @@ export function upsertJob(status: JobStatus, cwd?: string): boolean {
 
     return true;
   } catch (error) {
-    console.error("[job-state-db] Failed to upsert job:", error);
+    console.error('[job-state-db] Failed to upsert job:', error);
     return false;
   }
 }
@@ -355,7 +355,7 @@ export function upsertJob(status: JobStatus, cwd?: string): boolean {
  * @returns The JobStatus if found, null otherwise
  */
 export function getJob(
-  provider: "codex" | "gemini",
+  provider: 'codex' | 'gemini',
   jobId: string,
   cwd?: string,
 ): JobStatus | null {
@@ -364,7 +364,7 @@ export function getJob(
 
   try {
     const stmt = db.prepare(
-      "SELECT * FROM jobs WHERE provider = ? AND job_id = ?",
+      'SELECT * FROM jobs WHERE provider = ? AND job_id = ?',
     );
     const row = stmt.get(provider, jobId) as
       | Record<string, unknown>
@@ -373,7 +373,7 @@ export function getJob(
     if (!row) return null;
     return rowToJobStatus(row);
   } catch (error) {
-    console.error("[job-state-db] Failed to get job:", error);
+    console.error('[job-state-db] Failed to get job:', error);
     return null;
   }
 }
@@ -386,7 +386,7 @@ export function getJob(
  * @returns Array of matching JobStatus objects, empty array on failure
  */
 export function getJobsByStatus(
-  provider: "codex" | "gemini" | undefined,
+  provider: 'codex' | 'gemini' | undefined,
   status: string,
   cwd?: string,
 ): JobStatus[] {
@@ -399,19 +399,19 @@ export function getJobsByStatus(
 
     if (provider) {
       stmt = db.prepare(
-        "SELECT * FROM jobs WHERE provider = ? AND status = ? ORDER BY spawned_at DESC",
+        'SELECT * FROM jobs WHERE provider = ? AND status = ? ORDER BY spawned_at DESC',
       );
       rows = stmt.all(provider, status) as Record<string, unknown>[];
     } else {
       stmt = db.prepare(
-        "SELECT * FROM jobs WHERE status = ? ORDER BY spawned_at DESC",
+        'SELECT * FROM jobs WHERE status = ? ORDER BY spawned_at DESC',
       );
       rows = stmt.all(status) as Record<string, unknown>[];
     }
 
     return rows.map(rowToJobStatus);
   } catch (error) {
-    console.error("[job-state-db] Failed to get jobs by status:", error);
+    console.error('[job-state-db] Failed to get jobs by status:', error);
     return [];
   }
 }
@@ -423,7 +423,7 @@ export function getJobsByStatus(
  * @returns Array of active JobStatus objects, empty array on failure
  */
 export function getActiveJobs(
-  provider?: "codex" | "gemini",
+  provider?: 'codex' | 'gemini',
   cwd?: string,
 ): JobStatus[] {
   const db = getDb(cwd);
@@ -447,7 +447,7 @@ export function getActiveJobs(
 
     return rows.map(rowToJobStatus);
   } catch (error) {
-    console.error("[job-state-db] Failed to get active jobs:", error);
+    console.error('[job-state-db] Failed to get active jobs:', error);
     return [];
   }
 }
@@ -461,7 +461,7 @@ export function getActiveJobs(
  * @returns Array of recent JobStatus objects, empty array on failure
  */
 export function getRecentJobs(
-  provider?: "codex" | "gemini",
+  provider?: 'codex' | 'gemini',
   withinMs: number = 60 * 60 * 1000,
   cwd?: string,
 ): JobStatus[] {
@@ -475,19 +475,19 @@ export function getRecentJobs(
 
     if (provider) {
       stmt = db.prepare(
-        "SELECT * FROM jobs WHERE provider = ? AND spawned_at > ? ORDER BY spawned_at DESC",
+        'SELECT * FROM jobs WHERE provider = ? AND spawned_at > ? ORDER BY spawned_at DESC',
       );
       rows = stmt.all(provider, cutoff) as Record<string, unknown>[];
     } else {
       stmt = db.prepare(
-        "SELECT * FROM jobs WHERE spawned_at > ? ORDER BY spawned_at DESC",
+        'SELECT * FROM jobs WHERE spawned_at > ? ORDER BY spawned_at DESC',
       );
       rows = stmt.all(cutoff) as Record<string, unknown>[];
     }
 
     return rows.map(rowToJobStatus);
   } catch (error) {
-    console.error("[job-state-db] Failed to get recent jobs:", error);
+    console.error('[job-state-db] Failed to get recent jobs:', error);
     return [];
   }
 }
@@ -502,7 +502,7 @@ export function getRecentJobs(
  * @returns true if the update succeeded, false on failure
  */
 export function updateJobStatus(
-  provider: "codex" | "gemini",
+  provider: 'codex' | 'gemini',
   jobId: string,
   updates: Partial<JobStatus>,
   cwd?: string,
@@ -515,43 +515,43 @@ export function updateJobStatus(
     const values: (string | number | null)[] = [];
 
     if (updates.status !== undefined) {
-      setClauses.push("status = ?");
+      setClauses.push('status = ?');
       values.push(updates.status);
     }
     if (updates.pid !== undefined) {
-      setClauses.push("pid = ?");
+      setClauses.push('pid = ?');
       values.push(updates.pid ?? null);
     }
     if (updates.completedAt !== undefined) {
-      setClauses.push("completed_at = ?");
+      setClauses.push('completed_at = ?');
       values.push(updates.completedAt ?? null);
     }
     if (updates.error !== undefined) {
-      setClauses.push("error = ?");
+      setClauses.push('error = ?');
       values.push(updates.error ?? null);
     }
     if (updates.usedFallback !== undefined) {
-      setClauses.push("used_fallback = ?");
+      setClauses.push('used_fallback = ?');
       values.push(updates.usedFallback ? 1 : 0);
     }
     if (updates.fallbackModel !== undefined) {
-      setClauses.push("fallback_model = ?");
+      setClauses.push('fallback_model = ?');
       values.push(updates.fallbackModel ?? null);
     }
     if (updates.killedByUser !== undefined) {
-      setClauses.push("killed_by_user = ?");
+      setClauses.push('killed_by_user = ?');
       values.push(updates.killedByUser ? 1 : 0);
     }
     if (updates.slug !== undefined) {
-      setClauses.push("slug = ?");
+      setClauses.push('slug = ?');
       values.push(updates.slug);
     }
     if (updates.model !== undefined) {
-      setClauses.push("model = ?");
+      setClauses.push('model = ?');
       values.push(updates.model);
     }
     if (updates.agentRole !== undefined) {
-      setClauses.push("agent_role = ?");
+      setClauses.push('agent_role = ?');
       values.push(updates.agentRole);
     }
 
@@ -560,12 +560,12 @@ export function updateJobStatus(
 
     values.push(provider, jobId);
     const stmt = db.prepare(
-      `UPDATE jobs SET ${setClauses.join(", ")} WHERE provider = ? AND job_id = ?`,
+      `UPDATE jobs SET ${setClauses.join(', ')} WHERE provider = ? AND job_id = ?`,
     );
     stmt.run(...values);
     return true;
   } catch (error) {
-    console.error("[job-state-db] Failed to update job status:", error);
+    console.error('[job-state-db] Failed to update job status:', error);
     return false;
   }
 }
@@ -578,7 +578,7 @@ export function updateJobStatus(
  * @returns true if deletion succeeded, false on failure
  */
 export function deleteJob(
-  provider: "codex" | "gemini",
+  provider: 'codex' | 'gemini',
   jobId: string,
   cwd?: string,
 ): boolean {
@@ -587,12 +587,12 @@ export function deleteJob(
 
   try {
     const stmt = db.prepare(
-      "DELETE FROM jobs WHERE provider = ? AND job_id = ?",
+      'DELETE FROM jobs WHERE provider = ? AND job_id = ?',
     );
     stmt.run(provider, jobId);
     return true;
   } catch (error) {
-    console.error("[job-state-db] Failed to delete job:", error);
+    console.error('[job-state-db] Failed to delete job:', error);
     return false;
   }
 }
@@ -620,14 +620,14 @@ export function migrateFromJsonFiles(
   try {
     const files = readdirSync(promptsDir);
     const statusFiles = files.filter(
-      (f: string) => f.includes("-status-") && f.endsWith(".json"),
+      (f: string) => f.includes('-status-') && f.endsWith('.json'),
     );
 
     // Use a transaction for bulk import efficiency
     const importAll = db.transaction(() => {
       for (const file of statusFiles) {
         try {
-          const content = readFileSync(join(promptsDir, file), "utf-8");
+          const content = readFileSync(join(promptsDir, file), 'utf-8');
           const status = JSON.parse(content) as JobStatus;
 
           // Validate minimum required fields
@@ -649,7 +649,7 @@ export function migrateFromJsonFiles(
 
     importAll();
   } catch (error) {
-    console.error("[job-state-db] Failed to migrate from JSON files:", error);
+    console.error('[job-state-db] Failed to migrate from JSON files:', error);
   }
 
   return result;
@@ -681,7 +681,7 @@ export function cleanupOldJobs(
     const info = stmt.run(cutoff);
     return info.changes;
   } catch (error) {
-    console.error("[job-state-db] Failed to cleanup old jobs:", error);
+    console.error('[job-state-db] Failed to cleanup old jobs:', error);
     return 0;
   }
 }
@@ -725,7 +725,7 @@ export function getJobStats(cwd?: string): {
       failed: row.failed ?? 0,
     };
   } catch (error) {
-    console.error("[job-state-db] Failed to get job stats:", error);
+    console.error('[job-state-db] Failed to get job stats:', error);
     return null;
   }
 }
@@ -738,7 +738,7 @@ export function getJobStats(cwd?: string): {
  */
 export function getJobSummaryForPreCompact(cwd?: string): string {
   const db = getDb(cwd);
-  if (!db) return "";
+  if (!db) return '';
 
   try {
     const lines: string[] = [];
@@ -746,8 +746,8 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
     // Active jobs with full details
     const activeJobs = getActiveJobs(undefined, cwd);
     if (activeJobs.length > 0) {
-      lines.push("## Active Background Jobs");
-      lines.push("");
+      lines.push('## Active Background Jobs');
+      lines.push('');
       for (const job of activeJobs) {
         const elapsed = Date.now() - new Date(job.spawnedAt).getTime();
         const elapsedMin = Math.round(elapsed / 60000);
@@ -760,29 +760,29 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
           lines.push(`  - PID: ${job.pid}`);
         }
       }
-      lines.push("");
+      lines.push('');
     }
 
     // Recent completed/failed jobs (last hour) - brief summary
     const recentJobs = getRecentJobs(undefined, 60 * 60 * 1000, cwd);
     const terminalJobs = recentJobs.filter(
       (j) =>
-        j.status === "completed" ||
-        j.status === "failed" ||
-        j.status === "timeout",
+        j.status === 'completed' ||
+        j.status === 'failed' ||
+        j.status === 'timeout',
     );
 
     if (terminalJobs.length > 0) {
-      lines.push("## Recent Completed Jobs (last hour)");
-      lines.push("");
+      lines.push('## Recent Completed Jobs (last hour)');
+      lines.push('');
       for (const job of terminalJobs.slice(0, 10)) {
-        const icon = job.status === "completed" ? "done" : job.status;
+        const icon = job.status === 'completed' ? 'done' : job.status;
         const fallback = job.usedFallback
           ? ` (fallback: ${job.fallbackModel})`
-          : "";
+          : '';
         const errorNote = job.error
           ? ` - error: ${job.error.slice(0, 80)}`
-          : "";
+          : '';
         lines.push(
           `- **${job.provider}** \`${job.jobId}\` (${job.agentRole}): ${icon}${fallback}${errorNote}`,
         );
@@ -790,7 +790,7 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
       if (terminalJobs.length > 10) {
         lines.push(`- ... and ${terminalJobs.length - 10} more`);
       }
-      lines.push("");
+      lines.push('');
     }
 
     // Overall stats
@@ -801,12 +801,12 @@ export function getJobSummaryForPreCompact(cwd?: string): string {
       );
     }
 
-    return lines.join("\n");
+    return lines.join('\n');
   } catch (error) {
     console.error(
-      "[job-state-db] Failed to generate PreCompact summary:",
+      '[job-state-db] Failed to generate PreCompact summary:',
       error,
     );
-    return "";
+    return '';
   }
 }

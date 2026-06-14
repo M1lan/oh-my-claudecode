@@ -7,11 +7,11 @@
 // This resolves C1: leader notifications arrive via file, not tmux send-keys.
 // DO NOT register the leader as a member of the team registry (Option C, rejected).
 
-import { appendFile, mkdir, writeFile } from "fs/promises";
-import { existsSync } from "fs";
-import { dirname, join } from "path";
-import { sanitizeName } from "./tmux-session.js";
-import { validateResolvedPath } from "./fs-utils.js";
+import { appendFile, mkdir, writeFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { dirname, join } from 'path';
+import { sanitizeName } from './tmux-session.js';
+import { validateResolvedPath } from './fs-utils.js';
 
 const LEADER_INBOX_HEADER = `# Leader Inbox
 
@@ -45,7 +45,7 @@ export async function ensureLeaderInbox(
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
   if (!existsSync(inboxPath)) {
-    await writeFile(inboxPath, LEADER_INBOX_HEADER, "utf-8");
+    await writeFile(inboxPath, LEADER_INBOX_HEADER, 'utf-8');
   }
   return inboxPath;
 }
@@ -63,7 +63,7 @@ export async function appendToLeaderInbox(
   const inboxPath = leaderInboxPath(teamName, cwd);
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
-  await appendFile(inboxPath, `\n\n---\n${message}`, "utf-8");
+  await appendFile(inboxPath, `\n\n---\n${message}`, 'utf-8');
 }
 
 /**

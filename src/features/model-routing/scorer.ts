@@ -11,7 +11,7 @@ import type {
   LexicalSignals,
   StructuralSignals,
   ContextSignals,
-} from "./types.js";
+} from './types.js';
 
 /**
  * Score thresholds for tier classification
@@ -101,10 +101,10 @@ function scoreLexicalSignals(signals: LexicalSignals): number {
 
   // Question depth
   switch (signals.questionDepth) {
-    case "why":
+    case 'why':
       score += WEIGHTS.lexical.questionDepthWhy;
       break;
-    case "how":
+    case 'how':
       score += WEIGHTS.lexical.questionDepthHow;
       break;
     // 'what', 'where', 'none' add nothing
@@ -143,10 +143,10 @@ function scoreStructuralSignals(signals: StructuralSignals): number {
 
   // Domain specificity
   switch (signals.domainSpecificity) {
-    case "security":
+    case 'security':
       score += WEIGHTS.structural.securityDomain;
       break;
-    case "infrastructure":
+    case 'infrastructure':
       score += WEIGHTS.structural.infrastructureDomain;
       break;
     // Other domains add nothing
@@ -159,20 +159,20 @@ function scoreStructuralSignals(signals: StructuralSignals): number {
 
   // Reversibility
   switch (signals.reversibility) {
-    case "difficult":
+    case 'difficult':
       score += WEIGHTS.structural.reversibilityDifficult;
       break;
-    case "moderate":
+    case 'moderate':
       score += WEIGHTS.structural.reversibilityModerate;
       break;
   }
 
   // Impact scope
   switch (signals.impactScope) {
-    case "system-wide":
+    case 'system-wide':
       score += WEIGHTS.structural.impactSystemWide;
       break;
-    case "module":
+    case 'module':
       score += WEIGHTS.structural.impactModule;
       break;
   }
@@ -221,9 +221,9 @@ export function calculateComplexityScore(signals: ComplexitySignals): number {
  * Determine complexity tier from score
  */
 export function scoreToTier(score: number): ComplexityTier {
-  if (score >= TIER_THRESHOLDS.HIGH) return "HIGH";
-  if (score >= TIER_THRESHOLDS.MEDIUM) return "MEDIUM";
-  return "LOW";
+  if (score >= TIER_THRESHOLDS.HIGH) return 'HIGH';
+  if (score >= TIER_THRESHOLDS.MEDIUM) return 'MEDIUM';
+  return 'LOW';
 }
 
 /**
@@ -274,13 +274,13 @@ export function calculateConfidence(
   // Minimum distance from any threshold
   let minDistance: number;
   switch (tier) {
-    case "LOW":
+    case 'LOW':
       minDistance = TIER_THRESHOLDS.MEDIUM - score;
       break;
-    case "MEDIUM":
+    case 'MEDIUM':
       minDistance = Math.min(distanceFromLow, distanceFromHigh);
       break;
-    case "HIGH":
+    case 'HIGH':
       minDistance = score - TIER_THRESHOLDS.HIGH;
       break;
   }

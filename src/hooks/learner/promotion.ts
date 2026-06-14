@@ -4,10 +4,10 @@
  * Promotes learnings from ralph-progress to full skills.
  */
 
-import { readProgress } from "../ralph/index.js";
-import { writeSkill } from "./writer.js";
-import type { SkillExtractionRequest } from "./types.js";
-import type { WriteSkillResult } from "./writer.js";
+import { readProgress } from '../ralph/index.js';
+import { writeSkill } from './writer.js';
+import type { SkillExtractionRequest } from './types.js';
+import type { WriteSkillResult } from './writer.js';
 
 export interface PromotionCandidate {
   /** The learning text */
@@ -25,24 +25,24 @@ export interface PromotionCandidate {
  */
 function extractTriggers(text: string): string[] {
   const technicalKeywords = [
-    "react",
-    "typescript",
-    "javascript",
-    "python",
-    "api",
-    "database",
-    "testing",
-    "debugging",
-    "performance",
-    "async",
-    "state",
-    "component",
-    "error",
-    "validation",
-    "authentication",
-    "cache",
-    "query",
-    "mutation",
+    'react',
+    'typescript',
+    'javascript',
+    'python',
+    'api',
+    'database',
+    'testing',
+    'debugging',
+    'performance',
+    'async',
+    'state',
+    'component',
+    'error',
+    'validation',
+    'authentication',
+    'cache',
+    'query',
+    'mutation',
   ];
 
   const textLower = text.toLowerCase();
@@ -93,7 +93,7 @@ export function promoteLearning(
   candidate: PromotionCandidate,
   skillName: string,
   additionalTriggers: string[],
-  targetScope: "user" | "project",
+  targetScope: 'user' | 'project',
   projectRoot: string | null,
 ): WriteSkillResult {
   const request: SkillExtractionRequest = {
@@ -115,32 +115,32 @@ export function listPromotableLearnings(directory: string): string {
   const candidates = getPromotionCandidates(directory);
 
   if (candidates.length === 0) {
-    return "No promotion candidates found in ralph-progress learnings.";
+    return 'No promotion candidates found in ralph-progress learnings.';
   }
 
   const lines = [
-    "# Promotion Candidates",
-    "",
-    "The following learnings from ralph-progress could be promoted to skills:",
-    "",
+    '# Promotion Candidates',
+    '',
+    'The following learnings from ralph-progress could be promoted to skills:',
+    '',
   ];
 
   candidates.forEach((candidate, index) => {
     lines.push(
       `## ${index + 1}. From ${candidate.storyId} (${candidate.timestamp})`,
     );
-    lines.push("");
+    lines.push('');
     lines.push(candidate.learning);
-    lines.push("");
+    lines.push('');
     if (candidate.suggestedTriggers.length > 0) {
       lines.push(
-        `**Suggested triggers:** ${candidate.suggestedTriggers.join(", ")}`,
+        `**Suggested triggers:** ${candidate.suggestedTriggers.join(', ')}`,
       );
     }
-    lines.push("");
-    lines.push("---");
-    lines.push("");
+    lines.push('');
+    lines.push('---');
+    lines.push('');
   });
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

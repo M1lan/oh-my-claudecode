@@ -1,33 +1,33 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock("../../hud/state.js", () => ({
+vi.mock('../../hud/state.js', () => ({
   readHudState: vi.fn(),
   writeHudState: vi.fn(() => true),
 }));
 
-import { cleanupStaleBackgroundTasks } from "../../hud/background-cleanup.js";
-import { readHudState, writeHudState } from "../../hud/state.js";
+import { cleanupStaleBackgroundTasks } from '../../hud/background-cleanup.js';
+import { readHudState, writeHudState } from '../../hud/state.js';
 
 const mockReadHudState = vi.mocked(readHudState);
 const mockWriteHudState = vi.mocked(writeHudState);
 
-describe("background-cleanup", () => {
+describe('background-cleanup', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockWriteHudState.mockReturnValue(true);
   });
 
-  describe("cleanupStaleBackgroundTasks", () => {
-    it("marks stale running tasks as failed instead of silently removing them", async () => {
+  describe('cleanupStaleBackgroundTasks', () => {
+    it('marks stale running tasks as failed instead of silently removing them', async () => {
       const staleTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "stale-running",
-            description: "Stale running task",
+            id: 'stale-running',
+            description: 'Stale running task',
             startedAt: staleTime,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -38,24 +38,24 @@ describe("background-cleanup", () => {
       const writtenState = mockWriteHudState.mock.calls[0][0];
 
       const staleTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "stale-running",
+        (t: { id: string }) => t.id === 'stale-running',
       );
       expect(staleTask).toBeDefined();
-      expect(staleTask!.status).toBe("failed");
+      expect(staleTask!.status).toBe('failed');
       expect(staleTask!.completedAt).toBeDefined();
     });
 
-    it("updates state.timestamp when writing state", async () => {
+    it('updates state.timestamp when writing state', async () => {
       const staleTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-      const oldTimestamp = "2020-01-01T00:00:00.000Z";
+      const oldTimestamp = '2020-01-01T00:00:00.000Z';
       mockReadHudState.mockReturnValue({
         timestamp: oldTimestamp,
         backgroundTasks: [
           {
-            id: "stale-task",
-            description: "Stale task",
+            id: 'stale-task',
+            description: 'Stale task',
             startedAt: staleTime,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -70,16 +70,16 @@ describe("background-cleanup", () => {
       );
     });
 
-    it("does not write state when recent running tasks are unchanged", async () => {
+    it('does not write state when recent running tasks are unchanged', async () => {
       const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "recent-running",
-            description: "Recent running task",
+            id: 'recent-running',
+            description: 'Recent running task',
             startedAt: recentTime,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -90,16 +90,16 @@ describe("background-cleanup", () => {
       expect(result).toBe(0);
     });
 
-    it("does not write state when only completed tasks exist", async () => {
+    it('does not write state when only completed tasks exist', async () => {
       const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "completed-task",
-            description: "Done task",
+            id: 'completed-task',
+            description: 'Done task',
             startedAt: recentTime,
-            status: "completed",
+            status: 'completed',
             completedAt: recentTime,
           },
         ],
@@ -111,14 +111,14 @@ describe("background-cleanup", () => {
       expect(result).toBe(0);
     });
 
-    it("returns 0 when no state exists", async () => {
+    it('returns 0 when no state exists', async () => {
       mockReadHudState.mockReturnValue(null);
       const result = await cleanupStaleBackgroundTasks();
       expect(result).toBe(0);
       expect(mockWriteHudState).not.toHaveBeenCalled();
     });
 
-    it("returns 0 when backgroundTasks is undefined", async () => {
+    it('returns 0 when backgroundTasks is undefined', async () => {
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: undefined as unknown as [],
@@ -128,7 +128,7 @@ describe("background-cleanup", () => {
       expect(mockWriteHudState).not.toHaveBeenCalled();
     });
 
-    it("handles mix of stale running and completed tasks", async () => {
+    it('handles mix of stale running and completed tasks', async () => {
       const staleTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
@@ -136,23 +136,23 @@ describe("background-cleanup", () => {
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "stale-running",
-            description: "Stale running",
+            id: 'stale-running',
+            description: 'Stale running',
             startedAt: staleTime,
-            status: "running",
+            status: 'running',
           },
           {
-            id: "recent-completed",
-            description: "Recent completed",
+            id: 'recent-completed',
+            description: 'Recent completed',
             startedAt: recentTime,
-            status: "completed",
+            status: 'completed',
             completedAt: recentTime,
           },
           {
-            id: "recent-running",
-            description: "Recent running",
+            id: 'recent-running',
+            description: 'Recent running',
             startedAt: recentTime,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -163,26 +163,26 @@ describe("background-cleanup", () => {
       const writtenState = mockWriteHudState.mock.calls[0][0];
 
       const staleTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "stale-running",
+        (t: { id: string }) => t.id === 'stale-running',
       );
       expect(staleTask).toBeDefined();
-      expect(staleTask!.status).toBe("failed");
+      expect(staleTask!.status).toBe('failed');
       expect(staleTask!.completedAt).toBeDefined();
 
       const completedTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "recent-completed",
+        (t: { id: string }) => t.id === 'recent-completed',
       );
       expect(completedTask).toBeDefined();
-      expect(completedTask!.status).toBe("completed");
+      expect(completedTask!.status).toBe('completed');
 
       const recentRunning = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "recent-running",
+        (t: { id: string }) => t.id === 'recent-running',
       );
       expect(recentRunning).toBeDefined();
-      expect(recentRunning!.status).toBe("running");
+      expect(recentRunning!.status).toBe('running');
     });
 
-    it("uses strict > comparison (task within threshold stays running)", async () => {
+    it('uses strict > comparison (task within threshold stays running)', async () => {
       const threshold = 30 * 60 * 1000;
       // Use threshold - 100ms to avoid race between test setup and function execution
       const withinThreshold = new Date(
@@ -192,10 +192,10 @@ describe("background-cleanup", () => {
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "boundary-task",
-            description: "Boundary task",
+            id: 'boundary-task',
+            description: 'Boundary task',
             startedAt: withinThreshold,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -207,17 +207,17 @@ describe("background-cleanup", () => {
       expect(result).toBe(0);
     });
 
-    it("marks task as failed when just past threshold", async () => {
+    it('marks task as failed when just past threshold', async () => {
       const threshold = 30 * 60 * 1000;
       const justPast = new Date(Date.now() - threshold - 1).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "just-past",
-            description: "Just past threshold",
+            id: 'just-past',
+            description: 'Just past threshold',
             startedAt: justPast,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -227,22 +227,22 @@ describe("background-cleanup", () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "just-past",
+        (t: { id: string }) => t.id === 'just-past',
       );
-      expect(task!.status).toBe("failed");
+      expect(task!.status).toBe('failed');
     });
 
-    it("treats legacy startTime alias as startedAt", async () => {
+    it('treats legacy startTime alias as startedAt', async () => {
       const staleTime = new Date(Date.now() - 60 * 60 * 1000).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "legacy-task",
-            description: "Legacy task",
+            id: 'legacy-task',
+            description: 'Legacy task',
             startedAt: undefined as unknown as string,
             startTime: staleTime,
-            status: "running",
+            status: 'running',
           },
         ],
       });
@@ -252,22 +252,22 @@ describe("background-cleanup", () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "legacy-task",
+        (t: { id: string }) => t.id === 'legacy-task',
       );
       expect(task).toBeDefined();
-      expect(task!.status).toBe("failed");
+      expect(task!.status).toBe('failed');
       expect(task!.completedAt).toBeDefined();
     });
 
-    it("marks running task as failed when startedAt is invalid (NaN)", async () => {
+    it('marks running task as failed when startedAt is invalid (NaN)', async () => {
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
           {
-            id: "bad-timestamp",
-            description: "Invalid timestamp task",
-            startedAt: "not-a-date",
-            status: "running",
+            id: 'bad-timestamp',
+            description: 'Invalid timestamp task',
+            startedAt: 'not-a-date',
+            status: 'running',
           },
         ],
       });
@@ -277,14 +277,14 @@ describe("background-cleanup", () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === "bad-timestamp",
+        (t: { id: string }) => t.id === 'bad-timestamp',
       );
       expect(task).toBeDefined();
-      expect(task!.status).toBe("failed");
+      expect(task!.status).toBe('failed');
       expect(task!.completedAt).toBeDefined();
     });
 
-    it("preserves running tasks when limiting history to 20", async () => {
+    it('preserves running tasks when limiting history to 20', async () => {
       const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
       const tasks = [];
 
@@ -294,7 +294,7 @@ describe("background-cleanup", () => {
           id: `completed-${i}`,
           description: `Completed ${i}`,
           startedAt: recentTime,
-          status: "completed" as const,
+          status: 'completed' as const,
           completedAt: recentTime,
         });
       }
@@ -305,7 +305,7 @@ describe("background-cleanup", () => {
           id: `running-${i}`,
           description: `Running ${i}`,
           startedAt: recentTime,
-          status: "running" as const,
+          status: 'running' as const,
         });
       }
 
@@ -316,10 +316,10 @@ describe("background-cleanup", () => {
 
       // Add one stale task to trigger a write
       tasks.push({
-        id: "stale-trigger",
-        description: "Stale",
+        id: 'stale-trigger',
+        description: 'Stale',
         startedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-        status: "running" as const,
+        status: 'running' as const,
       });
 
       mockReadHudState.mockReturnValue({
@@ -334,7 +334,7 @@ describe("background-cleanup", () => {
 
       // All 3 recent running tasks must be preserved
       const runningTasks = writtenState.backgroundTasks.filter(
-        (t: { status: string }) => t.status === "running",
+        (t: { status: string }) => t.status === 'running',
       );
       expect(runningTasks).toHaveLength(3);
 
@@ -342,7 +342,7 @@ describe("background-cleanup", () => {
       expect(writtenState.backgroundTasks.length).toBeLessThanOrEqual(20);
     });
 
-    it("handles empty backgroundTasks array", async () => {
+    it('handles empty backgroundTasks array', async () => {
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [],

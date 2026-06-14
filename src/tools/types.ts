@@ -5,8 +5,8 @@
  * state-tools, notepad-tools, memory-tools, and lsp-tools.
  */
 
-import { z } from "zod";
-import type { ToolCategory } from "../constants/index.js";
+import { z } from 'zod';
+import type { ToolCategory } from '../constants/index.js';
 
 /**
  * Tool Definition interface for MCP tools.
@@ -41,7 +41,7 @@ export interface ToolDefinition<T extends z.ZodRawShape> {
   annotations?: ToolAnnotations;
   schema: T;
   handler: (args: z.infer<z.ZodObject<T>>) => Promise<{
-    content: Array<{ type: "text"; text: string }>;
+    content: Array<{ type: 'text'; text: string }>;
     isError?: boolean;
   }>;
 }

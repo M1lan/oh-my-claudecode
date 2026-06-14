@@ -10,31 +10,31 @@
  *      with session scoping, and get_status details (issue #1143)
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // ============================================================================
 // Module-level mock for worktree-paths (required before any state-tool imports)
 // ============================================================================
 
 const mockGetOmcRoot = vi.fn<(worktreeRoot?: string) => string>();
-vi.mock("../lib/worktree-paths.js", async (importOriginal) => {
+vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../lib/worktree-paths.js")>();
+    await importOriginal<typeof import('../lib/worktree-paths.js')>();
   return {
     ...actual,
     getOmcRoot: (...args: [string?]) => mockGetOmcRoot(...args),
-    validateWorkingDirectory: (dir?: string) => dir || "/tmp",
+    validateWorkingDirectory: (dir?: string) => dir || '/tmp',
   };
 });
 
 // Mock mode-registry — clearModeState/isModeActive use getOmcRoot internally,
 // and we need them to honour the same mockGetOmcRoot as worktree-paths.
-vi.mock("../hooks/mode-registry/index.js", async (importOriginal) => {
+vi.mock('../hooks/mode-registry/index.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("../hooks/mode-registry/index.js")>();
+    await importOriginal<typeof import('../hooks/mode-registry/index.js')>();
   return {
     ...actual,
     // Passthrough but ensure the mock getOmcRoot from worktree-paths is used
@@ -54,7 +54,7 @@ import {
   addSlackReaction,
   replySlackThread,
   type SlackSocketConfig,
-} from "../notifications/slack-socket.js";
+} from '../notifications/slack-socket.js';
 
 // ---------------------------------------------------------------------------
 // MockWebSocket — used across all Slack tests
@@ -78,7 +78,7 @@ class MockWebSocket {
   send = vi.fn();
   close = vi.fn(() => {
     this.readyState = 3; // CLOSED
-    this.fire("close");
+    this.fire('close');
   });
 
   fire(event: string, data?: any) {
@@ -97,22 +97,22 @@ const OrigWS = (globalThis as any).WebSocket;
 // ---------------------------------------------------------------------------
 
 const CONFIG: SlackSocketConfig = {
-  appToken: "xapp-test",
-  botToken: "xoxb-test",
-  channelId: "C999",
+  appToken: 'xapp-test',
+  botToken: 'xoxb-test',
+  channelId: 'C999',
 };
 
 function makeEnvelope(overrides: Record<string, any> = {}): string {
   return JSON.stringify({
-    envelope_id: "env_smoke_1",
-    type: "events_api",
+    envelope_id: 'env_smoke_1',
+    type: 'events_api',
     payload: {
       event: {
-        type: "message",
-        channel: "C999",
-        user: "U42",
-        text: "hello smoke",
-        ts: "1700000000.000001",
+        type: 'message',
+        channel: 'C999',
+        user: 'U42',
+        text: 'hello smoke',
+        ts: '1700000000.000001',
       },
     },
     ...overrides,
@@ -120,12 +120,12 @@ function makeEnvelope(overrides: Record<string, any> = {}): string {
 }
 
 function helloEnvelope(): string {
-  return JSON.stringify({ envelope_id: "env_hello", type: "hello" });
+  return JSON.stringify({ envelope_id: 'env_hello', type: 'hello' });
 }
 
 /** Send a hello envelope to authenticate the connection */
 async function authenticate(ws: MockWebSocket) {
-  ws.fire("message", { data: helloEnvelope() });
+  ws.fire('message', { data: helloEnvelope() });
   await new Promise((r) => setTimeout(r, 0));
 }
 
@@ -133,7 +133,7 @@ async function authenticate(ws: MockWebSocket) {
 // Describe: SlackSocketClient
 // ---------------------------------------------------------------------------
 
-describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139)", () => {
+describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139)', () => {
   beforeEach(() => {
     lastWs = null;
     (globalThis as any).WebSocket = class extends MockWebSocket {
@@ -141,14 +141,14 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
         super();
         lastWs = this as unknown as MockWebSocket;
         // auto-fire open on next microtask
-        queueMicrotask(() => (this as unknown as MockWebSocket).fire("open"));
+        queueMicrotask(() => (this as unknown as MockWebSocket).fire('open'));
       }
     };
     (globalThis as any).WebSocket.OPEN = MockWebSocket.OPEN;
 
     mockFetch.mockResolvedValue({
       json: () =>
-        Promise.resolve({ ok: true, url: "wss://fake-smoke.slack.test" }),
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
   });
 
@@ -158,37 +158,37 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     vi.restoreAllMocks();
   });
 
-  it("hello envelope: acknowledged but no message dispatch", async () => {
+  it('hello envelope: acknowledged but no message dispatch', async () => {
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
     await new Promise((r) => queueMicrotask(r as any)); // flush open
 
-    lastWs!.fire("message", {
-      data: JSON.stringify({ envelope_id: "env_hello_1", type: "hello" }),
+    lastWs!.fire('message', {
+      data: JSON.stringify({ envelope_id: 'env_hello_1', type: 'hello' }),
     });
     await new Promise((r) => setTimeout(r, 10));
 
     // hello is acknowledged (has envelope_id) but does not dispatch to onMessage
     expect(lastWs!.send).toHaveBeenCalledWith(
-      JSON.stringify({ envelope_id: "env_hello_1" }),
+      JSON.stringify({ envelope_id: 'env_hello_1' }),
     );
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
 
-  it("disconnect envelope: calls ws.close() and schedules reconnect", async () => {
+  it('disconnect envelope: calls ws.close() and schedules reconnect', async () => {
     const log = vi.fn();
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
     await client.start();
     await new Promise((r) => queueMicrotask(r as any));
 
     const ws = lastWs!;
-    lastWs!.fire("message", {
+    lastWs!.fire('message', {
       data: JSON.stringify({
-        envelope_id: "env_disconnect_1",
-        type: "disconnect",
-        reason: "refresh_requested",
+        envelope_id: 'env_disconnect_1',
+        type: 'disconnect',
+        reason: 'refresh_requested',
       }),
     });
 
@@ -196,45 +196,45 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     client.stop();
   });
 
-  it("events_api with message: sends ACK and dispatches to onMessage", async () => {
+  it('events_api with message: sends ACK and dispatches to onMessage', async () => {
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
     await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
-    lastWs!.fire("message", { data: makeEnvelope() });
+    lastWs!.fire('message', { data: makeEnvelope() });
     await new Promise((r) => setTimeout(r, 20));
 
     expect(lastWs!.send).toHaveBeenCalledWith(
-      JSON.stringify({ envelope_id: "env_smoke_1" }),
+      JSON.stringify({ envelope_id: 'env_smoke_1' }),
     );
     expect(onMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        type: "message",
-        channel: "C999",
-        text: "hello smoke",
+        type: 'message',
+        channel: 'C999',
+        text: 'hello smoke',
       }),
     );
     client.stop();
   });
 
-  it("filters out: wrong channel", async () => {
+  it('filters out: wrong channel', async () => {
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
     await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
-    lastWs!.fire("message", {
+    lastWs!.fire('message', {
       data: makeEnvelope({
         payload: {
           event: {
-            type: "message",
-            channel: "CWRONG",
-            user: "U1",
-            text: "hi",
-            ts: "1",
+            type: 'message',
+            channel: 'CWRONG',
+            user: 'U1',
+            text: 'hi',
+            ts: '1',
           },
         },
       }),
@@ -244,23 +244,23 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     client.stop();
   });
 
-  it("filters out: has subtype (message_changed)", async () => {
+  it('filters out: has subtype (message_changed)', async () => {
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
     await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
-    lastWs!.fire("message", {
+    lastWs!.fire('message', {
       data: makeEnvelope({
         payload: {
           event: {
-            type: "message",
-            channel: "C999",
-            user: "U1",
-            text: "edit",
-            ts: "1",
-            subtype: "message_changed",
+            type: 'message',
+            channel: 'C999',
+            user: 'U1',
+            text: 'edit',
+            ts: '1',
+            subtype: 'message_changed',
           },
         },
       }),
@@ -270,17 +270,17 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     client.stop();
   });
 
-  it("filters out: missing text", async () => {
+  it('filters out: missing text', async () => {
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
     await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
-    lastWs!.fire("message", {
+    lastWs!.fire('message', {
       data: makeEnvelope({
         payload: {
-          event: { type: "message", channel: "C999", user: "U1", ts: "1" },
+          event: { type: 'message', channel: 'C999', user: 'U1', ts: '1' },
         },
       }),
     });
@@ -290,7 +290,7 @@ describe("SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
   });
 });
 
-describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
+describe('SMOKE: SlackSocketClient — reconnect backoff (issue #1139)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     lastWs = null;
@@ -300,14 +300,14 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
       constructor(_url: string) {
         super();
         lastWs = this as unknown as MockWebSocket;
-        queueMicrotask(() => (this as unknown as MockWebSocket).fire("open"));
+        queueMicrotask(() => (this as unknown as MockWebSocket).fire('open'));
       }
     };
     (globalThis as any).WebSocket.OPEN = MockWebSocket.OPEN;
 
     mockFetch.mockResolvedValue({
       json: () =>
-        Promise.resolve({ ok: true, url: "wss://fake-smoke.slack.test" }),
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
   });
 
@@ -318,7 +318,7 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
     vi.restoreAllMocks();
   });
 
-  it("exponential backoff delays: 1s, 2s, 4s, 8s, 16s, 30s cap", async () => {
+  it('exponential backoff delays: 1s, 2s, 4s, 8s, 16s, 30s cap', async () => {
     const log = vi.fn();
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
 
@@ -328,11 +328,11 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
 
     // After initial connect, make all subsequent connect() calls fail
     // so reconnectAttempts is never reset by a successful 'open' event.
-    mockFetch.mockRejectedValue(new Error("simulated network failure"));
+    mockFetch.mockRejectedValue(new Error('simulated network failure'));
 
     const getDelay = (callIndex: number): number => {
       const calls = log.mock.calls.filter(
-        (c) => typeof c[0] === "string" && c[0].includes("reconnecting in"),
+        (c) => typeof c[0] === 'string' && c[0].includes('reconnecting in'),
       );
       if (!calls[callIndex]) return -1;
       const m = (calls[callIndex][0] as string).match(
@@ -342,7 +342,7 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
     };
 
     // Trigger first disconnect — attempt 0: delay = 1000 * 2^0 = 1000
-    lastWs!.fire("close");
+    lastWs!.fire('close');
     await vi.advanceTimersByTimeAsync(0);
     expect(getDelay(0)).toBe(1000);
 
@@ -375,17 +375,17 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
     client.stop();
   });
 
-  it("max 10 reconnect attempts: stops after 10", async () => {
+  it('max 10 reconnect attempts: stops after 10', async () => {
     const log = vi.fn();
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
     await client.start();
     await vi.advanceTimersByTimeAsync(0);
 
     // Make all reconnect attempts fail so counter keeps incrementing
-    mockFetch.mockRejectedValue(new Error("simulated network failure"));
+    mockFetch.mockRejectedValue(new Error('simulated network failure'));
 
     // Trigger initial disconnect
-    lastWs!.fire("close");
+    lastWs!.fire('close');
     await vi.advanceTimersByTimeAsync(0);
 
     // Drive through 10 reconnect attempts (each fails, schedules next)
@@ -396,32 +396,32 @@ describe("SMOKE: SlackSocketClient — reconnect backoff (issue #1139)", () => {
 
     const maxReachedCalls = log.mock.calls.filter(
       (c) =>
-        typeof c[0] === "string" && c[0].includes("max reconnect attempts"),
+        typeof c[0] === 'string' && c[0].includes('max reconnect attempts'),
     );
     expect(maxReachedCalls.length).toBeGreaterThanOrEqual(1);
     client.stop();
   });
 });
 
-describe("SMOKE: SlackSocketClient — stop() and WS-unavailable (issue #1139)", () => {
+describe('SMOKE: SlackSocketClient — stop() and WS-unavailable (issue #1139)', () => {
   afterEach(() => {
     if (OrigWS) (globalThis as any).WebSocket = OrigWS;
     else delete (globalThis as any).WebSocket;
     vi.restoreAllMocks();
   });
 
-  it("stop() sets isShuttingDown, clears timer, closes WS — no reconnect after stop", async () => {
+  it('stop() sets isShuttingDown, clears timer, closes WS — no reconnect after stop', async () => {
     vi.useFakeTimers();
     lastWs = null;
     mockFetch.mockResolvedValue({
       json: () =>
-        Promise.resolve({ ok: true, url: "wss://fake-smoke.slack.test" }),
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
     (globalThis as any).WebSocket = class extends MockWebSocket {
       constructor(_url: string) {
         super();
         lastWs = this as unknown as MockWebSocket;
-        queueMicrotask(() => (this as unknown as MockWebSocket).fire("open"));
+        queueMicrotask(() => (this as unknown as MockWebSocket).fire('open'));
       }
     };
     (globalThis as any).WebSocket.OPEN = MockWebSocket.OPEN;
@@ -436,32 +436,32 @@ describe("SMOKE: SlackSocketClient — stop() and WS-unavailable (issue #1139)",
     expect(ws.close).toHaveBeenCalled();
 
     // Fire close after stop — should NOT schedule reconnect
-    ws.fire("close");
+    ws.fire('close');
     await vi.advanceTimersByTimeAsync(0);
     await vi.advanceTimersByTimeAsync(5000);
     await vi.advanceTimersByTimeAsync(0);
 
     const reconnectCalls = log.mock.calls.filter(
-      (c) => typeof c[0] === "string" && c[0].includes("reconnecting in"),
+      (c) => typeof c[0] === 'string' && c[0].includes('reconnecting in'),
     );
     expect(reconnectCalls.length).toBe(0);
     vi.useRealTimers();
   });
 
-  it("WebSocket unavailable: logs warning, does not throw", async () => {
+  it('WebSocket unavailable: logs warning, does not throw', async () => {
     // Remove WebSocket from global
     delete (globalThis as any).WebSocket;
     const log = vi.fn();
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
     await client.start(); // should not throw
     expect(log).toHaveBeenCalledWith(
-      expect.stringContaining("WebSocket not available"),
+      expect.stringContaining('WebSocket not available'),
     );
     client.stop();
   });
 });
 
-describe("SMOKE: Slack API helper function signatures (issue #1139)", () => {
+describe('SMOKE: Slack API helper function signatures (issue #1139)', () => {
   beforeEach(() => {
     mockFetch.mockReset();
   });
@@ -470,76 +470,76 @@ describe("SMOKE: Slack API helper function signatures (issue #1139)", () => {
     vi.restoreAllMocks();
   });
 
-  it("postSlackBotMessage: returns ok and ts on success", async () => {
+  it('postSlackBotMessage: returns ok and ts on success', async () => {
     mockFetch.mockResolvedValueOnce({
-      json: () => Promise.resolve({ ok: true, ts: "1700000001.000001" }),
+      json: () => Promise.resolve({ ok: true, ts: '1700000001.000001' }),
     });
     const result = await postSlackBotMessage(
-      "xoxb-test",
-      "C999",
-      "hello from smoke",
+      'xoxb-test',
+      'C999',
+      'hello from smoke',
     );
     expect(result.ok).toBe(true);
-    expect(result.ts).toBe("1700000001.000001");
+    expect(result.ts).toBe('1700000001.000001');
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://slack.com/api/chat.postMessage",
-      expect.objectContaining({ method: "POST" }),
+      'https://slack.com/api/chat.postMessage',
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 
-  it("postSlackBotMessage: returns error on API failure", async () => {
+  it('postSlackBotMessage: returns error on API failure', async () => {
     mockFetch.mockResolvedValueOnce({
-      json: () => Promise.resolve({ ok: false, error: "channel_not_found" }),
+      json: () => Promise.resolve({ ok: false, error: 'channel_not_found' }),
     });
-    const result = await postSlackBotMessage("xoxb-test", "CBAD", "hi");
+    const result = await postSlackBotMessage('xoxb-test', 'CBAD', 'hi');
     expect(result.ok).toBe(false);
-    expect(result.error).toBe("channel_not_found");
+    expect(result.error).toBe('channel_not_found');
   });
 
-  it("addSlackReaction: calls reactions.add endpoint", async () => {
+  it('addSlackReaction: calls reactions.add endpoint', async () => {
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve({ ok: true }),
     });
     await addSlackReaction(
-      "xoxb-test",
-      "C999",
-      "1700000001.000001",
-      "white_check_mark",
+      'xoxb-test',
+      'C999',
+      '1700000001.000001',
+      'white_check_mark',
     );
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://slack.com/api/reactions.add",
-      expect.objectContaining({ method: "POST" }),
+      'https://slack.com/api/reactions.add',
+      expect.objectContaining({ method: 'POST' }),
     );
   });
 
-  it("addSlackReaction: uses default emoji when omitted", async () => {
+  it('addSlackReaction: uses default emoji when omitted', async () => {
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve({ ok: true }),
     });
-    await addSlackReaction("xoxb-test", "C999", "1700000001.000001");
+    await addSlackReaction('xoxb-test', 'C999', '1700000001.000001');
     const lastCall = mockFetch.mock.calls.at(-1)!;
     const callBody = JSON.parse(lastCall[1].body as string);
-    expect(callBody.name).toBe("white_check_mark");
+    expect(callBody.name).toBe('white_check_mark');
   });
 
-  it("replySlackThread: calls chat.postMessage with thread_ts", async () => {
+  it('replySlackThread: calls chat.postMessage with thread_ts', async () => {
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve({ ok: true }),
     });
     await replySlackThread(
-      "xoxb-test",
-      "C999",
-      "1700000001.000001",
-      "threaded reply",
+      'xoxb-test',
+      'C999',
+      '1700000001.000001',
+      'threaded reply',
     );
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://slack.com/api/chat.postMessage",
-      expect.objectContaining({ method: "POST" }),
+      'https://slack.com/api/chat.postMessage',
+      expect.objectContaining({ method: 'POST' }),
     );
     const lastCall = mockFetch.mock.calls.at(-1)!;
     const callBody = JSON.parse(lastCall[1].body as string);
-    expect(callBody.thread_ts).toBe("1700000001.000001");
-    expect(callBody.text).toBe("threaded reply");
+    expect(callBody.thread_ts).toBe('1700000001.000001');
+    expect(callBody.text).toBe('threaded reply');
   });
 });
 
@@ -553,10 +553,10 @@ import {
   stateClearTool,
   stateListActiveTool,
   stateGetStatusTool,
-} from "../tools/state-tools.js";
-import { resolveSessionStatePath } from "../lib/worktree-paths.js";
+} from '../tools/state-tools.js';
+import { resolveSessionStatePath } from '../lib/worktree-paths.js';
 
-describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () => {
+describe('SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)', () => {
   let testDir: string;
   let omcDir: string;
 
@@ -565,7 +565,7 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
       tmpdir(),
       `smoke-state-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
-    omcDir = join(testDir, ".omc");
+    omcDir = join(testDir, '.omc');
     mkdirSync(omcDir, { recursive: true });
     mockGetOmcRoot.mockReturnValue(omcDir);
   });
@@ -586,56 +586,56 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
     return result.content[0].text as string;
   }
 
-  it("session-scoped write → read → clear cycle", async () => {
-    const sessionId = "smoke-sess-001";
+  it('session-scoped write → read → clear cycle', async () => {
+    const sessionId = 'smoke-sess-001';
 
     // Write
     const writeResult = await callTool(stateWriteTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sessionId,
       active: true,
       iteration: 3,
-      task_description: "smoke test task",
+      task_description: 'smoke test task',
     });
-    expect(writeResult).toContain("Successfully wrote state");
+    expect(writeResult).toContain('Successfully wrote state');
     expect(writeResult).toContain(sessionId);
 
     // Read back
     const readResult = await callTool(stateReadTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sessionId,
     });
-    expect(readResult).toContain("smoke test task");
+    expect(readResult).toContain('smoke test task');
     expect(readResult).toContain(sessionId);
 
     // Clear
     const clearResult = await callTool(stateClearTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sessionId,
     });
-    expect(clearResult).toContain("Successfully cleared state");
+    expect(clearResult).toContain('Successfully cleared state');
 
     // Read after clear — should report no state
     const readAfterClear = await callTool(stateReadTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sessionId,
     });
-    expect(readAfterClear).toContain("No state found");
+    expect(readAfterClear).toContain('No state found');
   });
 
-  it("state_clear with session_id writes cancel signal with TTL (~30s)", async () => {
-    const sessionId = "smoke-cancel-sess";
+  it('state_clear with session_id writes cancel signal with TTL (~30s)', async () => {
+    const sessionId = 'smoke-cancel-sess';
 
     // Write some state first so there is something to clear
     await callTool(stateWriteTool, {
-      mode: "autopilot",
+      mode: 'autopilot',
       session_id: sessionId,
       active: true,
     });
 
     const before = Date.now();
     await callTool(stateClearTool, {
-      mode: "autopilot",
+      mode: 'autopilot',
       session_id: sessionId,
     });
     const after = Date.now();
@@ -645,17 +645,17 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
     // omcRoot = getOmcRoot(root) = mockGetOmcRoot(testDir) = omcDir
     const cancelSignalPath = join(
       omcDir,
-      "state",
-      "sessions",
+      'state',
+      'sessions',
       sessionId,
-      "cancel-signal-state.json",
+      'cancel-signal-state.json',
     );
     expect(existsSync(cancelSignalPath)).toBe(true);
 
-    const signal = JSON.parse(readFileSync(cancelSignalPath, "utf-8"));
+    const signal = JSON.parse(readFileSync(cancelSignalPath, 'utf-8'));
     expect(signal.active).toBe(true);
-    expect(signal.mode).toBe("autopilot");
-    expect(signal.source).toBe("state_clear");
+    expect(signal.mode).toBe('autopilot');
+    expect(signal.source).toBe('state_clear');
 
     const requestedAt = new Date(signal.requested_at).getTime();
     const expiresAt = new Date(signal.expires_at).getTime();
@@ -665,65 +665,65 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
     expect(ttlMs).toBe(30_000);
   });
 
-  it("ghost-legacy cleanup: session clear removes legacy file when sessionId matches", async () => {
-    const sessionId = "smoke-ghost-match";
+  it('ghost-legacy cleanup: session clear removes legacy file when sessionId matches', async () => {
+    const sessionId = 'smoke-ghost-match';
 
     // Write session-scoped state
     await callTool(stateWriteTool, {
-      mode: "ultrawork",
+      mode: 'ultrawork',
       session_id: sessionId,
       active: true,
     });
 
     // Plant a legacy ghost file with matching sessionId in _meta
-    const legacyDir = join(omcDir, "state");
+    const legacyDir = join(omcDir, 'state');
     mkdirSync(legacyDir, { recursive: true });
-    const legacyPath = join(legacyDir, "ultrawork-state.json");
+    const legacyPath = join(legacyDir, 'ultrawork-state.json');
     writeFileSync(
       legacyPath,
       JSON.stringify({
         active: true,
-        _meta: { mode: "ultrawork", sessionId, updatedBy: "state_write_tool" },
+        _meta: { mode: 'ultrawork', sessionId, updatedBy: 'state_write_tool' },
       }),
     );
     expect(existsSync(legacyPath)).toBe(true);
 
     const clearResult = await callTool(stateClearTool, {
-      mode: "ultrawork",
+      mode: 'ultrawork',
       session_id: sessionId,
     });
-    expect(clearResult).toContain("ghost legacy file also removed");
+    expect(clearResult).toContain('ghost legacy file also removed');
     expect(existsSync(legacyPath)).toBe(false);
   });
 
-  it("ghost-legacy preservation: session clear does NOT remove legacy file from a different session", async () => {
-    const sessionId = "smoke-ghost-mine";
-    const otherSessionId = "smoke-ghost-other";
+  it('ghost-legacy preservation: session clear does NOT remove legacy file from a different session', async () => {
+    const sessionId = 'smoke-ghost-mine';
+    const otherSessionId = 'smoke-ghost-other';
 
     await callTool(stateWriteTool, {
-      mode: "ultrawork",
+      mode: 'ultrawork',
       session_id: sessionId,
       active: true,
     });
 
     // Plant a legacy ghost file belonging to another session
-    const legacyDir = join(omcDir, "state");
+    const legacyDir = join(omcDir, 'state');
     mkdirSync(legacyDir, { recursive: true });
-    const legacyPath = join(legacyDir, "ultrawork-state.json");
+    const legacyPath = join(legacyDir, 'ultrawork-state.json');
     writeFileSync(
       legacyPath,
       JSON.stringify({
         active: true,
         _meta: {
-          mode: "ultrawork",
+          mode: 'ultrawork',
           sessionId: otherSessionId,
-          updatedBy: "state_write_tool",
+          updatedBy: 'state_write_tool',
         },
       }),
     );
 
     await callTool(stateClearTool, {
-      mode: "ultrawork",
+      mode: 'ultrawork',
       session_id: sessionId,
     });
 
@@ -731,39 +731,39 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
     expect(existsSync(legacyPath)).toBe(true);
   });
 
-  it("broadcast clear (no session_id) removes both legacy and session-scoped state", async () => {
+  it('broadcast clear (no session_id) removes both legacy and session-scoped state', async () => {
     // Write two session-scoped entries
     await callTool(stateWriteTool, {
-      mode: "team",
-      session_id: "broadcast-sess-a",
+      mode: 'team',
+      session_id: 'broadcast-sess-a',
       active: true,
     });
     await callTool(stateWriteTool, {
-      mode: "team",
-      session_id: "broadcast-sess-b",
+      mode: 'team',
+      session_id: 'broadcast-sess-b',
       active: true,
     });
 
     // Write a legacy path directly
-    const legacyDir = join(omcDir, "state");
+    const legacyDir = join(omcDir, 'state');
     mkdirSync(legacyDir, { recursive: true });
-    const legacyPath = join(legacyDir, "team-state.json");
+    const legacyPath = join(legacyDir, 'team-state.json');
     writeFileSync(legacyPath, JSON.stringify({ active: true }));
 
-    const clearResult = await callTool(stateClearTool, { mode: "team" });
+    const clearResult = await callTool(stateClearTool, { mode: 'team' });
     // Broadcast clear should mention multiple locations or warn about broad op
     expect(clearResult).toMatch(/Cleared state|cleared/i);
-    expect(clearResult).toContain("WARNING");
+    expect(clearResult).toContain('WARNING');
 
     // Both session paths should be gone
     const sessAPath = resolveSessionStatePath(
-      "team",
-      "broadcast-sess-a",
+      'team',
+      'broadcast-sess-a',
       omcDir,
     );
     const sessBPath = resolveSessionStatePath(
-      "team",
-      "broadcast-sess-b",
+      'team',
+      'broadcast-sess-b',
       omcDir,
     );
     expect(existsSync(sessAPath)).toBe(false);
@@ -771,20 +771,20 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
     expect(existsSync(legacyPath)).toBe(false);
   });
 
-  it("state_list_active with session_id only shows modes active in that session", async () => {
-    const sessionId = "smoke-list-sess";
+  it('state_list_active with session_id only shows modes active in that session', async () => {
+    const sessionId = 'smoke-list-sess';
 
     // Write active state for 'ralph' in this session
     await callTool(stateWriteTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sessionId,
       active: true,
     });
 
     // Write active state for 'ultrawork' in a DIFFERENT session
     await callTool(stateWriteTool, {
-      mode: "ultrawork",
-      session_id: "other-list-sess",
+      mode: 'ultrawork',
+      session_id: 'other-list-sess',
       active: true,
     });
 
@@ -792,51 +792,51 @@ describe("SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)", () 
       session_id: sessionId,
     });
 
-    expect(listResult).toContain("ralph");
+    expect(listResult).toContain('ralph');
     // ultrawork from another session must not appear
-    expect(listResult).not.toContain("ultrawork");
+    expect(listResult).not.toContain('ultrawork');
   });
 
-  it("state_get_status returns correct path and existence details for a mode", async () => {
-    const sessionId = "smoke-status-sess";
+  it('state_get_status returns correct path and existence details for a mode', async () => {
+    const sessionId = 'smoke-status-sess';
 
     await callTool(stateWriteTool, {
-      mode: "autopilot",
+      mode: 'autopilot',
       session_id: sessionId,
       active: true,
       iteration: 7,
     });
 
     const statusResult = await callTool(stateGetStatusTool, {
-      mode: "autopilot",
+      mode: 'autopilot',
       session_id: sessionId,
     });
 
-    expect(statusResult).toContain("autopilot");
+    expect(statusResult).toContain('autopilot');
     // Path should point into the sessions directory
     expect(statusResult).toContain(sessionId);
     // Should indicate file exists
-    expect(statusResult).toContain("Yes");
+    expect(statusResult).toContain('Yes');
   });
 
-  it("state_read with no session_id aggregates all sessions and legacy", async () => {
-    const sess1 = "agg-sess-1";
-    const sess2 = "agg-sess-2";
+  it('state_read with no session_id aggregates all sessions and legacy', async () => {
+    const sess1 = 'agg-sess-1';
+    const sess2 = 'agg-sess-2';
 
     await callTool(stateWriteTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sess1,
       active: true,
-      task_description: "task from sess1",
+      task_description: 'task from sess1',
     });
     await callTool(stateWriteTool, {
-      mode: "ralph",
+      mode: 'ralph',
       session_id: sess2,
       active: true,
-      task_description: "task from sess2",
+      task_description: 'task from sess2',
     });
 
-    const readResult = await callTool(stateReadTool, { mode: "ralph" });
+    const readResult = await callTool(stateReadTool, { mode: 'ralph' });
     // Both sessions should appear
     expect(readResult).toContain(sess1);
     expect(readResult).toContain(sess2);

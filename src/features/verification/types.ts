@@ -8,13 +8,13 @@
  * Types of verification evidence
  */
 export type VerificationEvidenceType =
-  | "build_success"
-  | "test_pass"
-  | "lint_clean"
-  | "functionality_verified"
-  | "architect_approval"
-  | "todo_complete"
-  | "error_free";
+  | 'build_success'
+  | 'test_pass'
+  | 'lint_clean'
+  | 'functionality_verified'
+  | 'architect_approval'
+  | 'todo_complete'
+  | 'error_free';
 
 /**
  * Proof of verification for a specific check
@@ -89,7 +89,7 @@ export interface VerificationChecklist {
   /** All checks with their current status */
   checks: VerificationCheck[];
   /** Overall completion status */
-  status: "pending" | "in_progress" | "complete" | "failed";
+  status: 'pending' | 'in_progress' | 'complete' | 'failed';
   /** Summary of results */
   summary?: VerificationSummary;
 }
@@ -111,7 +111,7 @@ export interface VerificationSummary {
   /** List of failed check IDs */
   failedChecks: string[];
   /** Overall verdict */
-  verdict: "approved" | "rejected" | "incomplete";
+  verdict: 'approved' | 'rejected' | 'incomplete';
 }
 
 /**
@@ -153,7 +153,7 @@ export interface ReportOptions {
   /** Include command output in report */
   includeOutput?: boolean;
   /** Format for report */
-  format?: "text" | "markdown" | "json";
+  format?: 'text' | 'markdown' | 'json';
   /** Whether to colorize output (for terminal) */
   colorize?: boolean;
 }

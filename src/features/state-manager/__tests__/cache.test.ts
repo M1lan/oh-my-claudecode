@@ -51,10 +51,14 @@ describe('state-manager cache', () => {
     clearStateCache();
     try {
       fs.rmSync(TEST_STATE_DIR, { recursive: true, force: true });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
     try {
       fs.rmSync(TEST_WORKTREE_ROOT, { recursive: true, force: true });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   });
 
   function writeStateToDisk(name: string, data: unknown) {
@@ -88,7 +92,9 @@ describe('state-manager cache', () => {
       const result2 = readState('test-mode', StateLocation.LOCAL);
       expect(result2.exists).toBe(true);
       expect((result2.data as Record<string, unknown>).value).toBe('original');
-      expect((result2.data as Record<string, unknown>).injected).toBeUndefined();
+      expect(
+        (result2.data as Record<string, unknown>).injected,
+      ).toBeUndefined();
     });
 
     it('should return independent clones even on cache hit path', () => {
@@ -135,7 +141,9 @@ describe('state-manager cache', () => {
         source: 'legacy',
       });
 
-      const result = readState('boulder', StateLocation.LOCAL, { checkLegacy: true });
+      const result = readState('boulder', StateLocation.LOCAL, {
+        checkLegacy: true,
+      });
 
       expect(result.exists).toBe(true);
       expect(result.foundAt).toBe(legacyPath);
@@ -147,16 +155,25 @@ describe('state-manager cache', () => {
     });
 
     it('should report missing state with warning evidence when legacy JSON is malformed', () => {
-      const legacyPath = path.join(TEST_WORKTREE_ROOT, '.omc', 'state', 'boulder.json');
+      const legacyPath = path.join(
+        TEST_WORKTREE_ROOT,
+        '.omc',
+        'state',
+        'boulder.json',
+      );
       fs.mkdirSync(path.dirname(legacyPath), { recursive: true });
       fs.writeFileSync(legacyPath, '{ malformed legacy json', 'utf-8');
 
-      const result = readState('boulder', StateLocation.LOCAL, { checkLegacy: true });
+      const result = readState('boulder', StateLocation.LOCAL, {
+        checkLegacy: true,
+      });
 
       expect(result.exists).toBe(false);
       expect(result.legacyLocations).toEqual(['.omc/state/boulder.json']);
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining(`Failed to read legacy state from ${legacyPath}`),
+        expect.stringContaining(
+          `Failed to read legacy state from ${legacyPath}`,
+        ),
         expect.any(SyntaxError),
       );
     });
@@ -211,7 +228,9 @@ describe('cleanupStaleStates', () => {
     clearStateCache();
     try {
       fs.rmSync(tmpDir, { recursive: true, force: true });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   });
 
   function writeStateFile(name: string, data: unknown) {
@@ -241,7 +260,9 @@ describe('cleanupStaleStates', () => {
   });
 
   it('should NOT deactivate entries with recent heartbeat', () => {
-    const staleUpdatedAt = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    const staleUpdatedAt = new Date(
+      Date.now() - 5 * 60 * 60 * 1000,
+    ).toISOString();
     const recentHeartbeat = new Date(Date.now() - 10 * 1000).toISOString(); // 10 seconds ago
     writeStateFile('heartbeat-mode', {
       active: true,
@@ -284,7 +305,9 @@ describe('cache TOCTOU prevention', () => {
     clearStateCache();
     try {
       fs.rmSync(TEST_STATE_DIR, { recursive: true, force: true });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   });
 
   function writeStateToDisk(name: string, data: unknown) {
@@ -304,7 +327,11 @@ describe('cache TOCTOU prevention', () => {
     const filePath = path.join(TEST_STATE_DIR, 'ext-change.json');
     // Force a different mtime by touching the file with a future timestamp
     const futureTime = new Date(Date.now() + 10_000);
-    fs.writeFileSync(filePath, JSON.stringify({ active: true, value: 'updated' }), 'utf-8');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ active: true, value: 'updated' }),
+      'utf-8',
+    );
     fs.utimesSync(filePath, futureTime, futureTime);
 
     // Read should detect mtime change and return fresh data, not stale cache
@@ -321,7 +348,11 @@ describe('cache TOCTOU prevention', () => {
 
     // Simulate rapid external modification (different content, different mtime)
     const filePath = path.join(TEST_STATE_DIR, 'toctou-seq.json');
-    fs.writeFileSync(filePath, JSON.stringify({ active: true, version: 2 }), 'utf-8');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ active: true, version: 2 }),
+      'utf-8',
+    );
     // Ensure mtime is clearly different from cached mtime
     const futureTime = new Date(Date.now() + 5_000);
     fs.utimesSync(filePath, futureTime, futureTime);
@@ -331,7 +362,11 @@ describe('cache TOCTOU prevention', () => {
     expect((r2.data as Record<string, unknown>).version).toBe(2);
 
     // Modify again with yet another mtime
-    fs.writeFileSync(filePath, JSON.stringify({ active: true, version: 3 }), 'utf-8');
+    fs.writeFileSync(
+      filePath,
+      JSON.stringify({ active: true, version: 3 }),
+      'utf-8',
+    );
     const futureTime2 = new Date(Date.now() + 10_000);
     fs.utimesSync(filePath, futureTime2, futureTime2);
 
@@ -377,10 +412,14 @@ describe('StateManager.update() atomicity', () => {
           fs.unlinkSync(path.join(TEST_STATE_DIR, f));
         }
       }
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
     try {
       fs.rmSync(TEST_STATE_DIR, { recursive: true, force: true });
-    } catch { /* best-effort */ }
+    } catch {
+      /* best-effort */
+    }
   });
 
   function writeStateToDisk(name: string, data: unknown) {
@@ -407,7 +446,7 @@ describe('StateManager.update() atomicity', () => {
     // update() should invalidate cache, read fresh count=5, then increment
     manager.update((current) => ({
       ...(current as Record<string, unknown>),
-      count: ((current as Record<string, unknown>)?.count as number ?? 0) + 1,
+      count: (((current as Record<string, unknown>)?.count as number) ?? 0) + 1,
     }));
 
     // Result should be 6 (fresh 5 + 1), not 1 (stale 0 + 1)
@@ -422,7 +461,9 @@ describe('StateManager.update() atomicity', () => {
 
     // Update with throwing updater
     expect(() => {
-      manager.update(() => { throw new Error('updater failed'); });
+      manager.update(() => {
+        throw new Error('updater failed');
+      });
     }).toThrow('updater failed');
 
     // Lock should be released — subsequent update should succeed
@@ -481,19 +522,25 @@ describe('isStateStale', () => {
   it('should return false for old updatedAt but recent heartbeat', () => {
     const oldTime = new Date(NOW - 5 * 60 * 60 * 1000).toISOString();
     const recentHb = new Date(NOW - 30 * 1000).toISOString();
-    expect(isStateStale({ updatedAt: oldTime, heartbeatAt: recentHb }, NOW, MAX_AGE)).toBe(false);
+    expect(
+      isStateStale({ updatedAt: oldTime, heartbeatAt: recentHb }, NOW, MAX_AGE),
+    ).toBe(false);
   });
 
   it('should return false for recent updatedAt and old heartbeat', () => {
     const recentTime = new Date(NOW - 1 * 60 * 60 * 1000).toISOString();
     const oldHb = new Date(NOW - 5 * 60 * 60 * 1000).toISOString();
-    expect(isStateStale({ updatedAt: recentTime, heartbeatAt: oldHb }, NOW, MAX_AGE)).toBe(false);
+    expect(
+      isStateStale({ updatedAt: recentTime, heartbeatAt: oldHb }, NOW, MAX_AGE),
+    ).toBe(false);
   });
 
   it('should return true when both timestamps are old', () => {
     const oldTime = new Date(NOW - 5 * 60 * 60 * 1000).toISOString();
     const oldHb = new Date(NOW - 6 * 60 * 60 * 1000).toISOString();
-    expect(isStateStale({ updatedAt: oldTime, heartbeatAt: oldHb }, NOW, MAX_AGE)).toBe(true);
+    expect(
+      isStateStale({ updatedAt: oldTime, heartbeatAt: oldHb }, NOW, MAX_AGE),
+    ).toBe(true);
   });
 
   it('should return false when no timestamps are present', () => {

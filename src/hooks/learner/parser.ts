@@ -4,7 +4,7 @@
  * Parses YAML frontmatter from skill files.
  */
 
-import type { SkillMetadata } from "./types.js";
+import type { SkillMetadata } from './types.js';
 
 export interface SkillParseResult {
   metadata: Partial<SkillMetadata>;
@@ -25,7 +25,7 @@ export function parseSkillFile(rawContent: string): SkillParseResult {
       metadata: {},
       content: rawContent,
       valid: false,
-      errors: ["Missing YAML frontmatter"],
+      errors: ['Missing YAML frontmatter'],
     };
   }
 
@@ -40,21 +40,21 @@ export function parseSkillFile(rawContent: string): SkillParseResult {
     if (!metadata.id && metadata.name) {
       metadata.id = metadata.name
         .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '');
     }
 
     // Default source to 'manual' if missing
     if (!metadata.source) {
-      metadata.source = "manual";
+      metadata.source = 'manual';
     }
 
     // Validate required fields (only truly required ones)
-    if (!metadata.name) errors.push("Missing required field: name");
+    if (!metadata.name) errors.push('Missing required field: name');
     if (!metadata.description)
-      errors.push("Missing required field: description");
+      errors.push('Missing required field: description');
     if (!metadata.triggers || metadata.triggers.length === 0) {
-      errors.push("Missing required field: triggers");
+      errors.push('Missing required field: triggers');
     }
 
     return {
@@ -77,13 +77,13 @@ export function parseSkillFile(rawContent: string): SkillParseResult {
  * Parse YAML metadata without external library.
  */
 export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
-  const lines = yamlContent.split("\n");
+  const lines = yamlContent.split('\n');
   const metadata: Partial<SkillMetadata> = {};
 
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
-    const colonIndex = line.indexOf(":");
+    const colonIndex = line.indexOf(':');
 
     if (colonIndex === -1) {
       i++;
@@ -94,46 +94,46 @@ export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
     const rawValue = line.slice(colonIndex + 1).trim();
 
     switch (key) {
-      case "id":
+      case 'id':
         metadata.id = parseStringValue(rawValue);
         break;
-      case "name":
+      case 'name':
         metadata.name = parseStringValue(rawValue);
         break;
-      case "description":
+      case 'description':
         metadata.description = parseStringValue(rawValue);
         break;
-      case "source":
+      case 'source':
         metadata.source = parseStringValue(rawValue) as
-          | "extracted"
-          | "promoted"
-          | "manual";
+          | 'extracted'
+          | 'promoted'
+          | 'manual';
         break;
-      case "createdAt":
+      case 'createdAt':
         metadata.createdAt = parseStringValue(rawValue);
         break;
-      case "sessionId":
+      case 'sessionId':
         metadata.sessionId = parseStringValue(rawValue);
         break;
-      case "model":
+      case 'model':
         metadata.model = parseStringValue(rawValue);
         break;
-      case "agent":
+      case 'agent':
         metadata.agent = parseStringValue(rawValue);
         break;
-      case "matching":
-        metadata.matching = parseStringValue(rawValue) as "exact" | "fuzzy";
+      case 'matching':
+        metadata.matching = parseStringValue(rawValue) as 'exact' | 'fuzzy';
         break;
-      case "quality":
+      case 'quality':
         metadata.quality = parseInt(rawValue, 10) || undefined;
         break;
-      case "usageCount":
+      case 'usageCount':
         metadata.usageCount = parseInt(rawValue, 10) || 0;
         break;
-      case "triggers":
-      case "tags": {
+      case 'triggers':
+      case 'tags': {
         const { value, consumed } = parseArrayValue(rawValue, lines, i);
-        if (key === "triggers") {
+        if (key === 'triggers') {
           metadata.triggers = normalizeStringArray(value);
         } else {
           metadata.tags = normalizeStringArray(value);
@@ -150,7 +150,7 @@ export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
 }
 
 export function parseStringValue(value: string): string {
-  if (!value) return "";
+  if (!value) return '';
   if (
     (value.startsWith('"') && value.endsWith('"')) ||
     (value.startsWith("'") && value.endsWith("'"))
@@ -171,21 +171,21 @@ export function parseArrayValue(
   currentIndex: number,
 ): { value: string | string[]; consumed: number } {
   // Inline array: ["a", "b"]
-  if (rawValue.startsWith("[")) {
-    const endIdx = rawValue.lastIndexOf("]");
+  if (rawValue.startsWith('[')) {
+    const endIdx = rawValue.lastIndexOf(']');
     if (endIdx === -1) return { value: [], consumed: 1 };
     const content = rawValue.slice(1, endIdx).trim();
     if (!content) return { value: [], consumed: 1 };
 
     const items = content
-      .split(",")
+      .split(',')
       .map((s) => parseStringValue(s.trim()))
       .filter(Boolean);
     return { value: items, consumed: 1 };
   }
 
   // Multi-line array
-  if (!rawValue || rawValue === "") {
+  if (!rawValue || rawValue === '') {
     const items: string[] = [];
     let consumed = 1;
 
@@ -197,7 +197,7 @@ export function parseArrayValue(
         const itemValue = parseStringValue(arrayMatch[1].trim());
         if (itemValue) items.push(itemValue);
         consumed++;
-      } else if (nextLine.trim() === "") {
+      } else if (nextLine.trim() === '') {
         consumed++;
       } else {
         break;
@@ -218,7 +218,7 @@ export function parseArrayValue(
  */
 export function generateSkillFrontmatter(metadata: SkillMetadata): string {
   const lines = [
-    "---",
+    '---',
     `id: "${metadata.id}"`,
     `name: "${metadata.name}"`,
     `description: "${metadata.description}"`,
@@ -238,18 +238,18 @@ export function generateSkillFrontmatter(metadata: SkillMetadata): string {
     lines.push(`usageCount: ${metadata.usageCount}`);
   }
 
-  lines.push("triggers:");
+  lines.push('triggers:');
   for (const trigger of metadata.triggers) {
     lines.push(`  - "${trigger}"`);
   }
 
   if (metadata.tags && metadata.tags.length > 0) {
-    lines.push("tags:");
+    lines.push('tags:');
     for (const tag of metadata.tags) {
       lines.push(`  - "${tag}"`);
     }
   }
 
-  lines.push("---");
-  return lines.join("\n");
+  lines.push('---');
+  return lines.join('\n');
 }

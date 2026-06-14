@@ -5,8 +5,8 @@
  * Tracks problem-solution pairs and suggests skill extraction.
  */
 
-import { createHash } from "crypto";
-import type { SkillMetadata } from "./types.js";
+import { createHash } from 'crypto';
+import type { SkillMetadata } from './types.js';
 
 const ABSOLUTE_PATH_PATTERN =
   /(?:^|\s)((?:[A-Z]:)?(?:\/|\\)[\w\/\\.-]+\.\w+)/gi;
@@ -52,42 +52,42 @@ const DEFAULT_SUGGESTION_THRESHOLD = 70;
  * Keywords that boost skill-worthiness score.
  */
 const HIGH_VALUE_KEYWORDS = [
-  "error",
-  "failed",
-  "crash",
-  "bug",
-  "fix",
-  "workaround",
-  "solution",
-  "resolved",
+  'error',
+  'failed',
+  'crash',
+  'bug',
+  'fix',
+  'workaround',
+  'solution',
+  'resolved',
 ];
 
 /**
  * Common file extensions that indicate technical content.
  */
 const TECHNICAL_EXTENSIONS = [
-  ".ts",
-  ".tsx",
-  ".js",
-  ".jsx",
-  ".py",
-  ".go",
-  ".rs",
-  ".java",
-  ".c",
-  ".cpp",
-  ".h",
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.py',
+  '.go',
+  '.rs',
+  '.java',
+  '.c',
+  '.cpp',
+  '.h',
 ];
 
 /**
  * Generic patterns that lower skill-worthiness.
  */
 const GENERIC_PATTERNS = [
-  "try again",
-  "restart",
-  "check the docs",
-  "google it",
-  "look at the error",
+  'try again',
+  'restart',
+  'check the docs',
+  'google it',
+  'look at the error',
 ];
 
 /**
@@ -106,7 +106,7 @@ export function initAutoLearner(sessionId: string): AutoLearnerState {
  */
 function generateContentHash(problem: string, solution: string): string {
   const normalized = `${problem.toLowerCase().trim()}::${solution.toLowerCase().trim()}`;
-  return createHash("sha256").update(normalized).digest("hex").slice(0, 16);
+  return createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
 /**
@@ -176,7 +176,7 @@ function extractKeyTerms(text: string): string[] {
   // Extract capitalized technical terms (like React, TypeScript, etc.)
   const capitalizedMatches = text.matchAll(PASCAL_CASE_PATTERN);
   for (const match of capitalizedMatches) {
-    if (match[1] && !["The", "This", "That", "There"].includes(match[1])) {
+    if (match[1] && !['The', 'This', 'That', 'There'].includes(match[1])) {
       terms.push(match[1]);
     }
   }
@@ -195,14 +195,14 @@ export function extractTriggers(problem: string, solution: string): string[] {
   for (const error of errors.slice(0, 3)) {
     // Limit to 3 errors
     // Take first 5 words of error message
-    const words = error.split(/\s+/).slice(0, 5).join(" ");
+    const words = error.split(/\s+/).slice(0, 5).join(' ');
     if (words.length > 5) {
       triggers.add(words);
     }
   }
 
   // Add file paths (basenames only)
-  const paths = extractFilePaths(problem + " " + solution);
+  const paths = extractFilePaths(problem + ' ' + solution);
   for (const path of paths.slice(0, 3)) {
     // Limit to 3 paths
     const basename = path.split(/[/\\]/).pop();
@@ -212,7 +212,7 @@ export function extractTriggers(problem: string, solution: string): string[] {
   }
 
   // Add key terms
-  const terms = extractKeyTerms(problem + " " + solution);
+  const terms = extractKeyTerms(problem + ' ' + solution);
   for (const term of terms.slice(0, 5)) {
     // Limit to 5 terms
     if (term.length > 3 && term.length < 30) {
@@ -221,7 +221,7 @@ export function extractTriggers(problem: string, solution: string): string[] {
   }
 
   // Add high-value keywords if present
-  const combinedText = (problem + " " + solution).toLowerCase();
+  const combinedText = (problem + ' ' + solution).toLowerCase();
   for (const keyword of HIGH_VALUE_KEYWORDS) {
     if (combinedText.includes(keyword)) {
       triggers.add(keyword);
@@ -236,20 +236,20 @@ export function extractTriggers(problem: string, solution: string): string[] {
  */
 function generateTags(problem: string, solution: string): string[] {
   const tags = new Set<string>();
-  const combinedText = (problem + " " + solution).toLowerCase();
+  const combinedText = (problem + ' ' + solution).toLowerCase();
 
   // Language/framework detection
   const langMap: Record<string, string> = {
-    typescript: "typescript",
-    javascript: "javascript",
-    python: "python",
-    react: "react",
-    vue: "vue",
-    angular: "angular",
-    node: "nodejs",
-    "node.js": "nodejs",
-    rust: "rust",
-    go: "golang",
+    typescript: 'typescript',
+    javascript: 'javascript',
+    python: 'python',
+    react: 'react',
+    vue: 'vue',
+    angular: 'angular',
+    node: 'nodejs',
+    'node.js': 'nodejs',
+    rust: 'rust',
+    go: 'golang',
   };
 
   for (const [keyword, tag] of Object.entries(langMap)) {
@@ -259,31 +259,31 @@ function generateTags(problem: string, solution: string): string[] {
   }
 
   // Problem category detection
-  if (combinedText.includes("error") || combinedText.includes("bug")) {
-    tags.add("debugging");
+  if (combinedText.includes('error') || combinedText.includes('bug')) {
+    tags.add('debugging');
   }
-  if (combinedText.includes("test") || combinedText.includes("spec")) {
-    tags.add("testing");
+  if (combinedText.includes('test') || combinedText.includes('spec')) {
+    tags.add('testing');
   }
-  if (combinedText.includes("build") || combinedText.includes("compile")) {
-    tags.add("build");
+  if (combinedText.includes('build') || combinedText.includes('compile')) {
+    tags.add('build');
   }
-  if (combinedText.includes("performance") || combinedText.includes("slow")) {
-    tags.add("performance");
+  if (combinedText.includes('performance') || combinedText.includes('slow')) {
+    tags.add('performance');
   }
   if (
-    combinedText.includes("security") ||
-    combinedText.includes("vulnerability")
+    combinedText.includes('security') ||
+    combinedText.includes('vulnerability')
   ) {
-    tags.add("security");
+    tags.add('security');
   }
 
   // File type detection
-  const paths = extractFilePaths(problem + " " + solution);
+  const paths = extractFilePaths(problem + ' ' + solution);
   for (const path of paths) {
     for (const ext of TECHNICAL_EXTENSIONS) {
       if (path.endsWith(ext)) {
-        tags.add("code");
+        tags.add('code');
         break;
       }
     }
@@ -298,11 +298,11 @@ function generateTags(problem: string, solution: string): string[] {
 export function calculateSkillWorthiness(pattern: PatternDetection): number {
   let score = 50; // Base score
 
-  const combinedText = (pattern.problem + " " + pattern.solution).toLowerCase();
+  const combinedText = (pattern.problem + ' ' + pattern.solution).toLowerCase();
 
   // Boost for specificity
   const hasFilePaths =
-    extractFilePaths(pattern.problem + " " + pattern.solution).length > 0;
+    extractFilePaths(pattern.problem + ' ' + pattern.solution).length > 0;
   if (hasFilePaths) {
     score += 15;
   }
@@ -449,16 +449,16 @@ export function patternToSkillMetadata(
   pattern: PatternDetection,
 ): Partial<SkillMetadata> {
   // Generate a descriptive name from the problem
-  const problemWords = pattern.problem.split(/\s+/).slice(0, 6).join(" ");
+  const problemWords = pattern.problem.split(/\s+/).slice(0, 6).join(' ');
   const name =
-    problemWords.length > 50 ? problemWords.slice(0, 50) + "..." : problemWords;
+    problemWords.length > 50 ? problemWords.slice(0, 50) + '...' : problemWords;
 
   return {
     name,
     description: pattern.problem.slice(0, 200),
     triggers: pattern.suggestedTriggers,
     tags: pattern.suggestedTags,
-    source: "extracted" as const,
+    source: 'extracted' as const,
     quality: pattern.confidence,
     usageCount: 0,
   };

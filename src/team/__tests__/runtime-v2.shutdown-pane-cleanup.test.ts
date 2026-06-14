@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { tmpdir } from "node:os";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 
 type ExecFileCallback = (
   err: Error | null,
@@ -14,8 +14,8 @@ const execFileMock = vi.hoisted(() => vi.fn());
 const execMock = vi.hoisted(() => vi.fn());
 const tmuxCalls = vi.hoisted(() => [] as string[][]);
 
-vi.mock("child_process", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("child_process")>();
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
   return {
     ...actual,
     exec: execMock,
@@ -30,30 +30,30 @@ async function writeJson(
 ): Promise<void> {
   const fullPath = join(cwd, relativePath);
   await mkdir(dirname(fullPath), { recursive: true });
-  await writeFile(fullPath, JSON.stringify(value, null, 2), "utf-8");
+  await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
 }
 
-describe("shutdownTeamV2 split-pane pane cleanup", () => {
-  let cwd = "";
+describe('shutdownTeamV2 split-pane pane cleanup', () => {
+  let cwd = '';
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "omc-runtime-v2-pane-cleanup-"));
+    cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-pane-cleanup-'));
     tmuxCalls.length = 0;
     execFileMock.mockReset();
     execMock.mockReset();
 
     const run = (args: string[]) => {
       tmuxCalls.push(args);
-      let stdout = "";
-      if (args[0] === "list-panes") {
-        stdout = "%1\n%2\n%3\n";
+      let stdout = '';
+      if (args[0] === 'list-panes') {
+        stdout = '%1\n%2\n%3\n';
       } else if (
-        args[0] === "display-message" &&
-        args.includes("#{pane_dead}")
+        args[0] === 'display-message' &&
+        args.includes('#{pane_dead}')
       ) {
-        stdout = "1\n";
+        stdout = '1\n';
       }
-      return { stdout, stderr: "" };
+      return { stdout, stderr: '' };
     };
 
     const parseTmuxShellCmd = (cmd: string): string[] | null => {
@@ -76,7 +76,7 @@ describe("shutdownTeamV2 split-pane pane cleanup", () => {
       },
     );
     (execFileMock as unknown as Record<symbol, unknown>)[
-      Symbol.for("nodejs.util.promisify.custom")
+      Symbol.for('nodejs.util.promisify.custom')
     ] = async (_cmd: string, args: string[]) => run(args);
 
     execMock.mockImplementation((cmd: string, cb: ExecCallback) => {
@@ -85,7 +85,7 @@ describe("shutdownTeamV2 split-pane pane cleanup", () => {
       return {} as never;
     });
     (execMock as unknown as Record<symbol, unknown>)[
-      Symbol.for("nodejs.util.promisify.custom")
+      Symbol.for('nodejs.util.promisify.custom')
     ] = async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
   });
 
@@ -95,52 +95,52 @@ describe("shutdownTeamV2 split-pane pane cleanup", () => {
     execMock.mockReset();
     if (cwd) {
       await rm(cwd, { recursive: true, force: true });
-      cwd = "";
+      cwd = '';
     }
   });
 
-  it("kills discovered split-pane worker panes beyond stale recorded pane metadata", async () => {
-    const teamName = "pane-cleanup-team";
+  it('kills discovered split-pane worker panes beyond stale recorded pane metadata', async () => {
+    const teamName = 'pane-cleanup-team';
     const teamRoot = `.omc/state/team/${teamName}`;
 
     await writeJson(cwd, `${teamRoot}/config.json`, {
       name: teamName,
-      task: "demo",
-      agent_type: "claude",
-      worker_launch_mode: "interactive",
+      task: 'demo',
+      agent_type: 'claude',
+      worker_launch_mode: 'interactive',
       worker_count: 2,
       max_workers: 20,
       workers: [
         {
-          name: "worker-1",
+          name: 'worker-1',
           index: 1,
-          role: "claude",
+          role: 'claude',
           assigned_tasks: [],
-          pane_id: "%2",
+          pane_id: '%2',
         },
-        { name: "worker-2", index: 2, role: "claude", assigned_tasks: [] },
+        { name: 'worker-2', index: 2, role: 'claude', assigned_tasks: [] },
       ],
       created_at: new Date().toISOString(),
-      tmux_session: "leader-session:0",
+      tmux_session: 'leader-session:0',
       tmux_window_owned: false,
       next_task_id: 1,
-      leader_pane_id: "%1",
+      leader_pane_id: '%1',
       hud_pane_id: null,
       resize_hook_name: null,
       resize_hook_target: null,
     });
 
-    const { shutdownTeamV2 } = await import("../runtime-v2.js");
+    const { shutdownTeamV2 } = await import('../runtime-v2.js');
     await shutdownTeamV2(teamName, cwd, { timeoutMs: 0 });
 
     const killPaneTargets = tmuxCalls
-      .filter((args) => args[0] === "kill-pane")
+      .filter((args) => args[0] === 'kill-pane')
       .map((args) => args[2]);
 
-    expect(killPaneTargets).toEqual(["%2", "%3"]);
-    expect(killPaneTargets).not.toContain("%1");
+    expect(killPaneTargets).toEqual(['%2', '%3']);
+    expect(killPaneTargets).not.toContain('%1');
     await expect(
-      readFile(join(cwd, teamRoot, "config.json"), "utf-8"),
-    ).rejects.toMatchObject({ code: "ENOENT" });
+      readFile(join(cwd, teamRoot, 'config.json'), 'utf-8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });

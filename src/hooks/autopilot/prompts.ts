@@ -1,19 +1,19 @@
 import {
   resolveAutopilotPlanPath,
   resolveOpenQuestionsPlanPath,
-} from "../../config/plan-output.js";
+} from '../../config/plan-output.js';
 /**
  * Autopilot Prompt Generation
  *
  * Generates phase-specific prompts that include Task tool invocations
  * for Claude to execute. This is the core of the agent invocation mechanism.
  */
-import type { PluginConfig } from "../../shared/types.js";
+import type { PluginConfig } from '../../shared/types.js';
 
 function resolvePromptPlanPath(
   planPathOrConfig?: string | PluginConfig,
 ): string {
-  return typeof planPathOrConfig === "string"
+  return typeof planPathOrConfig === 'string'
     ? planPathOrConfig
     : resolveAutopilotPlanPath(planPathOrConfig);
 }
@@ -21,7 +21,7 @@ function resolvePromptPlanPath(
 function resolvePromptOpenQuestionsPath(
   openQuestionsPathOrConfig?: string | PluginConfig,
 ): string {
-  return typeof openQuestionsPathOrConfig === "string"
+  return typeof openQuestionsPathOrConfig === 'string'
     ? openQuestionsPathOrConfig
     : resolveOpenQuestionsPlanPath(openQuestionsPathOrConfig);
 }
@@ -393,10 +393,10 @@ When all approve: AUTOPILOT_COMPLETE
  */
 function escapeForPrompt(text: string): string {
   return text
-    .replace(/\\/g, "\\\\")
+    .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
-    .replace(/`/g, "\\`")
-    .replace(/\$/g, "\\$");
+    .replace(/`/g, '\\`')
+    .replace(/\$/g, '\\$');
 }
 
 /**
@@ -412,23 +412,23 @@ export function getPhasePrompt(
   },
 ): string {
   switch (phase) {
-    case "expansion":
+    case 'expansion':
       return getExpansionPrompt(
-        context.idea || "",
+        context.idea || '',
         context.openQuestionsPath || resolveOpenQuestionsPlanPath(),
       );
-    case "planning":
+    case 'planning':
       return getDirectPlanningPrompt(
-        context.specPath || ".omc/autopilot/spec.md",
+        context.specPath || '.omc/autopilot/spec.md',
         context.planPath || resolveAutopilotPlanPath(),
       );
-    case "execution":
+    case 'execution':
       return getExecutionPrompt(context.planPath || resolveAutopilotPlanPath());
-    case "qa":
+    case 'qa':
       return getQAPrompt();
-    case "validation":
-      return getValidationPrompt(context.specPath || ".omc/autopilot/spec.md");
+    case 'validation':
+      return getValidationPrompt(context.specPath || '.omc/autopilot/spec.md');
     default:
-      return "";
+      return '';
   }
 }

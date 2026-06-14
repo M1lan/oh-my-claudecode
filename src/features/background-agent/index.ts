@@ -7,10 +7,10 @@
  * Adapted from oh-my-opencode's background-agent feature.
  */
 
-export * from "./types.js";
+export * from './types.js';
 export {
   BackgroundManager,
   getBackgroundManager,
   resetBackgroundManager,
-} from "./manager.js";
-export { ConcurrencyManager } from "./concurrency.js";
+} from './manager.js';
+export { ConcurrencyManager } from './concurrency.js';

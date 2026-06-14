@@ -8,19 +8,19 @@
  * - MCP workers: appends to worker's inbox JSONL file
  */
 
-import { join } from "node:path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { join } from 'node:path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import {
   appendFileWithMode,
   ensureDirWithMode,
   validateResolvedPath,
-} from "./fs-utils.js";
-import { getTeamMembers } from "./unified-team.js";
-import { sanitizeName } from "./tmux-session.js";
-import type { InboxMessage } from "./types.js";
+} from './fs-utils.js';
+import { getTeamMembers } from './unified-team.js';
+import { sanitizeName } from './tmux-session.js';
+import type { InboxMessage } from './types.js';
 
 export interface RouteResult {
-  method: "native" | "inbox";
+  method: 'native' | 'inbox';
   details: string;
 }
 
@@ -45,35 +45,35 @@ export function routeMessage(
 
   if (!member) {
     return {
-      method: "native",
+      method: 'native',
       details: `Unknown recipient "${recipientName}". Use SendMessage tool to attempt delivery.`,
     };
   }
 
-  if (member.backend === "claude-native") {
+  if (member.backend === 'claude-native') {
     return {
-      method: "native",
+      method: 'native',
       details: `Use SendMessage tool to send to "${recipientName}".`,
     };
   }
 
   // MCP worker: write to inbox
-  const teamsBase = join(getClaudeConfigDir(), "teams");
-  const inboxDir = join(teamsBase, sanitizeName(teamName), "inbox");
+  const teamsBase = join(getClaudeConfigDir(), 'teams');
+  const inboxDir = join(teamsBase, sanitizeName(teamName), 'inbox');
   ensureDirWithMode(inboxDir);
   const inboxPath = join(inboxDir, `${sanitizeName(recipientName)}.jsonl`);
   validateResolvedPath(inboxPath, teamsBase);
 
   const message: InboxMessage = {
-    type: "message",
+    type: 'message',
     content,
     timestamp: new Date().toISOString(),
   };
 
-  appendFileWithMode(inboxPath, JSON.stringify(message) + "\n");
+  appendFileWithMode(inboxPath, JSON.stringify(message) + '\n');
 
   return {
-    method: "inbox",
+    method: 'inbox',
     details: `Message written to ${recipientName}'s inbox.`,
   };
 }
@@ -93,23 +93,23 @@ export function broadcastToTeam(
   const inboxRecipients: string[] = [];
 
   for (const member of members) {
-    if (member.backend === "claude-native") {
+    if (member.backend === 'claude-native') {
       nativeRecipients.push(member.name);
     } else {
       // Write to each MCP worker's inbox
-      const teamsBase = join(getClaudeConfigDir(), "teams");
-      const inboxDir = join(teamsBase, sanitizeName(teamName), "inbox");
+      const teamsBase = join(getClaudeConfigDir(), 'teams');
+      const inboxDir = join(teamsBase, sanitizeName(teamName), 'inbox');
       ensureDirWithMode(inboxDir);
       const inboxPath = join(inboxDir, `${sanitizeName(member.name)}.jsonl`);
       validateResolvedPath(inboxPath, teamsBase);
 
       const message: InboxMessage = {
-        type: "message",
+        type: 'message',
         content,
         timestamp: new Date().toISOString(),
       };
 
-      appendFileWithMode(inboxPath, JSON.stringify(message) + "\n");
+      appendFileWithMode(inboxPath, JSON.stringify(message) + '\n');
       inboxRecipients.push(member.name);
     }
   }

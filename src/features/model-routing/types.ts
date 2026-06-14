@@ -6,13 +6,13 @@
  * task complexity.
  */
 
-import type { ModelType } from "../../shared/types.js";
-import { getDefaultTierModels } from "../../config/models.js";
+import type { ModelType } from '../../shared/types.js';
+import { getDefaultTierModels } from '../../config/models.js';
 
 /**
  * Complexity tier for task routing
  */
-export type ComplexityTier = "LOW" | "MEDIUM" | "HIGH";
+export type ComplexityTier = 'LOW' | 'MEDIUM' | 'HIGH';
 
 /**
  * Model tier mapping to actual Claude models.
@@ -28,9 +28,9 @@ export const TIER_MODELS: Record<ComplexityTier, string> =
  * Model tier to simple model type mapping
  */
 export const TIER_TO_MODEL_TYPE: Record<ComplexityTier, ModelType> = {
-  LOW: "haiku",
-  MEDIUM: "sonnet",
-  HIGH: "opus",
+  LOW: 'haiku',
+  MEDIUM: 'sonnet',
+  HIGH: 'opus',
 };
 
 /**
@@ -52,7 +52,7 @@ export interface LexicalSignals {
   /** Contains risk/critical keywords */
   hasRiskKeywords: boolean;
   /** Question depth: 'why' > 'how' > 'what' > 'where' */
-  questionDepth: "why" | "how" | "what" | "where" | "none";
+  questionDepth: 'why' | 'how' | 'what' | 'where' | 'none';
   /** Has implicit requirements (statements without clear deliverables) */
   hasImplicitRequirements: boolean;
 }
@@ -69,17 +69,17 @@ export interface StructuralSignals {
   hasTestRequirements: boolean;
   /** Domain specificity of the task */
   domainSpecificity:
-    | "generic"
-    | "frontend"
-    | "backend"
-    | "infrastructure"
-    | "security";
+    | 'generic'
+    | 'frontend'
+    | 'backend'
+    | 'infrastructure'
+    | 'security';
   /** Whether external knowledge is needed */
   requiresExternalKnowledge: boolean;
   /** How reversible the changes are */
-  reversibility: "easy" | "moderate" | "difficult";
+  reversibility: 'easy' | 'moderate' | 'difficult';
   /** Scope of impact */
-  impactScope: "local" | "module" | "system-wide";
+  impactScope: 'local' | 'module' | 'system-wide';
 }
 
 /**
@@ -163,7 +163,7 @@ export interface RoutingRule {
   condition: (context: RoutingContext, signals: ComplexitySignals) => boolean;
   /** Action to take if condition is true */
   action: {
-    tier: ComplexityTier | "EXPLICIT";
+    tier: ComplexityTier | 'EXPLICIT';
     reason: string;
   };
   /** Priority (higher = evaluated first) */
@@ -213,30 +213,30 @@ export interface RoutingConfig {
  */
 export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
   enabled: true,
-  defaultTier: "MEDIUM",
+  defaultTier: 'MEDIUM',
   escalationEnabled: false, // Deprecated: orchestrator routes proactively
   maxEscalations: 0,
   tierModels: TIER_MODELS,
   agentOverrides: {},
   escalationKeywords: [
-    "critical",
-    "production",
-    "urgent",
-    "security",
-    "breaking",
-    "architecture",
-    "refactor",
-    "redesign",
-    "root cause",
+    'critical',
+    'production',
+    'urgent',
+    'security',
+    'breaking',
+    'architecture',
+    'refactor',
+    'redesign',
+    'root cause',
   ],
   simplificationKeywords: [
-    "find",
-    "list",
-    "show",
-    "where",
-    "search",
-    "locate",
-    "grep",
+    'find',
+    'list',
+    'show',
+    'where',
+    'search',
+    'locate',
+    'grep',
   ],
 };
 
@@ -244,13 +244,13 @@ export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
  * Agent categories and their default complexity tiers
  */
 export const AGENT_CATEGORY_TIERS: Record<string, ComplexityTier> = {
-  exploration: "LOW",
-  utility: "LOW",
-  specialist: "MEDIUM",
-  orchestration: "MEDIUM",
-  advisor: "HIGH",
-  planner: "HIGH",
-  reviewer: "HIGH",
+  exploration: 'LOW',
+  utility: 'LOW',
+  specialist: 'MEDIUM',
+  orchestration: 'MEDIUM',
+  advisor: 'HIGH',
+  planner: 'HIGH',
+  reviewer: 'HIGH',
 };
 
 /**
@@ -258,66 +258,66 @@ export const AGENT_CATEGORY_TIERS: Record<string, ComplexityTier> = {
  */
 export const COMPLEXITY_KEYWORDS = {
   architecture: [
-    "architecture",
-    "refactor",
-    "redesign",
-    "restructure",
-    "reorganize",
-    "decouple",
-    "modularize",
-    "abstract",
-    "pattern",
-    "design",
+    'architecture',
+    'refactor',
+    'redesign',
+    'restructure',
+    'reorganize',
+    'decouple',
+    'modularize',
+    'abstract',
+    'pattern',
+    'design',
   ],
   debugging: [
-    "debug",
-    "diagnose",
-    "root cause",
-    "investigate",
-    "trace",
-    "analyze",
-    "why is",
-    "figure out",
-    "understand why",
-    "not working",
+    'debug',
+    'diagnose',
+    'root cause',
+    'investigate',
+    'trace',
+    'analyze',
+    'why is',
+    'figure out',
+    'understand why',
+    'not working',
   ],
   simple: [
-    "find",
-    "search",
-    "locate",
-    "list",
-    "show",
-    "where is",
-    "what is",
-    "get",
-    "fetch",
-    "display",
-    "print",
+    'find',
+    'search',
+    'locate',
+    'list',
+    'show',
+    'where is',
+    'what is',
+    'get',
+    'fetch',
+    'display',
+    'print',
   ],
   risk: [
-    "critical",
-    "production",
-    "urgent",
-    "security",
-    "breaking",
-    "dangerous",
-    "irreversible",
-    "data loss",
-    "migration",
-    "deploy",
+    'critical',
+    'production',
+    'urgent',
+    'security',
+    'breaking',
+    'dangerous',
+    'irreversible',
+    'data loss',
+    'migration',
+    'deploy',
   ],
 };
 
 /**
  * Prompt adaptation strategies per tier
  */
-export type PromptAdaptationStrategy = "full" | "balanced" | "concise";
+export type PromptAdaptationStrategy = 'full' | 'balanced' | 'concise';
 
 export const TIER_PROMPT_STRATEGIES: Record<
   ComplexityTier,
   PromptAdaptationStrategy
 > = {
-  HIGH: "full",
-  MEDIUM: "balanced",
-  LOW: "concise",
+  HIGH: 'full',
+  MEDIUM: 'balanced',
+  LOW: 'concise',
 };

@@ -18,8 +18,8 @@ import {
   markDispatchRequestNotified,
   type TeamDispatchRequest,
   type TeamDispatchRequestInput,
-} from "./dispatch-queue.js";
-import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
+} from './dispatch-queue.js';
+import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -30,11 +30,11 @@ export interface TeamNotifierTarget {
 }
 
 export type DispatchTransport =
-  | "hook"
-  | "prompt_stdin"
-  | "tmux_send_keys"
-  | "mailbox"
-  | "none";
+  | 'hook'
+  | 'prompt_stdin'
+  | 'tmux_send_keys'
+  | 'mailbox'
+  | 'none';
 
 export interface DispatchOutcome {
   ok: boolean;
@@ -88,8 +88,8 @@ export interface MailboxSender {
 
 function isConfirmedNotification(outcome: DispatchOutcome): boolean {
   if (!outcome.ok) return false;
-  if (outcome.transport !== "hook") return true;
-  return outcome.reason !== "queued_for_hook_dispatch";
+  if (outcome.transport !== 'hook') return true;
+  return outcome.reason !== 'queued_for_hook_dispatch';
 }
 
 function isLeaderPaneMissingMailboxPersistedOutcome(
@@ -97,18 +97,18 @@ function isLeaderPaneMissingMailboxPersistedOutcome(
   outcome: DispatchOutcome,
 ): boolean {
   return (
-    request.to_worker === "leader-fixed" &&
+    request.to_worker === 'leader-fixed' &&
     outcome.ok &&
-    outcome.reason === "leader_pane_missing_mailbox_persisted"
+    outcome.reason === 'leader_pane_missing_mailbox_persisted'
   );
 }
 
 function fallbackTransportForPreference(
-  preference: TeamDispatchRequestInput["transport_preference"],
+  preference: TeamDispatchRequestInput['transport_preference'],
 ): DispatchTransport {
-  if (preference === "prompt_stdin") return "prompt_stdin";
-  if (preference === "transport_direct") return "tmux_send_keys";
-  return "hook";
+  if (preference === 'prompt_stdin') return 'prompt_stdin';
+  if (preference === 'transport_direct') return 'tmux_send_keys';
+  return 'hook';
 }
 
 function notifyExceptionReason(error: unknown): string {
@@ -124,17 +124,17 @@ async function markImmediateDispatchFailure(params: {
   cwd: string;
 }): Promise<void> {
   const { teamName, request, reason, messageId, cwd } = params;
-  if (request.transport_preference === "hook_preferred_with_fallback") return;
+  if (request.transport_preference === 'hook_preferred_with_fallback') return;
   const logTransitionFailure = createSwallowedErrorLogger(
-    "team.mcp-comm.markImmediateDispatchFailure transitionDispatchRequest failed",
+    'team.mcp-comm.markImmediateDispatchFailure transitionDispatchRequest failed',
   );
 
   const current = await readDispatchRequest(teamName, request.request_id, cwd);
   if (!current) return;
   if (
-    current.status === "failed" ||
-    current.status === "notified" ||
-    current.status === "delivered"
+    current.status === 'failed' ||
+    current.status === 'notified' ||
+    current.status === 'delivered'
   )
     return;
 
@@ -142,7 +142,7 @@ async function markImmediateDispatchFailure(params: {
     teamName,
     request.request_id,
     current.status,
-    "failed",
+    'failed',
     {
       message_id: messageId ?? current.message_id,
       last_reason: reason,
@@ -159,11 +159,11 @@ async function markLeaderPaneMissingDeferred(params: {
 }): Promise<void> {
   const { teamName, request, cwd, messageId } = params;
   const logTransitionFailure = createSwallowedErrorLogger(
-    "team.mcp-comm.markLeaderPaneMissingDeferred transitionDispatchRequest failed",
+    'team.mcp-comm.markLeaderPaneMissingDeferred transitionDispatchRequest failed',
   );
   const current = await readDispatchRequest(teamName, request.request_id, cwd);
   if (!current) return;
-  if (current.status !== "pending") return;
+  if (current.status !== 'pending') return;
 
   await transitionDispatchRequest(
     teamName,
@@ -172,7 +172,7 @@ async function markLeaderPaneMissingDeferred(params: {
     current.status,
     {
       message_id: messageId ?? current.message_id,
-      last_reason: "leader_pane_missing_deferred",
+      last_reason: 'leader_pane_missing_deferred',
     },
     cwd,
   ).catch(logTransitionFailure);
@@ -188,7 +188,7 @@ export interface QueueInboxParams {
   inbox: string;
   triggerMessage: string;
   cwd: string;
-  transportPreference?: TeamDispatchRequestInput["transport_preference"];
+  transportPreference?: TeamDispatchRequestInput['transport_preference'];
   fallbackAllowed?: boolean;
   inboxCorrelationKey?: string;
   notify: TeamNotifier;
@@ -201,7 +201,7 @@ export async function queueInboxInstruction(
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
-      kind: "inbox",
+      kind: 'inbox',
       to_worker: params.workerName,
       worker_index: params.workerIndex,
       pane_id: params.paneId,
@@ -216,8 +216,8 @@ export async function queueInboxInstruction(
   if (queued.deduped) {
     return {
       ok: false,
-      transport: "none",
-      reason: "duplicate_pending_dispatch_request",
+      transport: 'none',
+      reason: 'duplicate_pending_dispatch_request',
       request_id: queued.request.request_id,
     };
   }
@@ -233,7 +233,7 @@ export async function queueInboxInstruction(
     await markImmediateDispatchFailure({
       teamName: params.teamName,
       request: queued.request,
-      reason: "inbox_write_failed",
+      reason: 'inbox_write_failed',
       cwd: params.cwd,
     });
     throw error;
@@ -290,7 +290,7 @@ export interface QueueDirectMessageParams {
   body: string;
   triggerMessage: string;
   cwd: string;
-  transportPreference?: TeamDispatchRequestInput["transport_preference"];
+  transportPreference?: TeamDispatchRequestInput['transport_preference'];
   fallbackAllowed?: boolean;
   notify: TeamNotifier;
   deps: MailboxSender;
@@ -309,7 +309,7 @@ export async function queueDirectMailboxMessage(
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
-      kind: "mailbox",
+      kind: 'mailbox',
       to_worker: params.toWorker,
       worker_index: params.toWorkerIndex,
       pane_id: params.toPaneId,
@@ -324,8 +324,8 @@ export async function queueDirectMailboxMessage(
   if (queued.deduped) {
     return {
       ok: false,
-      transport: "none",
-      reason: "duplicate_pending_dispatch_request",
+      transport: 'none',
+      reason: 'duplicate_pending_dispatch_request',
       request_id: queued.request.request_id,
       message_id: message.message_id,
     };
@@ -400,7 +400,7 @@ export interface QueueBroadcastParams {
   body: string;
   cwd: string;
   triggerFor: (workerName: string) => string;
-  transportPreference?: TeamDispatchRequestInput["transport_preference"];
+  transportPreference?: TeamDispatchRequestInput['transport_preference'];
   fallbackAllowed?: boolean;
   notify: TeamNotifier;
   deps: MailboxSender;
@@ -427,7 +427,7 @@ export async function queueBroadcastMailboxMessage(
     const queued = await enqueueDispatchRequest(
       params.teamName,
       {
-        kind: "mailbox",
+        kind: 'mailbox',
         to_worker: recipient.workerName,
         worker_index: recipient.workerIndex,
         pane_id: recipient.paneId,
@@ -442,8 +442,8 @@ export async function queueBroadcastMailboxMessage(
     if (queued.deduped) {
       outcomes.push({
         ok: false,
-        transport: "none",
-        reason: "duplicate_pending_dispatch_request",
+        transport: 'none',
+        reason: 'duplicate_pending_dispatch_request',
         request_id: queued.request.request_id,
         message_id: message.message_id,
         to_worker: recipient.workerName,
@@ -521,9 +521,9 @@ export async function waitForDispatchReceipt(
     const request = await readDispatchRequest(teamName, requestId, cwd);
     if (!request) return null;
     if (
-      request.status === "notified" ||
-      request.status === "delivered" ||
-      request.status === "failed"
+      request.status === 'notified' ||
+      request.status === 'delivered' ||
+      request.status === 'failed'
     ) {
       return request;
     }

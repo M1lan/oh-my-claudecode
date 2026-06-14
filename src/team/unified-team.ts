@@ -7,13 +7,13 @@
  * to provide a single coherent view of all team members.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
-import type { WorkerBackend, WorkerCapability } from "./types.js";
-import { listMcpWorkers } from "./team-registration.js";
-import { readHeartbeat, isWorkerAlive } from "./heartbeat.js";
-import { getDefaultCapabilities } from "./capabilities.js";
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+import type { WorkerBackend, WorkerCapability } from './types.js';
+import { listMcpWorkers } from './team-registration.js';
+import { readHeartbeat, isWorkerAlive } from './heartbeat.js';
+import { getDefaultCapabilities } from './capabilities.js';
 
 export interface UnifiedTeamMember {
   name: string;
@@ -22,7 +22,7 @@ export interface UnifiedTeamMember {
   model: string;
   capabilities: WorkerCapability[];
   joinedAt: number;
-  status: "active" | "idle" | "dead" | "quarantined" | "unknown";
+  status: 'active' | 'idle' | 'dead' | 'quarantined' | 'unknown';
   currentTaskId: string | null;
 }
 
@@ -39,29 +39,29 @@ export function getTeamMembers(
   try {
     const configPath = join(
       getClaudeConfigDir(),
-      "teams",
+      'teams',
       teamName,
-      "config.json",
+      'config.json',
     );
     if (existsSync(configPath)) {
-      const config = JSON.parse(readFileSync(configPath, "utf-8"));
+      const config = JSON.parse(readFileSync(configPath, 'utf-8'));
       if (Array.isArray(config.members)) {
         for (const member of config.members) {
           // Skip MCP workers registered via tmux backend (they'll be handled below)
           if (
-            member.backendType === "tmux" ||
-            String(member.agentType).startsWith("tmux-")
+            member.backendType === 'tmux' ||
+            String(member.agentType).startsWith('tmux-')
           )
             continue;
 
           members.push({
-            name: member.name || "unknown",
-            agentId: member.agentId || "",
-            backend: "claude-native",
-            model: member.model || "unknown",
-            capabilities: getDefaultCapabilities("claude-native"),
+            name: member.name || 'unknown',
+            agentId: member.agentId || '',
+            backend: 'claude-native',
+            model: member.model || 'unknown',
+            capabilities: getDefaultCapabilities('claude-native'),
             joinedAt: member.joinedAt || 0,
-            status: "active", // Claude native members are managed by CC
+            status: 'active', // Claude native members are managed by CC
             currentTaskId: null,
           });
         }
@@ -84,23 +84,23 @@ export function getTeamMembers(
       );
 
       // Determine status from heartbeat
-      let status: UnifiedTeamMember["status"] = "unknown";
+      let status: UnifiedTeamMember['status'] = 'unknown';
       if (heartbeat) {
-        if (heartbeat.status === "quarantined") status = "quarantined";
-        else if (heartbeat.status === "executing") status = "active";
-        else if (heartbeat.status === "ready" || heartbeat.status === "polling")
-          status = "idle";
-        else status = heartbeat.status as UnifiedTeamMember["status"];
+        if (heartbeat.status === 'quarantined') status = 'quarantined';
+        else if (heartbeat.status === 'executing') status = 'active';
+        else if (heartbeat.status === 'ready' || heartbeat.status === 'polling')
+          status = 'idle';
+        else status = heartbeat.status as UnifiedTeamMember['status'];
       }
-      if (!alive) status = "dead";
+      if (!alive) status = 'dead';
 
       // Determine backend and default capabilities
       let backend: WorkerBackend;
-      if (worker.agentType === "mcp-gemini") backend = "mcp-gemini";
-      else if (worker.agentType === "tmux-claude") backend = "tmux-claude";
-      else if (worker.agentType === "tmux-codex") backend = "tmux-codex";
-      else if (worker.agentType === "tmux-gemini") backend = "tmux-gemini";
-      else backend = "mcp-codex";
+      if (worker.agentType === 'mcp-gemini') backend = 'mcp-gemini';
+      else if (worker.agentType === 'tmux-claude') backend = 'tmux-claude';
+      else if (worker.agentType === 'tmux-codex') backend = 'tmux-codex';
+      else if (worker.agentType === 'tmux-gemini') backend = 'tmux-gemini';
+      else backend = 'mcp-codex';
       const capabilities = getDefaultCapabilities(backend);
 
       members.push({

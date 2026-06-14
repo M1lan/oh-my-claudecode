@@ -5,19 +5,19 @@
  * Follows patterns from ultrawork-state.
  */
 
-import { existsSync, readFileSync, mkdirSync, unlinkSync } from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { existsSync, readFileSync, mkdirSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import {
   validateWorkingDirectory,
   getOmcRoot,
   ensureSessionStateDir,
   resolveSessionStatePath,
-} from "../lib/worktree-paths.js";
+} from '../lib/worktree-paths.js';
 import {
   atomicWriteFileSync,
   atomicWriteJsonSync,
-} from "../lib/atomic-write.js";
+} from '../lib/atomic-write.js';
 import type {
   OmcHudState,
   BackgroundTask,
@@ -27,19 +27,19 @@ import type {
   ContextLimitWarningConfig,
   HudLabels,
   HudLocale,
-} from "./types.js";
+} from './types.js';
 import {
   DEFAULT_HUD_CONFIG,
   PRESET_CONFIGS,
   isHudLocale,
   resolveHudLabels,
   sanitizeHudLabels,
-} from "./types.js";
-import { DEFAULT_MISSION_BOARD_CONFIG } from "./mission-board.js";
+} from './types.js';
+import { DEFAULT_MISSION_BOARD_CONFIG } from './mission-board.js';
 import {
   cleanupStaleBackgroundTasks,
   markOrphanedTasksAsStale,
-} from "./background-cleanup.js";
+} from './background-cleanup.js';
 
 // ============================================================================
 // Path Helpers
@@ -50,19 +50,19 @@ import {
  */
 function getLocalStateFilePath(directory?: string): string {
   const baseDir = validateWorkingDirectory(directory);
-  const omcStateDir = join(getOmcRoot(baseDir), "state");
-  return join(omcStateDir, "hud-state.json");
+  const omcStateDir = join(getOmcRoot(baseDir), 'state');
+  return join(omcStateDir, 'hud-state.json');
 }
 
 function getLegacyRootStateFilePath(directory?: string): string {
   const baseDir = validateWorkingDirectory(directory);
-  return join(getOmcRoot(baseDir), "hud-state.json");
+  return join(getOmcRoot(baseDir), 'hud-state.json');
 }
 
 function getStateFilePath(directory?: string, sessionId?: string): string {
   const baseDir = validateWorkingDirectory(directory);
   if (sessionId) {
-    return resolveSessionStatePath("hud", sessionId, baseDir);
+    return resolveSessionStatePath('hud', sessionId, baseDir);
   }
   return getLocalStateFilePath(baseDir);
 }
@@ -71,14 +71,14 @@ function getStateFilePath(directory?: string, sessionId?: string): string {
  * Get Claude Code settings.json path
  */
 function getSettingsFilePath(): string {
-  return join(getClaudeConfigDir(), "settings.json");
+  return join(getClaudeConfigDir(), 'settings.json');
 }
 
 /**
  * Get the HUD config file path (legacy)
  */
 function getConfigFilePath(): string {
-  return join(getClaudeConfigDir(), ".omc", "hud-config.json");
+  return join(getClaudeConfigDir(), '.omc', 'hud-config.json');
 }
 
 function readJsonFile<T>(filePath: string): T | null {
@@ -87,7 +87,7 @@ function readJsonFile<T>(filePath: string): T | null {
   }
 
   try {
-    return JSON.parse(readFileSync(filePath, "utf-8")) as T;
+    return JSON.parse(readFileSync(filePath, 'utf-8')) as T;
   } catch {
     return null;
   }
@@ -98,9 +98,9 @@ function getLegacyHudConfig(): HudConfigInput | null {
 }
 
 function mergeElements(
-  primary?: Partial<HudConfig["elements"]>,
-  secondary?: Partial<HudConfig["elements"]>,
-): Partial<HudConfig["elements"]> {
+  primary?: Partial<HudConfig['elements']>,
+  secondary?: Partial<HudConfig['elements']>,
+): Partial<HudConfig['elements']> {
   return {
     ...(primary ?? {}),
     ...(secondary ?? {}),
@@ -108,9 +108,9 @@ function mergeElements(
 }
 
 function mergeThresholds(
-  primary?: Partial<HudConfig["thresholds"]>,
-  secondary?: Partial<HudConfig["thresholds"]>,
-): Partial<HudConfig["thresholds"]> {
+  primary?: Partial<HudConfig['thresholds']>,
+  secondary?: Partial<HudConfig['thresholds']>,
+): Partial<HudConfig['thresholds']> {
   return {
     ...(primary ?? {}),
     ...(secondary ?? {}),
@@ -118,9 +118,9 @@ function mergeThresholds(
 }
 
 function mergeContextLimitWarning(
-  primary?: Partial<HudConfig["contextLimitWarning"]>,
-  secondary?: Partial<HudConfig["contextLimitWarning"]>,
-): Partial<HudConfig["contextLimitWarning"]> {
+  primary?: Partial<HudConfig['contextLimitWarning']>,
+  secondary?: Partial<HudConfig['contextLimitWarning']>,
+): Partial<HudConfig['contextLimitWarning']> {
   return {
     ...(primary ?? {}),
     ...(secondary ?? {}),
@@ -128,9 +128,9 @@ function mergeContextLimitWarning(
 }
 
 function mergeMissionBoardConfig(
-  primary?: Partial<HudConfig["missionBoard"]>,
-  secondary?: Partial<HudConfig["missionBoard"]>,
-): Partial<HudConfig["missionBoard"]> {
+  primary?: Partial<HudConfig['missionBoard']>,
+  secondary?: Partial<HudConfig['missionBoard']>,
+): Partial<HudConfig['missionBoard']> {
   return {
     ...(primary ?? {}),
     ...(secondary ?? {}),
@@ -138,7 +138,7 @@ function mergeMissionBoardConfig(
 }
 
 function mergeElementsForWrite(
-  legacyElements: HudConfigInput["elements"],
+  legacyElements: HudConfigInput['elements'],
   nextElements: HudElementConfig,
 ): Partial<HudElementConfig> {
   const merged: Partial<HudElementConfig> = { ...(legacyElements ?? {}) };
@@ -165,7 +165,7 @@ function mergeElementsForWrite(
  */
 function ensureStateDir(directory?: string): void {
   const baseDir = validateWorkingDirectory(directory);
-  const omcStateDir = join(getOmcRoot(baseDir), "state");
+  const omcStateDir = join(getOmcRoot(baseDir), 'state');
   if (!existsSync(omcStateDir)) {
     mkdirSync(omcStateDir, { recursive: true });
   }
@@ -181,14 +181,14 @@ function ensureHudStateDir(directory?: string, sessionId?: string): void {
 
 type HudConfigInput = Omit<
   Partial<HudConfig>,
-  "elements" | "thresholds" | "contextLimitWarning" | "missionBoard" | "labels"
+  'elements' | 'thresholds' | 'contextLimitWarning' | 'missionBoard' | 'labels'
 > & {
   locale?: unknown;
   labels?: Partial<Record<keyof HudLabels, unknown>>;
   elements?: Partial<HudElementConfig>;
   thresholds?: Partial<HudThresholds>;
   contextLimitWarning?: Partial<ContextLimitWarningConfig>;
-  missionBoard?: Partial<NonNullable<HudConfig["missionBoard"]>>;
+  missionBoard?: Partial<NonNullable<HudConfig['missionBoard']>>;
 };
 
 // ============================================================================
@@ -212,11 +212,11 @@ export function readHudState(
     }
 
     try {
-      const content = readFileSync(sessionStateFile, "utf-8");
+      const content = readFileSync(sessionStateFile, 'utf-8');
       return JSON.parse(content);
     } catch (error) {
       console.error(
-        "[HUD] Failed to read session state:",
+        '[HUD] Failed to read session state:',
         error instanceof Error ? error.message : error,
       );
       return null;
@@ -227,11 +227,11 @@ export function readHudState(
   const localStateFile = getLocalStateFilePath(directory);
   if (existsSync(localStateFile)) {
     try {
-      const content = readFileSync(localStateFile, "utf-8");
+      const content = readFileSync(localStateFile, 'utf-8');
       return JSON.parse(content);
     } catch (error) {
       console.error(
-        "[HUD] Failed to read local state:",
+        '[HUD] Failed to read local state:',
         error instanceof Error ? error.message : error,
       );
       // Fall through to legacy check
@@ -242,11 +242,11 @@ export function readHudState(
   const legacyStateFile = getLegacyRootStateFilePath(directory);
   if (existsSync(legacyStateFile)) {
     try {
-      const content = readFileSync(legacyStateFile, "utf-8");
+      const content = readFileSync(legacyStateFile, 'utf-8');
       return JSON.parse(content);
     } catch (error) {
       console.error(
-        "[HUD] Failed to read legacy state:",
+        '[HUD] Failed to read legacy state:',
         error instanceof Error ? error.message : error,
       );
       return null;
@@ -279,7 +279,7 @@ export function writeHudState(
           continue;
         }
         try {
-          const content = readFileSync(legacyFile, "utf-8");
+          const content = readFileSync(legacyFile, 'utf-8');
           const legacyState = JSON.parse(content) as Partial<OmcHudState>;
           if (!legacyState.sessionId || legacyState.sessionId === sessionId) {
             unlinkSync(legacyFile);
@@ -293,7 +293,7 @@ export function writeHudState(
     return true;
   } catch (error) {
     console.error(
-      "[HUD] Failed to write state:",
+      '[HUD] Failed to write state:',
       error instanceof Error ? error.message : error,
     );
     return false;
@@ -315,7 +315,7 @@ export function createEmptyHudState(): OmcHudState {
  */
 export function getRunningTasks(state: OmcHudState | null): BackgroundTask[] {
   if (!state) return [];
-  return state.backgroundTasks.filter((task) => task.status === "running");
+  return state.backgroundTasks.filter((task) => task.status === 'running');
 }
 
 /**
@@ -327,7 +327,7 @@ export function getBackgroundTaskCount(state: OmcHudState | null): {
 } {
   const MAX_CONCURRENT = 5;
   const running = state
-    ? state.backgroundTasks.filter((t) => t.status === "running").length
+    ? state.backgroundTasks.filter((t) => t.status === 'running').length
     : 0;
   return { running, max: MAX_CONCURRENT };
 }
@@ -346,7 +346,7 @@ export function readHudConfig(): HudConfig {
 
   if (existsSync(settingsFile)) {
     try {
-      const content = readFileSync(settingsFile, "utf-8");
+      const content = readFileSync(settingsFile, 'utf-8');
       const settings = JSON.parse(content) as { omcHud?: HudConfigInput };
       if (settings.omcHud) {
         return mergeWithDefaults({
@@ -379,7 +379,7 @@ export function readHudConfig(): HudConfig {
       }
     } catch (error) {
       console.error(
-        "[HUD] Failed to read settings.json:",
+        '[HUD] Failed to read settings.json:',
         error instanceof Error ? error.message : error,
       );
     }
@@ -460,7 +460,7 @@ export function writeHudConfig(config: HudConfig): boolean {
     let settings: Record<string, unknown> = {};
 
     if (existsSync(settingsFile)) {
-      const content = readFileSync(settingsFile, "utf-8");
+      const content = readFileSync(settingsFile, 'utf-8');
       settings = JSON.parse(content) as Record<string, unknown>;
     }
 
@@ -489,7 +489,7 @@ export function writeHudConfig(config: HudConfig): boolean {
     return true;
   } catch (error) {
     console.error(
-      "[HUD] Failed to write config:",
+      '[HUD] Failed to write config:',
       error instanceof Error ? error.message : error,
     );
     return false;
@@ -499,7 +499,7 @@ export function writeHudConfig(config: HudConfig): boolean {
 /**
  * Apply a preset to the configuration
  */
-export function applyPreset(preset: HudConfig["preset"]): HudConfig {
+export function applyPreset(preset: HudConfig['preset']): HudConfig {
   const config = readHudConfig();
   const presetElements = PRESET_CONFIGS[preset];
 

@@ -36,7 +36,9 @@ function askUsageError(reason: string): Error {
 }
 
 function warnDeprecatedAlias(alias: string, canonical: string): void {
-  process.stderr.write(`[ask] DEPRECATED: ${alias} is deprecated; use ${canonical} instead.\n`);
+  process.stderr.write(
+    `[ask] DEPRECATED: ${alias} is deprecated; use ${canonical} instead.\n`,
+  );
 }
 
 function getPackageRoot(): string {
@@ -48,7 +50,10 @@ function getPackageRoot(): string {
       return join(__dirname, '..');
     }
 
-    if (currentDirName === 'cli' && (parentDirName === 'src' || parentDirName === 'dist')) {
+    if (
+      currentDirName === 'cli' &&
+      (parentDirName === 'src' || parentDirName === 'dist')
+    ) {
       return join(__dirname, '..', '..');
     }
   }
@@ -75,7 +80,9 @@ function resolveAskPromptsDir(
   try {
     const scopePath = join(cwd, '.omx', 'setup-scope.json');
     if (existsSync(scopePath)) {
-      const parsed = JSON.parse(readFileSync(scopePath, 'utf-8')) as Partial<{ scope: string }>;
+      const parsed = JSON.parse(readFileSync(scopePath, 'utf-8')) as Partial<{
+        scope: string;
+      }>;
       if (parsed.scope === 'project' || parsed.scope === 'project-local') {
         return join(cwd, '.codex', 'prompts');
       }
@@ -87,10 +94,15 @@ function resolveAskPromptsDir(
   return join(packageRoot, 'agents');
 }
 
-async function resolveAgentPromptContent(role: string, promptsDir: string): Promise<string> {
+async function resolveAgentPromptContent(
+  role: string,
+  promptsDir: string,
+): Promise<string> {
   const normalizedRole = role.trim().toLowerCase();
   if (!SAFE_ROLE_PATTERN.test(normalizedRole)) {
-    throw new Error(`[ask] invalid --agent-prompt role "${role}". Expected lowercase role names like "executor" or "test-engineer".`);
+    throw new Error(
+      `[ask] invalid --agent-prompt role "${role}". Expected lowercase role names like "executor" or "test-engineer".`,
+    );
   }
 
   if (!existsSync(promptsDir)) {
@@ -104,15 +116,20 @@ async function resolveAgentPromptContent(role: string, promptsDir: string): Prom
       .filter((file) => file.endsWith('.md'))
       .map((file) => file.slice(0, -3))
       .sort();
-    const availableSuffix = availableRoles.length > 0
-      ? ` Available roles: ${availableRoles.join(', ')}.`
-      : '';
-    throw new Error(`[ask] --agent-prompt role "${normalizedRole}" not found in ${promptsDir}.${availableSuffix}`);
+    const availableSuffix =
+      availableRoles.length > 0
+        ? ` Available roles: ${availableRoles.join(', ')}.`
+        : '';
+    throw new Error(
+      `[ask] --agent-prompt role "${normalizedRole}" not found in ${promptsDir}.${availableSuffix}`,
+    );
   }
 
   const content = (await readFile(promptPath, 'utf-8')).trim();
   if (!content) {
-    throw new Error(`[ask] --agent-prompt role "${normalizedRole}" is empty: ${promptPath}`);
+    throw new Error(
+      `[ask] --agent-prompt role "${normalizedRole}" is empty: ${promptPath}`,
+    );
   }
 
   return content;
@@ -123,7 +140,9 @@ export function parseAskArgs(args: readonly string[]): ParsedAskArgs {
   const provider = (providerRaw || '').toLowerCase();
 
   if (!provider || !ASK_PROVIDER_SET.has(provider)) {
-    throw askUsageError(`Invalid provider "${providerRaw || ''}". Expected one of: ${ASK_PROVIDERS.join(', ')}.`);
+    throw askUsageError(
+      `Invalid provider "${providerRaw || ''}". Expected one of: ${ASK_PROVIDERS.join(', ')}.`,
+    );
   }
 
   if (rest.length === 0) {
@@ -155,13 +174,23 @@ export function parseAskArgs(args: readonly string[]): ParsedAskArgs {
     }
 
     if (token === '-p' || token === '--print' || token === '--prompt') {
-      prompt = rest.slice(i + 1).join(' ').trim();
+      prompt = rest
+        .slice(i + 1)
+        .join(' ')
+        .trim();
       break;
     }
 
-    if (token.startsWith('-p=') || token.startsWith('--print=') || token.startsWith('--prompt=')) {
+    if (
+      token.startsWith('-p=') ||
+      token.startsWith('--print=') ||
+      token.startsWith('--prompt=')
+    ) {
       const inlinePrompt = token.split('=').slice(1).join('=').trim();
-      const remainder = rest.slice(i + 1).join(' ').trim();
+      const remainder = rest
+        .slice(i + 1)
+        .join(' ')
+        .trim();
       prompt = [inlinePrompt, remainder].filter(Boolean).join(' ').trim();
       break;
     }
@@ -215,13 +244,17 @@ export async function askCommand(args: string[]): Promise<void> {
   if (parsed.provider !== 'claude' && isExternalLLMDisabled()) {
     throw new Error(
       `[ask] External LLM provider "${parsed.provider}" is blocked by security policy ` +
-      `(disableExternalLLM). Only "claude" is allowed in the current security configuration.`,
+        `(disableExternalLLM). Only "claude" is allowed in the current security configuration.`,
     );
   }
 
   const packageRoot = getPackageRoot();
   const advisorScriptPath = resolveAskAdvisorScriptPath(packageRoot);
-  const promptsDir = resolveAskPromptsDir(process.cwd(), packageRoot, process.env);
+  const promptsDir = resolveAskPromptsDir(
+    process.cwd(),
+    packageRoot,
+    process.env,
+  );
 
   if (!existsSync(advisorScriptPath)) {
     throw new Error(`[ask] advisor script not found: ${advisorScriptPath}`);
@@ -229,7 +262,10 @@ export async function askCommand(args: string[]): Promise<void> {
 
   let finalPrompt = parsed.prompt;
   if (parsed.agentPromptRole) {
-    const agentPromptContent = await resolveAgentPromptContent(parsed.agentPromptRole, promptsDir);
+    const agentPromptContent = await resolveAgentPromptContent(
+      parsed.agentPromptRole,
+      promptsDir,
+    );
     finalPrompt = `${agentPromptContent}\n\n${parsed.prompt}`;
   }
 
@@ -254,12 +290,15 @@ export async function askCommand(args: string[]): Promise<void> {
   }
 
   if (child.error) {
-    throw new Error(`[ask] failed to launch advisor script: ${child.error.message}`);
+    throw new Error(
+      `[ask] failed to launch advisor script: ${child.error.message}`,
+    );
   }
 
-  const status = typeof child.status === 'number'
-    ? child.status
-    : resolveSignalExitCode(child.signal);
+  const status =
+    typeof child.status === 'number'
+      ? child.status
+      : resolveSignalExitCode(child.signal);
 
   if (status !== 0) {
     process.exitCode = status;

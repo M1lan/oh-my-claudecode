@@ -10,12 +10,26 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from 'fs';
-import { join, dirname, basename, resolve, relative, isAbsolute, win32 } from 'path';
+import {
+  join,
+  dirname,
+  basename,
+  resolve,
+  relative,
+  isAbsolute,
+  win32,
+} from 'path';
 import { fileURLToPath } from 'url';
 import type { BuiltinSkill } from './types.js';
-import { parseFrontmatter, parseFrontmatterAliases } from '../../utils/frontmatter.js';
+import {
+  parseFrontmatter,
+  parseFrontmatterAliases,
+} from '../../utils/frontmatter.js';
 import { rewriteOmcCliInvocations } from '../../utils/omc-cli-rendering.js';
-import { parseSkillPipelineMetadata, renderSkillPipelineGuidance } from '../../utils/skill-pipeline.js';
+import {
+  parseSkillPipelineMetadata,
+  renderSkillPipelineGuidance,
+} from '../../utils/skill-pipeline.js';
 import { renderSkillResourcesGuidance } from '../../utils/skill-resources.js';
 import { renderSkillRuntimeGuidance } from './runtime-guidance.js';
 import { isSkininthegamebrosUser } from '../../utils/skininthegamebros-user.js';
@@ -32,9 +46,9 @@ function getPackageDir(): string {
     }
 
     if (
-      currentDirName === 'builtin-skills'
-      && parentDirName === 'features'
-      && (grandparentDirName === 'src' || grandparentDirName === 'dist')
+      currentDirName === 'builtin-skills' &&
+      parentDirName === 'features' &&
+      (grandparentDirName === 'src' || grandparentDirName === 'dist')
     ) {
       return join(__dirname, '..', '..', '..');
     }
@@ -69,11 +83,7 @@ const CC_NATIVE_COMMANDS = new Set([
   'memory',
 ]);
 
-const SKININTHEGAMEBROS_ONLY_SKILLS = new Set([
-  'remember',
-  'verify',
-  'debug',
-]);
+const SKININTHEGAMEBROS_ONLY_SKILLS = new Set(['remember', 'verify', 'debug']);
 
 const DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD = 0.2;
 
@@ -92,7 +102,7 @@ function readJsonObject(path: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(readFileSync(path, 'utf-8'));
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? parsed as Record<string, unknown>
+      ? (parsed as Record<string, unknown>)
       : null;
   } catch {
     return null;
@@ -107,12 +117,20 @@ function readDeepInterviewThresholdFromSettings(path: string): number | null {
   }
 
   const deepInterview = (omc as Record<string, unknown>).deepInterview;
-  if (!deepInterview || typeof deepInterview !== 'object' || Array.isArray(deepInterview)) {
+  if (
+    !deepInterview ||
+    typeof deepInterview !== 'object' ||
+    Array.isArray(deepInterview)
+  ) {
     return null;
   }
 
-  const threshold = (deepInterview as Record<string, unknown>).ambiguityThreshold;
-  return typeof threshold === 'number' && Number.isFinite(threshold) && threshold >= 0 && threshold <= 1
+  const threshold = (deepInterview as Record<string, unknown>)
+    .ambiguityThreshold;
+  return typeof threshold === 'number' &&
+    Number.isFinite(threshold) &&
+    threshold >= 0 &&
+    threshold <= 1
     ? threshold
     : null;
 }
@@ -125,18 +143,26 @@ type DeepInterviewThresholdResolution = {
 function getDeepInterviewAmbiguityThresholdResolution(): DeepInterviewThresholdResolution {
   const profileSettingsPath = join(getClaudeConfigDir(), 'settings.json');
   const projectSettingsPath = join(process.cwd(), '.claude', 'settings.json');
-  const profileThreshold = readDeepInterviewThresholdFromSettings(profileSettingsPath);
-  const projectThreshold = readDeepInterviewThresholdFromSettings(projectSettingsPath);
+  const profileThreshold =
+    readDeepInterviewThresholdFromSettings(profileSettingsPath);
+  const projectThreshold =
+    readDeepInterviewThresholdFromSettings(projectSettingsPath);
 
   if (projectThreshold !== null) {
     return { threshold: projectThreshold, source: './.claude/settings.json' };
   }
 
   if (profileThreshold !== null) {
-    return { threshold: profileThreshold, source: '[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json' };
+    return {
+      threshold: profileThreshold,
+      source: '[$CLAUDE_CONFIG_DIR|~/.claude]/settings.json',
+    };
   }
 
-  return { threshold: DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD, source: 'default' };
+  return {
+    threshold: DEFAULT_DEEP_INTERVIEW_AMBIGUITY_THRESHOLD,
+    source: 'default',
+  };
 }
 
 function formatThresholdPercent(threshold: number): string {
@@ -147,18 +173,33 @@ function pathLooksWindows(value: string): boolean {
   return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\');
 }
 
-export function isPathInsideOrEqual(parentPath: string, candidatePath: string): boolean {
-  const pathApi = pathLooksWindows(parentPath) || pathLooksWindows(candidatePath) ? win32 : { relative, isAbsolute };
+export function isPathInsideOrEqual(
+  parentPath: string,
+  candidatePath: string,
+): boolean {
+  const pathApi =
+    pathLooksWindows(parentPath) || pathLooksWindows(candidatePath)
+      ? win32
+      : { relative, isAbsolute };
   const rel = pathApi.relative(parentPath, candidatePath);
   return rel === '' || (!rel.startsWith('..') && !pathApi.isAbsolute(rel));
 }
 
-function getFrontmatterString(metadata: Record<string, unknown>, key: string): string | null {
+function getFrontmatterString(
+  metadata: Record<string, unknown>,
+  key: string,
+): string | null {
   const value = metadata[key];
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
-function readSkillBodyOverride(skillPath: string, metadata: Record<string, unknown>, fallbackBody: string): string {
+function readSkillBodyOverride(
+  skillPath: string,
+  metadata: Record<string, unknown>,
+  fallbackBody: string,
+): string {
   const bodyPath = getFrontmatterString(metadata, 'omc-full-body');
   if (!bodyPath) {
     return fallbackBody;
@@ -190,40 +231,54 @@ function applyDeepInterviewRuntimeSettings(template: string): string {
     .replaceAll('<resolvedThresholdPercent>', percent)
     .replaceAll('<resolvedThresholdSource>', source);
 
-  const withRuntimeSettings = withResolvedPlaceholders.includes('3.5. **Load runtime settings**:')
-    || withResolvedPlaceholders.includes('## Phase 0: Resolve Ambiguity Threshold')
-    ? withResolvedPlaceholders
-    : withResolvedPlaceholders.replace(
-      '4. **Initialize state** via `state_write(mode="deep-interview")`:',
-      [
-        `3.5. **Load runtime settings** from \`~/.claude/settings.json\` and \`./.claude/settings.json\` before state init (project overrides profile). For this run, use \`ambiguityThreshold = ${threshold}\`.`,
-        '4. **Initialize state** via `state_write(mode="deep-interview")`:',
-      ].join('\n'),
-    );
+  const withRuntimeSettings =
+    withResolvedPlaceholders.includes('3.5. **Load runtime settings**:') ||
+    withResolvedPlaceholders.includes('## Phase 0: Resolve Ambiguity Threshold')
+      ? withResolvedPlaceholders
+      : withResolvedPlaceholders.replace(
+          '4. **Initialize state** via `state_write(mode="deep-interview")`:',
+          [
+            `3.5. **Load runtime settings** from \`~/.claude/settings.json\` and \`./.claude/settings.json\` before state init (project overrides profile). For this run, use \`ambiguityThreshold = ${threshold}\`.`,
+            '4. **Initialize state** via `state_write(mode="deep-interview")`:',
+          ].join('\n'),
+        );
 
-  return withRuntimeSettings
-    .replace('"threshold": 0.2,', `"threshold": ${threshold},`)
-    .replace(
-      'We\'ll proceed to execution once ambiguity drops below 20%.',
-      `We'll proceed to execution once ambiguity drops below ${percent}.`,
-    )
-    // Fix #2545: replace remaining hardcoded 20%/0.2 references that conflict with runtime threshold injection
-    .replace('(default: 20%)', `(default: ${percent})`)
-    .replace('(default 0.2)', `(default ${threshold})`)
-    .replace('"ambiguityThreshold": 0.2,', `"ambiguityThreshold": ${threshold},`)
-    .replace('Gate: ≤20% ambiguity', `Gate: ≤${percent} ambiguity`)
-    .replace('(threshold: 20%).', `(threshold: ${percent}).`)
-    .replace('ambiguity ≤ 20%', `ambiguity ≤ ${percent}`);
+  return (
+    withRuntimeSettings
+      .replace('"threshold": 0.2,', `"threshold": ${threshold},`)
+      .replace(
+        "We'll proceed to execution once ambiguity drops below 20%.",
+        `We'll proceed to execution once ambiguity drops below ${percent}.`,
+      )
+      // Fix #2545: replace remaining hardcoded 20%/0.2 references that conflict with runtime threshold injection
+      .replace('(default: 20%)', `(default: ${percent})`)
+      .replace('(default 0.2)', `(default ${threshold})`)
+      .replace(
+        '"ambiguityThreshold": 0.2,',
+        `"ambiguityThreshold": ${threshold},`,
+      )
+      .replace('Gate: ≤20% ambiguity', `Gate: ≤${percent} ambiguity`)
+      .replace('(threshold: 20%).', `(threshold: ${percent}).`)
+      .replace('ambiguity ≤ 20%', `ambiguity ≤ ${percent}`)
+  );
 }
 
 function normalizeSkillNameForRuntimeRendering(skillName: string): string {
-  return skillName.trim().toLowerCase().replace(/^oh-my-claudecode:/, '').replace(/^omc:/, '');
+  return skillName
+    .trim()
+    .toLowerCase()
+    .replace(/^oh-my-claudecode:/, '')
+    .replace(/^omc:/, '');
 }
 
-export function renderBundledSkillBody(skillName: string, body: string): string {
+export function renderBundledSkillBody(
+  skillName: string,
+  body: string,
+): string {
   const normalizedSkillName = normalizeSkillNameForRuntimeRendering(skillName);
   const rewrittenBody = rewriteOmcCliInvocations(body.trim());
-  return normalizedSkillName === 'deep-interview' || normalizedSkillName === 'deep-dive'
+  return normalizedSkillName === 'deep-interview' ||
+    normalizedSkillName === 'deep-dive'
     ? applyDeepInterviewRuntimeSettings(rewrittenBody)
     : rewrittenBody;
 }
@@ -231,7 +286,10 @@ export function renderBundledSkillBody(skillName: string, body: string): string 
 /**
  * Load a single skill from a SKILL.md file
  */
-function loadSkillFromFile(skillPath: string, skillName: string): BuiltinSkill[] {
+function loadSkillFromFile(
+  skillPath: string,
+  skillName: string,
+): BuiltinSkill[] {
   try {
     const content = readFileSync(skillPath, 'utf-8');
     const { metadata, body } = parseFrontmatter(content);
@@ -245,14 +303,20 @@ function loadSkillFromFile(skillPath: string, skillName: string): BuiltinSkill[]
       renderSkillRuntimeGuidance(safePrimaryName),
       renderSkillPipelineGuidance(safePrimaryName, pipeline),
       renderSkillResourcesGuidance(skillPath),
-    ].filter((section) => section.trim().length > 0).join('\n\n');
+    ]
+      .filter((section) => section.trim().length > 0)
+      .join('\n\n');
 
     const safeAliases = Array.from(
       new Set(
         parseFrontmatterAliases(metadata.aliases)
           .map((alias: string) => toSafeSkillName(alias))
-          .filter((alias: string) => alias.length > 0 && alias.toLowerCase() !== safePrimaryName.toLowerCase())
-      )
+          .filter(
+            (alias: string) =>
+              alias.length > 0 &&
+              alias.toLowerCase() !== safePrimaryName.toLowerCase(),
+          ),
+      ),
     );
 
     const allNames = [safePrimaryName, ...safeAliases];
@@ -269,9 +333,10 @@ function loadSkillFromFile(skillPath: string, skillName: string): BuiltinSkill[]
         aliases: name === safePrimaryName ? safeAliases : undefined,
         aliasOf: name === safePrimaryName ? undefined : safePrimaryName,
         deprecatedAlias: name === safePrimaryName ? undefined : true,
-        deprecationMessage: name === safePrimaryName
-          ? undefined
-          : `Skill alias "${name}" is deprecated. Use "${safePrimaryName}" instead.`,
+        deprecationMessage:
+          name === safePrimaryName
+            ? undefined
+            : `Skill alias "${name}" is deprecated. Use "${safePrimaryName}" instead.`,
         description: metadata.description || '',
         template,
         // Optional fields from frontmatter
@@ -300,18 +365,22 @@ function loadSkillsFromDirectory(): BuiltinSkill[] {
   const seenNames = new Set<string>();
 
   try {
-    const entries = readdirSync(SKILLS_DIR, { withFileTypes: true })
-      .sort((a, b) => {
+    const entries = readdirSync(SKILLS_DIR, { withFileTypes: true }).sort(
+      (a, b) => {
         // Public canonical skill-making surface must claim its deprecated
         // learner alias before the legacy compatibility skill is encountered.
         if (a.name === 'skillify') return -1;
         if (b.name === 'skillify') return 1;
         return a.name.localeCompare(b.name);
-      });
+      },
+    );
 
     for (const entry of entries) {
       if (!entry.isDirectory()) continue;
-      if (SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) && !isSkininthegamebrosUser()) {
+      if (
+        SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) &&
+        !isSkininthegamebrosUser()
+      ) {
         continue;
       }
 
@@ -340,7 +409,8 @@ let cachedSkillsKey: string | null = null;
 
 function getBuiltinSkillsCacheKey(): string {
   return JSON.stringify({
-    deepInterviewAmbiguityThreshold: getDeepInterviewAmbiguityThresholdResolution(),
+    deepInterviewAmbiguityThreshold:
+      getDeepInterviewAmbiguityThresholdResolution(),
   });
 }
 
@@ -364,7 +434,7 @@ export function createBuiltinSkills(): BuiltinSkill[] {
  */
 export function getBuiltinSkill(name: string): BuiltinSkill | undefined {
   const skills = createBuiltinSkills();
-  return skills.find(s => s.name.toLowerCase() === name.toLowerCase());
+  return skills.find((s) => s.name.toLowerCase() === name.toLowerCase());
 }
 
 export interface ListBuiltinSkillNamesOptions {
@@ -374,7 +444,9 @@ export interface ListBuiltinSkillNamesOptions {
 /**
  * List all builtin skill names
  */
-export function listBuiltinSkillNames(options?: ListBuiltinSkillNamesOptions): string[] {
+export function listBuiltinSkillNames(
+  options?: ListBuiltinSkillNamesOptions,
+): string[] {
   const { includeAliases = false } = options ?? {};
   const skills = createBuiltinSkills();
   if (includeAliases) {

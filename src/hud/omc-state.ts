@@ -5,15 +5,15 @@
  * These are read-only functions that don't modify the state files.
  */
 
-import { existsSync, readFileSync, statSync, readdirSync } from "fs";
-import { join } from "path";
-import { getOmcRoot } from "../lib/worktree-paths.js";
+import { existsSync, readFileSync, statSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { getOmcRoot } from '../lib/worktree-paths.js';
 import type {
   RalphStateForHud,
   UltraworkStateForHud,
   PrdStateForHud,
-} from "./types.js";
-import type { AutopilotStateForHud } from "./elements/autopilot.js";
+} from './types.js';
+import type { AutopilotStateForHud } from './elements/autopilot.js';
 
 /**
  * Maximum age for state files to be considered "active".
@@ -51,7 +51,7 @@ function resolveStatePath(
   const omcRoot = getOmcRoot(directory);
 
   if (sessionId) {
-    const sessionPath = join(omcRoot, "state", "sessions", sessionId, filename);
+    const sessionPath = join(omcRoot, 'state', 'sessions', sessionId, filename);
     return existsSync(sessionPath) ? sessionPath : null;
   }
 
@@ -59,7 +59,7 @@ function resolveStatePath(
   let bestMtime = 0;
 
   // Check session-scoped paths first (most likely location after Issue #456 fix)
-  const sessionsDir = join(omcRoot, "state", "sessions");
+  const sessionsDir = join(omcRoot, 'state', 'sessions');
   if (existsSync(sessionsDir)) {
     try {
       const entries = readdirSync(sessionsDir, { withFileTypes: true });
@@ -84,7 +84,7 @@ function resolveStatePath(
   }
 
   // Check standard path
-  const newPath = join(omcRoot, "state", filename);
+  const newPath = join(omcRoot, 'state', filename);
   if (existsSync(newPath)) {
     try {
       const mtime = statSync(newPath).mtimeMs;
@@ -133,7 +133,7 @@ export function readRalphStateForHud(
   directory: string,
   sessionId?: string,
 ): RalphStateForHud | null {
-  const stateFile = resolveStatePath(directory, "ralph-state.json", sessionId);
+  const stateFile = resolveStatePath(directory, 'ralph-state.json', sessionId);
 
   if (!stateFile) {
     return null;
@@ -145,7 +145,7 @@ export function readRalphStateForHud(
   }
 
   try {
-    const content = readFileSync(stateFile, "utf-8");
+    const content = readFileSync(stateFile, 'utf-8');
     const state = JSON.parse(content) as RalphLoopState;
 
     if (!state.active) {
@@ -184,7 +184,7 @@ export function readUltraworkStateForHud(
   // Check local state only (with new path fallback)
   const localFile = resolveStatePath(
     directory,
-    "ultrawork-state.json",
+    'ultrawork-state.json',
     sessionId,
   );
 
@@ -193,7 +193,7 @@ export function readUltraworkStateForHud(
   }
 
   try {
-    const content = readFileSync(localFile, "utf-8");
+    const content = readFileSync(localFile, 'utf-8');
     const state = JSON.parse(content) as UltraworkState;
 
     if (!state.active) {
@@ -229,11 +229,11 @@ interface PRD {
  */
 export function readPrdStateForHud(directory: string): PrdStateForHud | null {
   // Check root first
-  let prdPath = join(directory, "prd.json");
+  let prdPath = join(directory, 'prd.json');
 
   if (!existsSync(prdPath)) {
     // Check .omc
-    prdPath = join(getOmcRoot(directory), "prd.json");
+    prdPath = join(getOmcRoot(directory), 'prd.json');
 
     if (!existsSync(prdPath)) {
       return null;
@@ -241,7 +241,7 @@ export function readPrdStateForHud(directory: string): PrdStateForHud | null {
   }
 
   try {
-    const content = readFileSync(prdPath, "utf-8");
+    const content = readFileSync(prdPath, 'utf-8');
     const prd = JSON.parse(content) as PRD;
 
     if (!prd.userStories || !Array.isArray(prd.userStories)) {
@@ -294,7 +294,7 @@ export function readAutopilotStateForHud(
 ): AutopilotStateForHud | null {
   const stateFile = resolveStatePath(
     directory,
-    "autopilot-state.json",
+    'autopilot-state.json',
     sessionId,
   );
 
@@ -308,7 +308,7 @@ export function readAutopilotStateForHud(
   }
 
   try {
-    const content = readFileSync(stateFile, "utf-8");
+    const content = readFileSync(stateFile, 'utf-8');
     const state = JSON.parse(content) as AutopilotStateFile;
 
     if (!state.active) {
@@ -367,21 +367,21 @@ export function getActiveSkills(
 
   const autopilot = readAutopilotStateForHud(directory, sessionId);
   if (autopilot?.active) {
-    skills.push("autopilot");
+    skills.push('autopilot');
   }
 
   const ralph = readRalphStateForHud(directory, sessionId);
   if (ralph?.active) {
-    skills.push("ralph");
+    skills.push('ralph');
   }
 
   const ultrawork = readUltraworkStateForHud(directory, sessionId);
   if (ultrawork?.active) {
-    skills.push("ultrawork");
+    skills.push('ultrawork');
   }
 
   return skills;
 }
 
 // Re-export for convenience
-export type { AutopilotStateForHud } from "./elements/autopilot.js";
+export type { AutopilotStateForHud } from './elements/autopilot.js';

@@ -5,7 +5,7 @@
  * dynamically from agent metadata. Adding a new agent automatically updates the orchestrator.
  */
 
-import type { AgentConfig, AgentCategory } from "../types.js";
+import type { AgentConfig, AgentCategory } from '../types.js';
 
 /**
  * Build the header section with core orchestrator identity
@@ -25,52 +25,52 @@ You coordinate specialized subagents to accomplish complex software engineering 
  * Build the agent registry section with descriptions
  */
 export function buildAgentRegistry(agents: AgentConfig[]): string {
-  const lines: string[] = ["## Available Subagents", ""];
+  const lines: string[] = ['## Available Subagents', ''];
 
   // Group agents by tier (base vs variants)
-  const baseAgents = agents.filter((a) => !a.name.includes("-"));
-  const tieredAgents = agents.filter((a) => a.name.includes("-"));
+  const baseAgents = agents.filter((a) => !a.name.includes('-'));
+  const tieredAgents = agents.filter((a) => a.name.includes('-'));
 
   // Base agents
   if (baseAgents.length > 0) {
-    lines.push("### Primary Agents");
+    lines.push('### Primary Agents');
     for (const agent of baseAgents) {
-      const modelInfo = agent.model ? ` (${agent.model})` : "";
+      const modelInfo = agent.model ? ` (${agent.model})` : '';
       lines.push(`- **${agent.name}**${modelInfo}: ${agent.description}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   // Tiered variants
   if (tieredAgents.length > 0) {
-    lines.push("### Tiered Variants");
+    lines.push('### Tiered Variants');
     lines.push(
-      "Use tiered variants for smart model routing based on task complexity:",
+      'Use tiered variants for smart model routing based on task complexity:',
     );
     lines.push(
-      "- **HIGH tier (opus)**: Complex analysis, architecture, debugging",
+      '- **HIGH tier (opus)**: Complex analysis, architecture, debugging',
     );
     lines.push(
-      "- **MEDIUM tier (sonnet)**: Standard tasks, moderate complexity",
+      '- **MEDIUM tier (sonnet)**: Standard tasks, moderate complexity',
     );
-    lines.push("- **LOW tier (haiku)**: Simple lookups, trivial operations");
-    lines.push("");
+    lines.push('- **LOW tier (haiku)**: Simple lookups, trivial operations');
+    lines.push('');
 
     for (const agent of tieredAgents) {
-      const modelInfo = agent.model ? ` (${agent.model})` : "";
+      const modelInfo = agent.model ? ` (${agent.model})` : '';
       lines.push(`- **${agent.name}**${modelInfo}: ${agent.description}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
  * Build the trigger table showing when to use each agent
  */
 export function buildTriggerTable(agents: AgentConfig[]): string {
-  const lines: string[] = ["## Key Triggers", ""];
+  const lines: string[] = ['## Key Triggers', ''];
 
   // Filter agents with metadata triggers
   const agentsWithTriggers = agents.filter(
@@ -78,35 +78,35 @@ export function buildTriggerTable(agents: AgentConfig[]): string {
   );
 
   if (agentsWithTriggers.length === 0) {
-    return "";
+    return '';
   }
 
-  lines.push("| Agent | Domain | Trigger Condition |");
-  lines.push("|-------|--------|------------------|");
+  lines.push('| Agent | Domain | Trigger Condition |');
+  lines.push('|-------|--------|------------------|');
 
   for (const agent of agentsWithTriggers) {
     const triggers = agent.metadata?.triggers ?? [];
     for (let i = 0; i < triggers.length; i++) {
       const trigger = triggers[i];
-      const agentName = i === 0 ? `**${agent.name}**` : "";
+      const agentName = i === 0 ? `**${agent.name}**` : '';
       lines.push(`| ${agentName} | ${trigger.domain} | ${trigger.trigger} |`);
     }
   }
 
-  lines.push("");
-  return lines.join("\n");
+  lines.push('');
+  return lines.join('\n');
 }
 
 /**
  * Build tool selection guidance section
  */
 export function buildToolSelectionSection(agents: AgentConfig[]): string {
-  const lines: string[] = ["## Tool Selection Guidance", ""];
+  const lines: string[] = ['## Tool Selection Guidance', ''];
 
   // Group by category
   const categorizedAgents = new Map<AgentCategory, AgentConfig[]>();
   for (const agent of agents) {
-    const category = agent.metadata?.category || "utility";
+    const category = agent.metadata?.category || 'utility';
     if (!categorizedAgents.has(category)) {
       categorizedAgents.set(category, []);
     }
@@ -117,36 +117,36 @@ export function buildToolSelectionSection(agents: AgentConfig[]): string {
   for (const [category, categoryAgents] of categorizedAgents) {
     lines.push(`### ${capitalizeFirst(category)} Agents`);
     for (const agent of categoryAgents) {
-      lines.push(`**${agent.name}** (${agent.model || "sonnet"}):`);
+      lines.push(`**${agent.name}** (${agent.model || 'sonnet'}):`);
       if (agent.tools?.length) {
-        lines.push(`- Tools: ${agent.tools.join(", ")}`);
+        lines.push(`- Tools: ${agent.tools.join(', ')}`);
       }
 
       if (agent.metadata?.useWhen && agent.metadata.useWhen.length > 0) {
-        lines.push(`- Use when: ${agent.metadata.useWhen.join("; ")}`);
+        lines.push(`- Use when: ${agent.metadata.useWhen.join('; ')}`);
       }
 
       if (agent.metadata?.avoidWhen && agent.metadata.avoidWhen.length > 0) {
-        lines.push(`- Avoid when: ${agent.metadata.avoidWhen.join("; ")}`);
+        lines.push(`- Avoid when: ${agent.metadata.avoidWhen.join('; ')}`);
       }
 
-      lines.push("");
+      lines.push('');
     }
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
  * Build delegation matrix/guide table
  */
 export function buildDelegationMatrix(agents: AgentConfig[]): string {
-  const lines: string[] = ["## Delegation Guide", ""];
+  const lines: string[] = ['## Delegation Guide', ''];
 
   // Group by category
   const categorizedAgents = new Map<AgentCategory, AgentConfig[]>();
   for (const agent of agents) {
-    const category = agent.metadata?.category || "utility";
+    const category = agent.metadata?.category || 'utility';
     if (!categorizedAgents.has(category)) {
       categorizedAgents.set(category, []);
     }
@@ -154,15 +154,15 @@ export function buildDelegationMatrix(agents: AgentConfig[]): string {
     if (arr) arr.push(agent);
   }
 
-  lines.push("| Category | Agent | Model | Use Case |");
-  lines.push("|----------|-------|-------|----------|");
+  lines.push('| Category | Agent | Model | Use Case |');
+  lines.push('|----------|-------|-------|----------|');
 
   for (const [category, categoryAgents] of categorizedAgents) {
     const categoryName = capitalizeFirst(category);
     for (let i = 0; i < categoryAgents.length; i++) {
       const agent = categoryAgents[i];
-      const catDisplay = i === 0 ? categoryName : "";
-      const model = agent.model || "sonnet";
+      const catDisplay = i === 0 ? categoryName : '';
+      const model = agent.model || 'sonnet';
       const useCase = agent.metadata?.useWhen?.[0] || agent.description;
       lines.push(
         `| ${catDisplay} | **${agent.name}** | ${model} | ${useCase} |`,
@@ -170,8 +170,8 @@ export function buildDelegationMatrix(agents: AgentConfig[]): string {
     }
   }
 
-  lines.push("");
-  return lines.join("\n");
+  lines.push('');
+  return lines.join('\n');
 }
 
 /**

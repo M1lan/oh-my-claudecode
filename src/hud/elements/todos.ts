@@ -4,14 +4,14 @@
  * Renders todo progress display.
  */
 
-import type { TodoItem } from "../types.js";
-import { RESET } from "../colors.js";
-import { truncateToWidth } from "../../utils/string-width.js";
+import type { TodoItem } from '../types.js';
+import { RESET } from '../colors.js';
+import { truncateToWidth } from '../../utils/string-width.js';
 
-const GREEN = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const CYAN = "\x1b[36m";
-const DIM = "\x1b[2m";
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
+const CYAN = '\x1b[36m';
+const DIM = '\x1b[2m';
 
 /**
  * Render todo progress.
@@ -24,7 +24,7 @@ export function renderTodos(todos: TodoItem[]): string | null {
     return null;
   }
 
-  const completed = todos.filter((t) => t.status === "completed").length;
+  const completed = todos.filter((t) => t.status === 'completed').length;
   const total = todos.length;
 
   // Color based on progress
@@ -52,9 +52,9 @@ export function renderTodosWithCurrent(todos: TodoItem[]): string | null {
     return null;
   }
 
-  const completed = todos.filter((t) => t.status === "completed").length;
+  const completed = todos.filter((t) => t.status === 'completed').length;
   const total = todos.length;
-  const inProgress = todos.find((t) => t.status === "in_progress");
+  const inProgress = todos.find((t) => t.status === 'in_progress');
 
   // Color based on progress
   const percent = (completed / total) * 100;
@@ -71,7 +71,7 @@ export function renderTodosWithCurrent(todos: TodoItem[]): string | null {
   let result = `todos:${color}${completed}/${total}${RESET}`;
 
   if (inProgress) {
-    const activeText = inProgress.activeForm || inProgress.content || "...";
+    const activeText = inProgress.activeForm || inProgress.content || '...';
     // Use CJK-aware truncation (30 visual columns)
     const truncated = truncateToWidth(activeText, 30);
     result += ` ${DIM}(working: ${truncated})${RESET}`;

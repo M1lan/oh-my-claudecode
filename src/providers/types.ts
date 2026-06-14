@@ -7,13 +7,13 @@
 
 /** Supported git hosting provider identifiers */
 export type ProviderName =
-  | "github"
-  | "gitlab"
-  | "bitbucket"
-  | "azure-devops"
-  | "gitea"
-  | "forgejo"
-  | "unknown";
+  | 'github'
+  | 'gitlab'
+  | 'bitbucket'
+  | 'azure-devops'
+  | 'gitea'
+  | 'forgejo'
+  | 'unknown';
 
 /** Parsed remote URL information */
 export interface RemoteUrlInfo {
@@ -55,7 +55,7 @@ export interface GitProvider {
   readonly displayName: string;
 
   /** What this provider calls PRs: 'PR' or 'MR' */
-  readonly prTerminology: "PR" | "MR";
+  readonly prTerminology: 'PR' | 'MR';
 
   /**
    * Git refspec pattern for fetching PR/MR branches.

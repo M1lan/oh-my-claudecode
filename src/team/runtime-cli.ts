@@ -6,22 +6,22 @@
  * Bundled as CJS via esbuild (scripts/build-runtime-cli.mjs).
  */
 
-import { readdirSync, readFileSync, statSync } from "fs";
-import { readFile, rename, unlink, writeFile } from "fs/promises";
-import { basename, join } from "path";
-import { startTeam, monitorTeam, shutdownTeam } from "./runtime.js";
-import type { TeamConfig, TeamRuntime } from "./runtime.js";
-import { appendTeamEvent } from "./events.js";
-import { deriveTeamLeaderGuidance } from "./leader-nudge-guidance.js";
-import { waitForSentinelReadiness } from "./sentinel-gate.js";
+import { readdirSync, readFileSync, statSync } from 'fs';
+import { readFile, rename, unlink, writeFile } from 'fs/promises';
+import { basename, join } from 'path';
+import { startTeam, monitorTeam, shutdownTeam } from './runtime.js';
+import type { TeamConfig, TeamRuntime } from './runtime.js';
+import { appendTeamEvent } from './events.js';
+import { deriveTeamLeaderGuidance } from './leader-nudge-guidance.js';
+import { waitForSentinelReadiness } from './sentinel-gate.js';
 import {
   isRuntimeV2Enabled,
   startTeamV2,
   monitorTeamV2,
   shutdownTeamV2,
-} from "./runtime-v2.js";
-import type { TeamSnapshotV2 } from "./runtime-v2.js";
-import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
+} from './runtime-v2.js';
+import type { TeamSnapshotV2 } from './runtime-v2.js';
+import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
 
 interface CliInput {
   teamName: string;
@@ -43,7 +43,7 @@ export function assertAutoMergeRuntimeSupported(
 ): void {
   if (autoMerge && !useV2) {
     throw new Error(
-      "--auto-merge requires runtime v2; unset OMC_RUNTIME_V2=0 or disable --auto-merge",
+      '--auto-merge requires runtime v2; unset OMC_RUNTIME_V2=0 or disable --auto-merge',
     );
   }
 }
@@ -55,14 +55,14 @@ interface TaskResult {
 }
 
 interface CliOutput {
-  status: "completed" | "failed";
+  status: 'completed' | 'failed';
   teamName: string;
   taskResults: TaskResult[];
   duration: number;
   workerCount: number;
 }
 
-export type TerminalPhaseResult = "complete" | "failed" | "cancelled";
+export type TerminalPhaseResult = 'complete' | 'failed' | 'cancelled';
 
 export interface TerminalCliResult {
   output: CliOutput;
@@ -74,7 +74,7 @@ interface WatchdogFailedMarker {
   failedAt: string | number;
 }
 
-type TerminalStatus = "completed" | "failed" | null;
+type TerminalStatus = 'completed' | 'failed' | null;
 
 export function getTerminalStatus(
   taskCounts: {
@@ -88,31 +88,31 @@ export function getTerminalStatus(
   const active = taskCounts.pending + taskCounts.inProgress;
   const terminal = taskCounts.completed + taskCounts.failed;
   if (active !== 0 || terminal !== expectedTaskCount) return null;
-  return taskCounts.failed > 0 ? "failed" : "completed";
+  return taskCounts.failed > 0 ? 'failed' : 'completed';
 }
 
 function parseWatchdogFailedAt(marker: WatchdogFailedMarker): number {
-  if (typeof marker.failedAt === "number") return marker.failedAt;
-  if (typeof marker.failedAt === "string") {
+  if (typeof marker.failedAt === 'number') return marker.failedAt;
+  if (typeof marker.failedAt === 'string') {
     const numeric = Number(marker.failedAt);
     if (Number.isFinite(numeric)) return numeric;
     const parsed = Date.parse(marker.failedAt);
     if (Number.isFinite(parsed)) return parsed;
   }
-  throw new Error("watchdog marker missing valid failedAt");
+  throw new Error('watchdog marker missing valid failedAt');
 }
 
 export async function checkWatchdogFailedMarker(
   stateRoot: string,
   startTime: number,
 ): Promise<{ failed: boolean; reason?: string }> {
-  const markerPath = join(stateRoot, "watchdog-failed.json");
+  const markerPath = join(stateRoot, 'watchdog-failed.json');
   let raw: string;
   try {
-    raw = await readFile(markerPath, "utf-8");
+    raw = await readFile(markerPath, 'utf-8');
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") return { failed: false };
+    if (code === 'ENOENT') return { failed: false };
     return { failed: true, reason: `Failed to read watchdog marker: ${err}` };
   }
 
@@ -155,14 +155,14 @@ export async function writeResultArtifact(
   if (!jobId || !omcJobsDir) return;
   const resultPath = join(omcJobsDir, `${jobId}-result.json`);
   const tmpPath = `${resultPath}.tmp`;
-  await writeFile(tmpPath, JSON.stringify({ ...output, finishedAt }), "utf-8");
+  await writeFile(tmpPath, JSON.stringify({ ...output, finishedAt }), 'utf-8');
   await rename(tmpPath, resultPath);
 }
 
 export function buildCliOutput(
   stateRoot: string,
   teamName: string,
-  status: "completed" | "failed",
+  status: 'completed' | 'failed',
   workerCount: number,
   startTimeMs: number,
 ): CliOutput {
@@ -184,7 +184,7 @@ export function buildTerminalCliResult(
   workerCount: number,
   startTimeMs: number,
 ): TerminalCliResult {
-  const status = phase === "complete" ? "completed" : "failed";
+  const status = phase === 'complete' ? 'completed' : 'failed';
   return {
     output: buildCliOutput(
       stateRoot,
@@ -193,7 +193,7 @@ export function buildTerminalCliResult(
       workerCount,
       startTimeMs,
     ),
-    exitCode: status === "completed" ? 0 : 1,
+    exitCode: status === 'completed' ? 0 : 1,
     notice: `[runtime-cli] phase=${phase} reached terminal state; preserving team state for inspection. Run "omc team shutdown ${teamName}" when explicit cleanup is desired.\n`,
   };
 }
@@ -210,7 +210,7 @@ async function writePanesFile(
 
   const panesPath = join(omcJobsDir, `${jobId}-panes.json`);
   await writeFile(
-    panesPath + ".tmp",
+    panesPath + '.tmp',
     JSON.stringify({
       paneIds: [...paneIds],
       leaderPaneId,
@@ -218,7 +218,7 @@ async function writePanesFile(
       ownsWindow,
     }),
   );
-  await rename(panesPath + ".tmp", panesPath);
+  await rename(panesPath + '.tmp', panesPath);
 }
 
 const MAX_FALLBACK_SUMMARY_CHARS = 2000;
@@ -233,19 +233,19 @@ const MAX_FALLBACK_SUMMARY_CHARS = 2000;
 export function isTerseFinalSummary(summary: string): boolean {
   const trimmed = summary.trim();
   if (trimmed.length === 0) return true;
-  const normalized = trimmed.toLowerCase().replace(/[\s.!]+$/g, "");
+  const normalized = trimmed.toLowerCase().replace(/[\s.!]+$/g, '');
   const TERSE_ACKS = new Set([
-    "done",
-    "ready",
-    "ok",
-    "okay",
-    "complete",
-    "completed",
-    "finished",
-    "success",
-    "all done",
-    "task complete",
-    "task completed",
+    'done',
+    'ready',
+    'ok',
+    'okay',
+    'complete',
+    'completed',
+    'finished',
+    'success',
+    'all done',
+    'task complete',
+    'task completed',
   ]);
   return TERSE_ACKS.has(normalized);
 }
@@ -268,7 +268,7 @@ export function readTaskOutputFallback(
   }
   const prefix = `team-${teamName}-task-${taskId}-`;
   const candidates = entries.filter(
-    (f) => f.startsWith(prefix) && f.endsWith(".md"),
+    (f) => f.startsWith(prefix) && f.endsWith('.md'),
   );
   if (candidates.length === 0) return null;
 
@@ -285,10 +285,10 @@ export function readTaskOutputFallback(
   if (!newest) return null;
 
   try {
-    const content = readFileSync(newest.path, "utf-8").trim();
+    const content = readFileSync(newest.path, 'utf-8').trim();
     if (content.length === 0) return null;
     return content.length > MAX_FALLBACK_SUMMARY_CHARS
-      ? content.slice(0, MAX_FALLBACK_SUMMARY_CHARS) + "\n... (truncated)"
+      ? content.slice(0, MAX_FALLBACK_SUMMARY_CHARS) + '\n... (truncated)'
       : content;
   } catch {
     return null;
@@ -296,37 +296,37 @@ export function readTaskOutputFallback(
 }
 
 function collectTaskResults(stateRoot: string): TaskResult[] {
-  const tasksDir = join(stateRoot, "tasks");
+  const tasksDir = join(stateRoot, 'tasks');
   const teamName = basename(stateRoot);
   // stateRoot is `<omcRoot>/state/team/<teamName>`; outputs live at `<omcRoot>/outputs`.
-  const outputsDir = join(stateRoot, "..", "..", "..", "outputs");
+  const outputsDir = join(stateRoot, '..', '..', '..', 'outputs');
   try {
-    const files = readdirSync(tasksDir).filter((f) => f.endsWith(".json"));
+    const files = readdirSync(tasksDir).filter((f) => f.endsWith('.json'));
     return files.map((f) => {
       try {
-        const raw = readFileSync(join(tasksDir, f), "utf-8");
+        const raw = readFileSync(join(tasksDir, f), 'utf-8');
         const task = JSON.parse(raw) as {
           id?: string;
           status?: string;
           result?: string;
           summary?: string;
         };
-        const taskId = task.id ?? f.replace(".json", "");
-        let summary = task.result ?? task.summary ?? "";
+        const taskId = task.id ?? f.replace('.json', '');
+        let summary = task.result ?? task.summary ?? '';
         if (isTerseFinalSummary(summary)) {
           const fallback = readTaskOutputFallback(outputsDir, teamName, taskId);
           if (fallback) summary = fallback;
         }
         return {
           taskId,
-          status: task.status ?? "unknown",
+          status: task.status ?? 'unknown',
           summary,
         };
       } catch {
         return {
-          taskId: f.replace(".json", ""),
-          status: "unknown",
-          summary: "",
+          taskId: f.replace('.json', ''),
+          status: 'unknown',
+          summary: '',
         };
       }
     });
@@ -338,7 +338,7 @@ function collectTaskResults(stateRoot: string): TaskResult[] {
 async function main(): Promise<void> {
   const startTime = Date.now();
   const logLeaderNudgeEventFailure = createSwallowedErrorLogger(
-    "team.runtime-cli main appendTeamEvent failed",
+    'team.runtime-cli main appendTeamEvent failed',
   );
 
   // Read stdin
@@ -346,7 +346,7 @@ async function main(): Promise<void> {
   for await (const chunk of process.stdin) {
     chunks.push(chunk as Buffer);
   }
-  const rawInput = Buffer.concat(chunks).toString("utf-8").trim();
+  const rawInput = Buffer.concat(chunks).toString('utf-8').trim();
 
   let input: CliInput;
   try {
@@ -358,19 +358,19 @@ async function main(): Promise<void> {
 
   // Validate required fields
   const missing: string[] = [];
-  if (!input.teamName) missing.push("teamName");
+  if (!input.teamName) missing.push('teamName');
   if (
     !input.agentTypes ||
     !Array.isArray(input.agentTypes) ||
     input.agentTypes.length === 0
   )
-    missing.push("agentTypes");
+    missing.push('agentTypes');
   if (!input.tasks || !Array.isArray(input.tasks) || input.tasks.length === 0)
-    missing.push("tasks");
-  if (!input.cwd) missing.push("cwd");
+    missing.push('tasks');
+  if (!input.cwd) missing.push('cwd');
   if (missing.length > 0) {
     process.stderr.write(
-      `[runtime-cli] Missing required fields: ${missing.join(", ")}\n`,
+      `[runtime-cli] Missing required fields: ${missing.join(', ')}\n`,
     );
     process.exit(1);
   }
@@ -393,7 +393,7 @@ async function main(): Promise<void> {
   const config: TeamConfig = {
     teamName,
     workerCount,
-    agentTypes: agentTypes as TeamConfig["agentTypes"],
+    agentTypes: agentTypes as TeamConfig['agentTypes'],
     tasks,
     cwd,
     newWindow,
@@ -409,10 +409,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   let runtime: TeamRuntime | null = null;
-  let finalStatus: "completed" | "failed" = "failed";
+  let finalStatus: 'completed' | 'failed' = 'failed';
   let pollActive = true;
 
-  async function doShutdown(status: "completed" | "failed"): Promise<void> {
+  async function doShutdown(status: 'completed' | 'failed'): Promise<void> {
     pollActive = false;
     finalStatus = status;
 
@@ -460,15 +460,15 @@ async function main(): Promise<void> {
     }
 
     // 3. Write result to stdout
-    process.stdout.write(JSON.stringify(output) + "\n");
+    process.stdout.write(JSON.stringify(output) + '\n');
 
     // 4. Exit
-    process.exit(status === "completed" ? 0 : 1);
+    process.exit(status === 'completed' ? 0 : 1);
   }
 
   function exitWithoutShutdown(phase: TerminalPhaseResult): void {
     pollActive = false;
-    finalStatus = phase === "complete" ? "completed" : "failed";
+    finalStatus = phase === 'complete' ? 'completed' : 'failed';
     const result = buildTerminalCliResult(
       stateRoot,
       teamName,
@@ -477,18 +477,18 @@ async function main(): Promise<void> {
       startTime,
     );
     process.stderr.write(result.notice);
-    process.stdout.write(JSON.stringify(result.output) + "\n");
+    process.stdout.write(JSON.stringify(result.output) + '\n');
     process.exit(result.exitCode);
   }
 
   // Register signal handlers before poll loop
-  process.on("SIGINT", () => {
-    process.stderr.write("[runtime-cli] Received SIGINT, shutting down...\n");
-    doShutdown("failed").catch(() => process.exit(1));
+  process.on('SIGINT', () => {
+    process.stderr.write('[runtime-cli] Received SIGINT, shutting down...\n');
+    doShutdown('failed').catch(() => process.exit(1));
   });
-  process.on("SIGTERM", () => {
-    process.stderr.write("[runtime-cli] Received SIGTERM, shutting down...\n");
-    doShutdown("failed").catch(() => process.exit(1));
+  process.on('SIGTERM', () => {
+    process.stderr.write('[runtime-cli] Received SIGTERM, shutting down...\n');
+    doShutdown('failed').catch(() => process.exit(1));
   });
 
   // Start the team — v2 uses direct tmux spawn with CLI API inbox (no done.json, no watchdog)
@@ -505,11 +505,11 @@ async function main(): Promise<void> {
       });
       const v2PaneIds = v2Runtime.config.workers
         .map((w) => w.pane_id)
-        .filter((p): p is string => typeof p === "string");
+        .filter((p): p is string => typeof p === 'string');
       runtime = {
         teamName: v2Runtime.teamName,
         sessionName: v2Runtime.sessionName,
-        leaderPaneId: v2Runtime.config.leader_pane_id || "",
+        leaderPaneId: v2Runtime.config.leader_pane_id || '',
         ownsWindow: v2Runtime.ownsWindow,
         config,
         workerNames: v2Runtime.config.workers.map((w) => w.name),
@@ -544,9 +544,9 @@ async function main(): Promise<void> {
   // ── V2 event-driven poll loop (no watchdog) ────────────────────────────
   if (useV2) {
     process.stderr.write(
-      "[runtime-cli] Using runtime v2 (event-driven, no watchdog)\n",
+      '[runtime-cli] Using runtime v2 (event-driven, no watchdog)\n',
     );
-    let lastLeaderNudgeReason = "";
+    let lastLeaderNudgeReason = '';
 
     while (pollActive) {
       await new Promise((r) => setTimeout(r, pollIntervalMs));
@@ -562,9 +562,9 @@ async function main(): Promise<void> {
 
       if (!snap) {
         process.stderr.write(
-          "[runtime-cli/v2] monitorTeamV2 returned null (team config missing?)\n",
+          '[runtime-cli/v2] monitorTeamV2 returned null (team config missing?)\n',
         );
-        await doShutdown("failed");
+        await doShutdown('failed');
         return;
       }
 
@@ -597,8 +597,8 @@ async function main(): Promise<void> {
           idle: snap.workers.filter(
             (worker) =>
               worker.alive &&
-              (worker.status.state === "idle" ||
-                worker.status.state === "done"),
+              (worker.status.state === 'idle' ||
+                worker.status.state === 'done'),
           ).length,
           nonReporting: snap.nonReportingWorkers.length,
         },
@@ -611,18 +611,18 @@ async function main(): Promise<void> {
           `[runtime-cli/v2] recommendation=${recommendation}\n`,
         );
       }
-      if (leaderGuidance.nextAction === "keep-checking-status") {
-        lastLeaderNudgeReason = "";
+      if (leaderGuidance.nextAction === 'keep-checking-status') {
+        lastLeaderNudgeReason = '';
       }
       if (
-        leaderGuidance.nextAction !== "keep-checking-status" &&
+        leaderGuidance.nextAction !== 'keep-checking-status' &&
         leaderGuidance.reason !== lastLeaderNudgeReason
       ) {
         await appendTeamEvent(
           teamName,
           {
-            type: "team_leader_nudge",
-            worker: "leader-fixed",
+            type: 'team_leader_nudge',
+            worker: 'leader-fixed',
             reason: leaderGuidance.reason,
             next_action: leaderGuidance.nextAction,
             message: leaderGuidance.message,
@@ -645,22 +645,22 @@ async function main(): Promise<void> {
         );
         if (mismatchStreak >= 2) {
           process.stderr.write(
-            "[runtime-cli/v2] Persistent task-count mismatch — failing fast\n",
+            '[runtime-cli/v2] Persistent task-count mismatch — failing fast\n',
           );
-          await doShutdown("failed");
+          await doShutdown('failed');
           return;
         }
         continue;
       }
       mismatchStreak = 0;
 
-      if (snap.phase === "completed") {
-        exitWithoutShutdown("complete");
+      if (snap.phase === 'completed') {
+        exitWithoutShutdown('complete');
         return;
       }
 
-      if (snap.phase === "failed") {
-        exitWithoutShutdown("failed");
+      if (snap.phase === 'failed') {
+        exitWithoutShutdown('failed');
         return;
       }
 
@@ -668,7 +668,7 @@ async function main(): Promise<void> {
         const hasFailures = snap.tasks.failed > 0;
         if (!hasFailures) {
           // Sentinel gate before declaring success
-          const sentinelLogPath = join(cwd, "sentinel_stop.jsonl");
+          const sentinelLogPath = join(cwd, 'sentinel_stop.jsonl');
           const gateResult = await waitForSentinelReadiness({
             workspace: cwd,
             logPath: sentinelLogPath,
@@ -677,17 +677,17 @@ async function main(): Promise<void> {
           });
           if (!gateResult.ready) {
             process.stderr.write(
-              `[runtime-cli/v2] Sentinel gate blocked: ${gateResult.blockers.join("; ")}\n`,
+              `[runtime-cli/v2] Sentinel gate blocked: ${gateResult.blockers.join('; ')}\n`,
             );
-            exitWithoutShutdown("failed");
+            exitWithoutShutdown('failed');
             return;
           }
-          exitWithoutShutdown("complete");
+          exitWithoutShutdown('complete');
         } else {
           process.stderr.write(
-            "[runtime-cli/v2] Terminal failure detected from task counts\n",
+            '[runtime-cli/v2] Terminal failure detected from task counts\n',
           );
-          exitWithoutShutdown("failed");
+          exitWithoutShutdown('failed');
         }
         return;
       }
@@ -699,9 +699,9 @@ async function main(): Promise<void> {
       const hasOutstanding = snap.tasks.pending + snap.tasks.in_progress > 0;
       if (allDead && hasOutstanding) {
         process.stderr.write(
-          "[runtime-cli/v2] All workers dead with outstanding work — failing\n",
+          '[runtime-cli/v2] All workers dead with outstanding work — failing\n',
         );
-        await doShutdown("failed");
+        await doShutdown('failed');
         return;
       }
     }
@@ -717,9 +717,9 @@ async function main(): Promise<void> {
     const watchdogCheck = await checkWatchdogFailedMarker(stateRoot, startTime);
     if (watchdogCheck.failed) {
       process.stderr.write(
-        `[runtime-cli] ${watchdogCheck.reason ?? "Watchdog failure marker detected"}\n`,
+        `[runtime-cli] ${watchdogCheck.reason ?? 'Watchdog failure marker detected'}\n`,
       );
-      await doShutdown("failed");
+      await doShutdown('failed');
       return;
     }
 
@@ -761,9 +761,9 @@ async function main(): Promise<void> {
       );
       if (mismatchStreak >= 2) {
         process.stderr.write(
-          "[runtime-cli] Persistent task-count mismatch detected — failing fast\n",
+          '[runtime-cli] Persistent task-count mismatch detected — failing fast\n',
         );
-        await doShutdown("failed");
+        await doShutdown('failed');
         return;
       }
       continue;
@@ -776,8 +776,8 @@ async function main(): Promise<void> {
     );
 
     // Check completion — enforce sentinel readiness gate before terminal success
-    if (terminalStatus === "completed") {
-      const sentinelLogPath = join(cwd, "sentinel_stop.jsonl");
+    if (terminalStatus === 'completed') {
+      const sentinelLogPath = join(cwd, 'sentinel_stop.jsonl');
       const gateResult = await waitForSentinelReadiness({
         workspace: cwd,
         logPath: sentinelLogPath,
@@ -787,21 +787,21 @@ async function main(): Promise<void> {
 
       if (!gateResult.ready) {
         process.stderr.write(
-          `[runtime-cli] Sentinel gate blocked completion (timedOut=${gateResult.timedOut}, attempts=${gateResult.attempts}, elapsedMs=${gateResult.elapsedMs}): ${gateResult.blockers.join("; ")}\n`,
+          `[runtime-cli] Sentinel gate blocked completion (timedOut=${gateResult.timedOut}, attempts=${gateResult.attempts}, elapsedMs=${gateResult.elapsedMs}): ${gateResult.blockers.join('; ')}\n`,
         );
-        await doShutdown("failed");
+        await doShutdown('failed');
         return;
       }
 
-      await doShutdown("completed");
+      await doShutdown('completed');
       return;
     }
 
-    if (terminalStatus === "failed") {
+    if (terminalStatus === 'failed') {
       process.stderr.write(
-        "[runtime-cli] Terminal failure detected from task counts\n",
+        '[runtime-cli] Terminal failure detected from task counts\n',
       );
-      await doShutdown("failed");
+      await doShutdown('failed');
       return;
     }
 
@@ -813,13 +813,13 @@ async function main(): Promise<void> {
       snap.taskCounts.pending + snap.taskCounts.inProgress > 0;
 
     const deadWorkerFailure = allWorkersDead && hasOutstandingWork;
-    const fixingWithNoWorkers = snap.phase === "fixing" && allWorkersDead;
+    const fixingWithNoWorkers = snap.phase === 'fixing' && allWorkersDead;
 
     if (deadWorkerFailure || fixingWithNoWorkers) {
       process.stderr.write(
         `[runtime-cli] Failure detected: deadWorkerFailure=${deadWorkerFailure} fixingWithNoWorkers=${fixingWithNoWorkers}\n`,
       );
-      exitWithoutShutdown("failed");
+      exitWithoutShutdown('failed');
       return;
     }
   }

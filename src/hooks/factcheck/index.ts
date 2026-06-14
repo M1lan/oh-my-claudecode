@@ -17,7 +17,7 @@ import type {
   FactcheckResult,
   Mismatch,
   Severity,
-} from "./types.js";
+} from './types.js';
 import {
   checkMissingFields,
   checkMissingGates,
@@ -26,8 +26,8 @@ import {
   checkPaths,
   checkCommands,
   checkCwdParity,
-} from "./checks.js";
-import { loadGuardsConfig } from "./config.js";
+} from './checks.js';
+import { loadGuardsConfig } from './config.js';
 
 export type {
   FactcheckClaims,
@@ -36,16 +36,16 @@ export type {
   FactcheckResult,
   Mismatch,
   Severity,
-} from "./types.js";
-export { loadGuardsConfig, shouldUseStrictMode } from "./config.js";
+} from './types.js';
+export { loadGuardsConfig, shouldUseStrictMode } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Severity ranking
 // ---------------------------------------------------------------------------
 
 function severityRank(value: Severity): number {
-  if (value === "FAIL") return 2;
-  if (value === "WARN") return 1;
+  if (value === 'FAIL') return 2;
+  if (value === 'WARN') return 1;
   return 0;
 }
 
@@ -75,8 +75,8 @@ export function runChecks(
   const missingFields = checkMissingFields(claims);
   if (missingFields.length > 0) {
     mismatches.push({
-      check: "A",
-      severity: "FAIL",
+      check: 'A',
+      severity: 'FAIL',
       detail: `Missing required fields: ${JSON.stringify(missingFields)}`,
     });
   }
@@ -85,8 +85,8 @@ export function runChecks(
   const missingGates = checkMissingGates(claims);
   if (missingGates.length > 0) {
     mismatches.push({
-      check: "A",
-      severity: "FAIL",
+      check: 'A',
+      severity: 'FAIL',
       detail: `Missing required gates: ${JSON.stringify(missingGates)}`,
     });
   }
@@ -95,26 +95,26 @@ export function runChecks(
   const falseGates = getFalseGates(claims);
   const srcFiles = sourceFileCount(claims);
 
-  if (mode === "strict" && falseGates.length > 0) {
+  if (mode === 'strict' && falseGates.length > 0) {
     mismatches.push({
-      check: "B",
-      severity: "FAIL",
+      check: 'B',
+      severity: 'FAIL',
       detail: `Strict mode requires all gates true, got false: ${JSON.stringify(falseGates)}`,
     });
   } else if (
-    (mode === "declared" || mode === "manual") &&
+    (mode === 'declared' || mode === 'manual') &&
     falseGates.length > 0 &&
     policy.warn_on_unverified_gates
   ) {
     if (srcFiles > 0 || policy.warn_on_unverified_gates_when_no_source_files) {
       mismatches.push({
-        check: "B",
-        severity: "WARN",
+        check: 'B',
+        severity: 'WARN',
         detail: `Unverified gates in declared/manual mode: ${JSON.stringify(falseGates)}`,
       });
     } else {
       notes.push(
-        "No source files declared; unverified gates are ignored by policy",
+        'No source files declared; unverified gates are ignored by policy',
       );
     }
   }
@@ -126,7 +126,7 @@ export function runChecks(
   mismatches.push(...checkCommands(claims, policy));
 
   // CWD parity
-  const claimsCwd = String(claims.cwd ?? "").trim();
+  const claimsCwd = String(claims.cwd ?? '').trim();
   const cwdMismatch = checkCwdParity(
     claimsCwd,
     runtimeCwd ?? process.cwd(),
@@ -142,9 +142,9 @@ export function runChecks(
     (max, m) => Math.max(max, severityRank(m.severity)),
     0,
   );
-  let verdict: Severity = "PASS";
-  if (maxRank === 2) verdict = "FAIL";
-  else if (maxRank === 1) verdict = "WARN";
+  let verdict: Severity = 'PASS';
+  if (maxRank === 2) verdict = 'FAIL';
+  else if (maxRank === 1) verdict = 'WARN';
 
   return {
     verdict,

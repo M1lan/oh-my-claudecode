@@ -30,21 +30,21 @@ export interface WikiPageFrontmatter {
   /** Page category */
   category: WikiCategory;
   /** Confidence level of the knowledge */
-  confidence: "high" | "medium" | "low";
+  confidence: 'high' | 'medium' | 'low';
   /** Schema version for future migration support */
   schemaVersion: number;
 }
 
 /** Supported page categories. */
 export type WikiCategory =
-  | "architecture"
-  | "decision"
-  | "pattern"
-  | "debugging"
-  | "environment"
-  | "session-log"
-  | "reference"
-  | "convention";
+  | 'architecture'
+  | 'decision'
+  | 'pattern'
+  | 'debugging'
+  | 'environment'
+  | 'session-log'
+  | 'reference'
+  | 'convention';
 
 /** A wiki page: frontmatter + markdown content + filename. */
 export interface WikiPage {
@@ -65,7 +65,7 @@ export interface WikiLogEntry {
   /** ISO timestamp */
   timestamp: string;
   /** Type of operation */
-  operation: "ingest" | "query" | "lint" | "add" | "delete";
+  operation: 'ingest' | 'query' | 'lint' | 'add' | 'delete';
   /** Filenames of pages affected */
   pagesAffected: string[];
   /** Human-readable summary */
@@ -85,7 +85,7 @@ export interface WikiIngestInput {
   /** Source identifier (e.g., session ID) */
   sources?: string[];
   /** Confidence level */
-  confidence?: "high" | "medium" | "low";
+  confidence?: 'high' | 'medium' | 'low';
 }
 
 /** Result of an ingest operation. */
@@ -123,16 +123,16 @@ export interface WikiQueryMatch {
 // ============================================================================
 
 /** Severity levels for lint issues. */
-export type WikiLintSeverity = "error" | "warning" | "info";
+export type WikiLintSeverity = 'error' | 'warning' | 'info';
 
 /** Types of lint issues. */
 export type WikiLintIssueType =
-  | "orphan"
-  | "stale"
-  | "broken-ref"
-  | "low-confidence"
-  | "oversized"
-  | "structural-contradiction";
+  | 'orphan'
+  | 'stale'
+  | 'broken-ref'
+  | 'low-confidence'
+  | 'oversized'
+  | 'structural-contradiction';
 
 /** A single lint issue. */
 export interface WikiLintIssue {

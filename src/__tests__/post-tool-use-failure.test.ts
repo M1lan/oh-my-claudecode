@@ -1,5 +1,11 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+} from 'node:fs';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -8,7 +14,10 @@ const REPO_ROOT = resolve(join(__dirname, '..', '..'));
 const SCRIPT_PATH = join(REPO_ROOT, 'scripts', 'post-tool-use-failure.mjs');
 const TEST_TMP_ROOT = join(REPO_ROOT, '.tmp-post-tool-use-failure-tests');
 
-function runHook(input: Record<string, unknown>, extraEnv?: Record<string, string>) {
+function runHook(
+  input: Record<string, unknown>,
+  extraEnv?: Record<string, string>,
+) {
   const raw = execFileSync(NODE, [SCRIPT_PATH], {
     input: JSON.stringify(input),
     encoding: 'utf-8',
@@ -136,7 +145,14 @@ describe('post-tool-use-failure.mjs', () => {
   it('writes to session-scoped path when session_id is provided in payload', () => {
     const cwd = makeRepoLocalTempDir();
     const sessionId = 'abc';
-    const sessionPath = join(cwd, '.omc', 'state', 'sessions', sessionId, 'last-tool-error-state.json');
+    const sessionPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+      'last-tool-error-state.json',
+    );
     const legacyPath = join(cwd, '.omc', 'state', 'last-tool-error.json');
 
     const result = runHook({
@@ -182,7 +198,14 @@ describe('post-tool-use-failure.mjs', () => {
   it('uses OMC_SESSION_ID env var as fallback when payload has no session_id', () => {
     const cwd = makeRepoLocalTempDir();
     const sessionId = 'env-session-1';
-    const sessionPath = join(cwd, '.omc', 'state', 'sessions', sessionId, 'last-tool-error-state.json');
+    const sessionPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+      'last-tool-error-state.json',
+    );
     const legacyPath = join(cwd, '.omc', 'state', 'last-tool-error.json');
 
     runHook(
@@ -204,8 +227,22 @@ describe('post-tool-use-failure.mjs', () => {
     const cwd = makeRepoLocalTempDir();
     const payloadSessionId = 'payload-session';
     const envSessionId = 'env-session';
-    const payloadPath = join(cwd, '.omc', 'state', 'sessions', payloadSessionId, 'last-tool-error-state.json');
-    const envPath = join(cwd, '.omc', 'state', 'sessions', envSessionId, 'last-tool-error-state.json');
+    const payloadPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      payloadSessionId,
+      'last-tool-error-state.json',
+    );
+    const envPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      envSessionId,
+      'last-tool-error-state.json',
+    );
 
     runHook(
       {
@@ -226,8 +263,22 @@ describe('post-tool-use-failure.mjs', () => {
     const cwd = makeRepoLocalTempDir();
     const sessionA = 'session-alpha';
     const sessionB = 'session-beta';
-    const pathA = join(cwd, '.omc', 'state', 'sessions', sessionA, 'last-tool-error-state.json');
-    const pathB = join(cwd, '.omc', 'state', 'sessions', sessionB, 'last-tool-error-state.json');
+    const pathA = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      sessionA,
+      'last-tool-error-state.json',
+    );
+    const pathB = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      sessionB,
+      'last-tool-error-state.json',
+    );
 
     // First invocation
     runHook({
@@ -250,8 +301,12 @@ describe('post-tool-use-failure.mjs', () => {
     expect(existsSync(pathA)).toBe(true);
     expect(existsSync(pathB)).toBe(true);
 
-    const stateA = JSON.parse(readFileSync(pathA, 'utf-8')) as { tool_name: string };
-    const stateB = JSON.parse(readFileSync(pathB, 'utf-8')) as { tool_name: string };
+    const stateA = JSON.parse(readFileSync(pathA, 'utf-8')) as {
+      tool_name: string;
+    };
+    const stateB = JSON.parse(readFileSync(pathB, 'utf-8')) as {
+      tool_name: string;
+    };
 
     expect(stateA.tool_name).toBe('Edit');
     expect(stateB.tool_name).toBe('Bash');

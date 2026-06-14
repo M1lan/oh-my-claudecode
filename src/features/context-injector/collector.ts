@@ -12,7 +12,7 @@ import type {
   ContextPriority,
   PendingContext,
   RegisterContextOptions,
-} from "./types.js";
+} from './types.js';
 
 /** Priority ordering - lower number = higher priority */
 const PRIORITY_ORDER: Record<ContextPriority, number> = {
@@ -23,7 +23,7 @@ const PRIORITY_ORDER: Record<ContextPriority, number> = {
 };
 
 /** Separator between merged context entries */
-const CONTEXT_SEPARATOR = "\n\n---\n\n";
+const CONTEXT_SEPARATOR = '\n\n---\n\n';
 
 /**
  * Collects and manages context entries for sessions.
@@ -47,7 +47,7 @@ export class ContextCollector {
       id: options.id,
       source: options.source,
       content: options.content,
-      priority: options.priority ?? "normal",
+      priority: options.priority ?? 'normal',
       timestamp: Date.now(),
       metadata: options.metadata,
     };
@@ -63,7 +63,7 @@ export class ContextCollector {
 
     if (!sessionMap || sessionMap.size === 0) {
       return {
-        merged: "",
+        merged: '',
         entries: [],
         hasContent: false,
       };

@@ -15,28 +15,28 @@ import {
   readdirSync,
   unlinkSync,
   statSync,
-} from "fs";
-import { join } from "path";
-import { getOmcRoot } from "../../lib/worktree-paths.js";
+} from 'fs';
+import { join } from 'path';
+import { getOmcRoot } from '../../lib/worktree-paths.js';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 export type ReplayEventType =
-  | "agent_start"
-  | "agent_stop"
-  | "tool_start"
-  | "tool_end"
-  | "file_touch"
-  | "intervention"
-  | "error"
-  | "hook_fire"
-  | "hook_result"
-  | "keyword_detected"
-  | "skill_activated"
-  | "skill_invoked"
-  | "mode_change";
+  | 'agent_start'
+  | 'agent_stop'
+  | 'tool_start'
+  | 'tool_end'
+  | 'file_touch'
+  | 'intervention'
+  | 'error'
+  | 'hook_fire'
+  | 'hook_result'
+  | 'keyword_detected'
+  | 'skill_activated'
+  | 'skill_invoked'
+  | 'mode_change';
 
 export interface ReplayEvent {
   /** Seconds since session start */
@@ -112,7 +112,7 @@ export interface ReplaySummary {
 // Constants
 // ============================================================================
 
-const REPLAY_PREFIX = "agent-replay-";
+const REPLAY_PREFIX = 'agent-replay-';
 const MAX_REPLAY_FILES = 10;
 const MAX_REPLAY_SIZE_BYTES = 5 * 1024 * 1024; // 5MB per session
 
@@ -130,12 +130,12 @@ export function getReplayFilePath(
   directory: string,
   sessionId: string,
 ): string {
-  const stateDir = join(getOmcRoot(directory), "state");
+  const stateDir = join(getOmcRoot(directory), 'state');
   if (!existsSync(stateDir)) {
     mkdirSync(stateDir, { recursive: true });
   }
   // Sanitize sessionId to prevent path traversal
-  const safeId = sessionId.replace(/[^a-zA-Z0-9_-]/g, "_");
+  const safeId = sessionId.replace(/[^a-zA-Z0-9_-]/g, '_');
   return join(stateDir, `${REPLAY_PREFIX}${safeId}.jsonl`);
 }
 
@@ -163,7 +163,7 @@ function getElapsedSeconds(sessionId: string): number {
 export function appendReplayEvent(
   directory: string,
   sessionId: string,
-  event: Omit<ReplayEvent, "t">,
+  event: Omit<ReplayEvent, 't'>,
 ): void {
   try {
     const filePath = getReplayFilePath(directory, sessionId);
@@ -183,7 +183,7 @@ export function appendReplayEvent(
       ...event,
     };
 
-    appendFileSync(filePath, JSON.stringify(replayEvent) + "\n", "utf-8");
+    appendFileSync(filePath, JSON.stringify(replayEvent) + '\n', 'utf-8');
   } catch {
     // Never fail the hook on replay errors
   }
@@ -207,8 +207,8 @@ export function recordAgentStart(
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: agentId.substring(0, 7),
-    agent_type: agentType.replace("oh-my-claudecode:", ""),
-    event: "agent_start",
+    agent_type: agentType.replace('oh-my-claudecode:', ''),
+    event: 'agent_start',
     task: task?.substring(0, 100),
     parent_mode: parentMode,
     model,
@@ -228,8 +228,8 @@ export function recordAgentStop(
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: agentId.substring(0, 7),
-    agent_type: agentType.replace("oh-my-claudecode:", ""),
-    event: "agent_stop",
+    agent_type: agentType.replace('oh-my-claudecode:', ''),
+    event: 'agent_stop',
     success,
     duration_ms: durationMs,
   });
@@ -243,7 +243,7 @@ export function recordToolEvent(
   sessionId: string,
   agentId: string,
   toolName: string,
-  eventType: "tool_start" | "tool_end",
+  eventType: 'tool_start' | 'tool_end',
   durationMs?: number,
   success?: boolean,
 ): void {
@@ -267,7 +267,7 @@ export function recordFileTouch(
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: agentId.substring(0, 7),
-    event: "file_touch",
+    event: 'file_touch',
     file: filePath.substring(0, 200),
   });
 }
@@ -283,7 +283,7 @@ export function recordIntervention(
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: agentId.substring(0, 7),
-    event: "intervention",
+    event: 'intervention',
     reason,
   });
 }
@@ -303,9 +303,9 @@ export function readReplayEvents(
   if (!existsSync(filePath)) return [];
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     return content
-      .split("\n")
+      .split('\n')
       .filter((line) => line.trim())
       .map((line) => {
         try {
@@ -329,7 +329,7 @@ export function detectCycles(sequence: string[]): {
   cycles: number;
   pattern: string;
 } {
-  if (sequence.length < 2) return { cycles: 0, pattern: "" };
+  if (sequence.length < 2) return { cycles: 0, pattern: '' };
 
   // Try pattern lengths from 2 to half the sequence
   for (let patLen = 2; patLen <= Math.floor(sequence.length / 2); patLen++) {
@@ -348,12 +348,12 @@ export function detectCycles(sequence: string[]): {
     if (fullCycles >= 2) {
       return {
         cycles: fullCycles,
-        pattern: candidate.join("/"),
+        pattern: candidate.join('/'),
       };
     }
   }
 
-  return { cycles: 0, pattern: "" };
+  return { cycles: 0, pattern: '' };
 }
 
 /**
@@ -396,7 +396,7 @@ export function getReplaySummary(
 
   for (const event of events) {
     switch (event.event) {
-      case "agent_start":
+      case 'agent_start':
         summary.agents_spawned++;
         if (event.agent_type) {
           const type = event.agent_type;
@@ -412,7 +412,7 @@ export function getReplaySummary(
           agentTypeSequence.push(type);
         }
         break;
-      case "agent_stop":
+      case 'agent_stop':
         if (event.success) summary.agents_completed++;
         else summary.agents_failed++;
         if (event.agent_type && event.duration_ms) {
@@ -420,7 +420,7 @@ export function getReplaySummary(
           if (stats) stats.total_ms += event.duration_ms;
         }
         break;
-      case "tool_end":
+      case 'tool_end':
         if (event.tool) {
           if (!summary.tool_summary[event.tool]) {
             summary.tool_summary[event.tool] = {
@@ -451,14 +451,14 @@ export function getReplaySummary(
           }
         }
         break;
-      case "file_touch":
+      case 'file_touch':
         if (event.file) filesSet.add(event.file);
         break;
-      case "hook_fire":
+      case 'hook_fire':
         if (!summary.hooks_fired) summary.hooks_fired = 0;
         summary.hooks_fired++;
         break;
-      case "keyword_detected":
+      case 'keyword_detected':
         if (!summary.keywords_detected) summary.keywords_detected = [];
         if (
           event.keyword &&
@@ -467,7 +467,7 @@ export function getReplaySummary(
           summary.keywords_detected.push(event.keyword);
         }
         break;
-      case "skill_activated":
+      case 'skill_activated':
         if (!summary.skills_activated) summary.skills_activated = [];
         if (
           event.skill_name &&
@@ -476,7 +476,7 @@ export function getReplaySummary(
           summary.skills_activated.push(event.skill_name);
         }
         break;
-      case "skill_invoked":
+      case 'skill_invoked':
         if (!summary.skills_invoked) summary.skills_invoked = [];
         if (
           event.skill_name &&
@@ -485,7 +485,7 @@ export function getReplaySummary(
           summary.skills_invoked.push(event.skill_name);
         }
         break;
-      case "mode_change":
+      case 'mode_change':
         if (!summary.mode_transitions) summary.mode_transitions = [];
         if (event.mode_from !== undefined && event.mode_to !== undefined) {
           summary.mode_transitions.push({
@@ -554,12 +554,12 @@ export function getReplaySummary(
  * Clean up old replay files, keeping only the most recent ones
  */
 export function cleanupReplayFiles(directory: string): number {
-  const stateDir = join(getOmcRoot(directory), "state");
+  const stateDir = join(getOmcRoot(directory), 'state');
   if (!existsSync(stateDir)) return 0;
 
   try {
     const files = readdirSync(stateDir)
-      .filter((f) => f.startsWith(REPLAY_PREFIX) && f.endsWith(".jsonl"))
+      .filter((f) => f.startsWith(REPLAY_PREFIX) && f.endsWith('.jsonl'))
       .map((f) => ({
         name: f,
         path: join(stateDir, f),

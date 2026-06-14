@@ -3,21 +3,21 @@
  * Covers issue #2570: display $spent/$limit in HUD.
  */
 
-import { describe, it, expect } from "vitest";
-import { parseUsageResponse } from "../../hud/usage-api.js";
+import { describe, it, expect } from 'vitest';
+import { parseUsageResponse } from '../../hud/usage-api.js';
 import {
   renderRateLimits,
   renderRateLimitsCompact,
   renderRateLimitsWithBar,
-} from "../../hud/elements/limits.js";
-import type { RateLimits } from "../../hud/types.js";
+} from '../../hud/elements/limits.js';
+import type { RateLimits } from '../../hud/types.js';
 
 // ---------------------------------------------------------------------------
 // parseUsageResponse — extra_usage parsing
 // ---------------------------------------------------------------------------
 
-describe("parseUsageResponse — extra_usage", () => {
-  it("ignores extra_usage when limit_usd is absent", () => {
+describe('parseUsageResponse — extra_usage', () => {
+  it('ignores extra_usage when limit_usd is absent', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { spent_usd: 3.1 },
@@ -28,7 +28,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsageLimitUsd).toBeUndefined();
   });
 
-  it("ignores extra_usage when limit_usd is zero", () => {
+  it('ignores extra_usage when limit_usd is zero', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { spent_usd: 0, limit_usd: 0 },
@@ -37,7 +37,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsagePercent).toBeUndefined();
   });
 
-  it("parses extra_usage with API-provided utilization", () => {
+  it('parses extra_usage with API-provided utilization', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { utilization: 18, spent_usd: 3.1, limit_usd: 17.0 },
@@ -49,7 +49,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsageResetsAt).toBeNull();
   });
 
-  it("derives utilization from spent/limit when API utilization is absent", () => {
+  it('derives utilization from spent/limit when API utilization is absent', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { spent_usd: 5, limit_usd: 20 },
@@ -59,7 +59,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsagePercent).toBe(25);
   });
 
-  it("clamps utilization above 100 to 100", () => {
+  it('clamps utilization above 100 to 100', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { utilization: 150, spent_usd: 20, limit_usd: 17 },
@@ -67,7 +67,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsagePercent).toBe(100);
   });
 
-  it("clamps negative utilization to 0", () => {
+  it('clamps negative utilization to 0', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { utilization: -5, spent_usd: 0, limit_usd: 17 },
@@ -75,8 +75,8 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsagePercent).toBe(0);
   });
 
-  it("parses resets_at as a Date when present", () => {
-    const resetIso = "2026-05-01T00:00:00Z";
+  it('parses resets_at as a Date when present', () => {
+    const resetIso = '2026-05-01T00:00:00Z';
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { spent_usd: 3.1, limit_usd: 17, resets_at: resetIso },
@@ -87,15 +87,15 @@ describe("parseUsageResponse — extra_usage", () => {
     );
   });
 
-  it("treats invalid resets_at as null", () => {
+  it('treats invalid resets_at as null', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
-      extra_usage: { spent_usd: 3.1, limit_usd: 17, resets_at: "not-a-date" },
+      extra_usage: { spent_usd: 3.1, limit_usd: 17, resets_at: 'not-a-date' },
     });
     expect(result!.extraUsageResetsAt).toBeNull();
   });
 
-  it("defaults spent_usd to 0 when absent", () => {
+  it('defaults spent_usd to 0 when absent', () => {
     const result = parseUsageResponse({
       five_hour: { utilization: 10 },
       extra_usage: { limit_usd: 17 },
@@ -104,7 +104,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.extraUsagePercent).toBe(0);
   });
 
-  it("parses Max organization overage used_credits as extra usage without enterprise fields", () => {
+  it('parses Max organization overage used_credits as extra usage without enterprise fields', () => {
     const result = parseUsageResponse(
       {
         five_hour: { utilization: 3 },
@@ -114,12 +114,12 @@ describe("parseUsageResponse — extra_usage", () => {
           is_enabled: true,
           used_credits: 2726,
           monthly_limit: 5000,
-          currency: "USD",
+          currency: 'USD',
         },
       },
       {
-        subscriptionType: "max",
-        rateLimitTier: "default_claude_max_20x",
+        subscriptionType: 'max',
+        rateLimitTier: 'default_claude_max_20x',
       },
     );
 
@@ -135,7 +135,7 @@ describe("parseUsageResponse — extra_usage", () => {
     expect(result!.enterpriseUtilization).toBeUndefined();
   });
 
-  it("uses API utilization for non-enterprise used_credits overage when present", () => {
+  it('uses API utilization for non-enterprise used_credits overage when present', () => {
     const result = parseUsageResponse(
       {
         five_hour: { utilization: 10 },
@@ -143,10 +143,10 @@ describe("parseUsageResponse — extra_usage", () => {
           used_credits: 1000,
           monthly_limit: 5000,
           utilization: 30,
-          currency: "USD",
+          currency: 'USD',
         },
       },
-      { subscriptionType: "pro", rateLimitTier: "default" },
+      { subscriptionType: 'pro', rateLimitTier: 'default' },
     );
 
     expect(result).not.toBeNull();
@@ -161,21 +161,21 @@ describe("parseUsageResponse — extra_usage", () => {
 // renderRateLimits — extra usage display
 // ---------------------------------------------------------------------------
 
-describe("renderRateLimits — extra usage", () => {
+describe('renderRateLimits — extra usage', () => {
   const base: RateLimits = { fiveHourPercent: 10 };
 
-  it("omits extra section when extraUsagePercent is absent", () => {
+  it('omits extra section when extraUsagePercent is absent', () => {
     const result = renderRateLimits(base);
-    expect(result).not.toContain("extra:");
+    expect(result).not.toContain('extra:');
   });
 
-  it("omits extra section when extraUsageLimitUsd is absent", () => {
+  it('omits extra section when extraUsageLimitUsd is absent', () => {
     const limits: RateLimits = { ...base, extraUsagePercent: 18 };
     const result = renderRateLimits(limits);
-    expect(result).not.toContain("extra:");
+    expect(result).not.toContain('extra:');
   });
 
-  it("renders extra usage with dollar amounts", () => {
+  it('renders extra usage with dollar amounts', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 18,
@@ -183,13 +183,13 @@ describe("renderRateLimits — extra usage", () => {
       extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimits(limits);
-    expect(result).toContain("extra:");
-    expect(result).toContain("18%");
-    expect(result).toContain("$3.10");
-    expect(result).toContain("$17.00");
+    expect(result).toContain('extra:');
+    expect(result).toContain('18%');
+    expect(result).toContain('$3.10');
+    expect(result).toContain('$17.00');
   });
 
-  it("renders 0% extra usage with correct dollar amounts", () => {
+  it('renders 0% extra usage with correct dollar amounts', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 0,
@@ -197,24 +197,24 @@ describe("renderRateLimits — extra usage", () => {
       extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimits(limits);
-    expect(result).toContain("extra:");
-    expect(result).toContain("0%");
-    expect(result).toContain("$0.00");
-    expect(result).toContain("$17.00");
+    expect(result).toContain('extra:');
+    expect(result).toContain('0%');
+    expect(result).toContain('$0.00');
+    expect(result).toContain('$17.00');
   });
 
-  it("defaults spent to $0.00 when extraUsageSpentUsd is absent", () => {
+  it('defaults spent to $0.00 when extraUsageSpentUsd is absent', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 5,
       extraUsageLimitUsd: 10,
     };
     const result = renderRateLimits(limits);
-    expect(result).toContain("$0.00");
-    expect(result).toContain("$10.00");
+    expect(result).toContain('$0.00');
+    expect(result).toContain('$10.00');
   });
 
-  it("uses red color at >= 90%", () => {
+  it('uses red color at >= 90%', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 95,
@@ -223,10 +223,10 @@ describe("renderRateLimits — extra usage", () => {
     };
     const result = renderRateLimits(limits);
     // Red ANSI code before the percentage
-    expect(result).toContain("\x1b[31m");
+    expect(result).toContain('\x1b[31m');
   });
 
-  it("uses green color at < 70%", () => {
+  it('uses green color at < 70%', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 18,
@@ -235,12 +235,12 @@ describe("renderRateLimits — extra usage", () => {
     };
     const result = renderRateLimits(limits);
     // Green ANSI code before the extra percentage
-    const extraIndex = result!.indexOf("extra:");
+    const extraIndex = result!.indexOf('extra:');
     const afterExtra = result!.slice(extraIndex);
-    expect(afterExtra).toContain("\x1b[32m");
+    expect(afterExtra).toContain('\x1b[32m');
   });
 
-  it("renders stale marker when stale=true", () => {
+  it('renders stale marker when stale=true', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 18,
@@ -248,7 +248,7 @@ describe("renderRateLimits — extra usage", () => {
       extraUsageLimitUsd: 17,
     };
     const result = renderRateLimits(limits, true);
-    expect(result).toContain("*");
+    expect(result).toContain('*');
   });
 });
 
@@ -256,8 +256,8 @@ describe("renderRateLimits — extra usage", () => {
 // renderRateLimitsCompact — extra usage
 // ---------------------------------------------------------------------------
 
-describe("renderRateLimitsCompact — extra usage", () => {
-  it("omits extra from compact when absent", () => {
+describe('renderRateLimitsCompact — extra usage', () => {
+  it('omits extra from compact when absent', () => {
     const limits: RateLimits = { fiveHourPercent: 10 };
     const result = renderRateLimitsCompact(limits);
     // only one percentage in output
@@ -265,7 +265,7 @@ describe("renderRateLimitsCompact — extra usage", () => {
     expect((result!.match(/%/g) ?? []).length).toBe(1);
   });
 
-  it("appends extra percentage in compact when present", () => {
+  it('appends extra percentage in compact when present', () => {
     const limits: RateLimits = {
       fiveHourPercent: 10,
       extraUsagePercent: 18,
@@ -274,7 +274,7 @@ describe("renderRateLimitsCompact — extra usage", () => {
     const result = renderRateLimitsCompact(limits);
     expect(result).not.toBeNull();
     // Should contain 18% somewhere
-    expect(result).toContain("18%");
+    expect(result).toContain('18%');
   });
 });
 
@@ -282,14 +282,14 @@ describe("renderRateLimitsCompact — extra usage", () => {
 // renderRateLimitsWithBar — extra usage
 // ---------------------------------------------------------------------------
 
-describe("renderRateLimitsWithBar — extra usage", () => {
-  it("omits extra bar when absent", () => {
+describe('renderRateLimitsWithBar — extra usage', () => {
+  it('omits extra bar when absent', () => {
     const limits: RateLimits = { fiveHourPercent: 10 };
     const result = renderRateLimitsWithBar(limits);
-    expect(result).not.toContain("extra:");
+    expect(result).not.toContain('extra:');
   });
 
-  it("renders extra bar with dollar amounts", () => {
+  it('renders extra bar with dollar amounts', () => {
     const limits: RateLimits = {
       fiveHourPercent: 10,
       extraUsagePercent: 18,
@@ -297,10 +297,10 @@ describe("renderRateLimitsWithBar — extra usage", () => {
       extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimitsWithBar(limits);
-    expect(result).toContain("extra:");
-    expect(result).toContain("18%");
-    expect(result).toContain("$3.10");
-    expect(result).toContain("$17.00");
+    expect(result).toContain('extra:');
+    expect(result).toContain('18%');
+    expect(result).toContain('$3.10');
+    expect(result).toContain('$17.00');
     // Bar characters present
     expect(result).toMatch(/[█░]/);
   });

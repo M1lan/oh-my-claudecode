@@ -1,14 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { runHudWatchLoop } from "../hud-watch.js";
-import type { RegisterStandaloneShutdownHandlersOptions } from "../../mcp/standalone-shutdown.js";
+import { runHudWatchLoop } from '../hud-watch.js';
+import type { RegisterStandaloneShutdownHandlersOptions } from '../../mcp/standalone-shutdown.js';
 
-describe("runHudWatchLoop", () => {
+describe('runHudWatchLoop', () => {
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it("stops the watch loop when shutdown is requested", async () => {
+  it('stops the watch loop when shutdown is requested', async () => {
     let shutdownHandler: ((reason: string) => Promise<void>) | undefined;
     const registerShutdownHandlers = vi.fn(
       (options: RegisterStandaloneShutdownHandlersOptions) => {
@@ -21,7 +21,7 @@ describe("runHudWatchLoop", () => {
     );
 
     const hudMain = vi.fn(async () => {
-      await shutdownHandler?.("SIGTERM");
+      await shutdownHandler?.('SIGTERM');
     });
 
     await runHudWatchLoop({
@@ -34,7 +34,7 @@ describe("runHudWatchLoop", () => {
     expect(hudMain).toHaveBeenNthCalledWith(1, true, false);
   });
 
-  it("uses skipInit=true after the first iteration", async () => {
+  it('uses skipInit=true after the first iteration', async () => {
     vi.useFakeTimers();
 
     let shutdownHandler: ((reason: string) => Promise<void>) | undefined;
@@ -50,7 +50,7 @@ describe("runHudWatchLoop", () => {
 
     const hudMain = vi.fn(async () => {
       if (hudMain.mock.calls.length === 2) {
-        await shutdownHandler?.("SIGTERM");
+        await shutdownHandler?.('SIGTERM');
       }
     });
 

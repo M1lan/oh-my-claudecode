@@ -1,6 +1,6 @@
-import type { GitProvider, PRInfo, IssueInfo } from "./types.js";
+import type { GitProvider, PRInfo, IssueInfo } from './types.js';
 
-const API_BASE = "https://api.bitbucket.org/2.0/repositories";
+const API_BASE = 'https://api.bitbucket.org/2.0/repositories';
 
 function getAuthHeader(): string | null {
   const token = process.env.BITBUCKET_TOKEN;
@@ -10,7 +10,7 @@ function getAuthHeader(): string | null {
   const username = process.env.BITBUCKET_USERNAME;
   const appPassword = process.env.BITBUCKET_APP_PASSWORD;
   if (username && appPassword) {
-    return `Basic ${Buffer.from(`${username}:${appPassword}`).toString("base64")}`;
+    return `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`;
   }
   return null;
 }
@@ -31,13 +31,13 @@ async function fetchApi(url: string): Promise<Record<string, unknown> | null> {
 }
 
 export class BitbucketProvider implements GitProvider {
-  readonly name = "bitbucket" as const;
-  readonly displayName = "Bitbucket";
-  readonly prTerminology = "PR" as const;
+  readonly name = 'bitbucket' as const;
+  readonly displayName = 'Bitbucket';
+  readonly prTerminology = 'PR' as const;
   readonly prRefspec = null;
 
   detectFromRemote(url: string): boolean {
-    return url.includes("bitbucket.org");
+    return url.includes('bitbucket.org');
   }
 
   async viewPR(

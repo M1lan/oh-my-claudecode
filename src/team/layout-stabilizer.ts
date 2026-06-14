@@ -1,4 +1,4 @@
-import { tmuxExecAsync, tmuxCmdAsync } from "../cli/tmux-utils.js";
+import { tmuxExecAsync, tmuxCmdAsync } from '../cli/tmux-utils.js';
 
 export interface LayoutStabilizerOptions {
   sessionTarget: string;
@@ -83,10 +83,10 @@ export class LayoutStabilizer {
     try {
       try {
         await tmuxExecAsync([
-          "select-layout",
-          "-t",
+          'select-layout',
+          '-t',
           this.sessionTarget,
-          "main-vertical",
+          'main-vertical',
         ]);
       } catch {
         // ignore
@@ -94,27 +94,27 @@ export class LayoutStabilizer {
 
       try {
         const widthResult = await tmuxCmdAsync([
-          "display-message",
-          "-p",
-          "-t",
+          'display-message',
+          '-p',
+          '-t',
           this.sessionTarget,
-          "#{window_width}",
+          '#{window_width}',
         ]);
         const width = parseInt(widthResult.stdout.trim(), 10);
         if (Number.isFinite(width) && width >= 40) {
           const half = String(Math.floor(width / 2));
           await tmuxExecAsync([
-            "set-window-option",
-            "-t",
+            'set-window-option',
+            '-t',
             this.sessionTarget,
-            "main-pane-width",
+            'main-pane-width',
             half,
           ]);
           await tmuxExecAsync([
-            "select-layout",
-            "-t",
+            'select-layout',
+            '-t',
             this.sessionTarget,
-            "main-vertical",
+            'main-vertical',
           ]);
         }
       } catch {
@@ -122,7 +122,7 @@ export class LayoutStabilizer {
       }
 
       try {
-        await tmuxExecAsync(["select-pane", "-t", this.leaderPaneId]);
+        await tmuxExecAsync(['select-pane', '-t', this.leaderPaneId]);
       } catch {
         // ignore
       }

@@ -69,7 +69,7 @@ export function allocateTasksToWorkers(
       results.push({
         taskId: task.id,
         workerName: target.name,
-        reason: `role match (task.role=${task.role ?? "any"}, worker.role=${target.role}, load=${loadMap.get(target.name)})`,
+        reason: `role match (task.role=${task.role ?? 'any'}, worker.role=${target.role}, load=${loadMap.get(target.name)})`,
       });
       loadMap.set(target.name, (loadMap.get(target.name) ?? 0) + 1);
     }

@@ -13,19 +13,19 @@
  * @see https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1719
  */
 
-import { z } from "zod";
+import { z } from 'zod';
 import {
   readdirSync,
   statSync,
   readFileSync,
   existsSync,
   realpathSync,
-} from "node:fs";
-import { join, relative, sep } from "node:path";
-import { validateWorkingDirectory, getOmcRoot } from "../lib/worktree-paths.js";
-import { atomicWriteJsonSync } from "../lib/atomic-write.js";
-import { TOOL_CATEGORIES } from "../constants/names.js";
-import type { ToolDefinition } from "./types.js";
+} from 'node:fs';
+import { join, relative, sep } from 'node:path';
+import { validateWorkingDirectory, getOmcRoot } from '../lib/worktree-paths.js';
+import { atomicWriteJsonSync } from '../lib/atomic-write.js';
+import { TOOL_CATEGORIES } from '../constants/names.js';
+import type { ToolDefinition } from './types.js';
 
 // =============================================================================
 // CONSTANTS
@@ -41,13 +41,13 @@ const MAX_DIRECTORIES = 10_000;
 
 /** Directories excluded by name (exact match) */
 const EXCLUDED_DIRS = new Set([
-  "node_modules",
-  "dist",
-  "build",
-  "__pycache__",
-  "coverage",
-  ".next",
-  ".nuxt",
+  'node_modules',
+  'dist',
+  'build',
+  '__pycache__',
+  'coverage',
+  '.next',
+  '.nuxt',
 ]);
 
 // =============================================================================
@@ -67,7 +67,7 @@ interface DeepInitManifest {
 }
 
 /** Change status for a directory */
-type ChangeStatus = "added" | "deleted" | "modified" | "unchanged";
+type ChangeStatus = 'added' | 'deleted' | 'modified' | 'unchanged';
 
 /** Diff result for a single directory */
 interface DiffEntry {
@@ -94,31 +94,31 @@ interface DiffResult {
 
 const deepinitManifestSchema = {
   action: z
-    .enum(["diff", "save", "check"])
+    .enum(['diff', 'save', 'check'])
     .describe(
-      "Action: diff (compare current filesystem to saved manifest — compares directory file lists, not file contents), " +
-        "save (write current filesystem state as manifest), " +
-        "check (return whether manifest exists and is valid)",
+      'Action: diff (compare current filesystem to saved manifest — compares directory file lists, not file contents), ' +
+        'save (write current filesystem state as manifest), ' +
+        'check (return whether manifest exists and is valid)',
     ),
   workingDirectory: z
     .string()
     .optional()
     .describe(
-      "Project root directory. Auto-detected from git worktree if omitted.",
+      'Project root directory. Auto-detected from git worktree if omitted.',
     ),
   mode: z
-    .enum(["incremental", "full"])
+    .enum(['incremental', 'full'])
     .optional()
-    .default("incremental")
+    .default('incremental')
     .describe(
-      "Only valid with action=diff. incremental (default) returns only changed dirs, full returns all dirs as added.",
+      'Only valid with action=diff. incremental (default) returns only changed dirs, full returns all dirs as added.',
     ),
   dryRun: z
     .boolean()
     .optional()
     .default(false)
     .describe(
-      "Only valid with action=save. If true, return what would be saved without writing.",
+      'Only valid with action=save. If true, return what would be saved without writing.',
     ),
 };
 
@@ -135,7 +135,7 @@ type DeepinitManifestInput = z.infer<
  * Excludes all hidden directories (starting with '.') and known build/dependency dirs.
  */
 export function isExcluded(name: string): boolean {
-  return name.startsWith(".") || EXCLUDED_DIRS.has(name);
+  return name.startsWith('.') || EXCLUDED_DIRS.has(name);
 }
 
 /**
@@ -216,7 +216,7 @@ export function scanDirectories(
 
     // Only track directories that contain files
     if (files.length > 0) {
-      const relPath = relative(projectRoot, absDir).split(sep).join("/") || ".";
+      const relPath = relative(projectRoot, absDir).split(sep).join('/') || '.';
       result[relPath] = { files: [...files].sort() };
     }
 
@@ -239,11 +239,11 @@ export function loadManifest(manifestPath: string): DeepInitManifest | null {
   if (!existsSync(manifestPath)) return null;
 
   try {
-    const raw = readFileSync(manifestPath, "utf-8");
+    const raw = readFileSync(manifestPath, 'utf-8');
     const parsed = JSON.parse(raw) as Record<string, unknown>;
 
     if (parsed.version !== MANIFEST_VERSION) return null;
-    if (typeof parsed.directories !== "object" || parsed.directories === null)
+    if (typeof parsed.directories !== 'object' || parsed.directories === null)
       return null;
 
     return parsed as unknown as DeepInitManifest;
@@ -273,8 +273,8 @@ export function computeDiff(
     for (const path of Object.keys(current)) {
       entries.set(path, {
         path,
-        status: "added",
-        reason: "first run (no manifest)",
+        status: 'added',
+        reason: 'first run (no manifest)',
       });
     }
   } else {
@@ -282,7 +282,7 @@ export function computeDiff(
     for (const [path, entry] of Object.entries(current)) {
       const prev = previous[path];
       if (!prev) {
-        entries.set(path, { path, status: "added", reason: "new directory" });
+        entries.set(path, { path, status: 'added', reason: 'new directory' });
       } else {
         const prevFiles = [...prev.files].sort();
         const currFiles = [...entry.files].sort();
@@ -297,16 +297,16 @@ export function computeDiff(
           const added = currFiles.filter((f) => !prevSet.has(f));
           const removed = prevFiles.filter((f) => !currSet.has(f));
           const parts: string[] = [];
-          if (added.length > 0) parts.push(`files added: ${added.join(", ")}`);
+          if (added.length > 0) parts.push(`files added: ${added.join(', ')}`);
           if (removed.length > 0)
-            parts.push(`files removed: ${removed.join(", ")}`);
+            parts.push(`files removed: ${removed.join(', ')}`);
           entries.set(path, {
             path,
-            status: "modified",
-            reason: parts.join("; "),
+            status: 'modified',
+            reason: parts.join('; '),
           });
         } else {
-          entries.set(path, { path, status: "unchanged" });
+          entries.set(path, { path, status: 'unchanged' });
         }
       }
     }
@@ -316,8 +316,8 @@ export function computeDiff(
       if (!(path in current)) {
         entries.set(path, {
           path,
-          status: "deleted",
-          reason: "directory no longer exists",
+          status: 'deleted',
+          reason: 'directory no longer exists',
         });
       }
     }
@@ -325,30 +325,30 @@ export function computeDiff(
 
   // Ancestor cascading: mark parents of added/deleted dirs as modified
   const cascadeTargets = [...entries.values()].filter(
-    (e) => e.status === "added" || e.status === "deleted",
+    (e) => e.status === 'added' || e.status === 'deleted',
   );
 
   for (const target of cascadeTargets) {
-    const parts = target.path.split("/");
+    const parts = target.path.split('/');
     // Walk up from parent to root
     for (let i = parts.length - 1; i > 0; i--) {
-      const ancestor = parts.slice(0, i).join("/");
+      const ancestor = parts.slice(0, i).join('/');
       const existing = entries.get(ancestor);
-      if (existing && existing.status === "unchanged") {
+      if (existing && existing.status === 'unchanged') {
         entries.set(ancestor, {
           path: ancestor,
-          status: "modified",
+          status: 'modified',
           reason: `child directory ${target.status}: ${target.path}`,
         });
       }
     }
     // Handle root directory ('.')
-    if (target.path !== ".") {
-      const rootEntry = entries.get(".");
-      if (rootEntry && rootEntry.status === "unchanged") {
-        entries.set(".", {
-          path: ".",
-          status: "modified",
+    if (target.path !== '.') {
+      const rootEntry = entries.get('.');
+      if (rootEntry && rootEntry.status === 'unchanged') {
+        entries.set('.', {
+          path: '.',
+          status: 'modified',
           reason: `child directory ${target.status}: ${target.path}`,
         });
       }
@@ -361,10 +361,10 @@ export function computeDiff(
   );
   const summary = {
     total: sorted.length,
-    added: sorted.filter((e) => e.status === "added").length,
-    deleted: sorted.filter((e) => e.status === "deleted").length,
-    modified: sorted.filter((e) => e.status === "modified").length,
-    unchanged: sorted.filter((e) => e.status === "unchanged").length,
+    added: sorted.filter((e) => e.status === 'added').length,
+    deleted: sorted.filter((e) => e.status === 'deleted').length,
+    modified: sorted.filter((e) => e.status === 'modified').length,
+    unchanged: sorted.filter((e) => e.status === 'unchanged').length,
   };
 
   return { entries: sorted, summary };
@@ -375,18 +375,18 @@ export function computeDiff(
 // =============================================================================
 
 function resolveManifestPath(root: string): string {
-  return join(getOmcRoot(root), "deepinit-manifest.json");
+  return join(getOmcRoot(root), 'deepinit-manifest.json');
 }
 
 function handleDiff(
   root: string,
   mode: string,
-): { content: Array<{ type: "text"; text: string }> } {
+): { content: Array<{ type: 'text'; text: string }> } {
   const current = scanDirectories(root);
   const manifestPath = resolveManifestPath(root);
 
   let diff: DiffResult;
-  if (mode === "full") {
+  if (mode === 'full') {
     // Full mode: treat everything as added
     diff = computeDiff(null, current);
   } else {
@@ -401,14 +401,14 @@ function handleDiff(
   };
 
   return {
-    content: [{ type: "text" as const, text: JSON.stringify(output, null, 2) }],
+    content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }],
   };
 }
 
 function handleSave(
   root: string,
   dryRun: boolean,
-): { content: Array<{ type: "text"; text: string }> } {
+): { content: Array<{ type: 'text'; text: string }> } {
   const current = scanDirectories(root);
   const manifest: DeepInitManifest = {
     version: MANIFEST_VERSION,
@@ -420,7 +420,7 @@ function handleSave(
     return {
       content: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: `Dry run — manifest NOT written.\n\nDirectories tracked: ${Object.keys(current).length}\n\n\`\`\`json\n${JSON.stringify(manifest, null, 2)}\n\`\`\``,
         },
       ],
@@ -433,7 +433,7 @@ function handleSave(
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text: `Manifest saved successfully.\n\nPath: ${manifestPath}\nDirectories tracked: ${Object.keys(current).length}\nGenerated at: ${manifest.generatedAt}`,
       },
     ],
@@ -441,7 +441,7 @@ function handleSave(
 }
 
 function handleCheck(root: string): {
-  content: Array<{ type: "text"; text: string }>;
+  content: Array<{ type: 'text'; text: string }>;
 } {
   const manifestPath = resolveManifestPath(root);
   const exists = existsSync(manifestPath);
@@ -450,7 +450,7 @@ function handleCheck(root: string): {
     return {
       content: [
         {
-          type: "text" as const,
+          type: 'text' as const,
           text: JSON.stringify(
             {
               exists: false,
@@ -474,7 +474,7 @@ function handleCheck(root: string): {
   return {
     content: [
       {
-        type: "text" as const,
+        type: 'text' as const,
         text: JSON.stringify(
           { exists, valid, directoryCount, generatedAt },
           null,
@@ -492,33 +492,33 @@ function handleCheck(root: string): {
 export const deepinitManifestTool: ToolDefinition<
   typeof deepinitManifestSchema
 > = {
-  name: "deepinit_manifest",
+  name: 'deepinit_manifest',
   description:
-    "Manage the deepinit manifest for incremental AGENTS.md regeneration. " +
-    "Compares directory file lists (not file contents) to detect structural changes. " +
-    "Actions: diff (find changed directories), save (persist current state), check (validate manifest).",
+    'Manage the deepinit manifest for incremental AGENTS.md regeneration. ' +
+    'Compares directory file lists (not file contents) to detect structural changes. ' +
+    'Actions: diff (find changed directories), save (persist current state), check (validate manifest).',
   category: TOOL_CATEGORIES.DEEPINIT,
   schema: deepinitManifestSchema,
   handler: async (args: DeepinitManifestInput) => {
     const { action, workingDirectory, mode, dryRun } = args;
 
     // Per-action parameter validation
-    if (action !== "diff" && mode !== undefined && mode !== "incremental") {
+    if (action !== 'diff' && mode !== undefined && mode !== 'incremental') {
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error: 'mode' parameter is only valid with action='diff'. Got action='${action}'.`,
           },
         ],
         isError: true,
       };
     }
-    if (action !== "save" && dryRun) {
+    if (action !== 'save' && dryRun) {
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error: 'dryRun' parameter is only valid with action='save'. Got action='${action}'.`,
           },
         ],
@@ -530,16 +530,16 @@ export const deepinitManifestTool: ToolDefinition<
       const root = validateWorkingDirectory(workingDirectory);
 
       switch (action) {
-        case "diff":
-          return handleDiff(root, mode ?? "incremental");
-        case "save":
+        case 'diff':
+          return handleDiff(root, mode ?? 'incremental');
+        case 'save':
           return handleSave(root, dryRun ?? false);
-        case "check":
+        case 'check':
           return handleCheck(root);
         default:
           return {
             content: [
-              { type: "text" as const, text: `Unknown action: ${action}` },
+              { type: 'text' as const, text: `Unknown action: ${action}` },
             ],
             isError: true,
           };
@@ -548,7 +548,7 @@ export const deepinitManifestTool: ToolDefinition<
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error in deepinit_manifest (${action}): ${error instanceof Error ? error.message : String(error)}`,
           },
         ],

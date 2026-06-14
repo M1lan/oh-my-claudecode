@@ -21,18 +21,18 @@
  *
  * Either scenario silently breaks Ralph for the entire session.
  */
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
-} from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
-import { execFileSync } from "child_process";
-import { checkPersistentModes } from "../index.js";
+} from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { execFileSync } from 'child_process';
+import { checkPersistentModes } from '../index.js';
 
 const tempDirs: string[] = [];
 
@@ -44,9 +44,9 @@ afterEach(() => {
 });
 
 function createGitProject(): string {
-  const tempDir = mkdtempSync(join(tmpdir(), "ralph-session-mismatch-"));
+  const tempDir = mkdtempSync(join(tmpdir(), 'ralph-session-mismatch-'));
   tempDirs.push(tempDir);
-  execFileSync("git", ["init"], { cwd: tempDir, stdio: "pipe" });
+  execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
   return tempDir;
 }
 
@@ -59,8 +59,8 @@ function writeRalphStateFile(
   // Write to the legacy unscoped path when sessionId is undefined,
   // session-scoped path when defined.
   const stateDir = sessionId
-    ? join(tempDir, ".omc", "state", "sessions", sessionId)
-    : join(tempDir, ".omc", "state");
+    ? join(tempDir, '.omc', 'state', 'sessions', sessionId)
+    : join(tempDir, '.omc', 'state');
   mkdirSync(stateDir, { recursive: true });
 
   const state: Record<string, unknown> = {
@@ -68,7 +68,7 @@ function writeRalphStateFile(
     iteration,
     max_iterations: 100,
     started_at: new Date().toISOString(),
-    prompt: "Long-running ralph session",
+    prompt: 'Long-running ralph session',
     project_path: tempDir,
   };
   if (storedSessionId !== undefined) {
@@ -76,29 +76,29 @@ function writeRalphStateFile(
   }
 
   writeFileSync(
-    join(stateDir, "ralph-state.json"),
+    join(stateDir, 'ralph-state.json'),
     JSON.stringify(state, null, 2),
   );
 }
 
-describe("persistent-mode ralph session-id mismatch (stuck counter regression)", () => {
-  it("increments the counter when state file has no session_id but Stop hook supplies one", async () => {
+describe('persistent-mode ralph session-id mismatch (stuck counter regression)', () => {
+  it('increments the counter when state file has no session_id but Stop hook supplies one', async () => {
     const tempDir = createGitProject();
-    const sessionId = "fresh-session-uuid-1";
+    const sessionId = 'fresh-session-uuid-1';
 
     // Simulate the bug: state file written without a session_id (e.g. ralph
     // started before the session_id was known, or an older state schema).
     // Place it at the SESSION-SCOPED path so readRalphState finds it.
-    const stateDir = join(tempDir, ".omc", "state", "sessions", sessionId);
+    const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(
-      join(stateDir, "ralph-state.json"),
+      join(stateDir, 'ralph-state.json'),
       JSON.stringify({
         active: true,
         iteration: 5,
         max_iterations: 100,
         started_at: new Date().toISOString(),
-        prompt: "Test prompt",
+        prompt: 'Test prompt',
         project_path: tempDir,
         // No session_id field
       }),
@@ -106,61 +106,61 @@ describe("persistent-mode ralph session-id mismatch (stuck counter regression)",
 
     const result = await checkPersistentModes(sessionId, tempDir);
 
-    expect(result.mode).toBe("ralph");
+    expect(result.mode).toBe('ralph');
     expect(result.shouldBlock).toBe(true);
 
     const updated = JSON.parse(
-      readFileSync(join(stateDir, "ralph-state.json"), "utf-8"),
+      readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
     ) as { iteration: number };
     expect(updated.iteration).toBe(6);
   });
 
-  it("still rejects state files that explicitly belong to a different session", async () => {
+  it('still rejects state files that explicitly belong to a different session', async () => {
     const tempDir = createGitProject();
-    const sessionA = "session-a";
-    const sessionB = "session-b";
+    const sessionA = 'session-a';
+    const sessionB = 'session-b';
 
     // Write state under session A's directory with session A's id
     writeRalphStateFile(tempDir, sessionA, sessionA, 5);
 
     // Now invoke as session B — should not pick up session A's state
     const result = await checkPersistentModes(sessionB, tempDir);
-    expect(result.mode).not.toBe("ralph");
+    expect(result.mode).not.toBe('ralph');
 
     // Session A's state should be unchanged
     const stateFile = join(
       tempDir,
-      ".omc",
-      "state",
-      "sessions",
+      '.omc',
+      'state',
+      'sessions',
       sessionA,
-      "ralph-state.json",
+      'ralph-state.json',
     );
-    const unchanged = JSON.parse(readFileSync(stateFile, "utf-8")) as {
+    const unchanged = JSON.parse(readFileSync(stateFile, 'utf-8')) as {
       iteration: number;
     };
     expect(unchanged.iteration).toBe(5);
   });
 
-  it("correctly increments when both stored and incoming session_ids match", async () => {
+  it('correctly increments when both stored and incoming session_ids match', async () => {
     // Sanity check: the existing happy path still works after the fix.
     const tempDir = createGitProject();
-    const sessionId = "session-happy-path";
+    const sessionId = 'session-happy-path';
 
     writeRalphStateFile(tempDir, sessionId, sessionId, 3);
 
     const result = await checkPersistentModes(sessionId, tempDir);
-    expect(result.mode).toBe("ralph");
+    expect(result.mode).toBe('ralph');
 
     const stateFile = join(
       tempDir,
-      ".omc",
-      "state",
-      "sessions",
+      '.omc',
+      'state',
+      'sessions',
       sessionId,
-      "ralph-state.json",
+      'ralph-state.json',
     );
-    const updated = JSON.parse(readFileSync(stateFile, "utf-8")) as {
+    const updated = JSON.parse(readFileSync(stateFile, 'utf-8')) as {
       iteration: number;
     };
     expect(updated.iteration).toBe(4);

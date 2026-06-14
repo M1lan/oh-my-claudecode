@@ -11,17 +11,17 @@ import {
   writeFileSync,
   mkdirSync,
   appendFileSync,
-} from "fs";
-import { join, dirname } from "path";
-import type { WisdomEntry, WisdomCategory, PlanWisdom } from "./types.js";
-import { NOTEPAD_BASE_PATH } from "../boulder-state/constants.js";
+} from 'fs';
+import { join, dirname } from 'path';
+import type { WisdomEntry, WisdomCategory, PlanWisdom } from './types.js';
+import { NOTEPAD_BASE_PATH } from '../boulder-state/constants.js';
 
 // Constants
 const WISDOM_FILES = {
-  learnings: "learnings.md",
-  decisions: "decisions.md",
-  issues: "issues.md",
-  problems: "problems.md",
+  learnings: 'learnings.md',
+  decisions: 'decisions.md',
+  issues: 'issues.md',
+  problems: 'problems.md',
 } as const;
 
 /**
@@ -29,7 +29,7 @@ const WISDOM_FILES = {
  */
 function sanitizePlanName(planName: string): string {
   // Remove any path separators and dangerous characters
-  return planName.replace(/[^a-zA-Z0-9_-]/g, "-");
+  return planName.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
 /**
@@ -70,10 +70,10 @@ export function initPlanNotepad(
 
     // Create all wisdom files if they don't exist
     const categories: WisdomCategory[] = [
-      "learnings",
-      "decisions",
-      "issues",
-      "problems",
+      'learnings',
+      'decisions',
+      'issues',
+      'problems',
     ];
 
     for (const category of categories) {
@@ -81,13 +81,13 @@ export function initPlanNotepad(
 
       if (!existsSync(filePath)) {
         const header = `# ${category.charAt(0).toUpperCase() + category.slice(1)} - ${planName}\n\n`;
-        writeFileSync(filePath, header, "utf-8");
+        writeFileSync(filePath, header, 'utf-8');
       }
     }
 
     return true;
   } catch (error) {
-    console.error("Failed to initialize plan notepad:", error);
+    console.error('Failed to initialize plan notepad:', error);
     return false;
   }
 }
@@ -107,7 +107,7 @@ function readWisdomCategory(
   }
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     const entries: WisdomEntry[] = [];
 
     // Parse entries in format: ## YYYY-MM-DD HH:MM:SS\ncontent\n
@@ -139,10 +139,10 @@ export function readPlanWisdom(
 ): PlanWisdom {
   return {
     planName,
-    learnings: readWisdomCategory(planName, "learnings", directory),
-    decisions: readWisdomCategory(planName, "decisions", directory),
-    issues: readWisdomCategory(planName, "issues", directory),
-    problems: readWisdomCategory(planName, "problems", directory),
+    learnings: readWisdomCategory(planName, 'learnings', directory),
+    decisions: readWisdomCategory(planName, 'decisions', directory),
+    issues: readWisdomCategory(planName, 'issues', directory),
+    problems: readWisdomCategory(planName, 'problems', directory),
   };
 }
 
@@ -163,10 +163,10 @@ function addWisdomEntry(
   }
 
   try {
-    const timestamp = new Date().toISOString().replace("T", " ").split(".")[0];
+    const timestamp = new Date().toISOString().replace('T', ' ').split('.')[0];
     const entry = `\n## ${timestamp}\n\n${content}\n`;
 
-    appendFileSync(filePath, entry, "utf-8");
+    appendFileSync(filePath, entry, 'utf-8');
     return true;
   } catch (error) {
     console.error(`Failed to add ${category} entry:`, error);
@@ -182,7 +182,7 @@ export function addLearning(
   content: string,
   directory: string = process.cwd(),
 ): boolean {
-  return addWisdomEntry(planName, "learnings", content, directory);
+  return addWisdomEntry(planName, 'learnings', content, directory);
 }
 
 /**
@@ -193,7 +193,7 @@ export function addDecision(
   content: string,
   directory: string = process.cwd(),
 ): boolean {
-  return addWisdomEntry(planName, "decisions", content, directory);
+  return addWisdomEntry(planName, 'decisions', content, directory);
 }
 
 /**
@@ -204,7 +204,7 @@ export function addIssue(
   content: string,
   directory: string = process.cwd(),
 ): boolean {
-  return addWisdomEntry(planName, "issues", content, directory);
+  return addWisdomEntry(planName, 'issues', content, directory);
 }
 
 /**
@@ -215,7 +215,7 @@ export function addProblem(
   content: string,
   directory: string = process.cwd(),
 ): boolean {
-  return addWisdomEntry(planName, "problems", content, directory);
+  return addWisdomEntry(planName, 'problems', content, directory);
 }
 
 /**
@@ -230,40 +230,40 @@ export function getWisdomSummary(
 
   if (wisdom.learnings.length > 0) {
     sections.push(
-      "# Learnings\n\n" +
+      '# Learnings\n\n' +
         wisdom.learnings
           .map((e) => `- [${e.timestamp}] ${e.content}`)
-          .join("\n"),
+          .join('\n'),
     );
   }
 
   if (wisdom.decisions.length > 0) {
     sections.push(
-      "# Decisions\n\n" +
+      '# Decisions\n\n' +
         wisdom.decisions
           .map((e) => `- [${e.timestamp}] ${e.content}`)
-          .join("\n"),
+          .join('\n'),
     );
   }
 
   if (wisdom.issues.length > 0) {
     sections.push(
-      "# Issues\n\n" +
-        wisdom.issues.map((e) => `- [${e.timestamp}] ${e.content}`).join("\n"),
+      '# Issues\n\n' +
+        wisdom.issues.map((e) => `- [${e.timestamp}] ${e.content}`).join('\n'),
     );
   }
 
   if (wisdom.problems.length > 0) {
     sections.push(
-      "# Problems\n\n" +
+      '# Problems\n\n' +
         wisdom.problems
           .map((e) => `- [${e.timestamp}] ${e.content}`)
-          .join("\n"),
+          .join('\n'),
     );
   }
 
-  return sections.join("\n\n");
+  return sections.join('\n\n');
 }
 
 // Re-export types
-export type { WisdomEntry, WisdomCategory, PlanWisdom } from "./types.js";
+export type { WisdomEntry, WisdomCategory, PlanWisdom } from './types.js';

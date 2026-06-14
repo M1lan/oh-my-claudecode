@@ -1,31 +1,31 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, mkdir, rm, writeFile } from "fs/promises";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtemp, mkdir, rm, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
-import { executeTeamApiOperation } from "../api-interop.js";
+import { executeTeamApiOperation } from '../api-interop.js';
 
-describe("team api working-directory resolution", () => {
+describe('team api working-directory resolution', () => {
   let cwd: string;
-  const teamName = "resolution-team";
+  const teamName = 'resolution-team';
 
   async function seedTeamState(): Promise<string> {
-    const base = join(cwd, ".omc", "state", "team", teamName);
-    await mkdir(join(base, "tasks"), { recursive: true });
-    await mkdir(join(base, "mailbox"), { recursive: true });
+    const base = join(cwd, '.omc', 'state', 'team', teamName);
+    await mkdir(join(base, 'tasks'), { recursive: true });
+    await mkdir(join(base, 'mailbox'), { recursive: true });
     await writeFile(
-      join(base, "config.json"),
+      join(base, 'config.json'),
       JSON.stringify(
         {
           name: teamName,
-          task: "resolution test",
-          agent_type: "claude",
+          task: 'resolution test',
+          agent_type: 'claude',
           worker_count: 1,
           max_workers: 20,
           workers: [
-            { name: "worker-1", index: 1, role: "claude", assigned_tasks: [] },
+            { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
           ],
-          created_at: "2026-03-06T00:00:00.000Z",
+          created_at: '2026-03-06T00:00:00.000Z',
           next_task_id: 2,
           team_state_root: base,
         },
@@ -34,15 +34,15 @@ describe("team api working-directory resolution", () => {
       ),
     );
     await writeFile(
-      join(base, "tasks", "task-1.json"),
+      join(base, 'tasks', 'task-1.json'),
       JSON.stringify(
         {
-          id: "1",
-          subject: "Resolution test task",
-          description: "Ensure API finds the real team root",
-          status: "pending",
+          id: '1',
+          subject: 'Resolution test task',
+          description: 'Ensure API finds the real team root',
+          status: 'pending',
           owner: null,
-          created_at: "2026-03-06T00:00:00.000Z",
+          created_at: '2026-03-06T00:00:00.000Z',
           version: 1,
         },
         null,
@@ -53,7 +53,7 @@ describe("team api working-directory resolution", () => {
   }
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "omc-team-api-resolution-"));
+    cwd = await mkdtemp(join(tmpdir(), 'omc-team-api-resolution-'));
   });
 
   afterEach(async () => {
@@ -61,27 +61,27 @@ describe("team api working-directory resolution", () => {
     await rm(cwd, { recursive: true, force: true });
   });
 
-  it("resolves workspace cwd from a team-specific config.team_state_root", async () => {
+  it('resolves workspace cwd from a team-specific config.team_state_root', async () => {
     await seedTeamState();
 
     const readResult = await executeTeamApiOperation(
-      "read-task",
+      'read-task',
       {
         team_name: teamName,
-        task_id: "1",
+        task_id: '1',
       },
       cwd,
     );
     expect(readResult.ok).toBe(true);
     if (!readResult.ok) return;
-    expect((readResult.data as { task?: { id?: string } }).task?.id).toBe("1");
+    expect((readResult.data as { task?: { id?: string } }).task?.id).toBe('1');
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -89,22 +89,22 @@ describe("team api working-directory resolution", () => {
     if (!claimResult.ok) return;
     expect(
       typeof (claimResult.data as { claimToken?: string }).claimToken,
-    ).toBe("string");
+    ).toBe('string');
   });
 
-  it("resolves workspace cwd from OMC_TEAM_STATE_ROOT when it points at a team-specific root", async () => {
+  it('resolves workspace cwd from OMC_TEAM_STATE_ROOT when it points at a team-specific root', async () => {
     const teamStateRoot = await seedTeamState();
     process.env.OMC_TEAM_STATE_ROOT = teamStateRoot;
 
-    const nestedCwd = join(cwd, "nested", "worker");
+    const nestedCwd = join(cwd, 'nested', 'worker');
     await mkdir(nestedCwd, { recursive: true });
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       nestedCwd,
     );
@@ -112,21 +112,21 @@ describe("team api working-directory resolution", () => {
     if (!claimResult.ok) return;
     expect(
       typeof (claimResult.data as { claimToken?: string }).claimToken,
-    ).toBe("string");
+    ).toBe('string');
   });
 
-  it("claims tasks using config workers even when manifest workers are stale", async () => {
+  it('claims tasks using config workers even when manifest workers are stale', async () => {
     const teamStateRoot = await seedTeamState();
     await writeFile(
-      join(teamStateRoot, "manifest.json"),
+      join(teamStateRoot, 'manifest.json'),
       JSON.stringify(
         {
           schema_version: 2,
           name: teamName,
-          task: "resolution test",
+          task: 'resolution test',
           worker_count: 0,
           workers: [],
-          created_at: "2026-03-06T00:00:00.000Z",
+          created_at: '2026-03-06T00:00:00.000Z',
           team_state_root: teamStateRoot,
         },
         null,
@@ -135,11 +135,11 @@ describe("team api working-directory resolution", () => {
     );
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -148,22 +148,22 @@ describe("team api working-directory resolution", () => {
     expect((claimResult.data as { ok?: boolean }).ok).toBe(true);
     expect(
       typeof (claimResult.data as { claimToken?: string }).claimToken,
-    ).toBe("string");
+    ).toBe('string');
   });
 
-  it("recognizes workers implied by worker_count when workers array is temporarily empty", async () => {
+  it('recognizes workers implied by worker_count when workers array is temporarily empty', async () => {
     const teamStateRoot = await seedTeamState();
     await writeFile(
-      join(teamStateRoot, "config.json"),
+      join(teamStateRoot, 'config.json'),
       JSON.stringify(
         {
           name: teamName,
-          task: "resolution test",
-          agent_type: "claude",
+          task: 'resolution test',
+          agent_type: 'claude',
           worker_count: 2,
           max_workers: 20,
           workers: [],
-          created_at: "2026-03-06T00:00:00.000Z",
+          created_at: '2026-03-06T00:00:00.000Z',
           next_task_id: 2,
           team_state_root: teamStateRoot,
         },
@@ -173,11 +173,11 @@ describe("team api working-directory resolution", () => {
     );
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-2",
+        task_id: '1',
+        worker: 'worker-2',
       },
       cwd,
     );
@@ -186,6 +186,6 @@ describe("team api working-directory resolution", () => {
     expect((claimResult.data as { ok?: boolean }).ok).toBe(true);
     expect(
       typeof (claimResult.data as { claimToken?: string }).claimToken,
-    ).toBe("string");
+    ).toBe('string');
   });
 });

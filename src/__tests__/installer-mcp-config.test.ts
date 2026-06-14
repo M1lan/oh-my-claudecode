@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   existsSync,
   mkdtempSync,
@@ -6,20 +6,20 @@ import {
   readFileSync,
   rmSync,
   writeFileSync,
-} from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
-  const { join: pathJoin } = await import("path");
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
+  const { join: pathJoin } = await import('path');
   const repoRoot = process.cwd();
-  const sourceClaudeMdPath = pathJoin(repoRoot, "src", "docs", "CLAUDE.md");
-  const realClaudeMdPath = pathJoin(repoRoot, "docs", "CLAUDE.md");
+  const sourceClaudeMdPath = pathJoin(repoRoot, 'src', 'docs', 'CLAUDE.md');
+  const realClaudeMdPath = pathJoin(repoRoot, 'docs', 'CLAUDE.md');
 
   const withRedirect = (pathLike: unknown): string => {
-    const normalized = String(pathLike).replace(/\\/g, "/");
-    if (normalized === sourceClaudeMdPath.replace(/\\/g, "/")) {
+    const normalized = String(pathLike).replace(/\\/g, '/');
+    if (normalized === sourceClaudeMdPath.replace(/\\/g, '/')) {
       return realClaudeMdPath;
     }
     return String(pathLike);
@@ -52,10 +52,10 @@ async function loadInstallerWithEnv(
   process.env.OMC_HOME = omcHome;
   delete process.env.CLAUDE_MCP_CONFIG_PATH;
   delete process.env.OMC_MCP_REGISTRY_PATH;
-  return import("../installer/index.js");
+  return import('../installer/index.js');
 }
 
-describe("installer MCP config ownership (issue #1802)", () => {
+describe('installer MCP config ownership (issue #1802)', () => {
   let tempRoot: string;
   let homeDir: string;
   let claudeConfigDir: string;
@@ -64,11 +64,11 @@ describe("installer MCP config ownership (issue #1802)", () => {
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    tempRoot = mkdtempSync(join(tmpdir(), "omc-installer-mcp-config-"));
-    homeDir = join(tempRoot, "home");
-    claudeConfigDir = join(homeDir, ".claude");
-    codexHome = join(tempRoot, ".codex");
-    omcHome = join(tempRoot, ".omc");
+    tempRoot = mkdtempSync(join(tmpdir(), 'omc-installer-mcp-config-'));
+    homeDir = join(tempRoot, 'home');
+    claudeConfigDir = join(homeDir, '.claude');
+    codexHome = join(tempRoot, '.codex');
+    omcHome = join(tempRoot, '.omc');
 
     mkdirSync(homeDir, { recursive: true });
     mkdirSync(claudeConfigDir, { recursive: true });
@@ -84,25 +84,25 @@ describe("installer MCP config ownership (issue #1802)", () => {
     vi.resetModules();
   });
 
-  it("moves legacy settings.json mcpServers into ~/.claude.json during install", async () => {
-    const settingsPath = join(claudeConfigDir, "settings.json");
-    const claudeRootConfigPath = join(homeDir, ".claude.json");
-    const codexConfigPath = join(codexHome, "config.toml");
-    const registryPath = join(omcHome, "mcp-registry.json");
+  it('moves legacy settings.json mcpServers into ~/.claude.json during install', async () => {
+    const settingsPath = join(claudeConfigDir, 'settings.json');
+    const claudeRootConfigPath = join(homeDir, '.claude.json');
+    const codexConfigPath = join(codexHome, 'config.toml');
+    const registryPath = join(omcHome, 'mcp-registry.json');
 
     writeFileSync(
       settingsPath,
       JSON.stringify(
         {
-          theme: "dark",
+          theme: 'dark',
           statusLine: {
-            type: "command",
-            command: "node hud.mjs",
+            type: 'command',
+            command: 'node hud.mjs',
           },
           mcpServers: {
             gitnexus: {
-              command: "gitnexus",
-              args: ["mcp"],
+              command: 'gitnexus',
+              args: ['mcp'],
               timeout: 15,
             },
           },
@@ -129,15 +129,15 @@ describe("installer MCP config ownership (issue #1802)", () => {
     expect(existsSync(registryPath)).toBe(true);
     expect(existsSync(codexConfigPath)).toBe(true);
 
-    const settings = JSON.parse(readFileSync(settingsPath, "utf-8")) as Record<
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8')) as Record<
       string,
       unknown
     >;
     expect(settings).toEqual({
-      theme: "dark",
+      theme: 'dark',
       statusLine: {
-        type: "command",
-        command: "node hud.mjs",
+        type: 'command',
+        command: 'node hud.mjs',
       },
       hooks: {
         PostToolUse: [],
@@ -148,32 +148,32 @@ describe("installer MCP config ownership (issue #1802)", () => {
         UserPromptSubmit: [],
       },
     });
-    expect(settings).not.toHaveProperty("mcpServers");
+    expect(settings).not.toHaveProperty('mcpServers');
 
     const claudeRootConfig = JSON.parse(
-      readFileSync(claudeRootConfigPath, "utf-8"),
+      readFileSync(claudeRootConfigPath, 'utf-8'),
     ) as Record<string, unknown>;
     expect(claudeRootConfig).toEqual({
       mcpServers: {
         gitnexus: {
-          command: "gitnexus",
-          args: ["mcp"],
+          command: 'gitnexus',
+          args: ['mcp'],
           timeout: 15,
         },
       },
     });
 
-    expect(JSON.parse(readFileSync(registryPath, "utf-8"))).toEqual({
+    expect(JSON.parse(readFileSync(registryPath, 'utf-8'))).toEqual({
       gitnexus: {
-        command: "gitnexus",
-        args: ["mcp"],
+        command: 'gitnexus',
+        args: ['mcp'],
         timeout: 15,
       },
     });
 
-    const codexConfig = readFileSync(codexConfigPath, "utf-8");
-    expect(codexConfig).toContain("# BEGIN OMC MANAGED MCP REGISTRY");
-    expect(codexConfig).toContain("[mcp_servers.gitnexus]");
+    const codexConfig = readFileSync(codexConfigPath, 'utf-8');
+    expect(codexConfig).toContain('# BEGIN OMC MANAGED MCP REGISTRY');
+    expect(codexConfig).toContain('[mcp_servers.gitnexus]');
     expect(codexConfig).toContain('command = "gitnexus"');
   });
 });

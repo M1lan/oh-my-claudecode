@@ -131,7 +131,7 @@ export function stripAnsi(str: string): string {
   // Also handles other common sequences
   return str.replace(
     /\x1b\[[0-9;]*[a-zA-Z]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g,
-    "",
+    '',
   );
 }
 
@@ -147,9 +147,9 @@ export function stripAnsi(str: string): string {
 export function truncateToWidth(
   str: string,
   maxWidth: number,
-  suffix: string = "...",
+  suffix: string = '...',
 ): string {
-  if (!str || maxWidth <= 0) return "";
+  if (!str || maxWidth <= 0) return '';
 
   const strWidth = stringWidth(str);
   if (strWidth <= maxWidth) return str;
@@ -171,7 +171,7 @@ export function truncateToWidth(
  */
 function truncateToWidthNoSuffix(str: string, maxWidth: number): string {
   let width = 0;
-  let result = "";
+  let result = '';
 
   for (const char of str) {
     const charWidth = getCharWidth(char);
@@ -195,7 +195,7 @@ function truncateToWidthNoSuffix(str: string, maxWidth: number): string {
 export function padToWidth(
   str: string,
   minWidth: number,
-  padChar: string = " ",
+  padChar: string = ' ',
 ): string {
   const currentWidth = stringWidth(str);
   if (currentWidth >= minWidth) return str;
@@ -218,10 +218,10 @@ export function sliceByWidth(
   startWidth: number,
   endWidth?: number,
 ): string {
-  if (!str) return "";
+  if (!str) return '';
 
   let currentWidth = 0;
-  let result = "";
+  let result = '';
   let started = false;
 
   for (const char of str) {
@@ -236,7 +236,7 @@ export function sliceByWidth(
         // A double-width char straddles the start boundary.
         // Pad with a space so the output column-aligns correctly.
         started = true;
-        result += " ";
+        result += ' ';
         currentWidth += charWidth;
         continue;
       }

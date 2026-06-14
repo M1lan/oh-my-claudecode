@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { LSP_SERVERS, getServerForFile, getServerForLanguage } from '../tools/lsp/servers.js';
+import {
+  LSP_SERVERS,
+  getServerForFile,
+  getServerForLanguage,
+} from '../tools/lsp/servers.js';
 
 describe('LSP Server Configurations', () => {
   const serverKeys = Object.keys(LSP_SERVERS);
@@ -27,7 +31,9 @@ describe('LSP Server Configurations', () => {
     for (const [key, config] of Object.entries(LSP_SERVERS)) {
       for (const ext of config.extensions) {
         if (seen.has(ext)) {
-          throw new Error(`Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`);
+          throw new Error(
+            `Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`,
+          );
         }
         seen.set(ext, key);
       }
@@ -124,14 +130,19 @@ describe('getServerForLanguage', () => {
     ['v', 'Verible Verilog Language Server'],
   ];
 
-  it.each(cases)('should resolve language "%s" to "%s"', (lang, expectedName) => {
-    const server = getServerForLanguage(lang);
-    expect(server).not.toBeNull();
-    expect(server!.name).toBe(expectedName);
-  });
+  it.each(cases)(
+    'should resolve language "%s" to "%s"',
+    (lang, expectedName) => {
+      const server = getServerForLanguage(lang);
+      expect(server).not.toBeNull();
+      expect(server!.name).toBe(expectedName);
+    },
+  );
 
   it('should be case-insensitive', () => {
-    expect(getServerForLanguage('PHP')?.name).toBe('PHP Language Server (Intelephense)');
+    expect(getServerForLanguage('PHP')?.name).toBe(
+      'PHP Language Server (Intelephense)',
+    );
     expect(getServerForLanguage('Kotlin')?.name).toBe('Kotlin Language Server');
   });
 

@@ -7,13 +7,13 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
-} from "fs";
-import { basename, join } from "path";
-import { getClaudeConfigDir } from "./config-dir.js";
+} from 'fs';
+import { basename, join } from 'path';
+import { getClaudeConfigDir } from './config-dir.js';
 
-const CLAUDE_SKILLS_DIR = join(getClaudeConfigDir(), "skills");
-const OMC_LEARNED_DIR = join(CLAUDE_SKILLS_DIR, "omc-learned");
-const CLAUDE_SKILL_FILENAME = "SKILL.md";
+const CLAUDE_SKILLS_DIR = join(getClaudeConfigDir(), 'skills');
+const OMC_LEARNED_DIR = join(CLAUDE_SKILLS_DIR, 'omc-learned');
+const CLAUDE_SKILL_FILENAME = 'SKILL.md';
 
 export interface UserSkillCompatEntry {
   skillName: string;
@@ -34,8 +34,8 @@ function isSameSkillContent(
 ): boolean {
   try {
     return (
-      readFileSync(sourceSkillPath, "utf-8") ===
-      readFileSync(targetSkillPath, "utf-8")
+      readFileSync(sourceSkillPath, 'utf-8') ===
+      readFileSync(targetSkillPath, 'utf-8')
     );
   } catch {
     return false;
@@ -49,8 +49,8 @@ function isCompatSymlinkTarget(
   try {
     return (
       lstatSync(targetSkillPath).isSymbolicLink() &&
-      readFileSync(sourceSkillPath, "utf-8") ===
-        readFileSync(targetSkillPath, "utf-8")
+      readFileSync(sourceSkillPath, 'utf-8') ===
+        readFileSync(targetSkillPath, 'utf-8')
     );
   } catch {
     return false;
@@ -89,7 +89,7 @@ export function ensureClaudeCodeUserSkillCompat(
     return true;
   } catch {
     try {
-      writeFileSync(targetSkillPath, readFileSync(sourceSkillPath, "utf-8"));
+      writeFileSync(targetSkillPath, readFileSync(sourceSkillPath, 'utf-8'));
       return true;
     } catch {
       try {
@@ -110,9 +110,9 @@ export function listOmcLearnedUserSkills(): UserSkillCompatEntry[] {
   const entries: UserSkillCompatEntry[] = [];
 
   for (const entry of readdirSync(OMC_LEARNED_DIR, { withFileTypes: true })) {
-    if (entry.isFile() && entry.name.endsWith(".md")) {
+    if (entry.isFile() && entry.name.endsWith('.md')) {
       entries.push({
-        skillName: basename(entry.name, ".md"),
+        skillName: basename(entry.name, '.md'),
         sourceSkillPath: join(OMC_LEARNED_DIR, entry.name),
       });
       continue;

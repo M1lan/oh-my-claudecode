@@ -1,26 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock all dependencies before importing the module under test
-vi.mock("../utils/paths.js", () => ({
-  getClaudeConfigDir: vi.fn(() => "/tmp/test-claude-config"),
+vi.mock('../utils/paths.js', () => ({
+  getClaudeConfigDir: vi.fn(() => '/tmp/test-claude-config'),
 }));
 
-vi.mock("../team/team-registration.js", () => ({
+vi.mock('../team/team-registration.js', () => ({
   listMcpWorkers: vi.fn(() => []),
 }));
 
-vi.mock("../team/heartbeat.js", () => ({
+vi.mock('../team/heartbeat.js', () => ({
   readHeartbeat: vi.fn(() => null),
   isWorkerAlive: vi.fn(() => false),
 }));
 
-vi.mock("../team/tmux-session.js", () => ({
+vi.mock('../team/tmux-session.js', () => ({
   sanitizeName: vi.fn((name: string) => name),
 }));
 
-vi.mock("../team/usage-tracker.js", () => ({
+vi.mock('../team/usage-tracker.js', () => ({
   generateUsageReport: vi.fn(() => ({
-    teamName: "test",
+    teamName: 'test',
     totalWallClockMs: 0,
     taskCount: 0,
     workers: [],
@@ -35,31 +35,31 @@ let mockTasks: Array<{
   metadata?: { permanentlyFailed?: boolean };
 }> = [];
 
-vi.mock("../team/task-file-ops.js", () => ({
+vi.mock('../team/task-file-ops.js', () => ({
   listTaskIds: vi.fn(() => mockTasks.map((t) => t.id)),
   readTask: vi.fn(
     (_, id: string) => mockTasks.find((t) => t.id === id) || null,
   ),
 }));
 
-import { getTeamStatus } from "../team/team-status.js";
+import { getTeamStatus } from '../team/team-status.js';
 
-describe("team-status failed count", () => {
+describe('team-status failed count', () => {
   beforeEach(() => {
     mockTasks = [];
   });
 
-  it("should count status=failed tasks in taskSummary.failed", () => {
+  it('should count status=failed tasks in taskSummary.failed', () => {
     // BUG FIX: taskSummary.failed only counted completed+permanentlyFailed,
     // missing tasks with status === 'failed'. This caused total !== sum of parts.
     mockTasks = [
-      { id: "1", status: "completed" },
-      { id: "2", status: "failed" },
-      { id: "3", status: "pending" },
-      { id: "4", status: "in_progress" },
+      { id: '1', status: 'completed' },
+      { id: '2', status: 'failed' },
+      { id: '3', status: 'pending' },
+      { id: '4', status: 'in_progress' },
     ];
 
-    const status = getTeamStatus("test-team", "/tmp/test", 30000, {
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
       includeUsage: false,
     });
 
@@ -77,16 +77,16 @@ describe("team-status failed count", () => {
     expect(sum).toBe(status.taskSummary.total);
   });
 
-  it("should count both status=failed and permanentlyFailed in taskSummary.failed", () => {
+  it('should count both status=failed and permanentlyFailed in taskSummary.failed', () => {
     mockTasks = [
-      { id: "1", status: "completed" },
-      { id: "2", status: "completed", metadata: { permanentlyFailed: true } },
-      { id: "3", status: "failed" },
-      { id: "4", status: "pending" },
-      { id: "5", status: "in_progress" },
+      { id: '1', status: 'completed' },
+      { id: '2', status: 'completed', metadata: { permanentlyFailed: true } },
+      { id: '3', status: 'failed' },
+      { id: '4', status: 'pending' },
+      { id: '5', status: 'in_progress' },
     ];
 
-    const status = getTeamStatus("test-team", "/tmp/test", 30000, {
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
       includeUsage: false,
     });
 
@@ -104,14 +104,14 @@ describe("team-status failed count", () => {
     expect(sum).toBe(status.taskSummary.total);
   });
 
-  it("should handle no failed tasks correctly", () => {
+  it('should handle no failed tasks correctly', () => {
     mockTasks = [
-      { id: "1", status: "completed" },
-      { id: "2", status: "completed" },
-      { id: "3", status: "pending" },
+      { id: '1', status: 'completed' },
+      { id: '2', status: 'completed' },
+      { id: '3', status: 'pending' },
     ];
 
-    const status = getTeamStatus("test-team", "/tmp/test", 30000, {
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
       includeUsage: false,
     });
 

@@ -29,9 +29,9 @@ const teamCleanupMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../team/team-ops.js', async (_importOriginal) => {
-  const actual = await vi.importActual<typeof import('../../../team/team-ops.js')>(
-    '../../../team/team-ops.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../team/team-ops.js')
+  >('../../../team/team-ops.js');
   return {
     ...actual,
     teamReadManifest: teamCleanupMocks.teamReadManifest,
@@ -41,9 +41,9 @@ vi.mock('../../../team/team-ops.js', async (_importOriginal) => {
 });
 
 vi.mock('../../../team/runtime-v2.js', async (_importOriginal) => {
-  const actual = await vi.importActual<typeof import('../../../team/runtime-v2.js')>(
-    '../../../team/runtime-v2.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../team/runtime-v2.js')
+  >('../../../team/runtime-v2.js');
   return {
     ...actual,
     shutdownTeamV2: teamCleanupMocks.shutdownTeamV2,
@@ -51,9 +51,9 @@ vi.mock('../../../team/runtime-v2.js', async (_importOriginal) => {
 });
 
 vi.mock('../../../team/runtime.js', async (_importOriginal) => {
-  const actual = await vi.importActual<typeof import('../../../team/runtime.js')>(
-    '../../../team/runtime.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../team/runtime.js')
+  >('../../../team/runtime.js');
   return {
     ...actual,
     shutdownTeam: teamCleanupMocks.shutdownTeam,
@@ -61,9 +61,9 @@ vi.mock('../../../team/runtime.js', async (_importOriginal) => {
 });
 
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
   return {
     ...actual,
     resolveToWorktreeRoot: vi.fn((dir?: string) => dir ?? process.cwd()),
@@ -72,7 +72,10 @@ vi.mock('../../../lib/worktree-paths.js', async () => {
 
 import { processSessionEndCleanupWorker } from '../index.js';
 
-async function waitForAssertion(assertion: () => void, timeoutMs = 1000): Promise<void> {
+async function waitForAssertion(
+  assertion: () => void,
+  timeoutMs = 1000,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   let lastError: unknown;
   while (Date.now() < deadline) {
@@ -94,11 +97,16 @@ describe('processSessionEnd team cleanup (#1632)', () => {
   let transcriptPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-session-end-team-cleanup-'));
+    tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'omc-session-end-team-cleanup-'),
+    );
     transcriptPath = path.join(tmpDir, 'transcript.jsonl');
     fs.writeFileSync(
       transcriptPath,
-      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'done' }] } }),
+      JSON.stringify({
+        type: 'assistant',
+        message: { content: [{ type: 'text', text: 'done' }] },
+      }),
       'utf-8',
     );
   });
@@ -120,11 +128,22 @@ describe('processSessionEnd team cleanup (#1632)', () => {
 
   it('force-shuts down a session-owned runtime-v2 team from session team state', async () => {
     const sessionId = 'pid-1632-v2';
-    const teamSessionDir = path.join(tmpDir, '.omc', 'state', 'sessions', sessionId);
+    const teamSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     fs.mkdirSync(teamSessionDir, { recursive: true });
     fs.writeFileSync(
       path.join(teamSessionDir, 'team-state.json'),
-      JSON.stringify({ active: true, session_id: sessionId, team_name: 'delivery-team', current_phase: 'team-exec' }),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'delivery-team',
+        current_phase: 'team-exec',
+      }),
       'utf-8',
     );
 
@@ -151,11 +170,22 @@ describe('processSessionEnd team cleanup (#1632)', () => {
 
   it('force-shuts down a legacy runtime team referenced by the ending session', async () => {
     const sessionId = 'pid-1632-legacy';
-    const teamSessionDir = path.join(tmpDir, '.omc', 'state', 'sessions', sessionId);
+    const teamSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     fs.mkdirSync(teamSessionDir, { recursive: true });
     fs.writeFileSync(
       path.join(teamSessionDir, 'team-state.json'),
-      JSON.stringify({ active: true, session_id: sessionId, team_name: 'legacy-team', current_phase: 'team-exec' }),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'legacy-team',
+        current_phase: 'team-exec',
+      }),
       'utf-8',
     );
 
@@ -187,7 +217,6 @@ describe('processSessionEnd team cleanup (#1632)', () => {
     });
   });
 
-
   it('uses initial team names when session-scoped mode state has already been deleted', async () => {
     const sessionId = 'pid-1632-captured';
 
@@ -211,7 +240,6 @@ describe('processSessionEnd team cleanup (#1632)', () => {
       );
     });
   });
-
 
   it('rejects unsafe initial team names before invoking cleanup operations', async () => {
     const sessionId = 'pid-1632-unsafe';
@@ -245,7 +273,9 @@ describe('processSessionEnd team cleanup (#1632)', () => {
     fs.mkdirSync(path.join(teamRoot, 'owned-team'), { recursive: true });
     fs.mkdirSync(path.join(teamRoot, 'other-team'), { recursive: true });
 
-    teamCleanupMocks.teamReadManifest.mockImplementation((async (teamName: string) => {
+    teamCleanupMocks.teamReadManifest.mockImplementation((async (
+      teamName: string,
+    ) => {
       if (teamName === 'owned-team') {
         return { leader: { session_id: sessionId } };
       }
@@ -254,7 +284,9 @@ describe('processSessionEnd team cleanup (#1632)', () => {
       }
       return null;
     }) as never);
-    teamCleanupMocks.teamReadConfig.mockImplementation((async (teamName: string) => ({
+    teamCleanupMocks.teamReadConfig.mockImplementation((async (
+      teamName: string,
+    ) => ({
       workers: [{ name: `${teamName}-worker`, pane_id: '%1' }],
     })) as never);
 

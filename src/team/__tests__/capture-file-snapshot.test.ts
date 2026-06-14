@@ -1,8 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { mkdirSync, rmSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
-import { captureFileSnapshot } from "../mcp-team-bridge.js";
+import { describe, it, expect } from 'vitest';
+import { mkdirSync, rmSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { captureFileSnapshot } from '../mcp-team-bridge.js';
 
 /**
  * Regression tests for issue #871:
@@ -11,7 +11,7 @@ import { captureFileSnapshot } from "../mcp-team-bridge.js";
  *
  * Fix: use the top-level ESM import instead.
  */
-describe("captureFileSnapshot (ESM regression - issue #871)", () => {
+describe('captureFileSnapshot (ESM regression - issue #871)', () => {
   it('does not throw "require is not defined" when called in ESM context', () => {
     // This would throw "require is not defined" before the fix.
     // Any directory works — non-git dirs simply return an empty set.
@@ -19,12 +19,12 @@ describe("captureFileSnapshot (ESM regression - issue #871)", () => {
     expect(() => captureFileSnapshot(dir)).not.toThrow();
   });
 
-  it("returns a Set", () => {
+  it('returns a Set', () => {
     const result = captureFileSnapshot(tmpdir());
     expect(result).toBeInstanceOf(Set);
   });
 
-  it("returns an empty set for a non-git directory", () => {
+  it('returns an empty set for a non-git directory', () => {
     const nonGit = join(tmpdir(), `__non_git_${Date.now()}__`);
     mkdirSync(nonGit, { recursive: true });
     try {
@@ -36,14 +36,14 @@ describe("captureFileSnapshot (ESM regression - issue #871)", () => {
     }
   });
 
-  it("returns file paths as strings when run inside a git repo", () => {
+  it('returns file paths as strings when run inside a git repo', () => {
     // Run against the project root which is a real git repo
-    const projectRoot = join(import.meta.dirname, "../../../../");
+    const projectRoot = join(import.meta.dirname, '../../../../');
     const result = captureFileSnapshot(projectRoot);
     expect(result).toBeInstanceOf(Set);
     // Every entry must be a non-empty string
     for (const entry of result) {
-      expect(typeof entry).toBe("string");
+      expect(typeof entry).toBe('string');
       expect(entry.length).toBeGreaterThan(0);
     }
   });

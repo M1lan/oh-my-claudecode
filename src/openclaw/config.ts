@@ -6,19 +6,19 @@
  * Config file path can be overridden via OMC_OPENCLAW_CONFIG env var.
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import type {
   OpenClawConfig,
   OpenClawHookEvent,
   OpenClawGatewayConfig,
   OpenClawCommandGatewayConfig,
-} from "./types.js";
+} from './types.js';
 
 const CONFIG_FILE =
   process.env.OMC_OPENCLAW_CONFIG ||
-  join(getClaudeConfigDir(), "omc_config.openclaw.json");
+  join(getClaudeConfigDir(), 'omc_config.openclaw.json');
 
 /** Cached config (null = not yet read, undefined = read but file missing/invalid) */
 let _cachedConfig: OpenClawConfig | undefined | null = null;
@@ -34,7 +34,7 @@ let _cachedConfig: OpenClawConfig | undefined | null = null;
  */
 export function getOpenClawConfig(): OpenClawConfig | null {
   // Gate: only active when --openclaw flag was used
-  if (process.env.OMC_OPENCLAW !== "1") {
+  if (process.env.OMC_OPENCLAW !== '1') {
     return null;
   }
 
@@ -50,7 +50,7 @@ export function getOpenClawConfig(): OpenClawConfig | null {
 
   try {
     const raw = JSON.parse(
-      readFileSync(CONFIG_FILE, "utf-8"),
+      readFileSync(CONFIG_FILE, 'utf-8'),
     ) as OpenClawConfig;
     if (!raw.enabled || !raw.gateways || !raw.hooks) {
       _cachedConfig = undefined;
@@ -87,11 +87,11 @@ export function resolveGateway(
     return null;
   }
   // Validate based on gateway type
-  if ((gateway as OpenClawCommandGatewayConfig).type === "command") {
+  if ((gateway as OpenClawCommandGatewayConfig).type === 'command') {
     if (!(gateway as OpenClawCommandGatewayConfig).command) return null;
   } else {
     // HTTP gateway (default when type is absent or "http")
-    if (!("url" in gateway) || !gateway.url) return null;
+    if (!('url' in gateway) || !gateway.url) return null;
   }
 
   return {

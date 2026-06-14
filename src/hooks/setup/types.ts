@@ -7,8 +7,8 @@ export interface SetupInput {
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: "Setup";
-  trigger: "init" | "maintenance";
+  hook_event_name: 'Setup';
+  trigger: 'init' | 'maintenance';
 }
 
 export interface SetupResult {
@@ -21,7 +21,7 @@ export interface SetupResult {
 export interface HookOutput {
   continue: boolean;
   hookSpecificOutput: {
-    hookEventName: "Setup";
+    hookEventName: 'Setup';
     additionalContext: string;
   };
 }

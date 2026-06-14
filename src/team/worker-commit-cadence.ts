@@ -180,7 +180,11 @@ export async function installPostToolUseHook(
   const hookCommand = buildHookCommand(workerName);
   const merged = await mergeSettingsWithHook(settingsPath, hookCommand);
 
-  await writeFile(settingsPath, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+  await writeFile(
+    settingsPath,
+    JSON.stringify(merged, null, 2) + '\n',
+    'utf-8',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -191,7 +195,9 @@ export async function installPostToolUseHook(
  * Touches `{worktreePath}/.hook-paused` to suppress auto-commits.
  * Idempotent — no error if already paused.
  */
-export async function pauseHookViaSentinel(worktreePath: string): Promise<void> {
+export async function pauseHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   // Ensure parent dir exists (should always be the worktree root, but be safe).
   await mkdir(dirname(sentinelPath), { recursive: true });
@@ -202,7 +208,9 @@ export async function pauseHookViaSentinel(worktreePath: string): Promise<void> 
  * Removes `{worktreePath}/.hook-paused` to re-enable auto-commits.
  * Idempotent — no error if already absent.
  */
-export async function resumeHookViaSentinel(worktreePath: string): Promise<void> {
+export async function resumeHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   try {
     await unlink(sentinelPath);
@@ -272,12 +280,20 @@ export function startFallbackPoller(
 
   // Watch the worktree root recursively (node:fs.watch with recursive flag).
   // On macOS/Linux this uses FSEvents/inotify.
-  const watcher = fsWatch(worktreePath, { recursive: true }, (eventType, filename) => {
-    if (stopped) return;
-    // Ignore .git internal changes to avoid feedback loops.
-    if (filename && (filename.startsWith('.git') || filename.startsWith('.git/'))) return;
-    scheduleDebounce();
-  });
+  const watcher = fsWatch(
+    worktreePath,
+    { recursive: true },
+    (eventType, filename) => {
+      if (stopped) return;
+      // Ignore .git internal changes to avoid feedback loops.
+      if (
+        filename &&
+        (filename.startsWith('.git') || filename.startsWith('.git/'))
+      )
+        return;
+      scheduleDebounce();
+    },
+  );
 
   return {
     stop(): void {
@@ -324,7 +340,9 @@ export async function installCommitCadence(
  * Removes the auto-commit PostToolUse hook from .claude/settings.json.
  * For fallback-poll workers the caller is responsible for stopping the poller handle.
  */
-export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function uninstallCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   if (ctx.agentType !== 'claude') return;
 
   const settingsPath = join(ctx.worktreePath, '.claude', 'settings.json');
@@ -341,7 +359,11 @@ export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise
         PostToolUse: filtered,
       },
     };
-    await writeFile(settingsPath, JSON.stringify(updated, null, 2) + '\n', 'utf-8');
+    await writeFile(
+      settingsPath,
+      JSON.stringify(updated, null, 2) + '\n',
+      'utf-8',
+    );
   } catch {
     // File absent — nothing to uninstall.
   }
@@ -351,7 +373,9 @@ export async function uninstallCommitCadence(ctx: WorkerCadenceContext): Promise
  * Pauses commit cadence by touching the sentinel file.
  * Used by the orchestrator before fanning out a rebase.
  */
-export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function pauseCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await pauseHookViaSentinel(ctx.worktreePath);
 }
 
@@ -359,6 +383,8 @@ export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<voi
  * Resumes commit cadence by removing the sentinel file.
  * Used by the orchestrator after rebase conflict resolution.
  */
-export async function resumeCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function resumeCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await resumeHookViaSentinel(ctx.worktreePath);
 }

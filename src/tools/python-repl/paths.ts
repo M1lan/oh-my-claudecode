@@ -5,10 +5,10 @@
  * Uses OS-appropriate runtime directories outside the project root.
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import * as os from "os";
-import * as crypto from "crypto";
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 
 // =============================================================================
 // CONSTANTS
@@ -33,9 +33,28 @@ const SHORT_SESSION_ID_LENGTH = 12;
  */
 const WINDOWS_RESERVED_NAMES = new Set([
   // Standard reserved device names
-  'CON', 'PRN', 'AUX', 'NUL',
-  'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9',
-  'LPT1', 'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9',
+  'CON',
+  'PRN',
+  'AUX',
+  'NUL',
+  'COM1',
+  'COM2',
+  'COM3',
+  'COM4',
+  'COM5',
+  'COM6',
+  'COM7',
+  'COM8',
+  'COM9',
+  'LPT1',
+  'LPT2',
+  'LPT3',
+  'LPT4',
+  'LPT5',
+  'LPT6',
+  'LPT7',
+  'LPT8',
+  'LPT9',
 ]);
 
 // =============================================================================
@@ -84,24 +103,25 @@ export function getRuntimeDir(): string {
   // Priority 1: XDG_RUNTIME_DIR (Linux standard, usually /run/user/{uid})
   const xdgRuntime = process.env.XDG_RUNTIME_DIR;
   if (xdgRuntime && isSecureRuntimeDir(xdgRuntime)) {
-    return path.join(xdgRuntime, "omc");
+    return path.join(xdgRuntime, 'omc');
   }
 
   // Priority 2: Platform-specific user cache directory
   const platform = process.platform;
-  if (platform === "darwin") {
-    return path.join(os.homedir(), "Library", "Caches", "omc", "runtime");
-  } else if (platform === "linux") {
+  if (platform === 'darwin') {
+    return path.join(os.homedir(), 'Library', 'Caches', 'omc', 'runtime');
+  } else if (platform === 'linux') {
     // Linux fallback - use /tmp (XDG validation failed)
-    return path.join("/tmp", "omc", "runtime");
-  } else if (platform === "win32") {
+    return path.join('/tmp', 'omc', 'runtime');
+  } else if (platform === 'win32') {
     // Windows: use LOCALAPPDATA (e.g., C:\Users\<user>\AppData\Local)
-    const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
-    return path.join(localAppData, "omc", "runtime");
+    const localAppData =
+      process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    return path.join(localAppData, 'omc', 'runtime');
   }
 
   // Priority 3: Final fallback to os.tmpdir() for any other platform
-  return path.join(os.tmpdir(), "omc", "runtime");
+  return path.join(os.tmpdir(), 'omc', 'runtime');
 }
 
 // =============================================================================
@@ -126,9 +146,9 @@ export function shortenSessionId(sessionId: string): string {
   // SECURITY: Always hash - do not return raw input even for short IDs
   // This prevents traversal attacks like "../.." which is only 5 chars
   return crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(sessionId)
-    .digest("hex")
+    .digest('hex')
     .slice(0, SHORT_SESSION_ID_LENGTH);
 }
 
@@ -152,7 +172,7 @@ export function getSessionDir(sessionId: string): string {
  * @returns Path to bridge.sock in session's runtime directory
  */
 export function getBridgeSocketPath(sessionId: string): string {
-  return path.join(getSessionDir(sessionId), "bridge.sock");
+  return path.join(getSessionDir(sessionId), 'bridge.sock');
 }
 
 /**
@@ -162,7 +182,7 @@ export function getBridgeSocketPath(sessionId: string): string {
  * @returns Path to bridge_meta.json in session's runtime directory
  */
 export function getBridgeMetaPath(sessionId: string): string {
-  return path.join(getSessionDir(sessionId), "bridge_meta.json");
+  return path.join(getSessionDir(sessionId), 'bridge_meta.json');
 }
 
 /**
@@ -173,7 +193,7 @@ export function getBridgeMetaPath(sessionId: string): string {
  * @returns Path to bridge.port in session's runtime directory
  */
 export function getBridgePortPath(sessionId: string): string {
-  return path.join(getSessionDir(sessionId), "bridge.port");
+  return path.join(getSessionDir(sessionId), 'bridge.port');
 }
 
 /**
@@ -183,7 +203,7 @@ export function getBridgePortPath(sessionId: string): string {
  * @returns Path to session.lock in session's runtime directory
  */
 export function getSessionLockPath(sessionId: string): string {
-  return path.join(getSessionDir(sessionId), "session.lock");
+  return path.join(getSessionDir(sessionId), 'session.lock');
 }
 
 // =============================================================================
@@ -203,7 +223,7 @@ export function getSessionLockPath(sessionId: string): string {
  * validatePathSegment("../evil", "sessionId"); // throws Error
  */
 export function validatePathSegment(segment: string, name: string): void {
-  if (!segment || typeof segment !== "string") {
+  if (!segment || typeof segment !== 'string') {
     throw new Error(`${name} is required and must be a string`);
   }
 
@@ -212,21 +232,25 @@ export function validatePathSegment(segment: string, name: string): void {
   }
 
   // Normalize Unicode to prevent bypass via alternative representations
-  const normalized = segment.normalize("NFC");
+  const normalized = segment.normalize('NFC');
 
   // Prevent path traversal attacks
   // Block both ".." (parent directory) and path separators
-  if (normalized.includes("..") || normalized.includes("/") || normalized.includes("\\")) {
+  if (
+    normalized.includes('..') ||
+    normalized.includes('/') ||
+    normalized.includes('\\')
+  ) {
     throw new Error(`Invalid ${name}: contains path traversal characters`);
   }
 
   // Prevent null bytes
-  if (normalized.includes("\0")) {
+  if (normalized.includes('\0')) {
     throw new Error(`Invalid ${name}: contains null byte`);
   }
 
   // Limit byte length (filesystems typically limit to 255 bytes, not chars)
-  if (Buffer.byteLength(normalized, "utf8") > 255) {
+  if (Buffer.byteLength(normalized, 'utf8') > 255) {
     throw new Error(`Invalid ${name}: exceeds maximum length of 255 bytes`);
   }
 
@@ -234,7 +258,7 @@ export function validatePathSegment(segment: string, name: string): void {
   // Handle COM1.txt, NUL.txt etc (anything starting with reserved name + optional extension)
   // Trim trailing spaces/dots from baseName to prevent bypass via "CON .txt" or "NUL..txt"
   const upperSegment = normalized.toUpperCase();
-  const baseName = upperSegment.split('.')[0].replace(/[ .]+$/, "");
+  const baseName = upperSegment.split('.')[0].replace(/[ .]+$/, '');
   if (WINDOWS_RESERVED_NAMES.has(baseName)) {
     throw new Error(`${name} contains Windows reserved name: ${segment}`);
   }

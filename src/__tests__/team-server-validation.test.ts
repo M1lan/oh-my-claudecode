@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import * as path from "path";
+import { describe, it, expect, vi } from 'vitest';
+import * as path from 'path';
 
 // ---------------------------------------------------------------------------
 // We test validateJobId behaviour by invoking the MCP handler directly.
@@ -9,7 +9,7 @@ import * as path from "path";
 // ---------------------------------------------------------------------------
 
 // Mock child_process so spawn never runs
-vi.mock("child_process", () => ({
+vi.mock('child_process', () => ({
   spawn: vi.fn(() => ({
     pid: 1234,
     stdin: { write: vi.fn(), end: vi.fn() },
@@ -20,25 +20,25 @@ vi.mock("child_process", () => ({
 }));
 
 // Mock fs so disk access never fires
-vi.mock("fs", async () => {
-  const actual = await vi.importActual("fs");
+vi.mock('fs', async () => {
+  const actual = await vi.importActual('fs');
   return {
     ...actual,
     existsSync: vi.fn(() => false),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
     readFileSync: vi.fn(() => {
-      throw new Error("ENOENT");
+      throw new Error('ENOENT');
     }),
   };
 });
 
-vi.mock("fs/promises", () => ({
-  readFile: vi.fn(() => Promise.reject(new Error("ENOENT"))),
+vi.mock('fs/promises', () => ({
+  readFile: vi.fn(() => Promise.reject(new Error('ENOENT'))),
 }));
 
 // Mock tmux dependency
-vi.mock("../team/tmux-session.js", () => ({
+vi.mock('../team/tmux-session.js', () => ({
   killWorkerPanes: vi.fn(() => Promise.resolve()),
 }));
 
@@ -60,40 +60,40 @@ function validateJobId(job_id: string): void {
   }
 }
 
-describe("validateJobId", () => {
-  describe("rejects path traversal and invalid inputs", () => {
+describe('validateJobId', () => {
+  describe('rejects path traversal and invalid inputs', () => {
     const traversalPayloads = [
-      "../etc/passwd",
-      "../../etc/shadow",
-      "omc-../secret",
-      "omc-abc/../def",
-      "/etc/passwd",
-      "omc-abc/def",
-      "",
-      "omc-",
-      "omc-UPPERCASE",
-      "omc-has spaces",
-      "omc-" + "a".repeat(17), // 17 chars — exceeds 16-char limit
-      "notprefixed",
-      "omc_underscore",
-      "omc-abc!@#",
+      '../etc/passwd',
+      '../../etc/shadow',
+      'omc-../secret',
+      'omc-abc/../def',
+      '/etc/passwd',
+      'omc-abc/def',
+      '',
+      'omc-',
+      'omc-UPPERCASE',
+      'omc-has spaces',
+      'omc-' + 'a'.repeat(17), // 17 chars — exceeds 16-char limit
+      'notprefixed',
+      'omc_underscore',
+      'omc-abc!@#',
     ];
 
     for (const payload of traversalPayloads) {
       it(`rejects "${payload}"`, () => {
-        expect(() => validateJobId(payload)).toThrow("Invalid job_id");
+        expect(() => validateJobId(payload)).toThrow('Invalid job_id');
       });
     }
   });
 
-  describe("accepts valid job IDs", () => {
+  describe('accepts valid job IDs', () => {
     const validIds = [
-      "omc-abc123",
-      "omc-a",
-      "omc-123456789012", // 12 chars
-      "omc-1",
-      "omc-abcdefghijkl", // 12 lowercase letters
-      "omc-abcdefghijklmnop", // exactly 16 chars
+      'omc-abc123',
+      'omc-a',
+      'omc-123456789012', // 12 chars
+      'omc-1',
+      'omc-abcdefghijkl', // 12 lowercase letters
+      'omc-abcdefghijklmnop', // exactly 16 chars
     ];
 
     for (const id of validIds) {
@@ -110,18 +110,18 @@ describe("validateJobId", () => {
 // via the CallToolRequestSchema path — which catches and surfaces the error.
 // ---------------------------------------------------------------------------
 
-describe("team-server handler validation integration", () => {
-  const SOURCE_PATH = path.resolve(__dirname, "../mcp/team-server.ts");
+describe('team-server handler validation integration', () => {
+  const SOURCE_PATH = path.resolve(__dirname, '../mcp/team-server.ts');
 
-  it("production validateJobId regex matches test regex", async () => {
-    const nodeFs = (await vi.importActual("fs")) as typeof import("fs");
-    const src = nodeFs.readFileSync(SOURCE_PATH, "utf-8");
-    expect(src).toContain("/^omc-[a-z0-9]{1,16}$/");
+  it('production validateJobId regex matches test regex', async () => {
+    const nodeFs = (await vi.importActual('fs')) as typeof import('fs');
+    const src = nodeFs.readFileSync(SOURCE_PATH, 'utf-8');
+    expect(src).toContain('/^omc-[a-z0-9]{1,16}$/');
   });
 
-  it("handleStatus and handleWait both call validateJobId before disk access", async () => {
-    const nodeFs = (await vi.importActual("fs")) as typeof import("fs");
-    const src = nodeFs.readFileSync(SOURCE_PATH, "utf-8");
+  it('handleStatus and handleWait both call validateJobId before disk access', async () => {
+    const nodeFs = (await vi.importActual('fs')) as typeof import('fs');
+    const src = nodeFs.readFileSync(SOURCE_PATH, 'utf-8');
 
     // Extract the handleStatus function body
     const statusMatch = src.match(/async function handleStatus[\s\S]*?^}/m);
@@ -134,13 +134,13 @@ describe("team-server handler validation integration", () => {
     const waitBody = waitMatch![0];
 
     // validateJobId must appear before loadJobFromDisk in each handler
-    const statusValidatePos = statusBody.indexOf("validateJobId(job_id)");
-    const statusDiskPos = statusBody.indexOf("loadJobFromDisk");
+    const statusValidatePos = statusBody.indexOf('validateJobId(job_id)');
+    const statusDiskPos = statusBody.indexOf('loadJobFromDisk');
     expect(statusValidatePos).toBeGreaterThan(-1);
     expect(statusValidatePos).toBeLessThan(statusDiskPos);
 
-    const waitValidatePos = waitBody.indexOf("validateJobId(job_id)");
-    const waitDiskPos = waitBody.indexOf("loadJobFromDisk");
+    const waitValidatePos = waitBody.indexOf('validateJobId(job_id)');
+    const waitDiskPos = waitBody.indexOf('loadJobFromDisk');
     expect(waitValidatePos).toBeGreaterThan(-1);
     expect(waitValidatePos).toBeLessThan(waitDiskPos);
   });

@@ -5,17 +5,17 @@
  * Follows the OpenClaw config reader pattern (file-based, cached).
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
-import type { HookNotificationConfig } from "./hook-config-types.js";
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+import type { HookNotificationConfig } from './hook-config-types.js';
 import type {
   NotificationConfig,
   NotificationEvent,
   NotificationPlatform,
-} from "./types.js";
+} from './types.js';
 
-const DEFAULT_CONFIG_PATH = join(getClaudeConfigDir(), "omc_config.hook.json");
+const DEFAULT_CONFIG_PATH = join(getClaudeConfigDir(), 'omc_config.hook.json');
 
 /** Cached hook config. `undefined` = not yet read, `null` = read but absent/disabled. */
 let cachedConfig: HookNotificationConfig | null | undefined;
@@ -39,7 +39,7 @@ export function getHookConfig(): HookNotificationConfig | null {
   }
 
   try {
-    const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
     if (!raw || raw.enabled === false) {
       cachedConfig = null;
       return null;
@@ -114,6 +114,6 @@ export function mergeHookConfigIntoNotificationConfig(
     };
   }
 
-  merged.events = events as NotificationConfig["events"];
+  merged.events = events as NotificationConfig['events'];
   return merged;
 }

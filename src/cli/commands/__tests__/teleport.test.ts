@@ -13,7 +13,8 @@ vi.mock('fs', async (importOriginal) => {
     rmSync: vi.fn(),
     symlinkSync: vi.fn(),
     lstatSync: vi.fn((target: unknown) => ({
-      isDirectory: () => typeof target === 'string' && !target.endsWith('/.git'),
+      isDirectory: () =>
+        typeof target === 'string' && !target.endsWith('/.git'),
       isSymbolicLink: () => false,
     })),
   };
@@ -45,36 +46,48 @@ describe('teleportCommand', () => {
   beforeEach(async () => {
     vi.resetAllMocks();
 
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation((command: string) => {
-      if (command === 'git rev-parse --show-toplevel') return '/repo';
-      if (command === 'git remote get-url origin') return 'git@github.com:owner/repo.git';
-      return '';
-    });
+    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string) => {
+        if (command === 'git rev-parse --show-toplevel') return '/repo';
+        if (command === 'git remote get-url origin')
+          return 'git@github.com:owner/repo.git';
+        return '';
+      },
+    );
 
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
 
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (typeof target !== 'string') return false;
-      if (target === '/root/issue') return true;
-      if (target.includes('/issue/repo-')) return false;
-      if (target === '/repo/pnpm-lock.yaml') return true;
-      if (target === '/repo/node_modules') return true;
-      return false;
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (typeof target !== 'string') return false;
+        if (target === '/root/issue') return true;
+        if (target.includes('/issue/repo-')) return false;
+        if (target === '/repo/pnpm-lock.yaml') return true;
+        if (target === '/repo/node_modules') return true;
+        return false;
+      },
+    );
 
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (target === '/repo/package.json') return '{"name":"repo","version":"1.0.0"}';
-      if (typeof target === 'string' && target.includes('/issue/repo-1/package.json')) {
-        return '{"name":"repo","version":"1.0.0"}';
-      }
-      throw new Error(`unexpected readFileSync(${String(target)})`);
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (target === '/repo/package.json')
+          return '{"name":"repo","version":"1.0.0"}';
+        if (
+          typeof target === 'string' &&
+          target.includes('/issue/repo-1/package.json')
+        ) {
+          return '{"name":"repo","version":"1.0.0"}';
+        }
+        throw new Error(`unexpected readFileSync(${String(target)})`);
+      },
+    );
 
     (loadConfig as ReturnType<typeof vi.fn>).mockReturnValue({
       teleport: { symlinkNodeModules: true },
     });
 
-    const { parseRemoteUrl, getProvider } = await import('../../../providers/index.js');
+    const { parseRemoteUrl, getProvider } =
+      await import('../../../providers/index.js');
 
     (parseRemoteUrl as ReturnType<typeof vi.fn>).mockReturnValue({
       owner: 'owner',
@@ -92,7 +105,10 @@ describe('teleportCommand', () => {
   });
 
   it('passes branchName and baseBranch as discrete array arguments, never as a shell string', async () => {
-    await teleportCommand('#1', { base: 'main; touch /tmp/pwned', worktreePath: '/root' });
+    await teleportCommand('#1', {
+      base: 'main; touch /tmp/pwned',
+      worktreePath: '/root',
+    });
 
     const calls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls;
     for (const [cmd, args] of calls) {
@@ -114,8 +130,12 @@ describe('teleportCommand', () => {
     const execSyncCalls = (execSync as ReturnType<typeof vi.fn>).mock.calls;
     const gitShellCalls = execSyncCalls.filter((args: unknown[]) => {
       const cmd = args[0];
-      return typeof cmd === 'string' &&
-        (cmd.includes('git fetch') || cmd.includes('git branch') || cmd.includes('git worktree add'));
+      return (
+        typeof cmd === 'string' &&
+        (cmd.includes('git fetch') ||
+          cmd.includes('git branch') ||
+          cmd.includes('git worktree add'))
+      );
     });
     expect(gitShellCalls).toHaveLength(0);
   });
@@ -129,68 +149,99 @@ describe('teleportCommand', () => {
       expect.stringMatching(/dir|junction/),
     );
 
-    const installCalls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls.filter(
-      ([cmd]) => cmd === 'pnpm',
-    );
+    const installCalls = (
+      execFileSync as ReturnType<typeof vi.fn>
+    ).mock.calls.filter(([cmd]) => cmd === 'pnpm');
     expect(installCalls).toHaveLength(0);
   });
 
   it('falls back to install with a warning when package.json differs', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (target === '/repo/package.json') return '{"name":"repo","version":"1.0.0"}';
-      if (typeof target === 'string' && target.includes('/issue/repo-1/package.json')) {
-        return '{"name":"repo","version":"2.0.0"}';
-      }
-      throw new Error(`unexpected readFileSync(${String(target)})`);
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (target === '/repo/package.json')
+          return '{"name":"repo","version":"1.0.0"}';
+        if (
+          typeof target === 'string' &&
+          target.includes('/issue/repo-1/package.json')
+        ) {
+          return '{"name":"repo","version":"2.0.0"}';
+        }
+        throw new Error(`unexpected readFileSync(${String(target)})`);
+      },
+    );
 
     await teleportCommand('#1', { worktreePath: '/root' });
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('package.json differs'));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('package.json differs'),
+    );
     expect(symlinkSync).not.toHaveBeenCalled();
-    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(execFileSync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({ cwd: '/root/issue/repo-1' }),
+    );
   });
 
   it('falls back to pnpm install when symlinking is disabled in config', async () => {
     (loadConfig as ReturnType<typeof vi.fn>).mockReturnValue({
       teleport: { symlinkNodeModules: false },
     });
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (typeof target !== 'string') return false;
-      if (target === '/root/issue') return true;
-      if (target.includes('/issue/repo-')) return false;
-      if (target === '/repo/pnpm-lock.yaml') return true;
-      if (target === '/repo/node_modules') return true;
-      return false;
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (typeof target !== 'string') return false;
+        if (target === '/root/issue') return true;
+        if (target.includes('/issue/repo-')) return false;
+        if (target === '/repo/pnpm-lock.yaml') return true;
+        if (target === '/repo/node_modules') return true;
+        return false;
+      },
+    );
 
     await teleportCommand('#1', { worktreePath: '/root' });
 
     expect(symlinkSync).not.toHaveBeenCalled();
-    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(execFileSync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({ cwd: '/root/issue/repo-1' }),
+    );
   });
 
   it('falls back to pnpm install when parent package.json cannot be read', async () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (typeof target !== 'string') return false;
-      if (target === '/root/issue') return true;
-      if (target.includes('/issue/repo-')) return false;
-      if (target === '/repo/node_modules') return true;
-      return false;
-    });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => {
-      if (typeof target === 'string' && target.includes('/issue/repo-1/package.json')) {
-        return '{"name":"repo","version":"1.0.0"}';
-      }
-      throw new Error(`unexpected readFileSync(${String(target)})`);
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (typeof target !== 'string') return false;
+        if (target === '/root/issue') return true;
+        if (target.includes('/issue/repo-')) return false;
+        if (target === '/repo/node_modules') return true;
+        return false;
+      },
+    );
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => {
+        if (
+          typeof target === 'string' &&
+          target.includes('/issue/repo-1/package.json')
+        ) {
+          return '{"name":"repo","version":"1.0.0"}';
+        }
+        throw new Error(`unexpected readFileSync(${String(target)})`);
+      },
+    );
 
     await teleportCommand('#1', { worktreePath: '/root' });
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('could not read package.json'));
-    expect(execFileSync).toHaveBeenCalledWith('pnpm', ['install'], expect.objectContaining({ cwd: '/root/issue/repo-1' }));
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('could not read package.json'),
+    );
+    expect(execFileSync).toHaveBeenCalledWith(
+      'pnpm',
+      ['install'],
+      expect.objectContaining({ cwd: '/root/issue/repo-1' }),
+    );
   });
 });
 
@@ -203,18 +254,22 @@ describe('teleportRemoveCommand', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((target: unknown) => target === targetPath);
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (target: unknown) => target === targetPath,
+    );
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
   });
 
   it.each(['.git', '/repo/.git', 'C:\\repo\\.git'])(
     'refuses a main repo git-dir shape %s and does not remove the directory',
     async (gitDir) => {
-      (execSync as ReturnType<typeof vi.fn>).mockImplementation((command: string) => {
-        if (command === 'git status --porcelain') return '';
-        if (command === 'git rev-parse --git-dir') return `${gitDir}\n`;
-        return '';
-      });
+      (execSync as ReturnType<typeof vi.fn>).mockImplementation(
+        (command: string) => {
+          if (command === 'git status --porcelain') return '';
+          if (command === 'git rev-parse --git-dir') return `${gitDir}\n`;
+          return '';
+        },
+      );
 
       const result = await teleportRemoveCommand(targetPath, {});
 
@@ -225,16 +280,21 @@ describe('teleportRemoveCommand', () => {
         expect.arrayContaining(['worktree', 'remove']),
         expect.anything(),
       );
-      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('is not a registered worktree git-dir'));
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('is not a registered worktree git-dir'),
+      );
     },
   );
 
   it('refuses an unexpected non-worktree git-dir and does not remove the directory', async () => {
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation((command: string) => {
-      if (command === 'git status --porcelain') return '';
-      if (command === 'git rev-parse --git-dir') return '/tmp/unexpected/gitdir\n';
-      return '';
-    });
+    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string) => {
+        if (command === 'git status --porcelain') return '';
+        if (command === 'git rev-parse --git-dir')
+          return '/tmp/unexpected/gitdir\n';
+        return '';
+      },
+    );
 
     const result = await teleportRemoveCommand(targetPath, { force: true });
 
@@ -245,15 +305,20 @@ describe('teleportRemoveCommand', () => {
       expect.arrayContaining(['worktree', 'remove']),
       expect.anything(),
     );
-    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('is not a registered worktree git-dir'));
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining('is not a registered worktree git-dir'),
+    );
   });
 
   it('removes a registered worktree through git worktree remove', async () => {
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation((command: string) => {
-      if (command === 'git status --porcelain') return '';
-      if (command === 'git rev-parse --git-dir') return '/repo/.git/worktrees/repo-3089\n';
-      return '';
-    });
+    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string) => {
+        if (command === 'git status --porcelain') return '';
+        if (command === 'git rev-parse --git-dir')
+          return '/repo/.git/worktrees/repo-3089\n';
+        return '';
+      },
+    );
 
     const result = await teleportRemoveCommand(targetPath, { force: true });
 

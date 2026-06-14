@@ -8,23 +8,23 @@
  * enums, objects, arrays, nested objects, and edge cases.
  */
 
-import { describe, it, expect } from "vitest";
-import { z } from "zod";
+import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
 import {
   toSdkToolFormat,
   createZodSchema,
   GenericToolDefinition,
-} from "../index.js";
+} from '../index.js';
 
 /**
  * Helper: Create a minimal tool definition for testing schema conversion.
  */
 function makeToolDef(schema: z.ZodRawShape): GenericToolDefinition {
   return {
-    name: "test_tool",
-    description: "Test tool for schema conversion",
+    name: 'test_tool',
+    description: 'Test tool for schema conversion',
     schema,
-    handler: async () => ({ content: [{ type: "text" as const, text: "ok" }] }),
+    handler: async () => ({ content: [{ type: 'text' as const, text: 'ok' }] }),
   };
 }
 
@@ -41,28 +41,28 @@ function convertSchema(schema: z.ZodRawShape) {
 // Basic Type Conversions
 // ============================================================================
 
-describe("zodToJsonSchema - Basic Types", () => {
+describe('zodToJsonSchema - Basic Types', () => {
   it('should convert z.string() to { type: "string" }', () => {
     const result = convertSchema({ name: z.string() });
-    expect(result.properties.name).toEqual({ type: "string" });
-    expect(result.required).toContain("name");
+    expect(result.properties.name).toEqual({ type: 'string' });
+    expect(result.required).toContain('name');
   });
 
   it('should convert z.number() to { type: "number" }', () => {
     const result = convertSchema({ count: z.number() });
-    expect(result.properties.count).toEqual({ type: "number" });
-    expect(result.required).toContain("count");
+    expect(result.properties.count).toEqual({ type: 'number' });
+    expect(result.required).toContain('count');
   });
 
   it('should convert z.number().int() to { type: "integer" }', () => {
     const result = convertSchema({ count: z.number().int() });
-    expect(result.properties.count).toEqual({ type: "integer" });
+    expect(result.properties.count).toEqual({ type: 'integer' });
   });
 
   it('should convert z.boolean() to { type: "boolean" }', () => {
     const result = convertSchema({ enabled: z.boolean() });
-    expect(result.properties.enabled).toEqual({ type: "boolean" });
-    expect(result.required).toContain("enabled");
+    expect(result.properties.enabled).toEqual({ type: 'boolean' });
+    expect(result.required).toContain('enabled');
   });
 });
 
@@ -70,42 +70,42 @@ describe("zodToJsonSchema - Basic Types", () => {
 // Optional and Default
 // ============================================================================
 
-describe("zodToJsonSchema - Optional & Default", () => {
-  it("should not include optional fields in required", () => {
+describe('zodToJsonSchema - Optional & Default', () => {
+  it('should not include optional fields in required', () => {
     const result = convertSchema({
       name: z.string(),
       nickname: z.string().optional(),
     });
 
-    expect(result.required).toContain("name");
-    expect(result.required).not.toContain("nickname");
+    expect(result.required).toContain('name');
+    expect(result.required).not.toContain('nickname');
   });
 
   it('should convert optional string to { type: "string" }', () => {
     const result = convertSchema({ label: z.string().optional() });
-    expect(result.properties.label).toEqual({ type: "string" });
-    expect(result.required).not.toContain("label");
+    expect(result.properties.label).toEqual({ type: 'string' });
+    expect(result.required).not.toContain('label');
   });
 
-  it("should handle default values", () => {
+  it('should handle default values', () => {
     const result = convertSchema({
       timeout: z.number().default(30),
     });
 
     const prop = result.properties.timeout as Record<string, unknown>;
-    expect(prop.type).toBe("number");
+    expect(prop.type).toBe('number');
     expect(prop.default).toBe(30);
     // Default fields are not required
-    expect(result.required).not.toContain("timeout");
+    expect(result.required).not.toContain('timeout');
   });
 
-  it("should handle default boolean", () => {
+  it('should handle default boolean', () => {
     const result = convertSchema({
       verbose: z.boolean().default(false),
     });
 
     const prop = result.properties.verbose as Record<string, unknown>;
-    expect(prop.type).toBe("boolean");
+    expect(prop.type).toBe('boolean');
     expect(prop.default).toBe(false);
   });
 });
@@ -114,24 +114,24 @@ describe("zodToJsonSchema - Optional & Default", () => {
 // Enums
 // ============================================================================
 
-describe("zodToJsonSchema - Enums", () => {
-  it("should convert z.enum to string with enum values", () => {
+describe('zodToJsonSchema - Enums', () => {
+  it('should convert z.enum to string with enum values', () => {
     const result = convertSchema({
-      severity: z.enum(["error", "warning", "info", "hint"]),
+      severity: z.enum(['error', 'warning', 'info', 'hint']),
     });
 
     const prop = result.properties.severity as Record<string, unknown>;
-    expect(prop.type).toBe("string");
-    expect(prop.enum).toEqual(["error", "warning", "info", "hint"]);
+    expect(prop.type).toBe('string');
+    expect(prop.enum).toEqual(['error', 'warning', 'info', 'hint']);
   });
 
-  it("should handle single-value enum", () => {
+  it('should handle single-value enum', () => {
     const result = convertSchema({
-      type: z.enum(["fixed"]),
+      type: z.enum(['fixed']),
     });
 
     const prop = result.properties.type as Record<string, unknown>;
-    expect(prop.enum).toEqual(["fixed"]);
+    expect(prop.enum).toEqual(['fixed']);
   });
 });
 
@@ -139,35 +139,35 @@ describe("zodToJsonSchema - Enums", () => {
 // Arrays
 // ============================================================================
 
-describe("zodToJsonSchema - Arrays", () => {
-  it("should convert z.array(z.string()) to array of strings", () => {
+describe('zodToJsonSchema - Arrays', () => {
+  it('should convert z.array(z.string()) to array of strings', () => {
     const result = convertSchema({
       tags: z.array(z.string()),
     });
 
     const prop = result.properties.tags as Record<string, unknown>;
-    expect(prop.type).toBe("array");
-    expect(prop.items).toEqual({ type: "string" });
+    expect(prop.type).toBe('array');
+    expect(prop.items).toEqual({ type: 'string' });
   });
 
-  it("should convert z.array(z.number()) to array of numbers", () => {
+  it('should convert z.array(z.number()) to array of numbers', () => {
     const result = convertSchema({
       values: z.array(z.number()),
     });
 
     const prop = result.properties.values as Record<string, unknown>;
-    expect(prop.type).toBe("array");
-    expect(prop.items).toEqual({ type: "number" });
+    expect(prop.type).toBe('array');
+    expect(prop.items).toEqual({ type: 'number' });
   });
 
-  it("should handle optional arrays", () => {
+  it('should handle optional arrays', () => {
     const result = convertSchema({
       items: z.array(z.string()).optional(),
     });
 
     const prop = result.properties.items as Record<string, unknown>;
-    expect(prop.type).toBe("array");
-    expect(result.required).not.toContain("items");
+    expect(prop.type).toBe('array');
+    expect(result.required).not.toContain('items');
   });
 });
 
@@ -175,23 +175,23 @@ describe("zodToJsonSchema - Arrays", () => {
 // Descriptions
 // ============================================================================
 
-describe("zodToJsonSchema - Descriptions", () => {
-  it("should include description from .describe()", () => {
+describe('zodToJsonSchema - Descriptions', () => {
+  it('should include description from .describe()', () => {
     const result = convertSchema({
-      file: z.string().describe("Path to the source file"),
+      file: z.string().describe('Path to the source file'),
     });
 
     const prop = result.properties.file as Record<string, unknown>;
-    expect(prop.description).toBe("Path to the source file");
+    expect(prop.description).toBe('Path to the source file');
   });
 
-  it("should include description on enum fields", () => {
+  it('should include description on enum fields', () => {
     const result = convertSchema({
-      mode: z.enum(["read", "write"]).describe("Access mode"),
+      mode: z.enum(['read', 'write']).describe('Access mode'),
     });
 
     const prop = result.properties.mode as Record<string, unknown>;
-    expect(prop.description).toBe("Access mode");
+    expect(prop.description).toBe('Access mode');
   });
 });
 
@@ -199,8 +199,8 @@ describe("zodToJsonSchema - Descriptions", () => {
 // Nested Objects
 // ============================================================================
 
-describe("zodToJsonSchema - Nested Objects", () => {
-  it("should convert nested z.object", () => {
+describe('zodToJsonSchema - Nested Objects', () => {
+  it('should convert nested z.object', () => {
     const result = convertSchema({
       config: z.object({
         name: z.string(),
@@ -211,16 +211,16 @@ describe("zodToJsonSchema - Nested Objects", () => {
     const prop = result.properties.config as Record<string, unknown>;
     expect(prop).toBeDefined();
     // Nested object should have type: 'object' and properties
-    expect((prop as Record<string, unknown>).type).toBe("object");
+    expect((prop as Record<string, unknown>).type).toBe('object');
     const nestedProps = (prop as Record<string, unknown>).properties as Record<
       string,
       unknown
     >;
-    expect(nestedProps.name).toEqual({ type: "string" });
-    expect(nestedProps.port).toEqual({ type: "number" });
+    expect(nestedProps.name).toEqual({ type: 'string' });
+    expect(nestedProps.port).toEqual({ type: 'number' });
   });
 
-  it("should handle deeply nested objects", () => {
+  it('should handle deeply nested objects', () => {
     const result = convertSchema({
       outer: z.object({
         inner: z.object({
@@ -230,12 +230,12 @@ describe("zodToJsonSchema - Nested Objects", () => {
     });
 
     const outer = result.properties.outer as Record<string, unknown>;
-    expect(outer.type).toBe("object");
+    expect(outer.type).toBe('object');
     const outerProps = outer.properties as Record<string, unknown>;
     const inner = outerProps.inner as Record<string, unknown>;
-    expect(inner.type).toBe("object");
+    expect(inner.type).toBe('object');
     const innerProps = inner.properties as Record<string, unknown>;
-    expect(innerProps.value).toEqual({ type: "string" });
+    expect(innerProps.value).toEqual({ type: 'string' });
   });
 });
 
@@ -243,50 +243,50 @@ describe("zodToJsonSchema - Nested Objects", () => {
 // Output Validity
 // ============================================================================
 
-describe("zodToJsonSchema - Output Validity", () => {
+describe('zodToJsonSchema - Output Validity', () => {
   it('should always produce type: "object" at top level', () => {
     const result = convertSchema({ x: z.string() });
-    expect(result.type).toBe("object");
+    expect(result.type).toBe('object');
   });
 
-  it("should always have a properties object", () => {
+  it('should always have a properties object', () => {
     const result = convertSchema({ x: z.string() });
-    expect(typeof result.properties).toBe("object");
+    expect(typeof result.properties).toBe('object');
   });
 
-  it("should always have a required array", () => {
+  it('should always have a required array', () => {
     const result = convertSchema({ x: z.string() });
     expect(Array.isArray(result.required)).toBe(true);
   });
 
-  it("should produce valid JSON Schema for complex tool", () => {
+  it('should produce valid JSON Schema for complex tool', () => {
     const result = convertSchema({
-      file: z.string().describe("Path to source file"),
-      line: z.number().int().describe("Line number"),
-      character: z.number().int().describe("Character offset"),
+      file: z.string().describe('Path to source file'),
+      line: z.number().int().describe('Line number'),
+      character: z.number().int().describe('Character offset'),
       includeDeclaration: z.boolean().optional(),
     });
 
-    expect(result.type).toBe("object");
-    expect(result.required).toEqual(["file", "line", "character"]);
+    expect(result.type).toBe('object');
+    expect(result.required).toEqual(['file', 'line', 'character']);
     expect(result.properties.file).toEqual({
-      type: "string",
-      description: "Path to source file",
+      type: 'string',
+      description: 'Path to source file',
     });
     expect(result.properties.line).toEqual({
-      type: "integer",
-      description: "Line number",
+      type: 'integer',
+      description: 'Line number',
     });
     expect(result.properties.character).toEqual({
-      type: "integer",
-      description: "Character offset",
+      type: 'integer',
+      description: 'Character offset',
     });
-    expect(result.properties.includeDeclaration).toEqual({ type: "boolean" });
+    expect(result.properties.includeDeclaration).toEqual({ type: 'boolean' });
   });
 
-  it("should handle empty schema", () => {
+  it('should handle empty schema', () => {
     const result = convertSchema({});
-    expect(result.type).toBe("object");
+    expect(result.type).toBe('object');
     expect(result.properties).toEqual({});
     expect(result.required).toEqual([]);
   });
@@ -296,20 +296,20 @@ describe("zodToJsonSchema - Output Validity", () => {
 // createZodSchema Helper
 // ============================================================================
 
-describe("createZodSchema", () => {
-  it("should create a ZodObject from raw shape", () => {
+describe('createZodSchema', () => {
+  it('should create a ZodObject from raw shape', () => {
     const schema = createZodSchema({
       name: z.string(),
       age: z.number(),
     });
 
     // Should be a valid Zod schema that can parse
-    const result = schema.parse({ name: "Alice", age: 30 });
-    expect(result.name).toBe("Alice");
+    const result = schema.parse({ name: 'Alice', age: 30 });
+    expect(result.name).toBe('Alice');
     expect(result.age).toBe(30);
   });
 
-  it("should reject invalid input", () => {
+  it('should reject invalid input', () => {
     const schema = createZodSchema({
       name: z.string(),
     });
@@ -322,8 +322,8 @@ describe("createZodSchema", () => {
 // Documented Gaps
 // ============================================================================
 
-describe("zodToJsonSchema - Documented Gaps", () => {
-  it("should fall back to string type for unsupported Zod types", () => {
+describe('zodToJsonSchema - Documented Gaps', () => {
+  it('should fall back to string type for unsupported Zod types', () => {
     // z.any(), z.unknown(), z.union() etc. are not explicitly handled
     // The fallback is { type: 'string' }
     const result = convertSchema({
@@ -333,6 +333,6 @@ describe("zodToJsonSchema - Documented Gaps", () => {
 
     const prop = result.properties.data as Record<string, unknown>;
     // Fallback: unknown types become string
-    expect(prop.type).toBe("string");
+    expect(prop.type).toBe('string');
   });
 });

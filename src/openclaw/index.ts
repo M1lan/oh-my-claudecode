@@ -21,44 +21,44 @@ export type {
   OpenClawSignalKind,
   OpenClawSignalPhase,
   OpenClawSignalPriority,
-} from "./types.js";
+} from './types.js';
 
 export {
   getOpenClawConfig,
   resolveGateway,
   resetOpenClawConfigCache,
-} from "./config.js";
+} from './config.js';
 export {
   wakeGateway,
   wakeCommandGateway,
   interpolateInstruction,
   isCommandGateway,
   shellEscapeArg,
-} from "./dispatcher.js";
-export { buildOpenClawSignal } from "./signal.js";
+} from './dispatcher.js';
+export { buildOpenClawSignal } from './signal.js';
 
 import type {
   OpenClawHookEvent,
   OpenClawContext,
   OpenClawPayload,
   OpenClawResult,
-} from "./types.js";
-import { getOpenClawConfig, resolveGateway } from "./config.js";
+} from './types.js';
+import { getOpenClawConfig, resolveGateway } from './config.js';
 import {
   wakeGateway,
   wakeCommandGateway,
   interpolateInstruction,
   isCommandGateway,
-} from "./dispatcher.js";
-import { buildOpenClawSignal } from "./signal.js";
-import { shouldCollapseOpenClawBurst } from "./dedupe.js";
-import { basename, join } from "path";
-import { getOmcRoot } from "../lib/worktree-paths.js";
-import { getCurrentTmuxSession } from "../notifications/tmux.js";
-import { parseTmuxTail } from "../notifications/formatter.js";
+} from './dispatcher.js';
+import { buildOpenClawSignal } from './signal.js';
+import { shouldCollapseOpenClawBurst } from './dedupe.js';
+import { basename, join } from 'path';
+import { getOmcRoot } from '../lib/worktree-paths.js';
+import { getCurrentTmuxSession } from '../notifications/tmux.js';
+import { parseTmuxTail } from '../notifications/formatter.js';
 
 /** Whether debug logging is enabled */
-const DEBUG = process.env.OMC_OPENCLAW_DEBUG === "1";
+const DEBUG = process.env.OMC_OPENCLAW_DEBUG === '1';
 
 /**
  * Build a whitelisted context object from the input context.
@@ -144,7 +144,7 @@ export async function wakeOpenClaw(
           `[openclaw] deduped ${event} (${signal.routeKey}) for tmux session ${tmuxSession}`,
         );
       }
-      return { gateway: gatewayName, success: true, skipped: "deduped" };
+      return { gateway: gatewayName, success: true, skipped: 'deduped' };
     }
 
     // Auto-capture tmux pane content for stop/session-end events (best-effort).
@@ -153,16 +153,16 @@ export async function wakeOpenClaw(
     let tmuxTail = context.tmuxTail;
     if (
       !tmuxTail &&
-      (event === "stop" || event === "session-end") &&
+      (event === 'stop' || event === 'session-end') &&
       process.env.TMUX
     ) {
       try {
         const { getNewPaneTail } =
-          await import("../features/rate-limit-wait/pane-fresh-capture.js");
+          await import('../features/rate-limit-wait/pane-fresh-capture.js');
         const paneId = process.env.TMUX_PANE;
         const projectPath = context.projectPath;
         if (paneId && projectPath) {
-          const stateDir = join(getOmcRoot(projectPath), "state");
+          const stateDir = join(getOmcRoot(projectPath), 'state');
           const fresh = getNewPaneTail(paneId, stateDir, 15);
           tmuxTail = fresh || undefined;
         }
@@ -248,7 +248,7 @@ export async function wakeOpenClaw(
 
     if (DEBUG) {
       console.error(
-        `[openclaw] wake ${event} -> ${gatewayName}: ${result.success ? "ok" : result.error}`,
+        `[openclaw] wake ${event} -> ${gatewayName}: ${result.success ? 'ok' : result.error}`,
       );
     }
 

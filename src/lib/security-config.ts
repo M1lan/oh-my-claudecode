@@ -14,10 +14,10 @@
  * Precedence: config file > OMC_SECURITY env var > defaults (all off)
  */
 
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
-import { parseJsonc } from "../utils/jsonc.js";
-import { getConfigDir } from "../utils/paths.js";
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import { parseJsonc } from '../utils/jsonc.js';
+import { getConfigDir } from '../utils/paths.js';
 
 export interface SecurityConfig {
   /** Restrict ast_grep_search/replace path to project root */
@@ -65,16 +65,16 @@ let cachedConfig: SecurityConfig | null = null;
  */
 function loadSecurityFromConfigFiles(): Partial<SecurityConfig> {
   const paths = [
-    join(process.cwd(), ".claude", "omc.jsonc"),
-    join(getConfigDir(), "claude-omc", "config.jsonc"),
+    join(process.cwd(), '.claude', 'omc.jsonc'),
+    join(getConfigDir(), 'claude-omc', 'config.jsonc'),
   ];
 
   for (const configPath of paths) {
     if (!existsSync(configPath)) continue;
     try {
-      const content = readFileSync(configPath, "utf-8");
+      const content = readFileSync(configPath, 'utf-8');
       const parsed = parseJsonc(content) as Record<string, unknown>;
-      if (parsed?.security && typeof parsed.security === "object") {
+      if (parsed?.security && typeof parsed.security === 'object') {
         return parsed.security as Partial<SecurityConfig>;
       }
     } catch {
@@ -92,7 +92,7 @@ function loadSecurityFromConfigFiles(): Partial<SecurityConfig> {
 export function getSecurityConfig(): SecurityConfig {
   if (cachedConfig) return cachedConfig;
 
-  const isStrict = process.env.OMC_SECURITY === "strict";
+  const isStrict = process.env.OMC_SECURITY === 'strict';
   const base = isStrict ? { ...STRICT_OVERRIDES } : { ...DEFAULTS };
   const fileOverrides = loadSecurityFromConfigFiles();
 
@@ -114,7 +114,7 @@ export function getSecurityConfig(): SecurityConfig {
         base.disableExternalLLM || (fileOverrides.disableExternalLLM ?? false),
       hardMaxIterations: Math.min(
         base.hardMaxIterations,
-        typeof fileOverrides.hardMaxIterations === "number" &&
+        typeof fileOverrides.hardMaxIterations === 'number' &&
           fileOverrides.hardMaxIterations > 0
           ? fileOverrides.hardMaxIterations
           : base.hardMaxIterations,

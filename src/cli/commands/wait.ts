@@ -16,7 +16,7 @@
  *   omc wait detect        - Scan for blocked Claude Code sessions
  */
 
-import chalk from "chalk";
+import chalk from 'chalk';
 import {
   checkRateLimitStatus,
   formatRateLimitStatus,
@@ -29,8 +29,8 @@ import {
   detectBlockedPanes,
   runDaemonForeground,
   isDaemonRunning,
-} from "../../features/rate-limit-wait/index.js";
-import type { DaemonConfig } from "../../features/rate-limit-wait/types.js";
+} from '../../features/rate-limit-wait/index.js';
+import type { DaemonConfig } from '../../features/rate-limit-wait/types.js';
 
 export interface WaitOptions {
   json?: boolean;
@@ -60,11 +60,11 @@ export interface WaitDetectOptions {
 export async function waitCommand(options: WaitOptions): Promise<void> {
   // Handle explicit start/stop flags
   if (options.start) {
-    await waitDaemonCommand("start", {});
+    await waitDaemonCommand('start', {});
     return;
   }
   if (options.stop) {
-    await waitDaemonCommand("stop", {});
+    await waitDaemonCommand('stop', {});
     return;
   }
 
@@ -88,66 +88,66 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
   }
 
   // Smart output based on current state
-  console.log(chalk.bold("\n🕐 Rate Limit Status\n"));
+  console.log(chalk.bold('\n🕐 Rate Limit Status\n'));
 
   if (!rateLimitStatus) {
     console.log(
       chalk.yellow(
-        "Unable to check rate limits (OAuth credentials required)\n",
+        'Unable to check rate limits (OAuth credentials required)\n',
       ),
     );
     console.log(
-      chalk.gray("Rate limit monitoring requires Claude Pro/Max subscription."),
+      chalk.gray('Rate limit monitoring requires Claude Pro/Max subscription.'),
     );
     return;
   }
 
   if (rateLimitStatus.isLimited) {
     // Rate limited - provide helpful guidance
-    console.log(chalk.red.bold("⚠️  Rate Limited"));
+    console.log(chalk.red.bold('⚠️  Rate Limited'));
     console.log(chalk.yellow(`\n${formatRateLimitStatus(rateLimitStatus)}\n`));
 
     if (!tmuxAvailable) {
       console.log(
-        chalk.gray("💡 Install tmux to enable auto-resume when limit clears"),
+        chalk.gray('💡 Install tmux to enable auto-resume when limit clears'),
       );
-      console.log(chalk.gray("   brew install tmux  (macOS)"));
-      console.log(chalk.gray("   apt install tmux   (Linux)\n"));
+      console.log(chalk.gray('   brew install tmux  (macOS)'));
+      console.log(chalk.gray('   apt install tmux   (Linux)\n'));
     } else if (!daemonRunning) {
-      console.log(chalk.cyan("💡 Want to auto-resume when the limit clears?"));
-      console.log(chalk.white("   Run: ") + chalk.green("omc wait --start"));
-      console.log(chalk.gray("   (or: omc wait daemon start)\n"));
+      console.log(chalk.cyan('💡 Want to auto-resume when the limit clears?'));
+      console.log(chalk.white('   Run: ') + chalk.green('omc wait --start'));
+      console.log(chalk.gray('   (or: omc wait daemon start)\n'));
     } else {
-      console.log(chalk.green("✓ Auto-resume daemon is running"));
+      console.log(chalk.green('✓ Auto-resume daemon is running'));
       console.log(
         chalk.gray(
-          "  Your session will resume automatically when the limit clears.\n",
+          '  Your session will resume automatically when the limit clears.\n',
         ),
       );
     }
   } else if (isRateLimitStatusDegraded(rateLimitStatus)) {
-    console.log(chalk.yellow.bold("⚠️  Usage API Rate Limited"));
+    console.log(chalk.yellow.bold('⚠️  Usage API Rate Limited'));
     console.log(chalk.yellow(`\n${formatRateLimitStatus(rateLimitStatus)}\n`));
 
     if (daemonRunning) {
       console.log(
-        chalk.gray("Auto-resume daemon is running while usage data is stale."),
+        chalk.gray('Auto-resume daemon is running while usage data is stale.'),
       );
       console.log(
-        chalk.gray("Blocked panes can still be tracked if detected.\n"),
+        chalk.gray('Blocked panes can still be tracked if detected.\n'),
       );
     }
   } else {
     // Not rate limited
-    console.log(chalk.green("✓ Not rate limited\n"));
+    console.log(chalk.green('✓ Not rate limited\n'));
 
     if (daemonRunning) {
       console.log(
         chalk.gray(
-          "Auto-resume daemon is running (not needed when not rate limited)",
+          'Auto-resume daemon is running (not needed when not rate limited)',
         ),
       );
-      console.log(chalk.gray("Stop with: omc wait --stop\n"));
+      console.log(chalk.gray('Stop with: omc wait --stop\n'));
     }
   }
 }
@@ -179,11 +179,11 @@ export async function waitStatusCommand(
     return;
   }
 
-  console.log(chalk.bold("\n📊 Rate Limit Wait Status\n"));
-  console.log(chalk.gray("─".repeat(50)));
+  console.log(chalk.bold('\n📊 Rate Limit Wait Status\n'));
+  console.log(chalk.gray('─'.repeat(50)));
 
   // Rate limit status
-  console.log(chalk.bold("\nRate Limits:"));
+  console.log(chalk.bold('\nRate Limits:'));
   if (rateLimitStatus) {
     if (rateLimitStatus.isLimited) {
       console.log(
@@ -209,15 +209,15 @@ export async function waitStatusCommand(
         chalk.yellow(`  ⚠ ${formatRateLimitStatus(rateLimitStatus)}`),
       );
     } else {
-      console.log(chalk.green("  ✓ Not rate limited"));
+      console.log(chalk.green('  ✓ Not rate limited'));
       console.log(
         chalk.gray(
-          `    5-hour: ${rateLimitStatus.fiveHourLimited ? "100%" : "OK"}`,
+          `    5-hour: ${rateLimitStatus.fiveHourLimited ? '100%' : 'OK'}`,
         ),
       );
       console.log(
         chalk.gray(
-          `    Weekly: ${rateLimitStatus.weeklyLimited ? "100%" : "OK"}`,
+          `    Weekly: ${rateLimitStatus.weeklyLimited ? '100%' : 'OK'}`,
         ),
       );
     }
@@ -227,11 +227,11 @@ export async function waitStatusCommand(
       ),
     );
   } else {
-    console.log(chalk.yellow("  ? Unable to check (no OAuth credentials?)"));
+    console.log(chalk.yellow('  ? Unable to check (no OAuth credentials?)'));
   }
 
   // Daemon status
-  console.log(chalk.bold("\nDaemon:"));
+  console.log(chalk.bold('\nDaemon:'));
   if (daemonStatus.state) {
     if (daemonStatus.state.isRunning) {
       console.log(chalk.green(`  ✓ Running (PID: ${daemonStatus.state.pid})`));
@@ -251,32 +251,32 @@ export async function waitStatusCommand(
         chalk.dim(`    Successful: ${daemonStatus.state.successfulResumes}`),
       );
     } else {
-      console.log(chalk.gray("  ○ Not running"));
+      console.log(chalk.gray('  ○ Not running'));
     }
   } else {
-    console.log(chalk.gray("  ○ Never started"));
+    console.log(chalk.gray('  ○ Never started'));
   }
 
   // tmux status
-  console.log(chalk.bold("\ntmux:"));
+  console.log(chalk.bold('\ntmux:'));
   if (isTmuxAvailable()) {
-    console.log(chalk.green("  ✓ Available"));
+    console.log(chalk.green('  ✓ Available'));
     if (isInsideTmux()) {
-      console.log(chalk.dim("    Currently inside tmux session"));
+      console.log(chalk.dim('    Currently inside tmux session'));
     }
   } else {
-    console.log(chalk.yellow("  ⚠ Not installed"));
-    console.log(chalk.gray("    Install tmux for auto-resume functionality"));
+    console.log(chalk.yellow('  ⚠ Not installed'));
+    console.log(chalk.gray('    Install tmux for auto-resume functionality'));
   }
 
-  console.log("");
+  console.log('');
 }
 
 /**
  * Start/stop the daemon
  */
 export async function waitDaemonCommand(
-  action: "start" | "stop",
+  action: 'start' | 'stop',
   options: WaitDaemonOptions,
 ): Promise<void> {
   const config: DaemonConfig = {
@@ -284,7 +284,7 @@ export async function waitDaemonCommand(
     pollIntervalMs: options.interval ? options.interval * 1000 : undefined,
   };
 
-  if (action === "start") {
+  if (action === 'start') {
     if (options.foreground) {
       // Run in foreground (blocking)
       await runDaemonForeground(config);
@@ -292,13 +292,13 @@ export async function waitDaemonCommand(
       const result = startDaemon(config);
       if (result.success) {
         console.log(chalk.green(`✓ ${result.message}`));
-        console.log(chalk.gray("\nThe daemon will:"));
-        console.log(chalk.gray("  • Poll rate limit status every minute"));
+        console.log(chalk.gray('\nThe daemon will:'));
+        console.log(chalk.gray('  • Poll rate limit status every minute'));
         console.log(
-          chalk.gray("  • Track blocked Claude Code sessions in tmux"),
+          chalk.gray('  • Track blocked Claude Code sessions in tmux'),
         );
         console.log(
-          chalk.gray("  • Auto-resume sessions when rate limit clears"),
+          chalk.gray('  • Auto-resume sessions when rate limit clears'),
         );
         console.log(
           chalk.gray('\nUse "omc wait status" to check daemon status'),
@@ -314,7 +314,7 @@ export async function waitDaemonCommand(
         process.exit(1);
       }
     }
-  } else if (action === "stop") {
+  } else if (action === 'stop') {
     const result = stopDaemon(config);
     if (result.success) {
       console.log(chalk.green(`✓ ${result.message}`));
@@ -335,14 +335,14 @@ export async function waitDetectCommand(
   options: WaitDetectOptions,
 ): Promise<void> {
   if (!isTmuxAvailable()) {
-    console.error(chalk.yellow("⚠ tmux is not installed"));
+    console.error(chalk.yellow('⚠ tmux is not installed'));
     console.log(
-      chalk.gray("Install tmux to use session detection and auto-resume"),
+      chalk.gray('Install tmux to use session detection and auto-resume'),
     );
     process.exit(1);
   }
 
-  console.log(chalk.blue("Scanning for blocked Claude Code sessions...\n"));
+  console.log(chalk.blue('Scanning for blocked Claude Code sessions...\n'));
 
   const config: DaemonConfig = {
     paneLinesToCapture: options.lines,
@@ -360,15 +360,15 @@ export async function waitDetectCommand(
   if (result.state?.blockedPanes && result.state.blockedPanes.length > 0) {
     console.log(
       chalk.gray(
-        "\nTip: Start the daemon to auto-resume when rate limit clears:",
+        '\nTip: Start the daemon to auto-resume when rate limit clears:',
       ),
     );
-    console.log(chalk.gray("  omc wait daemon start"));
+    console.log(chalk.gray('  omc wait daemon start'));
   }
 
   // Also show rate limit status
   if (result.state?.rateLimitStatus) {
-    console.log(chalk.bold("\nCurrent Rate Limit:"));
+    console.log(chalk.bold('\nCurrent Rate Limit:'));
     console.log(`  ${formatRateLimitStatus(result.state.rateLimitStatus)}`);
   }
 }

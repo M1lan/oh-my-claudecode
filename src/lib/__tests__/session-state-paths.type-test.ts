@@ -13,7 +13,11 @@
  * assertions.
  */
 
-import { resolveSessionStatePaths, type ReadPath, type WritePath } from '../worktree-paths.js';
+import {
+  resolveSessionStatePaths,
+  type ReadPath,
+  type WritePath,
+} from '../worktree-paths.js';
 
 declare function writeTo(p: WritePath, data: string): void;
 declare function readFrom(p: ReadPath): string;

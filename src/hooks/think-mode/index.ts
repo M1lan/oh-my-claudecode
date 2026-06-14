@@ -11,19 +11,19 @@ import {
   detectThinkKeyword,
   extractPromptText,
   detectUltrathinkKeyword,
-} from "./detector.js";
+} from './detector.js';
 import {
   getHighVariant,
   isAlreadyHighVariant,
   getThinkingConfig,
   getClaudeThinkingConfig,
-} from "./switcher.js";
-import type { ThinkModeState, ThinkModeInput } from "./types.js";
+} from './switcher.js';
+import type { ThinkModeState, ThinkModeInput } from './types.js';
 
 // Re-export all submodules
-export * from "./detector.js";
-export * from "./switcher.js";
-export * from "./types.js";
+export * from './detector.js';
+export * from './switcher.js';
+export * from './types.js';
 
 /** Session state storage for think mode */
 const thinkModeState = new Map<string, ThinkModeState>();

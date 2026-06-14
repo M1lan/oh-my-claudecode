@@ -6,7 +6,7 @@
  * Adapted from oh-my-opencode's background-agent feature.
  */
 
-import type { BackgroundTaskConfig } from "./types.js";
+import type { BackgroundTaskConfig } from './types.js';
 
 /**
  * Manages concurrency limits for background tasks.
@@ -32,7 +32,7 @@ export class ConcurrencyManager {
     }
 
     // Check provider-specific limit (first part of key before /)
-    const provider = key.split("/")[0];
+    const provider = key.split('/')[0];
     const providerLimit = this.config?.providerConcurrency?.[provider];
     if (providerLimit !== undefined) {
       return providerLimit === 0 ? Infinity : providerLimit;

@@ -8,19 +8,19 @@
  * Adapted for Claude Code's shell hook system.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 import {
   loadInjectedPaths,
   saveInjectedPaths,
   clearInjectedPaths,
-} from "./storage.js";
-import { CONTEXT_FILENAMES, TRACKED_TOOLS } from "./constants.js";
+} from './storage.js';
+import { CONTEXT_FILENAMES, TRACKED_TOOLS } from './constants.js';
 
 // Re-export submodules
-export * from "./types.js";
-export * from "./constants.js";
-export * from "./storage.js";
+export * from './types.js';
+export * from './constants.js';
+export * from './storage.js';
 
 /**
  * Simple token estimation (4 chars per token)
@@ -116,8 +116,8 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
    * Get a human-readable label for a context file.
    */
   function getContextLabel(filePath: string): string {
-    if (filePath.endsWith("AGENTS.md")) return "Project AGENTS";
-    return "Project README";
+    if (filePath.endsWith('AGENTS.md')) return 'Project AGENTS';
+    return 'Project README';
   }
 
   /**
@@ -129,13 +129,13 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
     sessionID: string,
   ): string {
     const resolved = resolveFilePath(filePath);
-    if (!resolved) return "";
+    if (!resolved) return '';
 
     const dir = dirname(resolved);
     const cache = getSessionCache(sessionID);
     const contextPaths = findContextFilesUp(dir);
 
-    let output = "";
+    let output = '';
 
     for (const contextPath of contextPaths) {
       // Track by full file path to allow both README.md and AGENTS.md
@@ -143,12 +143,12 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
       if (cache.has(contextPath)) continue;
 
       try {
-        const content = readFileSync(contextPath, "utf-8");
+        const content = readFileSync(contextPath, 'utf-8');
         const { result, truncated } = truncateContent(content);
 
         const truncationNotice = truncated
           ? `\n\n[Note: Content was truncated to save context window space. For full context, please read the file directly: ${contextPath}]`
-          : "";
+          : '';
 
         const label = getContextLabel(contextPath);
         output += `\n\n[${label}: ${contextPath}]\n${result}${truncationNotice}`;
@@ -175,7 +175,7 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
       sessionID: string,
     ): string => {
       if (!TRACKED_TOOLS.includes(toolName.toLowerCase())) {
-        return "";
+        return '';
       }
 
       return processFilePathForContextFiles(filePath, sessionID);

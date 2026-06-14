@@ -1,14 +1,14 @@
-import * as fs from "fs";
-import * as path from "path";
-import { getOmcRoot, getWorktreeRoot } from "../../lib/worktree-paths.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
+import * as fs from 'fs';
+import * as path from 'path';
+import { getOmcRoot, getWorktreeRoot } from '../../lib/worktree-paths.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
 
 export interface PermissionRequestInput {
   session_id: string;
   transcript_path: string;
   cwd: string;
   permission_mode: string;
-  hook_event_name: "PermissionRequest";
+  hook_event_name: 'PermissionRequest';
   tool_name: string;
   tool_input: {
     command?: string;
@@ -24,7 +24,7 @@ export interface HookOutput {
   hookSpecificOutput?: {
     hookEventName: string;
     decision?: {
-      behavior: "allow" | "deny" | "ask";
+      behavior: 'allow' | 'deny' | 'ask';
       reason?: string;
     };
   };
@@ -60,45 +60,45 @@ const HEREDOC_PATTERN = /<<[-~]?\s*['"]?\w+['"]?/;
 const SAFE_HEREDOC_PATTERNS = [/^git commit\b/, /^git tag\b/];
 
 const SAFE_RIPGREP_FLAGS = new Set([
-  "-n",
-  "--line-number",
-  "-S",
-  "--smart-case",
-  "-F",
-  "--fixed-strings",
-  "-i",
-  "--ignore-case",
-  "--no-heading",
+  '-n',
+  '--line-number',
+  '-S',
+  '--smart-case',
+  '-F',
+  '--fixed-strings',
+  '-i',
+  '--ignore-case',
+  '--no-heading',
 ]);
 
 const BACKGROUND_MUTATION_SUBAGENTS = new Set([
-  "executor",
-  "designer",
-  "writer",
-  "debugger",
-  "git-master",
-  "test-engineer",
-  "qa-tester",
-  "document-specialist",
+  'executor',
+  'designer',
+  'writer',
+  'debugger',
+  'git-master',
+  'test-engineer',
+  'qa-tester',
+  'document-specialist',
 ]);
 
 function readPermissionStringEntries(
   filePath: string,
-  key: "allow" | "ask",
+  key: 'allow' | 'ask',
 ): string[] {
   try {
     if (!fs.existsSync(filePath)) {
       return [];
     }
 
-    const settings = JSON.parse(fs.readFileSync(filePath, "utf-8")) as {
+    const settings = JSON.parse(fs.readFileSync(filePath, 'utf-8')) as {
       permissions?: { allow?: unknown; ask?: unknown };
       allow?: unknown;
       ask?: unknown;
     };
     const entries = settings?.permissions?.[key] ?? settings?.[key];
     return Array.isArray(entries)
-      ? entries.filter((entry): entry is string => typeof entry === "string")
+      ? entries.filter((entry): entry is string => typeof entry === 'string')
       : [];
   } catch {
     return [];
@@ -108,19 +108,19 @@ function readPermissionStringEntries(
 export function getClaudePermissionAllowEntries(directory: string): string[] {
   const projectSettingsPath = path.join(
     directory,
-    ".claude",
-    "settings.local.json",
+    '.claude',
+    'settings.local.json',
   );
   const globalConfigDir = getClaudeConfigDir();
   const candidatePaths = [
     projectSettingsPath,
-    path.join(globalConfigDir, "settings.local.json"),
-    path.join(globalConfigDir, "settings.json"),
+    path.join(globalConfigDir, 'settings.local.json'),
+    path.join(globalConfigDir, 'settings.json'),
   ];
 
   const allowEntries = new Set<string>();
   for (const candidatePath of candidatePaths) {
-    for (const entry of readPermissionStringEntries(candidatePath, "allow")) {
+    for (const entry of readPermissionStringEntries(candidatePath, 'allow')) {
       allowEntries.add(entry.trim());
     }
   }
@@ -139,16 +139,16 @@ function hasGenericToolPermission(
 
 export function hasClaudePermissionApproval(
   directory: string,
-  toolName: "Edit" | "Write" | "Bash",
+  toolName: 'Edit' | 'Write' | 'Bash',
   command?: string,
 ): boolean {
   const allowEntries = getClaudePermissionAllowEntries(directory);
 
-  if (toolName !== "Bash") {
+  if (toolName !== 'Bash') {
     return hasGenericToolPermission(allowEntries, toolName);
   }
 
-  if (allowEntries.includes("Bash")) {
+  if (allowEntries.includes('Bash')) {
     return true;
   }
 
@@ -163,19 +163,19 @@ export function hasClaudePermissionApproval(
 export function getClaudePermissionAskEntries(directory: string): string[] {
   const projectSettingsPath = path.join(
     directory,
-    ".claude",
-    "settings.local.json",
+    '.claude',
+    'settings.local.json',
   );
   const globalConfigDir = getClaudeConfigDir();
   const candidatePaths = [
     projectSettingsPath,
-    path.join(globalConfigDir, "settings.local.json"),
-    path.join(globalConfigDir, "settings.json"),
+    path.join(globalConfigDir, 'settings.local.json'),
+    path.join(globalConfigDir, 'settings.json'),
   ];
 
   const askEntries = new Set<string>();
   for (const candidatePath of candidatePaths) {
-    for (const entry of readPermissionStringEntries(candidatePath, "ask")) {
+    for (const entry of readPermissionStringEntries(candidatePath, 'ask')) {
       askEntries.add(entry.trim());
     }
   }
@@ -192,11 +192,11 @@ function commandMatchesPermissionPattern(
     return false;
   }
 
-  if (!trimmedPattern.includes("*")) {
+  if (!trimmedPattern.includes('*')) {
     return command === trimmedPattern;
   }
 
-  const normalizedPrefix = trimmedPattern.replace(/[\s:]*\*+$/, "").trimEnd();
+  const normalizedPrefix = trimmedPattern.replace(/[\s:]*\*+$/, '').trimEnd();
   if (!normalizedPrefix) {
     return false;
   }
@@ -206,17 +206,17 @@ function commandMatchesPermissionPattern(
   }
 
   const nextChar = command.charAt(normalizedPrefix.length);
-  return nextChar === "" || /[\s:=(["']/.test(nextChar);
+  return nextChar === '' || /[\s:=(["']/.test(nextChar);
 }
 
 export function hasClaudePermissionAsk(
   directory: string,
-  toolName: "Edit" | "Write" | "Bash",
+  toolName: 'Edit' | 'Write' | 'Bash',
   command?: string,
 ): boolean {
   const askEntries = getClaudePermissionAskEntries(directory);
 
-  if (toolName !== "Bash") {
+  if (toolName !== 'Bash') {
     return hasGenericToolPermission(askEntries, toolName);
   }
 
@@ -226,11 +226,11 @@ export function hasClaudePermissionAsk(
   }
 
   return askEntries.some((entry) => {
-    if (entry === "Bash") {
+    if (entry === 'Bash') {
       return true;
     }
 
-    if (!entry.startsWith("Bash(") || !entry.endsWith(")")) {
+    if (!entry.startsWith('Bash(') || !entry.endsWith(')')) {
       return false;
     }
 
@@ -255,9 +255,9 @@ export function getBackgroundTaskPermissionFallback(
     return { shouldFallback: false, missingTools: [] };
   }
 
-  const missingTools = ["Edit", "Write"].filter(
+  const missingTools = ['Edit', 'Write'].filter(
     (toolName) =>
-      !hasClaudePermissionApproval(directory, toolName as "Edit" | "Write"),
+      !hasClaudePermissionApproval(directory, toolName as 'Edit' | 'Write'),
   );
 
   return {
@@ -274,22 +274,22 @@ export function getBackgroundBashPermissionFallback(
     return { shouldFallback: false, missingTools: [] };
   }
 
-  if (hasClaudePermissionAsk(directory, "Bash", command)) {
-    return { shouldFallback: true, missingTools: ["Bash"] };
+  if (hasClaudePermissionAsk(directory, 'Bash', command)) {
+    return { shouldFallback: true, missingTools: ['Bash'] };
   }
 
   if (isSafeAutoApprovedCommand(command, directory)) {
     return { shouldFallback: false, missingTools: [] };
   }
 
-  return hasClaudePermissionApproval(directory, "Bash", command)
+  return hasClaudePermissionApproval(directory, 'Bash', command)
     ? { shouldFallback: false, missingTools: [] }
-    : { shouldFallback: true, missingTools: ["Bash"] };
+    : { shouldFallback: true, missingTools: ['Bash'] };
 }
 
 function tokenizeShellCommand(command: string): string[] | null {
   const tokens: string[] = [];
-  let current = "";
+  let current = '';
   let quote: '"' | "'" | null = null;
 
   for (const char of command.trim()) {
@@ -310,7 +310,7 @@ function tokenizeShellCommand(command: string): string[] | null {
     if (/\s/.test(char)) {
       if (current) {
         tokens.push(current);
-        current = "";
+        current = '';
       }
       continue;
     }
@@ -330,28 +330,28 @@ function tokenizeShellCommand(command: string): string[] | null {
 }
 
 function isSensitiveRepoRelativePath(repoRelativePath: string): boolean {
-  const normalized = repoRelativePath.replace(/\\/g, "/").replace(/^\.\//, "");
-  if (!normalized || normalized === ".") {
+  const normalized = repoRelativePath.replace(/\\/g, '/').replace(/^\.\//, '');
+  if (!normalized || normalized === '.') {
     return false;
   }
 
   return (
-    normalized === ".git" ||
-    normalized.startsWith(".git/") ||
-    normalized.includes("/.git/") ||
-    normalized === ".ssh" ||
-    normalized.startsWith(".ssh/") ||
-    normalized.includes("/.ssh/") ||
-    normalized === "secrets" ||
-    normalized.startsWith("secrets/") ||
-    normalized.includes("/secrets/") ||
-    normalized === ".env" ||
-    normalized.startsWith(".env.") ||
-    normalized.includes("/.env") ||
-    normalized.includes("/.env.") ||
-    normalized === "node_modules/.cache" ||
-    normalized.startsWith("node_modules/.cache/") ||
-    normalized.includes("/node_modules/.cache/")
+    normalized === '.git' ||
+    normalized.startsWith('.git/') ||
+    normalized.includes('/.git/') ||
+    normalized === '.ssh' ||
+    normalized.startsWith('.ssh/') ||
+    normalized.includes('/.ssh/') ||
+    normalized === 'secrets' ||
+    normalized.startsWith('secrets/') ||
+    normalized.includes('/secrets/') ||
+    normalized === '.env' ||
+    normalized.startsWith('.env.') ||
+    normalized.includes('/.env') ||
+    normalized.includes('/.env.') ||
+    normalized === 'node_modules/.cache' ||
+    normalized.startsWith('node_modules/.cache/') ||
+    normalized.includes('/node_modules/.cache/')
   );
 }
 
@@ -385,11 +385,11 @@ function isSafeRepoPath(
   }
 
   const relativePath = path.relative(worktreeRoot, canonicalPath);
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
     return false;
   }
 
-  if (!relativePath || relativePath === ".") {
+  if (!relativePath || relativePath === '.') {
     return allowDirectory;
   }
 
@@ -415,28 +415,28 @@ function areSafeRepoPaths(
   args: string[],
   options: { allowDirectory?: boolean; requireExisting?: boolean } = {},
 ): boolean {
-  const pathArgs = args.filter((arg) => arg !== "--");
+  const pathArgs = args.filter((arg) => arg !== '--');
   return (
     pathArgs.length > 0 &&
     pathArgs.every(
-      (arg) => !arg.startsWith("-") && isSafeRepoPath(cwd, arg, options),
+      (arg) => !arg.startsWith('-') && isSafeRepoPath(cwd, arg, options),
     )
   );
 }
 
 function isSafeCatCommand(tokens: string[], cwd: string): boolean {
-  return tokens[0] === "cat" && areSafeRepoPaths(cwd, tokens.slice(1));
+  return tokens[0] === 'cat' && areSafeRepoPaths(cwd, tokens.slice(1));
 }
 
 function isSafeHeadOrTailCommand(tokens: string[], cwd: string): boolean {
-  if (tokens[0] !== "head" && tokens[0] !== "tail") {
+  if (tokens[0] !== 'head' && tokens[0] !== 'tail') {
     return false;
   }
 
   let index = 1;
-  if (tokens[index] === "-n") {
+  if (tokens[index] === '-n') {
     index += 2;
-  } else if (/^-n\d+$/.test(tokens[index] ?? "")) {
+  } else if (/^-n\d+$/.test(tokens[index] ?? '')) {
     index += 1;
   }
 
@@ -444,7 +444,7 @@ function isSafeHeadOrTailCommand(tokens: string[], cwd: string): boolean {
 }
 
 function isSafeSedInspectionCommand(tokens: string[], cwd: string): boolean {
-  if (tokens[0] !== "sed" || tokens[1] !== "-n") {
+  if (tokens[0] !== 'sed' || tokens[1] !== '-n') {
     return false;
   }
 
@@ -460,18 +460,18 @@ function isSafeRipgrepInspectionCommand(
   tokens: string[],
   cwd: string,
 ): boolean {
-  if (tokens[0] !== "rg") {
+  if (tokens[0] !== 'rg') {
     return false;
   }
 
   let index = 1;
   while (index < tokens.length) {
     const token = tokens[index];
-    if (token === "--") {
+    if (token === '--') {
       index += 1;
       break;
     }
-    if (!token.startsWith("-")) {
+    if (!token.startsWith('-')) {
       break;
     }
     if (!SAFE_RIPGREP_FLAGS.has(token)) {
@@ -481,7 +481,7 @@ function isSafeRipgrepInspectionCommand(
   }
 
   const pattern = tokens[index];
-  if (!pattern || pattern.startsWith("-")) {
+  if (!pattern || pattern.startsWith('-')) {
     return false;
   }
 
@@ -491,8 +491,8 @@ function isSafeRipgrepInspectionCommand(
 
 function isSafeTargetedVitestCommand(tokens: string[], cwd: string): boolean {
   const supportedPrefixes: string[][] = [
-    ["vitest", "run"],
-    ["pnpm", "vitest", "run"],
+    ['vitest', 'run'],
+    ['pnpm', 'vitest', 'run'],
   ];
 
   const matchedPrefix = supportedPrefixes.find((prefix) =>
@@ -515,8 +515,8 @@ function isSafeTargetedPackageManagerTestCommand(
   cwd: string,
 ): boolean {
   const supportedPrefixes: string[][] = [
-    ["pnpm", "test", "--", "--run"],
-    ["pnpm", "run", "test", "--", "--run"],
+    ['pnpm', 'test', '--', '--run'],
+    ['pnpm', 'run', 'test', '--', '--run'],
   ];
 
   const matchedPrefix = supportedPrefixes.find((prefix) =>
@@ -536,8 +536,8 @@ function isSafeTargetedPackageManagerTestCommand(
 
 function isSafeTargetedNodeTestCommand(tokens: string[], cwd: string): boolean {
   return (
-    tokens[0] === "node" &&
-    tokens[1] === "--test" &&
+    tokens[0] === 'node' &&
+    tokens[1] === '--test' &&
     tokens.length === 3 &&
     isSafeRepoPath(cwd, tokens[2], { allowDirectory: false })
   );
@@ -628,7 +628,7 @@ export function isHeredocWithSafeBase(command: string): boolean {
   const trimmed = command.trim();
 
   // Heredoc commands from Claude Code are always multi-line
-  if (!trimmed.includes("\n")) {
+  if (!trimmed.includes('\n')) {
     return false;
   }
 
@@ -638,7 +638,7 @@ export function isHeredocWithSafeBase(command: string): boolean {
   }
 
   // Extract the first line as the base command
-  const firstLine = trimmed.split("\n")[0].trim();
+  const firstLine = trimmed.split('\n')[0].trim();
 
   // Check if the first line starts with a safe pattern
   return SAFE_HEREDOC_PATTERNS.some((pattern) => pattern.test(firstLine));
@@ -648,18 +648,18 @@ export function isHeredocWithSafeBase(command: string): boolean {
  * Check if an active mode (autopilot/ultrawork/ralph/team) is running
  */
 export function isActiveModeRunning(directory: string): boolean {
-  const stateDir = path.join(getOmcRoot(directory), "state");
+  const stateDir = path.join(getOmcRoot(directory), 'state');
 
   if (!fs.existsSync(stateDir)) {
     return false;
   }
 
   const activeStateFiles = [
-    "autopilot-state.json",
-    "ralph-state.json",
-    "ultrawork-state.json",
-    "team-state.json",
-    "omc-teams-state.json",
+    'autopilot-state.json',
+    'ralph-state.json',
+    'ultrawork-state.json',
+    'team-state.json',
+    'omc-teams-state.json',
   ];
 
   for (const stateFile of activeStateFiles) {
@@ -667,14 +667,14 @@ export function isActiveModeRunning(directory: string): boolean {
     if (fs.existsSync(statePath)) {
       // JSON state files: check active/status fields
       try {
-        const content = fs.readFileSync(statePath, "utf-8");
+        const content = fs.readFileSync(statePath, 'utf-8');
         const state = JSON.parse(content);
 
         // Check if mode is active
         if (
           state.active === true ||
-          state.status === "running" ||
-          state.status === "active"
+          state.status === 'running' ||
+          state.status === 'active'
         ) {
           return true;
         }
@@ -696,19 +696,19 @@ export function processPermissionRequest(
 ): HookOutput {
   // Only process Bash tool for command auto-approval
   // Normalize tool name - handle both proxy_ prefixed and unprefixed versions
-  const toolName = input.tool_name.replace(/^proxy_/, "");
-  if (toolName !== "Bash") {
+  const toolName = input.tool_name.replace(/^proxy_/, '');
+  if (toolName !== 'Bash') {
     return { continue: true };
   }
 
   const command = input.tool_input.command;
-  if (!command || typeof command !== "string") {
+  if (!command || typeof command !== 'string') {
     return { continue: true };
   }
 
   const shouldAskBashPermission = hasClaudePermissionAsk(
     input.cwd,
-    "Bash",
+    'Bash',
     command,
   );
 
@@ -718,14 +718,14 @@ export function processPermissionRequest(
     isSafeAutoApprovedCommand(command, input.cwd)
   ) {
     const reason = isHeredocWithSafeBase(command)
-      ? "Safe command with heredoc content"
-      : "Safe read-only or test command";
+      ? 'Safe command with heredoc content'
+      : 'Safe read-only or test command';
     return {
       continue: true,
       hookSpecificOutput: {
-        hookEventName: "PermissionRequest",
+        hookEventName: 'PermissionRequest',
         decision: {
-          behavior: "allow",
+          behavior: 'allow',
           reason,
         },
       },

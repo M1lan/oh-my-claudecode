@@ -8,14 +8,14 @@ import type {
   CustomIntegration,
   WebhookIntegrationConfig,
   CliIntegrationConfig,
-} from "./types.js";
+} from './types.js';
 
 export interface ValidationResult {
   valid: boolean;
   errors: string[];
 }
 
-const VALID_HTTP_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
+const VALID_HTTP_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const;
 const MIN_TIMEOUT = 1000; // 1 second
 const MAX_TIMEOUT = 60000; // 60 seconds
 const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
@@ -30,30 +30,30 @@ export function validateCustomIntegration(
 
   // Validate ID format
   if (!integration.id) {
-    errors.push("Integration ID is required");
+    errors.push('Integration ID is required');
   } else if (!VALID_ID_PATTERN.test(integration.id)) {
     errors.push(
-      "Integration ID must be alphanumeric with hyphens/underscores only",
+      'Integration ID must be alphanumeric with hyphens/underscores only',
     );
   }
 
   // Validate type
-  if (!integration.type || !["webhook", "cli"].includes(integration.type)) {
+  if (!integration.type || !['webhook', 'cli'].includes(integration.type)) {
     errors.push('Type must be either "webhook" or "cli"');
   }
 
   // Validate events
   if (!integration.events || integration.events.length === 0) {
-    errors.push("At least one event must be selected");
+    errors.push('At least one event must be selected');
   }
 
   // Type-specific validation
-  if (integration.type === "webhook") {
+  if (integration.type === 'webhook') {
     const webhookErrors = validateWebhookIntegrationConfig(
       integration.config as WebhookIntegrationConfig,
     );
     errors.push(...webhookErrors);
-  } else if (integration.type === "cli") {
+  } else if (integration.type === 'cli') {
     const cliErrors = validateCliIntegrationConfig(
       integration.config as CliIntegrationConfig,
     );
@@ -73,45 +73,45 @@ function validateWebhookIntegrationConfig(
 
   // URL validation
   if (!config.url) {
-    errors.push("Webhook URL is required");
+    errors.push('Webhook URL is required');
   } else {
     try {
       const url = new URL(config.url);
 
       // Require HTTPS for non-localhost URLs
       if (
-        url.protocol !== "https:" &&
-        url.hostname !== "localhost" &&
-        url.hostname !== "127.0.0.1"
+        url.protocol !== 'https:' &&
+        url.hostname !== 'localhost' &&
+        url.hostname !== '127.0.0.1'
       ) {
         errors.push(
-          "Webhook URL must use HTTPS (except localhost for development)",
+          'Webhook URL must use HTTPS (except localhost for development)',
         );
       }
 
       // Block file:// and other unsafe protocols
       if (
-        url.protocol === "file:" ||
-        url.protocol === "ftp:" ||
-        url.protocol === "sftp:"
+        url.protocol === 'file:' ||
+        url.protocol === 'ftp:' ||
+        url.protocol === 'sftp:'
       ) {
         errors.push(`Protocol "${url.protocol}" is not allowed`);
       }
     } catch {
-      errors.push("Invalid webhook URL");
+      errors.push('Invalid webhook URL');
     }
   }
 
   // Method validation
   if (!config.method) {
-    errors.push("HTTP method is required");
+    errors.push('HTTP method is required');
   } else if (
     !VALID_HTTP_METHODS.includes(
       config.method as (typeof VALID_HTTP_METHODS)[number],
     )
   ) {
     errors.push(
-      `Invalid HTTP method. Must be one of: ${VALID_HTTP_METHODS.join(", ")}`,
+      `Invalid HTTP method. Must be one of: ${VALID_HTTP_METHODS.join(', ')}`,
     );
   }
 
@@ -155,19 +155,19 @@ function validateCliIntegrationConfig(config: CliIntegrationConfig): string[] {
 
   // Command validation
   if (!config.command) {
-    errors.push("Command is required");
+    errors.push('Command is required');
   } else {
     // Command must be a single executable, no spaces or shell metacharacters
-    if (config.command.includes(" ")) {
+    if (config.command.includes(' ')) {
       errors.push(
-        "Command must be a single executable path (no spaces or arguments)",
+        'Command must be a single executable path (no spaces or arguments)',
       );
     }
 
     // Check for shell metacharacters
     const shellMetacharacters = /[;&|`$(){}[\]<>!#*?~]/;
     if (shellMetacharacters.test(config.command)) {
-      errors.push("Command contains shell metacharacters");
+      errors.push('Command contains shell metacharacters');
     }
   }
 
@@ -175,7 +175,7 @@ function validateCliIntegrationConfig(config: CliIntegrationConfig): string[] {
   if (config.args && Array.isArray(config.args)) {
     for (const arg of config.args) {
       // Check for shell metacharacters outside of template syntax
-      const withoutTemplates = arg.replace(/\{\{[^}]+\}\}/g, "");
+      const withoutTemplates = arg.replace(/\{\{[^}]+\}\}/g, '');
       const shellMetacharacters = /[;&|`$(){}[\]<>!#*?~]/;
 
       if (shellMetacharacters.test(withoutTemplates)) {
@@ -224,10 +224,10 @@ export function checkDuplicateIds(integrations: CustomIntegration[]): string[] {
  */
 export function sanitizeArgument(arg: string): string {
   // Remove null bytes
-  let sanitized = arg.replace(/\0/g, "");
+  let sanitized = arg.replace(/\0/g, '');
 
   // Remove control characters except common whitespace
-  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+  sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
 
   return sanitized;
 }

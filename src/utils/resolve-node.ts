@@ -1,17 +1,17 @@
-import { existsSync, readdirSync } from "fs";
-import { execSync } from "child_process";
-import { join } from "path";
-import { homedir } from "os";
+import { existsSync, readdirSync } from 'fs';
+import { execSync } from 'child_process';
+import { join } from 'path';
+import { homedir } from 'os';
 
 const EPHEMERAL_NODE_PATH_MARKERS = [
-  "hostedtoolcache",
-  "/runner/",
-  "\\runner\\",
+  'hostedtoolcache',
+  '/runner/',
+  '\\runner\\',
 ];
 const SYSTEM_NODE_PATHS = [
-  "/opt/homebrew/bin/node",
-  "/usr/local/bin/node",
-  "/usr/bin/node",
+  '/opt/homebrew/bin/node',
+  '/usr/local/bin/node',
+  '/usr/bin/node',
 ];
 
 function isKnownEphemeralNodePath(nodePath: string): boolean {
@@ -61,10 +61,10 @@ export function resolveNodeBinary(): string {
   // 1. Prefer the PATH-resolved node because it typically points to a stable
   // symlink (for example /opt/homebrew/bin/node instead of a Cellar version).
   try {
-    const cmd = process.platform === "win32" ? "where node" : "which node";
-    const result = execSync(cmd, { encoding: "utf-8", stdio: "pipe" })
+    const cmd = process.platform === 'win32' ? 'where node' : 'which node';
+    const result = execSync(cmd, { encoding: 'utf-8', stdio: 'pipe' })
       .trim()
-      .split("\n")[0]
+      .split('\n')[0]
       .trim();
     if (result && existsSync(result)) {
       return result;
@@ -84,30 +84,30 @@ export function resolveNodeBinary(): string {
   }
 
   // Unix-only fallbacks below (nvm and fnm are not used on Windows)
-  if (process.platform === "win32") {
-    return "node";
+  if (process.platform === 'win32') {
+    return 'node';
   }
 
   const home = homedir();
 
   // 3. nvm: ~/.nvm/versions/node/<version>/bin/node
   const nvmNode = resolveLatestVersionedNode(
-    join(home, ".nvm", "versions", "node"),
-    ["bin", "node"],
+    join(home, '.nvm', 'versions', 'node'),
+    ['bin', 'node'],
   );
   if (nvmNode) return nvmNode;
 
   // 4. fnm: multiple possible base directories
   const fnmBases = [
-    join(home, ".fnm", "node-versions"),
-    join(home, "Library", "Application Support", "fnm", "node-versions"),
-    join(home, ".local", "share", "fnm", "node-versions"),
+    join(home, '.fnm', 'node-versions'),
+    join(home, 'Library', 'Application Support', 'fnm', 'node-versions'),
+    join(home, '.local', 'share', 'fnm', 'node-versions'),
   ];
   for (const fnmBase of fnmBases) {
     const fnmNode = resolveLatestVersionedNode(fnmBase, [
-      "installation",
-      "bin",
-      "node",
+      'installation',
+      'bin',
+      'node',
     ]);
     if (fnmNode) return fnmNode;
   }
@@ -118,7 +118,7 @@ export function resolveNodeBinary(): string {
   }
 
   // 6. Last-resort fallback
-  return "node";
+  return 'node';
 }
 
 /**
@@ -133,12 +133,12 @@ export function pickLatestVersion(versions: string[]): string | undefined {
     .filter((v) => /^v?\d/.test(v))
     .sort((a, b) => {
       const pa = a
-        .replace(/^v/, "")
-        .split(".")
+        .replace(/^v/, '')
+        .split('.')
         .map((s) => parseInt(s, 10) || 0);
       const pb = b
-        .replace(/^v/, "")
-        .split(".")
+        .replace(/^v/, '')
+        .split('.')
         .map((s) => parseInt(s, 10) || 0);
       for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
         const diff = (pb[i] ?? 0) - (pa[i] ?? 0);

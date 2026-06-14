@@ -12,18 +12,18 @@
  * import time based on CLAUDE_CONFIG_DIR.
  */
 
-import { describe, it, expect, afterEach, vi } from "vitest";
-import { existsSync, readdirSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { describe, it, expect, afterEach, vi } from 'vitest';
+import { existsSync, readdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const REPO_ROOT = join(__dirname, "..", "..", "..");
+const REPO_ROOT = join(__dirname, '..', '..', '..');
 
 // ── Contract 7: getHooksSettingsConfig() generates portable hook commands ─────
 
-describe("Contract 7: hook command portability (#2084, #2348)", () => {
+describe('Contract 7: hook command portability (#2084, #2348)', () => {
   const originalConfigDir = process.env.CLAUDE_CONFIG_DIR;
   const originalPlatform = process.platform;
 
@@ -33,15 +33,15 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
     } else {
       process.env.CLAUDE_CONFIG_DIR = originalConfigDir;
     }
-    Object.defineProperty(process, "platform", { value: originalPlatform });
+    Object.defineProperty(process, 'platform', { value: originalPlatform });
     vi.resetModules();
   });
 
-  it("default config: commands use ${CLAUDE_CONFIG_DIR:-$HOME/.claude} pattern", async () => {
+  it('default config: commands use ${CLAUDE_CONFIG_DIR:-$HOME/.claude} pattern', async () => {
     delete process.env.CLAUDE_CONFIG_DIR;
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
     const commands: string[] = [];
@@ -59,15 +59,15 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
 
     // On default config, all commands should use the portable env-var pattern
     for (const cmd of commands) {
-      expect(cmd).toContain("${CLAUDE_CONFIG_DIR:-$HOME/.claude}");
+      expect(cmd).toContain('${CLAUDE_CONFIG_DIR:-$HOME/.claude}');
     }
   });
 
-  it("no command contains an absolute path to a node binary", async () => {
+  it('no command contains an absolute path to a node binary', async () => {
     delete process.env.CLAUDE_CONFIG_DIR;
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
     // Regex: command starts with an absolute path to node binary
@@ -91,7 +91,7 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
     if (violations.length > 0) {
       const details = violations
         .map((v) => `  ${v.event}: ${v.command}`)
-        .join("\n");
+        .join('\n');
       expect.fail(
         `Found absolute node binary paths in hook commands (issue #2348 regression):\n${details}\n\n` +
           `Hook commands must use bare 'node', not resolved absolute paths like /opt/hostedtoolcache/...`,
@@ -99,11 +99,11 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
     }
   });
 
-  it("no command contains a hardcoded home directory path", async () => {
+  it('no command contains a hardcoded home directory path', async () => {
     delete process.env.CLAUDE_CONFIG_DIR;
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
     // Pattern: hardcoded /home/username or /Users/username paths
@@ -125,7 +125,7 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
     if (violations.length > 0) {
       const details = violations
         .map((v) => `  ${v.event}: ${v.command}`)
-        .join("\n");
+        .join('\n');
       expect.fail(
         `Found hardcoded home directory paths in hook commands:\n${details}\n\n` +
           `Hook commands must use $HOME or \${CLAUDE_CONFIG_DIR:-$HOME/.claude}, not resolved absolute home paths.`,
@@ -133,11 +133,11 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
     }
   });
 
-  it("custom config: commands use the custom absolute path", async () => {
-    process.env.CLAUDE_CONFIG_DIR = "/tmp/custom-claude-test-config";
+  it('custom config: commands use the custom absolute path', async () => {
+    process.env.CLAUDE_CONFIG_DIR = '/tmp/custom-claude-test-config';
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
     const commands: string[] = [];
@@ -155,16 +155,16 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
 
     // With custom config dir, commands should reference the custom path
     for (const cmd of commands) {
-      expect(cmd).toContain("/tmp/custom-claude-test-config/hooks/");
+      expect(cmd).toContain('/tmp/custom-claude-test-config/hooks/');
     }
   });
 
-  it("Windows default config: avoids CMD-only %USERPROFILE% and keeps portable bash-style expansion", async () => {
-    Object.defineProperty(process, "platform", { value: "win32" });
+  it('Windows default config: avoids CMD-only %USERPROFILE% and keeps portable bash-style expansion', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32' });
     delete process.env.CLAUDE_CONFIG_DIR;
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
     const commands: string[] = [];
@@ -180,23 +180,23 @@ describe("Contract 7: hook command portability (#2084, #2348)", () => {
 
     expect(commands.length).toBeGreaterThan(0);
     for (const cmd of commands) {
-      expect(cmd).toContain("${CLAUDE_CONFIG_DIR:-$HOME/.claude}");
-      expect(cmd).not.toContain("%USERPROFILE%");
+      expect(cmd).toContain('${CLAUDE_CONFIG_DIR:-$HOME/.claude}');
+      expect(cmd).not.toContain('%USERPROFILE%');
     }
   });
 });
 
 // ── Contract 8: Hook config commands reference known OMC hook filenames ───────
 
-describe("Contract 8: hook commands reference existing template files", () => {
-  it("all hook commands reference files that exist in templates/hooks/", async () => {
+describe('Contract 8: hook commands reference existing template files', () => {
+  it('all hook commands reference files that exist in templates/hooks/', async () => {
     delete process.env.CLAUDE_CONFIG_DIR;
     vi.resetModules();
 
-    const { getHooksSettingsConfig } = await import("../../installer/hooks.js");
+    const { getHooksSettingsConfig } = await import('../../installer/hooks.js');
     const config = getHooksSettingsConfig();
 
-    const templatesDir = join(REPO_ROOT, "templates", "hooks");
+    const templatesDir = join(REPO_ROOT, 'templates', 'hooks');
     expect(existsSync(templatesDir)).toBe(true);
 
     const templateFiles = new Set(readdirSync(templatesDir));
@@ -229,7 +229,7 @@ describe("Contract 8: hook commands reference existing template files", () => {
     if (missingFiles.length > 0) {
       const details = missingFiles
         .map((v) => `  ${v.event}: ${v.filename} (command: ${v.command})`)
-        .join("\n");
+        .join('\n');
       expect.fail(
         `Hook commands reference files not found in templates/hooks/:\n${details}\n\n` +
           `Ensure all referenced hook scripts exist in templates/hooks/.`,

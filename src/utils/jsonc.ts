@@ -18,26 +18,26 @@ export function parseJsonc(content: string): unknown {
  * Handles single-line (//) and multi-line comments
  */
 export function stripJsoncComments(content: string): string {
-  let result = "";
+  let result = '';
   let i = 0;
 
   while (i < content.length) {
     // Check for single-line comment
-    if (content[i] === "/" && content[i + 1] === "/") {
+    if (content[i] === '/' && content[i + 1] === '/') {
       // Skip until end of line
-      while (i < content.length && content[i] !== "\n") {
+      while (i < content.length && content[i] !== '\n') {
         i++;
       }
       continue;
     }
 
     // Check for multi-line comment start
-    if (content[i] === "/" && content[i + 1] === "*") {
+    if (content[i] === '/' && content[i + 1] === '*') {
       // Skip until end of comment
       i += 2;
       while (
         i < content.length &&
-        !(content[i] === "*" && content[i + 1] === "/")
+        !(content[i] === '*' && content[i + 1] === '/')
       ) {
         i++;
       }
@@ -50,7 +50,7 @@ export function stripJsoncComments(content: string): string {
       result += content[i];
       i++;
       while (i < content.length && content[i] !== '"') {
-        if (content[i] === "\\") {
+        if (content[i] === '\\') {
           result += content[i];
           i++;
           if (i < content.length) {

@@ -36,23 +36,23 @@
  *      copy is authoritative for cross-session aggregation.
  */
 
-import { existsSync, readFileSync, unlinkSync } from "fs";
+import { existsSync, readFileSync, unlinkSync } from 'fs';
 import {
   resolveStatePath,
   resolveSessionStatePath,
-} from "../../lib/worktree-paths.js";
-import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
+} from '../../lib/worktree-paths.js';
+import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
 import {
   readTrackingState,
   getStaleAgents,
-} from "../subagent-tracker/index.js";
+} from '../subagent-tracker/index.js';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-export const SKILL_ACTIVE_STATE_MODE = "skill-active";
-export const SKILL_ACTIVE_STATE_FILE = "skill-active-state.json";
+export const SKILL_ACTIVE_STATE_MODE = 'skill-active';
+export const SKILL_ACTIVE_STATE_FILE = 'skill-active-state.json';
 export const WORKFLOW_TOMBSTONE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 /**
@@ -61,21 +61,21 @@ export const WORKFLOW_TOMBSTONE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
  * `support_skill` branch.
  */
 export const CANONICAL_WORKFLOW_SKILLS = [
-  "autopilot",
-  "ralph",
-  "team",
-  "ultrawork",
-  "ultraqa",
-  "deep-interview",
-  "ralplan",
-  "self-improve",
+  'autopilot',
+  'ralph',
+  'team',
+  'ultrawork',
+  'ultraqa',
+  'deep-interview',
+  'ralplan',
+  'self-improve',
 ] as const;
 export type CanonicalWorkflowSkill = (typeof CANONICAL_WORKFLOW_SKILLS)[number];
 
 export function isCanonicalWorkflowSkill(
   skillName: string,
 ): skillName is CanonicalWorkflowSkill {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   return (CANONICAL_WORKFLOW_SKILLS as readonly string[]).includes(normalized);
 }
 
@@ -83,7 +83,7 @@ export function isCanonicalWorkflowSkill(
 // Support-skill protection (preserves v1 behavior)
 // ---------------------------------------------------------------------------
 
-export type SkillProtectionLevel = "none" | "light" | "medium" | "heavy";
+export type SkillProtectionLevel = 'none' | 'light' | 'medium' | 'heavy';
 
 export interface SkillStateConfig {
   /** Max stop-hook reinforcements before allowing stop */
@@ -109,52 +109,52 @@ const PROTECTION_CONFIGS: Record<SkillProtectionLevel, SkillStateConfig> = {
  */
 const SKILL_PROTECTION: Record<string, SkillProtectionLevel> = {
   // === Canonical workflow skills — bypass support-skill protection; flow through the workflow-slot path ===
-  autopilot: "none",
-  autoresearch: "none",
-  ralph: "none",
-  ultrawork: "none",
-  team: "none",
-  "omc-teams": "none",
-  ultraqa: "none",
-  ralplan: "none",
-  "self-improve": "none",
-  cancel: "none",
+  autopilot: 'none',
+  autoresearch: 'none',
+  ralph: 'none',
+  ultrawork: 'none',
+  team: 'none',
+  'omc-teams': 'none',
+  ultraqa: 'none',
+  ralplan: 'none',
+  'self-improve': 'none',
+  cancel: 'none',
 
   // === Instant / read-only → no protection needed ===
-  trace: "none",
-  hud: "none",
-  "omc-doctor": "none",
-  "omc-help": "none",
-  "learn-about-omc": "none",
-  note: "none",
+  trace: 'none',
+  hud: 'none',
+  'omc-doctor': 'none',
+  'omc-help': 'none',
+  'learn-about-omc': 'none',
+  note: 'none',
 
   // === Light protection (simple shortcuts, 3 reinforcements) ===
-  skill: "light",
-  ask: "light",
-  "configure-notifications": "light",
+  skill: 'light',
+  ask: 'light',
+  'configure-notifications': 'light',
 
   // === Medium protection (review/planning, 5 reinforcements) ===
-  "omc-plan": "medium",
-  plan: "medium",
-  "deep-interview": "heavy",
-  review: "medium",
-  "external-context": "medium",
-  "ai-slop-cleaner": "medium",
-  sciomc: "medium",
-  skillify: "medium",
-  learner: "medium",
-  "omc-setup": "medium",
-  setup: "medium",
-  "mcp-setup": "medium",
-  "project-session-manager": "medium",
-  psm: "medium",
-  "writer-memory": "medium",
-  "ralph-init": "medium",
-  release: "medium",
-  ccg: "medium",
+  'omc-plan': 'medium',
+  plan: 'medium',
+  'deep-interview': 'heavy',
+  review: 'medium',
+  'external-context': 'medium',
+  'ai-slop-cleaner': 'medium',
+  sciomc: 'medium',
+  skillify: 'medium',
+  learner: 'medium',
+  'omc-setup': 'medium',
+  setup: 'medium',
+  'mcp-setup': 'medium',
+  'project-session-manager': 'medium',
+  psm: 'medium',
+  'writer-memory': 'medium',
+  'ralph-init': 'medium',
+  release: 'medium',
+  ccg: 'medium',
 
   // === Heavy protection (long-running, 10 reinforcements) ===
-  deepinit: "heavy",
+  deepinit: 'heavy',
 };
 
 export function getSkillProtection(
@@ -163,12 +163,12 @@ export function getSkillProtection(
 ): SkillProtectionLevel {
   if (
     rawSkillName != null &&
-    !rawSkillName.toLowerCase().startsWith("oh-my-claudecode:")
+    !rawSkillName.toLowerCase().startsWith('oh-my-claudecode:')
   ) {
-    return "none";
+    return 'none';
   }
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
-  return SKILL_PROTECTION[normalized] ?? "none";
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
+  return SKILL_PROTECTION[normalized] ?? 'none';
 }
 
 export function getSkillConfig(
@@ -248,7 +248,7 @@ function isEmptyV2(state: SkillActiveStateV2): boolean {
 function readRawFromPath(path: string): unknown {
   if (!existsSync(path)) return null;
   try {
-    return JSON.parse(readFileSync(path, "utf-8"));
+    return JSON.parse(readFileSync(path, 'utf-8'));
   } catch {
     return null;
   }
@@ -260,7 +260,7 @@ function readRawFromPath(path: string): unknown {
  * dropped during migration.
  */
 function normalizeToV2(raw: unknown): SkillActiveStateV2 {
-  if (!raw || typeof raw !== "object") {
+  if (!raw || typeof raw !== 'object') {
     return emptySkillActiveStateV2();
   }
 
@@ -271,25 +271,25 @@ function normalizeToV2(raw: unknown): SkillActiveStateV2 {
   const state = rest as Record<string, unknown>;
 
   const looksV2 =
-    state.version === 2 || "active_skills" in state || "support_skill" in state;
+    state.version === 2 || 'active_skills' in state || 'support_skill' in state;
   if (looksV2) {
     const active_skills: Record<string, ActiveSkillSlot> = {};
     const raw_slots = state.active_skills;
     if (
       raw_slots &&
-      typeof raw_slots === "object" &&
+      typeof raw_slots === 'object' &&
       !Array.isArray(raw_slots)
     ) {
       for (const [name, slot] of Object.entries(
         raw_slots as Record<string, unknown>,
       )) {
-        if (slot && typeof slot === "object") {
+        if (slot && typeof slot === 'object') {
           active_skills[name] = slot as ActiveSkillSlot;
         }
       }
     }
     const support_skill =
-      state.support_skill && typeof state.support_skill === "object"
+      state.support_skill && typeof state.support_skill === 'object'
         ? (state.support_skill as SkillActiveState)
         : null;
     return { version: 2, active_skills, support_skill };
@@ -297,8 +297,8 @@ function normalizeToV2(raw: unknown): SkillActiveStateV2 {
 
   // Legacy scalar shape → fold into support_skill.
   if (
-    typeof state.active === "boolean" &&
-    typeof state.skill_name === "string"
+    typeof state.active === 'boolean' &&
+    typeof state.skill_name === 'string'
   ) {
     return {
       version: 2,
@@ -320,7 +320,7 @@ export function upsertWorkflowSkillSlot(
   skillName: string,
   slotData: Partial<ActiveSkillSlot> = {},
 ): SkillActiveStateV2 {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   const existing = state.active_skills[normalized];
   const now = new Date().toISOString();
 
@@ -329,12 +329,12 @@ export function upsertWorkflowSkillSlot(
     started_at: existing?.started_at ?? now,
     completed_at: existing?.completed_at ?? null,
     parent_skill: existing?.parent_skill ?? null,
-    session_id: existing?.session_id ?? "",
-    mode_state_path: existing?.mode_state_path ?? "",
+    session_id: existing?.session_id ?? '',
+    mode_state_path: existing?.mode_state_path ?? '',
     initialized_mode: existing?.initialized_mode ?? normalized,
-    initialized_state_path: existing?.initialized_state_path ?? "",
+    initialized_state_path: existing?.initialized_state_path ?? '',
     initialized_session_state_path:
-      existing?.initialized_session_state_path ?? "",
+      existing?.initialized_session_state_path ?? '',
   };
   if (existing?.last_confirmed_at !== undefined) {
     base.last_confirmed_at = existing.last_confirmed_at;
@@ -365,7 +365,7 @@ export function markWorkflowSkillCompleted(
   skillName: string,
   now: string = new Date().toISOString(),
 ): SkillActiveStateV2 {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   const existing = state.active_skills[normalized];
   if (!existing) return state;
   const updated: ActiveSkillSlot = { ...existing, completed_at: now };
@@ -380,7 +380,7 @@ export function clearWorkflowSkillSlot(
   state: SkillActiveStateV2,
   skillName: string,
 ): SkillActiveStateV2 {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   if (!(normalized in state.active_skills)) return state;
   const next: Record<string, ActiveSkillSlot> = { ...state.active_skills };
   delete next[normalized];
@@ -462,7 +462,7 @@ export function isWorkflowSkillLive(
   state: SkillActiveStateV2,
   skillName: string,
 ): boolean {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   const slot = state.active_skills[normalized];
   return !!slot && !slot.completed_at;
 }
@@ -478,7 +478,7 @@ export function isWorkflowSkillTombstoned(
   ttlMs: number = WORKFLOW_TOMBSTONE_TTL_MS,
   now: number = Date.now(),
 ): boolean {
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   const slot = state.active_skills[normalized];
   if (!slot || !slot.completed_at) return false;
   const tombstonedAt = new Date(slot.completed_at).getTime();
@@ -509,9 +509,9 @@ export function readSkillActiveStateNormalized(
   directory: string,
   sessionId?: string,
 ): SkillActiveStateV2 {
-  const rootPath = resolveStatePath("skill-active", directory);
+  const rootPath = resolveStatePath('skill-active', directory);
   const sessionPath = sessionId
-    ? resolveSessionStatePath("skill-active", sessionId, directory)
+    ? resolveSessionStatePath('skill-active', sessionId, directory)
     : null;
 
   const sessionExists = !!(sessionPath && existsSync(sessionPath));
@@ -532,7 +532,7 @@ export function readSkillActiveStateNormalized(
         // Non-fatal — next writeSkillActiveStateCopies() call will re-sync.
         console.warn(
           `[skill-active] copy drift detected for slot "${name}" in session ${sessionId}; ` +
-            "next mutation will reconcile via writeSkillActiveStateCopies().",
+            'next mutation will reconcile via writeSkillActiveStateCopies().',
         );
         break;
       }
@@ -567,9 +567,9 @@ export function writeSkillActiveStateCopies(
   sessionId?: string,
   options?: WriteSkillActiveStateCopiesOptions,
 ): boolean {
-  const rootPath = resolveStatePath("skill-active", directory);
+  const rootPath = resolveStatePath('skill-active', directory);
   const sessionPath = sessionId
-    ? resolveSessionStatePath("skill-active", sessionId, directory)
+    ? resolveSessionStatePath('skill-active', sessionId, directory)
     : null;
 
   // Root defaults to the same payload as session. Explicit `null` deletes root.
@@ -632,7 +632,7 @@ export function readSkillActiveState(
 ): SkillActiveState | null {
   const v2 = readSkillActiveStateNormalized(directory, sessionId);
   const support = v2.support_skill;
-  if (!support || typeof support.active !== "boolean") return null;
+  if (!support || typeof support.active !== 'boolean') return null;
   return support;
 }
 
@@ -654,11 +654,11 @@ export function writeSkillActiveState(
   rawSkillName?: string,
 ): SkillActiveState | null {
   const protection = getSkillProtection(skillName, rawSkillName);
-  if (protection === "none") return null;
+  if (protection === 'none') return null;
 
   const config = PROTECTION_CONFIGS[protection];
   const now = new Date().toISOString();
-  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, "");
+  const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
 
   const existingV2 = readSkillActiveStateNormalized(directory, sessionId);
   const existing = existingV2.support_skill;
@@ -725,24 +725,24 @@ export function checkSkillActiveState(
   const state = readSkillActiveState(directory, sessionId);
 
   if (!state || !state.active) {
-    return { shouldBlock: false, message: "" };
+    return { shouldBlock: false, message: '' };
   }
 
   // Session isolation
   if (sessionId && state.session_id && state.session_id !== sessionId) {
-    return { shouldBlock: false, message: "" };
+    return { shouldBlock: false, message: '' };
   }
 
   // Staleness check
   if (isSkillStateStale(state)) {
     clearSkillActiveState(directory, sessionId);
-    return { shouldBlock: false, message: "" };
+    return { shouldBlock: false, message: '' };
   }
 
   // Reinforcement limit check
   if (state.reinforcement_count >= state.max_reinforcements) {
     clearSkillActiveState(directory, sessionId);
-    return { shouldBlock: false, message: "" };
+    return { shouldBlock: false, message: '' };
   }
 
   // Orchestrators are allowed to go idle while delegated work is still active.
@@ -751,7 +751,7 @@ export function checkSkillActiveState(
     getStaleAgents(trackingState).map((a) => a.agent_id),
   );
   const nonStaleRunning = trackingState.agents.filter(
-    (a) => a.status === "running" && !staleIds.has(a.agent_id),
+    (a) => a.status === 'running' && !staleIds.has(a.agent_id),
   );
   if (nonStaleRunning.length > 0) {
     if (state.reinforcement_count > 0) {
@@ -767,7 +767,7 @@ export function checkSkillActiveState(
         sessionId,
       );
     }
-    return { shouldBlock: false, message: "", skillName: state.skill_name };
+    return { shouldBlock: false, message: '', skillName: state.skill_name };
   }
 
   // Block the stop and increment reinforcement count.
@@ -783,7 +783,7 @@ export function checkSkillActiveState(
     sessionId,
   );
   if (!ok) {
-    return { shouldBlock: false, message: "" };
+    return { shouldBlock: false, message: '' };
   }
 
   const message =

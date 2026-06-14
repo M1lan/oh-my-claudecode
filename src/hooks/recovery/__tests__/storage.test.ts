@@ -1,18 +1,18 @@
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const SYNTHETIC_THINKING_CONTENT =
-  "[Synthetic thinking block inserted to preserve message structure]";
+  '[Synthetic thinking block inserted to preserve message structure]';
 
-describe("recovery storage issue #1386 regression", () => {
+describe('recovery storage issue #1386 regression', () => {
   const originalXdgDataHome = process.env.XDG_DATA_HOME;
   let dataDir: string;
 
   beforeEach(() => {
-    dataDir = mkdtempSync(join(tmpdir(), "issue-1386-recovery-"));
+    dataDir = mkdtempSync(join(tmpdir(), 'issue-1386-recovery-'));
     process.env.XDG_DATA_HOME = dataDir;
     vi.resetModules();
   });
@@ -26,15 +26,15 @@ describe("recovery storage issue #1386 regression", () => {
     vi.resetModules();
   });
 
-  it("prepends generic synthetic thinking instead of reusing prior assistant thinking", async () => {
-    const sessionID = "session-1";
-    const priorMessageID = "assistant-1";
-    const targetMessageID = "assistant-2";
-    const staleThinking = "Old reasoning that should never be copied forward";
-    const storageRoot = join(dataDir, "claude-code", "storage");
-    const messageDir = join(storageRoot, "message", sessionID);
-    const priorPartDir = join(storageRoot, "part", priorMessageID);
-    const targetPartDir = join(storageRoot, "part", targetMessageID);
+  it('prepends generic synthetic thinking instead of reusing prior assistant thinking', async () => {
+    const sessionID = 'session-1';
+    const priorMessageID = 'assistant-1';
+    const targetMessageID = 'assistant-2';
+    const staleThinking = 'Old reasoning that should never be copied forward';
+    const storageRoot = join(dataDir, 'claude-code', 'storage');
+    const messageDir = join(storageRoot, 'message', sessionID);
+    const priorPartDir = join(storageRoot, 'part', priorMessageID);
+    const targetPartDir = join(storageRoot, 'part', targetMessageID);
 
     mkdirSync(messageDir, { recursive: true });
     mkdirSync(priorPartDir, { recursive: true });
@@ -45,7 +45,7 @@ describe("recovery storage issue #1386 regression", () => {
       JSON.stringify({
         id: priorMessageID,
         sessionID,
-        role: "assistant",
+        role: 'assistant',
         time: { created: 1 },
       }),
     );
@@ -54,34 +54,34 @@ describe("recovery storage issue #1386 regression", () => {
       JSON.stringify({
         id: targetMessageID,
         sessionID,
-        role: "assistant",
+        role: 'assistant',
         time: { created: 2 },
       }),
     );
     writeFileSync(
-      join(priorPartDir, "thinking.json"),
+      join(priorPartDir, 'thinking.json'),
       JSON.stringify({
-        id: "thinking-1",
+        id: 'thinking-1',
         sessionID,
         messageID: priorMessageID,
-        type: "thinking",
+        type: 'thinking',
         thinking: staleThinking,
       }),
     );
 
-    const { prependThinkingPart } = await import("../storage.js");
+    const { prependThinkingPart } = await import('../storage.js');
 
     expect(prependThinkingPart(sessionID, targetMessageID)).toBe(true);
 
     const insertedPart = JSON.parse(
       readFileSync(
-        join(targetPartDir, "prt_0000000000_thinking.json"),
-        "utf-8",
+        join(targetPartDir, 'prt_0000000000_thinking.json'),
+        'utf-8',
       ),
     ) as { type: string; thinking: string; synthetic?: boolean };
 
     expect(insertedPart).toMatchObject({
-      type: "thinking",
+      type: 'thinking',
       synthetic: true,
       thinking: SYNTHETIC_THINKING_CONTENT,
     });

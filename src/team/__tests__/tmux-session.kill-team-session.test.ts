@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 type ExecFileCallback = (
   error: Error | null,
@@ -13,22 +13,22 @@ type ExecCallback = (
 
 const mocked = vi.hoisted(() => ({
   execCalls: [] as string[][],
-  currentSession: "leader-session",
-  listedPanes: "%10\n%11\n",
+  currentSession: 'leader-session',
+  listedPanes: '%10\n%11\n',
 }));
 
-vi.mock("child_process", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("child_process")>();
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
 
   const run = (args: string[]): { stdout: string; stderr: string } => {
     mocked.execCalls.push(args);
-    if (args[0] === "display-message" && args[1] === "-p" && args[2] === "#S") {
-      return { stdout: `${mocked.currentSession}\n`, stderr: "" };
+    if (args[0] === 'display-message' && args[1] === '-p' && args[2] === '#S') {
+      return { stdout: `${mocked.currentSession}\n`, stderr: '' };
     }
-    if (args[0] === "list-panes") {
-      return { stdout: mocked.listedPanes, stderr: "" };
+    if (args[0] === 'list-panes') {
+      return { stdout: mocked.listedPanes, stderr: '' };
     }
-    return { stdout: "", stderr: "" };
+    return { stdout: '', stderr: '' };
   };
 
   const parseTmuxShellCmd = (cmd: string): string[] | null => {
@@ -51,7 +51,7 @@ vi.mock("child_process", async (importOriginal) => {
     },
   );
   (execFileMock as unknown as Record<symbol, unknown>)[
-    Symbol.for("nodejs.util.promisify.custom")
+    Symbol.for('nodejs.util.promisify.custom')
   ] = async (_cmd: string, args: string[]) => run(args);
 
   const execMock = vi.fn((cmd: string, cb: ExecCallback) => {
@@ -61,7 +61,7 @@ vi.mock("child_process", async (importOriginal) => {
     return {} as never;
   });
   (execMock as unknown as Record<symbol, unknown>)[
-    Symbol.for("nodejs.util.promisify.custom")
+    Symbol.for('nodejs.util.promisify.custom')
   ] = async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
 
   return {
@@ -74,87 +74,87 @@ vi.mock("child_process", async (importOriginal) => {
 import {
   killTeamSession,
   resolveSplitPaneWorkerPaneIds,
-} from "../tmux-session.js";
+} from '../tmux-session.js';
 
-describe("killTeamSession safeguards", () => {
+describe('killTeamSession safeguards', () => {
   afterEach(() => {
     mocked.execCalls = [];
-    mocked.currentSession = "leader-session";
-    mocked.listedPanes = "%10\n%11\n";
+    mocked.currentSession = 'leader-session';
+    mocked.listedPanes = '%10\n%11\n';
     vi.unstubAllEnvs();
   });
 
-  it("does not kill the current attached session by default", async () => {
-    vi.stubEnv("TMUX", "/tmp/tmux-1000/default,1,1");
-    mocked.currentSession = "leader-session";
+  it('does not kill the current attached session by default', async () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-1000/default,1,1');
+    mocked.currentSession = 'leader-session';
 
-    await killTeamSession("leader-session");
+    await killTeamSession('leader-session');
 
-    expect(mocked.execCalls.some((args) => args[0] === "kill-session")).toBe(
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(
       false,
     );
   });
 
-  it("kills a different detached session", async () => {
-    vi.stubEnv("TMUX", "/tmp/tmux-1000/default,1,1");
-    mocked.currentSession = "leader-session";
+  it('kills a different detached session', async () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-1000/default,1,1');
+    mocked.currentSession = 'leader-session';
 
-    await killTeamSession("worker-detached-session");
+    await killTeamSession('worker-detached-session');
 
     expect(
       mocked.execCalls.some(
         (args) =>
-          args[0] === "kill-session" &&
-          args.includes("worker-detached-session"),
+          args[0] === 'kill-session' &&
+          args.includes('worker-detached-session'),
       ),
     ).toBe(true);
   });
 
-  it("kills only worker panes in split-pane mode", async () => {
-    await killTeamSession("leader-session:0", ["%10", "%11"], "%10");
+  it('kills only worker panes in split-pane mode', async () => {
+    await killTeamSession('leader-session:0', ['%10', '%11'], '%10');
 
     const killPaneTargets = mocked.execCalls
-      .filter((args) => args[0] === "kill-pane")
+      .filter((args) => args[0] === 'kill-pane')
       .map((args) => args[2]);
 
-    expect(killPaneTargets).toEqual(["%11"]);
-    expect(mocked.execCalls.some((args) => args[0] === "kill-session")).toBe(
+    expect(killPaneTargets).toEqual(['%11']);
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(
       false,
     );
-    expect(mocked.execCalls.some((args) => args[0] === "kill-window")).toBe(
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-window')).toBe(
       false,
     );
   });
 
-  it("kills an owned team window when session owns that window", async () => {
-    await killTeamSession("leader-session:3", ["%10", "%11"], "%10", {
-      sessionMode: "dedicated-window",
+  it('kills an owned team window when session owns that window', async () => {
+    await killTeamSession('leader-session:3', ['%10', '%11'], '%10', {
+      sessionMode: 'dedicated-window',
     });
 
     expect(
       mocked.execCalls.some(
         (args) =>
-          args[0] === "kill-window" && args.includes("leader-session:3"),
+          args[0] === 'kill-window' && args.includes('leader-session:3'),
       ),
     ).toBe(true);
-    expect(mocked.execCalls.some((args) => args[0] === "kill-pane")).toBe(
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-pane')).toBe(
       false,
     );
   });
 
-  it("discovers additional split-pane worker panes from the recorded team target", async () => {
-    mocked.listedPanes = "%10\n%11\n%12\n";
+  it('discovers additional split-pane worker panes from the recorded team target', async () => {
+    mocked.listedPanes = '%10\n%11\n%12\n';
 
     const paneIds = await resolveSplitPaneWorkerPaneIds(
-      "leader-session:0",
-      ["%11"],
-      "%10",
+      'leader-session:0',
+      ['%11'],
+      '%10',
     );
 
-    expect(paneIds).toEqual(["%11", "%12"]);
+    expect(paneIds).toEqual(['%11', '%12']);
     expect(
       mocked.execCalls.some(
-        (args) => args[0] === "list-panes" && args.includes("leader-session:0"),
+        (args) => args[0] === 'list-panes' && args.includes('leader-session:0'),
       ),
     ).toBe(true);
   });

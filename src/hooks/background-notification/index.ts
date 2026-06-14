@@ -8,17 +8,17 @@
  * shell hooks system.
  */
 
-import { getBackgroundManager } from "../../features/background-agent/index.js";
+import { getBackgroundManager } from '../../features/background-agent/index.js';
 import type {
   BackgroundManager,
   BackgroundTask,
-} from "../../features/background-agent/index.js";
+} from '../../features/background-agent/index.js';
 import type {
   BackgroundNotificationHookConfig,
   BackgroundNotificationHookInput,
   BackgroundNotificationHookOutput,
   NotificationCheckResult,
-} from "./types.js";
+} from './types.js';
 
 // Re-export types
 export type {
@@ -26,10 +26,10 @@ export type {
   BackgroundNotificationHookInput,
   BackgroundNotificationHookOutput,
   NotificationCheckResult,
-} from "./types.js";
+} from './types.js';
 
 /** Hook name identifier */
-export const HOOK_NAME = "background-notification";
+export const HOOK_NAME = 'background-notification';
 
 /**
  * Format a single task notification
@@ -38,7 +38,7 @@ function formatTaskNotification(task: BackgroundTask): string {
   const status = task.status.toUpperCase();
   const duration = formatDuration(task.startedAt, task.completedAt);
   const emoji =
-    task.status === "completed" ? "✓" : task.status === "error" ? "✗" : "○";
+    task.status === 'completed' ? '✓' : task.status === 'error' ? '✗' : '○';
 
   const lines = [
     `${emoji} [${status}] ${task.description}`,
@@ -52,7 +52,7 @@ function formatTaskNotification(task: BackgroundTask): string {
 
   if (task.result) {
     const resultPreview = task.result.substring(0, 200);
-    const truncated = task.result.length > 200 ? "..." : "";
+    const truncated = task.result.length > 200 ? '...' : '';
     lines.push(`  Result: ${resultPreview}${truncated}`);
   }
 
@@ -60,7 +60,7 @@ function formatTaskNotification(task: BackgroundTask): string {
     lines.push(`  Error: ${task.error}`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -85,17 +85,17 @@ function formatDuration(start: Date, end?: Date): string {
  */
 function defaultFormatNotification(tasks: BackgroundTask[]): string {
   if (tasks.length === 0) {
-    return "";
+    return '';
   }
 
   const header =
     tasks.length === 1
-      ? "\n[BACKGROUND TASK COMPLETED]\n"
+      ? '\n[BACKGROUND TASK COMPLETED]\n'
       : `\n[${tasks.length} BACKGROUND TASKS COMPLETED]\n`;
 
   const taskDescriptions = tasks
     .map((task) => formatTaskNotification(task))
-    .join("\n\n");
+    .join('\n\n');
 
   return `${header}\n${taskDescriptions}\n`;
 }
@@ -174,7 +174,7 @@ export function handleBackgroundEvent(
   manager: BackgroundManager,
 ): void {
   // Handle task completion events
-  if (event.type === "task.completed" || event.type === "task.failed") {
+  if (event.type === 'task.completed' || event.type === 'task.failed') {
     const taskId = event.properties?.taskId as string;
     if (taskId) {
       const task = manager.getTask(taskId);

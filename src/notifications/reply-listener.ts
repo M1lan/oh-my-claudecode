@@ -16,7 +16,17 @@
  * Follows the daemon pattern from src/features/rate-limit-wait/daemon.ts
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, chmodSync, statSync, appendFileSync, renameSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  chmodSync,
+  statSync,
+  appendFileSync,
+  renameSync,
+} from 'fs';
 import { join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { spawn } from 'child_process';
@@ -64,16 +74,37 @@ const MAX_LOG_SIZE_BYTES = 1 * 1024 * 1024;
  * OMC_* notification env vars are forwarded so the daemon can call getNotificationConfig().
  */
 const DAEMON_ENV_ALLOWLIST = [
-  'PATH', 'HOME', 'USERPROFILE',
-  'USER', 'USERNAME', 'LOGNAME',
-  'LANG', 'LC_ALL', 'LC_CTYPE',
-  'TERM', 'TMUX', 'TMUX_PANE',
-  'TMPDIR', 'TMP', 'TEMP',
-  'XDG_RUNTIME_DIR', 'XDG_DATA_HOME', 'XDG_CONFIG_HOME',
+  'PATH',
+  'HOME',
+  'USERPROFILE',
+  'USER',
+  'USERNAME',
+  'LOGNAME',
+  'LANG',
+  'LC_ALL',
+  'LC_CTYPE',
+  'TERM',
+  'TMUX',
+  'TMUX_PANE',
+  'TMPDIR',
+  'TMP',
+  'TEMP',
+  'XDG_RUNTIME_DIR',
+  'XDG_DATA_HOME',
+  'XDG_CONFIG_HOME',
   'SHELL',
-  'NODE_ENV', 'NODE_EXTRA_CA_CERTS',
-  'HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy', 'NO_PROXY', 'no_proxy',
-  'SystemRoot', 'SYSTEMROOT', 'windir', 'COMSPEC',
+  'NODE_ENV',
+  'NODE_EXTRA_CA_CERTS',
+  'HTTP_PROXY',
+  'HTTPS_PROXY',
+  'http_proxy',
+  'https_proxy',
+  'NO_PROXY',
+  'no_proxy',
+  'SystemRoot',
+  'SYSTEMROOT',
+  'windir',
+  'COMSPEC',
 ] as const;
 
 /** Default paths */
@@ -237,7 +268,11 @@ function writeDaemonState(state: ReplyListenerState): void {
  */
 export async function buildDaemonConfig(): Promise<ReplyListenerDaemonConfig | null> {
   try {
-    const { getReplyConfig, getNotificationConfig, getReplyListenerPlatformConfig } = await import('./config.js');
+    const {
+      getReplyConfig,
+      getNotificationConfig,
+      getReplyListenerPlatformConfig,
+    } = await import('./config.js');
     const replyConfig = getReplyConfig();
     if (!replyConfig) return null;
     const notifConfig = getNotificationConfig();
@@ -313,13 +348,13 @@ export function isDaemonRunning(): boolean {
  */
 export function sanitizeReplyInput(text: string): string {
   return text
-    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '')  // Strip control chars (keep \n, \r, \t)
-    .replace(/[\u202a-\u202e\u2066-\u2069]/g, '')      // Strip bidi override characters
-    .replace(/\r?\n/g, ' ')                            // Newlines -> spaces
-    .replace(/\\/g, '\\\\')                            // Escape backslashes
-    .replace(/`/g, '\\`')                              // Escape backticks
-    .replace(/\$\(/g, '\\$(')                          // Escape $()
-    .replace(/\$\{/g, '\\${')                          // Escape ${}
+    .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '') // Strip control chars (keep \n, \r, \t)
+    .replace(/[\u202a-\u202e\u2066-\u2069]/g, '') // Strip bidi override characters
+    .replace(/\r?\n/g, ' ') // Newlines -> spaces
+    .replace(/\\/g, '\\\\') // Escape backslashes
+    .replace(/`/g, '\\`') // Escape backticks
+    .replace(/\$\(/g, '\\$(') // Escape $()
+    .replace(/\$\{/g, '\\${') // Escape ${}
     .trim();
 }
 
@@ -336,7 +371,7 @@ class RateLimiter {
   canProceed(): boolean {
     const now = Date.now();
     // Remove timestamps outside the window
-    this.timestamps = this.timestamps.filter(t => now - t < this.windowMs);
+    this.timestamps = this.timestamps.filter((t) => now - t < this.windowMs);
 
     if (this.timestamps.length >= this.maxPerMinute) {
       return false;
@@ -368,7 +403,10 @@ export function buildReplyInjectionSteps(
   text: string,
   platform: string,
   config: Pick<ReplyListenerDaemonConfig, 'includePrefix' | 'maxMessageLength'>,
-  mapping?: Pick<SessionMapping, 'event' | 'askUserQuestionOptionCount' | 'askUserQuestionAllowOther'>,
+  mapping?: Pick<
+    SessionMapping,
+    'event' | 'askUserQuestionOptionCount' | 'askUserQuestionAllowOther'
+  >,
 ): ReplyInjectionStep[] {
   const prefix = config.includePrefix ? `[reply:${platform}] ` : '';
   const sanitized = sanitizeReplyInput(prefix + text);
@@ -379,9 +417,15 @@ export function buildReplyInjectionSteps(
     mapping.askUserQuestionAllowOther !== false &&
     Number.isFinite(mapping.askUserQuestionOptionCount)
   ) {
-    const optionCount = Math.max(0, Math.floor(mapping.askUserQuestionOptionCount ?? 0));
+    const optionCount = Math.max(
+      0,
+      Math.floor(mapping.askUserQuestionOptionCount ?? 0),
+    );
     return [
-      ...Array.from({ length: optionCount }, () => ({ kind: 'key' as const, value: 'Down' })),
+      ...Array.from({ length: optionCount }, () => ({
+        kind: 'key' as const,
+        value: 'Down',
+      })),
       { kind: 'key', value: 'Enter' },
       { kind: 'literal', value: truncated },
       { kind: 'key', value: 'Enter' },
@@ -394,18 +438,29 @@ export function buildReplyInjectionSteps(
   ];
 }
 
-function sendReplyInjectionSteps(paneId: string, steps: ReplyInjectionStep[]): boolean {
+function sendReplyInjectionSteps(
+  paneId: string,
+  steps: ReplyInjectionStep[],
+): boolean {
   try {
     for (const step of steps) {
       if (step.kind === 'literal') {
-        tmuxExec(['send-keys', '-t', paneId, '-l', step.value], { stripTmux: true, timeout: 2000 });
+        tmuxExec(['send-keys', '-t', paneId, '-l', step.value], {
+          stripTmux: true,
+          timeout: 2000,
+        });
       } else {
-        tmuxExec(['send-keys', '-t', paneId, step.value], { stripTmux: true, timeout: 2000 });
+        tmuxExec(['send-keys', '-t', paneId, step.value], {
+          stripTmux: true,
+          timeout: 2000,
+        });
       }
     }
     return true;
   } catch (error) {
-    log(`ERROR: Failed to send reply injection steps to pane ${paneId}: ${error instanceof Error ? error.message : String(error)}`);
+    log(
+      `ERROR: Failed to send reply injection steps to pane ${paneId}: ${error instanceof Error ? error.message : String(error)}`,
+    );
     return false;
   }
 }
@@ -421,7 +476,9 @@ function injectReply(
   const content = capturePaneContent(paneId, 15);
 
   if (!content.trim()) {
-    log(`WARN: Pane ${paneId} appears empty. Skipping injection, removing stale mapping.`);
+    log(
+      `WARN: Pane ${paneId} appears empty. Skipping injection, removing stale mapping.`,
+    );
     removeMessagesByPane(paneId);
     return false;
   }
@@ -429,12 +486,15 @@ function injectReply(
   const steps = buildReplyInjectionSteps(text, platform, config, mapping);
   const preview = steps.find((step) => step.kind === 'literal')?.value ?? '';
 
-  const success = mapping?.event === 'ask-user-question'
-    ? sendReplyInjectionSteps(paneId, steps)
-    : sendToPane(paneId, preview, true);
+  const success =
+    mapping?.event === 'ask-user-question'
+      ? sendReplyInjectionSteps(paneId, steps)
+      : sendToPane(paneId, preview, true);
 
   if (success) {
-    log(`Injected reply from ${platform} into pane ${paneId}: "${preview.slice(0, 50)}${preview.length > 50 ? '...' : ''}"`);
+    log(
+      `Injected reply from ${platform} into pane ${paneId}: "${preview.slice(0, 50)}${preview.length > 50 ? '...' : ''}"`,
+    );
   } else {
     log(`ERROR: Failed to inject reply into pane ${paneId}`);
   }
@@ -472,13 +532,15 @@ async function pollDiscord(
   }
 
   try {
-    const after = state.discordLastMessageId ? `?after=${state.discordLastMessageId}&limit=10` : '?limit=10';
+    const after = state.discordLastMessageId
+      ? `?after=${state.discordLastMessageId}&limit=10`
+      : '?limit=10';
     const url = `https://discord.com/api/v10/channels/${config.discordChannelId}/messages${after}`;
 
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bot ${config.discordBotToken}`,
+        Authorization: `Bot ${config.discordBotToken}`,
       },
       signal: AbortSignal.timeout(10000),
     });
@@ -489,7 +551,9 @@ async function pollDiscord(
     if (remaining !== null && parseInt(remaining, 10) < 2) {
       const resetTime = reset ? parseFloat(reset) * 1000 : Date.now() + 10_000;
       discordBackoffUntil = resetTime;
-      log(`WARN: Discord rate limit low (remaining: ${remaining}), backing off until ${new Date(resetTime).toISOString()}`);
+      log(
+        `WARN: Discord rate limit low (remaining: ${remaining}), backing off until ${new Date(resetTime).toISOString()}`,
+      );
     }
 
     if (!response.ok) {
@@ -497,7 +561,7 @@ async function pollDiscord(
       return;
     }
 
-    const messages = await response.json() as Array<{
+    const messages = (await response.json()) as Array<{
       id: string;
       author: { id: string };
       content: string;
@@ -526,7 +590,10 @@ async function pollDiscord(
       }
 
       // Filter: referenced message exists in session registry
-      const mapping = lookupByMessageId('discord-bot', msg.message_reference.message_id);
+      const mapping = lookupByMessageId(
+        'discord-bot',
+        msg.message_reference.message_id,
+      );
       if (!mapping) {
         state.discordLastMessageId = msg.id;
         writeDaemonState(state);
@@ -547,7 +614,13 @@ async function pollDiscord(
       writeDaemonState(state);
 
       // Inject reply
-      const success = injectReply(mapping.tmuxPaneId, msg.content, 'discord', config, mapping);
+      const success = injectReply(
+        mapping.tmuxPaneId,
+        msg.content,
+        'discord',
+        config,
+        mapping,
+      );
       if (success) {
         state.messagesInjected++;
 
@@ -557,9 +630,9 @@ async function pollDiscord(
             `https://discord.com/api/v10/channels/${config.discordChannelId}/messages/${msg.id}/reactions/%E2%9C%85/@me`,
             {
               method: 'PUT',
-              headers: { 'Authorization': `Bot ${config.discordBotToken}` },
+              headers: { Authorization: `Bot ${config.discordBotToken}` },
               signal: AbortSignal.timeout(5000),
-            }
+            },
           );
         } catch (e) {
           log(`WARN: Failed to add confirmation reaction: ${e}`);
@@ -567,7 +640,9 @@ async function pollDiscord(
 
         // Send injection notification to channel (non-critical)
         try {
-          const mentionPrefix = config.discordMention ? `${config.discordMention} ` : '';
+          const mentionPrefix = config.discordMention
+            ? `${config.discordMention} `
+            : '';
           const feedbackAllowedMentions = config.discordMention
             ? parseMentionAllowedMentions(config.discordMention)
             : { parse: [] as string[] };
@@ -576,7 +651,7 @@ async function pollDiscord(
             {
               method: 'POST',
               headers: {
-                'Authorization': `Bot ${config.discordBotToken}`,
+                Authorization: `Bot ${config.discordBotToken}`,
                 'Content-Type': 'application/json',
               },
               body: JSON.stringify({
@@ -585,7 +660,7 @@ async function pollDiscord(
                 allowed_mentions: feedbackAllowedMentions,
               }),
               signal: AbortSignal.timeout(5000),
-            }
+            },
           );
         } catch (e) {
           log(`WARN: Failed to send injection channel notification: ${e}`);
@@ -594,10 +669,11 @@ async function pollDiscord(
         state.errors++;
       }
     }
-
   } catch (error) {
     state.errors++;
-    state.lastError = redactTokens(error instanceof Error ? error.message : String(error));
+    state.lastError = redactTokens(
+      error instanceof Error ? error.message : String(error),
+    );
     log(`Discord polling error: ${state.lastError}`);
   }
 }
@@ -620,7 +696,9 @@ async function pollTelegram(
   }
 
   try {
-    const offset = state.telegramLastUpdateId ? state.telegramLastUpdateId + 1 : 0;
+    const offset = state.telegramLastUpdateId
+      ? state.telegramLastUpdateId + 1
+      : 0;
     const path = `/bot${config.telegramBotToken}/getUpdates?offset=${offset}&timeout=0`;
 
     const updates = await new Promise<any[]>((resolve, reject) => {
@@ -638,7 +716,11 @@ async function pollTelegram(
           res.on('end', () => {
             try {
               const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              if (
+                res.statusCode &&
+                res.statusCode >= 200 &&
+                res.statusCode < 300
+              ) {
                 resolve(body.result || []);
               } else {
                 reject(new Error(`HTTP ${res.statusCode}`));
@@ -647,7 +729,7 @@ async function pollTelegram(
               reject(e);
             }
           });
-        }
+        },
       );
 
       req.on('error', reject);
@@ -683,7 +765,10 @@ async function pollTelegram(
       }
 
       // Filter: referenced message exists in session registry
-      const mapping = lookupByMessageId('telegram', String(msg.reply_to_message.message_id));
+      const mapping = lookupByMessageId(
+        'telegram',
+        String(msg.reply_to_message.message_id),
+      );
       if (!mapping) {
         state.telegramLastUpdateId = update.update_id;
         writeDaemonState(state);
@@ -699,7 +784,9 @@ async function pollTelegram(
 
       // Rate limiting
       if (!rateLimiter.canProceed()) {
-        log(`WARN: Rate limit exceeded, dropping Telegram message ${msg.message_id}`);
+        log(
+          `WARN: Rate limit exceeded, dropping Telegram message ${msg.message_id}`,
+        );
         state.telegramLastUpdateId = update.update_id;
         writeDaemonState(state);
         state.errors++;
@@ -711,7 +798,13 @@ async function pollTelegram(
       writeDaemonState(state);
 
       // Inject reply
-      const success = injectReply(mapping.tmuxPaneId, text, 'telegram', config, mapping);
+      const success = injectReply(
+        mapping.tmuxPaneId,
+        text,
+        'telegram',
+        config,
+        mapping,
+      );
       if (success) {
         state.messagesInjected++;
 
@@ -739,7 +832,7 @@ async function pollTelegram(
               (res) => {
                 res.resume(); // Drain response
                 resolve();
-              }
+              },
             );
 
             replyReq.on('error', () => resolve());
@@ -758,10 +851,11 @@ async function pollTelegram(
         state.errors++;
       }
     }
-
   } catch (error) {
     state.errors++;
-    state.lastError = redactTokens(error instanceof Error ? error.message : String(error));
+    state.lastError = redactTokens(
+      error instanceof Error ? error.message : String(error),
+    );
     log(`Telegram polling error: ${state.lastError}`);
   }
 }
@@ -806,10 +900,13 @@ async function pollLoop(): Promise<void> {
   let slackSocket: import('./slack-socket.js').SlackSocketClient | null = null;
   if (config.slackAppToken && config.slackBotToken && config.slackChannelId) {
     if (typeof WebSocket === 'undefined') {
-      log('WARN: WebSocket not available (requires Node 20.10+), Slack Socket Mode disabled');
+      log(
+        'WARN: WebSocket not available (requires Node 20.10+), Slack Socket Mode disabled',
+      );
     } else {
       try {
-        const { SlackSocketClient, addSlackReaction } = await import('./slack-socket.js');
+        const { SlackSocketClient, addSlackReaction } =
+          await import('./slack-socket.js');
         const slackChannelId = config.slackChannelId;
         const slackBotToken = config.slackBotToken;
 
@@ -821,18 +918,27 @@ async function pollLoop(): Promise<void> {
           },
           async (event) => {
             // Authorization: fail-closed — reject when no authorized users configured
-            if (!config.authorizedSlackUserIds || config.authorizedSlackUserIds.length === 0) {
-              log('WARN: No authorized Slack user IDs configured, rejecting all messages (fail-closed)');
+            if (
+              !config.authorizedSlackUserIds ||
+              config.authorizedSlackUserIds.length === 0
+            ) {
+              log(
+                'WARN: No authorized Slack user IDs configured, rejecting all messages (fail-closed)',
+              );
               return;
             }
             if (!config.authorizedSlackUserIds.includes(event.user)) {
-              log(`REJECTED Slack message from unauthorized user ${event.user}`);
+              log(
+                `REJECTED Slack message from unauthorized user ${event.user}`,
+              );
               return;
             }
 
             // Rate limiting
             if (!rateLimiter.canProceed()) {
-              log(`WARN: Rate limit exceeded, dropping Slack message ${event.ts}`);
+              log(
+                `WARN: Rate limit exceeded, dropping Slack message ${event.ts}`,
+              );
               state.errors++;
               return;
             }
@@ -859,7 +965,13 @@ async function pollLoop(): Promise<void> {
             }
 
             // Inject reply
-            const success = injectReply(targetPaneId, event.text, 'slack', config, targetMapping);
+            const success = injectReply(
+              targetPaneId,
+              event.text,
+              'slack',
+              config,
+              targetMapping,
+            );
             if (success) {
               state.messagesInjected++;
               writeDaemonState(state);
@@ -881,7 +993,9 @@ async function pollLoop(): Promise<void> {
         await slackSocket.start();
         log('Slack Socket Mode listener started');
       } catch (e) {
-        log(`ERROR: Failed to start Slack Socket Mode: ${e instanceof Error ? e.message : String(e)}`);
+        log(
+          `ERROR: Failed to start Slack Socket Mode: ${e instanceof Error ? e.message : String(e)}`,
+        );
         slackSocket = null;
       }
     }
@@ -926,23 +1040,30 @@ async function pollLoop(): Promise<void> {
           lastPruneAt = Date.now();
           log('Pruned stale registry entries');
         } catch (e) {
-          log(`WARN: Prune failed: ${e instanceof Error ? e.message : String(e)}`);
+          log(
+            `WARN: Prune failed: ${e instanceof Error ? e.message : String(e)}`,
+          );
         }
       }
 
       writeDaemonState(state);
 
       // Wait for next poll
-      await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs));
-
+      await new Promise((resolve) =>
+        setTimeout(resolve, config.pollIntervalMs),
+      );
     } catch (error) {
       state.errors++;
-      state.lastError = redactTokens(error instanceof Error ? error.message : String(error));
+      state.lastError = redactTokens(
+        error instanceof Error ? error.message : String(error),
+      );
       log(`Poll error: ${state.lastError}`);
       writeDaemonState(state);
 
       // Back off on repeated errors
-      await new Promise((resolve) => setTimeout(resolve, config.pollIntervalMs * 2));
+      await new Promise((resolve) =>
+        setTimeout(resolve, config.pollIntervalMs * 2),
+      );
     }
   }
 
@@ -963,7 +1084,9 @@ async function pollLoop(): Promise<void> {
  *
  * @param config - Daemon config (used only for validation, daemon reads config independently)
  */
-export function startReplyListener(_config: ReplyListenerDaemonConfig): DaemonResponse {
+export function startReplyListener(
+  _config: ReplyListenerDaemonConfig,
+): DaemonResponse {
   // Check if already running (idempotent)
   if (isDaemonRunning()) {
     const state = readDaemonState();
@@ -985,7 +1108,10 @@ export function startReplyListener(_config: ReplyListenerDaemonConfig): DaemonRe
   ensureStateDir();
 
   // Fork a new process for the daemon
-  const modulePath = resolveDaemonModulePath(__filename, ['notifications', 'reply-listener.js']);
+  const modulePath = resolveDaemonModulePath(__filename, [
+    'notifications',
+    'reply-listener.js',
+  ]);
   const moduleUrl = pathToFileURL(modulePath).href;
   const daemonScript = `
     import(${JSON.stringify(moduleUrl)}).then(({ pollLoop }) => {
@@ -1058,7 +1184,8 @@ export function stopReplyListener(): DaemonResponse {
     removePidFile();
     return {
       success: true,
-      message: 'Reply listener daemon was not running (cleaned up stale PID file)',
+      message:
+        'Reply listener daemon was not running (cleaned up stale PID file)',
     };
   }
 
@@ -1196,7 +1323,9 @@ export function processSlackSocketMessage(
     const payload = parsed.payload;
     text = payload?.event?.text || payload?.text || '';
   } catch {
-    log('REJECTED Slack message: failed to extract text from validated message');
+    log(
+      'REJECTED Slack message: failed to extract text from validated message',
+    );
     state.errors++;
     return {
       injected: false,

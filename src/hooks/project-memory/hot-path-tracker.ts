@@ -3,8 +3,8 @@
  * Tracks frequently accessed files and directories
  */
 
-import path from "path";
-import { HotPath, ProjectMemoryContext } from "./types.js";
+import path from 'path';
+import { HotPath, ProjectMemoryContext } from './types.js';
 
 const MAX_HOT_PATHS = 50;
 
@@ -15,7 +15,7 @@ export function trackAccess(
   hotPaths: HotPath[] | null | undefined,
   filePath: string,
   projectRoot: string,
-  type: "file" | "directory",
+  type: 'file' | 'directory',
 ): HotPath[] {
   const relativePath = path.isAbsolute(filePath)
     ? path.relative(projectRoot, filePath)
@@ -23,7 +23,7 @@ export function trackAccess(
 
   const normalizedHotPaths = ensureHotPathList(hotPaths);
 
-  if (relativePath.startsWith("..") || shouldIgnorePath(relativePath)) {
+  if (relativePath.startsWith('..') || shouldIgnorePath(relativePath)) {
     return normalizedHotPaths;
   }
 
@@ -50,23 +50,22 @@ export function trackAccess(
   return normalizedHotPaths;
 }
 
-
 function ensureHotPathList(hotPaths: HotPath[] | null | undefined): HotPath[] {
   return Array.isArray(hotPaths) ? hotPaths : [];
 }
 
 function shouldIgnorePath(relativePath: string): boolean {
   const ignorePatterns = [
-    "node_modules",
-    ".git",
-    ".omc",
-    "dist",
-    "build",
-    ".cache",
-    ".next",
-    ".nuxt",
-    "coverage",
-    ".DS_Store",
+    'node_modules',
+    '.git',
+    '.omc',
+    'dist',
+    'build',
+    '.cache',
+    '.next',
+    '.nuxt',
+    'coverage',
+    '.DS_Store',
   ];
 
   return ignorePatterns.some((pattern) => relativePath.includes(pattern));
@@ -95,7 +94,9 @@ export function getTopHotPaths(
 /**
  * Decay old hot paths (reduce access count over time)
  */
-export function decayHotPaths(hotPaths: HotPath[] | null | undefined): HotPath[] {
+export function decayHotPaths(
+  hotPaths: HotPath[] | null | undefined,
+): HotPath[] {
   const now = Date.now();
   const dayInMs = 24 * 60 * 60 * 1000;
 
@@ -121,7 +122,7 @@ function scoreHotPath(
   const ageMs = Math.max(0, now - hotPath.lastAccessed);
   const recencyScore = Math.max(0, 120 - Math.floor(ageMs / (60 * 60 * 1000)));
   const accessScore = hotPath.accessCount * 10;
-  const typeBonus = hotPath.type === "file" ? 6 : 3;
+  const typeBonus = hotPath.type === 'file' ? 6 : 3;
   const scopeBonus = getScopeAffinityScore(hotPath.path, scopePath);
 
   return accessScore + recencyScore + typeBonus + scopeBonus;
@@ -131,7 +132,7 @@ function getScopeAffinityScore(
   hotPath: string,
   scopePath: string | null,
 ): number {
-  if (!scopePath || scopePath === "." || scopePath.length === 0) {
+  if (!scopePath || scopePath === '.' || scopePath.length === 0) {
     return 0;
   }
 
@@ -147,8 +148,8 @@ function getScopeAffinityScore(
     return 220;
   }
 
-  const hotSegments = hotPath.split("/");
-  const scopeSegments = scopePath.split("/");
+  const hotSegments = hotPath.split('/');
+  const scopeSegments = scopePath.split('/');
   let sharedSegments = 0;
 
   while (
@@ -169,9 +170,9 @@ function normalizeScopePath(workingDirectory?: string): string | null {
 
   const normalized = path
     .normalize(workingDirectory)
-    .replace(/^\.[/\\]?/, "")
-    .replace(/\\/g, "/");
-  if (normalized === "" || normalized === ".") {
+    .replace(/^\.[/\\]?/, '')
+    .replace(/\\/g, '/');
+  if (normalized === '' || normalized === '.') {
     return null;
   }
 

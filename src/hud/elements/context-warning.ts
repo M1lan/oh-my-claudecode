@@ -24,7 +24,7 @@ const BOLD = '\x1b[1m';
 export function renderContextLimitWarning(
   contextPercent: number,
   threshold: number,
-  autoCompact: boolean
+  autoCompact: boolean,
 ): string | null {
   const safePercent = Math.min(100, Math.max(0, Math.round(contextPercent)));
 

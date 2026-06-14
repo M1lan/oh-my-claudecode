@@ -1,30 +1,30 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 import {
   cleanupOwnedBridgeSessions,
   cleanupStaleBridges,
   trackOwnedBridgeSession,
-} from "../bridge-manager.js";
+} from '../bridge-manager.js';
 import {
   getBridgeMetaPath,
   getBridgeSocketPath,
   getSessionDir,
   getSessionLockPath,
   getRuntimeDir,
-} from "../paths.js";
-import type { BridgeMeta } from "../types.js";
+} from '../paths.js';
+import type { BridgeMeta } from '../types.js';
 
-describe("bridge-manager cleanup", () => {
+describe('bridge-manager cleanup', () => {
   let tmpRuntimeRoot: string;
   let originalXdgRuntimeDir: string | undefined;
 
   beforeEach(() => {
     originalXdgRuntimeDir = process.env.XDG_RUNTIME_DIR;
     tmpRuntimeRoot = fs.mkdtempSync(
-      path.join(os.tmpdir(), "omc-bridge-cleanup-"),
+      path.join(os.tmpdir(), 'omc-bridge-cleanup-'),
     );
     fs.chmodSync(tmpRuntimeRoot, 0o700);
     process.env.XDG_RUNTIME_DIR = tmpRuntimeRoot;
@@ -40,8 +40,8 @@ describe("bridge-manager cleanup", () => {
     fs.rmSync(tmpRuntimeRoot, { recursive: true, force: true });
   });
 
-  it("removes stale bridge metadata/socket/lock for dead processes", async () => {
-    const sessionId = "stale-session";
+  it('removes stale bridge metadata/socket/lock for dead processes', async () => {
+    const sessionId = 'stale-session';
     const sessionDir = getSessionDir(sessionId);
     fs.mkdirSync(sessionDir, { recursive: true });
 
@@ -50,20 +50,20 @@ describe("bridge-manager cleanup", () => {
       socketPath: getBridgeSocketPath(sessionId),
       startedAt: new Date().toISOString(),
       sessionId,
-      pythonEnv: { pythonPath: "python3", type: "venv" },
+      pythonEnv: { pythonPath: 'python3', type: 'venv' },
     };
 
     fs.writeFileSync(
       getBridgeMetaPath(sessionId),
       JSON.stringify(meta),
-      "utf-8",
+      'utf-8',
     );
     fs.writeFileSync(
       getBridgeSocketPath(sessionId),
-      "not-a-real-socket",
-      "utf-8",
+      'not-a-real-socket',
+      'utf-8',
     );
-    fs.writeFileSync(getSessionLockPath(sessionId), "lock", "utf-8");
+    fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
 
     const result = await cleanupStaleBridges();
 
@@ -81,8 +81,8 @@ describe("bridge-manager cleanup", () => {
     expect(fs.existsSync(getSessionLockPath(sessionId))).toBe(false);
   });
 
-  it("keeps bridge artifacts for active processes", async () => {
-    const sessionId = "active-session";
+  it('keeps bridge artifacts for active processes', async () => {
+    const sessionId = 'active-session';
     fs.mkdirSync(getSessionDir(sessionId), { recursive: true });
 
     const meta: BridgeMeta = {
@@ -90,16 +90,16 @@ describe("bridge-manager cleanup", () => {
       socketPath: getBridgeSocketPath(sessionId),
       startedAt: new Date().toISOString(),
       sessionId,
-      pythonEnv: { pythonPath: "python3", type: "venv" },
+      pythonEnv: { pythonPath: 'python3', type: 'venv' },
     };
 
     fs.writeFileSync(
       getBridgeMetaPath(sessionId),
       JSON.stringify(meta),
-      "utf-8",
+      'utf-8',
     );
-    fs.writeFileSync(getBridgeSocketPath(sessionId), "placeholder", "utf-8");
-    fs.writeFileSync(getSessionLockPath(sessionId), "lock", "utf-8");
+    fs.writeFileSync(getBridgeSocketPath(sessionId), 'placeholder', 'utf-8');
+    fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
 
     const result = await cleanupStaleBridges();
 
@@ -113,15 +113,15 @@ describe("bridge-manager cleanup", () => {
     expect(fs.existsSync(getSessionLockPath(sessionId))).toBe(true);
   });
 
-  it("cleanupOwnedBridgeSessions only removes sessions tracked by this process", async () => {
-    const ownedSessionId = "owned-session";
-    const foreignSessionId = "foreign-session";
+  it('cleanupOwnedBridgeSessions only removes sessions tracked by this process', async () => {
+    const ownedSessionId = 'owned-session';
+    const foreignSessionId = 'foreign-session';
 
     for (const sessionId of [ownedSessionId, foreignSessionId]) {
       fs.mkdirSync(getSessionDir(sessionId), { recursive: true });
-      fs.writeFileSync(getBridgeMetaPath(sessionId), "{invalid-json", "utf-8");
-      fs.writeFileSync(getBridgeSocketPath(sessionId), "placeholder", "utf-8");
-      fs.writeFileSync(getSessionLockPath(sessionId), "lock", "utf-8");
+      fs.writeFileSync(getBridgeMetaPath(sessionId), '{invalid-json', 'utf-8');
+      fs.writeFileSync(getBridgeSocketPath(sessionId), 'placeholder', 'utf-8');
+      fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
     }
 
     trackOwnedBridgeSession(ownedSessionId);
@@ -141,12 +141,12 @@ describe("bridge-manager cleanup", () => {
     expect(fs.existsSync(getSessionLockPath(foreignSessionId))).toBe(true);
   });
 
-  it("cleanupOwnedBridgeSessions clears tracked ownership after cleanup", async () => {
-    const sessionId = "cleanup-once";
+  it('cleanupOwnedBridgeSessions clears tracked ownership after cleanup', async () => {
+    const sessionId = 'cleanup-once';
     fs.mkdirSync(getSessionDir(sessionId), { recursive: true });
-    fs.writeFileSync(getBridgeMetaPath(sessionId), "{invalid-json", "utf-8");
-    fs.writeFileSync(getBridgeSocketPath(sessionId), "placeholder", "utf-8");
-    fs.writeFileSync(getSessionLockPath(sessionId), "lock", "utf-8");
+    fs.writeFileSync(getBridgeMetaPath(sessionId), '{invalid-json', 'utf-8');
+    fs.writeFileSync(getBridgeSocketPath(sessionId), 'placeholder', 'utf-8');
+    fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
 
     trackOwnedBridgeSession(sessionId);
 

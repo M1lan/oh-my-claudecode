@@ -1,12 +1,12 @@
 // src/team/phase-controller.ts
 
 export type TeamPhase =
-  | "initializing"
-  | "planning"
-  | "executing"
-  | "fixing"
-  | "completed"
-  | "failed";
+  | 'initializing'
+  | 'planning'
+  | 'executing'
+  | 'fixing'
+  | 'completed'
+  | 'failed';
 
 export interface PhaseableTask {
   status: string;
@@ -32,23 +32,23 @@ export interface PhaseableTask {
  * 9. Fallback → 'executing'
  */
 export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
-  if (tasks.length === 0) return "initializing";
+  if (tasks.length === 0) return 'initializing';
 
   // Categorize tasks
-  const inProgress = tasks.filter((t) => t.status === "in_progress");
-  const pending = tasks.filter((t) => t.status === "pending");
+  const inProgress = tasks.filter((t) => t.status === 'in_progress');
+  const pending = tasks.filter((t) => t.status === 'pending');
   // CRITICAL: permanentlyFailed tasks have status='completed' but are actually failed
   const permanentlyFailed = tasks.filter(
-    (t) => t.status === "completed" && t.metadata?.permanentlyFailed === true,
+    (t) => t.status === 'completed' && t.metadata?.permanentlyFailed === true,
   );
   const genuinelyCompleted = tasks.filter(
-    (t) => t.status === "completed" && !t.metadata?.permanentlyFailed,
+    (t) => t.status === 'completed' && !t.metadata?.permanentlyFailed,
   );
-  const explicitlyFailed = tasks.filter((t) => t.status === "failed");
+  const explicitlyFailed = tasks.filter((t) => t.status === 'failed');
   const allFailed = [...permanentlyFailed, ...explicitlyFailed];
 
   // Rule 2: Any in_progress → executing
-  if (inProgress.length > 0) return "executing";
+  if (inProgress.length > 0) return 'executing';
 
   // Rule 3: All pending, nothing else → planning
   if (
@@ -56,7 +56,7 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
     genuinelyCompleted.length === 0 &&
     allFailed.length === 0
   ) {
-    return "planning";
+    return 'planning';
   }
 
   // Rule 4: Mixed completed + pending (no in_progress, no failures) → executing
@@ -66,7 +66,7 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
     inProgress.length === 0 &&
     allFailed.length === 0
   ) {
-    return "executing";
+    return 'executing';
   }
 
   // Rules 6 & 7: Handle failures
@@ -86,20 +86,20 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
         genuinelyCompleted.length === 0 &&
         !hasRetriesRemaining)
     ) {
-      return "failed";
+      return 'failed';
     }
 
     // Rule 6: Some failed but retries available
-    if (hasRetriesRemaining) return "fixing";
+    if (hasRetriesRemaining) return 'fixing';
   }
 
   // Rule 8: All genuinely completed, no failures
   if (genuinelyCompleted.length === tasks.length && allFailed.length === 0) {
-    return "completed";
+    return 'completed';
   }
 
   // Rule 9: Fallback
-  return "executing";
+  return 'executing';
 }
 
 /**
@@ -117,5 +117,5 @@ export function getPhaseTransitionLog(
  * Check if a phase is terminal (no further transitions expected).
  */
 export function isTerminalPhase(phase: TeamPhase): boolean {
-  return phase === "completed" || phase === "failed";
+  return phase === 'completed' || phase === 'failed';
 }

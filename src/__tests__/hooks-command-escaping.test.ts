@@ -28,18 +28,18 @@ function expandHookCommandArgv(command: string, pluginRoot: string): string[] {
         HOOK_COMMAND: command,
         CLAUDE_PLUGIN_ROOT: pluginRoot,
       },
-    }).trim()
+    }).trim(),
   ) as string[];
 }
 
 function getHookCommands(): HookCommandEntry[] {
   const raw = JSON.parse(readFileSync(hooksJsonPath, 'utf-8')) as HooksConfig;
   return Object.entries(raw.hooks ?? {}).flatMap(([event, groups]) =>
-    groups.flatMap(group =>
+    groups.flatMap((group) =>
       (group.hooks ?? [])
-        .map(hook => hook.command)
+        .map((hook) => hook.command)
         .filter((command): command is string => typeof command === 'string')
-        .map(command => ({ event, command })),
+        .map((command) => ({ event, command })),
     ),
   );
 }
@@ -47,7 +47,9 @@ function getHookCommands(): HookCommandEntry[] {
 describe('hooks.json command escaping', () => {
   it('uses portable hook commands without absolute /bin/sh or pre-expanded ${...} placeholders', () => {
     for (const { command } of getHookCommands()) {
-      expect(command).toMatch(/^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs "\$CLAUDE_PLUGIN_ROOT"\/scripts\/[^\s]+/);
+      expect(command).toMatch(
+        /^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs "\$CLAUDE_PLUGIN_ROOT"\/scripts\/[^\s]+/,
+      );
       expect(command).not.toContain('find-node.sh');
       expect(command).not.toMatch(/^sh /);
       expect(command).not.toContain('/bin/sh');
@@ -57,7 +59,8 @@ describe('hooks.json command escaping', () => {
   });
 
   it('keeps Windows-style plugin roots with spaces intact when bash expands the command', () => {
-    const pluginRoot = '/c/Users/First Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10';
+    const pluginRoot =
+      '/c/Users/First Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10';
 
     for (const { command } of getHookCommands()) {
       const argv = expandHookCommandArgv(command, pluginRoot);
@@ -68,7 +71,9 @@ describe('hooks.json command escaping', () => {
       expect(argv[1]).toContain('First Last');
       expect(argv[2]).toContain('First Last');
       expect(argv).not.toContain('/c/Users/First');
-      expect(argv).not.toContain('Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10/scripts/run.cjs');
+      expect(argv).not.toContain(
+        'Last/.claude/plugins/cache/omc/oh-my-claudecode/4.7.10/scripts/run.cjs',
+      );
     }
   });
 
@@ -84,18 +89,22 @@ describe('hooks.json command escaping', () => {
         'utf-8',
       );
 
-      const stdout = execFileSync('/bin/sh', [
-        join(process.cwd(), 'scripts', 'find-node.sh'),
-        '-e',
-        "process.stdout.write('ok')",
-      ], {
-        encoding: 'utf-8',
-        env: {
-          HOME: homeDir,
-          CLAUDE_CONFIG_DIR: configDir,
-          PATH: '/usr/bin:/bin',
+      const stdout = execFileSync(
+        '/bin/sh',
+        [
+          join(process.cwd(), 'scripts', 'find-node.sh'),
+          '-e',
+          "process.stdout.write('ok')",
+        ],
+        {
+          encoding: 'utf-8',
+          env: {
+            HOME: homeDir,
+            CLAUDE_CONFIG_DIR: configDir,
+            PATH: '/usr/bin:/bin',
+          },
         },
-      });
+      );
 
       expect(stdout).toBe('ok');
     } finally {

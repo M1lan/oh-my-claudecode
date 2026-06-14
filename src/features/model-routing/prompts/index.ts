@@ -5,29 +5,29 @@
  * Each tier has prompts optimized for that model's capabilities.
  */
 
-import type { ComplexityTier, PromptAdaptationStrategy } from "../types.js";
-import { TIER_PROMPT_STRATEGIES } from "../types.js";
+import type { ComplexityTier, PromptAdaptationStrategy } from '../types.js';
+import { TIER_PROMPT_STRATEGIES } from '../types.js';
 
 import {
   adaptPromptForOpus,
   OPUS_PROMPT_PREFIX,
   OPUS_PROMPT_SUFFIX,
-} from "./opus.js";
+} from './opus.js';
 import {
   adaptPromptForSonnet,
   SONNET_PROMPT_PREFIX,
   SONNET_PROMPT_SUFFIX,
-} from "./sonnet.js";
+} from './sonnet.js';
 import {
   adaptPromptForHaiku,
   HAIKU_PROMPT_PREFIX,
   HAIKU_PROMPT_SUFFIX,
-} from "./haiku.js";
+} from './haiku.js';
 
 // Re-export tier-specific modules
-export * from "./opus.js";
-export * from "./sonnet.js";
-export * from "./haiku.js";
+export * from './opus.js';
+export * from './sonnet.js';
+export * from './haiku.js';
 
 /**
  * Adapt a prompt for a specific complexity tier
@@ -37,11 +37,11 @@ export function adaptPromptForTier(
   tier: ComplexityTier,
 ): string {
   switch (tier) {
-    case "HIGH":
+    case 'HIGH':
       return adaptPromptForOpus(prompt);
-    case "MEDIUM":
+    case 'MEDIUM':
       return adaptPromptForSonnet(prompt);
-    case "LOW":
+    case 'LOW':
       return adaptPromptForHaiku(prompt);
   }
 }
@@ -60,11 +60,11 @@ export function getPromptStrategy(
  */
 export function getPromptPrefix(tier: ComplexityTier): string {
   switch (tier) {
-    case "HIGH":
+    case 'HIGH':
       return OPUS_PROMPT_PREFIX;
-    case "MEDIUM":
+    case 'MEDIUM':
       return SONNET_PROMPT_PREFIX;
-    case "LOW":
+    case 'LOW':
       return HAIKU_PROMPT_PREFIX;
   }
 }
@@ -74,11 +74,11 @@ export function getPromptPrefix(tier: ComplexityTier): string {
  */
 export function getPromptSuffix(tier: ComplexityTier): string {
   switch (tier) {
-    case "HIGH":
+    case 'HIGH':
       return OPUS_PROMPT_SUFFIX;
-    case "MEDIUM":
+    case 'MEDIUM':
       return SONNET_PROMPT_SUFFIX;
-    case "LOW":
+    case 'LOW':
       return HAIKU_PROMPT_SUFFIX;
   }
 }
@@ -117,19 +117,19 @@ export function createDelegationPrompt(
   }
 
   if (context.mustDo?.length) {
-    body += `\n### MUST DO\n${context.mustDo.map((m) => `- ${m}`).join("\n")}\n`;
+    body += `\n### MUST DO\n${context.mustDo.map((m) => `- ${m}`).join('\n')}\n`;
   }
 
   if (context.mustNotDo?.length) {
-    body += `\n### MUST NOT DO\n${context.mustNotDo.map((m) => `- ${m}`).join("\n")}\n`;
+    body += `\n### MUST NOT DO\n${context.mustNotDo.map((m) => `- ${m}`).join('\n')}\n`;
   }
 
   if (context.requiredSkills?.length) {
-    body += `\n### REQUIRED SKILLS\n${context.requiredSkills.map((s) => `- ${s}`).join("\n")}\n`;
+    body += `\n### REQUIRED SKILLS\n${context.requiredSkills.map((s) => `- ${s}`).join('\n')}\n`;
   }
 
   if (context.requiredTools?.length) {
-    body += `\n### REQUIRED TOOLS\n${context.requiredTools.map((t) => `- ${t}`).join("\n")}\n`;
+    body += `\n### REQUIRED TOOLS\n${context.requiredTools.map((t) => `- ${t}`).join('\n')}\n`;
   }
 
   return prefix + body + suffix;
@@ -143,25 +143,25 @@ export const TIER_TASK_INSTRUCTIONS: Record<
   Record<string, string>
 > = {
   HIGH: {
-    search: "Perform thorough multi-angle search with analysis of findings.",
-    implement: "Design solution with tradeoff analysis before implementing.",
-    debug: "Deep root cause analysis with hypothesis testing.",
-    review: "Comprehensive evaluation against multiple criteria.",
-    plan: "Strategic planning with risk analysis and alternatives.",
+    search: 'Perform thorough multi-angle search with analysis of findings.',
+    implement: 'Design solution with tradeoff analysis before implementing.',
+    debug: 'Deep root cause analysis with hypothesis testing.',
+    review: 'Comprehensive evaluation against multiple criteria.',
+    plan: 'Strategic planning with risk analysis and alternatives.',
   },
   MEDIUM: {
-    search: "Search efficiently, return structured results.",
-    implement: "Follow existing patterns, implement cleanly.",
-    debug: "Systematic debugging, fix the issue.",
-    review: "Check against criteria, provide feedback.",
-    plan: "Create actionable plan with clear steps.",
+    search: 'Search efficiently, return structured results.',
+    implement: 'Follow existing patterns, implement cleanly.',
+    debug: 'Systematic debugging, fix the issue.',
+    review: 'Check against criteria, provide feedback.',
+    plan: 'Create actionable plan with clear steps.',
   },
   LOW: {
-    search: "Find and return paths.",
-    implement: "Make the change.",
-    debug: "Fix the bug.",
-    review: "Check it.",
-    plan: "List steps.",
+    search: 'Find and return paths.',
+    implement: 'Make the change.',
+    debug: 'Fix the bug.',
+    review: 'Check it.',
+    plan: 'List steps.',
   },
 };
 

@@ -11,14 +11,14 @@
  * - setup: Sync all OMC components (hooks, agents, skills)
  */
 
-import { Command } from "commander";
-import chalk from "chalk";
-import { join } from "path";
-import { writeFileSync, existsSync } from "fs";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
-import { OMC_PLUGIN_ROOT_ENV } from "../lib/env-vars.js";
-import { loadConfig, getConfigPaths } from "../config/loader.js";
-import { createOmcSession } from "../index.js";
+import { Command } from 'commander';
+import chalk from 'chalk';
+import { join } from 'path';
+import { writeFileSync, existsSync } from 'fs';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
+import { loadConfig, getConfigPaths } from '../config/loader.js';
+import { createOmcSession } from '../index.js';
 import {
   checkForUpdates,
   performUpdate,
@@ -28,38 +28,38 @@ import {
   reconcileUpdateRuntime,
   CONFIG_FILE,
   type OMCConfig,
-} from "../features/auto-update.js";
+} from '../features/auto-update.js';
 import {
   install as installOmc,
   isInstalled,
   getInstallInfo,
-} from "../installer/index.js";
+} from '../installer/index.js';
 import {
   waitCommand,
   waitStatusCommand,
   waitDaemonCommand,
   waitDetectCommand,
-} from "./commands/wait.js";
-import { doctorConflictsCommand } from "./commands/doctor-conflicts.js";
-import { doctorTeamRoutingCommand } from "./commands/doctor-team-routing.js";
-import { sessionSearchCommand } from "./commands/session-search.js";
-import { teamCommand } from "./commands/team.js";
-import { ralphthonCommand } from "./commands/ralphthon.js";
-import { ultragoalCommand, ULTRAGOAL_HELP } from "./commands/ultragoal.js";
+} from './commands/wait.js';
+import { doctorConflictsCommand } from './commands/doctor-conflicts.js';
+import { doctorTeamRoutingCommand } from './commands/doctor-team-routing.js';
+import { sessionSearchCommand } from './commands/session-search.js';
+import { teamCommand } from './commands/team.js';
+import { ralphthonCommand } from './commands/ralphthon.js';
+import { ultragoalCommand, ULTRAGOAL_HELP } from './commands/ultragoal.js';
 import {
   teleportCommand,
   teleportListCommand,
   teleportRemoveCommand,
-} from "./commands/teleport.js";
+} from './commands/teleport.js';
 
-import { getRuntimePackageVersion } from "../lib/version.js";
-import { resolvePluginDirArg } from "../lib/plugin-dir.js";
-import { launchCommand } from "./launch.js";
-import { interopCommand } from "./interop.js";
-import { askCommand, ASK_USAGE } from "./ask.js";
-import { warnIfWin32 } from "./win32-warning.js";
-import { autoresearchCommand } from "./autoresearch.js";
-import { runHudWatchLoop } from "./hud-watch.js";
+import { getRuntimePackageVersion } from '../lib/version.js';
+import { resolvePluginDirArg } from '../lib/plugin-dir.js';
+import { launchCommand } from './launch.js';
+import { interopCommand } from './interop.js';
+import { askCommand, ASK_USAGE } from './ask.js';
+import { warnIfWin32 } from './win32-warning.js';
+import { autoresearchCommand } from './autoresearch.js';
+import { runHudWatchLoop } from './hud-watch.js';
 
 const version = getRuntimePackageVersion();
 
@@ -105,7 +105,7 @@ async function defaultAction() {
 
   // Defensive fallback: wrapper/bridge invocations must preserve explicit ask routing
   // so nested Claude launch checks only apply to actual Claude launches.
-  if (args[0] === "ask") {
+  if (args[0] === 'ask') {
     await askCommand(args.slice(1));
     return;
   }
@@ -114,8 +114,8 @@ async function defaultAction() {
 }
 
 program
-  .name("omc")
-  .description("Multi-agent orchestration system for Claude Agent SDK")
+  .name('omc')
+  .description('Multi-agent orchestration system for Claude Agent SDK')
   .version(version)
   .allowUnknownOption()
   .action(defaultAction);
@@ -124,11 +124,11 @@ program
  * Launch command - Native tmux shell launch for Claude Code
  */
 program
-  .command("launch [args...]")
-  .description("Launch Claude Code with native tmux shell integration")
+  .command('launch [args...]')
+  .description('Launch Claude Code with native tmux shell integration')
   .allowUnknownOption()
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc                                Launch Claude Code
@@ -155,12 +155,12 @@ Environment:
  * Interop command - Split-pane tmux session with OMC and OMX
  */
 program
-  .command("interop")
+  .command('interop')
   .description(
-    "Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)",
+    'Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)',
   )
   .addHelpText(
-    "after",
+    'after',
     `
 Requirements:
   - Must be running inside a tmux session
@@ -175,10 +175,10 @@ Requirements:
  * Ask command - Run provider advisor prompt (claude|gemini)
  */
 program
-  .command("ask [args...]")
-  .description("Run provider advisor prompt and write an ask artifact")
+  .command('ask [args...]')
+  .description('Run provider advisor prompt and write an ask artifact')
   .allowUnknownOption()
-  .addHelpText("after", `\n${ASK_USAGE}`)
+  .addHelpText('after', `\n${ASK_USAGE}`)
   .action(async (args: string[]) => {
     await askCommand(args || []);
   });
@@ -187,12 +187,12 @@ program
  * Config command - Show or validate configuration
  */
 program
-  .command("config")
-  .description("Show current configuration")
-  .option("-v, --validate", "Validate configuration")
-  .option("-p, --paths", "Show configuration file paths")
+  .command('config')
+  .description('Show current configuration')
+  .option('-v, --validate', 'Validate configuration')
+  .option('-p, --paths', 'Show configuration file paths')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc config                   Show current configuration
@@ -204,16 +204,16 @@ Examples:
   .action(async (options) => {
     if (options.paths) {
       const paths = getConfigPaths();
-      console.log(chalk.blue("Configuration file paths:"));
+      console.log(chalk.blue('Configuration file paths:'));
       console.log(`  User:    ${paths.user}`);
       console.log(`  Project: ${paths.project}`);
 
-      console.log(chalk.blue("\nFile status:"));
+      console.log(chalk.blue('\nFile status:'));
       console.log(
-        `  User:    ${existsSync(paths.user) ? chalk.green("exists") : chalk.gray("not found")}`,
+        `  User:    ${existsSync(paths.user) ? chalk.green('exists') : chalk.gray('not found')}`,
       );
       console.log(
-        `  Project: ${existsSync(paths.project) ? chalk.green("exists") : chalk.gray("not found")}`,
+        `  Project: ${existsSync(paths.project) ? chalk.green('exists') : chalk.gray('not found')}`,
       );
       return;
     }
@@ -221,14 +221,14 @@ Examples:
     const config = loadConfig();
 
     if (options.validate) {
-      console.log(chalk.blue("Validating configuration...\n"));
+      console.log(chalk.blue('Validating configuration...\n'));
 
       // Check for required fields
       const warnings: string[] = [];
       const errors: string[] = [];
 
       if (!process.env.ANTHROPIC_API_KEY) {
-        warnings.push("ANTHROPIC_API_KEY environment variable not set");
+        warnings.push('ANTHROPIC_API_KEY environment variable not set');
       }
 
       if (
@@ -236,27 +236,27 @@ Examples:
         !process.env.EXA_API_KEY &&
         !config.mcpServers.exa.apiKey
       ) {
-        warnings.push("Exa is enabled but EXA_API_KEY is not set");
+        warnings.push('Exa is enabled but EXA_API_KEY is not set');
       }
 
       if (errors.length > 0) {
-        console.log(chalk.red("Errors:"));
+        console.log(chalk.red('Errors:'));
         errors.forEach((e) => console.log(chalk.red(`  - ${e}`)));
       }
 
       if (warnings.length > 0) {
-        console.log(chalk.yellow("Warnings:"));
+        console.log(chalk.yellow('Warnings:'));
         warnings.forEach((w) => console.log(chalk.yellow(`  - ${w}`)));
       }
 
       if (errors.length === 0 && warnings.length === 0) {
-        console.log(chalk.green("Configuration is valid!"));
+        console.log(chalk.green('Configuration is valid!'));
       }
 
       return;
     }
 
-    console.log(chalk.blue("Current configuration:\n"));
+    console.log(chalk.blue('Current configuration:\n'));
     console.log(JSON.stringify(config, null, 2));
   });
 
@@ -264,27 +264,27 @@ Examples:
  * Config stop-callback subcommand - Configure stop hook callbacks
  */
 const _configStopCallback = program
-  .command("config-stop-callback <type>")
-  .description("Configure stop hook callbacks (file/telegram/discord/slack)")
-  .option("--enable", "Enable callback")
-  .option("--disable", "Disable callback")
-  .option("--path <path>", "File path (supports {session_id}, {date}, {time})")
-  .option("--format <format>", "File format: markdown | json")
-  .option("--token <token>", "Bot token (telegram or discord-bot)")
-  .option("--chat <id>", "Telegram chat ID")
-  .option("--webhook <url>", "Discord webhook URL")
-  .option("--channel-id <id>", "Discord bot channel ID (used with --profile)")
+  .command('config-stop-callback <type>')
+  .description('Configure stop hook callbacks (file/telegram/discord/slack)')
+  .option('--enable', 'Enable callback')
+  .option('--disable', 'Disable callback')
+  .option('--path <path>', 'File path (supports {session_id}, {date}, {time})')
+  .option('--format <format>', 'File format: markdown | json')
+  .option('--token <token>', 'Bot token (telegram or discord-bot)')
+  .option('--chat <id>', 'Telegram chat ID')
+  .option('--webhook <url>', 'Discord webhook URL')
+  .option('--channel-id <id>', 'Discord bot channel ID (used with --profile)')
   .option(
-    "--tag-list <csv>",
-    "Replace tag list (comma-separated, telegram/discord only)",
+    '--tag-list <csv>',
+    'Replace tag list (comma-separated, telegram/discord only)',
   )
-  .option("--add-tag <tag>", "Append one tag (telegram/discord only)")
-  .option("--remove-tag <tag>", "Remove one tag (telegram/discord only)")
-  .option("--clear-tags", "Clear all tags (telegram/discord only)")
-  .option("--profile <name>", "Named notification profile to configure")
-  .option("--show", "Show current configuration")
+  .option('--add-tag <tag>', 'Append one tag (telegram/discord only)')
+  .option('--remove-tag <tag>', 'Remove one tag (telegram/discord only)')
+  .option('--clear-tags', 'Clear all tags (telegram/discord only)')
+  .option('--profile <name>', 'Named notification profile to configure')
+  .option('--show', 'Show current configuration')
   .addHelpText(
-    "after",
+    'after',
     `
 Types:
   file       File system callback (saves session summary to disk)
@@ -298,7 +298,7 @@ Profile types (use with --profile):
   webhook      Generic webhook (POST with JSON body)
 
 Examples:
-  $ omc config-stop-callback file --enable --path ${join(getClaudeConfigDir(), "logs/{date}.md")}
+  $ omc config-stop-callback file --enable --path ${join(getClaudeConfigDir(), 'logs/{date}.md')}
   $ omc config-stop-callback telegram --enable --token <token> --chat <id>
   $ omc config-stop-callback discord --enable --webhook <url>
   $ omc config-stop-callback file --disable
@@ -316,17 +316,17 @@ Examples:
     // When --profile is used, route to profile-based config
     if (options.profile) {
       const profileValidTypes = [
-        "file",
-        "telegram",
-        "discord",
-        "discord-bot",
-        "slack",
-        "webhook",
+        'file',
+        'telegram',
+        'discord',
+        'discord-bot',
+        'slack',
+        'webhook',
       ];
       if (!profileValidTypes.includes(type)) {
         console.error(chalk.red(`Invalid type for profile: ${type}`));
         console.error(
-          chalk.gray(`Valid types: ${profileValidTypes.join(", ")}`),
+          chalk.gray(`Valid types: ${profileValidTypes.join(', ')}`),
         );
         process.exit(1);
       }
@@ -367,11 +367,11 @@ Examples:
       else if (options.disable) enabled = false;
 
       switch (type) {
-        case "discord": {
+        case 'discord': {
           const current = profile.discord;
           if (enabled === true && !options.webhook && !current?.webhookUrl) {
             console.error(
-              chalk.red("Discord requires --webhook <webhook_url>"),
+              chalk.red('Discord requires --webhook <webhook_url>'),
             );
             process.exit(1);
           }
@@ -382,21 +382,21 @@ Examples:
           };
           break;
         }
-        case "discord-bot": {
-          const current = profile["discord-bot"];
+        case 'discord-bot': {
+          const current = profile['discord-bot'];
           if (enabled === true && !options.token && !current?.botToken) {
             console.error(
-              chalk.red("Discord bot requires --token <bot_token>"),
+              chalk.red('Discord bot requires --token <bot_token>'),
             );
             process.exit(1);
           }
           if (enabled === true && !options.channelId && !current?.channelId) {
             console.error(
-              chalk.red("Discord bot requires --channel-id <channel_id>"),
+              chalk.red('Discord bot requires --channel-id <channel_id>'),
             );
             process.exit(1);
           }
-          profile["discord-bot"] = {
+          profile['discord-bot'] = {
             ...current,
             enabled: enabled ?? current?.enabled ?? false,
             botToken: options.token ?? current?.botToken,
@@ -404,14 +404,14 @@ Examples:
           };
           break;
         }
-        case "telegram": {
+        case 'telegram': {
           const current = profile.telegram;
           if (enabled === true && !options.token && !current?.botToken) {
-            console.error(chalk.red("Telegram requires --token <bot_token>"));
+            console.error(chalk.red('Telegram requires --token <bot_token>'));
             process.exit(1);
           }
           if (enabled === true && !options.chat && !current?.chatId) {
-            console.error(chalk.red("Telegram requires --chat <chat_id>"));
+            console.error(chalk.red('Telegram requires --chat <chat_id>'));
             process.exit(1);
           }
           profile.telegram = {
@@ -422,10 +422,10 @@ Examples:
           };
           break;
         }
-        case "slack": {
+        case 'slack': {
           const current = profile.slack;
           if (enabled === true && !options.webhook && !current?.webhookUrl) {
-            console.error(chalk.red("Slack requires --webhook <webhook_url>"));
+            console.error(chalk.red('Slack requires --webhook <webhook_url>'));
             process.exit(1);
           }
           profile.slack = {
@@ -435,10 +435,10 @@ Examples:
           };
           break;
         }
-        case "webhook": {
+        case 'webhook': {
           const current = profile.webhook;
           if (enabled === true && !options.webhook && !current?.url) {
-            console.error(chalk.red("Webhook requires --webhook <url>"));
+            console.error(chalk.red('Webhook requires --webhook <url>'));
             process.exit(1);
           }
           profile.webhook = {
@@ -448,14 +448,14 @@ Examples:
           };
           break;
         }
-        case "file": {
+        case 'file': {
           console.error(
             chalk.yellow(
-              "File callbacks are not supported in notification profiles.",
+              'File callbacks are not supported in notification profiles.',
             ),
           );
           console.error(
-            chalk.gray("Use without --profile for file callbacks."),
+            chalk.gray('Use without --profile for file callbacks.'),
           );
           process.exit(1);
           break;
@@ -465,23 +465,23 @@ Examples:
       config.notificationProfiles[profileName] = profile;
 
       try {
-        writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+        writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
         console.log(
           chalk.green(`\u2713 Profile "${profileName}" — ${type} configured`),
         );
         console.log(JSON.stringify(profile[type], null, 2));
       } catch (error) {
-        console.error(chalk.red("Failed to write configuration:"), error);
+        console.error(chalk.red('Failed to write configuration:'), error);
         process.exit(1);
       }
       return;
     }
 
     // Legacy (non-profile) path
-    const validTypes = ["file", "telegram", "discord", "slack"];
+    const validTypes = ['file', 'telegram', 'discord', 'slack'];
     if (!validTypes.includes(type)) {
       console.error(chalk.red(`Invalid callback type: ${type}`));
-      console.error(chalk.gray(`Valid types: ${validTypes.join(", ")}`));
+      console.error(chalk.gray(`Valid types: ${validTypes.join(', ')}`));
       process.exit(1);
     }
 
@@ -517,7 +517,7 @@ Examples:
 
     const parseTagList = (value: string): string[] =>
       value
-        .split(",")
+        .split(',')
         .map((tag) => tag.trim())
         .filter(Boolean);
 
@@ -550,30 +550,30 @@ Examples:
 
     // Update config based on type
     switch (type) {
-      case "file": {
+      case 'file': {
         const current = config.stopHookCallbacks.file;
         config.stopHookCallbacks.file = {
           enabled: enabled ?? current?.enabled ?? false,
           path:
             options.path ??
             current?.path ??
-            join(getClaudeConfigDir(), "session-logs/{session_id}.md"),
+            join(getClaudeConfigDir(), 'session-logs/{session_id}.md'),
           format:
-            (options.format as "markdown" | "json") ??
+            (options.format as 'markdown' | 'json') ??
             current?.format ??
-            "markdown",
+            'markdown',
         };
         break;
       }
 
-      case "telegram": {
+      case 'telegram': {
         const current = config.stopHookCallbacks.telegram;
         if (enabled === true && !options.token && !current?.botToken) {
-          console.error(chalk.red("Telegram requires --token <bot_token>"));
+          console.error(chalk.red('Telegram requires --token <bot_token>'));
           process.exit(1);
         }
         if (enabled === true && !options.chat && !current?.chatId) {
-          console.error(chalk.red("Telegram requires --chat <chat_id>"));
+          console.error(chalk.red('Telegram requires --chat <chat_id>'));
           process.exit(1);
         }
         config.stopHookCallbacks.telegram = {
@@ -588,10 +588,10 @@ Examples:
         break;
       }
 
-      case "discord": {
+      case 'discord': {
         const current = config.stopHookCallbacks.discord;
         if (enabled === true && !options.webhook && !current?.webhookUrl) {
-          console.error(chalk.red("Discord requires --webhook <webhook_url>"));
+          console.error(chalk.red('Discord requires --webhook <webhook_url>'));
           process.exit(1);
         }
         config.stopHookCallbacks.discord = {
@@ -605,10 +605,10 @@ Examples:
         break;
       }
 
-      case "slack": {
+      case 'slack': {
         const current = config.stopHookCallbacks.slack;
         if (enabled === true && !options.webhook && !current?.webhookUrl) {
-          console.error(chalk.red("Slack requires --webhook <webhook_url>"));
+          console.error(chalk.red('Slack requires --webhook <webhook_url>'));
           process.exit(1);
         }
         config.stopHookCallbacks.slack = {
@@ -625,7 +625,7 @@ Examples:
 
     // Write config
     try {
-      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+      writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
       console.log(chalk.green(`\u2713 Stop callback '${type}' configured`));
       console.log(
         JSON.stringify(
@@ -637,7 +637,7 @@ Examples:
         ),
       );
     } catch (error) {
-      console.error(chalk.red("Failed to write configuration:"), error);
+      console.error(chalk.red('Failed to write configuration:'), error);
       process.exit(1);
     }
   });
@@ -646,13 +646,13 @@ Examples:
  * Config notify-profile subcommand - List, show, and delete notification profiles
  */
 program
-  .command("config-notify-profile [name]")
-  .description("Manage notification profiles")
-  .option("--list", "List all profiles")
-  .option("--show", "Show profile configuration")
-  .option("--delete", "Delete a profile")
+  .command('config-notify-profile [name]')
+  .description('Manage notification profiles')
+  .option('--list', 'List all profiles')
+  .option('--show', 'Show profile configuration')
+  .option('--delete', 'Delete a profile')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc config-notify-profile --list
@@ -674,31 +674,31 @@ Examples:
     if (options.list || !name) {
       const names = Object.keys(profiles);
       if (names.length === 0) {
-        console.log(chalk.yellow("No notification profiles configured."));
+        console.log(chalk.yellow('No notification profiles configured.'));
         console.log(
           chalk.gray(
-            "Create one with: omc config-stop-callback <type> --profile <name> --enable ...",
+            'Create one with: omc config-stop-callback <type> --profile <name> --enable ...',
           ),
         );
       } else {
-        console.log(chalk.blue("Notification profiles:"));
+        console.log(chalk.blue('Notification profiles:'));
         for (const pName of names) {
           const p = profiles[pName];
           const platforms = [
-            "discord",
-            "discord-bot",
-            "telegram",
-            "slack",
-            "webhook",
+            'discord',
+            'discord-bot',
+            'telegram',
+            'slack',
+            'webhook',
           ]
             .filter((plat) => p[plat]?.enabled)
-            .join(", ");
+            .join(', ');
           const status =
             p.enabled !== false
-              ? chalk.green("enabled")
-              : chalk.red("disabled");
+              ? chalk.green('enabled')
+              : chalk.red('disabled');
           console.log(
-            `  ${chalk.bold(pName)} [${status}] — ${platforms || "no platforms"}`,
+            `  ${chalk.bold(pName)} [${status}] — ${platforms || 'no platforms'}`,
           );
         }
       }
@@ -732,10 +732,10 @@ Examples:
         delete config.notificationProfiles;
       }
       try {
-        writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), "utf-8");
+        writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
         console.log(chalk.green(`\u2713 Profile "${name}" deleted`));
       } catch (error) {
-        console.error(chalk.red("Failed to write configuration:"), error);
+        console.error(chalk.red('Failed to write configuration:'), error);
         process.exit(1);
       }
       return;
@@ -749,9 +749,9 @@ Examples:
       console.log(chalk.yellow(`Profile "${name}" not found.`));
       console.log(
         chalk.gray(
-          "Create it with: omc config-stop-callback <type> --profile " +
+          'Create it with: omc config-stop-callback <type> --profile ' +
             name +
-            " --enable ...",
+            ' --enable ...',
         ),
       );
     }
@@ -761,10 +761,10 @@ Examples:
  * Info command - Show system information
  */
 program
-  .command("info")
-  .description("Show system and agent information")
+  .command('info')
+  .description('Show system and agent information')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc info                     Show agents, features, and MCP servers`,
@@ -772,54 +772,54 @@ Examples:
   .action(async () => {
     const session = createOmcSession();
 
-    console.log(chalk.blue.bold("\nOh-My-ClaudeCode System Information\n"));
-    console.log(chalk.gray("━".repeat(50)));
+    console.log(chalk.blue.bold('\nOh-My-ClaudeCode System Information\n'));
+    console.log(chalk.gray('━'.repeat(50)));
 
-    console.log(chalk.blue("\nAvailable Agents:"));
+    console.log(chalk.blue('\nAvailable Agents:'));
     const agents = session.queryOptions.options.agents;
     for (const [name, agent] of Object.entries(agents)) {
       console.log(`  ${chalk.green(name)}`);
-      console.log(`    ${chalk.gray(agent.description.split("\n")[0])}`);
+      console.log(`    ${chalk.gray(agent.description.split('\n')[0])}`);
     }
 
-    console.log(chalk.blue("\nEnabled Features:"));
+    console.log(chalk.blue('\nEnabled Features:'));
     const features = session.config.features;
     if (features) {
       console.log(
-        `  Parallel Execution:      ${features.parallelExecution ? chalk.green("enabled") : chalk.gray("disabled")}`,
+        `  Parallel Execution:      ${features.parallelExecution ? chalk.green('enabled') : chalk.gray('disabled')}`,
       );
       console.log(
-        `  LSP Tools:               ${features.lspTools ? chalk.green("enabled") : chalk.gray("disabled")}`,
+        `  LSP Tools:               ${features.lspTools ? chalk.green('enabled') : chalk.gray('disabled')}`,
       );
       console.log(
-        `  AST Tools:               ${features.astTools ? chalk.green("enabled") : chalk.gray("disabled")}`,
+        `  AST Tools:               ${features.astTools ? chalk.green('enabled') : chalk.gray('disabled')}`,
       );
       console.log(
-        `  Continuation Enforcement:${features.continuationEnforcement ? chalk.green("enabled") : chalk.gray("disabled")}`,
+        `  Continuation Enforcement:${features.continuationEnforcement ? chalk.green('enabled') : chalk.gray('disabled')}`,
       );
       console.log(
-        `  Auto Context Injection:  ${features.autoContextInjection ? chalk.green("enabled") : chalk.gray("disabled")}`,
+        `  Auto Context Injection:  ${features.autoContextInjection ? chalk.green('enabled') : chalk.gray('disabled')}`,
       );
     }
 
-    console.log(chalk.blue("\nMCP Servers:"));
+    console.log(chalk.blue('\nMCP Servers:'));
     const mcpServers = session.queryOptions.options.mcpServers;
     for (const name of Object.keys(mcpServers)) {
       console.log(`  ${chalk.green(name)}`);
     }
 
-    console.log(chalk.blue("\nMagic Keywords:"));
+    console.log(chalk.blue('\nMagic Keywords:'));
     console.log(
-      `  Ultrawork: ${chalk.cyan(session.config.magicKeywords?.ultrawork?.join(", ") ?? "ultrawork, ulw, uw")}`,
+      `  Ultrawork: ${chalk.cyan(session.config.magicKeywords?.ultrawork?.join(', ') ?? 'ultrawork, ulw, uw')}`,
     );
     console.log(
-      `  Search:    ${chalk.cyan(session.config.magicKeywords?.search?.join(", ") ?? "search, find, locate")}`,
+      `  Search:    ${chalk.cyan(session.config.magicKeywords?.search?.join(', ') ?? 'search, find, locate')}`,
     );
     console.log(
-      `  Analyze:   ${chalk.cyan(session.config.magicKeywords?.analyze?.join(", ") ?? "analyze, investigate, examine")}`,
+      `  Analyze:   ${chalk.cyan(session.config.magicKeywords?.analyze?.join(', ') ?? 'analyze, investigate, examine')}`,
     );
 
-    console.log(chalk.gray("\n━".repeat(50)));
+    console.log(chalk.gray('\n━'.repeat(50)));
     console.log(chalk.gray(`Version: ${version}`));
   });
 
@@ -827,10 +827,10 @@ Examples:
  * Test command - Test prompt enhancement
  */
 program
-  .command("test-prompt <prompt>")
-  .description("Test how a prompt would be enhanced")
+  .command('test-prompt <prompt>')
+  .description('Test how a prompt would be enhanced')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc test-prompt "ultrawork fix bugs"    See how magic keywords are detected
@@ -839,16 +839,16 @@ Examples:
   .action(async (prompt: string) => {
     const session = createOmcSession();
 
-    console.log(chalk.blue("Original prompt:"));
+    console.log(chalk.blue('Original prompt:'));
     console.log(chalk.gray(prompt));
 
     const keywords = session.detectKeywords(prompt);
     if (keywords.length > 0) {
-      console.log(chalk.blue("\nDetected magic keywords:"));
-      console.log(chalk.yellow(keywords.join(", ")));
+      console.log(chalk.blue('\nDetected magic keywords:'));
+      console.log(chalk.yellow(keywords.join(', ')));
     }
 
-    console.log(chalk.blue("\nEnhanced prompt:"));
+    console.log(chalk.blue('\nEnhanced prompt:'));
     console.log(chalk.green(session.processPrompt(prompt)));
   });
 
@@ -856,18 +856,18 @@ Examples:
  * Update command - Check for and install updates
  */
 program
-  .command("update")
-  .description("Check for and install updates")
-  .option("-c, --check", "Only check for updates, do not install")
-  .option("-f, --force", "Force reinstall even if up to date")
-  .option("-q, --quiet", "Suppress output except for errors")
-  .option("--standalone", "Force pnpm update even in plugin context")
+  .command('update')
+  .description('Check for and install updates')
+  .option('-c, --check', 'Only check for updates, do not install')
+  .option('-f, --force', 'Force reinstall even if up to date')
+  .option('-q, --quiet', 'Suppress output except for errors')
+  .option('--standalone', 'Force pnpm update even in plugin context')
   .option(
-    "--clean",
-    "Purge old plugin cache versions immediately (bypass 24h grace period)",
+    '--clean',
+    'Purge old plugin cache versions immediately (bypass 24h grace period)',
   )
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc update                   Check and install updates
@@ -877,7 +877,7 @@ Examples:
   )
   .action(async (options) => {
     if (!options.quiet) {
-      console.log(chalk.blue("Oh-My-ClaudeCode Update\n"));
+      console.log(chalk.blue('Oh-My-ClaudeCode Update\n'));
     }
 
     try {
@@ -885,19 +885,19 @@ Examples:
       const installed = getInstalledVersion();
       if (!options.quiet) {
         console.log(
-          chalk.gray(`Current version: ${installed?.version ?? "unknown"}`),
+          chalk.gray(`Current version: ${installed?.version ?? 'unknown'}`),
         );
         console.log(
           chalk.gray(
-            `Install method: ${installed?.installMethod ?? "unknown"}`,
+            `Install method: ${installed?.installMethod ?? 'unknown'}`,
           ),
         );
-        console.log("");
+        console.log('');
       }
 
       // Check for updates
       if (!options.quiet) {
-        console.log("Checking for updates...");
+        console.log('Checking for updates...');
       }
 
       const checkResult = await checkForUpdates();
@@ -921,7 +921,7 @@ Examples:
       if (options.check) {
         if (checkResult.updateAvailable) {
           console.log(
-            chalk.yellow("\nRun without --check to install the update."),
+            chalk.yellow('\nRun without --check to install the update.'),
           );
         }
         return;
@@ -929,7 +929,7 @@ Examples:
 
       // Perform the update
       if (!options.quiet) {
-        console.log(chalk.blue("\nStarting update...\n"));
+        console.log(chalk.blue('\nStarting update...\n'));
       }
 
       const result = await performUpdate({
@@ -943,7 +943,7 @@ Examples:
           console.log(chalk.green(`\n✓ ${result.message}`));
           console.log(
             chalk.gray(
-              "\nPlease restart your Claude Code session to use the new version.",
+              '\nPlease restart your Claude Code session to use the new version.',
             ),
           );
         }
@@ -973,12 +973,12 @@ Examples:
  * Called automatically after install to ensure hooks/settings are updated with NEW code
  */
 program
-  .command("update-reconcile")
+  .command('update-reconcile')
   .description(
-    "Internal: Reconcile runtime state after update (called by update command)",
+    'Internal: Reconcile runtime state after update (called by update command)',
   )
-  .option("-v, --verbose", "Show detailed output")
-  .option("--skip-grace-period", "Bypass 24h grace period for cache purge")
+  .option('-v, --verbose', 'Show detailed output')
+  .option('--skip-grace-period', 'Bypass 24h grace period for cache purge')
   .action(async (options) => {
     try {
       const reconcileResult = reconcileUpdateRuntime({
@@ -986,7 +986,7 @@ program
         skipGracePeriod: options.skipGracePeriod,
       });
       if (!reconcileResult.success) {
-        console.error(chalk.red("Reconciliation failed:"));
+        console.error(chalk.red('Reconciliation failed:'));
         if (reconcileResult.errors) {
           reconcileResult.errors.forEach((err) =>
             console.error(chalk.red(`  - ${err}`)),
@@ -1008,10 +1008,10 @@ program
  * Version command - Show version information
  */
 program
-  .command("version")
-  .description("Show detailed version information")
+  .command('version')
+  .description('Show detailed version information')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc version                  Show version, install method, and commit hash`,
@@ -1019,8 +1019,8 @@ Examples:
   .action(async () => {
     const installed = getInstalledVersion();
 
-    console.log(chalk.blue.bold("\nOh-My-ClaudeCode Version Information\n"));
-    console.log(chalk.gray("━".repeat(50)));
+    console.log(chalk.blue.bold('\nOh-My-ClaudeCode Version Information\n'));
+    console.log(chalk.gray('━'.repeat(50)));
 
     console.log(`\n  Package version:   ${chalk.green(version)}`);
 
@@ -1039,16 +1039,16 @@ Examples:
         console.log(`  Commit hash:       ${chalk.gray(installed.commitHash)}`);
       }
     } else {
-      console.log(chalk.yellow("  No installation metadata found"));
+      console.log(chalk.yellow('  No installation metadata found'));
       console.log(
-        chalk.gray("  (Run the install script to create version metadata)"),
+        chalk.gray('  (Run the install script to create version metadata)'),
       );
     }
 
-    console.log(chalk.gray("\n━".repeat(50)));
+    console.log(chalk.gray('\n━'.repeat(50)));
     console.log(
       chalk.gray(
-        "\nTo check for updates, run: oh-my-claudecode update --check",
+        '\nTo check for updates, run: oh-my-claudecode update --check',
       ),
     );
   });
@@ -1057,15 +1057,15 @@ Examples:
  * Install command - Install agents and commands (default: ~/.claude/)
  */
 program
-  .command("install")
+  .command('install')
   .description(
-    "Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)",
+    'Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)',
   )
-  .option("-f, --force", "Overwrite existing files")
-  .option("-q, --quiet", "Suppress output except for errors")
-  .option("--skip-claude-check", "Skip checking if Claude Code is installed")
+  .option('-f, --force', 'Overwrite existing files')
+  .option('-q, --quiet', 'Suppress output except for errors')
+  .option('--skip-claude-check', 'Skip checking if Claude Code is installed')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc install                  Install to config directory (default: ~/.claude/)
@@ -1077,37 +1077,37 @@ Examples:
     if (!options.quiet) {
       console.log(
         chalk.blue(
-          "╔═══════════════════════════════════════════════════════════╗",
+          '╔═══════════════════════════════════════════════════════════╗',
         ),
       );
       console.log(
         chalk.blue(
-          "║         Oh-My-ClaudeCode Installer                        ║",
+          '║         Oh-My-ClaudeCode Installer                        ║',
         ),
       );
       console.log(
         chalk.blue(
-          "║   Multi-Agent Orchestration for Claude Code               ║",
+          '║   Multi-Agent Orchestration for Claude Code               ║',
         ),
       );
       console.log(
         chalk.blue(
-          "╚═══════════════════════════════════════════════════════════╝",
+          '╚═══════════════════════════════════════════════════════════╝',
         ),
       );
-      console.log("");
+      console.log('');
     }
 
     // Check if already installed
     if (isInstalled() && !options.force) {
       const info = getInstallInfo();
       if (!options.quiet) {
-        console.log(chalk.yellow("OMC is already installed."));
+        console.log(chalk.yellow('OMC is already installed.'));
         if (info) {
           console.log(chalk.gray(`  Version: ${info.version}`));
           console.log(chalk.gray(`  Installed: ${info.installedAt}`));
         }
-        console.log(chalk.gray("\nUse --force to reinstall."));
+        console.log(chalk.gray('\nUse --force to reinstall.'));
       }
       return;
     }
@@ -1121,90 +1121,90 @@ Examples:
 
     if (result.success) {
       if (!options.quiet) {
-        console.log("");
+        console.log('');
         console.log(
           chalk.green(
-            "╔═══════════════════════════════════════════════════════════╗",
+            '╔═══════════════════════════════════════════════════════════╗',
           ),
         );
         console.log(
           chalk.green(
-            "║         Installation Complete!                            ║",
+            '║         Installation Complete!                            ║',
           ),
         );
         console.log(
           chalk.green(
-            "╚═══════════════════════════════════════════════════════════╝",
+            '╚═══════════════════════════════════════════════════════════╝',
           ),
         );
-        console.log("");
+        console.log('');
         console.log(chalk.gray(`Installed to: ${getClaudeConfigDir()}`));
-        console.log("");
-        console.log(chalk.yellow("Usage:"));
+        console.log('');
+        console.log(chalk.yellow('Usage:'));
         console.log(
-          "  claude                        # Start Claude Code normally",
+          '  claude                        # Start Claude Code normally',
         );
-        console.log("");
-        console.log(chalk.yellow("Slash Commands:"));
+        console.log('');
+        console.log(chalk.yellow('Slash Commands:'));
         console.log(
-          "  /omc <task>              # Activate OMC orchestration mode",
-        );
-        console.log(
-          "  /omc-default             # Configure for current project",
-        );
-        console.log("  /omc-default-global      # Configure globally");
-        console.log(
-          "  /ultrawork <task>             # Maximum performance mode",
+          '  /omc <task>              # Activate OMC orchestration mode',
         );
         console.log(
-          "  /deepsearch <query>           # Thorough codebase search",
+          '  /omc-default             # Configure for current project',
         );
-        console.log("  /analyze <target>             # Deep analysis mode");
+        console.log('  /omc-default-global      # Configure globally');
         console.log(
-          "  /plan <description>           # Start planning with Planner",
-        );
-        console.log(
-          "  /review [plan-path]           # Review plan with Critic",
-        );
-        console.log("");
-        console.log(chalk.yellow("Available Agents (via Task tool):"));
-        console.log(chalk.gray("  Base Agents:"));
-        console.log(
-          "    architect              - Architecture & debugging (Opus)",
+          '  /ultrawork <task>             # Maximum performance mode',
         );
         console.log(
-          "    document-specialist   - External docs & reference lookup (Sonnet)",
+          '  /deepsearch <query>           # Thorough codebase search',
         );
-        console.log("    explore             - Fast pattern matching (Haiku)");
-        console.log("    designer            - UI/UX specialist (Sonnet)");
-        console.log("    writer              - Technical writing (Haiku)");
-        console.log("    vision              - Visual analysis (Sonnet)");
-        console.log("    critic               - Plan review (Opus)");
-        console.log("    analyst               - Pre-planning analysis (Opus)");
-        console.log("    debugger            - Root-cause diagnosis (Sonnet)");
-        console.log("    executor            - Focused execution (Sonnet)");
-        console.log("    planner          - Strategic planning (Opus)");
+        console.log('  /analyze <target>             # Deep analysis mode');
         console.log(
-          "    qa-tester           - Interactive CLI testing (Sonnet)",
+          '  /plan <description>           # Start planning with Planner',
         );
-        console.log(chalk.gray("  Tiered Variants (for smart routing):"));
-        console.log("    architect-medium       - Simpler analysis (Sonnet)");
-        console.log("    architect-low          - Quick questions (Haiku)");
-        console.log("    executor-high       - Complex tasks (Opus)");
-        console.log("    executor-low        - Trivial tasks (Haiku)");
-        console.log("    designer-high       - Design systems (Opus)");
-        console.log("    designer-low        - Simple styling (Haiku)");
-        console.log("");
-        console.log(chalk.yellow("After Updates:"));
+        console.log(
+          '  /review [plan-path]           # Review plan with Critic',
+        );
+        console.log('');
+        console.log(chalk.yellow('Available Agents (via Task tool):'));
+        console.log(chalk.gray('  Base Agents:'));
+        console.log(
+          '    architect              - Architecture & debugging (Opus)',
+        );
+        console.log(
+          '    document-specialist   - External docs & reference lookup (Sonnet)',
+        );
+        console.log('    explore             - Fast pattern matching (Haiku)');
+        console.log('    designer            - UI/UX specialist (Sonnet)');
+        console.log('    writer              - Technical writing (Haiku)');
+        console.log('    vision              - Visual analysis (Sonnet)');
+        console.log('    critic               - Plan review (Opus)');
+        console.log('    analyst               - Pre-planning analysis (Opus)');
+        console.log('    debugger            - Root-cause diagnosis (Sonnet)');
+        console.log('    executor            - Focused execution (Sonnet)');
+        console.log('    planner          - Strategic planning (Opus)');
+        console.log(
+          '    qa-tester           - Interactive CLI testing (Sonnet)',
+        );
+        console.log(chalk.gray('  Tiered Variants (for smart routing):'));
+        console.log('    architect-medium       - Simpler analysis (Sonnet)');
+        console.log('    architect-low          - Quick questions (Haiku)');
+        console.log('    executor-high       - Complex tasks (Opus)');
+        console.log('    executor-low        - Trivial tasks (Haiku)');
+        console.log('    designer-high       - Design systems (Opus)');
+        console.log('    designer-low        - Simple styling (Haiku)');
+        console.log('');
+        console.log(chalk.yellow('After Updates:'));
         console.log(
           "  Run '/omc-default' (project) or '/omc-default-global' (global)",
         );
-        console.log("  to download the latest CLAUDE.md configuration.");
+        console.log('  to download the latest CLAUDE.md configuration.');
         console.log(
-          "  This ensures you get the newest features and agent behaviors.",
+          '  This ensures you get the newest features and agent behaviors.',
         );
-        console.log("");
-        console.log(chalk.blue("Quick Start:"));
+        console.log('');
+        console.log(chalk.blue('Quick Start:'));
         console.log("  1. Run 'claude' to start Claude Code");
         console.log(
           "  2. Type '/omc-default' for project or '/omc-default-global' for global",
@@ -1236,15 +1236,15 @@ Examples:
  * - Subcommands available for power users
  */
 const waitCmd = program
-  .command("wait")
+  .command('wait')
   .description(
     'Rate limit wait and auto-resume (just run "omc wait" to get started)',
   )
-  .option("--json", "Output as JSON")
-  .option("--start", "Start the auto-resume daemon")
-  .option("--stop", "Stop the auto-resume daemon")
+  .option('--json', 'Output as JSON')
+  .option('--start', 'Start the auto-resume daemon')
+  .option('--stop', 'Stop the auto-resume daemon')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc wait                     Show status and suggestions
@@ -1258,21 +1258,21 @@ Examples:
   });
 
 waitCmd
-  .command("status")
-  .description("Show detailed rate limit and daemon status")
-  .option("--json", "Output as JSON")
+  .command('status')
+  .description('Show detailed rate limit and daemon status')
+  .option('--json', 'Output as JSON')
   .action(async (options) => {
     await waitStatusCommand(options);
   });
 
 waitCmd
-  .command("daemon <action>")
-  .description("Start or stop the auto-resume daemon")
-  .option("-v, --verbose", "Enable verbose logging")
-  .option("-f, --foreground", "Run in foreground (blocking)")
-  .option("-i, --interval <seconds>", "Poll interval in seconds", "60")
+  .command('daemon <action>')
+  .description('Start or stop the auto-resume daemon')
+  .option('-v, --verbose', 'Enable verbose logging')
+  .option('-f, --foreground', 'Run in foreground (blocking)')
+  .option('-i, --interval <seconds>', 'Poll interval in seconds', '60')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc wait daemon start            Start background daemon
@@ -1280,14 +1280,14 @@ Examples:
   $ omc wait daemon start -f         Run in foreground`,
   )
   .action(async (action: string, options) => {
-    if (action !== "start" && action !== "stop") {
+    if (action !== 'start' && action !== 'stop') {
       console.error(
         chalk.red(`Invalid action "${action}". Valid options: start, stop`),
       );
-      console.error(chalk.gray("Example: omc wait daemon start"));
+      console.error(chalk.gray('Example: omc wait daemon start'));
       process.exit(1);
     }
-    await waitDaemonCommand(action as "start" | "stop", {
+    await waitDaemonCommand(action as 'start' | 'stop', {
       verbose: options.verbose,
       foreground: options.foreground,
       interval: parseInt(options.interval),
@@ -1295,10 +1295,10 @@ Examples:
   });
 
 waitCmd
-  .command("detect")
-  .description("Scan for blocked Claude Code sessions in tmux")
-  .option("--json", "Output as JSON")
-  .option("-l, --lines <number>", "Number of pane lines to analyze", "15")
+  .command('detect')
+  .description('Scan for blocked Claude Code sessions in tmux')
+  .option('--json', 'Output as JSON')
+  .option('-l, --lines <number>', 'Number of pane lines to analyze', '15')
   .action(async (options) => {
     await waitDetectCommand({
       json: options.json,
@@ -1316,22 +1316,22 @@ waitCmd
  * - `omc teleport remove <path>` - Remove a worktree
  */
 const teleportCmd = program
-  .command("teleport [ref]")
+  .command('teleport [ref]')
   .description(
     "Create git worktree for isolated development (e.g., omc teleport '#123')",
   )
   .option(
-    "--worktree",
-    "Create worktree (default behavior, flag kept for compatibility)",
+    '--worktree',
+    'Create worktree (default behavior, flag kept for compatibility)',
   )
   .option(
-    "-p, --path <path>",
-    "Custom worktree path (default: ~/Workspace/omc-worktrees/)",
+    '-p, --path <path>',
+    'Custom worktree path (default: ~/Workspace/omc-worktrees/)',
   )
-  .option("-b, --base <branch>", "Base branch to create from (default: main)")
-  .option("--json", "Output as JSON")
+  .option('-b, --base <branch>', 'Base branch to create from (default: main)')
+  .option('--json', 'Output as JSON')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc teleport '#42'           Create worktree for issue/PR #42
@@ -1345,36 +1345,36 @@ Note:
   .action(async (ref: string | undefined, options) => {
     if (!ref) {
       // No ref provided, show help
-      console.log(chalk.blue("Teleport - Quick worktree creation\n"));
-      console.log("Usage:");
+      console.log(chalk.blue('Teleport - Quick worktree creation\n'));
+      console.log('Usage:');
       console.log(
-        "  omc teleport <ref>           Create worktree for issue/PR/feature",
+        '  omc teleport <ref>           Create worktree for issue/PR/feature',
       );
-      console.log("  omc teleport list            List existing worktrees");
-      console.log("  omc teleport remove <path>   Remove a worktree");
-      console.log("");
-      console.log("Reference formats:");
+      console.log('  omc teleport list            List existing worktrees');
+      console.log('  omc teleport remove <path>   Remove a worktree');
+      console.log('');
+      console.log('Reference formats:');
       console.log(
         "  '#123'                       Issue/PR in current repo (quoted for shell safety)",
       );
-      console.log("  owner/repo#123               Issue/PR in specific repo");
-      console.log("  my-feature                   Feature branch name");
-      console.log("  https://github.com/...       GitHub URL");
-      console.log("");
+      console.log('  owner/repo#123               Issue/PR in specific repo');
+      console.log('  my-feature                   Feature branch name');
+      console.log('  https://github.com/...       GitHub URL');
+      console.log('');
       console.log(
         chalk.yellow(
           "Note: In many shells, # starts a comment. Quote refs: omc teleport '#42'",
         ),
       );
-      console.log("");
-      console.log("Examples:");
+      console.log('');
+      console.log('Examples:');
       console.log(
         "  omc teleport '#42'           Create worktree for issue #42",
       );
       console.log(
         '  omc teleport add-auth        Create worktree for feature "add-auth"',
       );
-      console.log("");
+      console.log('');
       return;
     }
 
@@ -1387,19 +1387,19 @@ Note:
   });
 
 teleportCmd
-  .command("list")
-  .description("List existing worktrees in ~/Workspace/omc-worktrees/")
-  .option("--json", "Output as JSON")
+  .command('list')
+  .description('List existing worktrees in ~/Workspace/omc-worktrees/')
+  .option('--json', 'Output as JSON')
   .action(async (options) => {
     await teleportListCommand(options);
   });
 
 teleportCmd
-  .command("remove <path>")
-  .alias("rm")
-  .description("Remove a worktree")
-  .option("-f, --force", "Force removal even with uncommitted changes")
-  .option("--json", "Output as JSON")
+  .command('remove <path>')
+  .alias('rm')
+  .description('Remove a worktree')
+  .option('-f, --force', 'Force removal even with uncommitted changes')
+  .option('--json', 'Output as JSON')
   .action(async (path: string, options) => {
     const exitCode = await teleportRemoveCommand(path, options);
     if (exitCode !== 0) process.exit(exitCode);
@@ -1409,11 +1409,11 @@ teleportCmd
  * Session command - Search prior local session history
  */
 const sessionCmd = program
-  .command("session")
-  .alias("sessions")
-  .description("Inspect prior local session history")
+  .command('session')
+  .alias('sessions')
+  .description('Inspect prior local session history')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc session search "team leader stale"
@@ -1422,26 +1422,26 @@ Examples:
   );
 
 sessionCmd
-  .command("search <query>")
+  .command('search <query>')
   .description(
-    "Search prior local session transcripts and OMC session artifacts",
+    'Search prior local session transcripts and OMC session artifacts',
   )
-  .option("-l, --limit <number>", "Maximum number of matches to return", "10")
-  .option("-s, --session <id>", "Restrict search to a specific session id")
+  .option('-l, --limit <number>', 'Maximum number of matches to return', '10')
+  .option('-s, --session <id>', 'Restrict search to a specific session id')
   .option(
-    "--since <duration|date>",
-    "Only include matches since a duration (e.g. 7d, 24h) or absolute date",
+    '--since <duration|date>',
+    'Only include matches since a duration (e.g. 7d, 24h) or absolute date',
   )
   .option(
-    "--project <scope>",
+    '--project <scope>',
     'Project scope. Defaults to current project. Use "all" to search all local projects',
   )
-  .option("--json", "Output results as JSON")
-  .option("--case-sensitive", "Match query case-sensitively")
+  .option('--json', 'Output results as JSON')
+  .option('--case-sensitive', 'Match query case-sensitively')
   .option(
-    "--context <chars>",
-    "Approximate snippet context on each side of a match",
-    "120",
+    '--context <chars>',
+    'Approximate snippet context on each side of a match',
+    '120',
   )
   .action(async (query: string, options) => {
     await sessionSearchCommand(query, {
@@ -1460,19 +1460,19 @@ sessionCmd
  * Doctor command - Diagnostic tools
  */
 const doctorCmd = program
-  .command("doctor")
-  .description("Diagnostic tools for troubleshooting OMC installation")
+  .command('doctor')
+  .description('Diagnostic tools for troubleshooting OMC installation')
   .option(
-    "--plugin-dir <path>",
-    "Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)",
+    '--plugin-dir <path>',
+    'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)',
   )
   .option(
-    "--team-routing",
-    "Probe CLI presence for every provider referenced by team.roleRouting",
+    '--team-routing',
+    'Probe CLI presence for every provider referenced by team.roleRouting',
   )
-  .option("--json", "Output as JSON (used with --team-routing)")
+  .option('--json', 'Output as JSON (used with --team-routing)')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc doctor conflicts                        Check for plugin conflicts
@@ -1480,7 +1480,7 @@ Examples:
   $ omc doctor --team-routing                   Same as above (flag form)
   $ omc doctor --plugin-dir /path/to/plugin     Run diagnostics against a specific plugin dir`,
   )
-  .hook("preAction", (thisCommand) => {
+  .hook('preAction', (thisCommand) => {
     applyPluginDirOption(thisCommand.opts().pluginDir as string | undefined);
   })
   .action(async (options) => {
@@ -1495,13 +1495,13 @@ Examples:
   });
 
 doctorCmd
-  .command("team-routing")
+  .command('team-routing')
   .description(
-    "Probe CLI presence for every provider referenced by team.roleRouting",
+    'Probe CLI presence for every provider referenced by team.roleRouting',
   )
-  .option("--json", "Output as JSON")
+  .option('--json', 'Output as JSON')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc doctor team-routing                     Probe configured providers
@@ -1515,17 +1515,17 @@ Examples:
   });
 
 doctorCmd
-  .command("conflicts")
+  .command('conflicts')
   .description(
-    "Check for plugin coexistence issues and configuration conflicts",
+    'Check for plugin coexistence issues and configuration conflicts',
   )
-  .option("--json", "Output as JSON")
+  .option('--json', 'Output as JSON')
   .option(
-    "--plugin-dir <path>",
-    "Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)",
+    '--plugin-dir <path>',
+    'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)',
   )
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc doctor conflicts                        Check for configuration issues
@@ -1547,22 +1547,22 @@ Examples:
  * - Shows clear summary of what was installed/updated
  */
 program
-  .command("setup")
-  .description("Run OMC setup to sync all components (hooks, agents, skills)")
-  .option("-f, --force", "Force reinstall even if already up to date")
-  .option("-q, --quiet", "Suppress output except for errors")
+  .command('setup')
+  .description('Run OMC setup to sync all components (hooks, agents, skills)')
+  .option('-f, --force', 'Force reinstall even if already up to date')
+  .option('-q, --quiet', 'Suppress output except for errors')
   .option(
-    "--no-plugin",
-    "Install bundled skills from the current package instead of relying on plugin-provided skills",
+    '--no-plugin',
+    'Install bundled skills from the current package instead of relying on plugin-provided skills',
   )
   .option(
-    "--plugin-dir-mode",
-    "Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)",
+    '--plugin-dir-mode',
+    'Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)',
   )
-  .option("--skip-hooks", "Skip hook installation")
-  .option("--force-hooks", "Force reinstall hooks even if unchanged")
+  .option('--skip-hooks', 'Skip hook installation')
+  .option('--force-hooks', 'Force reinstall hooks even if unchanged')
   .addHelpText(
-    "after",
+    'after',
     `
 Examples:
   $ omc setup                     Sync all OMC components
@@ -1575,12 +1575,12 @@ Examples:
   )
   .action(async (options) => {
     if (!options.quiet) {
-      console.log(chalk.blue("Oh-My-ClaudeCode Setup\n"));
+      console.log(chalk.blue('Oh-My-ClaudeCode Setup\n'));
     }
 
     // Step 1: Run installation (which handles hooks, agents, skills)
     if (!options.quiet) {
-      console.log(chalk.gray("Syncing OMC components..."));
+      console.log(chalk.gray('Syncing OMC components...'));
     }
 
     // Commander exposes negated flags like `--no-plugin` as `options.plugin === false`
@@ -1605,7 +1605,7 @@ Examples:
       if (!options.quiet) {
         console.log(
           chalk.yellow(
-            "Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence",
+            'Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence',
           ),
         );
       }
@@ -1614,7 +1614,7 @@ Examples:
     if (pluginDirMode && !options.quiet) {
       console.log(
         chalk.gray(
-          "Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)",
+          'Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)',
         ),
       );
     }
@@ -1638,9 +1638,9 @@ Examples:
 
     // Step 2: Show summary
     if (!options.quiet) {
-      console.log("");
-      console.log(chalk.green("Setup complete!"));
-      console.log("");
+      console.log('');
+      console.log(chalk.green('Setup complete!'));
+      console.log('');
 
       if (result.installedAgents.length > 0) {
         console.log(
@@ -1658,11 +1658,11 @@ Examples:
         );
       }
       if (result.hooksConfigured) {
-        console.log(chalk.gray("  Hooks:    configured"));
+        console.log(chalk.gray('  Hooks:    configured'));
       }
       if (result.hookConflicts.length > 0) {
-        console.log("");
-        console.log(chalk.yellow("  Hook conflicts detected:"));
+        console.log('');
+        console.log(chalk.yellow('  Hook conflicts detected:'));
         result.hookConflicts.forEach((c) => {
           console.log(
             chalk.yellow(`    - ${c.eventType}: ${c.existingCommand}`),
@@ -1673,14 +1673,14 @@ Examples:
       const installed = getInstalledVersion();
       const reportedVersion = installed?.version ?? version;
 
-      console.log("");
+      console.log('');
       console.log(chalk.gray(`Version: ${reportedVersion}`));
       if (reportedVersion !== version) {
         console.log(chalk.gray(`CLI package version: ${version}`));
       }
       console.log(
         chalk.gray(
-          "Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup.",
+          'Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup.',
         ),
       );
     }
@@ -1690,8 +1690,10 @@ Examples:
  * Postinstall command - Silent install for the package-manager postinstall hook
  */
 program
-  .command("postinstall", { hidden: true })
-  .description("Run post-install setup (called automatically by the package manager)")
+  .command('postinstall', { hidden: true })
+  .description(
+    'Run post-install setup (called automatically by the package manager)',
+  )
   .action(async () => {
     // Silent install - only show errors
     const result = installOmc({
@@ -1701,7 +1703,7 @@ program
     });
 
     if (result.success) {
-      console.log(chalk.green("✓ Oh-My-ClaudeCode installed successfully!"));
+      console.log(chalk.green('✓ Oh-My-ClaudeCode installed successfully!'));
       console.log(
         chalk.gray('  Run "oh-my-claudecode info" to see available agents.'),
       );
@@ -1713,7 +1715,7 @@ program
     } else {
       // Don't fail the install, just warn
       console.warn(
-        chalk.yellow("⚠ Could not complete OMC setup:"),
+        chalk.yellow('⚠ Could not complete OMC setup:'),
         result.message,
       );
       console.warn(
@@ -1729,12 +1731,12 @@ program
  * In --watch mode, loops continuously for use in a tmux pane.
  */
 program
-  .command("hud")
-  .description("Run the OMC HUD statusline renderer")
-  .option("--watch", "Run in watch mode (continuous polling for tmux pane)")
-  .option("--interval <ms>", "Poll interval in milliseconds", "1000")
+  .command('hud')
+  .description('Run the OMC HUD statusline renderer')
+  .option('--watch', 'Run in watch mode (continuous polling for tmux pane)')
+  .option('--interval <ms>', 'Poll interval in milliseconds', '1000')
   .action(async (options) => {
-    const { main: hudMain } = await import("../hud/index.js");
+    const { main: hudMain } = await import('../hud/index.js');
     if (options.watch) {
       const intervalMs = parseInt(options.interval, 10);
       await runHudWatchLoop({ intervalMs, hudMain });
@@ -1744,14 +1746,14 @@ program
   });
 
 program
-  .command("mission-board")
+  .command('mission-board')
   .description(
-    "Render the opt-in mission board snapshot for the current workspace",
+    'Render the opt-in mission board snapshot for the current workspace',
   )
-  .option("--json", "Print raw mission-board JSON")
+  .option('--json', 'Print raw mission-board JSON')
   .action(async (options) => {
     const { refreshMissionBoardState, renderMissionBoard } =
-      await import("../hud/mission-board.js");
+      await import('../hud/mission-board.js');
     const state = refreshMissionBoardState(process.cwd());
     if (options.json) {
       console.log(JSON.stringify(state, null, 2));
@@ -1766,7 +1768,7 @@ program
       persistCompletedForMinutes: 20,
     });
 
-    console.log(lines.length > 0 ? lines.join("\n") : "(no active missions)");
+    console.log(lines.length > 0 ? lines.join('\n') : '(no active missions)');
   });
 
 /**
@@ -1777,12 +1779,12 @@ program
  * our teamCommand handler provides its own help output.
  */
 program
-  .command("team")
-  .description("Team CLI API for worker lifecycle operations")
+  .command('team')
+  .description('Team CLI API for worker lifecycle operations')
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .argument("[args...]", "team subcommand arguments")
+  .argument('[args...]', 'team subcommand arguments')
   .action(async (args: string[]) => {
     await teamCommand(args);
   });
@@ -1791,14 +1793,14 @@ program
  * Autoresearch command - hard-deprecated shim preserved only for migration messaging
  */
 program
-  .command("autoresearch")
+  .command('autoresearch')
   .description(
-    "Hard-deprecated shim that redirects users to deep-interview + autoresearch skill",
+    'Hard-deprecated shim that redirects users to deep-interview + autoresearch skill',
   )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .argument("[args...]", "autoresearch subcommand arguments")
+  .argument('[args...]', 'autoresearch subcommand arguments')
   .action(async (args: string[]) => {
     await autoresearchCommand(args);
   });
@@ -1810,14 +1812,14 @@ program
  * auto-hardening phase, terminates after clean waves.
  */
 program
-  .command("ralphthon")
+  .command('ralphthon')
   .description(
-    "Autonomous hackathon lifecycle: interview -> execute -> harden -> done",
+    'Autonomous hackathon lifecycle: interview -> execute -> harden -> done',
   )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .argument("[args...]", "ralphthon arguments")
+  .argument('[args...]', 'ralphthon arguments')
   .action(async (args: string[]) => {
     await ralphthonCommand(args);
   });
@@ -1832,15 +1834,15 @@ program
  * session /goal directive; this command only persists durable state.
  */
 program
-  .command("ultragoal")
+  .command('ultragoal')
   .description(
-    "Durable repo-native multi-goal workflow with Claude Code /goal handoff (see omc ultragoal help)",
+    'Durable repo-native multi-goal workflow with Claude Code /goal handoff (see omc ultragoal help)',
   )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
-  .argument("[args...]", "ultragoal subcommand arguments")
-  .addHelpText("after", `\n${ULTRAGOAL_HELP}`)
+  .argument('[args...]', 'ultragoal subcommand arguments')
+  .addHelpText('after', `\n${ULTRAGOAL_HELP}`)
   .action(async (args: string[]) => {
     await ultragoalCommand(args);
   });

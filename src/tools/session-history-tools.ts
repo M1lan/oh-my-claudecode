@@ -1,9 +1,9 @@
-import { z } from "zod";
+import { z } from 'zod';
 import {
   searchSessionHistory,
   type SessionHistorySearchOptions,
-} from "../features/session-history-search/index.js";
-import { ToolDefinition } from "./types.js";
+} from '../features/session-history-search/index.js';
+import { ToolDefinition } from './types.js';
 
 function buildToolJson(
   report: Awaited<ReturnType<typeof searchSessionHistory>>,
@@ -21,29 +21,29 @@ export const sessionSearchTool: ToolDefinition<{
   contextChars: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "session_search",
+  name: 'session_search',
   description:
-    "Search prior local session history and transcript artifacts. Returns structured JSON with session ids, timestamps, source paths, and matching excerpts.",
+    'Search prior local session history and transcript artifacts. Returns structured JSON with session ids, timestamps, source paths, and matching excerpts.',
   schema: {
     query: z
       .string()
       .min(1)
-      .describe("Text query to search for in prior session history"),
+      .describe('Text query to search for in prior session history'),
     limit: z
       .number()
       .int()
       .positive()
       .optional()
-      .describe("Maximum number of matches to return (default: 10)"),
+      .describe('Maximum number of matches to return (default: 10)'),
     sessionId: z
       .string()
       .optional()
-      .describe("Restrict search to a specific session id"),
+      .describe('Restrict search to a specific session id'),
     since: z
       .string()
       .optional()
       .describe(
-        "Only include matches since a relative duration (e.g. 7d, 24h) or absolute date",
+        'Only include matches since a relative duration (e.g. 7d, 24h) or absolute date',
       ),
     project: z
       .string()
@@ -54,20 +54,20 @@ export const sessionSearchTool: ToolDefinition<{
     caseSensitive: z
       .boolean()
       .optional()
-      .describe("Whether to match case-sensitively (default: false)"),
+      .describe('Whether to match case-sensitively (default: false)'),
     contextChars: z
       .number()
       .int()
       .positive()
       .optional()
       .describe(
-        "Approximate snippet context on each side of a match (default: 120)",
+        'Approximate snippet context on each side of a match (default: 120)',
       ),
     workingDirectory: z
       .string()
       .optional()
       .describe(
-        "Working directory used to determine the current project scope",
+        'Working directory used to determine the current project scope',
       ),
   },
   handler: async (args) => {
@@ -78,7 +78,7 @@ export const sessionSearchTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: buildToolJson(report),
           },
         ],
@@ -87,7 +87,7 @@ export const sessionSearchTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error searching session history: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],

@@ -5,13 +5,13 @@
  * Shows spent:$X,XXX.XX when unlimited, or spent:$X.XX/$Y.YY (Z%) when capped.
  */
 
-import type { RateLimits } from "../types.js";
-import { RESET } from "../colors.js";
+import type { RateLimits } from '../types.js';
+import { RESET } from '../colors.js';
 
-const GREEN = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const RED = "\x1b[31m";
-const DIM = "\x1b[2m";
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
+const RED = '\x1b[31m';
+const DIM = '\x1b[2m';
 
 // Thresholds matching limits.ts for consistency
 const WARNING_THRESHOLD = 70;
@@ -28,9 +28,9 @@ function getColor(percent: number): string {
  * e.g. 3323.93 → "3,323.93"
  */
 function formatMoney(amount: number): string {
-  const [intPart, decPart] = amount.toFixed(2).split(".");
-  const withCommas = (intPart ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  return `${withCommas}.${decPart ?? "00"}`;
+  const [intPart, decPart] = amount.toFixed(2).split('.');
+  const withCommas = (intPart ?? '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${withCommas}.${decPart ?? '00'}`;
 }
 
 /**
@@ -38,7 +38,7 @@ function formatMoney(amount: number): string {
  * USD → "$", anything else → "KRW " (ISO code + space)
  */
 function currencyPrefix(currency: string): string {
-  return currency.toUpperCase() === "USD" ? "$" : `${currency.toUpperCase()} `;
+  return currency.toUpperCase() === 'USD' ? '$' : `${currency.toUpperCase()} `;
 }
 
 /**
@@ -54,8 +54,8 @@ export function renderEnterpriseCost(
 ): string | null {
   if (!limits || limits.enterpriseSpentUsd === undefined) return null;
 
-  const staleMarker = stale ? `${DIM}*${RESET}` : "";
-  const currency = limits.enterpriseCurrency ?? "USD";
+  const staleMarker = stale ? `${DIM}*${RESET}` : '';
+  const currency = limits.enterpriseCurrency ?? 'USD';
   const prefix = currencyPrefix(currency);
   const spentStr = formatMoney(limits.enterpriseSpentUsd);
 

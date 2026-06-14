@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   mkdtempSync,
   mkdirSync,
   writeFileSync,
   readFileSync,
   rmSync,
-} from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+} from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 /**
  * Regression test: when tmux pane creation fails (empty paneId),
@@ -19,21 +19,21 @@ import { tmpdir } from "os";
 
 const mockTmuxExecAsync = vi.fn();
 
-vi.mock("../cli/tmux-utils.js", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../cli/tmux-utils.js")>();
+vi.mock('../cli/tmux-utils.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../cli/tmux-utils.js')>();
   return { ...actual, tmuxExecAsync: mockTmuxExecAsync };
 });
 
-vi.mock("../team/model-contract.js", () => ({
-  buildWorkerArgv: vi.fn(() => ["/usr/bin/claude", "--flag"]),
-  resolveValidatedBinaryPath: vi.fn(() => "/usr/bin/claude"),
+vi.mock('../team/model-contract.js', () => ({
+  buildWorkerArgv: vi.fn(() => ['/usr/bin/claude', '--flag']),
+  resolveValidatedBinaryPath: vi.fn(() => '/usr/bin/claude'),
   getWorkerEnv: vi.fn(() => ({})),
   isPromptModeAgent: vi.fn(() => false),
   getPromptModeArgs: vi.fn(() => []),
   resolveClaudeWorkerModel: vi.fn(() => undefined),
 }));
 
-vi.mock("../team/tmux-session.js", () => ({
+vi.mock('../team/tmux-session.js', () => ({
   createTeamSession: vi.fn(),
   spawnWorkerInPane: vi.fn(),
   sendToWorker: vi.fn(() => Promise.resolve(true)),
@@ -43,18 +43,18 @@ vi.mock("../team/tmux-session.js", () => ({
   waitForPaneReady: vi.fn(() => Promise.resolve(true)),
 }));
 
-vi.mock("../team/worker-bootstrap.js", () => ({
+vi.mock('../team/worker-bootstrap.js', () => ({
   composeInitialInbox: vi.fn(),
   ensureWorkerStateDir: vi.fn(),
   writeWorkerOverlay: vi.fn(),
-  generateTriggerMessage: vi.fn(() => "trigger"),
+  generateTriggerMessage: vi.fn(() => 'trigger'),
 }));
 
-vi.mock("../team/git-worktree.js", () => ({
+vi.mock('../team/git-worktree.js', () => ({
   cleanupTeamWorktrees: vi.fn(),
 }));
 
-vi.mock("../team/task-file-ops.js", () => ({
+vi.mock('../team/task-file-ops.js', () => ({
   withTaskLock: vi.fn(
     async (_team: string, _taskId: string, fn: () => unknown) => fn(),
   ),
@@ -62,11 +62,11 @@ vi.mock("../team/task-file-ops.js", () => ({
   DEFAULT_MAX_TASK_RETRIES: 3,
 }));
 
-describe("spawnWorkerForTask task orphan prevention", () => {
+describe('spawnWorkerForTask task orphan prevention', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), "runtime-task-orphan-"));
+    tmpDir = mkdtempSync(join(tmpdir(), 'runtime-task-orphan-'));
     mockTmuxExecAsync.mockReset();
   });
 
@@ -74,23 +74,23 @@ describe("spawnWorkerForTask task orphan prevention", () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it("reverts task to pending when tmux pane creation returns empty paneId", async () => {
-    const { spawnWorkerForTask } = await import("../team/runtime.js");
+  it('reverts task to pending when tmux pane creation returns empty paneId', async () => {
+    const { spawnWorkerForTask } = await import('../team/runtime.js');
 
-    const teamName = "testteam";
+    const teamName = 'testteam';
     const taskIndex = 0;
     const taskId = String(taskIndex + 1);
 
     // Create task directory and initial task file (status: pending)
-    const tasksDir = join(tmpDir, ".omc", "state", "team", teamName, "tasks");
+    const tasksDir = join(tmpDir, '.omc', 'state', 'team', teamName, 'tasks');
     mkdirSync(tasksDir, { recursive: true });
     writeFileSync(
       join(tasksDir, `${taskId}.json`),
       JSON.stringify({
         id: taskId,
-        subject: "Test task",
-        description: "Test description",
-        status: "pending",
+        subject: 'Test task',
+        description: 'Test description',
+        status: 'pending',
         owner: null,
         result: null,
         createdAt: new Date().toISOString(),
@@ -98,36 +98,36 @@ describe("spawnWorkerForTask task orphan prevention", () => {
     );
 
     // Mock tmux split-window to return empty stdout (pane creation failure)
-    mockTmuxExecAsync.mockResolvedValue({ stdout: "\n", stderr: "" });
+    mockTmuxExecAsync.mockResolvedValue({ stdout: '\n', stderr: '' });
 
     const runtime = {
       teamName,
-      sessionName: "test-session",
-      leaderPaneId: "%0",
+      sessionName: 'test-session',
+      leaderPaneId: '%0',
       config: {
         teamName,
         workerCount: 1,
-        agentTypes: ["claude" as const],
-        tasks: [{ subject: "Test task", description: "Test description" }],
+        agentTypes: ['claude' as const],
+        tasks: [{ subject: 'Test task', description: 'Test description' }],
         cwd: tmpDir,
       },
-      workerNames: ["worker-1"],
+      workerNames: ['worker-1'],
       workerPaneIds: [] as string[],
       activeWorkers: new Map(),
       cwd: tmpDir,
-      resolvedBinaryPaths: { claude: "/usr/bin/claude" },
+      resolvedBinaryPaths: { claude: '/usr/bin/claude' },
     };
 
-    const result = await spawnWorkerForTask(runtime, "worker-1", taskIndex);
+    const result = await spawnWorkerForTask(runtime, 'worker-1', taskIndex);
 
     // Should return empty string (failure indicator)
-    expect(result).toBe("");
+    expect(result).toBe('');
 
     // Task must be reverted back to pending (not orphaned as in_progress)
     const taskFile = JSON.parse(
-      readFileSync(join(tasksDir, `${taskId}.json`), "utf-8"),
+      readFileSync(join(tasksDir, `${taskId}.json`), 'utf-8'),
     );
-    expect(taskFile.status).toBe("pending");
+    expect(taskFile.status).toBe('pending');
     expect(taskFile.owner).toBeNull();
   });
 });

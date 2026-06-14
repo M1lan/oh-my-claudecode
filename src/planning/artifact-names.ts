@@ -1,12 +1,12 @@
-import { basename } from "path";
+import { basename } from 'path';
 
 const PLANNING_ARTIFACT_TIMESTAMP_PATTERN = /^\d{8}T\d{6}Z$/;
 
 export type PlanningArtifactKind =
-  | "prd"
-  | "test-spec"
-  | "deep-interview"
-  | "deep-interview-autoresearch";
+  | 'prd'
+  | 'test-spec'
+  | 'deep-interview'
+  | 'deep-interview-autoresearch';
 
 export interface PlanningArtifactNameInfo {
   kind: PlanningArtifactKind;
@@ -17,8 +17,8 @@ export interface PlanningArtifactNameInfo {
 export function planningArtifactTimestamp(date: Date = new Date()): string {
   return date
     .toISOString()
-    .replace(/[-:]/g, "")
-    .replace(/\.\d{3}Z$/, "Z");
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z');
 }
 
 function legacyTestSpecSlug(fileNameOrPath: string): string | null {
@@ -29,7 +29,7 @@ function legacyTestSpecSlug(fileNameOrPath: string): string | null {
 function requiredTimestampedTestSpecFileName(
   prdArtifact: PlanningArtifactNameInfo,
 ): string | null {
-  return prdArtifact.kind === "prd" && prdArtifact.timestamp
+  return prdArtifact.kind === 'prd' && prdArtifact.timestamp
     ? `test-spec-${prdArtifact.timestamp}-${prdArtifact.slug}.md`
     : null;
 }
@@ -38,7 +38,7 @@ function splitTimestampPrefix(rawSlug: string): {
   slug: string;
   timestamp?: string;
 } {
-  const separatorIndex = rawSlug.indexOf("-");
+  const separatorIndex = rawSlug.indexOf('-');
   if (separatorIndex === -1) {
     return { slug: rawSlug };
   }
@@ -68,7 +68,7 @@ export function parsePlanningArtifactFileName(
     );
     if (!parsedSlug.slug) return null;
     return {
-      kind: "deep-interview-autoresearch",
+      kind: 'deep-interview-autoresearch',
       ...parsedSlug,
     };
   }
@@ -80,7 +80,7 @@ export function parsePlanningArtifactFileName(
     const parsedSlug = splitTimestampPrefix(deepInterviewMatch.groups.slug);
     if (!parsedSlug.slug) return null;
     return {
-      kind: "deep-interview",
+      kind: 'deep-interview',
       ...parsedSlug,
     };
   }
@@ -90,7 +90,7 @@ export function parsePlanningArtifactFileName(
     const parsedSlug = splitTimestampPrefix(prdMatch.groups.slug);
     if (!parsedSlug.slug) return null;
     return {
-      kind: "prd",
+      kind: 'prd',
       ...parsedSlug,
     };
   }
@@ -100,7 +100,7 @@ export function parsePlanningArtifactFileName(
     const parsedSlug = splitTimestampPrefix(testSpecMatch.groups.slug);
     if (!parsedSlug.slug) return null;
     return {
-      kind: "test-spec",
+      kind: 'test-spec',
       ...parsedSlug,
     };
   }
@@ -149,7 +149,7 @@ export function selectMatchingTestSpecsForPrd(
   }
 
   const prdArtifact = parsePlanningArtifactFileName(prdPath);
-  if (prdArtifact?.kind !== "prd") {
+  if (prdArtifact?.kind !== 'prd') {
     return [];
   }
 

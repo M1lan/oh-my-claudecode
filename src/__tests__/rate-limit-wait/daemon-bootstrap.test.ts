@@ -4,14 +4,16 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import type { DaemonConfig } from '../../features/rate-limit-wait/types.js';
 
-const { mockSpawn, mockResolveDaemonModulePath, mockIsTmuxAvailable } = vi.hoisted(() => ({
-  mockSpawn: vi.fn(),
-  mockResolveDaemonModulePath: vi.fn(),
-  mockIsTmuxAvailable: vi.fn(() => true),
-}));
+const { mockSpawn, mockResolveDaemonModulePath, mockIsTmuxAvailable } =
+  vi.hoisted(() => ({
+    mockSpawn: vi.fn(),
+    mockResolveDaemonModulePath: vi.fn(),
+    mockIsTmuxAvailable: vi.fn(() => true),
+  }));
 
 vi.mock('child_process', async () => {
-  const actual = await vi.importActual<typeof import('child_process')>('child_process');
+  const actual =
+    await vi.importActual<typeof import('child_process')>('child_process');
   return {
     ...actual,
     spawn: mockSpawn,
@@ -23,9 +25,9 @@ vi.mock('../../utils/daemon-module-path.js', () => ({
 }));
 
 vi.mock('../../features/rate-limit-wait/tmux-detector.js', async () => {
-  const actual = await vi.importActual<typeof import('../../features/rate-limit-wait/tmux-detector.js')>(
-    '../../features/rate-limit-wait/tmux-detector.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../features/rate-limit-wait/tmux-detector.js')
+  >('../../features/rate-limit-wait/tmux-detector.js');
   return {
     ...actual,
     isTmuxAvailable: mockIsTmuxAvailable,
@@ -43,9 +45,12 @@ describe('daemon bootstrap', () => {
     mockResolveDaemonModulePath.mockReset();
     mockIsTmuxAvailable.mockReset();
     mockIsTmuxAvailable.mockReturnValue(true);
-    mockResolveDaemonModulePath.mockReturnValue('/repo/dist/features/rate-limit-wait/daemon.js');
+    mockResolveDaemonModulePath.mockReturnValue(
+      '/repo/dist/features/rate-limit-wait/daemon.js',
+    );
 
-    ({ startDaemon } = await import('../../features/rate-limit-wait/daemon.js'));
+    ({ startDaemon } =
+      await import('../../features/rate-limit-wait/daemon.js'));
   });
 
   afterEach(() => {
@@ -86,7 +91,9 @@ describe('daemon bootstrap', () => {
     const [command, args, spawnOptions] = mockSpawn.mock.calls[0]!;
     expect(command).toBe('node');
     expect(args[0]).toBe('-e');
-    expect(args[1]).toContain("import(\"file:///repo/dist/features/rate-limit-wait/daemon.js\")");
+    expect(args[1]).toContain(
+      'import("file:///repo/dist/features/rate-limit-wait/daemon.js")',
+    );
     expect(spawnOptions?.detached).toBe(true);
     expect(spawnOptions?.stdio).toBe('ignore');
 
@@ -99,7 +106,9 @@ describe('daemon bootstrap', () => {
     const configPath = childEnv.OMC_DAEMON_CONFIG_FILE;
     expect(configPath).toBeTruthy();
     expect(existsSync(configPath!)).toBe(true);
-    const persistedConfig = JSON.parse(readFileSync(configPath!, 'utf-8')) as Record<string, unknown>;
+    const persistedConfig = JSON.parse(
+      readFileSync(configPath!, 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persistedConfig.pollIntervalMs).toBe(1234);
     expect(persistedConfig.verbose).toBe(true);
   });
@@ -107,7 +116,9 @@ describe('daemon bootstrap', () => {
   it('uses a file URL in daemon import script so Windows backslashes are not parsed as JS escapes', () => {
     const unref = vi.fn();
     mockSpawn.mockReturnValue({ pid: 4243, unref } as any);
-    mockResolveDaemonModulePath.mockReturnValue('C:\\Users\\soung\\AppData\\Roaming\\npm\\node_modules\\oh-my-claude-sisyphus\\dist\\features\\rate-limit-wait\\daemon.js');
+    mockResolveDaemonModulePath.mockReturnValue(
+      'C:\\Users\\soung\\AppData\\Roaming\\npm\\node_modules\\oh-my-claude-sisyphus\\dist\\features\\rate-limit-wait\\daemon.js',
+    );
 
     const config: DaemonConfig = {
       stateFilePath: join(testDir, 'state.json'),
@@ -123,7 +134,9 @@ describe('daemon bootstrap', () => {
 
     expect(daemonScript).toContain('import("file://');
     expect(daemonScript).not.toContain("import('C:\\Users");
-    expect(daemonScript).not.toContain('\\features\\rate-limit-wait\\daemon.js');
+    expect(daemonScript).not.toContain(
+      '\\features\\rate-limit-wait\\daemon.js',
+    );
   });
 
   it('returns already running when config pid file points to a live process', () => {

@@ -1,32 +1,32 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // ---------------------------------------------------------------------------
 // BUG 3: team-ops teamCreateTask must use locking for task ID generation
 // ---------------------------------------------------------------------------
 
-describe("team-ops teamCreateTask locking", () => {
+describe('team-ops teamCreateTask locking', () => {
   let tempDir: string;
-  const teamName = "lock-test-team";
+  const teamName = 'lock-test-team';
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), "team-ops-lock-test-"));
+    tempDir = mkdtempSync(join(tmpdir(), 'team-ops-lock-test-'));
     // Set up minimal team config
-    const root = join(tempDir, ".omc", "state", "team", teamName);
-    mkdirSync(join(root, "tasks"), { recursive: true });
+    const root = join(tempDir, '.omc', 'state', 'team', teamName);
+    mkdirSync(join(root, 'tasks'), { recursive: true });
     writeFileSync(
-      join(root, "config.json"),
+      join(root, 'config.json'),
       JSON.stringify({
         name: teamName,
-        task: "test",
-        agent_type: "executor",
+        task: 'test',
+        agent_type: 'executor',
         worker_count: 1,
         max_workers: 20,
-        tmux_session: "test-session",
+        tmux_session: 'test-session',
         workers: [
-          { name: "worker-1", index: 1, role: "executor", assigned_tasks: [] },
+          { name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] },
         ],
         created_at: new Date().toISOString(),
         next_task_id: 1,
@@ -42,33 +42,33 @@ describe("team-ops teamCreateTask locking", () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it("teamCreateTask source uses locking around task creation", () => {
-    const { readFileSync } = require("fs");
-    const sourcePath = join(__dirname, "..", "team", "team-ops.ts");
-    const source = readFileSync(sourcePath, "utf-8");
+  it('teamCreateTask source uses locking around task creation', () => {
+    const { readFileSync } = require('fs');
+    const sourcePath = join(__dirname, '..', 'team', 'team-ops.ts');
+    const source = readFileSync(sourcePath, 'utf-8');
 
     // Extract the teamCreateTask function
-    const fnStart = source.indexOf("export async function teamCreateTask");
+    const fnStart = source.indexOf('export async function teamCreateTask');
     expect(fnStart).toBeGreaterThan(-1);
     const fnBody = source.slice(fnStart, fnStart + 2000);
 
     // Must use locking (either withLock or withFileLockSync)
-    expect(fnBody).toContain("withLock");
-    expect(fnBody).toContain("lock-create-task");
+    expect(fnBody).toContain('withLock');
+    expect(fnBody).toContain('lock-create-task');
   });
 
-  it("two sequential task creations produce different IDs", async () => {
-    const { teamCreateTask } = await import("../team/team-ops.js");
+  it('two sequential task creations produce different IDs', async () => {
+    const { teamCreateTask } = await import('../team/team-ops.js');
 
     const task1 = await teamCreateTask(
       teamName,
-      { subject: "Task A", description: "first", status: "pending" as const },
+      { subject: 'Task A', description: 'first', status: 'pending' as const },
       tempDir,
     );
 
     const task2 = await teamCreateTask(
       teamName,
-      { subject: "Task B", description: "second", status: "pending" as const },
+      { subject: 'Task B', description: 'second', status: 'pending' as const },
       tempDir,
     );
 
@@ -76,23 +76,23 @@ describe("team-ops teamCreateTask locking", () => {
     expect(Number(task1.id)).toBeLessThan(Number(task2.id));
   });
 
-  it("concurrent task creations produce different IDs", async () => {
-    const { teamCreateTask } = await import("../team/team-ops.js");
+  it('concurrent task creations produce different IDs', async () => {
+    const { teamCreateTask } = await import('../team/team-ops.js');
 
     const results = await Promise.all([
       teamCreateTask(
         teamName,
-        { subject: "Task 1", description: "c1", status: "pending" as const },
+        { subject: 'Task 1', description: 'c1', status: 'pending' as const },
         tempDir,
       ),
       teamCreateTask(
         teamName,
-        { subject: "Task 2", description: "c2", status: "pending" as const },
+        { subject: 'Task 2', description: 'c2', status: 'pending' as const },
         tempDir,
       ),
       teamCreateTask(
         teamName,
-        { subject: "Task 3", description: "c3", status: "pending" as const },
+        { subject: 'Task 3', description: 'c3', status: 'pending' as const },
         tempDir,
       ),
     ]);

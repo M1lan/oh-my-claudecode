@@ -1,15 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   createBuiltinSkills,
   clearSkillsCache,
   getBuiltinSkill,
-} from "../features/builtin-skills/skills.js";
+} from '../features/builtin-skills/skills.js';
 
-describe("builtin skill drafting contracts for learned skills (issue #2425)", () => {
+describe('builtin skill drafting contracts for learned skills (issue #2425)', () => {
   const originalUserType = process.env.USER_TYPE;
 
   beforeEach(() => {
-    process.env.USER_TYPE = "ant";
+    process.env.USER_TYPE = 'ant';
     clearSkillsCache();
   });
 
@@ -22,35 +22,35 @@ describe("builtin skill drafting contracts for learned skills (issue #2425)", ()
     clearSkillsCache();
   });
 
-  it("learner remains a deprecated alias of canonical skillify", () => {
-    const learner = getBuiltinSkill("learner");
+  it('learner remains a deprecated alias of canonical skillify', () => {
+    const learner = getBuiltinSkill('learner');
 
     expect(learner).toBeDefined();
-    expect(learner!.aliasOf).toBe("skillify");
+    expect(learner!.aliasOf).toBe('skillify');
     expect(learner!.deprecatedAlias).toBe(true);
-    expect(learner!.template).toContain("Prefer `/oh-my-claudecode:skillify`");
+    expect(learner!.template).toContain('Prefer `/oh-my-claudecode:skillify`');
     expect(learner!.template).toContain(
-      "Do **not** write plain markdown without frontmatter.",
+      'Do **not** write plain markdown without frontmatter.',
     );
-    expect(learner!.template).toContain(".omc/skills/<skill-name>.md");
-    expect(learner!.template).toContain("skills/omc-learned/<skill-name>.md");
+    expect(learner!.template).toContain('.omc/skills/<skill-name>.md');
+    expect(learner!.template).toContain('skills/omc-learned/<skill-name>.md');
     expect(learner!.template).toContain(
-      "uncommitted skills are still worktree-local",
+      'uncommitted skills are still worktree-local',
     );
   });
 
-  it("skillify skill instructs drafting flat file-backed skills with YAML frontmatter", () => {
+  it('skillify skill instructs drafting flat file-backed skills with YAML frontmatter', () => {
     const skills = createBuiltinSkills();
-    const skillify = skills.find((skill) => skill.name === "skillify");
+    const skillify = skills.find((skill) => skill.name === 'skillify');
 
     expect(skillify).toBeDefined();
     expect(skillify!.template).toContain(
-      "output a complete skill file that starts with YAML frontmatter",
+      'output a complete skill file that starts with YAML frontmatter',
     );
     expect(skillify!.template).toContain(
-      "Never emit plain markdown-only skill files.",
+      'Never emit plain markdown-only skill files.',
     );
-    expect(skillify!.template).toContain(".omc/skills/<skill-name>.md");
-    expect(skillify!.template).toContain("skills/omc-learned/<skill-name>.md");
+    expect(skillify!.template).toContain('.omc/skills/<skill-name>.md');
+    expect(skillify!.template).toContain('skills/omc-learned/<skill-name>.md');
   });
 });

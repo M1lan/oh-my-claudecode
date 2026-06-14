@@ -10,7 +10,7 @@ export interface WorkerBootstrapParams {
   teamName: string;
   workerName: string;
   agentType: CliAgentType;
-  tasks: Array<{ id: string; subject: string; description: string; }>;
+  tasks: Array<{ id: string; subject: string; description: string }>;
   bootstrapInstructions?: string;
   cwd: string;
   /**
@@ -33,9 +33,10 @@ function buildTeamStateInstructionPath(
   instructionStateRoot: string,
   ...teamRelativeParts: string[]
 ): string {
-  const baseParts = instructionStateRoot === DEFAULT_INSTRUCTION_STATE_ROOT
-    ? [instructionStateRoot, 'team', teamName]
-    : [instructionStateRoot];
+  const baseParts =
+    instructionStateRoot === DEFAULT_INSTRUCTION_STATE_ROOT
+      ? [instructionStateRoot, 'team', teamName]
+      : [instructionStateRoot];
   return buildInstructionPath(...baseParts, ...teamRelativeParts);
 }
 
@@ -44,7 +45,13 @@ export function generateTriggerMessage(
   workerName: string,
   teamStateRoot = DEFAULT_INSTRUCTION_STATE_ROOT,
 ): string {
-  const inboxPath = buildTeamStateInstructionPath(teamName, teamStateRoot, 'workers', workerName, 'inbox.md');
+  const inboxPath = buildTeamStateInstructionPath(
+    teamName,
+    teamStateRoot,
+    'workers',
+    workerName,
+    'inbox.md',
+  );
   if (teamStateRoot !== DEFAULT_INSTRUCTION_STATE_ROOT) {
     return `Read ${inboxPath}, work now, report progress.`;
   }
@@ -57,7 +64,13 @@ export function generatePromptModeStartupPrompt(
   teamStateRoot = DEFAULT_INSTRUCTION_STATE_ROOT,
   cliOutputContract?: string,
 ): string {
-  const inboxPath = buildTeamStateInstructionPath(teamName, teamStateRoot, 'workers', workerName, 'inbox.md');
+  const inboxPath = buildTeamStateInstructionPath(
+    teamName,
+    teamStateRoot,
+    'workers',
+    workerName,
+    'inbox.md',
+  );
   const base = `Open ${inboxPath}. Follow it and begin the assigned work.`;
   return cliOutputContract ? `${base}\n${cliOutputContract}` : base;
 }
@@ -68,8 +81,15 @@ export function generateMailboxTriggerMessage(
   count = 1,
   teamStateRoot = DEFAULT_INSTRUCTION_STATE_ROOT,
 ): string {
-  const normalizedCount = Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
-  const mailboxPath = buildTeamStateInstructionPath(teamName, teamStateRoot, 'mailbox', `${workerName}.json`);
+  const normalizedCount = Number.isFinite(count)
+    ? Math.max(1, Math.floor(count))
+    : 1;
+  const mailboxPath = buildTeamStateInstructionPath(
+    teamName,
+    teamStateRoot,
+    'mailbox',
+    `${workerName}.json`,
+  );
   if (teamStateRoot !== DEFAULT_INSTRUCTION_STATE_ROOT) {
     return `${normalizedCount} new msg(s): check ${mailboxPath}, act and report progress.`;
   }
@@ -79,7 +99,9 @@ export function generateMailboxTriggerMessage(
 function agentTypeGuidance(agentType: CliAgentType): string {
   const teamApiCommand = formatOmcCliInvocation('team api');
   const claimTaskCommand = formatOmcCliInvocation('team api claim-task');
-  const transitionTaskStatusCommand = formatOmcCliInvocation('team api transition-task-status');
+  const transitionTaskStatusCommand = formatOmcCliInvocation(
+    'team api transition-task-status',
+  );
   switch (agentType) {
     case 'codex':
       return [
@@ -126,35 +148,89 @@ function agentTypeGuidance(agentType: CliAgentType): string {
  * Does NOT mutate the project AGENTS.md.
  */
 export function generateWorkerOverlay(params: WorkerBootstrapParams): string {
-  const { teamName, workerName, agentType, tasks, bootstrapInstructions } = params;
-  const instructionStateRoot = params.instructionStateRoot ?? DEFAULT_INSTRUCTION_STATE_ROOT;
+  const { teamName, workerName, agentType, tasks, bootstrapInstructions } =
+    params;
+  const instructionStateRoot =
+    params.instructionStateRoot ?? DEFAULT_INSTRUCTION_STATE_ROOT;
 
   // Sanitize all task content before embedding
-  const sanitizedTasks = tasks.map(t => ({
+  const sanitizedTasks = tasks.map((t) => ({
     id: t.id,
     subject: sanitizePromptContent(t.subject),
     description: sanitizePromptContent(t.description),
   }));
 
-  const sentinelPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, 'workers', workerName, '.ready');
-  const heartbeatPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, 'workers', workerName, 'heartbeat.json');
-  const inboxPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, 'workers', workerName, 'inbox.md');
-  const statusPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, 'workers', workerName, 'status.json');
-  const shutdownAckPath = buildTeamStateInstructionPath(teamName, instructionStateRoot, 'workers', workerName, 'shutdown-ack.json');
-  const claimTaskCommand = formatOmcCliInvocation(`team api claim-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"worker\\":\\"${workerName}\\"}" --json`);
-  const sendAckCommand = formatOmcCliInvocation(`team api send-message --input "{\\"team_name\\":\\"${teamName}\\",\\"from_worker\\":\\"${workerName}\\",\\"to_worker\\":\\"leader-fixed\\",\\"body\\":\\"ACK: ${workerName} initialized\\"}" --json`);
-  const completeTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\",\\"result\\":\\"Summary: <what changed>\\\\nVerification: <tests/checks run>\\\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session\\"}" --json`);
-  const failTaskCommand = formatOmcCliInvocation(`team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"failed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`);
-  const readTaskCommand = formatOmcCliInvocation(`team api read-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\"}" --json`);
-  const releaseClaimCommand = formatOmcCliInvocation(`team api release-task-claim --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"claim_token\\":\\"<claim_token>\\",\\"worker\\":\\"${workerName}\\"}" --json`);
-  const mailboxListCommand = formatOmcCliInvocation(`team api mailbox-list --input "{\\"team_name\\":\\"${teamName}\\",\\"worker\\":\\"${workerName}\\"}" --json`);
-  const mailboxDeliveredCommand = formatOmcCliInvocation(`team api mailbox-mark-delivered --input "{\\"team_name\\":\\"${teamName}\\",\\"worker\\":\\"${workerName}\\",\\"message_id\\":\\"<id>\\"}" --json`);
+  const sentinelPath = buildTeamStateInstructionPath(
+    teamName,
+    instructionStateRoot,
+    'workers',
+    workerName,
+    '.ready',
+  );
+  const heartbeatPath = buildTeamStateInstructionPath(
+    teamName,
+    instructionStateRoot,
+    'workers',
+    workerName,
+    'heartbeat.json',
+  );
+  const inboxPath = buildTeamStateInstructionPath(
+    teamName,
+    instructionStateRoot,
+    'workers',
+    workerName,
+    'inbox.md',
+  );
+  const statusPath = buildTeamStateInstructionPath(
+    teamName,
+    instructionStateRoot,
+    'workers',
+    workerName,
+    'status.json',
+  );
+  const shutdownAckPath = buildTeamStateInstructionPath(
+    teamName,
+    instructionStateRoot,
+    'workers',
+    workerName,
+    'shutdown-ack.json',
+  );
+  const claimTaskCommand = formatOmcCliInvocation(
+    `team api claim-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"worker\\":\\"${workerName}\\"}" --json`,
+  );
+  const sendAckCommand = formatOmcCliInvocation(
+    `team api send-message --input "{\\"team_name\\":\\"${teamName}\\",\\"from_worker\\":\\"${workerName}\\",\\"to_worker\\":\\"leader-fixed\\",\\"body\\":\\"ACK: ${workerName} initialized\\"}" --json`,
+  );
+  const completeTaskCommand = formatOmcCliInvocation(
+    `team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"completed\\",\\"claim_token\\":\\"<claim_token>\\",\\"result\\":\\"Summary: <what changed>\\\\nVerification: <tests/checks run>\\\\nSubagent skip reason: worker protocol forbids nested subagents; completed focused probe in-session\\"}" --json`,
+  );
+  const failTaskCommand = formatOmcCliInvocation(
+    `team api transition-task-status --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"from\\":\\"in_progress\\",\\"to\\":\\"failed\\",\\"claim_token\\":\\"<claim_token>\\"}" --json`,
+  );
+  const readTaskCommand = formatOmcCliInvocation(
+    `team api read-task --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\"}" --json`,
+  );
+  const releaseClaimCommand = formatOmcCliInvocation(
+    `team api release-task-claim --input "{\\"team_name\\":\\"${teamName}\\",\\"task_id\\":\\"<id>\\",\\"claim_token\\":\\"<claim_token>\\",\\"worker\\":\\"${workerName}\\"}" --json`,
+  );
+  const mailboxListCommand = formatOmcCliInvocation(
+    `team api mailbox-list --input "{\\"team_name\\":\\"${teamName}\\",\\"worker\\":\\"${workerName}\\"}" --json`,
+  );
+  const mailboxDeliveredCommand = formatOmcCliInvocation(
+    `team api mailbox-mark-delivered --input "{\\"team_name\\":\\"${teamName}\\",\\"worker\\":\\"${workerName}\\",\\"message_id\\":\\"<id>\\"}" --json`,
+  );
   const teamApiCommand = formatOmcCliInvocation('team api');
   const teamCommand = formatOmcCliInvocation('team');
 
-  const taskList = sanitizedTasks.length > 0
-    ? sanitizedTasks.map(t => `- **Task ${t.id}**: ${t.subject}\n  Description: ${t.description}\n  Status: pending`).join('\n')
-    : '- No tasks assigned yet. Check your inbox for assignments.';
+  const taskList =
+    sanitizedTasks.length > 0
+      ? sanitizedTasks
+          .map(
+            (t) =>
+              `- **Task ${t.id}**: ${t.subject}\n  Description: ${t.description}\n  Status: pending`,
+          )
+          .join('\n')
+      : '- No tasks assigned yet. Check your inbox for assignments.';
 
   return `# Team Worker Protocol
 
@@ -268,11 +344,15 @@ export async function composeInitialInbox(
   cwd: string,
   cliOutputContract?: string,
 ): Promise<void> {
-  const inboxPath = join(cwd, `.omc/state/team/${teamName}/workers/${workerName}/inbox.md`);
+  const inboxPath = join(
+    cwd,
+    `.omc/state/team/${teamName}/workers/${workerName}/inbox.md`,
+  );
   await mkdir(dirname(inboxPath), { recursive: true });
-  const finalContent = cliOutputContract && !content.includes(cliOutputContract)
-    ? `${content}\n${cliOutputContract}`
-    : content;
+  const finalContent =
+    cliOutputContract && !content.includes(cliOutputContract)
+      ? `${content}\n${cliOutputContract}`
+      : content;
   await writeFile(inboxPath, finalContent, 'utf-8');
 }
 
@@ -287,11 +367,14 @@ export async function appendToInbox(
   teamName: string,
   workerName: string,
   message: string,
-  cwd: string
+  cwd: string,
 ): Promise<void> {
   const safeTeam = sanitizeName(teamName);
   const safeWorker = sanitizeName(workerName);
-  const inboxPath = join(cwd, `.omc/state/team/${safeTeam}/workers/${safeWorker}/inbox.md`);
+  const inboxPath = join(
+    cwd,
+    `.omc/state/team/${safeTeam}/workers/${safeWorker}/inbox.md`,
+  );
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
   await appendFile(inboxPath, `\n\n---\n${message}`, 'utf-8');
@@ -306,9 +389,12 @@ export { getWorkerEnv } from './model-contract.js';
 export async function ensureWorkerStateDir(
   teamName: string,
   workerName: string,
-  cwd: string
+  cwd: string,
 ): Promise<void> {
-  const workerDir = join(cwd, `.omc/state/team/${teamName}/workers/${workerName}`);
+  const workerDir = join(
+    cwd,
+    `.omc/state/team/${teamName}/workers/${workerName}`,
+  );
   await mkdir(workerDir, { recursive: true });
 
   // Also ensure mailbox dir
@@ -325,11 +411,14 @@ export async function ensureWorkerStateDir(
  * This is separate from the project AGENTS.md — it will be passed to the worker via inbox.
  */
 export async function writeWorkerOverlay(
-  params: WorkerBootstrapParams
+  params: WorkerBootstrapParams,
 ): Promise<string> {
   const { teamName, workerName, cwd } = params;
   const overlay = generateWorkerOverlay(params);
-  const overlayPath = join(cwd, `.omc/state/team/${teamName}/workers/${workerName}/AGENTS.md`);
+  const overlayPath = join(
+    cwd,
+    `.omc/state/team/${teamName}/workers/${workerName}/AGENTS.md`,
+  );
   await mkdir(dirname(overlayPath), { recursive: true });
   await writeFile(overlayPath, overlay, 'utf-8');
   return overlayPath;

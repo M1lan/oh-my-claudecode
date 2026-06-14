@@ -1,4 +1,4 @@
-import { registerStandaloneShutdownHandlers } from "../mcp/standalone-shutdown.js";
+import { registerStandaloneShutdownHandlers } from '../mcp/standalone-shutdown.js';
 
 export interface HudMainLike {
   (watchMode: boolean, skipInit?: boolean): Promise<void>;

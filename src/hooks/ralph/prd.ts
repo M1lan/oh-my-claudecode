@@ -12,13 +12,13 @@
  * - notes: Optional notes from implementation
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
-import { dirname, join } from "path";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { dirname, join } from 'path';
 import {
   ensureSessionStateDir,
   getOmcRoot,
   getSessionStateDir,
-} from "../../lib/worktree-paths.js";
+} from '../../lib/worktree-paths.js';
 
 // ============================================================================
 // Types
@@ -73,8 +73,8 @@ export interface PRDStatus {
 // Constants
 // ============================================================================
 
-export const PRD_FILENAME = "prd.json";
-export const PRD_EXAMPLE_FILENAME = "prd.example.json";
+export const PRD_FILENAME = 'prd.json';
+export const PRD_EXAMPLE_FILENAME = 'prd.example.json';
 
 export interface EnsurePrdForStartupResult {
   ok: boolean;
@@ -85,22 +85,22 @@ export interface EnsurePrdForStartupResult {
 }
 
 function normalizeStory(candidate: unknown): UserStory | null {
-  if (!candidate || typeof candidate !== "object") {
+  if (!candidate || typeof candidate !== 'object') {
     return null;
   }
 
   const story = candidate as Record<string, unknown>;
   if (
-    typeof story.id !== "string" ||
-    typeof story.title !== "string" ||
-    typeof story.description !== "string" ||
+    typeof story.id !== 'string' ||
+    typeof story.title !== 'string' ||
+    typeof story.description !== 'string' ||
     !Array.isArray(story.acceptanceCriteria) ||
     !story.acceptanceCriteria.every(
-      (criterion) => typeof criterion === "string",
+      (criterion) => typeof criterion === 'string',
     ) ||
-    typeof story.priority !== "number" ||
+    typeof story.priority !== 'number' ||
     !Number.isFinite(story.priority) ||
-    typeof story.passes !== "boolean"
+    typeof story.passes !== 'boolean'
   ) {
     return null;
   }
@@ -113,20 +113,20 @@ function normalizeStory(candidate: unknown): UserStory | null {
     priority: story.priority,
     passes: story.passes,
     architectVerified: story.architectVerified === true,
-    notes: typeof story.notes === "string" ? story.notes : undefined,
+    notes: typeof story.notes === 'string' ? story.notes : undefined,
   };
 }
 
 function normalizePrd(candidate: unknown): PRD | null {
-  if (!candidate || typeof candidate !== "object") {
+  if (!candidate || typeof candidate !== 'object') {
     return null;
   }
 
   const prd = candidate as Record<string, unknown>;
   if (
-    typeof prd.project !== "string" ||
-    typeof prd.branchName !== "string" ||
-    typeof prd.description !== "string" ||
+    typeof prd.project !== 'string' ||
+    typeof prd.branchName !== 'string' ||
+    typeof prd.description !== 'string' ||
     !Array.isArray(prd.userStories)
   ) {
     return null;
@@ -148,7 +148,7 @@ function normalizePrd(candidate: unknown): PRD | null {
 
 function readPrdFromPath(prdPath: string): { prd?: PRD; error?: string } {
   try {
-    const content = readFileSync(prdPath, "utf-8");
+    const content = readFileSync(prdPath, 'utf-8');
     const parsed = JSON.parse(content) as unknown;
     const normalized = normalizePrd(parsed);
 
@@ -199,7 +199,7 @@ export function getSessionPrdPath(
  * Get the legacy state-manager PRD path used by older builds.
  */
 export function getLegacyStatePrdPath(directory: string): string {
-  return join(getOmcRoot(directory), "state", PRD_FILENAME);
+  return join(getOmcRoot(directory), 'state', PRD_FILENAME);
 }
 
 /**
@@ -428,7 +428,7 @@ export function getNextStory(
 /**
  * Input type for creating user stories (priority is optional)
  */
-export type UserStoryInput = Omit<UserStory, "passes" | "priority"> & {
+export type UserStoryInput = Omit<UserStory, 'passes' | 'priority'> & {
   priority?: number;
 };
 
@@ -464,16 +464,16 @@ export function createSimplePrd(
 ): PRD {
   return createPrd(project, branchName, taskDescription, [
     {
-      id: "US-001",
+      id: 'US-001',
       title:
         taskDescription.slice(0, 50) +
-        (taskDescription.length > 50 ? "..." : ""),
+        (taskDescription.length > 50 ? '...' : ''),
       description: taskDescription,
       acceptanceCriteria: [
-        "Implementation is complete",
-        "Code compiles/runs without errors",
-        "Tests pass (if applicable)",
-        "Changes are committed",
+        'Implementation is complete',
+        'Code compiles/runs without errors',
+        'Tests pass (if applicable)',
+        'Changes are committed',
       ],
       priority: 1,
     },
@@ -610,9 +610,9 @@ export function formatPrdStatus(status: PRDStatus): string {
   );
 
   if (status.allComplete) {
-    lines.push("All stories are COMPLETE!");
+    lines.push('All stories are COMPLETE!');
   } else {
-    lines.push(`Remaining: ${status.incompleteIds.join(", ")}`);
+    lines.push(`Remaining: ${status.incompleteIds.join(', ')}`);
     if (status.nextStory) {
       lines.push(
         `Next story: ${status.nextStory.id} - ${status.nextStory.title}`,
@@ -620,7 +620,7 @@ export function formatPrdStatus(status: PRDStatus): string {
     }
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -631,26 +631,26 @@ export function formatStory(story: UserStory): string {
 
   lines.push(`## ${story.id}: ${story.title}`);
   const statusLabel = isStoryComplete(story)
-    ? "COMPLETE"
+    ? 'COMPLETE'
     : story.passes
-      ? "AWAITING ARCHITECT REVIEW"
-      : "PENDING";
+      ? 'AWAITING ARCHITECT REVIEW'
+      : 'PENDING';
   lines.push(`Status: ${statusLabel}`);
   lines.push(`Priority: ${story.priority}`);
-  lines.push("");
+  lines.push('');
   lines.push(story.description);
-  lines.push("");
-  lines.push("**Acceptance Criteria:**");
+  lines.push('');
+  lines.push('**Acceptance Criteria:**');
   story.acceptanceCriteria.forEach((c, i) => {
     lines.push(`${i + 1}. ${c}`);
   });
 
   if (story.notes) {
-    lines.push("");
+    lines.push('');
     lines.push(`**Notes:** ${story.notes}`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -662,13 +662,13 @@ export function formatPrd(prd: PRD): string {
 
   lines.push(`# ${prd.project}`);
   lines.push(`Branch: ${prd.branchName}`);
-  lines.push("");
+  lines.push('');
   lines.push(prd.description);
-  lines.push("");
+  lines.push('');
   lines.push(formatPrdStatus(status));
-  lines.push("");
-  lines.push("---");
-  lines.push("");
+  lines.push('');
+  lines.push('---');
+  lines.push('');
 
   // Sort by priority for display
   const sortedStories = [...prd.userStories].sort(
@@ -677,12 +677,12 @@ export function formatPrd(prd: PRD): string {
 
   for (const story of sortedStories) {
     lines.push(formatStory(story));
-    lines.push("");
-    lines.push("---");
-    lines.push("");
+    lines.push('');
+    lines.push('---');
+    lines.push('');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -699,9 +699,9 @@ export function formatNextStoryPrompt(
 ${story.description}
 
 **Acceptance Criteria:**
-${story.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+${story.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
-${prdPath ? `**Active PRD file:** ${prdPath}\n\n` : ""}**Instructions:**
+${prdPath ? `**Active PRD file:** ${prdPath}\n\n` : ''}**Instructions:**
 1. Implement this story completely
 2. Verify ALL acceptance criteria are met
 3. Run quality checks (tests, typecheck, lint)

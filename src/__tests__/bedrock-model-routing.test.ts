@@ -98,9 +98,12 @@ describe('Bedrock model routing repro', () => {
 
   describe('tier resolution: getDefaultModelMedium()', () => {
     it('reads ANTHROPIC_DEFAULT_SONNET_MODEL', async () => {
-      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'global.anthropic.claude-sonnet-4-6-v1:0';
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL =
+        'global.anthropic.claude-sonnet-4-6-v1:0';
       const { getDefaultModelMedium } = await import('../config/models.js');
-      expect(getDefaultModelMedium()).toBe('global.anthropic.claude-sonnet-4-6-v1:0');
+      expect(getDefaultModelMedium()).toBe(
+        'global.anthropic.claude-sonnet-4-6-v1:0',
+      );
     });
 
     it('falls back to bare "claude-sonnet-4-6" without env vars', async () => {
@@ -120,7 +123,8 @@ describe('Bedrock model routing repro', () => {
       // (all Bedrock env vars already cleared by beforeEach)
 
       // 1. Bedrock detection fails
-      const { isBedrock, isNonClaudeProvider } = await import('../config/models.js');
+      const { isBedrock, isNonClaudeProvider } =
+        await import('../config/models.js');
       expect(isBedrock()).toBe(false);
       expect(isNonClaudeProvider()).toBe(false);
 
@@ -137,7 +141,8 @@ describe('Bedrock model routing repro', () => {
       expect(defs['architect'].model).toBe('claude-opus-4-8');
 
       // 4. enforceModel normalizes to bare CC-supported aliases (FIX)
-      const { enforceModel } = await import('../features/delegation-enforcer.js');
+      const { enforceModel } =
+        await import('../features/delegation-enforcer.js');
 
       // 4a. executor → 'sonnet' (normalized from config's full model ID)
       const executorResult = enforceModel({
@@ -167,9 +172,21 @@ describe('Bedrock model routing repro', () => {
       expect(architectResult.modifiedInput.model).toBe('opus');
 
       // 5. After fix: these are valid CC aliases that CC resolves on any provider
-      expect(['sonnet', 'opus', 'haiku'].includes(executorResult.modifiedInput.model!)).toBe(true);
-      expect(['sonnet', 'opus', 'haiku'].includes(exploreResult.modifiedInput.model!)).toBe(true);
-      expect(['sonnet', 'opus', 'haiku'].includes(architectResult.modifiedInput.model!)).toBe(true);
+      expect(
+        ['sonnet', 'opus', 'haiku'].includes(
+          executorResult.modifiedInput.model!,
+        ),
+      ).toBe(true);
+      expect(
+        ['sonnet', 'opus', 'haiku'].includes(
+          exploreResult.modifiedInput.model!,
+        ),
+      ).toBe(true);
+      expect(
+        ['sonnet', 'opus', 'haiku'].includes(
+          architectResult.modifiedInput.model!,
+        ),
+      ).toBe(true);
     });
 
     it('the defense works when CLAUDE_CODE_USE_BEDROCK IS propagated', async () => {
@@ -183,10 +200,17 @@ describe('Bedrock model routing repro', () => {
       const config = loadConfig();
       expect(config.routing?.forceInherit).toBe(true);
 
-      const { enforceModel } = await import('../features/delegation-enforcer.js');
+      const { enforceModel } =
+        await import('../features/delegation-enforcer.js');
 
       // All agents get model stripped → inherit parent
-      for (const agent of ['executor', 'explore', 'architect', 'debugger', 'verifier']) {
+      for (const agent of [
+        'executor',
+        'explore',
+        'architect',
+        'debugger',
+        'verifier',
+      ]) {
         const result = enforceModel({
           description: 'test',
           prompt: 'test',
@@ -206,12 +230,16 @@ describe('Bedrock model routing repro', () => {
     it('full chain: tier env Bedrock models do not globally force inherit', async () => {
       // ── Setup: user has Bedrock-format models in ANTHROPIC_DEFAULT_*_MODEL
       //    (as shown in their settings) but CLAUDE_CODE_USE_BEDROCK is not set ──
-      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'global.anthropic.claude-sonnet-4-6-v1:0';
-      process.env.ANTHROPIC_DEFAULT_OPUS_MODEL = 'global.anthropic.claude-opus-4-6-v1:0';
-      process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = 'global.anthropic.claude-haiku-4-5-v1:0';
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL =
+        'global.anthropic.claude-sonnet-4-6-v1:0';
+      process.env.ANTHROPIC_DEFAULT_OPUS_MODEL =
+        'global.anthropic.claude-opus-4-6-v1:0';
+      process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL =
+        'global.anthropic.claude-haiku-4-5-v1:0';
 
       // 1. isBedrock now checks tier model env vars too.
-      const { isBedrock, isNonClaudeProvider } = await import('../config/models.js');
+      const { isBedrock, isNonClaudeProvider } =
+        await import('../config/models.js');
       expect(isBedrock()).toBe(true);
       expect(isNonClaudeProvider()).toBe(true);
 
@@ -223,18 +251,31 @@ describe('Bedrock model routing repro', () => {
       // 3. BUT tier model resolution DOES read the Bedrock IDs
       const { getDefaultModelMedium, getDefaultModelHigh, getDefaultModelLow } =
         await import('../config/models.js');
-      expect(getDefaultModelMedium()).toBe('global.anthropic.claude-sonnet-4-6-v1:0');
-      expect(getDefaultModelHigh()).toBe('global.anthropic.claude-opus-4-6-v1:0');
-      expect(getDefaultModelLow()).toBe('global.anthropic.claude-haiku-4-5-v1:0');
+      expect(getDefaultModelMedium()).toBe(
+        'global.anthropic.claude-sonnet-4-6-v1:0',
+      );
+      expect(getDefaultModelHigh()).toBe(
+        'global.anthropic.claude-opus-4-6-v1:0',
+      );
+      expect(getDefaultModelLow()).toBe(
+        'global.anthropic.claude-haiku-4-5-v1:0',
+      );
 
       // 4. config.agents get the Bedrock-format model IDs
-      expect(config.agents?.executor?.model).toBe('global.anthropic.claude-sonnet-4-6-v1:0');
-      expect(config.agents?.architect?.model).toBe('global.anthropic.claude-opus-4-6-v1:0');
-      expect(config.agents?.explore?.model).toBe('global.anthropic.claude-haiku-4-5-v1:0');
+      expect(config.agents?.executor?.model).toBe(
+        'global.anthropic.claude-sonnet-4-6-v1:0',
+      );
+      expect(config.agents?.architect?.model).toBe(
+        'global.anthropic.claude-opus-4-6-v1:0',
+      );
+      expect(config.agents?.explore?.model).toBe(
+        'global.anthropic.claude-haiku-4-5-v1:0',
+      );
 
       // 5. enforceModel injects the configured tier provider ID for that agent,
       // instead of collapsing every agent call into inheritance mode.
-      const { enforceModel } = await import('../features/delegation-enforcer.js');
+      const { enforceModel } =
+        await import('../features/delegation-enforcer.js');
       const result = enforceModel({
         description: 'Implement feature',
         prompt: 'Write the code',
@@ -242,15 +283,19 @@ describe('Bedrock model routing repro', () => {
       });
       expect(result.injected).toBe(true);
       expect(result.model).toBe('global.anthropic.claude-sonnet-4-6-v1:0');
-      expect(result.modifiedInput.model).toBe('global.anthropic.claude-sonnet-4-6-v1:0');
+      expect(result.modifiedInput.model).toBe(
+        'global.anthropic.claude-sonnet-4-6-v1:0',
+      );
     });
 
     it('isBedrock detects Bedrock patterns in tier env vars', async () => {
       // ANTHROPIC_DEFAULT_*_MODEL values can be the only Bedrock signal
       // when CLAUDE_MODEL/ANTHROPIC_MODEL are unset.
-      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'global.anthropic.claude-sonnet-4-6-v1:0';
+      process.env.ANTHROPIC_DEFAULT_SONNET_MODEL =
+        'global.anthropic.claude-sonnet-4-6-v1:0';
 
-      const { isBedrock, hasTierModelEnvOverrides } = await import('../config/models.js');
+      const { isBedrock, hasTierModelEnvOverrides } =
+        await import('../config/models.js');
 
       // The env var IS detected by hasTierModelEnvOverrides
       expect(hasTierModelEnvOverrides()).toBe(true);
@@ -326,7 +371,8 @@ describe('Bedrock model routing repro', () => {
       // Only the bridge hook strip (lines 1082-1093) catches explicit models.
 
       // Without forceInherit, explicit model from LLM passes straight through
-      const { enforceModel } = await import('../features/delegation-enforcer.js');
+      const { enforceModel } =
+        await import('../features/delegation-enforcer.js');
       const result = enforceModel({
         description: 'Implement feature',
         prompt: 'Write the code',
@@ -345,7 +391,8 @@ describe('Bedrock model routing repro', () => {
 
   describe('DIAGNOSIS: matching error to scenario', () => {
     it('reported error uses "claude-sonnet-4-6" → matches enforceModel injection path', async () => {
-      const { enforceModel } = await import('../features/delegation-enforcer.js');
+      const { enforceModel } =
+        await import('../features/delegation-enforcer.js');
       const result = enforceModel({
         description: 'test',
         prompt: 'test',
@@ -384,8 +431,12 @@ describe('Bedrock model routing repro', () => {
 
       // Should deny with permissionDecision
       expect(parsed.hookSpecificOutput?.permissionDecision).toBe('deny');
-      expect(parsed.hookSpecificOutput?.permissionDecisionReason).toContain('claude-sonnet-4-6');
-      expect(parsed.hookSpecificOutput?.permissionDecisionReason).toContain('model');
+      expect(parsed.hookSpecificOutput?.permissionDecisionReason).toContain(
+        'claude-sonnet-4-6',
+      );
+      expect(parsed.hookSpecificOutput?.permissionDecisionReason).toContain(
+        'model',
+      );
     });
 
     it('allows Task calls without model even on Bedrock', async () => {

@@ -14,17 +14,17 @@ import {
   handleContextWindowRecovery,
   detectContextLimitError,
   parseTokenLimitError,
-} from "./context-window.js";
+} from './context-window.js';
 import {
   handleEditErrorRecovery,
   detectEditError,
   processEditOutput,
-} from "./edit-error.js";
+} from './edit-error.js';
 import {
   handleSessionRecovery,
   detectErrorType as detectSessionErrorType,
   isRecoverableError,
-} from "./session-recovery.js";
+} from './session-recovery.js';
 
 // Re-export types
 export type {
@@ -40,9 +40,9 @@ export type {
   StoredTextPart,
   StoredToolPart,
   StoredReasoningPart,
-} from "./types.js";
+} from './types.js';
 
-export { RETRY_CONFIG, TRUNCATE_CONFIG } from "./types.js";
+export { RETRY_CONFIG, TRUNCATE_CONFIG } from './types.js';
 
 // Re-export constants
 export {
@@ -57,7 +57,7 @@ export {
   EDIT_ERROR_REMINDER,
   RECOVERY_MESSAGES,
   PLACEHOLDER_TEXT,
-} from "./constants.js";
+} from './constants.js';
 
 // Re-export storage utilities
 export {
@@ -70,7 +70,7 @@ export {
   prependThinkingPart,
   stripThinkingParts,
   replaceEmptyTextParts,
-} from "./storage.js";
+} from './storage.js';
 
 // Re-export individual recovery functions
 export {
@@ -78,21 +78,21 @@ export {
   detectContextLimitError,
   parseTokenLimitError,
   containsTokenLimitError,
-} from "./context-window.js";
+} from './context-window.js';
 
 export {
   handleEditErrorRecovery,
   detectEditError,
   processEditOutput,
-} from "./edit-error.js";
+} from './edit-error.js';
 
 export {
   handleSessionRecovery,
   detectErrorType as detectSessionErrorType,
   isRecoverableError,
-} from "./session-recovery.js";
+} from './session-recovery.js';
 
-import type { RecoveryResult, RecoveryConfig, MessageData } from "./types.js";
+import type { RecoveryResult, RecoveryConfig, MessageData } from './types.js';
 
 /**
  * Unified recovery handler
@@ -164,7 +164,7 @@ export function detectRecoverableError(error: unknown): {
   if (parsed) {
     return {
       recoverable: true,
-      type: "context_window_limit",
+      type: 'context_window_limit',
     };
   }
 

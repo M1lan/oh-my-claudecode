@@ -24,7 +24,7 @@ export interface MessagePart {
  */
 export interface MessageInfo {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: 'user' | 'assistant' | 'system';
   sessionID?: string;
   modelID?: string;
 }
@@ -55,7 +55,7 @@ export interface MessagesTransformOutput {
  * Hook for transforming messages before API call
  */
 export interface MessagesTransformHook {
-  "experimental.chat.messages.transform"?: (
+  'experimental.chat.messages.transform'?: (
     input: Record<string, never>,
     output: MessagesTransformOutput,
   ) => Promise<void>;

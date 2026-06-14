@@ -31,7 +31,7 @@ Use this instead of Bash heredocs when you need:
 - Any workflow benefiting from Python state persistence`,
 
   schema: pythonReplSchema,
-  handler: pythonReplHandler
+  handler: pythonReplHandler,
 };
 
 // Re-export types for convenience

@@ -5,8 +5,8 @@
  * wiki_ingest, wiki_query, wiki_lint, wiki_add, wiki_list, wiki_read, wiki_delete
  */
 
-import { z } from "zod";
-import { validateWorkingDirectoryOrLinkedWorktree } from "../lib/worktree-paths.js";
+import { z } from 'zod';
+import { validateWorkingDirectoryOrLinkedWorktree } from '../lib/worktree-paths.js';
 import {
   readPage,
   listPages,
@@ -14,22 +14,22 @@ import {
   deletePage,
   appendLog,
   titleToSlug,
-} from "../hooks/wiki/index.js";
-import { ingestKnowledge } from "../hooks/wiki/ingest.js";
-import { queryWiki } from "../hooks/wiki/query.js";
-import { lintWiki } from "../hooks/wiki/lint.js";
-import type { WikiCategory } from "../hooks/wiki/types.js";
-import { ToolDefinition } from "./types.js";
+} from '../hooks/wiki/index.js';
+import { ingestKnowledge } from '../hooks/wiki/ingest.js';
+import { queryWiki } from '../hooks/wiki/query.js';
+import { lintWiki } from '../hooks/wiki/lint.js';
+import type { WikiCategory } from '../hooks/wiki/types.js';
+import { ToolDefinition } from './types.js';
 
 const WIKI_CATEGORIES: [string, ...string[]] = [
-  "architecture",
-  "decision",
-  "pattern",
-  "debugging",
-  "environment",
-  "session-log",
-  "reference",
-  "convention",
+  'architecture',
+  'decision',
+  'pattern',
+  'debugging',
+  'environment',
+  'session-log',
+  'reference',
+  'convention',
 ];
 
 // ============================================================================
@@ -42,39 +42,39 @@ export const wikiIngestTool: ToolDefinition<{
   tags: z.ZodArray<z.ZodString>;
   category: z.ZodEnum<typeof WIKI_CATEGORIES>;
   sources: z.ZodOptional<z.ZodArray<z.ZodString>>;
-  confidence: z.ZodOptional<z.ZodEnum<["high", "medium", "low"]>>;
+  confidence: z.ZodOptional<z.ZodEnum<['high', 'medium', 'low']>>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_ingest",
+  name: 'wiki_ingest',
   description:
-    "Process knowledge into wiki pages. Creates new pages or merges into existing ones (append strategy — never replaces). A single ingest can update multiple pages via cross-references.",
+    'Process knowledge into wiki pages. Creates new pages or merges into existing ones (append strategy — never replaces). A single ingest can update multiple pages via cross-references.',
   schema: {
     title: z
       .string()
       .max(200)
-      .describe("Page title (used to generate filename slug, max 200 chars)"),
+      .describe('Page title (used to generate filename slug, max 200 chars)'),
     content: z
       .string()
       .max(50_000)
-      .describe("Markdown content to ingest (max 50KB)"),
+      .describe('Markdown content to ingest (max 50KB)'),
     tags: z
       .array(z.string().max(50))
       .max(20)
-      .describe("Searchable tags (max 20 tags, 50 chars each)"),
-    category: z.enum(WIKI_CATEGORIES).describe("Page category"),
+      .describe('Searchable tags (max 20 tags, 50 chars each)'),
+    category: z.enum(WIKI_CATEGORIES).describe('Page category'),
     sources: z
       .array(z.string().max(100))
       .max(10)
       .optional()
-      .describe("Source identifiers (e.g., session IDs)"),
+      .describe('Source identifiers (e.g., session IDs)'),
     confidence: z
-      .enum(["high", "medium", "low"])
+      .enum(['high', 'medium', 'low'])
       .optional()
-      .describe("Confidence level (default: medium)"),
+      .describe('Confidence level (default: medium)'),
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -88,14 +88,14 @@ export const wikiIngestTool: ToolDefinition<{
         tags: args.tags,
         category: args.category as WikiCategory,
         sources: args.sources,
-        confidence: args.confidence as "high" | "medium" | "low" | undefined,
+        confidence: args.confidence as 'high' | 'medium' | 'low' | undefined,
       });
 
       return {
         content: [
           {
-            type: "text" as const,
-            text: `Wiki ingest complete.\n- Created: ${result.created.join(", ") || "none"}\n- Updated: ${result.updated.join(", ") || "none"}\n- Total affected: ${result.totalAffected}`,
+            type: 'text' as const,
+            text: `Wiki ingest complete.\n- Created: ${result.created.join(', ') || 'none'}\n- Updated: ${result.updated.join(', ') || 'none'}\n- Total affected: ${result.totalAffected}`,
           },
         ],
       };
@@ -103,7 +103,7 @@ export const wikiIngestTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error ingesting into wiki: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -124,26 +124,26 @@ export const wikiQueryTool: ToolDefinition<{
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_query",
+  name: 'wiki_query',
   description:
-    "Search across all wiki pages by keywords and tags. Returns matching pages with relevance snippets. YOU synthesize answers with citations from the results — the tool returns raw matches only. NO vector embeddings.",
+    'Search across all wiki pages by keywords and tags. Returns matching pages with relevance snippets. YOU synthesize answers with citations from the results — the tool returns raw matches only. NO vector embeddings.',
   schema: {
     query: z
       .string()
-      .describe("Search text (matched against title, tags, and content)"),
-    tags: z.array(z.string()).optional().describe("Filter by tags (OR match)"),
-    category: z.enum(WIKI_CATEGORIES).optional().describe("Filter by category"),
+      .describe('Search text (matched against title, tags, and content)'),
+    tags: z.array(z.string()).optional().describe('Filter by tags (OR match)'),
+    category: z.enum(WIKI_CATEGORIES).optional().describe('Filter by category'),
     limit: z
       .number()
       .int()
       .min(1)
       .max(50)
       .optional()
-      .describe("Max results (default: 20)"),
+      .describe('Max results (default: 20)'),
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -160,7 +160,7 @@ export const wikiQueryTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
+              type: 'text' as const,
               text: `No wiki pages match "${args.query}".`,
             },
           ],
@@ -171,7 +171,7 @@ export const wikiQueryTool: ToolDefinition<{
         const fm = m.page.frontmatter;
         return (
           `### ${i + 1}. ${fm.title} (${fm.category}, ${fm.confidence})\n` +
-          `**File:** ${m.page.filename} | **Tags:** ${fm.tags.join(", ")} | **Score:** ${m.score}\n` +
+          `**File:** ${m.page.filename} | **Tags:** ${fm.tags.join(', ')} | **Score:** ${m.score}\n` +
           `**Snippet:** ${m.snippet}`
         );
       });
@@ -179,8 +179,8 @@ export const wikiQueryTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
-            text: `## Wiki Query: "${args.query}"\n\n${matches.length} results:\n\n${results.join("\n\n")}`,
+            type: 'text' as const,
+            text: `## Wiki Query: "${args.query}"\n\n${matches.length} results:\n\n${results.join('\n\n')}`,
           },
         ],
       };
@@ -188,7 +188,7 @@ export const wikiQueryTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error querying wiki: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -205,14 +205,14 @@ export const wikiQueryTool: ToolDefinition<{
 export const wikiLintTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_lint",
+  name: 'wiki_lint',
   description:
-    "Run health checks on the wiki. Detects orphan pages, stale content, broken cross-references, oversized pages, and structural contradictions.",
+    'Run health checks on the wiki. Detects orphan pages, stale content, broken cross-references, oversized pages, and structural contradictions.',
   schema: {
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -225,7 +225,7 @@ export const wikiLintTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
+              type: 'text' as const,
               text: `Wiki lint: ${report.stats.totalPages} pages, no issues found.`,
             },
           ],
@@ -239,11 +239,11 @@ export const wikiLintTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text:
               `## Wiki Lint Report\n\n` +
               `**${report.stats.totalPages} pages**, ${report.issues.length} issues:\n\n` +
-              issueLines.join("\n") +
+              issueLines.join('\n') +
               `\n\n**Summary:** ${report.stats.orphanCount} orphan, ${report.stats.staleCount} stale, ` +
               `${report.stats.brokenRefCount} broken refs, ${report.stats.contradictionCount} contradictions, ` +
               `${report.stats.oversizedCount} oversized`,
@@ -254,7 +254,7 @@ export const wikiLintTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error linting wiki: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -275,28 +275,28 @@ export const wikiAddTool: ToolDefinition<{
   category: z.ZodOptional<z.ZodEnum<typeof WIKI_CATEGORIES>>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_add",
+  name: 'wiki_add',
   description:
-    "Quick-add a wiki page. Simpler than wiki_ingest — creates a single page directly.",
+    'Quick-add a wiki page. Simpler than wiki_ingest — creates a single page directly.',
   schema: {
-    title: z.string().max(200).describe("Page title (max 200 chars)"),
+    title: z.string().max(200).describe('Page title (max 200 chars)'),
     content: z
       .string()
       .max(50_000)
-      .describe("Page content in markdown (max 50KB)"),
+      .describe('Page content in markdown (max 50KB)'),
     tags: z
       .array(z.string().max(50))
       .max(20)
       .optional()
-      .describe("Tags (default: [])"),
+      .describe('Tags (default: [])'),
     category: z
       .enum(WIKI_CATEGORIES)
       .optional()
-      .describe("Category (default: reference)"),
+      .describe('Category (default: reference)'),
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -310,7 +310,7 @@ export const wikiAddTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
+              type: 'text' as const,
               text: `Page "${slug}" already exists. Use wiki_ingest to merge content into it, or wiki_delete to remove it first.`,
             },
           ],
@@ -323,13 +323,13 @@ export const wikiAddTool: ToolDefinition<{
         title: args.title,
         content: args.content,
         tags: args.tags || [],
-        category: (args.category || "reference") as WikiCategory,
+        category: (args.category || 'reference') as WikiCategory,
       });
 
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Wiki page created: ${result.created[0]}\nPath: .omc/wiki/${result.created[0]}`,
           },
         ],
@@ -338,7 +338,7 @@ export const wikiAddTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error adding wiki page: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -355,14 +355,14 @@ export const wikiAddTool: ToolDefinition<{
 export const wikiListTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_list",
+  name: 'wiki_list',
   description:
-    "List all wiki pages with summaries. Reads the auto-maintained index.",
+    'List all wiki pages with summaries. Reads the auto-maintained index.',
   schema: {
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -377,8 +377,8 @@ export const wikiListTool: ToolDefinition<{
           return {
             content: [
               {
-                type: "text" as const,
-                text: "Wiki is empty. Use wiki_add or wiki_ingest to create pages.",
+                type: 'text' as const,
+                text: 'Wiki is empty. Use wiki_add or wiki_ingest to create pages.',
               },
             ],
           };
@@ -386,8 +386,8 @@ export const wikiListTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
-              text: `Wiki has ${pages.length} pages but no index. Pages:\n${pages.map((p) => `- ${p}`).join("\n")}`,
+              type: 'text' as const,
+              text: `Wiki has ${pages.length} pages but no index. Pages:\n${pages.map((p) => `- ${p}`).join('\n')}`,
             },
           ],
         };
@@ -396,7 +396,7 @@ export const wikiListTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: index,
           },
         ],
@@ -405,7 +405,7 @@ export const wikiListTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error listing wiki: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -423,9 +423,9 @@ export const wikiReadTool: ToolDefinition<{
   page: z.ZodString;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_read",
+  name: 'wiki_read',
   description:
-    "Read a specific wiki page by filename (without .md extension is OK).",
+    'Read a specific wiki page by filename (without .md extension is OK).',
   schema: {
     page: z
       .string()
@@ -435,14 +435,14 @@ export const wikiReadTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
       const root = validateWorkingDirectoryOrLinkedWorktree(
         args.workingDirectory,
       );
-      const filename = args.page.endsWith(".md")
+      const filename = args.page.endsWith('.md')
         ? args.page
         : `${args.page}.md`;
       const page = readPage(root, filename);
@@ -451,7 +451,7 @@ export const wikiReadTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
+              type: 'text' as const,
               text: `Wiki page not found: ${filename}`,
             },
           ],
@@ -463,18 +463,18 @@ export const wikiReadTool: ToolDefinition<{
       const header = [
         `## ${fm.title}`,
         `**Category:** ${fm.category} | **Confidence:** ${fm.confidence} | **Updated:** ${fm.updated}`,
-        `**Tags:** ${fm.tags.join(", ")}`,
-        fm.links.length > 0 ? `**Links:** ${fm.links.join(", ")}` : "",
-        fm.sources.length > 0 ? `**Sources:** ${fm.sources.join(", ")}` : "",
-        "",
+        `**Tags:** ${fm.tags.join(', ')}`,
+        fm.links.length > 0 ? `**Links:** ${fm.links.join(', ')}` : '',
+        fm.sources.length > 0 ? `**Sources:** ${fm.sources.join(', ')}` : '',
+        '',
       ]
         .filter(Boolean)
-        .join("\n");
+        .join('\n');
 
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `${header}\n${page.content}`,
           },
         ],
@@ -483,7 +483,7 @@ export const wikiReadTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error reading wiki page: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],
@@ -501,21 +501,21 @@ export const wikiDeleteTool: ToolDefinition<{
   page: z.ZodString;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
-  name: "wiki_delete",
-  description: "Delete a wiki page by filename.",
+  name: 'wiki_delete',
+  description: 'Delete a wiki page by filename.',
   schema: {
-    page: z.string().describe("Page filename or slug to delete"),
+    page: z.string().describe('Page filename or slug to delete'),
     workingDirectory: z
       .string()
       .optional()
-      .describe("Working directory (defaults to cwd)"),
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
       const root = validateWorkingDirectoryOrLinkedWorktree(
         args.workingDirectory,
       );
-      const filename = args.page.endsWith(".md")
+      const filename = args.page.endsWith('.md')
         ? args.page
         : `${args.page}.md`;
       const deleted = deletePage(root, filename);
@@ -524,7 +524,7 @@ export const wikiDeleteTool: ToolDefinition<{
         return {
           content: [
             {
-              type: "text" as const,
+              type: 'text' as const,
               text: `Wiki page not found: ${filename}`,
             },
           ],
@@ -534,7 +534,7 @@ export const wikiDeleteTool: ToolDefinition<{
 
       appendLog(root, {
         timestamp: new Date().toISOString(),
-        operation: "delete",
+        operation: 'delete',
         pagesAffected: [filename],
         summary: `Deleted page "${filename}"`,
       });
@@ -542,7 +542,7 @@ export const wikiDeleteTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Deleted wiki page: ${filename}`,
           },
         ],
@@ -551,7 +551,7 @@ export const wikiDeleteTool: ToolDefinition<{
       return {
         content: [
           {
-            type: "text" as const,
+            type: 'text' as const,
             text: `Error deleting wiki page: ${error instanceof Error ? error.message : String(error)}`,
           },
         ],

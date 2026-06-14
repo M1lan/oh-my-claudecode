@@ -10,7 +10,7 @@ import type {
   RoutingContext,
   ComplexitySignals,
   ComplexityTier,
-} from "./types.js";
+} from './types.js';
 
 /**
  * Default routing rules, ordered by priority (highest first)
@@ -19,11 +19,11 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
   // ============ Override Rules (Highest Priority) ============
 
   {
-    name: "explicit-model-specified",
+    name: 'explicit-model-specified',
     condition: (ctx) => ctx.explicitModel !== undefined,
     action: {
-      tier: "EXPLICIT" as any,
-      reason: "User specified model explicitly",
+      tier: 'EXPLICIT' as any,
+      reason: 'User specified model explicitly',
     },
     priority: 100,
   },
@@ -36,101 +36,101 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
   // Architect: Simple lookups → LOW, tracing → MEDIUM, debugging/architecture → HIGH
   // Higher priority (85) to override generic rules like short-local-change
   {
-    name: "architect-complex-debugging",
+    name: 'architect-complex-debugging',
     condition: (ctx, signals) =>
-      ctx.agentType === "architect" &&
+      ctx.agentType === 'architect' &&
       (signals.lexical.hasDebuggingKeywords ||
         signals.lexical.hasArchitectureKeywords ||
         signals.lexical.hasRiskKeywords),
     action: {
-      tier: "HIGH",
-      reason: "Architect: Complex debugging/architecture decision",
+      tier: 'HIGH',
+      reason: 'Architect: Complex debugging/architecture decision',
     },
     priority: 85,
   },
 
   {
-    name: "architect-simple-lookup",
+    name: 'architect-simple-lookup',
     condition: (ctx, signals) =>
-      ctx.agentType === "architect" &&
+      ctx.agentType === 'architect' &&
       signals.lexical.hasSimpleKeywords &&
       !signals.lexical.hasDebuggingKeywords &&
       !signals.lexical.hasArchitectureKeywords &&
       !signals.lexical.hasRiskKeywords,
-    action: { tier: "LOW", reason: "Architect: Simple lookup query" },
+    action: { tier: 'LOW', reason: 'Architect: Simple lookup query' },
     priority: 80,
   },
 
   // Planner: Simple breakdown → LOW, moderate planning → MEDIUM, cross-domain → HIGH
   {
-    name: "planner-simple-breakdown",
+    name: 'planner-simple-breakdown',
     condition: (ctx, signals) =>
-      ctx.agentType === "planner" &&
+      ctx.agentType === 'planner' &&
       signals.structural.estimatedSubtasks <= 3 &&
       !signals.lexical.hasRiskKeywords &&
-      signals.structural.impactScope === "local",
-    action: { tier: "LOW", reason: "Planner: Simple task breakdown" },
+      signals.structural.impactScope === 'local',
+    action: { tier: 'LOW', reason: 'Planner: Simple task breakdown' },
     priority: 75,
   },
 
   {
-    name: "planner-strategic-planning",
+    name: 'planner-strategic-planning',
     condition: (ctx, signals) =>
-      ctx.agentType === "planner" &&
-      (signals.structural.impactScope === "system-wide" ||
+      ctx.agentType === 'planner' &&
+      (signals.structural.impactScope === 'system-wide' ||
         signals.lexical.hasArchitectureKeywords ||
         signals.structural.estimatedSubtasks > 10),
     action: {
-      tier: "HIGH",
-      reason: "Planner: Cross-domain strategic planning",
+      tier: 'HIGH',
+      reason: 'Planner: Cross-domain strategic planning',
     },
     priority: 75,
   },
 
   // Critic: Checklist → LOW, gap analysis → MEDIUM, adversarial review → HIGH
   {
-    name: "critic-checklist-review",
+    name: 'critic-checklist-review',
     condition: (ctx, signals) =>
-      ctx.agentType === "critic" &&
+      ctx.agentType === 'critic' &&
       signals.lexical.wordCount < 30 &&
       !signals.lexical.hasRiskKeywords,
-    action: { tier: "LOW", reason: "Critic: Checklist verification" },
+    action: { tier: 'LOW', reason: 'Critic: Checklist verification' },
     priority: 75,
   },
 
   {
-    name: "critic-adversarial-review",
+    name: 'critic-adversarial-review',
     condition: (ctx, signals) =>
-      ctx.agentType === "critic" &&
+      ctx.agentType === 'critic' &&
       (signals.lexical.hasRiskKeywords ||
-        signals.structural.impactScope === "system-wide"),
+        signals.structural.impactScope === 'system-wide'),
     action: {
-      tier: "HIGH",
-      reason: "Critic: Adversarial review for critical system",
+      tier: 'HIGH',
+      reason: 'Critic: Adversarial review for critical system',
     },
     priority: 75,
   },
 
   // Analyst: Simple impact → LOW, dependency mapping → MEDIUM, risk analysis → HIGH
   {
-    name: "analyst-simple-impact",
+    name: 'analyst-simple-impact',
     condition: (ctx, signals) =>
-      ctx.agentType === "analyst" &&
-      signals.structural.impactScope === "local" &&
+      ctx.agentType === 'analyst' &&
+      signals.structural.impactScope === 'local' &&
       !signals.lexical.hasRiskKeywords,
-    action: { tier: "LOW", reason: "Analyst: Simple impact analysis" },
+    action: { tier: 'LOW', reason: 'Analyst: Simple impact analysis' },
     priority: 75,
   },
 
   {
-    name: "analyst-risk-analysis",
+    name: 'analyst-risk-analysis',
     condition: (ctx, signals) =>
-      ctx.agentType === "analyst" &&
+      ctx.agentType === 'analyst' &&
       (signals.lexical.hasRiskKeywords ||
-        signals.structural.impactScope === "system-wide"),
+        signals.structural.impactScope === 'system-wide'),
     action: {
-      tier: "HIGH",
-      reason: "Analyst: Risk analysis and unknown-unknowns detection",
+      tier: 'HIGH',
+      reason: 'Analyst: Risk analysis and unknown-unknowns detection',
     },
     priority: 75,
   },
@@ -138,109 +138,109 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
   // ============ Task-Based Rules ============
 
   {
-    name: "architecture-system-wide",
+    name: 'architecture-system-wide',
     condition: (ctx, signals) =>
       signals.lexical.hasArchitectureKeywords &&
-      signals.structural.impactScope === "system-wide",
+      signals.structural.impactScope === 'system-wide',
     action: {
-      tier: "HIGH",
-      reason: "Architectural decisions with system-wide impact",
+      tier: 'HIGH',
+      reason: 'Architectural decisions with system-wide impact',
     },
     priority: 70,
   },
 
   {
-    name: "security-domain",
+    name: 'security-domain',
     condition: (ctx, signals) =>
-      signals.structural.domainSpecificity === "security",
+      signals.structural.domainSpecificity === 'security',
     action: {
-      tier: "HIGH",
-      reason: "Security-related tasks require careful reasoning",
+      tier: 'HIGH',
+      reason: 'Security-related tasks require careful reasoning',
     },
     priority: 70,
   },
 
   {
-    name: "difficult-reversibility-risk",
+    name: 'difficult-reversibility-risk',
     condition: (ctx, signals) =>
-      signals.structural.reversibility === "difficult" &&
+      signals.structural.reversibility === 'difficult' &&
       signals.lexical.hasRiskKeywords,
-    action: { tier: "HIGH", reason: "High-risk, difficult-to-reverse changes" },
+    action: { tier: 'HIGH', reason: 'High-risk, difficult-to-reverse changes' },
     priority: 70,
   },
 
   {
-    name: "deep-debugging",
+    name: 'deep-debugging',
     condition: (ctx, signals) =>
       signals.lexical.hasDebuggingKeywords &&
-      signals.lexical.questionDepth === "why",
+      signals.lexical.questionDepth === 'why',
     action: {
-      tier: "HIGH",
-      reason: "Root cause analysis requires deep reasoning",
+      tier: 'HIGH',
+      reason: 'Root cause analysis requires deep reasoning',
     },
     priority: 65,
   },
 
   {
-    name: "complex-multi-step",
+    name: 'complex-multi-step',
     condition: (ctx, signals) =>
       signals.structural.estimatedSubtasks > 5 &&
       signals.structural.crossFileDependencies,
     action: {
-      tier: "HIGH",
-      reason: "Complex multi-step task with cross-file changes",
+      tier: 'HIGH',
+      reason: 'Complex multi-step task with cross-file changes',
     },
     priority: 60,
   },
 
   {
-    name: "simple-search-query",
+    name: 'simple-search-query',
     condition: (ctx, signals) =>
       signals.lexical.hasSimpleKeywords &&
       signals.structural.estimatedSubtasks <= 1 &&
-      signals.structural.impactScope === "local" &&
+      signals.structural.impactScope === 'local' &&
       !signals.lexical.hasArchitectureKeywords &&
       !signals.lexical.hasDebuggingKeywords,
-    action: { tier: "LOW", reason: "Simple search or lookup task" },
+    action: { tier: 'LOW', reason: 'Simple search or lookup task' },
     priority: 60,
   },
 
   {
-    name: "short-local-change",
+    name: 'short-local-change',
     condition: (ctx, signals) =>
       signals.lexical.wordCount < 50 &&
-      signals.structural.impactScope === "local" &&
-      signals.structural.reversibility === "easy" &&
+      signals.structural.impactScope === 'local' &&
+      signals.structural.reversibility === 'easy' &&
       !signals.lexical.hasRiskKeywords,
-    action: { tier: "LOW", reason: "Short, local, easily reversible change" },
+    action: { tier: 'LOW', reason: 'Short, local, easily reversible change' },
     priority: 55,
   },
 
   {
-    name: "moderate-complexity",
+    name: 'moderate-complexity',
     condition: (ctx, signals) =>
       signals.structural.estimatedSubtasks > 1 &&
       signals.structural.estimatedSubtasks <= 5,
     action: {
-      tier: "MEDIUM",
-      reason: "Moderate complexity with multiple subtasks",
+      tier: 'MEDIUM',
+      reason: 'Moderate complexity with multiple subtasks',
     },
     priority: 50,
   },
 
   {
-    name: "module-level-work",
-    condition: (ctx, signals) => signals.structural.impactScope === "module",
-    action: { tier: "MEDIUM", reason: "Module-level changes" },
+    name: 'module-level-work',
+    condition: (ctx, signals) => signals.structural.impactScope === 'module',
+    action: { tier: 'MEDIUM', reason: 'Module-level changes' },
     priority: 45,
   },
 
   // ============ Default Rule ============
 
   {
-    name: "default-medium",
+    name: 'default-medium',
     condition: () => true,
-    action: { tier: "MEDIUM", reason: "Default tier for unclassified tasks" },
+    action: { tier: 'MEDIUM', reason: 'Default tier for unclassified tasks' },
     priority: 0,
   },
 ];
@@ -252,7 +252,7 @@ export function evaluateRules(
   context: RoutingContext,
   signals: ComplexitySignals,
   rules: RoutingRule[] = DEFAULT_ROUTING_RULES,
-): { tier: ComplexityTier | "EXPLICIT"; reason: string; ruleName: string } {
+): { tier: ComplexityTier | 'EXPLICIT'; reason: string; ruleName: string } {
   // Sort rules by priority (highest first)
   const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
 
@@ -268,9 +268,9 @@ export function evaluateRules(
 
   // Should never reach here due to default rule, but just in case
   return {
-    tier: "MEDIUM",
-    reason: "Fallback to medium tier",
-    ruleName: "fallback",
+    tier: 'MEDIUM',
+    reason: 'Fallback to medium tier',
+    ruleName: 'fallback',
   };
 }
 

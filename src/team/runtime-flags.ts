@@ -9,5 +9,5 @@ export function isRuntimeV2Enabled(
   const raw = env.OMC_RUNTIME_V2;
   if (!raw) return true;
   const normalized = raw.trim().toLowerCase();
-  return !["0", "false", "no", "off"].includes(normalized);
+  return !['0', 'false', 'no', 'off'].includes(normalized);
 }

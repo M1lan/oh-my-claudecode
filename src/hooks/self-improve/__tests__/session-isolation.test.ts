@@ -12,7 +12,13 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const RESOLVER = join(process.cwd(), 'skills', 'self-improve', 'scripts', 'resolve-paths.mjs');
+const RESOLVER = join(
+  process.cwd(),
+  'skills',
+  'self-improve',
+  'scripts',
+  'resolve-paths.mjs',
+);
 
 function readJson(command: string, args: string[]) {
   return JSON.parse(execFileSync(command, args, { encoding: 'utf-8' }));
@@ -34,8 +40,24 @@ describe('self-improve session isolation (Wave B2)', () => {
     const sidA = 'session-alpha';
     const sidB = 'session-beta';
 
-    const pathsA = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sidA]);
-    const pathsB = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sidB]);
+    const pathsA = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sidA,
+    ]);
+    const pathsB = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sidB,
+    ]);
 
     expect(pathsA.root).not.toBe(pathsB.root);
     expect(pathsA.root).toContain(sidA);
@@ -48,17 +70,45 @@ describe('self-improve session isolation (Wave B2)', () => {
     const slug = 'code-quality';
     const sid = 'abc123';
 
-    const paths = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sid]);
+    const paths = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sid,
+    ]);
 
-    const expectedRoot = join(root, '.omc', 'self-improve', 'topics', slug, 'sessions', sid);
+    const expectedRoot = join(
+      root,
+      '.omc',
+      'self-improve',
+      'topics',
+      slug,
+      'sessions',
+      sid,
+    );
     expect(paths.root).toBe(expectedRoot);
   });
 
   it('without session-id, two runs with same slug share the same topic root', () => {
     const slug = 'shared-topic';
 
-    const pathsA = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug]);
-    const pathsB = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug]);
+    const pathsA = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+    ]);
+    const pathsB = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+    ]);
 
     expect(pathsA.root).toBe(pathsB.root);
     expect(pathsA.scope_mode).toBe('topic-scoped');
@@ -69,22 +119,53 @@ describe('self-improve session isolation (Wave B2)', () => {
     const sidA = 'run-001';
     const sidB = 'run-002';
 
-    const pathsA = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sidA, '--ensure-dirs']);
-    const pathsB = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sidB, '--ensure-dirs']);
+    const pathsA = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sidA,
+      '--ensure-dirs',
+    ]);
+    const pathsB = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sidB,
+      '--ensure-dirs',
+    ]);
 
     // Write a file into session A's state dir
-    writeFileSync(join(pathsA.state_dir, 'iteration_state.json'), JSON.stringify({ active: true, session: sidA }));
+    writeFileSync(
+      join(pathsA.state_dir, 'iteration_state.json'),
+      JSON.stringify({ active: true, session: sidA }),
+    );
 
     // Session B's state dir should not contain that file
     const { existsSync } = require('node:fs');
-    expect(existsSync(join(pathsB.state_dir, 'iteration_state.json'))).toBe(false);
+    expect(existsSync(join(pathsB.state_dir, 'iteration_state.json'))).toBe(
+      false,
+    );
   });
 
   it('session_id is returned in the paths object', () => {
     const slug = 'with-session';
     const sid = 'my-session-id';
 
-    const paths = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug, '--session-id', sid]);
+    const paths = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+      '--session-id',
+      sid,
+    ]);
 
     expect(paths.session_id).toBe(sid);
   });
@@ -92,7 +173,13 @@ describe('self-improve session isolation (Wave B2)', () => {
   it('session_id is null when not provided', () => {
     const slug = 'no-session';
 
-    const paths = readJson('node', [RESOLVER, '--project-root', root, '--slug', slug]);
+    const paths = readJson('node', [
+      RESOLVER,
+      '--project-root',
+      root,
+      '--slug',
+      slug,
+    ]);
 
     expect(paths.session_id).toBeNull();
   });
@@ -106,7 +193,7 @@ describe('self-improve session isolation (Wave B2)', () => {
       execFileSync('node', [RESOLVER, '--project-root', root, '--slug', slug], {
         encoding: 'utf-8',
         env: { ...process.env, OMC_SESSION_ID: sid },
-      })
+      }),
     );
 
     expect(result.scope_mode).toBe('session-scoped');

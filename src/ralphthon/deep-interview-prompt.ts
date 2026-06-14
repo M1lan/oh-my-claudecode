@@ -3,7 +3,7 @@ export function buildRalphthonDeepInterviewPrompt(
   maxWaves: number,
   pollIntervalMs: number,
 ): string {
-  const sanitizedTask = task.replace(/[\r\n\0]+/g, " ").trim();
+  const sanitizedTask = task.replace(/[\r\n\0]+/g, ' ').trim();
 
   return `/deep-interview ${sanitizedTask}
 

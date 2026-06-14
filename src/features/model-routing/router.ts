@@ -10,15 +10,15 @@ import type {
   RoutingDecision,
   RoutingConfig,
   ComplexityTier,
-} from "./types.js";
-import { DEFAULT_ROUTING_CONFIG, TIER_TO_MODEL_TYPE } from "./types.js";
-import { extractAllSignals } from "./signals.js";
+} from './types.js';
+import { DEFAULT_ROUTING_CONFIG, TIER_TO_MODEL_TYPE } from './types.js';
+import { extractAllSignals } from './signals.js';
 import {
   calculateComplexityScore,
   calculateConfidence,
   scoreToTier,
-} from "./scorer.js";
-import { evaluateRules, DEFAULT_ROUTING_RULES } from "./rules.js";
+} from './scorer.js';
+import { evaluateRules, DEFAULT_ROUTING_RULES } from './rules.js';
 
 /**
  * Route a task to the appropriate model tier
@@ -32,11 +32,11 @@ export function routeTask(
   // If forceInherit is enabled, bypass all routing so agents inherit the parent model (issue #1135)
   if (mergedConfig.forceInherit) {
     return {
-      model: "inherit",
-      modelType: "inherit",
-      tier: "MEDIUM",
+      model: 'inherit',
+      modelType: 'inherit',
+      tier: 'MEDIUM',
       confidence: 1.0,
-      reasons: ["forceInherit enabled: agents inherit parent model"],
+      reasons: ['forceInherit enabled: agents inherit parent model'],
       escalated: false,
     };
   }
@@ -46,7 +46,7 @@ export function routeTask(
     return createDecision(
       mergedConfig.defaultTier,
       mergedConfig.tierModels,
-      ["Routing disabled, using default tier"],
+      ['Routing disabled, using default tier'],
       false,
     );
   }
@@ -57,7 +57,7 @@ export function routeTask(
     return createDecision(
       explicitTier,
       mergedConfig.tierModels,
-      ["Explicit model specified by user"],
+      ['Explicit model specified by user'],
       false,
       explicitTier,
     );
@@ -81,12 +81,12 @@ export function routeTask(
   // Evaluate routing rules
   const ruleResult = evaluateRules(context, signals, DEFAULT_ROUTING_RULES);
 
-  if (ruleResult.tier === "EXPLICIT") {
+  if (ruleResult.tier === 'EXPLICIT') {
     // Explicit model was handled above, this shouldn't happen
     return createDecision(
-      "MEDIUM",
+      'MEDIUM',
       mergedConfig.tierModels,
-      ["Unexpected EXPLICIT tier"],
+      ['Unexpected EXPLICIT tier'],
       false,
     );
   }
@@ -97,7 +97,7 @@ export function routeTask(
   let confidence = calculateConfidence(score, ruleResult.tier);
 
   let finalTier = ruleResult.tier;
-  const tierOrder: ComplexityTier[] = ["LOW", "MEDIUM", "HIGH"];
+  const tierOrder: ComplexityTier[] = ['LOW', 'MEDIUM', 'HIGH'];
   const ruleIdx = tierOrder.indexOf(ruleResult.tier);
   const scoreIdx = tierOrder.indexOf(scoreTier);
 
@@ -166,13 +166,13 @@ function createDecision(
  */
 function modelTypeToTier(modelType: string): ComplexityTier {
   switch (modelType) {
-    case "opus":
-      return "HIGH";
-    case "haiku":
-      return "LOW";
-    case "sonnet":
+    case 'opus':
+      return 'HIGH';
+    case 'haiku':
+      return 'LOW';
+    case 'sonnet':
     default:
-      return "MEDIUM";
+      return 'MEDIUM';
   }
 }
 
@@ -181,12 +181,12 @@ function modelTypeToTier(modelType: string): ComplexityTier {
  */
 export function escalateModel(currentTier: ComplexityTier): ComplexityTier {
   switch (currentTier) {
-    case "LOW":
-      return "MEDIUM";
-    case "MEDIUM":
-      return "HIGH";
-    case "HIGH":
-      return "HIGH"; // Already at max
+    case 'LOW':
+      return 'MEDIUM';
+    case 'MEDIUM':
+      return 'HIGH';
+    case 'HIGH':
+      return 'HIGH'; // Already at max
   }
 }
 
@@ -194,7 +194,7 @@ export function escalateModel(currentTier: ComplexityTier): ComplexityTier {
  * Check if we can escalate further
  */
 export function canEscalate(currentTier: ComplexityTier): boolean {
-  return currentTier !== "HIGH";
+  return currentTier !== 'HIGH';
 }
 
 /**
@@ -237,11 +237,11 @@ export function explainRouting(
   const signals = extractAllSignals(context.taskPrompt, context);
 
   const lines = [
-    "=== Model Routing Decision ===",
-    `Task: ${context.taskPrompt.substring(0, 100)}${context.taskPrompt.length > 100 ? "..." : ""}`,
-    `Agent: ${context.agentType ?? "unspecified"}`,
-    "",
-    "--- Signals ---",
+    '=== Model Routing Decision ===',
+    `Task: ${context.taskPrompt.substring(0, 100)}${context.taskPrompt.length > 100 ? '...' : ''}`,
+    `Agent: ${context.agentType ?? 'unspecified'}`,
+    '',
+    '--- Signals ---',
     `Word count: ${signals.lexical.wordCount}`,
     `File paths: ${signals.lexical.filePathCount}`,
     `Architecture keywords: ${signals.lexical.hasArchitectureKeywords}`,
@@ -254,18 +254,18 @@ export function explainRouting(
     `Impact scope: ${signals.structural.impactScope}`,
     `Reversibility: ${signals.structural.reversibility}`,
     `Previous failures: ${signals.context.previousFailures}`,
-    "",
-    "--- Decision ---",
+    '',
+    '--- Decision ---',
     `Tier: ${decision.tier}`,
     `Model: ${decision.model}`,
     `Confidence: ${decision.confidence}`,
     `Escalated: ${decision.escalated}`,
-    "",
-    "--- Reasons ---",
+    '',
+    '--- Reasons ---',
     ...decision.reasons.map((r) => `  - ${r}`),
   ];
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -274,19 +274,19 @@ export function explainRouting(
  */
 export function quickTierForAgent(agentType: string): ComplexityTier | null {
   const agentTiers: Record<string, ComplexityTier> = {
-    architect: "HIGH",
-    planner: "HIGH",
-    critic: "HIGH",
-    analyst: "HIGH",
-    explore: "LOW",
-    writer: "LOW",
-    "document-specialist": "MEDIUM",
-    researcher: "MEDIUM",
-    "test-engineer": "MEDIUM",
-    "tdd-guide": "MEDIUM",
-    executor: "MEDIUM",
-    designer: "MEDIUM",
-    vision: "MEDIUM",
+    architect: 'HIGH',
+    planner: 'HIGH',
+    critic: 'HIGH',
+    analyst: 'HIGH',
+    explore: 'LOW',
+    writer: 'LOW',
+    'document-specialist': 'MEDIUM',
+    researcher: 'MEDIUM',
+    'test-engineer': 'MEDIUM',
+    'tdd-guide': 'MEDIUM',
+    executor: 'MEDIUM',
+    designer: 'MEDIUM',
+    vision: 'MEDIUM',
   };
 
   return agentTiers[agentType] ?? null;
@@ -309,7 +309,7 @@ export function getModelForTask(
   taskPrompt: string,
   config: Partial<RoutingConfig> = {},
 ): {
-  model: "haiku" | "sonnet" | "opus";
+  model: 'haiku' | 'sonnet' | 'opus';
   tier: ComplexityTier;
   reason: string;
 } {
@@ -318,9 +318,9 @@ export function getModelForTask(
   const decision = routeTask({ taskPrompt, agentType }, config);
 
   return {
-    model: decision.modelType as "haiku" | "sonnet" | "opus",
+    model: decision.modelType as 'haiku' | 'sonnet' | 'opus',
     tier: decision.tier,
-    reason: decision.reasons[0] ?? "Complexity analysis",
+    reason: decision.reasons[0] ?? 'Complexity analysis',
   };
 }
 
@@ -349,32 +349,32 @@ export function analyzeTaskComplexity(
 
   const analysis = [
     `**Tier: ${decision.tier}** → ${decision.model}`,
-    "",
-    "**Why:**",
+    '',
+    '**Why:**',
     ...decision.reasons.map((r) => `- ${r}`),
-    "",
-    "**Signals detected:**",
+    '',
+    '**Signals detected:**',
     signals.lexical.hasArchitectureKeywords
-      ? "- Architecture keywords (refactor, redesign, etc.)"
+      ? '- Architecture keywords (refactor, redesign, etc.)'
       : null,
     signals.lexical.hasRiskKeywords
-      ? "- Risk keywords (migration, production, critical)"
+      ? '- Risk keywords (migration, production, critical)'
       : null,
     signals.lexical.hasDebuggingKeywords
-      ? "- Debugging keywords (root cause, investigate)"
+      ? '- Debugging keywords (root cause, investigate)'
       : null,
     signals.structural.crossFileDependencies
-      ? "- Cross-file dependencies"
+      ? '- Cross-file dependencies'
       : null,
-    signals.structural.impactScope === "system-wide"
-      ? "- System-wide impact"
+    signals.structural.impactScope === 'system-wide'
+      ? '- System-wide impact'
       : null,
-    signals.structural.reversibility === "difficult"
-      ? "- Difficult to reverse"
+    signals.structural.reversibility === 'difficult'
+      ? '- Difficult to reverse'
       : null,
   ]
     .filter(Boolean)
-    .join("\n");
+    .join('\n');
 
   return {
     tier: decision.tier,

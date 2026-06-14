@@ -13,9 +13,12 @@ type HookCommandConfig = {
 };
 
 type HooksJson = {
-  hooks?: Record<string, Array<{
-    hooks?: HookCommandConfig[];
-  }>>;
+  hooks?: Record<
+    string,
+    Array<{
+      hooks?: HookCommandConfig[];
+    }>
+  >;
 };
 
 type NpmPackDryRunEntry = {
@@ -33,7 +36,9 @@ type PluginJson = {
 function referencesStandardHooksManifest(value: unknown): boolean {
   if (typeof value === 'string') {
     const normalized = value.replace(/\\/g, '/');
-    return normalized === './hooks/hooks.json' || normalized === 'hooks/hooks.json';
+    return (
+      normalized === './hooks/hooks.json' || normalized === 'hooks/hooks.json'
+    );
   }
 
   if (Array.isArray(value)) {
@@ -47,12 +52,15 @@ function referencesStandardHooksManifest(value: unknown): boolean {
   return false;
 }
 
-const LOCAL_IMPORT_RE = /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
+const LOCAL_IMPORT_RE =
+  /(?:import\s+(?:[^'"()]+?\s+from\s+)?|import\s*\(|export\s+\*\s+from\s+|export\s+\{[^}]*\}\s+from\s+|require\s*\()\s*['"](\.[^'"]+)['"]/g;
 const PLUGIN_SCRIPT_RE = /"\$CLAUDE_PLUGIN_ROOT"\/(scripts\/[^\s"]+)/g;
 let packedFilesCache: Set<string> | null = null;
 
 function listHookScriptEntries(): string[] {
-  const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8')) as HooksJson;
+  const hooksJson = JSON.parse(
+    readFileSync(HOOKS_JSON_PATH, 'utf-8'),
+  ) as HooksJson;
   const entries = new Set<string>(['scripts/run.cjs']);
 
   for (const eventHooks of Object.values(hooksJson.hooks ?? {})) {
@@ -69,7 +77,10 @@ function listHookScriptEntries(): string[] {
   return [...entries].sort();
 }
 
-function resolveRelativeScriptImport(fromFile: string, specifier: string): string | null {
+function resolveRelativeScriptImport(
+  fromFile: string,
+  specifier: string,
+): string | null {
   const resolved = normalize(join(dirname(fromFile), specifier));
   const candidates = [
     resolved,
@@ -90,13 +101,19 @@ function resolveRelativeScriptImport(fromFile: string, specifier: string): strin
   return null;
 }
 
-function collectRequiredScriptFiles(entryRelPath: string, collected = new Set<string>()): Set<string> {
+function collectRequiredScriptFiles(
+  entryRelPath: string,
+  collected = new Set<string>(),
+): Set<string> {
   const absolutePath = join(PACKAGE_ROOT, entryRelPath);
   if (!existsSync(absolutePath)) {
     throw new Error(`Required hook file is missing in repo: ${entryRelPath}`);
   }
 
-  const normalizedRel = relative(PACKAGE_ROOT, absolutePath).replace(/\\/g, '/');
+  const normalizedRel = relative(PACKAGE_ROOT, absolutePath).replace(
+    /\\/g,
+    '/',
+  );
   if (collected.has(normalizedRel)) {
     return collected;
   }
@@ -108,7 +125,10 @@ function collectRequiredScriptFiles(entryRelPath: string, collected = new Set<st
     if (!resolved) {
       continue;
     }
-    collectRequiredScriptFiles(relative(PACKAGE_ROOT, resolved).replace(/\\/g, '/'), collected);
+    collectRequiredScriptFiles(
+      relative(PACKAGE_ROOT, resolved).replace(/\\/g, '/'),
+      collected,
+    );
   }
 
   return collected;
@@ -125,13 +145,17 @@ function getPackedFiles(): Set<string> {
   });
 
   const results = JSON.parse(stdout) as NpmPackDryRunResult[];
-  packedFilesCache = new Set((results[0]?.files ?? []).map(file => file.path));
+  packedFilesCache = new Set(
+    (results[0]?.files ?? []).map((file) => file.path),
+  );
   return packedFilesCache;
 }
 
 describe('npm package hook surface regression', () => {
   it('does not explicitly reference the auto-loaded standard hooks manifest from plugin.json', () => {
-    const pluginJson = JSON.parse(readFileSync(PLUGIN_JSON_PATH, 'utf-8')) as PluginJson;
+    const pluginJson = JSON.parse(
+      readFileSync(PLUGIN_JSON_PATH, 'utf-8'),
+    ) as PluginJson;
     expect(referencesStandardHooksManifest(pluginJson.hooks)).toBe(false);
 
     const packedFiles = getPackedFiles();
@@ -158,7 +182,9 @@ describe('npm package hook surface regression', () => {
     const packedFiles = getPackedFiles();
     expect([...requiredFiles].sort()).not.toHaveLength(0);
 
-    const missing = [...requiredFiles].filter(file => !packedFiles.has(file)).sort();
+    const missing = [...requiredFiles]
+      .filter((file) => !packedFiles.has(file))
+      .sort();
     expect(missing).toEqual([]);
   });
 });

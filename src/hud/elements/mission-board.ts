@@ -1,1 +1,1 @@
-export { renderMissionBoard } from "../mission-board.js";
+export { renderMissionBoard } from '../mission-board.js';

@@ -5,7 +5,7 @@
  * Recorded by the keyword-detector hook on UserPromptSubmit.
  */
 
-import { dim } from "../colors.js";
+import { dim } from '../colors.js';
 
 /**
  * Format elapsed milliseconds as human-readable duration.
@@ -37,13 +37,13 @@ export function renderPromptTime(
   if (now) {
     const elapsed = now.getTime() - promptTime.getTime();
     if (elapsed >= 0) {
-      return `${dim("⏱")}${formatElapsed(elapsed)}`;
+      return `${dim('⏱')}${formatElapsed(elapsed)}`;
     }
   }
 
-  const hours = String(promptTime.getHours()).padStart(2, "0");
-  const minutes = String(promptTime.getMinutes()).padStart(2, "0");
-  const seconds = String(promptTime.getSeconds()).padStart(2, "0");
+  const hours = String(promptTime.getHours()).padStart(2, '0');
+  const minutes = String(promptTime.getMinutes()).padStart(2, '0');
+  const seconds = String(promptTime.getSeconds()).padStart(2, '0');
 
-  return `${dim("prompt:")}${hours}:${minutes}:${seconds}`;
+  return `${dim('prompt:')}${hours}:${minutes}:${seconds}`;
 }

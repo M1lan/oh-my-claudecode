@@ -5,7 +5,7 @@
  * for the /trace feature. All functions are best-effort (never throw).
  */
 
-import { appendReplayEvent } from "./session-replay.js";
+import { appendReplayEvent } from './session-replay.js';
 
 /**
  * Record a hook fire event
@@ -17,8 +17,8 @@ export function recordHookFire(
   hookEvent: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "hook_fire",
+    agent: 'system',
+    event: 'hook_fire',
     hook: hookName,
     hook_event: hookEvent,
   });
@@ -37,8 +37,8 @@ export function recordHookResult(
   contextLength?: number,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "hook_result",
+    agent: 'system',
+    event: 'hook_result',
     hook: hookName,
     hook_event: hookEvent,
     duration_ms: durationMs,
@@ -56,8 +56,8 @@ export function recordKeywordDetected(
   keyword: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "keyword_detected",
+    agent: 'system',
+    event: 'keyword_detected',
     keyword,
   });
 }
@@ -72,8 +72,8 @@ export function recordSkillActivated(
   source: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "skill_activated",
+    agent: 'system',
+    event: 'skill_activated',
     skill_name: skillName,
     skill_source: source,
   });
@@ -88,8 +88,8 @@ export function recordSkillInvoked(
   skillName: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "skill_invoked",
+    agent: 'system',
+    event: 'skill_invoked',
     skill_name: skillName,
   });
 }
@@ -104,8 +104,8 @@ export function recordModeChange(
   toMode: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
-    agent: "system",
-    event: "mode_change",
+    agent: 'system',
+    event: 'mode_change',
     mode_from: fromMode,
     mode_to: toMode,
   });

@@ -1,4 +1,4 @@
-import type { TeamTaskDelegationPlan } from "./types.js";
+import type { TeamTaskDelegationPlan } from './types.js';
 
 const BROAD_TASK_VERBS_RE =
   /\b(?:investigate|analy[sz]e|debug|review|audit|refactor|cleanup|research|design|build|implement|improve)\b/i;
@@ -9,10 +9,10 @@ const FILE_REF_RE = /\b(?:[\w./-]+\/)?[\w.-]+\.[a-z0-9]{1,8}\b/i;
 const SYMBOL_REF_RE = /`[^`]+`|\b[A-Za-z_$][\w$]*(?:\.[A-Za-z_$][\w$]*)+\b/;
 
 export const BROAD_TASK_DELEGATION_PLAN: TeamTaskDelegationPlan = {
-  mode: "auto",
+  mode: 'auto',
   required_parallel_probe: true,
   skip_allowed_reason_required: true,
-  child_report_format: "bullets",
+  child_report_format: 'bullets',
 };
 
 export function isBroadTeamTaskText(text: string): boolean {

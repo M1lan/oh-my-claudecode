@@ -1,18 +1,18 @@
-import { createHash } from "crypto";
-import { mkdirSync, readFileSync, statSync, writeFileSync } from "fs";
-import { dirname } from "path";
+import { createHash } from 'crypto';
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
 
 export const DEFAULT_INLINE_ARTIFACT_THRESHOLD_BYTES = 2048;
 const DEFAULT_HANDOFF_SUMMARY_MAX_CHARS = 160;
 
 export type ArtifactRetention =
-  | "ephemeral"
-  | "session"
-  | "until-completion"
-  | "persistent";
+  | 'ephemeral'
+  | 'session'
+  | 'until-completion'
+  | 'persistent';
 
 export interface ArtifactProducer {
-  system: "omc" | "omx";
+  system: 'omc' | 'omx';
   component: string;
   worker?: string;
 }
@@ -29,7 +29,7 @@ export interface ArtifactDescriptor {
 }
 
 export interface InlineArtifactHandoff {
-  mode: "inline";
+  mode: 'inline';
   body: string;
   summary: string;
   sizeBytes: number;
@@ -37,7 +37,7 @@ export interface InlineArtifactHandoff {
 }
 
 export interface DescriptorArtifactHandoff {
-  mode: "descriptor";
+  mode: 'descriptor';
   summary: string;
   descriptor: ArtifactDescriptor;
   sizeBytes: number;
@@ -70,7 +70,7 @@ export function summarizeArtifactBody(
   body: string,
   maxChars: number = DEFAULT_HANDOFF_SUMMARY_MAX_CHARS,
 ): string {
-  const normalized = body.replace(/\s+/g, " ").trim();
+  const normalized = body.replace(/\s+/g, ' ').trim();
   if (normalized.length <= maxChars) {
     return normalized;
   }
@@ -88,7 +88,7 @@ export function createArtifactDescriptorFromPath(
   return {
     kind: options.kind,
     path,
-    contentHash: createHash("sha256").update(content).digest("hex"),
+    contentHash: createHash('sha256').update(content).digest('hex'),
     createdAt: options.createdAt ?? new Date(stats.mtimeMs).toISOString(),
     producer: options.producer,
     sizeBytes: stats.size,
@@ -102,7 +102,7 @@ export function writeTextArtifact(
 ): ArtifactDescriptor {
   mkdirSync(dirname(options.path), { recursive: true });
   writeFileSync(options.path, options.content, {
-    encoding: "utf-8",
+    encoding: 'utf-8',
     mode: 0o600,
   });
 
@@ -114,12 +114,12 @@ export function createArtifactHandoff(
 ): ArtifactHandoff {
   const thresholdBytes =
     options.thresholdBytes ?? DEFAULT_INLINE_ARTIFACT_THRESHOLD_BYTES;
-  const sizeBytes = Buffer.byteLength(options.body, "utf-8");
+  const sizeBytes = Buffer.byteLength(options.body, 'utf-8');
   const summary = options.summary ?? summarizeArtifactBody(options.body);
 
   if (sizeBytes <= thresholdBytes) {
     return {
-      mode: "inline",
+      mode: 'inline',
       body: options.body,
       summary,
       sizeBytes,
@@ -128,7 +128,7 @@ export function createArtifactHandoff(
   }
 
   return {
-    mode: "descriptor",
+    mode: 'descriptor',
     summary,
     descriptor: options.descriptorFactory(),
     sizeBytes,

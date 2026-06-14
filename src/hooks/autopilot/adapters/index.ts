@@ -8,19 +8,19 @@
 export {
   ralplanAdapter,
   RALPLAN_COMPLETION_SIGNAL,
-} from "./ralplan-adapter.js";
+} from './ralplan-adapter.js';
 export {
   executionAdapter,
   EXECUTION_COMPLETION_SIGNAL,
-} from "./execution-adapter.js";
-export { ralphAdapter, RALPH_COMPLETION_SIGNAL } from "./ralph-adapter.js";
-export { qaAdapter, QA_COMPLETION_SIGNAL } from "./qa-adapter.js";
+} from './execution-adapter.js';
+export { ralphAdapter, RALPH_COMPLETION_SIGNAL } from './ralph-adapter.js';
+export { qaAdapter, QA_COMPLETION_SIGNAL } from './qa-adapter.js';
 
-import type { PipelineStageAdapter } from "../pipeline-types.js";
-import { ralplanAdapter } from "./ralplan-adapter.js";
-import { executionAdapter } from "./execution-adapter.js";
-import { ralphAdapter } from "./ralph-adapter.js";
-import { qaAdapter } from "./qa-adapter.js";
+import type { PipelineStageAdapter } from '../pipeline-types.js';
+import { ralplanAdapter } from './ralplan-adapter.js';
+import { executionAdapter } from './execution-adapter.js';
+import { ralphAdapter } from './ralph-adapter.js';
+import { qaAdapter } from './qa-adapter.js';
 
 /**
  * All stage adapters in canonical execution order.

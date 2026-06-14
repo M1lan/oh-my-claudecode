@@ -17,36 +17,36 @@ import {
   loadConfig,
   findContextFiles,
   loadContextFromFiles,
-} from "./config/loader.js";
-import { getAgentDefinitions, omcSystemPrompt } from "./agents/definitions.js";
-import { getDefaultMcpServers, toSdkMcpFormat } from "./mcp/servers.js";
-import { omcToolsServer, getOmcToolNames } from "./mcp/omc-tools-server.js";
+} from './config/loader.js';
+import { getAgentDefinitions, omcSystemPrompt } from './agents/definitions.js';
+import { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
+import { omcToolsServer, getOmcToolNames } from './mcp/omc-tools-server.js';
 import {
   createMagicKeywordProcessor,
   detectMagicKeywords,
-} from "./features/magic-keywords.js";
-import { continuationSystemPromptAddition } from "./features/continuation-enforcement.js";
-import { appendSkininthegamebrosGuidance } from "./agents/skininthegamebros-guidance.js";
+} from './features/magic-keywords.js';
+import { continuationSystemPromptAddition } from './features/continuation-enforcement.js';
+import { appendSkininthegamebrosGuidance } from './agents/skininthegamebros-guidance.js';
 import {
   createBackgroundTaskManager,
   shouldRunInBackground as shouldRunInBackgroundFn,
   type BackgroundTaskManager,
   type TaskExecutionDecision,
-} from "./features/background-tasks.js";
-import type { PluginConfig, SessionState } from "./shared/types.js";
+} from './features/background-tasks.js';
+import type { PluginConfig, SessionState } from './shared/types.js';
 
 export { loadConfig, getAgentDefinitions, omcSystemPrompt };
-export { getDefaultMcpServers, toSdkMcpFormat } from "./mcp/servers.js";
-export { lspTools, astTools, allCustomTools } from "./tools/index.js";
+export { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
+export { lspTools, astTools, allCustomTools } from './tools/index.js';
 export {
   omcToolsServer,
   omcToolNames,
   getOmcToolNames,
-} from "./mcp/omc-tools-server.js";
+} from './mcp/omc-tools-server.js';
 export {
   createMagicKeywordProcessor,
   detectMagicKeywords,
-} from "./features/magic-keywords.js";
+} from './features/magic-keywords.js';
 export {
   createBackgroundTaskManager,
   shouldRunInBackground,
@@ -56,7 +56,7 @@ export {
   BLOCKING_PATTERNS,
   type BackgroundTaskManager,
   type TaskExecutionDecision,
-} from "./features/background-tasks.js";
+} from './features/background-tasks.js';
 export {
   // Auto-update types
   type VersionMetadata,
@@ -78,11 +78,11 @@ export {
   shouldCheckForUpdates,
   backgroundUpdateCheck,
   compareVersions,
-} from "./features/auto-update.js";
-export * from "./shared/index.js";
+} from './features/auto-update.js';
+export * from './shared/index.js';
 
 // Hooks module exports
-export * from "./hooks/index.js";
+export * from './hooks/index.js';
 
 // Features module exports (boulder-state, context-injector)
 export {
@@ -124,14 +124,14 @@ export {
   type OutputPart,
   type InjectionStrategy,
   type InjectionResult,
-} from "./features/index.js";
+} from './features/index.js';
 export {
   searchSessionHistory,
   parseSinceSpec,
   type SessionHistoryMatch,
   type SessionHistorySearchOptions,
   type SessionHistorySearchReport,
-} from "./features/index.js";
+} from './features/index.js';
 
 // Agent module exports (modular agent system)
 export {
@@ -181,10 +181,10 @@ export {
   ANALYST_PROMPT_METADATA,
   plannerAgent,
   PLANNER_PROMPT_METADATA,
-} from "./agents/index.js";
+} from './agents/index.js';
 
 /** @deprecated Use documentSpecialistAgent instead */
-export { documentSpecialistAgent as researcherAgent } from "./agents/document-specialist.js";
+export { documentSpecialistAgent as researcherAgent } from './agents/document-specialist.js';
 
 // Command expansion utilities for SDK integration
 export {
@@ -198,7 +198,7 @@ export {
   getCommandsDir,
   type CommandInfo,
   type ExpandedCommand,
-} from "./commands/index.js";
+} from './commands/index.js';
 
 // Installer exports
 export {
@@ -212,7 +212,7 @@ export {
   VERSION as INSTALLER_VERSION,
   type InstallResult,
   type InstallOptions,
-} from "./installer/index.js";
+} from './installer/index.js';
 
 /**
  * Options for creating a OMC session
@@ -299,7 +299,7 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   };
 
   // Find and load context files
-  let contextAddition = "";
+  let contextAddition = '';
   if (
     !options?.skipContextInjection &&
     config.features?.autoContextInjection !== false
@@ -311,7 +311,7 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   }
 
   // Build system prompt
-  let systemPrompt = appendSkininthegamebrosGuidance(omcSystemPrompt, "system");
+  let systemPrompt = appendSkininthegamebrosGuidance(omcSystemPrompt, 'system');
 
   // Add continuation enforcement
   if (config.features?.continuationEnforcement !== false) {
@@ -340,25 +340,25 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
 
   // Build allowed tools list
   const allowedTools: string[] = [
-    "Read",
-    "Glob",
-    "Grep",
-    "WebSearch",
-    "WebFetch",
-    "Task",
-    "TodoWrite",
+    'Read',
+    'Glob',
+    'Grep',
+    'WebSearch',
+    'WebFetch',
+    'Task',
+    'TodoWrite',
   ];
 
   if (config.permissions?.allowBash !== false) {
-    allowedTools.push("Bash");
+    allowedTools.push('Bash');
   }
 
   if (config.permissions?.allowEdit !== false) {
-    allowedTools.push("Edit");
+    allowedTools.push('Edit');
   }
 
   if (config.permissions?.allowWrite !== false) {
-    allowedTools.push("Write");
+    allowedTools.push('Write');
   }
 
   // Add MCP tool names
@@ -397,7 +397,7 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
           t: omcToolsServer as any,
         },
         allowedTools,
-        permissionMode: "acceptEdits",
+        permissionMode: 'acceptEdits',
       },
     },
     state,
@@ -430,7 +430,7 @@ export function getOmcSystemPrompt(options?: {
   includeContinuation?: boolean;
   customAddition?: string;
 }): string {
-  let prompt = appendSkininthegamebrosGuidance(omcSystemPrompt, "system");
+  let prompt = appendSkininthegamebrosGuidance(omcSystemPrompt, 'system');
 
   if (options?.includeContinuation !== false) {
     prompt += continuationSystemPromptAddition;

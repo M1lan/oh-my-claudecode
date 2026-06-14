@@ -1,4 +1,7 @@
-import { isCliAvailable, type CliAgentType } from '../../team/model-contract.js';
+import {
+  isCliAvailable,
+  type CliAgentType,
+} from '../../team/model-contract.js';
 
 export interface SkillRuntimeAvailability {
   claude: boolean;
@@ -29,7 +32,9 @@ function normalizeSkillName(skillName: string): string {
   return skillName.trim().toLowerCase();
 }
 
-function renderPlanRuntimeGuidance(availability: SkillRuntimeAvailability): string {
+function renderPlanRuntimeGuidance(
+  availability: SkillRuntimeAvailability,
+): string {
   if (!availability.codex) {
     return '';
   }
@@ -40,7 +45,9 @@ function renderPlanRuntimeGuidance(availability: SkillRuntimeAvailability): stri
   ].join('\n');
 }
 
-function renderRalphRuntimeGuidance(availability: SkillRuntimeAvailability): string {
+function renderRalphRuntimeGuidance(
+  availability: SkillRuntimeAvailability,
+): string {
   if (!availability.codex) {
     return '';
   }
@@ -51,7 +58,9 @@ function renderRalphRuntimeGuidance(availability: SkillRuntimeAvailability): str
   ].join('\n');
 }
 
-function renderDeepInterviewRuntimeGuidance(availability: SkillRuntimeAvailability): string {
+function renderDeepInterviewRuntimeGuidance(
+  availability: SkillRuntimeAvailability,
+): string {
   if (!availability.codex) {
     return '';
   }
@@ -74,13 +83,19 @@ export function renderSkillRuntimeGuidance(
 ): string {
   switch (normalizeSkillName(skillName)) {
     case 'deep-interview':
-      return renderDeepInterviewRuntimeGuidance(availability ?? detectSkillRuntimeAvailability());
+      return renderDeepInterviewRuntimeGuidance(
+        availability ?? detectSkillRuntimeAvailability(),
+      );
     case 'ralplan':
     case 'omc-plan':
     case 'plan':
-      return renderPlanRuntimeGuidance(availability ?? detectSkillRuntimeAvailability());
+      return renderPlanRuntimeGuidance(
+        availability ?? detectSkillRuntimeAvailability(),
+      );
     case 'ralph':
-      return renderRalphRuntimeGuidance(availability ?? detectSkillRuntimeAvailability());
+      return renderRalphRuntimeGuidance(
+        availability ?? detectSkillRuntimeAvailability(),
+      );
     default:
       return '';
   }

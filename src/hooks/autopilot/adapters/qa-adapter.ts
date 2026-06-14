@@ -11,14 +11,14 @@ import type {
   PipelineStageAdapter,
   PipelineConfig,
   PipelineContext,
-} from "../pipeline-types.js";
-import { getQAPrompt } from "../prompts.js";
+} from '../pipeline-types.js';
+import { getQAPrompt } from '../prompts.js';
 
-export const QA_COMPLETION_SIGNAL = "PIPELINE_QA_COMPLETE";
+export const QA_COMPLETION_SIGNAL = 'PIPELINE_QA_COMPLETE';
 
 export const qaAdapter: PipelineStageAdapter = {
-  id: "qa",
-  name: "Quality Assurance",
+  id: 'qa',
+  name: 'Quality Assurance',
   completionSignal: QA_COMPLETION_SIGNAL,
 
   shouldSkip(config: PipelineConfig): boolean {

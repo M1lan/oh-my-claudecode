@@ -3,7 +3,10 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-import { drainPendingTeamDispatch, type InjectionResult } from '../team-dispatch-hook.js';
+import {
+  drainPendingTeamDispatch,
+  type InjectionResult,
+} from '../team-dispatch-hook.js';
 import type { TeamDispatchRequest } from '../../team/dispatch-queue.js';
 
 // Regression coverage for the #3224 "dispatch gap": issue/trigger cooldowns
@@ -19,7 +22,9 @@ let logsDir: string;
 let teamDir: string;
 let savedEnv: NodeJS.ProcessEnv;
 
-function makeRequest(overrides: Partial<TeamDispatchRequest> = {}): TeamDispatchRequest {
+function makeRequest(
+  overrides: Partial<TeamDispatchRequest> = {},
+): TeamDispatchRequest {
   const now = new Date().toISOString();
   return {
     request_id: `req-${Math.random().toString(16).slice(2, 10)}`,
@@ -40,29 +45,39 @@ function makeRequest(overrides: Partial<TeamDispatchRequest> = {}): TeamDispatch
 }
 
 async function writeRequests(requests: TeamDispatchRequest[]): Promise<void> {
-  await writeFile(join(teamDir, 'dispatch', 'requests.json'), JSON.stringify(requests, null, 2));
+  await writeFile(
+    join(teamDir, 'dispatch', 'requests.json'),
+    JSON.stringify(requests, null, 2),
+  );
 }
 
 async function readRequests(): Promise<TeamDispatchRequest[]> {
-  return JSON.parse(await readFile(join(teamDir, 'dispatch', 'requests.json'), 'utf8'));
+  return JSON.parse(
+    await readFile(join(teamDir, 'dispatch', 'requests.json'), 'utf8'),
+  );
 }
 
 async function readIssueCooldownKeys(): Promise<string[]> {
   try {
-    const parsed = JSON.parse(await readFile(join(teamDir, 'dispatch', 'issue-cooldown.json'), 'utf8'));
+    const parsed = JSON.parse(
+      await readFile(join(teamDir, 'dispatch', 'issue-cooldown.json'), 'utf8'),
+    );
     return Object.keys(parsed?.by_issue ?? {});
   } catch {
     return [];
   }
 }
 
-async function drain(injector: (request: TeamDispatchRequest) => Promise<InjectionResult>) {
+async function drain(
+  injector: (request: TeamDispatchRequest) => Promise<InjectionResult>,
+) {
   return drainPendingTeamDispatch({
     cwd: root,
     stateDir,
     logsDir,
     maxPerTick: 10,
-    injector: async (request) => injector(request as unknown as TeamDispatchRequest),
+    injector: async (request) =>
+      injector(request as unknown as TeamDispatchRequest),
   });
 }
 
@@ -72,7 +87,10 @@ beforeEach(async () => {
   logsDir = join(root, 'logs');
   teamDir = join(stateDir, 'team', TEAM);
   await mkdir(join(teamDir, 'dispatch'), { recursive: true });
-  await writeFile(join(teamDir, 'config.json'), JSON.stringify({ tmux_session: 'sess' }));
+  await writeFile(
+    join(teamDir, 'config.json'),
+    JSON.stringify({ tmux_session: 'sess' }),
+  );
 
   savedEnv = { ...process.env };
   delete process.env.OMC_TEAM_WORKER;
@@ -90,7 +108,10 @@ describe('drainPendingTeamDispatch cooldown stamping', () => {
   it('stamps the issue cooldown on a successful dispatch and dedups same-issue requests', async () => {
     await writeRequests([
       makeRequest({ request_id: 'a', trigger_message: 'Resolve ABC-100 now' }),
-      makeRequest({ request_id: 'b', trigger_message: 'Resolve ABC-100 again' }),
+      makeRequest({
+        request_id: 'b',
+        trigger_message: 'Resolve ABC-100 again',
+      }),
     ]);
 
     const calls: string[] = [];
@@ -113,7 +134,10 @@ describe('drainPendingTeamDispatch cooldown stamping', () => {
   it('does not stamp the issue cooldown when dispatch fails, so re-dispatch is not gated', async () => {
     await writeRequests([
       makeRequest({ request_id: 'a', trigger_message: 'Resolve ABC-200 now' }),
-      makeRequest({ request_id: 'b', trigger_message: 'Resolve ABC-200 again' }),
+      makeRequest({
+        request_id: 'b',
+        trigger_message: 'Resolve ABC-200 again',
+      }),
     ]);
 
     const calls: string[] = [];
@@ -131,7 +155,9 @@ describe('drainPendingTeamDispatch cooldown stamping', () => {
   });
 
   it('does not self-gate an unconfirmed dispatch awaiting retry', async () => {
-    await writeRequests([makeRequest({ request_id: 'a', trigger_message: 'Resolve ABC-300 now' })]);
+    await writeRequests([
+      makeRequest({ request_id: 'a', trigger_message: 'Resolve ABC-300 now' }),
+    ]);
 
     let calls = 0;
     const injector = async (): Promise<InjectionResult> => {

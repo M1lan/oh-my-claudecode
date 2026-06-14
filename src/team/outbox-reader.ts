@@ -15,17 +15,17 @@ import {
   statSync,
   existsSync,
   readdirSync,
-} from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+} from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import {
   validateResolvedPath,
   writeFileWithMode,
   atomicWriteJson,
   ensureDirWithMode,
-} from "./fs-utils.js";
-import { sanitizeName } from "./tmux-session.js";
-import type { OutboxMessage } from "./types.js";
+} from './fs-utils.js';
+import { sanitizeName } from './tmux-session.js';
+import type { OutboxMessage } from './types.js';
 
 /** Outbox cursor stored alongside outbox files */
 export interface OutboxCursor {
@@ -35,7 +35,7 @@ export interface OutboxCursor {
 const MAX_OUTBOX_READ_SIZE = 10 * 1024 * 1024; // 10MB cap per read
 
 function teamsDir(): string {
-  return join(getClaudeConfigDir(), "teams");
+  return join(getClaudeConfigDir(), 'teams');
 }
 
 /**
@@ -51,13 +51,13 @@ export function readNewOutboxMessages(
   const outboxPath = join(
     teamsDir(),
     safeName,
-    "outbox",
+    'outbox',
     `${safeWorker}.jsonl`,
   );
   const cursorPath = join(
     teamsDir(),
     safeName,
-    "outbox",
+    'outbox',
     `${safeWorker}.outbox-offset`,
   );
 
@@ -70,7 +70,7 @@ export function readNewOutboxMessages(
   let cursor: OutboxCursor = { bytesRead: 0 };
   if (existsSync(cursorPath)) {
     try {
-      const raw = readFileSync(cursorPath, "utf-8");
+      const raw = readFileSync(cursorPath, 'utf-8');
       cursor = JSON.parse(raw);
     } catch {
       cursor = { bytesRead: 0 };
@@ -90,30 +90,30 @@ export function readNewOutboxMessages(
   if (bytesToRead <= 0) return [];
 
   const buf = Buffer.alloc(bytesToRead);
-  const fd = openSync(outboxPath, "r");
+  const fd = openSync(outboxPath, 'r');
   try {
     readSync(fd, buf, 0, bytesToRead, cursor.bytesRead);
   } finally {
     closeSync(fd);
   }
 
-  const chunk = buf.toString("utf-8");
+  const chunk = buf.toString('utf-8');
 
   // Only parse complete lines (up to the last newline) so that a partial
   // trailing line is not delivered prematurely and then re-delivered on
   // the next read when the cursor backtracks.
   let consumed = bytesToRead;
   let completePortion = chunk;
-  if (!chunk.endsWith("\n")) {
-    const lastNewline = chunk.lastIndexOf("\n");
+  if (!chunk.endsWith('\n')) {
+    const lastNewline = chunk.lastIndexOf('\n');
     consumed =
       lastNewline >= 0
-        ? Buffer.byteLength(chunk.slice(0, lastNewline + 1), "utf-8")
+        ? Buffer.byteLength(chunk.slice(0, lastNewline + 1), 'utf-8')
         : 0;
-    completePortion = lastNewline >= 0 ? chunk.slice(0, lastNewline + 1) : "";
+    completePortion = lastNewline >= 0 ? chunk.slice(0, lastNewline + 1) : '';
   }
 
-  const lines = completePortion.split("\n").filter((l) => l.trim());
+  const lines = completePortion.split('\n').filter((l) => l.trim());
   const messages: OutboxMessage[] = [];
   for (const line of lines) {
     try {
@@ -125,7 +125,7 @@ export function readNewOutboxMessages(
 
   // Update cursor atomically to prevent corruption on crash
   const newCursor: OutboxCursor = { bytesRead: cursor.bytesRead + consumed };
-  const cursorDir = join(teamsDir(), safeName, "outbox");
+  const cursorDir = join(teamsDir(), safeName, 'outbox');
   ensureDirWithMode(cursorDir);
   atomicWriteJson(cursorPath, newCursor);
 
@@ -139,15 +139,15 @@ export function readAllTeamOutboxMessages(
   teamName: string,
 ): { workerName: string; messages: OutboxMessage[] }[] {
   const safeName = sanitizeName(teamName);
-  const outboxDir = join(teamsDir(), safeName, "outbox");
+  const outboxDir = join(teamsDir(), safeName, 'outbox');
 
   if (!existsSync(outboxDir)) return [];
 
-  const files = readdirSync(outboxDir).filter((f) => f.endsWith(".jsonl"));
+  const files = readdirSync(outboxDir).filter((f) => f.endsWith('.jsonl'));
   const results: { workerName: string; messages: OutboxMessage[] }[] = [];
 
   for (const file of files) {
-    const workerName = file.replace(".jsonl", "");
+    const workerName = file.replace('.jsonl', '');
     const messages = readNewOutboxMessages(teamName, workerName);
     if (messages.length > 0) {
       results.push({ workerName, messages });
@@ -166,11 +166,11 @@ export function resetOutboxCursor(teamName: string, workerName: string): void {
   const cursorPath = join(
     teamsDir(),
     safeName,
-    "outbox",
+    'outbox',
     `${safeWorker}.outbox-offset`,
   );
   validateResolvedPath(cursorPath, teamsDir());
-  const cursorDir = join(teamsDir(), safeName, "outbox");
+  const cursorDir = join(teamsDir(), safeName, 'outbox');
   ensureDirWithMode(cursorDir);
   writeFileWithMode(cursorPath, JSON.stringify({ bytesRead: 0 }));
 }

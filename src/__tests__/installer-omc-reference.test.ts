@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  readdirSync,
+} from 'node:fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -21,7 +29,10 @@ vi.mock('fs', async () => {
       return realSkillsDir;
     }
     if (normalized.startsWith(`${normalizedSourceSkillsDir}/`)) {
-      return normalized.replace(normalizedSourceSkillsDir, normalizedRealSkillsDir);
+      return normalized.replace(
+        normalizedSourceSkillsDir,
+        normalizedRealSkillsDir,
+      );
     }
     if (normalized === sourceClaudeMdPath.replace(/\\/g, '/')) {
       return realClaudeMdPath;
@@ -32,13 +43,19 @@ vi.mock('fs', async () => {
   return {
     ...actual,
     existsSync: vi.fn((pathLike: Parameters<typeof actual.existsSync>[0]) =>
-      actual.existsSync(withRedirect(pathLike))
+      actual.existsSync(withRedirect(pathLike)),
     ),
-    readFileSync: vi.fn((pathLike: Parameters<typeof actual.readFileSync>[0], options?: Parameters<typeof actual.readFileSync>[1]) =>
-      actual.readFileSync(withRedirect(pathLike), options as never)
+    readFileSync: vi.fn(
+      (
+        pathLike: Parameters<typeof actual.readFileSync>[0],
+        options?: Parameters<typeof actual.readFileSync>[1],
+      ) => actual.readFileSync(withRedirect(pathLike), options as never),
     ),
-    readdirSync: vi.fn((pathLike: Parameters<typeof actual.readdirSync>[0], options?: Parameters<typeof actual.readdirSync>[1]) =>
-      actual.readdirSync(withRedirect(pathLike), options as never)
+    readdirSync: vi.fn(
+      (
+        pathLike: Parameters<typeof actual.readdirSync>[0],
+        options?: Parameters<typeof actual.readdirSync>[1],
+      ) => actual.readdirSync(withRedirect(pathLike), options as never),
     ),
   };
 });
@@ -50,57 +67,87 @@ async function loadInstallerWithEnv(claudeConfigDir: string, homeDir: string) {
   return import('../installer/index.js');
 }
 
-function writeInstalledPluginRegistry(claudeConfigDir: string, pluginRoot: string): void {
+function writeInstalledPluginRegistry(
+  claudeConfigDir: string,
+  pluginRoot: string,
+): void {
   const pluginsDir = join(claudeConfigDir, 'plugins');
   mkdirSync(pluginsDir, { recursive: true });
   writeFileSync(
     join(pluginsDir, 'installed_plugins.json'),
-    JSON.stringify({
-      'oh-my-claudecode': [
-        { installPath: pluginRoot },
-      ],
-    }, null, 2)
+    JSON.stringify(
+      {
+        'oh-my-claudecode': [{ installPath: pluginRoot }],
+      },
+      null,
+      2,
+    ),
   );
 }
 
 function writeEnabledPluginSettings(claudeConfigDir: string): void {
   writeFileSync(
     join(claudeConfigDir, 'settings.json'),
-    JSON.stringify({ plugins: ['oh-my-claudecode'] }, null, 2)
+    JSON.stringify({ plugins: ['oh-my-claudecode'] }, null, 2),
   );
 }
 
 function writeMinimallyCompletePluginPayload(pluginRoot: string): void {
   mkdirSync(join(pluginRoot, 'dist', 'hooks'), { recursive: true });
-  writeFileSync(join(pluginRoot, 'dist', 'hooks', 'skill-bridge.cjs'), 'console.log("skill bridge");\n');
+  writeFileSync(
+    join(pluginRoot, 'dist', 'hooks', 'skill-bridge.cjs'),
+    'console.log("skill bridge");\n',
+  );
   mkdirSync(join(pluginRoot, 'bridge'), { recursive: true });
-  writeFileSync(join(pluginRoot, 'bridge', 'cli.cjs'), 'console.log("bridge");\n');
+  writeFileSync(
+    join(pluginRoot, 'bridge', 'cli.cjs'),
+    'console.log("bridge");\n',
+  );
   mkdirSync(join(pluginRoot, 'hooks'), { recursive: true });
   writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), '{}\n');
   mkdirSync(join(pluginRoot, 'commands'), { recursive: true });
-  writeFileSync(join(pluginRoot, 'commands', 'omc-setup.md'), 'Read skills/omc-setup/SKILL.md.\n');
+  writeFileSync(
+    join(pluginRoot, 'commands', 'omc-setup.md'),
+    'Read skills/omc-setup/SKILL.md.\n',
+  );
   mkdirSync(join(pluginRoot, 'skills', 'ralph'), { recursive: true });
-  writeFileSync(join(pluginRoot, 'skills', 'ralph', 'SKILL.md'), 'name: ralph\n');
+  writeFileSync(
+    join(pluginRoot, 'skills', 'ralph', 'SKILL.md'),
+    'name: ralph\n',
+  );
   mkdirSync(join(pluginRoot, '.claude-plugin'), { recursive: true });
   writeFileSync(
     join(pluginRoot, '.claude-plugin', 'plugin.json'),
-    JSON.stringify({
-      name: 'oh-my-claudecode',
-      commands: './commands/',
-      skills: ['./skills/ralph/'],
-    }, null, 2)
+    JSON.stringify(
+      {
+        name: 'oh-my-claudecode',
+        commands: './commands/',
+        skills: ['./skills/ralph/'],
+      },
+      null,
+      2,
+    ),
   );
-  writeFileSync(join(pluginRoot, 'package.json'), JSON.stringify({ name: 'oh-my-claude-sisyphus', version: '4.10.2' }, null, 2));
+  writeFileSync(
+    join(pluginRoot, 'package.json'),
+    JSON.stringify(
+      { name: 'oh-my-claude-sisyphus', version: '4.10.2' },
+      null,
+      2,
+    ),
+  );
 }
 
 function getBundledSkillNames(): string[] {
   const skininthegamebrosOnlySkills = new Set(['remember', 'verify', 'debug']);
 
   return readdirSync(join(process.cwd(), 'skills'), { withFileTypes: true })
-    .filter(entry => entry.isDirectory())
-    .map(entry => entry.name)
-    .filter(name => existsSync(join(process.cwd(), 'skills', name, 'SKILL.md')))
-    .filter(name => !skininthegamebrosOnlySkills.has(name))
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .filter((name) =>
+      existsSync(join(process.cwd(), 'skills', name, 'SKILL.md')),
+    )
+    .filter((name) => !skininthegamebrosOnlySkills.has(name))
     .sort();
 }
 
@@ -147,29 +194,54 @@ describe('installer bundled + standalone skill sync', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.installedSkills).toEqual(expect.arrayContaining([
-      'autopilot/SKILL.md',
-      'ralph/SKILL.md',
-      'ralplan/SKILL.md',
-      'team/SKILL.md',
-      'ultrawork/SKILL.md',
-      'omc-reference/SKILL.md',
-      'omc-plan/SKILL.md',
-    ]));
+    expect(result.installedSkills).toEqual(
+      expect.arrayContaining([
+        'autopilot/SKILL.md',
+        'ralph/SKILL.md',
+        'ralplan/SKILL.md',
+        'team/SKILL.md',
+        'ultrawork/SKILL.md',
+        'omc-reference/SKILL.md',
+        'omc-plan/SKILL.md',
+      ]),
+    );
 
-    for (const skillName of ['autopilot', 'ralph', 'ralplan', 'team', 'ultrawork', 'omc-reference', 'omc-plan']) {
-      const installedSkillPath = join(claudeConfigDir, 'skills', skillName, 'SKILL.md');
+    for (const skillName of [
+      'autopilot',
+      'ralph',
+      'ralplan',
+      'team',
+      'ultrawork',
+      'omc-reference',
+      'omc-plan',
+    ]) {
+      const installedSkillPath = join(
+        claudeConfigDir,
+        'skills',
+        skillName,
+        'SKILL.md',
+      );
       expect(existsSync(installedSkillPath)).toBe(true);
       expect(readFileSync(installedSkillPath, 'utf-8')).toContain('name:');
     }
 
-    expect(existsSync(join(claudeConfigDir, 'skills', 'plan', 'SKILL.md'))).toBe(false);
+    expect(
+      existsSync(join(claudeConfigDir, 'skills', 'plan', 'SKILL.md')),
+    ).toBe(false);
   });
 
   it('installs bundled skills when no enabled OMC plugin is configured', async () => {
-    const pluginRoot = join(tempRoot, 'plugin-cache', 'oh-my-claudecode', '4.10.2');
+    const pluginRoot = join(
+      tempRoot,
+      'plugin-cache',
+      'oh-my-claudecode',
+      '4.10.2',
+    );
     mkdirSync(join(pluginRoot, 'skills', 'ralph'), { recursive: true });
-    writeFileSync(join(pluginRoot, 'skills', 'ralph', 'SKILL.md'), 'name: ralph\n');
+    writeFileSync(
+      join(pluginRoot, 'skills', 'ralph', 'SKILL.md'),
+      'name: ralph\n',
+    );
     writeInstalledPluginRegistry(claudeConfigDir, pluginRoot);
 
     const installer = await loadInstallerWithEnv(claudeConfigDir, homeDir);
@@ -180,22 +252,40 @@ describe('installer bundled + standalone skill sync', () => {
 
     expect(result.success).toBe(true);
     const bundledSkillNames = getBundledSkillNames();
-    expect(result.installedSkills.length).toBeGreaterThanOrEqual(bundledSkillNames.length - 4);
+    expect(result.installedSkills.length).toBeGreaterThanOrEqual(
+      bundledSkillNames.length - 4,
+    );
     expect(result.installedSkills).toContain('omc-reference/SKILL.md');
     expect(result.installedSkills).toContain('ralph/SKILL.md');
     expect(result.installedSkills).toContain('omc-plan/SKILL.md');
 
     for (const skillName of ['omc-reference', 'ralph', 'team']) {
-      const installedSkillPath = join(claudeConfigDir, 'skills', skillName, 'SKILL.md');
+      const installedSkillPath = join(
+        claudeConfigDir,
+        'skills',
+        skillName,
+        'SKILL.md',
+      );
       expect(existsSync(installedSkillPath)).toBe(true);
-      expect(readFileSync(installedSkillPath, 'utf-8')).toContain(`name: ${skillName}`);
+      expect(readFileSync(installedSkillPath, 'utf-8')).toContain(
+        `name: ${skillName}`,
+      );
     }
 
-    expect(existsSync(join(claudeConfigDir, 'skills', 'omc-setup', 'phases', '04-welcome.md'))).toBe(true);
+    expect(
+      existsSync(
+        join(claudeConfigDir, 'skills', 'omc-setup', 'phases', '04-welcome.md'),
+      ),
+    ).toBe(true);
   });
 
   it('skips bundled skill sync when an installed plugin already provides skills', async () => {
-    const pluginRoot = join(tempRoot, 'plugin-cache', 'oh-my-claudecode', '4.10.2');
+    const pluginRoot = join(
+      tempRoot,
+      'plugin-cache',
+      'oh-my-claudecode',
+      '4.10.2',
+    );
     writeMinimallyCompletePluginPayload(pluginRoot);
     writeInstalledPluginRegistry(claudeConfigDir, pluginRoot);
     writeEnabledPluginSettings(claudeConfigDir);
@@ -208,13 +298,23 @@ describe('installer bundled + standalone skill sync', () => {
 
     expect(result.success).toBe(true);
     expect(result.installedSkills).toEqual([]);
-    expect(existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md'))).toBe(false);
+    expect(
+      existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md')),
+    ).toBe(false);
   });
 
   it('forces bundled skill sync with noPlugin even when plugin skills exist', async () => {
-    const pluginRoot = join(tempRoot, 'plugin-cache', 'oh-my-claudecode', '4.10.2');
+    const pluginRoot = join(
+      tempRoot,
+      'plugin-cache',
+      'oh-my-claudecode',
+      '4.10.2',
+    );
     mkdirSync(join(pluginRoot, 'skills', 'ralph'), { recursive: true });
-    writeFileSync(join(pluginRoot, 'skills', 'ralph', 'SKILL.md'), 'name: ralph\n');
+    writeFileSync(
+      join(pluginRoot, 'skills', 'ralph', 'SKILL.md'),
+      'name: ralph\n',
+    );
     writeInstalledPluginRegistry(claudeConfigDir, pluginRoot);
     writeEnabledPluginSettings(claudeConfigDir);
 
@@ -227,12 +327,24 @@ describe('installer bundled + standalone skill sync', () => {
 
     expect(result.success).toBe(true);
     expect(result.installedSkills).toContain('ralph/SKILL.md');
-    expect(existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md'))).toBe(true);
-    expect(readFileSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md'), 'utf-8')).toContain('name: ralph');
+    expect(
+      existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md')),
+    ).toBe(true);
+    expect(
+      readFileSync(
+        join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md'),
+        'utf-8',
+      ),
+    ).toContain('name: ralph');
   });
 
   it('falls back to bundled skills when plugin is enabled but skill files are unavailable', async () => {
-    const pluginRoot = join(tempRoot, 'plugin-cache', 'oh-my-claudecode', '4.10.2');
+    const pluginRoot = join(
+      tempRoot,
+      'plugin-cache',
+      'oh-my-claudecode',
+      '4.10.2',
+    );
     mkdirSync(pluginRoot, { recursive: true });
     writeInstalledPluginRegistry(claudeConfigDir, pluginRoot);
     writeEnabledPluginSettings(claudeConfigDir);
@@ -245,13 +357,18 @@ describe('installer bundled + standalone skill sync', () => {
 
     expect(result.success).toBe(true);
     expect(result.installedSkills).toContain('ralph/SKILL.md');
-    expect(existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md'))).toBe(true);
+    expect(
+      existsSync(join(claudeConfigDir, 'skills', 'ralph', 'SKILL.md')),
+    ).toBe(true);
   });
 
   it('re-syncs bundled skills on repeated noPlugin installs so local skill edits can be validated', async () => {
     const installedSkillDir = join(claudeConfigDir, 'skills', 'ralph');
     mkdirSync(installedSkillDir, { recursive: true });
-    writeFileSync(join(installedSkillDir, 'SKILL.md'), 'name: ralph\n\nstale content\n');
+    writeFileSync(
+      join(installedSkillDir, 'SKILL.md'),
+      'name: ralph\n\nstale content\n',
+    );
 
     const installer = await loadInstallerWithEnv(claudeConfigDir, homeDir);
     const result = installer.install({
@@ -262,7 +379,11 @@ describe('installer bundled + standalone skill sync', () => {
 
     expect(result.success).toBe(true);
     expect(result.installedSkills).toContain('ralph/SKILL.md');
-    expect(readFileSync(join(installedSkillDir, 'SKILL.md'), 'utf-8')).not.toContain('stale content');
-    expect(readFileSync(join(installedSkillDir, 'SKILL.md'), 'utf-8')).toContain('name: ralph');
+    expect(
+      readFileSync(join(installedSkillDir, 'SKILL.md'), 'utf-8'),
+    ).not.toContain('stale content');
+    expect(
+      readFileSync(join(installedSkillDir, 'SKILL.md'), 'utf-8'),
+    ).toContain('name: ralph');
   });
 });

@@ -11,7 +11,7 @@ import {
   type WikiPage,
   type WikiPageFrontmatter,
   WIKI_SCHEMA_VERSION,
-} from "./types.js";
+} from './types.js';
 import {
   withWikiLock,
   readPage,
@@ -19,7 +19,7 @@ import {
   updateIndexUnsafe,
   appendLogUnsafe,
   titleToSlug,
-} from "./storage.js";
+} from './storage.js';
 
 /**
  * Ingest knowledge into the wiki.
@@ -63,7 +63,7 @@ export function ingestKnowledge(
 
     appendLogUnsafe(root, {
       timestamp: now,
-      operation: "ingest",
+      operation: 'ingest',
       pagesAffected: [...result.created, ...result.updated],
       summary: existing
         ? `Updated "${input.title}" with new content`
@@ -89,7 +89,7 @@ function createPage(
     sources: input.sources || [],
     links: extractWikiLinks(input.content),
     category: input.category,
-    confidence: input.confidence || "medium",
+    confidence: input.confidence || 'medium',
     schemaVersion: WIKI_SCHEMA_VERSION,
   };
 
@@ -127,10 +127,10 @@ function mergePage(
 
   const confidenceRank = { high: 3, medium: 2, low: 1 };
   const existingRank = confidenceRank[existing.frontmatter.confidence] || 2;
-  const newRank = confidenceRank[input.confidence || "medium"] || 2;
+  const newRank = confidenceRank[input.confidence || 'medium'] || 2;
   const mergedConfidence =
     newRank >= existingRank
-      ? input.confidence || "medium"
+      ? input.confidence || 'medium'
       : existing.frontmatter.confidence;
 
   const appendedContent =

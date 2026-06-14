@@ -7,27 +7,24 @@
  * - Environment variables
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join, dirname } from "path";
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
 import type {
   PluginConfig,
   ExternalModelsConfig,
   DelegationProvider,
   TeamRoleAssignmentSpec,
-} from "../shared/types.js";
-import {
-  CANONICAL_TEAM_ROLES,
-  KNOWN_AGENT_NAMES,
-} from "../shared/types.js";
-import { getConfigDir } from "../utils/paths.js";
-import { parseJsonc } from "../utils/jsonc.js";
+} from '../shared/types.js';
+import { CANONICAL_TEAM_ROLES, KNOWN_AGENT_NAMES } from '../shared/types.js';
+import { getConfigDir } from '../utils/paths.js';
+import { parseJsonc } from '../utils/jsonc.js';
 import {
   getDefaultTierModels,
   BUILTIN_EXTERNAL_MODEL_DEFAULTS,
   shouldAutoForceInherit,
-} from "./models.js";
-import { normalizeDelegationRole } from "../features/delegation-routing/types.js";
-import { isDeprecatedMcpProvider } from "../features/delegation-routing/index.js";
+} from './models.js';
+import { normalizeDelegationRole } from '../features/delegation-routing/types.js';
+import { isDeprecatedMcpProvider } from '../features/delegation-routing/index.js';
 
 /**
  * Default configuration.
@@ -78,7 +75,7 @@ export function buildDefaultConfig(): PluginConfig {
       context7: { enabled: true },
     },
     companyContext: {
-      onError: "warn",
+      onError: 'warn',
     },
     permissions: {
       allowBash: true,
@@ -87,58 +84,58 @@ export function buildDefaultConfig(): PluginConfig {
       maxBackgroundTasks: 5,
     },
     magicKeywords: {
-      ultrawork: ["ultrawork", "ulw", "uw"],
-      search: ["search", "find", "locate"],
-      analyze: ["analyze", "investigate", "examine"],
-      ultrathink: ["ultrathink", "think", "reason", "ponder"],
+      ultrawork: ['ultrawork', 'ulw', 'uw'],
+      search: ['search', 'find', 'locate'],
+      analyze: ['analyze', 'investigate', 'examine'],
+      ultrathink: ['ultrathink', 'think', 'reason', 'ponder'],
     },
     // Intelligent model routing configuration
     routing: {
       enabled: true,
-      defaultTier: "MEDIUM",
+      defaultTier: 'MEDIUM',
       forceInherit: false,
       escalationEnabled: true,
       maxEscalations: 2,
       tierModels: { ...defaultTierModels },
       agentOverrides: {
         architect: {
-          tier: "HIGH",
-          reason: "Advisory agent requires deep reasoning",
+          tier: 'HIGH',
+          reason: 'Advisory agent requires deep reasoning',
         },
         planner: {
-          tier: "HIGH",
-          reason: "Strategic planning requires deep reasoning",
+          tier: 'HIGH',
+          reason: 'Strategic planning requires deep reasoning',
         },
         critic: {
-          tier: "HIGH",
-          reason: "Critical review requires deep reasoning",
+          tier: 'HIGH',
+          reason: 'Critical review requires deep reasoning',
         },
         analyst: {
-          tier: "HIGH",
-          reason: "Pre-planning analysis requires deep reasoning",
+          tier: 'HIGH',
+          reason: 'Pre-planning analysis requires deep reasoning',
         },
-        explore: { tier: "LOW", reason: "Exploration is search-focused" },
-        writer: { tier: "LOW", reason: "Documentation is straightforward" },
+        explore: { tier: 'LOW', reason: 'Exploration is search-focused' },
+        writer: { tier: 'LOW', reason: 'Documentation is straightforward' },
       },
       escalationKeywords: [
-        "critical",
-        "production",
-        "urgent",
-        "security",
-        "breaking",
-        "architecture",
-        "refactor",
-        "redesign",
-        "root cause",
+        'critical',
+        'production',
+        'urgent',
+        'security',
+        'breaking',
+        'architecture',
+        'refactor',
+        'redesign',
+        'root cause',
       ],
       simplificationKeywords: [
-        "find",
-        "list",
-        "show",
-        "where",
-        "search",
-        "locate",
-        "grep",
+        'find',
+        'list',
+        'show',
+        'where',
+        'search',
+        'locate',
+        'grep',
       ],
     },
     // External models configuration (Codex, Gemini)
@@ -149,15 +146,15 @@ export function buildDefaultConfig(): PluginConfig {
         geminiModel: BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel,
       },
       fallbackPolicy: {
-        onModelFailure: "provider_chain",
+        onModelFailure: 'provider_chain',
         allowCrossProvider: false,
-        crossProviderOrder: ["codex", "gemini"],
+        crossProviderOrder: ['codex', 'gemini'],
       },
     },
     // Delegation routing configuration (opt-in feature for external model routing)
     delegationRouting: {
       enabled: false,
-      defaultProvider: "claude",
+      defaultProvider: 'claude',
       roles: {},
     },
     // /team role routing (Option E — /team-scoped per-role provider & model)
@@ -167,8 +164,8 @@ export function buildDefaultConfig(): PluginConfig {
       roleRouting: {},
     },
     planOutput: {
-      directory: ".omc/plans",
-      filenameTemplate: "{{name}}.md",
+      directory: '.omc/plans',
+      filenameTemplate: '{{name}}.md',
     },
     teleport: {
       symlinkNodeModules: true,
@@ -187,13 +184,13 @@ export function buildDefaultConfig(): PluginConfig {
     promptPrerequisites: {
       enabled: true,
       sectionNames: {
-        memory: ["MÉMOIRE", "MEMOIRE", "MEMORY"],
-        skills: ["SKILLS"],
-        verifyFirst: ["VERIFY-FIRST", "VERIFY FIRST", "VERIFY_FIRST"],
-        context: ["CONTEXT"],
+        memory: ['MÉMOIRE', 'MEMOIRE', 'MEMORY'],
+        skills: ['SKILLS'],
+        verifyFirst: ['VERIFY-FIRST', 'VERIFY FIRST', 'VERIFY_FIRST'],
+        context: ['CONTEXT'],
       },
-      blockingTools: ["Edit", "MultiEdit", "Write", "Agent", "Task"],
-      executionKeywords: ["ralph", "ultrawork", "autopilot"],
+      blockingTools: ['Edit', 'MultiEdit', 'Write', 'Agent', 'Task'],
+      executionKeywords: ['ralph', 'ultrawork', 'autopilot'],
     },
   };
 }
@@ -207,8 +204,8 @@ export function getConfigPaths(): { user: string; project: string } {
   const userConfigDir = getConfigDir();
 
   return {
-    user: join(userConfigDir, "claude-omc", "config.jsonc"),
-    project: join(process.cwd(), ".claude", "omc.jsonc"),
+    user: join(userConfigDir, 'claude-omc', 'config.jsonc'),
+    project: join(process.cwd(), '.claude', 'omc.jsonc'),
   };
 }
 
@@ -221,7 +218,7 @@ export function loadJsoncFile(path: string): PluginConfig | null {
   }
 
   try {
-    const content = readFileSync(path, "utf-8");
+    const content = readFileSync(path, 'utf-8');
     const result = parseJsonc(content);
     return result as PluginConfig;
   } catch (error) {
@@ -238,17 +235,17 @@ export function deepMerge<T extends object>(target: T, source: Partial<T>): T {
   const mutableResult = result as Record<string, unknown>;
 
   for (const key of Object.keys(source) as (keyof T)[]) {
-    if (key === "__proto__" || key === "constructor" || key === "prototype")
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
       continue;
     const sourceValue = source[key];
     const targetValue = mutableResult[key as string];
 
     if (
       sourceValue !== undefined &&
-      typeof sourceValue === "object" &&
+      typeof sourceValue === 'object' &&
       sourceValue !== null &&
       !Array.isArray(sourceValue) &&
-      typeof targetValue === "object" &&
+      typeof targetValue === 'object' &&
       targetValue !== null &&
       !Array.isArray(targetValue)
     ) {
@@ -282,14 +279,14 @@ export function loadEnvConfig(): Partial<PluginConfig> {
   if (process.env.OMC_PARALLEL_EXECUTION !== undefined) {
     config.features = {
       ...config.features,
-      parallelExecution: process.env.OMC_PARALLEL_EXECUTION === "true",
+      parallelExecution: process.env.OMC_PARALLEL_EXECUTION === 'true',
     };
   }
 
   if (process.env.OMC_LSP_TOOLS !== undefined) {
     config.features = {
       ...config.features,
-      lspTools: process.env.OMC_LSP_TOOLS === "true",
+      lspTools: process.env.OMC_LSP_TOOLS === 'true',
     };
   }
 
@@ -307,29 +304,29 @@ export function loadEnvConfig(): Partial<PluginConfig> {
   if (process.env.OMC_ROUTING_ENABLED !== undefined) {
     config.routing = {
       ...config.routing,
-      enabled: process.env.OMC_ROUTING_ENABLED === "true",
+      enabled: process.env.OMC_ROUTING_ENABLED === 'true',
     };
   }
 
   if (process.env.OMC_ROUTING_FORCE_INHERIT !== undefined) {
     config.routing = {
       ...config.routing,
-      forceInherit: process.env.OMC_ROUTING_FORCE_INHERIT === "true",
+      forceInherit: process.env.OMC_ROUTING_FORCE_INHERIT === 'true',
     };
   }
 
   if (process.env.OMC_ROUTING_DEFAULT_TIER) {
     const tier = process.env.OMC_ROUTING_DEFAULT_TIER.toUpperCase();
-    if (tier === "LOW" || tier === "MEDIUM" || tier === "HIGH") {
+    if (tier === 'LOW' || tier === 'MEDIUM' || tier === 'HIGH') {
       config.routing = {
         ...config.routing,
-        defaultTier: tier as "LOW" | "MEDIUM" | "HIGH",
+        defaultTier: tier as 'LOW' | 'MEDIUM' | 'HIGH',
       };
     }
   }
 
   // Model alias overrides from environment (issue #1211)
-  const aliasKeys = ["HAIKU", "SONNET", "OPUS"] as const;
+  const aliasKeys = ['HAIKU', 'SONNET', 'OPUS'] as const;
   const modelAliases: Record<string, string> = {};
   for (const key of aliasKeys) {
     const envVal = process.env[`OMC_MODEL_ALIAS_${key}`];
@@ -343,7 +340,7 @@ export function loadEnvConfig(): Partial<PluginConfig> {
       ...config.routing,
       modelAliases: modelAliases as Record<
         string,
-        "haiku" | "sonnet" | "opus" | "inherit"
+        'haiku' | 'sonnet' | 'opus' | 'inherit'
       >,
     };
   }
@@ -351,16 +348,16 @@ export function loadEnvConfig(): Partial<PluginConfig> {
   if (process.env.OMC_ESCALATION_ENABLED !== undefined) {
     config.routing = {
       ...config.routing,
-      escalationEnabled: process.env.OMC_ESCALATION_ENABLED === "true",
+      escalationEnabled: process.env.OMC_ESCALATION_ENABLED === 'true',
     };
   }
 
   // External models configuration from environment
-  const externalModelsDefaults: ExternalModelsConfig["defaults"] = {};
+  const externalModelsDefaults: ExternalModelsConfig['defaults'] = {};
 
   if (process.env.OMC_EXTERNAL_MODELS_DEFAULT_PROVIDER) {
     const provider = process.env.OMC_EXTERNAL_MODELS_DEFAULT_PROVIDER;
-    if (provider === "codex" || provider === "gemini") {
+    if (provider === 'codex' || provider === 'gemini') {
       externalModelsDefaults.provider = provider;
     }
   }
@@ -389,16 +386,16 @@ export function loadEnvConfig(): Partial<PluginConfig> {
     externalModelsDefaults.grokModel = process.env.OMC_GROK_DEFAULT_MODEL;
   }
 
-  const externalModelsFallback: ExternalModelsConfig["fallbackPolicy"] = {
-    onModelFailure: "provider_chain",
+  const externalModelsFallback: ExternalModelsConfig['fallbackPolicy'] = {
+    onModelFailure: 'provider_chain',
   };
 
   if (process.env.OMC_EXTERNAL_MODELS_FALLBACK_POLICY) {
     const policy = process.env.OMC_EXTERNAL_MODELS_FALLBACK_POLICY;
     if (
-      policy === "provider_chain" ||
-      policy === "cross_provider" ||
-      policy === "claude_only"
+      policy === 'provider_chain' ||
+      policy === 'cross_provider' ||
+      policy === 'claude_only'
     ) {
       externalModelsFallback.onModelFailure = policy;
     }
@@ -407,7 +404,7 @@ export function loadEnvConfig(): Partial<PluginConfig> {
   // Only add externalModels if any env vars were set
   if (
     Object.keys(externalModelsDefaults).length > 0 ||
-    externalModelsFallback.onModelFailure !== "provider_chain"
+    externalModelsFallback.onModelFailure !== 'provider_chain'
   ) {
     config.externalModels = {
       defaults: externalModelsDefaults,
@@ -419,16 +416,16 @@ export function loadEnvConfig(): Partial<PluginConfig> {
   if (process.env.OMC_DELEGATION_ROUTING_ENABLED !== undefined) {
     config.delegationRouting = {
       ...config.delegationRouting,
-      enabled: process.env.OMC_DELEGATION_ROUTING_ENABLED === "true",
+      enabled: process.env.OMC_DELEGATION_ROUTING_ENABLED === 'true',
     };
   }
 
   if (process.env.OMC_DELEGATION_ROUTING_DEFAULT_PROVIDER) {
     const provider = process.env.OMC_DELEGATION_ROUTING_DEFAULT_PROVIDER;
-    if (["claude", "codex", "gemini"].includes(provider)) {
+    if (['claude', 'codex', 'gemini'].includes(provider)) {
       config.delegationRouting = {
         ...config.delegationRouting,
-        defaultProvider: provider as "claude" | "codex" | "gemini",
+        defaultProvider: provider as 'claude' | 'codex' | 'gemini',
       };
     }
   }
@@ -472,7 +469,7 @@ function warnOnDeprecatedDelegationRouting(config: PluginConfig): void {
   }
 
   console.warn(
-    "[OMC] delegationRouting to Codex/Gemini is deprecated and falls back to Claude Task. Use /team for Codex/Gemini CLI workers instead.",
+    '[OMC] delegationRouting to Codex/Gemini is deprecated and falls back to Claude Task. Use /team for Codex/Gemini CLI workers instead.',
   );
 }
 
@@ -485,59 +482,68 @@ function warnOnDeprecatedDelegationRouting(config: PluginConfig): void {
 const CANONICAL_TEAM_ROLE_SET = new Set<string>(CANONICAL_TEAM_ROLES);
 const KNOWN_AGENT_NAME_SET = new Set<string>(KNOWN_AGENT_NAMES);
 // /team CLI workers — codex/gemini/grok here are CLI integrations, NOT the deprecated MCP delegationRouting providers.
-const TEAM_ROLE_PROVIDERS = new Set(["claude", "codex", "gemini", "grok"]);
-const TEAM_ROLE_TIERS = new Set(["HIGH", "MEDIUM", "LOW"]);
+const TEAM_ROLE_PROVIDERS = new Set(['claude', 'codex', 'gemini', 'grok']);
+const TEAM_ROLE_TIERS = new Set(['HIGH', 'MEDIUM', 'LOW']);
 
 export function validateTeamConfig(config: PluginConfig): void {
   const team = (config as Record<string, unknown>).team as
     | Record<string, unknown>
     | undefined;
-  if (!team || typeof team !== "object") return;
+  if (!team || typeof team !== 'object') return;
 
   const ops = team.ops as Record<string, unknown> | undefined;
-  if (ops && typeof ops === "object") {
+  if (ops && typeof ops === 'object') {
     if (ops.defaultAgentType !== undefined) {
       if (
-        typeof ops.defaultAgentType !== "string" ||
+        typeof ops.defaultAgentType !== 'string' ||
         !TEAM_ROLE_PROVIDERS.has(ops.defaultAgentType)
       ) {
         throw new Error(
-          `[OMC] team.ops.defaultAgentType: invalid value "${String(ops.defaultAgentType)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(", ")}`,
+          `[OMC] team.ops.defaultAgentType: invalid value "${String(ops.defaultAgentType)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(', ')}`,
         );
       }
     }
     if (ops.worktreeMode !== undefined) {
-      const allowed = new Set(["disabled", "off", "detached", "branch", "named"]);
-      if (typeof ops.worktreeMode !== "string" || !allowed.has(ops.worktreeMode)) {
+      const allowed = new Set([
+        'disabled',
+        'off',
+        'detached',
+        'branch',
+        'named',
+      ]);
+      if (
+        typeof ops.worktreeMode !== 'string' ||
+        !allowed.has(ops.worktreeMode)
+      ) {
         throw new Error(
-          `[OMC] team.ops.worktreeMode: invalid value "${String(ops.worktreeMode)}". Allowed: ${[...allowed].join(", ")}`,
+          `[OMC] team.ops.worktreeMode: invalid value "${String(ops.worktreeMode)}". Allowed: ${[...allowed].join(', ')}`,
         );
       }
     }
   }
 
   const roleRouting = team.roleRouting as Record<string, unknown> | undefined;
-  if (!roleRouting || typeof roleRouting !== "object") return;
+  if (!roleRouting || typeof roleRouting !== 'object') return;
 
   for (const [rawRoleKey, rawSpec] of Object.entries(roleRouting)) {
     const normalized = normalizeDelegationRole(rawRoleKey);
     if (!CANONICAL_TEAM_ROLE_SET.has(normalized)) {
       throw new Error(
-        `[OMC] team.roleRouting: unknown role "${rawRoleKey}". Allowed roles: ${[...CANONICAL_TEAM_ROLE_SET].join(", ")}`,
+        `[OMC] team.roleRouting: unknown role "${rawRoleKey}". Allowed roles: ${[...CANONICAL_TEAM_ROLE_SET].join(', ')}`,
       );
     }
 
-    if (!rawSpec || typeof rawSpec !== "object" || Array.isArray(rawSpec)) {
+    if (!rawSpec || typeof rawSpec !== 'object' || Array.isArray(rawSpec)) {
       throw new Error(
-        `[OMC] team.roleRouting.${rawRoleKey}: must be an object, got ${Array.isArray(rawSpec) ? "array" : typeof rawSpec}`,
+        `[OMC] team.roleRouting.${rawRoleKey}: must be an object, got ${Array.isArray(rawSpec) ? 'array' : typeof rawSpec}`,
       );
     }
     const spec = rawSpec as Record<string, unknown>;
 
     // Orchestrator entry: only `model` is allowed.
-    if (normalized === "orchestrator") {
+    if (normalized === 'orchestrator') {
       for (const key of Object.keys(spec)) {
-        if (key !== "model") {
+        if (key !== 'model') {
           throw new Error(
             `[OMC] team.roleRouting.orchestrator: key "${key}" is not allowed (orchestrator is pinned to claude; only "model" is configurable)`,
           );
@@ -552,9 +558,12 @@ export function validateTeamConfig(config: PluginConfig): void {
     }
 
     if (spec.provider !== undefined) {
-      if (typeof spec.provider !== "string" || !TEAM_ROLE_PROVIDERS.has(spec.provider)) {
+      if (
+        typeof spec.provider !== 'string' ||
+        !TEAM_ROLE_PROVIDERS.has(spec.provider)
+      ) {
         throw new Error(
-          `[OMC] team.roleRouting.${rawRoleKey}.provider: invalid value "${String(spec.provider)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(", ")}`,
+          `[OMC] team.roleRouting.${rawRoleKey}.provider: invalid value "${String(spec.provider)}". Allowed: ${[...TEAM_ROLE_PROVIDERS].join(', ')}`,
         );
       }
     }
@@ -566,9 +575,12 @@ export function validateTeamConfig(config: PluginConfig): void {
     }
 
     if (spec.agent !== undefined) {
-      if (typeof spec.agent !== "string" || !KNOWN_AGENT_NAME_SET.has(spec.agent)) {
+      if (
+        typeof spec.agent !== 'string' ||
+        !KNOWN_AGENT_NAME_SET.has(spec.agent)
+      ) {
         throw new Error(
-          `[OMC] team.roleRouting.${rawRoleKey}.agent: unknown agent "${String(spec.agent)}". Allowed: ${[...KNOWN_AGENT_NAME_SET].join(", ")}`,
+          `[OMC] team.roleRouting.${rawRoleKey}.agent: unknown agent "${String(spec.agent)}". Allowed: ${[...KNOWN_AGENT_NAME_SET].join(', ')}`,
         );
       }
     }
@@ -576,21 +588,23 @@ export function validateTeamConfig(config: PluginConfig): void {
 }
 
 function isValidModelValue(value: unknown): value is string {
-  if (typeof value !== "string") return false;
+  if (typeof value !== 'string') return false;
   if (value.length === 0) return false;
   // Accept tier names OR explicit model IDs (any non-empty string).
   // Tier names are canonicalized during resolution; explicit IDs pass through.
   return TEAM_ROLE_TIERS.has(value) || value.length > 0;
 }
 
-function parseTeamRoleOverridesFromEnv(): Record<string, TeamRoleAssignmentSpec> | undefined {
+function parseTeamRoleOverridesFromEnv():
+  | Record<string, TeamRoleAssignmentSpec>
+  | undefined {
   const raw = process.env.OMC_TEAM_ROLE_OVERRIDES;
   if (!raw) return undefined;
   try {
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
       console.warn(
-        "[OMC] OMC_TEAM_ROLE_OVERRIDES: expected a JSON object; ignoring.",
+        '[OMC] OMC_TEAM_ROLE_OVERRIDES: expected a JSON object; ignoring.',
       );
       return undefined;
     }
@@ -652,16 +666,16 @@ export function loadConfig(): PluginConfig {
 }
 
 const OMC_STARTUP_COMPACTABLE_SECTIONS = [
-  "agent_catalog",
-  "skills",
-  "team_compositions",
+  'agent_catalog',
+  'skills',
+  'team_compositions',
 ] as const;
 const OMC_STARTUP_GUIDANCE_MAX_CHARS = 8000;
 const OMC_CONTEXT_FILES_MAX_CHARS = 12000;
 
 function compactBudgetedText(text: string, maxChars: number): string {
-  if (!text || maxChars <= 0) return "";
-  const notice = "\n...[truncated to preserve startup context budget]";
+  if (!text || maxChars <= 0) return '';
+  const notice = '\n...[truncated to preserve startup context budget]';
   if (text.length <= maxChars) return text;
   if (maxChars <= notice.length) return notice.slice(0, maxChars);
   return `${text.slice(0, maxChars - notice.length).trimEnd()}${notice}`;
@@ -669,7 +683,7 @@ function compactBudgetedText(text: string, maxChars: number): string {
 
 function looksLikeOmcGuidance(content: string): boolean {
   return (
-    content.includes("<guidance_schema_contract>") &&
+    content.includes('<guidance_schema_contract>') &&
     /oh-my-(claudecode|codex)/i.test(content) &&
     OMC_STARTUP_COMPACTABLE_SECTIONS.some(
       (section) =>
@@ -689,23 +703,24 @@ export function compactOmcStartupGuidance(content: string): string {
   for (const section of OMC_STARTUP_COMPACTABLE_SECTIONS) {
     const pattern = new RegExp(
       `\n*<${section}>[\\s\\S]*?</${section}>\n*`,
-      "g",
+      'g',
     );
-    const next = compacted.replace(pattern, "\n\n");
+    const next = compacted.replace(pattern, '\n\n');
     removedAny = removedAny || next !== compacted;
     compacted = next;
   }
 
   const normalized = compacted
-    .replace(/\n{3,}/g, "\n\n")
-    .replace(/\n\n---\n\n---\n\n/g, "\n\n---\n\n")
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\n\n---\n\n---\n\n/g, '\n\n---\n\n')
     .trim();
 
   if (normalized.length <= OMC_STARTUP_GUIDANCE_MAX_CHARS) {
     return removedAny ? normalized : content;
   }
 
-  const notice = "\n\n[OMC startup guidance truncated to preserve an 8000-character budget. Read the source file directly for the full document.]";
+  const notice =
+    '\n\n[OMC startup guidance truncated to preserve an 8000-character budget. Read the source file directly for the full document.]';
   return `${normalized.slice(0, OMC_STARTUP_GUIDANCE_MAX_CHARS - notice.length).trimEnd()}${notice}`;
 }
 
@@ -718,10 +733,10 @@ export function findContextFiles(startDir?: string): string[] {
 
   // Files to look for
   const contextFileNames = [
-    "AGENTS.md",
-    "CLAUDE.md",
-    ".claude/CLAUDE.md",
-    ".claude/AGENTS.md",
+    'AGENTS.md',
+    'CLAUDE.md',
+    '.claude/CLAUDE.md',
+    '.claude/AGENTS.md',
   ];
 
   // Search in current directory and parent directories
@@ -752,14 +767,15 @@ export function findContextFiles(startDir?: string): string[] {
 export function loadContextFromFiles(files: string[]): string {
   const contexts: string[] = [];
   let used = 0;
-  const separator = "\n\n---\n\n";
+  const separator = '\n\n---\n\n';
 
   for (const file of files) {
     try {
-      const content = compactOmcStartupGuidance(readFileSync(file, "utf-8"));
+      const content = compactOmcStartupGuidance(readFileSync(file, 'utf-8'));
       const contextBlock = `## Context from ${file}\n\n${content}`;
       const separatorLength = contexts.length > 0 ? separator.length : 0;
-      const remainingBudget = OMC_CONTEXT_FILES_MAX_CHARS - used - separatorLength;
+      const remainingBudget =
+        OMC_CONTEXT_FILES_MAX_CHARS - used - separatorLength;
 
       if (remainingBudget <= 0) break;
       if (contextBlock.length > remainingBudget) {
@@ -782,154 +798,157 @@ export function loadContextFromFiles(files: string[]): string {
  */
 export function generateConfigSchema(): object {
   return {
-    $schema: "http://json-schema.org/draft-07/schema#",
-    title: "Oh-My-ClaudeCode Configuration",
-    type: "object",
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: 'Oh-My-ClaudeCode Configuration',
+    type: 'object',
     properties: {
       agents: {
-        type: "object",
-        description: "Agent model and feature configuration",
+        type: 'object',
+        description: 'Agent model and feature configuration',
         properties: {
           omc: {
-            type: "object",
+            type: 'object',
             properties: {
               model: {
-                type: "string",
-                description: "Model ID for the main orchestrator",
+                type: 'string',
+                description: 'Model ID for the main orchestrator',
               },
             },
           },
           explore: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           analyst: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           planner: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           architect: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           debugger: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           executor: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           verifier: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           securityReviewer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           codeReviewer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           testEngineer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           designer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           writer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           qaTester: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           scientist: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           tracer: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           gitMaster: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           codeSimplifier: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           critic: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
           documentSpecialist: {
-            type: "object",
-            properties: { model: { type: "string" } },
+            type: 'object',
+            properties: { model: { type: 'string' } },
           },
         },
       },
       features: {
-        type: "object",
-        description: "Feature toggles",
+        type: 'object',
+        description: 'Feature toggles',
         properties: {
-          parallelExecution: { type: "boolean", default: true },
-          lspTools: { type: "boolean", default: true },
-          astTools: { type: "boolean", default: true },
-          continuationEnforcement: { type: "boolean", default: true },
-          autoContextInjection: { type: "boolean", default: true },
+          parallelExecution: { type: 'boolean', default: true },
+          lspTools: { type: 'boolean', default: true },
+          astTools: { type: 'boolean', default: true },
+          continuationEnforcement: { type: 'boolean', default: true },
+          autoContextInjection: { type: 'boolean', default: true },
         },
       },
       mcpServers: {
-        type: "object",
-        description: "MCP server configurations",
+        type: 'object',
+        description: 'MCP server configurations',
         properties: {
           exa: {
-            type: "object",
+            type: 'object',
             properties: {
-              enabled: { type: "boolean" },
-              apiKey: { type: "string" },
+              enabled: { type: 'boolean' },
+              apiKey: { type: 'string' },
             },
           },
           context7: {
-            type: "object",
-            properties: { enabled: { type: "boolean" } },
+            type: 'object',
+            properties: { enabled: { type: 'boolean' } },
           },
         },
       },
       companyContext: {
-        type: "object",
-        description: "Prompt-level company-context MCP contract for workflow skills",
+        type: 'object',
+        description:
+          'Prompt-level company-context MCP contract for workflow skills',
         properties: {
           tool: {
-            type: "string",
-            description: "Full MCP tool name to call, for example mcp__vendor__get_company_context",
+            type: 'string',
+            description:
+              'Full MCP tool name to call, for example mcp__vendor__get_company_context',
           },
           onError: {
-            type: "string",
-            enum: ["warn", "silent", "fail"],
-            default: "warn",
-            description: "How prompt workflows should react when the configured company-context tool call fails",
+            type: 'string',
+            enum: ['warn', 'silent', 'fail'],
+            default: 'warn',
+            description:
+              'How prompt workflows should react when the configured company-context tool call fails',
           },
         },
       },
       permissions: {
-        type: "object",
-        description: "Permission settings",
+        type: 'object',
+        description: 'Permission settings',
         properties: {
-          allowBash: { type: "boolean", default: true },
-          allowEdit: { type: "boolean", default: true },
-          allowWrite: { type: "boolean", default: true },
+          allowBash: { type: 'boolean', default: true },
+          allowEdit: { type: 'boolean', default: true },
+          allowWrite: { type: 'boolean', default: true },
           maxBackgroundTasks: {
-            type: "integer",
+            type: 'integer',
             default: 5,
             minimum: 1,
             maximum: 50,
@@ -937,43 +956,44 @@ export function generateConfigSchema(): object {
         },
       },
       magicKeywords: {
-        type: "object",
-        description: "Magic keyword triggers",
+        type: 'object',
+        description: 'Magic keyword triggers',
         properties: {
-          ultrawork: { type: "array", items: { type: "string" } },
-          search: { type: "array", items: { type: "string" } },
-          analyze: { type: "array", items: { type: "string" } },
-          ultrathink: { type: "array", items: { type: "string" } },
+          ultrawork: { type: 'array', items: { type: 'string' } },
+          search: { type: 'array', items: { type: 'string' } },
+          analyze: { type: 'array', items: { type: 'string' } },
+          ultrathink: { type: 'array', items: { type: 'string' } },
         },
       },
       teleport: {
-        type: "object",
-        description: "Teleport worktree bootstrap settings",
+        type: 'object',
+        description: 'Teleport worktree bootstrap settings',
         properties: {
           symlinkNodeModules: {
-            type: "boolean",
+            type: 'boolean',
             default: true,
-            description: "Symlink node_modules from the parent repo when teleport-created worktrees have a matching package.json",
+            description:
+              'Symlink node_modules from the parent repo when teleport-created worktrees have a matching package.json',
           },
         },
       },
       routing: {
-        type: "object",
-        description: "Intelligent model routing configuration",
+        type: 'object',
+        description: 'Intelligent model routing configuration',
         properties: {
           enabled: {
-            type: "boolean",
+            type: 'boolean',
             default: true,
-            description: "Enable intelligent model routing",
+            description: 'Enable intelligent model routing',
           },
           defaultTier: {
-            type: "string",
-            enum: ["LOW", "MEDIUM", "HIGH"],
-            default: "MEDIUM",
-            description: "Default tier when no rules match",
+            type: 'string',
+            enum: ['LOW', 'MEDIUM', 'HIGH'],
+            default: 'MEDIUM',
+            description: 'Default tier when no rules match',
           },
           forceInherit: {
-            type: "boolean",
+            type: 'boolean',
             default: false,
             description:
               "Force all agents to inherit the parent model, bypassing OMC model routing. When true, no model parameter is passed to Task/Agent calls, so agents use the user's Claude Code model setting. Auto-enabled for non-Claude providers (CC Switch, custom ANTHROPIC_BASE_URL), AWS Bedrock, and Google Vertex AI.",
@@ -981,148 +1001,152 @@ export function generateConfigSchema(): object {
         },
       },
       externalModels: {
-        type: "object",
-        description: "External model provider configuration (Codex, Gemini, Grok)",
+        type: 'object',
+        description:
+          'External model provider configuration (Codex, Gemini, Grok)',
         properties: {
           defaults: {
-            type: "object",
-            description: "Default model settings for external providers",
+            type: 'object',
+            description: 'Default model settings for external providers',
             properties: {
               provider: {
-                type: "string",
-                enum: ["codex", "gemini"],
-                description: "Default external provider",
+                type: 'string',
+                enum: ['codex', 'gemini'],
+                description: 'Default external provider',
               },
               codexModel: {
-                type: "string",
+                type: 'string',
                 default: BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel,
-                description: "Default Codex model",
+                description: 'Default Codex model',
               },
               geminiModel: {
-                type: "string",
+                type: 'string',
                 default: BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel,
-                description: "Default Gemini model",
+                description: 'Default Gemini model',
               },
               grokModel: {
-                type: "string",
-                description: "Default Grok Build model",
+                type: 'string',
+                description: 'Default Grok Build model',
               },
             },
           },
           rolePreferences: {
-            type: "object",
-            description: "Provider/model preferences by agent role",
+            type: 'object',
+            description: 'Provider/model preferences by agent role',
             additionalProperties: {
-              type: "object",
+              type: 'object',
               properties: {
-                provider: { type: "string", enum: ["codex", "gemini"] },
-                model: { type: "string" },
+                provider: { type: 'string', enum: ['codex', 'gemini'] },
+                model: { type: 'string' },
               },
-              required: ["provider", "model"],
+              required: ['provider', 'model'],
             },
           },
           taskPreferences: {
-            type: "object",
-            description: "Provider/model preferences by task type",
+            type: 'object',
+            description: 'Provider/model preferences by task type',
             additionalProperties: {
-              type: "object",
+              type: 'object',
               properties: {
-                provider: { type: "string", enum: ["codex", "gemini"] },
-                model: { type: "string" },
+                provider: { type: 'string', enum: ['codex', 'gemini'] },
+                model: { type: 'string' },
               },
-              required: ["provider", "model"],
+              required: ['provider', 'model'],
             },
           },
           fallbackPolicy: {
-            type: "object",
-            description: "Fallback behavior on model failure",
+            type: 'object',
+            description: 'Fallback behavior on model failure',
             properties: {
               onModelFailure: {
-                type: "string",
-                enum: ["provider_chain", "cross_provider", "claude_only"],
-                default: "provider_chain",
-                description: "Fallback strategy when a model fails",
+                type: 'string',
+                enum: ['provider_chain', 'cross_provider', 'claude_only'],
+                default: 'provider_chain',
+                description: 'Fallback strategy when a model fails',
               },
               allowCrossProvider: {
-                type: "boolean",
+                type: 'boolean',
                 default: false,
-                description: "Allow fallback to a different provider",
+                description: 'Allow fallback to a different provider',
               },
               crossProviderOrder: {
-                type: "array",
-                items: { type: "string", enum: ["codex", "gemini"] },
-                default: ["codex", "gemini"],
-                description: "Order of providers for cross-provider fallback",
+                type: 'array',
+                items: { type: 'string', enum: ['codex', 'gemini'] },
+                default: ['codex', 'gemini'],
+                description: 'Order of providers for cross-provider fallback',
               },
             },
           },
         },
       },
       delegationRouting: {
-        type: "object",
+        type: 'object',
         description:
-          "Delegation routing configuration for external model providers (opt-in feature)",
+          'Delegation routing configuration for external model providers (opt-in feature)',
         properties: {
           enabled: {
-            type: "boolean",
+            type: 'boolean',
             default: false,
             description:
-              "Enable delegation routing to external providers (Codex, Gemini)",
+              'Enable delegation routing to external providers (Codex, Gemini)',
           },
           defaultProvider: {
-            type: "string",
-            enum: ["claude", "codex", "gemini"],
-            default: "claude",
+            type: 'string',
+            enum: ['claude', 'codex', 'gemini'],
+            default: 'claude',
             description:
-              "Default provider for delegation routing when no specific role mapping exists",
+              'Default provider for delegation routing when no specific role mapping exists',
           },
           roles: {
-            type: "object",
-            description: "Provider mappings by agent role",
+            type: 'object',
+            description: 'Provider mappings by agent role',
             additionalProperties: {
-              type: "object",
+              type: 'object',
               properties: {
                 provider: {
-                  type: "string",
-                  enum: ["claude", "codex", "gemini"],
+                  type: 'string',
+                  enum: ['claude', 'codex', 'gemini'],
                 },
-                tool: { type: "string", enum: ["Task"] },
-                model: { type: "string" },
-                agentType: { type: "string" },
-                fallback: { type: "array", items: { type: "string" } },
+                tool: { type: 'string', enum: ['Task'] },
+                model: { type: 'string' },
+                agentType: { type: 'string' },
+                fallback: { type: 'array', items: { type: 'string' } },
               },
-              required: ["provider", "tool"],
+              required: ['provider', 'tool'],
             },
           },
         },
       },
       team: {
-        type: "object",
-        description: "/team runtime configuration",
+        type: 'object',
+        description: '/team runtime configuration',
         properties: {
           ops: {
-            type: "object",
+            type: 'object',
             properties: {
-              maxAgents: { type: "integer", minimum: 1 },
+              maxAgents: { type: 'integer', minimum: 1 },
               defaultAgentType: {
-                type: "string",
-                enum: ["claude", "codex", "gemini", "grok"],
-                default: "claude",
+                type: 'string',
+                enum: ['claude', 'codex', 'gemini', 'grok'],
+                default: 'claude',
               },
-              monitorIntervalMs: { type: "integer", minimum: 1 },
-              shutdownTimeoutMs: { type: "integer", minimum: 1 },
-              costMode: { type: "string", enum: ["normal", "downgrade"] },
+              monitorIntervalMs: { type: 'integer', minimum: 1 },
+              shutdownTimeoutMs: { type: 'integer', minimum: 1 },
+              costMode: { type: 'string', enum: ['normal', 'downgrade'] },
             },
           },
           roleRouting: {
-            type: "object",
-            description: "Provider/model overrides for canonical /team roles",
+            type: 'object',
+            description: 'Provider/model overrides for canonical /team roles',
             additionalProperties: {
-              type: "object",
+              type: 'object',
               properties: {
-                provider: { type: "string", enum: ["claude", "codex", "gemini", "grok"] },
-                model: { type: "string" },
-                agent: { type: "string" },
+                provider: {
+                  type: 'string',
+                  enum: ['claude', 'codex', 'gemini', 'grok'],
+                },
+                model: { type: 'string' },
+                agent: { type: 'string' },
               },
             },
           },

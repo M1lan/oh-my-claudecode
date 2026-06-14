@@ -5,20 +5,20 @@
  * createSdkMcpServer helper for use by subagents.
  */
 
-import { createSdkMcpServer, tool } from "@anthropic-ai/claude-agent-sdk";
-import { lspTools } from "../tools/lsp-tools.js";
-import { astTools } from "../tools/ast-tools.js";
-import { pythonReplTool } from "../tools/python-repl/index.js";
-import { skillsTools } from "../tools/skills-tools.js";
-import { stateTools } from "../tools/state-tools.js";
-import { notepadTools } from "../tools/notepad-tools.js";
-import { memoryTools } from "../tools/memory-tools.js";
-import { traceTools } from "../tools/trace-tools.js";
-import { sharedMemoryTools } from "../tools/shared-memory-tools.js";
-import { getInteropTools } from "../interop/mcp-bridge.js";
-import { deepinitManifestTool } from "../tools/deepinit-manifest.js";
-import { wikiTools } from "../tools/wiki-tools.js";
-import { TOOL_CATEGORIES, type ToolCategory } from "../constants/index.js";
+import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
+import { lspTools } from '../tools/lsp-tools.js';
+import { astTools } from '../tools/ast-tools.js';
+import { pythonReplTool } from '../tools/python-repl/index.js';
+import { skillsTools } from '../tools/skills-tools.js';
+import { stateTools } from '../tools/state-tools.js';
+import { notepadTools } from '../tools/notepad-tools.js';
+import { memoryTools } from '../tools/memory-tools.js';
+import { traceTools } from '../tools/trace-tools.js';
+import { sharedMemoryTools } from '../tools/shared-memory-tools.js';
+import { getInteropTools } from '../interop/mcp-bridge.js';
+import { deepinitManifestTool } from '../tools/deepinit-manifest.js';
+import { wikiTools } from '../tools/wiki-tools.js';
+import { TOOL_CATEGORIES, type ToolCategory } from '../constants/index.js';
 
 // Type for our tool definitions
 interface ToolDef {
@@ -27,7 +27,7 @@ interface ToolDef {
   category?: ToolCategory;
   schema: Record<string, unknown>;
   handler: (args: unknown) => Promise<{
-    content: Array<{ type: "text"; text: string }>;
+    content: Array<{ type: 'text'; text: string }>;
     isError?: boolean;
   }>;
 }
@@ -48,19 +48,19 @@ export const DISABLE_TOOLS_GROUP_MAP: Record<string, ToolCategory> = {
   lsp: TOOL_CATEGORIES.LSP,
   ast: TOOL_CATEGORIES.AST,
   python: TOOL_CATEGORIES.PYTHON,
-  "python-repl": TOOL_CATEGORIES.PYTHON,
+  'python-repl': TOOL_CATEGORIES.PYTHON,
   trace: TOOL_CATEGORIES.TRACE,
   state: TOOL_CATEGORIES.STATE,
   notepad: TOOL_CATEGORIES.NOTEPAD,
   memory: TOOL_CATEGORIES.MEMORY,
-  "project-memory": TOOL_CATEGORIES.MEMORY,
+  'project-memory': TOOL_CATEGORIES.MEMORY,
   skills: TOOL_CATEGORIES.SKILLS,
   interop: TOOL_CATEGORIES.INTEROP,
   codex: TOOL_CATEGORIES.CODEX,
   gemini: TOOL_CATEGORIES.GEMINI,
-  "shared-memory": TOOL_CATEGORIES.SHARED_MEMORY,
+  'shared-memory': TOOL_CATEGORIES.SHARED_MEMORY,
   deepinit: TOOL_CATEGORIES.DEEPINIT,
-  "deepinit-manifest": TOOL_CATEGORIES.DEEPINIT,
+  'deepinit-manifest': TOOL_CATEGORIES.DEEPINIT,
   wiki: TOOL_CATEGORIES.WIKI,
 };
 
@@ -82,7 +82,7 @@ export function parseDisabledGroups(envValue?: string): Set<ToolCategory> {
   const value = envValue ?? process.env.OMC_DISABLE_TOOLS;
   if (!value || !value.trim()) return disabled;
 
-  for (const name of value.split(",")) {
+  for (const name of value.split(',')) {
     const trimmed = name.trim().toLowerCase();
     if (!trimmed) continue;
     const category = DISABLE_TOOLS_GROUP_MAP[trimmed];
@@ -94,7 +94,7 @@ export function parseDisabledGroups(envValue?: string): Set<ToolCategory> {
 }
 
 // Aggregate all custom tools with category metadata (full list, unfiltered)
-const interopToolsEnabled = process.env.OMC_INTEROP_TOOLS_ENABLED === "1";
+const interopToolsEnabled = process.env.OMC_INTEROP_TOOLS_ENABLED === '1';
 const interopTools: ToolDef[] = interopToolsEnabled
   ? tagCategory(
       getInteropTools() as unknown as ToolDef[],
@@ -153,8 +153,8 @@ const sdkTools = enabledTools.map((t) =>
  * Tools in disabled groups (via OMC_DISABLE_TOOLS) are excluded at startup.
  */
 export const omcToolsServer = createSdkMcpServer({
-  name: "t",
-  version: "1.0.0",
+  name: 't',
+  version: '1.0.0',
   tools: sdkTools,
 });
 

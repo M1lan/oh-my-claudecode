@@ -10,38 +10,38 @@
  * Adapted from oh-my-opencode's auto-slash-command hook.
  */
 
-import { detectSlashCommand, extractPromptText } from "./detector.js";
+import { detectSlashCommand, extractPromptText } from './detector.js';
 import {
   executeSlashCommand,
   findCommand,
   listAvailableCommands,
-} from "./executor.js";
+} from './executor.js';
 import {
   HOOK_NAME,
   AUTO_SLASH_COMMAND_TAG_OPEN,
   AUTO_SLASH_COMMAND_TAG_CLOSE,
-} from "./constants.js";
+} from './constants.js';
 import type {
   AutoSlashCommandHookInput,
   AutoSlashCommandResult,
-} from "./types.js";
+} from './types.js';
 
 // Re-export all submodules
-export * from "./types.js";
-export * from "./constants.js";
+export * from './types.js';
+export * from './constants.js';
 export {
   detectSlashCommand,
   extractPromptText,
   parseSlashCommand,
   removeCodeBlocks,
   isExcludedCommand,
-} from "./detector.js";
+} from './detector.js';
 export {
   executeSlashCommand,
   findCommand,
   discoverAllCommands,
   listAvailableCommands,
-} from "./executor.js";
+} from './executor.js';
 
 /** Track processed commands to avoid duplicate expansion */
 const sessionProcessedCommands = new Set<string>();
@@ -146,5 +146,5 @@ export function createAutoSlashCommandHook() {
  */
 export function processSlashCommand(prompt: string): AutoSlashCommandResult {
   const hook = createAutoSlashCommandHook();
-  return hook.processMessage({}, [{ type: "text", text: prompt }]);
+  return hook.processMessage({}, [{ type: 'text', text: prompt }]);
 }

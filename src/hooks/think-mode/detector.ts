@@ -13,114 +13,114 @@ const ENGLISH_PATTERNS = [/\bultrathink\b/i, /\bthink\b/i];
 /** Multilingual think keywords for global support */
 const MULTILINGUAL_KEYWORDS = [
   // Korean
-  "생각",
-  "고민",
-  "검토",
-  "제대로",
+  '생각',
+  '고민',
+  '검토',
+  '제대로',
   // Chinese (Simplified & Traditional)
-  "思考",
-  "考虑",
-  "考慮",
+  '思考',
+  '考虑',
+  '考慮',
   // Japanese
-  "考え",
-  "熟考",
+  '考え',
+  '熟考',
   // Hindi
-  "सोच",
-  "विचार",
+  'सोच',
+  'विचार',
   // Arabic
-  "تفكير",
-  "تأمل",
+  'تفكير',
+  'تأمل',
   // Bengali
-  "চিন্তা",
-  "ভাবনা",
+  'চিন্তা',
+  'ভাবনা',
   // Russian
-  "думать",
-  "думай",
-  "размышлять",
-  "размышляй",
+  'думать',
+  'думай',
+  'размышлять',
+  'размышляй',
   // Portuguese
-  "pensar",
-  "pense",
-  "refletir",
-  "reflita",
+  'pensar',
+  'pense',
+  'refletir',
+  'reflita',
   // Spanish
-  "piensa",
-  "reflexionar",
-  "reflexiona",
+  'piensa',
+  'reflexionar',
+  'reflexiona',
   // French
-  "penser",
-  "réfléchir",
-  "réfléchis",
+  'penser',
+  'réfléchir',
+  'réfléchis',
   // German
-  "denken",
-  "denk",
-  "nachdenken",
+  'denken',
+  'denk',
+  'nachdenken',
   // Vietnamese
-  "suy nghĩ",
-  "cân nhắc",
+  'suy nghĩ',
+  'cân nhắc',
   // Turkish
-  "düşün",
-  "düşünmek",
+  'düşün',
+  'düşünmek',
   // Italian
-  "pensare",
-  "pensa",
-  "riflettere",
-  "rifletti",
+  'pensare',
+  'pensa',
+  'riflettere',
+  'rifletti',
   // Thai
-  "คิด",
-  "พิจารณา",
+  'คิด',
+  'พิจารณา',
   // Polish
-  "myśl",
-  "myśleć",
-  "zastanów",
+  'myśl',
+  'myśleć',
+  'zastanów',
   // Dutch
-  "nadenken",
+  'nadenken',
   // Indonesian/Malay
-  "berpikir",
-  "pikir",
-  "pertimbangkan",
+  'berpikir',
+  'pikir',
+  'pertimbangkan',
   // Ukrainian
-  "думати",
-  "роздумувати",
+  'думати',
+  'роздумувати',
   // Greek
-  "σκέψου",
-  "σκέφτομαι",
+  'σκέψου',
+  'σκέφτομαι',
   // Czech
-  "myslet",
-  "mysli",
-  "přemýšlet",
+  'myslet',
+  'mysli',
+  'přemýšlet',
   // Romanian
-  "gândește",
-  "gândi",
-  "reflectă",
+  'gândește',
+  'gândi',
+  'reflectă',
   // Swedish
-  "tänka",
-  "tänk",
-  "fundera",
+  'tänka',
+  'tänk',
+  'fundera',
   // Hungarian
-  "gondolkodj",
-  "gondolkodni",
+  'gondolkodj',
+  'gondolkodni',
   // Finnish
-  "ajattele",
-  "ajatella",
-  "pohdi",
+  'ajattele',
+  'ajatella',
+  'pohdi',
   // Danish
-  "tænk",
-  "tænke",
-  "overvej",
+  'tænk',
+  'tænke',
+  'overvej',
   // Norwegian
-  "tenk",
-  "tenke",
-  "gruble",
+  'tenk',
+  'tenke',
+  'gruble',
   // Hebrew
-  "חשוב",
-  "לחשוב",
-  "להרהר",
+  'חשוב',
+  'לחשוב',
+  'להרהר',
 ];
 
 /** Combined patterns including multilingual support */
 const MULTILINGUAL_PATTERNS = MULTILINGUAL_KEYWORDS.map(
-  (kw) => new RegExp(kw, "i"),
+  (kw) => new RegExp(kw, 'i'),
 );
 const THINK_PATTERNS = [...ENGLISH_PATTERNS, ...MULTILINGUAL_PATTERNS];
 
@@ -132,7 +132,7 @@ const INLINE_CODE_PATTERN = /`[^`]+`/g;
  * Remove code blocks from text to avoid false positive keyword detection.
  */
 export function removeCodeBlocks(text: string): string {
-  return text.replace(CODE_BLOCK_PATTERN, "").replace(INLINE_CODE_PATTERN, "");
+  return text.replace(CODE_BLOCK_PATTERN, '').replace(INLINE_CODE_PATTERN, '');
 }
 
 /**
@@ -150,9 +150,9 @@ export function extractPromptText(
   parts: Array<{ type: string; text?: string }>,
 ): string {
   return parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text || "")
-    .join("");
+    .filter((p) => p.type === 'text')
+    .map((p) => p.text || '')
+    .join('');
 }
 
 /**

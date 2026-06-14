@@ -24,7 +24,11 @@ const packageRoot = join(__dirname, '..', '..');
 describe('HUD Windows Compatibility', () => {
   describe('File Naming', () => {
     it('session-start.mjs should reference omc-hud.mjs', () => {
-      const sessionStartPath = join(packageRoot, 'scripts', 'session-start.mjs');
+      const sessionStartPath = join(
+        packageRoot,
+        'scripts',
+        'session-start.mjs',
+      );
       expect(existsSync(sessionStartPath)).toBe(true);
 
       const content = readFileSync(sessionStartPath, 'utf-8');
@@ -45,29 +49,51 @@ describe('HUD Windows Compatibility', () => {
   describe('pathToFileURL for Dynamic Import', () => {
     it('shared HUD wrapper template should import pathToFileURL', () => {
       // The wrapper text now lives in the shared template (binary-weaving-mountain).
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('pathToFileURL } from "node:url"');
     });
 
     it('shared HUD wrapper template uses pathToFileURL for OMC_PLUGIN_ROOT path import', () => {
       // The OMC_DEV/devPath branch was deleted; OMC_PLUGIN_ROOT subsumes it.
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('pathToFileURL(envHudPath).href');
     });
 
     it('shared HUD wrapper template uses pathToFileURL for plugin path import', () => {
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('pathToFileURL(pluginPath).href');
     });
 
     it('shared HUD wrapper template uses shell:true only for Windows npm root discovery', () => {
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('const isWin = process.platform === "win32";');
-      expect(content).toContain('const npmCommand = isWin ? "npm.cmd" : "npm";');
+      expect(content).toContain(
+        'const npmCommand = isWin ? "npm.cmd" : "npm";',
+      );
       expect(content).toContain('shell: isWin');
       expect(content).not.toContain('shell: true');
     });
@@ -77,7 +103,7 @@ describe('HUD Windows Compatibility', () => {
       expect(pathToFileURL(unixPath).href).toBe(
         process.platform === 'win32'
           ? 'file:///C:/home/user/test.js'
-          : 'file:///home/user/test.js'
+          : 'file:///home/user/test.js',
       );
     });
 
@@ -86,14 +112,19 @@ describe('HUD Windows Compatibility', () => {
       expect(pathToFileURL(spacePath).href).toBe(
         process.platform === 'win32'
           ? 'file:///C:/path/with%20spaces/file.js'
-          : 'file:///path/with%20spaces/file.js'
+          : 'file:///path/with%20spaces/file.js',
       );
     });
   });
 
   describe('Numeric Version Sorting', () => {
     it('shared HUD wrapper template should use semver-aware version sorting', () => {
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('const compareSemverDesc = (a, b) => {');
       expect(content).toContain('stable (empty pre) wins over any prerelease');
@@ -107,25 +138,25 @@ describe('HUD Windows Compatibility', () => {
       expect(lexSorted[0]).toBe('3.9.0'); // Wrong! 9 > 1 lexicographically
 
       // Correct numeric sort
-      const numSorted = [...versions].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
-      ).reverse();
+      const numSorted = [...versions]
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .reverse();
       expect(numSorted[0]).toBe('3.10.0'); // Correct! 10 > 9 > 5 numerically
     });
 
     it('should handle single-digit and double-digit versions', () => {
       const versions = ['1.0.0', '10.0.0', '2.0.0', '9.0.0'];
-      const sorted = [...versions].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
-      ).reverse();
+      const sorted = [...versions]
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .reverse();
       expect(sorted).toEqual(['10.0.0', '9.0.0', '2.0.0', '1.0.0']);
     });
 
     it('should handle patch version comparison', () => {
       const versions = ['1.0.1', '1.0.10', '1.0.9', '1.0.2'];
-      const sorted = [...versions].sort((a, b) =>
-        a.localeCompare(b, undefined, { numeric: true })
-      ).reverse();
+      const sorted = [...versions]
+        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        .reverse();
       expect(sorted).toEqual(['1.0.10', '1.0.9', '1.0.2', '1.0.1']);
     });
   });
@@ -164,7 +195,9 @@ describe('HUD Windows Compatibility', () => {
     it('getPluginCacheBase should use platform-native separators', () => {
       const cachePath = getPluginCacheBase();
       // On Windows: backslashes, on Unix: forward slashes
-      expect(cachePath).toContain(`plugins${sep}cache${sep}omc${sep}oh-my-claudecode`);
+      expect(cachePath).toContain(
+        `plugins${sep}cache${sep}omc${sep}oh-my-claudecode`,
+      );
     });
 
     it('getPluginCacheBase should be under claude config dir', () => {
@@ -176,14 +209,24 @@ describe('HUD Windows Compatibility', () => {
     it('shared HUD wrapper template should use pathToFileURL for dynamic imports', () => {
       // After binary-weaving-mountain, plugin-setup.mjs writes the wrapper
       // body sourced from scripts/lib/hud-wrapper-template.txt.
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('pathToFileURL } from "node:url"');
       expect(content).toContain('pathToFileURL(pluginPath).href');
     });
 
     it('shared HUD wrapper template should respect CLAUDE_CONFIG_DIR for plugin cache base', () => {
-      const templatePath = join(packageRoot, 'scripts', 'lib', 'hud-wrapper-template.txt');
+      const templatePath = join(
+        packageRoot,
+        'scripts',
+        'lib',
+        'hud-wrapper-template.txt',
+      );
       const content = readFileSync(templatePath, 'utf-8');
       expect(content).toContain('getClaudeConfigDir()');
       expect(content).toContain('join(configDir,');
@@ -196,11 +239,15 @@ describe('HUD Windows Compatibility', () => {
       // Should NOT use ~ for plugin cache paths in bash commands
       expect(content).not.toMatch(/ls ~\/\.claude\/plugins\/cache/);
       // Should use node -e for cross-platform compatibility
-      expect(content).toContain("node -e");
+      expect(content).toContain('node -e');
       // Should use path.join for constructing paths
-      expect(content).toContain("p.join(d,'plugins','cache','omc','oh-my-claudecode')");
+      expect(content).toContain(
+        "p.join(d,'plugins','cache','omc','oh-my-claudecode')",
+      );
       expect(content).not.toContain('ls ~/.claude/CLAUDE-*.md');
-      expect(content).toContain("find \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}\" -maxdepth 1 -type f -name 'CLAUDE-*.md' -print 2>/dev/null");
+      expect(content).toContain(
+        'find "${CLAUDE_CONFIG_DIR:-$HOME/.claude}" -maxdepth 1 -type f -name \'CLAUDE-*.md\' -print 2>/dev/null',
+      );
     });
 
     it('hud skill should use cross-platform Node.js commands for plugin detection', () => {
@@ -211,7 +258,7 @@ describe('HUD Windows Compatibility', () => {
       expect(content).not.toMatch(/ls ~\/\.claude\/plugins\/cache/);
       expect(content).not.toMatch(/sort -V/);
       // Should use node for cross-platform path resolution
-      expect(content).toContain("node -e");
+      expect(content).toContain('node -e');
     });
 
     it('hud skill should normalize statusLine command paths to forward slashes', () => {
@@ -219,10 +266,18 @@ describe('HUD Windows Compatibility', () => {
       const content = readFileSync(hudPath, 'utf-8');
 
       expect(content).toContain(".split(require('path').sep).join('/')");
-      expect(content).toContain('The command path MUST use forward slashes on all platforms');
-      expect(content).toContain('On Windows the path uses forward slashes (not backslashes):');
-      expect(content).toContain('"command": "node C:/Users/username/.claude/hud/omc-hud.mjs"');
-      expect(content).not.toContain('"command": "node C:\\Users\\username\\.claude\\hud\\omc-hud.mjs"');
+      expect(content).toContain(
+        'The command path MUST use forward slashes on all platforms',
+      );
+      expect(content).toContain(
+        'On Windows the path uses forward slashes (not backslashes):',
+      );
+      expect(content).toContain(
+        '"command": "node C:/Users/username/.claude/hud/omc-hud.mjs"',
+      );
+      expect(content).not.toContain(
+        '"command": "node C:\\Users\\username\\.claude\\hud\\omc-hud.mjs"',
+      );
     });
 
     it('usage-api should use path.join with separate segments', () => {
@@ -231,7 +286,9 @@ describe('HUD Windows Compatibility', () => {
 
       // Should use join() with separate segments, not forward-slash literals
       // Provider-specific cache files use template literals with the same join() pattern
-      expect(content).toContain("'plugins', 'oh-my-claudecode', `.usage-cache-${source}.json`");
+      expect(content).toContain(
+        "'plugins', 'oh-my-claudecode', `.usage-cache-${source}.json`",
+      );
     });
   });
 });

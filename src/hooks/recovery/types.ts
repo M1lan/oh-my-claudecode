@@ -8,12 +8,12 @@
  * Recovery error types
  */
 export type RecoveryErrorType =
-  | "context_window_limit"
-  | "edit_error"
-  | "tool_result_missing"
-  | "thinking_block_order"
-  | "thinking_disabled_violation"
-  | "empty_content"
+  | 'context_window_limit'
+  | 'edit_error'
+  | 'tool_result_missing'
+  | 'thinking_block_order'
+  | 'thinking_disabled_violation'
+  | 'empty_content'
   | null;
 
 /**
@@ -105,7 +105,7 @@ export interface MessageData {
 export interface StoredMessageMeta {
   id: string;
   sessionID: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   parentID?: string;
   time?: {
     created: number;
@@ -121,7 +121,7 @@ export interface StoredTextPart {
   id: string;
   sessionID: string;
   messageID: string;
-  type: "text";
+  type: 'text';
   text: string;
   synthetic?: boolean;
   ignored?: boolean;
@@ -134,11 +134,11 @@ export interface StoredToolPart {
   id: string;
   sessionID: string;
   messageID: string;
-  type: "tool";
+  type: 'tool';
   callID: string;
   tool: string;
   state: {
-    status: "pending" | "running" | "completed" | "error";
+    status: 'pending' | 'running' | 'completed' | 'error';
     input: Record<string, unknown>;
     output?: string;
     error?: string;
@@ -152,7 +152,7 @@ export interface StoredReasoningPart {
   id: string;
   sessionID: string;
   messageID: string;
-  type: "reasoning";
+  type: 'reasoning';
   text: string;
 }
 

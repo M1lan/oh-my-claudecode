@@ -18,7 +18,11 @@ vi.mock('node:child_process', async (importOriginal) => {
   };
 });
 
-import { getGitStatusCounts, renderGitStatus, resetGitCache } from '../elements/git.js';
+import {
+  getGitStatusCounts,
+  renderGitStatus,
+  resetGitCache,
+} from '../elements/git.js';
 
 const mockedExecFileSync = vi.mocked(execFileSync);
 
@@ -34,25 +38,37 @@ describe('getGitStatusCounts', () => {
   it('returns zeros for clean repo', () => {
     mockedExecFileSync.mockReturnValue('## main...origin/main\n' as any);
     const counts = getGitStatusCounts('/tmp');
-    expect(counts).toEqual({ staged: 0, modified: 0, untracked: 0, ahead: 0, behind: 0 });
+    expect(counts).toEqual({
+      staged: 0,
+      modified: 0,
+      untracked: 0,
+      ahead: 0,
+      behind: 0,
+    });
   });
 
   it('counts staged files', () => {
-    mockedExecFileSync.mockReturnValue('## main\nM  file1.ts\nA  file2.ts\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main\nM  file1.ts\nA  file2.ts\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.staged).toBe(2);
     expect(counts?.modified).toBe(0);
   });
 
   it('counts modified (unstaged) files', () => {
-    mockedExecFileSync.mockReturnValue('## main\n M file1.ts\n D file2.ts\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main\n M file1.ts\n D file2.ts\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.staged).toBe(0);
     expect(counts?.modified).toBe(2);
   });
 
   it('counts untracked files', () => {
-    mockedExecFileSync.mockReturnValue('## main\n?? newfile.ts\n?? another.ts\n?? third.ts\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main\n?? newfile.ts\n?? another.ts\n?? third.ts\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.untracked).toBe(3);
     expect(counts?.staged).toBe(0);
@@ -68,42 +84,56 @@ describe('getGitStatusCounts', () => {
   });
 
   it('parses ahead count', () => {
-    mockedExecFileSync.mockReturnValue('## main...origin/main [ahead 3]\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main...origin/main [ahead 3]\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.ahead).toBe(3);
     expect(counts?.behind).toBe(0);
   });
 
   it('parses behind count', () => {
-    mockedExecFileSync.mockReturnValue('## main...origin/main [behind 2]\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main...origin/main [behind 2]\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.ahead).toBe(0);
     expect(counts?.behind).toBe(2);
   });
 
   it('parses ahead and behind', () => {
-    mockedExecFileSync.mockReturnValue('## main...origin/main [ahead 5, behind 2]\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main...origin/main [ahead 5, behind 2]\n' as any,
+    );
     const counts = getGitStatusCounts('/tmp');
     expect(counts?.ahead).toBe(5);
     expect(counts?.behind).toBe(2);
   });
 
   it('handles mixed status', () => {
-    mockedExecFileSync.mockReturnValue((
-      '## feat...origin/feat [ahead 1, behind 3]\n' +
-      'M  staged.ts\n' +
-      ' M modified.ts\n' +
-      '?? new.ts\n' +
-      'A  added.ts\n' +
-      'D  deleted.ts\n' +
-      ' D removed.ts\n'
-    ) as any);
+    mockedExecFileSync.mockReturnValue(
+      ('## feat...origin/feat [ahead 1, behind 3]\n' +
+        'M  staged.ts\n' +
+        ' M modified.ts\n' +
+        '?? new.ts\n' +
+        'A  added.ts\n' +
+        'D  deleted.ts\n' +
+        ' D removed.ts\n') as any,
+    );
     const counts = getGitStatusCounts('/tmp');
-    expect(counts).toEqual({ staged: 3, modified: 2, untracked: 1, ahead: 1, behind: 3 });
+    expect(counts).toEqual({
+      staged: 3,
+      modified: 2,
+      untracked: 1,
+      ahead: 1,
+      behind: 3,
+    });
   });
 
   it('returns null on git error', () => {
-    mockedExecFileSync.mockImplementation(() => { throw new Error('not a git repo'); });
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error('not a git repo');
+    });
     expect(getGitStatusCounts('/tmp')).toBeNull();
   });
 
@@ -135,7 +165,9 @@ describe('renderGitStatus', () => {
   });
 
   it('returns null on git error', () => {
-    mockedExecFileSync.mockImplementation(() => { throw new Error('fail'); });
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error('fail');
+    });
     expect(renderGitStatus('/tmp')).toBeNull();
   });
 
@@ -161,27 +193,30 @@ describe('renderGitStatus', () => {
   });
 
   it('shows ahead with ⇡', () => {
-    mockedExecFileSync.mockReturnValue('## main...origin/main [ahead 2]\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main...origin/main [ahead 2]\n' as any,
+    );
     const result = renderGitStatus('/tmp')!;
     expect(result).toContain('⇡');
     expect(result).toContain('2');
   });
 
   it('shows behind with ⇣', () => {
-    mockedExecFileSync.mockReturnValue('## main...origin/main [behind 4]\n' as any);
+    mockedExecFileSync.mockReturnValue(
+      '## main...origin/main [behind 4]\n' as any,
+    );
     const result = renderGitStatus('/tmp')!;
     expect(result).toContain('⇣');
     expect(result).toContain('4');
   });
 
-
   it('uses configured status labels without changing counts', () => {
-    mockedExecFileSync.mockReturnValue((
-      '## main...origin/main [ahead 2, behind 4]\n' +
-      'A  staged.ts\n' +
-      ' M modified.ts\n' +
-      '?? new.ts\n'
-    ) as any);
+    mockedExecFileSync.mockReturnValue(
+      ('## main...origin/main [ahead 2, behind 4]\n' +
+        'A  staged.ts\n' +
+        ' M modified.ts\n' +
+        '?? new.ts\n') as any,
+    );
     const result = renderGitStatus('/tmp', {
       staged: '已暂存',
       modified: '已修改',

@@ -12,8 +12,8 @@
  *   scripts/lib/config-dir.sh    — POSIX shell runtime
  */
 
-import { join, normalize, parse, sep } from "path";
-import { homedir } from "os";
+import { join, normalize, parse, sep } from 'path';
+import { homedir } from 'os';
 
 /**
  * Strip a single trailing path separator (preserve filesystem root).
@@ -38,14 +38,14 @@ export function getClaudeConfigDir(): string {
   const configured = process.env.CLAUDE_CONFIG_DIR?.trim();
 
   if (!configured) {
-    return stripTrailingSep(normalize(join(home, ".claude")));
+    return stripTrailingSep(normalize(join(home, '.claude')));
   }
 
-  if (configured === "~") {
+  if (configured === '~') {
     return stripTrailingSep(normalize(home));
   }
 
-  if (configured.startsWith("~/") || configured.startsWith("~\\")) {
+  if (configured.startsWith('~/') || configured.startsWith('~\\')) {
     return stripTrailingSep(normalize(join(home, configured.slice(2))));
   }
 

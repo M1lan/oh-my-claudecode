@@ -4,15 +4,15 @@
  * Renders background task count display.
  */
 
-import type { BackgroundTask, HudLabels } from "../types.js";
-import { DEFAULT_HUD_LABELS } from "../types.js";
-import { RESET } from "../colors.js";
-import { truncateToWidth } from "../../utils/string-width.js";
+import type { BackgroundTask, HudLabels } from '../types.js';
+import { DEFAULT_HUD_LABELS } from '../types.js';
+import { RESET } from '../colors.js';
+import { truncateToWidth } from '../../utils/string-width.js';
 
-const CYAN = "\x1b[36m";
-const GREEN = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const DIM = "\x1b[2m";
+const CYAN = '\x1b[36m';
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
+const DIM = '\x1b[2m';
 
 const MAX_CONCURRENT = 5;
 
@@ -24,9 +24,9 @@ const MAX_CONCURRENT = 5;
  */
 export function renderBackground(
   tasks: BackgroundTask[],
-  labels: Pick<HudLabels, "background"> = DEFAULT_HUD_LABELS,
+  labels: Pick<HudLabels, 'background'> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const running = tasks.filter((t) => t.status === "running").length;
+  const running = tasks.filter((t) => t.status === 'running').length;
 
   if (running === 0) {
     return null;
@@ -52,9 +52,9 @@ export function renderBackground(
  */
 export function renderBackgroundDetailed(
   tasks: BackgroundTask[],
-  labels: Pick<HudLabels, "background"> = DEFAULT_HUD_LABELS,
+  labels: Pick<HudLabels, 'background'> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const running = tasks.filter((t) => t.status === "running");
+  const running = tasks.filter((t) => t.status === 'running');
 
   if (running.length === 0) {
     return null;
@@ -74,13 +74,13 @@ export function renderBackgroundDetailed(
   const descriptions = running.slice(0, 3).map((t) => {
     // Extract agent type short name if available
     if (t.agentType) {
-      const parts = t.agentType.split(":");
+      const parts = t.agentType.split(':');
       return parts[parts.length - 1];
     }
     // Otherwise use truncated description (CJK-aware)
-    return truncateToWidth(t.description, 8, "");
+    return truncateToWidth(t.description, 8, '');
   });
 
-  const suffix = running.length > 3 ? ",+" + (running.length - 3) : "";
-  return `${labels.background}:${color}${running.length}/${MAX_CONCURRENT}${RESET} ${DIM}[${descriptions.join(",")}${suffix}]${RESET}`;
+  const suffix = running.length > 3 ? ',+' + (running.length - 3) : '';
+  return `${labels.background}:${color}${running.length}/${MAX_CONCURRENT}${RESET} ${DIM}[${descriptions.join(',')}${suffix}]${RESET}`;
 }

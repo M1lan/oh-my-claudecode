@@ -10,8 +10,8 @@
  * enforced by `src/__tests__/hud-wrapper-template-sync.test.ts`.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 /**
  * Returns the HUD wrapper script body, read from
@@ -22,7 +22,7 @@ import { join } from "node:path";
  */
 export function buildHudWrapper(packageDir: string): string {
   return readFileSync(
-    join(packageDir, "scripts", "lib", "hud-wrapper-template.txt"),
-    "utf8",
+    join(packageDir, 'scripts', 'lib', 'hud-wrapper-template.txt'),
+    'utf8',
   );
 }

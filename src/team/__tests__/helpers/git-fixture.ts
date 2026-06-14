@@ -13,7 +13,13 @@
 //     handle (if set externally) and can optionally create an orphan rebase-merge dir.
 
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { OrchestratorHandle } from '../../merge-orchestrator.js';
@@ -37,7 +43,11 @@ export interface GitFixture {
    * Commit a file in a worker worktree.
    * Returns the resulting commit SHA.
    */
-  commitFile(workerName: string, relPath: string, content: string): Promise<string>;
+  commitFile(
+    workerName: string,
+    relPath: string,
+    content: string,
+  ): Promise<string>;
   /**
    * Read the HEAD SHA of any branch in the repo.
    */
@@ -87,7 +97,9 @@ export interface CreateGitFixtureOpts {
   keepLeaderBranchCheckedOut?: boolean;
 }
 
-export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitFixture> {
+export async function createGitFixture(
+  opts: CreateGitFixtureOpts,
+): Promise<GitFixture> {
   const {
     workerCount,
     leaderBranchName = 'omc-team-test-leader',
@@ -98,7 +110,9 @@ export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitF
   // Guard: never allow main/master as leader branch (M3)
   const normalized = leaderBranchName.toLowerCase();
   if (normalized === 'main' || normalized === 'master') {
-    throw new Error(`git-fixture: leaderBranchName must not be main/master (M3 hardening)`);
+    throw new Error(
+      `git-fixture: leaderBranchName must not be main/master (M3 hardening)`,
+    );
   }
 
   // Create temp directory structure
@@ -154,7 +168,11 @@ export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitF
     createdAt: new Date().toISOString(),
     repoRoot,
   }));
-  writeFileSync(join(worktreesMetaDir, 'worktrees.json'), JSON.stringify(worktreesMeta), 'utf-8');
+  writeFileSync(
+    join(worktreesMetaDir, 'worktrees.json'),
+    JSON.stringify(worktreesMeta),
+    'utf-8',
+  );
 
   let attachedHandle: OrchestratorHandle | null = null;
 
@@ -164,11 +182,23 @@ export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitF
     teamName,
     workers,
 
-    async commitFile(workerName: string, relPath: string, content: string): Promise<string> {
+    async commitFile(
+      workerName: string,
+      relPath: string,
+      content: string,
+    ): Promise<string> {
       const worker = workers.find((w) => w.name === workerName);
       if (!worker) throw new Error(`No worker named ${workerName}`);
       const filePath = join(worker.worktreePath, relPath);
-      mkdirSync(join(worker.worktreePath, relPath.includes('/') ? relPath.split('/').slice(0, -1).join('/') : '.'), { recursive: true });
+      mkdirSync(
+        join(
+          worker.worktreePath,
+          relPath.includes('/')
+            ? relPath.split('/').slice(0, -1).join('/')
+            : '.',
+        ),
+        { recursive: true },
+      );
       writeFileSync(filePath, content, 'utf-8');
       git(worker.worktreePath, ['add', relPath]);
       git(worker.worktreePath, ['commit', '-m', `test: update ${relPath}`]);
@@ -182,9 +212,17 @@ export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitF
     createRebaseState(workerName: string): string {
       const worker = workers.find((w) => w.name === workerName);
       if (!worker) throw new Error(`No worker named ${workerName}`);
-      const rebaseMergeDir = git(worker.worktreePath, ['rev-parse', '--git-path', 'rebase-merge']);
+      const rebaseMergeDir = git(worker.worktreePath, [
+        'rev-parse',
+        '--git-path',
+        'rebase-merge',
+      ]);
       mkdirSync(rebaseMergeDir, { recursive: true });
-      writeFileSync(join(rebaseMergeDir, 'head-name'), `refs/heads/${worker.branch}\n`, 'utf-8');
+      writeFileSync(
+        join(rebaseMergeDir, 'head-name'),
+        `refs/heads/${worker.branch}\n`,
+        'utf-8',
+      );
       writeFileSync(join(rebaseMergeDir, 'onto'), 'deadbeef\n', 'utf-8');
       return rebaseMergeDir;
     },
@@ -211,9 +249,17 @@ export async function createGitFixture(opts: CreateGitFixtureOpts): Promise<GitF
       if (orphanWorkerName) {
         const worker = workers.find((w) => w.name === orphanWorkerName);
         if (!worker) throw new Error(`No worker named ${orphanWorkerName}`);
-        const rebaseMergeDir = git(worker.worktreePath, ['rev-parse', '--git-path', 'rebase-merge']);
+        const rebaseMergeDir = git(worker.worktreePath, [
+          'rev-parse',
+          '--git-path',
+          'rebase-merge',
+        ]);
         mkdirSync(rebaseMergeDir, { recursive: true });
-        writeFileSync(join(rebaseMergeDir, 'head-name'), `refs/heads/${worker.branch}\n`, 'utf-8');
+        writeFileSync(
+          join(rebaseMergeDir, 'head-name'),
+          `refs/heads/${worker.branch}\n`,
+          'utf-8',
+        );
         writeFileSync(join(rebaseMergeDir, 'onto'), 'deadbeef\n', 'utf-8');
       }
     },
@@ -265,7 +311,13 @@ export interface WaitForEventOpts {
 }
 
 export async function waitForEventInLog(opts: WaitForEventOpts): Promise<void> {
-  const { eventLogPath, eventType, count = 1, timeoutMs = 10000, worker } = opts;
+  const {
+    eventLogPath,
+    eventType,
+    count = 1,
+    timeoutMs = 10000,
+    worker,
+  } = opts;
   await new Promise((r) => setTimeout(r, 250));
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -275,16 +327,20 @@ export async function waitForEventInLog(opts: WaitForEventOpts): Promise<void> {
         const lines = raw
           .split('\n')
           .filter((l: string) => l.trim().length > 0);
-        const events = lines.map((l: string) => {
-          try {
-            return JSON.parse(l) as { type: string; worker?: string };
-          } catch {
-            return null;
-          }
-        }).filter(Boolean) as Array<{ type: string; worker?: string }>;
+        const events = lines
+          .map((l: string) => {
+            try {
+              return JSON.parse(l) as { type: string; worker?: string };
+            } catch {
+              return null;
+            }
+          })
+          .filter(Boolean) as Array<{ type: string; worker?: string }>;
 
         const matching = events.filter(
-          (e) => e.type === eventType && (worker === undefined || e.worker === worker),
+          (e) =>
+            e.type === eventType &&
+            (worker === undefined || e.worker === worker),
         );
         if (matching.length >= count) return;
       } catch {
@@ -313,7 +369,9 @@ export async function waitForEventInLog(opts: WaitForEventOpts): Promise<void> {
 }
 
 /** Read all events from the orchestrator event log. */
-export function readEventLog(eventLogPath: string): Array<{ type: string; worker?: string; [k: string]: unknown }> {
+export function readEventLog(
+  eventLogPath: string,
+): Array<{ type: string; worker?: string; [k: string]: unknown }> {
   if (!existsSync(eventLogPath)) return [];
   try {
     return readFileSync(eventLogPath, 'utf-8')
@@ -333,6 +391,16 @@ export function readEventLog(eventLogPath: string): Array<{ type: string; worker
 }
 
 /** Build the event log path for a team. */
-export function orchestratorEventLogPath(repoRoot: string, teamName: string): string {
-  return join(repoRoot, '.omc', 'state', 'team', teamName, 'orchestrator-events.jsonl');
+export function orchestratorEventLogPath(
+  repoRoot: string,
+  teamName: string,
+): string {
+  return join(
+    repoRoot,
+    '.omc',
+    'state',
+    'team',
+    teamName,
+    'orchestrator-events.jsonl',
+  );
 }

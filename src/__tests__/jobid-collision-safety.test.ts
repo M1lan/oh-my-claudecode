@@ -7,15 +7,15 @@
  * BUG 4: generateJobId not collision-safe
  */
 
-import { describe, it, expect } from "vitest";
-import { readFileSync } from "fs";
-import { join } from "path";
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // ---------------------------------------------------------------------------
-describe("generateJobId collision safety", () => {
-  it("generateJobId includes randomness for uniqueness", () => {
-    const sourcePath = join(__dirname, "..", "cli", "team.ts");
-    const source = readFileSync(sourcePath, "utf-8");
+describe('generateJobId collision safety', () => {
+  it('generateJobId includes randomness for uniqueness', () => {
+    const sourcePath = join(__dirname, '..', 'cli', 'team.ts');
+    const source = readFileSync(sourcePath, 'utf-8');
 
     // Extract the generateJobId function
     const fnMatch = source.match(/function generateJobId[\s\S]*?\n}/);
@@ -23,11 +23,11 @@ describe("generateJobId collision safety", () => {
     const fnBody = fnMatch![0];
 
     // Must include randomness (randomUUID or similar)
-    expect(fnBody).toContain("randomUUID");
+    expect(fnBody).toContain('randomUUID');
   });
 
-  it("100 rapid calls produce 100 unique IDs", async () => {
-    const { generateJobId } = await import("../cli/team.js");
+  it('100 rapid calls produce 100 unique IDs', async () => {
+    const { generateJobId } = await import('../cli/team.js');
 
     const ids = new Set<string>();
     const fixedTime = Date.now();
@@ -38,8 +38,8 @@ describe("generateJobId collision safety", () => {
     expect(ids.size).toBe(100);
   });
 
-  it("generated IDs match the updated JOB_ID_PATTERN", async () => {
-    const { generateJobId } = await import("../cli/team.js");
+  it('generated IDs match the updated JOB_ID_PATTERN', async () => {
+    const { generateJobId } = await import('../cli/team.js');
     const JOB_ID_PATTERN = /^omc-[a-z0-9]{1,16}$/;
 
     for (let i = 0; i < 50; i++) {
@@ -48,8 +48,8 @@ describe("generateJobId collision safety", () => {
     }
   });
 
-  it("generateJobId uses 8+ hex chars of randomness", async () => {
-    const { generateJobId } = await import("../cli/team.js");
+  it('generateJobId uses 8+ hex chars of randomness', async () => {
+    const { generateJobId } = await import('../cli/team.js');
 
     const fixedTime = Date.now();
     const id = generateJobId(fixedTime);

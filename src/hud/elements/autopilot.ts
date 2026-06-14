@@ -4,15 +4,15 @@
  * Renders autopilot phase and progress display.
  */
 
-import type { HudThresholds } from "../types.js";
-import { RESET } from "../colors.js";
+import type { HudThresholds } from '../types.js';
+import { RESET } from '../colors.js';
 
 // ANSI color codes
-const CYAN = "\x1b[36m";
-const GREEN = "\x1b[32m";
-const YELLOW = "\x1b[33m";
-const RED = "\x1b[31m";
-const MAGENTA = "\x1b[35m";
+const CYAN = '\x1b[36m';
+const GREEN = '\x1b[32m';
+const YELLOW = '\x1b[33m';
+const RED = '\x1b[31m';
+const MAGENTA = '\x1b[35m';
 
 export interface AutopilotStateForHud {
   active: boolean;
@@ -25,13 +25,13 @@ export interface AutopilotStateForHud {
 }
 
 const PHASE_NAMES: Record<string, string> = {
-  expansion: "Expand",
-  planning: "Plan",
-  execution: "Build",
-  qa: "QA",
-  validation: "Verify",
-  complete: "Done",
-  failed: "Failed",
+  expansion: 'Expand',
+  planning: 'Plan',
+  execution: 'Build',
+  qa: 'QA',
+  validation: 'Verify',
+  complete: 'Done',
+  failed: 'Failed',
 };
 
 const PHASE_INDEX: Record<string, number> = {
@@ -72,16 +72,16 @@ export function renderAutopilot(
   // Color based on phase
   let phaseColor: string;
   switch (phase) {
-    case "complete":
+    case 'complete':
       phaseColor = GREEN;
       break;
-    case "failed":
+    case 'failed':
       phaseColor = RED;
       break;
-    case "validation":
+    case 'validation':
       phaseColor = MAGENTA;
       break;
-    case "qa":
+    case 'qa':
       phaseColor = YELLOW;
       break;
     default:
@@ -96,7 +96,7 @@ export function renderAutopilot(
   }
 
   // Add task progress if in execution phase
-  if (phase === "execution" && tasksTotal && tasksTotal > 0) {
+  if (phase === 'execution' && tasksTotal && tasksTotal > 0) {
     const taskColor = tasksCompleted === tasksTotal ? GREEN : YELLOW;
     output += ` | Tasks: ${taskColor}${tasksCompleted || 0}/${tasksTotal}${RESET}`;
   }
@@ -124,11 +124,11 @@ export function renderAutopilotCompact(
   const { phase } = state;
   const phaseNum = PHASE_INDEX[phase] || 0;
 
-  if (phase === "complete") {
+  if (phase === 'complete') {
     return `${GREEN}AP:Done${RESET}`;
   }
 
-  if (phase === "failed") {
+  if (phase === 'failed') {
     return `${RED}AP:Fail${RESET}`;
   }
 

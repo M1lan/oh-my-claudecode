@@ -3,10 +3,7 @@ import { existsSync } from 'fs';
 import { mkdir, readFile, symlink, writeFile } from 'fs/promises';
 import { dirname, join, resolve } from 'path';
 import { getOmcRoot } from '../lib/worktree-paths.js';
-import {
-  readModeState,
-  writeModeState,
-} from '../lib/mode-state-io.js';
+import { readModeState, writeModeState } from '../lib/mode-state-io.js';
 import { isModeActiveInAnySession } from '../hooks/mode-registry/index.js';
 import type { ExecutionMode } from '../hooks/mode-registry/types.js';
 import {
@@ -15,9 +12,25 @@ import {
   type AutoresearchMissionContract,
 } from './contracts.js';
 
-export type AutoresearchCandidateStatus = 'candidate' | 'noop' | 'abort' | 'interrupted';
-export type AutoresearchDecisionStatus = 'baseline' | 'keep' | 'discard' | 'ambiguous' | 'noop' | 'abort' | 'interrupted' | 'error';
-export type AutoresearchRunStatus = 'running' | 'stopped' | 'completed' | 'failed';
+export type AutoresearchCandidateStatus =
+  | 'candidate'
+  | 'noop'
+  | 'abort'
+  | 'interrupted';
+export type AutoresearchDecisionStatus =
+  | 'baseline'
+  | 'keep'
+  | 'discard'
+  | 'ambiguous'
+  | 'noop'
+  | 'abort'
+  | 'interrupted'
+  | 'error';
+export type AutoresearchRunStatus =
+  | 'running'
+  | 'stopped'
+  | 'completed'
+  | 'failed';
 
 export interface PreparedAutoresearchRuntime {
   runId: string;
@@ -144,11 +157,22 @@ interface AutoresearchInstructionLedgerSummary {
   description: string;
 }
 
-const AUTORESEARCH_RESULTS_HEADER = 'iteration\tcommit\tpass\tscore\tstatus\tdescription\n';
-const AUTORESEARCH_WORKTREE_EXCLUDES = ['results.tsv', 'run.log', 'node_modules', '.omc/'];
+const AUTORESEARCH_RESULTS_HEADER =
+  'iteration\tcommit\tpass\tscore\tstatus\tdescription\n';
+const AUTORESEARCH_WORKTREE_EXCLUDES = [
+  'results.tsv',
+  'run.log',
+  'node_modules',
+  '.omc/',
+];
 
 // Exclusive modes that cannot run concurrently with autoresearch
-const EXCLUSIVE_MODES: ExecutionMode[] = ['ralph', 'ultrawork', 'autopilot', 'autoresearch'];
+const EXCLUSIVE_MODES: ExecutionMode[] = [
+  'ralph',
+  'ultrawork',
+  'autopilot',
+  'autoresearch',
+];
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -159,7 +183,11 @@ export function getAutoresearchMissionArtifactLayout(
   missionSlug: string,
   runId: string,
 ): AutoresearchMissionArtifactLayout {
-  const missionRoot = join(getOmcRoot(projectRoot), 'autoresearch', missionSlug);
+  const missionRoot = join(
+    getOmcRoot(projectRoot),
+    'autoresearch',
+    missionSlug,
+  );
   const runDir = join(missionRoot, 'runs', runId);
   return {
     missionRoot,
@@ -202,27 +230,39 @@ function readGit(repoPath: string, args: string[]): string {
     }).trim();
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { stderr?: string | Buffer };
-    const stderr = typeof err.stderr === 'string'
-      ? err.stderr.trim()
-      : err.stderr instanceof Buffer
-        ? err.stderr.toString('utf-8').trim()
-        : '';
+    const stderr =
+      typeof err.stderr === 'string'
+        ? err.stderr.trim()
+        : err.stderr instanceof Buffer
+          ? err.stderr.toString('utf-8').trim()
+          : '';
     throw new Error(stderr || `git ${args.join(' ')} failed`);
   }
 }
 
 function tryResolveGitCommit(worktreePath: string, ref: string): string | null {
-  const result = spawnSync('git', ['rev-parse', '--verify', `${ref}^{commit}`], {
-    cwd: worktreePath,
-    encoding: 'utf-8',
-  });
+  const result = spawnSync(
+    'git',
+    ['rev-parse', '--verify', `${ref}^{commit}`],
+    {
+      cwd: worktreePath,
+      encoding: 'utf-8',
+    },
+  );
   if (result.status !== 0) return null;
   const resolved = (result.stdout || '').trim();
   return resolved || null;
 }
 
-async function writeGitInfoExclude(worktreePath: string, pattern: string): Promise<void> {
-  const excludePath = readGit(worktreePath, ['rev-parse', '--git-path', 'info/exclude']);
+async function writeGitInfoExclude(
+  worktreePath: string,
+  pattern: string,
+): Promise<void> {
+  const excludePath = readGit(worktreePath, [
+    'rev-parse',
+    '--git-path',
+    'info/exclude',
+  ]);
   const existing = existsSync(excludePath)
     ? await readFile(excludePath, 'utf-8')
     : '';
@@ -280,13 +320,20 @@ async function appendDecisionLog(
   await writeFile(decisionLogFile, `${existing}${lines.join('\n')}`, 'utf-8');
 }
 
-async function ensureAutoresearchWorktreeDependencies(repoRoot: string, worktreePath: string): Promise<void> {
+async function ensureAutoresearchWorktreeDependencies(
+  repoRoot: string,
+  worktreePath: string,
+): Promise<void> {
   const sourceNodeModules = join(repoRoot, 'node_modules');
   const targetNodeModules = join(worktreePath, 'node_modules');
   if (!existsSync(sourceNodeModules) || existsSync(targetNodeModules)) {
     return;
   }
-  await symlink(sourceNodeModules, targetNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
+  await symlink(
+    sourceNodeModules,
+    targetNodeModules,
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
 }
 
 function readGitShortHead(worktreePath: string): string {
@@ -303,16 +350,24 @@ function requireGitSuccess(worktreePath: string, args: string[]): void {
     encoding: 'utf-8',
   });
   if (result.status === 0) return;
-  throw new Error((result.stderr || '').trim() || `git ${args.join(' ')} failed`);
+  throw new Error(
+    (result.stderr || '').trim() || `git ${args.join(' ')} failed`,
+  );
 }
 
 function gitStatusLines(worktreePath: string): string[] {
-  const result = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], {
-    cwd: worktreePath,
-    encoding: 'utf-8',
-  });
+  const result = spawnSync(
+    'git',
+    ['status', '--porcelain', '--untracked-files=all'],
+    {
+      cwd: worktreePath,
+      encoding: 'utf-8',
+    },
+  );
   if (result.status !== 0) {
-    throw new Error((result.stderr || '').trim() || `git status failed for ${worktreePath}`);
+    throw new Error(
+      (result.stderr || '').trim() || `git status failed for ${worktreePath}`,
+    );
   }
   return (result.stdout || '')
     .split(/\r?\n/)
@@ -327,9 +382,11 @@ function normalizeGitStatusPath(path: string): string {
 }
 
 function isAllowedRuntimeDirtyPath(path: string): boolean {
-  return AUTORESEARCH_WORKTREE_EXCLUDES.some((exclude) => exclude.endsWith('/')
-    ? path.startsWith(exclude) || path === exclude.slice(0, -1)
-    : path === exclude);
+  return AUTORESEARCH_WORKTREE_EXCLUDES.some((exclude) =>
+    exclude.endsWith('/')
+      ? path.startsWith(exclude) || path === exclude.slice(0, -1)
+      : path === exclude,
+  );
 }
 
 function allowedBootstrapDirtyPaths(
@@ -360,12 +417,22 @@ function isAllowedRuntimeDirtyLine(
   return isAllowedRuntimeDirtyPath(path) || allowedBootstrapPaths.has(path);
 }
 
-export function assertResetSafeWorktree(worktreePath: string, allowedDirtyPaths: readonly string[] = []): void {
+export function assertResetSafeWorktree(
+  worktreePath: string,
+  allowedDirtyPaths: readonly string[] = [],
+): void {
   const lines = gitStatusLines(worktreePath);
-  const allowedBootstrapPaths = allowedBootstrapDirtyPaths(worktreePath, allowedDirtyPaths);
-  const blocking = lines.filter((line) => !isAllowedRuntimeDirtyLine(line, allowedBootstrapPaths));
+  const allowedBootstrapPaths = allowedBootstrapDirtyPaths(
+    worktreePath,
+    allowedDirtyPaths,
+  );
+  const blocking = lines.filter(
+    (line) => !isAllowedRuntimeDirtyLine(line, allowedBootstrapPaths),
+  );
   if (blocking.length === 0) return;
-  throw new Error(`autoresearch_reset_requires_clean_worktree:${worktreePath}:${blocking.join(' | ')}`);
+  throw new Error(
+    `autoresearch_reset_requires_clean_worktree:${worktreePath}:${blocking.join(' | ')}`,
+  );
 }
 
 async function ensureParentDir(filePath: string): Promise<void> {
@@ -381,17 +448,24 @@ async function readJsonFile<T>(filePath: string): Promise<T> {
   return JSON.parse(await readFile(filePath, 'utf-8')) as T;
 }
 
-async function readActiveRunState(projectRoot: string): Promise<AutoresearchActiveRunState | null> {
+async function readActiveRunState(
+  projectRoot: string,
+): Promise<AutoresearchActiveRunState | null> {
   const file = activeRunStateFile(projectRoot);
   if (!existsSync(file)) return null;
   return readJsonFile<AutoresearchActiveRunState>(file);
 }
 
-async function writeActiveRunState(projectRoot: string, value: AutoresearchActiveRunState): Promise<void> {
+async function writeActiveRunState(
+  projectRoot: string,
+  value: AutoresearchActiveRunState,
+): Promise<void> {
   await writeJsonFile(activeRunStateFile(projectRoot), value);
 }
 
-async function assertAutoresearchLockAvailable(projectRoot: string): Promise<void> {
+async function assertAutoresearchLockAvailable(
+  projectRoot: string,
+): Promise<void> {
   const state = await readActiveRunState(projectRoot);
   if (state?.active && state.run_id) {
     throw new Error(`autoresearch_active_run_exists:${state.run_id}`);
@@ -402,7 +476,10 @@ async function assertAutoresearchLockAvailable(projectRoot: string): Promise<voi
  * Assert no exclusive mode is already active (ralph, ultrawork, autopilot).
  * Mirrors OMX assertModeStartAllowed semantics using OMC mode-state-io.
  */
-export async function assertModeStartAllowed(mode: ExecutionMode, projectRoot: string): Promise<void> {
+export async function assertModeStartAllowed(
+  mode: ExecutionMode,
+  projectRoot: string,
+): Promise<void> {
   for (const other of EXCLUSIVE_MODES) {
     if (other === mode) continue;
     if (isModeActiveInAnySession(other, projectRoot)) {
@@ -411,7 +488,9 @@ export async function assertModeStartAllowed(mode: ExecutionMode, projectRoot: s
   }
 }
 
-async function activateAutoresearchRun(manifest: AutoresearchRunManifest): Promise<void> {
+async function activateAutoresearchRun(
+  manifest: AutoresearchRunManifest,
+): Promise<void> {
   await writeActiveRunState(manifest.repo_root, {
     schema_version: 1,
     active: true,
@@ -424,7 +503,9 @@ async function activateAutoresearchRun(manifest: AutoresearchRunManifest): Promi
   });
 }
 
-async function deactivateAutoresearchRun(manifest: AutoresearchRunManifest): Promise<void> {
+async function deactivateAutoresearchRun(
+  manifest: AutoresearchRunManifest,
+): Promise<void> {
   const previous = await readActiveRunState(manifest.repo_root);
   await writeActiveRunState(manifest.repo_root, {
     schema_version: 1,
@@ -442,40 +523,64 @@ async function deactivateAutoresearchRun(manifest: AutoresearchRunManifest): Pro
 /**
  * Start autoresearch mode state using OMC's writeModeState.
  */
-function startAutoresearchMode(taskDescription: string, projectRoot: string): void {
-  writeModeState('autoresearch', {
-    active: true,
-    mode: 'autoresearch',
-    iteration: 0,
-    current_phase: 'starting',
-    task_description: taskDescription,
-    started_at: nowIso(),
-    updated_at: nowIso(),
-  }, projectRoot);
+function startAutoresearchMode(
+  taskDescription: string,
+  projectRoot: string,
+): void {
+  writeModeState(
+    'autoresearch',
+    {
+      active: true,
+      mode: 'autoresearch',
+      iteration: 0,
+      current_phase: 'starting',
+      task_description: taskDescription,
+      started_at: nowIso(),
+      updated_at: nowIso(),
+    },
+    projectRoot,
+  );
 }
 
 /**
  * Update autoresearch mode state (merge semantics).
  */
-function updateAutoresearchMode(updates: Record<string, unknown>, projectRoot: string): void {
-  const current = readModeState<Record<string, unknown>>('autoresearch', projectRoot);
+function updateAutoresearchMode(
+  updates: Record<string, unknown>,
+  projectRoot: string,
+): void {
+  const current = readModeState<Record<string, unknown>>(
+    'autoresearch',
+    projectRoot,
+  );
   if (!current) return;
-  writeModeState('autoresearch', { ...current, ...updates, updated_at: nowIso() }, projectRoot);
+  writeModeState(
+    'autoresearch',
+    { ...current, ...updates, updated_at: nowIso() },
+    projectRoot,
+  );
 }
 
 /**
  * Cancel autoresearch mode state.
  */
 function cancelAutoresearchMode(projectRoot: string): void {
-  const state = readModeState<Record<string, unknown>>('autoresearch', projectRoot);
+  const state = readModeState<Record<string, unknown>>(
+    'autoresearch',
+    projectRoot,
+  );
   if (state && state.active) {
-    writeModeState('autoresearch', {
-      ...state,
-      active: false,
-      current_phase: 'cancelled',
-      completed_at: nowIso(),
-      updated_at: nowIso(),
-    }, projectRoot);
+    writeModeState(
+      'autoresearch',
+      {
+        ...state,
+        active: false,
+        current_phase: 'cancelled',
+        completed_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      projectRoot,
+    );
   }
 }
 
@@ -487,7 +592,9 @@ function resultScoreValue(value: number | undefined | null): string {
   return typeof value === 'number' ? String(value) : '';
 }
 
-async function initializeAutoresearchResultsFile(resultsFile: string): Promise<void> {
+async function initializeAutoresearchResultsFile(
+  resultsFile: string,
+): Promise<void> {
   if (existsSync(resultsFile)) return;
   await ensureParentDir(resultsFile);
   await writeFile(resultsFile, AUTORESEARCH_RESULTS_HEADER, 'utf-8');
@@ -514,20 +621,24 @@ async function appendAutoresearchResultsRow(
   );
 }
 
-async function appendAutoresearchLedgerEntry(ledgerFile: string, entry: AutoresearchLedgerEntry): Promise<void> {
+async function appendAutoresearchLedgerEntry(
+  ledgerFile: string,
+  entry: AutoresearchLedgerEntry,
+): Promise<void> {
   const parsed = existsSync(ledgerFile)
     ? await readJsonFile<{
-      schema_version?: number;
-      run_id?: string;
-      created_at?: string;
-      updated_at?: string;
-      entries?: AutoresearchLedgerEntry[];
-    }>(ledgerFile)
+        schema_version?: number;
+        run_id?: string;
+        created_at?: string;
+        updated_at?: string;
+        entries?: AutoresearchLedgerEntry[];
+      }>(ledgerFile)
     : { schema_version: 1, entries: [] };
   const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
   entries.push(entry);
   await writeJsonFile(ledgerFile, {
-    schema_version: typeof parsed.schema_version === 'number' ? parsed.schema_version : 1,
+    schema_version:
+      typeof parsed.schema_version === 'number' ? parsed.schema_version : 1,
     run_id: parsed.run_id,
     created_at: parsed.created_at || nowIso(),
     updated_at: nowIso(),
@@ -535,18 +646,25 @@ async function appendAutoresearchLedgerEntry(ledgerFile: string, entry: Autorese
   });
 }
 
-async function readAutoresearchLedgerEntries(ledgerFile: string): Promise<AutoresearchLedgerEntry[]> {
+async function readAutoresearchLedgerEntries(
+  ledgerFile: string,
+): Promise<AutoresearchLedgerEntry[]> {
   if (!existsSync(ledgerFile)) return [];
-  const parsed = await readJsonFile<{ entries?: AutoresearchLedgerEntry[] }>(ledgerFile);
+  const parsed = await readJsonFile<{ entries?: AutoresearchLedgerEntry[] }>(
+    ledgerFile,
+  );
   return Array.isArray(parsed.entries) ? parsed.entries : [];
 }
 
-export async function countTrailingAutoresearchNoops(ledgerFile: string): Promise<number> {
+export async function countTrailingAutoresearchNoops(
+  ledgerFile: string,
+): Promise<number> {
   const entries = await readAutoresearchLedgerEntries(ledgerFile);
   let count = 0;
   for (let index = entries.length - 1; index >= 0; index -= 1) {
     const entry = entries[index];
-    if (!entry || entry.kind !== 'iteration' || entry.decision !== 'noop') break;
+    if (!entry || entry.kind !== 'iteration' || entry.decision !== 'noop')
+      break;
     count += 1;
   }
   return count;
@@ -556,21 +674,22 @@ function formatAutoresearchInstructionSummary(
   entries: AutoresearchLedgerEntry[],
   maxEntries = 3,
 ): AutoresearchInstructionLedgerSummary[] {
-  return entries
-    .slice(-maxEntries)
-    .map((entry) => ({
-      iteration: entry.iteration,
-      decision: entry.decision,
-      reason: trimContent(entry.decision_reason, 160),
-      kept_commit: entry.kept_commit,
-      candidate_commit: entry.candidate_commit,
-      evaluator_status: entry.evaluator?.status ?? null,
-      evaluator_score: typeof entry.evaluator?.score === 'number' ? entry.evaluator.score : null,
-      description: trimContent(entry.description, 120),
-    }));
+  return entries.slice(-maxEntries).map((entry) => ({
+    iteration: entry.iteration,
+    decision: entry.decision,
+    reason: trimContent(entry.decision_reason, 160),
+    kept_commit: entry.kept_commit,
+    candidate_commit: entry.candidate_commit,
+    evaluator_status: entry.evaluator?.status ?? null,
+    evaluator_score:
+      typeof entry.evaluator?.score === 'number' ? entry.evaluator.score : null,
+    description: trimContent(entry.description, 120),
+  }));
 }
 
-async function buildAutoresearchInstructionContext(manifest: AutoresearchRunManifest): Promise<{
+async function buildAutoresearchInstructionContext(
+  manifest: AutoresearchRunManifest,
+): Promise<{
   previousIterationOutcome: string | null;
   recentLedgerSummary: AutoresearchInstructionLedgerSummary[];
 }> {
@@ -608,7 +727,9 @@ export async function runAutoresearchEvaluator(
       status: 'error',
       exit_code: result.status,
       stdout,
-      stderr: result.error ? [stderr, result.error.message].filter(Boolean).join('\n') : stderr,
+      stderr: result.error
+        ? [stderr, result.error.message].filter(Boolean).join('\n')
+        : stderr,
     };
   } else {
     try {
@@ -643,13 +764,19 @@ export async function runAutoresearchEvaluator(
     await appendAutoresearchLedgerEntry(ledgerFile, {
       iteration: -1,
       kind: 'iteration',
-      decision: record.status === 'error' ? 'error' : record.status === 'pass' ? 'keep' : 'discard',
+      decision:
+        record.status === 'error'
+          ? 'error'
+          : record.status === 'pass'
+            ? 'keep'
+            : 'discard',
       decision_reason: 'raw evaluator record',
       candidate_status: 'candidate',
       base_commit: readGitShortHead(worktreePath),
       candidate_commit: null,
       kept_commit: readGitShortHead(worktreePath),
-      keep_policy: contract.sandbox.evaluator.keep_policy ?? 'score_improvement',
+      keep_policy:
+        contract.sandbox.evaluator.keep_policy ?? 'score_improvement',
       evaluator: record,
       created_at: nowIso(),
       notes: ['raw evaluator invocation'],
@@ -659,7 +786,10 @@ export async function runAutoresearchEvaluator(
   return record;
 }
 
-function comparableScore(previousScore: number | null, nextScore: number | undefined): boolean {
+function comparableScore(
+  previousScore: number | null,
+  nextScore: number | undefined,
+): boolean {
   return typeof previousScore === 'number' && typeof nextScore === 'number';
 }
 
@@ -692,7 +822,9 @@ export function decideAutoresearchOutcome(
       decisionReason: 'candidate session was interrupted',
       keep: false,
       evaluator: null,
-      notes: ['supervisor should inspect worktree cleanliness before continuing'],
+      notes: [
+        'supervisor should inspect worktree cleanliness before continuing',
+      ],
     };
   }
   if (!evaluation || evaluation.status === 'error') {
@@ -731,10 +863,13 @@ export function decideAutoresearchOutcome(
     if (typeof evaluation.score === 'number') {
       return {
         decision: 'keep',
-        decisionReason: '[bootstrap] first comparable score in score_improvement run',
+        decisionReason:
+          '[bootstrap] first comparable score in score_improvement run',
         keep: true,
         evaluator: evaluation,
-        notes: ['candidate kept because no prior comparable score existed; this becomes the new baseline'],
+        notes: [
+          'candidate kept because no prior comparable score existed; this becomes the new baseline',
+        ],
       };
     }
     return {
@@ -742,7 +877,9 @@ export function decideAutoresearchOutcome(
       decisionReason: 'evaluator pass without numeric score',
       keep: false,
       evaluator: evaluation,
-      notes: ['candidate discarded because score_improvement policy requires a numeric score'],
+      notes: [
+        'candidate discarded because score_improvement policy requires a numeric score',
+      ],
     };
   }
   if ((evaluation.score as number) > (manifest.last_kept_score as number)) {
@@ -759,7 +896,9 @@ export function decideAutoresearchOutcome(
     decisionReason: 'score did not improve',
     keep: false,
     evaluator: evaluation,
-    notes: ['candidate discarded because evaluator score was not better than the kept baseline'],
+    notes: [
+      'candidate discarded because evaluator score was not better than the kept baseline',
+    ],
   };
 }
 
@@ -796,15 +935,20 @@ export function buildAutoresearchInstructions(
     '',
     'Iteration state snapshot:',
     '```json',
-    JSON.stringify({
-      iteration: context.iteration,
-      baseline_commit: context.baselineCommit,
-      last_kept_commit: context.lastKeptCommit,
-      last_kept_score: context.lastKeptScore ?? null,
-      previous_iteration_outcome: context.previousIterationOutcome ?? 'none yet',
-      recent_ledger_summary: context.recentLedgerSummary ?? [],
-      keep_policy: context.keepPolicy,
-    }, null, 2),
+    JSON.stringify(
+      {
+        iteration: context.iteration,
+        baseline_commit: context.baselineCommit,
+        last_kept_commit: context.lastKeptCommit,
+        last_kept_score: context.lastKeptScore ?? null,
+        previous_iteration_outcome:
+          context.previousIterationOutcome ?? 'none yet',
+        recent_ledger_summary: context.recentLedgerSummary ?? [],
+        keep_policy: context.keepPolicy,
+      },
+      null,
+      2,
+    ),
     '```',
     '',
     'Operate as a thin autoresearch experiment worker for exactly one experiment cycle.',
@@ -865,21 +1009,36 @@ export async function materializeAutoresearchMissionToWorktree(
   };
 }
 
-export async function loadAutoresearchRunManifest(projectRoot: string, runId: string): Promise<AutoresearchRunManifest> {
-  const manifestFile = join(getOmcRoot(projectRoot), 'logs', 'autoresearch', runId, 'manifest.json');
+export async function loadAutoresearchRunManifest(
+  projectRoot: string,
+  runId: string,
+): Promise<AutoresearchRunManifest> {
+  const manifestFile = join(
+    getOmcRoot(projectRoot),
+    'logs',
+    'autoresearch',
+    runId,
+    'manifest.json',
+  );
   if (!existsSync(manifestFile)) {
     throw new Error(`autoresearch_resume_manifest_missing:${runId}`);
   }
   return readJsonFile<AutoresearchRunManifest>(manifestFile);
 }
 
-async function writeRunManifest(manifest: AutoresearchRunManifest): Promise<void> {
+async function writeRunManifest(
+  manifest: AutoresearchRunManifest,
+): Promise<void> {
   manifest.updated_at = nowIso();
   await writeJsonFile(manifest.manifest_file, manifest);
 }
 
-async function writeInstructionsFile(contract: AutoresearchMissionContract, manifest: AutoresearchRunManifest): Promise<void> {
-  const instructionContext = await buildAutoresearchInstructionContext(manifest);
+async function writeInstructionsFile(
+  contract: AutoresearchMissionContract,
+  manifest: AutoresearchRunManifest,
+): Promise<void> {
+  const instructionContext =
+    await buildAutoresearchInstructionContext(manifest);
   await writeFile(
     manifest.instructions_file,
     `${buildAutoresearchInstructions(contract, {
@@ -902,10 +1061,20 @@ async function seedBaseline(
   contract: AutoresearchMissionContract,
   manifest: AutoresearchRunManifest,
 ): Promise<AutoresearchEvaluationRecord> {
-  const evaluation = await runAutoresearchEvaluator(contract, manifest.worktree_path);
+  const evaluation = await runAutoresearchEvaluator(
+    contract,
+    manifest.worktree_path,
+  );
   await writeJsonFile(manifest.latest_evaluator_file, evaluation);
-  const artifactLayout = getAutoresearchMissionArtifactLayout(manifest.repo_root, manifest.mission_slug, manifest.run_id);
-  await writeJsonFile(join(artifactLayout.evaluationsDir, 'iteration-0000.json'), evaluation);
+  const artifactLayout = getAutoresearchMissionArtifactLayout(
+    manifest.repo_root,
+    manifest.mission_slug,
+    manifest.run_id,
+  );
+  await writeJsonFile(
+    join(artifactLayout.evaluationsDir, 'iteration-0000.json'),
+    evaluation,
+  );
   await appendAutoresearchResultsRow(manifest.results_file, {
     iteration: 0,
     commit: readGitShortHead(manifest.worktree_path),
@@ -918,7 +1087,10 @@ async function seedBaseline(
     iteration: 0,
     kind: 'baseline',
     decision: evaluation.status === 'error' ? 'error' : 'baseline',
-    decision_reason: evaluation.status === 'error' ? 'baseline evaluator error' : 'baseline established',
+    decision_reason:
+      evaluation.status === 'error'
+        ? 'baseline evaluator error'
+        : 'baseline established',
     candidate_status: 'baseline',
     base_commit: manifest.baseline_commit,
     candidate_commit: null,
@@ -937,7 +1109,10 @@ async function seedBaseline(
     evaluator: evaluation,
     notes: ['baseline established'],
   });
-  manifest.last_kept_score = evaluation.pass && typeof evaluation.score === 'number' ? evaluation.score : null;
+  manifest.last_kept_score =
+    evaluation.pass && typeof evaluation.score === 'number'
+      ? evaluation.score
+      : null;
   await writeRunManifest(manifest);
   await writeInstructionsFile(contract, manifest);
   return evaluation;
@@ -952,12 +1127,20 @@ export async function prepareAutoresearchRuntime(
   await assertAutoresearchLockAvailable(projectRoot);
   await ensureRuntimeExcludes(worktreePath);
   await ensureAutoresearchWorktreeDependencies(projectRoot, worktreePath);
-  assertResetSafeWorktree(worktreePath, [contract.missionFile, contract.sandboxFile]);
+  assertResetSafeWorktree(worktreePath, [
+    contract.missionFile,
+    contract.sandboxFile,
+  ]);
 
   const runTag = options.runTag || buildAutoresearchRunTag();
   const runId = buildRunId(contract.missionSlug, runTag);
   const baselineCommit = readGitShortHead(worktreePath);
-  const branchName = readGit(worktreePath, ['symbolic-ref', '--quiet', '--short', 'HEAD']);
+  const branchName = readGit(worktreePath, [
+    'symbolic-ref',
+    '--quiet',
+    '--short',
+    'HEAD',
+  ]);
   const runDir = join(getOmcRoot(projectRoot), 'logs', 'autoresearch', runId);
   const stateFile = activeRunStateFile(projectRoot);
   const instructionsFile = join(runDir, 'bootstrap-instructions.md');
@@ -967,22 +1150,34 @@ export async function prepareAutoresearchRuntime(
   const candidateFile = join(runDir, 'candidate.json');
   const resultsFile = join(worktreePath, 'results.tsv');
   const taskDescription = `autoresearch ${contract.missionRelativeDir} (${runId})`;
-  const keepPolicy = contract.sandbox.evaluator.keep_policy ?? 'score_improvement';
-  const artifactLayout = getAutoresearchMissionArtifactLayout(projectRoot, contract.missionSlug, runId);
-  const deadlineAt = typeof options.maxRuntimeMs === 'number'
-    ? new Date(Date.now() + options.maxRuntimeMs).toISOString()
-    : undefined;
+  const keepPolicy =
+    contract.sandbox.evaluator.keep_policy ?? 'score_improvement';
+  const artifactLayout = getAutoresearchMissionArtifactLayout(
+    projectRoot,
+    contract.missionSlug,
+    runId,
+  );
+  const deadlineAt =
+    typeof options.maxRuntimeMs === 'number'
+      ? new Date(Date.now() + options.maxRuntimeMs).toISOString()
+      : undefined;
 
   await mkdir(runDir, { recursive: true });
   await mkdir(artifactLayout.evaluationsDir, { recursive: true });
   await initializeAutoresearchResultsFile(resultsFile);
   await ensureParentDir(artifactLayout.missionSpecFile);
-  await writeFile(artifactLayout.missionSpecFile, contract.missionContent, 'utf-8');
+  await writeFile(
+    artifactLayout.missionSpecFile,
+    contract.missionContent,
+    'utf-8',
+  );
   await ensureParentDir(artifactLayout.evaluatorReferenceFile);
   await writeJsonFile(artifactLayout.evaluatorReferenceFile, {
     command: contract.sandbox.evaluator.command,
     format: contract.sandbox.evaluator.format,
-    ...(contract.sandbox.evaluator.keep_policy ? { keep_policy: contract.sandbox.evaluator.keep_policy } : {}),
+    ...(contract.sandbox.evaluator.keep_policy
+      ? { keep_policy: contract.sandbox.evaluator.keep_policy }
+      : {}),
   });
   await writeJsonFile(candidateFile, {
     status: 'noop',
@@ -1039,50 +1234,61 @@ export async function prepareAutoresearchRuntime(
     updated_at: nowIso(),
   });
 
-  const existingModeState = readModeState<Record<string, unknown>>('autoresearch', projectRoot);
+  const existingModeState = readModeState<Record<string, unknown>>(
+    'autoresearch',
+    projectRoot,
+  );
   if (existingModeState?.active) {
-    throw new Error(`autoresearch_active_mode_exists:${String(existingModeState.run_id || 'unknown')}`);
+    throw new Error(
+      `autoresearch_active_mode_exists:${String(existingModeState.run_id || 'unknown')}`,
+    );
   }
   startAutoresearchMode(taskDescription, projectRoot);
   await activateAutoresearchRun(manifest);
-  updateAutoresearchMode({
-    current_phase: 'evaluating-baseline',
-    run_id: runId,
-    run_tag: runTag,
-    mission_dir: contract.missionDir,
-    mission_file: contract.missionFile,
-    sandbox_file: contract.sandboxFile,
-    mission_slug: contract.missionSlug,
-    repo_root: projectRoot,
-    worktree_path: worktreePath,
-    baseline_commit: baselineCommit,
-    last_kept_commit: manifest.last_kept_commit,
-    results_file: resultsFile,
-    manifest_path: manifestFile,
-    iteration_ledger_path: ledgerFile,
-    latest_evaluator_result_path: latestEvaluatorFile,
-    bootstrap_instructions_path: instructionsFile,
-    candidate_path: candidateFile,
-    keep_policy: keepPolicy,
-    state_file: stateFile,
-    mission_artifact_root: artifactLayout.missionRoot,
-    mission_spec_file: artifactLayout.missionSpecFile,
-    evaluator_reference_file: artifactLayout.evaluatorReferenceFile,
-    decision_log_file: artifactLayout.decisionLogFile,
-    max_runtime_ms: options.maxRuntimeMs,
-    deadline_at: deadlineAt,
-  }, projectRoot);
+  updateAutoresearchMode(
+    {
+      current_phase: 'evaluating-baseline',
+      run_id: runId,
+      run_tag: runTag,
+      mission_dir: contract.missionDir,
+      mission_file: contract.missionFile,
+      sandbox_file: contract.sandboxFile,
+      mission_slug: contract.missionSlug,
+      repo_root: projectRoot,
+      worktree_path: worktreePath,
+      baseline_commit: baselineCommit,
+      last_kept_commit: manifest.last_kept_commit,
+      results_file: resultsFile,
+      manifest_path: manifestFile,
+      iteration_ledger_path: ledgerFile,
+      latest_evaluator_result_path: latestEvaluatorFile,
+      bootstrap_instructions_path: instructionsFile,
+      candidate_path: candidateFile,
+      keep_policy: keepPolicy,
+      state_file: stateFile,
+      mission_artifact_root: artifactLayout.missionRoot,
+      mission_spec_file: artifactLayout.missionSpecFile,
+      evaluator_reference_file: artifactLayout.evaluatorReferenceFile,
+      decision_log_file: artifactLayout.decisionLogFile,
+      max_runtime_ms: options.maxRuntimeMs,
+      deadline_at: deadlineAt,
+    },
+    projectRoot,
+  );
 
   const evaluation = await seedBaseline(contract, manifest);
-  updateAutoresearchMode({
-    current_phase: 'running',
-    latest_evaluator_status: evaluation.status,
-    latest_evaluator_pass: evaluation.pass,
-    latest_evaluator_score: evaluation.score,
-    latest_evaluator_ran_at: evaluation.ran_at,
-    last_kept_commit: manifest.last_kept_commit,
-    last_kept_score: manifest.last_kept_score,
-  }, projectRoot);
+  updateAutoresearchMode(
+    {
+      current_phase: 'running',
+      latest_evaluator_status: evaluation.status,
+      latest_evaluator_pass: evaluation.pass,
+      latest_evaluator_score: evaluation.score,
+      latest_evaluator_ran_at: evaluation.ran_at,
+      last_kept_commit: manifest.last_kept_commit,
+      last_kept_score: manifest.last_kept_score,
+    },
+    projectRoot,
+  );
 
   return {
     runId,
@@ -1101,42 +1307,56 @@ export async function prepareAutoresearchRuntime(
   };
 }
 
-export async function resumeAutoresearchRuntime(projectRoot: string, runId: string): Promise<PreparedAutoresearchRuntime> {
+export async function resumeAutoresearchRuntime(
+  projectRoot: string,
+  runId: string,
+): Promise<PreparedAutoresearchRuntime> {
   await assertAutoresearchLockAvailable(projectRoot);
   const manifest = await loadAutoresearchRunManifest(projectRoot, runId);
   if (manifest.status !== 'running') {
     throw new Error(`autoresearch_resume_terminal_run:${runId}`);
   }
   if (!existsSync(manifest.worktree_path)) {
-    throw new Error(`autoresearch_resume_missing_worktree:${manifest.worktree_path}`);
+    throw new Error(
+      `autoresearch_resume_missing_worktree:${manifest.worktree_path}`,
+    );
   }
   await ensureRuntimeExcludes(manifest.worktree_path);
-  await ensureAutoresearchWorktreeDependencies(projectRoot, manifest.worktree_path);
-  assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
+  await ensureAutoresearchWorktreeDependencies(
+    projectRoot,
+    manifest.worktree_path,
+  );
+  assertResetSafeWorktree(manifest.worktree_path, [
+    manifest.mission_file,
+    manifest.sandbox_file,
+  ]);
   startAutoresearchMode(`autoresearch resume ${runId}`, projectRoot);
   await activateAutoresearchRun(manifest);
-  updateAutoresearchMode({
-    current_phase: 'running',
-    run_id: manifest.run_id,
-    run_tag: manifest.run_tag,
-    mission_dir: manifest.mission_dir,
-    mission_file: manifest.mission_file,
-    sandbox_file: manifest.sandbox_file,
-    mission_slug: manifest.mission_slug,
-    repo_root: manifest.repo_root,
-    worktree_path: manifest.worktree_path,
-    baseline_commit: manifest.baseline_commit,
-    last_kept_commit: manifest.last_kept_commit,
-    last_kept_score: manifest.last_kept_score,
-    results_file: manifest.results_file,
-    manifest_path: manifest.manifest_file,
-    iteration_ledger_path: manifest.ledger_file,
-    latest_evaluator_result_path: manifest.latest_evaluator_file,
-    bootstrap_instructions_path: manifest.instructions_file,
-    candidate_path: manifest.candidate_file,
-    keep_policy: manifest.keep_policy,
-    state_file: activeRunStateFile(projectRoot),
-  }, projectRoot);
+  updateAutoresearchMode(
+    {
+      current_phase: 'running',
+      run_id: manifest.run_id,
+      run_tag: manifest.run_tag,
+      mission_dir: manifest.mission_dir,
+      mission_file: manifest.mission_file,
+      sandbox_file: manifest.sandbox_file,
+      mission_slug: manifest.mission_slug,
+      repo_root: manifest.repo_root,
+      worktree_path: manifest.worktree_path,
+      baseline_commit: manifest.baseline_commit,
+      last_kept_commit: manifest.last_kept_commit,
+      last_kept_score: manifest.last_kept_score,
+      results_file: manifest.results_file,
+      manifest_path: manifest.manifest_file,
+      iteration_ledger_path: manifest.ledger_file,
+      latest_evaluator_result_path: manifest.latest_evaluator_file,
+      bootstrap_instructions_path: manifest.instructions_file,
+      candidate_path: manifest.candidate_file,
+      keep_policy: manifest.keep_policy,
+      state_file: activeRunStateFile(projectRoot),
+    },
+    projectRoot,
+  );
   return {
     runId: manifest.run_id,
     runTag: manifest.run_tag,
@@ -1154,7 +1374,9 @@ export async function resumeAutoresearchRuntime(projectRoot: string, runId: stri
   };
 }
 
-export function parseAutoresearchCandidateArtifact(raw: string): AutoresearchCandidateArtifact {
+export function parseAutoresearchCandidateArtifact(
+  raw: string,
+): AutoresearchCandidateArtifact {
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
@@ -1166,11 +1388,23 @@ export function parseAutoresearchCandidateArtifact(raw: string): AutoresearchCan
   }
   const record = parsed as Record<string, unknown>;
   const status = record.status;
-  if (status !== 'candidate' && status !== 'noop' && status !== 'abort' && status !== 'interrupted') {
-    throw new Error('autoresearch candidate artifact status must be candidate|noop|abort|interrupted');
+  if (
+    status !== 'candidate' &&
+    status !== 'noop' &&
+    status !== 'abort' &&
+    status !== 'interrupted'
+  ) {
+    throw new Error(
+      'autoresearch candidate artifact status must be candidate|noop|abort|interrupted',
+    );
   }
-  if (record.candidate_commit !== null && typeof record.candidate_commit !== 'string') {
-    throw new Error('autoresearch candidate artifact candidate_commit must be string|null');
+  if (
+    record.candidate_commit !== null &&
+    typeof record.candidate_commit !== 'string'
+  ) {
+    throw new Error(
+      'autoresearch candidate artifact candidate_commit must be string|null',
+    );
   }
   if (typeof record.base_commit !== 'string' || !record.base_commit.trim()) {
     throw new Error('autoresearch candidate artifact base_commit is required');
@@ -1178,8 +1412,13 @@ export function parseAutoresearchCandidateArtifact(raw: string): AutoresearchCan
   if (typeof record.description !== 'string') {
     throw new Error('autoresearch candidate artifact description is required');
   }
-  if (!Array.isArray(record.notes) || record.notes.some((note) => typeof note !== 'string')) {
-    throw new Error('autoresearch candidate artifact notes must be a string array');
+  if (
+    !Array.isArray(record.notes) ||
+    record.notes.some((note) => typeof note !== 'string')
+  ) {
+    throw new Error(
+      'autoresearch candidate artifact notes must be a string array',
+    );
   }
   if (typeof record.created_at !== 'string' || !record.created_at.trim()) {
     throw new Error('autoresearch candidate artifact created_at is required');
@@ -1194,11 +1433,15 @@ export function parseAutoresearchCandidateArtifact(raw: string): AutoresearchCan
   };
 }
 
-async function readCandidateArtifact(candidateFile: string): Promise<AutoresearchCandidateArtifact> {
+async function readCandidateArtifact(
+  candidateFile: string,
+): Promise<AutoresearchCandidateArtifact> {
   if (!existsSync(candidateFile)) {
     throw new Error(`autoresearch_candidate_missing:${candidateFile}`);
   }
-  return parseAutoresearchCandidateArtifact(await readFile(candidateFile, 'utf-8'));
+  return parseAutoresearchCandidateArtifact(
+    await readFile(candidateFile, 'utf-8'),
+  );
 }
 
 async function finalizeRun(
@@ -1210,25 +1453,38 @@ async function finalizeRun(
   manifest.stop_reason = updates.stopReason;
   manifest.completed_at = nowIso();
   await writeRunManifest(manifest);
-  updateAutoresearchMode({
-    active: false,
-    current_phase: updates.status,
-    completed_at: manifest.completed_at,
-    stop_reason: updates.stopReason,
-  }, projectRoot);
+  updateAutoresearchMode(
+    {
+      active: false,
+      current_phase: updates.status,
+      completed_at: manifest.completed_at,
+      stop_reason: updates.stopReason,
+    },
+    projectRoot,
+  );
   await deactivateAutoresearchRun(manifest);
 }
 
 function resetToLastKeptCommit(manifest: AutoresearchRunManifest): void {
-  assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
-  requireGitSuccess(manifest.worktree_path, ['reset', '--hard', manifest.last_kept_commit]);
+  assertResetSafeWorktree(manifest.worktree_path, [
+    manifest.mission_file,
+    manifest.sandbox_file,
+  ]);
+  requireGitSuccess(manifest.worktree_path, [
+    'reset',
+    '--hard',
+    manifest.last_kept_commit,
+  ]);
 }
 
 function validateAutoresearchCandidate(
   manifest: Pick<AutoresearchRunManifest, 'last_kept_commit' | 'worktree_path'>,
   candidate: AutoresearchCandidateArtifact,
 ): { candidate: AutoresearchCandidateArtifact } | { reason: string } {
-  const resolvedBaseCommit = tryResolveGitCommit(manifest.worktree_path, candidate.base_commit);
+  const resolvedBaseCommit = tryResolveGitCommit(
+    manifest.worktree_path,
+    candidate.base_commit,
+  );
   if (!resolvedBaseCommit) {
     return {
       reason: `candidate base_commit does not resolve in git: ${candidate.base_commit}`,
@@ -1254,7 +1510,10 @@ function validateAutoresearchCandidate(
       reason: 'candidate status requires a non-null candidate_commit',
     };
   }
-  const resolvedCandidateCommit = tryResolveGitCommit(manifest.worktree_path, candidate.candidate_commit);
+  const resolvedCandidateCommit = tryResolveGitCommit(
+    manifest.worktree_path,
+    candidate.candidate_commit,
+  );
   if (!resolvedCandidateCommit) {
     return {
       reason: `candidate_commit does not resolve in git: ${candidate.candidate_commit}`,
@@ -1282,7 +1541,11 @@ async function failAutoresearchIteration(
   reason: string,
   candidate?: AutoresearchCandidateArtifact,
 ): Promise<'error'> {
-  const artifactLayout = getAutoresearchMissionArtifactLayout(projectRoot, manifest.mission_slug, manifest.run_id);
+  const artifactLayout = getAutoresearchMissionArtifactLayout(
+    projectRoot,
+    manifest.mission_slug,
+    manifest.run_id,
+  );
   const headCommit = (() => {
     try {
       return readGitShortHead(manifest.worktree_path);
@@ -1319,7 +1582,10 @@ async function failAutoresearchIteration(
     reason,
     notes: [...(candidate?.notes ?? []), `validation_error:${reason}`],
   });
-  await finalizeRun(manifest, projectRoot, { status: 'failed', stopReason: reason });
+  await finalizeRun(manifest, projectRoot, {
+    status: 'failed',
+    stopReason: reason,
+  });
   return 'error';
 }
 
@@ -1329,7 +1595,11 @@ export async function processAutoresearchCandidate(
   projectRoot: string,
 ): Promise<AutoresearchDecisionStatus> {
   manifest.iteration += 1;
-  const artifactLayout = getAutoresearchMissionArtifactLayout(projectRoot, manifest.mission_slug, manifest.run_id);
+  const artifactLayout = getAutoresearchMissionArtifactLayout(
+    projectRoot,
+    manifest.mission_slug,
+    manifest.run_id,
+  );
   let candidate: AutoresearchCandidateArtifact;
   try {
     candidate = await readCandidateArtifact(manifest.candidate_file);
@@ -1343,7 +1613,12 @@ export async function processAutoresearchCandidate(
 
   const validation = validateAutoresearchCandidate(manifest, candidate);
   if ('reason' in validation) {
-    return failAutoresearchIteration(manifest, projectRoot, validation.reason, candidate);
+    return failAutoresearchIteration(
+      manifest,
+      projectRoot,
+      validation.reason,
+      candidate,
+    );
   }
   candidate = validation.candidate;
   manifest.latest_candidate_commit = candidate.candidate_commit;
@@ -1377,15 +1652,24 @@ export async function processAutoresearchCandidate(
       reason: 'candidate requested abort',
       notes: candidate.notes,
     });
-    await finalizeRun(manifest, projectRoot, { status: 'stopped', stopReason: 'candidate abort' });
+    await finalizeRun(manifest, projectRoot, {
+      status: 'stopped',
+      stopReason: 'candidate abort',
+    });
     return 'abort';
   }
 
   if (candidate.status === 'interrupted') {
     try {
-      assertResetSafeWorktree(manifest.worktree_path, [manifest.mission_file, manifest.sandbox_file]);
+      assertResetSafeWorktree(manifest.worktree_path, [
+        manifest.mission_file,
+        manifest.sandbox_file,
+      ]);
     } catch {
-      await finalizeRun(manifest, projectRoot, { status: 'failed', stopReason: 'interrupted dirty worktree requires operator intervention' });
+      await finalizeRun(manifest, projectRoot, {
+        status: 'failed',
+        stopReason: 'interrupted dirty worktree requires operator intervention',
+      });
       return 'error';
     }
     await appendAutoresearchResultsRow(manifest.results_file, {
@@ -1455,16 +1739,25 @@ export async function processAutoresearchCandidate(
     return 'noop';
   }
 
-  const evaluation = await runAutoresearchEvaluator(contract, manifest.worktree_path);
+  const evaluation = await runAutoresearchEvaluator(
+    contract,
+    manifest.worktree_path,
+  );
   await writeJsonFile(manifest.latest_evaluator_file, evaluation);
   await writeJsonFile(
-    join(artifactLayout.evaluationsDir, `iteration-${String(manifest.iteration).padStart(4, '0')}.json`),
+    join(
+      artifactLayout.evaluationsDir,
+      `iteration-${String(manifest.iteration).padStart(4, '0')}.json`,
+    ),
     evaluation,
   );
   const decision = decideAutoresearchOutcome(manifest, candidate, evaluation);
   if (decision.keep) {
     manifest.last_kept_commit = readGitFullHead(manifest.worktree_path);
-    manifest.last_kept_score = typeof evaluation.score === 'number' ? evaluation.score : manifest.last_kept_score;
+    manifest.last_kept_score =
+      typeof evaluation.score === 'number'
+        ? evaluation.score
+        : manifest.last_kept_score;
   } else {
     resetToLastKeptCommit(manifest);
   }
@@ -1502,17 +1795,20 @@ export async function processAutoresearchCandidate(
   });
   await writeRunManifest(manifest);
   await writeInstructionsFile(contract, manifest);
-  updateAutoresearchMode({
-    current_phase: 'running',
-    iteration: manifest.iteration,
-    last_kept_commit: manifest.last_kept_commit,
-    last_kept_score: manifest.last_kept_score,
-    latest_evaluator_status: evaluation.status,
-    latest_evaluator_pass: evaluation.pass,
-    latest_evaluator_score: evaluation.score,
-    latest_evaluator_ran_at: evaluation.ran_at,
-    decision_log_file: artifactLayout.decisionLogFile,
-  }, projectRoot);
+  updateAutoresearchMode(
+    {
+      current_phase: 'running',
+      iteration: manifest.iteration,
+      last_kept_commit: manifest.last_kept_commit,
+      last_kept_score: manifest.last_kept_score,
+      latest_evaluator_status: evaluation.status,
+      latest_evaluator_pass: evaluation.pass,
+      latest_evaluator_score: evaluation.score,
+      latest_evaluator_ran_at: evaluation.ran_at,
+      decision_log_file: artifactLayout.decisionLogFile,
+    },
+    projectRoot,
+  );
   return decision.decision;
 }
 
@@ -1528,8 +1824,13 @@ export async function finalizeAutoresearchRunState(
   await finalizeRun(manifest, projectRoot, updates);
 }
 
-export async function stopAutoresearchRuntime(projectRoot: string): Promise<void> {
-  const state = readModeState<Record<string, unknown>>('autoresearch', projectRoot);
+export async function stopAutoresearchRuntime(
+  projectRoot: string,
+): Promise<void> {
+  const state = readModeState<Record<string, unknown>>(
+    'autoresearch',
+    projectRoot,
+  );
   if (!state?.active) {
     return;
   }

@@ -17,12 +17,22 @@ describe('resolveSessionId', () => {
 
     it('returns payload when only payload is set', () => {
       delete process.env.OMC_SESSION_ID;
-      expect(resolveSessionId({ context: 'cli', hookPayload: { session_id: 'payload-sid' } })).toBe('payload-sid');
+      expect(
+        resolveSessionId({
+          context: 'cli',
+          hookPayload: { session_id: 'payload-sid' },
+        }),
+      ).toBe('payload-sid');
     });
 
     it('env WINS over payload in CLI context (intentional asymmetry)', () => {
       process.env.OMC_SESSION_ID = 'env-sid';
-      expect(resolveSessionId({ context: 'cli', hookPayload: { session_id: 'payload-sid' } })).toBe('env-sid');
+      expect(
+        resolveSessionId({
+          context: 'cli',
+          hookPayload: { session_id: 'payload-sid' },
+        }),
+      ).toBe('env-sid');
     });
 
     it('returns undefined when neither source provides a value', () => {
@@ -34,7 +44,12 @@ describe('resolveSessionId', () => {
   describe('context = hook', () => {
     it('returns payload when only payload is set', () => {
       delete process.env.OMC_SESSION_ID;
-      expect(resolveSessionId({ context: 'hook', hookPayload: { session_id: 'payload-sid' } })).toBe('payload-sid');
+      expect(
+        resolveSessionId({
+          context: 'hook',
+          hookPayload: { session_id: 'payload-sid' },
+        }),
+      ).toBe('payload-sid');
     });
 
     it('returns env when only env is set', () => {
@@ -44,7 +59,12 @@ describe('resolveSessionId', () => {
 
     it('payload WINS over env in hook context (intentional asymmetry)', () => {
       process.env.OMC_SESSION_ID = 'env-sid';
-      expect(resolveSessionId({ context: 'hook', hookPayload: { session_id: 'payload-sid' } })).toBe('payload-sid');
+      expect(
+        resolveSessionId({
+          context: 'hook',
+          hookPayload: { session_id: 'payload-sid' },
+        }),
+      ).toBe('payload-sid');
     });
 
     it('returns undefined when neither source provides a value', () => {
@@ -56,17 +76,26 @@ describe('resolveSessionId', () => {
   describe('input normalization', () => {
     it('ignores empty-string env', () => {
       process.env.OMC_SESSION_ID = '   ';
-      expect(resolveSessionId({ context: 'cli', hookPayload: { session_id: 'payload-sid' } })).toBe('payload-sid');
+      expect(
+        resolveSessionId({
+          context: 'cli',
+          hookPayload: { session_id: 'payload-sid' },
+        }),
+      ).toBe('payload-sid');
     });
 
     it('ignores empty-string payload', () => {
       delete process.env.OMC_SESSION_ID;
-      expect(resolveSessionId({ context: 'hook', hookPayload: { session_id: '' } })).toBeUndefined();
+      expect(
+        resolveSessionId({ context: 'hook', hookPayload: { session_id: '' } }),
+      ).toBeUndefined();
     });
 
     it('ignores null payload', () => {
       delete process.env.OMC_SESSION_ID;
-      expect(resolveSessionId({ context: 'hook', hookPayload: null })).toBeUndefined();
+      expect(
+        resolveSessionId({ context: 'hook', hookPayload: null }),
+      ).toBeUndefined();
     });
 
     it('trims whitespace from values', () => {

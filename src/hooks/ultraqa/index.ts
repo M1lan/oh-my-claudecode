@@ -5,19 +5,19 @@
  * until the QA goal is met or max cycles reached.
  */
 
-import { readRalphState } from "../ralph/index.js";
+import { readRalphState } from '../ralph/index.js';
 import {
   writeModeState,
   readModeState,
   clearModeStateFile,
-} from "../../lib/mode-state-io.js";
+} from '../../lib/mode-state-io.js';
 
 export type UltraQAGoalType =
-  | "tests"
-  | "build"
-  | "lint"
-  | "typecheck"
-  | "custom";
+  | 'tests'
+  | 'build'
+  | 'lint'
+  | 'typecheck'
+  | 'custom';
 
 export interface UltraQAState {
   /** Whether the loop is currently active */
@@ -54,11 +54,11 @@ export interface UltraQAResult {
   cycles: number;
   /** Reason for exit */
   reason:
-    | "goal_met"
-    | "max_cycles"
-    | "same_failure"
-    | "env_error"
-    | "cancelled";
+    | 'goal_met'
+    | 'max_cycles'
+    | 'same_failure'
+    | 'env_error'
+    | 'cancelled';
   /** Diagnosis message if failed */
   diagnosis?: string;
 }
@@ -73,7 +73,7 @@ export function readUltraQAState(
   directory: string,
   sessionId?: string,
 ): UltraQAState | null {
-  return readModeState<UltraQAState>("ultraqa", directory, sessionId);
+  return readModeState<UltraQAState>('ultraqa', directory, sessionId);
 }
 
 /**
@@ -85,7 +85,7 @@ export function writeUltraQAState(
   sessionId?: string,
 ): boolean {
   return writeModeState(
-    "ultraqa",
+    'ultraqa',
     state as unknown as Record<string, unknown>,
     directory,
     sessionId,
@@ -99,7 +99,7 @@ export function clearUltraQAState(
   directory: string,
   sessionId?: string,
 ): boolean {
-  return clearModeStateFile("ultraqa", directory, sessionId);
+  return clearModeStateFile('ultraqa', directory, sessionId);
 }
 
 /**
@@ -128,7 +128,7 @@ export function startUltraQA(
     return {
       success: false,
       error:
-        "Cannot start UltraQA while Ralph Loop is active. Cancel Ralph Loop first with /oh-my-claudecode:cancel.",
+        'Cannot start UltraQA while Ralph Loop is active. Cancel Ralph Loop first with /oh-my-claudecode:cancel.',
     };
   }
 
@@ -159,7 +159,7 @@ export function recordFailure(
   const state = readUltraQAState(directory, sessionId);
 
   if (!state || !state.active) {
-    return { state: null, shouldExit: true, reason: "not_active" };
+    return { state: null, shouldExit: true, reason: 'not_active' };
   }
 
   // Add failure to array
@@ -212,7 +212,7 @@ export function completeUltraQA(
   const result: UltraQAResult = {
     success: true,
     cycles: state.cycle,
-    reason: "goal_met",
+    reason: 'goal_met',
   };
 
   clearUltraQAState(directory, sessionId);
@@ -224,7 +224,7 @@ export function completeUltraQA(
  */
 export function stopUltraQA(
   directory: string,
-  reason: "max_cycles" | "same_failure" | "env_error",
+  reason: 'max_cycles' | 'same_failure' | 'env_error',
   diagnosis: string,
   sessionId?: string,
 ): UltraQAResult | null {
@@ -258,10 +258,10 @@ export function cancelUltraQA(directory: string, sessionId?: string): boolean {
 function normalizeFailure(failure: string): string {
   // Remove timestamps, line numbers, and other variable parts
   return failure
-    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, "") // ISO timestamps
-    .replace(/:\d+:\d+/g, "") // line:col numbers
-    .replace(/\d+ms/g, "") // timing
-    .replace(/\s+/g, " ")
+    .replace(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/g, '') // ISO timestamps
+    .replace(/:\d+:\d+/g, '') // line:col numbers
+    .replace(/\d+ms/g, '') // timing
+    .replace(/\s+/g, ' ')
     .trim()
     .toLowerCase();
 }
@@ -271,16 +271,16 @@ function normalizeFailure(failure: string): string {
  */
 export function getGoalCommand(goalType: UltraQAGoalType): string {
   switch (goalType) {
-    case "tests":
-      return "# Run the project test command (e.g., pnpm test, pytest, go test ./..., cargo test)";
-    case "build":
-      return "# Run the project build command (e.g., pnpm run build, go build ./..., cargo build)";
-    case "lint":
-      return "# Run the project lint command (e.g., pnpm run lint, ruff check ., golangci-lint run)";
-    case "typecheck":
-      return "# Run the project type check command (e.g., tsc --noEmit, mypy ., cargo check)";
-    case "custom":
-      return "# Custom command based on goal pattern";
+    case 'tests':
+      return '# Run the project test command (e.g., pnpm test, pytest, go test ./..., cargo test)';
+    case 'build':
+      return '# Run the project build command (e.g., pnpm run build, go build ./..., cargo build)';
+    case 'lint':
+      return '# Run the project lint command (e.g., pnpm run lint, ruff check ., golangci-lint run)';
+    case 'typecheck':
+      return '# Run the project type check command (e.g., tsc --noEmit, mypy ., cargo check)';
+    case 'custom':
+      return '# Custom command based on goal pattern';
   }
 }
 

@@ -8,15 +8,15 @@
 
 /** All supported execution mode identifiers. */
 export const MODE_NAMES = {
-  AUTOPILOT: "autopilot",
-  AUTORESEARCH: "autoresearch",
-  TEAM: "team",
-  RALPH: "ralph",
-  ULTRAWORK: "ultrawork",
-  ULTRAQA: "ultraqa",
-  RALPLAN: "ralplan",
-  DEEP_INTERVIEW: "deep-interview",
-  SELF_IMPROVE: "self-improve",
+  AUTOPILOT: 'autopilot',
+  AUTORESEARCH: 'autoresearch',
+  TEAM: 'team',
+  RALPH: 'ralph',
+  ULTRAWORK: 'ultrawork',
+  ULTRAQA: 'ultraqa',
+  RALPLAN: 'ralplan',
+  DEEP_INTERVIEW: 'deep-interview',
+  SELF_IMPROVE: 'self-improve',
 } as const;
 
 /**
@@ -24,9 +24,9 @@ export const MODE_NAMES = {
  * Kept as constants for deprecation warnings and migration paths.
  */
 export const DEPRECATED_MODE_NAMES = {
-  ULTRAPILOT: "ultrapilot",
-  SWARM: "swarm",
-  PIPELINE: "pipeline",
+  ULTRAPILOT: 'ultrapilot',
+  SWARM: 'swarm',
+  PIPELINE: 'pipeline',
 } as const;
 
 /** Union type derived from the constant map. */
@@ -53,15 +53,15 @@ export const ALL_MODE_NAMES: readonly ModeName[] = [
  * relative to `.omc/state/`.
  */
 export const MODE_STATE_FILE_MAP: Readonly<Record<ModeName, string>> = {
-  [MODE_NAMES.AUTOPILOT]: "autopilot-state.json",
-  [MODE_NAMES.AUTORESEARCH]: "autoresearch-state.json",
-  [MODE_NAMES.TEAM]: "team-state.json",
-  [MODE_NAMES.RALPH]: "ralph-state.json",
-  [MODE_NAMES.ULTRAWORK]: "ultrawork-state.json",
-  [MODE_NAMES.ULTRAQA]: "ultraqa-state.json",
-  [MODE_NAMES.RALPLAN]: "ralplan-state.json",
-  [MODE_NAMES.DEEP_INTERVIEW]: "deep-interview-state.json",
-  [MODE_NAMES.SELF_IMPROVE]: "self-improve-state.json",
+  [MODE_NAMES.AUTOPILOT]: 'autopilot-state.json',
+  [MODE_NAMES.AUTORESEARCH]: 'autoresearch-state.json',
+  [MODE_NAMES.TEAM]: 'team-state.json',
+  [MODE_NAMES.RALPH]: 'ralph-state.json',
+  [MODE_NAMES.ULTRAWORK]: 'ultrawork-state.json',
+  [MODE_NAMES.ULTRAQA]: 'ultraqa-state.json',
+  [MODE_NAMES.RALPLAN]: 'ralplan-state.json',
+  [MODE_NAMES.DEEP_INTERVIEW]: 'deep-interview-state.json',
+  [MODE_NAMES.SELF_IMPROVE]: 'self-improve-state.json',
 };
 
 /**
@@ -96,7 +96,7 @@ export const SESSION_END_MODE_STATE_FILES: readonly {
     file: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE],
     mode: MODE_NAMES.SELF_IMPROVE,
   },
-  { file: "skill-active-state.json", mode: "skill-active" },
+  { file: 'skill-active-state.json', mode: 'skill-active' },
 ];
 
 /**

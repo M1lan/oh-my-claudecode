@@ -55,7 +55,7 @@ export interface ContextUsageResult {
   /** Whether usage is above critical threshold */
   isCritical: boolean;
   /** Suggested action */
-  action: "none" | "warn" | "compact";
+  action: 'none' | 'warn' | 'compact';
 }
 
 /**

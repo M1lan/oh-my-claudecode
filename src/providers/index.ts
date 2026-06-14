@@ -5,13 +5,13 @@
  * access to provider-specific adapters.
  */
 
-import { execSync } from "node:child_process";
-import type { ProviderName, RemoteUrlInfo, GitProvider } from "./types.js";
-import { GitHubProvider } from "./github.js";
-import { GitLabProvider } from "./gitlab.js";
-import { BitbucketProvider } from "./bitbucket.js";
-import { AzureDevOpsProvider } from "./azure-devops.js";
-import { GiteaProvider } from "./gitea.js";
+import { execSync } from 'node:child_process';
+import type { ProviderName, RemoteUrlInfo, GitProvider } from './types.js';
+import { GitHubProvider } from './github.js';
+import { GitLabProvider } from './gitlab.js';
+import { BitbucketProvider } from './bitbucket.js';
+import { AzureDevOpsProvider } from './azure-devops.js';
+import { GiteaProvider } from './gitea.js';
 
 // Singleton provider registry
 let providerRegistry: Map<ProviderName, GitProvider> | null = null;
@@ -56,11 +56,11 @@ function getRemoteUrl(cwd?: string): string | null {
   if (cached !== undefined) return cached;
 
   try {
-    const url = execSync("git remote get-url origin", {
+    const url = execSync('git remote get-url origin', {
       cwd: resolvedCwd,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 3000,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
 
     const result = url || null;
@@ -80,45 +80,45 @@ export function detectProvider(remoteUrl: string): ProviderName {
 
   // Extract host portion for accurate matching (strip port if present)
   const hostMatch = url.match(/^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/);
-  const rawHost = hostMatch ? hostMatch[1].toLowerCase() : "";
-  const host = rawHost.replace(/:\d+$/, ""); // strip port for matching
+  const rawHost = hostMatch ? hostMatch[1].toLowerCase() : '';
+  const host = rawHost.replace(/:\d+$/, ''); // strip port for matching
 
   // Azure DevOps (check before generic patterns)
   if (
-    host.includes("dev.azure.com") ||
-    host.includes("ssh.dev.azure.com") ||
-    host.endsWith(".visualstudio.com")
+    host.includes('dev.azure.com') ||
+    host.includes('ssh.dev.azure.com') ||
+    host.endsWith('.visualstudio.com')
   ) {
-    return "azure-devops";
+    return 'azure-devops';
   }
 
   // GitHub
-  if (host === "github.com") {
-    return "github";
+  if (host === 'github.com') {
+    return 'github';
   }
 
   // GitLab (SaaS)
-  if (host === "gitlab.com") {
-    return "gitlab";
+  if (host === 'gitlab.com') {
+    return 'gitlab';
   }
 
   // Bitbucket
-  if (host === "bitbucket.org") {
-    return "bitbucket";
+  if (host === 'bitbucket.org') {
+    return 'bitbucket';
   }
 
   // Self-hosted heuristics — match hostname labels only
   if (/(^|[.-])gitlab([.-]|$)/.test(host)) {
-    return "gitlab";
+    return 'gitlab';
   }
   if (/(^|[.-])gitea([.-]|$)/.test(host)) {
-    return "gitea";
+    return 'gitea';
   }
   if (/(^|[.-])forgejo([.-]|$)/.test(host)) {
-    return "forgejo";
+    return 'forgejo';
   }
 
-  return "unknown";
+  return 'unknown';
 }
 
 /**
@@ -134,8 +134,8 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
   );
   if (azureHttpsMatch) {
     return {
-      provider: "azure-devops",
-      host: "dev.azure.com",
+      provider: 'azure-devops',
+      host: 'dev.azure.com',
       owner: `${azureHttpsMatch[1]}/${azureHttpsMatch[2]}`,
       repo: azureHttpsMatch[3],
     };
@@ -147,8 +147,8 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
   );
   if (azureSshMatch) {
     return {
-      provider: "azure-devops",
-      host: "dev.azure.com",
+      provider: 'azure-devops',
+      host: 'dev.azure.com',
       owner: `${azureSshMatch[1]}/${azureSshMatch[2]}`,
       repo: azureSshMatch[3],
     };
@@ -160,7 +160,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
   );
   if (azureLegacyMatch) {
     return {
-      provider: "azure-devops",
+      provider: 'azure-devops',
       host: `${azureLegacyMatch[1]}.visualstudio.com`,
       owner: `${azureLegacyMatch[1]}/${azureLegacyMatch[2]}`,
       repo: azureLegacyMatch[3],
@@ -216,7 +216,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
  */
 export function detectProviderFromCwd(cwd?: string): ProviderName {
   const url = getRemoteUrl(cwd);
-  if (!url) return "unknown";
+  if (!url) return 'unknown';
   return detectProvider(url);
 }
 
@@ -236,12 +236,12 @@ function initRegistry(): Map<ProviderName, GitProvider> {
   if (providerRegistry) return providerRegistry;
 
   providerRegistry = new Map<ProviderName, GitProvider>([
-    ["github", new GitHubProvider()],
-    ["gitlab", new GitLabProvider()],
-    ["bitbucket", new BitbucketProvider()],
-    ["azure-devops", new AzureDevOpsProvider()],
-    ["gitea", new GiteaProvider()],
-    ["forgejo", new GiteaProvider({ name: "forgejo", displayName: "Forgejo" })],
+    ['github', new GitHubProvider()],
+    ['gitlab', new GitLabProvider()],
+    ['bitbucket', new BitbucketProvider()],
+    ['azure-devops', new AzureDevOpsProvider()],
+    ['gitea', new GiteaProvider()],
+    ['forgejo', new GiteaProvider({ name: 'forgejo', displayName: 'Forgejo' })],
   ]);
 
   return providerRegistry;
@@ -262,7 +262,7 @@ export function getProvider(name: ProviderName): GitProvider | null {
  */
 export function getProviderFromCwd(cwd?: string): GitProvider | null {
   const name = detectProviderFromCwd(cwd);
-  if (name === "unknown") return null;
+  if (name === 'unknown') return null;
   return getProvider(name);
 }
 
@@ -273,4 +273,4 @@ export type {
   GitProvider,
   PRInfo,
   IssueInfo,
-} from "./types.js";
+} from './types.js';

@@ -10,9 +10,9 @@
  */
 export enum StateLocation {
   /** Local project state: .omc/state/{name}.json */
-  LOCAL = "local",
+  LOCAL = 'local',
   /** Global user state: XDG-aware OMC state path with legacy ~/.omc/state fallback on reads */
-  GLOBAL = "global",
+  GLOBAL = 'global',
 }
 
 /**

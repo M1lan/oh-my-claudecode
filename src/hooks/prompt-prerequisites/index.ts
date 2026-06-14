@@ -1,16 +1,16 @@
-import { isAbsolute, relative } from "node:path";
+import { isAbsolute, relative } from 'node:path';
 import {
   clearModeStateFile,
   readModeState,
   writeModeState,
-} from "../../lib/mode-state-io.js";
-import type { PluginConfig } from "../../shared/types.js";
+} from '../../lib/mode-state-io.js';
+import type { PluginConfig } from '../../shared/types.js';
 
 export type PromptPrerequisiteSectionKind =
-  | "memory"
-  | "skills"
-  | "verifyFirst"
-  | "context";
+  | 'memory'
+  | 'skills'
+  | 'verifyFirst'
+  | 'context';
 
 export interface PromptPrerequisiteSection {
   kind: PromptPrerequisiteSectionKind;
@@ -51,17 +51,17 @@ export interface PromptPrerequisiteProgress {
   isComplete: boolean;
 }
 
-const STATE_MODE = "prompt-prerequisites";
+const STATE_MODE = 'prompt-prerequisites';
 
 const DEFAULT_SECTION_NAMES: Record<PromptPrerequisiteSectionKind, string[]> = {
-  memory: ["MÉMOIRE", "MEMOIRE", "MEMORY"],
-  skills: ["SKILLS"],
-  verifyFirst: ["VERIFY-FIRST", "VERIFY FIRST", "VERIFY_FIRST"],
-  context: ["CONTEXT"],
+  memory: ['MÉMOIRE', 'MEMOIRE', 'MEMORY'],
+  skills: ['SKILLS'],
+  verifyFirst: ['VERIFY-FIRST', 'VERIFY FIRST', 'VERIFY_FIRST'],
+  context: ['CONTEXT'],
 };
 
-const DEFAULT_BLOCKING_TOOLS = ["Edit", "MultiEdit", "Write", "Agent", "Task"];
-const DEFAULT_EXECUTION_KEYWORDS = ["ralph", "ultrawork", "autopilot"];
+const DEFAULT_BLOCKING_TOOLS = ['Edit', 'MultiEdit', 'Write', 'Agent', 'Task'];
+const DEFAULT_EXECUTION_KEYWORDS = ['ralph', 'ultrawork', 'autopilot'];
 
 const HEADING_PATTERN = /^#{1,6}\s+(.+?)\s*$/gm;
 const FILE_PATH_PATTERN =
@@ -69,10 +69,10 @@ const FILE_PATH_PATTERN =
 
 function normalizeHeading(value: string): string {
   return value
-    .normalize("NFD")
-    .replace(/\p{M}+/gu, "")
+    .normalize('NFD')
+    .replace(/\p{M}+/gu, '')
     .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, " ")
+    .replace(/[^A-Z0-9]+/g, ' ')
     .trim();
 }
 
@@ -81,25 +81,25 @@ function dedupe(values: string[]): string[] {
 }
 
 function normalizePath(value: string): string {
-  return value.trim().replace(/^[("'`]+|[)"'`]+$/g, "");
+  return value.trim().replace(/^[("'`]+|[)"'`]+$/g, '');
 }
 
 function isLikelyPath(value: string): boolean {
   if (!value) return false;
   if (/^https?:\/\//i.test(value)) return false;
-  if (value.startsWith("#")) return false;
-  if (value.includes("://")) return false;
+  if (value.startsWith('#')) return false;
+  if (value.includes('://')) return false;
   // Require an explicit path prefix to avoid false positives on
   // slash-separated English words like "read/write", "input/output".
   if (
-    value.startsWith("./") ||
-    value.startsWith("../") ||
-    value.startsWith("/")
+    value.startsWith('./') ||
+    value.startsWith('../') ||
+    value.startsWith('/')
   )
     return true;
   // For bare relative paths (e.g. "src/foo.ts"), require a recognisable
   // file extension in the last segment to distinguish from natural language.
-  const lastSegment = value.split("/").pop() || "";
+  const lastSegment = value.split('/').pop() || '';
   return /\.[a-z0-9]{1,10}$/i.test(lastSegment);
 }
 
@@ -163,7 +163,7 @@ export function parsePromptPrerequisiteSections(
 
   for (let index = 0; index < matches.length; index += 1) {
     const match = matches[index];
-    const heading = match[1]?.trim() ?? "";
+    const heading = match[1]?.trim() ?? '';
     const kind = getSectionKind(heading, config);
     if (!kind || match.index === undefined) {
       continue;
@@ -199,17 +199,17 @@ export function parsePromptPrerequisiteSections(
 export function extractRequiredToolCalls(content: string): string[] {
   const required: string[] = [];
   if (/\bnotepad_read\b/i.test(content)) {
-    required.push("notepad_read");
+    required.push('notepad_read');
   }
   if (/\bproject_memory_read\b/i.test(content)) {
-    required.push("project_memory_read");
+    required.push('project_memory_read');
   }
   if (
     /\bsupermemory(?:\s+|_)?search\b|\bmcp__supermemory__search\b/i.test(
       content,
     )
   ) {
-    required.push("supermemory.search");
+    required.push('supermemory.search');
   }
   return required;
 }
@@ -217,7 +217,7 @@ export function extractRequiredToolCalls(content: string): string[] {
 export function extractFilePaths(content: string): string[] {
   const paths: string[] = [];
   for (const match of content.matchAll(FILE_PATH_PATTERN)) {
-    const candidate = normalizePath(match[1] ?? "");
+    const candidate = normalizePath(match[1] ?? '');
     if (isLikelyPath(candidate)) {
       paths.push(candidate);
     }
@@ -304,22 +304,22 @@ export function buildPromptPrerequisiteReminder(
 ): string {
   const toolList =
     state.required_tool_calls.length > 0
-      ? state.required_tool_calls.map((tool) => `- Call \`${tool}\``).join("\n")
-      : "";
+      ? state.required_tool_calls.map((tool) => `- Call \`${tool}\``).join('\n')
+      : '';
   const fileList =
     state.required_file_paths.length > 0
-      ? state.required_file_paths.map((path) => `- Read \`${path}\``).join("\n")
-      : "";
+      ? state.required_file_paths.map((path) => `- Read \`${path}\``).join('\n')
+      : '';
 
   return `<system-reminder>
 [BLOCKING PREREQUISITE GATE]
 This prompt declared prerequisite context. Before any Edit/Write/Agent/Task tool use, you MUST satisfy every prerequisite below.
 
 Required MCP/tool calls:
-${toolList || "- None"}
+${toolList || '- None'}
 
 Required file reads:
-${fileList || "- None"}
+${fileList || '- None'}
 
 Do the prerequisite reads first. Do not edit files. Do not spawn/delegate agents until the list is complete.
 </system-reminder>`;
@@ -342,20 +342,20 @@ function matchesToolRequirement(
 
   const normalizedTool = toolName.toLowerCase();
   switch (requiredTool) {
-    case "notepad_read":
+    case 'notepad_read':
       return (
-        normalizedTool === "notepad_read" ||
-        normalizedTool.endsWith("__notepad_read")
+        normalizedTool === 'notepad_read' ||
+        normalizedTool.endsWith('__notepad_read')
       );
-    case "project_memory_read":
+    case 'project_memory_read':
       return (
-        normalizedTool === "project_memory_read" ||
-        normalizedTool.endsWith("__project_memory_read")
+        normalizedTool === 'project_memory_read' ||
+        normalizedTool.endsWith('__project_memory_read')
       );
-    case "supermemory.search":
+    case 'supermemory.search':
       return (
-        normalizedTool === "supermemory_search" ||
-        normalizedTool === "supermemory.search" ||
+        normalizedTool === 'supermemory_search' ||
+        normalizedTool === 'supermemory.search' ||
         /supermemory.*search/i.test(toolName)
       );
     default:
@@ -367,17 +367,17 @@ function extractReadFilePath(
   toolName: string | undefined,
   toolInput: unknown,
 ): string | null {
-  if ((toolName || "").toLowerCase() !== "read") {
+  if ((toolName || '').toLowerCase() !== 'read') {
     return null;
   }
 
-  if (!toolInput || typeof toolInput !== "object") {
+  if (!toolInput || typeof toolInput !== 'object') {
     return null;
   }
 
   const input = toolInput as Record<string, unknown>;
   const filePath = input.file_path ?? input.path;
-  return typeof filePath === "string" && filePath.trim().length > 0
+  return typeof filePath === 'string' && filePath.trim().length > 0
     ? filePath.trim()
     : null;
 }
@@ -479,12 +479,12 @@ export function buildPromptPrerequisiteDenyReason(
   const remaining = getRemainingPromptPrerequisites(state);
   const toolBits =
     remaining.remainingToolCalls.length > 0
-      ? `Missing tool calls: ${remaining.remainingToolCalls.join(", ")}.`
-      : "";
+      ? `Missing tool calls: ${remaining.remainingToolCalls.join(', ')}.`
+      : '';
   const fileBits =
     remaining.remainingFilePaths.length > 0
-      ? `Missing file reads: ${remaining.remainingFilePaths.join(", ")}.`
-      : "";
+      ? `Missing file reads: ${remaining.remainingFilePaths.join(', ')}.`
+      : '';
 
-  return `[PROMPT PREREQUISITES] Blocking ${toolName || "tool"} until prompt prerequisites are completed. ${toolBits} ${fileBits}`.trim();
+  return `[PROMPT PREREQUISITES] Blocking ${toolName || 'tool'} until prompt prerequisites are completed. ${toolBits} ${fileBits}`.trim();
 }

@@ -191,7 +191,9 @@ World`);
   describe('switcher - getHighVariant', () => {
     describe('Claude models', () => {
       it('should return high variant for claude-sonnet-4-6', () => {
-        expect(getHighVariant('claude-sonnet-4-6')).toBe('claude-sonnet-4-6-high');
+        expect(getHighVariant('claude-sonnet-4-6')).toBe(
+          'claude-sonnet-4-6-high',
+        );
       });
 
       it('should return high variant for claude-opus-4-8', () => {
@@ -199,7 +201,9 @@ World`);
       });
 
       it('should return high variant for claude-3-5-sonnet', () => {
-        expect(getHighVariant('claude-3-5-sonnet')).toBe('claude-sonnet-4-6-high');
+        expect(getHighVariant('claude-3-5-sonnet')).toBe(
+          'claude-sonnet-4-6-high',
+        );
       });
 
       it('should return high variant for claude-3-opus', () => {
@@ -207,7 +211,9 @@ World`);
       });
 
       it('should handle version with dot notation', () => {
-        expect(getHighVariant('claude-sonnet-4.5')).toBe('claude-sonnet-4-6-high');
+        expect(getHighVariant('claude-sonnet-4.5')).toBe(
+          'claude-sonnet-4-6-high',
+        );
       });
     });
 
@@ -255,7 +261,9 @@ World`);
 
     describe('Prefixed models', () => {
       it('should preserve prefix in high variant', () => {
-        expect(getHighVariant('vertex_ai/claude-sonnet-4-5')).toBe('vertex_ai/claude-sonnet-4-6-high');
+        expect(getHighVariant('vertex_ai/claude-sonnet-4-5')).toBe(
+          'vertex_ai/claude-sonnet-4-6-high',
+        );
       });
 
       it('should handle openai/ prefix', () => {
@@ -282,7 +290,9 @@ World`);
     });
 
     it('should handle prefixed models', () => {
-      expect(isAlreadyHighVariant('vertex_ai/claude-sonnet-4-6-high')).toBe(true);
+      expect(isAlreadyHighVariant('vertex_ai/claude-sonnet-4-6-high')).toBe(
+        true,
+      );
       expect(isAlreadyHighVariant('vertex_ai/claude-sonnet-4-6')).toBe(false);
     });
 
@@ -307,7 +317,10 @@ World`);
 
     describe('Amazon Bedrock provider', () => {
       it('should return config for Claude models on Bedrock', () => {
-        const config = getThinkingConfig('amazon-bedrock', 'anthropic.claude-3-sonnet');
+        const config = getThinkingConfig(
+          'amazon-bedrock',
+          'anthropic.claude-3-sonnet',
+        );
         expect(config).not.toBeNull();
         expect(config).toHaveProperty('reasoningConfig');
       });

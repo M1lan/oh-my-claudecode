@@ -1,7 +1,7 @@
-import { runFactcheck } from "../hooks/factcheck/index.js";
-import { checkSentinelHealth } from "../hooks/factcheck/sentinel.js";
-import { loadGuardsConfig } from "../hooks/factcheck/config.js";
-import type { FactcheckResult } from "../hooks/factcheck/types.js";
+import { runFactcheck } from '../hooks/factcheck/index.js';
+import { checkSentinelHealth } from '../hooks/factcheck/sentinel.js';
+import { loadGuardsConfig } from '../hooks/factcheck/config.js';
+import type { FactcheckResult } from '../hooks/factcheck/types.js';
 
 export interface SentinelReadinessOptions {
   logPath?: string;
@@ -28,7 +28,7 @@ export interface SentinelWaitResult extends SentinelGateResult {
 }
 
 function mapFactcheckToBlockers(result: FactcheckResult): string[] {
-  if (result.verdict === "PASS") {
+  if (result.verdict === 'PASS') {
     return [];
   }
 
@@ -51,7 +51,7 @@ function mapFactcheckToBlockers(result: FactcheckResult): string[] {
 function coerceArray(value: unknown): unknown[] {
   if (Array.isArray(value)) return value;
   if (value == null) return [];
-  if (typeof value === "object" && !Array.isArray(value)) return [];
+  if (typeof value === 'object' && !Array.isArray(value)) return [];
   return [value];
 }
 
@@ -62,12 +62,12 @@ function coerceArray(value: unknown): unknown[] {
 function sanitizeClaims(raw: Record<string, unknown>): Record<string, unknown> {
   const out = { ...raw };
   const arrayFields = [
-    "files_modified",
-    "files_created",
-    "files_deleted",
-    "artifacts_expected",
-    "commands_executed",
-    "models_used",
+    'files_modified',
+    'files_created',
+    'files_deleted',
+    'artifacts_expected',
+    'commands_executed',
+    'models_used',
   ];
   for (const field of arrayFields) {
     if (field in out) {
@@ -122,7 +122,7 @@ export function checkSentinelReadiness(
     return {
       ready: false,
       blockers: [
-        "[sentinel] gate enabled but no logPath or claims provided — cannot verify readiness",
+        '[sentinel] gate enabled but no logPath or claims provided — cannot verify readiness',
       ],
       skipped: true,
     };

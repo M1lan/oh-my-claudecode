@@ -1,13 +1,13 @@
-import { execFileSync } from "child_process";
-import { existsSync, realpathSync } from "fs";
-import { readFile } from "fs/promises";
-import { basename, join, relative, resolve } from "path";
+import { execFileSync } from 'child_process';
+import { existsSync, realpathSync } from 'fs';
+import { readFile } from 'fs/promises';
+import { basename, join, relative, resolve } from 'path';
 
-export type AutoresearchKeepPolicy = "score_improvement" | "pass_only";
+export type AutoresearchKeepPolicy = 'score_improvement' | 'pass_only';
 
 export interface AutoresearchEvaluatorContract {
   command: string;
-  format: "json";
+  format: 'json';
   keep_policy?: AutoresearchKeepPolicy;
 }
 
@@ -40,21 +40,21 @@ function contractError(message: string): Error {
 
 function readGit(repoPath: string, args: string[]): string {
   try {
-    return execFileSync("git", args, {
+    return execFileSync('git', args, {
       cwd: repoPath,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
     }).trim();
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { stderr?: string | Buffer };
     const stderr =
-      typeof err.stderr === "string"
+      typeof err.stderr === 'string'
         ? err.stderr.trim()
         : err.stderr instanceof Buffer
-          ? err.stderr.toString("utf-8").trim()
-          : "";
+          ? err.stderr.toString('utf-8').trim()
+          : '';
     throw contractError(
-      stderr || "mission-dir must be inside a git repository.",
+      stderr || 'mission-dir must be inside a git repository.',
     );
   }
 }
@@ -63,17 +63,17 @@ export function slugifyMissionName(value: string): string {
   return (
     value
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "")
-      .slice(0, 48) || "mission"
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 48) || 'mission'
   );
 }
 
 function ensurePathInside(parentPath: string, childPath: string): void {
   const rel = relative(parentPath, childPath);
-  if (rel === "" || (!rel.startsWith("..") && rel !== "..")) return;
-  throw contractError("mission-dir must be inside a git repository.");
+  if (rel === '' || (!rel.startsWith('..') && rel !== '..')) return;
+  throw contractError('mission-dir must be inside a git repository.');
 }
 
 function extractFrontmatter(content: string): {
@@ -83,12 +83,12 @@ function extractFrontmatter(content: string): {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
   if (!match) {
     throw contractError(
-      "sandbox.md must start with YAML frontmatter containing evaluator.command and evaluator.format=json.",
+      'sandbox.md must start with YAML frontmatter containing evaluator.command and evaluator.format=json.',
     );
   }
   return {
-    frontmatter: match[1] || "",
-    body: (match[2] || "").trim(),
+    frontmatter: match[1] || '',
+    body: (match[2] || '').trim(),
   };
 }
 
@@ -99,9 +99,9 @@ function parseSimpleYamlFrontmatter(
   let currentSection: string | null = null;
 
   for (const rawLine of frontmatter.split(/\r?\n/)) {
-    const line = rawLine.replace(/\t/g, "  ");
+    const line = rawLine.replace(/\t/g, '  ');
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
+    if (!trimmed || trimmed.startsWith('#')) continue;
 
     const sectionMatch = /^([A-Za-z0-9_-]+):\s*$/.exec(trimmed);
     if (sectionMatch) {
@@ -118,15 +118,15 @@ function parseSimpleYamlFrontmatter(
     }
 
     const [, key, rawValue] = nestedMatch;
-    const value = rawValue.replace(/^['"]|['"]$/g, "");
-    if (line.startsWith(" ") || line.startsWith("\t")) {
+    const value = rawValue.replace(/^['"]|['"]$/g, '');
+    if (line.startsWith(' ') || line.startsWith('\t')) {
       if (!currentSection) {
         throw contractError(
           `Nested sandbox.md frontmatter key requires a parent section: ${trimmed}`,
         );
       }
       const section = result[currentSection];
-      if (!section || typeof section !== "object" || Array.isArray(section)) {
+      if (!section || typeof section !== 'object' || Array.isArray(section)) {
         throw contractError(
           `Invalid sandbox.md frontmatter section: ${currentSection}`,
         );
@@ -144,17 +144,17 @@ function parseSimpleYamlFrontmatter(
 
 function parseKeepPolicy(raw: unknown): AutoresearchKeepPolicy | undefined {
   if (raw === undefined) return undefined;
-  if (typeof raw !== "string") {
+  if (typeof raw !== 'string') {
     throw contractError(
-      "sandbox.md frontmatter evaluator.keep_policy must be a string when provided.",
+      'sandbox.md frontmatter evaluator.keep_policy must be a string when provided.',
     );
   }
   const normalized = raw.trim().toLowerCase();
   if (!normalized) return undefined;
-  if (normalized === "pass_only") return "pass_only";
-  if (normalized === "score_improvement") return "score_improvement";
+  if (normalized === 'pass_only') return 'pass_only';
+  if (normalized === 'score_improvement') return 'score_improvement';
   throw contractError(
-    "sandbox.md frontmatter evaluator.keep_policy must be one of: score_improvement, pass_only.",
+    'sandbox.md frontmatter evaluator.keep_policy must be one of: score_improvement, pass_only.',
   );
 }
 
@@ -165,11 +165,11 @@ export function parseSandboxContract(content: string): ParsedSandboxContract {
 
   if (
     !evaluatorRaw ||
-    typeof evaluatorRaw !== "object" ||
+    typeof evaluatorRaw !== 'object' ||
     Array.isArray(evaluatorRaw)
   ) {
     throw contractError(
-      "sandbox.md frontmatter must define an evaluator block.",
+      'sandbox.md frontmatter must define an evaluator block.',
     );
   }
 
@@ -179,26 +179,26 @@ export function parseSandboxContract(content: string): ParsedSandboxContract {
     keep_policy?: unknown;
   };
   const command =
-    typeof evaluator.command === "string" ? evaluator.command.trim() : "";
+    typeof evaluator.command === 'string' ? evaluator.command.trim() : '';
   const format =
-    typeof evaluator.format === "string"
+    typeof evaluator.format === 'string'
       ? evaluator.format.trim().toLowerCase()
-      : "";
+      : '';
   const keepPolicy = parseKeepPolicy(evaluator.keep_policy);
 
   if (!command) {
     throw contractError(
-      "sandbox.md frontmatter evaluator.command is required.",
+      'sandbox.md frontmatter evaluator.command is required.',
     );
   }
   if (!format) {
     throw contractError(
-      "sandbox.md frontmatter evaluator.format is required and must be json in autoresearch v1.",
+      'sandbox.md frontmatter evaluator.format is required and must be json in autoresearch v1.',
     );
   }
-  if (format !== "json") {
+  if (format !== 'json') {
     throw contractError(
-      "sandbox.md frontmatter evaluator.format must be json in autoresearch v1.",
+      'sandbox.md frontmatter evaluator.format must be json in autoresearch v1.',
     );
   }
 
@@ -206,7 +206,7 @@ export function parseSandboxContract(content: string): ParsedSandboxContract {
     frontmatter: parsedFrontmatter,
     evaluator: {
       command,
-      format: "json",
+      format: 'json',
       ...(keepPolicy ? { keep_policy: keepPolicy } : {}),
     },
     body,
@@ -219,21 +219,21 @@ export function parseEvaluatorResult(raw: string): AutoresearchEvaluatorResult {
     parsed = JSON.parse(raw);
   } catch {
     throw contractError(
-      "Evaluator output must be valid JSON with required boolean pass and optional numeric score.",
+      'Evaluator output must be valid JSON with required boolean pass and optional numeric score.',
     );
   }
 
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw contractError("Evaluator output must be a JSON object.");
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw contractError('Evaluator output must be a JSON object.');
   }
 
   const result = parsed as Record<string, unknown>;
-  if (typeof result.pass !== "boolean") {
-    throw contractError("Evaluator output must include boolean pass.");
+  if (typeof result.pass !== 'boolean') {
+    throw contractError('Evaluator output must include boolean pass.');
   }
-  if (result.score !== undefined && typeof result.score !== "number") {
+  if (result.score !== undefined && typeof result.score !== 'number') {
     throw contractError(
-      "Evaluator output score must be numeric when provided.",
+      'Evaluator output score must be numeric when provided.',
     );
   }
 
@@ -256,11 +256,11 @@ export async function loadAutoresearchMissionContract(
     /* keep resolved path */
   }
 
-  const repoRoot = readGit(missionDir, ["rev-parse", "--show-toplevel"]);
+  const repoRoot = readGit(missionDir, ['rev-parse', '--show-toplevel']);
   ensurePathInside(repoRoot, missionDir);
 
-  const missionFile = join(missionDir, "mission.md");
-  const sandboxFile = join(missionDir, "sandbox.md");
+  const missionFile = join(missionDir, 'mission.md');
+  const sandboxFile = join(missionDir, 'sandbox.md');
   if (!existsSync(missionFile)) {
     throw contractError(
       `mission.md is required inside mission-dir: ${missionFile}`,
@@ -272,8 +272,8 @@ export async function loadAutoresearchMissionContract(
     );
   }
 
-  const missionContent = await readFile(missionFile, "utf-8");
-  const sandboxContent = await readFile(sandboxFile, "utf-8");
+  const missionContent = await readFile(missionFile, 'utf-8');
+  const sandboxContent = await readFile(sandboxFile, 'utf-8');
   const sandbox = parseSandboxContract(sandboxContent);
   const missionRelativeDir =
     relative(repoRoot, missionDir) || basename(missionDir);

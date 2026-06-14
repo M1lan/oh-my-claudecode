@@ -7,30 +7,30 @@
  * returns an empty string, so no stale scrollback ever reaches the gateway
  * as tmuxTail.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { join } from "path";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { join } from 'path';
 
 // Hoisted mock for the delta-capture function used inside wakeOpenClaw.
 const mockGetNewPaneTail = vi.fn<
   (paneId: string, stateDir: string, maxLines?: number) => string
->(() => "");
+>(() => '');
 
-vi.mock("../../features/rate-limit-wait/pane-fresh-capture.js", () => ({
+vi.mock('../../features/rate-limit-wait/pane-fresh-capture.js', () => ({
   getNewPaneTail: (paneId: string, stateDir: string, maxLines?: number) =>
     mockGetNewPaneTail(paneId, stateDir, maxLines),
 }));
 
-vi.mock("../../notifications/tmux.js", () => ({
-  getCurrentTmuxSession: () => "test-session",
+vi.mock('../../notifications/tmux.js', () => ({
+  getCurrentTmuxSession: () => 'test-session',
 }));
 
-vi.mock("../config.js", () => ({
+vi.mock('../config.js', () => ({
   getOpenClawConfig: vi.fn(),
   resolveGateway: vi.fn(),
   resetOpenClawConfigCache: vi.fn(),
 }));
 
-vi.mock("../dispatcher.js", () => ({
+vi.mock('../dispatcher.js', () => ({
   wakeGateway: vi.fn().mockResolvedValue({ success: true }),
   wakeCommandGateway: vi.fn().mockResolvedValue({ success: true }),
   isCommandGateway: vi.fn(() => false),
@@ -38,76 +38,76 @@ vi.mock("../dispatcher.js", () => ({
   interpolateInstruction: vi.fn((t: string) => t),
 }));
 
-vi.mock("../dedupe.js", () => ({
+vi.mock('../dedupe.js', () => ({
   shouldCollapseOpenClawBurst: vi.fn(() => false),
 }));
 
-vi.mock("../signal.js", () => ({
+vi.mock('../signal.js', () => ({
   buildOpenClawSignal: vi.fn(() => ({
-    kind: "lifecycle",
-    name: "stop",
-    phase: "idle",
-    priority: "normal",
-    routeKey: "session.stopped",
-    summary: "Session stopped",
+    kind: 'lifecycle',
+    name: 'stop',
+    phase: 'idle',
+    priority: 'normal',
+    routeKey: 'session.stopped',
+    summary: 'Session stopped',
   })),
 }));
 
-import { wakeOpenClaw } from "../index.js";
-import { getOpenClawConfig, resolveGateway } from "../config.js";
-import { wakeGateway } from "../dispatcher.js";
-import type { OpenClawConfig } from "../types.js";
+import { wakeOpenClaw } from '../index.js';
+import { getOpenClawConfig, resolveGateway } from '../config.js';
+import { wakeGateway } from '../dispatcher.js';
+import type { OpenClawConfig } from '../types.js';
 
 const TEST_CONFIG: OpenClawConfig = {
   enabled: true,
   gateways: {
-    "test-gw": { url: "https://example.com/hook", method: "POST" },
+    'test-gw': { url: 'https://example.com/hook', method: 'POST' },
   },
   hooks: {
     stop: {
-      gateway: "test-gw",
-      instruction: "Stopped: {{tmuxTail}}",
+      gateway: 'test-gw',
+      instruction: 'Stopped: {{tmuxTail}}',
       enabled: true,
     },
-    "session-end": {
-      gateway: "test-gw",
-      instruction: "Ended: {{tmuxTail}}",
+    'session-end': {
+      gateway: 'test-gw',
+      instruction: 'Ended: {{tmuxTail}}',
       enabled: true,
     },
-    "session-start": {
-      gateway: "test-gw",
-      instruction: "Started",
+    'session-start': {
+      gateway: 'test-gw',
+      instruction: 'Started',
       enabled: true,
     },
   },
 };
 
 const RESOLVED_GW = {
-  gatewayName: "test-gw",
-  gateway: { url: "https://example.com/hook", method: "POST" as const },
-  instruction: "Stopped: {{tmuxTail}}",
+  gatewayName: 'test-gw',
+  gateway: { url: 'https://example.com/hook', method: 'POST' as const },
+  instruction: 'Stopped: {{tmuxTail}}',
 };
 
-const PROJECT_PATH = "/home/user/project";
-const STATE_DIR = join(PROJECT_PATH, ".omc", "state");
+const PROJECT_PATH = '/home/user/project';
+const STATE_DIR = join(PROJECT_PATH, '.omc', 'state');
 
-describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
+describe('dead-pane guard in wakeOpenClaw (issue #2562)', () => {
   let origTmux: string | undefined;
   let origTmuxPane: string | undefined;
 
   beforeEach(() => {
     origTmux = process.env.TMUX;
     origTmuxPane = process.env.TMUX_PANE;
-    process.env.TMUX = "/tmp/tmux-1000/default,12345,0";
-    process.env.TMUX_PANE = "%42";
+    process.env.TMUX = '/tmp/tmux-1000/default,12345,0';
+    process.env.TMUX_PANE = '%42';
 
     vi.mocked(getOpenClawConfig).mockReturnValue(TEST_CONFIG);
     vi.mocked(resolveGateway).mockReturnValue(RESOLVED_GW);
     mockGetNewPaneTail.mockReset();
-    mockGetNewPaneTail.mockReturnValue("");
+    mockGetNewPaneTail.mockReturnValue('');
     vi.mocked(wakeGateway).mockReset();
     vi.mocked(wakeGateway).mockResolvedValue({
-      gateway: "test-gw",
+      gateway: 'test-gw',
       success: true,
     });
   });
@@ -120,15 +120,15 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     vi.clearAllMocks();
   });
 
-  it("skips capture when pane has no new lines — no stale tmuxTail in payload", async () => {
-    mockGetNewPaneTail.mockReturnValue("");
+  it('skips capture when pane has no new lines — no stale tmuxTail in payload', async () => {
+    mockGetNewPaneTail.mockReturnValue('');
 
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-dead",
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-dead',
       projectPath: PROJECT_PATH,
     });
 
-    expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
+    expect(mockGetNewPaneTail).toHaveBeenCalledWith('%42', STATE_DIR, 15);
     const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
       string,
       unknown,
@@ -137,36 +137,36 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     expect(payload.tmuxTail).toBeUndefined();
   });
 
-  it("captures new pane delta — tmuxTail forwarded to gateway", async () => {
-    mockGetNewPaneTail.mockReturnValue("live output line");
+  it('captures new pane delta — tmuxTail forwarded to gateway', async () => {
+    mockGetNewPaneTail.mockReturnValue('live output line');
 
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-alive",
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-alive',
       projectPath: PROJECT_PATH,
     });
 
-    expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
+    expect(mockGetNewPaneTail).toHaveBeenCalledWith('%42', STATE_DIR, 15);
     const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
       string,
       unknown,
       { tmuxTail?: string },
     ];
-    expect(payload.tmuxTail).toBe("live output line");
+    expect(payload.tmuxTail).toBe('live output line');
   });
 
-  it("skips capture for session-end when pane has no new lines", async () => {
-    mockGetNewPaneTail.mockReturnValue("");
+  it('skips capture for session-end when pane has no new lines', async () => {
+    mockGetNewPaneTail.mockReturnValue('');
     vi.mocked(resolveGateway).mockReturnValue({
       ...RESOLVED_GW,
-      instruction: "Ended: {{tmuxTail}}",
+      instruction: 'Ended: {{tmuxTail}}',
     });
 
-    await wakeOpenClaw("session-end", {
-      sessionId: "sid-end-dead",
+    await wakeOpenClaw('session-end', {
+      sessionId: 'sid-end-dead',
       projectPath: PROJECT_PATH,
     });
 
-    expect(mockGetNewPaneTail).toHaveBeenCalledWith("%42", STATE_DIR, 15);
+    expect(mockGetNewPaneTail).toHaveBeenCalledWith('%42', STATE_DIR, 15);
     const [, , payload] = vi.mocked(wakeGateway).mock.calls[0] as [
       string,
       unknown,
@@ -175,45 +175,45 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     expect(payload.tmuxTail).toBeUndefined();
   });
 
-  it("does not call getNewPaneTail for session-start (non-stop event)", async () => {
+  it('does not call getNewPaneTail for session-start (non-stop event)', async () => {
     vi.mocked(resolveGateway).mockReturnValue({
       ...RESOLVED_GW,
-      instruction: "Started",
+      instruction: 'Started',
     });
 
-    await wakeOpenClaw("session-start", {
-      sessionId: "sid-start",
+    await wakeOpenClaw('session-start', {
+      sessionId: 'sid-start',
       projectPath: PROJECT_PATH,
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
   });
 
-  it("does not call getNewPaneTail when TMUX env is absent", async () => {
+  it('does not call getNewPaneTail when TMUX env is absent', async () => {
     delete process.env.TMUX;
 
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-no-tmux",
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-no-tmux',
       projectPath: PROJECT_PATH,
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
   });
 
-  it("does not call getNewPaneTail when TMUX_PANE env is absent", async () => {
+  it('does not call getNewPaneTail when TMUX_PANE env is absent', async () => {
     delete process.env.TMUX_PANE;
 
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-no-pane-id",
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-no-pane-id',
       projectPath: PROJECT_PATH,
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
   });
 
-  it("does not call getNewPaneTail when projectPath is absent", async () => {
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-no-path",
+  it('does not call getNewPaneTail when projectPath is absent', async () => {
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-no-path',
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
@@ -225,11 +225,11 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
     expect(payload.tmuxTail).toBeUndefined();
   });
 
-  it("uses caller-provided tmuxTail and skips getNewPaneTail entirely", async () => {
-    await wakeOpenClaw("stop", {
-      sessionId: "sid-prefilled",
+  it('uses caller-provided tmuxTail and skips getNewPaneTail entirely', async () => {
+    await wakeOpenClaw('stop', {
+      sessionId: 'sid-prefilled',
       projectPath: PROJECT_PATH,
-      tmuxTail: "pre-captured content",
+      tmuxTail: 'pre-captured content',
     });
 
     expect(mockGetNewPaneTail).not.toHaveBeenCalled();
@@ -238,6 +238,6 @@ describe("dead-pane guard in wakeOpenClaw (issue #2562)", () => {
       unknown,
       { tmuxTail?: string },
     ];
-    expect(payload.tmuxTail).toBe("pre-captured content");
+    expect(payload.tmuxTail).toBe('pre-captured content');
   });
 });

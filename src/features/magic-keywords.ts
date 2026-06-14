@@ -5,8 +5,8 @@
  * Patterns ported from oh-my-opencode.
  */
 
-import type { MagicKeyword, PluginConfig } from "../shared/types.js";
-import { getUltraworkMessage } from "../hooks/keyword-detector/ultrawork/index.js";
+import type { MagicKeyword, PluginConfig } from '../shared/types.js';
+import { getUltraworkMessage } from '../hooks/keyword-detector/ultrawork/index.js';
 
 /**
  * Code block pattern for stripping from detection
@@ -18,7 +18,7 @@ const INLINE_CODE_PATTERN = /`[^`]+`/g;
  * Remove code blocks from text for keyword detection
  */
 function removeCodeBlocks(text: string): string {
-  return text.replace(CODE_BLOCK_PATTERN, "").replace(INLINE_CODE_PATTERN, "");
+  return text.replace(CODE_BLOCK_PATTERN, '').replace(INLINE_CODE_PATTERN, '');
 }
 
 const INFORMATIONAL_INTENT_PATTERNS: RegExp[] = [
@@ -47,11 +47,11 @@ function isInformationalKeywordContext(
  * Escape regex metacharacters so a string matches literally inside new RegExp().
  */
 function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function hasActionableTrigger(text: string, trigger: string): boolean {
-  const pattern = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, "gi");
+  const pattern = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, 'gi');
 
   for (const match of text.matchAll(pattern)) {
     if (match.index === undefined) {
@@ -73,12 +73,12 @@ function hasActionableTrigger(text: string, trigger: string): boolean {
  * Activates maximum performance with parallel agent orchestration
  */
 const ultraworkEnhancement: MagicKeyword = {
-  triggers: ["ultrawork", "ulw", "uw"],
+  triggers: ['ultrawork', 'ulw', 'uw'],
   description:
-    "Activates maximum performance mode with parallel agent orchestration",
+    'Activates maximum performance mode with parallel agent orchestration',
   action: (prompt: string, agentName?: string, modelId?: string) => {
     // Remove the trigger word and add enhancement instructions
-    const cleanPrompt = removeTriggerWords(prompt, ["ultrawork", "ulw", "uw"]);
+    const cleanPrompt = removeTriggerWords(prompt, ['ultrawork', 'ulw', 'uw']);
     return getUltraworkMessage(agentName, modelId) + cleanPrompt;
   },
 };
@@ -89,24 +89,24 @@ const ultraworkEnhancement: MagicKeyword = {
  */
 const searchEnhancement: MagicKeyword = {
   triggers: [
-    "search",
-    "find",
-    "locate",
-    "lookup",
-    "explore",
-    "discover",
-    "scan",
-    "grep",
-    "query",
-    "browse",
-    "detect",
-    "trace",
-    "seek",
-    "track",
-    "pinpoint",
-    "hunt",
+    'search',
+    'find',
+    'locate',
+    'lookup',
+    'explore',
+    'discover',
+    'scan',
+    'grep',
+    'query',
+    'browse',
+    'detect',
+    'trace',
+    'seek',
+    'track',
+    'pinpoint',
+    'hunt',
   ],
-  description: "Maximizes search effort and thoroughness",
+  description: 'Maximizes search effort and thoroughness',
   action: (prompt: string) => {
     // Multi-language search pattern
     const searchPattern =
@@ -135,27 +135,27 @@ NEVER stop at first result - be exhaustive.`;
  */
 const analyzeEnhancement: MagicKeyword = {
   triggers: [
-    "analyze",
-    "analyse",
-    "investigate",
-    "examine",
-    "study",
-    "deep-dive",
-    "inspect",
-    "audit",
-    "evaluate",
-    "assess",
-    "review",
-    "diagnose",
-    "scrutinize",
-    "dissect",
-    "debug",
-    "comprehend",
-    "interpret",
-    "breakdown",
-    "understand",
+    'analyze',
+    'analyse',
+    'investigate',
+    'examine',
+    'study',
+    'deep-dive',
+    'inspect',
+    'audit',
+    'evaluate',
+    'assess',
+    'review',
+    'diagnose',
+    'scrutinize',
+    'dissect',
+    'debug',
+    'comprehend',
+    'interpret',
+    'breakdown',
+    'understand',
   ],
-  description: "Activates deep analysis and investigation mode",
+  description: 'Activates deep analysis and investigation mode',
   action: (prompt: string) => {
     // Multi-language analyze pattern
     const analyzePattern =
@@ -189,8 +189,8 @@ SYNTHESIZE findings before proceeding.`;
  * Activates extended thinking and deep reasoning
  */
 const ultrathinkEnhancement: MagicKeyword = {
-  triggers: ["ultrathink", "think", "reason", "ponder"],
-  description: "Activates extended thinking mode for deep reasoning",
+  triggers: ['ultrathink', 'think', 'reason', 'ponder'],
+  description: 'Activates extended thinking mode for deep reasoning',
   action: (prompt: string) => {
     // Check if ultrathink-related triggers are present
     const hasThinkCommand = /\b(ultrathink|think|reason|ponder)\b/i.test(
@@ -202,10 +202,10 @@ const ultrathinkEnhancement: MagicKeyword = {
     }
 
     const cleanPrompt = removeTriggerWords(prompt, [
-      "ultrathink",
-      "think",
-      "reason",
-      "ponder",
+      'ultrathink',
+      'think',
+      'reason',
+      'ponder',
     ]);
 
     return `[ULTRATHINK MODE - EXTENDED REASONING ACTIVATED]
@@ -233,8 +233,8 @@ Use maximum cognitive effort before responding.`;
 function removeTriggerWords(prompt: string, triggers: string[]): string {
   let result = prompt;
   for (const trigger of triggers) {
-    const regex = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, "gi");
-    result = result.replace(regex, "");
+    const regex = new RegExp(`\\b${escapeRegExp(trigger)}\\b`, 'gi');
+    result = result.replace(regex, '');
   }
   return result.trim();
 }
@@ -253,7 +253,7 @@ export const builtInMagicKeywords: MagicKeyword[] = [
  * Create a magic keyword processor with custom triggers
  */
 export function createMagicKeywordProcessor(
-  config?: PluginConfig["magicKeywords"],
+  config?: PluginConfig['magicKeywords'],
 ): (prompt: string, agentName?: string, modelId?: string) => string {
   const keywords = builtInMagicKeywords.map((k) => ({
     ...k,
@@ -263,26 +263,26 @@ export function createMagicKeywordProcessor(
   // Override triggers from config
   if (config) {
     if (config.ultrawork) {
-      const ultrawork = keywords.find((k) => k.triggers.includes("ultrawork"));
+      const ultrawork = keywords.find((k) => k.triggers.includes('ultrawork'));
       if (ultrawork) {
         ultrawork.triggers = config.ultrawork;
       }
     }
     if (config.search) {
-      const search = keywords.find((k) => k.triggers.includes("search"));
+      const search = keywords.find((k) => k.triggers.includes('search'));
       if (search) {
         search.triggers = config.search;
       }
     }
     if (config.analyze) {
-      const analyze = keywords.find((k) => k.triggers.includes("analyze"));
+      const analyze = keywords.find((k) => k.triggers.includes('analyze'));
       if (analyze) {
         analyze.triggers = config.analyze;
       }
     }
     if (config.ultrathink) {
       const ultrathink = keywords.find((k) =>
-        k.triggers.includes("ultrathink"),
+        k.triggers.includes('ultrathink'),
       );
       if (ultrathink) {
         ultrathink.triggers = config.ultrathink;
@@ -312,7 +312,7 @@ export function createMagicKeywordProcessor(
  */
 export function detectMagicKeywords(
   prompt: string,
-  config?: PluginConfig["magicKeywords"],
+  config?: PluginConfig['magicKeywords'],
 ): string[] {
   const detected: string[] = [];
   const keywords = builtInMagicKeywords.map((k) => ({
@@ -324,20 +324,20 @@ export function detectMagicKeywords(
   // Apply config overrides
   if (config) {
     if (config.ultrawork) {
-      const ultrawork = keywords.find((k) => k.triggers.includes("ultrawork"));
+      const ultrawork = keywords.find((k) => k.triggers.includes('ultrawork'));
       if (ultrawork) ultrawork.triggers = config.ultrawork;
     }
     if (config.search) {
-      const search = keywords.find((k) => k.triggers.includes("search"));
+      const search = keywords.find((k) => k.triggers.includes('search'));
       if (search) search.triggers = config.search;
     }
     if (config.analyze) {
-      const analyze = keywords.find((k) => k.triggers.includes("analyze"));
+      const analyze = keywords.find((k) => k.triggers.includes('analyze'));
       if (analyze) analyze.triggers = config.analyze;
     }
     if (config.ultrathink) {
       const ultrathink = keywords.find((k) =>
-        k.triggers.includes("ultrathink"),
+        k.triggers.includes('ultrathink'),
       );
       if (ultrathink) ultrathink.triggers = config.ultrathink;
     }
@@ -362,7 +362,7 @@ export function extractPromptText(
   parts: Array<{ type: string; text?: string; [key: string]: unknown }>,
 ): string {
   return parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text ?? "")
-    .join("\n");
+    .filter((p) => p.type === 'text')
+    .map((p) => p.text ?? '')
+    .join('\n');
 }

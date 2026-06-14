@@ -4,14 +4,14 @@
  * Renders last-request input/output token usage from transcript metadata.
  */
 
-import type { HudLabels, LastRequestTokenUsage } from "../types.js";
-import { DEFAULT_HUD_LABELS } from "../types.js";
-import { formatTokenCount } from "../../cli/utils/formatting.js";
+import type { HudLabels, LastRequestTokenUsage } from '../types.js';
+import { DEFAULT_HUD_LABELS } from '../types.js';
+import { formatTokenCount } from '../../cli/utils/formatting.js';
 
 export function renderTokenUsage(
   usage: LastRequestTokenUsage | null | undefined,
   sessionTotalTokens?: number | null,
-  labels: Pick<HudLabels, "tokens"> = DEFAULT_HUD_LABELS,
+  labels: Pick<HudLabels, 'tokens'> = DEFAULT_HUD_LABELS,
 ): string | null {
   if (!usage) return null;
 
@@ -30,5 +30,5 @@ export function renderTokenUsage(
     parts.push(`s${formatTokenCount(sessionTotalTokens)}`);
   }
 
-  return parts.join(" ");
+  return parts.join(' ');
 }

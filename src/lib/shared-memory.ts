@@ -26,11 +26,11 @@ import {
   unlinkSync,
   readdirSync,
   renameSync,
-} from "fs";
-import { join } from "path";
-import { getOmcRoot } from "./worktree-paths.js";
-import { withFileLockSync } from "./file-lock.js";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+} from 'fs';
+import { join } from 'path';
+import { getOmcRoot } from './worktree-paths.js';
+import { withFileLockSync } from './file-lock.js';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,7 +58,7 @@ export interface SharedMemoryListItem {
 // Config
 // ---------------------------------------------------------------------------
 
-const CONFIG_FILE_NAME = ".omc-config.json";
+const CONFIG_FILE_NAME = '.omc-config.json';
 
 /**
  * Check if shared memory is enabled via config.
@@ -72,9 +72,9 @@ export function isSharedMemoryEnabled(): boolean {
   try {
     const configPath = join(getClaudeConfigDir(), CONFIG_FILE_NAME);
     if (!existsSync(configPath)) return true; // default enabled
-    const raw = JSON.parse(readFileSync(configPath, "utf-8"));
+    const raw = JSON.parse(readFileSync(configPath, 'utf-8'));
     const enabled = raw?.agents?.sharedMemory?.enabled;
-    if (typeof enabled === "boolean") return enabled;
+    if (typeof enabled === 'boolean') return enabled;
     return true; // default enabled when key absent
   } catch {
     return true;
@@ -85,7 +85,7 @@ export function isSharedMemoryEnabled(): boolean {
 // Path helpers
 // ---------------------------------------------------------------------------
 
-const SHARED_MEMORY_DIR = "state/shared-memory";
+const SHARED_MEMORY_DIR = 'state/shared-memory';
 
 /** Validate namespace: alphanumeric, hyphens, underscores, dots. Max 128 chars. */
 function validateNamespace(namespace: string): void {
@@ -99,8 +99,8 @@ function validateNamespace(namespace: string): void {
       `Invalid namespace: must be alphanumeric with hyphens/underscores/dots (got "${namespace}")`,
     );
   }
-  if (namespace.includes("..")) {
-    throw new Error("Invalid namespace: path traversal not allowed");
+  if (namespace.includes('..')) {
+    throw new Error('Invalid namespace: path traversal not allowed');
   }
 }
 
@@ -116,8 +116,8 @@ function validateKey(key: string): void {
       `Invalid key: must be alphanumeric with hyphens/underscores/dots (got "${key}")`,
     );
   }
-  if (key.includes("..")) {
-    throw new Error("Invalid key: path traversal not allowed");
+  if (key.includes('..')) {
+    throw new Error('Invalid key: path traversal not allowed');
   }
 }
 
@@ -177,13 +177,13 @@ export function writeEntry(
   const now = new Date().toISOString();
 
   // Lock the read-modify-write to prevent concurrent writers from losing updates
-  const lockPath = filePath + ".lock";
+  const lockPath = filePath + '.lock';
   const doWrite = () => {
     let existingCreatedAt = now;
     if (existsSync(filePath)) {
       try {
         const existing: SharedMemoryEntry = JSON.parse(
-          readFileSync(filePath, "utf-8"),
+          readFileSync(filePath, 'utf-8'),
         );
         existingCreatedAt = existing.createdAt || now;
       } catch {
@@ -205,12 +205,12 @@ export function writeEntry(
     }
 
     const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-    writeFileSync(tmpPath, JSON.stringify(entry, null, 2), "utf-8");
+    writeFileSync(tmpPath, JSON.stringify(entry, null, 2), 'utf-8');
     renameSync(tmpPath, filePath);
 
     // Clean up legacy .tmp file (old constant-suffix scheme) if it exists
     try {
-      const legacyTmp = filePath + ".tmp";
+      const legacyTmp = filePath + '.tmp';
       if (existsSync(legacyTmp)) unlinkSync(legacyTmp);
     } catch {
       /* best-effort cleanup */
@@ -249,7 +249,7 @@ export function readEntry(
 
   try {
     const entry: SharedMemoryEntry = JSON.parse(
-      readFileSync(filePath, "utf-8"),
+      readFileSync(filePath, 'utf-8'),
     );
 
     // Auto-cleanup expired entries
@@ -285,12 +285,12 @@ export function listEntries(
   const items: SharedMemoryListItem[] = [];
 
   try {
-    const files = readdirSync(dir).filter((f) => f.endsWith(".json"));
+    const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
     for (const file of files) {
       try {
         const filePath = join(dir, file);
         const entry: SharedMemoryEntry = JSON.parse(
-          readFileSync(filePath, "utf-8"),
+          readFileSync(filePath, 'utf-8'),
         );
         if (!isExpired(entry)) {
           items.push({
@@ -376,12 +376,12 @@ export function cleanupExpired(
 
     let nsRemoved = 0;
     try {
-      const files = readdirSync(nsDir).filter((f) => f.endsWith(".json"));
+      const files = readdirSync(nsDir).filter((f) => f.endsWith('.json'));
       for (const file of files) {
         try {
           const filePath = join(nsDir, file);
           const entry: SharedMemoryEntry = JSON.parse(
-            readFileSync(filePath, "utf-8"),
+            readFileSync(filePath, 'utf-8'),
           );
           if (isExpired(entry)) {
             unlinkSync(filePath);

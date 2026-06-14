@@ -5,8 +5,8 @@
  * Uses the OAuth API to check utilization percentages.
  */
 
-import { getUsage } from "../../hud/usage-api.js";
-import type { RateLimitStatus } from "./types.js";
+import { getUsage } from '../../hud/usage-api.js';
+import type { RateLimitStatus } from './types.js';
 
 /** Threshold percentage for considering rate limited */
 const RATE_LIMIT_THRESHOLD = 100;
@@ -32,7 +32,7 @@ export async function checkRateLimitStatus(): Promise<RateLimitStatus | null> {
     const monthlyLimited = (usage.monthlyPercent ?? 0) >= RATE_LIMIT_THRESHOLD;
     const isLimited = fiveHourLimited || weeklyLimited || monthlyLimited;
     const usingStaleData =
-      result.error === "rate_limited" && !!result.rateLimits;
+      result.error === 'rate_limited' && !!result.rateLimits;
 
     // Determine next reset time
     let nextResetAt: Date | null = null;
@@ -80,7 +80,7 @@ export async function checkRateLimitStatus(): Promise<RateLimitStatus | null> {
     };
   } catch (error) {
     // Log error but don't throw - return null to indicate unavailable
-    console.error("[RateLimitMonitor] Error checking rate limit:", error);
+    console.error('[RateLimitMonitor] Error checking rate limit:', error);
     return null;
   }
 }
@@ -89,7 +89,7 @@ export async function checkRateLimitStatus(): Promise<RateLimitStatus | null> {
  * Format time until reset for display
  */
 export function formatTimeUntilReset(ms: number): string {
-  if (ms <= 0) return "now";
+  if (ms <= 0) return 'now';
 
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -109,49 +109,49 @@ export function formatTimeUntilReset(ms: number): string {
  * Get a human-readable rate limit status message
  */
 export function formatRateLimitStatus(status: RateLimitStatus): string {
-  if (status.apiErrorReason === "rate_limited" && !status.isLimited) {
+  if (status.apiErrorReason === 'rate_limited' && !status.isLimited) {
     const cachedUsageParts: string[] = [];
 
-    if (typeof status.fiveHourPercent === "number") {
+    if (typeof status.fiveHourPercent === 'number') {
       cachedUsageParts.push(`5-hour ${status.fiveHourPercent}%`);
     }
-    if (typeof status.weeklyPercent === "number") {
+    if (typeof status.weeklyPercent === 'number') {
       cachedUsageParts.push(`weekly ${status.weeklyPercent}%`);
     }
-    if (typeof status.monthlyPercent === "number") {
+    if (typeof status.monthlyPercent === 'number') {
       cachedUsageParts.push(`monthly ${status.monthlyPercent}%`);
     }
 
     if (cachedUsageParts.length > 0) {
-      return `Usage API rate limited; showing stale cached usage (${cachedUsageParts.join(", ")})`;
+      return `Usage API rate limited; showing stale cached usage (${cachedUsageParts.join(', ')})`;
     }
-    return "Usage API rate limited; current limit status unavailable";
+    return 'Usage API rate limited; current limit status unavailable';
   }
 
   if (!status.isLimited) {
-    return "Not rate limited";
+    return 'Not rate limited';
   }
 
   const parts: string[] = [];
 
   if (status.fiveHourLimited) {
-    parts.push("5-hour limit reached");
+    parts.push('5-hour limit reached');
   }
   if (status.weeklyLimited) {
-    parts.push("Weekly limit reached");
+    parts.push('Weekly limit reached');
   }
   if (status.monthlyLimited) {
-    parts.push("Monthly limit reached");
+    parts.push('Monthly limit reached');
   }
 
-  let message = parts.join(" and ");
+  let message = parts.join(' and ');
 
   if (status.timeUntilResetMs !== null) {
     message += ` (resets in ${formatTimeUntilReset(status.timeUntilResetMs)})`;
   }
 
-  if (status.apiErrorReason === "rate_limited") {
-    message += " [usage API 429; cached data]";
+  if (status.apiErrorReason === 'rate_limited') {
+    message += ' [usage API 429; cached data]';
   }
 
   return message;
@@ -163,7 +163,7 @@ export function formatRateLimitStatus(status: RateLimitStatus): string {
 export function isRateLimitStatusDegraded(
   status: RateLimitStatus | null,
 ): boolean {
-  return status?.apiErrorReason === "rate_limited";
+  return status?.apiErrorReason === 'rate_limited';
 }
 
 /**

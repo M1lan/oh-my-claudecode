@@ -19,7 +19,11 @@ export function getRuntimePackageVersion(): string {
     // From dist/lib/version.js -> ../../package.json
     // From src/lib/version.ts -> ../../package.json
     for (let i = 0; i < 5; i++) {
-      const candidate = join(__dirname, ...Array(i + 1).fill('..'), 'package.json');
+      const candidate = join(
+        __dirname,
+        ...Array(i + 1).fill('..'),
+        'package.json',
+      );
       try {
         const pkg = JSON.parse(readFileSync(candidate, 'utf-8'));
         if (pkg.name && pkg.version) {
@@ -38,7 +42,9 @@ export function getRuntimePackageVersion(): string {
   // the path itself contains the version: .../oh-my-claudecode/4.11.2/dist/lib/version.js
   try {
     const __filename = fileURLToPath(import.meta.url);
-    const pathMatch = __filename.match(/oh-my-claudecode\/(\d+\.\d+\.\d+[^/]*)\//);
+    const pathMatch = __filename.match(
+      /oh-my-claudecode\/(\d+\.\d+\.\d+[^/]*)\//,
+    );
     if (pathMatch?.[1]) {
       return pathMatch[1];
     }

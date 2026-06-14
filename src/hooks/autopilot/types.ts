@@ -15,28 +15,28 @@
  * Represents the current phase of autopilot execution
  */
 export type AutopilotPhase =
-  | "expansion" // Requirements gathering and spec creation
-  | "planning" // Creating detailed execution plan
-  | "execution" // Implementing the plan
-  | "qa" // Quality assurance testing
-  | "validation" // Final verification by architects
-  | "complete" // Successfully completed
-  | "failed"; // Failed to complete
+  | 'expansion' // Requirements gathering and spec creation
+  | 'planning' // Creating detailed execution plan
+  | 'execution' // Implementing the plan
+  | 'qa' // Quality assurance testing
+  | 'validation' // Final verification by architects
+  | 'complete' // Successfully completed
+  | 'failed'; // Failed to complete
 
 /**
  * QA test status for build, lint, and test phases
  */
-export type QAStatus = "pending" | "passing" | "failing";
+export type QAStatus = 'pending' | 'passing' | 'failing';
 
 /**
  * Type of validation performed by specialized architects
  */
-export type ValidationVerdictType = "functional" | "security" | "quality";
+export type ValidationVerdictType = 'functional' | 'security' | 'quality';
 
 /**
  * Verdict from a validation check
  */
-export type ValidationVerdict = "APPROVED" | "REJECTED" | "NEEDS_FIX";
+export type ValidationVerdict = 'APPROVED' | 'REJECTED' | 'NEEDS_FIX';
 
 /**
  * Result from a single validation check
@@ -109,7 +109,7 @@ export interface AutopilotQA {
   /** Current lint status */
   lint_status: QAStatus;
   /** Current test status (or skipped if no tests) */
-  test_status: QAStatus | "skipped";
+  test_status: QAStatus | 'skipped';
   /** Timestamp when QA phase completed */
   qa_completed_at?: string;
 }
@@ -205,11 +205,11 @@ export interface AutopilotConfig {
    */
   pipeline?: {
     /** Planning stage: 'ralplan' for consensus, 'direct' for simple, false to skip */
-    planning?: "ralplan" | "direct" | false;
+    planning?: 'ralplan' | 'direct' | false;
     /** Execution backend: 'team' for multi-worker, 'solo' for single-session */
-    execution?: "team" | "solo";
+    execution?: 'team' | 'solo';
     /** Verification config, or false to skip */
-    verification?: { engine: "ralph"; maxIterations: number } | false;
+    verification?: { engine: 'ralph'; maxIterations: number } | false;
     /** Whether to run QA stage */
     qa?: boolean;
   };
@@ -253,14 +253,14 @@ export interface AutopilotSummary {
  * Signal types for phase transitions and completion
  */
 export type AutopilotSignal =
-  | "EXPANSION_COMPLETE" // Expansion phase finished
-  | "PLANNING_COMPLETE" // Planning phase finished
-  | "EXECUTION_COMPLETE" // Execution phase finished
-  | "QA_COMPLETE" // QA phase finished
-  | "VALIDATION_COMPLETE" // Validation phase finished
-  | "AUTOPILOT_COMPLETE" // All phases complete
-  | "TRANSITION_TO_QA" // Ready to start QA
-  | "TRANSITION_TO_VALIDATION"; // Ready to start validation
+  | 'EXPANSION_COMPLETE' // Expansion phase finished
+  | 'PLANNING_COMPLETE' // Planning phase finished
+  | 'EXECUTION_COMPLETE' // Execution phase finished
+  | 'QA_COMPLETE' // QA phase finished
+  | 'VALIDATION_COMPLETE' // Validation phase finished
+  | 'AUTOPILOT_COMPLETE' // All phases complete
+  | 'TRANSITION_TO_QA' // Ready to start QA
+  | 'TRANSITION_TO_VALIDATION'; // Ready to start validation
 
 /**
  * Default configuration for autopilot
@@ -277,5 +277,5 @@ export const DEFAULT_CONFIG: AutopilotConfig = {
   skipQa: false,
   skipValidation: false,
   autoCommit: false,
-  validationArchitects: ["functional", "security", "quality"],
+  validationArchitects: ['functional', 'security', 'quality'],
 };

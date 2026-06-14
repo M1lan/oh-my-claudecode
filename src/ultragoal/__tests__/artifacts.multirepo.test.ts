@@ -22,15 +22,28 @@ import {
 
 function cleanQualityGate(): object {
   return {
-    aiSlopCleaner: { status: 'passed', evidence: 'ai-slop-cleaner ran on changed files' },
-    verification: { status: 'passed', commands: ['npm test'], evidence: 'tests passed after cleaner' },
-    codeReview: { recommendation: 'APPROVE', architectStatus: 'CLEAR', evidence: '$code-review approved with CLEAR architecture' },
+    aiSlopCleaner: {
+      status: 'passed',
+      evidence: 'ai-slop-cleaner ran on changed files',
+    },
+    verification: {
+      status: 'passed',
+      commands: ['npm test'],
+      evidence: 'tests passed after cleaner',
+    },
+    codeReview: {
+      recommendation: 'APPROVE',
+      architectStatus: 'CLEAR',
+      evidence: '$code-review approved with CLEAR architecture',
+    },
   };
 }
 
 describe('ultragoal artifacts — multi-repo workspace anchor', () => {
   it('writes artifacts to workspace anchor .omc/ when .omc-workspace marker is in a parent dir', async () => {
-    const workspaceRoot = await mkdtemp(join(tmpdir(), 'omc-multirepo-anchor-'));
+    const workspaceRoot = await mkdtemp(
+      join(tmpdir(), 'omc-multirepo-anchor-'),
+    );
     try {
       // Drop workspace marker so getOmcRoot() anchors to workspaceRoot
       writeFileSync(join(workspaceRoot, '.omc-workspace'), '{}');
@@ -45,7 +58,9 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
       await createUltragoalPlan(subDir, { brief: '- Task A\n- Task B' });
 
       // Artifacts must land under the workspace anchor, not in the sub-repo
-      expect(existsSync(join(workspaceRoot, '.omc', 'ultragoal', 'goals.json'))).toBe(true);
+      expect(
+        existsSync(join(workspaceRoot, '.omc', 'ultragoal', 'goals.json')),
+      ).toBe(true);
       expect(existsSync(join(subDir, '.omc', 'ultragoal'))).toBe(false);
     } finally {
       clearWorktreeCache();
@@ -54,7 +69,9 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
   });
 
   it('sibling sub-repos share one workspace .omc/ when rooted at the same .omc-workspace', async () => {
-    const workspaceRoot = await mkdtemp(join(tmpdir(), 'omc-multirepo-sibling-'));
+    const workspaceRoot = await mkdtemp(
+      join(tmpdir(), 'omc-multirepo-sibling-'),
+    );
     try {
       writeFileSync(join(workspaceRoot, '.omc-workspace'), '{}');
 
@@ -68,12 +85,40 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
       clearWorktreeCache();
 
       // Plans with explicit planId so they don't collide on the shared goals.json
-      await createUltragoalPlan(repoA, { brief: '- Feature A', planId: 'plan-a' });
-      await createUltragoalPlan(repoB, { brief: '- Feature B', planId: 'plan-b' });
+      await createUltragoalPlan(repoA, {
+        brief: '- Feature A',
+        planId: 'plan-a',
+      });
+      await createUltragoalPlan(repoB, {
+        brief: '- Feature B',
+        planId: 'plan-b',
+      });
 
       // Both plans land under the single workspace .omc/
-      expect(existsSync(join(workspaceRoot, '.omc', 'ultragoal', 'plans', 'plan-a', 'goals.json'))).toBe(true);
-      expect(existsSync(join(workspaceRoot, '.omc', 'ultragoal', 'plans', 'plan-b', 'goals.json'))).toBe(true);
+      expect(
+        existsSync(
+          join(
+            workspaceRoot,
+            '.omc',
+            'ultragoal',
+            'plans',
+            'plan-a',
+            'goals.json',
+          ),
+        ),
+      ).toBe(true);
+      expect(
+        existsSync(
+          join(
+            workspaceRoot,
+            '.omc',
+            'ultragoal',
+            'plans',
+            'plan-b',
+            'goals.json',
+          ),
+        ),
+      ).toBe(true);
 
       // Sub-repos must not have their own .omc/ultragoal
       expect(existsSync(join(repoA, '.omc', 'ultragoal'))).toBe(false);
@@ -91,7 +136,9 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
   });
 
   it('full lifecycle (start → checkpoint) resolves through workspace anchor', async () => {
-    const workspaceRoot = await mkdtemp(join(tmpdir(), 'omc-multirepo-lifecycle-'));
+    const workspaceRoot = await mkdtemp(
+      join(tmpdir(), 'omc-multirepo-lifecycle-'),
+    );
     try {
       writeFileSync(join(workspaceRoot, '.omc-workspace'), '{}');
 
@@ -114,7 +161,8 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
       await checkpointUltragoal(subDir, {
         goalId: started.goal!.id,
         status: 'complete',
-        evidence: 'planned work done; tests passed clean; review APPROVED CLEAR',
+        evidence:
+          'planned work done; tests passed clean; review APPROVED CLEAR',
         claudeGoal: { goal: { objective, status: 'complete' } },
         qualityGate: cleanQualityGate(),
       });
@@ -123,7 +171,10 @@ describe('ultragoal artifacts — multi-repo workspace anchor', () => {
       expect(plan.goals[0]?.status).toBe('complete');
 
       // Ledger is in the workspace anchor, not the sub-repo
-      const ledger = await readFile(join(workspaceRoot, '.omc', 'ultragoal', 'ledger.jsonl'), 'utf-8');
+      const ledger = await readFile(
+        join(workspaceRoot, '.omc', 'ultragoal', 'ledger.jsonl'),
+        'utf-8',
+      );
       expect(ledger).toMatch(/"event":"plan_created"/);
       expect(ledger).toMatch(/"event":"goal_started"/);
     } finally {

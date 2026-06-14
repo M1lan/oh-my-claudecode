@@ -2,18 +2,18 @@ import type {
   TeamPipelinePhase,
   TeamPipelineState,
   TeamTransitionResult,
-} from "./types.js";
-import { markTeamPhase } from "./state.js";
+} from './types.js';
+import { markTeamPhase } from './state.js';
 
 const ALLOWED: Record<TeamPipelinePhase, TeamPipelinePhase[]> = {
-  "team-plan": ["team-prd"],
-  "team-prd": ["team-exec"],
-  "team-exec": ["team-verify"],
-  "team-verify": ["team-fix", "complete", "failed"],
-  "team-fix": ["team-exec", "team-verify", "complete", "failed"],
+  'team-plan': ['team-prd'],
+  'team-prd': ['team-exec'],
+  'team-exec': ['team-verify'],
+  'team-verify': ['team-fix', 'complete', 'failed'],
+  'team-fix': ['team-exec', 'team-verify', 'complete', 'failed'],
   complete: [],
   failed: [],
-  cancelled: ["team-plan", "team-exec"],
+  cancelled: ['team-plan', 'team-exec'],
 };
 
 function isAllowedTransition(
@@ -26,7 +26,7 @@ function isAllowedTransition(
 /** Validates that a value is a non-negative finite integer */
 export function isNonNegativeFiniteInteger(n: unknown): n is number {
   return (
-    typeof n === "number" && Number.isFinite(n) && Number.isInteger(n) && n >= 0
+    typeof n === 'number' && Number.isFinite(n) && Number.isInteger(n) && n >= 0
   );
 }
 
@@ -34,13 +34,13 @@ function hasRequiredArtifactsForPhase(
   state: TeamPipelineState,
   next: TeamPipelinePhase,
 ): string | null {
-  if (next === "team-exec") {
+  if (next === 'team-exec') {
     if (!state.artifacts.plan_path && !state.artifacts.prd_path) {
-      return "team-exec requires plan_path or prd_path artifact";
+      return 'team-exec requires plan_path or prd_path artifact';
     }
     return null;
   }
-  if (next === "team-verify") {
+  if (next === 'team-verify') {
     if (!isNonNegativeFiniteInteger(state.execution.tasks_total)) {
       return `tasks_total must be a non-negative finite integer, got: ${state.execution.tasks_total}`;
     }
@@ -48,7 +48,7 @@ function hasRequiredArtifactsForPhase(
       return `tasks_completed must be a non-negative finite integer, got: ${state.execution.tasks_completed}`;
     }
     if (state.execution.tasks_total <= 0) {
-      return "tasks_total must be > 0 for team-verify transition";
+      return 'tasks_total must be > 0 for team-verify transition';
     }
     if (state.execution.tasks_completed < state.execution.tasks_total) {
       return `tasks_completed (${state.execution.tasks_completed}) < tasks_total (${state.execution.tasks_total})`;
@@ -72,7 +72,7 @@ export function transitionTeamPhase(
   }
 
   // When resuming from cancelled, require preserve_for_resume flag
-  if (state.phase === "cancelled") {
+  if (state.phase === 'cancelled') {
     if (!state.cancel.preserve_for_resume) {
       return {
         ok: false,
@@ -86,7 +86,7 @@ export function transitionTeamPhase(
       active: true,
       completed_at: null,
     };
-    return markTeamPhase(resumed, next, reason ?? "resumed-from-cancelled");
+    return markTeamPhase(resumed, next, reason ?? 'resumed-from-cancelled');
   }
 
   const guardFailure = hasRequiredArtifactsForPhase(state, next);
@@ -116,16 +116,16 @@ export function requestTeamCancel(
       requested_at: new Date().toISOString(),
       preserve_for_resume: preserveForResume,
     },
-    phase: "cancelled",
+    phase: 'cancelled',
     active: false,
     completed_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     phase_history: [
       ...state.phase_history,
       {
-        phase: "cancelled",
+        phase: 'cancelled',
         entered_at: new Date().toISOString(),
-        reason: "cancel-requested",
+        reason: 'cancel-requested',
       },
     ],
   };

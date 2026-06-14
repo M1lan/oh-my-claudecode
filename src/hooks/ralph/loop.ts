@@ -10,14 +10,14 @@
  * Ported from oh-my-opencode's ralph hook.
  */
 
-import { execSync } from "child_process";
-import { readFileSync } from "fs";
-import { basename, join } from "path";
+import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
+import { basename, join } from 'path';
 import {
   writeModeState,
   readModeState,
   clearModeStateFile,
-} from "../../lib/mode-state-io.js";
+} from '../../lib/mode-state-io.js';
 import {
   ensurePrdForStartup,
   findPrdPath,
@@ -27,25 +27,25 @@ import {
   formatPrdStatus,
   type PRDStatus,
   type UserStory,
-} from "./prd.js";
+} from './prd.js';
 import {
   findProgressPath,
   getProgressContext,
   appendProgress,
   initProgress,
   addPattern,
-} from "./progress.js";
+} from './progress.js';
 import {
   UltraworkState,
   readUltraworkState as readUltraworkStateFromModule,
   writeUltraworkState as writeUltraworkStateFromModule,
-} from "../ultrawork/index.js";
+} from '../ultrawork/index.js';
 import {
   resolveSessionStatePath,
   getOmcRoot,
-} from "../../lib/worktree-paths.js";
-import { readTeamPipelineState } from "../team-pipeline/state.js";
-import type { TeamPipelinePhase } from "../team-pipeline/types.js";
+} from '../../lib/worktree-paths.js';
+import { readTeamPipelineState } from '../team-pipeline/state.js';
+import type { TeamPipelinePhase } from '../team-pipeline/types.js';
 
 // Forward declaration to avoid circular import - check ultraqa state file directly
 export function isUltraQAActive(
@@ -55,16 +55,16 @@ export function isUltraQAActive(
   // When sessionId is provided, ONLY check session-scoped path — no legacy fallback
   if (sessionId) {
     const sessionFile = resolveSessionStatePath(
-      "ultraqa",
+      'ultraqa',
       sessionId,
       directory,
     );
     try {
-      const content = readFileSync(sessionFile, "utf-8");
+      const content = readFileSync(sessionFile, 'utf-8');
       const state = JSON.parse(content);
       return state && state.active === true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return false;
       }
       return false; // NO legacy fallback
@@ -73,13 +73,13 @@ export function isUltraQAActive(
 
   // No sessionId: legacy path (backward compat)
   const omcDir = getOmcRoot(directory);
-  const stateFile = join(omcDir, "state", "ultraqa-state.json");
+  const stateFile = join(omcDir, 'state', 'ultraqa-state.json');
   try {
-    const content = readFileSync(stateFile, "utf-8");
+    const content = readFileSync(stateFile, 'utf-8');
     const state = JSON.parse(content);
     return state && state.active === true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return false;
     }
     return false;
@@ -111,7 +111,7 @@ export interface RalphLoopState {
   critic_mode?: RalphCriticMode;
 }
 
-export const RALPH_CRITIC_MODES = ["architect", "critic", "codex"] as const;
+export const RALPH_CRITIC_MODES = ['architect', 'critic', 'codex'] as const;
 export type RalphCriticMode = (typeof RALPH_CRITIC_MODES)[number];
 
 export interface RalphLoopOptions {
@@ -134,7 +134,7 @@ export interface RalphLoopHook {
 }
 
 const DEFAULT_MAX_ITERATIONS = 10;
-const DEFAULT_RALPH_CRITIC_MODE: RalphCriticMode = "architect";
+const DEFAULT_RALPH_CRITIC_MODE: RalphCriticMode = 'architect';
 
 /**
  * Read Ralph Loop state from disk
@@ -143,7 +143,7 @@ export function readRalphState(
   directory: string,
   sessionId?: string,
 ): RalphLoopState | null {
-  const state = readModeState<RalphLoopState>("ralph", directory, sessionId);
+  const state = readModeState<RalphLoopState>('ralph', directory, sessionId);
 
   // Validate session identity
   if (
@@ -167,7 +167,7 @@ export function writeRalphState(
   sessionId?: string,
 ): boolean {
   return writeModeState(
-    "ralph",
+    'ralph',
     state as unknown as Record<string, unknown>,
     directory,
     sessionId,
@@ -181,7 +181,7 @@ export function clearRalphState(
   directory: string,
   sessionId?: string,
 ): boolean {
-  return clearModeStateFile("ralph", directory, sessionId);
+  return clearModeStateFile('ralph', directory, sessionId);
 }
 
 /**
@@ -198,7 +198,7 @@ export function clearLinkedUltraworkState(
     return true;
   }
 
-  return clearModeStateFile("ultrawork", directory, sessionId);
+  return clearModeStateFile('ultrawork', directory, sessionId);
 }
 
 /**
@@ -239,8 +239,8 @@ export function detectNoPrdFlag(prompt: string): boolean {
  */
 export function stripNoPrdFlag(prompt: string): string {
   return prompt
-    .replace(/--no-prd/gi, "")
-    .replace(/\s+/g, " ")
+    .replace(/--no-prd/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -273,8 +273,8 @@ export function detectCriticModeFlag(prompt: string): RalphCriticMode | null {
  */
 export function stripCriticModeFlag(prompt: string): string {
   return prompt
-    .replace(/--critic(?:=|\s+)([^\s]+)/gi, "")
-    .replace(/\s+/g, " ")
+    .replace(/--critic(?:=|\s+)([^\s]+)/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
@@ -290,7 +290,7 @@ export function createRalphLoopHook(directory: string): RalphLoopHook {
     // Mutual exclusion check: cannot start Ralph Loop if UltraQA is active
     if (isUltraQAActive(directory, sessionId)) {
       console.error(
-        "Cannot start Ralph Loop while UltraQA is active. Cancel UltraQA first with /oh-my-claudecode:cancel.",
+        'Cannot start Ralph Loop while UltraQA is active. Cancel UltraQA first with /oh-my-claudecode:cancel.',
       );
       return false;
     }
@@ -299,11 +299,11 @@ export function createRalphLoopHook(directory: string): RalphLoopHook {
     const now = new Date().toISOString();
     const normalizedPrompt = stripCriticModeFlag(stripNoPrdFlag(prompt));
 
-    let branchName = "ralph/task";
+    let branchName = 'ralph/task';
     try {
-      branchName = execSync("git rev-parse --abbrev-ref HEAD", {
+      branchName = execSync('git rev-parse --abbrev-ref HEAD', {
         cwd: directory,
-        encoding: "utf-8",
+        encoding: 'utf-8',
         timeout: 5000,
       }).trim();
     } catch {
@@ -472,7 +472,7 @@ export function getRalphContext(directory: string, sessionId?: string): string {
     );
   }
 
-  return parts.join("\n");
+  return parts.join('\n');
 }
 
 /**
@@ -544,28 +544,28 @@ export function recordPattern(directory: string, pattern: string): boolean {
 export function getTeamPhaseDirective(
   directory: string,
   sessionId?: string,
-): "continue" | "complete" | null {
+): 'continue' | 'complete' | null {
   const teamState = readTeamPipelineState(directory, sessionId);
   if (!teamState || !teamState.active) {
     // Check terminal states even when active=false
     if (teamState) {
-      const terminalPhases: TeamPipelinePhase[] = ["complete", "failed"];
+      const terminalPhases: TeamPipelinePhase[] = ['complete', 'failed'];
       if (terminalPhases.includes(teamState.phase)) {
-        return "complete";
+        return 'complete';
       }
     }
     return null;
   }
 
   const continuePhases: TeamPipelinePhase[] = [
-    "team-verify",
-    "team-fix",
-    "team-exec",
-    "team-plan",
-    "team-prd",
+    'team-verify',
+    'team-fix',
+    'team-exec',
+    'team-plan',
+    'team-prd',
   ];
   if (continuePhases.includes(teamState.phase)) {
-    return "continue";
+    return 'continue';
   }
 
   return null;
@@ -583,4 +583,4 @@ export function shouldCompleteByPrd(
 }
 
 // Re-export PRD types for convenience
-export type { PRD, PRDStatus, UserStory } from "./prd.js";
+export type { PRD, PRDStatus, UserStory } from './prd.js';

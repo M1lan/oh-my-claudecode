@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { mkdtempSync } from 'fs';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
@@ -42,11 +49,15 @@ function runCli(
   envOverrides: Record<string, string> = {},
   options: RunOptions = {},
 ): CliRunResult {
-  const result = spawnSync(process.execPath, ['--import', TSX_LOADER, CLI_ENTRY, ...args], {
-    cwd,
-    encoding: 'utf-8',
-    env: buildChildEnv(envOverrides, options),
-  });
+  const result = spawnSync(
+    process.execPath,
+    ['--import', TSX_LOADER, CLI_ENTRY, ...args],
+    {
+      cwd,
+      encoding: 'utf-8',
+      env: buildChildEnv(envOverrides, options),
+    },
+  );
 
   return {
     status: result.status,
@@ -83,11 +94,15 @@ function runAdvisorScriptWithPrelude(
   envOverrides: Record<string, string> = {},
   options: RunOptions = {},
 ): CliRunResult {
-  const result = spawnSync(process.execPath, ['--import', preludePath, ADVISOR_SCRIPT, ...args], {
-    cwd,
-    encoding: 'utf-8',
-    env: buildChildEnv(envOverrides, options),
-  });
+  const result = spawnSync(
+    process.execPath,
+    ['--import', preludePath, ADVISOR_SCRIPT, ...args],
+    {
+      cwd,
+      encoding: 'utf-8',
+      env: buildChildEnv(envOverrides, options),
+    },
+  );
 
   return {
     status: result.status,
@@ -120,7 +135,10 @@ function writeAdvisorStub(dir: string): string {
   return stubPath;
 }
 
-function writeFakeProviderBinary(dir: string, provider: 'claude' | 'gemini'): string {
+function writeFakeProviderBinary(
+  dir: string,
+  provider: 'claude' | 'gemini',
+): string {
   const binDir = join(dir, 'bin');
   mkdirSync(binDir, { recursive: true });
   const binPath = join(binDir, provider);
@@ -151,17 +169,17 @@ function writeSpawnSyncCapturePrelude(dir: string): string {
       '    command,',
       '    args,',
       '    options: {',
-      "      shell: options.shell ?? false,",
-      "      encoding: options.encoding ?? null,",
-      "      stdio: options.stdio ?? null,",
-      "      input: options.input ?? null,",
+      '      shell: options.shell ?? false,',
+      '      encoding: options.encoding ?? null,',
+      '      stdio: options.stdio ?? null,',
+      '      input: options.input ?? null,',
       '      env: {',
-      "        CLAUDECODE: options.env?.CLAUDECODE ?? null,",
-      "        CLAUDE_SESSION_ID: options.env?.CLAUDE_SESSION_ID ?? null,",
-      "        CLAUDECODE_SESSION_ID: options.env?.CLAUDECODE_SESSION_ID ?? null,",
-      "        CLAUDE_CODE_ENTRYPOINT: options.env?.CLAUDE_CODE_ENTRYPOINT ?? null,",
-      "        RUST_LOG: options.env?.RUST_LOG ?? null,",
-      "        RUST_BACKTRACE: options.env?.RUST_BACKTRACE ?? null,",
+      '        CLAUDECODE: options.env?.CLAUDECODE ?? null,',
+      '        CLAUDE_SESSION_ID: options.env?.CLAUDE_SESSION_ID ?? null,',
+      '        CLAUDECODE_SESSION_ID: options.env?.CLAUDECODE_SESSION_ID ?? null,',
+      '        CLAUDE_CODE_ENTRYPOINT: options.env?.CLAUDE_CODE_ENTRYPOINT ?? null,',
+      '        RUST_LOG: options.env?.RUST_LOG ?? null,',
+      '        RUST_BACKTRACE: options.env?.RUST_BACKTRACE ?? null,',
       '      },',
       '    },',
       '  });',
@@ -169,7 +187,7 @@ function writeSpawnSyncCapturePrelude(dir: string): string {
       "    return { status: 1, stdout: '', stderr: '', pid: 0, output: [], signal: null };",
       '  }',
       "  if (mode === 'missing' && (command === 'codex' || command === 'gemini') && Array.isArray(args) && args[0] === '--version') {",
-      "    return { status: 1, stdout: '', stderr: \"'\" + command + \"' is not recognized\", pid: 0, output: [], signal: null };",
+      '    return { status: 1, stdout: \'\', stderr: "\'" + command + "\' is not recognized", pid: 0, output: [], signal: null };',
       '  }',
       "  const isVersionProbe = Array.isArray(args) && args[0] === '--version';",
       '  return {',
@@ -182,7 +200,7 @@ function writeSpawnSyncCapturePrelude(dir: string): string {
       '  };',
       '};',
       'syncBuiltinESMExports();',
-      'process.on(\'exit\', () => {',
+      "process.on('exit', () => {",
       '  if (capturePath) {',
       "    writeFileSync(capturePath, JSON.stringify(calls), 'utf8');",
       '  }',
@@ -193,7 +211,6 @@ function writeSpawnSyncCapturePrelude(dir: string): string {
   );
   return preludePath;
 }
-
 
 function writeSpawnSyncCapturePreludeNative(dir: string): string {
   const preludePath = join(dir, 'spawn-sync-capture-prelude-native.mjs');
@@ -212,10 +229,10 @@ function writeSpawnSyncCapturePreludeNative(dir: string): string {
       '    command,',
       '    args,',
       '    options: {',
-      "      shell: options.shell ?? false,",
-      "      encoding: options.encoding ?? null,",
-      "      stdio: options.stdio ?? null,",
-      "      input: options.input ?? null,",
+      '      shell: options.shell ?? false,',
+      '      encoding: options.encoding ?? null,',
+      '      stdio: options.stdio ?? null,',
+      '      input: options.input ?? null,',
       '    },',
       '  });',
       "  const isVersionProbe = Array.isArray(args) && args[0] === '--version';",
@@ -267,23 +284,54 @@ exit 9
 
 describe('parseAskArgs', () => {
   it('supports positional and print/prompt flag forms', () => {
-    expect(parseAskArgs(['claude', 'review', 'this'])).toEqual({ provider: 'claude', prompt: 'review this' });
-    expect(parseAskArgs(['gemini', '-p', 'brainstorm'])).toEqual({ provider: 'gemini', prompt: 'brainstorm' });
-    expect(parseAskArgs(['claude', '--print', 'draft', 'summary'])).toEqual({ provider: 'claude', prompt: 'draft summary' });
-    expect(parseAskArgs(['gemini', '--prompt=ship safely'])).toEqual({ provider: 'gemini', prompt: 'ship safely' });
-    expect(parseAskArgs(['codex', 'review', 'this'])).toEqual({ provider: 'codex', prompt: 'review this' });
-    expect(parseAskArgs(['grok', 'review', 'this'])).toEqual({ provider: 'grok', prompt: 'review this' });
-    expect(parseAskArgs(['grok', '-p', 'brainstorm'])).toEqual({ provider: 'grok', prompt: 'brainstorm' });
+    expect(parseAskArgs(['claude', 'review', 'this'])).toEqual({
+      provider: 'claude',
+      prompt: 'review this',
+    });
+    expect(parseAskArgs(['gemini', '-p', 'brainstorm'])).toEqual({
+      provider: 'gemini',
+      prompt: 'brainstorm',
+    });
+    expect(parseAskArgs(['claude', '--print', 'draft', 'summary'])).toEqual({
+      provider: 'claude',
+      prompt: 'draft summary',
+    });
+    expect(parseAskArgs(['gemini', '--prompt=ship safely'])).toEqual({
+      provider: 'gemini',
+      prompt: 'ship safely',
+    });
+    expect(parseAskArgs(['codex', 'review', 'this'])).toEqual({
+      provider: 'codex',
+      prompt: 'review this',
+    });
+    expect(parseAskArgs(['grok', 'review', 'this'])).toEqual({
+      provider: 'grok',
+      prompt: 'review this',
+    });
+    expect(parseAskArgs(['grok', '-p', 'brainstorm'])).toEqual({
+      provider: 'grok',
+      prompt: 'brainstorm',
+    });
   });
 
   it('supports --agent-prompt flag and equals syntax', () => {
-    expect(parseAskArgs(['claude', '--agent-prompt', 'executor', 'do', 'it'])).toEqual({
+    expect(
+      parseAskArgs(['claude', '--agent-prompt', 'executor', 'do', 'it']),
+    ).toEqual({
       provider: 'claude',
       prompt: 'do it',
       agentPromptRole: 'executor',
     });
 
-    expect(parseAskArgs(['gemini', '--agent-prompt=planner', '--prompt', 'plan', 'it'])).toEqual({
+    expect(
+      parseAskArgs([
+        'gemini',
+        '--agent-prompt=planner',
+        '--prompt',
+        'plan',
+        'it',
+      ]),
+    ).toEqual({
       provider: 'gemini',
       prompt: 'plan it',
       agentPromptRole: 'planner',
@@ -300,11 +348,9 @@ describe('omc ask command', () => {
     const wd = mkdtempSync(join(tmpdir(), 'omc-ask-canonical-'));
     try {
       const stubPath = writeAdvisorStub(wd);
-      const result = runCli(
-        ['ask', 'claude', '--print', 'hello world'],
-        wd,
-        { OMC_ASK_ADVISOR_SCRIPT: stubPath },
-      );
+      const result = runCli(['ask', 'claude', '--print', 'hello world'], wd, {
+        OMC_ASK_ADVISOR_SCRIPT: stubPath,
+      });
 
       expect(result.error).toBeUndefined();
       expect(result.status).toBe(0);
@@ -326,11 +372,9 @@ describe('omc ask command', () => {
     const wd = mkdtempSync(join(tmpdir(), 'omc-ask-alias-'));
     try {
       const stubPath = writeAdvisorStub(wd);
-      const result = runCli(
-        ['ask', 'gemini', 'legacy', 'path'],
-        wd,
-        { OMX_ASK_ADVISOR_SCRIPT: stubPath },
-      );
+      const result = runCli(['ask', 'gemini', 'legacy', 'path'], wd, {
+        OMX_ASK_ADVISOR_SCRIPT: stubPath,
+      });
 
       expect(result.error).toBeUndefined();
       expect(result.status).toBe(0);
@@ -410,11 +454,25 @@ describe('omc ask command', () => {
       const stubPath = writeAdvisorStub(wd);
       mkdirSync(join(wd, '.omx'), { recursive: true });
       mkdirSync(join(wd, '.codex', 'prompts'), { recursive: true });
-      writeFileSync(join(wd, '.omx', 'setup-scope.json'), JSON.stringify({ scope: 'project' }), 'utf8');
-      writeFileSync(join(wd, '.codex', 'prompts', 'executor.md'), 'ROLE HEADER\nFollow checks.', 'utf8');
+      writeFileSync(
+        join(wd, '.omx', 'setup-scope.json'),
+        JSON.stringify({ scope: 'project' }),
+        'utf8',
+      );
+      writeFileSync(
+        join(wd, '.codex', 'prompts', 'executor.md'),
+        'ROLE HEADER\nFollow checks.',
+        'utf8',
+      );
 
       const result = runCli(
-        ['ask', 'claude', '--agent-prompt=executor', '--prompt', 'ship feature'],
+        [
+          'ask',
+          'claude',
+          '--agent-prompt=executor',
+          '--prompt',
+          'ship feature',
+        ],
         wd,
         { OMC_ASK_ADVISOR_SCRIPT: stubPath },
       );
@@ -447,7 +505,9 @@ describe('run-provider-advisor script contract', () => {
       expect(result.status).toBe(0);
 
       const artifactPath = result.stdout.trim();
-      expect(artifactPath).toContain(join('.omc', 'artifacts', 'ask', 'claude-artifact-path-contract-'));
+      expect(artifactPath).toContain(
+        join('.omc', 'artifacts', 'ask', 'claude-artifact-path-contract-'),
+      );
       expect(existsSync(artifactPath)).toBe(true);
 
       const artifact = readFileSync(artifactPath, 'utf8');
@@ -488,53 +548,58 @@ describe('run-provider-advisor script contract', () => {
     ['codex', ['codex', '--prompt', 'nested codex prompt']],
     ['gemini', ['gemini', '--prompt', 'nested gemini prompt']],
     ['grok', ['grok', '--prompt', 'nested grok prompt']],
-  ] as const)('strips Claude session env vars for %s advisor spawns', (provider, args) => {
-    const wd = mkdtempSync(join(tmpdir(), `omc-ask-${provider}-advisor-env-`));
-    try {
-      const capturePath = join(wd, 'spawn-sync-calls.json');
-      const preludePath = writeSpawnSyncCapturePrelude(wd);
-      const result = runAdvisorScriptWithPrelude(
-        preludePath,
-        args,
-        wd,
-        {
-          SPAWN_CAPTURE_PATH: capturePath,
-          CLAUDECODE: '1',
-          CLAUDE_SESSION_ID: 'session-123',
-          CLAUDECODE_SESSION_ID: 'session-legacy',
-          CLAUDE_CODE_ENTRYPOINT: 'plugin',
-        },
-        { preserveClaudeSessionEnv: true },
+  ] as const)(
+    'strips Claude session env vars for %s advisor spawns',
+    (provider, args) => {
+      const wd = mkdtempSync(
+        join(tmpdir(), `omc-ask-${provider}-advisor-env-`),
       );
+      try {
+        const capturePath = join(wd, 'spawn-sync-calls.json');
+        const preludePath = writeSpawnSyncCapturePrelude(wd);
+        const result = runAdvisorScriptWithPrelude(
+          preludePath,
+          args,
+          wd,
+          {
+            SPAWN_CAPTURE_PATH: capturePath,
+            CLAUDECODE: '1',
+            CLAUDE_SESSION_ID: 'session-123',
+            CLAUDECODE_SESSION_ID: 'session-legacy',
+            CLAUDE_CODE_ENTRYPOINT: 'plugin',
+          },
+          { preserveClaudeSessionEnv: true },
+        );
 
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
+        expect(result.error).toBeUndefined();
+        expect(result.status).toBe(0);
 
-      const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
-        command: string;
-        args: string[];
-        options: {
-          shell: boolean;
-          encoding: string | null;
-          stdio: string | null;
-          input: string | null;
-          env: Record<string, string | null>;
-        };
-      }>;
+        const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
+          command: string;
+          args: string[];
+          options: {
+            shell: boolean;
+            encoding: string | null;
+            stdio: string | null;
+            input: string | null;
+            env: Record<string, string | null>;
+          };
+        }>;
 
-      expect(calls).toHaveLength(2);
-      for (const call of calls) {
-        expect(call.options.env).toMatchObject({
-          CLAUDECODE: null,
-          CLAUDE_SESSION_ID: null,
-          CLAUDECODE_SESSION_ID: null,
-          CLAUDE_CODE_ENTRYPOINT: null,
-        });
+        expect(calls).toHaveLength(2);
+        for (const call of calls) {
+          expect(call.options.env).toMatchObject({
+            CLAUDECODE: null,
+            CLAUDE_SESSION_ID: null,
+            CLAUDECODE_SESSION_ID: null,
+            CLAUDE_CODE_ENTRYPOINT: null,
+          });
+        }
+      } finally {
+        rmSync(wd, { recursive: true, force: true });
       }
-    } finally {
-      rmSync(wd, { recursive: true, force: true });
-    }
-  });
+    },
+  );
 
   it('launches grok as `grok -p <prompt> --always-approve` and never pipes stdin', () => {
     const wd = mkdtempSync(join(tmpdir(), 'omc-ask-grok-args-'));
@@ -564,7 +629,11 @@ describe('run-provider-advisor script contract', () => {
       const launch = calls.find((c) => !c.args.includes('--version'));
       expect(launch).toBeDefined();
       expect(launch!.command).toBe('grok');
-      expect(launch!.args).toEqual(['-p', 'review this\nand that', '--always-approve']);
+      expect(launch!.args).toEqual([
+        '-p',
+        'review this\nand that',
+        '--always-approve',
+      ]);
       expect(launch!.options.input ?? null).toBeNull();
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -617,19 +686,34 @@ describe('run-provider-advisor script contract', () => {
       const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
         command: string;
         args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string | null; input: string | null };
+        options: {
+          shell: boolean;
+          encoding: string | null;
+          stdio: string | null;
+          input: string | null;
+        };
       }>;
 
       expect(calls).toHaveLength(2);
       expect(calls[0]).toMatchObject({
         command: 'codex',
         args: ['--version'],
-        options: { shell: true, encoding: 'utf8', stdio: 'ignore', input: null },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: 'ignore',
+          input: null,
+        },
       });
       expect(calls[1]).toMatchObject({
         command: 'codex',
         args: ['exec', '--dangerously-bypass-approvals-and-sandbox', '-'],
-        options: { shell: true, encoding: 'utf8', stdio: null, input: 'windows cmd support 你好' },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: null,
+          input: 'windows cmd support 你好',
+        },
       });
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -654,19 +738,34 @@ describe('run-provider-advisor script contract', () => {
       const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
         command: string;
         args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string | null; input: string | null };
+        options: {
+          shell: boolean;
+          encoding: string | null;
+          stdio: string | null;
+          input: string | null;
+        };
       }>;
 
       expect(calls).toHaveLength(2);
       expect(calls[0]).toMatchObject({
         command: 'gemini',
         args: ['--version'],
-        options: { shell: true, encoding: 'utf8', stdio: 'ignore', input: null },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: 'ignore',
+          input: null,
+        },
       });
       expect(calls[1]).toMatchObject({
         command: 'gemini',
         args: ['--yolo'],
-        options: { shell: true, encoding: 'utf8', stdio: null, input: 'ship safely 你好' },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: null,
+          input: 'ship safely 你好',
+        },
       });
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -692,14 +791,24 @@ describe('run-provider-advisor script contract', () => {
       const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
         command: string;
         args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string | null; input: string | null };
+        options: {
+          shell: boolean;
+          encoding: string | null;
+          stdio: string | null;
+          input: string | null;
+        };
       }>;
 
       expect(calls).toHaveLength(2);
       expect(calls[1]).toMatchObject({
         command: 'codex',
         args: ['exec', '--dangerously-bypass-approvals-and-sandbox', '-'],
-        options: { shell: true, encoding: 'utf8', stdio: null, input: multilinePrompt },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: null,
+          input: multilinePrompt,
+        },
       });
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -725,14 +834,24 @@ describe('run-provider-advisor script contract', () => {
       const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
         command: string;
         args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string | null; input: string | null };
+        options: {
+          shell: boolean;
+          encoding: string | null;
+          stdio: string | null;
+          input: string | null;
+        };
       }>;
 
       expect(calls).toHaveLength(2);
       expect(calls[1]).toMatchObject({
         command: 'gemini',
         args: ['--yolo'],
-        options: { shell: true, encoding: 'utf8', stdio: null, input: longPrompt },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: null,
+          input: longPrompt,
+        },
       });
     } finally {
       rmSync(wd, { recursive: true, force: true });
@@ -806,7 +925,9 @@ describe('run-provider-advisor script contract', () => {
   });
 
   it('pipes a short claude prompt that begins with a dash over stdin instead of as argv (#3221)', () => {
-    const wd = mkdtempSync(join(tmpdir(), 'omc-ask-claude-leading-dash-stdin-'));
+    const wd = mkdtempSync(
+      join(tmpdir(), 'omc-ask-claude-leading-dash-stdin-'),
+    );
     const dashPrompt = '--help me design the API';
     try {
       const capturePath = join(wd, 'spawn-sync-calls.json');
@@ -890,20 +1011,32 @@ describe('run-provider-advisor script contract', () => {
       expect(result.error).toBeUndefined();
       expect(result.status).toBe(1);
       expect(result.stdout).toBe('');
-      expect(result.stderr).toContain('Missing required local CLI binary: codex');
+      expect(result.stderr).toContain(
+        'Missing required local CLI binary: codex',
+      );
       expect(result.stderr).toContain('codex --version');
 
       const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
         command: string;
         args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string | null; input: string | null };
+        options: {
+          shell: boolean;
+          encoding: string | null;
+          stdio: string | null;
+          input: string | null;
+        };
       }>;
 
       expect(calls).toHaveLength(2);
       expect(calls[0]).toMatchObject({
         command: 'codex',
         args: ['--version'],
-        options: { shell: true, encoding: 'utf8', stdio: 'ignore', input: null },
+        options: {
+          shell: true,
+          encoding: 'utf8',
+          stdio: 'ignore',
+          input: null,
+        },
       });
       expect(calls[1]).toMatchObject({
         command: 'where',
@@ -918,47 +1051,60 @@ describe('run-provider-advisor script contract', () => {
     ['codex', ['codex', '--prompt', 'short prompt']],
     ['gemini', ['gemini', '--prompt', 'short prompt']],
     ['claude', ['claude', '--prompt', 'short prompt']],
-  ] as const)('closes stdin for %s on non-Windows to prevent hang in piped environments', (provider, args) => {
-    const wd = mkdtempSync(join(tmpdir(), `omc-ask-${provider}-stdin-close-`));
-    try {
-      const capturePath = join(wd, 'spawn-sync-calls.json');
-      const preludePath = writeSpawnSyncCapturePreludeNative(wd);
-      const result = runAdvisorScriptWithPrelude(
-        preludePath,
-        args,
-        wd,
-        { SPAWN_CAPTURE_PATH: capturePath },
+  ] as const)(
+    'closes stdin for %s on non-Windows to prevent hang in piped environments',
+    (provider, args) => {
+      const wd = mkdtempSync(
+        join(tmpdir(), `omc-ask-${provider}-stdin-close-`),
       );
+      try {
+        const capturePath = join(wd, 'spawn-sync-calls.json');
+        const preludePath = writeSpawnSyncCapturePreludeNative(wd);
+        const result = runAdvisorScriptWithPrelude(preludePath, args, wd, {
+          SPAWN_CAPTURE_PATH: capturePath,
+        });
 
-      expect(result.error).toBeUndefined();
-      expect(result.status).toBe(0);
+        expect(result.error).toBeUndefined();
+        expect(result.status).toBe(0);
 
-      const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
-        command: string;
-        args: string[];
-        options: { shell: boolean; encoding: string | null; stdio: string[] | string | null; input: string | null };
-      }>;
+        const calls = JSON.parse(readFileSync(capturePath, 'utf8')) as Array<{
+          command: string;
+          args: string[];
+          options: {
+            shell: boolean;
+            encoding: string | null;
+            stdio: string[] | string | null;
+            input: string | null;
+          };
+        }>;
 
-      expect(calls).toHaveLength(2);
+        expect(calls).toHaveLength(2);
 
-      // Version probe always ignores stdio
-      expect(calls[0].options.stdio).toBe('ignore');
+        // Version probe always ignores stdio
+        expect(calls[0].options.stdio).toBe('ignore');
 
-      // Provider spawn must close stdin to prevent hangs when parent stdin is a pipe
-      expect(calls[1].options.stdio).toEqual(['ignore', 'pipe', 'pipe']);
-      expect(calls[1].options.input).toBeNull();
-    } finally {
-      rmSync(wd, { recursive: true, force: true });
-    }
-  });
+        // Provider spawn must close stdin to prevent hangs when parent stdin is a pipe
+        expect(calls[1].options.stdio).toEqual(['ignore', 'pipe', 'pipe']);
+        expect(calls[1].options.input).toBeNull();
+      } finally {
+        rmSync(wd, { recursive: true, force: true });
+      }
+    },
+  );
 });
 
 describe('resolveAskAdvisorScriptPath', () => {
   it('resolves canonical env and supports package-root relative paths', () => {
     const packageRoot = '/tmp/pkg-root';
-    expect(resolveAskAdvisorScriptPath(packageRoot, { OMC_ASK_ADVISOR_SCRIPT: 'scripts/custom.js' } as NodeJS.ProcessEnv))
-      .toBe('/tmp/pkg-root/scripts/custom.js');
-    expect(resolveAskAdvisorScriptPath(packageRoot, { OMC_ASK_ADVISOR_SCRIPT: '/opt/custom.js' } as NodeJS.ProcessEnv))
-      .toBe('/opt/custom.js');
+    expect(
+      resolveAskAdvisorScriptPath(packageRoot, {
+        OMC_ASK_ADVISOR_SCRIPT: 'scripts/custom.js',
+      } as NodeJS.ProcessEnv),
+    ).toBe('/tmp/pkg-root/scripts/custom.js');
+    expect(
+      resolveAskAdvisorScriptPath(packageRoot, {
+        OMC_ASK_ADVISOR_SCRIPT: '/opt/custom.js',
+      } as NodeJS.ProcessEnv),
+    ).toBe('/opt/custom.js');
   });
 });

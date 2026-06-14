@@ -6,31 +6,31 @@
  * Ported from oh-my-opencode's agent-usage-reminder hook.
  */
 
-import { join } from "path";
-import { homedir } from "os";
+import { join } from 'path';
+import { homedir } from 'os';
 
 /** Storage directory for agent usage reminder state */
-export const OMC_STORAGE_DIR = join(homedir(), ".omc");
+export const OMC_STORAGE_DIR = join(homedir(), '.omc');
 export const AGENT_USAGE_REMINDER_STORAGE = join(
   OMC_STORAGE_DIR,
-  "agent-usage-reminder",
+  'agent-usage-reminder',
 );
 
 /** All tool names normalized to lowercase for case-insensitive matching */
 export const TARGET_TOOLS = new Set([
-  "grep",
-  "safe_grep",
-  "glob",
-  "safe_glob",
-  "webfetch",
-  "context7_resolve-library-id",
-  "context7_query-docs",
-  "websearch_web_search_exa",
-  "context7_get-library-docs",
+  'grep',
+  'safe_grep',
+  'glob',
+  'safe_glob',
+  'webfetch',
+  'context7_resolve-library-id',
+  'context7_query-docs',
+  'websearch_web_search_exa',
+  'context7_get-library-docs',
 ]);
 
 /** Agent tools that indicate agent usage */
-export const AGENT_TOOLS = new Set(["task", "call_omo_agent", "omc_task"]);
+export const AGENT_TOOLS = new Set(['task', 'call_omo_agent', 'omc_task']);
 
 /** Reminder message shown to users */
 export const REMINDER_MESSAGE = `

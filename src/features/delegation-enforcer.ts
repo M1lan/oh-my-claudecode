@@ -13,14 +13,14 @@
  * Claude-specific tier names (sonnet/opus/haiku) that the provider won't recognize.
  */
 
-import { getAgentDefinitions } from "../agents/definitions.js";
-import { normalizeDelegationRole } from "./delegation-routing/types.js";
-import { loadConfig } from "../config/loader.js";
+import { getAgentDefinitions } from '../agents/definitions.js';
+import { normalizeDelegationRole } from './delegation-routing/types.js';
+import { loadConfig } from '../config/loader.js';
 import {
   isProviderSpecificModelId,
   resolveClaudeFamily,
-} from "../config/models.js";
-import type { PluginConfig } from "../shared/types.js";
+} from '../config/models.js';
+import type { PluginConfig } from '../shared/types.js';
 
 // ---------------------------------------------------------------------------
 // Config cache — avoids repeated disk reads on every enforceModel() call (F10)
@@ -35,38 +35,38 @@ import type { PluginConfig } from "../shared/types.js";
 /** All env var names that affect the output of loadConfig(). */
 const CONFIG_ENV_KEYS = [
   // forceInherit auto-detection (isNonClaudeProvider)
-  "ANTHROPIC_BASE_URL",
-  "CLAUDE_MODEL",
-  "ANTHROPIC_MODEL",
-  "CLAUDE_CODE_USE_BEDROCK",
-  "CLAUDE_CODE_USE_VERTEX",
+  'ANTHROPIC_BASE_URL',
+  'CLAUDE_MODEL',
+  'ANTHROPIC_MODEL',
+  'CLAUDE_CODE_USE_BEDROCK',
+  'CLAUDE_CODE_USE_VERTEX',
   // explicit routing overrides
-  "OMC_ROUTING_FORCE_INHERIT",
-  "OMC_ROUTING_ENABLED",
-  "OMC_ROUTING_DEFAULT_TIER",
-  "OMC_ESCALATION_ENABLED",
+  'OMC_ROUTING_FORCE_INHERIT',
+  'OMC_ROUTING_ENABLED',
+  'OMC_ROUTING_DEFAULT_TIER',
+  'OMC_ESCALATION_ENABLED',
   // model alias overrides (issue #1211)
-  "OMC_MODEL_ALIAS_HAIKU",
-  "OMC_MODEL_ALIAS_SONNET",
-  "OMC_MODEL_ALIAS_OPUS",
+  'OMC_MODEL_ALIAS_HAIKU',
+  'OMC_MODEL_ALIAS_SONNET',
+  'OMC_MODEL_ALIAS_OPUS',
   // tier model resolution (feeds buildDefaultConfig)
-  "OMC_MODEL_HIGH",
-  "OMC_MODEL_MEDIUM",
-  "OMC_MODEL_LOW",
-  "CLAUDE_CODE_BEDROCK_HAIKU_MODEL",
-  "CLAUDE_CODE_BEDROCK_SONNET_MODEL",
-  "CLAUDE_CODE_BEDROCK_OPUS_MODEL",
-  "ANTHROPIC_DEFAULT_HAIKU_MODEL",
-  "ANTHROPIC_DEFAULT_SONNET_MODEL",
-  "ANTHROPIC_DEFAULT_OPUS_MODEL",
+  'OMC_MODEL_HIGH',
+  'OMC_MODEL_MEDIUM',
+  'OMC_MODEL_LOW',
+  'CLAUDE_CODE_BEDROCK_HAIKU_MODEL',
+  'CLAUDE_CODE_BEDROCK_SONNET_MODEL',
+  'CLAUDE_CODE_BEDROCK_OPUS_MODEL',
+  'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+  'ANTHROPIC_DEFAULT_SONNET_MODEL',
+  'ANTHROPIC_DEFAULT_OPUS_MODEL',
 ] as const;
 
 function buildEnvCacheKey(): string {
-  return CONFIG_ENV_KEYS.map((k) => `${k}=${process.env[k] ?? ""}`).join("|");
+  return CONFIG_ENV_KEYS.map((k) => `${k}=${process.env[k] ?? ''}`).join('|');
 }
 
 let _cachedConfig: PluginConfig | null = null;
-let _cachedConfigKey = "";
+let _cachedConfigKey = '';
 
 function getCachedConfig(): PluginConfig {
   // In test environments, skip the cache so vi.mock/vi.fn() overrides of
@@ -84,9 +84,9 @@ function getCachedConfig(): PluginConfig {
 
 /** Map Claude model family to CC-supported alias */
 const FAMILY_TO_ALIAS: Record<string, string> = {
-  SONNET: "sonnet",
-  OPUS: "opus",
-  HAIKU: "haiku",
+  SONNET: 'sonnet',
+  OPUS: 'opus',
+  HAIKU: 'haiku',
 };
 
 /** Normalize a model ID to a CC-supported alias (sonnet/opus/haiku) if possible */
@@ -129,12 +129,12 @@ export interface EnforcementResult {
 
 function isDelegationToolName(toolName: string): boolean {
   const normalizedToolName = toolName.toLowerCase();
-  return normalizedToolName === "agent" || normalizedToolName === "task";
+  return normalizedToolName === 'agent' || normalizedToolName === 'task';
 }
 
 function canonicalizeSubagentType(subagentType: string): string {
-  const hasPrefix = subagentType.startsWith("oh-my-claudecode:");
-  const rawAgentType = subagentType.replace(/^oh-my-claudecode:/, "");
+  const hasPrefix = subagentType.startsWith('oh-my-claudecode:');
+  const rawAgentType = subagentType.replace(/^oh-my-claudecode:/, '');
   const canonicalAgentType = normalizeDelegationRole(rawAgentType);
   return hasPrefix
     ? `oh-my-claudecode:${canonicalAgentType}`
@@ -169,7 +169,7 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
       originalInput: agentInput,
       modifiedInput: cleanedInput,
       injected: false,
-      model: "inherit",
+      model: 'inherit',
     };
   }
 
@@ -190,7 +190,7 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
     };
   }
 
-  const agentType = canonicalSubagentType.replace(/^oh-my-claudecode:/, "");
+  const agentType = canonicalSubagentType.replace(/^oh-my-claudecode:/, '');
   const agentDefs = getAgentDefinitions({ config });
   const agentDef = agentDefs[agentType];
 
@@ -210,7 +210,7 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   let resolvedModel = agentDef.model;
   const aliases = config.routing?.modelAliases;
   const aliasSourceModel = agentDef.defaultModel ?? agentDef.model;
-  if (aliases && aliasSourceModel && aliasSourceModel !== "inherit") {
+  if (aliases && aliasSourceModel && aliasSourceModel !== 'inherit') {
     const alias = aliases[aliasSourceModel as keyof typeof aliases];
     if (alias) {
       resolvedModel = alias;
@@ -218,7 +218,7 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   }
 
   // If the resolved model is 'inherit', don't inject any model parameter.
-  if (resolvedModel === "inherit") {
+  if (resolvedModel === 'inherit') {
     const { model: _existing, ...rest } = agentInput;
     const cleanedInput: AgentInput = {
       ...(rest as AgentInput),
@@ -228,7 +228,7 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
       originalInput: agentInput,
       modifiedInput: cleanedInput,
       injected: false,
-      model: "inherit",
+      model: 'inherit',
     };
   }
 
@@ -243,15 +243,15 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   };
 
   let warning: string | undefined;
-  if (process.env.OMC_DEBUG === "true") {
+  if (process.env.OMC_DEBUG === 'true') {
     const aliasNote =
       resolvedModel !== agentDef.model && aliasSourceModel
         ? ` (aliased from ${aliasSourceModel})`
-        : "";
+        : '';
     const normalizedNote =
       normalizedModel !== resolvedModel
         ? ` (normalized from ${resolvedModel})`
-        : "";
+        : '';
     warning = `[OMC] Auto-injecting model: ${normalizedModel} for ${agentType}${aliasNote}${normalizedNote}`;
   }
 
@@ -275,15 +275,15 @@ export function isAgentCall(
     return false;
   }
 
-  if (!toolInput || typeof toolInput !== "object") {
+  if (!toolInput || typeof toolInput !== 'object') {
     return false;
   }
 
   const input = toolInput as Record<string, unknown>;
   return (
-    typeof input.subagent_type === "string" &&
-    typeof input.prompt === "string" &&
-    typeof input.description === "string"
+    typeof input.subagent_type === 'string' &&
+    typeof input.prompt === 'string' &&
+    typeof input.description === 'string'
   );
 }
 
@@ -315,7 +315,7 @@ export function processPreToolUse(
  */
 export function getModelForAgent(agentType: string): string {
   const normalizedType = normalizeDelegationRole(
-    agentType.replace(/^oh-my-claudecode:/, ""),
+    agentType.replace(/^oh-my-claudecode:/, ''),
   );
   const agentDefs = getAgentDefinitions({ config: getCachedConfig() });
   const agentDef = agentDefs[normalizedType];

@@ -8,4 +8,4 @@ export {
   type ToolCategory,
   HOOK_EVENTS,
   type HookEvent,
-} from "./names.js";
+} from './names.js';

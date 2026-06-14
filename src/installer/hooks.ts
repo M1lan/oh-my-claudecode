@@ -9,12 +9,12 @@
  * Bash scripts were deprecated in v3.8.6 and removed in v3.9.0.
  */
 
-import { join, dirname } from "path";
-import { readFileSync, existsSync } from "fs";
-import { fileURLToPath } from "url";
-import { homedir } from "os";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
-import { getDefaultUltraworkMessage } from "../hooks/keyword-detector/ultrawork/index.js";
+import { join, dirname } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { homedir } from 'os';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
+import { getDefaultUltraworkMessage } from '../hooks/keyword-detector/ultrawork/index.js';
 
 // =============================================================================
 // TEMPLATE LOADER (loads hook scripts from templates/hooks/)
@@ -28,15 +28,15 @@ import { getDefaultUltraworkMessage } from "../hooks/keyword-detector/ultrawork/
  */
 function getPackageDir(): string {
   // CJS bundle path (bridge/cli.cjs): from bridge/ go up 1 level to package root
-  if (typeof __dirname !== "undefined") {
-    return join(__dirname, "..");
+  if (typeof __dirname !== 'undefined') {
+    return join(__dirname, '..');
   }
   // ESM path (works in dev via ts/dist)
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
     // From src/installer/ or dist/installer/, go up two levels to package root
-    return join(__dirname, "..", "..");
+    return join(__dirname, '..', '..');
   } catch {
     // import.meta.url unavailable — last resort
     return process.cwd();
@@ -50,12 +50,12 @@ function getPackageDir(): string {
  * @throws If the template file is not found
  */
 function loadTemplate(filename: string): string {
-  const templatePath = join(getPackageDir(), "templates", "hooks", filename);
+  const templatePath = join(getPackageDir(), 'templates', 'hooks', filename);
   if (!existsSync(templatePath)) {
     // .sh templates have been removed in favor of .mjs - return empty string for missing bash templates
-    return "";
+    return '';
   }
-  return readFileSync(templatePath, "utf-8");
+  return readFileSync(templatePath, 'utf-8');
 }
 
 // =============================================================================
@@ -67,12 +67,12 @@ export const MIN_NODE_VERSION = 20;
 
 /** Check if running on Windows */
 export function isWindows(): boolean {
-  return process.platform === "win32";
+  return process.platform === 'win32';
 }
 
 /** Get the hooks directory path */
 export function getHooksDir(): string {
-  return join(getClaudeConfigDir(), "hooks");
+  return join(getClaudeConfigDir(), 'hooks');
 }
 
 /**
@@ -80,17 +80,17 @@ export function getHooksDir(): string {
  * Returns the appropriate syntax for the current platform.
  */
 export function getHomeEnvVar(): string {
-  return isWindows() ? "%USERPROFILE%" : "$HOME";
+  return isWindows() ? '%USERPROFILE%' : '$HOME';
 }
 
 function normalizePath(value: string): string {
-  return value.replace(/\\/g, "/").replace(/\/+$/, "");
+  return value.replace(/\\/g, '/').replace(/\/+$/, '');
 }
 
 function isDefaultClaudeConfigDir(): boolean {
   return (
     normalizePath(getClaudeConfigDir()) ===
-    normalizePath(join(homedir(), ".claude"))
+    normalizePath(join(homedir(), '.claude'))
   );
 }
 
@@ -104,14 +104,14 @@ function buildHookCommand(filename: string): string {
       return `node "\${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/${filename}"`;
     }
 
-    return `node ${quoteCommandPath(join(getClaudeConfigDir(), "hooks", filename).replace(/\\/g, "/"))}`;
+    return `node ${quoteCommandPath(join(getClaudeConfigDir(), 'hooks', filename).replace(/\\/g, '/'))}`;
   }
 
   if (isDefaultClaudeConfigDir()) {
     return `node "\${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/${filename}"`;
   }
 
-  return `node ${quoteCommandPath(join(getClaudeConfigDir(), "hooks", filename).replace(/\\/g, "/"))}`;
+  return `node ${quoteCommandPath(join(getClaudeConfigDir(), 'hooks', filename).replace(/\\/g, '/'))}`;
 }
 
 /**
@@ -282,25 +282,25 @@ Respond to the user in their original language.
 
 /** Node.js keyword detector hook script - loaded from templates/hooks/keyword-detector.mjs */
 export const KEYWORD_DETECTOR_SCRIPT_NODE = loadTemplate(
-  "keyword-detector.mjs",
+  'keyword-detector.mjs',
 );
 
 /** Node.js stop continuation hook script - loaded from templates/hooks/stop-continuation.mjs */
 export const STOP_CONTINUATION_SCRIPT_NODE = loadTemplate(
-  "stop-continuation.mjs",
+  'stop-continuation.mjs',
 );
 
 /** Node.js persistent mode hook script - loaded from templates/hooks/persistent-mode.mjs */
-export const PERSISTENT_MODE_SCRIPT_NODE = loadTemplate("persistent-mode.mjs");
+export const PERSISTENT_MODE_SCRIPT_NODE = loadTemplate('persistent-mode.mjs');
 
 /** Node.js code simplifier hook script - loaded from templates/hooks/code-simplifier.mjs */
-export const CODE_SIMPLIFIER_SCRIPT_NODE = loadTemplate("code-simplifier.mjs");
+export const CODE_SIMPLIFIER_SCRIPT_NODE = loadTemplate('code-simplifier.mjs');
 
 /** Node.js session start hook script - loaded from templates/hooks/session-start.mjs */
-export const SESSION_START_SCRIPT_NODE = loadTemplate("session-start.mjs");
+export const SESSION_START_SCRIPT_NODE = loadTemplate('session-start.mjs');
 
 /** Post-tool-use Node.js script - loaded from templates/hooks/post-tool-use.mjs */
-export const POST_TOOL_USE_SCRIPT_NODE = loadTemplate("post-tool-use.mjs");
+export const POST_TOOL_USE_SCRIPT_NODE = loadTemplate('post-tool-use.mjs');
 
 // =============================================================================
 // SETTINGS CONFIGURATION
@@ -316,8 +316,8 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("keyword-detector.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('keyword-detector.mjs'),
           },
         ],
       },
@@ -326,8 +326,8 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("session-start.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('session-start.mjs'),
           },
         ],
       },
@@ -336,8 +336,8 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("pre-tool-use.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('pre-tool-use.mjs'),
           },
         ],
       },
@@ -346,8 +346,8 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("post-tool-use.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('post-tool-use.mjs'),
           },
         ],
       },
@@ -356,8 +356,8 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("post-tool-use-failure.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('post-tool-use-failure.mjs'),
           },
         ],
       },
@@ -366,16 +366,16 @@ export const HOOKS_SETTINGS_CONFIG_NODE = {
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("persistent-mode.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('persistent-mode.mjs'),
           },
         ],
       },
       {
         hooks: [
           {
-            type: "command" as const,
-            command: buildHookCommand("code-simplifier.mjs"),
+            type: 'command' as const,
+            command: buildHookCommand('code-simplifier.mjs'),
           },
         ],
       },

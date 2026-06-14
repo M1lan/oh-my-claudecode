@@ -1,23 +1,23 @@
-import { spawnSync } from "child_process";
-import { existsSync, readFileSync, readdirSync } from "fs";
-import { resolve, join, relative, sep, dirname, parse, basename } from "path";
-import { posix } from "path";
-import { fileURLToPath, pathToFileURL } from "url";
-import { parseJsonc } from "../../utils/jsonc.js";
+import { spawnSync } from 'child_process';
+import { existsSync, readFileSync, readdirSync } from 'fs';
+import { resolve, join, relative, sep, dirname, parse, basename } from 'path';
+import { posix } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { parseJsonc } from '../../utils/jsonc.js';
 
 const DEVCONTAINER_PRIMARY_CONFIG_PATH = [
-  ".devcontainer",
-  "devcontainer.json",
+  '.devcontainer',
+  'devcontainer.json',
 ] as const;
-const DEVCONTAINER_DOTFILE_NAME = ".devcontainer.json" as const;
-const DEVCONTAINER_CONFIG_DIR = ".devcontainer" as const;
+const DEVCONTAINER_DOTFILE_NAME = '.devcontainer.json' as const;
+const DEVCONTAINER_CONFIG_DIR = '.devcontainer' as const;
 const DEVCONTAINER_LOCAL_FOLDER_LABELS = [
-  "devcontainer.local_folder",
-  "vsch.local.folder",
+  'devcontainer.local_folder',
+  'vsch.local.folder',
 ] as const;
 const DEVCONTAINER_CONFIG_FILE_LABELS = [
-  "devcontainer.config_file",
-  "vsch.config.file",
+  'devcontainer.config_file',
+  'vsch.config.file',
 ] as const;
 
 interface DockerInspectMount {
@@ -119,14 +119,14 @@ export function hostPathToContainerPath(
 
   const resolvedPath = resolve(filePath);
   const relativePath = relative(context.hostWorkspaceRoot, resolvedPath);
-  if (relativePath === "") {
+  if (relativePath === '') {
     return context.containerWorkspaceRoot;
   }
-  if (relativePath.startsWith("..") || relativePath.includes(`..${sep}`)) {
+  if (relativePath.startsWith('..') || relativePath.includes(`..${sep}`)) {
     return resolvedPath;
   }
 
-  const posixRelativePath = relativePath.split(sep).join("/");
+  const posixRelativePath = relativePath.split(sep).join('/');
   return posix.join(context.containerWorkspaceRoot, posixRelativePath);
 }
 
@@ -143,21 +143,21 @@ export function containerPathToHostPath(
     context.containerWorkspaceRoot,
     normalizedContainerPath,
   );
-  if (relativePath === "") {
+  if (relativePath === '') {
     return context.hostWorkspaceRoot;
   }
-  if (relativePath.startsWith("..") || relativePath.includes("../")) {
+  if (relativePath.startsWith('..') || relativePath.includes('../')) {
     return normalizedContainerPath;
   }
 
-  return resolve(context.hostWorkspaceRoot, ...relativePath.split("/"));
+  return resolve(context.hostWorkspaceRoot, ...relativePath.split('/'));
 }
 
 export function hostUriToContainerUri(
   uri: string,
   context: DevContainerContext | null | undefined,
 ): string {
-  if (!context || !uri.startsWith("file://")) {
+  if (!context || !uri.startsWith('file://')) {
     return uri;
   }
 
@@ -170,7 +170,7 @@ export function containerUriToHostUri(
   uri: string,
   context: DevContainerContext | null | undefined,
 ): string {
-  if (!context || !uri.startsWith("file://")) {
+  if (!context || !uri.startsWith('file://')) {
     return uri;
   }
 
@@ -218,7 +218,7 @@ function resolveDevContainerConfigPathAt(dir: string): string | undefined {
     withFileTypes: true,
   })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => join(devcontainerDir, entry.name, "devcontainer.json"))
+    .map((entry) => join(devcontainerDir, entry.name, 'devcontainer.json'))
     .filter(existsSync)
     .sort((left, right) => left.localeCompare(right));
 
@@ -252,8 +252,8 @@ function readDevContainerConfig(
   }
 
   try {
-    const parsed = parseJsonc(readFileSync(configFilePath, "utf-8"));
-    return typeof parsed === "object" && parsed !== null
+    const parsed = parseJsonc(readFileSync(configFilePath, 'utf-8'));
+    return typeof parsed === 'object' && parsed !== null
       ? (parsed as DevContainerJson)
       : null;
   } catch {
@@ -262,15 +262,15 @@ function readDevContainerConfig(
 }
 
 function listRunningContainerIds(): string[] {
-  const result = runDocker(["ps", "-q"]);
+  const result = runDocker(['ps', '-q']);
   if (!result || result.status !== 0) {
     return [];
   }
 
   const stdout =
-    typeof result.stdout === "string"
+    typeof result.stdout === 'string'
       ? result.stdout
-      : result.stdout.toString("utf8");
+      : result.stdout.toString('utf8');
 
   return stdout
     .split(/\r?\n/)
@@ -279,16 +279,16 @@ function listRunningContainerIds(): string[] {
 }
 
 function inspectContainer(containerId: string): DockerInspectResult | null {
-  const result = runDocker(["inspect", containerId]);
+  const result = runDocker(['inspect', containerId]);
   if (!result || result.status !== 0) {
     return null;
   }
 
   try {
     const stdout =
-      typeof result.stdout === "string"
+      typeof result.stdout === 'string'
         ? result.stdout
-        : result.stdout.toString("utf8");
+        : result.stdout.toString('utf8');
     const parsed = JSON.parse(stdout) as DockerInspectResult[];
     const inspect = parsed[0];
     if (!inspect?.Id || inspect.State?.Running === false) {
@@ -352,10 +352,10 @@ function deriveContainerWorkspaceRoot(
   let bestMountMatch: { sourceLength: number; destination: string } | null =
     null;
   for (const mount of mounts) {
-    const source = mount.Source ? resolve(mount.Source) : "";
+    const source = mount.Source ? resolve(mount.Source) : '';
     const destination = mount.Destination
       ? normalizeContainerPath(mount.Destination)
-      : "";
+      : '';
     if (!source || !destination) {
       continue;
     }
@@ -366,8 +366,8 @@ function deriveContainerWorkspaceRoot(
 
     const relativePath = relative(source, hostWorkspaceRoot);
     if (
-      relativePath === "" ||
-      relativePath.startsWith("..") ||
+      relativePath === '' ||
+      relativePath.startsWith('..') ||
       relativePath.includes(`..${sep}`)
     ) {
       continue;
@@ -376,7 +376,7 @@ function deriveContainerWorkspaceRoot(
     if (!bestMountMatch || source.length > bestMountMatch.sourceLength) {
       bestMountMatch = {
         sourceLength: source.length,
-        destination: posix.join(destination, relativePath.split(sep).join("/")),
+        destination: posix.join(destination, relativePath.split(sep).join('/')),
       };
     }
   }
@@ -431,22 +431,22 @@ function scoreContainerMatch(
 }
 
 function normalizeContainerPath(filePath: string): string {
-  return posix.normalize(filePath.replace(/\\/g, "/"));
+  return posix.normalize(filePath.replace(/\\/g, '/'));
 }
 
 function containerPathToFileUri(filePath: string): string {
   const normalizedPath = normalizeContainerPath(filePath);
   const encodedPath = normalizedPath
-    .split("/")
+    .split('/')
     .map((segment) => encodeURIComponent(segment))
-    .join("/");
-  return `file://${encodedPath.startsWith("/") ? encodedPath : `/${encodedPath}`}`;
+    .join('/');
+  return `file://${encodedPath.startsWith('/') ? encodedPath : `/${encodedPath}`}`;
 }
 
 function runDocker(args: string[]): ReturnType<typeof spawnSync> | null {
-  const result = spawnSync("docker", args, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"],
+  const result = spawnSync('docker', args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
   });
 
   if (result.error) {

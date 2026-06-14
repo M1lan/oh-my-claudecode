@@ -12,10 +12,10 @@ import {
   readFileSync,
   writeFileSync,
   unlinkSync,
-} from "node:fs";
-import { join } from "node:path";
-import { README_INJECTOR_STORAGE } from "./constants.js";
-import type { InjectedPathsData } from "./types.js";
+} from 'node:fs';
+import { join } from 'node:path';
+import { README_INJECTOR_STORAGE } from './constants.js';
+import type { InjectedPathsData } from './types.js';
 
 /**
  * Get storage file path for a session.
@@ -32,7 +32,7 @@ export function loadInjectedPaths(sessionID: string): Set<string> {
   if (!existsSync(filePath)) return new Set();
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     const data: InjectedPathsData = JSON.parse(content);
     return new Set(data.injectedPaths);
   } catch {

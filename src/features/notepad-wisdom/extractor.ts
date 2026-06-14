@@ -4,7 +4,7 @@
  * Parses agent completion responses to extract wisdom entries.
  */
 
-import type { WisdomCategory } from "./types.js";
+import type { WisdomCategory } from './types.js';
 
 export interface ExtractedWisdom {
   category: WisdomCategory;
@@ -42,20 +42,20 @@ export function extractWisdomFromCompletion(
 
   // Pattern 2: <learning>, <decision>, <issue>, <problem> tags
   const _categories: WisdomCategory[] = [
-    "learnings",
-    "decisions",
-    "issues",
-    "problems",
+    'learnings',
+    'decisions',
+    'issues',
+    'problems',
   ];
   const singularMap: Record<string, WisdomCategory> = {
-    learning: "learnings",
-    decision: "decisions",
-    issue: "issues",
-    problem: "problems",
+    learning: 'learnings',
+    decision: 'decisions',
+    issue: 'issues',
+    problem: 'problems',
   };
 
   for (const [singular, category] of Object.entries(singularMap)) {
-    const tagRegex = new RegExp(`<${singular}>([\s\S]*?)<\/${singular}>`, "gi");
+    const tagRegex = new RegExp(`<${singular}>([\s\S]*?)<\/${singular}>`, 'gi');
 
     while ((match = tagRegex.exec(response)) !== null) {
       const content = match[1].trim();
@@ -72,7 +72,7 @@ export function extractWisdomFromCompletion(
  * Validate wisdom category
  */
 function isValidCategory(category: string): category is WisdomCategory {
-  return ["learnings", "decisions", "issues", "problems"].includes(category);
+  return ['learnings', 'decisions', 'issues', 'problems'].includes(category);
 }
 
 /**

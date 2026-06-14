@@ -1,8 +1,8 @@
-import { spawn } from "child_process";
+import { spawn } from 'child_process';
 import type {
   NotificationEvent,
   NotificationPayload,
-} from "../notifications/types.js";
+} from '../notifications/types.js';
 
 export type BackgroundNotificationData = Partial<NotificationPayload> & {
   sessionId: string;
@@ -23,7 +23,7 @@ export function dispatchNotificationInBackground(
   event: NotificationEvent,
   data: BackgroundNotificationData,
 ): void {
-  if (process.env.OMC_NOTIFY === "0") return;
+  if (process.env.OMC_NOTIFY === '0') return;
 
   let serializedEvent: string;
   let serializedData: string;
@@ -35,7 +35,7 @@ export function dispatchNotificationInBackground(
   }
 
   const notificationsModuleUrl = new URL(
-    "../notifications/index.js",
+    '../notifications/index.js',
     import.meta.url,
   ).href;
 
@@ -47,14 +47,14 @@ export function dispatchNotificationInBackground(
   try {
     const child = spawn(
       process.execPath,
-      ["--input-type=module", "-e", childSource],
+      ['--input-type=module', '-e', childSource],
       {
         detached: true,
-        stdio: "ignore",
+        stdio: 'ignore',
         windowsHide: true,
         env: {
           ...process.env,
-          OMC_HOOK_BACKGROUND_CHILD: "1",
+          OMC_HOOK_BACKGROUND_CHILD: '1',
         },
       },
     );

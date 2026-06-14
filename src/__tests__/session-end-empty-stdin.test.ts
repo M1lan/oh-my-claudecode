@@ -9,10 +9,15 @@ const sessionEndScripts = [
 const fallback = JSON.stringify({ continue: true, suppressOutput: true });
 
 describe('SessionEnd hook stdin handling', () => {
-  it.each(sessionEndScripts.flatMap(([name, script]) => [
-    [name, 'empty stdin', script, ''],
-    [name, 'whitespace stdin', script, '  \n\t  '],
-  ] as const))('%s treats %s as a clean no-op', (_name, _label, script, input) => {
+  it.each(
+    sessionEndScripts.flatMap(
+      ([name, script]) =>
+        [
+          [name, 'empty stdin', script, ''],
+          [name, 'whitespace stdin', script, '  \n\t  '],
+        ] as const,
+    ),
+  )('%s treats %s as a clean no-op', (_name, _label, script, input) => {
     const result = spawnSync(process.execPath, [script], {
       input,
       encoding: 'utf-8',

@@ -12,12 +12,12 @@
  *   events/events.ndjson     — TeamEvent (append-only)
  */
 
-import { readFile, readdir, appendFile, mkdir } from "fs/promises";
-import { join, dirname } from "path";
-import { existsSync } from "fs";
-import { randomUUID } from "crypto";
-import { z } from "zod";
-import { atomicWriteJson } from "../lib/atomic-write.js";
+import { readFile, readdir, appendFile, mkdir } from 'fs/promises';
+import { join, dirname } from 'path';
+import { existsSync } from 'fs';
+import { randomUUID } from 'crypto';
+import { z } from 'zod';
+import { atomicWriteJson } from '../lib/atomic-write.js';
 
 // ============================================================================
 // Types (matching omx team state format)
@@ -48,7 +48,7 @@ export interface OmxTeamTask {
   id: string;
   subject: string;
   description: string;
-  status: "pending" | "blocked" | "in_progress" | "completed" | "failed";
+  status: 'pending' | 'blocked' | 'in_progress' | 'completed' | 'failed';
   requires_code_change?: boolean;
   owner?: string;
   result?: string;
@@ -79,22 +79,22 @@ export interface OmxTeamEvent {
   event_id: string;
   team: string;
   type:
-    | "task_completed"
-    | "worker_idle"
-    | "worker_stopped"
-    | "message_received"
-    | "shutdown_ack"
-    | "approval_decision"
-    | "team_leader_nudge";
+    | 'task_completed'
+    | 'worker_idle'
+    | 'worker_stopped'
+    | 'message_received'
+    | 'shutdown_ack'
+    | 'approval_decision'
+    | 'team_leader_nudge';
   worker: string;
   task_id?: string;
   message_id?: string | null;
   reason?: string;
   next_action?:
-    | "shutdown"
-    | "reuse-current-team"
-    | "launch-new-team"
-    | "keep-checking-status";
+    | 'shutdown'
+    | 'reuse-current-team'
+    | 'launch-new-team'
+    | 'keep-checking-status';
   message?: string;
   created_at: string;
 }
@@ -155,12 +155,12 @@ const OmxTeamConfigSchema = z.object({
 
 /** Root of omx state: {cwd}/.omx/state/ */
 function omxStateDir(cwd: string): string {
-  return join(cwd, ".omx", "state");
+  return join(cwd, '.omx', 'state');
 }
 
 /** Team directory: .omx/state/team/{name}/ */
 function teamDir(teamName: string, cwd: string): string {
-  return join(omxStateDir(cwd), "team", teamName);
+  return join(omxStateDir(cwd), 'team', teamName);
 }
 
 function mailboxPath(
@@ -168,15 +168,15 @@ function mailboxPath(
   workerName: string,
   cwd: string,
 ): string {
-  return join(teamDir(teamName, cwd), "mailbox", `${workerName}.json`);
+  return join(teamDir(teamName, cwd), 'mailbox', `${workerName}.json`);
 }
 
 function taskFilePath(teamName: string, taskId: string, cwd: string): string {
-  return join(teamDir(teamName, cwd), "tasks", `task-${taskId}.json`);
+  return join(teamDir(teamName, cwd), 'tasks', `task-${taskId}.json`);
 }
 
 function eventLogPath(teamName: string, cwd: string): string {
-  return join(teamDir(teamName, cwd), "events", "events.ndjson");
+  return join(teamDir(teamName, cwd), 'events', 'events.ndjson');
 }
 
 // ============================================================================
@@ -187,7 +187,7 @@ function eventLogPath(teamName: string, cwd: string): string {
  * List active omx teams by scanning .omx/state/team/ subdirectories
  */
 export async function listOmxTeams(cwd: string): Promise<string[]> {
-  const teamsRoot = join(omxStateDir(cwd), "team");
+  const teamsRoot = join(omxStateDir(cwd), 'team');
   if (!existsSync(teamsRoot)) return [];
 
   try {
@@ -216,17 +216,17 @@ export async function readOmxTeamConfig(
   if (!existsSync(root)) return null;
 
   // Try manifest.v2.json first
-  const manifestPath = join(root, "manifest.v2.json");
+  const manifestPath = join(root, 'manifest.v2.json');
   if (existsSync(manifestPath)) {
     try {
-      const raw = await readFile(manifestPath, "utf8");
+      const raw = await readFile(manifestPath, 'utf8');
       const manifestResult = OmxTeamManifestV2Schema.safeParse(JSON.parse(raw));
       if (manifestResult.success) {
         const manifest = manifestResult.data;
         return {
           name: manifest.name,
           task: manifest.task,
-          agent_type: manifest.workers?.[0]?.role ?? "executor",
+          agent_type: manifest.workers?.[0]?.role ?? 'executor',
           worker_count: manifest.worker_count,
           max_workers: 20,
           workers: manifest.workers ?? [],
@@ -241,11 +241,11 @@ export async function readOmxTeamConfig(
   }
 
   // Fall back to config.json
-  const configPath = join(root, "config.json");
+  const configPath = join(root, 'config.json');
   if (!existsSync(configPath)) return null;
 
   try {
-    const raw = await readFile(configPath, "utf8");
+    const raw = await readFile(configPath, 'utf8');
     const configResult = OmxTeamConfigSchema.safeParse(JSON.parse(raw));
     return configResult.success ? configResult.data : null;
   } catch {
@@ -268,7 +268,7 @@ export async function readOmxMailbox(
   const p = mailboxPath(teamName, workerName, cwd);
   try {
     if (!existsSync(p)) return { worker: workerName, messages: [] };
-    const raw = await readFile(p, "utf8");
+    const raw = await readFile(p, 'utf8');
     const parsed = JSON.parse(raw) as { worker?: unknown; messages?: unknown };
     if (parsed.worker !== workerName || !Array.isArray(parsed.messages)) {
       return { worker: workerName, messages: [] };
@@ -324,7 +324,7 @@ export async function sendOmxDirectMessage(
   await appendOmxTeamEvent(
     teamName,
     {
-      type: "message_received",
+      type: 'message_received',
       worker: toWorker,
       task_id: undefined,
       message_id: msg.message_id,
@@ -397,14 +397,14 @@ export async function readOmxTask(
   const p = taskFilePath(teamName, taskId, cwd);
   if (!existsSync(p)) return null;
   try {
-    const raw = await readFile(p, "utf8");
+    const raw = await readFile(p, 'utf8');
     const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return null;
+    if (!parsed || typeof parsed !== 'object') return null;
     const t = parsed as Record<string, unknown>;
     if (
-      typeof t.id !== "string" ||
-      typeof t.subject !== "string" ||
-      typeof t.status !== "string"
+      typeof t.id !== 'string' ||
+      typeof t.subject !== 'string' ||
+      typeof t.status !== 'string'
     )
       return null;
     return parsed as OmxTeamTask;
@@ -420,7 +420,7 @@ export async function listOmxTasks(
   teamName: string,
   cwd: string,
 ): Promise<OmxTeamTask[]> {
-  const tasksRoot = join(teamDir(teamName, cwd), "tasks");
+  const tasksRoot = join(teamDir(teamName, cwd), 'tasks');
   if (!existsSync(tasksRoot)) return [];
 
   try {
@@ -452,7 +452,7 @@ export async function listOmxTasks(
  */
 export async function appendOmxTeamEvent(
   teamName: string,
-  event: Omit<OmxTeamEvent, "event_id" | "created_at" | "team">,
+  event: Omit<OmxTeamEvent, 'event_id' | 'created_at' | 'team'>,
   cwd: string,
 ): Promise<OmxTeamEvent> {
   const full: OmxTeamEvent = {
@@ -463,6 +463,6 @@ export async function appendOmxTeamEvent(
   };
   const p = eventLogPath(teamName, cwd);
   await mkdir(dirname(p), { recursive: true });
-  await appendFile(p, `${JSON.stringify(full)}\n`, "utf8");
+  await appendFile(p, `${JSON.stringify(full)}\n`, 'utf8');
   return full;
 }

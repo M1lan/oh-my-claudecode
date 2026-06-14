@@ -17,33 +17,33 @@
  * Adapted from oh-my-opencode's empty-message-sanitizer hook.
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { tmpdir } from "os";
+import * as fs from 'fs';
+import * as path from 'path';
+import { tmpdir } from 'os';
 import {
   PLACEHOLDER_TEXT,
   TOOL_PART_TYPES,
   HOOK_NAME,
   DEBUG_PREFIX,
-} from "./constants.js";
+} from './constants.js';
 import type {
   MessagePart,
   MessageWithParts,
   EmptyMessageSanitizerInput,
   EmptyMessageSanitizerOutput,
   EmptyMessageSanitizerConfig,
-} from "./types.js";
+} from './types.js';
 
-const DEBUG = process.env.EMPTY_MESSAGE_SANITIZER_DEBUG === "1";
-const DEBUG_FILE = path.join(tmpdir(), "empty-message-sanitizer-debug.log");
+const DEBUG = process.env.EMPTY_MESSAGE_SANITIZER_DEBUG === '1';
+const DEBUG_FILE = path.join(tmpdir(), 'empty-message-sanitizer-debug.log');
 
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] ${DEBUG_PREFIX} ${args
       .map((a) =>
-        typeof a === "object" ? JSON.stringify(a, null, 2) : String(a),
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
       )
-      .join(" ")}\n`;
+      .join(' ')}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
 }
@@ -52,7 +52,7 @@ function debugLog(...args: unknown[]): void {
  * Check if a part has non-empty text content
  */
 export function hasTextContent(part: MessagePart): boolean {
-  if (part.type === "text") {
+  if (part.type === 'text') {
     const text = part.text;
     return Boolean(text && text.trim().length > 0);
   }
@@ -82,11 +82,11 @@ export function sanitizeMessage(
   isLastMessage: boolean,
   placeholderText: string = PLACEHOLDER_TEXT,
 ): boolean {
-  const isAssistant = message.info.role === "assistant";
+  const isAssistant = message.info.role === 'assistant';
 
   // Skip final assistant message (allowed to be empty per API spec)
   if (isLastMessage && isAssistant) {
-    debugLog("skipping final assistant message");
+    debugLog('skipping final assistant message');
     return false;
   }
 
@@ -101,7 +101,7 @@ export function sanitizeMessage(
 
     // Try to find an existing empty text part and replace its content
     for (const part of parts) {
-      if (part.type === "text") {
+      if (part.type === 'text') {
         if (!part.text || !part.text.trim()) {
           part.text = placeholderText;
           part.synthetic = true;
@@ -119,8 +119,8 @@ export function sanitizeMessage(
       const newPart: MessagePart = {
         id: `synthetic_${Date.now()}`,
         messageID: message.info.id,
-        sessionID: message.info.sessionID ?? "",
-        type: "text",
+        sessionID: message.info.sessionID ?? '',
+        type: 'text',
         text: placeholderText,
         synthetic: true,
       };
@@ -142,8 +142,8 @@ export function sanitizeMessage(
   // Also sanitize any empty text parts that exist alongside valid content
   let sanitized = false;
   for (const part of parts) {
-    if (part.type === "text") {
-      if (part.text !== undefined && part.text.trim() === "") {
+    if (part.type === 'text') {
+      if (part.text !== undefined && part.text.trim() === '') {
         part.text = placeholderText;
         part.synthetic = true;
         sanitized = true;
@@ -165,7 +165,7 @@ export function sanitizeMessages(
   const { messages } = input;
   const placeholderText = config?.placeholderText ?? PLACEHOLDER_TEXT;
 
-  debugLog("sanitizing messages", { count: messages.length });
+  debugLog('sanitizing messages', { count: messages.length });
 
   let sanitizedCount = 0;
 
@@ -201,7 +201,7 @@ export function sanitizeMessages(
 export function createEmptyMessageSanitizerHook(
   config?: EmptyMessageSanitizerConfig,
 ) {
-  debugLog("createEmptyMessageSanitizerHook called", { config });
+  debugLog('createEmptyMessageSanitizerHook called', { config });
 
   return {
     /**
@@ -230,7 +230,7 @@ export type {
   EmptyMessageSanitizerInput,
   EmptyMessageSanitizerOutput,
   EmptyMessageSanitizerConfig,
-} from "./types.js";
+} from './types.js';
 
 // Re-export constants
 export {
@@ -239,4 +239,4 @@ export {
   HOOK_NAME,
   DEBUG_PREFIX,
   ERROR_PATTERNS,
-} from "./constants.js";
+} from './constants.js';

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -25,7 +31,11 @@ vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('child_process')>();
   const { promisify: utilPromisify } = await import('util');
 
-  function mockExecFile(_cmd: string, args: string[], cb: (err: Error | null, stdout: string, stderr: string) => void) {
+  function mockExecFile(
+    _cmd: string,
+    args: string[],
+    cb: (err: Error | null, stdout: string, stderr: string) => void,
+  ) {
     tmuxCalls.args.push(args);
     if (args[0] === 'split-window') {
       cb(null, '%42\n', '');
@@ -36,7 +46,11 @@ vi.mock('child_process', async (importOriginal) => {
       tmuxCalls.lastLiteralSend = '';
       cb(null, '', '');
     } else if (args[0] === 'capture-pane') {
-      cb(null, `${tmuxCalls.lastLiteralSend}\n${tmuxCalls.capturePaneText}`, '');
+      cb(
+        null,
+        `${tmuxCalls.lastLiteralSend}\n${tmuxCalls.capturePaneText}`,
+        '',
+      );
     } else if (args[0] === 'display-message') {
       // pane_dead check → "0" means alive; pane_current_command zsh means shell is ready;
       // pane_in_mode → "0" means not in copy mode.
@@ -49,7 +63,10 @@ vi.mock('child_process', async (importOriginal) => {
   }
 
   // Attach custom promisify so util.promisify(execFile) returns {stdout, stderr}
-  (mockExecFile as any)[utilPromisify.custom] = async (_cmd: string, args: string[]) => {
+  (mockExecFile as any)[utilPromisify.custom] = async (
+    _cmd: string,
+    args: string[],
+  ) => {
     tmuxCalls.args.push(args);
     if (args[0] === 'split-window') {
       return { stdout: '%42\n', stderr: '' };
@@ -63,19 +80,31 @@ vi.mock('child_process', async (importOriginal) => {
       return { stdout: '', stderr: '' };
     }
     if (args[0] === 'capture-pane') {
-      return { stdout: `${tmuxCalls.lastLiteralSend}\n${tmuxCalls.capturePaneText}`, stderr: '' };
+      return {
+        stdout: `${tmuxCalls.lastLiteralSend}\n${tmuxCalls.capturePaneText}`,
+        stderr: '',
+      };
     }
     if (args[0] === 'display-message') {
       const format = args[args.length - 1] ?? '';
-      return { stdout: format.includes('pane_current_command') ? '0 zsh\n' : '0\n', stderr: '' };
+      return {
+        stdout: format.includes('pane_current_command') ? '0 zsh\n' : '0\n',
+        stderr: '',
+      };
     }
     return { stdout: '', stderr: '' };
   };
 
-  function mockExec(cmd: string, cb: (err: Error | null, stdout: string, stderr: string) => void) {
+  function mockExec(
+    cmd: string,
+    cb: (err: Error | null, stdout: string, stderr: string) => void,
+  ) {
     if (cmd.includes('display-message') && cmd.includes('#{window_width}')) {
       cb(null, '160\n', '');
-    } else if (cmd.includes('display-message') && cmd.includes('#{pane_current_command}')) {
+    } else if (
+      cmd.includes('display-message') &&
+      cmd.includes('#{pane_current_command}')
+    ) {
       cb(null, '0 zsh\n', '');
     } else {
       cb(null, '', '');
@@ -87,7 +116,10 @@ vi.mock('child_process', async (importOriginal) => {
     if (cmd.includes('display-message') && cmd.includes('#{window_width}')) {
       return { stdout: '160\n', stderr: '' };
     }
-    if (cmd.includes('display-message') && cmd.includes('#{pane_current_command}')) {
+    if (
+      cmd.includes('display-message') &&
+      cmd.includes('#{pane_current_command}')
+    ) {
       return { stdout: '0 zsh\n', stderr: '' };
     }
     return { stdout: '', stderr: '' };
@@ -110,7 +142,10 @@ vi.mock('child_process', async (importOriginal) => {
 
 import { spawnWorkerForTask, type TeamRuntime } from '../runtime.js';
 
-function makeRuntime(cwd: string, agentType: 'gemini' | 'codex' | 'claude' | 'grok'): TeamRuntime {
+function makeRuntime(
+  cwd: string,
+  agentType: 'gemini' | 'codex' | 'claude' | 'grok',
+): TeamRuntime {
   return {
     teamName: 'test-team',
     sessionName: 'test-session:0',
@@ -136,13 +171,16 @@ function makeRuntime(cwd: string, agentType: 'gemini' | 'codex' | 'claude' | 'gr
 function setupTaskDir(cwd: string): void {
   const tasksDir = join(cwd, '.omc/state/team/test-team/tasks');
   mkdirSync(tasksDir, { recursive: true });
-  writeFileSync(join(tasksDir, '1.json'), JSON.stringify({
-    id: '1',
-    subject: 'Test task',
-    description: 'Do something',
-    status: 'pending',
-    owner: null,
-  }));
+  writeFileSync(
+    join(tasksDir, '1.json'),
+    JSON.stringify({
+      id: '1',
+      subject: 'Test task',
+      description: 'Do something',
+      status: 'pending',
+      owner: null,
+    }),
+  );
   const workerDir = join(cwd, '.omc/state/team/test-team/workers/worker-1');
   mkdirSync(workerDir, { recursive: true });
 }
@@ -166,7 +204,7 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
     // Find the send-keys call that launches the worker (contains -l flag)
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -174,7 +212,9 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
     // Should contain -p flag for prompt mode
     expect(launchCmd).toContain("'-p'");
     // Should contain the inbox path reference
-    expect(launchCmd).toContain('.omc/state/team/test-team/workers/worker-1/inbox.md');
+    expect(launchCmd).toContain(
+      '.omc/state/team/test-team/workers/worker-1/inbox.md',
+    );
     expect(launchCmd).toContain('execute now');
     expect(launchCmd).toContain('concrete progress');
 
@@ -188,11 +228,11 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
     // Collect all literal send-keys messages (the -l flag content)
     const literalMessages = tmuxCalls.args
-      .filter(args => args[0] === 'send-keys' && args.includes('-l'))
-      .map(args => args[args.length - 1]);
+      .filter((args) => args[0] === 'send-keys' && args.includes('-l'))
+      .map((args) => args[args.length - 1]);
 
     // Should NOT contain the trust-confirm "1" as a literal send
-    const trustConfirmSent = literalMessages.some(msg => msg === '1');
+    const trustConfirmSent = literalMessages.some((msg) => msg === '1');
     expect(trustConfirmSent).toBe(false);
 
     rmSync(cwd, { recursive: true, force: true });
@@ -203,7 +243,10 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
-    const inboxPath = join(cwd, '.omc/state/team/test-team/workers/worker-1/inbox.md');
+    const inboxPath = join(
+      cwd,
+      '.omc/state/team/test-team/workers/worker-1/inbox.md',
+    );
     const content = readFileSync(inboxPath, 'utf-8');
     expect(content).toContain('Initial Task Assignment');
     expect(content).toContain('Test task');
@@ -219,7 +262,7 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
     // Find the send-keys call that launches the worker (contains -l flag).
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -227,7 +270,9 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
     expect(launchCmd).toContain('/usr/local/bin/codex');
     expect(launchCmd).toContain('--dangerously-bypass-approvals-and-sandbox');
     expect(launchCmd).not.toContain("'exec'");
-    expect(launchCmd).not.toContain('.omc/state/team/test-team/workers/worker-1/inbox.md');
+    expect(launchCmd).not.toContain(
+      '.omc/state/team/test-team/workers/worker-1/inbox.md',
+    );
     expect(launchCmd).not.toContain('execute now');
     expect(launchCmd).not.toContain('concrete progress');
 
@@ -240,10 +285,12 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const sendKeysCalls = tmuxCalls.args.filter(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(sendKeysCalls.length).toBe(2);
-    const readInstructionCall = sendKeysCalls.find((args) => (args[args.length - 1] ?? '').includes('execute now'));
+    const readInstructionCall = sendKeysCalls.find((args) =>
+      (args[args.length - 1] ?? '').includes('execute now'),
+    );
     expect(readInstructionCall).toBeDefined();
 
     rmSync(cwd, { recursive: true, force: true });
@@ -254,14 +301,25 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
-    const captureCalls = tmuxCalls.args.filter(args => args[0] === 'capture-pane');
+    const captureCalls = tmuxCalls.args.filter(
+      (args) => args[0] === 'capture-pane',
+    );
     expect(captureCalls.length).toBeGreaterThan(0);
 
     const readInstructionCalls = tmuxCalls.args.filter(
-      args => args[0] === 'send-keys' && args.includes('-l') && (args[args.length - 1] ?? '').includes('execute now')
+      (args) =>
+        args[0] === 'send-keys' &&
+        args.includes('-l') &&
+        (args[args.length - 1] ?? '').includes('execute now'),
     );
     expect(readInstructionCalls.length).toBe(1);
-    expect(tmuxCalls.args).toContainEqual(['set-window-option', '-t', 'test-session:0', 'main-pane-width', '80']);
+    expect(tmuxCalls.args).toContainEqual([
+      'set-window-option',
+      '-t',
+      'test-session:0',
+      'main-pane-width',
+      '80',
+    ]);
 
     rmSync(cwd, { recursive: true, force: true });
   });
@@ -271,10 +329,15 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
     tmuxCalls.capturePaneText = 'still booting\n';
     process.env.OMC_SHELL_READY_TIMEOUT_MS = '40';
 
-    await expect(spawnWorkerForTask(runtime, 'worker-1', 0)).rejects.toThrow('worker_pane_not_ready:worker-1');
+    await expect(spawnWorkerForTask(runtime, 'worker-1', 0)).rejects.toThrow(
+      'worker_pane_not_ready:worker-1',
+    );
 
     const taskPath = join(cwd, '.omc/state/team/test-team/tasks/1.json');
-    const task = JSON.parse(readFileSync(taskPath, 'utf-8')) as { status: string; owner: string | null };
+    const task = JSON.parse(readFileSync(taskPath, 'utf-8')) as {
+      status: string;
+      owner: string | null;
+    };
     expect(task.status).toBe('pending');
     expect(task.owner).toBeNull();
 
@@ -283,23 +346,32 @@ describe('spawnWorkerForTask – prompt mode and interactive worker launch', () 
 
   it('returns empty and skips spawn when task is already in_progress (claim already taken)', async () => {
     const taskPath = join(cwd, '.omc/state/team/test-team/tasks/1.json');
-    writeFileSync(taskPath, JSON.stringify({
-      id: '1',
-      subject: 'Test task',
-      description: 'Do something',
-      status: 'in_progress',
-      owner: 'worker-2',
-    }), 'utf-8');
+    writeFileSync(
+      taskPath,
+      JSON.stringify({
+        id: '1',
+        subject: 'Test task',
+        description: 'Do something',
+        status: 'in_progress',
+        owner: 'worker-2',
+      }),
+      'utf-8',
+    );
 
     const runtime = makeRuntime(cwd, 'codex');
     const paneId = await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     expect(paneId).toBe('');
-    expect(tmuxCalls.args.some(args => args[0] === 'split-window')).toBe(false);
-    expect(tmuxCalls.args.some(args => args[0] === 'send-keys')).toBe(false);
+    expect(tmuxCalls.args.some((args) => args[0] === 'split-window')).toBe(
+      false,
+    );
+    expect(tmuxCalls.args.some((args) => args[0] === 'send-keys')).toBe(false);
     expect(runtime.activeWorkers.size).toBe(0);
 
-    const task = JSON.parse(readFileSync(taskPath, 'utf-8')) as { status: string; owner: string | null };
+    const task = JSON.parse(readFileSync(taskPath, 'utf-8')) as {
+      status: string;
+      owner: string | null;
+    };
     expect(task.status).toBe('in_progress');
     expect(task.owner).toBe('worker-2');
   });
@@ -351,7 +423,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -368,7 +440,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -385,7 +457,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -400,7 +472,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -416,7 +488,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -433,7 +505,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -448,7 +520,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -465,7 +537,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -482,7 +554,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -497,14 +569,15 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     // Claude/Bedrock model id via resolveClaudeWorkerModel().
     process.env.CLAUDE_CODE_USE_BEDROCK = '1';
     process.env.ANTHROPIC_MODEL = 'us.anthropic.claude-sonnet-4-6-v1:0';
-    process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL = 'us.anthropic.claude-sonnet-4-6-v1:0';
+    process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL =
+      'us.anthropic.claude-sonnet-4-6-v1:0';
     process.env.OMC_MODEL_MEDIUM = 'us.anthropic.claude-sonnet-4-6-v1:0';
     const runtime = makeRuntime(cwd, 'grok');
 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -517,7 +590,9 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     //  that is pane startup env, not the grok model selection.)
     expect(launchCmd).toContain("'--always-approve'");
     expect(launchCmd).not.toContain("'--model'");
-    expect(launchCmd).not.toContain("'--model' 'us.anthropic.claude-sonnet-4-6-v1:0'");
+    expect(launchCmd).not.toContain(
+      "'--model' 'us.anthropic.claude-sonnet-4-6-v1:0'",
+    );
   });
 
   it('claude worker does not pass model flag (not supported)', async () => {
@@ -527,7 +602,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -543,7 +618,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -561,7 +636,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -574,9 +649,12 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
 
   it('claude worker propagates tiered Bedrock/env model selection variables', async () => {
     process.env.CLAUDE_CODE_USE_BEDROCK = '1';
-    process.env.CLAUDE_CODE_BEDROCK_OPUS_MODEL = 'us.anthropic.claude-opus-4-6-v1:0';
-    process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL = 'us.anthropic.claude-sonnet-4-6-v1:0';
-    process.env.CLAUDE_CODE_BEDROCK_HAIKU_MODEL = 'us.anthropic.claude-haiku-4-5-v1:0';
+    process.env.CLAUDE_CODE_BEDROCK_OPUS_MODEL =
+      'us.anthropic.claude-opus-4-6-v1:0';
+    process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL =
+      'us.anthropic.claude-sonnet-4-6-v1:0';
+    process.env.CLAUDE_CODE_BEDROCK_HAIKU_MODEL =
+      'us.anthropic.claude-haiku-4-5-v1:0';
     process.env.ANTHROPIC_DEFAULT_OPUS_MODEL = 'claude-opus-4-6-custom';
     process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'claude-sonnet-4-6-custom';
     process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = 'claude-haiku-4-5-custom';
@@ -588,7 +666,7 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];
@@ -618,14 +696,13 @@ describe('spawnWorkerForTask – model passthrough from environment variables', 
     expect(launchCmd).toContain('us.anthropic.claude-sonnet-4-6-v1:0');
   });
 
-
   it('codex worker does not pass model flag when no env var is set', async () => {
     const runtime = makeRuntime(cwd, 'codex');
 
     await spawnWorkerForTask(runtime, 'worker-1', 0);
 
     const launchCall = tmuxCalls.args.find(
-      args => args[0] === 'send-keys' && args.includes('-l')
+      (args) => args[0] === 'send-keys' && args.includes('-l'),
     );
     expect(launchCall).toBeDefined();
     const launchCmd = launchCall![launchCall!.length - 1];

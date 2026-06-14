@@ -6,9 +6,9 @@
  * Ported from oh-my-opencode's rules-injector hook.
  */
 
-import { createHash } from "crypto";
-import { relative } from "path";
-import type { RuleMetadata, MatchResult } from "./types.js";
+import { createHash } from 'crypto';
+import { relative } from 'path';
+import type { RuleMetadata, MatchResult } from './types.js';
 
 /**
  * Simple glob pattern matcher.
@@ -17,11 +17,11 @@ import type { RuleMetadata, MatchResult } from "./types.js";
 function matchGlob(pattern: string, filePath: string): boolean {
   // Convert glob pattern to regex
   const regexStr = pattern
-    .replace(/\./g, "\\.") // Escape dots
-    .replace(/\*\*/g, "<<<GLOBSTAR>>>") // Temporarily replace **
-    .replace(/\*/g, "[^/]*") // * matches any characters except /
-    .replace(/<<<GLOBSTAR>>>/g, ".*") // ** matches anything including /
-    .replace(/\?/g, "."); // ? matches single character
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/\*\*/g, '<<<GLOBSTAR>>>') // Temporarily replace **
+    .replace(/\*/g, '[^/]*') // * matches any characters except /
+    .replace(/<<<GLOBSTAR>>>/g, '.*') // ** matches anything including /
+    .replace(/\?/g, '.'); // ? matches single character
 
   const regex = new RegExp(`^${regexStr}$`);
   return regex.test(filePath);
@@ -36,7 +36,7 @@ export function shouldApplyRule(
   projectRoot: string | null,
 ): MatchResult {
   if (metadata.alwaysApply === true) {
-    return { applies: true, reason: "alwaysApply" };
+    return { applies: true, reason: 'alwaysApply' };
   }
 
   const globs = metadata.globs;
@@ -54,7 +54,7 @@ export function shouldApplyRule(
     : currentFilePath;
 
   // Normalize path separators to forward slashes for matching
-  const normalizedPath = relativePath.replace(/\\/g, "/");
+  const normalizedPath = relativePath.replace(/\\/g, '/');
 
   for (const pattern of patterns) {
     if (matchGlob(pattern, normalizedPath)) {
@@ -79,7 +79,7 @@ export function isDuplicateByRealPath(
  * Create SHA-256 hash of content, truncated to 16 chars.
  */
 export function createContentHash(content: string): string {
-  return createHash("sha256").update(content).digest("hex").slice(0, 16);
+  return createHash('sha256').update(content).digest('hex').slice(0, 16);
 }
 
 /**

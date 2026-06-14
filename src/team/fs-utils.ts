@@ -18,8 +18,8 @@ import {
   closeSync,
   realpathSync,
   constants,
-} from "fs";
-import { dirname, resolve, relative, basename, join } from "path";
+} from 'fs';
+import { dirname, resolve, relative, basename, join } from 'path';
 
 /** Atomic write: write JSON to temp file with permissions, then rename (prevents corruption on crash) */
 export function atomicWriteJson(
@@ -30,8 +30,8 @@ export function atomicWriteJson(
   const dir = dirname(filePath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-  writeFileSync(tmpPath, JSON.stringify(data, null, 2) + "\n", {
-    encoding: "utf-8",
+  writeFileSync(tmpPath, JSON.stringify(data, null, 2) + '\n', {
+    encoding: 'utf-8',
     mode,
   });
   renameSync(tmpPath, filePath);
@@ -43,7 +43,7 @@ export function writeFileWithMode(
   data: string,
   mode: number = 0o600,
 ): void {
-  writeFileSync(filePath, data, { encoding: "utf-8", mode });
+  writeFileSync(filePath, data, { encoding: 'utf-8', mode });
 }
 
 /** Append to file with explicit permission mode. Creates with mode if file doesn't exist.
@@ -60,7 +60,7 @@ export function appendFileWithMode(
     mode,
   );
   try {
-    writeSync(fd, data, null, "utf-8");
+    writeSync(fd, data, null, 'utf-8');
   } finally {
     closeSync(fd);
   }
@@ -104,7 +104,7 @@ export function validateResolvedPath(
   const absResolved = safeRealpath(resolvedPath);
   const absBase = safeRealpath(expectedBase);
   const rel = relative(absBase, absResolved);
-  if (rel.startsWith("..") || resolve(absBase, rel) !== absResolved) {
+  if (rel.startsWith('..') || resolve(absBase, rel) !== absResolved) {
     throw new Error(
       `Path traversal detected: "${resolvedPath}" escapes base "${expectedBase}"`,
     );

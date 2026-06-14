@@ -109,8 +109,8 @@ export interface SkillInvocation {
 }
 
 export interface PendingPermission {
-  toolName: string;       // "Edit", "Bash", etc. (proxy_ prefix stripped)
-  targetSummary: string;  // "src/main.ts" or "pnpm install"
+  toolName: string; // "Edit", "Bash", etc. (proxy_ prefix stripped)
+  targetSummary: string; // "src/main.ts" or "pnpm install"
   timestamp: Date;
 }
 
@@ -170,7 +170,6 @@ export interface PrdStateForHud {
   total: number;
 }
 
-
 // ============================================================================
 // Render Context
 // ============================================================================
@@ -227,7 +226,13 @@ export interface RateLimits {
  * - 'auth': Authentication failure (token expired, refresh failed)
  * - 'no_credentials': No OAuth credentials available (expected for API key users)
  */
-export type UsageErrorReason = 'network' | 'timeout' | 'http' | 'auth' | 'no_credentials' | 'rate_limited';
+export type UsageErrorReason =
+  | 'network'
+  | 'timeout'
+  | 'http'
+  | 'auth'
+  | 'no_credentials'
+  | 'rate_limited';
 
 /**
  * Result of fetching usage data from the API.
@@ -281,7 +286,10 @@ export interface BucketUsageString {
   value: string;
 }
 
-export type CustomBucketUsage = BucketUsagePercent | BucketUsageCredit | BucketUsageString;
+export type CustomBucketUsage =
+  | BucketUsagePercent
+  | BucketUsageCredit
+  | BucketUsageString;
 
 /** A single rate limit bucket returned by the custom provider command */
 export interface CustomBucket {
@@ -434,7 +442,14 @@ export type HudPreset = 'minimal' | 'focused' | 'full' | 'opencode' | 'dense';
  * - tasks: [analyzing code, searching...] (just descriptions - most readable)
  * - multiline: Multi-line display with full agent details on separate lines
  */
-export type AgentsFormat = 'count' | 'codes' | 'codes-duration' | 'detailed' | 'descriptions' | 'tasks' | 'multiline';
+export type AgentsFormat =
+  | 'count'
+  | 'codes'
+  | 'codes-duration'
+  | 'detailed'
+  | 'descriptions'
+  | 'tasks'
+  | 'multiline';
 
 /**
  * Thinking indicator format options:
@@ -554,18 +569,18 @@ export function resolveHudLabels(
 }
 
 export interface HudElementConfig {
-  cwd: boolean;              // Show working directory
-  cwdFormat: CwdFormat;      // Path display format
-  useHyperlinks?: boolean;   // Wrap cwd/paths in OSC 8 terminal hyperlinks (clickable in supported terminals)
-  gitRepo: boolean;          // Show git repository name
-  gitBranch: boolean;        // Show git branch
-  gitStatus: boolean;        // Show git working tree status (+staged !modified ?untracked ⇡ahead ⇣behind)
-  gitInfoPosition: 'above' | 'below';  // Position of git info relative to main HUD line
-  model: boolean;            // Show current model name
-  modelFormat: ModelFormat;   // Model name verbosity level
+  cwd: boolean; // Show working directory
+  cwdFormat: CwdFormat; // Path display format
+  useHyperlinks?: boolean; // Wrap cwd/paths in OSC 8 terminal hyperlinks (clickable in supported terminals)
+  gitRepo: boolean; // Show git repository name
+  gitBranch: boolean; // Show git branch
+  gitStatus: boolean; // Show git working tree status (+staged !modified ?untracked ⇡ahead ⇣behind)
+  gitInfoPosition: 'above' | 'below'; // Position of git info relative to main HUD line
+  model: boolean; // Show current model name
+  modelFormat: ModelFormat; // Model name verbosity level
   omcLabel: boolean;
   updateNotification?: boolean; // Show available-update prompt text in the OMC label
-  rateLimits: boolean;  // Show 5h and weekly rate limits
+  rateLimits: boolean; // Show 5h and weekly rate limits
   ralph: boolean;
   autopilot: boolean;
   prdStory: boolean;
@@ -574,31 +589,31 @@ export interface HudElementConfig {
   contextBar: boolean;
   agents: boolean;
   agentsFormat: AgentsFormat;
-  agentsMaxLines: number;  // Max agent detail lines for multiline format (default: 5)
+  agentsMaxLines: number; // Max agent detail lines for multiline format (default: 5)
   backgroundTasks: boolean;
   todos: boolean;
-  permissionStatus: boolean;  // Show pending permission indicator
-  thinking: boolean;          // Show extended thinking indicator
-  thinkingFormat: ThinkingFormat;  // Thinking indicator format
-  apiKeySource: boolean;       // Show API key source (project/global/env)
-  hostname: boolean;           // Show machine hostname (useful for multi-host SSH workflows)
-  profile: boolean;            // Show active profile name (from CLAUDE_CONFIG_DIR)
-  missionBoard?: boolean;      // Show opt-in mission board above existing HUD detail lines
-  promptTime: boolean;        // Show last prompt submission time (HH:MM:SS)
-  sessionHealth: boolean;     // Show session health/duration
-  showSessionDuration?: boolean;  // Show session:19m duration display (default: true if sessionHealth is true)
-  showHealthIndicator?: boolean;  // Show 🟢/🟡/🔴 health indicator (default: true if sessionHealth is true)
-  showTokens?: boolean;           // Show last-request token usage when enabled (tok:i1.2k/o340)
-  enterpriseMode?: boolean;       // Explicit override for enterprise mode (undefined = auto-detect)
-  showEnterpriseCost?: boolean;   // Whether to render enterprise billing cost (default: true when enterprise)
-  useBars: boolean;           // Show visual progress bars instead of/alongside percentages
-  showCallCounts?: boolean;   // Show tool/agent/skill call counts on the right of the status line (default: true)
+  permissionStatus: boolean; // Show pending permission indicator
+  thinking: boolean; // Show extended thinking indicator
+  thinkingFormat: ThinkingFormat; // Thinking indicator format
+  apiKeySource: boolean; // Show API key source (project/global/env)
+  hostname: boolean; // Show machine hostname (useful for multi-host SSH workflows)
+  profile: boolean; // Show active profile name (from CLAUDE_CONFIG_DIR)
+  missionBoard?: boolean; // Show opt-in mission board above existing HUD detail lines
+  promptTime: boolean; // Show last prompt submission time (HH:MM:SS)
+  sessionHealth: boolean; // Show session health/duration
+  showSessionDuration?: boolean; // Show session:19m duration display (default: true if sessionHealth is true)
+  showHealthIndicator?: boolean; // Show 🟢/🟡/🔴 health indicator (default: true if sessionHealth is true)
+  showTokens?: boolean; // Show last-request token usage when enabled (tok:i1.2k/o340)
+  enterpriseMode?: boolean; // Explicit override for enterprise mode (undefined = auto-detect)
+  showEnterpriseCost?: boolean; // Whether to render enterprise billing cost (default: true when enterprise)
+  useBars: boolean; // Show visual progress bars instead of/alongside percentages
+  showCallCounts?: boolean; // Show tool/agent/skill call counts on the right of the status line (default: true)
   callCountsFormat?: CallCountsFormat; // Controls call count icon rendering: auto (platform default), emoji, or ascii
-  showLastTool?: boolean;      // Show name of last tool called (tool:Read)
-  sessionSummary: boolean;    // Show AI-generated session summary (<20 chars) - generated every 10 turns via claude -p
-  maxOutputLines: number;     // Max total output lines to prevent input field shrinkage
-  safeMode: boolean;          // Strip ANSI codes and use ASCII-only output to prevent terminal rendering corruption (Issue #346).
-                              // Default true. Set to false to explicitly disable even on Windows (e.g. Windows Terminal with ANSI support).
+  showLastTool?: boolean; // Show name of last tool called (tool:Read)
+  sessionSummary: boolean; // Show AI-generated session summary (<20 chars) - generated every 10 turns via claude -p
+  maxOutputLines: number; // Max total output lines to prevent input field shrinkage
+  safeMode: boolean; // Strip ANSI codes and use ASCII-only output to prevent terminal rendering corruption (Issue #346).
+  // Default true. Set to false to explicitly disable even on Windows (e.g. Windows Terminal with ANSI support).
 }
 
 export interface HudThresholds {
@@ -644,14 +659,45 @@ export interface LayoutConfig {
  * Used as fallback when no layout is configured.
  */
 export const DEFAULT_ELEMENT_ORDER: Required<LayoutConfig> = {
-  line1: ['hostname', 'cwd', 'gitRepo', 'gitBranch', 'gitStatus', 'apiKeySource', 'profile'],
-  main: [
-    'omcLabel', 'model', 'enterpriseCost', 'rateLimits', 'customBuckets', 'permission', 'thinking',
-    'promptTime', 'session', 'tokens', 'ralph', 'autopilot', 'prd',
-    'skills', 'lastSkill', 'contextBar', 'agents', 'background',
-    'callCounts', 'lastTool', 'sessionSummary',
+  line1: [
+    'hostname',
+    'cwd',
+    'gitRepo',
+    'gitBranch',
+    'gitStatus',
+    'apiKeySource',
+    'profile',
   ],
-  detail: ['missionBoard', 'agents', 'contextWarning', 'payloadWarning', 'todos'],
+  main: [
+    'omcLabel',
+    'model',
+    'enterpriseCost',
+    'rateLimits',
+    'customBuckets',
+    'permission',
+    'thinking',
+    'promptTime',
+    'session',
+    'tokens',
+    'ralph',
+    'autopilot',
+    'prd',
+    'skills',
+    'lastSkill',
+    'contextBar',
+    'agents',
+    'background',
+    'callCounts',
+    'lastTool',
+    'sessionSummary',
+  ],
+  detail: [
+    'missionBoard',
+    'agents',
+    'contextWarning',
+    'payloadWarning',
+    'todos',
+  ],
 };
 
 export interface HudConfig {
@@ -687,18 +733,18 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
   locale: 'en',
   labels: DEFAULT_HUD_LABELS,
   elements: {
-    cwd: false,               // Disabled by default for backward compatibility
+    cwd: false, // Disabled by default for backward compatibility
     cwdFormat: 'relative',
     useHyperlinks: false,
-    gitRepo: false,           // Disabled by default for backward compatibility
-    gitBranch: false,         // Disabled by default for backward compatibility
-    gitStatus: false,         // Disabled by default for backward compatibility
-    gitInfoPosition: 'above',  // Git info above main HUD line (backward compatible)
-    model: true,              // Show only when Claude Code statusline stdin provides a model
+    gitRepo: false, // Disabled by default for backward compatibility
+    gitBranch: false, // Disabled by default for backward compatibility
+    gitStatus: false, // Disabled by default for backward compatibility
+    gitInfoPosition: 'above', // Git info above main HUD line (backward compatible)
+    model: true, // Show only when Claude Code statusline stdin provides a model
     modelFormat: 'versioned', // Preserve model version by default
     omcLabel: true,
     updateNotification: true, // Preserve existing update prompt behavior by default
-    rateLimits: true,  // Show rate limits by default
+    rateLimits: true, // Show rate limits by default
     ralph: true,
     autopilot: true,
     prdStory: true,
@@ -710,25 +756,25 @@ export const DEFAULT_HUD_CONFIG: HudConfig = {
     backgroundTasks: true,
     todos: true,
     lastSkill: true,
-    permissionStatus: false,  // Disabled: heuristic-based, causes false positives
+    permissionStatus: false, // Disabled: heuristic-based, causes false positives
     thinking: true,
-    thinkingFormat: 'text',   // Text format for backward compatibility
+    thinkingFormat: 'text', // Text format for backward compatibility
     apiKeySource: false, // Disabled by default
     hostname: false,
-    profile: true,  // Show profile name when CLAUDE_CONFIG_DIR is set
-    missionBoard: false,  // Opt-in mission board for whole-run progress tracking
-    promptTime: true,  // Show last prompt time by default
+    profile: true, // Show profile name when CLAUDE_CONFIG_DIR is set
+    missionBoard: false, // Opt-in mission board for whole-run progress tracking
+    promptTime: true, // Show last prompt time by default
     sessionHealth: true,
     showSessionDuration: true,
     showHealthIndicator: true,
     showTokens: false,
-    useBars: false,  // Disabled by default for backwards compatibility
-    showCallCounts: true,  // Show tool/agent/skill call counts by default (Issue #710)
-    callCountsFormat: 'auto',  // Preserve platform-based emoji/ASCII defaults unless explicitly overridden
+    useBars: false, // Disabled by default for backwards compatibility
+    showCallCounts: true, // Show tool/agent/skill call counts by default (Issue #710)
+    callCountsFormat: 'auto', // Preserve platform-based emoji/ASCII defaults unless explicitly overridden
     showLastTool: false,
     sessionSummary: false, // Disabled by default - opt-in AI-generated session summary
     maxOutputLines: 4,
-    safeMode: true,  // Enabled by default to prevent terminal rendering corruption (Issue #346)
+    safeMode: true, // Enabled by default to prevent terminal rendering corruption (Issue #346)
   },
   thresholds: {
     contextWarning: 70,

@@ -6,7 +6,7 @@
  * Also generates human-readable summaries when autopilot completes.
  */
 
-import { readAutopilotState, writeAutopilotState } from "./state.js";
+import { readAutopilotState, writeAutopilotState } from './state.js';
 import type {
   AutopilotState,
   AutopilotPhase,
@@ -14,7 +14,7 @@ import type {
   ValidationResult,
   ValidationVerdictType,
   ValidationVerdict,
-} from "./types.js";
+} from './types.js';
 
 /** Number of architects required for validation consensus */
 export const REQUIRED_ARCHITECTS = 3;
@@ -38,7 +38,7 @@ export function recordValidationVerdict(
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
-  if (!state || state.phase !== "validation") {
+  if (!state || state.phase !== 'validation') {
     return false;
   }
 
@@ -63,7 +63,7 @@ export function recordValidationVerdict(
   // Check if all verdicts are in
   if (state.validation.verdicts.length >= REQUIRED_ARCHITECTS) {
     state.validation.all_approved = state.validation.verdicts.every(
-      (v) => v.verdict === "APPROVED",
+      (v) => v.verdict === 'APPROVED',
     );
   }
 
@@ -106,7 +106,7 @@ export function startValidationRound(
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
-  if (!state || state.phase !== "validation") {
+  if (!state || state.phase !== 'validation') {
     return false;
   }
 
@@ -132,7 +132,7 @@ export function shouldRetryValidation(
   }
 
   const hasRejection = state.validation.verdicts.some(
-    (v) => v.verdict === "REJECTED",
+    (v) => v.verdict === 'REJECTED',
   );
 
   const canRetry = state.validation.validation_rounds < maxRounds;
@@ -155,9 +155,9 @@ export function getIssuesToFix(
   const issues: string[] = [];
 
   for (const verdict of state.validation.verdicts) {
-    if (verdict.verdict === "REJECTED" && verdict.issues) {
+    if (verdict.verdict === 'REJECTED' && verdict.issues) {
       issues.push(
-        `[${verdict.type.toUpperCase()}] ${verdict.issues.join(", ")}`,
+        `[${verdict.type.toUpperCase()}] ${verdict.issues.join(', ')}`,
       );
     }
   }
@@ -238,13 +238,13 @@ export function formatValidationResults(
   _sessionId?: string,
 ): string {
   const lines: string[] = [
-    "## Validation Results",
+    '## Validation Results',
     `Round: ${state.validation.validation_rounds}`,
-    "",
+    '',
   ];
 
   for (const verdict of state.validation.verdicts) {
-    const icon = verdict.verdict === "APPROVED" ? "✓" : "✗";
+    const icon = verdict.verdict === 'APPROVED' ? '✓' : '✗';
     lines.push(`${icon} **${verdict.type.toUpperCase()}**: ${verdict.verdict}`);
 
     if (verdict.issues && verdict.issues.length > 0) {
@@ -254,15 +254,15 @@ export function formatValidationResults(
     }
   }
 
-  lines.push("");
+  lines.push('');
 
   if (state.validation.all_approved) {
-    lines.push("**Result: ALL APPROVED** - Ready to complete");
+    lines.push('**Result: ALL APPROVED** - Ready to complete');
   } else {
-    lines.push("**Result: NEEDS FIXES** - Address issues above");
+    lines.push('**Result: NEEDS FIXES** - Address issues above');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 // ============================================================================
@@ -288,20 +288,20 @@ export function generateSummary(
   const duration = endTime - startTime;
 
   const phasesCompleted: AutopilotPhase[] = [];
-  if (state.expansion.spec_path) phasesCompleted.push("expansion");
-  if (state.planning.approved) phasesCompleted.push("planning");
-  if (state.execution.ralph_completed_at) phasesCompleted.push("execution");
-  if (state.qa.qa_completed_at) phasesCompleted.push("qa");
-  if (state.validation.all_approved) phasesCompleted.push("validation");
-  if (state.phase === "complete") phasesCompleted.push("complete");
+  if (state.expansion.spec_path) phasesCompleted.push('expansion');
+  if (state.planning.approved) phasesCompleted.push('planning');
+  if (state.execution.ralph_completed_at) phasesCompleted.push('execution');
+  if (state.qa.qa_completed_at) phasesCompleted.push('qa');
+  if (state.validation.all_approved) phasesCompleted.push('validation');
+  if (state.phase === 'complete') phasesCompleted.push('complete');
 
-  let testsStatus = "Not run";
-  if (state.qa.test_status === "passing") {
-    testsStatus = "Passing";
-  } else if (state.qa.test_status === "failing") {
-    testsStatus = "Failing";
-  } else if (state.qa.test_status === "skipped") {
-    testsStatus = "Skipped";
+  let testsStatus = 'Not run';
+  if (state.qa.test_status === 'passing') {
+    testsStatus = 'Passing';
+  } else if (state.qa.test_status === 'failing') {
+    testsStatus = 'Failing';
+  } else if (state.qa.test_status === 'skipped') {
+    testsStatus = 'Skipped';
   }
 
   return {
@@ -341,50 +341,50 @@ function formatDuration(ms: number): string {
  */
 export function formatSummary(summary: AutopilotSummary): string {
   const lines: string[] = [
-    "",
-    "╭──────────────────────────────────────────────────────╮",
-    "│                  AUTOPILOT COMPLETE                   │",
-    "├──────────────────────────────────────────────────────┤",
+    '',
+    '╭──────────────────────────────────────────────────────╮',
+    '│                  AUTOPILOT COMPLETE                   │',
+    '├──────────────────────────────────────────────────────┤',
   ];
 
   // Original idea (truncate if too long)
   const ideaDisplay =
     summary.originalIdea.length > 50
-      ? summary.originalIdea.substring(0, 47) + "..."
+      ? summary.originalIdea.substring(0, 47) + '...'
       : summary.originalIdea;
   lines.push(`│  Original Idea: ${ideaDisplay.padEnd(36)} │`);
-  lines.push("│                                                      │");
+  lines.push('│                                                      │');
 
   // Delivered section
-  lines.push("│  Delivered:                                          │");
+  lines.push('│  Delivered:                                          │');
   lines.push(
-    `│  • ${summary.filesCreated.length} files created${" ".repeat(36 - String(summary.filesCreated.length).length)}│`,
+    `│  • ${summary.filesCreated.length} files created${' '.repeat(36 - String(summary.filesCreated.length).length)}│`,
   );
   lines.push(
-    `│  • ${summary.filesModified.length} files modified${" ".repeat(35 - String(summary.filesModified.length).length)}│`,
+    `│  • ${summary.filesModified.length} files modified${' '.repeat(35 - String(summary.filesModified.length).length)}│`,
   );
   lines.push(
-    `│  • Tests: ${summary.testsStatus}${" ".repeat(36 - summary.testsStatus.length)}│`,
+    `│  • Tests: ${summary.testsStatus}${' '.repeat(36 - summary.testsStatus.length)}│`,
   );
-  lines.push("│                                                      │");
+  lines.push('│                                                      │');
 
   // Metrics
-  lines.push("│  Metrics:                                            │");
+  lines.push('│  Metrics:                                            │');
   const durationStr = formatDuration(summary.duration);
   lines.push(
-    `│  • Duration: ${durationStr}${" ".repeat(35 - durationStr.length)}│`,
+    `│  • Duration: ${durationStr}${' '.repeat(35 - durationStr.length)}│`,
   );
   lines.push(
-    `│  • Agents spawned: ${summary.agentsSpawned}${" ".repeat(30 - String(summary.agentsSpawned).length)}│`,
+    `│  • Agents spawned: ${summary.agentsSpawned}${' '.repeat(30 - String(summary.agentsSpawned).length)}│`,
   );
   lines.push(
-    `│  • Phases completed: ${summary.phasesCompleted.length}/5${" ".repeat(27)}│`,
+    `│  • Phases completed: ${summary.phasesCompleted.length}/5${' '.repeat(27)}│`,
   );
 
-  lines.push("╰──────────────────────────────────────────────────────╯");
-  lines.push("");
+  lines.push('╰──────────────────────────────────────────────────────╯');
+  lines.push('');
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -397,20 +397,20 @@ export function formatCompactSummary(state: AutopilotState): string {
     state.execution.files_modified.length;
   const agents = state.total_agents_spawned;
 
-  if (state.phase === "complete") {
+  if (state.phase === 'complete') {
     return `[AUTOPILOT ✓] Complete | ${files} files | ${agents} agents`;
   }
 
-  if (state.phase === "failed") {
+  if (state.phase === 'failed') {
     return `[AUTOPILOT ✗] Failed at ${state.phase}`;
   }
 
   const phaseIndex = [
-    "expansion",
-    "planning",
-    "execution",
-    "qa",
-    "validation",
+    'expansion',
+    'planning',
+    'execution',
+    'qa',
+    'validation',
   ].indexOf(state.phase);
   return `[AUTOPILOT] Phase ${phaseIndex + 1}/5: ${phase} | ${files} files`;
 }
@@ -423,28 +423,28 @@ export function formatFailureSummary(
   error?: string,
 ): string {
   const lines: string[] = [
-    "",
-    "╭──────────────────────────────────────────────────────╮",
-    "│                  AUTOPILOT FAILED                     │",
-    "├──────────────────────────────────────────────────────┤",
+    '',
+    '╭──────────────────────────────────────────────────────╮',
+    '│                  AUTOPILOT FAILED                     │',
+    '├──────────────────────────────────────────────────────┤',
     `│  Failed at phase: ${state.phase.toUpperCase().padEnd(33)} │`,
   ];
 
   if (error) {
     const errorLines = error.match(/.{1,48}/g) || [error];
-    lines.push("│                                                      │");
-    lines.push("│  Error:                                              │");
+    lines.push('│                                                      │');
+    lines.push('│  Error:                                              │');
     for (const line of errorLines.slice(0, 3)) {
       lines.push(`│  ${line.padEnd(50)} │`);
     }
   }
 
-  lines.push("│                                                      │");
-  lines.push("│  Progress preserved. Run /autopilot to resume.       │");
-  lines.push("╰──────────────────────────────────────────────────────╯");
-  lines.push("");
+  lines.push('│                                                      │');
+  lines.push('│  Progress preserved. Run /autopilot to resume.       │');
+  lines.push('╰──────────────────────────────────────────────────────╯');
+  lines.push('');
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -456,7 +456,7 @@ export function formatFileList(
   maxFiles: number = 10,
 ): string {
   if (files.length === 0) {
-    return "";
+    return '';
   }
 
   const lines: string[] = [`\n### ${title} (${files.length})`];
@@ -470,5 +470,5 @@ export function formatFileList(
     lines.push(`- ... and ${files.length - maxFiles} more`);
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

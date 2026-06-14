@@ -9,19 +9,19 @@
  * Modeled after oh-my-codex/src/team/team-ops.ts.
  */
 
-import { randomUUID } from "node:crypto";
-import { existsSync } from "node:fs";
-import { appendFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { randomUUID } from 'node:crypto';
+import { existsSync } from 'node:fs';
+import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 
-import { TeamPaths, absPath } from "./state-paths.js";
-import { normalizeTeamManifest } from "./governance.js";
-import { normalizeTeamGovernance } from "./governance.js";
+import { TeamPaths, absPath } from './state-paths.js';
+import { normalizeTeamManifest } from './governance.js';
+import { normalizeTeamGovernance } from './governance.js';
 import {
   isTerminalTeamTaskStatus,
   canTransitionTeamTaskStatus,
-} from "./contracts.js";
-import type { TeamTaskStatus } from "./contracts.js";
+} from './contracts.js';
+import type { TeamTaskStatus } from './contracts.js';
 import type {
   TeamTask,
   TeamTaskV2,
@@ -43,15 +43,15 @@ import type {
   TeamSummaryPerformance,
   ShutdownAck,
   TeamMonitorSnapshotState,
-} from "./types.js";
+} from './types.js';
 
 import {
   claimTask as claimTaskImpl,
   transitionTaskStatus as transitionTaskStatusImpl,
   releaseTaskClaim as releaseTaskClaimImpl,
   listTasks as listTasksImpl,
-} from "./state/tasks.js";
-import { canonicalizeTeamConfigWorkers } from "./worker-canonicalization.js";
+} from './state/tasks.js';
+import { canonicalizeTeamConfigWorkers } from './worker-canonicalization.js';
 
 // Re-export types for consumers
 export type {
@@ -86,7 +86,7 @@ function teamDir(teamName: string, cwd: string): string {
 
 function normalizeTaskId(taskId: string): string {
   const raw = String(taskId).trim();
-  return raw.startsWith("task-") ? raw.slice("task-".length) : raw;
+  return raw.startsWith('task-') ? raw.slice('task-'.length) : raw;
 }
 
 function canonicalTaskFilePath(
@@ -126,15 +126,15 @@ function taskFileCandidates(
 async function writeAtomic(path: string, data: string): Promise<void> {
   const tmp = `${path}.${process.pid}.tmp`;
   await mkdir(dirname(path), { recursive: true });
-  await writeFile(tmp, data, "utf8");
-  const { rename } = await import("node:fs/promises");
+  await writeFile(tmp, data, 'utf8');
+  const { rename } = await import('node:fs/promises');
   await rename(tmp, path);
 }
 
 async function readJsonSafe<T>(path: string): Promise<T | null> {
   try {
     if (!existsSync(path)) return null;
-    const raw = await readFile(path, "utf8");
+    const raw = await readFile(path, 'utf8');
     return JSON.parse(raw) as T;
   } catch {
     return null;
@@ -146,12 +146,12 @@ function normalizeTask(task: TeamTask): TeamTaskV2 {
 }
 
 function isTeamTask(value: unknown): value is TeamTask {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== 'object') return false;
   const v = value as Record<string, unknown>;
   return (
-    typeof v.id === "string" &&
-    typeof v.subject === "string" &&
-    typeof v.status === "string"
+    typeof v.id === 'string' &&
+    typeof v.subject === 'string' &&
+    typeof v.status === 'string'
   );
 }
 
@@ -165,10 +165,10 @@ async function withLock<T>(
   try {
     await mkdir(lockDir, { recursive: false });
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
       // Check staleness
       try {
-        const { stat } = await import("node:fs/promises");
+        const { stat } = await import('node:fs/promises');
         const s = await stat(lockDir);
         if (Date.now() - s.mtimeMs > STALE_MS) {
           await rm(lockDir, { recursive: true, force: true });
@@ -202,7 +202,7 @@ async function withTaskClaimLock<T>(
   cwd: string,
   fn: () => Promise<T>,
 ): Promise<{ ok: true; value: T } | { ok: false }> {
-  const lockDir = join(teamDir(teamName, cwd), "tasks", `.lock-${taskId}`);
+  const lockDir = join(teamDir(teamName, cwd), 'tasks', `.lock-${taskId}`);
   return withLock(lockDir, fn);
 }
 
@@ -237,7 +237,7 @@ function configFromManifest(manifest: TeamManifestV2): TeamConfig {
   return {
     name: manifest.name,
     task: manifest.task,
-    agent_type: "claude",
+    agent_type: 'claude',
     policy: manifest.policy,
     governance: manifest.governance,
     worker_launch_mode: manifest.policy.worker_launch_mode,
@@ -350,8 +350,8 @@ export async function teamReadWorkerStatus(
   cwd: string,
 ): Promise<WorkerStatus> {
   const unknownStatus: WorkerStatus = {
-    state: "unknown",
-    updated_at: "1970-01-01T00:00:00.000Z",
+    state: 'unknown',
+    updated_at: '1970-01-01T00:00:00.000Z',
   };
   const p = absPath(cwd, TeamPaths.workerStatus(teamName, workerName));
   const status = await readJsonSafe<WorkerStatus>(p);
@@ -374,10 +374,10 @@ export async function teamWriteWorkerInbox(
 
 export async function teamCreateTask(
   teamName: string,
-  task: Omit<TeamTask, "id" | "created_at">,
+  task: Omit<TeamTask, 'id' | 'created_at'>,
   cwd: string,
 ): Promise<TeamTaskV2> {
-  const lockDir = join(teamDir(teamName, cwd), ".lock-create-task");
+  const lockDir = join(teamDir(teamName, cwd), '.lock-create-task');
   const timeoutMs = 5_000;
   const deadline = Date.now() + timeoutMs;
   let delayMs = 20;
@@ -392,7 +392,7 @@ export async function teamCreateTask(
       const created: TeamTaskV2 = {
         ...task,
         id: nextId,
-        status: task.status ?? "pending",
+        status: task.status ?? 'pending',
         depends_on: task.depends_on ?? task.blocked_by ?? [],
         version: 1,
         created_at: new Date().toISOString(),
@@ -500,11 +500,11 @@ export async function teamClaimTask(
     const task = await teamReadTask(teamName, taskId, cwd);
     if (task?.requires_code_change) {
       const approval = await teamReadTaskApproval(teamName, taskId, cwd);
-      if (!approval || approval.status !== "approved") {
+      if (!approval || approval.status !== 'approved') {
         return {
           ok: false,
-          error: "blocked_dependency",
-          dependencies: ["approval-required"],
+          error: 'blocked_dependency',
+          dependencies: ['approval-required'],
         };
       }
     }
@@ -604,32 +604,32 @@ export async function teamReleaseTaskClaim(
 function normalizeLegacyMailboxMessage(
   raw: Record<string, unknown>,
 ): TeamMailboxMessage | null {
-  if (raw.type === "notified") return null;
+  if (raw.type === 'notified') return null;
   const messageId =
-    typeof raw.message_id === "string" && raw.message_id.trim() !== ""
+    typeof raw.message_id === 'string' && raw.message_id.trim() !== ''
       ? raw.message_id
-      : typeof raw.id === "string" && raw.id.trim() !== ""
+      : typeof raw.id === 'string' && raw.id.trim() !== ''
         ? raw.id
-        : "";
+        : '';
   const fromWorker =
-    typeof raw.from_worker === "string" && raw.from_worker.trim() !== ""
+    typeof raw.from_worker === 'string' && raw.from_worker.trim() !== ''
       ? raw.from_worker
-      : typeof raw.from === "string"
+      : typeof raw.from === 'string'
         ? raw.from
-        : "";
+        : '';
   const toWorker =
-    typeof raw.to_worker === "string" && raw.to_worker.trim() !== ""
+    typeof raw.to_worker === 'string' && raw.to_worker.trim() !== ''
       ? raw.to_worker
-      : typeof raw.to === "string"
+      : typeof raw.to === 'string'
         ? raw.to
-        : "";
-  const body = typeof raw.body === "string" ? raw.body : "";
+        : '';
+  const body = typeof raw.body === 'string' ? raw.body : '';
   const createdAt =
-    typeof raw.created_at === "string" && raw.created_at.trim() !== ""
+    typeof raw.created_at === 'string' && raw.created_at.trim() !== ''
       ? raw.created_at
-      : typeof raw.createdAt === "string"
+      : typeof raw.createdAt === 'string'
         ? raw.createdAt
-        : "";
+        : '';
 
   if (!messageId || !fromWorker || !toWorker || !body || !createdAt)
     return null;
@@ -639,16 +639,16 @@ function normalizeLegacyMailboxMessage(
     to_worker: toWorker,
     body,
     created_at: createdAt,
-    ...(typeof raw.notified_at === "string"
+    ...(typeof raw.notified_at === 'string'
       ? { notified_at: raw.notified_at }
       : {}),
-    ...(typeof raw.notifiedAt === "string"
+    ...(typeof raw.notifiedAt === 'string'
       ? { notified_at: raw.notifiedAt }
       : {}),
-    ...(typeof raw.delivered_at === "string"
+    ...(typeof raw.delivered_at === 'string'
       ? { delivered_at: raw.delivered_at }
       : {}),
-    ...(typeof raw.deliveredAt === "string"
+    ...(typeof raw.deliveredAt === 'string'
       ? { delivered_at: raw.deliveredAt }
       : {}),
   };
@@ -661,14 +661,14 @@ async function readLegacyMailboxJsonl(
 ): Promise<TeamMailbox> {
   const legacyPath = absPath(
     cwd,
-    TeamPaths.mailbox(teamName, workerName).replace(/\.json$/i, ".jsonl"),
+    TeamPaths.mailbox(teamName, workerName).replace(/\.json$/i, '.jsonl'),
   );
   if (!existsSync(legacyPath)) return { worker: workerName, messages: [] };
 
   try {
-    const raw = await readFile(legacyPath, "utf8");
+    const raw = await readFile(legacyPath, 'utf8');
     const lines = raw
-      .split("\n")
+      .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
     const byMessageId = new Map<string, TeamMailboxMessage>();
@@ -679,7 +679,7 @@ async function readLegacyMailboxJsonl(
       } catch {
         continue;
       }
-      if (!parsed || typeof parsed !== "object") continue;
+      if (!parsed || typeof parsed !== 'object') continue;
       const normalized = normalizeLegacyMailboxMessage(
         parsed as Record<string, unknown>,
       );
@@ -737,7 +737,7 @@ export async function teamSendMessage(
     await teamAppendEvent(
       teamName,
       {
-        type: "message_received",
+        type: 'message_received',
         worker: toWorker,
         message_id: message.message_id,
       },
@@ -819,7 +819,7 @@ export async function teamMarkMessageNotified(
 
 export async function teamAppendEvent(
   teamName: string,
-  event: Omit<TeamEvent, "event_id" | "created_at" | "team">,
+  event: Omit<TeamEvent, 'event_id' | 'created_at' | 'team'>,
   cwd: string,
 ): Promise<TeamEvent> {
   const full: TeamEvent = {
@@ -830,7 +830,7 @@ export async function teamAppendEvent(
   };
   const p = absPath(cwd, TeamPaths.events(teamName));
   await mkdir(dirname(p), { recursive: true });
-  await appendFile(p, `${JSON.stringify(full)}\n`, "utf8");
+  await appendFile(p, `${JSON.stringify(full)}\n`, 'utf8');
   return full;
 }
 
@@ -858,7 +858,7 @@ export async function teamWriteTaskApproval(
   await teamAppendEvent(
     teamName,
     {
-      type: "approval_decision",
+      type: 'approval_decision',
       worker: approval.reviewer,
       task_id: approval.task_id,
       reason: `${approval.status}: ${approval.decision_reason}`,
@@ -896,7 +896,7 @@ export async function teamGetSummary(
   }
 
   const workersStartMs = Date.now();
-  const workerEntries: TeamSummary["workers"] = [];
+  const workerEntries: TeamSummary['workers'] = [];
   const nonReporting: string[] = [];
 
   for (const w of cfg.workers) {
@@ -980,12 +980,12 @@ export async function teamReadShutdownAck(
 ): Promise<ShutdownAck | null> {
   const ackPath = absPath(cwd, TeamPaths.shutdownAck(teamName, workerName));
   const parsed = await readJsonSafe<ShutdownAck>(ackPath);
-  if (!parsed || (parsed.status !== "accept" && parsed.status !== "reject"))
+  if (!parsed || (parsed.status !== 'accept' && parsed.status !== 'reject'))
     return null;
 
-  if (typeof minUpdatedAt === "string" && minUpdatedAt.trim() !== "") {
+  if (typeof minUpdatedAt === 'string' && minUpdatedAt.trim() !== '') {
     const minTs = Date.parse(minUpdatedAt);
-    const ackTs = Date.parse(parsed.updated_at ?? "");
+    const ackTs = Date.parse(parsed.updated_at ?? '');
     if (!Number.isFinite(minTs) || !Number.isFinite(ackTs) || ackTs < minTs)
       return null;
   }

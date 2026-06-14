@@ -6,24 +6,24 @@
  * Ported from oh-my-opencode's rules-injector hook.
  */
 
-import { existsSync, readdirSync, realpathSync, statSync } from "fs";
-import { dirname, join, relative } from "path";
+import { existsSync, readdirSync, realpathSync, statSync } from 'fs';
+import { dirname, join, relative } from 'path';
 import {
   GITHUB_INSTRUCTIONS_PATTERN,
   PROJECT_MARKERS,
   PROJECT_RULE_FILES,
   PROJECT_RULE_SUBDIRS,
   RULE_EXTENSIONS,
-} from "./constants.js";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
-import type { RuleFileCandidate } from "./types.js";
+} from './constants.js';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import type { RuleFileCandidate } from './types.js';
 
 /**
  * Check if a directory is a GitHub instructions directory.
  */
 function isGitHubInstructionsDir(dir: string): boolean {
   return (
-    dir.includes(".github/instructions") || dir.endsWith(".github/instructions")
+    dir.includes('.github/instructions') || dir.endsWith('.github/instructions')
   );
 }
 
@@ -122,7 +122,7 @@ export function calculateDistance(
     const currentRel = relative(projectRoot, currentDir);
 
     // Handle paths outside project root
-    if (ruleRel.startsWith("..") || currentRel.startsWith("..")) {
+    if (ruleRel.startsWith('..') || currentRel.startsWith('..')) {
       return 9999;
     }
 
@@ -220,7 +220,7 @@ export function findRuleFiles(
   }
 
   // Search user-level rule directory
-  const userRuleDir = join(getClaudeConfigDir(), "rules");
+  const userRuleDir = join(getClaudeConfigDir(), 'rules');
   const userFiles: string[] = [];
   findRuleFilesRecursive(userRuleDir, userFiles);
 

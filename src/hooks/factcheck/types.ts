@@ -66,13 +66,13 @@ export interface GuardsConfig {
   sentinel: SentinelPolicy;
 }
 
-export type FactcheckMode = "strict" | "declared" | "manual" | "quick";
+export type FactcheckMode = 'strict' | 'declared' | 'manual' | 'quick';
 
 // ---------------------------------------------------------------------------
 // Check Results
 // ---------------------------------------------------------------------------
 
-export type Severity = "PASS" | "WARN" | "FAIL";
+export type Severity = 'PASS' | 'WARN' | 'FAIL';
 
 export interface Mismatch {
   check: string;
@@ -129,20 +129,20 @@ export interface SentinelReadinessResult {
 // ---------------------------------------------------------------------------
 
 export const REQUIRED_FIELDS: ReadonlySet<string> = new Set([
-  "schema_version",
-  "run_id",
-  "ts",
-  "cwd",
-  "mode",
-  "files_modified",
-  "files_created",
-  "artifacts_expected",
-  "gates",
+  'schema_version',
+  'run_id',
+  'ts',
+  'cwd',
+  'mode',
+  'files_modified',
+  'files_created',
+  'artifacts_expected',
+  'gates',
 ]);
 
 export const REQUIRED_GATES: ReadonlySet<string> = new Set([
-  "selftest_ran",
-  "goldens_ran",
-  "sentinel_stop_smoke_ran",
-  "shadow_leak_check_ran",
+  'selftest_ran',
+  'goldens_ran',
+  'sentinel_stop_smoke_ran',
+  'shadow_leak_check_ran',
 ]);

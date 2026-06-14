@@ -4,9 +4,9 @@
  * Executes `tsc --noEmit` to get project-level type checking diagnostics.
  */
 
-import { execFileSync } from "child_process";
-import { existsSync } from "fs";
-import { join } from "path";
+import { execFileSync } from 'child_process';
+import { existsSync } from 'fs';
+import { join } from 'path';
 
 export interface TscDiagnostic {
   file: string;
@@ -14,7 +14,7 @@ export interface TscDiagnostic {
   column: number;
   code: string;
   message: string;
-  severity: "error" | "warning";
+  severity: 'error' | 'warning';
 }
 
 export interface TscResult {
@@ -30,7 +30,7 @@ export interface TscResult {
  * @returns Result with diagnostics, error count, and warning count
  */
 export function runTscDiagnostics(directory: string): TscResult {
-  const tsconfigPath = join(directory, "tsconfig.json");
+  const tsconfigPath = join(directory, 'tsconfig.json');
 
   if (!existsSync(tsconfigPath)) {
     return {
@@ -42,10 +42,10 @@ export function runTscDiagnostics(directory: string): TscResult {
   }
 
   try {
-    execFileSync("tsc", ["--noEmit", "--pretty", "false"], {
+    execFileSync('tsc', ['--noEmit', '--pretty', 'false'], {
       cwd: directory,
-      encoding: "utf-8",
-      stdio: "pipe",
+      encoding: 'utf-8',
+      stdio: 'pipe',
     });
     return {
       success: true,
@@ -54,7 +54,7 @@ export function runTscDiagnostics(directory: string): TscResult {
       warningCount: 0,
     };
   } catch (error: any) {
-    const output = error.stdout || error.stderr || "";
+    const output = error.stdout || error.stderr || '';
     return parseTscOutput(output);
   }
 }
@@ -75,15 +75,15 @@ function parseTscOutput(output: string): TscResult {
       file: match[1],
       line: parseInt(match[2], 10),
       column: parseInt(match[3], 10),
-      severity: match[4] as "error" | "warning",
+      severity: match[4] as 'error' | 'warning',
       code: match[5],
       message: match[6],
     });
   }
 
-  const errorCount = diagnostics.filter((d) => d.severity === "error").length;
+  const errorCount = diagnostics.filter((d) => d.severity === 'error').length;
   const warningCount = diagnostics.filter(
-    (d) => d.severity === "warning",
+    (d) => d.severity === 'warning',
   ).length;
 
   return {

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fsMocks = vi.hoisted(() => ({
   appendFile: vi.fn(),
@@ -6,8 +6,8 @@ const fsMocks = vi.hoisted(() => ({
   readFile: vi.fn(),
 }));
 
-vi.mock("fs/promises", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("fs/promises")>();
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>();
   return {
     ...actual,
     appendFile: fsMocks.appendFile,
@@ -16,7 +16,7 @@ vi.mock("fs/promises", async (importOriginal) => {
   };
 });
 
-describe("emitMonitorDerivedEvents swallowed error logging", () => {
+describe('emitMonitorDerivedEvents swallowed error logging', () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
@@ -25,25 +25,25 @@ describe("emitMonitorDerivedEvents swallowed error logging", () => {
     fsMocks.readFile.mockReset();
   });
 
-  it("logs appendTeamEvent failures without throwing", async () => {
+  it('logs appendTeamEvent failures without throwing', async () => {
     fsMocks.mkdir.mockResolvedValue(undefined);
-    fsMocks.appendFile.mockRejectedValue(new Error("disk full"));
+    fsMocks.appendFile.mockRejectedValue(new Error('disk full'));
 
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const { emitMonitorDerivedEvents } = await import("../events.js");
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { emitMonitorDerivedEvents } = await import('../events.js');
 
     await expect(
       emitMonitorDerivedEvents(
-        "demo-team",
-        [{ id: "task-1", status: "completed" }],
+        'demo-team',
+        [{ id: 'task-1', status: 'completed' }],
         [],
-        { taskStatusById: { "task-1": "in_progress" } },
-        "/tmp/demo-team",
+        { taskStatusById: { 'task-1': 'in_progress' } },
+        '/tmp/demo-team',
       ),
     ).resolves.toBeUndefined();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      "[omc] team.events.emitMonitorDerivedEvents appendTeamEvent failed: disk full",
+      '[omc] team.events.emitMonitorDerivedEvents appendTeamEvent failed: disk full',
     );
   });
 });

@@ -6,14 +6,21 @@ import type { JsonRpcRequest, JsonRpcResponse } from './types.js';
  * Custom error types for socket communication
  */
 export class SocketConnectionError extends Error {
-  constructor(message: string, public readonly socketPath: string, public readonly originalError?: Error) {
+  constructor(
+    message: string,
+    public readonly socketPath: string,
+    public readonly originalError?: Error,
+  ) {
     super(message);
     this.name = 'SocketConnectionError';
   }
 }
 
 export class SocketTimeoutError extends Error {
-  constructor(message: string, public readonly timeoutMs: number) {
+  constructor(
+    message: string,
+    public readonly timeoutMs: number,
+  ) {
     super(message);
     this.name = 'SocketTimeoutError';
   }
@@ -23,7 +30,7 @@ export class JsonRpcError extends Error {
   constructor(
     message: string,
     public readonly code: number,
-    public readonly data?: unknown
+    public readonly data?: unknown,
   ) {
     super(message);
     this.name = 'JsonRpcError';
@@ -57,7 +64,7 @@ export async function sendSocketRequest<T>(
   socketPath: string,
   method: string,
   params?: Record<string, unknown>,
-  timeout: number = 60000
+  timeout: number = 60000,
 ): Promise<T> {
   return new Promise((resolve, reject) => {
     const id = randomUUID();
@@ -79,10 +86,12 @@ export async function sendSocketRequest<T>(
       timedOut = true;
       settled = true;
       socket.destroy();
-      reject(new SocketTimeoutError(
-        `Request timeout after ${timeout}ms for method "${method}"`,
-        timeout
-      ));
+      reject(
+        new SocketTimeoutError(
+          `Request timeout after ${timeout}ms for method "${method}"`,
+          timeout,
+        ),
+      );
     }, timeout);
 
     // Cleanup helper
@@ -119,9 +128,11 @@ export async function sendSocketRequest<T>(
         if (!settled) {
           settled = true;
           cleanup();
-          reject(new Error(
-            `Response exceeded maximum size of ${MAX_RESPONSE_SIZE} bytes`
-          ));
+          reject(
+            new Error(
+              `Response exceeded maximum size of ${MAX_RESPONSE_SIZE} bytes`,
+            ),
+          );
         }
         return;
       }
@@ -137,36 +148,59 @@ export async function sendSocketRequest<T>(
 
           // Validate JSON-RPC 2.0 response format
           if (response.jsonrpc !== '2.0') {
-            if (!settled) { settled = true; reject(new Error(
-              `Invalid JSON-RPC version: expected "2.0", got "${response.jsonrpc}"`
-            )); }
+            if (!settled) {
+              settled = true;
+              reject(
+                new Error(
+                  `Invalid JSON-RPC version: expected "2.0", got "${response.jsonrpc}"`,
+                ),
+              );
+            }
             return;
           }
 
           // Validate response ID matches request
           if (response.id !== id) {
-            if (!settled) { settled = true; reject(new Error(
-              `Response ID mismatch: expected "${id}", got "${response.id}"`
-            )); }
+            if (!settled) {
+              settled = true;
+              reject(
+                new Error(
+                  `Response ID mismatch: expected "${id}", got "${response.id}"`,
+                ),
+              );
+            }
             return;
           }
 
           // Handle error response
           if (response.error) {
-            if (!settled) { settled = true; reject(new JsonRpcError(
-              response.error.message,
-              response.error.code,
-              response.error.data
-            )); }
+            if (!settled) {
+              settled = true;
+              reject(
+                new JsonRpcError(
+                  response.error.message,
+                  response.error.code,
+                  response.error.data,
+                ),
+              );
+            }
             return;
           }
 
           // Success - return result
-          if (!settled) { settled = true; resolve(response.result as T); }
+          if (!settled) {
+            settled = true;
+            resolve(response.result as T);
+          }
         } catch (e) {
-          if (!settled) { settled = true; reject(new Error(
-            `Failed to parse JSON-RPC response: ${(e as Error).message}`
-          )); }
+          if (!settled) {
+            settled = true;
+            reject(
+              new Error(
+                `Failed to parse JSON-RPC response: ${(e as Error).message}`,
+              ),
+            );
+          }
         }
       }
     });
@@ -183,23 +217,29 @@ export async function sendSocketRequest<T>(
 
       // Provide specific error messages for common cases
       if (err.code === 'ENOENT') {
-        reject(new SocketConnectionError(
-          `Socket does not exist at path: ${socketPath}`,
-          socketPath,
-          err
-        ));
+        reject(
+          new SocketConnectionError(
+            `Socket does not exist at path: ${socketPath}`,
+            socketPath,
+            err,
+          ),
+        );
       } else if (err.code === 'ECONNREFUSED') {
-        reject(new SocketConnectionError(
-          `Connection refused - server not listening at: ${socketPath}`,
-          socketPath,
-          err
-        ));
+        reject(
+          new SocketConnectionError(
+            `Connection refused - server not listening at: ${socketPath}`,
+            socketPath,
+            err,
+          ),
+        );
       } else {
-        reject(new SocketConnectionError(
-          `Socket connection error: ${err.message}`,
-          socketPath,
-          err
-        ));
+        reject(
+          new SocketConnectionError(
+            `Socket connection error: ${err.message}`,
+            socketPath,
+            err,
+          ),
+        );
       }
     });
 
@@ -214,9 +254,11 @@ export async function sendSocketRequest<T>(
       // If we haven't received a complete response, this is an error
       if (responseBuffer.indexOf('\n') === -1) {
         cleanup();
-        reject(new Error(
-          `Socket closed without sending complete response (method: "${method}")`
-        ));
+        reject(
+          new Error(
+            `Socket closed without sending complete response (method: "${method}")`,
+          ),
+        );
       }
     });
   });

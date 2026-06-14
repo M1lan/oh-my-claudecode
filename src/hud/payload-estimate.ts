@@ -7,13 +7,13 @@
  * screenshot/tool-output-heavy sessions, not an exact API payload byte count.
  */
 
-import { existsSync, statSync } from "fs";
+import { existsSync, statSync } from 'fs';
 
 export const ANTHROPIC_REQUEST_PAYLOAD_LIMIT_BYTES = 32_000_000;
 export const PAYLOAD_WARNING_BYTES = 22_000_000;
 export const PAYLOAD_CRITICAL_BYTES = 26_000_000;
 
-export type PayloadPressure = "normal" | "warning" | "critical";
+export type PayloadPressure = 'normal' | 'warning' | 'critical';
 
 export interface PayloadEstimate {
   /** Approximate local transcript-backed payload pressure in bytes. */
@@ -27,9 +27,9 @@ export interface PayloadEstimate {
 }
 
 function toPressure(bytes: number): PayloadPressure {
-  if (bytes >= PAYLOAD_CRITICAL_BYTES) return "critical";
-  if (bytes >= PAYLOAD_WARNING_BYTES) return "warning";
-  return "normal";
+  if (bytes >= PAYLOAD_CRITICAL_BYTES) return 'critical';
+  if (bytes >= PAYLOAD_WARNING_BYTES) return 'warning';
+  return 'normal';
 }
 
 export function formatPayloadMegabytes(bytes: number): string {

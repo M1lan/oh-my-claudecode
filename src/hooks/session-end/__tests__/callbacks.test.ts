@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   formatSessionSummary,
   interpolatePath,
   triggerStopCallbacks,
-} from "../callbacks.js";
-import type { SessionMetrics } from "../index.js";
+} from '../callbacks.js';
+import type { SessionMetrics } from '../index.js';
 
 // Mock auto-update module
-vi.mock("../../../features/auto-update.js", () => ({
+vi.mock('../../../features/auto-update.js', () => ({
   getOMCConfig: vi.fn(() => ({
     silentAutoUpdate: false,
     stopHookCallbacks: undefined,
@@ -15,8 +15,8 @@ vi.mock("../../../features/auto-update.js", () => ({
 }));
 
 // Mock fs module
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
   return {
     ...actual,
     writeFileSync: vi.fn(),
@@ -25,8 +25,8 @@ vi.mock("fs", async () => {
 });
 
 // Import mocked modules
-import { getOMCConfig } from "../../../features/auto-update.js";
-import { writeFileSync, mkdirSync } from "fs";
+import { getOMCConfig } from '../../../features/auto-update.js';
+import { writeFileSync, mkdirSync } from 'fs';
 
 const mockGetConfig = vi.mocked(getOMCConfig);
 const mockWriteFileSync = vi.mocked(writeFileSync);
@@ -36,111 +36,111 @@ function createTestMetrics(
   overrides?: Partial<SessionMetrics>,
 ): SessionMetrics {
   return {
-    session_id: "test-session-123",
-    started_at: "2026-02-04T10:00:00.000Z",
-    ended_at: "2026-02-04T11:00:00.000Z",
-    reason: "clear",
+    session_id: 'test-session-123',
+    started_at: '2026-02-04T10:00:00.000Z',
+    ended_at: '2026-02-04T11:00:00.000Z',
+    reason: 'clear',
     duration_ms: 3600000, // 1 hour
     agents_spawned: 5,
     agents_completed: 4,
-    modes_used: ["ultrawork"],
+    modes_used: ['ultrawork'],
     ...overrides,
   };
 }
 
-describe("formatSessionSummary", () => {
-  it("formats markdown summary with all fields", () => {
+describe('formatSessionSummary', () => {
+  it('formats markdown summary with all fields', () => {
     const metrics = createTestMetrics();
     const summary = formatSessionSummary(metrics);
 
-    expect(summary).toContain("test-session-123");
-    expect(summary).toContain("60m 0s");
-    expect(summary).toContain("clear");
-    expect(summary).toContain("5");
-    expect(summary).toContain("4");
+    expect(summary).toContain('test-session-123');
+    expect(summary).toContain('60m 0s');
+    expect(summary).toContain('clear');
+    expect(summary).toContain('5');
+    expect(summary).toContain('4');
   });
 
-  it("handles unknown duration", () => {
+  it('handles unknown duration', () => {
     const metrics = createTestMetrics({ duration_ms: undefined });
     const summary = formatSessionSummary(metrics);
 
-    expect(summary).toContain("unknown");
+    expect(summary).toContain('unknown');
   });
 
-  it("handles no modes used", () => {
+  it('handles no modes used', () => {
     const metrics = createTestMetrics({ modes_used: [] });
     const summary = formatSessionSummary(metrics);
 
-    expect(summary).toContain("none");
+    expect(summary).toContain('none');
   });
 
-  it("formats JSON summary", () => {
+  it('formats JSON summary', () => {
     const metrics = createTestMetrics();
-    const summary = formatSessionSummary(metrics, "json");
+    const summary = formatSessionSummary(metrics, 'json');
 
     const parsed = JSON.parse(summary);
-    expect(parsed.session_id).toBe("test-session-123");
+    expect(parsed.session_id).toBe('test-session-123');
     expect(parsed.duration_ms).toBe(3600000);
   });
 
-  it("formats short durations correctly", () => {
+  it('formats short durations correctly', () => {
     const metrics = createTestMetrics({ duration_ms: 90000 }); // 1m 30s
     const summary = formatSessionSummary(metrics);
 
-    expect(summary).toContain("1m 30s");
+    expect(summary).toContain('1m 30s');
   });
 });
 
-describe("interpolatePath", () => {
-  it("replaces {session_id} placeholder", () => {
-    const result = interpolatePath("/tmp/{session_id}.md", "abc-123");
-    expect(result).toBe("/tmp/abc-123.md");
+describe('interpolatePath', () => {
+  it('replaces {session_id} placeholder', () => {
+    const result = interpolatePath('/tmp/{session_id}.md', 'abc-123');
+    expect(result).toBe('/tmp/abc-123.md');
   });
 
-  it("replaces {date} placeholder", () => {
-    const result = interpolatePath("/tmp/{date}.md", "session-1");
+  it('replaces {date} placeholder', () => {
+    const result = interpolatePath('/tmp/{date}.md', 'session-1');
     // Date should be YYYY-MM-DD format
     expect(result).toMatch(/\/tmp\/\d{4}-\d{2}-\d{2}\.md/);
   });
 
-  it("replaces {time} placeholder", () => {
-    const result = interpolatePath("/tmp/{time}.md", "session-1");
+  it('replaces {time} placeholder', () => {
+    const result = interpolatePath('/tmp/{time}.md', 'session-1');
     // Time should be HH-MM-SS format
     expect(result).toMatch(/\/tmp\/\d{2}-\d{2}-\d{2}\.md/);
   });
 
-  it("replaces ~ with homedir", () => {
-    const result = interpolatePath("~/logs/test.md", "session-1");
-    expect(result).not.toContain("~");
-    expect(result).toContain("/logs/test.md");
+  it('replaces ~ with homedir', () => {
+    const result = interpolatePath('~/logs/test.md', 'session-1');
+    expect(result).not.toContain('~');
+    expect(result).toContain('/logs/test.md');
   });
 
-  it("replaces multiple placeholders", () => {
-    const result = interpolatePath("/tmp/{date}/{session_id}.md", "my-session");
-    expect(result).toContain("my-session");
+  it('replaces multiple placeholders', () => {
+    const result = interpolatePath('/tmp/{date}/{session_id}.md', 'my-session');
+    expect(result).toContain('my-session');
     expect(result).toMatch(/\/tmp\/\d{4}-\d{2}-\d{2}\/my-session\.md/);
   });
 
-  it("handles paths without placeholders", () => {
-    const result = interpolatePath("/tmp/fixed-path.md", "session-1");
-    expect(result).toBe("/tmp/fixed-path.md");
+  it('handles paths without placeholders', () => {
+    const result = interpolatePath('/tmp/fixed-path.md', 'session-1');
+    expect(result).toBe('/tmp/fixed-path.md');
   });
 });
 
-describe("triggerStopCallbacks", () => {
-  const testInput = { session_id: "test-session-123", cwd: "/tmp/test" };
+describe('triggerStopCallbacks', () => {
+  const testInput = { session_id: 'test-session-123', cwd: '/tmp/test' };
 
   beforeEach(() => {
     vi.resetAllMocks();
     // Reset global fetch mock
-    vi.stubGlobal("fetch", vi.fn());
+    vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("does nothing when no callbacks configured", async () => {
+  it('does nothing when no callbacks configured', async () => {
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: undefined,
@@ -152,7 +152,7 @@ describe("triggerStopCallbacks", () => {
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
-  it("does nothing when callbacks object is empty", async () => {
+  it('does nothing when callbacks object is empty', async () => {
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {},
@@ -164,13 +164,13 @@ describe("triggerStopCallbacks", () => {
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
-  it("writes file when file callback is enabled", async () => {
+  it('writes file when file callback is enabled', async () => {
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         file: {
           enabled: true,
-          path: "/tmp/test-{session_id}.md",
+          path: '/tmp/test-{session_id}.md',
         },
       },
     });
@@ -178,22 +178,22 @@ describe("triggerStopCallbacks", () => {
     const metrics = createTestMetrics();
     await triggerStopCallbacks(metrics, testInput);
 
-    expect(mockMkdirSync).toHaveBeenCalledWith("/tmp", { recursive: true });
+    expect(mockMkdirSync).toHaveBeenCalledWith('/tmp', { recursive: true });
     expect(mockWriteFileSync).toHaveBeenCalledWith(
-      "/tmp/test-test-session-123.md",
-      expect.stringContaining("test-session-123"),
-      { encoding: "utf-8", mode: 0o600 },
+      '/tmp/test-test-session-123.md',
+      expect.stringContaining('test-session-123'),
+      { encoding: 'utf-8', mode: 0o600 },
     );
   });
 
-  it("writes JSON format when configured", async () => {
+  it('writes JSON format when configured', async () => {
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         file: {
           enabled: true,
-          path: "/tmp/test.json",
-          format: "json" as const,
+          path: '/tmp/test.json',
+          format: 'json' as const,
         },
       },
     });
@@ -202,19 +202,19 @@ describe("triggerStopCallbacks", () => {
     await triggerStopCallbacks(metrics, testInput);
 
     expect(mockWriteFileSync).toHaveBeenCalledWith(
-      "/tmp/test.json",
+      '/tmp/test.json',
       expect.stringContaining('"session_id"'),
-      { encoding: "utf-8", mode: 0o600 },
+      { encoding: 'utf-8', mode: 0o600 },
     );
   });
 
-  it("skips disabled file callback", async () => {
+  it('skips disabled file callback', async () => {
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         file: {
           enabled: false,
-          path: "/tmp/test.md",
+          path: '/tmp/test.md',
         },
       },
     });
@@ -225,20 +225,20 @@ describe("triggerStopCallbacks", () => {
     expect(mockWriteFileSync).not.toHaveBeenCalled();
   });
 
-  it("sends Telegram notification when enabled", async () => {
+  it('sends Telegram notification when enabled', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve("OK"),
+      text: () => Promise.resolve('OK'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         telegram: {
           enabled: true,
-          botToken: "123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678",
-          chatId: "12345",
+          botToken: '123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678',
+          chatId: '12345',
         },
       },
     });
@@ -247,29 +247,29 @@ describe("triggerStopCallbacks", () => {
     await triggerStopCallbacks(metrics, testInput);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.telegram.org/bot123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678/sendMessage",
+      'https://api.telegram.org/bot123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678/sendMessage',
       expect.objectContaining({
-        method: "POST",
+        method: 'POST',
         body: expect.stringContaining('"chat_id":"12345"'),
       }),
     );
   });
 
-  it("prefixes Telegram messages with normalized tags from tagList", async () => {
+  it('prefixes Telegram messages with normalized tags from tagList', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve("OK"),
+      text: () => Promise.resolve('OK'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         telegram: {
           enabled: true,
-          botToken: "123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678",
-          chatId: "12345",
-          tagList: ["@alice", "bob", "  ", "", "charlie"],
+          botToken: '123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678',
+          chatId: '12345',
+          tagList: ['@alice', 'bob', '  ', '', 'charlie'],
         },
       },
     });
@@ -280,13 +280,13 @@ describe("triggerStopCallbacks", () => {
     const request = mockFetch.mock.calls[0]?.[1] as { body: string };
     const payload = JSON.parse(request.body) as { text: string };
     expect(
-      payload.text.startsWith("@alice @bob @charlie\n# Session Ended"),
+      payload.text.startsWith('@alice @bob @charlie\n# Session Ended'),
     ).toBe(true);
   });
 
-  it("skips Telegram when missing credentials", async () => {
+  it('skips Telegram when missing credentials', async () => {
     const mockFetch = vi.fn();
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
@@ -304,19 +304,19 @@ describe("triggerStopCallbacks", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("sends Discord notification when enabled", async () => {
+  it('sends Discord notification when enabled', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve("OK"),
+      text: () => Promise.resolve('OK'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         discord: {
           enabled: true,
-          webhookUrl: "https://discord.com/api/webhooks/test",
+          webhookUrl: 'https://discord.com/api/webhooks/test',
         },
       },
     });
@@ -325,35 +325,35 @@ describe("triggerStopCallbacks", () => {
     await triggerStopCallbacks(metrics, testInput);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://discord.com/api/webhooks/test",
+      'https://discord.com/api/webhooks/test',
       expect.objectContaining({
-        method: "POST",
-        body: expect.stringContaining("test-session-123"),
+        method: 'POST',
+        body: expect.stringContaining('test-session-123'),
       }),
     );
   });
 
-  it("prefixes Discord messages with normalized tags from tagList", async () => {
+  it('prefixes Discord messages with normalized tags from tagList', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve("OK"),
+      text: () => Promise.resolve('OK'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         discord: {
           enabled: true,
-          webhookUrl: "https://discord.com/api/webhooks/test",
+          webhookUrl: 'https://discord.com/api/webhooks/test',
           tagList: [
-            "@here",
-            "@everyone",
-            "role:123",
-            "456",
-            "dev-team",
-            "  ",
-            "",
+            '@here',
+            '@everyone',
+            'role:123',
+            '456',
+            'dev-team',
+            '  ',
+            '',
           ],
         },
       },
@@ -366,14 +366,14 @@ describe("triggerStopCallbacks", () => {
     const payload = JSON.parse(request.body) as { content: string };
     expect(
       payload.content.startsWith(
-        "@here @everyone <@&123> <@456> dev-team\n# Session Ended",
+        '@here @everyone <@&123> <@456> dev-team\n# Session Ended',
       ),
     ).toBe(true);
   });
 
-  it("skips Discord when missing webhook URL", async () => {
+  it('skips Discord when missing webhook URL', async () => {
     const mockFetch = vi.fn();
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
@@ -391,9 +391,9 @@ describe("triggerStopCallbacks", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("handles file write errors gracefully", async () => {
+  it('handles file write errors gracefully', async () => {
     mockMkdirSync.mockImplementation(() => {
-      throw new Error("Permission denied");
+      throw new Error('Permission denied');
     });
 
     mockGetConfig.mockReturnValue({
@@ -401,7 +401,7 @@ describe("triggerStopCallbacks", () => {
       stopHookCallbacks: {
         file: {
           enabled: true,
-          path: "/root/protected/test.md",
+          path: '/root/protected/test.md',
         },
       },
     });
@@ -413,21 +413,21 @@ describe("triggerStopCallbacks", () => {
     ).resolves.not.toThrow();
   });
 
-  it("handles Telegram API errors gracefully", async () => {
+  it('handles Telegram API errors gracefully', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 401,
-      text: () => Promise.resolve("Unauthorized"),
+      text: () => Promise.resolve('Unauthorized'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         telegram: {
           enabled: true,
-          botToken: "123456789:BADtokenABCdefGHIjklMNO012345678",
-          chatId: "12345",
+          botToken: '123456789:BADtokenABCdefGHIjklMNO012345678',
+          chatId: '12345',
         },
       },
     });
@@ -439,16 +439,16 @@ describe("triggerStopCallbacks", () => {
     ).resolves.not.toThrow();
   });
 
-  it("handles network errors gracefully", async () => {
-    const mockFetch = vi.fn().mockRejectedValue(new Error("Network error"));
-    vi.stubGlobal("fetch", mockFetch);
+  it('handles network errors gracefully', async () => {
+    const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         discord: {
           enabled: true,
-          webhookUrl: "https://discord.com/api/webhooks/test",
+          webhookUrl: 'https://discord.com/api/webhooks/test',
         },
       },
     });
@@ -460,28 +460,28 @@ describe("triggerStopCallbacks", () => {
     ).resolves.not.toThrow();
   });
 
-  it("executes multiple callbacks in parallel", async () => {
+  it('executes multiple callbacks in parallel', async () => {
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      text: () => Promise.resolve("OK"),
+      text: () => Promise.resolve('OK'),
     });
-    vi.stubGlobal("fetch", mockFetch);
+    vi.stubGlobal('fetch', mockFetch);
 
     mockGetConfig.mockReturnValue({
       silentAutoUpdate: false,
       stopHookCallbacks: {
         file: {
           enabled: true,
-          path: "/tmp/test.md",
+          path: '/tmp/test.md',
         },
         telegram: {
           enabled: true,
-          botToken: "123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678",
-          chatId: "12345",
+          botToken: '123456789:ABCdefGHIjklMNOpqrSTUvwxyz012345678',
+          chatId: '12345',
         },
         discord: {
           enabled: true,
-          webhookUrl: "https://discord.com/api/webhooks/test",
+          webhookUrl: 'https://discord.com/api/webhooks/test',
         },
       },
     });

@@ -10,7 +10,7 @@ import {
   readLastToolError,
   clearToolErrorState,
   getToolErrorRetryGuidance,
-  type ToolErrorState
+  type ToolErrorState,
 } from '../index.js';
 
 // Mock fs module
@@ -44,7 +44,7 @@ describe('readLastToolError', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(recentError)
+      JSON.stringify(recentError),
     );
 
     const result = readLastToolError(testDir);
@@ -75,7 +75,7 @@ describe('readLastToolError', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(staleError)
+      JSON.stringify(staleError),
     );
 
     const result = readLastToolError(testDir);
@@ -86,7 +86,7 @@ describe('readLastToolError', () => {
   it('returns null when file contains malformed JSON', () => {
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      'invalid json{{'
+      'invalid json{{',
     );
 
     const result = readLastToolError(testDir);
@@ -104,7 +104,7 @@ describe('readLastToolError', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(errorWithoutTimestamp)
+      JSON.stringify(errorWithoutTimestamp),
     );
 
     const result = readLastToolError(testDir);
@@ -114,9 +114,11 @@ describe('readLastToolError', () => {
 
   it('handles readFileSync throwing error', () => {
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      throw new Error('Permission denied');
-    });
+    (readFileSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error('Permission denied');
+      },
+    );
 
     const result = readLastToolError(testDir);
 
@@ -134,7 +136,9 @@ describe('clearToolErrorState', () => {
 
   it('removes state file when it exists', () => {
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      undefined,
+    );
 
     clearToolErrorState(testDir);
 
@@ -152,9 +156,11 @@ describe('clearToolErrorState', () => {
 
   it('handles permission errors gracefully', () => {
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      throw new Error('EACCES: permission denied');
-    });
+    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        throw new Error('EACCES: permission denied');
+      },
+    );
 
     expect(() => clearToolErrorState(testDir)).not.toThrow();
     expect(unlinkSync).toHaveBeenCalledWith(errorPath);
@@ -162,11 +168,15 @@ describe('clearToolErrorState', () => {
 
   it('handles unlinkSync throwing ENOENT error', () => {
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => {
-      const error = new Error('ENOENT: no such file or directory') as NodeJS.ErrnoException;
-      error.code = 'ENOENT';
-      throw error;
-    });
+    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+      () => {
+        const error = new Error(
+          'ENOENT: no such file or directory',
+        ) as NodeJS.ErrnoException;
+        error.code = 'ENOENT';
+        throw error;
+      },
+    );
 
     expect(() => clearToolErrorState(testDir)).not.toThrow();
   });
@@ -301,14 +311,16 @@ describe('Integration: Continuation message with tool error', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(recentError)
+      JSON.stringify(recentError),
     );
 
     // Simulate continuation message construction
     const toolError = readLastToolError(testDir);
     const errorGuidance = getToolErrorRetryGuidance(toolError);
     const baseMessage = '[ULTRAWORK #5/50] Mode active. Continue working.';
-    const fullMessage = errorGuidance ? errorGuidance + baseMessage : baseMessage;
+    const fullMessage = errorGuidance
+      ? errorGuidance + baseMessage
+      : baseMessage;
 
     expect(fullMessage).toContain('[TOOL ERROR - RETRY REQUIRED]');
     expect(fullMessage).toContain('Command not found: invalid-command');
@@ -324,9 +336,13 @@ describe('Integration: Continuation message with tool error', () => {
     const toolError = readLastToolError(testDir);
     const errorGuidance = getToolErrorRetryGuidance(toolError);
     const baseMessage = '[ULTRAWORK #5/50] Mode active. Continue working.';
-    const fullMessage = errorGuidance ? errorGuidance + baseMessage : baseMessage;
+    const fullMessage = errorGuidance
+      ? errorGuidance + baseMessage
+      : baseMessage;
 
-    expect(fullMessage).toBe('[ULTRAWORK #5/50] Mode active. Continue working.');
+    expect(fullMessage).toBe(
+      '[ULTRAWORK #5/50] Mode active. Continue working.',
+    );
     expect(fullMessage).not.toContain('[TOOL ERROR');
   });
 
@@ -342,9 +358,11 @@ describe('Integration: Continuation message with tool error', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(recentError)
+      JSON.stringify(recentError),
     );
-    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (unlinkSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
+      undefined,
+    );
 
     // Read error and generate message
     const toolError = readLastToolError(testDir);
@@ -417,7 +435,7 @@ describe('Edge cases and error handling', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(toolError)
+      JSON.stringify(toolError),
     );
 
     const result = readLastToolError('/test');
@@ -437,7 +455,7 @@ describe('Edge cases and error handling', () => {
 
     (existsSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as unknown as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify(toolError)
+      JSON.stringify(toolError),
     );
 
     const result = readLastToolError('/test');

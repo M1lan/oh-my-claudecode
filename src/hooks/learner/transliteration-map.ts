@@ -18,13 +18,13 @@
 /** English trigger -> Korean transliterations (loanwords only, no native Korean translations) */
 const KOREAN_MAP: Record<string, string[]> = {
   // === deep-dive skill ===
-  "deep dive": ["딥다이브", "딥 다이브"],
-  "deep-dive": ["딥다이브"],
-  "trace and interview": ["트레이스 앤 인터뷰"],
+  'deep dive': ['딥다이브', '딥 다이브'],
+  'deep-dive': ['딥다이브'],
+  'trace and interview': ['트레이스 앤 인터뷰'],
 
   // === deep-pipeline skill ===
-  "deep-pipeline": ["딥파이프라인", "딥 파이프라인"],
-  "deep-pipe": ["딥파이프"],
+  'deep-pipeline': ['딥파이프라인', '딥 파이프라인'],
+  'deep-pipe': ['딥파이프'],
 };
 
 /**

@@ -5,8 +5,8 @@
  * Provides a single source of truth for verification requirements and execution.
  */
 
-import { exec } from "child_process";
-import { promisify } from "util";
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import type {
   VerificationProtocol,
   VerificationCheck,
@@ -17,7 +17,7 @@ import type {
   ValidationResult,
   VerificationOptions,
   ReportOptions,
-} from "./types.js";
+} from './types.js';
 
 const execAsync = promisify(exec);
 
@@ -26,61 +26,61 @@ const execAsync = promisify(exec);
  */
 export const STANDARD_CHECKS = {
   BUILD: {
-    id: "build",
-    name: "Build Success",
-    description: "Code compiles without errors",
-    evidenceType: "build_success" as VerificationEvidenceType,
+    id: 'build',
+    name: 'Build Success',
+    description: 'Code compiles without errors',
+    evidenceType: 'build_success' as VerificationEvidenceType,
     required: true,
     command: undefined,
     completed: false,
   },
   TEST: {
-    id: "test",
-    name: "Tests Pass",
-    description: "All tests pass without errors",
-    evidenceType: "test_pass" as VerificationEvidenceType,
+    id: 'test',
+    name: 'Tests Pass',
+    description: 'All tests pass without errors',
+    evidenceType: 'test_pass' as VerificationEvidenceType,
     required: true,
     command: undefined,
     completed: false,
   },
   LINT: {
-    id: "lint",
-    name: "Lint Clean",
-    description: "No linting errors",
-    evidenceType: "lint_clean" as VerificationEvidenceType,
+    id: 'lint',
+    name: 'Lint Clean',
+    description: 'No linting errors',
+    evidenceType: 'lint_clean' as VerificationEvidenceType,
     required: true,
     command: undefined,
     completed: false,
   },
   FUNCTIONALITY: {
-    id: "functionality",
-    name: "Functionality Verified",
-    description: "All requested features work as described",
-    evidenceType: "functionality_verified" as VerificationEvidenceType,
+    id: 'functionality',
+    name: 'Functionality Verified',
+    description: 'All requested features work as described',
+    evidenceType: 'functionality_verified' as VerificationEvidenceType,
     required: true,
     completed: false,
   },
   ARCHITECT: {
-    id: "architect",
-    name: "Architect Approval",
-    description: "Architect has reviewed and approved the implementation",
-    evidenceType: "architect_approval" as VerificationEvidenceType,
+    id: 'architect',
+    name: 'Architect Approval',
+    description: 'Architect has reviewed and approved the implementation',
+    evidenceType: 'architect_approval' as VerificationEvidenceType,
     required: true,
     completed: false,
   },
   TODO: {
-    id: "todo",
-    name: "TODO Complete",
-    description: "Zero pending or in_progress tasks",
-    evidenceType: "todo_complete" as VerificationEvidenceType,
+    id: 'todo',
+    name: 'TODO Complete',
+    description: 'Zero pending or in_progress tasks',
+    evidenceType: 'todo_complete' as VerificationEvidenceType,
     required: true,
     completed: false,
   },
   ERROR_FREE: {
-    id: "error_free",
-    name: "Error Free",
-    description: "Zero unaddressed errors",
-    evidenceType: "error_free" as VerificationEvidenceType,
+    id: 'error_free',
+    name: 'Error Free',
+    description: 'Zero unaddressed errors',
+    evidenceType: 'error_free' as VerificationEvidenceType,
     required: true,
     completed: false,
   },
@@ -113,7 +113,7 @@ export function createChecklist(
     protocol,
     startedAt: new Date(),
     checks: protocol.checks.map((check) => ({ ...check })),
-    status: "pending",
+    status: 'pending',
   };
 }
 
@@ -163,7 +163,7 @@ async function runSingleCheck(
     timestamp: new Date(),
     metadata: {
       requiresManualVerification: true,
-      status: "pending_manual_review",
+      status: 'pending_manual_review',
     },
   };
 }
@@ -177,7 +177,7 @@ export async function runVerification(
 ): Promise<VerificationChecklist> {
   const { parallel = true, failFast = false, skipOptional = false } = options;
 
-  checklist.status = "in_progress";
+  checklist.status = 'in_progress';
 
   // Filter checks based on options
   const checksToRun = skipOptional
@@ -193,14 +193,14 @@ export async function runVerification(
     // Update checklist with results
     checksToRun.forEach((check, idx) => {
       const result = results[idx];
-      if (result.status === "fulfilled") {
+      if (result.status === 'fulfilled') {
         check.evidence = result.value;
         check.completed = true;
       } else {
         check.evidence = {
           type: check.evidenceType,
           passed: false,
-          error: result.reason?.message || "Check failed",
+          error: result.reason?.message || 'Check failed',
           timestamp: new Date(),
         };
         check.completed = true;
@@ -238,8 +238,8 @@ export async function runVerification(
   checklist.summary = generateSummary(checklist);
   checklist.completedAt = new Date();
   checklist.status = checklist.summary.allRequiredPassed
-    ? "complete"
-    : "failed";
+    ? 'complete'
+    : 'failed';
 
   return checklist;
 }
@@ -257,7 +257,7 @@ export function checkEvidence(
   // Basic validation
   if (!evidence) {
     issues.push(`No evidence provided for check: ${check.name}`);
-    recommendations.push("Run the verification check to collect evidence");
+    recommendations.push('Run the verification check to collect evidence');
     return {
       valid: false,
       message: `Missing evidence for ${check.name}`,
@@ -282,14 +282,14 @@ export function checkEvidence(
     if (check.command) {
       recommendations.push(`Review command output: ${check.command}`);
     }
-    recommendations.push("Fix the issue and re-run verification");
+    recommendations.push('Fix the issue and re-run verification');
   }
 
   // Check for stale evidence (older than 5 minutes)
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
   if (evidence.timestamp < fiveMinutesAgo) {
-    issues.push("Evidence is stale (older than 5 minutes)");
-    recommendations.push("Re-run verification to get fresh evidence");
+    issues.push('Evidence is stale (older than 5 minutes)');
+    recommendations.push('Re-run verification to get fresh evidence');
   }
 
   return {
@@ -323,15 +323,15 @@ function generateSummary(
     .filter((c) => c.completed && !c.evidence?.passed)
     .map((c) => c.id);
 
-  let verdict: "approved" | "rejected" | "incomplete";
+  let verdict: 'approved' | 'rejected' | 'incomplete';
   if (skipped > 0) {
-    verdict = "incomplete";
+    verdict = 'incomplete';
   } else if (checklist.protocol.strictMode && failed > 0) {
-    verdict = "rejected";
+    verdict = 'rejected';
   } else if (allRequiredPassed) {
-    verdict = "approved";
+    verdict = 'approved';
   } else {
-    verdict = "rejected";
+    verdict = 'rejected';
   }
 
   return {
@@ -355,25 +355,25 @@ export function formatReport(
   const {
     includeEvidence = true,
     includeOutput = false,
-    format = "markdown",
+    format = 'markdown',
   } = options;
 
-  if (format === "json") {
+  if (format === 'json') {
     return JSON.stringify(checklist, null, 2);
   }
 
   const lines: string[] = [];
 
   // Header
-  if (format === "markdown") {
+  if (format === 'markdown') {
     lines.push(`# Verification Report: ${checklist.protocol.name}`);
-    lines.push("");
+    lines.push('');
     lines.push(`**Status:** ${checklist.status}`);
     lines.push(`**Started:** ${checklist.startedAt.toISOString()}`);
     if (checklist.completedAt) {
       lines.push(`**Completed:** ${checklist.completedAt.toISOString()}`);
     }
-    lines.push("");
+    lines.push('');
   } else {
     lines.push(`Verification Report: ${checklist.protocol.name}`);
     lines.push(`Status: ${checklist.status}`);
@@ -381,57 +381,57 @@ export function formatReport(
     if (checklist.completedAt) {
       lines.push(`Completed: ${checklist.completedAt.toISOString()}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   // Summary
   if (checklist.summary) {
     const { summary } = checklist;
-    if (format === "markdown") {
-      lines.push("## Summary");
-      lines.push("");
+    if (format === 'markdown') {
+      lines.push('## Summary');
+      lines.push('');
       lines.push(`- **Total Checks:** ${summary.total}`);
       lines.push(`- **Passed:** ${summary.passed}`);
       lines.push(`- **Failed:** ${summary.failed}`);
       lines.push(`- **Skipped:** ${summary.skipped}`);
       lines.push(`- **Verdict:** ${summary.verdict.toUpperCase()}`);
-      lines.push("");
+      lines.push('');
     } else {
-      lines.push("Summary:");
+      lines.push('Summary:');
       lines.push(`  Total Checks: ${summary.total}`);
       lines.push(`  Passed: ${summary.passed}`);
       lines.push(`  Failed: ${summary.failed}`);
       lines.push(`  Skipped: ${summary.skipped}`);
       lines.push(`  Verdict: ${summary.verdict.toUpperCase()}`);
-      lines.push("");
+      lines.push('');
     }
   }
 
   // Checks
-  if (format === "markdown") {
-    lines.push("## Checks");
-    lines.push("");
+  if (format === 'markdown') {
+    lines.push('## Checks');
+    lines.push('');
   } else {
-    lines.push("Checks:");
+    lines.push('Checks:');
   }
 
   for (const check of checklist.checks) {
-    const status = check.evidence?.passed ? "✓" : check.completed ? "✗" : "○";
-    const required = check.required ? "(required)" : "(optional)";
+    const status = check.evidence?.passed ? '✓' : check.completed ? '✗' : '○';
+    const required = check.required ? '(required)' : '(optional)';
 
-    if (format === "markdown") {
+    if (format === 'markdown') {
       lines.push(`### ${status} ${check.name} ${required}`);
-      lines.push("");
+      lines.push('');
       lines.push(check.description);
-      lines.push("");
+      lines.push('');
     } else {
       lines.push(`  ${status} ${check.name} ${required}`);
       lines.push(`     ${check.description}`);
     }
 
     if (includeEvidence && check.evidence) {
-      if (format === "markdown") {
-        lines.push("**Evidence:**");
+      if (format === 'markdown') {
+        lines.push('**Evidence:**');
         lines.push(`- Passed: ${check.evidence.passed}`);
         lines.push(`- Timestamp: ${check.evidence.timestamp.toISOString()}`);
         if (check.evidence.command) {
@@ -442,7 +442,7 @@ export function formatReport(
         }
       } else {
         lines.push(
-          `     Evidence: ${check.evidence.passed ? "PASSED" : "FAILED"}`,
+          `     Evidence: ${check.evidence.passed ? 'PASSED' : 'FAILED'}`,
         );
         if (check.evidence.error) {
           lines.push(`     Error: ${check.evidence.error}`);
@@ -450,12 +450,12 @@ export function formatReport(
       }
 
       if (includeOutput && check.evidence.output) {
-        if (format === "markdown") {
-          lines.push("");
-          lines.push("**Output:**");
-          lines.push("```");
+        if (format === 'markdown') {
+          lines.push('');
+          lines.push('**Output:**');
+          lines.push('```');
           lines.push(check.evidence.output.trim());
-          lines.push("```");
+          lines.push('```');
         } else {
           lines.push(
             `     Output: ${check.evidence.output.substring(0, 100)}...`,
@@ -463,11 +463,11 @@ export function formatReport(
         }
       }
 
-      lines.push("");
+      lines.push('');
     }
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 /**
@@ -480,12 +480,12 @@ export async function validateChecklist(
   const recommendations: string[] = [];
 
   // Check if verification is complete
-  if (checklist.status !== "complete" && checklist.status !== "failed") {
-    issues.push("Verification is not complete");
-    recommendations.push("Run verification to completion before validating");
+  if (checklist.status !== 'complete' && checklist.status !== 'failed') {
+    issues.push('Verification is not complete');
+    recommendations.push('Run verification to completion before validating');
     return {
       valid: false,
-      message: "Incomplete verification",
+      message: 'Incomplete verification',
       issues,
       recommendations,
     };
@@ -525,8 +525,8 @@ export async function validateChecklist(
     valid: issues.length === 0,
     message:
       issues.length === 0
-        ? "All verifications passed"
-        : "Some verifications failed",
+        ? 'All verifications passed'
+        : 'Some verifications failed',
     issues,
     recommendations,
   };
@@ -543,4 +543,4 @@ export type {
   ValidationResult,
   VerificationOptions,
   ReportOptions,
-} from "./types.js";
+} from './types.js';

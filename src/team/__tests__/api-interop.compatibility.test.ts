@@ -1,39 +1,39 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, mkdir, rm, writeFile, readFile } from "fs/promises";
-import { existsSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
-import { executeTeamApiOperation } from "../api-interop.js";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtemp, mkdir, rm, writeFile, readFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { executeTeamApiOperation } from '../api-interop.js';
 
-describe("team api compatibility (task + mailbox legacy formats)", () => {
+describe('team api compatibility (task + mailbox legacy formats)', () => {
   let cwd: string;
-  const teamName = "compat-team";
+  const teamName = 'compat-team';
 
   beforeEach(async () => {
-    cwd = await mkdtemp(join(tmpdir(), "omc-team-api-compat-"));
-    const base = join(cwd, ".omc", "state", "team", teamName);
-    await mkdir(join(base, "tasks"), { recursive: true });
-    await mkdir(join(base, "mailbox"), { recursive: true });
-    await mkdir(join(base, "events"), { recursive: true });
+    cwd = await mkdtemp(join(tmpdir(), 'omc-team-api-compat-'));
+    const base = join(cwd, '.omc', 'state', 'team', teamName);
+    await mkdir(join(base, 'tasks'), { recursive: true });
+    await mkdir(join(base, 'mailbox'), { recursive: true });
+    await mkdir(join(base, 'events'), { recursive: true });
     await writeFile(
-      join(base, "config.json"),
+      join(base, 'config.json'),
       JSON.stringify(
         {
           name: teamName,
-          task: "compat",
-          agent_type: "executor",
+          task: 'compat',
+          agent_type: 'executor',
           worker_count: 1,
           max_workers: 20,
           workers: [
             {
-              name: "worker-1",
+              name: 'worker-1',
               index: 1,
-              role: "executor",
+              role: 'executor',
               assigned_tasks: [],
             },
           ],
           created_at: new Date().toISOString(),
-          tmux_session: "test:0",
+          tmux_session: 'test:0',
           next_task_id: 2,
         },
         null,
@@ -46,25 +46,25 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     await rm(cwd, { recursive: true, force: true });
   });
 
-  it("reads legacy tasks/1.json and writes canonical task-1.json on claim", async () => {
+  it('reads legacy tasks/1.json and writes canonical task-1.json on claim', async () => {
     const legacyTaskPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "tasks",
-      "1.json",
+      'tasks',
+      '1.json',
     );
     await writeFile(
       legacyTaskPath,
       JSON.stringify(
         {
-          id: "1",
-          subject: "Compat task",
-          description: "legacy filename format",
-          status: "pending",
-          owner: "worker-1",
+          id: '1',
+          subject: 'Compat task',
+          description: 'legacy filename format',
+          status: 'pending',
+          owner: 'worker-1',
           created_at: new Date().toISOString(),
           version: 1,
         },
@@ -74,24 +74,24 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     );
 
     const readResult = await executeTeamApiOperation(
-      "read-task",
+      'read-task',
       {
         team_name: teamName,
-        task_id: "1",
+        task_id: '1',
       },
       cwd,
     );
     expect(readResult.ok).toBe(true);
     if (!readResult.ok) return;
     const readData = readResult.data as { task?: { id?: string } };
-    expect(readData.task?.id).toBe("1");
+    expect(readData.task?.id).toBe('1');
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -99,43 +99,43 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
 
     const canonicalPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "tasks",
-      "task-1.json",
+      'tasks',
+      'task-1.json',
     );
     expect(existsSync(canonicalPath)).toBe(true);
   });
 
-  it("reads legacy mailbox JSONL and migrates to canonical JSON on mark-notified", async () => {
+  it('reads legacy mailbox JSONL and migrates to canonical JSON on mark-notified', async () => {
     const legacyMailboxPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "mailbox",
-      "worker-1.jsonl",
+      'mailbox',
+      'worker-1.jsonl',
     );
     await writeFile(
       legacyMailboxPath,
       `${JSON.stringify({
-        id: "msg-1",
-        from: "leader-fixed",
-        to: "worker-1",
-        body: "hello",
+        id: 'msg-1',
+        from: 'leader-fixed',
+        to: 'worker-1',
+        body: 'hello',
         createdAt: new Date().toISOString(),
       })}\n`,
-      "utf-8",
+      'utf-8',
     );
 
     const listResult = await executeTeamApiOperation(
-      "mailbox-list",
+      'mailbox-list',
       {
         team_name: teamName,
-        worker: "worker-1",
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -146,14 +146,14 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
       messages?: Array<{ message_id?: string }>;
     };
     expect(listData.count).toBe(1);
-    expect(listData.messages?.[0]?.message_id).toBe("msg-1");
+    expect(listData.messages?.[0]?.message_id).toBe('msg-1');
 
     const markResult = await executeTeamApiOperation(
-      "mailbox-mark-notified",
+      'mailbox-mark-notified',
       {
         team_name: teamName,
-        worker: "worker-1",
-        message_id: "msg-1",
+        worker: 'worker-1',
+        message_id: 'msg-1',
       },
       cwd,
     );
@@ -161,33 +161,33 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
 
     const canonicalMailboxPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "mailbox",
-      "worker-1.json",
+      'mailbox',
+      'worker-1.json',
     );
     expect(existsSync(canonicalMailboxPath)).toBe(true);
-    const canonicalRaw = await readFile(canonicalMailboxPath, "utf-8");
+    const canonicalRaw = await readFile(canonicalMailboxPath, 'utf-8');
     const canonical = JSON.parse(canonicalRaw) as {
       messages: Array<{ message_id: string; notified_at?: string }>;
     };
-    expect(canonical.messages[0]?.message_id).toBe("msg-1");
-    expect(typeof canonical.messages[0]?.notified_at).toBe("string");
+    expect(canonical.messages[0]?.message_id).toBe('msg-1');
+    expect(typeof canonical.messages[0]?.notified_at).toBe('string');
   });
 
-  it("threads delegation plans through the real team api create-task flow and enforces completion evidence", async () => {
+  it('threads delegation plans through the real team api create-task flow and enforces completion evidence', async () => {
     const created = await executeTeamApiOperation(
-      "create-task",
+      'create-task',
       {
         team_name: teamName,
-        subject: "Investigate flaky runtime behavior",
+        subject: 'Investigate flaky runtime behavior',
         description:
-          "Investigate flaky runtime behavior across the team runtime",
-        owner: "worker-1",
+          'Investigate flaky runtime behavior across the team runtime',
+        owner: 'worker-1',
         delegation: {
-          mode: "auto",
+          mode: 'auto',
           required_parallel_probe: true,
           skip_allowed_reason_required: true,
         },
@@ -203,18 +203,18 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
         delegation?: { mode?: string; required_parallel_probe?: boolean };
       };
     };
-    expect(createdData.task?.id).toBe("2");
+    expect(createdData.task?.id).toBe('2');
     expect(createdData.task?.delegation).toMatchObject({
-      mode: "auto",
+      mode: 'auto',
       required_parallel_probe: true,
     });
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "2",
-        worker: "worker-1",
+        task_id: '2',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -224,14 +224,14 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     expect(claimData.ok).toBe(true);
 
     const missing = await executeTeamApiOperation(
-      "transition-task-status",
+      'transition-task-status',
       {
         team_name: teamName,
-        task_id: "2",
-        from: "in_progress",
-        to: "completed",
+        task_id: '2',
+        from: 'in_progress',
+        to: 'completed',
         claim_token: claimData.claimToken,
-        result: "Summary: done\nVerification: targeted test",
+        result: 'Summary: done\nVerification: targeted test',
       },
       cwd,
     );
@@ -240,32 +240,32 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     if (!missing.ok) return;
     const missingData = missing.data as { ok?: boolean; error?: string };
     expect(missingData.ok).toBe(false);
-    expect(missingData.error).toBe("missing_delegation_compliance_evidence");
+    expect(missingData.error).toBe('missing_delegation_compliance_evidence');
   });
 
-  it("rejects broad delegated task completion without spawn evidence or skip reason", async () => {
+  it('rejects broad delegated task completion without spawn evidence or skip reason', async () => {
     const taskPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "tasks",
-      "task-1.json",
+      'tasks',
+      'task-1.json',
     );
     await writeFile(
       taskPath,
       JSON.stringify(
         {
-          id: "1",
-          subject: "Investigate flaky runtime behavior",
-          description: "Search runtime and debug flaky assignment behavior",
-          status: "pending",
-          owner: "worker-1",
+          id: '1',
+          subject: 'Investigate flaky runtime behavior',
+          description: 'Search runtime and debug flaky assignment behavior',
+          status: 'pending',
+          owner: 'worker-1',
           created_at: new Date().toISOString(),
           version: 1,
           delegation: {
-            mode: "auto",
+            mode: 'auto',
             required_parallel_probe: true,
             skip_allowed_reason_required: true,
           },
@@ -276,11 +276,11 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     );
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -290,14 +290,14 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     expect(claimData.ok).toBe(true);
 
     const missing = await executeTeamApiOperation(
-      "transition-task-status",
+      'transition-task-status',
       {
         team_name: teamName,
-        task_id: "1",
-        from: "in_progress",
-        to: "completed",
+        task_id: '1',
+        from: 'in_progress',
+        to: 'completed',
         claim_token: claimData.claimToken,
-        result: "Verification:\nPASS - focused regression",
+        result: 'Verification:\nPASS - focused regression',
       },
       cwd,
     );
@@ -306,45 +306,45 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     if (!missing.ok) return;
     const missingData = missing.data as { ok?: boolean; error?: string };
     expect(missingData.ok).toBe(false);
-    expect(missingData.error).toBe("missing_delegation_compliance_evidence");
+    expect(missingData.error).toBe('missing_delegation_compliance_evidence');
 
     const reread = await executeTeamApiOperation(
-      "read-task",
+      'read-task',
       {
         team_name: teamName,
-        task_id: "1",
+        task_id: '1',
       },
       cwd,
     );
     expect(reread.ok).toBe(true);
     if (!reread.ok) return;
     const rereadData = reread.data as { task?: { status?: string } };
-    expect(rereadData.task?.status).toBe("in_progress");
+    expect(rereadData.task?.status).toBe('in_progress');
   });
 
-  it("records delegation compliance when broad delegated completion includes spawn evidence", async () => {
+  it('records delegation compliance when broad delegated completion includes spawn evidence', async () => {
     const taskPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "tasks",
-      "task-1.json",
+      'tasks',
+      'task-1.json',
     );
     await writeFile(
       taskPath,
       JSON.stringify(
         {
-          id: "1",
-          subject: "Investigate flaky runtime behavior",
-          description: "Search runtime and debug flaky assignment behavior",
-          status: "pending",
-          owner: "worker-1",
+          id: '1',
+          subject: 'Investigate flaky runtime behavior',
+          description: 'Search runtime and debug flaky assignment behavior',
+          status: 'pending',
+          owner: 'worker-1',
           created_at: new Date().toISOString(),
           version: 1,
           delegation: {
-            mode: "auto",
+            mode: 'auto',
             required_parallel_probe: true,
             skip_allowed_reason_required: true,
           },
@@ -355,11 +355,11 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     );
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -369,18 +369,18 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     expect(claimData.ok).toBe(true);
 
     const completed = await executeTeamApiOperation(
-      "transition-task-status",
+      'transition-task-status',
       {
         team_name: teamName,
-        task_id: "1",
-        from: "in_progress",
-        to: "completed",
+        task_id: '1',
+        from: 'in_progress',
+        to: 'completed',
         claim_token: claimData.claimToken,
         result: [
-          "Verification:",
-          "PASS - focused regression",
-          "Subagent spawn evidence: spawned 2 native subagents for runtime map and test probe",
-        ].join("\n"),
+          'Verification:',
+          'PASS - focused regression',
+          'Subagent spawn evidence: spawned 2 native subagents for runtime map and test probe',
+        ].join('\n'),
       },
       cwd,
     );
@@ -399,39 +399,39 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
       };
     };
     expect(completedData.ok).toBe(true);
-    expect(completedData.task?.result).toContain("Subagent spawn evidence:");
-    expect(completedData.task?.delegation_compliance?.status).toBe("spawned");
+    expect(completedData.task?.result).toContain('Subagent spawn evidence:');
+    expect(completedData.task?.delegation_compliance?.status).toBe('spawned');
     expect(completedData.task?.delegation_compliance?.source).toBe(
-      "terminal_result",
+      'terminal_result',
     );
     expect(completedData.task?.delegation_compliance?.detail).toContain(
-      "spawned 2 native subagents",
+      'spawned 2 native subagents',
     );
   });
 
-  it("accepts documented skip reason when broad delegated task allows skipping", async () => {
+  it('accepts documented skip reason when broad delegated task allows skipping', async () => {
     const taskPath = join(
       cwd,
-      ".omc",
-      "state",
-      "team",
+      '.omc',
+      'state',
+      'team',
       teamName,
-      "tasks",
-      "task-1.json",
+      'tasks',
+      'task-1.json',
     );
     await writeFile(
       taskPath,
       JSON.stringify(
         {
-          id: "1",
-          subject: "Review focused regression",
-          description: "Audit one already-isolated failing test",
-          status: "pending",
-          owner: "worker-1",
+          id: '1',
+          subject: 'Review focused regression',
+          description: 'Audit one already-isolated failing test',
+          status: 'pending',
+          owner: 'worker-1',
           created_at: new Date().toISOString(),
           version: 1,
           delegation: {
-            mode: "auto",
+            mode: 'auto',
             required_parallel_probe: true,
             skip_allowed_reason_required: true,
           },
@@ -442,11 +442,11 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     );
 
     const claimResult = await executeTeamApiOperation(
-      "claim-task",
+      'claim-task',
       {
         team_name: teamName,
-        task_id: "1",
-        worker: "worker-1",
+        task_id: '1',
+        worker: 'worker-1',
       },
       cwd,
     );
@@ -456,18 +456,18 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
     expect(claimData.ok).toBe(true);
 
     const completed = await executeTeamApiOperation(
-      "transition-task-status",
+      'transition-task-status',
       {
         team_name: teamName,
-        task_id: "1",
-        from: "in_progress",
-        to: "completed",
+        task_id: '1',
+        from: 'in_progress',
+        to: 'completed',
         claim_token: claimData.claimToken,
         result: [
-          "Verification:",
-          "PASS - focused regression",
-          "Subagent skip reason: task scope collapsed to one isolated assertion; spawning would duplicate serial verification",
-        ].join("\n"),
+          'Verification:',
+          'PASS - focused regression',
+          'Subagent skip reason: task scope collapsed to one isolated assertion; spawning would duplicate serial verification',
+        ].join('\n'),
       },
       cwd,
     );
@@ -479,6 +479,6 @@ describe("team api compatibility (task + mailbox legacy formats)", () => {
       task?: { delegation_compliance?: { status?: string } };
     };
     expect(completedData.ok).toBe(true);
-    expect(completedData.task?.delegation_compliance?.status).toBe("skipped");
+    expect(completedData.task?.delegation_compliance?.status).toBe('skipped');
   });
 });

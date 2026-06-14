@@ -3,8 +3,8 @@
  * Auto-detects languages, frameworks, build tools, and conventions
  */
 
-import fs from "fs/promises";
-import path from "path";
+import fs from 'fs/promises';
+import path from 'path';
 import {
   ProjectMemory,
   TechStack,
@@ -14,14 +14,14 @@ import {
   LanguageDetection,
   FrameworkDetection,
   GitBranchPattern,
-} from "./types.js";
+} from './types.js';
 import {
   SCHEMA_VERSION,
   CONFIG_PATTERNS,
   FRAMEWORK_PATTERNS,
   MAIN_DIRECTORIES,
-} from "./constants.js";
-import { mapDirectoryStructure } from "./directory-mapper.js";
+} from './constants.js';
+import { mapDirectoryStructure } from './directory-mapper.js';
 
 /**
  * Main entry point: detect all project environment details
@@ -84,7 +84,7 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
           languages.push({
             name: pattern.indicates.language!,
             version,
-            confidence: "high",
+            confidence: 'high',
             markers: [pattern.file],
           });
         } else {
@@ -101,14 +101,14 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
 
   // Prioritize lockfile-based package managers over generic ones
   const lockfileManagers = [
-    "pnpm",
-    "yarn",
-    "cargo",
-    "poetry",
-    "pipenv",
-    "bundler",
-    "composer",
-    "go",
+    'pnpm',
+    'yarn',
+    'cargo',
+    'poetry',
+    'pipenv',
+    'bundler',
+    'composer',
+    'go',
   ];
   const lockfileMatch = packageManagerHints.find((pm) =>
     lockfileManagers.includes(pm),
@@ -116,7 +116,7 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
   packageManager = lockfileMatch || packageManagerHints[0] || null;
 
   // Detect frameworks from package.json
-  const packageJsonPath = path.join(projectRoot, "package.json");
+  const packageJsonPath = path.join(projectRoot, 'package.json');
   if (await fileExists(packageJsonPath)) {
     const pkgFrameworks =
       await detectFrameworksFromPackageJson(packageJsonPath);
@@ -127,14 +127,14 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
   }
 
   // Detect frameworks from Cargo.toml
-  const cargoTomlPath = path.join(projectRoot, "Cargo.toml");
+  const cargoTomlPath = path.join(projectRoot, 'Cargo.toml');
   if (await fileExists(cargoTomlPath)) {
     const cargoFrameworks = await detectFrameworksFromCargoToml(cargoTomlPath);
     frameworks.push(...cargoFrameworks);
   }
 
   // Detect frameworks from pyproject.toml
-  const pyprojectPath = path.join(projectRoot, "pyproject.toml");
+  const pyprojectPath = path.join(projectRoot, 'pyproject.toml');
   if (await fileExists(pyprojectPath)) {
     const pyFrameworks = await detectFrameworksFromPyproject(pyprojectPath);
     frameworks.push(...pyFrameworks);
@@ -159,21 +159,21 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
   const scripts: Record<string, string> = {};
 
   // Check package.json scripts
-  const packageJsonPath = path.join(projectRoot, "package.json");
+  const packageJsonPath = path.join(projectRoot, 'package.json');
   if (await fileExists(packageJsonPath)) {
     try {
-      const content = await fs.readFile(packageJsonPath, "utf-8");
+      const content = await fs.readFile(packageJsonPath, 'utf-8');
       const packageJson = JSON.parse(content);
       const pkgScripts = packageJson.scripts || {};
 
       // Determine package manager
-      let pm = "pnpm";
-      if (await fileExists(path.join(projectRoot, "pnpm-lock.yaml"))) {
-        pm = "pnpm";
-      } else if (await fileExists(path.join(projectRoot, "yarn.lock"))) {
-        pm = "yarn";
-      } else if (await fileExists(path.join(projectRoot, "bun.lockb"))) {
-        pm = "bun";
+      let pm = 'pnpm';
+      if (await fileExists(path.join(projectRoot, 'pnpm-lock.yaml'))) {
+        pm = 'pnpm';
+      } else if (await fileExists(path.join(projectRoot, 'yarn.lock'))) {
+        pm = 'yarn';
+      } else if (await fileExists(path.join(projectRoot, 'bun.lockb'))) {
+        pm = 'bun';
       }
 
       // Store all scripts
@@ -181,16 +181,16 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
 
       // Extract common commands
       if (pkgScripts.build) {
-        buildCommand = `${pm} ${pm === "npm" ? "run " : ""}build`;
+        buildCommand = `${pm} ${pm === 'npm' ? 'run ' : ''}build`;
       }
       if (pkgScripts.test) {
         testCommand = `${pm} test`;
       }
       if (pkgScripts.lint) {
-        lintCommand = `${pm} ${pm === "npm" ? "run " : ""}lint`;
+        lintCommand = `${pm} ${pm === 'npm' ? 'run ' : ''}lint`;
       }
       if (pkgScripts.dev || pkgScripts.start) {
-        devCommand = `${pm} ${pm === "npm" ? "run " : ""}${pkgScripts.dev ? "dev" : "start"}`;
+        devCommand = `${pm} ${pm === 'npm' ? 'run ' : ''}${pkgScripts.dev ? 'dev' : 'start'}`;
       }
     } catch (_error) {
       // Invalid JSON, skip
@@ -198,23 +198,23 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
   }
 
   // Check Cargo.toml
-  if (await fileExists(path.join(projectRoot, "Cargo.toml"))) {
-    if (!buildCommand) buildCommand = "cargo build";
-    if (!testCommand) testCommand = "cargo test";
-    if (!lintCommand) lintCommand = "cargo clippy";
-    if (!devCommand) devCommand = "cargo run";
+  if (await fileExists(path.join(projectRoot, 'Cargo.toml'))) {
+    if (!buildCommand) buildCommand = 'cargo build';
+    if (!testCommand) testCommand = 'cargo test';
+    if (!lintCommand) lintCommand = 'cargo clippy';
+    if (!devCommand) devCommand = 'cargo run';
   }
 
   // Check Makefile
-  if (await fileExists(path.join(projectRoot, "Makefile"))) {
-    if (!buildCommand) buildCommand = "make build";
-    if (!testCommand) testCommand = "make test";
+  if (await fileExists(path.join(projectRoot, 'Makefile'))) {
+    if (!buildCommand) buildCommand = 'make build';
+    if (!testCommand) testCommand = 'make test';
   }
 
   // Check pyproject.toml
-  if (await fileExists(path.join(projectRoot, "pyproject.toml"))) {
-    if (!testCommand) testCommand = "pytest";
-    if (!lintCommand) lintCommand = "ruff check";
+  if (await fileExists(path.join(projectRoot, 'pyproject.toml'))) {
+    if (!testCommand) testCommand = 'pytest';
+    if (!lintCommand) lintCommand = 'ruff check';
   }
 
   return {
@@ -238,7 +238,7 @@ async function detectConventions(
   let fileOrganization: string | null = null;
 
   // Sample source files
-  const srcDirs = ["src", "lib", "app"];
+  const srcDirs = ['src', 'lib', 'app'];
   const sampleFiles: string[] = [];
 
   for (const dir of srcDirs) {
@@ -248,9 +248,9 @@ async function detectConventions(
         const files = await fs.readdir(dirPath);
         for (const file of files.slice(0, 5)) {
           if (
-            file.endsWith(".ts") ||
-            file.endsWith(".js") ||
-            file.endsWith(".py")
+            file.endsWith('.ts') ||
+            file.endsWith('.js') ||
+            file.endsWith('.py')
           ) {
             sampleFiles.push(path.join(dirPath, file));
           }
@@ -264,7 +264,7 @@ async function detectConventions(
   // Analyze naming patterns
   if (sampleFiles.length > 0) {
     const contents = await Promise.all(
-      sampleFiles.map((f) => fs.readFile(f, "utf-8").catch(() => "")),
+      sampleFiles.map((f) => fs.readFile(f, 'utf-8').catch(() => '')),
     );
 
     // Detect naming style (simplified heuristic)
@@ -279,11 +279,11 @@ async function detectConventions(
     ).length;
 
     if (snakeCaseCount > camelCaseCount) {
-      namingStyle = "snake_case";
+      namingStyle = 'snake_case';
     } else if (pascalCaseCount > 0) {
-      namingStyle = "camelCase/PascalCase";
+      namingStyle = 'camelCase/PascalCase';
     } else if (camelCaseCount > 0) {
-      namingStyle = "camelCase";
+      namingStyle = 'camelCase';
     }
 
     // Detect import style
@@ -295,14 +295,14 @@ async function detectConventions(
     ).length;
 
     if (esModuleCount > commonJSCount) {
-      importStyle = "ES modules";
+      importStyle = 'ES modules';
     } else if (commonJSCount > 0) {
-      importStyle = "CommonJS";
+      importStyle = 'CommonJS';
     }
   }
 
   // Detect test pattern
-  const testDirs = ["tests", "test", "__tests__", "spec"];
+  const testDirs = ['tests', 'test', '__tests__', 'spec'];
   for (const dir of testDirs) {
     const dirPath = path.join(projectRoot, dir);
     if (await fileExists(dirPath)) {
@@ -312,9 +312,9 @@ async function detectConventions(
           /\.(test|spec)\.(ts|js|py)$/.test(f),
         );
         if (testFile) {
-          if (testFile.endsWith(".test.ts")) testPattern = "*.test.ts";
-          else if (testFile.endsWith(".spec.ts")) testPattern = "*.spec.ts";
-          else if (testFile.startsWith("test_")) testPattern = "test_*.py";
+          if (testFile.endsWith('.test.ts')) testPattern = '*.test.ts';
+          else if (testFile.endsWith('.spec.ts')) testPattern = '*.spec.ts';
+          else if (testFile.startsWith('test_')) testPattern = 'test_*.py';
           break;
         }
       } catch (_error) {
@@ -325,19 +325,19 @@ async function detectConventions(
 
   // Detect file organization (feature-based vs type-based)
   const hasFeaturesDir = await fileExists(
-    path.join(projectRoot, "src", "features"),
+    path.join(projectRoot, 'src', 'features'),
   );
   const hasComponentsDir = await fileExists(
-    path.join(projectRoot, "src", "components"),
+    path.join(projectRoot, 'src', 'components'),
   );
   const hasControllersDir = await fileExists(
-    path.join(projectRoot, "src", "controllers"),
+    path.join(projectRoot, 'src', 'controllers'),
   );
 
   if (hasFeaturesDir) {
-    fileOrganization = "feature-based";
+    fileOrganization = 'feature-based';
   } else if (hasComponentsDir || hasControllersDir) {
-    fileOrganization = "type-based";
+    fileOrganization = 'type-based';
   }
 
   return {
@@ -358,10 +358,10 @@ async function detectStructure(projectRoot: string): Promise<ProjectStructure> {
   let gitBranches: GitBranchPattern | null = null;
 
   // Check for monorepo
-  const packageJsonPath = path.join(projectRoot, "package.json");
+  const packageJsonPath = path.join(projectRoot, 'package.json');
   if (await fileExists(packageJsonPath)) {
     try {
-      const content = await fs.readFile(packageJsonPath, "utf-8");
+      const content = await fs.readFile(packageJsonPath, 'utf-8');
       const packageJson = JSON.parse(content);
       if (packageJson.workspaces) {
         isMonorepo = true;
@@ -377,7 +377,7 @@ async function detectStructure(projectRoot: string): Promise<ProjectStructure> {
   }
 
   // Check pnpm-workspace.yaml
-  const pnpmWorkspacePath = path.join(projectRoot, "pnpm-workspace.yaml");
+  const pnpmWorkspacePath = path.join(projectRoot, 'pnpm-workspace.yaml');
   if (await fileExists(pnpmWorkspacePath)) {
     isMonorepo = true;
     // Could parse YAML here, but skipping for simplicity
@@ -426,21 +426,21 @@ async function extractVersion(
   _language: string,
 ): Promise<string | null> {
   try {
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(filePath, 'utf-8');
 
-    if (filePath.endsWith("package.json")) {
+    if (filePath.endsWith('package.json')) {
       const packageJson = JSON.parse(content);
       if (packageJson.engines?.node) {
         return packageJson.engines.node;
       }
     }
 
-    if (filePath.endsWith("Cargo.toml")) {
+    if (filePath.endsWith('Cargo.toml')) {
       const match = content.match(/^rust-version\s*=\s*"([^"]+)"/m);
       if (match) return match[1];
     }
 
-    if (filePath.endsWith("pyproject.toml")) {
+    if (filePath.endsWith('pyproject.toml')) {
       const match = content.match(/^python\s*=\s*"([^"]+)"/m);
       if (match) return match[1];
     }
@@ -460,7 +460,7 @@ async function detectFrameworksFromPackageJson(
   const frameworks: FrameworkDetection[] = [];
 
   try {
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(filePath, 'utf-8');
     const packageJson = JSON.parse(content);
     const deps = {
       ...packageJson.dependencies,
@@ -472,7 +472,7 @@ async function detectFrameworksFromPackageJson(
         frameworks.push({
           name,
           version:
-            typeof version === "string" ? version.replace(/[\^~]/, "") : null,
+            typeof version === 'string' ? version.replace(/[\^~]/, '') : null,
           category: FRAMEWORK_PATTERNS[name].category,
         });
       }
@@ -493,11 +493,11 @@ async function detectFrameworksFromCargoToml(
   const frameworks: FrameworkDetection[] = [];
 
   try {
-    const content = await fs.readFile(filePath, "utf-8");
-    const deps = ["axum", "actix-web", "rocket", "tokio", "async-std"];
+    const content = await fs.readFile(filePath, 'utf-8');
+    const deps = ['axum', 'actix-web', 'rocket', 'tokio', 'async-std'];
 
     for (const dep of deps) {
-      const regex = new RegExp(`^${dep}\\s*=`, "m");
+      const regex = new RegExp(`^${dep}\\s*=`, 'm');
       if (regex.test(content) && FRAMEWORK_PATTERNS[dep]) {
         frameworks.push({
           name: dep,
@@ -522,11 +522,11 @@ async function detectFrameworksFromPyproject(
   const frameworks: FrameworkDetection[] = [];
 
   try {
-    const content = await fs.readFile(filePath, "utf-8");
-    const deps = ["fastapi", "django", "flask", "pytest"];
+    const content = await fs.readFile(filePath, 'utf-8');
+    const deps = ['fastapi', 'django', 'flask', 'pytest'];
 
     for (const dep of deps) {
-      const regex = new RegExp(`["']${dep}`, "m");
+      const regex = new RegExp(`["']${dep}`, 'm');
       if (regex.test(content) && FRAMEWORK_PATTERNS[dep]) {
         frameworks.push({
           name: dep,
@@ -547,11 +547,11 @@ async function detectFrameworksFromPyproject(
  */
 async function detectRuntime(filePath: string): Promise<string | null> {
   try {
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(filePath, 'utf-8');
     const packageJson = JSON.parse(content);
 
     if (packageJson.engines?.node) {
-      const version = packageJson.engines.node.replace(/[\^~><= ]/g, "");
+      const version = packageJson.engines.node.replace(/[\^~><= ]/g, '');
       return `Node.js ${version}`;
     }
   } catch (_error) {
@@ -568,14 +568,14 @@ async function detectGitBranch(
   projectRoot: string,
 ): Promise<GitBranchPattern | null> {
   try {
-    const { execFile } = await import("child_process");
-    const { promisify } = await import("util");
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
     const execFileAsync = promisify(execFile);
 
     // Get default branch
     const { stdout } = await execFileAsync(
-      "git",
-      ["symbolic-ref", "refs/remotes/origin/HEAD"],
+      'git',
+      ['symbolic-ref', 'refs/remotes/origin/HEAD'],
       {
         cwd: projectRoot,
       },

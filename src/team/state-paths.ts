@@ -1,4 +1,4 @@
-import { isAbsolute, join } from "path";
+import { isAbsolute, join } from 'path';
 
 /**
  * Typed path builders for all team state files.
@@ -24,7 +24,7 @@ import { isAbsolute, join } from "path";
 export function normalizeTaskFileStem(taskId: string): string {
   const trimmed = String(taskId)
     .trim()
-    .replace(/\.json$/i, "");
+    .replace(/\.json$/i, '');
   if (/^task-\d+$/.test(trimmed)) return trimmed;
   if (/^\d+$/.test(trimmed)) return `task-${trimmed}`;
   return trimmed;
@@ -169,7 +169,7 @@ export function getLegacyTaskStoragePath(
   taskId?: string,
 ): string {
   if (taskId !== undefined) {
-    return join(claudeConfigDir, "tasks", teamName, `${taskId}.json`);
+    return join(claudeConfigDir, 'tasks', teamName, `${taskId}.json`);
   }
-  return join(claudeConfigDir, "tasks", teamName);
+  return join(claudeConfigDir, 'tasks', teamName);
 }

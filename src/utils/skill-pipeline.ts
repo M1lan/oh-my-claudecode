@@ -1,4 +1,4 @@
-import { parseFrontmatterList, stripOptionalQuotes } from "./frontmatter.js";
+import { parseFrontmatterList, stripOptionalQuotes } from './frontmatter.js';
 
 export interface SkillPipelineMetadata {
   steps: string[];
@@ -18,9 +18,9 @@ function normalizeSkillReference(
 
   return (
     trimmed
-      .replace(/^\/oh-my-claudecode:/i, "")
-      .replace(/^oh-my-claudecode:/i, "")
-      .replace(/^\//, "")
+      .replace(/^\/oh-my-claudecode:/i, '')
+      .replace(/^oh-my-claudecode:/i, '')
+      .replace(/^\//, '')
       .trim()
       .toLowerCase() || undefined
   );
@@ -51,18 +51,18 @@ export function parseSkillPipelineMetadata(
       .map((step) => normalizeSkillReference(step))
       .filter((step): step is string => Boolean(step)),
   );
-  const nextSkill = normalizeSkillReference(frontmatter["next-skill"]);
+  const nextSkill = normalizeSkillReference(frontmatter['next-skill']);
   const nextSkillArgs =
-    stripOptionalQuotes(frontmatter["next-skill-args"] ?? "").trim() ||
+    stripOptionalQuotes(frontmatter['next-skill-args'] ?? '').trim() ||
     undefined;
   const handoff =
-    stripOptionalQuotes(frontmatter.handoff ?? "").trim() || undefined;
-  const handoffPolicy = stripOptionalQuotes(frontmatter["handoff-policy"] ?? "")
+    stripOptionalQuotes(frontmatter.handoff ?? '').trim() || undefined;
+  const handoffPolicy = stripOptionalQuotes(frontmatter['handoff-policy'] ?? '')
     .trim()
     .toLowerCase();
   const handoffRequiresApproval =
-    handoffPolicy === "approval-required" ||
-    handoffPolicy === "requires-approval";
+    handoffPolicy === 'approval-required' ||
+    handoffPolicy === 'requires-approval';
 
   if (
     steps.length === 0 &&
@@ -88,7 +88,7 @@ export function renderSkillPipelineGuidance(
   pipeline: SkillPipelineMetadata | undefined,
 ): string {
   if (!pipeline) {
-    return "";
+    return '';
   }
 
   const currentSkill =
@@ -104,16 +104,16 @@ export function renderSkillPipelineGuidance(
         pipeline.nextSkillArgs
           ? `with arguments \`${pipeline.nextSkillArgs}\``
           : undefined,
-        "using the handoff context from this stage",
+        'using the handoff context from this stage',
       ]
         .filter(Boolean)
-        .join(" ")
+        .join(' ')
     : undefined;
 
-  const lines: string[] = ["## Skill Pipeline"];
+  const lines: string[] = ['## Skill Pipeline'];
 
   if (steps.length > 0) {
-    lines.push(`Pipeline: \`${steps.join(" → ")}\``);
+    lines.push(`Pipeline: \`${steps.join(' → ')}\``);
   }
 
   lines.push(`Current stage: \`${currentSkill}\``);
@@ -130,15 +130,15 @@ export function renderSkillPipelineGuidance(
     lines.push(`Handoff artifact: \`${pipeline.handoff}\``);
   }
 
-  lines.push("");
+  lines.push('');
 
   if (pipeline.nextSkill) {
     if (pipeline.handoffRequiresApproval) {
       lines.push(
-        "When this stage completes: stop with the handoff artifact marked `pending approval`. Do not invoke the next skill until the user gives explicit approval in the current turn or structured approval UI.",
+        'When this stage completes: stop with the handoff artifact marked `pending approval`. Do not invoke the next skill until the user gives explicit approval in the current turn or structured approval UI.',
       );
     } else {
-      lines.push("When this stage completes:");
+      lines.push('When this stage completes:');
     }
     if (pipeline.handoff) {
       lines.push(
@@ -146,11 +146,11 @@ export function renderSkillPipelineGuidance(
       );
     } else {
       lines.push(
-        "1. Write a concise handoff note before moving to the next skill.",
+        '1. Write a concise handoff note before moving to the next skill.',
       );
     }
     lines.push(
-      "2. Carry forward the concrete output, decisions made, and remaining risks or assumptions.",
+      '2. Carry forward the concrete output, decisions made, and remaining risks or assumptions.',
     );
     if (pipeline.handoffRequiresApproval) {
       lines.push(`3. After explicit approval only, invoke ${nextInvocation}.`);
@@ -160,14 +160,14 @@ export function renderSkillPipelineGuidance(
   } else {
     if (pipeline.handoffRequiresApproval) {
       lines.push(
-        "This stage is approval-gated. Stop after producing the handoff artifact and do not hand off to another skill unless the user explicitly approves that next step.",
+        'This stage is approval-gated. Stop after producing the handoff artifact and do not hand off to another skill unless the user explicitly approves that next step.',
       );
     } else {
       lines.push(
-        "This is the terminal stage in the declared skill pipeline. Do not hand off to another skill unless the user explicitly asks.",
+        'This is the terminal stage in the declared skill pipeline. Do not hand off to another skill unless the user explicitly asks.',
       );
     }
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

@@ -4,8 +4,8 @@
  * Renders heuristic-based permission pending indicator.
  */
 
-import type { PendingPermission } from "../types.js";
-import { dim, yellow } from "../colors.js";
+import type { PendingPermission } from '../types.js';
+import { dim, yellow } from '../colors.js';
 
 /**
  * Render permission pending indicator.
@@ -16,5 +16,5 @@ export function renderPermission(
   pending: PendingPermission | null,
 ): string | null {
   if (!pending) return null;
-  return `${yellow("APPROVE?")} ${dim(pending.toolName.toLowerCase())}:${pending.targetSummary}`;
+  return `${yellow('APPROVE?')} ${dim(pending.toolName.toLowerCase())}:${pending.targetSummary}`;
 }

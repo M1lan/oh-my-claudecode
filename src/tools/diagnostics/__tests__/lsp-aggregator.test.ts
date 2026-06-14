@@ -25,9 +25,14 @@ beforeEach(() => {
 
 describe('runLspAggregatedDiagnostics', () => {
   it('surfaces install hints when language server is missing', async () => {
-    mockGetServerForFile.mockReturnValue({ command: 'ty', installHint: 'Install ty from https://github.com/astral-sh/ty' });
+    mockGetServerForFile.mockReturnValue({
+      command: 'ty',
+      installHint: 'Install ty from https://github.com/astral-sh/ty',
+    });
     mockRunWithClientLease.mockRejectedValue(
-      new Error("Language server 'ty' not found.\nInstall with: Install ty from https://github.com/astral-sh/ty")
+      new Error(
+        "Language server 'ty' not found.\nInstall with: Install ty from https://github.com/astral-sh/ty",
+      ),
     );
 
     const tmp = mkdtempSync(join(tmpdir(), 'lsp-agg-test-'));
@@ -37,9 +42,13 @@ describe('runLspAggregatedDiagnostics', () => {
 
       const result = await runLspAggregatedDiagnostics(tmp, ['.py']);
 
-      expect(result.installHints).toEqual(['Install ty from https://github.com/astral-sh/ty']);
+      expect(result.installHints).toEqual([
+        'Install ty from https://github.com/astral-sh/ty',
+      ]);
       expect(result.skippedFiles.length).toBe(2);
-      expect(result.skippedFiles[0].reason).toMatch(/missing language server: ty/);
+      expect(result.skippedFiles[0].reason).toMatch(
+        /missing language server: ty/,
+      );
       expect(result.filesChecked).toBe(0);
       expect(result.success).toBe(false);
     } finally {
@@ -61,7 +70,9 @@ describe('runLspAggregatedDiagnostics', () => {
       const result = await runLspAggregatedDiagnostics(tmp, ['.py']);
 
       expect(result.skippedFiles.length).toBe(1);
-      expect(result.skippedFiles[0].reason).toBe('no language server registered for extension');
+      expect(result.skippedFiles[0].reason).toBe(
+        'no language server registered for extension',
+      );
       expect(mockRunWithClientLease).toHaveBeenCalledTimes(1);
       expect(result.installHints).toEqual([]);
     } finally {
@@ -106,6 +117,8 @@ describe('formatLspResult', () => {
     const out = formatLspResult(input);
 
     expect(out.diagnostics).toBe('Checked 5 files. No diagnostics found!');
-    expect(out.summary).toBe('LSP check passed: 0 errors, 0 warnings (5 files)');
+    expect(out.summary).toBe(
+      'LSP check passed: 0 errors, 0 warnings (5 files)',
+    );
   });
 });

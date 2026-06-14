@@ -5,7 +5,13 @@
  * Based on claude-hud reference implementation.
  */
 
-import { existsSync, readFileSync, statSync, writeFileSync, mkdirSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+  mkdirSync,
+} from 'fs';
 import { dirname, join } from 'path';
 import {
   getSessionStateDir,
@@ -26,7 +32,10 @@ const TRANSIENT_CONTEXT_PERCENT_TOLERANCE = 3;
  * Claude Code populates `CLAUDE_SESSION_ID` first; `CLAUDECODE_SESSION_ID`
  * is a legacy / compatibility alias for the same value.
  */
-const SESSION_ID_ENV_VARS = ['CLAUDE_SESSION_ID', 'CLAUDECODE_SESSION_ID'] as const;
+const SESSION_ID_ENV_VARS = [
+  'CLAUDE_SESSION_ID',
+  'CLAUDECODE_SESSION_ID',
+] as const;
 
 /**
  * Normalize an env value to a session-id candidate.
@@ -223,11 +232,15 @@ function parseResetDate(value: number | string | undefined): Date | null {
     return null;
   }
 
-  const numericValue = typeof value === 'number'
-    ? value
-    : (typeof value === 'string' && value.trim() !== '' ? Number(value) : Number.NaN);
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string' && value.trim() !== ''
+        ? Number(value)
+        : Number.NaN;
   if (Number.isFinite(numericValue)) {
-    const millis = Math.abs(numericValue) < 1e12 ? numericValue * 1000 : numericValue;
+    const millis =
+      Math.abs(numericValue) < 1e12 ? numericValue * 1000 : numericValue;
     const date = new Date(millis);
     return Number.isNaN(date.getTime()) ? null : date;
   }
@@ -256,7 +269,9 @@ function getTotalInputTokens(stdin: StatuslineStdin): number {
   return stdin.context_window?.total_input_tokens ?? 0;
 }
 
-function getRoundedNativeContextPercent(stdin: StatuslineStdin | null | undefined): number | null {
+function getRoundedNativeContextPercent(
+  stdin: StatuslineStdin | null | undefined,
+): number | null {
   const nativePercent = stdin?.context_window?.used_percentage;
   if (typeof nativePercent !== 'number' || Number.isNaN(nativePercent)) {
     return null;
@@ -264,9 +279,15 @@ function getRoundedNativeContextPercent(stdin: StatuslineStdin | null | undefine
   return Math.min(100, Math.max(0, Math.round(nativePercent)));
 }
 
-function getPositiveNativeContextPercent(stdin: StatuslineStdin | null | undefined): number | null {
+function getPositiveNativeContextPercent(
+  stdin: StatuslineStdin | null | undefined,
+): number | null {
   const nativePercent = stdin?.context_window?.used_percentage;
-  if (typeof nativePercent !== 'number' || Number.isNaN(nativePercent) || nativePercent <= 0) {
+  if (
+    typeof nativePercent !== 'number' ||
+    Number.isNaN(nativePercent) ||
+    nativePercent <= 0
+  ) {
     return null;
   }
   return Math.min(100, Math.max(0, Math.round(nativePercent)));
@@ -282,7 +303,9 @@ function getManualContextPercent(stdin: StatuslineStdin): number | null {
   return Math.min(100, Math.round((totalTokens / size) * 100));
 }
 
-function getPositiveManualContextPercent(stdin: StatuslineStdin): number | null {
+function getPositiveManualContextPercent(
+  stdin: StatuslineStdin,
+): number | null {
   const manualPercent = getManualContextPercent(stdin);
   return manualPercent !== null && manualPercent > 0 ? manualPercent : null;
 }
@@ -301,10 +324,16 @@ function getTotalInputContextPercent(stdin: StatuslineStdin): number | null {
   return Math.min(100, Math.round((totalInputTokens / size) * 100));
 }
 
-function isSameContextStream(current: StatuslineStdin, previous: StatuslineStdin): boolean {
-  return current.cwd === previous.cwd
-    && current.transcript_path === previous.transcript_path
-    && current.context_window?.context_window_size === previous.context_window?.context_window_size;
+function isSameContextStream(
+  current: StatuslineStdin,
+  previous: StatuslineStdin,
+): boolean {
+  return (
+    current.cwd === previous.cwd &&
+    current.transcript_path === previous.transcript_path &&
+    current.context_window?.context_window_size ===
+      previous.context_window?.context_window_size
+  );
 }
 
 /**
@@ -329,13 +358,16 @@ export function stabilizeContextPercent(
     return stdin;
   }
 
-  const fallbackPercent = getPositiveManualContextPercent(stdin) ?? getTotalInputContextPercent(stdin);
+  const fallbackPercent =
+    getPositiveManualContextPercent(stdin) ??
+    getTotalInputContextPercent(stdin);
   if (fallbackPercent === null && getRoundedNativeContextPercent(stdin) === 0) {
     return stdin;
   }
   if (
-    fallbackPercent !== null
-    && Math.abs(fallbackPercent - previousNativePercent) > TRANSIENT_CONTEXT_PERCENT_TOLERANCE
+    fallbackPercent !== null &&
+    Math.abs(fallbackPercent - previousNativePercent) >
+      TRANSIENT_CONTEXT_PERCENT_TOLERANCE
   ) {
     return stdin;
   }
@@ -344,7 +376,8 @@ export function stabilizeContextPercent(
     ...stdin,
     context_window: {
       ...stdin.context_window,
-      used_percentage: previousStdin.context_window?.used_percentage ?? previousNativePercent,
+      used_percentage:
+        previousStdin.context_window?.used_percentage ?? previousNativePercent,
     },
   };
 }
@@ -357,17 +390,19 @@ export function stabilizeContextPercent(
  */
 export function getContextPercent(stdin: StatuslineStdin): number {
   return (
-    getPositiveNativeContextPercent(stdin)
-    ?? getPositiveManualContextPercent(stdin)
-    ?? getTotalInputContextPercent(stdin)
-    ?? 0
+    getPositiveNativeContextPercent(stdin) ??
+    getPositiveManualContextPercent(stdin) ??
+    getTotalInputContextPercent(stdin) ??
+    0
   );
 }
 
 /**
  * Convert Claude Code stdin rate_limits into the existing HUD RateLimits shape.
  */
-export function getRateLimitsFromStdin(stdin: StatuslineStdin): RateLimits | null {
+export function getRateLimitsFromStdin(
+  stdin: StatuslineStdin,
+): RateLimits | null {
   const fiveHour = stdin.rate_limits?.five_hour?.used_percentage;
   const sevenDay = stdin.rate_limits?.seven_day?.used_percentage;
 

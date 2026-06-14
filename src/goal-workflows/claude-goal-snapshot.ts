@@ -1,13 +1,13 @@
-import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { existsSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 export type ClaudeGoalSnapshotStatus =
-  | "active"
-  | "complete"
-  | "cancelled"
-  | "failed"
-  | "unknown";
+  | 'active'
+  | 'complete'
+  | 'cancelled'
+  | 'failed'
+  | 'unknown';
 
 export interface ClaudeGoalSnapshot {
   available: boolean;
@@ -35,40 +35,40 @@ export interface ReconcileClaudeGoalOptions {
 export class ClaudeGoalSnapshotError extends Error {}
 
 function safeObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value)
+  return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
 }
 
 function safeString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
+  return typeof value === 'string' ? value.trim() : '';
 }
 
 function safeNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value)
+  return typeof value === 'number' && Number.isFinite(value)
     ? value
     : undefined;
 }
 
 function normalizeStatus(value: unknown): ClaudeGoalSnapshotStatus {
   const status = safeString(value).toLowerCase();
-  if (status === "complete" || status === "completed" || status === "done")
-    return "complete";
-  if (status === "cancelled" || status === "canceled" || status === "cleared")
-    return "cancelled";
-  if (status === "failed" || status === "failure") return "failed";
+  if (status === 'complete' || status === 'completed' || status === 'done')
+    return 'complete';
+  if (status === 'cancelled' || status === 'canceled' || status === 'cleared')
+    return 'cancelled';
+  if (status === 'failed' || status === 'failure') return 'failed';
   if (
-    status === "active" ||
-    status === "in_progress" ||
-    status === "pending" ||
-    status === "running"
+    status === 'active' ||
+    status === 'in_progress' ||
+    status === 'pending' ||
+    status === 'running'
   )
-    return "active";
-  return "unknown";
+    return 'active';
+  return 'unknown';
 }
 
 function normalizeObjective(value: string): string {
-  return value.replace(/\s+/g, " ").trim();
+  return value.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -86,7 +86,7 @@ function normalizeObjective(value: string): string {
  */
 export function parseClaudeGoalSnapshot(value: unknown): ClaudeGoalSnapshot {
   const root = safeObject(value);
-  const goalValue = Object.hasOwn(root, "goal") ? root.goal : value;
+  const goalValue = Object.hasOwn(root, 'goal') ? root.goal : value;
   if (goalValue === null || goalValue === undefined || goalValue === false) {
     return { available: false, raw: value };
   }
@@ -112,7 +112,7 @@ export function parseClaudeGoalSnapshot(value: unknown): ClaudeGoalSnapshot {
   );
 
   return {
-    available: Boolean(objective || status !== "unknown"),
+    available: Boolean(objective || status !== 'unknown'),
     ...(objective ? { objective } : {}),
     status,
     ...(tokenBudget !== undefined ? { tokenBudget } : {}),
@@ -137,10 +137,10 @@ export async function readClaudeGoalSnapshotInput(
       );
     }
     try {
-      return parseClaudeGoalSnapshot(JSON.parse(await readFile(path, "utf-8")));
+      return parseClaudeGoalSnapshot(JSON.parse(await readFile(path, 'utf-8')));
     } catch (error) {
       throw new ClaudeGoalSnapshotError(
-        `Claude goal snapshot path does not contain valid JSON: ${trimmed}${error instanceof Error ? ` (${error.message})` : ""}`,
+        `Claude goal snapshot path does not contain valid JSON: ${trimmed}${error instanceof Error ? ` (${error.message})` : ''}`,
       );
     }
   }
@@ -156,7 +156,7 @@ export function reconcileClaudeGoalSnapshot(
 
   if (!effectiveSnapshot.available) {
     const message =
-      "Claude goal snapshot is absent or reports no active goal; ask the active Claude agent to share the current /goal condition and pass its JSON with --claude-goal-json.";
+      'Claude goal snapshot is absent or reports no active goal; ask the active Claude agent to share the current /goal condition and pass its JSON with --claude-goal-json.';
     if (options.requireSnapshot) errors.push(message);
     else warnings.push(message);
     return {
@@ -168,9 +168,9 @@ export function reconcileClaudeGoalSnapshot(
   }
 
   const expected = normalizeObjective(options.expectedObjective);
-  const actual = normalizeObjective(effectiveSnapshot.objective ?? "");
+  const actual = normalizeObjective(effectiveSnapshot.objective ?? '');
   if (!actual) {
-    errors.push("Claude goal snapshot is missing objective text.");
+    errors.push('Claude goal snapshot is missing objective text.');
   } else if (actual !== expected) {
     errors.push(
       `Claude goal objective mismatch: expected "${expected}", got "${actual}".`,
@@ -179,14 +179,14 @@ export function reconcileClaudeGoalSnapshot(
 
   const allowed =
     options.allowedStatuses ??
-    (options.requireComplete ? ["complete"] : ["active", "complete"]);
-  const actualStatus = effectiveSnapshot.status ?? "unknown";
+    (options.requireComplete ? ['complete'] : ['active', 'complete']);
+  const actualStatus = effectiveSnapshot.status ?? 'unknown';
   if (!allowed.includes(actualStatus)) {
     errors.push(
-      `Claude goal status mismatch: expected ${allowed.join(" or ")}, got ${actualStatus}.`,
+      `Claude goal status mismatch: expected ${allowed.join(' or ')}, got ${actualStatus}.`,
     );
   }
-  if (options.requireComplete && actualStatus !== "complete") {
+  if (options.requireComplete && actualStatus !== 'complete') {
     errors.push(
       `Claude goal is not complete; only after the active condition is genuinely satisfied (the /goal hook auto-clears, or you run /goal clear), share the fresh snapshot.`,
     );
@@ -204,5 +204,5 @@ export function formatClaudeGoalReconciliation(
   reconciliation: ClaudeGoalReconciliation,
 ): string {
   const parts = [...reconciliation.errors, ...reconciliation.warnings];
-  return parts.join(" ");
+  return parts.join(' ');
 }

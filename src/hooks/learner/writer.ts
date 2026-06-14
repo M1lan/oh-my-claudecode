@@ -4,18 +4,18 @@
  * Writes skill files to disk with proper formatting.
  */
 
-import { writeFileSync, existsSync } from "fs";
-import { join } from "path";
-import { ensureSkillsDir, getSkillsDir } from "./finder.js";
-import { generateSkillFrontmatter } from "./parser.js";
-import { validateExtractionRequest } from "./validator.js";
-import { DEBUG_ENABLED } from "./constants.js";
-import { ensureClaudeCodeUserSkillCompat } from "../../utils/user-skill-compat.js";
+import { writeFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { ensureSkillsDir, getSkillsDir } from './finder.js';
+import { generateSkillFrontmatter } from './parser.js';
+import { validateExtractionRequest } from './validator.js';
+import { DEBUG_ENABLED } from './constants.js';
+import { ensureClaudeCodeUserSkillCompat } from '../../utils/user-skill-compat.js';
 import type {
   SkillMetadata,
   SkillExtractionRequest,
   QualityValidation,
-} from "./types.js";
+} from './types.js';
 
 /**
  * Generate a unique skill ID.
@@ -32,8 +32,8 @@ function generateSkillId(): string {
 function sanitizeFilename(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .slice(0, 50);
 }
 
@@ -61,7 +61,7 @@ export function writeSkill(
   if (!validation.valid) {
     return {
       success: false,
-      error: `Quality validation failed: ${validation.missingFields.join(", ")}`,
+      error: `Quality validation failed: ${validation.missingFields.join(', ')}`,
       validation,
     };
   }
@@ -80,7 +80,7 @@ export function writeSkill(
     id: generateSkillId(),
     name: skillName,
     description: request.problem.slice(0, 200),
-    source: "extracted",
+    source: 'extracted',
     createdAt: new Date().toISOString(),
     triggers: request.triggers,
     tags: request.tags,
@@ -117,7 +117,7 @@ ${request.solution}
 
   try {
     writeFileSync(filePath, content);
-    if (request.targetScope === "user") {
+    if (request.targetScope === 'user') {
       ensureClaudeCodeUserSkillCompat(safeSkillName, filePath);
     }
     return {
@@ -127,7 +127,7 @@ ${request.solution}
     };
   } catch (e) {
     if (DEBUG_ENABLED) {
-      console.error("[learner] Error writing skill file:", e);
+      console.error('[learner] Error writing skill file:', e);
     }
     return {
       success: false,
@@ -145,7 +145,7 @@ export function checkDuplicateTriggers(
   projectRoot: string | null,
 ): { isDuplicate: boolean; existingSkillId?: string } {
   // Import dynamically to avoid circular dependency
-  const { loadAllSkills } = require("./loader.js");
+  const { loadAllSkills } = require('./loader.js');
   const skills = loadAllSkills(projectRoot);
 
   const normalizedTriggers = new Set(triggers.map((t) => t.toLowerCase()));

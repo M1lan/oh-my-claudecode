@@ -25,14 +25,20 @@ import { sanitizeName } from './tmux-session.js';
  * and contains a trusted subpath (Claude config dir or ~/.omc/).
  * Resolves the path first to defeat traversal attacks like ~/foo/.claude/../../evil.json.
  */
-export function validateConfigPath(configPath: string, homeDir: string, claudeConfigDir: string): boolean {
+export function validateConfigPath(
+  configPath: string,
+  homeDir: string,
+  claudeConfigDir: string,
+): boolean {
   // Resolve to canonical absolute path to defeat ".." traversal
   const resolved = resolve(configPath);
 
-  const isUnderHome = resolved.startsWith(homeDir + '/') || resolved === homeDir;
+  const isUnderHome =
+    resolved.startsWith(homeDir + '/') || resolved === homeDir;
   const normalizedConfigDir = resolve(claudeConfigDir);
   const normalizedOmcDir = resolve(homeDir, '.omc');
-  const hasOmcComponent = resolved.includes('/.omc/') || resolved.endsWith('/.omc');
+  const hasOmcComponent =
+    resolved.includes('/.omc/') || resolved.endsWith('/.omc');
   const isTrustedSubpath =
     resolved === normalizedConfigDir ||
     resolved.startsWith(normalizedConfigDir + '/') ||
@@ -84,7 +90,9 @@ function validateBridgeWorkingDirectory(workingDirectory: string): void {
   // Must be inside a git worktree
   const root = getWorktreeRoot(workingDirectory);
   if (!root) {
-    throw new Error(`workingDirectory is not inside a git worktree: ${workingDirectory}`);
+    throw new Error(
+      `workingDirectory is not inside a git worktree: ${workingDirectory}`,
+    );
   }
 }
 
@@ -102,7 +110,9 @@ function main(): void {
   const home = homedir();
   const claudeConfigDir = getClaudeConfigDir();
   if (!validateConfigPath(configPath, home, claudeConfigDir)) {
-    console.error(`Config path must be under ~/ with ${claudeConfigDir} or ~/.omc/ subpath: ${configPath}`);
+    console.error(
+      `Config path must be under ~/ with ${claudeConfigDir} or ~/.omc/ subpath: ${configPath}`,
+    );
     process.exit(1);
   }
 
@@ -111,12 +121,19 @@ function main(): void {
     const raw = readFileSync(configPath, 'utf-8');
     config = JSON.parse(raw);
   } catch (err) {
-    console.error(`Failed to read config from ${configPath}: ${(err as Error).message}`);
+    console.error(
+      `Failed to read config from ${configPath}: ${(err as Error).message}`,
+    );
     process.exit(1);
   }
 
   // Validate required fields
-  const required: (keyof BridgeConfig)[] = ['teamName', 'workerName', 'provider', 'workingDirectory'];
+  const required: (keyof BridgeConfig)[] = [
+    'teamName',
+    'workerName',
+    'provider',
+    'workingDirectory',
+  ];
   for (const field of required) {
     if (!config[field]) {
       console.error(`Missing required config field: ${field}`);
@@ -130,7 +147,9 @@ function main(): void {
 
   // Validate provider
   if (config.provider !== 'codex' && config.provider !== 'gemini') {
-    console.error(`Invalid provider: ${config.provider}. Must be 'codex' or 'gemini'.`);
+    console.error(
+      `Invalid provider: ${config.provider}. Must be 'codex' or 'gemini'.`,
+    );
     process.exit(1);
   }
 
@@ -138,7 +157,9 @@ function main(): void {
   try {
     validateBridgeWorkingDirectory(config.workingDirectory);
   } catch (err) {
-    console.error(`[bridge] Invalid workingDirectory: ${(err as Error).message}`);
+    console.error(
+      `[bridge] Invalid workingDirectory: ${(err as Error).message}`,
+    );
     process.exit(1);
   }
 
@@ -146,7 +167,9 @@ function main(): void {
   if (config.permissionEnforcement) {
     const validModes = ['off', 'audit', 'enforce'];
     if (!validModes.includes(config.permissionEnforcement)) {
-      console.error(`Invalid permissionEnforcement: ${config.permissionEnforcement}. Must be 'off', 'audit', or 'enforce'.`);
+      console.error(
+        `Invalid permissionEnforcement: ${config.permissionEnforcement}. Must be 'off', 'audit', or 'enforce'.`,
+      );
       process.exit(1);
     }
 
@@ -162,15 +185,19 @@ function main(): void {
         process.exit(1);
       }
       if (p.allowedCommands && !Array.isArray(p.allowedCommands)) {
-        console.error('permissions.allowedCommands must be an array of strings');
+        console.error(
+          'permissions.allowedCommands must be an array of strings',
+        );
         process.exit(1);
       }
 
       // Reject dangerous patterns that could defeat the deny-defaults
       const dangerousPatterns = ['**', '*', '!.git/**', '!.env*', '!**/.env*'];
-      for (const pattern of (p.allowedPaths || [])) {
+      for (const pattern of p.allowedPaths || []) {
         if (dangerousPatterns.includes(pattern)) {
-          console.error(`Dangerous allowedPaths pattern rejected: "${pattern}"`);
+          console.error(
+            `Dangerous allowedPaths pattern rejected: "${pattern}"`,
+          );
           process.exit(1);
         }
       }
@@ -190,15 +217,25 @@ function main(): void {
     process.on(sig, () => {
       console.error(`[bridge] Received ${sig}, shutting down...`);
       try {
-        deleteHeartbeat(config.workingDirectory, config.teamName, config.workerName);
-        unregisterMcpWorker(config.teamName, config.workerName, config.workingDirectory);
-      } catch { /* best-effort cleanup */ }
+        deleteHeartbeat(
+          config.workingDirectory,
+          config.teamName,
+          config.workerName,
+        );
+        unregisterMcpWorker(
+          config.teamName,
+          config.workerName,
+          config.workingDirectory,
+        );
+      } catch {
+        /* best-effort cleanup */
+      }
       process.exit(0);
     });
   }
 
   // Run bridge (never returns unless shutdown)
-  runBridge(config).catch(err => {
+  runBridge(config).catch((err) => {
     console.error(`[bridge] Fatal error: ${(err as Error).message}`);
     process.exit(1);
   });

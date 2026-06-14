@@ -30,7 +30,9 @@ function readEnv(): string | undefined {
   return value && value.trim() ? value.trim() : undefined;
 }
 
-function readPayload(payload: ResolveSessionIdInput['hookPayload']): string | undefined {
+function readPayload(
+  payload: ResolveSessionIdInput['hookPayload'],
+): string | undefined {
   if (!payload || typeof payload !== 'object') return undefined;
   const value = payload.session_id;
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
@@ -41,7 +43,9 @@ function readPayload(payload: ResolveSessionIdInput['hookPayload']): string | un
  * when neither source supplies a value (back-compat legacy mode — caller
  * should fall back to global state path).
  */
-export function resolveSessionId(input: ResolveSessionIdInput): string | undefined {
+export function resolveSessionId(
+  input: ResolveSessionIdInput,
+): string | undefined {
   const env = readEnv();
   const payload = readPayload(input.hookPayload);
   if (input.context === 'cli') {

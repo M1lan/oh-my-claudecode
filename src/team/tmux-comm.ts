@@ -1,7 +1,7 @@
-import { mkdir, appendFile, readFile, writeFile } from "fs/promises";
-import { join } from "path";
-import { sendToWorker } from "./tmux-session.js";
-import { TeamPaths, absPath } from "./state-paths.js";
+import { mkdir, appendFile, readFile, writeFile } from 'fs/promises';
+import { join } from 'path';
+import { sendToWorker } from './tmux-session.js';
+import { TeamPaths, absPath } from './state-paths.js';
 
 interface MailboxMessage {
   message_id: string;
@@ -31,38 +31,38 @@ function legacyMailboxPath(
   workerName: string,
   cwd: string,
 ): string {
-  return mailboxPath(teamName, workerName, cwd).replace(/\.json$/i, ".jsonl");
+  return mailboxPath(teamName, workerName, cwd).replace(/\.json$/i, '.jsonl');
 }
 
 function normalizeLegacyMessage(
   raw: Record<string, unknown>,
 ): MailboxMessage | null {
-  if (raw.type === "notified") return null;
+  if (raw.type === 'notified') return null;
   const messageId =
-    typeof raw.message_id === "string" && raw.message_id.trim() !== ""
+    typeof raw.message_id === 'string' && raw.message_id.trim() !== ''
       ? raw.message_id
-      : typeof raw.id === "string" && raw.id.trim() !== ""
+      : typeof raw.id === 'string' && raw.id.trim() !== ''
         ? raw.id
-        : "";
+        : '';
   const fromWorker =
-    typeof raw.from_worker === "string" && raw.from_worker.trim() !== ""
+    typeof raw.from_worker === 'string' && raw.from_worker.trim() !== ''
       ? raw.from_worker
-      : typeof raw.from === "string"
+      : typeof raw.from === 'string'
         ? raw.from
-        : "";
+        : '';
   const toWorker =
-    typeof raw.to_worker === "string" && raw.to_worker.trim() !== ""
+    typeof raw.to_worker === 'string' && raw.to_worker.trim() !== ''
       ? raw.to_worker
-      : typeof raw.to === "string"
+      : typeof raw.to === 'string'
         ? raw.to
-        : "";
-  const body = typeof raw.body === "string" ? raw.body : "";
+        : '';
+  const body = typeof raw.body === 'string' ? raw.body : '';
   const createdAt =
-    typeof raw.created_at === "string" && raw.created_at.trim() !== ""
+    typeof raw.created_at === 'string' && raw.created_at.trim() !== ''
       ? raw.created_at
-      : typeof raw.createdAt === "string"
+      : typeof raw.createdAt === 'string'
         ? raw.createdAt
-        : "";
+        : '';
   if (!messageId || !fromWorker || !toWorker || !body || !createdAt)
     return null;
   return {
@@ -71,16 +71,16 @@ function normalizeLegacyMessage(
     to_worker: toWorker,
     body,
     created_at: createdAt,
-    ...(typeof raw.notified_at === "string"
+    ...(typeof raw.notified_at === 'string'
       ? { notified_at: raw.notified_at }
       : {}),
-    ...(typeof raw.notifiedAt === "string"
+    ...(typeof raw.notifiedAt === 'string'
       ? { notified_at: raw.notifiedAt }
       : {}),
-    ...(typeof raw.delivered_at === "string"
+    ...(typeof raw.delivered_at === 'string'
       ? { delivered_at: raw.delivered_at }
       : {}),
-    ...(typeof raw.deliveredAt === "string"
+    ...(typeof raw.deliveredAt === 'string'
       ? { delivered_at: raw.deliveredAt }
       : {}),
   };
@@ -93,7 +93,7 @@ async function readMailboxFile(
 ): Promise<MailboxFile> {
   const canonicalPath = mailboxPath(teamName, workerName, cwd);
   try {
-    const raw = await readFile(canonicalPath, "utf-8");
+    const raw = await readFile(canonicalPath, 'utf-8');
     const parsed = JSON.parse(raw) as Partial<MailboxFile>;
     if (parsed && Array.isArray(parsed.messages)) {
       return {
@@ -107,10 +107,10 @@ async function readMailboxFile(
 
   const legacyPath = legacyMailboxPath(teamName, workerName, cwd);
   try {
-    const raw = await readFile(legacyPath, "utf-8");
+    const raw = await readFile(legacyPath, 'utf-8');
     const messagesById = new Map<string, MailboxMessage>();
     const lines = raw
-      .split("\n")
+      .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
     for (const line of lines) {
@@ -120,7 +120,7 @@ async function readMailboxFile(
       } catch {
         continue;
       }
-      if (!parsed || typeof parsed !== "object") continue;
+      if (!parsed || typeof parsed !== 'object') continue;
       const normalized = normalizeLegacyMessage(
         parsed as Record<string, unknown>,
       );
@@ -140,8 +140,8 @@ async function writeMailboxFile(
   mailbox: MailboxFile,
 ): Promise<void> {
   const canonicalPath = mailboxPath(teamName, workerName, cwd);
-  await mkdir(join(canonicalPath, ".."), { recursive: true });
-  await writeFile(canonicalPath, JSON.stringify(mailbox, null, 2), "utf-8");
+  await mkdir(join(canonicalPath, '..'), { recursive: true });
+  await writeFile(canonicalPath, JSON.stringify(mailbox, null, 2), 'utf-8');
 }
 
 /**
@@ -164,7 +164,7 @@ export async function sendTmuxTrigger(
     return false;
   }
   try {
-    return await sendToWorker("", paneId, message);
+    return await sendToWorker('', paneId, message);
   } catch {
     return false;
   }
@@ -186,14 +186,14 @@ export async function queueInboxInstruction(
     cwd,
     `.omc/state/team/${teamName}/workers/${workerName}/inbox.md`,
   );
-  await mkdir(join(inboxPath, ".."), { recursive: true });
+  await mkdir(join(inboxPath, '..'), { recursive: true });
 
   // Write FIRST (write-then-notify)
   const entry = `\n\n---\n${instruction}\n_queued: ${new Date().toISOString()}_\n`;
-  await appendFile(inboxPath, entry, "utf-8");
+  await appendFile(inboxPath, entry, 'utf-8');
 
   // Notify AFTER write
-  await sendTmuxTrigger(paneId, "check-inbox");
+  await sendTmuxTrigger(paneId, 'check-inbox');
 }
 
 /**
@@ -222,7 +222,7 @@ export async function queueDirectMessage(
   await writeMailboxFile(teamName, toWorker, cwd, mailbox);
 
   // Update notifiedAt after successful trigger
-  const notified = await sendTmuxTrigger(toPaneId, "new-message", fromWorker);
+  const notified = await sendTmuxTrigger(toPaneId, 'new-message', fromWorker);
   if (notified) {
     const updated = await readMailboxFile(teamName, toWorker, cwd);
     const entry = updated.messages.find(
@@ -264,7 +264,7 @@ export async function queueBroadcastMessage(
   // Send triggers to all (best-effort)
   await Promise.all(
     workerNames.map((toWorker) =>
-      sendTmuxTrigger(workerPanes[toWorker], "new-message", fromWorker),
+      sendTmuxTrigger(workerPanes[toWorker], 'new-message', fromWorker),
     ),
   );
 }

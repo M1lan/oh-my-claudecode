@@ -16,24 +16,24 @@ import {
   openSync,
   readSync,
   closeSync,
-} from "fs";
-import { join, dirname } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+} from 'fs';
+import { join, dirname } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import type {
   InboxMessage,
   OutboxMessage,
   ShutdownSignal,
   DrainSignal,
   InboxCursor,
-} from "./types.js";
-import { sanitizeName } from "./tmux-session.js";
+} from './types.js';
+import { sanitizeName } from './tmux-session.js';
 import {
   appendFileWithMode,
   writeFileWithMode,
   atomicWriteJson,
   ensureDirWithMode,
   validateResolvedPath,
-} from "./fs-utils.js";
+} from './fs-utils.js';
 
 /** Maximum bytes to read from inbox in a single call (10 MB) */
 const MAX_INBOX_READ_SIZE = 10 * 1024 * 1024;
@@ -41,19 +41,19 @@ const MAX_INBOX_READ_SIZE = 10 * 1024 * 1024;
 // --- Path helpers ---
 
 function teamsDir(teamName: string): string {
-  const result = join(getClaudeConfigDir(), "teams", sanitizeName(teamName));
-  validateResolvedPath(result, join(getClaudeConfigDir(), "teams"));
+  const result = join(getClaudeConfigDir(), 'teams', sanitizeName(teamName));
+  validateResolvedPath(result, join(getClaudeConfigDir(), 'teams'));
   return result;
 }
 
 function inboxPath(teamName: string, workerName: string): string {
-  return join(teamsDir(teamName), "inbox", `${sanitizeName(workerName)}.jsonl`);
+  return join(teamsDir(teamName), 'inbox', `${sanitizeName(workerName)}.jsonl`);
 }
 
 function inboxCursorPath(teamName: string, workerName: string): string {
   return join(
     teamsDir(teamName),
-    "inbox",
+    'inbox',
     `${sanitizeName(workerName)}.offset`,
   );
 }
@@ -61,7 +61,7 @@ function inboxCursorPath(teamName: string, workerName: string): string {
 function outboxPath(teamName: string, workerName: string): string {
   return join(
     teamsDir(teamName),
-    "outbox",
+    'outbox',
     `${sanitizeName(workerName)}.jsonl`,
   );
 }
@@ -69,7 +69,7 @@ function outboxPath(teamName: string, workerName: string): string {
 function signalPath(teamName: string, workerName: string): string {
   return join(
     teamsDir(teamName),
-    "signals",
+    'signals',
     `${sanitizeName(workerName)}.shutdown`,
   );
 }
@@ -77,7 +77,7 @@ function signalPath(teamName: string, workerName: string): string {
 function drainSignalPath(teamName: string, workerName: string): string {
   return join(
     teamsDir(teamName),
-    "signals",
+    'signals',
     `${sanitizeName(workerName)}.drain`,
   );
 }
@@ -101,7 +101,7 @@ export function appendOutbox(
 ): void {
   const filePath = outboxPath(teamName, workerName);
   ensureDir(filePath);
-  appendFileWithMode(filePath, JSON.stringify(message) + "\n");
+  appendFileWithMode(filePath, JSON.stringify(message) + '\n');
 }
 
 /**
@@ -122,8 +122,8 @@ export function rotateOutboxIfNeeded(
   if (!existsSync(filePath)) return;
 
   try {
-    const content = readFileSync(filePath, "utf-8");
-    const lines = content.split("\n").filter((l) => l.trim());
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n').filter((l) => l.trim());
     if (lines.length <= maxLines) return;
 
     // Keep the most recent half
@@ -132,7 +132,7 @@ export function rotateOutboxIfNeeded(
     // Explicitly clear in that case instead.
     const kept = keepCount === 0 ? [] : lines.slice(-keepCount);
     const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-    writeFileWithMode(tmpPath, kept.join("\n") + "\n");
+    writeFileWithMode(tmpPath, kept.join('\n') + '\n');
     renameSync(tmpPath, filePath);
   } catch {
     // Rotation failure is non-fatal
@@ -160,14 +160,14 @@ export function rotateInboxIfNeeded(
     const stat = statSync(filePath);
     if (stat.size <= maxSizeBytes) return;
 
-    const content = readFileSync(filePath, "utf-8");
-    const lines = content.split("\n").filter((l) => l.trim());
+    const content = readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n').filter((l) => l.trim());
 
     // Keep the most recent half
     const keepCount = Math.max(1, Math.floor(lines.length / 2));
     const kept = lines.slice(-keepCount);
     const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
-    writeFileWithMode(tmpPath, kept.join("\n") + "\n");
+    writeFileWithMode(tmpPath, kept.join('\n') + '\n');
     renameSync(tmpPath, filePath);
 
     // Reset cursor since file content changed
@@ -205,7 +205,7 @@ export function readNewInboxMessages(
   let offset = 0;
   if (existsSync(cursorFile)) {
     try {
-      const cursor: InboxCursor = JSON.parse(readFileSync(cursorFile, "utf-8"));
+      const cursor: InboxCursor = JSON.parse(readFileSync(cursorFile, 'utf-8'));
       offset = cursor.bytesRead;
     } catch {
       /* reset to 0 */
@@ -230,7 +230,7 @@ export function readNewInboxMessages(
       `[inbox-outbox] Inbox for ${workerName} exceeds ${MAX_INBOX_READ_SIZE} bytes, reading truncated`,
     );
   }
-  const fd = openSync(inbox, "r");
+  const fd = openSync(inbox, 'r');
   const buffer = Buffer.alloc(cappedSize);
   try {
     readSync(fd, buffer, 0, buffer.length, offset);
@@ -238,12 +238,12 @@ export function readNewInboxMessages(
     closeSync(fd);
   }
 
-  const newData = buffer.toString("utf-8");
+  const newData = buffer.toString('utf-8');
 
   // Find the last newline in the buffer to avoid processing partial trailing lines.
   // This prevents livelock when the capped buffer ends mid-line: we only process
   // up to the last complete line boundary and leave the partial for the next read.
-  const lastNewlineIdx = newData.lastIndexOf("\n");
+  const lastNewlineIdx = newData.lastIndexOf('\n');
   if (lastNewlineIdx === -1) {
     // No complete line in buffer — don't advance cursor, wait for more data
     return [];
@@ -253,22 +253,22 @@ export function readNewInboxMessages(
   const messages: InboxMessage[] = [];
   let bytesProcessed = 0;
 
-  const lines = completeData.split("\n");
+  const lines = completeData.split('\n');
   // Remove trailing empty string from split — completeData always ends with '\n',
   // so the last element is always '' and doesn't represent real data.
-  if (lines.length > 0 && lines[lines.length - 1] === "") {
+  if (lines.length > 0 && lines[lines.length - 1] === '') {
     lines.pop();
   }
   for (const line of lines) {
     if (!line.trim()) {
       // Account for the newline separator byte(s). Check for \r\n (CRLF) by
       // looking at whether the line ends with \r (split on \n leaves \r attached).
-      bytesProcessed += Buffer.byteLength(line, "utf-8") + 1; // +1 for the \n
+      bytesProcessed += Buffer.byteLength(line, 'utf-8') + 1; // +1 for the \n
       continue;
     }
     // Strip trailing \r if present (from CRLF line endings)
-    const cleanLine = line.endsWith("\r") ? line.slice(0, -1) : line;
-    const lineBytes = Buffer.byteLength(line, "utf-8") + 1; // +1 for the \n
+    const cleanLine = line.endsWith('\r') ? line.slice(0, -1) : line;
+    const lineBytes = Buffer.byteLength(line, 'utf-8') + 1; // +1 for the \n
     try {
       messages.push(JSON.parse(cleanLine));
       bytesProcessed += lineBytes;
@@ -302,9 +302,9 @@ export function readAllInboxMessages(
   if (!existsSync(inbox)) return [];
 
   try {
-    const content = readFileSync(inbox, "utf-8");
+    const content = readFileSync(inbox, 'utf-8');
     const messages: InboxMessage[] = [];
-    for (const line of content.split("\n")) {
+    for (const line of content.split('\n')) {
       if (!line.trim()) continue;
       try {
         messages.push(JSON.parse(line));
@@ -325,7 +325,7 @@ export function clearInbox(teamName: string, workerName: string): void {
 
   if (existsSync(inbox)) {
     try {
-      writeFileWithMode(inbox, "");
+      writeFileWithMode(inbox, '');
     } catch {
       /* ignore */
     }
@@ -366,7 +366,7 @@ export function checkShutdownSignal(
   const filePath = signalPath(teamName, workerName);
   if (!existsSync(filePath)) return null;
   try {
-    const raw = readFileSync(filePath, "utf-8");
+    const raw = readFileSync(filePath, 'utf-8');
     return JSON.parse(raw) as ShutdownSignal;
   } catch {
     return null;
@@ -415,7 +415,7 @@ export function checkDrainSignal(
   const filePath = drainSignalPath(teamName, workerName);
   if (!existsSync(filePath)) return null;
   try {
-    const raw = readFileSync(filePath, "utf-8");
+    const raw = readFileSync(filePath, 'utf-8');
     return JSON.parse(raw) as DrainSignal;
   } catch {
     return null;

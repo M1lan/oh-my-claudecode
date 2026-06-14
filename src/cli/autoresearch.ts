@@ -23,7 +23,7 @@ are hard-deprecated shims and no longer launch the old runtime.
 
 function renderDeprecationMessage(args: readonly string[]): string {
   const suffix =
-    args.length > 0 ? `\nReceived legacy arguments: ${args.join(" ")}\n` : "\n";
+    args.length > 0 ? `\nReceived legacy arguments: ${args.join(' ')}\n` : '\n';
 
   return `${AUTORESEARCH_HELP}${suffix}`;
 }

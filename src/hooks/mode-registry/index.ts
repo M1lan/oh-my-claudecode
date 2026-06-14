@@ -18,29 +18,29 @@ import {
   statSync,
   rmdirSync,
   rmSync,
-} from "fs";
-import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
-import { join, dirname } from "path";
+} from 'fs';
+import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
+import { join, dirname } from 'path';
 import type {
   ExecutionMode,
   ModeConfig,
   ModeStatus,
   CanStartResult,
-} from "./types.js";
+} from './types.js';
 import {
   listSessionIds,
   resolveSessionStatePath,
   getSessionStateDir,
   getOmcRoot,
-} from "../../lib/worktree-paths.js";
-import { MODE_STATE_FILE_MAP, MODE_NAMES } from "../../lib/mode-names.js";
+} from '../../lib/worktree-paths.js';
+import { MODE_STATE_FILE_MAP, MODE_NAMES } from '../../lib/mode-names.js';
 
 export type {
   ExecutionMode,
   ModeConfig,
   ModeStatus,
   CanStartResult,
-} from "./types.js";
+} from './types.js';
 
 /**
  * Mode configuration registry
@@ -50,49 +50,49 @@ export type {
  */
 const MODE_CONFIGS: Record<ExecutionMode, ModeConfig> = {
   [MODE_NAMES.AUTOPILOT]: {
-    name: "Autopilot",
+    name: 'Autopilot',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT],
-    activeProperty: "active",
+    activeProperty: 'active',
   },
   [MODE_NAMES.AUTORESEARCH]: {
-    name: "Autoresearch",
+    name: 'Autoresearch',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH],
-    activeProperty: "active",
+    activeProperty: 'active',
     hasGlobalState: false,
   },
   [MODE_NAMES.TEAM]: {
-    name: "Team",
+    name: 'Team',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.TEAM],
-    activeProperty: "active",
+    activeProperty: 'active',
     hasGlobalState: false,
   },
   [MODE_NAMES.RALPH]: {
-    name: "Ralph",
+    name: 'Ralph',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.RALPH],
-    markerFile: "ralph-verification.json",
-    activeProperty: "active",
+    markerFile: 'ralph-verification.json',
+    activeProperty: 'active',
     hasGlobalState: false,
   },
   [MODE_NAMES.ULTRAWORK]: {
-    name: "Ultrawork",
+    name: 'Ultrawork',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK],
-    activeProperty: "active",
+    activeProperty: 'active',
     hasGlobalState: false,
   },
   [MODE_NAMES.ULTRAQA]: {
-    name: "UltraQA",
+    name: 'UltraQA',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAQA],
-    activeProperty: "active",
+    activeProperty: 'active',
   },
   [MODE_NAMES.DEEP_INTERVIEW]: {
-    name: "Deep Interview",
+    name: 'Deep Interview',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.DEEP_INTERVIEW],
-    activeProperty: "active",
+    activeProperty: 'active',
   },
   [MODE_NAMES.SELF_IMPROVE]: {
-    name: "Self Improve",
+    name: 'Self Improve',
     stateFile: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE],
-    activeProperty: "active",
+    activeProperty: 'active',
   },
 };
 
@@ -111,7 +111,7 @@ const EXCLUSIVE_MODES: ExecutionMode[] = [
  * Get the state directory path
  */
 export function getStateDir(cwd: string): string {
-  return join(getOmcRoot(cwd), "state");
+  return join(getOmcRoot(cwd), 'state');
 }
 
 /**
@@ -186,22 +186,22 @@ function isWorkflowSlotTombstonedForMode(
 ): boolean {
   try {
     const ledgerPath = sessionId
-      ? resolveSessionStatePath("skill-active", sessionId, cwd)
-      : join(getStateDir(cwd), "skill-active-state.json");
+      ? resolveSessionStatePath('skill-active', sessionId, cwd)
+      : join(getStateDir(cwd), 'skill-active-state.json');
     if (!existsSync(ledgerPath)) return false;
 
-    const raw = JSON.parse(readFileSync(ledgerPath, "utf-8")) as Record<
+    const raw = JSON.parse(readFileSync(ledgerPath, 'utf-8')) as Record<
       string,
       unknown
     >;
     const slots = raw.active_skills;
-    if (!slots || typeof slots !== "object") return false;
+    if (!slots || typeof slots !== 'object') return false;
 
     const slot = (slots as Record<string, unknown>)[mode];
-    if (!slot || typeof slot !== "object") return false;
+    if (!slot || typeof slot !== 'object') return false;
 
     const completedAt = (slot as Record<string, unknown>).completed_at;
-    if (typeof completedAt !== "string" || completedAt.length === 0)
+    if (typeof completedAt !== 'string' || completedAt.length === 0)
       return false;
 
     const tombstonedAt = new Date(completedAt).getTime();
@@ -237,7 +237,7 @@ function isJsonModeActive(
   if (sessionId) {
     const sessionStateFile = resolveSessionStatePath(mode, sessionId, cwd);
     try {
-      const content = readFileSync(sessionStateFile, "utf-8");
+      const content = readFileSync(sessionStateFile, 'utf-8');
       const state = JSON.parse(content);
 
       // Validate session identity: state must belong to this session
@@ -251,7 +251,7 @@ function isJsonModeActive(
 
       return true;
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         return false;
       }
       return false;
@@ -261,7 +261,7 @@ function isJsonModeActive(
   // No sessionId: check legacy shared path (backward compat)
   const stateFile = getStateFilePath(cwd, mode);
   try {
-    const content = readFileSync(stateFile, "utf-8");
+    const content = readFileSync(stateFile, 'utf-8');
     const state = JSON.parse(content);
 
     if (config.activeProperty) {
@@ -271,7 +271,7 @@ function isJsonModeActive(
     // Default: file existence means active
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return false;
     }
     return false;
@@ -423,7 +423,7 @@ export function clearModeState(
     try {
       unlinkSync(sessionStateFile);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
         success = false;
       }
     }
@@ -431,7 +431,7 @@ export function clearModeState(
     // Clear session-scoped marker artifacts (e.g., ralph-verification-state.json).
     // Keep legacy/shared marker files untouched for isolation.
     if (config.markerFile) {
-      const markerStateName = config.markerFile.replace(/\.json$/i, "");
+      const markerStateName = config.markerFile.replace(/\.json$/i, '');
       const sessionMarkerFile = resolveSessionStatePath(
         markerStateName,
         sessionId,
@@ -440,7 +440,7 @@ export function clearModeState(
       try {
         unlinkSync(sessionMarkerFile);
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
           success = false;
         }
       }
@@ -450,7 +450,7 @@ export function clearModeState(
     // Keep isolation by deleting only unowned markers or markers owned by this session.
     if (markerFile) {
       try {
-        const markerRaw = JSON.parse(readFileSync(markerFile, "utf-8")) as {
+        const markerRaw = JSON.parse(readFileSync(markerFile, 'utf-8')) as {
           session_id?: string;
           sessionId?: string;
         };
@@ -459,7 +459,7 @@ export function clearModeState(
           try {
             unlinkSync(markerFile);
           } catch (err) {
-            if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               success = false;
             }
           }
@@ -469,7 +469,7 @@ export function clearModeState(
         try {
           unlinkSync(markerFile);
         } catch (err) {
-          if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
             success = false;
           }
         }
@@ -483,7 +483,7 @@ export function clearModeState(
     try {
       unlinkSync(stateFile);
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
         success = false;
       }
     }
@@ -494,7 +494,7 @@ export function clearModeState(
     if (isSessionScopedClear) {
       // Only delete if the marker is unowned or owned by this session.
       try {
-        const markerRaw = JSON.parse(readFileSync(markerFile, "utf-8")) as {
+        const markerRaw = JSON.parse(readFileSync(markerFile, 'utf-8')) as {
           session_id?: string;
           sessionId?: string;
         };
@@ -503,7 +503,7 @@ export function clearModeState(
           try {
             unlinkSync(markerFile);
           } catch (err) {
-            if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+            if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
               success = false;
             }
           }
@@ -513,7 +513,7 @@ export function clearModeState(
         try {
           unlinkSync(markerFile);
         } catch (err) {
-          if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+          if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
             success = false;
           }
         }
@@ -522,7 +522,7 @@ export function clearModeState(
       try {
         unlinkSync(markerFile);
       } catch (err) {
-        if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
           success = false;
         }
       }
@@ -547,11 +547,11 @@ export function clearAllModeStates(cwd: string): boolean {
   }
 
   // Clear skill-active-state.json (issue #1033)
-  const skillStatePath = join(getStateDir(cwd), "skill-active-state.json");
+  const skillStatePath = join(getStateDir(cwd), 'skill-active-state.json');
   try {
     unlinkSync(skillStatePath);
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
+    if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
       success = false;
     }
   }
@@ -717,7 +717,7 @@ export function removeModeMarker(mode: ExecutionMode, cwd: string): boolean {
     unlinkSync(markerPath);
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return true;
     }
     console.error(`Failed to remove marker file for ${mode}:`, error);
@@ -741,10 +741,10 @@ export function readModeMarker(
   }
 
   try {
-    const content = readFileSync(markerPath, "utf-8");
+    const content = readFileSync(markerPath, 'utf-8');
     return JSON.parse(content);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
     }
     return null;
@@ -768,7 +768,7 @@ export function forceRemoveMarker(mode: ExecutionMode, cwd: string): boolean {
     unlinkSync(markerPath);
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return true;
     }
     console.error(`Failed to force remove marker file for ${mode}:`, error);

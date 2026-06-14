@@ -7,7 +7,7 @@
  * This module provides a pre-execution gate that routes small tasks to lightweight paths.
  */
 
-export type TaskSize = "small" | "medium" | "large";
+export type TaskSize = 'small' | 'medium' | 'large';
 
 export interface TaskSizeResult {
   size: TaskSize;
@@ -37,13 +37,13 @@ export const DEFAULT_THRESHOLDS: TaskSizeThresholds = {
  * Users can prefix their prompt with these to skip heavy orchestration.
  */
 const ESCAPE_HATCH_PREFIXES = [
-  "quick:",
-  "simple:",
-  "tiny:",
-  "minor:",
-  "small:",
-  "just:",
-  "only:",
+  'quick:',
+  'simple:',
+  'tiny:',
+  'minor:',
+  'small:',
+  'just:',
+  'only:',
 ];
 
 /**
@@ -153,7 +153,7 @@ export function classifyTaskSize(
   // Rule 1: Explicit escape hatch → always small
   if (escapePrefix !== null) {
     return {
-      size: "small",
+      size: 'small',
       reason: `Escape hatch prefix detected: "${escapePrefix}"`,
       wordCount,
       hasEscapeHatch: true,
@@ -167,9 +167,9 @@ export function classifyTaskSize(
   // Rule 2: Large task signals always classify as large (explicit scope indicators beat word count)
   if (hasLarge) {
     return {
-      size: "large",
+      size: 'large',
       reason:
-        "Large task signals detected (architecture/refactor/cross-cutting scope)",
+        'Large task signals detected (architecture/refactor/cross-cutting scope)',
       wordCount,
       hasEscapeHatch: false,
     };
@@ -178,7 +178,7 @@ export function classifyTaskSize(
   // Rule 3: Long prompt → large
   if (wordCount > thresholds.largeWordLimit) {
     return {
-      size: "large",
+      size: 'large',
       reason: `Prompt length (${wordCount} words) exceeds large task threshold (${thresholds.largeWordLimit})`,
       wordCount,
       hasEscapeHatch: false,
@@ -188,8 +188,8 @@ export function classifyTaskSize(
   // Rule 4: Small signals + within limits → small
   if (hasSmall && !hasLarge) {
     return {
-      size: "small",
-      reason: "Small task signals detected (single file / minor change)",
+      size: 'small',
+      reason: 'Small task signals detected (single file / minor change)',
       wordCount,
       hasEscapeHatch: false,
     };
@@ -198,7 +198,7 @@ export function classifyTaskSize(
   // Rule 5: Short prompt → small
   if (wordCount <= thresholds.smallWordLimit) {
     return {
-      size: "small",
+      size: 'small',
       reason: `Prompt length (${wordCount} words) is within small task threshold (${thresholds.smallWordLimit})`,
       wordCount,
       hasEscapeHatch: false,
@@ -207,7 +207,7 @@ export function classifyTaskSize(
 
   // Rule 6: Default → medium
   return {
-    size: "medium",
+    size: 'medium',
     reason: `Prompt length (${wordCount} words) is in medium range`,
     wordCount,
     hasEscapeHatch: false,
@@ -219,12 +219,12 @@ export function classifyTaskSize(
  * These modes spin up multiple agents and are overkill for single-file/minor changes.
  */
 export const HEAVY_MODE_KEYWORDS = new Set([
-  "ralph",
-  "autopilot",
-  "team",
-  "ultrawork",
-  "ralplan",
-  "ccg",
+  'ralph',
+  'autopilot',
+  'team',
+  'ultrawork',
+  'ralplan',
+  'ccg',
 ]);
 
 /**

@@ -2,33 +2,33 @@
  * Tests that getActiveJobsSummary reads from the correct worktree DB
  * when multiple DBs are open simultaneously (closes #862).
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, existsSync, rmSync } from "fs";
-import { join } from "path";
-import { createCompactCheckpoint } from "../hooks/pre-compact/index.js";
-import { initJobDb, upsertJob, closeAllJobDbs } from "../lib/job-state-db.js";
-import type { JobStatus } from "../mcp/prompt-persistence.js";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, existsSync, rmSync } from 'fs';
+import { join } from 'path';
+import { createCompactCheckpoint } from '../hooks/pre-compact/index.js';
+import { initJobDb, upsertJob, closeAllJobDbs } from '../lib/job-state-db.js';
+import type { JobStatus } from '../mcp/prompt-persistence.js';
 
-const TEST_BASE = join(process.cwd(), ".test-pre-compact-cwd-" + process.pid);
-const DIR_A = join(TEST_BASE, "worktree-a");
-const DIR_B = join(TEST_BASE, "worktree-b");
+const TEST_BASE = join(process.cwd(), '.test-pre-compact-cwd-' + process.pid);
+const DIR_A = join(TEST_BASE, 'worktree-a');
+const DIR_B = join(TEST_BASE, 'worktree-b');
 
 function makeJob(overrides: Partial<JobStatus> = {}): JobStatus {
   return {
-    provider: "codex",
-    jobId: "default-id",
-    slug: "test",
-    status: "running",
-    promptFile: "/tmp/prompt.md",
-    responseFile: "/tmp/response.md",
-    model: "gpt-5.3-codex",
-    agentRole: "architect",
+    provider: 'codex',
+    jobId: 'default-id',
+    slug: 'test',
+    status: 'running',
+    promptFile: '/tmp/prompt.md',
+    responseFile: '/tmp/response.md',
+    model: 'gpt-5.3-codex',
+    agentRole: 'architect',
     spawnedAt: new Date().toISOString(),
     ...overrides,
   };
 }
 
-describe("pre-compact: getActiveJobsSummary respects cwd", () => {
+describe('pre-compact: getActiveJobsSummary respects cwd', () => {
   beforeEach(async () => {
     if (existsSync(TEST_BASE))
       rmSync(TEST_BASE, { recursive: true, force: true });
@@ -41,11 +41,11 @@ describe("pre-compact: getActiveJobsSummary respects cwd", () => {
 
     // Insert distinct jobs into each worktree DB
     upsertJob(
-      makeJob({ jobId: "job-worktree-a", agentRole: "planner" }),
+      makeJob({ jobId: 'job-worktree-a', agentRole: 'planner' }),
       DIR_A,
     );
     upsertJob(
-      makeJob({ jobId: "job-worktree-b", agentRole: "executor" }),
+      makeJob({ jobId: 'job-worktree-b', agentRole: 'executor' }),
       DIR_B,
     );
   });
@@ -56,27 +56,27 @@ describe("pre-compact: getActiveJobsSummary respects cwd", () => {
       rmSync(TEST_BASE, { recursive: true, force: true });
   });
 
-  it("reads active jobs from worktree-a only when called with DIR_A", async () => {
-    const checkpoint = await createCompactCheckpoint(DIR_A, "auto");
+  it('reads active jobs from worktree-a only when called with DIR_A', async () => {
+    const checkpoint = await createCompactCheckpoint(DIR_A, 'auto');
     const activeIds =
       checkpoint.background_jobs?.active.map((j) => j.jobId) ?? [];
 
-    expect(activeIds).toContain("job-worktree-a");
-    expect(activeIds).not.toContain("job-worktree-b");
+    expect(activeIds).toContain('job-worktree-a');
+    expect(activeIds).not.toContain('job-worktree-b');
   });
 
-  it("reads active jobs from worktree-b only when called with DIR_B", async () => {
-    const checkpoint = await createCompactCheckpoint(DIR_B, "auto");
+  it('reads active jobs from worktree-b only when called with DIR_B', async () => {
+    const checkpoint = await createCompactCheckpoint(DIR_B, 'auto');
     const activeIds =
       checkpoint.background_jobs?.active.map((j) => j.jobId) ?? [];
 
-    expect(activeIds).toContain("job-worktree-b");
-    expect(activeIds).not.toContain("job-worktree-a");
+    expect(activeIds).toContain('job-worktree-b');
+    expect(activeIds).not.toContain('job-worktree-a');
   });
 
-  it("stats reflect only the target worktree DB", async () => {
-    const checkpointA = await createCompactCheckpoint(DIR_A, "auto");
-    const checkpointB = await createCompactCheckpoint(DIR_B, "auto");
+  it('stats reflect only the target worktree DB', async () => {
+    const checkpointA = await createCompactCheckpoint(DIR_A, 'auto');
+    const checkpointB = await createCompactCheckpoint(DIR_B, 'auto');
 
     expect(checkpointA.background_jobs?.stats?.total).toBe(1);
     expect(checkpointB.background_jobs?.stats?.total).toBe(1);

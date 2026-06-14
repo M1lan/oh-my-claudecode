@@ -5,10 +5,10 @@
  * multiple agents write to notepad and project memory simultaneously.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, existsSync, writeFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, rmSync, existsSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import {
   initNotepad,
   addWorkingMemoryEntry,
@@ -18,14 +18,14 @@ import {
   getNotepadPath,
   WORKING_MEMORY_HEADER as _WORKING_MEMORY_HEADER,
   MANUAL_HEADER as _MANUAL_HEADER,
-} from "../hooks/notepad/index.js";
+} from '../hooks/notepad/index.js';
 import {
   loadProjectMemory,
   saveProjectMemory,
   withProjectMemoryLock,
-} from "../hooks/project-memory/index.js";
+} from '../hooks/project-memory/index.js';
 
-describe("Shared Memory Concurrency (issue #1160)", () => {
+describe('Shared Memory Concurrency (issue #1160)', () => {
   let testDir: string;
 
   beforeEach(() => {
@@ -42,8 +42,8 @@ describe("Shared Memory Concurrency (issue #1160)", () => {
     }
   });
 
-  describe("Notepad concurrent writes", () => {
-    it("should not lose entries when multiple working memory writes happen concurrently", () => {
+  describe('Notepad concurrent writes', () => {
+    it('should not lose entries when multiple working memory writes happen concurrently', () => {
       initNotepad(testDir);
 
       // Simulate sequential writes (which previously raced without locking)
@@ -60,52 +60,52 @@ describe("Shared Memory Concurrency (issue #1160)", () => {
       }
     });
 
-    it("should not lose entries when manual and working memory writes interleave", () => {
+    it('should not lose entries when manual and working memory writes interleave', () => {
       initNotepad(testDir);
 
       // Interleave different section writes
-      addWorkingMemoryEntry(testDir, "Working entry 1");
-      addManualEntry(testDir, "Manual entry 1");
-      addWorkingMemoryEntry(testDir, "Working entry 2");
-      addManualEntry(testDir, "Manual entry 2");
+      addWorkingMemoryEntry(testDir, 'Working entry 1');
+      addManualEntry(testDir, 'Manual entry 1');
+      addWorkingMemoryEntry(testDir, 'Working entry 2');
+      addManualEntry(testDir, 'Manual entry 2');
 
       const content = readNotepad(testDir)!;
-      expect(content).toContain("Working entry 1");
-      expect(content).toContain("Working entry 2");
-      expect(content).toContain("Manual entry 1");
-      expect(content).toContain("Manual entry 2");
+      expect(content).toContain('Working entry 1');
+      expect(content).toContain('Working entry 2');
+      expect(content).toContain('Manual entry 1');
+      expect(content).toContain('Manual entry 2');
     });
 
-    it("should not lose priority context when set concurrently with working memory", () => {
+    it('should not lose priority context when set concurrently with working memory', () => {
       initNotepad(testDir);
 
-      setPriorityContext(testDir, "Critical discovery");
-      addWorkingMemoryEntry(testDir, "Working note");
+      setPriorityContext(testDir, 'Critical discovery');
+      addWorkingMemoryEntry(testDir, 'Working note');
 
       const content = readNotepad(testDir)!;
-      expect(content).toContain("Critical discovery");
-      expect(content).toContain("Working note");
+      expect(content).toContain('Critical discovery');
+      expect(content).toContain('Working note');
     });
 
-    it("lock file should be cleaned up after notepad writes", () => {
+    it('lock file should be cleaned up after notepad writes', () => {
       initNotepad(testDir);
 
-      addWorkingMemoryEntry(testDir, "Test entry");
+      addWorkingMemoryEntry(testDir, 'Test entry');
 
       const notepadPath = getNotepadPath(testDir);
-      const lockPath = notepadPath + ".lock";
+      const lockPath = notepadPath + '.lock';
       expect(existsSync(lockPath)).toBe(false);
     });
   });
 
-  describe("Project memory concurrent writes", () => {
-    it("withProjectMemoryLock should serialize concurrent access", async () => {
+  describe('Project memory concurrent writes', () => {
+    it('withProjectMemoryLock should serialize concurrent access', async () => {
       // Set up initial memory
-      const omcDir = join(testDir, ".omc");
+      const omcDir = join(testDir, '.omc');
       mkdirSync(omcDir, { recursive: true });
 
       const initialMemory = {
-        version: "1.0.0",
+        version: '1.0.0',
         projectRoot: testDir,
         lastScanned: Date.now(),
         techStack: { languages: [], frameworks: [], packageManagers: [] },
@@ -127,12 +127,12 @@ describe("Shared Memory Concurrency (issue #1160)", () => {
       const writers = Array.from({ length: 5 }, (_, i) =>
         withProjectMemoryLock(testDir, async () => {
           const memory = await loadProjectMemory(testDir);
-          if (!memory) throw new Error("Memory not found");
+          if (!memory) throw new Error('Memory not found');
 
           memory.customNotes.push({
             timestamp: Date.now(),
-            source: "learned",
-            category: "test",
+            source: 'learned',
+            category: 'test',
             content: `Note from agent ${i}`,
           });
 
@@ -155,15 +155,15 @@ describe("Shared Memory Concurrency (issue #1160)", () => {
       }
     });
 
-    it("lock file should be cleaned up after project memory writes", async () => {
-      const omcDir = join(testDir, ".omc");
+    it('lock file should be cleaned up after project memory writes', async () => {
+      const omcDir = join(testDir, '.omc');
       mkdirSync(omcDir, { recursive: true });
 
-      const memoryPath = join(omcDir, "project-memory.json");
+      const memoryPath = join(omcDir, 'project-memory.json');
       writeFileSync(
         memoryPath,
         JSON.stringify({
-          version: "1.0.0",
+          version: '1.0.0',
           projectRoot: testDir,
           lastScanned: Date.now(),
           techStack: { languages: [], frameworks: [], packageManagers: [] },
@@ -180,7 +180,7 @@ describe("Shared Memory Concurrency (issue #1160)", () => {
         // Do nothing -- just verify lock lifecycle
       });
 
-      const lockPath = memoryPath + ".lock";
+      const lockPath = memoryPath + '.lock';
       expect(existsSync(lockPath)).toBe(false);
     });
   });

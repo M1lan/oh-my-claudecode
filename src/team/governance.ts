@@ -4,14 +4,14 @@ import type {
   TeamManifestV2,
   TeamPolicy,
   TeamTransportPolicy,
-} from "./types.js";
+} from './types.js';
 
-export type LifecycleProfile = "default" | "linked_ralph";
+export type LifecycleProfile = 'default' | 'linked_ralph';
 
 export const DEFAULT_TEAM_TRANSPORT_POLICY: TeamTransportPolicy = {
-  display_mode: "split_pane",
-  worker_launch_mode: "interactive",
-  dispatch_mode: "hook_preferred_with_fallback",
+  display_mode: 'split_pane',
+  worker_launch_mode: 'interactive',
+  dispatch_mode: 'hook_preferred_with_fallback',
   dispatch_ack_timeout_ms: 15_000,
 };
 
@@ -39,7 +39,7 @@ export function normalizeTeamTransportPolicy(
     dispatch_mode:
       policy?.dispatch_mode ?? DEFAULT_TEAM_TRANSPORT_POLICY.dispatch_mode,
     dispatch_ack_timeout_ms:
-      typeof policy?.dispatch_ack_timeout_ms === "number"
+      typeof policy?.dispatch_ack_timeout_ms === 'number'
         ? policy.dispatch_ack_timeout_ms
         : DEFAULT_TEAM_TRANSPORT_POLICY.dispatch_ack_timeout_ms,
   };
@@ -94,18 +94,18 @@ export function getConfigGovernance(
  * Manifest takes precedence over config; defaults to 'default'.
  */
 export function resolveLifecycleProfile(
-  config?: Pick<TeamConfig, "lifecycle_profile"> | null,
-  manifest?: Pick<TeamManifestV2, "lifecycle_profile"> | null,
+  config?: Pick<TeamConfig, 'lifecycle_profile'> | null,
+  manifest?: Pick<TeamManifestV2, 'lifecycle_profile'> | null,
 ): LifecycleProfile {
   if (manifest?.lifecycle_profile) return manifest.lifecycle_profile;
   if (config?.lifecycle_profile) return config.lifecycle_profile;
-  return "default";
+  return 'default';
 }
 
 /** Returns true when the effective lifecycle profile is 'linked_ralph' */
 export function isLinkedRalphProfile(
-  config?: Pick<TeamConfig, "lifecycle_profile"> | null,
-  manifest?: Pick<TeamManifestV2, "lifecycle_profile"> | null,
+  config?: Pick<TeamConfig, 'lifecycle_profile'> | null,
+  manifest?: Pick<TeamManifestV2, 'lifecycle_profile'> | null,
 ): boolean {
-  return resolveLifecycleProfile(config, manifest) === "linked_ralph";
+  return resolveLifecycleProfile(config, manifest) === 'linked_ralph';
 }

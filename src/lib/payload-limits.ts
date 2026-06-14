@@ -38,7 +38,7 @@ function measureDepth(
 ): number {
   if (current > maxAllowed) return current; // short-circuit
 
-  if (value !== null && typeof value === "object") {
+  if (value !== null && typeof value === 'object') {
     const entries = Array.isArray(value)
       ? value
       : Object.values(value as Record<string, unknown>);
@@ -71,7 +71,7 @@ export function validatePayload(
   // 1. Top-level key count (only for objects)
   if (
     payload !== null &&
-    typeof payload === "object" &&
+    typeof payload === 'object' &&
     !Array.isArray(payload)
   ) {
     const keyCount = Object.keys(payload as Record<string, unknown>).length;
@@ -97,10 +97,10 @@ export function validatePayload(
   try {
     serialized = JSON.stringify(payload);
   } catch {
-    return { valid: false, error: "Payload cannot be serialized to JSON" };
+    return { valid: false, error: 'Payload cannot be serialized to JSON' };
   }
 
-  const byteSize = Buffer.byteLength(serialized, "utf-8");
+  const byteSize = Buffer.byteLength(serialized, 'utf-8');
   if (byteSize > resolved.maxPayloadBytes) {
     const sizeMB = (byteSize / 1_048_576).toFixed(2);
     const limitMB = (resolved.maxPayloadBytes / 1_048_576).toFixed(2);

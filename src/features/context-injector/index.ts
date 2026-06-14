@@ -8,14 +8,14 @@
  */
 
 // Collector
-export { ContextCollector, contextCollector } from "./collector.js";
+export { ContextCollector, contextCollector } from './collector.js';
 
 // Injector functions
 export {
   injectPendingContext,
   injectContextIntoText,
   createContextInjectorHook,
-} from "./injector.js";
+} from './injector.js';
 
 // Types
 export type {
@@ -28,4 +28,4 @@ export type {
   OutputPart,
   InjectionStrategy,
   InjectionResult,
-} from "./types.js";
+} from './types.js';

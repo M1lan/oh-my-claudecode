@@ -19,9 +19,12 @@ export interface InteropRuntimeFlags {
   failClosed: boolean;
 }
 
-export function readInteropRuntimeFlags(env: NodeJS.ProcessEnv = process.env): InteropRuntimeFlags {
+export function readInteropRuntimeFlags(
+  env: NodeJS.ProcessEnv = process.env,
+): InteropRuntimeFlags {
   const rawMode = (env.OMX_OMC_INTEROP_MODE || 'off').toLowerCase();
-  const mode: InteropMode = rawMode === 'observe' || rawMode === 'active' ? rawMode : 'off';
+  const mode: InteropMode =
+    rawMode === 'observe' || rawMode === 'active' ? rawMode : 'off';
   return {
     enabled: env.OMX_OMC_INTEROP_ENABLED === '1',
     mode,
@@ -30,13 +33,23 @@ export function readInteropRuntimeFlags(env: NodeJS.ProcessEnv = process.env): I
   };
 }
 
-export function validateInteropRuntimeFlags(flags: InteropRuntimeFlags): { ok: boolean; reason?: string } {
+export function validateInteropRuntimeFlags(flags: InteropRuntimeFlags): {
+  ok: boolean;
+  reason?: string;
+} {
   if (!flags.enabled && flags.mode !== 'off') {
-    return { ok: false, reason: 'OMX_OMC_INTEROP_MODE must be "off" when OMX_OMC_INTEROP_ENABLED=0.' };
+    return {
+      ok: false,
+      reason:
+        'OMX_OMC_INTEROP_MODE must be "off" when OMX_OMC_INTEROP_ENABLED=0.',
+    };
   }
 
   if (flags.mode === 'active' && !flags.omcInteropToolsEnabled) {
-    return { ok: false, reason: 'Active mode requires OMC_INTEROP_TOOLS_ENABLED=1.' };
+    return {
+      ok: false,
+      reason: 'Active mode requires OMC_INTEROP_TOOLS_ENABLED=1.',
+    };
   }
 
   return { ok: true };
@@ -61,7 +74,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   const flags = readInteropRuntimeFlags();
   const flagCheck = validateInteropRuntimeFlags(flags);
 
-  console.log(`[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, failClosed=${flags.failClosed ? '1' : '0'}`);
+  console.log(
+    `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, failClosed=${flags.failClosed ? '1' : '0'}`,
+  );
   if (!flagCheck.ok) {
     console.error(`Error: ${flagCheck.reason}`);
     console.error('Refusing to start interop in invalid flag configuration.');
@@ -70,7 +85,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
 
   // Check prerequisites
   if (!isTmuxAvailable()) {
-    console.error('Error: tmux is not available. Install tmux to use interop mode.');
+    console.error(
+      'Error: tmux is not available. Install tmux to use interop mode.',
+    );
     process.exit(1);
   }
 
@@ -78,20 +95,28 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   const hasClaude = isClaudeAvailable();
 
   if (!hasClaude) {
-    console.error('Error: claude CLI is not available. Install Claude Code CLI first.');
+    console.error(
+      'Error: claude CLI is not available. Install Claude Code CLI first.',
+    );
     process.exit(1);
   }
 
   if (!hasCodex) {
-    console.warn('Warning: codex CLI is not available. Only Claude Code will be launched.');
-    console.warn('Install oh-my-codex (pnpm add -g @openai/codex) for full interop support.\n');
+    console.warn(
+      'Warning: codex CLI is not available. Only Claude Code will be launched.',
+    );
+    console.warn(
+      'Install oh-my-codex (pnpm add -g @openai/codex) for full interop support.\n',
+    );
   }
 
   // Check if already in tmux
   const inTmux = Boolean(process.env.TMUX);
 
   if (!inTmux) {
-    console.error('Error: Interop mode requires running inside a tmux session.');
+    console.error(
+      'Error: Interop mode requires running inside a tmux session.',
+    );
     console.error('Start tmux first: tmux new-session -s myproject');
     process.exit(1);
   }
@@ -100,7 +125,11 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   const sessionId = `interop-${randomUUID().split('-')[0]}`;
 
   // Initialize interop session
-  const _config = initInteropSession(sessionId, cwd, hasCodex ? cwd : undefined);
+  const _config = initInteropSession(
+    sessionId,
+    cwd,
+    hasCodex ? cwd : undefined,
+  );
 
   console.log(`Initializing interop session: ${sessionId}`);
   console.log(`Working directory: ${cwd}`);
@@ -127,13 +156,10 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       // Create right pane with codex
       console.log('Splitting pane: Left (Claude Code) | Right (Codex)');
 
-      tmuxExec([
-        'split-window',
-        '-h',
-        '-c', cwd,
-        '-t', currentPaneId,
-        'codex',
-      ], { stdio: 'inherit' });
+      tmuxExec(
+        ['split-window', '-h', '-c', cwd, '-t', currentPaneId, 'codex'],
+        { stdio: 'inherit' },
+      );
 
       // Select left pane (original/current)
       tmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
@@ -141,7 +167,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       console.log('\nInterop session ready!');
       console.log('- Left pane: Claude Code (this terminal)');
       console.log('- Right pane: Codex CLI');
-      console.log('\nYou can now use interop MCP tools to communicate between the two:');
+      console.log(
+        '\nYou can now use interop MCP tools to communicate between the two:',
+      );
       console.log('- interop_send_task: Send tasks between tools');
       console.log('- interop_read_results: Check task results');
       console.log('- interop_send_message: Send messages');
@@ -153,7 +181,10 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       console.log('\nInstall: pnpm add -g @openai/codex');
     }
   } catch (error) {
-    console.error('Error creating split pane:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Error creating split pane:',
+      error instanceof Error ? error.message : String(error),
+    );
     process.exit(1);
   }
 
@@ -164,7 +195,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   if (result.error) {
     console.error(
       'Error launching claude:',
-      result.error instanceof Error ? result.error.message : String(result.error),
+      result.error instanceof Error
+        ? result.error.message
+        : String(result.error),
     );
     process.exit(1);
   }

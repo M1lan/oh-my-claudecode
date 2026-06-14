@@ -5,9 +5,9 @@
  * command templates and expanding them with arguments.
  */
 
-import { readFileSync, existsSync, readdirSync } from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { readFileSync, existsSync, readdirSync } from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 
 export interface CommandInfo {
   name: string;
@@ -26,7 +26,7 @@ export interface ExpandedCommand {
  * Get the commands directory path
  */
 export function getCommandsDir(): string {
-  return join(getClaudeConfigDir(), "commands");
+  return join(getClaudeConfigDir(), 'commands');
 }
 
 /**
@@ -39,7 +39,7 @@ function parseCommandFile(content: string): {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 
   if (!frontmatterMatch) {
-    return { description: "", template: content };
+    return { description: '', template: content };
   }
 
   const frontmatter = frontmatterMatch[1];
@@ -47,7 +47,7 @@ function parseCommandFile(content: string): {
 
   // Extract description from frontmatter
   const descMatch = frontmatter.match(/description:\s*(.+)/);
-  const description = descMatch ? descMatch[1].trim() : "";
+  const description = descMatch ? descMatch[1].trim() : '';
 
   return { description, template };
 }
@@ -64,7 +64,7 @@ export function getCommand(name: string): CommandInfo | null {
   }
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     const { description, template } = parseCommandFile(content);
 
     return {
@@ -90,11 +90,11 @@ export function getAllCommands(): CommandInfo[] {
   }
 
   try {
-    const files = readdirSync(commandsDir).filter((f) => f.endsWith(".md"));
+    const files = readdirSync(commandsDir).filter((f) => f.endsWith('.md'));
     const commands: CommandInfo[] = [];
 
     for (const file of files) {
-      const name = file.replace(".md", "");
+      const name = file.replace('.md', '');
       const command = getCommand(name);
       if (command) {
         commands.push(command);
@@ -103,7 +103,7 @@ export function getAllCommands(): CommandInfo[] {
 
     return commands;
   } catch (error) {
-    console.error("Error listing commands:", error);
+    console.error('Error listing commands:', error);
     return [];
   }
 }
@@ -132,7 +132,7 @@ export function listCommands(): string[] {
  */
 export function expandCommand(
   name: string,
-  args: string = "",
+  args: string = '',
 ): ExpandedCommand | null {
   const command = getCommand(name);
 
@@ -168,7 +168,7 @@ export function expandCommand(
  */
 export function expandCommandPrompt(
   name: string,
-  args: string = "",
+  args: string = '',
 ): string | null {
   const expanded = expandCommand(name, args);
   return expanded ? expanded.prompt : null;

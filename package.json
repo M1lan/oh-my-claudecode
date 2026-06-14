@@ -57,7 +57,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
-    "format": "prettier --write src/**/*.ts",
+    "format": "prettier --write \"src/**/*.ts\"",
     "sync-featured-contributors": "tsx scripts/generate-featured-contributors.ts",
     "sync-featured-contributors:verify": "tsx scripts/generate-featured-contributors.ts --verify",
     "sync-featured-contributors:dry-run": "tsx scripts/generate-featured-contributors.ts --dry-run",

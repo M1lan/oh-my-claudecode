@@ -7,7 +7,11 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { learnFromToolOutput, addCustomNote } from '../learner.js';
-import { saveProjectMemory, loadProjectMemory, getMemoryPath } from '../storage.js';
+import {
+  saveProjectMemory,
+  loadProjectMemory,
+  getMemoryPath,
+} from '../storage.js';
 import { ProjectMemory } from '../types.js';
 import { SCHEMA_VERSION } from '../constants.js';
 
@@ -16,10 +20,31 @@ const createBaseMemory = (projectRoot: string): ProjectMemory => ({
   version: SCHEMA_VERSION,
   lastScanned: Date.now(),
   projectRoot,
-  techStack: { languages: [], frameworks: [], packageManager: null, runtime: null },
-  build: { buildCommand: null, testCommand: null, lintCommand: null, devCommand: null, scripts: {} },
-  conventions: { namingStyle: null, importStyle: null, testPattern: null, fileOrganization: null },
-  structure: { isMonorepo: false, workspaces: [], mainDirectories: [], gitBranches: null },
+  techStack: {
+    languages: [],
+    frameworks: [],
+    packageManager: null,
+    runtime: null,
+  },
+  build: {
+    buildCommand: null,
+    testCommand: null,
+    lintCommand: null,
+    devCommand: null,
+    scripts: {},
+  },
+  conventions: {
+    namingStyle: null,
+    importStyle: null,
+    testPattern: null,
+    fileOrganization: null,
+  },
+  structure: {
+    isMonorepo: false,
+    workspaces: [],
+    mainDirectories: [],
+    gitBranches: null,
+  },
   customNotes: [],
   directoryMap: {},
   hotPaths: [],
@@ -75,7 +100,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       const output = 'Node.js v20.10.0\n...';
-      await learnFromToolOutput('Bash', { command: 'node --version' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'node --version' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -88,7 +118,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       const output = 'Python 3.11.5\n...';
-      await learnFromToolOutput('Bash', { command: 'python --version' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'python --version' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -101,7 +136,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       const output = 'rustc 1.75.0 (82e1608df 2024-01-01)\n...';
-      await learnFromToolOutput('Bash', { command: 'rustc --version' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'rustc --version' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -113,8 +153,13 @@ describe('Project Memory Learner', () => {
       const memory = createBasicMemory();
       await saveProjectMemory(tempDir, memory);
 
-      const output = 'Error: Cannot find module \'express\'\n...';
-      await learnFromToolOutput('Bash', { command: 'node app.js' }, output, tempDir);
+      const output = "Error: Cannot find module 'express'\n...";
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'node app.js' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -127,7 +172,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       const output = 'Error: Missing environment variable: DATABASE_URL\n...';
-      await learnFromToolOutput('Bash', { command: 'npm start' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'npm start' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -146,7 +196,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       const output = 'Node.js v20.10.0\n...';
-      await learnFromToolOutput('Bash', { command: 'node --version' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'node --version' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(1);
@@ -167,7 +222,12 @@ describe('Project Memory Learner', () => {
 
       // Add one more
       const output = 'Node.js v20.10.0\n...';
-      await learnFromToolOutput('Bash', { command: 'node --version' }, output, tempDir);
+      await learnFromToolOutput(
+        'Bash',
+        { command: 'node --version' },
+        output,
+        tempDir,
+      );
 
       const updated = await loadProjectMemory(tempDir);
       expect(updated?.customNotes).toHaveLength(20);
@@ -179,7 +239,12 @@ describe('Project Memory Learner', () => {
       await saveProjectMemory(tempDir, memory);
 
       await expect(
-        learnFromToolOutput('Bash', { command: 'node --version' }, { stdout: 'Node.js v20.10.0' }, tempDir)
+        learnFromToolOutput(
+          'Bash',
+          { command: 'node --version' },
+          { stdout: 'Node.js v20.10.0' },
+          tempDir,
+        ),
       ).resolves.not.toThrow();
 
       const updated = await loadProjectMemory(tempDir);
@@ -191,10 +256,19 @@ describe('Project Memory Learner', () => {
       const minimalMemory = createBasicMemory();
       const { hotPaths: _hotPaths, ...memoryWithoutHotPaths } = minimalMemory;
       await fs.mkdir(path.dirname(memoryPath), { recursive: true });
-      await fs.writeFile(memoryPath, JSON.stringify(memoryWithoutHotPaths), 'utf-8');
+      await fs.writeFile(
+        memoryPath,
+        JSON.stringify(memoryWithoutHotPaths),
+        'utf-8',
+      );
 
       await expect(
-        learnFromToolOutput('Read', { file_path: path.join(tempDir, 'src', 'index.ts') }, '', tempDir)
+        learnFromToolOutput(
+          'Read',
+          { file_path: path.join(tempDir, 'src', 'index.ts') },
+          '',
+          tempDir,
+        ),
       ).resolves.not.toThrow();
 
       const updated = await loadProjectMemory(tempDir);
@@ -210,7 +284,7 @@ describe('Project Memory Learner', () => {
 
     it('should do nothing if memory file does not exist', async () => {
       await expect(
-        learnFromToolOutput('Bash', { command: 'pnpm build' }, '', tempDir)
+        learnFromToolOutput('Bash', { command: 'pnpm build' }, '', tempDir),
       ).resolves.not.toThrow();
     });
   });
@@ -231,7 +305,7 @@ describe('Project Memory Learner', () => {
 
     it('should do nothing if memory file does not exist', async () => {
       await expect(
-        addCustomNote(tempDir, 'test', 'Test note')
+        addCustomNote(tempDir, 'test', 'Test note'),
       ).resolves.not.toThrow();
     });
   });

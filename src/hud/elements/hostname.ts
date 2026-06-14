@@ -7,8 +7,8 @@
  * host when terminal tab titles are hidden behind tmux/screen splits.
  */
 
-import { hostname } from "node:os";
-import { cyan } from "../colors.js";
+import { hostname } from 'node:os';
+import { cyan } from '../colors.js';
 
 /**
  * Render the short hostname (FQDN stripped).
@@ -19,7 +19,7 @@ import { cyan } from "../colors.js";
 export function renderHostname(): string | null {
   const full = hostname();
   if (!full) return null;
-  const short = full.split(".")[0];
+  const short = full.split('.')[0];
   if (!short) return null;
   return cyan(`host:${short}`);
 }

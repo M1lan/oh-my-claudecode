@@ -2,7 +2,11 @@ import { spawnSync } from 'child_process';
 import { isAbsolute, normalize, sep, win32 as win32Path } from 'path';
 import { validateTeamName } from './team-name.js';
 import { normalizeToCcAlias } from '../features/delegation-enforcer.js';
-import { isBedrock, isVertexAI, isProviderSpecificModelId } from '../config/models.js';
+import {
+  isBedrock,
+  isVertexAI,
+  isProviderSpecificModelId,
+} from '../config/models.js';
 import { isExternalLLMDisabled } from '../lib/security-config.js';
 
 export type CliAgentType = 'claude' | 'codex' | 'gemini' | 'cursor' | 'grok';
@@ -55,11 +59,7 @@ const UNTRUSTED_PATH_PATTERNS: RegExp[] = [
 ];
 
 function getTrustedPrefixes(): string[] {
-  const trusted = [
-    '/usr/local/bin',
-    '/usr/bin',
-    '/opt/homebrew/',
-  ];
+  const trusted = ['/usr/local/bin', '/usr/bin', '/opt/homebrew/'];
 
   const home = process.env.HOME;
   if (home) {
@@ -71,9 +71,9 @@ function getTrustedPrefixes(): string[] {
 
   const custom = (process.env.OMC_TRUSTED_CLI_DIRS ?? '')
     .split(':')
-    .map(part => part.trim())
+    .map((part) => part.trim())
     .filter(Boolean)
-    .filter(part => isAbsolute(part));
+    .filter((part) => isAbsolute(part));
 
   trusted.push(...custom);
   return trusted;
@@ -81,7 +81,7 @@ function getTrustedPrefixes(): string[] {
 
 function isTrustedPrefix(resolvedPath: string): boolean {
   const normalized = normalize(resolvedPath);
-  return getTrustedPrefixes().some(prefix => {
+  return getTrustedPrefixes().some((prefix) => {
     // `normalize` strips trailing separators, so a plain `startsWith` would treat
     // a sibling whose name merely begins with the prefix as trusted — e.g.
     // `/usr/bin` would match `/usr/bin-malicious/grok`, and `~/.local/bin` would
@@ -122,7 +122,11 @@ export function resolveCliBinaryPath(binary: string): string {
   }
 
   const stdout = result.stdout?.toString().trim() ?? '';
-  const firstLine = stdout.split('\n').map(line => line.trim()).find(Boolean) ?? '';
+  const firstLine =
+    stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .find(Boolean) ?? '';
   if (!firstLine) {
     throw new Error(`CLI binary '${binary}' not found in PATH`);
   }
@@ -132,12 +136,16 @@ export function resolveCliBinaryPath(binary: string): string {
     throw new Error(`Resolved CLI binary '${binary}' to relative path`);
   }
 
-  if (UNTRUSTED_PATH_PATTERNS.some(pattern => pattern.test(resolvedPath))) {
-    throw new Error(`Resolved CLI binary '${binary}' to untrusted location: ${resolvedPath}`);
+  if (UNTRUSTED_PATH_PATTERNS.some((pattern) => pattern.test(resolvedPath))) {
+    throw new Error(
+      `Resolved CLI binary '${binary}' to untrusted location: ${resolvedPath}`,
+    );
   }
 
   if (!isTrustedPrefix(resolvedPath)) {
-    console.warn(`[omc:cli-security] CLI binary '${binary}' resolved to non-standard path: ${resolvedPath}`);
+    console.warn(
+      `[omc:cli-security] CLI binary '${binary}' resolved to non-standard path: ${resolvedPath}`,
+    );
   }
 
   resolvedPathCache.set(binary, resolvedPath);
@@ -176,8 +184,13 @@ export const _testInternals = {
  * prompts. When an API key is present, `--bare` is needed to avoid the
  * interactive OAuth/session login path for team worker panes.
  */
-export function shouldUseClaudeBareMode(env: NodeJS.ProcessEnv = process.env): boolean {
-  return typeof env.ANTHROPIC_API_KEY === 'string' && env.ANTHROPIC_API_KEY.trim().length > 0;
+export function shouldUseClaudeBareMode(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return (
+    typeof env.ANTHROPIC_API_KEY === 'string' &&
+    env.ANTHROPIC_API_KEY.trim().length > 0
+  );
 }
 
 const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
@@ -195,7 +208,9 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
         // Normalizing them to aliases like "sonnet" causes Claude Code to expand
         // them to Anthropic API names (claude-sonnet-4-6) which are invalid on
         // these providers. (issue #1695)
-        const resolved = isProviderSpecificModelId(model) ? model : normalizeToCcAlias(model);
+        const resolved = isProviderSpecificModelId(model)
+          ? model
+          : normalizeToCcAlias(model);
         args.push('--model', resolved);
       }
       return [...args, ...extraFlags];
@@ -269,7 +284,8 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
   cursor: {
     agentType: 'cursor',
     binary: 'cursor-agent',
-    installInstructions: 'Install Cursor Agent CLI: see https://docs.cursor.com/cli',
+    installInstructions:
+      'Install Cursor Agent CLI: see https://docs.cursor.com/cli',
     // cursor-agent runs as an interactive REPL — no exit-on-complete prompt mode.
     // Keep supportsPromptMode false so the verdict-file contract path
     // (CONTRACT_ROLES + shouldInjectContract) skips this provider; cursor
@@ -289,12 +305,14 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
 export function getContract(agentType: CliAgentType): CliAgentContract {
   const contract = CONTRACTS[agentType];
   if (!contract) {
-    throw new Error(`Unknown agent type: ${agentType}. Supported: ${Object.keys(CONTRACTS).join(', ')}`);
+    throw new Error(
+      `Unknown agent type: ${agentType}. Supported: ${Object.keys(CONTRACTS).join(', ')}`,
+    );
   }
   if (agentType !== 'claude' && isExternalLLMDisabled()) {
     throw new Error(
       `External LLM provider "${agentType}" is blocked by security policy (disableExternalLLM). ` +
-      `Only Claude workers are allowed in the current security configuration.`
+        `Only Claude workers are allowed in the current security configuration.`,
     );
   }
   return contract;
@@ -312,16 +330,21 @@ function resolveBinaryPath(binary: string): string {
 
   try {
     const resolver = process.platform === 'win32' ? 'where' : 'which';
-    const result = spawnSync(resolver, [binary], { timeout: 5000, encoding: 'utf8' });
+    const result = spawnSync(resolver, [binary], {
+      timeout: 5000,
+      encoding: 'utf8',
+    });
     if (result.status !== 0) return binary;
 
-    const lines = result.stdout
-      ?.split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter(Boolean) ?? [];
+    const lines =
+      result.stdout
+        ?.split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean) ?? [];
 
     const firstPath = lines[0];
-    const isResolvedAbsolute = !!firstPath && (isAbsolute(firstPath) || win32Path.isAbsolute(firstPath));
+    const isResolvedAbsolute =
+      !!firstPath && (isAbsolute(firstPath) || win32Path.isAbsolute(firstPath));
     return isResolvedAbsolute ? firstPath : binary;
   } catch {
     return binary;
@@ -334,7 +357,11 @@ export function isCliAvailable(agentType: CliAgentType): boolean {
     const resolvedBinary = resolveBinaryPath(contract.binary);
     if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
       const comspec = process.env.COMSPEC || 'cmd.exe';
-      const result = spawnSync(comspec, ['/d', '/s', '/c', `"${resolvedBinary}" --version`], { timeout: 5000 });
+      const result = spawnSync(
+        comspec,
+        ['/d', '/s', '/c', `"${resolvedBinary}" --version`],
+        { timeout: 5000 },
+      );
       return result.status === 0;
     }
 
@@ -352,7 +379,7 @@ export function validateCliAvailable(agentType: CliAgentType): void {
   if (!isCliAvailable(agentType)) {
     const contract = getContract(agentType);
     throw new Error(
-      `CLI agent '${agentType}' not found. ${contract.installInstructions}`
+      `CLI agent '${agentType}' not found. ${contract.installInstructions}`,
     );
   }
 }
@@ -362,11 +389,20 @@ export function resolveValidatedBinaryPath(agentType: CliAgentType): string {
   return resolveCliBinaryPath(contract.binary);
 }
 
-export function buildLaunchArgs(agentType: CliAgentType, config: WorkerLaunchConfig): string[] {
-  return getContract(agentType).buildLaunchArgs(config.model, config.extraFlags);
+export function buildLaunchArgs(
+  agentType: CliAgentType,
+  config: WorkerLaunchConfig,
+): string[] {
+  return getContract(agentType).buildLaunchArgs(
+    config.model,
+    config.extraFlags,
+  );
 }
 
-export function buildWorkerArgv(agentType: CliAgentType, config: WorkerLaunchConfig): string[] {
+export function buildWorkerArgv(
+  agentType: CliAgentType,
+  config: WorkerLaunchConfig,
+): string[] {
   validateTeamName(config.teamName);
   const contract = getContract(agentType);
   const binary = config.resolvedBinaryPath
@@ -379,7 +415,10 @@ export function buildWorkerArgv(agentType: CliAgentType, config: WorkerLaunchCon
   return [binary, ...args];
 }
 
-export function buildWorkerCommand(agentType: CliAgentType, config: WorkerLaunchConfig): string {
+export function buildWorkerCommand(
+  agentType: CliAgentType,
+  config: WorkerLaunchConfig,
+): string {
   return buildWorkerArgv(agentType, config)
     .map((part) => `'${part.replace(/'/g, `'\"'\"'`)}'`)
     .join(' ');
@@ -431,7 +470,10 @@ export function getWorkerEnv(
   return workerEnv;
 }
 
-export function parseCliOutput(agentType: CliAgentType, rawOutput: string): string {
+export function parseCliOutput(
+  agentType: CliAgentType,
+  rawOutput: string,
+): string {
   return getContract(agentType).parseOutput(rawOutput);
 }
 
@@ -501,7 +543,10 @@ export function resolveClaudeWorkerModel(
  * Get the extra CLI args needed to pass an instruction in prompt mode.
  * Returns empty array if the agent does not support prompt mode.
  */
-export function getPromptModeArgs(agentType: CliAgentType, instruction: string): string[] {
+export function getPromptModeArgs(
+  agentType: CliAgentType,
+  instruction: string,
+): string[] {
   const contract = getContract(agentType);
   if (!contract.supportsPromptMode) {
     return [];

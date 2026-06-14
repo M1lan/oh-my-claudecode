@@ -17,7 +17,7 @@ import type {
   CustomNote,
   UserDirective,
   HotPath,
-} from "../hooks/project-memory/types.js";
+} from '../hooks/project-memory/types.js';
 
 // ---------------------------------------------------------------------------
 // Generic deep-merge utilities
@@ -28,7 +28,7 @@ import type {
  */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return (
-    typeof value === "object" &&
+    typeof value === 'object' &&
     value !== null &&
     !Array.isArray(value) &&
     !(value instanceof Date) &&
@@ -51,7 +51,7 @@ export function deepMerge<T extends Record<string, unknown>>(
   const result: Record<string, unknown> = { ...base };
 
   for (const key of Object.keys(incoming)) {
-    if (key === "__proto__" || key === "constructor" || key === "prototype")
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
       continue;
     const baseVal = (base as Record<string, unknown>)[key];
     const incomingVal = (incoming as Record<string, unknown>)[key];
@@ -101,7 +101,7 @@ function mergeArrays(
   incoming: unknown[],
 ): unknown[] {
   switch (fieldName) {
-    case "customNotes":
+    case 'customNotes':
       return mergeByKey(
         base as CustomNote[],
         incoming as CustomNote[],
@@ -109,7 +109,7 @@ function mergeArrays(
         (a, b) => (b.timestamp >= a.timestamp ? b : a),
       );
 
-    case "userDirectives":
+    case 'userDirectives':
       return mergeByKey(
         base as UserDirective[],
         incoming as UserDirective[],
@@ -117,7 +117,7 @@ function mergeArrays(
         (a, b) => (b.timestamp >= a.timestamp ? b : a),
       );
 
-    case "hotPaths":
+    case 'hotPaths':
       return mergeByKey(
         base as HotPath[],
         incoming as HotPath[],
@@ -129,8 +129,8 @@ function mergeArrays(
         }),
       );
 
-    case "languages":
-    case "frameworks":
+    case 'languages':
+    case 'frameworks':
       return mergeByKey(
         base as Array<{ name: string }>,
         incoming as Array<{ name: string }>,
@@ -138,10 +138,10 @@ function mergeArrays(
         (_a, b) => b,
       );
 
-    case "workspaces":
-    case "mainDirectories":
-    case "keyFiles":
-    case "markers":
+    case 'workspaces':
+    case 'mainDirectories':
+    case 'keyFiles':
+    case 'markers':
       return mergeScalarArray(base as string[], incoming as string[]);
 
     default:

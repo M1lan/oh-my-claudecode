@@ -8,12 +8,12 @@ import {
   REQUIRED_METADATA_FIELDS,
   MIN_QUALITY_SCORE,
   MAX_SKILL_CONTENT_LENGTH,
-} from "./constants.js";
+} from './constants.js';
 import type {
   SkillExtractionRequest,
   QualityValidation,
   SkillMetadata,
-} from "./types.js";
+} from './types.js';
 
 /**
  * Validate a skill extraction request.
@@ -27,17 +27,17 @@ export function validateExtractionRequest(
 
   // Check required fields
   if (!request.problem || request.problem.trim().length < 10) {
-    missingFields.push("problem (minimum 10 characters)");
+    missingFields.push('problem (minimum 10 characters)');
     score -= 30;
   }
 
   if (!request.solution || request.solution.trim().length < 20) {
-    missingFields.push("solution (minimum 20 characters)");
+    missingFields.push('solution (minimum 20 characters)');
     score -= 30;
   }
 
   if (!request.triggers || request.triggers.length === 0) {
-    missingFields.push("triggers (at least one required)");
+    missingFields.push('triggers (at least one required)');
     score -= 20;
   }
 
@@ -56,27 +56,27 @@ export function validateExtractionRequest(
     const shortTriggers = request.triggers.filter((t) => t.length < 3);
     if (shortTriggers.length > 0) {
       warnings.push(
-        `Short triggers may cause false matches: ${shortTriggers.join(", ")}`,
+        `Short triggers may cause false matches: ${shortTriggers.join(', ')}`,
       );
       score -= 5;
     }
 
     const genericTriggers = [
-      "the",
-      "a",
-      "an",
-      "this",
-      "that",
-      "it",
-      "is",
-      "are",
+      'the',
+      'a',
+      'an',
+      'this',
+      'that',
+      'it',
+      'is',
+      'are',
     ];
     const foundGeneric = request.triggers.filter((t) =>
       genericTriggers.includes(t.toLowerCase()),
     );
     if (foundGeneric.length > 0) {
       warnings.push(
-        `Generic triggers should be avoided: ${foundGeneric.join(", ")}`,
+        `Generic triggers should be avoided: ${foundGeneric.join(', ')}`,
       );
       score -= 10;
     }
@@ -112,14 +112,14 @@ export function validateSkillMetadata(
 
   // Check triggers array
   if (metadata.triggers && metadata.triggers.length === 0) {
-    missingFields.push("triggers (empty array)");
+    missingFields.push('triggers (empty array)');
     score -= 20;
   }
 
   // Check source value
   if (
     metadata.source &&
-    !["extracted", "promoted", "manual"].includes(metadata.source)
+    !['extracted', 'promoted', 'manual'].includes(metadata.source)
   ) {
     warnings.push(`Invalid source value: ${metadata.source}`);
     score -= 10;

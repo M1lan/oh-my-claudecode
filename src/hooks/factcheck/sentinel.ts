@@ -5,14 +5,14 @@
  * Ported from sentinel_health.py (issue #1155).
  */
 
-import { readFileSync, existsSync } from "fs";
+import { readFileSync, existsSync } from 'fs';
 import type {
   SentinelLogEntry,
   SentinelStats,
   SentinelReadinessResult,
   SentinelReadinessPolicy,
-} from "./types.js";
-import { loadGuardsConfig } from "./config.js";
+} from './types.js';
+import { loadGuardsConfig } from './config.js';
 
 // ---------------------------------------------------------------------------
 // Stats computation helpers
@@ -46,13 +46,13 @@ export function getReasonCoverageRate(stats: SentinelStats): number {
 /**
  * Normalize a verdict string to PASS, WARN, or FAIL.
  */
-function extractVerdict(entry: SentinelLogEntry): "PASS" | "WARN" | "FAIL" {
-  const raw = String(entry.verdict ?? "")
+function extractVerdict(entry: SentinelLogEntry): 'PASS' | 'WARN' | 'FAIL' {
+  const raw = String(entry.verdict ?? '')
     .toUpperCase()
     .trim();
-  if (raw === "PASS") return "PASS";
-  if (raw === "WARN") return "WARN";
-  return "FAIL";
+  if (raw === 'PASS') return 'PASS';
+  if (raw === 'WARN') return 'WARN';
+  return 'FAIL';
 }
 
 /**
@@ -68,8 +68,8 @@ function hasReason(entry: SentinelLogEntry): boolean {
 function isTimeout(entry: SentinelLogEntry): boolean {
   if (entry.runtime?.timed_out === true) return true;
   if (entry.runtime?.global_timeout === true) return true;
-  const reason = String(entry.reason ?? "").toLowerCase();
-  return reason.includes("timeout");
+  const reason = String(entry.reason ?? '').toLowerCase();
+  return reason.includes('timeout');
 }
 
 // ---------------------------------------------------------------------------
@@ -98,12 +98,12 @@ export function analyzeLog(logPath: string): SentinelStats {
 
   let content: string;
   try {
-    content = readFileSync(logPath, "utf-8");
+    content = readFileSync(logPath, 'utf-8');
   } catch {
     return stats;
   }
 
-  const lines = content.split("\n").filter((line) => line.trim().length > 0);
+  const lines = content.split('\n').filter((line) => line.trim().length > 0);
 
   for (const line of lines) {
     let entry: SentinelLogEntry;
@@ -117,8 +117,8 @@ export function analyzeLog(logPath: string): SentinelStats {
     stats.total_runs++;
 
     const verdict = extractVerdict(entry);
-    if (verdict === "PASS") stats.pass_count++;
-    else if (verdict === "WARN") stats.warn_count++;
+    if (verdict === 'PASS') stats.pass_count++;
+    else if (verdict === 'WARN') stats.warn_count++;
     else stats.fail_count++;
 
     if (isTimeout(entry)) stats.timeout_count++;

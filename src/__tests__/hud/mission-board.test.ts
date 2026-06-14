@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { renderMissionBoard } from '../../hud/elements/mission-board.js';
 import { render } from '../../hud/render.js';
-import { DEFAULT_HUD_CONFIG, type HudConfig, type HudRenderContext } from '../../hud/types.js';
+import {
+  DEFAULT_HUD_CONFIG,
+  type HudConfig,
+  type HudRenderContext,
+} from '../../hud/types.js';
 import type { MissionBoardState } from '../../hud/mission-board.js';
 
 // Force non-local so the OMC banner omits the "L" local-build suffix under test.
@@ -24,7 +28,14 @@ function createMissionState(): MissionBoardState {
         updatedAt: '2026-03-09T07:12:00.000Z',
         status: 'running',
         workerCount: 2,
-        taskCounts: { total: 2, pending: 0, blocked: 0, inProgress: 1, completed: 1, failed: 0 },
+        taskCounts: {
+          total: 2,
+          pending: 0,
+          blocked: 0,
+          inProgress: 1,
+          completed: 1,
+          failed: 0,
+        },
         agents: [
           {
             name: 'worker-1',
@@ -113,7 +124,7 @@ describe('mission board renderer', () => {
       promptTime: null,
       apiKeySource: null,
       profileName: null,
-    sessionSummary: null,
+      sessionSummary: null,
     };
 
     const config: HudConfig = {

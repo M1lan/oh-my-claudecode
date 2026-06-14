@@ -10,14 +10,14 @@ import {
   clearAutopilotState,
   writeAutopilotState,
   getAutopilotStateAge,
-} from "./state.js";
+} from './state.js';
 import {
   clearRalphState,
   clearLinkedUltraworkState,
   readRalphState,
-} from "../ralph/index.js";
-import { clearUltraQAState, readUltraQAState } from "../ultraqa/index.js";
-import type { AutopilotState } from "./types.js";
+} from '../ralph/index.js';
+import { clearUltraQAState, readUltraQAState } from '../ultraqa/index.js';
+import type { AutopilotState } from './types.js';
 
 export interface CancelResult {
   success: boolean;
@@ -38,14 +38,14 @@ export function cancelAutopilot(
   if (!state) {
     return {
       success: false,
-      message: "No active autopilot session found",
+      message: 'No active autopilot session found',
     };
   }
 
   if (!state.active) {
     return {
       success: false,
-      message: "Autopilot is not currently active",
+      message: 'Autopilot is not currently active',
     };
   }
 
@@ -63,14 +63,14 @@ export function cancelAutopilot(
       } else {
         clearLinkedUltraworkState(directory);
       }
-      cleanedUp.push("ultrawork");
+      cleanedUp.push('ultrawork');
     }
     if (sessionId) {
       clearRalphState(directory, sessionId);
     } else {
       clearRalphState(directory);
     }
-    cleanedUp.push("ralph");
+    cleanedUp.push('ralph');
   }
 
   // Clean up any active UltraQA state
@@ -83,7 +83,7 @@ export function cancelAutopilot(
     } else {
       clearUltraQAState(directory);
     }
-    cleanedUp.push("ultraqa");
+    cleanedUp.push('ultraqa');
   }
 
   // Mark autopilot as inactive but preserve state for resume
@@ -91,7 +91,7 @@ export function cancelAutopilot(
   writeAutopilotState(directory, state, sessionId);
 
   const cleanupMsg =
-    cleanedUp.length > 0 ? ` Cleaned up: ${cleanedUp.join(", ")}.` : "";
+    cleanedUp.length > 0 ? ` Cleaned up: ${cleanedUp.join(', ')}.` : '';
 
   return {
     success: true,
@@ -112,7 +112,7 @@ export function clearAutopilot(
   if (!state) {
     return {
       success: true,
-      message: "No autopilot state to clear",
+      message: 'No autopilot state to clear',
     };
   }
 
@@ -151,7 +151,7 @@ export function clearAutopilot(
 
   return {
     success: true,
-    message: "Autopilot state cleared completely",
+    message: 'Autopilot state cleared completely',
   };
 }
 
@@ -182,7 +182,7 @@ export function canResumeAutopilot(
   }
 
   // Cannot resume terminal states
-  if (state.phase === "complete" || state.phase === "failed") {
+  if (state.phase === 'complete' || state.phase === 'failed') {
     return { canResume: false, state, resumePhase: state.phase };
   }
 
@@ -224,7 +224,7 @@ export function resumeAutopilot(
   if (!canResume || !state) {
     return {
       success: false,
-      message: "No autopilot session available to resume",
+      message: 'No autopilot session available to resume',
     };
   }
 
@@ -235,7 +235,7 @@ export function resumeAutopilot(
   if (!writeAutopilotState(directory, state, sessionId)) {
     return {
       success: false,
-      message: "Failed to update autopilot state",
+      message: 'Failed to update autopilot state',
     };
   }
 
@@ -254,18 +254,18 @@ export function formatCancelMessage(result: CancelResult): string {
     return `[AUTOPILOT] ${result.message}`;
   }
 
-  const lines: string[] = ["", "[AUTOPILOT CANCELLED]", "", result.message, ""];
+  const lines: string[] = ['', '[AUTOPILOT CANCELLED]', '', result.message, ''];
 
   if (result.preservedState) {
     const state = result.preservedState;
-    lines.push("Progress Summary:");
+    lines.push('Progress Summary:');
     lines.push(`- Phase reached: ${state.phase}`);
     lines.push(`- Files created: ${state.execution.files_created.length}`);
     lines.push(`- Files modified: ${state.execution.files_modified.length}`);
     lines.push(`- Agents used: ${state.total_agents_spawned}`);
-    lines.push("");
-    lines.push("Run /autopilot to resume from where you left off.");
+    lines.push('');
+    lines.push('Run /autopilot to resume from where you left off.');
   }
 
-  return lines.join("\n");
+  return lines.join('\n');
 }

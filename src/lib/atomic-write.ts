@@ -3,10 +3,10 @@
  * Self-contained module with no external dependencies.
  */
 
-import * as fs from "fs/promises";
-import * as fsSync from "fs";
-import * as path from "path";
-import * as crypto from "crypto";
+import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * Create directory recursively (inline implementation).
@@ -24,7 +24,7 @@ export function ensureDirSync(dir: string): void {
   } catch (err) {
     // If directory was created by another process between exists check and mkdir,
     // that's fine - verify it exists now
-    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
       return;
     }
     throw err;
@@ -57,9 +57,9 @@ export async function atomicWriteJson(
     const jsonContent = JSON.stringify(data, null, 2);
 
     // Write to temp file with exclusive creation (wx = O_CREAT | O_EXCL | O_WRONLY)
-    const fd = await fs.open(tempPath, "wx", 0o600);
+    const fd = await fs.open(tempPath, 'wx', 0o600);
     try {
-      await fd.write(jsonContent, 0, "utf-8");
+      await fd.write(jsonContent, 0, 'utf-8');
       // Sync file data to disk before rename
       await fd.sync();
     } finally {
@@ -74,7 +74,7 @@ export async function atomicWriteJson(
 
     // Best-effort directory fsync to ensure rename is durable
     try {
-      const dirFd = await fs.open(dir, "r");
+      const dirFd = await fs.open(dir, 'r');
       try {
         await dirFd.sync();
       } finally {
@@ -111,9 +111,9 @@ export function atomicWriteSync(filePath: string, content: string): void {
     ensureDirSync(dir);
 
     // Write to temp file with exclusive creation
-    const fd = fsSync.openSync(tempPath, "wx", 0o600);
+    const fd = fsSync.openSync(tempPath, 'wx', 0o600);
     try {
-      fsSync.writeSync(fd, content, 0, "utf-8");
+      fsSync.writeSync(fd, content, 0, 'utf-8');
       // Sync file data to disk before rename
       fsSync.fsyncSync(fd);
     } finally {
@@ -127,7 +127,7 @@ export function atomicWriteSync(filePath: string, content: string): void {
 
     // Best-effort directory fsync to ensure rename is durable
     try {
-      const dirFd = fsSync.openSync(dir, "r");
+      const dirFd = fsSync.openSync(dir, 'r');
       try {
         fsSync.fsyncSync(dirFd);
       } finally {
@@ -176,10 +176,10 @@ export function atomicWriteFileSync(filePath: string, content: string): void {
     ensureDirSync(dir);
 
     // Open temp file with exclusive creation (O_CREAT | O_EXCL | O_WRONLY)
-    fd = fsSync.openSync(tempPath, "wx", 0o600);
+    fd = fsSync.openSync(tempPath, 'wx', 0o600);
 
     // Write content
-    fsSync.writeSync(fd, content, 0, "utf-8");
+    fsSync.writeSync(fd, content, 0, 'utf-8');
 
     // Sync file data to disk before rename
     fsSync.fsyncSync(fd);
@@ -195,7 +195,7 @@ export function atomicWriteFileSync(filePath: string, content: string): void {
 
     // Best-effort directory fsync to ensure rename is durable
     try {
-      const dirFd = fsSync.openSync(dir, "r");
+      const dirFd = fsSync.openSync(dir, 'r');
       try {
         fsSync.fsyncSync(dirFd);
       } finally {
@@ -243,7 +243,7 @@ export async function safeReadJson<T>(filePath: string): Promise<T | null> {
     await fs.access(filePath);
 
     // Read file content
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(filePath, 'utf-8');
 
     // Parse JSON
     return JSON.parse(content) as T;
@@ -251,7 +251,7 @@ export async function safeReadJson<T>(filePath: string): Promise<T | null> {
     const error = err as NodeJS.ErrnoException;
 
     // File doesn't exist - return null
-    if (error.code === "ENOENT") {
+    if (error.code === 'ENOENT') {
       return null;
     }
 

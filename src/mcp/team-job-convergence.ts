@@ -31,7 +31,10 @@ type ArtifactOutcome =
   | { kind: 'terminal'; status: 'completed' | 'failed'; raw: string }
   | { kind: 'parse-failed'; message: string; payload: string };
 
-function readResultArtifact(omcJobsDir: string, jobId: string): ArtifactOutcome {
+function readResultArtifact(
+  omcJobsDir: string,
+  jobId: string,
+): ArtifactOutcome {
   const artifactPath = join(omcJobsDir, `${jobId}-result.json`);
   if (!existsSync(artifactPath)) return { kind: 'none' };
 
@@ -73,40 +76,53 @@ export function convergeJobWithResultArtifact(
   if (artifact.kind === 'none') return { job, changed: false };
 
   if (artifact.kind === 'terminal') {
-    const changed = job.status !== artifact.status || job.result !== artifact.raw;
+    const changed =
+      job.status !== artifact.status || job.result !== artifact.raw;
     return {
       job: changed
         ? {
-          ...job,
-          status: artifact.status,
-          result: artifact.raw,
-        }
+            ...job,
+            status: artifact.status,
+            result: artifact.raw,
+          }
         : job,
       changed,
     };
   }
 
-  const changed = job.status !== 'failed' || job.result !== artifact.payload || job.stderr !== artifact.message;
+  const changed =
+    job.status !== 'failed' ||
+    job.result !== artifact.payload ||
+    job.stderr !== artifact.message;
   return {
     job: changed
       ? {
-        ...job,
-        status: 'failed',
-        result: artifact.payload,
-        stderr: artifact.message,
-      }
+          ...job,
+          status: 'failed',
+          result: artifact.payload,
+          stderr: artifact.message,
+        }
       : job,
     changed,
   };
 }
 
 export function isJobTerminal(job: OmcTeamJob): boolean {
-  return job.status === 'completed' || job.status === 'failed' || job.status === 'timeout';
+  return (
+    job.status === 'completed' ||
+    job.status === 'failed' ||
+    job.status === 'timeout'
+  );
 }
 
-export function clearScopedTeamState(job: Pick<OmcTeamJob, 'cwd' | 'teamName'>): ScopedTeamStateCleanupResult {
+export function clearScopedTeamState(
+  job: Pick<OmcTeamJob, 'cwd' | 'teamName'>,
+): ScopedTeamStateCleanupResult {
   if (!job.cwd || !job.teamName) {
-    return { ok: true, message: 'team state cleanup skipped (missing job cwd/teamName).' };
+    return {
+      ok: true,
+      message: 'team state cleanup skipped (missing job cwd/teamName).',
+    };
   }
 
   try {
@@ -142,10 +158,16 @@ export function clearScopedTeamState(job: Pick<OmcTeamJob, 'cwd' | 'teamName'>):
 
   try {
     if (!existsSync(stateDir)) {
-      return { ok: true, message: `${worktreeMessage} team state dir not found at ${stateDir}.` };
+      return {
+        ok: true,
+        message: `${worktreeMessage} team state dir not found at ${stateDir}.`,
+      };
     }
     rmSync(stateDir, { recursive: true, force: true });
-    return { ok: true, message: `${worktreeMessage} team state dir removed at ${stateDir}.` };
+    return {
+      ok: true,
+      message: `${worktreeMessage} team state dir removed at ${stateDir}.`,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {

@@ -1,6 +1,11 @@
 // Re-exports from model-contract.ts for backward compatibility
 // and additional CLI detection utilities
-export { isCliAvailable, validateCliAvailable, getContract, type CliAgentType } from './model-contract.js';
+export {
+  isCliAvailable,
+  validateCliAvailable,
+  getContract,
+  type CliAgentType,
+} from './model-contract.js';
 import { spawnSync } from 'child_process';
 
 export interface CliInfo {

@@ -1,18 +1,18 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from 'vitest';
 import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
-} from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
-import { execFileSync } from "child_process";
-import { checkPersistentModes } from "../index.js";
-import { clearSecurityConfigCache } from "../../../lib/security-config.js";
+} from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { execFileSync } from 'child_process';
+import { checkPersistentModes } from '../index.js';
+import { clearSecurityConfigCache } from '../../../lib/security-config.js';
 
-describe("persistent-mode ralph hard max iterations", () => {
+describe('persistent-mode ralph hard max iterations', () => {
   const originalSecurity = process.env.OMC_SECURITY;
 
   afterEach(() => {
@@ -24,27 +24,27 @@ describe("persistent-mode ralph hard max iterations", () => {
     clearSecurityConfigCache();
   });
 
-  it("auto-disables ralph when hard max is reached (OMC_SECURITY=strict)", async () => {
-    process.env.OMC_SECURITY = "strict";
+  it('auto-disables ralph when hard max is reached (OMC_SECURITY=strict)', async () => {
+    process.env.OMC_SECURITY = 'strict';
     clearSecurityConfigCache();
 
-    const tempDir = mkdtempSync(join(tmpdir(), "ralph-hard-max-"));
-    const sessionId = "session-hard-max";
+    const tempDir = mkdtempSync(join(tmpdir(), 'ralph-hard-max-'));
+    const sessionId = 'session-hard-max';
 
     try {
-      execFileSync("git", ["init"], { cwd: tempDir, stdio: "pipe" });
-      const stateDir = join(tempDir, ".omc", "state", "sessions", sessionId);
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
       mkdirSync(stateDir, { recursive: true });
 
       writeFileSync(
-        join(stateDir, "ralph-state.json"),
+        join(stateDir, 'ralph-state.json'),
         JSON.stringify(
           {
             active: true,
             iteration: 200,
             max_iterations: 200,
             started_at: new Date().toISOString(),
-            prompt: "Test task",
+            prompt: 'Test task',
             session_id: sessionId,
             project_path: tempDir,
           },
@@ -55,10 +55,10 @@ describe("persistent-mode ralph hard max iterations", () => {
 
       const result = await checkPersistentModes(sessionId, tempDir);
       expect(result).not.toBeNull();
-      expect(result!.message).toContain("HARD LIMIT");
+      expect(result!.message).toContain('HARD LIMIT');
 
       const updated = JSON.parse(
-        readFileSync(join(stateDir, "ralph-state.json"), "utf-8"),
+        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
       );
       expect(updated.active).toBe(false);
     } finally {
@@ -66,27 +66,27 @@ describe("persistent-mode ralph hard max iterations", () => {
     }
   });
 
-  it("still extends normally when below hard max (default 500)", async () => {
+  it('still extends normally when below hard max (default 500)', async () => {
     delete process.env.OMC_SECURITY;
     clearSecurityConfigCache();
 
-    const tempDir = mkdtempSync(join(tmpdir(), "ralph-no-hardmax-"));
-    const sessionId = "session-no-hardmax";
+    const tempDir = mkdtempSync(join(tmpdir(), 'ralph-no-hardmax-'));
+    const sessionId = 'session-no-hardmax';
 
     try {
-      execFileSync("git", ["init"], { cwd: tempDir, stdio: "pipe" });
-      const stateDir = join(tempDir, ".omc", "state", "sessions", sessionId);
+      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
+      const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
       mkdirSync(stateDir, { recursive: true });
 
       writeFileSync(
-        join(stateDir, "ralph-state.json"),
+        join(stateDir, 'ralph-state.json'),
         JSON.stringify(
           {
             active: true,
             iteration: 100,
             max_iterations: 100,
             started_at: new Date().toISOString(),
-            prompt: "Test task",
+            prompt: 'Test task',
             session_id: sessionId,
             project_path: tempDir,
           },
@@ -98,10 +98,10 @@ describe("persistent-mode ralph hard max iterations", () => {
       const result = await checkPersistentModes(sessionId, tempDir);
       expect(result).not.toBeNull();
       expect(result!.shouldBlock).toBe(true);
-      expect(result!.message).not.toContain("HARD LIMIT");
+      expect(result!.message).not.toContain('HARD LIMIT');
 
       const updated = JSON.parse(
-        readFileSync(join(stateDir, "ralph-state.json"), "utf-8"),
+        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
       );
       expect(updated.active).toBe(true);
       expect(updated.max_iterations).toBe(110);

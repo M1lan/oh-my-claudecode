@@ -6,12 +6,12 @@
  * this module ensures the mode persists until all work is done.
  */
 
-import { readFileSync, unlinkSync } from "fs";
-import { writeModeState, readModeState } from "../../lib/mode-state-io.js";
+import { readFileSync, unlinkSync } from 'fs';
+import { writeModeState, readModeState } from '../../lib/mode-state-io.js';
 import {
   resolveStatePath,
   resolveSessionStatePath,
-} from "../../lib/worktree-paths.js";
+} from '../../lib/worktree-paths.js';
 
 export interface UltraworkState {
   /** Whether ultrawork mode is currently active */
@@ -38,21 +38,21 @@ export interface UltraworkState {
 
 const _DEFAULT_STATE: UltraworkState = {
   active: false,
-  started_at: "",
-  original_prompt: "",
+  started_at: '',
+  original_prompt: '',
   reinforcement_count: 0,
-  last_checked_at: "",
+  last_checked_at: '',
 };
 
 const ULTRAWORK_OBJECTIVE_MAX_CHARS = 140;
 
 function formatConciseObjective(value: unknown): string {
-  if (typeof value !== "string") return "";
-  const compact = value.replace(/\s+/g, " ").trim();
-  if (!compact) return "";
+  if (typeof value !== 'string') return '';
+  const compact = value.replace(/\s+/g, ' ').trim();
+  if (!compact) return '';
   const chars = [...compact];
   if (chars.length <= ULTRAWORK_OBJECTIVE_MAX_CHARS) return compact;
-  return `${chars.slice(0, ULTRAWORK_OBJECTIVE_MAX_CHARS).join("").trimEnd()}…`;
+  return `${chars.slice(0, ULTRAWORK_OBJECTIVE_MAX_CHARS).join('').trimEnd()}…`;
 }
 
 function getLiveUltraworkObjective(state: UltraworkState): string {
@@ -65,9 +65,9 @@ function getLiveUltraworkObjective(state: UltraworkState): string {
 function getStateFilePath(directory?: string, sessionId?: string): string {
   const baseDir = directory || process.cwd();
   if (sessionId) {
-    return resolveSessionStatePath("ultrawork", sessionId, baseDir);
+    return resolveSessionStatePath('ultrawork', sessionId, baseDir);
   }
-  return resolveStatePath("ultrawork", baseDir);
+  return resolveStatePath('ultrawork', baseDir);
 }
 
 /**
@@ -81,7 +81,7 @@ export function readUltraworkState(
   sessionId?: string,
 ): UltraworkState | null {
   const state = readModeState<UltraworkState>(
-    "ultrawork",
+    'ultrawork',
     directory,
     sessionId,
   );
@@ -108,7 +108,7 @@ export function writeUltraworkState(
   sessionId?: string,
 ): boolean {
   return writeModeState(
-    "ultrawork",
+    'ultrawork',
     state as unknown as Record<string, unknown>,
     directory,
     sessionId,
@@ -157,7 +157,7 @@ export function deactivateUltrawork(
   try {
     unlinkSync(stateFile);
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
       success = false;
     }
   }
@@ -167,7 +167,7 @@ export function deactivateUltrawork(
   if (sessionId) {
     const legacyFile = getStateFilePath(directory); // no sessionId = legacy path
     try {
-      const content = readFileSync(legacyFile, "utf-8");
+      const content = readFileSync(legacyFile, 'utf-8');
       const legacyState = JSON.parse(content);
 
       // Only remove if it belongs to this session or is unowned (no session_id)
@@ -175,7 +175,7 @@ export function deactivateUltrawork(
         try {
           unlinkSync(legacyFile);
         } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
             throw error;
           }
         }
@@ -242,7 +242,7 @@ export function getUltraworkPersistenceMessage(state: UltraworkState): string {
   const currentObjective = getLiveUltraworkObjective(state);
   const objectiveLine = currentObjective
     ? `\nCurrent objective: ${currentObjective}\n`
-    : "";
+    : '';
 
   return `<ultrawork-persistence>
 

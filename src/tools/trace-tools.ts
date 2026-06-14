@@ -13,10 +13,7 @@ import {
   getReplaySummary,
   type ReplayEvent,
 } from '../hooks/subagent-tracker/session-replay.js';
-import {
-  validateWorkingDirectory,
-  getOmcRoot,
-} from '../lib/worktree-paths.js';
+import { validateWorkingDirectory, getOmcRoot } from '../lib/worktree-paths.js';
 import { ToolDefinition } from './types.js';
 import { sessionSearchTool } from './session-history-tools.js';
 
@@ -33,8 +30,8 @@ function findLatestSessionId(directory: string): string | null {
   const stateDir = join(getOmcRoot(directory), 'state');
   try {
     const files = readdirSync(stateDir)
-      .filter(f => f.startsWith(REPLAY_PREFIX) && f.endsWith('.jsonl'))
-      .map(f => ({
+      .filter((f) => f.startsWith(REPLAY_PREFIX) && f.endsWith('.jsonl'))
+      .map((f) => ({
         name: f,
         sessionId: f.slice(REPLAY_PREFIX.length, -'.jsonl'.length),
         mtime: statSync(join(stateDir, f)).mtimeMs,
@@ -85,7 +82,8 @@ function formatTimelineEvent(event: ReplayEvent): string {
       break;
     case 'agent_stop':
       detail = `[${event.agent}] ${event.agent_type || 'unknown'} ${event.success ? 'completed' : 'FAILED'}`;
-      if (event.duration_ms) detail += ` (${(event.duration_ms / 1000).toFixed(1)}s)`;
+      if (event.duration_ms)
+        detail += ` (${(event.duration_ms / 1000).toFixed(1)}s)`;
       break;
     case 'tool_start':
       detail = `[${event.agent}] ${event.tool} started`;
@@ -111,7 +109,8 @@ function formatTimelineEvent(event: ReplayEvent): string {
       detail = `${event.hook} result`;
       const hookParts: string[] = [];
       if (event.duration_ms) hookParts.push(`${event.duration_ms}ms`);
-      if (event.context_injected) hookParts.push(`context: ${event.context_length || '?'}B`);
+      if (event.context_injected)
+        hookParts.push(`context: ${event.context_length || '?'}B`);
       if (hookParts.length) detail += ` (${hookParts.join(', ')})`;
       break;
     }
@@ -134,12 +133,22 @@ function formatTimelineEvent(event: ReplayEvent): string {
   return `${time}  ${type} ${detail}`;
 }
 
-type FilterType = 'all' | 'hooks' | 'skills' | 'agents' | 'keywords' | 'tools' | 'modes';
+type FilterType =
+  | 'all'
+  | 'hooks'
+  | 'skills'
+  | 'agents'
+  | 'keywords'
+  | 'tools'
+  | 'modes';
 
 /**
  * Filter events by category
  */
-function filterEvents(events: ReplayEvent[], filter: FilterType): ReplayEvent[] {
+function filterEvents(
+  events: ReplayEvent[],
+  filter: FilterType,
+): ReplayEvent[] {
   if (filter === 'all') return events;
 
   const filterMap: Record<FilterType, string[]> = {
@@ -154,7 +163,7 @@ function filterEvents(events: ReplayEvent[], filter: FilterType): ReplayEvent[] 
 
   const allowed = filterMap[filter];
   if (!allowed) return events;
-  return events.filter(e => allowed.includes(e.event));
+  return events.filter((e) => allowed.includes(e.event));
 }
 
 // ============================================================================
@@ -167,8 +176,12 @@ function filterEvents(events: ReplayEvent[], filter: FilterType): ReplayEvent[] 
 function buildExecutionFlow(events: ReplayEvent[]): string[] {
   const flow: string[] = [];
   const KEY_EVENTS = new Set([
-    'keyword_detected', 'skill_activated', 'skill_invoked',
-    'mode_change', 'agent_start', 'agent_stop',
+    'keyword_detected',
+    'skill_activated',
+    'skill_invoked',
+    'mode_change',
+    'agent_start',
+    'agent_stop',
   ]);
 
   for (const event of events) {
@@ -179,7 +192,9 @@ function buildExecutionFlow(events: ReplayEvent[]): string[] {
         flow.push(`Keyword "${event.keyword}" detected`);
         break;
       case 'skill_activated':
-        flow.push(`${event.skill_name} skill activated (${event.skill_source})`);
+        flow.push(
+          `${event.skill_name} skill activated (${event.skill_source})`,
+        );
         break;
       case 'skill_invoked':
         flow.push(`${event.skill_name} invoked (via Skill tool)`);
@@ -196,7 +211,9 @@ function buildExecutionFlow(events: ReplayEvent[]): string[] {
       case 'agent_stop': {
         const type = event.agent_type || 'unknown';
         const status = event.success ? 'completed' : 'FAILED';
-        const dur = event.duration_ms ? ` ${(event.duration_ms / 1000).toFixed(1)}s` : '';
+        const dur = event.duration_ms
+          ? ` ${(event.duration_ms / 1000).toFixed(1)}s`
+          : '';
         flow.push(`${type} agent ${status} (${event.agent}${dur})`);
         break;
       }
@@ -212,20 +229,39 @@ function buildExecutionFlow(events: ReplayEvent[]): string[] {
 
 export const traceTimelineTool: ToolDefinition<{
   sessionId: z.ZodOptional<z.ZodString>;
-  filter: z.ZodOptional<z.ZodEnum<['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes']>>;
+  filter: z.ZodOptional<
+    z.ZodEnum<
+      ['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes']
+    >
+  >;
   last: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'trace_timeline',
-  description: 'Show chronological agent flow trace timeline. Displays hooks, keywords, skills, agents, and tools in time order. Use filter to show specific event types.',
+  description:
+    'Show chronological agent flow trace timeline. Displays hooks, keywords, skills, agents, and tools in time order. Use filter to show specific event types.',
   schema: {
-    sessionId: z.string().optional().describe('Session ID (auto-detects latest if omitted)'),
-    filter: z.enum(['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes']).optional().describe('Filter to show specific event types (default: all)'),
+    sessionId: z
+      .string()
+      .optional()
+      .describe('Session ID (auto-detects latest if omitted)'),
+    filter: z
+      .enum(['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes'])
+      .optional()
+      .describe('Filter to show specific event types (default: all)'),
     last: z.number().optional().describe('Limit to last N events'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
-    const { sessionId: requestedSessionId, filter = 'all', last, workingDirectory } = args;
+    const {
+      sessionId: requestedSessionId,
+      filter = 'all',
+      last,
+      workingDirectory,
+    } = args;
 
     try {
       const root = validateWorkingDirectory(workingDirectory);
@@ -233,10 +269,12 @@ export const traceTimelineTool: ToolDefinition<{
 
       if (!sessionId) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: '## Agent Flow Trace\n\nNo trace sessions found. Traces are recorded automatically during agent execution.'
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: '## Agent Flow Trace\n\nNo trace sessions found. Traces are recorded automatically during agent execution.',
+            },
+          ],
         };
       }
 
@@ -244,10 +282,12 @@ export const traceTimelineTool: ToolDefinition<{
 
       if (events.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## Agent Flow Trace (session: ${sessionId})\n\nNo events recorded for this session.`
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: `## Agent Flow Trace (session: ${sessionId})\n\nNo events recorded for this session.`,
+            },
+          ],
         };
       }
 
@@ -259,9 +299,10 @@ export const traceTimelineTool: ToolDefinition<{
         events = events.slice(-last);
       }
 
-      const duration = events.length > 0
-        ? (events[events.length - 1].t - events[0].t).toFixed(1)
-        : '0.0';
+      const duration =
+        events.length > 0
+          ? (events[events.length - 1].t - events[0].t).toFixed(1)
+          : '0.0';
 
       const lines = [
         `## Agent Flow Trace (session: ${sessionId})`,
@@ -274,20 +315,24 @@ export const traceTimelineTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Error reading trace: ${error instanceof Error ? error.message : String(error)}`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error reading trace: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
       };
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -299,10 +344,17 @@ export const traceSummaryTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'trace_summary',
-  description: 'Show aggregate statistics for an agent flow trace session. Includes hook stats, keyword frequencies, skill activations, mode transitions, and tool bottlenecks.',
+  description:
+    'Show aggregate statistics for an agent flow trace session. Includes hook stats, keyword frequencies, skill activations, mode transitions, and tool bottlenecks.',
   schema: {
-    sessionId: z.string().optional().describe('Session ID (auto-detects latest if omitted)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    sessionId: z
+      .string()
+      .optional()
+      .describe('Session ID (auto-detects latest if omitted)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     const { sessionId: requestedSessionId, workingDirectory } = args;
@@ -313,10 +365,12 @@ export const traceSummaryTool: ToolDefinition<{
 
       if (!sessionId) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: '## Trace Summary\n\nNo trace sessions found.'
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: '## Trace Summary\n\nNo trace sessions found.',
+            },
+          ],
         };
       }
 
@@ -324,10 +378,12 @@ export const traceSummaryTool: ToolDefinition<{
 
       if (summary.total_events === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## Trace Summary (session: ${sessionId})\n\nNo events recorded.`
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: `## Trace Summary (session: ${sessionId})\n\nNo events recorded.`,
+            },
+          ],
         };
       }
 
@@ -344,16 +400,26 @@ export const traceSummaryTool: ToolDefinition<{
       // Agent Activity breakdown
       if (summary.agent_breakdown && summary.agent_breakdown.length > 0) {
         lines.push(`### Agent Activity`);
-        lines.push('| Agent | Invocations | Total Time | Model | Avg Duration |');
-        lines.push('|-------|-------------|------------|-------|--------------|');
+        lines.push(
+          '| Agent | Invocations | Total Time | Model | Avg Duration |',
+        );
+        lines.push(
+          '|-------|-------------|------------|-------|--------------|',
+        );
         for (const ab of summary.agent_breakdown) {
-          const totalSec = ab.total_ms > 0 ? `${(ab.total_ms / 1000).toFixed(1)}s` : '-';
-          const avgSec = ab.avg_ms > 0 ? `${(ab.avg_ms / 1000).toFixed(1)}s` : '-';
+          const totalSec =
+            ab.total_ms > 0 ? `${(ab.total_ms / 1000).toFixed(1)}s` : '-';
+          const avgSec =
+            ab.avg_ms > 0 ? `${(ab.avg_ms / 1000).toFixed(1)}s` : '-';
           const models = ab.models.length > 0 ? ab.models.join(', ') : '-';
-          lines.push(`| ${ab.type} | ${ab.count} | ${totalSec} | ${models} | ${avgSec} |`);
+          lines.push(
+            `| ${ab.type} | ${ab.count} | ${totalSec} | ${models} | ${avgSec} |`,
+          );
         }
         if (summary.cycle_count && summary.cycle_pattern) {
-          lines.push(`> ${summary.cycle_count} ${summary.cycle_pattern} cycle(s) detected`);
+          lines.push(
+            `> ${summary.cycle_count} ${summary.cycle_pattern} cycle(s) detected`,
+          );
         }
         lines.push('');
       }
@@ -417,8 +483,12 @@ export const traceSummaryTool: ToolDefinition<{
         lines.push(`### Tool Performance`);
         lines.push('| Tool | Calls | Avg (ms) | Max (ms) | Total (ms) |');
         lines.push('|------|-------|----------|----------|------------|');
-        for (const [tool, stats] of toolEntries.sort((a, b) => b[1].total_ms - a[1].total_ms)) {
-          lines.push(`| ${tool} | ${stats.count} | ${stats.avg_ms} | ${stats.max_ms} | ${stats.total_ms} |`);
+        for (const [tool, stats] of toolEntries.sort(
+          (a, b) => b[1].total_ms - a[1].total_ms,
+        )) {
+          lines.push(
+            `| ${tool} | ${stats.count} | ${stats.avg_ms} | ${stats.max_ms} | ${stats.total_ms} |`,
+          );
         }
         lines.push('');
       }
@@ -427,7 +497,9 @@ export const traceSummaryTool: ToolDefinition<{
       if (summary.bottlenecks.length > 0) {
         lines.push(`### Bottlenecks (>1s avg)`);
         for (const b of summary.bottlenecks) {
-          lines.push(`- **${b.tool}** by agent \`${b.agent}\`: avg ${b.avg_ms}ms`);
+          lines.push(
+            `- **${b.tool}** by agent \`${b.agent}\`: avg ${b.avg_ms}ms`,
+          );
         }
         lines.push('');
       }
@@ -444,23 +516,31 @@ export const traceSummaryTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Error generating summary: ${error instanceof Error ? error.message : String(error)}`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error generating summary: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
       };
     }
-  }
+  },
 };
 
 /**
  * All trace tools for registration
  */
-export const traceTools = [traceTimelineTool, traceSummaryTool, sessionSearchTool];
+export const traceTools = [
+  traceTimelineTool,
+  traceSummaryTool,
+  sessionSearchTool,
+];

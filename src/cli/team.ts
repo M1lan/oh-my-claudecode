@@ -4,9 +4,16 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { readFile, rm } from 'fs/promises';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
-import { executeTeamApiOperation as executeCanonicalTeamApiOperation, resolveTeamApiOperation } from '../team/api-interop.js';
+import {
+  executeTeamApiOperation as executeCanonicalTeamApiOperation,
+  resolveTeamApiOperation,
+} from '../team/api-interop.js';
 import { cleanupTeamWorktrees } from '../team/git-worktree.js';
-import { killWorkerPanes, killTeamSession, getWorkerLiveness } from '../team/tmux-session.js';
+import {
+  killWorkerPanes,
+  killTeamSession,
+  getWorkerLiveness,
+} from '../team/tmux-session.js';
 import { validateTeamName } from '../team/team-name.js';
 import { monitorTeam, resumeTeam, shutdownTeam } from '../team/runtime.js';
 import { readTeamConfig } from '../team/monitor.js';
@@ -16,8 +23,25 @@ import { readApprovedExecutionLaunchHintOutcome } from '../planning/artifacts.js
 import { getOmcRoot } from '../lib/worktree-paths.js';
 
 const JOB_ID_PATTERN = /^omc-[a-z0-9]{1,16}$/;
-const VALID_CLI_AGENT_TYPES = new Set(['claude', 'codex', 'gemini', 'cursor', 'grok']);
-const SUBCOMMANDS = new Set(['start', 'status', 'wait', 'cleanup', 'resume', 'shutdown', 'api', 'help', '--help', '-h']);
+const VALID_CLI_AGENT_TYPES = new Set([
+  'claude',
+  'codex',
+  'gemini',
+  'cursor',
+  'grok',
+]);
+const SUBCOMMANDS = new Set([
+  'start',
+  'status',
+  'wait',
+  'cleanup',
+  'resume',
+  'shutdown',
+  'api',
+  'help',
+  '--help',
+  '-h',
+]);
 
 const SUPPORTED_API_OPERATIONS = new Set([
   'send-message',
@@ -145,23 +169,36 @@ interface TeamPanesFile {
   ownsWindow?: boolean;
 }
 
-function getTeamWorkerIdentityFromEnv(env: NodeJS.ProcessEnv = process.env): string | null {
-  const omc = typeof env.OMC_TEAM_WORKER === 'string' ? env.OMC_TEAM_WORKER.trim() : '';
+function getTeamWorkerIdentityFromEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const omc =
+    typeof env.OMC_TEAM_WORKER === 'string' ? env.OMC_TEAM_WORKER.trim() : '';
   if (omc) return omc;
-  const omx = typeof env.OMX_TEAM_WORKER === 'string' ? env.OMX_TEAM_WORKER.trim() : '';
+  const omx =
+    typeof env.OMX_TEAM_WORKER === 'string' ? env.OMX_TEAM_WORKER.trim() : '';
   return omx || null;
 }
 
-async function assertTeamSpawnAllowed(cwd: string, env: NodeJS.ProcessEnv = process.env): Promise<void> {
+async function assertTeamSpawnAllowed(
+  cwd: string,
+  env: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   const workerIdentity = getTeamWorkerIdentityFromEnv(env);
   const { teamReadManifest } = await import('../team/team-ops.js');
   const { findActiveTeamsV2 } = await import('../team/runtime-v2.js');
-  const { DEFAULT_TEAM_GOVERNANCE, normalizeTeamGovernance } = await import('../team/governance.js');
+  const { DEFAULT_TEAM_GOVERNANCE, normalizeTeamGovernance } =
+    await import('../team/governance.js');
 
   if (workerIdentity) {
     const [parentTeamName] = workerIdentity.split('/');
-    const parentManifest = parentTeamName ? await teamReadManifest(parentTeamName, cwd) : null;
-    const governance = normalizeTeamGovernance(parentManifest?.governance, parentManifest?.policy);
+    const parentManifest = parentTeamName
+      ? await teamReadManifest(parentTeamName, cwd)
+      : null;
+    const governance = normalizeTeamGovernance(
+      parentManifest?.governance,
+      parentManifest?.policy,
+    );
     if (!governance.nested_teams_allowed) {
       throw new Error(
         `Worker context (${workerIdentity}) cannot start nested teams because nested_teams_allowed is false.`,
@@ -178,8 +215,14 @@ async function assertTeamSpawnAllowed(cwd: string, env: NodeJS.ProcessEnv = proc
   const activeTeams = await findActiveTeamsV2(cwd);
   for (const activeTeam of activeTeams) {
     const manifest = await teamReadManifest(activeTeam, cwd);
-    const governance = normalizeTeamGovernance(manifest?.governance, manifest?.policy);
-    if (governance.one_team_per_leader_session ?? DEFAULT_TEAM_GOVERNANCE.one_team_per_leader_session) {
+    const governance = normalizeTeamGovernance(
+      manifest?.governance,
+      manifest?.policy,
+    );
+    if (
+      governance.one_team_per_leader_session ??
+      DEFAULT_TEAM_GOVERNANCE.one_team_per_leader_session
+    ) {
       throw new Error(
         `Leader session already owns active team "${activeTeam}" and one_team_per_leader_session is enabled.`,
       );
@@ -236,24 +279,36 @@ function parseJsonSafe<T>(content: string): T | null {
   }
 }
 
-
-async function resolveCleanupPaneEvidence(job: TeamJobRecord, jobsDir: string, jobId: string): Promise<{
+async function resolveCleanupPaneEvidence(
+  job: TeamJobRecord,
+  jobsDir: string,
+  jobId: string,
+): Promise<{
   paneArtifact: TeamPanesFile | null;
   livenessUnknownReason?: string;
 }> {
-  const paneArtifact = await readFile(panesArtifactPath(jobsDir, jobId), 'utf-8')
+  const paneArtifact = await readFile(
+    panesArtifactPath(jobsDir, jobId),
+    'utf-8',
+  )
     .then((content) => parseJsonSafe<TeamPanesFile>(content))
     .catch(() => null);
   if (paneArtifact?.paneIds?.length) return { paneArtifact };
 
   const config = await readTeamConfig(job.teamName, job.cwd).catch(() => null);
   if (!config) {
-    return { paneArtifact, livenessUnknownReason: 'worker_liveness_unknown:no_config_or_panes' };
+    return {
+      paneArtifact,
+      livenessUnknownReason: 'worker_liveness_unknown:no_config_or_panes',
+    };
   }
 
   const configPaneIds = (config.workers ?? [])
     .map((worker) => worker.pane_id)
-    .filter((paneId): paneId is string => typeof paneId === 'string' && paneId.trim().length > 0);
+    .filter(
+      (paneId): paneId is string =>
+        typeof paneId === 'string' && paneId.trim().length > 0,
+    );
   if (configPaneIds.length > 0) {
     return {
       paneArtifact: {
@@ -265,9 +320,13 @@ async function resolveCleanupPaneEvidence(job: TeamJobRecord, jobsDir: string, j
     };
   }
 
-  const hasConfiguredWorkers = (config.workers ?? []).length > 0 || config.worker_count > 0;
+  const hasConfiguredWorkers =
+    (config.workers ?? []).length > 0 || config.worker_count > 0;
   if (hasConfiguredWorkers) {
-    return { paneArtifact, livenessUnknownReason: 'worker_liveness_unknown:no_worker_pane_ids' };
+    return {
+      paneArtifact,
+      livenessUnknownReason: 'worker_liveness_unknown:no_worker_pane_ids',
+    };
   }
 
   return { paneArtifact };
@@ -282,7 +341,11 @@ function readJobFromDisk(jobId: string, jobsDir: string): TeamJobRecord | null {
   }
 }
 
-function writeJobToDisk(jobId: string, job: TeamJobRecord, jobsDir: string): void {
+function writeJobToDisk(
+  jobId: string,
+  job: TeamJobRecord,
+  jobsDir: string,
+): void {
   ensureJobsDir(jobsDir);
   writeFileSync(jobPath(jobsDir, jobId), JSON.stringify(job), 'utf-8');
 }
@@ -307,11 +370,21 @@ export function generateJobId(now = Date.now()): string {
   return `omc-${now.toString(36)}${randomUUID().slice(0, 8)}`;
 }
 
-function convergeWithResultArtifact(jobId: string, job: TeamJobRecord, jobsDir: string): TeamJobRecord {
+function convergeWithResultArtifact(
+  jobId: string,
+  job: TeamJobRecord,
+  jobsDir: string,
+): TeamJobRecord {
   try {
-    const artifactRaw = readFileSync(resultArtifactPath(jobsDir, jobId), 'utf-8');
+    const artifactRaw = readFileSync(
+      resultArtifactPath(jobsDir, jobId),
+      'utf-8',
+    );
     const artifactParsed = parseJsonSafe<{ status?: string }>(artifactRaw);
-    if (artifactParsed?.status === 'completed' || artifactParsed?.status === 'failed') {
+    if (
+      artifactParsed?.status === 'completed' ||
+      artifactParsed?.status === 'failed'
+    ) {
       return {
         ...job,
         status: artifactParsed.status,
@@ -326,7 +399,8 @@ function convergeWithResultArtifact(jobId: string, job: TeamJobRecord, jobsDir: 
     return {
       ...job,
       status: 'failed',
-      result: job.result ?? JSON.stringify({ error: 'Process no longer alive' }),
+      result:
+        job.result ?? JSON.stringify({ error: 'Process no longer alive' }),
     };
   }
 
@@ -359,11 +433,12 @@ function normalizeAgentType(value: string): string {
 }
 
 function autoTeamName(task: string): string {
-  const slug = task
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 24) || 'task';
+  const slug =
+    task
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 24) || 'task';
   return `omc-${slug}-${Date.now().toString(36).slice(-4)}`;
 }
 
@@ -376,7 +451,9 @@ function parseJsonInput(inputRaw: string | undefined): Record<string, unknown> {
   return parsed;
 }
 
-export async function startTeamJob(input: TeamStartInput): Promise<TeamStartResult> {
+export async function startTeamJob(
+  input: TeamStartInput,
+): Promise<TeamStartResult> {
   await assertTeamSpawnAllowed(input.cwd);
   validateTeamName(input.teamName);
   if (!Array.isArray(input.agentTypes) || input.agentTypes.length === 0) {
@@ -456,7 +533,10 @@ export async function getTeamJobStatus(jobId: string): Promise<TeamJobStatus> {
   return buildStatus(jobId, converged);
 }
 
-export async function waitForTeamJob(jobId: string, options: TeamWaitOptions = {}): Promise<TeamWaitResult> {
+export async function waitForTeamJob(
+  jobId: string,
+  options: TeamWaitOptions = {},
+): Promise<TeamWaitResult> {
   const timeoutMs = Math.min(options.timeoutMs ?? 300_000, 3_600_000);
   const deadline = Date.now() + timeoutMs;
   let delayMs = 500;
@@ -479,7 +559,10 @@ export async function waitForTeamJob(jobId: string, options: TeamWaitOptions = {
   };
 }
 
-export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<TeamCleanupResult> {
+export async function cleanupTeamJob(
+  jobId: string,
+  graceMs = 10_000,
+): Promise<TeamCleanupResult> {
   validateJobId(jobId);
 
   const jobsDir = resolveJobsDir();
@@ -488,23 +571,35 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
     throw new Error(`No job found: ${jobId}`);
   }
 
-  const { paneArtifact, livenessUnknownReason } = await resolveCleanupPaneEvidence(job, jobsDir, jobId);
+  const { paneArtifact, livenessUnknownReason } =
+    await resolveCleanupPaneEvidence(job, jobsDir, jobId);
   if (livenessUnknownReason) {
-    writeJobToDisk(jobId, {
-      ...job,
-      cleanupBlockedAt: new Date().toISOString(),
-      cleanupBlockedReason: livenessUnknownReason,
-    }, jobsDir);
+    writeJobToDisk(
+      jobId,
+      {
+        ...job,
+        cleanupBlockedAt: new Date().toISOString(),
+        cleanupBlockedReason: livenessUnknownReason,
+      },
+      jobsDir,
+    );
     return {
       jobId,
       message: `Preserved team state because worker liveness could not be proven (${livenessUnknownReason})`,
     };
   }
 
-  if (paneArtifact?.sessionName && (paneArtifact.ownsWindow === true || !paneArtifact.sessionName.includes(':'))) {
-    const sessionMode = paneArtifact.ownsWindow === true
-      ? (paneArtifact.sessionName.includes(':') ? 'dedicated-window' : 'detached-session')
-      : 'detached-session';
+  if (
+    paneArtifact?.sessionName &&
+    (paneArtifact.ownsWindow === true ||
+      !paneArtifact.sessionName.includes(':'))
+  ) {
+    const sessionMode =
+      paneArtifact.ownsWindow === true
+        ? paneArtifact.sessionName.includes(':')
+          ? 'dedicated-window'
+          : 'detached-session'
+        : 'detached-session';
     await killTeamSession(
       paneArtifact.sessionName,
       paneArtifact.paneIds,
@@ -522,23 +617,37 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
   }
 
   if (paneArtifact?.paneIds?.length) {
-    const liveness = await Promise.all(paneArtifact.paneIds.map(async (paneId) => [paneId, await getWorkerLiveness(paneId)] as const));
-    const alivePaneIds = liveness.filter(([, state]) => state === 'alive').map(([paneId]) => paneId);
-    const unknownPaneIds = liveness.filter(([, state]) => state === 'unknown').map(([paneId]) => paneId);
+    const liveness = await Promise.all(
+      paneArtifact.paneIds.map(
+        async (paneId) => [paneId, await getWorkerLiveness(paneId)] as const,
+      ),
+    );
+    const alivePaneIds = liveness
+      .filter(([, state]) => state === 'alive')
+      .map(([paneId]) => paneId);
+    const unknownPaneIds = liveness
+      .filter(([, state]) => state === 'unknown')
+      .map(([paneId]) => paneId);
     if (alivePaneIds.length > 0 || unknownPaneIds.length > 0) {
-      const reason = alivePaneIds.length > 0
-        ? `worker_panes_still_alive:${alivePaneIds.join(',')}`
-        : `worker_liveness_unknown:${unknownPaneIds.join(',')}`;
-      writeJobToDisk(jobId, {
-        ...job,
-        cleanupBlockedAt: new Date().toISOString(),
-        cleanupBlockedReason: reason,
-      }, jobsDir);
+      const reason =
+        alivePaneIds.length > 0
+          ? `worker_panes_still_alive:${alivePaneIds.join(',')}`
+          : `worker_liveness_unknown:${unknownPaneIds.join(',')}`;
+      writeJobToDisk(
+        jobId,
+        {
+          ...job,
+          cleanupBlockedAt: new Date().toISOString(),
+          cleanupBlockedReason: reason,
+        },
+        jobsDir,
+      );
       return {
         jobId,
-        message: alivePaneIds.length > 0
-          ? `Preserved team state because worker pane(s) are still alive: ${alivePaneIds.join(', ')}`
-          : `Preserved team state because worker pane liveness is unknown: ${unknownPaneIds.join(', ')}`,
+        message:
+          alivePaneIds.length > 0
+            ? `Preserved team state because worker pane(s) are still alive: ${alivePaneIds.join(', ')}`
+            : `Preserved team state because worker pane liveness is unknown: ${unknownPaneIds.join(', ')}`,
       };
     }
   }
@@ -553,11 +662,15 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
     preservedWorktrees = 1;
   }
   if (preservedWorktrees > 0) {
-    writeJobToDisk(jobId, {
-      ...job,
-      cleanupBlockedAt: new Date().toISOString(),
-      cleanupBlockedReason: `worktrees_preserved:${preservedWorktrees}`,
-    }, jobsDir);
+    writeJobToDisk(
+      jobId,
+      {
+        ...job,
+        cleanupBlockedAt: new Date().toISOString(),
+        cleanupBlockedReason: `worktrees_preserved:${preservedWorktrees}`,
+      },
+      jobsDir,
+    );
     return {
       jobId,
       message: `Preserved team state because ${preservedWorktrees} worktree(s) require follow-up cleanup`,
@@ -569,10 +682,14 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
     force: true,
   }).catch(() => undefined);
 
-  writeJobToDisk(jobId, {
-    ...job,
-    cleanedUpAt: new Date().toISOString(),
-  }, jobsDir);
+  writeJobToDisk(
+    jobId,
+    {
+      ...job,
+      cleanedUpAt: new Date().toISOString(),
+    },
+    jobsDir,
+  );
 
   return {
     jobId,
@@ -584,7 +701,10 @@ export async function cleanupTeamJob(jobId: string, graceMs = 10_000): Promise<T
   };
 }
 
-export async function teamStatusByTeamName(teamName: string, cwd = process.cwd()): Promise<Record<string, unknown>> {
+export async function teamStatusByTeamName(
+  teamName: string,
+  cwd = process.cwd(),
+): Promise<Record<string, unknown>> {
   validateTeamName(teamName);
 
   const runtimeV2 = await import('../team/runtime-v2.js');
@@ -607,11 +727,16 @@ export async function teamStatusByTeamName(teamName: string, cwd = process.cwd()
       workspace_mode: config?.workspace_mode,
       worktree_mode: config?.worktree_mode,
       team_state_root: config?.team_state_root,
-      workerPaneIds: Array.from(new Set(
-        (config?.workers ?? [])
-          .map((worker) => worker.pane_id)
-          .filter((paneId): paneId is string => typeof paneId === 'string' && paneId.trim().length > 0),
-      )),
+      workerPaneIds: Array.from(
+        new Set(
+          (config?.workers ?? [])
+            .map((worker) => worker.pane_id)
+            .filter(
+              (paneId): paneId is string =>
+                typeof paneId === 'string' && paneId.trim().length > 0,
+            ),
+        ),
+      ),
       workers: (config?.workers ?? []).map((worker) => ({
         name: worker.name,
         working_dir: worker.working_dir,
@@ -646,7 +771,10 @@ export async function teamStatusByTeamName(teamName: string, cwd = process.cwd()
   };
 }
 
-export async function teamResumeByName(teamName: string, cwd = process.cwd()): Promise<Record<string, unknown>> {
+export async function teamResumeByName(
+  teamName: string,
+  cwd = process.cwd(),
+): Promise<Record<string, unknown>> {
   validateTeamName(teamName);
   const runtime = await resumeTeam(teamName, cwd);
   if (!runtime) {
@@ -667,14 +795,19 @@ export async function teamResumeByName(teamName: string, cwd = process.cwd()): P
   };
 }
 
-export async function teamShutdownByName(teamName: string, options: { cwd?: string; force?: boolean } = {}): Promise<Record<string, unknown>> {
+export async function teamShutdownByName(
+  teamName: string,
+  options: { cwd?: string; force?: boolean } = {},
+): Promise<Record<string, unknown>> {
   validateTeamName(teamName);
   const cwd = options.cwd ?? process.cwd();
 
   const runtimeV2 = await import('../team/runtime-v2.js');
   if (runtimeV2.isRuntimeV2Enabled()) {
     const config = await readTeamConfig(teamName, cwd);
-    await runtimeV2.shutdownTeamV2(teamName, cwd, { force: Boolean(options.force) });
+    await runtimeV2.shutdownTeamV2(teamName, cwd, {
+      force: Boolean(options.force),
+    });
     return {
       teamName,
       shutdown: true,
@@ -687,7 +820,10 @@ export async function teamShutdownByName(teamName: string, options: { cwd?: stri
 
   if (!runtime) {
     if (options.force) {
-      await rm(teamStateRoot(cwd, teamName), { recursive: true, force: true }).catch(() => undefined);
+      await rm(teamStateRoot(cwd, teamName), {
+        recursive: true,
+        force: true,
+      }).catch(() => undefined);
       return {
         teamName,
         shutdown: true,
@@ -696,7 +832,9 @@ export async function teamShutdownByName(teamName: string, options: { cwd?: stri
       };
     }
 
-    throw new Error(`Team ${teamName} is not running. Use --force to clear stale state.`);
+    throw new Error(
+      `Team ${teamName} is not running. Use --force to clear stale state.`,
+    );
   }
 
   await shutdownTeam(
@@ -723,7 +861,10 @@ export async function executeTeamApiOperation(
   cwd = process.cwd(),
 ): Promise<TeamApiEnvelope> {
   const canonicalOperation = resolveTeamApiOperation(operation);
-  if (!canonicalOperation || !SUPPORTED_API_OPERATIONS.has(canonicalOperation as SupportedApiOperation)) {
+  if (
+    !canonicalOperation ||
+    !SUPPORTED_API_OPERATIONS.has(canonicalOperation as SupportedApiOperation)
+  ) {
     return {
       ok: false,
       operation,
@@ -736,37 +877,59 @@ export async function executeTeamApiOperation(
 
   const normalizedInput = {
     ...input,
-    ...(typeof input.teamName === 'string' && input.teamName.trim() !== '' && typeof input.team_name !== 'string'
+    ...(typeof input.teamName === 'string' &&
+    input.teamName.trim() !== '' &&
+    typeof input.team_name !== 'string'
       ? { team_name: input.teamName }
       : {}),
-    ...(typeof input.taskId === 'string' && input.taskId.trim() !== '' && typeof input.task_id !== 'string'
+    ...(typeof input.taskId === 'string' &&
+    input.taskId.trim() !== '' &&
+    typeof input.task_id !== 'string'
       ? { task_id: input.taskId }
       : {}),
-    ...(typeof input.workerName === 'string' && input.workerName.trim() !== '' && typeof input.worker !== 'string'
+    ...(typeof input.workerName === 'string' &&
+    input.workerName.trim() !== '' &&
+    typeof input.worker !== 'string'
       ? { worker: input.workerName }
       : {}),
-    ...(typeof input.fromWorker === 'string' && input.fromWorker.trim() !== '' && typeof input.from_worker !== 'string'
+    ...(typeof input.fromWorker === 'string' &&
+    input.fromWorker.trim() !== '' &&
+    typeof input.from_worker !== 'string'
       ? { from_worker: input.fromWorker }
       : {}),
-    ...(typeof input.toWorker === 'string' && input.toWorker.trim() !== '' && typeof input.to_worker !== 'string'
+    ...(typeof input.toWorker === 'string' &&
+    input.toWorker.trim() !== '' &&
+    typeof input.to_worker !== 'string'
       ? { to_worker: input.toWorker }
       : {}),
-    ...(typeof input.messageId === 'string' && input.messageId.trim() !== '' && typeof input.message_id !== 'string'
+    ...(typeof input.messageId === 'string' &&
+    input.messageId.trim() !== '' &&
+    typeof input.message_id !== 'string'
       ? { message_id: input.messageId }
       : {}),
   };
 
-  const result = await executeCanonicalTeamApiOperation(canonicalOperation, normalizedInput, cwd);
+  const result = await executeCanonicalTeamApiOperation(
+    canonicalOperation,
+    normalizedInput,
+    cwd,
+  );
   return result;
 }
 
-export async function teamStartCommand(input: TeamStartInput, options: { json?: boolean } = {}): Promise<TeamStartResult> {
+export async function teamStartCommand(
+  input: TeamStartInput,
+  options: { json?: boolean } = {},
+): Promise<TeamStartResult> {
   const result = await startTeamJob(input);
   output(result, Boolean(options.json));
   return result;
 }
 
-export async function teamStatusCommand(jobId: string, options: { json?: boolean } = {}): Promise<TeamJobStatus> {
+export async function teamStatusCommand(
+  jobId: string,
+  options: { json?: boolean } = {},
+): Promise<TeamJobStatus> {
   const result = await getTeamJobStatus(jobId);
   output(result, Boolean(options.json));
   return result;
@@ -872,7 +1035,9 @@ function parseStartArgs(args: string[]): StartArgsParsed {
       continue;
     }
     if (token.startsWith('--agent=')) {
-      agentValues.push(...token.slice('--agent='.length).split(',').map(normalizeAgentType));
+      agentValues.push(
+        ...token.slice('--agent='.length).split(',').map(normalizeAgentType),
+      );
       continue;
     }
 
@@ -938,29 +1103,43 @@ function parseStartArgs(args: string[]): StartArgsParsed {
       continue;
     }
     if (token.startsWith('--poll-interval-ms=')) {
-      pollIntervalMs = toInt(token.slice('--poll-interval-ms='.length), '--poll-interval-ms');
+      pollIntervalMs = toInt(
+        token.slice('--poll-interval-ms='.length),
+        '--poll-interval-ms',
+      );
       continue;
     }
 
     if (token === '--sentinel-gate-timeout-ms') {
-      if (!next) throw new Error('Missing value after --sentinel-gate-timeout-ms');
+      if (!next)
+        throw new Error('Missing value after --sentinel-gate-timeout-ms');
       sentinelGateTimeoutMs = toInt(next, '--sentinel-gate-timeout-ms');
       i += 1;
       continue;
     }
     if (token.startsWith('--sentinel-gate-timeout-ms=')) {
-      sentinelGateTimeoutMs = toInt(token.slice('--sentinel-gate-timeout-ms='.length), '--sentinel-gate-timeout-ms');
+      sentinelGateTimeoutMs = toInt(
+        token.slice('--sentinel-gate-timeout-ms='.length),
+        '--sentinel-gate-timeout-ms',
+      );
       continue;
     }
 
     if (token === '--sentinel-gate-poll-interval-ms') {
-      if (!next) throw new Error('Missing value after --sentinel-gate-poll-interval-ms');
-      sentinelGatePollIntervalMs = toInt(next, '--sentinel-gate-poll-interval-ms');
+      if (!next)
+        throw new Error('Missing value after --sentinel-gate-poll-interval-ms');
+      sentinelGatePollIntervalMs = toInt(
+        next,
+        '--sentinel-gate-poll-interval-ms',
+      );
       i += 1;
       continue;
     }
     if (token.startsWith('--sentinel-gate-poll-interval-ms=')) {
-      sentinelGatePollIntervalMs = toInt(token.slice('--sentinel-gate-poll-interval-ms='.length), '--sentinel-gate-poll-interval-ms');
+      sentinelGatePollIntervalMs = toInt(
+        token.slice('--sentinel-gate-poll-interval-ms='.length),
+        '--sentinel-gate-poll-interval-ms',
+      );
       continue;
     }
 
@@ -971,23 +1150,32 @@ function parseStartArgs(args: string[]): StartArgsParsed {
   if (agentValues.length === 0) throw new Error('Missing required --agent');
   if (taskValues.length === 0) throw new Error('Missing required --task');
 
-  const agentTypes = agentValues.length === 1
-    ? Array.from({ length: count }, () => agentValues[0])
-    : [...agentValues];
+  const agentTypes =
+    agentValues.length === 1
+      ? Array.from({ length: count }, () => agentValues[0])
+      : [...agentValues];
 
   if (agentValues.length > 1 && count !== 1) {
-    throw new Error('Do not combine --count with multiple --agent values; either use one agent+count or explicit agent list.');
+    throw new Error(
+      'Do not combine --count with multiple --agent values; either use one agent+count or explicit agent list.',
+    );
   }
 
-  const taskDescriptions = taskValues.length === 1
-    ? Array.from({ length: agentTypes.length }, () => taskValues[0])
-    : [...taskValues];
+  const taskDescriptions =
+    taskValues.length === 1
+      ? Array.from({ length: agentTypes.length }, () => taskValues[0])
+      : [...taskValues];
 
   if (taskDescriptions.length !== agentTypes.length) {
-    throw new Error(`Task count (${taskDescriptions.length}) must match worker count (${agentTypes.length}).`);
+    throw new Error(
+      `Task count (${taskDescriptions.length}) must match worker count (${agentTypes.length}).`,
+    );
   }
 
-  const resolvedTeamName = (teamName && teamName.trim()) ? teamName.trim() : autoTeamName(taskDescriptions[0]);
+  const resolvedTeamName =
+    teamName && teamName.trim()
+      ? teamName.trim()
+      : autoTeamName(taskDescriptions[0]);
   const tasks: TeamTaskInput[] = taskDescriptions.map((description, index) => ({
     subject: `${subjectPrefix} ${index + 1}`,
     description,
@@ -1002,14 +1190,19 @@ function parseStartArgs(args: string[]): StartArgsParsed {
       ...(newWindow ? { newWindow: true } : {}),
       ...(pollIntervalMs != null ? { pollIntervalMs } : {}),
       ...(sentinelGateTimeoutMs != null ? { sentinelGateTimeoutMs } : {}),
-      ...(sentinelGatePollIntervalMs != null ? { sentinelGatePollIntervalMs } : {}),
+      ...(sentinelGatePollIntervalMs != null
+        ? { sentinelGatePollIntervalMs }
+        : {}),
       ...(autoMerge ? { autoMerge: true } : {}),
     },
     json,
   };
 }
 
-function parseCommonJobArgs(args: string[], command: 'status' | 'wait' | 'cleanup'): {
+function parseCommonJobArgs(
+  args: string[],
+  command: 'status' | 'wait' | 'cleanup',
+): {
   target: string;
   json: boolean;
   cwd?: string;
@@ -1098,7 +1291,10 @@ function parseCommonJobArgs(args: string[], command: 'status' | 'wait' | 'cleanu
   };
 }
 
-function parseTeamTargetArgs(args: string[], command: 'resume' | 'shutdown'): {
+function parseTeamTargetArgs(
+  args: string[],
+  command: 'resume' | 'shutdown',
+): {
   teamName: string;
   json: boolean;
   cwd?: string;
@@ -1199,7 +1395,9 @@ function parseApiArgs(args: string[]): {
   }
 
   if (!operation) {
-    throw new Error(`Missing required <operation> for "omc team api"\n\n${TEAM_API_USAGE}`);
+    throw new Error(
+      `Missing required <operation> for "omc team api"\n\n${TEAM_API_USAGE}`,
+    );
   }
 
   return {
@@ -1270,11 +1468,21 @@ function parseLegacyStartAlias(args: string[]): TeamLegacyStartArgs | null {
   let task = taskParts.join(' ').trim();
   if (!task) throw new Error('Legacy start alias requires a task string');
 
-  const shortFollowup = ['team', '/team', 'team please', 'run team', 'start team'].includes(task.toLowerCase());
+  const shortFollowup = [
+    'team',
+    '/team',
+    'team please',
+    'run team',
+    'start team',
+  ].includes(task.toLowerCase());
   if (shortFollowup) {
-    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(cwd, 'team', {
-      requirePlanningComplete: true,
-    });
+    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(
+      cwd,
+      'team',
+      {
+        requirePlanningComplete: true,
+      },
+    );
     if (approvedHintOutcome.status === 'ambiguous') {
       throw new Error('approved_execution_hint_ambiguous:team');
     }
@@ -1291,10 +1499,14 @@ function parseLegacyStartAlias(args: string[]): TeamLegacyStartArgs | null {
     }
   } else {
     const command = `omc team ${ralph ? 'ralph ' : ''}${spec} ${JSON.stringify(task)}`;
-    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(cwd, 'team', {
-      task,
-      command,
-    });
+    const approvedHintOutcome = readApprovedExecutionLaunchHintOutcome(
+      cwd,
+      'team',
+      {
+        task,
+        command,
+      },
+    );
     if (approvedHintOutcome.status === 'ambiguous') {
       throw new Error('approved_execution_hint_ambiguous:team');
     }
@@ -1318,7 +1530,12 @@ export async function teamCommand(argv: string[]): Promise<void> {
   const [commandRaw, ...rest] = argv;
   const command = (commandRaw || '').toLowerCase();
 
-  if (!command || command === 'help' || command === '--help' || command === '-h') {
+  if (
+    !command ||
+    command === 'help' ||
+    command === '--help' ||
+    command === '-h'
+  ) {
     console.log(TEAM_USAGE);
     return;
   }
@@ -1336,26 +1553,40 @@ export async function teamCommand(argv: string[]): Promise<void> {
       return;
     }
 
-    const byTeam = await teamStatusByTeamName(parsed.target, parsed.cwd ?? process.cwd());
+    const byTeam = await teamStatusByTeamName(
+      parsed.target,
+      parsed.cwd ?? process.cwd(),
+    );
     output(byTeam, parsed.json);
     return;
   }
 
   if (command === 'wait') {
     const parsed = parseCommonJobArgs(rest, 'wait');
-    await teamWaitCommand(parsed.target, { ...(parsed.timeoutMs != null ? { timeoutMs: parsed.timeoutMs } : {}) }, { json: parsed.json });
+    await teamWaitCommand(
+      parsed.target,
+      { ...(parsed.timeoutMs != null ? { timeoutMs: parsed.timeoutMs } : {}) },
+      { json: parsed.json },
+    );
     return;
   }
 
   if (command === 'cleanup') {
     const parsed = parseCommonJobArgs(rest, 'cleanup');
-    await teamCleanupCommand(parsed.target, { ...(parsed.graceMs != null ? { graceMs: parsed.graceMs } : {}) }, { json: parsed.json });
+    await teamCleanupCommand(
+      parsed.target,
+      { ...(parsed.graceMs != null ? { graceMs: parsed.graceMs } : {}) },
+      { json: parsed.json },
+    );
     return;
   }
 
   if (command === 'resume') {
     const parsed = parseTeamTargetArgs(rest, 'resume');
-    const result = await teamResumeByName(parsed.teamName, parsed.cwd ?? process.cwd());
+    const result = await teamResumeByName(
+      parsed.teamName,
+      parsed.cwd ?? process.cwd(),
+    );
     output(result, parsed.json);
     return;
   }
@@ -1371,13 +1602,22 @@ export async function teamCommand(argv: string[]): Promise<void> {
   }
 
   if (command === 'api') {
-    if (rest.length === 0 || rest[0] === 'help' || rest[0] === '--help' || rest[0] === '-h') {
+    if (
+      rest.length === 0 ||
+      rest[0] === 'help' ||
+      rest[0] === '--help' ||
+      rest[0] === '-h'
+    ) {
       console.log(TEAM_API_USAGE);
       return;
     }
 
     const parsed = parseApiArgs(rest);
-    const result = await executeTeamApiOperation(parsed.operation, parsed.input, parsed.cwd ?? process.cwd());
+    const result = await executeTeamApiOperation(
+      parsed.operation,
+      parsed.input,
+      parsed.cwd ?? process.cwd(),
+    );
     if (!result.ok && !parsed.json) {
       throw new Error(result.error?.message ?? 'Team API operation failed');
     }
@@ -1396,7 +1636,10 @@ export async function teamCommand(argv: string[]): Promise<void> {
       const result = await startTeamJob({
         teamName: legacy.teamName,
         workerCount: legacy.workerCount,
-        agentTypes: Array.from({ length: legacy.workerCount }, () => legacy.agentType),
+        agentTypes: Array.from(
+          { length: legacy.workerCount },
+          () => legacy.agentType,
+        ),
         tasks,
         cwd: legacy.cwd,
         ...(legacy.newWindow ? { newWindow: true } : {}),

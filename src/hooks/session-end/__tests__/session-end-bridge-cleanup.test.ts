@@ -43,8 +43,16 @@ describe('processSessionEndCleanupWorker python bridge cleanup', () => {
         type: 'assistant',
         message: {
           content: [
-            { type: 'tool_use', name: 'mcp__t__python_repl', input: { action: 'execute', researchSessionID: 'bridge-A' } },
-            { type: 'tool_use', name: 'python_repl', input: { action: 'get_state', researchSessionID: 'bridge-B' } },
+            {
+              type: 'tool_use',
+              name: 'mcp__t__python_repl',
+              input: { action: 'execute', researchSessionID: 'bridge-A' },
+            },
+            {
+              type: 'tool_use',
+              name: 'python_repl',
+              input: { action: 'get_state', researchSessionID: 'bridge-B' },
+            },
           ],
         },
       }),
@@ -59,8 +67,8 @@ describe('processSessionEndCleanupWorker python bridge cleanup', () => {
     });
 
     expect(cleanupBridgeSessions).toHaveBeenCalledTimes(1);
-    const calledWith = vi.mocked(cleanupBridgeSessions).mock.calls[0]?.[0] as string[];
+    const calledWith = vi.mocked(cleanupBridgeSessions).mock
+      .calls[0]?.[0] as string[];
     expect(calledWith.sort()).toEqual(['bridge-A', 'bridge-B'].sort());
   });
 });
-

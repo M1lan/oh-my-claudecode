@@ -10,20 +10,20 @@ export {
   sanitizePromptContent,
   singleErrorBlock,
   inlineSuccessBlocks,
-} from "../agents/prompt-helpers.js";
-export type { AgentRole } from "../agents/prompt-helpers.js";
+} from '../agents/prompt-helpers.js';
+export type { AgentRole } from '../agents/prompt-helpers.js';
 
-import path from "path";
+import path from 'path';
 
 function isWindowsStylePath(value: string): boolean {
-  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith("\\\\");
+  return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\');
 }
 
 function selectPathApi(
   baseDir: string,
   candidatePath: string,
 ): path.PlatformPath {
-  if (process.platform === "win32") {
+  if (process.platform === 'win32') {
     return path.win32;
   }
   if (isWindowsStylePath(baseDir) || isWindowsStylePath(candidatePath)) {
@@ -37,7 +37,7 @@ function isPathWithinBaseDir(baseDir: string, candidatePath: string): boolean {
   const resolvedBase = pathApi.resolve(baseDir);
   const resolvedCandidate = pathApi.resolve(baseDir, candidatePath);
   const caseInsensitive =
-    pathApi === path.win32 || process.platform === "darwin";
+    pathApi === path.win32 || process.platform === 'darwin';
   const baseForCompare = caseInsensitive
     ? resolvedBase.toLowerCase()
     : resolvedBase;
@@ -46,7 +46,7 @@ function isPathWithinBaseDir(baseDir: string, candidatePath: string): boolean {
     : resolvedCandidate;
   const rel = pathApi.relative(baseForCompare, candidateForCompare);
 
-  return rel === "" || (!rel.startsWith("..") && !pathApi.isAbsolute(rel));
+  return rel === '' || (!rel.startsWith('..') && !pathApi.isAbsolute(rel));
 }
 
 /**
@@ -118,5 +118,5 @@ export function buildPromptWithSystemContext(
 
   parts.push(userPrompt);
 
-  return parts.join("\n\n");
+  return parts.join('\n\n');
 }

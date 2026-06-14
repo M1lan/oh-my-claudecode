@@ -2,21 +2,21 @@
  * Tests for Project Memory PreCompact Handler
  */
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { processPreCompact, PreCompactInput } from "../pre-compact.js";
-import { ProjectMemory } from "../types.js";
-import { SCHEMA_VERSION } from "../constants.js";
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { processPreCompact, PreCompactInput } from '../pre-compact.js';
+import { ProjectMemory } from '../types.js';
+import { SCHEMA_VERSION } from '../constants.js';
 
-vi.mock("../../rules-injector/finder.js", () => ({
+vi.mock('../../rules-injector/finder.js', () => ({
   findProjectRoot: vi.fn(),
 }));
 
-vi.mock("../storage.js", () => ({
+vi.mock('../storage.js', () => ({
   loadProjectMemory: vi.fn(),
 }));
 
-import { findProjectRoot } from "../../rules-injector/finder.js";
-import { loadProjectMemory } from "../storage.js";
+import { findProjectRoot } from '../../rules-injector/finder.js';
+import { loadProjectMemory } from '../storage.js';
 
 const mockedFindProjectRoot = vi.mocked(findProjectRoot);
 const mockedLoadProjectMemory = vi.mocked(loadProjectMemory);
@@ -26,7 +26,7 @@ const createBaseMemory = (
 ): ProjectMemory => ({
   version: SCHEMA_VERSION,
   lastScanned: Date.now(),
-  projectRoot: "/test",
+  projectRoot: '/test',
   techStack: {
     languages: [],
     frameworks: [],
@@ -60,39 +60,39 @@ const createBaseMemory = (
 });
 
 const baseInput: PreCompactInput = {
-  session_id: "test-session",
-  transcript_path: "/tmp/transcript",
-  cwd: "/test",
-  permission_mode: "default",
-  hook_event_name: "PreCompact",
-  trigger: "auto",
+  session_id: 'test-session',
+  transcript_path: '/tmp/transcript',
+  cwd: '/test',
+  permission_mode: 'default',
+  hook_event_name: 'PreCompact',
+  trigger: 'auto',
 };
 
-describe("Project Memory PreCompact Handler", () => {
+describe('Project Memory PreCompact Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("should treat customNotes as critical info and inject system message", async () => {
-    mockedFindProjectRoot.mockReturnValue("/test");
+  it('should treat customNotes as critical info and inject system message', async () => {
+    mockedFindProjectRoot.mockReturnValue('/test');
     mockedLoadProjectMemory.mockResolvedValue(
       createBaseMemory({
         techStack: {
           languages: [
             {
-              name: "TypeScript",
+              name: 'TypeScript',
               version: null,
-              confidence: "high",
-              markers: ["tsconfig.json"],
+              confidence: 'high',
+              markers: ['tsconfig.json'],
             },
           ],
           frameworks: [],
-          packageManager: "pnpm",
+          packageManager: 'pnpm',
           runtime: null,
         },
         build: {
-          buildCommand: "pnpm build",
-          testCommand: "pnpm test",
+          buildCommand: 'pnpm build',
+          testCommand: 'pnpm test',
           lintCommand: null,
           devCommand: null,
           scripts: {},
@@ -100,18 +100,18 @@ describe("Project Memory PreCompact Handler", () => {
         customNotes: [
           {
             timestamp: Date.now(),
-            source: "learned",
-            category: "env",
-            content: "Requires NODE_ENV",
+            source: 'learned',
+            category: 'env',
+            content: 'Requires NODE_ENV',
           },
         ],
         userDirectives: [
           {
             timestamp: Date.now(),
-            directive: "Stay in scope",
-            context: "",
-            source: "explicit",
-            priority: "high",
+            directive: 'Stay in scope',
+            context: '',
+            source: 'explicit',
+            priority: 'high',
           },
         ],
       }),
@@ -121,14 +121,14 @@ describe("Project Memory PreCompact Handler", () => {
 
     expect(result.continue).toBe(true);
     expect(result.systemMessage).toBeDefined();
-    expect(result.systemMessage).toContain("Project Memory");
-    expect(result.systemMessage).toContain("[Project Environment]");
-    expect(result.systemMessage).toContain("[Directives]");
-    expect(result.systemMessage).toContain("[Recent Learnings]");
+    expect(result.systemMessage).toContain('Project Memory');
+    expect(result.systemMessage).toContain('[Project Environment]');
+    expect(result.systemMessage).toContain('[Directives]');
+    expect(result.systemMessage).toContain('[Recent Learnings]');
   });
 
-  it("should not inject when memory has no critical info", async () => {
-    mockedFindProjectRoot.mockReturnValue("/test");
+  it('should not inject when memory has no critical info', async () => {
+    mockedFindProjectRoot.mockReturnValue('/test');
     mockedLoadProjectMemory.mockResolvedValue(createBaseMemory());
 
     const result = await processPreCompact(baseInput);

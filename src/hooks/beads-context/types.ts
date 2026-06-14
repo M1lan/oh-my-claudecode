@@ -1,4 +1,4 @@
-export type TaskTool = "builtin" | "beads" | "beads-rust";
+export type TaskTool = 'builtin' | 'beads' | 'beads-rust';
 
 export interface BeadsContextConfig {
   taskTool: TaskTool;

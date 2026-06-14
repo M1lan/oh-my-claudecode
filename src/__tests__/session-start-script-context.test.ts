@@ -16,7 +16,9 @@ describe('session-start.mjs regression #1386', () => {
     tempDir = mkdtempSync(join(tmpdir(), 'omc-session-start-script-'));
     fakeHome = join(tempDir, 'home');
     fakeProject = join(tempDir, 'project');
-    mkdirSync(join(fakeProject, '.omc', 'state', 'sessions', 'session-1386'), { recursive: true });
+    mkdirSync(join(fakeProject, '.omc', 'state', 'sessions', 'session-1386'), {
+      recursive: true,
+    });
     // session-start validateCwd requires a real workspace anchor (.git / .omc-workspace)
     mkdirSync(join(fakeProject, '.git'), { recursive: true });
   });
@@ -27,7 +29,14 @@ describe('session-start.mjs regression #1386', () => {
 
   it('marks restored ultrawork state as prior-session context instead of imperative continuation', () => {
     writeFileSync(
-      join(fakeProject, '.omc', 'state', 'sessions', 'session-1386', 'ultrawork-state.json'),
+      join(
+        fakeProject,
+        '.omc',
+        'state',
+        'sessions',
+        'session-1386',
+        'ultrawork-state.json',
+      ),
       JSON.stringify({
         active: true,
         session_id: 'session-1386',
@@ -58,7 +67,9 @@ describe('session-start.mjs regression #1386', () => {
 
     expect(context).toContain('[ULTRAWORK MODE RESTORED]');
     expect(context).toContain("Prioritize the user's newest request");
-    expect(context).not.toContain('Continue working in ultrawork mode until all tasks are complete.');
+    expect(context).not.toContain(
+      'Continue working in ultrawork mode until all tasks are complete.',
+    );
   });
 
   it('injects persisted project memory into session-start additionalContext', () => {
@@ -147,7 +158,9 @@ describe('session-start.mjs regression #1386', () => {
     expect(output.continue).toBe(true);
     expect(context).toContain('<project-memory-context>');
     expect(context).toContain('[PROJECT MEMORY]');
-    expect(context).toContain('Preserve project memory directives at session start');
+    expect(context).toContain(
+      'Preserve project memory directives at session start',
+    );
     expect(context).toContain('[Project Environment]');
     expect(context).toContain('- TypeScript | pkg:pnpm | node');
     expect(context).toContain('- build=pnpm build | test=pnpm test');
@@ -204,9 +217,15 @@ ${'- oversized startup guidance\n'.repeat(700)}
     mkdirSync(join(claudeDir, '.omc'), { recursive: true });
     mkdirSync(join(claudeDir, 'hud'), { recursive: true });
     mkdirSync(pluginRoot, { recursive: true });
-    writeFileSync(join(pluginRoot, 'package.json'), JSON.stringify({ version: '1.0.0', type: 'module' }));
+    writeFileSync(
+      join(pluginRoot, 'package.json'),
+      JSON.stringify({ version: '1.0.0', type: 'module' }),
+    );
     writeFileSync(join(claudeDir, 'hud', 'omc-hud.mjs'), '');
-    writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({ statusLine: 'node ~/.claude/hud/omc-hud.mjs' }));
+    writeFileSync(
+      join(claudeDir, 'settings.json'),
+      JSON.stringify({ statusLine: 'node ~/.claude/hud/omc-hud.mjs' }),
+    );
     writeFileSync(
       join(claudeDir, '.omc', 'update-check.json'),
       JSON.stringify({
@@ -245,22 +264,49 @@ ${'- oversized startup guidance\n'.repeat(700)}
     expect(output.systemMessage).toContain('[OMC UPDATE AVAILABLE]');
     expect(output.systemMessage).toContain('v999.0.0');
     expect(output.systemMessage).toContain('/update');
-    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain('[OMC UPDATE AVAILABLE]');
-    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain('999.0.0');
+    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain(
+      '[OMC UPDATE AVAILABLE]',
+    );
+    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain(
+      '999.0.0',
+    );
   });
 
   it('does not show update notice when stale CLAUDE_PLUGIN_ROOT is older than plugin cache', () => {
     const claudeDir = join(fakeHome, '.claude');
-    const stalePluginRoot = join(claudeDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode', '4.14.4');
-    const latestPluginRoot = join(claudeDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode', '4.14.5');
+    const stalePluginRoot = join(
+      claudeDir,
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+      '4.14.4',
+    );
+    const latestPluginRoot = join(
+      claudeDir,
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+      '4.14.5',
+    );
     mkdirSync(join(claudeDir, '.omc'), { recursive: true });
     mkdirSync(join(claudeDir, 'hud'), { recursive: true });
     mkdirSync(stalePluginRoot, { recursive: true });
     mkdirSync(latestPluginRoot, { recursive: true });
-    writeFileSync(join(stalePluginRoot, 'package.json'), JSON.stringify({ version: '4.14.4', type: 'module' }));
-    writeFileSync(join(latestPluginRoot, 'package.json'), JSON.stringify({ version: '4.14.5', type: 'module' }));
+    writeFileSync(
+      join(stalePluginRoot, 'package.json'),
+      JSON.stringify({ version: '4.14.4', type: 'module' }),
+    );
+    writeFileSync(
+      join(latestPluginRoot, 'package.json'),
+      JSON.stringify({ version: '4.14.5', type: 'module' }),
+    );
     writeFileSync(join(claudeDir, 'hud', 'omc-hud.mjs'), '');
-    writeFileSync(join(claudeDir, 'settings.json'), JSON.stringify({ statusLine: 'node ~/.claude/hud/omc-hud.mjs' }));
+    writeFileSync(
+      join(claudeDir, 'settings.json'),
+      JSON.stringify({ statusLine: 'node ~/.claude/hud/omc-hud.mjs' }),
+    );
     writeFileSync(
       join(claudeDir, '.omc', 'update-check.json'),
       JSON.stringify({
@@ -298,7 +344,8 @@ ${'- oversized startup guidance\n'.repeat(700)}
     expect(output.continue).toBe(true);
     expect(output.systemMessage ?? '').not.toContain('[OMC UPDATE AVAILABLE]');
     expect(output.systemMessage ?? '').not.toContain('4.14.4');
-    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain('[OMC UPDATE AVAILABLE]');
+    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain(
+      '[OMC UPDATE AVAILABLE]',
+    );
   });
-
 });

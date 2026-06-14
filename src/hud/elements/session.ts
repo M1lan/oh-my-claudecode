@@ -4,8 +4,8 @@
  * Renders session duration and health indicator.
  */
 
-import type { SessionHealth } from "../types.js";
-import { green, red, yellow } from "../colors.js";
+import type { SessionHealth } from '../types.js';
+import { green, red, yellow } from '../colors.js';
 
 /**
  * Render session health indicator.
@@ -16,9 +16,9 @@ export function renderSession(session: SessionHealth | null): string | null {
   if (!session) return null;
 
   const colorize =
-    session.health === "critical"
+    session.health === 'critical'
       ? red
-      : session.health === "warning"
+      : session.health === 'warning'
         ? yellow
         : green;
 

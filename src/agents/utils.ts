@@ -16,7 +16,7 @@ import type {
   AgentPromptMetadata,
   AvailableAgent,
   AgentOverrideConfig,
-  ModelType
+  ModelType,
 } from './types.js';
 // ============================================================
 // DYNAMIC PROMPT LOADING
@@ -47,7 +47,10 @@ function getPackageDir(): string {
     }
 
     // Source/dist module path (src/agents or dist/agents) -> package root is two levels up.
-    if (currentDirName === 'agents' && (parentDirName === 'src' || parentDirName === 'dist')) {
+    if (
+      currentDirName === 'agents' &&
+      (parentDirName === 'src' || parentDirName === 'dist')
+    ) {
       return join(__dirname, '..', '..');
     }
   }
@@ -94,7 +97,10 @@ export function loadAgentPrompt(agentName: string): string {
 
   // Prefer build-time embedded prompts (always available in CJS bundles)
   try {
-    if (typeof __AGENT_PROMPTS__ !== 'undefined' && __AGENT_PROMPTS__ !== null) {
+    if (
+      typeof __AGENT_PROMPTS__ !== 'undefined' &&
+      __AGENT_PROMPTS__ !== null
+    ) {
       const prompt = __AGENT_PROMPTS__[agentName];
       if (prompt) return prompt;
     }
@@ -119,9 +125,10 @@ export function loadAgentPrompt(agentName: string): string {
     return stripFrontmatter(content);
   } catch (error) {
     // Don't leak internal paths in error messages
-    const message = error instanceof Error && error.message.includes('Invalid agent name')
-      ? error.message
-      : 'Agent prompt file not found';
+    const message =
+      error instanceof Error && error.message.includes('Invalid agent name')
+        ? error.message
+        : 'Agent prompt file not found';
     console.warn(`[loadAgentPrompt] ${message}`);
     return `Agent: ${agentName}\n\nPrompt unavailable.`;
   }
@@ -131,9 +138,9 @@ export function loadAgentPrompt(agentName: string): string {
  * Create tool restrictions configuration
  * Returns an object that can be spread into agent config to restrict tools
  */
-export function createAgentToolRestrictions(
-  blockedTools: string[]
-): { tools: Record<string, boolean> } {
+export function createAgentToolRestrictions(blockedTools: string[]): {
+  tools: Record<string, boolean>;
+} {
   const restrictions: Record<string, boolean> = {};
   for (const tool of blockedTools) {
     restrictions[tool.toLowerCase()] = false;
@@ -146,14 +153,14 @@ export function createAgentToolRestrictions(
  */
 export function mergeAgentConfig(
   base: AgentConfig,
-  override: AgentOverrideConfig
+  override: AgentOverrideConfig,
 ): AgentConfig {
   const { prompt_append, ...rest } = override;
 
   const merged: AgentConfig = {
     ...base,
     ...(rest.model && { model: rest.model as ModelType }),
-    ...(rest.enabled !== undefined && { enabled: rest.enabled })
+    ...(rest.enabled !== undefined && { enabled: rest.enabled }),
   };
 
   if (prompt_append && merged.prompt) {
@@ -166,16 +173,18 @@ export function mergeAgentConfig(
 /**
  * Build delegation table section for OMC prompt
  */
-export function buildDelegationTable(availableAgents: AvailableAgent[]): string {
+export function buildDelegationTable(
+  availableAgents: AvailableAgent[],
+): string {
   if (availableAgents.length === 0) {
     return '';
   }
 
   const rows = availableAgents
-    .filter(a => a.metadata.triggers.length > 0)
-    .map(a => {
+    .filter((a) => a.metadata.triggers.length > 0)
+    .map((a) => {
       const triggers = a.metadata.triggers
-        .map(t => `${t.domain}: ${t.trigger}`)
+        .map((t) => `${t.domain}: ${t.trigger}`)
         .join('; ');
       return `| ${a.metadata.promptAlias || a.name} | ${a.metadata.cost} | ${triggers} |`;
     });
@@ -199,12 +208,12 @@ export function buildUseAvoidSection(metadata: AgentPromptMetadata): string {
 
   if (metadata.useWhen && metadata.useWhen.length > 0) {
     sections.push(`**USE when:**
-${metadata.useWhen.map(u => `- ${u}`).join('\n')}`);
+${metadata.useWhen.map((u) => `- ${u}`).join('\n')}`);
   }
 
   if (metadata.avoidWhen && metadata.avoidWhen.length > 0) {
     sections.push(`**AVOID when:**
-${metadata.avoidWhen.map(a => `- ${a}`).join('\n')}`);
+${metadata.avoidWhen.map((a) => `- ${a}`).join('\n')}`);
   }
 
   return sections.join('\n\n');
@@ -237,14 +246,14 @@ export function createEnvContext(): string {
  * Get all available agents as AvailableAgent descriptors
  */
 export function getAvailableAgents(
-  agents: Record<string, AgentConfig>
+  agents: Record<string, AgentConfig>,
 ): AvailableAgent[] {
   return Object.entries(agents)
     .filter(([_, config]) => config.metadata)
     .map(([name, config]) => ({
       name,
       description: config.description,
-      metadata: config.metadata!
+      metadata: config.metadata!,
     }));
 }
 
@@ -252,13 +261,15 @@ export function getAvailableAgents(
  * Build key triggers section for OMC prompt
  */
 export function buildKeyTriggersSection(
-  availableAgents: AvailableAgent[]
+  availableAgents: AvailableAgent[],
 ): string {
   const triggers: string[] = [];
 
   for (const agent of availableAgents) {
     for (const trigger of agent.metadata.triggers) {
-      triggers.push(`- **${trigger.domain}** → ${agent.metadata.promptAlias || agent.name}: ${trigger.trigger}`);
+      triggers.push(
+        `- **${trigger.domain}** → ${agent.metadata.promptAlias || agent.name}: ${trigger.trigger}`,
+      );
     }
   }
 
@@ -326,7 +337,10 @@ export function parseDisallowedTools(agentName: string): string[] | undefined {
     if (!disallowedMatch) return undefined;
 
     // Parse comma-separated list
-    return disallowedMatch[1].split(',').map(t => t.trim()).filter(Boolean);
+    return disallowedMatch[1]
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
   } catch {
     return undefined;
   }
@@ -346,13 +360,13 @@ export const OPEN_QUESTIONS_PATH = '.omc/plans/open-questions.md';
  */
 export function formatOpenQuestions(
   topic: string,
-  questions: Array<{ question: string; reason: string }>
+  questions: Array<{ question: string; reason: string }>,
 ): string {
   if (questions.length === 0) return '';
 
   const date = new Date().toISOString().split('T')[0];
   const items = questions
-    .map(q => `- [ ] ${q.question} — ${q.reason}`)
+    .map((q) => `- [ ] ${q.question} — ${q.reason}`)
     .join('\n');
 
   return `\n## ${topic} - ${date}\n${items}\n`;
@@ -363,12 +377,13 @@ export function formatOpenQuestions(
  */
 export function deepMerge<T extends Record<string, unknown>>(
   target: T,
-  source: Partial<T>
+  source: Partial<T>,
 ): T {
   const result = { ...target };
 
   for (const key of Object.keys(source)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
+      continue;
     const sourceValue = source[key as keyof T];
     const targetValue = target[key as keyof T];
 
@@ -382,7 +397,7 @@ export function deepMerge<T extends Record<string, unknown>>(
     ) {
       (result as Record<string, unknown>)[key] = deepMerge(
         targetValue as Record<string, unknown>,
-        sourceValue as Record<string, unknown>
+        sourceValue as Record<string, unknown>,
       );
     } else if (sourceValue !== undefined) {
       (result as Record<string, unknown>)[key] = sourceValue;

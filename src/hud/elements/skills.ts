@@ -8,12 +8,12 @@ import type {
   UltraworkStateForHud,
   RalphStateForHud,
   SkillInvocation,
-} from "../types.js";
-import { RESET, cyan } from "../colors.js";
-import { truncateToWidth } from "../../utils/string-width.js";
+} from '../types.js';
+import { RESET, cyan } from '../colors.js';
+import { truncateToWidth } from '../../utils/string-width.js';
 
-const MAGENTA = "\x1b[35m";
-const BRIGHT_MAGENTA = "\x1b[95m";
+const MAGENTA = '\x1b[35m';
+const BRIGHT_MAGENTA = '\x1b[95m';
 
 /**
  * Truncate string to max visual width with ellipsis.
@@ -29,7 +29,7 @@ function truncate(str: string, maxWidth: number): string {
  * For non-namespaced skills, returns the name unchanged.
  */
 function getSkillDisplayName(skillName: string): string {
-  return skillName.split(":").pop() || skillName;
+  return skillName.split(':').pop() || skillName;
 }
 
 /**
@@ -40,9 +40,9 @@ function isActiveMode(
   ultrawork: UltraworkStateForHud | null,
   ralph: RalphStateForHud | null,
 ): boolean {
-  if (skillName === "ultrawork" && ultrawork?.active) return true;
-  if (skillName === "ralph" && ralph?.active) return true;
-  if (skillName === "ultrawork+ralph" && ultrawork?.active && ralph?.active)
+  if (skillName === 'ultrawork' && ultrawork?.active) return true;
+  if (skillName === 'ralph' && ralph?.active) return true;
+  if (skillName === 'ultrawork+ralph' && ultrawork?.active && ralph?.active)
     return true;
   return false;
 }
@@ -74,12 +74,12 @@ export function renderSkills(
   if (lastSkill && !isActiveMode(lastSkill.name, ultrawork, ralph)) {
     const argsDisplay = lastSkill.args
       ? `(${truncate(lastSkill.args, 15)})`
-      : "";
+      : '';
     const displayName = getSkillDisplayName(lastSkill.name);
     parts.push(cyan(`skill:${displayName}${argsDisplay}`));
   }
 
-  return parts.length > 0 ? parts.join(" ") : null;
+  return parts.length > 0 ? parts.join(' ') : null;
 }
 
 /**
@@ -90,7 +90,7 @@ export function renderLastSkill(
 ): string | null {
   if (!lastSkill) return null;
 
-  const argsDisplay = lastSkill.args ? `(${truncate(lastSkill.args, 15)})` : "";
+  const argsDisplay = lastSkill.args ? `(${truncate(lastSkill.args, 15)})` : '';
   const displayName = getSkillDisplayName(lastSkill.name);
   return cyan(`skill:${displayName}${argsDisplay}`);
 }
@@ -114,13 +114,13 @@ export function renderSkillsWithReinforcement(
     const reinforcement =
       ultrawork.reinforcementCount > 0
         ? `(r${ultrawork.reinforcementCount})`
-        : "";
+        : '';
     parts.push(`ultrawork${reinforcement}`);
   }
 
   if (ralph?.active) {
-    parts.push("ralph");
+    parts.push('ralph');
   }
 
-  return `${MAGENTA}${parts.join("-")}${RESET}`;
+  return `${MAGENTA}${parts.join('-')}${RESET}`;
 }

@@ -8,15 +8,15 @@
  * Events are appended to: .omc/state/team/{teamName}/events.jsonl
  */
 
-import { randomUUID } from "crypto";
-import { dirname } from "path";
-import { mkdir, readFile, appendFile } from "fs/promises";
-import { existsSync } from "fs";
-import { TeamPaths, absPath } from "./state-paths.js";
-import type { TeamEventType } from "./contracts.js";
-import type { TeamEvent } from "./types.js";
-import type { WorkerPaneLiveness } from "./tmux-session.js";
-import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
+import { randomUUID } from 'crypto';
+import { dirname } from 'path';
+import { mkdir, readFile, appendFile } from 'fs/promises';
+import { existsSync } from 'fs';
+import { TeamPaths, absPath } from './state-paths.js';
+import type { TeamEventType } from './contracts.js';
+import type { TeamEvent } from './types.js';
+import type { WorkerPaneLiveness } from './tmux-session.js';
+import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
 
 /**
  * Append a team event to the JSONL event log.
@@ -24,7 +24,7 @@ import { createSwallowedErrorLogger } from "../lib/swallowed-error.js";
  */
 export async function appendTeamEvent(
   teamName: string,
-  event: Omit<TeamEvent, "event_id" | "created_at" | "team">,
+  event: Omit<TeamEvent, 'event_id' | 'created_at' | 'team'>,
   cwd: string,
 ): Promise<TeamEvent> {
   const full: TeamEvent = {
@@ -35,7 +35,7 @@ export async function appendTeamEvent(
   };
   const p = absPath(cwd, TeamPaths.events(teamName));
   await mkdir(dirname(p), { recursive: true });
-  await appendFile(p, `${JSON.stringify(full)}\n`, "utf8");
+  await appendFile(p, `${JSON.stringify(full)}\n`, 'utf8');
   return full;
 }
 
@@ -50,10 +50,10 @@ export async function readTeamEvents(
   const p = absPath(cwd, TeamPaths.events(teamName));
   if (!existsSync(p)) return [];
   try {
-    const raw = await readFile(p, "utf8");
+    const raw = await readFile(p, 'utf8');
     return raw
       .trim()
-      .split("\n")
+      .split('\n')
       .filter(Boolean)
       .map((line) => JSON.parse(line) as TeamEvent);
   } catch {
@@ -102,7 +102,7 @@ export async function emitMonitorDerivedEvents(
   if (!previousSnapshot) return;
 
   const logDerivedEventFailure = createSwallowedErrorLogger(
-    "team.events.emitMonitorDerivedEvents appendTeamEvent failed",
+    'team.events.emitMonitorDerivedEvents appendTeamEvent failed',
   );
 
   const completedEventTaskIds = {
@@ -114,24 +114,24 @@ export async function emitMonitorDerivedEvents(
     const prevStatus = previousSnapshot.taskStatusById?.[task.id];
     if (!prevStatus || prevStatus === task.status) continue;
 
-    if (task.status === "completed" && !completedEventTaskIds[task.id]) {
+    if (task.status === 'completed' && !completedEventTaskIds[task.id]) {
       await appendTeamEvent(
         teamName,
         {
-          type: "task_completed",
-          worker: "leader-fixed",
+          type: 'task_completed',
+          worker: 'leader-fixed',
           task_id: task.id,
           reason: `status_transition:${prevStatus}->${task.status}`,
         },
         cwd,
       ).catch(logDerivedEventFailure);
       completedEventTaskIds[task.id] = true;
-    } else if (task.status === "failed") {
+    } else if (task.status === 'failed') {
       await appendTeamEvent(
         teamName,
         {
-          type: "task_failed",
-          worker: "leader-fixed",
+          type: 'task_failed',
+          worker: 'leader-fixed',
           task_id: task.id,
           reason: `status_transition:${prevStatus}->${task.status}`,
         },
@@ -145,25 +145,25 @@ export async function emitMonitorDerivedEvents(
     const prevAlive = previousSnapshot.workerAliveByName?.[worker.name];
     const prevState = previousSnapshot.workerStateByName?.[worker.name];
     const currentLiveness =
-      worker.liveness ?? (worker.alive ? "alive" : "dead");
+      worker.liveness ?? (worker.alive ? 'alive' : 'dead');
 
-    if (prevAlive === true && currentLiveness === "dead") {
+    if (prevAlive === true && currentLiveness === 'dead') {
       await appendTeamEvent(
         teamName,
         {
-          type: "worker_stopped",
+          type: 'worker_stopped',
           worker: worker.name,
-          reason: "pane_exited",
+          reason: 'pane_exited',
         },
         cwd,
       ).catch(logDerivedEventFailure);
     }
 
-    if (prevState === "working" && worker.status.state === "idle") {
+    if (prevState === 'working' && worker.status.state === 'idle') {
       await appendTeamEvent(
         teamName,
         {
-          type: "worker_idle",
+          type: 'worker_idle',
           worker: worker.name,
           reason: `state_transition:${prevState}->${worker.status.state}`,
         },

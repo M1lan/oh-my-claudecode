@@ -12,22 +12,22 @@ import type {
   HookDefinition,
   HookContext,
   HookResult,
-} from "../shared/types.js";
+} from '../shared/types.js';
 import {
   getBackgroundTaskGuidance,
   DEFAULT_MAX_BACKGROUND_TASKS,
-} from "./background-tasks.js";
+} from './background-tasks.js';
 
 /**
  * Messages to remind agents to continue
  * ENHANCED: Using exact pattern from oh-my-opencode's todo-continuation-enforcer
  */
 const CONTINUATION_REMINDERS = [
-  "[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain in your todo list. Continue working on the next pending task. Proceed without asking for permission. Mark each task complete when finished. Do not stop until all tasks are done.",
-  "[TODO CONTINUATION ENFORCED] Your todo list has incomplete items. The boulder does not stop. Continue working on pending tasks immediately. Do not ask for permission - just execute.",
-  "[OMC REMINDER] You attempted to stop with incomplete work. This is not permitted. Check your todo list and continue working on the next pending task.",
-  "[CONTINUATION REQUIRED] Incomplete tasks detected. You are BOUND to your todo list. Continue executing until all tasks show completed status.",
-  "[THE BOULDER NEVER STOPS] Your work is not done. Resume working on incomplete tasks immediately. Verify completion before any further stop attempts.",
+  '[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain in your todo list. Continue working on the next pending task. Proceed without asking for permission. Mark each task complete when finished. Do not stop until all tasks are done.',
+  '[TODO CONTINUATION ENFORCED] Your todo list has incomplete items. The boulder does not stop. Continue working on pending tasks immediately. Do not ask for permission - just execute.',
+  '[OMC REMINDER] You attempted to stop with incomplete work. This is not permitted. Check your todo list and continue working on the next pending task.',
+  '[CONTINUATION REQUIRED] Incomplete tasks detected. You are BOUND to your todo list. Continue executing until all tasks show completed status.',
+  '[THE BOULDER NEVER STOPS] Your work is not done. Resume working on incomplete tasks immediately. Verify completion before any further stop attempts.',
 ];
 
 /**
@@ -48,7 +48,7 @@ function getRandomReminder(): string {
  */
 export function createContinuationHook(): HookDefinition {
   return {
-    event: "Stop",
+    event: 'Stop',
     handler: async (_context: HookContext): Promise<HookResult> => {
       // In a real implementation, this would check the actual todo state
       // For now, we'll provide the structure for integration
@@ -147,7 +147,7 @@ ${getBackgroundTaskGuidance(DEFAULT_MAX_BACKGROUND_TASKS)}
  */
 export function detectCompletionSignals(response: string): {
   claimed: boolean;
-  confidence: "high" | "medium" | "low";
+  confidence: 'high' | 'medium' | 'low';
   reason: string;
 } {
   const completionPatterns = [
@@ -169,23 +169,23 @@ export function detectCompletionSignals(response: string): {
   if (!hasCompletion) {
     return {
       claimed: false,
-      confidence: "high",
-      reason: "No completion claim detected",
+      confidence: 'high',
+      reason: 'No completion claim detected',
     };
   }
 
   if (hasUncertainty) {
     return {
       claimed: true,
-      confidence: "low",
-      reason: "Completion claimed with uncertainty language",
+      confidence: 'low',
+      reason: 'Completion claimed with uncertainty language',
     };
   }
 
   return {
     claimed: true,
-    confidence: "high",
-    reason: "Clear completion claim detected",
+    confidence: 'high',
+    reason: 'Clear completion claim detected',
   };
 }
 

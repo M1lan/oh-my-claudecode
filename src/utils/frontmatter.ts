@@ -37,8 +37,8 @@ export function parseFrontmatter(content: string): {
   const [, yamlContent, body] = match;
   const metadata: Record<string, string> = {};
 
-  for (const line of yamlContent.split("\n")) {
-    const colonIndex = line.indexOf(":");
+  for (const line of yamlContent.split('\n')) {
+    const colonIndex = line.indexOf(':');
     if (colonIndex === -1) continue;
 
     const key = line.slice(0, colonIndex).trim();
@@ -70,12 +70,12 @@ export function parseFrontmatterList(rawValue: string | undefined): string[] {
   const trimmed = rawValue.trim();
   if (!trimmed) return [];
 
-  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+  if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     const inner = trimmed.slice(1, -1).trim();
     if (!inner) return [];
 
     return inner
-      .split(",")
+      .split(',')
       .map((item) => stripOptionalQuotes(item))
       .filter((item) => item.length > 0);
   }

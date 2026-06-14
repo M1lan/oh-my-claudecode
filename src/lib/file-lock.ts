@@ -18,10 +18,10 @@ import {
   readFileSync,
   statSync,
   constants as fsConstants,
-} from "fs";
-import * as path from "path";
-import { ensureDirSync } from "./atomic-write.js";
-import { isProcessAlive } from "../platform/index.js";
+} from 'fs';
+import * as path from 'path';
+import { ensureDirSync } from './atomic-write.js';
+import { isProcessAlive } from '../platform/index.js';
 
 // ============================================================================
 // Types
@@ -66,7 +66,7 @@ function isLockStale(lockPath: string, staleLockMs: number): boolean {
 
     // Try to read PID from the lock payload
     try {
-      const raw = readFileSync(lockPath, "utf-8");
+      const raw = readFileSync(lockPath, 'utf-8');
       const payload = JSON.parse(raw) as { pid?: number };
       if (payload.pid && isProcessAlive(payload.pid)) return false;
     } catch {
@@ -84,7 +84,7 @@ function isLockStale(lockPath: string, staleLockMs: number): boolean {
  * e.g. /path/to/data.json -> /path/to/data.json.lock
  */
 export function lockPathFor(filePath: string): string {
-  return filePath + ".lock";
+  return filePath + '.lock';
 }
 
 // ============================================================================
@@ -112,20 +112,31 @@ function tryAcquireSync(
       0o600,
     );
     try {
-      const payload = JSON.stringify({ pid: process.pid, timestamp: Date.now() });
-      writeSync(fd, payload, null, "utf-8");
+      const payload = JSON.stringify({
+        pid: process.pid,
+        timestamp: Date.now(),
+      });
+      writeSync(fd, payload, null, 'utf-8');
     } catch (writeErr) {
-      try { closeSync(fd); } catch { /* already closed */ }
-      try { unlinkSync(lockPath); } catch { /* best effort */ }
+      try {
+        closeSync(fd);
+      } catch {
+        /* already closed */
+      }
+      try {
+        unlinkSync(lockPath);
+      } catch {
+        /* best effort */
+      }
       throw writeErr;
     }
     return { fd, path: lockPath };
   } catch (err: unknown) {
     if (
       err &&
-      typeof err === "object" &&
-      "code" in err &&
-      (err as { code: string }).code === "EEXIST"
+      typeof err === 'object' &&
+      'code' in err &&
+      (err as { code: string }).code === 'EEXIST'
     ) {
       // Lock file exists — check if stale
       if (isLockStale(lockPath, staleLockMs)) {
@@ -142,11 +153,22 @@ function tryAcquireSync(
             0o600,
           );
           try {
-            const payload = JSON.stringify({ pid: process.pid, timestamp: Date.now() });
-            writeSync(fd, payload, null, "utf-8");
+            const payload = JSON.stringify({
+              pid: process.pid,
+              timestamp: Date.now(),
+            });
+            writeSync(fd, payload, null, 'utf-8');
           } catch (writeErr) {
-            try { closeSync(fd); } catch { /* already closed */ }
-            try { unlinkSync(lockPath); } catch { /* best effort */ }
+            try {
+              closeSync(fd);
+            } catch {
+              /* already closed */
+            }
+            try {
+              unlinkSync(lockPath);
+            } catch {
+              /* best effort */
+            }
             throw writeErr;
           }
           return { fd, path: lockPath };
@@ -191,7 +213,9 @@ export function acquireFileLockSync(
     } catch {
       // Main thread: Atomics.wait throws — brief spin instead (capped at retryDelayMs)
       const waitUntil = Date.now() + waitMs;
-      while (Date.now() < waitUntil) { /* spin */ }
+      while (Date.now() < waitUntil) {
+        /* spin */
+      }
     }
     const retryHandle = tryAcquireSync(lockPath, staleLockMs);
     if (retryHandle) return retryHandle;

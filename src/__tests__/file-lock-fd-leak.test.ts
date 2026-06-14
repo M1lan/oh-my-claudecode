@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { mkdirSync, rmSync, existsSync, writeFileSync, utimesSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, rmSync, existsSync, writeFileSync, utimesSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
-vi.mock("fs", async () => {
-  const actual = await vi.importActual<typeof import("fs")>("fs");
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
   return {
     ...actual,
     openSync: vi.fn(actual.openSync),
@@ -19,15 +19,15 @@ import {
   closeSync as mockCloseSync,
   writeSync as mockWriteSync,
   unlinkSync as mockUnlinkSync,
-} from "fs";
-import { acquireFileLockSync } from "../lib/file-lock.js";
+} from 'fs';
+import { acquireFileLockSync } from '../lib/file-lock.js';
 
 const mockedOpenSync = vi.mocked(mockOpenSync);
 const mockedCloseSync = vi.mocked(mockCloseSync);
 const mockedWriteSync = vi.mocked(mockWriteSync);
 const mockedUnlinkSync = vi.mocked(mockUnlinkSync);
 
-describe("file-lock fd leak on writeSync failure", () => {
+describe('file-lock fd leak on writeSync failure', () => {
   let testDir: string;
 
   beforeEach(async () => {
@@ -37,7 +37,7 @@ describe("file-lock fd leak on writeSync failure", () => {
     );
     mkdirSync(testDir, { recursive: true });
     vi.clearAllMocks();
-    const realFs = await vi.importActual<typeof import("fs")>("fs");
+    const realFs = await vi.importActual<typeof import('fs')>('fs');
     mockedOpenSync.mockImplementation(realFs.openSync);
     mockedCloseSync.mockImplementation(realFs.closeSync);
     mockedWriteSync.mockImplementation(
@@ -53,8 +53,8 @@ describe("file-lock fd leak on writeSync failure", () => {
     }
   });
 
-  it("should close fd and unlink lock file when writeSync throws on primary path", async () => {
-    const realFs = await vi.importActual<typeof import("fs")>("fs");
+  it('should close fd and unlink lock file when writeSync throws on primary path', async () => {
+    const realFs = await vi.importActual<typeof import('fs')>('fs');
 
     const capturedFds: number[] = [];
     const closedFds: number[] = [];
@@ -75,13 +75,13 @@ describe("file-lock fd leak on writeSync failure", () => {
     mockedUnlinkSync.mockImplementation(realFs.unlinkSync);
 
     mockedWriteSync.mockImplementation(() => {
-      throw new Error("simulated write failure");
+      throw new Error('simulated write failure');
     });
 
-    const lockPath = join(testDir, "primary.lock");
+    const lockPath = join(testDir, 'primary.lock');
 
     expect(() => acquireFileLockSync(lockPath)).toThrow(
-      "simulated write failure",
+      'simulated write failure',
     );
 
     expect(capturedFds).toHaveLength(1);
@@ -89,8 +89,8 @@ describe("file-lock fd leak on writeSync failure", () => {
     expect(existsSync(lockPath)).toBe(false);
   });
 
-  it("should close fd and unlink lock file when writeSync throws on retry path", async () => {
-    const realFs = await vi.importActual<typeof import("fs")>("fs");
+  it('should close fd and unlink lock file when writeSync throws on retry path', async () => {
+    const realFs = await vi.importActual<typeof import('fs')>('fs');
 
     const capturedFds: number[] = [];
     const closedFds: number[] = [];
@@ -112,10 +112,10 @@ describe("file-lock fd leak on writeSync failure", () => {
 
     // writeSync always throws; primary path hits EEXIST so openSync only runs once (retry)
     mockedWriteSync.mockImplementation(() => {
-      throw new Error("simulated write failure on retry");
+      throw new Error('simulated write failure on retry');
     });
 
-    const lockPath = join(testDir, "retry.lock");
+    const lockPath = join(testDir, 'retry.lock');
 
     writeFileSync(
       lockPath,

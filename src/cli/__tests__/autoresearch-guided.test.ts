@@ -1,17 +1,39 @@
-import { describe, it, expect, vi, beforeEach, afterEach, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  afterAll,
+} from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { parseSandboxContract } from '../../autoresearch/contracts.js';
 
-const { tmuxAvailableMock, buildTmuxShellCommandMock, buildTmuxShellCommandWithEnvMock, wrapWithLoginShellMock, quoteShellArgMock } = vi.hoisted(() => ({
+const {
+  tmuxAvailableMock,
+  buildTmuxShellCommandMock,
+  buildTmuxShellCommandWithEnvMock,
+  wrapWithLoginShellMock,
+  quoteShellArgMock,
+} = vi.hoisted(() => ({
   tmuxAvailableMock: vi.fn(),
-  buildTmuxShellCommandMock: vi.fn((cmd: string, args: string[]) => `${cmd} ${args.join(' ')}`),
-  buildTmuxShellCommandWithEnvMock: vi.fn((cmd: string, args: string[], envVars: Record<string, string>) => {
-    const envPart = Object.entries(envVars).map(([k, v]) => `${k}=${v}`).join(' ');
-    return envPart ? `${envPart} ${cmd} ${args.join(' ')}` : `${cmd} ${args.join(' ')}`;
-  }),
+  buildTmuxShellCommandMock: vi.fn(
+    (cmd: string, args: string[]) => `${cmd} ${args.join(' ')}`,
+  ),
+  buildTmuxShellCommandWithEnvMock: vi.fn(
+    (cmd: string, args: string[], envVars: Record<string, string>) => {
+      const envPart = Object.entries(envVars)
+        .map(([k, v]) => `${k}=${v}`)
+        .join(' ');
+      return envPart
+        ? `${envPart} ${cmd} ${args.join(' ')}`
+        : `${cmd} ${args.join(' ')}`;
+    },
+  ),
   wrapWithLoginShellMock: vi.fn((cmd: string) => `wrapped:${cmd}`),
   quoteShellArgMock: vi.fn((value: string) => `'${value}'`),
 }));
@@ -52,8 +74,14 @@ import {
 async function initRepo(): Promise<string> {
   const cwd = await mkdtemp(join(tmpdir(), 'omc-autoresearch-guided-test-'));
   execFileSync('git', ['init'], { cwd, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'Test User'], { cwd, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+    cwd,
+    stdio: 'ignore',
+  });
+  execFileSync('git', ['config', 'user.name', 'Test User'], {
+    cwd,
+    stdio: 'ignore',
+  });
   await writeFile(join(cwd, 'README.md'), 'hello\n', 'utf-8');
   execFileSync('git', ['add', 'README.md'], { cwd, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd, stdio: 'ignore' });
@@ -62,12 +90,18 @@ async function initRepo(): Promise<string> {
 
 function withMockedTty<T>(fn: () => Promise<T>): Promise<T> {
   const descriptor = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
-  Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: true });
+  Object.defineProperty(process.stdin, 'isTTY', {
+    configurable: true,
+    value: true,
+  });
   return fn().finally(() => {
     if (descriptor) {
       Object.defineProperty(process.stdin, 'isTTY', descriptor);
     } else {
-      Object.defineProperty(process.stdin, 'isTTY', { configurable: true, value: false });
+      Object.defineProperty(process.stdin, 'isTTY', {
+        configurable: true,
+        value: false,
+      });
     }
   });
 }
@@ -97,9 +131,14 @@ describe('initAutoresearchMission', () => {
       expect(result.slug).toBe('auth-coverage');
       expect(result.missionDir).toBe(join(repo, 'missions', 'auth-coverage'));
 
-      const missionContent = await readFile(join(result.missionDir, 'mission.md'), 'utf-8');
+      const missionContent = await readFile(
+        join(result.missionDir, 'mission.md'),
+        'utf-8',
+      );
       expect(missionContent).toMatch(/# Mission/);
-      expect(missionContent).toMatch(/Improve test coverage for the auth module/);
+      expect(missionContent).toMatch(
+        /Improve test coverage for the auth module/,
+      );
     } finally {
       await rm(repo, { recursive: true, force: true });
     }
@@ -116,7 +155,10 @@ describe('initAutoresearchMission', () => {
         repoRoot: repo,
       });
 
-      const sandboxContent = await readFile(join(result.missionDir, 'sandbox.md'), 'utf-8');
+      const sandboxContent = await readFile(
+        join(result.missionDir, 'sandbox.md'),
+        'utf-8',
+      );
       expect(sandboxContent).toMatch(/^---\n/);
       expect(sandboxContent).toMatch(/evaluator:/);
       expect(sandboxContent).toMatch(/command: node scripts\/eval-perf\.js/);
@@ -137,7 +179,10 @@ describe('initAutoresearchMission', () => {
         repoRoot: repo,
       });
 
-      const sandboxContent = await readFile(join(result.missionDir, 'sandbox.md'), 'utf-8');
+      const sandboxContent = await readFile(
+        join(result.missionDir, 'sandbox.md'),
+        'utf-8',
+      );
       expect(sandboxContent).not.toMatch(/keep_policy:/);
       const parsed = parseSandboxContract(sandboxContent);
       expect(parsed.evaluator.keep_policy).toBeUndefined();
@@ -157,7 +202,10 @@ describe('initAutoresearchMission', () => {
         repoRoot: repo,
       });
 
-      const sandboxContent = await readFile(join(result.missionDir, 'sandbox.md'), 'utf-8');
+      const sandboxContent = await readFile(
+        join(result.missionDir, 'sandbox.md'),
+        'utf-8',
+      );
       const parsed = parseSandboxContract(sandboxContent);
       expect(parsed.evaluator.command).toBe('bash run-tests.sh');
       expect(parsed.evaluator.format).toBe('json');
@@ -171,10 +219,14 @@ describe('initAutoresearchMission', () => {
 describe('parseInitArgs', () => {
   it('parses all flags with space-separated values', () => {
     const result = parseInitArgs([
-      '--topic', 'my topic',
-      '--evaluator', 'node eval.js',
-      '--keep-policy', 'pass_only',
-      '--slug', 'my-slug',
+      '--topic',
+      'my topic',
+      '--evaluator',
+      'node eval.js',
+      '--keep-policy',
+      'pass_only',
+      '--slug',
+      'my-slug',
     ]);
     expect(result.topic).toBe('my topic');
     expect(result.evaluatorCommand).toBe('node eval.js');
@@ -200,29 +252,43 @@ describe('runAutoresearchNoviceBridge', () => {
   it('loops through refine further before launching and writes draft + mission files', async () => {
     const repo = await initRepo();
     try {
-      const result = await withMockedTty(() => runAutoresearchNoviceBridge(
-        repo,
-        {},
-        makeFakeIo([
-          'Improve evaluator UX',
-          'Make success measurable',
-          'TODO replace with evaluator command',
-          'score_improvement',
-          'ux-eval',
-          'refine further',
-          'Improve evaluator UX',
-          'Passing evaluator output',
-          'node scripts/eval.js',
-          'pass_only',
-          'ux-eval',
-          'launch',
-        ]),
-      ));
+      const result = await withMockedTty(() =>
+        runAutoresearchNoviceBridge(
+          repo,
+          {},
+          makeFakeIo([
+            'Improve evaluator UX',
+            'Make success measurable',
+            'TODO replace with evaluator command',
+            'score_improvement',
+            'ux-eval',
+            'refine further',
+            'Improve evaluator UX',
+            'Passing evaluator output',
+            'node scripts/eval.js',
+            'pass_only',
+            'ux-eval',
+            'launch',
+          ]),
+        ),
+      );
 
-      const draftContent = await readFile(join(repo, '.omc', 'specs', 'deep-interview-autoresearch-ux-eval.md'), 'utf-8');
-      const resultContent = await readFile(join(repo, '.omc', 'specs', 'autoresearch-ux-eval', 'result.json'), 'utf-8');
-      const missionContent = await readFile(join(result.missionDir, 'mission.md'), 'utf-8');
-      const sandboxContent = await readFile(join(result.missionDir, 'sandbox.md'), 'utf-8');
+      const draftContent = await readFile(
+        join(repo, '.omc', 'specs', 'deep-interview-autoresearch-ux-eval.md'),
+        'utf-8',
+      );
+      const resultContent = await readFile(
+        join(repo, '.omc', 'specs', 'autoresearch-ux-eval', 'result.json'),
+        'utf-8',
+      );
+      const missionContent = await readFile(
+        join(result.missionDir, 'mission.md'),
+        'utf-8',
+      );
+      const sandboxContent = await readFile(
+        join(result.missionDir, 'sandbox.md'),
+        'utf-8',
+      );
 
       expect(result.slug).toBe('ux-eval');
       expect(draftContent).toMatch(/Launch-ready: yes/);
@@ -240,11 +306,18 @@ describe('guidedAutoresearchSetup', () => {
   it('delegates to the novice bridge behavior', async () => {
     const repo = await initRepo();
     try {
-      const result = await withMockedTty(() => guidedAutoresearchSetup(
-        repo,
-        { topic: 'Seeded topic', evaluatorCommand: 'node scripts/eval.js', keepPolicy: 'score_improvement', slug: 'seeded-topic' },
-        makeFakeIo(['', '', '', '', '', 'launch']),
-      ));
+      const result = await withMockedTty(() =>
+        guidedAutoresearchSetup(
+          repo,
+          {
+            topic: 'Seeded topic',
+            evaluatorCommand: 'node scripts/eval.js',
+            keepPolicy: 'score_improvement',
+            slug: 'seeded-topic',
+          },
+          makeFakeIo(['', '', '', '', '', 'launch']),
+        ),
+      );
 
       expect(result.slug).toBe('seeded-topic');
     } finally {
@@ -253,13 +326,20 @@ describe('guidedAutoresearchSetup', () => {
   });
 
   it('loops on low-confidence inference until clarification produces a launch-ready handoff', async () => {
-    const questionMock = vi.fn()
+    const questionMock = vi
+      .fn()
       .mockResolvedValueOnce('Improve search onboarding')
       .mockResolvedValueOnce('')
-      .mockResolvedValueOnce('Use the vitest onboarding smoke test as evaluator');
+      .mockResolvedValueOnce(
+        'Use the vitest onboarding smoke test as evaluator',
+      );
     const closeMock = vi.fn();
-    const createPromptInterface = vi.fn(() => ({ question: questionMock, close: closeMock }));
-    const runSetupSession = vi.fn()
+    const createPromptInterface = vi.fn(() => ({
+      question: questionMock,
+      close: closeMock,
+    }));
+    const runSetupSession = vi
+      .fn()
       .mockReturnValueOnce({
         missionText: 'Improve search onboarding',
         evaluatorCommand: 'npm run test:onboarding',
@@ -279,7 +359,10 @@ describe('guidedAutoresearchSetup', () => {
       });
 
     const isTty = process.stdin.isTTY;
-    Object.defineProperty(process.stdin, 'isTTY', { value: true, configurable: true });
+    Object.defineProperty(process.stdin, 'isTTY', {
+      value: true,
+      configurable: true,
+    });
 
     try {
       const repo = await initRepo();
@@ -293,7 +376,10 @@ describe('guidedAutoresearchSetup', () => {
       expect(closeMock).toHaveBeenCalled();
       await rm(repo, { recursive: true, force: true });
     } finally {
-      Object.defineProperty(process.stdin, 'isTTY', { value: isTty, configurable: true });
+      Object.defineProperty(process.stdin, 'isTTY', {
+        value: isTty,
+        configurable: true,
+      });
     }
   });
 });
@@ -328,7 +414,9 @@ describe('spawnAutoresearchTmux', () => {
 
   it('throws when tmux is unavailable', () => {
     tmuxAvailableMock.mockReturnValue(false);
-    expect(() => spawnAutoresearchTmux('/repo/missions/demo', 'demo')).toThrow(/background autoresearch execution/);
+    expect(() => spawnAutoresearchTmux('/repo/missions/demo', 'demo')).toThrow(
+      /background autoresearch execution/,
+    );
   });
 
   it('uses explicit cwd, login-shell wrapping, and verifies startup before logging success', () => {
@@ -347,7 +435,8 @@ describe('spawnAutoresearchTmux', () => {
     tmuxExecMock.mockImplementation((args: string[]) => {
       if (args[0] === 'set-option' && args.includes('set-clipboard')) return '';
       if (args[0] === 'show-options') return 'xterm*:clipboard:focus\n';
-      if (args[0] === 'set-option' && args.includes('terminal-features')) return '';
+      if (args[0] === 'set-option' && args.includes('terminal-features'))
+        return '';
       if (args[0] === 'has-session') {
         hasSessionCalls += 1;
         if (hasSessionCalls === 1) {
@@ -356,8 +445,18 @@ describe('spawnAutoresearchTmux', () => {
         return '';
       }
       if (args[0] === 'new-session') {
-        expect(args.slice(0, 6)).toEqual(['new-session', '-d', '-s', 'omc-autoresearch-demo', '-c', '/repo']);
-        expect(args[6]).toBe('wrapped:' + `${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`);
+        expect(args.slice(0, 6)).toEqual([
+          'new-session',
+          '-d',
+          '-s',
+          'omc-autoresearch-demo',
+          '-c',
+          '/repo',
+        ]);
+        expect(args[6]).toBe(
+          'wrapped:' +
+            `${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`,
+        );
         return '';
       }
       throw new Error(`unexpected tmuxExec call: ${String(args)}`);
@@ -365,12 +464,34 @@ describe('spawnAutoresearchTmux', () => {
 
     spawnAutoresearchTmux('/repo/missions/demo', 'demo');
 
-    expect(buildTmuxShellCommandMock).toHaveBeenCalledWith(process.execPath, [expect.stringMatching(/bin\/omc\.js$/), 'autoresearch', '/repo/missions/demo']);
-    expect(wrapWithLoginShellMock).toHaveBeenCalledWith(`${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`);
-    expect(logSpy).toHaveBeenCalledWith('\nAutoresearch launched in background tmux session.');
-    expect(tmuxExecMock).toHaveBeenCalledWith(['set-option', '-t', 'omc-autoresearch-demo', 'set-clipboard', 'on'], { stripTmux: true, stdio: 'ignore' });
-    expect(tmuxExecMock).toHaveBeenCalledWith(['set-option', '-at', 'omc-autoresearch-demo', 'terminal-features', ',*:clipboard'], { stripTmux: true, stdio: 'ignore' });
-    expect(logSpy).toHaveBeenCalledWith('  Attach:   tmux attach -t omc-autoresearch-demo');
+    expect(buildTmuxShellCommandMock).toHaveBeenCalledWith(process.execPath, [
+      expect.stringMatching(/bin\/omc\.js$/),
+      'autoresearch',
+      '/repo/missions/demo',
+    ]);
+    expect(wrapWithLoginShellMock).toHaveBeenCalledWith(
+      `${process.execPath} ${process.cwd()}/bin/omc.js autoresearch /repo/missions/demo`,
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      '\nAutoresearch launched in background tmux session.',
+    );
+    expect(tmuxExecMock).toHaveBeenCalledWith(
+      ['set-option', '-t', 'omc-autoresearch-demo', 'set-clipboard', 'on'],
+      { stripTmux: true, stdio: 'ignore' },
+    );
+    expect(tmuxExecMock).toHaveBeenCalledWith(
+      [
+        'set-option',
+        '-at',
+        'omc-autoresearch-demo',
+        'terminal-features',
+        ',*:clipboard',
+      ],
+      { stripTmux: true, stdio: 'ignore' },
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      '  Attach:   tmux attach -t omc-autoresearch-demo',
+    );
   });
 });
 
@@ -382,13 +503,25 @@ describe('prepareAutoresearchSetupCodexHome', () => {
     try {
       const baseCodexHome = join(repo, 'base-codex-home');
       await mkdir(join(baseCodexHome, 'skills'), { recursive: true });
-      await writeFile(join(baseCodexHome, 'skills', 'marker.txt'), 'ok\n', 'utf-8');
+      await writeFile(
+        join(baseCodexHome, 'skills', 'marker.txt'),
+        'ok\n',
+        'utf-8',
+      );
       process.env.CODEX_HOME = baseCodexHome;
 
-      const tempCodexHome = prepareAutoresearchSetupCodexHome(repo, 'setup-session');
-      const configText = await readFile(join(tempCodexHome, '.omx-config.json'), 'utf-8');
+      const tempCodexHome = prepareAutoresearchSetupCodexHome(
+        repo,
+        'setup-session',
+      );
+      const configText = await readFile(
+        join(tempCodexHome, '.omx-config.json'),
+        'utf-8',
+      );
       expect(JSON.parse(configText)).toEqual({ autoNudge: { enabled: false } });
-      expect(await readFile(join(tempCodexHome, 'skills', 'marker.txt'), 'utf-8')).toBe('ok\n');
+      expect(
+        await readFile(join(tempCodexHome, 'skills', 'marker.txt'), 'utf-8'),
+      ).toBe('ok\n');
     } finally {
       if (originalCodexHome === undefined) delete process.env.CODEX_HOME;
       else process.env.CODEX_HOME = originalCodexHome;
@@ -426,21 +559,37 @@ describe('spawnAutoresearchSetupTmux', () => {
       tmuxExecMock.mockImplementation((args: string[]) => {
         if (args[0] === 'new-session') {
           expect(args.slice(0, 9)).toEqual([
-            'new-session', '-d', '-P', '-F', '#{pane_id}', '-s', 'omc-autoresearch-setup-kf12oi', '-c', repo,
+            'new-session',
+            '-d',
+            '-P',
+            '-F',
+            '#{pane_id}',
+            '-s',
+            'omc-autoresearch-setup-kf12oi',
+            '-c',
+            repo,
           ]);
           expect(typeof args[9]).toBe('string');
           expect(String(args[9])).toContain('wrapped:CODEX_HOME=');
-          expect(String(args[9])).toContain(`CODEX_HOME=${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home`);
+          expect(String(args[9])).toContain(
+            `CODEX_HOME=${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home`,
+          );
           expect(String(args[9])).toContain('claude');
           expect(String(args[9])).toContain('--dangerously-skip-permissions');
           return '%42\n';
         }
-        if (args[0] === 'set-option' && args.includes('set-clipboard')) return '';
+        if (args[0] === 'set-option' && args.includes('set-clipboard'))
+          return '';
         if (args[0] === 'show-options') return 'xterm*:clipboard:focus\n';
-        if (args[0] === 'set-option' && args.includes('terminal-features')) return '';
+        if (args[0] === 'set-option' && args.includes('terminal-features'))
+          return '';
         if (args[0] === 'has-session') {
           hasSessionCalls += 1;
-          expect(args).toEqual(['has-session', '-t', 'omc-autoresearch-setup-kf12oi']);
+          expect(args).toEqual([
+            'has-session',
+            '-t',
+            'omc-autoresearch-setup-kf12oi',
+          ]);
           return '';
         }
         if (args[0] === 'send-keys') {
@@ -454,18 +603,46 @@ describe('spawnAutoresearchSetupTmux', () => {
       expect(buildTmuxShellCommandWithEnvMock).toHaveBeenCalledWith(
         'claude',
         ['--dangerously-skip-permissions'],
-        { CODEX_HOME: `${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home` },
+        {
+          CODEX_HOME: `${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home`,
+        },
       );
-      expect(wrapWithLoginShellMock).toHaveBeenCalledWith(`CODEX_HOME=${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home claude --dangerously-skip-permissions`);
-      expect(buildAutoresearchSetupSlashCommand()).toBe('/deep-interview --autoresearch');
+      expect(wrapWithLoginShellMock).toHaveBeenCalledWith(
+        `CODEX_HOME=${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home claude --dangerously-skip-permissions`,
+      );
+      expect(buildAutoresearchSetupSlashCommand()).toBe(
+        '/deep-interview --autoresearch',
+      );
       expect(tmuxExecMock).toHaveBeenCalledWith(
         ['send-keys', '-t', '%42', '-l', buildAutoresearchSetupSlashCommand()],
         expect.objectContaining({ stripTmux: true }),
       );
-      expect(logSpy).toHaveBeenCalledWith('\nAutoresearch setup launched in background Claude session.');
-      expect(tmuxExecMock).toHaveBeenCalledWith(['set-option', '-t', 'omc-autoresearch-setup-kf12oi', 'set-clipboard', 'on'], { stripTmux: true, stdio: 'ignore' });
-      expect(tmuxExecMock).toHaveBeenCalledWith(['set-option', '-at', 'omc-autoresearch-setup-kf12oi', 'terminal-features', ',*:clipboard'], { stripTmux: true, stdio: 'ignore' });
-      expect(logSpy).toHaveBeenCalledWith('  Attach:   tmux attach -t omc-autoresearch-setup-kf12oi');
+      expect(logSpy).toHaveBeenCalledWith(
+        '\nAutoresearch setup launched in background Claude session.',
+      );
+      expect(tmuxExecMock).toHaveBeenCalledWith(
+        [
+          'set-option',
+          '-t',
+          'omc-autoresearch-setup-kf12oi',
+          'set-clipboard',
+          'on',
+        ],
+        { stripTmux: true, stdio: 'ignore' },
+      );
+      expect(tmuxExecMock).toHaveBeenCalledWith(
+        [
+          'set-option',
+          '-at',
+          'omc-autoresearch-setup-kf12oi',
+          'terminal-features',
+          ',*:clipboard',
+        ],
+        { stripTmux: true, stdio: 'ignore' },
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        '  Attach:   tmux attach -t omc-autoresearch-setup-kf12oi',
+      );
       expect(hasSessionCalls).toBe(1);
     } finally {
       await rm(repo, { recursive: true, force: true });
@@ -476,14 +653,19 @@ describe('spawnAutoresearchSetupTmux', () => {
     tmuxAvailableMock.mockReturnValue(true);
     const repo = await initRepo();
     const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
 
     try {
       tmuxExecMock.mockImplementation((args: string[]) => {
         if (args[0] === 'new-session') return '%42\n';
-        if (args[0] === 'set-option' && args.includes('set-clipboard')) return '';
+        if (args[0] === 'set-option' && args.includes('set-clipboard'))
+          return '';
         if (args[0] === 'show-options') return 'xterm*:clipboard:focus\n';
-        if (args[0] === 'set-option' && args.includes('terminal-features')) return '';
+        if (args[0] === 'set-option' && args.includes('terminal-features'))
+          return '';
         if (args[0] === 'has-session' || args[0] === 'send-keys') return '';
         throw new Error(`unexpected tmuxExec call: ${String(args)}`);
       });
@@ -493,13 +675,18 @@ describe('spawnAutoresearchSetupTmux', () => {
       expect(buildTmuxShellCommandWithEnvMock).toHaveBeenCalledWith(
         'claude',
         ['--dangerously-skip-permissions'],
-        { CODEX_HOME: `${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home` },
+        {
+          CODEX_HOME: `${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home`,
+        },
       );
       expect(wrapWithLoginShellMock).toHaveBeenCalledWith(
         `CODEX_HOME=${repo}/.omx/tmp/omc-autoresearch-setup-kf12oi/codex-home claude --dangerously-skip-permissions`,
       );
     } finally {
-      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      });
       await rm(repo, { recursive: true, force: true });
     }
   });

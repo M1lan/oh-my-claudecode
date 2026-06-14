@@ -12,7 +12,7 @@ import type {
   OpenClawHttpGatewayConfig,
   OpenClawPayload,
   OpenClawResult,
-} from "./types.js";
+} from './types.js';
 
 /** Default per-request timeout */
 const DEFAULT_TIMEOUT_MS = 10_000;
@@ -24,12 +24,12 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 function validateGatewayUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    if (parsed.protocol === "https:") return true;
+    if (parsed.protocol === 'https:') return true;
     if (
-      parsed.protocol === "http:" &&
-      (parsed.hostname === "localhost" ||
-        parsed.hostname === "127.0.0.1" ||
-        parsed.hostname === "::1")
+      parsed.protocol === 'http:' &&
+      (parsed.hostname === 'localhost' ||
+        parsed.hostname === '127.0.0.1' ||
+        parsed.hostname === '::1')
     ) {
       return true;
     }
@@ -74,7 +74,7 @@ export function interpolateInstruction(
 export function isCommandGateway(
   config: OpenClawGatewayConfig,
 ): config is OpenClawCommandGatewayConfig {
-  return (config as OpenClawCommandGatewayConfig).type === "command";
+  return (config as OpenClawCommandGatewayConfig).type === 'command';
 }
 
 /**
@@ -98,20 +98,20 @@ export async function wakeGateway(
     return {
       gateway: gatewayName,
       success: false,
-      error: "Invalid URL (HTTPS required)",
+      error: 'Invalid URL (HTTPS required)',
     };
   }
 
   try {
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...gatewayConfig.headers,
     };
 
     const timeout = gatewayConfig.timeout ?? DEFAULT_TIMEOUT_MS;
 
     const response = await fetch(gatewayConfig.url, {
-      method: gatewayConfig.method || "POST",
+      method: gatewayConfig.method || 'POST',
       headers,
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(timeout),
@@ -131,7 +131,7 @@ export async function wakeGateway(
     return {
       gateway: gatewayName,
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -149,8 +149,8 @@ export async function wakeCommandGateway(
   payload?: OpenClawPayload,
 ): Promise<OpenClawResult> {
   try {
-    const { execFile } = await import("child_process");
-    const { promisify } = await import("util");
+    const { execFile } = await import('child_process');
+    const { promisify } = await import('util');
     const execFileAsync = promisify(execFile);
 
     // Interpolate variables with shell escaping
@@ -169,7 +169,7 @@ export async function wakeCommandGateway(
       ? JSON.stringify(payload)
       : variables.payloadJson;
 
-    await execFileAsync("sh", ["-c", command], {
+    await execFileAsync('sh', ['-c', command], {
       timeout,
       env: {
         ...process.env,
@@ -191,7 +191,7 @@ export async function wakeCommandGateway(
     return {
       gateway: gatewayName,
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

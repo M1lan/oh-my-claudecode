@@ -18,16 +18,16 @@
  *   6. --plugin-dir-mode --force                    → pluginDirMode=true, force=true
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { OMC_PLUGIN_ROOT_ENV } from "../../lib/env-vars.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { OMC_PLUGIN_ROOT_ENV } from '../../lib/env-vars.js';
 
 // Tell src/cli/index.ts not to auto-parse process.argv on import.
-process.env.OMC_CLI_SKIP_PARSE = "1";
+process.env.OMC_CLI_SKIP_PARSE = '1';
 
 // Capture every install() invocation made by the setup action.
 const installMock = vi.fn(() => ({
   success: true,
-  message: "ok",
+  message: 'ok',
   installedAgents: [],
   installedCommands: [],
   installedSkills: [],
@@ -36,26 +36,26 @@ const installMock = vi.fn(() => ({
   errors: [],
 }));
 
-vi.mock("../../installer/index.js", async () => {
+vi.mock('../../installer/index.js', async () => {
   const actual = await vi.importActual<
-    typeof import("../../installer/index.js")
-  >("../../installer/index.js");
+    typeof import('../../installer/index.js')
+  >('../../installer/index.js');
   return {
     ...actual,
     install: installMock,
     isInstalled: () => true,
-    getInstallInfo: () => ({ installed: true, version: "test" }),
+    getInstallInfo: () => ({ installed: true, version: 'test' }),
   };
 });
 
 // Stub auto-update so the setup action doesn't try to read real install state.
-vi.mock("../../features/auto-update.js", async () => {
+vi.mock('../../features/auto-update.js', async () => {
   const actual = await vi.importActual<
-    typeof import("../../features/auto-update.js")
-  >("../../features/auto-update.js");
+    typeof import('../../features/auto-update.js')
+  >('../../features/auto-update.js');
   return {
     ...actual,
-    getInstalledVersion: () => ({ version: "test", installPath: "/tmp" }),
+    getInstalledVersion: () => ({ version: 'test', installPath: '/tmp' }),
   };
 });
 
@@ -69,9 +69,9 @@ let errorSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   installMock.mockClear();
   delete process.env[OMC_PLUGIN_ROOT_ENV];
-  logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-  warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-  errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+  logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -91,9 +91,9 @@ async function runSetup(extraArgs: string[]): Promise<void> {
   // between parseAsync calls, which would leak --plugin-dir-mode/--force
   // across tests).
   vi.resetModules();
-  const { buildProgram } = await import("../index.js");
+  const { buildProgram } = await import('../index.js');
   const program = buildProgram();
-  await program.parseAsync(["setup", ...extraArgs], { from: "user" });
+  await program.parseAsync(['setup', ...extraArgs], { from: 'user' });
 }
 
 function lastInstallOptions(): Record<string, unknown> {
@@ -104,48 +104,48 @@ function lastInstallOptions(): Record<string, unknown> {
 }
 
 function loggedText(): string {
-  return logSpy.mock.calls.map((c: unknown[]) => c.join(" ")).join("\n");
+  return logSpy.mock.calls.map((c: unknown[]) => c.join(' ')).join('\n');
 }
 
-describe("omc setup commander pipeline — pluginDirMode precedence", () => {
-  it("1. --plugin-dir-mode flag → pluginDirMode=true", async () => {
-    await runSetup(["--plugin-dir-mode", "--quiet"]);
+describe('omc setup commander pipeline — pluginDirMode precedence', () => {
+  it('1. --plugin-dir-mode flag → pluginDirMode=true', async () => {
+    await runSetup(['--plugin-dir-mode', '--quiet']);
     expect(lastInstallOptions().pluginDirMode).toBe(true);
     expect(lastInstallOptions().noPlugin).toBe(false);
   });
 
-  it("2. OMC_PLUGIN_ROOT env, no flag → pluginDirMode auto-enabled with detection log", async () => {
-    process.env[OMC_PLUGIN_ROOT_ENV] = "/tmp/foo";
+  it('2. OMC_PLUGIN_ROOT env, no flag → pluginDirMode auto-enabled with detection log', async () => {
+    process.env[OMC_PLUGIN_ROOT_ENV] = '/tmp/foo';
     await runSetup([]);
     expect(lastInstallOptions().pluginDirMode).toBe(true);
     expect(loggedText()).toMatch(/Detected OMC_PLUGIN_ROOT/);
   });
 
-  it("3. neither flag nor env → pluginDirMode=false", async () => {
-    await runSetup(["--quiet"]);
+  it('3. neither flag nor env → pluginDirMode=false', async () => {
+    await runSetup(['--quiet']);
     expect(lastInstallOptions().pluginDirMode).toBe(false);
     expect(lastInstallOptions().noPlugin).toBe(false);
   });
 
-  it("4. --plugin-dir-mode --no-plugin → noPlugin wins, conflict warning logged", async () => {
-    await runSetup(["--plugin-dir-mode", "--no-plugin"]);
+  it('4. --plugin-dir-mode --no-plugin → noPlugin wins, conflict warning logged', async () => {
+    await runSetup(['--plugin-dir-mode', '--no-plugin']);
     const opts = lastInstallOptions();
     expect(opts.pluginDirMode).toBe(false);
     expect(opts.noPlugin).toBe(true);
     expect(loggedText()).toMatch(/conflict/i);
   });
 
-  it("5. OMC_PLUGIN_ROOT env + --no-plugin → noPlugin wins, conflict warning logged", async () => {
-    process.env[OMC_PLUGIN_ROOT_ENV] = "/tmp/bar";
-    await runSetup(["--no-plugin"]);
+  it('5. OMC_PLUGIN_ROOT env + --no-plugin → noPlugin wins, conflict warning logged', async () => {
+    process.env[OMC_PLUGIN_ROOT_ENV] = '/tmp/bar';
+    await runSetup(['--no-plugin']);
     const opts = lastInstallOptions();
     expect(opts.pluginDirMode).toBe(false);
     expect(opts.noPlugin).toBe(true);
     expect(loggedText()).toMatch(/conflict/i);
   });
 
-  it("6. --plugin-dir-mode --force → pluginDirMode=true, force=true", async () => {
-    await runSetup(["--plugin-dir-mode", "--force", "--quiet"]);
+  it('6. --plugin-dir-mode --force → pluginDirMode=true, force=true', async () => {
+    await runSetup(['--plugin-dir-mode', '--force', '--quiet']);
     const opts = lastInstallOptions();
     expect(opts.pluginDirMode).toBe(true);
     expect(opts.force).toBe(true);

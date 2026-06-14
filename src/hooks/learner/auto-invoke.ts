@@ -1,8 +1,8 @@
-import fs from "fs";
-import path from "path";
-import os from "os";
-import { getClaudeConfigDir } from "../../utils/config-dir.js";
-import { atomicWriteJson } from "../../lib/atomic-write.js";
+import fs from 'fs';
+import path from 'path';
+import os from 'os';
+import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import { atomicWriteJson } from '../../lib/atomic-write.js';
 
 export interface InvocationConfig {
   enabled: boolean;
@@ -39,14 +39,14 @@ const DEFAULT_CONFIG: InvocationConfig = {
  * Load auto-invocation config from ~/.claude/.omc-config.json
  */
 export function loadInvocationConfig(): InvocationConfig {
-  const configPath = path.join(getClaudeConfigDir(), ".omc-config.json");
+  const configPath = path.join(getClaudeConfigDir(), '.omc-config.json');
 
   try {
     if (!fs.existsSync(configPath)) {
       return { ...DEFAULT_CONFIG };
     }
 
-    const configFile = fs.readFileSync(configPath, "utf-8");
+    const configFile = fs.readFileSync(configPath, 'utf-8');
     const config = JSON.parse(configFile);
 
     // Merge with defaults
@@ -60,7 +60,7 @@ export function loadInvocationConfig(): InvocationConfig {
       cooldownMs: config.autoInvoke?.cooldownMs ?? DEFAULT_CONFIG.cooldownMs,
     };
   } catch (error) {
-    console.error("[auto-invoke] Failed to load config:", error);
+    console.error('[auto-invoke] Failed to load config:', error);
     return { ...DEFAULT_CONFIG };
   }
 }
@@ -122,7 +122,7 @@ export function shouldAutoInvoke(
  */
 export function recordInvocation(
   state: AutoInvokeState,
-  record: Omit<InvocationRecord, "timestamp">,
+  record: Omit<InvocationRecord, 'timestamp'>,
 ): void {
   state.invocations.push({
     ...record,
@@ -216,9 +216,9 @@ export function getInvocationStats(state: AutoInvokeState): {
 export function saveInvocationHistory(state: AutoInvokeState): void {
   const historyDir = path.join(
     os.homedir(),
-    ".omc",
-    "analytics",
-    "invocations",
+    '.omc',
+    'analytics',
+    'invocations',
   );
   const historyFile = path.join(historyDir, `${state.sessionId}.json`);
 
@@ -229,7 +229,7 @@ export function saveInvocationHistory(state: AutoInvokeState): void {
     invocations: state.invocations,
     stats: getInvocationStats(state),
   }).catch((error) => {
-    console.error("[auto-invoke] Failed to save invocation history:", error);
+    console.error('[auto-invoke] Failed to save invocation history:', error);
   });
 }
 
@@ -241,9 +241,9 @@ export function loadInvocationHistory(
 ): AutoInvokeState | null {
   const historyFile = path.join(
     os.homedir(),
-    ".omc",
-    "analytics",
-    "invocations",
+    '.omc',
+    'analytics',
+    'invocations',
     `${sessionId}.json`,
   );
 
@@ -252,7 +252,7 @@ export function loadInvocationHistory(
       return null;
     }
 
-    const data = JSON.parse(fs.readFileSync(historyFile, "utf-8"));
+    const data = JSON.parse(fs.readFileSync(historyFile, 'utf-8'));
     return {
       sessionId: data.sessionId,
       config: data.config,
@@ -265,7 +265,7 @@ export function loadInvocationHistory(
           : 0,
     };
   } catch (error) {
-    console.error("[auto-invoke] Failed to load invocation history:", error);
+    console.error('[auto-invoke] Failed to load invocation history:', error);
     return null;
   }
 }
@@ -286,9 +286,9 @@ export function getAggregatedStats(): {
 } {
   const historyDir = path.join(
     os.homedir(),
-    ".omc",
-    "analytics",
-    "invocations",
+    '.omc',
+    'analytics',
+    'invocations',
   );
 
   try {
@@ -301,7 +301,7 @@ export function getAggregatedStats(): {
       };
     }
 
-    const files = fs.readdirSync(historyDir).filter((f) => f.endsWith(".json"));
+    const files = fs.readdirSync(historyDir).filter((f) => f.endsWith('.json'));
     const allInvocations: InvocationRecord[] = [];
     const skillStats = new Map<
       string,
@@ -310,7 +310,7 @@ export function getAggregatedStats(): {
 
     for (const file of files) {
       const data = JSON.parse(
-        fs.readFileSync(path.join(historyDir, file), "utf-8"),
+        fs.readFileSync(path.join(historyDir, file), 'utf-8'),
       );
       allInvocations.push(...data.invocations);
 
@@ -354,7 +354,7 @@ export function getAggregatedStats(): {
       topSkills,
     };
   } catch (error) {
-    console.error("[auto-invoke] Failed to get aggregated stats:", error);
+    console.error('[auto-invoke] Failed to get aggregated stats:', error);
     return {
       totalSessions: 0,
       totalInvocations: 0,
