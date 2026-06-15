@@ -81,6 +81,7 @@ import {
   getWorkerLiveness,
   captureTeamPane,
   sendTeamPaneKey,
+  splitTeamWorkerPane,
   type WorkerPaneConfig,
   type WorkerPaneLiveness,
   type TeamSessionMode,
@@ -625,7 +626,7 @@ interface SpawnV2WorkerOptions {
   model?: string;
   /**
    * Canonical role resolved from the task. When set to a reviewer role AND
-   * agentType is codex/gemini, the CLI-worker output contract (AC-7) is
+   * agentType is codex/gemini/grok, the CLI-worker output contract (AC-7) is
    * injected into the task instruction + startup prompt, and `output_file`
    * is populated for the completion handler.
    */
@@ -716,21 +717,14 @@ async function spawnV2Worker(
     opts.existingWorkerPaneIds.length === 0
       ? opts.leaderPaneId
       : opts.existingWorkerPaneIds[opts.existingWorkerPaneIds.length - 1];
-  const splitType = opts.existingWorkerPaneIds.length === 0 ? '-h' : '-v';
+  const splitDirection =
+    opts.existingWorkerPaneIds.length === 0 ? 'right' : 'down';
 
-  const splitResult = await tmuxExecAsync([
-    'split-window',
-    splitType,
-    '-t',
+  const paneId = await splitTeamWorkerPane(
     splitTarget,
-    '-d',
-    '-P',
-    '-F',
-    '#{pane_id}',
-    '-c',
+    splitDirection,
     opts.workerCwd ?? opts.cwd,
-  ]);
-  const paneId = splitResult.stdout.split('\n')[0]?.trim();
+  );
   if (!paneId) {
     return {
       paneId: null,
@@ -742,7 +736,7 @@ async function spawnV2Worker(
   const usePromptMode = isPromptModeAgent(opts.agentType);
 
   // AC-7: render the CLI-worker output contract when a reviewer-style role
-  // is routed to an external provider (codex/gemini). Claude workers speak
+  // is routed to an external provider (codex/gemini/grok). Claude workers speak
   // through the team messaging API and do not use the verdict-file contract.
   const injectContract = shouldInjectContract(
     opts.role ?? null,
@@ -808,7 +802,7 @@ async function spawnV2Worker(
   // For Claude agents on Bedrock/Vertex, resolve the provider-specific model
   // so workers don't fall back to invalid Anthropic API model names. (#1695)
   // Snapshot-provided model (from resolved_routing) takes precedence so
-  // per-role routing (codex/gemini/claude-tier) is honored at spawn time.
+  // per-role routing (codex/gemini/grok/cursor/claude-tier) is honored at spawn time.
   const modelForAgent =
     opts.model ??
     (() => {
@@ -832,6 +826,9 @@ async function spawnV2Worker(
           process.env.OMC_GROK_DEFAULT_MODEL ||
           undefined
         );
+      }
+      if (opts.agentType === 'cursor') {
+        return undefined;
       }
       // Claude agents: resolve Bedrock/Vertex model when on those providers
       return resolveClaudeWorkerModel();
@@ -1162,7 +1159,7 @@ export async function startTeamV2(
     }
   }
   // Best-effort resolve extra providers referenced by the routing snapshot
-  // (codex/gemini critic, reviewer, etc.). Missing binaries are tolerated —
+  // (codex/gemini/grok/cursor critic, reviewer, etc.). Missing binaries are tolerated —
   // the spawn path falls back to the snapshot's Claude fallback (AC-8).
   for (const { primary } of Object.values(resolvedRouting)) {
     const provider = primary.provider as CliAgentType;

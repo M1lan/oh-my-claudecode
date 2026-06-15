@@ -433,6 +433,10 @@ describe('task-size-detector', () => {
       expect(isHeavyMode('gemini')).toBe(false);
     });
 
+    it('returns false for cursor', () => {
+      expect(isHeavyMode('cursor')).toBe(false);
+    });
+
     it('returns false for unknown keyword', () => {
       expect(isHeavyMode('unknown-mode')).toBe(false);
     });
@@ -463,6 +467,7 @@ describe('task-size-detector', () => {
         'analyze',
         'codex',
         'gemini',
+        'cursor',
       ];
       for (const mode of lightweight) {
         expect(HEAVY_MODE_KEYWORDS.has(mode)).toBe(false);

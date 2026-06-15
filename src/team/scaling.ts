@@ -59,6 +59,7 @@ const CLI_AGENT_TYPES = new Set<CliAgentType>([
   'codex',
   'gemini',
   'grok',
+  'cursor',
 ]);
 
 export function isScalingEnabled(

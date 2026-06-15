@@ -31,6 +31,7 @@ const VALID_TEAM_CLI_AGENT_TYPES = new Set([
   'codex',
   'gemini',
   'grok',
+  'cursor',
 ]);
 const DEFAULT_TEAM_CLI_AGENT_TYPE: CliAgentType = 'claude';
 
@@ -46,6 +47,7 @@ Examples:
   omc team 2:codex:architect "design auth system"
   omc team 1:gemini:executor "implement feature"
   omc team 1:codex,1:gemini "compare approaches"
+  omc team 1:cursor:executor "apply the implementation"
   omc team 2:codex "review auth flow" --new-window
   omc team status fix-failing-tests
   omc team shutdown fix-failing-tests
@@ -650,10 +652,20 @@ export function buildTeamLaunchTasks(
   effectiveWorkerCount: number,
 ): TeamLaunchTask[] {
   const tasks: TeamLaunchTask[] = [];
+
+  // Numbered/bulleted lists are explicit pre-authored scopes the user typed out,
+  // so they must line up with an explicit worker count. A `conjunction` split is
+  // only a heuristic guess at parallelism inside free-form prose (e.g.
+  // "Read X and execute it then commit"), so it must never reject or reshape an
+  // explicit worker spec — every worker just receives the full launch text. (#3267)
+  const isPreauthoredScopeList =
+    decomposition.strategy === 'numbered' ||
+    decomposition.strategy === 'bulleted';
+
   if (
     parsed.explicitWorkerSpec &&
     !parsed.noDecompose &&
-    decomposition.strategy !== 'atomic' &&
+    isPreauthoredScopeList &&
     decomposition.subtasks.length > 1 &&
     decomposition.subtasks.length !== effectiveWorkerCount
   ) {
@@ -667,7 +679,8 @@ export function buildTeamLaunchTasks(
     decomposition.strategy !== 'atomic' &&
     decomposition.subtasks.length > 1 &&
     (!parsed.explicitWorkerSpec ||
-      decomposition.subtasks.length === effectiveWorkerCount);
+      (isPreauthoredScopeList &&
+        decomposition.subtasks.length === effectiveWorkerCount));
 
   for (let i = 0; i < effectiveWorkerCount; i++) {
     const workerSpec = parsed.workerSpecs[i];

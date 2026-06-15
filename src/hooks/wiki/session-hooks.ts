@@ -19,6 +19,7 @@ import {
   listPages,
   withWikiLock,
   writePageUnsafe,
+  writeEnvironmentUnsafe,
   updateIndexUnsafe,
   appendLogUnsafe,
 } from './storage.js';
@@ -225,8 +226,13 @@ function feedProjectMemory(root: string): void {
 
     if (pm.techStack) {
       const ts = pm.techStack;
-      if (ts.languages?.length)
-        lines.push(`**Languages:** ${ts.languages.join(', ')}`);
+      if (ts.languages?.length) {
+        const names = ts.languages
+          .map((l: any) => (typeof l === 'string' ? l : l?.name))
+          .filter(Boolean)
+          .join(', ');
+        if (names) lines.push(`**Languages:** ${names}`);
+      }
       if (ts.frameworks?.length)
         lines.push(`**Frameworks:** ${ts.frameworks.join(', ')}`);
       if (ts.packageManager)
@@ -246,7 +252,7 @@ function feedProjectMemory(root: string): void {
     const now = new Date().toISOString();
 
     withWikiLock(root, () => {
-      writePageUnsafe(root, {
+      writeEnvironmentUnsafe(root, {
         filename: envSlug,
         frontmatter: {
           title: 'Project Environment',

@@ -69,7 +69,7 @@ function peekRecentOutboxMessages(
 
 export interface WorkerStatus {
   workerName: string;
-  provider: 'claude' | 'codex' | 'gemini' | 'grok';
+  provider: 'claude' | 'codex' | 'gemini' | 'grok' | 'cursor';
   heartbeat: HeartbeatData | null;
   isAlive: boolean;
   currentTask: TaskFile | null;
@@ -159,7 +159,8 @@ export function getTeamStatus(
       | 'claude'
       | 'codex'
       | 'gemini'
-      | 'grok';
+      | 'grok'
+      | 'cursor';
 
     return {
       workerName: w.name,

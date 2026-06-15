@@ -373,6 +373,59 @@ describe('parseTeamArgs comma-separated multi-type specs', () => {
     ).toThrow(/scope count \(3\) must match explicit worker count \(2\)/);
   });
 
+  it('does not reject a single explicit worker when prose contains "and"/commas (#3267)', () => {
+    const parsed = parseTeamArgs([
+      '1:executor',
+      'Read plan.md and execute it then commit the result',
+    ]);
+    expect(parsed.workerCount).toBe(1);
+    expect(parsed.explicitWorkerSpec).toBe(true);
+
+    const decomposition = splitTaskString(parsed.task);
+    // Free-form prose still parses as a conjunction heuristic...
+    expect(decomposition.strategy).toBe('conjunction');
+    expect(decomposition.subtasks.length).toBeGreaterThan(1);
+
+    const effective = resolveTeamFanoutLimit(
+      parsed.workerCount,
+      parsed.agentTypes[0],
+      parsed.explicitWorkerSpec ? parsed.workerCount : undefined,
+      decomposition,
+      parsed.noDecompose,
+    );
+    expect(effective).toBe(1);
+
+    // ...but a conjunction guess must NOT reject the explicit worker spec.
+    const tasks = buildTeamLaunchTasks(parsed, decomposition, effective);
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].description).toBe(parsed.task);
+  });
+
+  it('gives every explicit worker the full prose instead of splitting on conjunctions (#3267)', () => {
+    const parsed = parseTeamArgs([
+      '2:codex',
+      'review the parser and patch the runtime',
+    ]);
+    const decomposition = splitTaskString(parsed.task);
+    expect(decomposition.strategy).toBe('conjunction');
+    expect(decomposition.subtasks).toHaveLength(2);
+
+    const effective = resolveTeamFanoutLimit(
+      parsed.workerCount,
+      parsed.agentTypes[0],
+      parsed.explicitWorkerSpec ? parsed.workerCount : undefined,
+      decomposition,
+      parsed.noDecompose,
+    );
+    expect(effective).toBe(2);
+
+    const tasks = buildTeamLaunchTasks(parsed, decomposition, effective);
+    expect(tasks.map((task) => task.description)).toEqual([
+      parsed.task,
+      parsed.task,
+    ]);
+  });
+
   it('maps pre-authored numbered scopes to explicit workers when counts match', () => {
     const parsed = parseTeamArgs([
       '1:claude,2:codex',
@@ -538,6 +591,29 @@ describe('parseTeamArgs comma-separated multi-type specs', () => {
     expect(parsed.task).toBe('fix tests');
   });
 
+  it('parses single-type spec 3:cursor into uniform agentTypes', () => {
+    const parsed = parseTeamArgs(['3:cursor', 'apply implementation']);
+    expect(parsed.workerCount).toBe(3);
+    expect(parsed.agentTypes).toEqual(['cursor', 'cursor', 'cursor']);
+    expect(parsed.workerSpecs).toEqual([
+      { agentType: 'cursor' },
+      { agentType: 'cursor' },
+      { agentType: 'cursor' },
+    ]);
+    expect(parsed.task).toBe('apply implementation');
+  });
+
+  it('supports cursor in mixed explicit cli specs', () => {
+    const parsed = parseTeamArgs(['1:cursor,1:codex', 'compare edits']);
+    expect(parsed.workerCount).toBe(2);
+    expect(parsed.agentTypes).toEqual(['cursor', 'codex']);
+    expect(parsed.workerSpecs).toEqual([
+      { agentType: 'cursor' },
+      { agentType: 'codex' },
+    ]);
+    expect(parsed.task).toBe('compare edits');
+  });
+
   it('defaults to 3 claude workers when no spec is given', () => {
     const parsed = parseTeamArgs(['run all tests']);
     expect(parsed.workerCount).toBe(3);
@@ -546,12 +622,12 @@ describe('parseTeamArgs comma-separated multi-type specs', () => {
   });
 
   it('uses configured CLI provider default when it is supported', () => {
-    const parsed = parseTeamArgs(['run all tests'], 'codex');
-    expect(parsed.agentTypes).toEqual(['codex', 'codex', 'codex']);
+    const parsed = parseTeamArgs(['run all tests'], 'cursor');
+    expect(parsed.agentTypes).toEqual(['cursor', 'cursor', 'cursor']);
     expect(parsed.workerSpecs).toEqual([
-      { agentType: 'codex' },
-      { agentType: 'codex' },
-      { agentType: 'codex' },
+      { agentType: 'cursor' },
+      { agentType: 'cursor' },
+      { agentType: 'cursor' },
     ]);
   });
 

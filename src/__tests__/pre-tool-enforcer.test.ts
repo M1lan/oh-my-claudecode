@@ -63,6 +63,8 @@ function runPreToolEnforcerWithEnv(
       ANTHROPIC_DEFAULT_HAIKU_MODEL: '',
       ANTHROPIC_DEFAULT_SONNET_MODEL: '',
       ANTHROPIC_DEFAULT_OPUS_MODEL: '',
+      CLAUDE_CODE_BEDROCK_FABLE_MODEL: '',
+      ANTHROPIC_DEFAULT_FABLE_MODEL: '',
       ...env,
     },
   });
@@ -1356,6 +1358,74 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
   });
 
+  it('allows tier alias "fable" via ANTHROPIC_DEFAULT_FABLE_MODEL without OMC_SUBAGENT_MODEL (issue #3246)', () => {
+    const output = runPreToolEnforcerWithEnv(
+      {
+        tool_name: 'Agent',
+        toolInput: {
+          subagent_type: 'oh-my-claudecode:architect',
+          model: 'fable',
+        },
+        cwd: tempDir,
+        session_id: 'session-tier-default-fable',
+      },
+      {
+        OMC_ROUTING_FORCE_INHERIT: 'true',
+        OMC_SUBAGENT_MODEL: '',
+        ANTHROPIC_DEFAULT_FABLE_MODEL: 'global.anthropic.claude-fable-5-v1',
+      },
+    );
+
+    expect(output.continue).toBe(true);
+    expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+  });
+
+  it('resolves tier alias "fable" via CLAUDE_CODE_BEDROCK_FABLE_MODEL (issue #3246)', () => {
+    const output = runPreToolEnforcerWithEnv(
+      {
+        tool_name: 'Agent',
+        toolInput: {
+          subagent_type: 'oh-my-claudecode:executor',
+          model: 'fable',
+        },
+        cwd: tempDir,
+        session_id: 'session-tier-fable-cc-bedrock-env',
+      },
+      {
+        OMC_ROUTING_FORCE_INHERIT: 'true',
+        OMC_SUBAGENT_MODEL: '',
+        CLAUDE_CODE_BEDROCK_FABLE_MODEL: 'us.anthropic.claude-fable-5-v1:0',
+      },
+    );
+
+    expect(output.continue).toBe(true);
+    expect(JSON.stringify(output)).not.toContain('MODEL ROUTING');
+  });
+
+  it('blocks tier alias "fable" when no fable model env is configured (issue #3246)', () => {
+    const output = runPreToolEnforcerWithEnv(
+      {
+        tool_name: 'Agent',
+        toolInput: {
+          subagent_type: 'oh-my-claudecode:architect',
+          model: 'fable',
+        },
+        cwd: tempDir,
+        session_id: 'session-tier-fable-no-env',
+      },
+      {
+        OMC_ROUTING_FORCE_INHERIT: 'true',
+        OMC_SUBAGENT_MODEL: '',
+        ANTHROPIC_DEFAULT_FABLE_MODEL: '',
+      },
+    );
+
+    const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
+    expect(hookOutput.permissionDecisionReason as string).toContain(
+      'MODEL ROUTING',
+    );
+  });
+
   it.each([
     [
       'sonnet',
@@ -2574,5 +2644,188 @@ describe('pre-tool-enforcer npm/npx/yarn hard guard (pnpm only)', () => {
       cwd: tempDir,
     });
     expect(denyReason(output)).toBe('');
+  });
+});
+
+describe('pre-tool-enforcer agents.<name>.model injection (issue #3242)', () => {
+  let tempDir: string;
+  let xdgConfigHome: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-agent-model-'));
+    xdgConfigHome = join(tempDir, 'xdg-config');
+    mkdirSync(join(xdgConfigHome, 'claude-omc'), { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function writeUserConfig(jsonc: string): void {
+    writeFileSync(join(xdgConfigHome, 'claude-omc', 'config.jsonc'), jsonc);
+  }
+
+  function writeProjectConfig(jsonc: string): void {
+    const dir = join(tempDir, '.claude');
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, 'omc.jsonc'), jsonc);
+  }
+
+  function run(
+    input: Record<string, unknown>,
+    env: Record<string, string> = {},
+  ): Record<string, unknown> {
+    return runPreToolEnforcerWithEnv(
+      { cwd: tempDir, ...input },
+      {
+        XDG_CONFIG_HOME: xdgConfigHome,
+        OMC_ROUTING_FORCE_INHERIT: 'false',
+        ...env,
+      },
+    );
+  }
+
+  function updatedModel(output: Record<string, unknown>): unknown {
+    const hookOutput = output.hookSpecificOutput as
+      | Record<string, unknown>
+      | undefined;
+    const updatedInput = hookOutput?.updatedInput as
+      | Record<string, unknown>
+      | undefined;
+    return updatedInput?.model;
+  }
+
+  it('injects configured model via updatedInput for native Task calls without a model param', () => {
+    writeUserConfig('{ "agents": { "explore": { "model": "sonnet" } } }');
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:explore',
+        prompt: 'x',
+        description: 'find files',
+      },
+      session_id: 'session-3242-inject',
+    });
+    expect(updatedModel(output)).toBe('sonnet');
+  });
+
+  it('does not inject when no per-agent override is configured', () => {
+    writeUserConfig('{ "agents": {} }');
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:architect',
+        prompt: 'x',
+        description: 'design',
+      },
+      session_id: 'session-3242-noop',
+    });
+    expect(updatedModel(output)).toBeUndefined();
+  });
+
+  it('preserves an explicit model param and does not inject', () => {
+    writeUserConfig('{ "agents": { "explore": { "model": "sonnet" } } }');
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:explore',
+        model: 'opus',
+        prompt: 'x',
+        description: 'd',
+      },
+      session_id: 'session-3242-explicit',
+    });
+    expect(updatedModel(output)).toBeUndefined();
+  });
+
+  it('normalizes full Claude model IDs to a CC tier alias', () => {
+    writeUserConfig(
+      '{ "agents": { "executor": { "model": "claude-opus-4-6" } } }',
+    );
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:executor',
+        prompt: 'x',
+        description: 'd',
+      },
+      session_id: 'session-3242-normalize',
+    });
+    expect(updatedModel(output)).toBe('opus');
+  });
+
+  it('lets project config override user config', () => {
+    writeUserConfig('{ "agents": { "explore": { "model": "haiku" } } }');
+    writeProjectConfig('{ "agents": { "explore": { "model": "sonnet" } } }');
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:explore',
+        prompt: 'x',
+        description: 'd',
+      },
+      session_id: 'session-3242-precedence',
+    });
+    expect(updatedModel(output)).toBe('sonnet');
+  });
+
+  it('resolves deprecated subagent aliases to the canonical config key', () => {
+    writeUserConfig('{ "agents": { "codeReviewer": { "model": "opus" } } }');
+    const output = run({
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:reviewer',
+        prompt: 'x',
+        description: 'd',
+      },
+      session_id: 'session-3242-alias',
+    });
+    expect(updatedModel(output)).toBe('opus');
+  });
+
+  it('does not inject under forceInherit even when an override is configured', () => {
+    writeUserConfig('{ "agents": { "explore": { "model": "sonnet" } } }');
+    const output = run(
+      {
+        tool_name: 'Task',
+        toolInput: {
+          subagent_type: 'oh-my-claudecode:explore',
+          prompt: 'x',
+          description: 'd',
+        },
+        session_id: 'session-3242-force-inherit',
+      },
+      { OMC_ROUTING_FORCE_INHERIT: 'true' },
+    );
+    expect(updatedModel(output)).toBeUndefined();
+  });
+
+  it('still injects the configured model when the advisory message is throttled (suppressOutput)', () => {
+    writeUserConfig('{ "agents": { "explore": { "model": "sonnet" } } }');
+    const input = {
+      tool_name: 'Task',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:explore',
+        prompt: 'x',
+        description: 'find files',
+      },
+      session_id: 'session-3242-throttle',
+    };
+    // Pin the throttle clock so the second identical call lands inside the cooldown
+    // window and is advisory-throttled.
+    const throttleEnv = {
+      OMC_PRE_TOOL_ADVISORY_COOLDOWN_MS: '5000',
+      OMC_PRE_TOOL_ADVISORY_NOW_MS: '1000',
+    };
+
+    const first = run(input, throttleEnv);
+    const throttled = run(input, throttleEnv);
+
+    // First call: advisory emitted alongside the injection.
+    expect(updatedModel(first)).toBe('sonnet');
+    // Second identical call: advisory suppressed, but the model injection MUST survive.
+    expect(throttled.suppressOutput).toBe(true);
+    expect(throttled.hookSpecificOutput).toBeDefined();
+    expect(updatedModel(throttled)).toBe('sonnet');
   });
 });

@@ -8,6 +8,10 @@ const advisoryAgents = [
   'critic',
   'code-reviewer',
   'security-reviewer',
+  'verifier',
+  'analyst',
+  'tracer',
+  'debugger',
 ] as const;
 
 const forbiddenSignoffPattern =
@@ -39,6 +43,31 @@ const requiredMarkers: Record<(typeof advisoryAgents)[number], string[]> = {
     '# Security Review Report',
     '**Risk Level:**',
     '## Security Checklist',
+  ],
+  verifier: [
+    '<Final_Response_Contract>',
+    '## Verification Report',
+    '### Verdict',
+    '### Evidence',
+    '### Recommendation',
+  ],
+  analyst: [
+    '<Final_Response_Contract>',
+    '## Analyst Review',
+    '### Scope Risks',
+    '### Recommendations',
+  ],
+  tracer: [
+    '<Final_Response_Contract>',
+    '## Trace Report',
+    '### Hypothesis Table',
+    '### Discriminating Probe',
+  ],
+  debugger: [
+    '<Final_Response_Contract>',
+    '## Bug Report',
+    '## References',
+    '## Build Error Resolution',
   ],
 };
 

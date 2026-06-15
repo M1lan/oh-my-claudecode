@@ -173,13 +173,51 @@ jobs:
         run: |
           echo "📦 Creating tarball..."
           npm pack
-          
+
           TARBALL=$(ls -t oh-my-claude-sisyphus-*.tgz | head -1)
           echo "📦 Tarball: $TARBALL"
-          
+
+          # ENOTEMPTY hardening (mirrors .github/workflows/upgrade-test.yml):
+          # the global node_modules dir is reused across runs on self-hosted
+          # runners and inside the GitHub-hosted tool cache. A previously
+          # interrupted `npm install -g` can leave the resolved package dir
+          # and/or npm's staging temp dirs (`.oh-my-claude-sisyphus-*`) behind,
+          # so the next install fails with
+          #   npm ERR! ENOTEMPTY: directory not empty, rename
+          #     '.../oh-my-claude-sisyphus' -> '.../.oh-my-claude-sisyphus-XXXX'
+          # Remove any stale global package + npm staging dirs before
+          # installing, then retry a few times so a transient rename race does
+          # not fail the run. A persistent install failure still exits non-zero.
+          PKG=oh-my-claude-sisyphus
+          GLOBAL_ROOT="$(npm root -g)"
+
+          clean_stale_global_pkg() {
+            # `:?` guards against an empty GLOBAL_ROOT so we never rm -rf "/".
+            rm -rf "${GLOBAL_ROOT:?}/$PKG" 2>/dev/null || true
+            find "$GLOBAL_ROOT" -maxdepth 1 -name ".$PKG-*" -exec rm -rf {} + 2>/dev/null || true
+          }
+
           echo "📦 Testing global install from tarball..."
-          npm install -g ./$TARBALL
-          
+          clean_stale_global_pkg
+
+          ATTEMPTS=3
+          INSTALLED=false
+          for attempt in $(seq 1 "$ATTEMPTS"); do
+            echo "Installing $TARBALL globally (attempt $attempt/$ATTEMPTS)"
+            if npm install -g "./$TARBALL" --no-audit --no-fund; then
+              INSTALLED=true
+              break
+            fi
+            echo "Install attempt $attempt failed; cleaning stale global state and retrying."
+            clean_stale_global_pkg
+            sleep 2
+          done
+
+          if [ "$INSTALLED" != "true" ]; then
+            echo "❌ npm install -g ./$TARBALL failed after $ATTEMPTS attempts"
+            exit 1
+          fi
+
           echo "🔍 Checking omc command..."
           which omc
           

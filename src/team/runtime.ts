@@ -22,6 +22,7 @@ import {
   waitForPaneReady,
   applyMainVerticalLayout,
   killTeamPane,
+  splitTeamWorkerPane,
   type TeamSession,
   type WorkerPaneConfig,
 } from './tmux-session.js';
@@ -584,7 +585,7 @@ export async function monitorTeam(
 
     workers.push(status);
     if (!alive) deadWorkers.push(wName);
-    // Note: CLI workers (codex/gemini/grok) may not write heartbeat.json — stall is advisory only
+    // Note: CLI workers (codex/gemini/grok/cursor) may not write heartbeat.json — stall is advisory only
   }
   const workerScanMs = Date.now() - workerScanStartedAt;
 
@@ -819,20 +820,12 @@ export async function spawnWorkerForTask(
     runtime.workerPaneIds.length === 0
       ? runtime.leaderPaneId
       : runtime.workerPaneIds[runtime.workerPaneIds.length - 1];
-  const splitType = runtime.workerPaneIds.length === 0 ? '-h' : '-v';
-  const splitResult = await tmuxExecAsync([
-    'split-window',
-    splitType,
-    '-t',
+  const splitDirection = runtime.workerPaneIds.length === 0 ? 'right' : 'down';
+  const paneId = await splitTeamWorkerPane(
     splitTarget,
-    '-d',
-    '-P',
-    '-F',
-    '#{pane_id}',
-    '-c',
+    splitDirection,
     runtime.cwd,
-  ]);
-  const paneId = splitResult.stdout.split('\n')[0]?.trim();
+  );
   if (!paneId) {
     try {
       await resetTaskToPending(root, taskId, runtime.teamName, runtime.cwd);
@@ -902,6 +895,9 @@ export async function spawnWorkerForTask(
         process.env.OMC_GROK_DEFAULT_MODEL ||
         undefined
       );
+    }
+    if (agentType === 'cursor') {
+      return undefined;
     }
     // Claude agents: resolve Bedrock/Vertex model when on those providers
     return resolveClaudeWorkerModel();
@@ -1126,7 +1122,7 @@ export async function shutdownTeam(
 
   const configData = await readJsonSafe<TeamConfig>(join(root, 'config.json'));
 
-  // CLI workers (claude/codex/gemini/grok tmux pane processes) never write shutdown-ack.json.
+  // CLI workers (claude/codex/gemini/grok/cursor tmux pane processes) never write shutdown-ack.json.
   // Polling for ACK files on CLI worker teams wastes the full timeoutMs on every shutdown.
   // Detect CLI worker teams by checking if all agent types are known CLI types, and skip
   // ACK polling — the tmux kill below handles process cleanup instead.
@@ -1135,6 +1131,7 @@ export async function shutdownTeam(
     'codex',
     'gemini',
     'grok',
+    'cursor',
   ]);
   const agentTypes: string[] = configData?.agentTypes ?? [];
   const isCliWorkerTeam =
