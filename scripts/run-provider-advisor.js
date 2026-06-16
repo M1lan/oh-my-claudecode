@@ -11,6 +11,7 @@ const PROVIDER_BINARIES = {
   gemini: 'gemini',
   grok: 'grok',
   cursor: 'cursor-agent',
+  gjc: 'gjc',
 };
 const SHOULD_USE_WINDOWS_SHELL = process.platform === 'win32';
 
@@ -22,6 +23,7 @@ const SHOULD_USE_WINDOWS_SHELL = process.platform === 'win32';
  * - grok: `grok -p <prompt> --always-approve` (headless mode takes the prompt
  *   as an arg; grok's stdin is reserved for ACP JSON-RPC, never the prompt)
  * - cursor: `cursor-agent --print --force --trust --sandbox disabled <prompt>`
+ * - gjc: `gjc -p <prompt>` (gajae-code coding-agent headless mode)
  */
 function buildProviderArgs(provider, prompt, { pipePromptViaStdin = false } = {}) {
   if (provider === 'codex') {
@@ -39,6 +41,10 @@ function buildProviderArgs(provider, prompt, { pipePromptViaStdin = false } = {}
     // Cursor Agent's print mode takes the prompt as a positional arg. Keep stdin
     // closed so it cannot interpret advisor prompt bytes as interactive input.
     return ['--print', '--force', '--trust', '--sandbox', 'disabled', prompt];
+  }
+  if (provider === 'gjc') {
+    // gjc -p takes the prompt as a positional arg; no stdin piping.
+    return ['-p', prompt];
   }
   // claude: `claude -p` reads the prompt from stdin when no prompt arg is given.
   return pipePromptViaStdin ? ['-p'] : ['-p', prompt];
