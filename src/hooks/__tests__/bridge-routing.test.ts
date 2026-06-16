@@ -6,7 +6,7 @@
  * and respects the OMC_SKIP_HOOKS env kill-switch.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
 import {
   existsSync,
   mkdtempSync,
@@ -73,6 +73,18 @@ function writeCanonicalTeamState(
 
 describe('processHook - Routing Matrix', () => {
   const originalEnv = process.env;
+  let testRoutingDir: string;
+  let testRoutingAutopilotDir: string;
+
+  beforeAll(() => {
+    testRoutingDir = mkdtempSync(join(tmpdir(), 'omc-routing-'));
+    testRoutingAutopilotDir = mkdtempSync(join(tmpdir(), 'omc-routing-autopilot-'));
+  });
+
+  afterAll(() => {
+    rmSync(testRoutingDir, { recursive: true, force: true });
+    rmSync(testRoutingAutopilotDir, { recursive: true, force: true });
+  });
 
   beforeEach(() => {
     process.env = { ...originalEnv };
@@ -92,11 +104,15 @@ describe('processHook - Routing Matrix', () => {
   // --------------------------------------------------------------------------
 
   describe('HookType routing', () => {
-    const baseInput: HookInput = {
-      sessionId: 'test-session',
-      prompt: 'test prompt',
-      directory: '/tmp/test-routing',
-    };
+    let baseInput: HookInput;
+
+    beforeAll(() => {
+      baseInput = {
+        sessionId: 'test-session',
+        prompt: 'test prompt',
+        directory: testRoutingDir,
+      };
+    });
 
     const hookTypes: HookType[] = [
       'keyword-detector',
@@ -138,7 +154,7 @@ describe('processHook - Routing Matrix', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'ultrawork this task',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -153,7 +169,7 @@ describe('processHook - Routing Matrix', () => {
         sessionId: 'test-session',
         prompt:
           '/ultrawork fix the complex multi-step regression in src/hooks/bridge.ts function processKeywordDetector by preserving keyword routing, state activation behavior, verification messaging, prompt enhancement flow, bridge wiring, runtime output guarantees, prompt-context propagation, and related test coverage, installer constants, generated bridge artifacts, keyword false-positive behavior, session isolation assumptions, and developer-facing documentation without changing unrelated orchestration behavior elsewhere in this worktree',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
         agent_name: 'planner',
         model: 'gpt-5.4',
       } as HookInput & { agent_name: string; model: string });
@@ -170,7 +186,7 @@ describe('processHook - Routing Matrix', () => {
         sessionId: 'test-session',
         prompt:
           '/ultrawork fix the complex multi-step regression in src/hooks/bridge.ts function processKeywordDetector by preserving keyword routing, state activation behavior, verification messaging, prompt enhancement flow, bridge wiring, runtime output guarantees, prompt-context propagation, and related test coverage, installer constants, generated bridge artifacts, keyword false-positive behavior, session isolation assumptions, and developer-facing documentation without changing unrelated orchestration behavior elsewhere in this worktree',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
         model: 'gpt-5.4',
       } as HookInput & { model: string });
 
@@ -183,7 +199,7 @@ describe('processHook - Routing Matrix', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'code review this change',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -195,7 +211,7 @@ describe('processHook - Routing Matrix', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'security review this change',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -268,7 +284,7 @@ Read src/hooks/bridge.ts before editing.`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'just a regular message',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -360,7 +376,7 @@ Read src/hooks/bridge.ts first.`,
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: { command: 'ls -la' },
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -373,7 +389,7 @@ Read src/hooks/bridge.ts first.`,
         toolName: 'Bash',
         toolInput: { command: 'echo hello' },
         toolOutput: 'hello',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('post-tool-use', input);
@@ -1444,7 +1460,7 @@ $ ultrawork search the codebase`,
     it('should handle session-start and return continue:true', async () => {
       const input: HookInput = {
         sessionId: 'test-session',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('session-start', input);
@@ -1782,7 +1798,7 @@ $ ultrawork search the codebase`,
     it('should handle stop-continuation and always return continue:true', async () => {
       const input: HookInput = {
         sessionId: 'test-session',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('stop-continuation', input);
@@ -1918,7 +1934,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       // Cast to HookType to simulate an unknown type
@@ -1929,7 +1945,7 @@ $ ultrawork search the codebase`,
     it('should return continue:true for empty string hook type', async () => {
       const input: HookInput = {
         sessionId: 'test-session',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('' as HookType, input);
@@ -1948,7 +1964,7 @@ $ ultrawork search the codebase`,
         session_id: 'test-session',
         tool_name: 'Bash',
         tool_input: { command: 'echo hi' },
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
       } as unknown as HookInput;
 
       const result = await processHook('pre-tool-use', rawInput);
@@ -1960,7 +1976,7 @@ $ ultrawork search the codebase`,
     it('should normalize cwd to directory', async () => {
       const rawInput = {
         session_id: 'test-session',
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
         prompt: 'hello',
       } as unknown as HookInput;
 
@@ -1975,7 +1991,7 @@ $ ultrawork search the codebase`,
         tool_name: 'Read',
         tool_input: { file_path: '/tmp/test.ts' },
         tool_response: 'file contents here',
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
       } as unknown as HookInput;
 
       const result = await processHook('post-tool-use', rawInput);
@@ -1988,7 +2004,7 @@ $ ultrawork search the codebase`,
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: { command: 'ls' },
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -2023,7 +2039,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'ultrawork this',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2037,7 +2053,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('stop-continuation', input);
@@ -2052,7 +2068,7 @@ $ ultrawork search the codebase`,
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: { command: 'ls' },
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const keywordResult = await processHook('keyword-detector', input);
@@ -2070,7 +2086,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'ultrawork',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2083,7 +2099,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2102,7 +2118,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'ultrawork this',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2115,7 +2131,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -2128,7 +2144,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2143,7 +2159,7 @@ $ ultrawork search the codebase`,
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'ultrawork',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook('keyword-detector', input);
@@ -2196,7 +2212,7 @@ $ ultrawork search the codebase`,
         // camelCase input (as produced by normalizeHookInput)
         const input: HookInput = {
           sessionId: 'test-session-abc',
-          directory: '/tmp/test-routing',
+          directory: testRoutingDir,
           toolName: 'Bash',
         };
 
@@ -2223,7 +2239,7 @@ $ ultrawork search the codebase`,
 
       const input: HookInput = {
         sessionId: 'test-session-abc',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
         toolName: 'Bash',
       };
 
@@ -2265,7 +2281,7 @@ $ ultrawork search the codebase`,
       // Raw snake_case input as Claude Code would send
       const rawInput = {
         session_id: 'test-session-xyz',
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
         tool_name: 'Read',
       } as unknown as HookInput;
 
@@ -2357,7 +2373,7 @@ $ ultrawork search the codebase`,
       // Since no state file exists, it returns continue:true — but it should not crash
       const input: HookInput = {
         sessionId: 'isolated-session-123',
-        directory: '/tmp/test-routing-autopilot',
+        directory: testRoutingAutopilotDir,
       };
 
       const result = await processHook('autopilot', input);
@@ -2370,7 +2386,7 @@ $ ultrawork search the codebase`,
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       const input: HookInput = {
-        directory: '/tmp/test-routing-autopilot',
+        directory: testRoutingAutopilotDir,
       };
 
       const result = await processHook('autopilot', input);
@@ -2488,7 +2504,7 @@ $ ultrawork search the codebase`,
     it('should return continue:true for completely unknown hook type', async () => {
       const input: HookInput = {
         sessionId: 'test-session',
-        directory: '/tmp/test-routing',
+        directory: testRoutingDir,
       };
 
       const result = await processHook(
@@ -2517,7 +2533,7 @@ $ ultrawork search the codebase`,
       // handler returned { continue: true } with no hookSpecificOutput.
       const rawInput = {
         session_id: 'test-session-858',
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
         tool_name: 'Bash',
         tool_input: { command: 'git status' },
         tool_use_id: 'tool-use-123',
@@ -2725,7 +2741,7 @@ $ ultrawork search the codebase`,
     it('permission-request: canonical hookEventName wins over conflicting raw hook_event_name', async () => {
       const rawInput = {
         session_id: 'test-session-858',
-        cwd: '/tmp/test-routing',
+        cwd: testRoutingDir,
         tool_name: 'Bash',
         tool_input: { command: 'git status' },
         hook_event_name: 'NotPermissionRequest',

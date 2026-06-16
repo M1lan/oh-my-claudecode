@@ -192,28 +192,34 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
 
   it('should propagate rejection to all coalesced callers and clear mutex', async () => {
     // Use a nonexistent directory to trigger an error in doProcessPreCompact
-    const badDir = '/tmp/nonexistent-compaction-dir-' + Date.now();
+    const badDir = join(tmpdir(), 'nonexistent-compaction-dir-' + Date.now());
     const input = makePreCompactInput(badDir);
 
-    // Fire 3 concurrent calls sharing the same in-flight promise
-    const results = await Promise.allSettled(
-      Array.from({ length: 3 }, () => processPreCompact(input)),
-    );
+    try {
+      // Fire 3 concurrent calls sharing the same in-flight promise
+      const results = await Promise.allSettled(
+        Array.from({ length: 3 }, () => processPreCompact(input)),
+      );
 
-    // All should either reject or return an error-like result
-    // processPreCompact may catch internally and return a result rather than throwing
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        expect(result.reason).toBeDefined();
-      } else {
-        // If it doesn't throw, at minimum it should still complete
-        expect(result.value).toBeDefined();
+      // All should either reject or return an error-like result
+      // processPreCompact may catch internally and return a result rather than throwing
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          expect(result.reason).toBeDefined();
+        } else {
+          // If it doesn't throw, at minimum it should still complete
+          expect(result.value).toBeDefined();
+        }
+      }
+
+      // Mutex state should be cleared regardless
+      expect(isCompactionInProgress(badDir)).toBe(false);
+      expect(getCompactionQueueDepth(badDir)).toBe(0);
+    } finally {
+      if (existsSync(badDir)) {
+        rmSync(badDir, { recursive: true, force: true });
       }
     }
-
-    // Mutex state should be cleared regardless
-    expect(isCompactionInProgress(badDir)).toBe(false);
-    expect(getCompactionQueueDepth(badDir)).toBe(0);
   });
 });
 
