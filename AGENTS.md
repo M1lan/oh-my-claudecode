@@ -36,6 +36,8 @@ Keep runtime marker contracts stable and non-destructive when overlays are appli
 
 ## Working agreements
 
+- This project MUST use `pnpm`, never `npm` (no `npm install`, `npm run`, `npm ci`, etc.).
+- This project MUST use `rmux`, never `tmux` (for all multiplexer/pane/session work).
 - Write a cleanup plan before modifying code.
 - Prefer deletion over addition.
 - Reuse existing utilities and patterns first.
