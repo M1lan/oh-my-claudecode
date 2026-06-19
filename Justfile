@@ -634,6 +634,44 @@ git-pr-checks:
     @if ! command -v gh >/dev/null 2>&1; then echo "gh not installed -- brew install gh"; exit 1; fi
     gh pr checks --watch
 
+# ── OMC Install / Uninstall ──────────────────────────────────────────────────
+
+# Uninstall all global omc installations (pnpm global remove)
+[group('omc')]
+omc-uninstall:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source ~/.config/sh/fnm-init.sh 2>/dev/null || true
+    echo "── omc-uninstall: removing global oh-my-claude-sisyphus ──"
+    if pnpm list -g --depth=0 2>/dev/null | rg -q 'oh-my-claude-sisyphus'; then
+        pnpm remove -g oh-my-claude-sisyphus
+        echo "omc-uninstall: removed ✓"
+    else
+        echo "omc-uninstall: nothing to remove (not installed globally)"
+    fi
+    if type -af omc 2>/dev/null | rg -q 'omc'; then
+        echo "WARNING: omc still found after uninstall:" >&2
+        type -af omc >&2
+    else
+        echo "omc-uninstall: verified not in PATH ✓"
+    fi
+
+# Install omc from this local checkout (pnpm add -g <abs-path>)
+[group('omc')]
+omc-install:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source ~/.config/sh/fnm-init.sh 2>/dev/null || true
+    REPO_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")")" && pwd)"
+    echo "── omc-install: installing from $REPO_DIR ──"
+    pnpm add -g "$REPO_DIR"
+    echo "omc-install: installed ✓"
+    echo "  $(type -af omc 2>/dev/null | head -1)"
+
+# Uninstall then reinstall omc from this local checkout (full cycle)
+[group('omc')]
+omc-reinstall: omc-uninstall omc-install
+
 # ── OMC Project-Specific ─────────────────────────────────────────────────────
 
 # Open .omc/notepad.md in $EDITOR (creates if missing)
@@ -839,6 +877,9 @@ menu:
         '  git-pr <title> [body]   -- gh pr create' \
         '  git-pr-checks           -- gh pr checks --watch' \
         '── OMC ──' \
+        '* omc-reinstall           -- uninstall + reinstall from local repo' \
+        '  omc-uninstall           -- remove all global omc installs' \
+        '  omc-install             -- install omc from this local checkout' \
         '* notepad                 -- open .omc/notepad.md' \
         '  state                   -- show .omc/state/*.json' \
         '  agents-list             -- list agent definitions' \
