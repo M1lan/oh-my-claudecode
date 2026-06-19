@@ -85,7 +85,7 @@ _info-runtime:
 
 [private]
 _info-cli:
-    @for tool in rg fd bat jq watchexec gh dust rumdl shellcheck typos tokei scc knip; do \
+    @for tool in rg fd bat jq watchexec gh rmux dust rumdl shellcheck typos tokei scc knip; do \
         if command -v $tool >/dev/null 2>&1; then \
             printf '%-10s %s\n' "$tool" "$($tool --version 2>/dev/null | head -1)"; \
         else \
@@ -135,6 +135,7 @@ doctor:
     require fzf "brew install fzf"
     require watchexec "brew install watchexec"
     require gh "brew install gh"
+    require rmux "install rmux -- drop-in tmux replacement; this project never uses tmux (omc launch spawns rmux)"
     echo
     echo "── optional ──"
     suggest dust "brew install dust  -- for bundle-size"

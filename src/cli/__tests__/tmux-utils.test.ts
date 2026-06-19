@@ -174,7 +174,7 @@ describe('resolveLaunchPolicy', () => {
       } as ReturnType<typeof spawnSync>);
 
     expect(resolveLaunchPolicy({})).toBe('outside-tmux');
-    expect(mockedSpawnSync).toHaveBeenNthCalledWith(1, 'where', ['tmux'], {
+    expect(mockedSpawnSync).toHaveBeenNthCalledWith(1, 'where', ['rmux'], {
       timeout: 5000,
       encoding: 'utf8',
     });
