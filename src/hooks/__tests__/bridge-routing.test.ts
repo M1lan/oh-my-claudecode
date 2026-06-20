@@ -6,7 +6,16 @@
  * and respects the OMC_SKIP_HOOKS env kill-switch.
  */
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+  vi,
+} from 'vitest';
 import {
   existsSync,
   mkdtempSync,
@@ -78,7 +87,9 @@ describe('processHook - Routing Matrix', () => {
 
   beforeAll(() => {
     testRoutingDir = mkdtempSync(join(tmpdir(), 'omc-routing-'));
-    testRoutingAutopilotDir = mkdtempSync(join(tmpdir(), 'omc-routing-autopilot-'));
+    testRoutingAutopilotDir = mkdtempSync(
+      join(tmpdir(), 'omc-routing-autopilot-'),
+    );
   });
 
   afterAll(() => {

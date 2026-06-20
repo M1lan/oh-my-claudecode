@@ -101,7 +101,7 @@
   "engines": {
     "node": ">=20.0.0"
   },
-  "packageManager": "pnpm@10.33.3",
+  "packageManager": "pnpm@11.8.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Yeachan-Heo/oh-my-claudecode.git"

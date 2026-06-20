@@ -15,7 +15,14 @@ export const ASK_USAGE = [
   '   or: omc ask <claude|codex|gemini|grok|cursor|gjc> --agent-prompt=<role> --prompt "<prompt>"',
 ].join('\n');
 
-const ASK_PROVIDERS = ['claude', 'codex', 'gemini', 'grok', 'cursor', 'gjc'] as const;
+const ASK_PROVIDERS = [
+  'claude',
+  'codex',
+  'gemini',
+  'grok',
+  'cursor',
+  'gjc',
+] as const;
 export type AskProvider = (typeof ASK_PROVIDERS)[number];
 const ASK_PROVIDER_SET = new Set<string>(ASK_PROVIDERS);
 
