@@ -2647,6 +2647,74 @@ describe('pre-tool-enforcer npm/npx/yarn hard guard (pnpm only)', () => {
   });
 });
 
+describe('pre-tool-enforcer tmux hard guard (rmux only)', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-tmux-guard-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  function denyReason(output: Record<string, unknown>): string {
+    const hookOutput =
+      (output.hookSpecificOutput as Record<string, unknown>) || {};
+    return hookOutput.permissionDecision === 'deny'
+      ? String(hookOutput.permissionDecisionReason)
+      : '';
+  }
+
+  it.each([
+    'tmux new-session -d',
+    'tmux send-keys -t foo Enter',
+    'tmux list-panes',
+    'sudo tmux kill-server',
+    'FOO=bar tmux attach',
+    'cd /tmp && tmux ls',
+    'rmux new-session || tmux new-session',
+    '/opt/homebrew/bin/tmux split-window',
+    'env tmux capture-pane',
+  ])('denies Bash command %j', (command) => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Bash',
+      toolInput: { command },
+      cwd: tempDir,
+    });
+    expect(denyReason(output)).toContain('[RMUX ONLY]');
+  });
+
+  it.each([
+    'rmux new-session -d',
+    'rmux send-keys -t foo Enter',
+    'rmux list-panes',
+    'echo "tmux is banned"',
+    'rg tmux src/',
+    'cat ./tmux-utils.ts',
+    'node scripts/build.mjs',
+  ])('allows Bash command %j', (command) => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Bash',
+      toolInput: { command },
+      cwd: tempDir,
+    });
+    expect(denyReason(output)).toBe('');
+  });
+
+  it('does not guard non-Bash tools that merely mention tmux', () => {
+    const output = runPreToolEnforcer({
+      tool_name: 'Write',
+      toolInput: {
+        file_path: join(tempDir, 'notes.txt'),
+        content: 'tmux new-session everywhere',
+      },
+      cwd: tempDir,
+    });
+    expect(denyReason(output)).toBe('');
+  });
+});
+
 describe('pre-tool-enforcer agents.<name>.model injection (issue #3242)', () => {
   let tempDir: string;
   let xdgConfigHome: string;

@@ -547,22 +547,23 @@ function resolveTranscriptPath(transcriptPath, cwd) {
 }
 
 // ---------------------------------------------------------------------------
-// Hard guard: npm/npx/yarn are banned in this project — pnpm only.
-// Detects a banned package manager invoked as an actual command in a Bash tool
-// call so the hook can deny it. Matches across shell separators
+// Hard guards for banned commands — pnpm only (no npm/npx/yarn) and rmux only
+// (no tmux). Detects a banned command invoked as an actual command in a Bash
+// tool call so the hook can deny it. Matches across shell separators
 // (; & | && || newline ()) and tolerates leading env-assignments and wrapper
 // prefixes (sudo/command/exec/env/time/nice/nohup) plus absolute/relative
 // paths and Windows .cmd/.exe suffixes. Substring uses inside other words
-// (e.g. pnpm, npm-run-all as an argument, paths like ./npm-cache) are NOT
+// (e.g. pnpm, npm-run-all as an argument, paths like ./npm-cache, rmux) are NOT
 // matched because only the resolved command basename of each segment is
 // inspected.
 // ---------------------------------------------------------------------------
-const NPM_GUARD_WRAPPER_PREFIXES = new Set([
+const COMMAND_GUARD_WRAPPER_PREFIXES = new Set([
   'sudo', 'command', 'exec', 'env', 'time', 'nice', 'nohup', 'builtin',
 ]);
 const BANNED_PACKAGE_MANAGERS = new Set(['npm', 'npx', 'yarn']);
+const BANNED_MULTIPLEXERS = new Set(['tmux']);
 
-function detectBlockedPackageManager(command) {
+function detectBlockedBaseCommand(command, bannedSet) {
   if (typeof command !== 'string' || !command) return null;
   const segments = command.split(/&&|\|\||[;&|\n()]/);
   for (const rawSegment of segments) {
@@ -571,7 +572,7 @@ function detectBlockedPackageManager(command) {
     while (
       tokens.length > 0 &&
       (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[0]) ||
-        NPM_GUARD_WRAPPER_PREFIXES.has(tokens[0]))
+        COMMAND_GUARD_WRAPPER_PREFIXES.has(tokens[0]))
     ) {
       tokens = tokens.slice(1);
     }
@@ -580,9 +581,17 @@ function detectBlockedPackageManager(command) {
       .split(/[/\\]/)
       .pop()
       .replace(/\.(cmd|exe|ps1)$/i, '');
-    if (BANNED_PACKAGE_MANAGERS.has(base)) return base;
+    if (bannedSet.has(base)) return base;
   }
   return null;
+}
+
+function detectBlockedPackageManager(command) {
+  return detectBlockedBaseCommand(command, BANNED_PACKAGE_MANAGERS);
+}
+
+function detectBlockedMultiplexer(command) {
+  return detectBlockedBaseCommand(command, BANNED_MULTIPLEXERS);
 }
 
 // Simple JSON field extraction
@@ -1248,7 +1257,8 @@ async function main() {
     try { data = JSON.parse(input); } catch {}
     recordToolInvocation(data, directory);
 
-    // ── Hard guard: npm/npx/yarn are banned — pnpm only. Deny before anything runs. ──
+    // ── Hard guards: npm/npx/yarn banned (pnpm only) and tmux banned (rmux only).
+    //    Deny before anything runs. ──
     if (toolName === 'Bash') {
       const bashInput = data.toolInput || data.tool_input || {};
       const blockedPm = detectBlockedPackageManager(bashInput.command);
@@ -1262,6 +1272,18 @@ async function main() {
             hookEventName: 'PreToolUse',
             permissionDecision: 'deny',
             permissionDecisionReason: `[PNPM ONLY] \`${blockedPm}\` is banned in this project. ${replacement} npm/npx/yarn must never be used here.`,
+          },
+        }));
+        return;
+      }
+      const blockedMux = detectBlockedMultiplexer(bashInput.command);
+      if (blockedMux) {
+        console.log(JSON.stringify({
+          continue: true,
+          hookSpecificOutput: {
+            hookEventName: 'PreToolUse',
+            permissionDecision: 'deny',
+            permissionDecisionReason: `[RMUX ONLY] \`${blockedMux}\` is banned in this project. Use \`rmux\` instead — it is a drop-in tmux replacement, so the same subcommands work (e.g. \`rmux new-session\`, \`rmux send-keys\`, \`rmux list-panes\`). tmux must never be used here.`,
           },
         }));
         return;

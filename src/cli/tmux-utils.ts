@@ -17,6 +17,16 @@ import {
 import { basename, isAbsolute, win32 as win32Path } from 'path';
 import { promisify } from 'util';
 
+// ── multiplexer binary ───────────────────────────────────────────────────────
+
+/**
+ * The multiplexer binary this project drives. rmux is a drop-in tmux
+ * replacement (identical subcommands and `$TMUX` env contract), and is a
+ * required dependency of this project — tmux must never be spawned here.
+ * This is the single source of truth for the spawned binary name.
+ */
+export const MULTIPLEXER_BINARY = 'rmux';
+
 // ── tmux environment & execution wrappers ────────────────────────────────────
 
 export interface TmuxExecOptions {
@@ -123,7 +133,7 @@ export function tmuxShell(
     },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
-  return execSync(`tmux ${command}`, {
+  return execSync(`${MULTIPLEXER_BINARY} ${command}`, {
     encoding: 'utf-8',
     ...execOpts,
     env: resolveEnv(opts),
@@ -135,7 +145,7 @@ export async function tmuxShellAsync(
   opts?: TmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
-  return promisify(exec)(`tmux ${command}`, {
+  return promisify(exec)(`${MULTIPLEXER_BINARY} ${command}`, {
     encoding: 'utf-8',
     env: resolveEnv(opts),
     ...(timeout !== undefined ? { timeout } : {}),
@@ -182,15 +192,15 @@ export interface TmuxPaneSnapshot {
 
 function resolveTmuxBinaryPath(): string {
   if (process.platform !== 'win32') {
-    return 'tmux';
+    return MULTIPLEXER_BINARY;
   }
 
   try {
-    const result = spawnSync('where', ['tmux'], {
+    const result = spawnSync('where', [MULTIPLEXER_BINARY], {
       timeout: 5000,
       encoding: 'utf8',
     });
-    if (result.status !== 0) return 'tmux';
+    if (result.status !== 0) return MULTIPLEXER_BINARY;
 
     const candidates =
       result.stdout
@@ -202,10 +212,10 @@ function resolveTmuxBinaryPath(): string {
       return first;
     }
   } catch {
-    // Fall back to plain tmux lookup below.
+    // Fall back to plain binary lookup below.
   }
 
-  return 'tmux';
+  return MULTIPLEXER_BINARY;
 }
 
 /**
