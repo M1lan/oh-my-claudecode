@@ -159,6 +159,10 @@ program
   .description(
     'Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)',
   )
+  .option(
+    '--yolo',
+    'Start both OMC and OMX in yolo mode (Claude --dangerously-skip-permissions, Codex --dangerously-bypass-approvals-and-sandbox)',
+  )
   .addHelpText(
     'after',
     `
@@ -167,8 +171,8 @@ Requirements:
   - Claude CLI must be installed
   - Codex CLI recommended (graceful fallback if missing)`,
   )
-  .action(() => {
-    interopCommand();
+  .action((options: { yolo?: boolean }) => {
+    interopCommand({ yolo: options.yolo });
   });
 
 /**

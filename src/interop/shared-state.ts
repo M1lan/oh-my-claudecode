@@ -481,15 +481,23 @@ export function markMessageAsRead(cwd: string, messageId: string): boolean {
   }
 
   try {
-    const content = readFileSync(messagePath, 'utf-8');
-    const parsed = SharedMessageSchema.safeParse(JSON.parse(content));
-    if (!parsed.success) return false;
-    const message = parsed.data;
+    // Lock the read-modify-write so a concurrent reader (also marking read) or
+    // writer cannot lose the flag update. Mirrors updateSharedTask's locking.
+    return withFileLockSync(
+      messagePath + '.lock',
+      () => {
+        const content = readFileSync(messagePath, 'utf-8');
+        const parsed = SharedMessageSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) return false;
+        const message = parsed.data;
 
-    message.read = true;
-    atomicWriteJsonSync(messagePath, message);
+        message.read = true;
+        atomicWriteJsonSync(messagePath, message);
 
-    return true;
+        return true;
+      },
+      { timeoutMs: 2000 },
+    );
   } catch {
     return false;
   }

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -97,10 +97,15 @@ describe('interop mcp bridge artifact surfacing', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'mcp-bridge-artifacts-'));
+    // resolveWorkingDirectory now pins via validateWorkingDirectory, which
+    // anchors to the trusted worktree root (process.cwd()). Point cwd at the
+    // temp dir so the supplied workingDirectory validates to itself.
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
     initInteropSession('session-1', tempDir);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     rmSync(tempDir, { recursive: true, force: true });
   });
 

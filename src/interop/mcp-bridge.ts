@@ -24,6 +24,7 @@ import {
   broadcastOmxMessage,
   listOmxTasks,
 } from './omx-team-state.js';
+import { validateWorkingDirectory } from '../lib/worktree-paths.js';
 
 export type InteropMode = 'off' | 'observe' | 'active';
 
@@ -47,7 +48,11 @@ export function canUseOmxDirectWriteBridge(
 }
 
 function resolveWorkingDirectory(workingDirectory?: string): string {
-  return workingDirectory || process.cwd();
+  // Pin an agent-supplied workingDirectory to the trusted worktree root so a
+  // crafted absolute/traversal path cannot make interop state read or write
+  // outside the current repo. Matches the rest of the MCP tool surface
+  // (state-tools, notepad-tools, trace-tools).
+  return validateWorkingDirectory(workingDirectory);
 }
 
 function getInteropSource(target: 'omc' | 'omx'): 'omc' | 'omx' {

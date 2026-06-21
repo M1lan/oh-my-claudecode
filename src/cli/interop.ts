@@ -7,10 +7,22 @@
 
 import { execFileSync, spawnSync } from 'child_process';
 import { randomUUID } from 'crypto';
-import { isTmuxAvailable, isClaudeAvailable, tmuxExec } from './tmux-utils.js';
+import {
+  isTmuxAvailable,
+  isClaudeAvailable,
+  tmuxExec,
+  buildTmuxShellCommand,
+  wrapWithLoginShell,
+  killTmuxPane,
+} from './tmux-utils.js';
 import { initInteropSession, getInteropDir } from '../interop/shared-state.js';
 
 export type InteropMode = 'off' | 'observe' | 'active';
+
+/** Bypass flag passed to Claude Code (OMC) when --yolo is set. */
+const CLAUDE_YOLO_FLAG = '--dangerously-skip-permissions';
+/** Bypass flag passed to Codex (OMX) when --yolo is set. */
+const CODEX_YOLO_FLAG = '--dangerously-bypass-approvals-and-sandbox';
 
 export interface InteropRuntimeFlags {
   enabled: boolean;
@@ -70,13 +82,22 @@ function isCodexAvailable(): boolean {
 /**
  * Launch interop session with split tmux panes
  */
-export function launchInteropSession(cwd: string = process.cwd()): void {
+export function launchInteropSession(
+  cwd: string = process.cwd(),
+  options: { yolo?: boolean } = {},
+): void {
+  const yolo = Boolean(options.yolo);
   const flags = readInteropRuntimeFlags();
   const flagCheck = validateInteropRuntimeFlags(flags);
 
   console.log(
-    `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, failClosed=${flags.failClosed ? '1' : '0'}`,
+    `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, failClosed=${flags.failClosed ? '1' : '0'}, yolo=${yolo ? '1' : '0'}`,
   );
+  if (yolo) {
+    console.warn(
+      '[interop] --yolo: launching Claude with --dangerously-skip-permissions and Codex with --dangerously-bypass-approvals-and-sandbox.',
+    );
+  }
   if (!flagCheck.ok) {
     console.error(`Error: ${flagCheck.reason}`);
     console.error('Refusing to start interop in invalid flag configuration.');
@@ -124,12 +145,8 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   // Generate session ID
   const sessionId = `interop-${randomUUID().split('-')[0]}`;
 
-  // Initialize interop session
-  const _config = initInteropSession(
-    sessionId,
-    cwd,
-    hasCodex ? cwd : undefined,
-  );
+  // Initialize interop session (writes config.json as a side effect)
+  initInteropSession(sessionId, cwd, hasCodex ? cwd : undefined);
 
   console.log(`Initializing interop session: ${sessionId}`);
   console.log(`Working directory: ${cwd}`);
@@ -150,16 +167,37 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
     process.exit(1);
   }
 
+  // Track the codex pane so we can tear it down if launching claude fails —
+  // otherwise a failed left-pane launch orphans the right-pane codex process.
+  let codexPaneId: string | null = null;
+
   // Split pane horizontally (left: claude, right: codex)
   try {
     if (hasCodex) {
       // Create right pane with codex
       console.log('Splitting pane: Left (Claude Code) | Right (Codex)');
 
-      tmuxExec(
-        ['split-window', '-h', '-c', cwd, '-t', currentPaneId, 'codex'],
-        { stdio: 'inherit' },
+      // Wrap in a login shell so the codex pane inherits the same PATH setup
+      // (fnm/pnpm/etc.) that the parent shell — and the left-pane claude
+      // (spawnSync inherits this process's env) — already see. Capture the new
+      // pane id (-P -F) so failures can clean it up.
+      const codexCommand = wrapWithLoginShell(
+        buildTmuxShellCommand('codex', yolo ? [CODEX_YOLO_FLAG] : []),
       );
+      const splitOutput = tmuxExec([
+        'split-window',
+        '-h',
+        '-c',
+        cwd,
+        '-t',
+        currentPaneId,
+        '-P',
+        '-F',
+        '#{pane_id}',
+        codexCommand,
+      ]);
+      const newPaneId = splitOutput.split('\n')[0]?.trim() ?? '';
+      codexPaneId = newPaneId.startsWith('%') ? newPaneId : null;
 
       // Select left pane (original/current)
       tmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
@@ -181,6 +219,7 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
       console.log('\nInstall: pnpm add -g @openai/codex');
     }
   } catch (error) {
+    if (codexPaneId) killTmuxPane(codexPaneId);
     console.error(
       'Error creating split pane:',
       error instanceof Error ? error.message : String(error),
@@ -191,8 +230,12 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
   // Launch claude in the current (left) pane. spawnSync inherits stdio so
   // claude takes over this terminal until it exits, mirroring how codex
   // runs as the foreground process in the right pane.
-  const result = spawnSync('claude', [], { stdio: 'inherit', cwd });
+  const claudeArgs = yolo ? [CLAUDE_YOLO_FLAG] : [];
+  const result = spawnSync('claude', claudeArgs, { stdio: 'inherit', cwd });
   if (result.error) {
+    // Claude never started — tear down the codex pane we just created so it
+    // isn't left running headless without its OMC counterpart.
+    if (codexPaneId) killTmuxPane(codexPaneId);
     console.error(
       'Error launching claude:',
       result.error instanceof Error
@@ -207,7 +250,9 @@ export function launchInteropSession(cwd: string = process.cwd()): void {
 /**
  * CLI entry point for interop command
  */
-export function interopCommand(options: { cwd?: string } = {}): void {
+export function interopCommand(
+  options: { cwd?: string; yolo?: boolean } = {},
+): void {
   const cwd = options.cwd || process.cwd();
-  launchInteropSession(cwd);
+  launchInteropSession(cwd, { yolo: options.yolo });
 }
