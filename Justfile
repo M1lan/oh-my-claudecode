@@ -662,7 +662,7 @@ omc-install:
     #!/usr/bin/env bash
     set -euo pipefail
     source ~/.config/sh/fnm-init.sh 2>/dev/null || true
-    REPO_DIR="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}" 2>/dev/null || echo "$0")")" && pwd)"
+    REPO_DIR="{{justfile_directory()}}"
     echo "── omc-install: installing from $REPO_DIR ──"
     pnpm add -g "$REPO_DIR"
     echo "omc-install: installed ✓"
