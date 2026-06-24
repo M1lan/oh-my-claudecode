@@ -27,6 +27,7 @@ import {
   renderRateLimits,
   renderRateLimitsWithBar,
   renderRateLimitsError,
+  renderApiKeyUsageHint,
   renderCustomBuckets,
 } from './elements/limits.js';
 import { renderPermission } from './elements/permission.js';
@@ -368,7 +369,16 @@ export async function render(
       if (limits) rendered.set('rateLimits', limits);
     } else {
       const errorIndicator = renderRateLimitsError(context.rateLimitsResult);
-      if (errorIndicator) rendered.set('rateLimits', errorIndicator);
+      if (errorIndicator) {
+        rendered.set('rateLimits', errorIndicator);
+      } else {
+        const hint = renderApiKeyUsageHint(
+          context.rateLimitsResult,
+          context.apiKeyMode ?? false,
+          config.rateLimitsProvider?.type === 'custom',
+        );
+        if (hint) rendered.set('rateLimits', hint);
+      }
     }
   }
 

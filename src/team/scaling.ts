@@ -17,6 +17,7 @@ import {
   buildWorkerArgv,
   getWorkerEnv as getModelWorkerEnv,
   resolveClaudeWorkerModel,
+  assertHeadlessSupported,
   type CliAgentType,
 } from './model-contract.js';
 import { CANONICAL_TEAM_ROLES } from '../shared/types.js';
@@ -60,6 +61,7 @@ const CLI_AGENT_TYPES = new Set<CliAgentType>([
   'gemini',
   'grok',
   'cursor',
+  'antigravity',
 ]);
 
 export function isScalingEnabled(
@@ -423,6 +425,10 @@ export async function scaleUp(
           agentType: CliAgentType,
           model: string | undefined,
         ): { launchBinary: string; launchArgs: string[] } => {
+          // Platform guard (parity with startTeamV2 preflight): a headless-unsupported
+          // provider (e.g. antigravity on Windows) throws here so scale-up falls back
+          // to the routed Claude fallback instead of spawning an unusable primary.
+          assertHeadlessSupported(agentType);
           const [launchBinary, ...launchArgs] = buildWorkerArgv(agentType, {
             teamName: sanitized,
             workerName,

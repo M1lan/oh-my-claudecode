@@ -32,7 +32,9 @@ const VALID_TEAM_CLI_AGENT_TYPES = new Set([
   'gemini',
   'grok',
   'cursor',
+  'antigravity',
 ]);
+const CURSOR_ALLOWED_TEAM_ROLES = new Set(['executor']);
 const DEFAULT_TEAM_CLI_AGENT_TYPE: CliAgentType = 'claude';
 
 const TEAM_HELP = `
@@ -48,6 +50,7 @@ Examples:
   omc team 1:gemini:executor "implement feature"
   omc team 1:codex,1:gemini "compare approaches"
   omc team 1:cursor:executor "apply the implementation"
+  omc team 1:antigravity:executor "apply the implementation"
   omc team 2:codex "review auth flow" --new-window
   omc team status fix-failing-tests
   omc team shutdown fix-failing-tests
@@ -65,6 +68,8 @@ Auto-merge (v2-only):
 
 Roles (optional): architect, executor, planner, analyst, critic, debugger, verifier,
   code-reviewer, security-reviewer, test-engineer, designer, writer, scientist
+
+Cursor workers are executor-style only; use 1:cursor or 1:cursor:executor, not reviewer/critic/security/verdict roles.
 `;
 
 const TEAM_API_HELP = `
@@ -456,6 +461,12 @@ function normalizeWorkerSpecSegment(
           `For a role-only shorthand on the default agent, use "${count}:${explicitRole}".`,
       );
     }
+    if (token === 'cursor' && !CURSOR_ALLOWED_TEAM_ROLES.has(explicitRole)) {
+      throw new Error(
+        `Invalid Cursor worker role "${explicitRole}" in worker spec "${match[0]}". ` +
+          `Cursor workers are executor-style only; use "${count}:cursor" or "${count}:cursor:executor".`,
+      );
+    }
     return { count, agentType: token, role: explicitRole };
   }
 
@@ -616,7 +627,9 @@ export function parseTeamArgs(
   };
 }
 
-export function buildStartupTasks(parsed: ParsedTeamArgs): Array<{
+export function buildStartupTasks(
+  parsed: ParsedTeamArgs,
+): Array<{
   subject: string;
   description: string;
   owner?: string;

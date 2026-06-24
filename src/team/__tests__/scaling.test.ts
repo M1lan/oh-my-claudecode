@@ -53,6 +53,8 @@ vi.mock('../model-contract.js', () => ({
   buildWorkerArgv: modelContractMocks.buildWorkerArgv,
   getWorkerEnv: modelContractMocks.getWorkerEnv,
   resolveClaudeWorkerModel: modelContractMocks.resolveClaudeWorkerModel,
+  assertHeadlessSupported: () => {},
+  isHeadlessSupportedOnPlatform: () => true,
 }));
 
 vi.mock('../team-ops.js', () => ({

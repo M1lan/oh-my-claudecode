@@ -31,6 +31,7 @@ export type KeywordType =
   | 'codex' // Priority 15
   | 'gemini' // Priority 16
   | 'cursor' // Priority 17
+  | 'antigravity' // Priority 18
   | 'ccg'; // Priority 8.5 (Claude-Codex-Gemini orchestration)
 
 export interface DetectedKeyword {
@@ -68,6 +69,7 @@ const KEYWORD_PATTERNS: Record<KeywordType, RegExp> = {
   codex: /\b(ask|use|delegate\s+to)\s+(codex|gpt)\b/i,
   gemini: /\b(ask|use|delegate\s+to)\s+gemini\b/i,
   cursor: /\b(ask|use|delegate\s+to)\s+cursor\b/i,
+  antigravity: /\b(ask|use|delegate\s+to)\s+(antigravity|agy)\b/i,
 };
 
 /**
@@ -115,6 +117,7 @@ const KEYWORD_PRIORITY: KeywordType[] = [
   'codex',
   'gemini',
   'cursor',
+  'antigravity',
 ];
 
 /**

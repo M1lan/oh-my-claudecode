@@ -2,7 +2,8 @@
  * OMC Tools Server - In-process MCP server for custom tools
  *
  * Exposes 18 custom tools (12 LSP, 2 AST, 1 python_repl, 3 skills) via the Claude Agent SDK's
- * createSdkMcpServer helper for use by subagents.
+ * createSdkMcpServer helper for local Node.js Agent SDK integrations. This is not a VS Code
+ * extension host or CI runner by itself.
  */
 
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
@@ -26,7 +27,9 @@ interface ToolDef {
   description: string;
   category?: ToolCategory;
   schema: Record<string, unknown>;
-  handler: (args: unknown) => Promise<{
+  handler: (
+    args: unknown,
+  ) => Promise<{
     content: Array<{ type: 'text'; text: string }>;
     isError?: boolean;
   }>;
@@ -58,6 +61,7 @@ export const DISABLE_TOOLS_GROUP_MAP: Record<string, ToolCategory> = {
   interop: TOOL_CATEGORIES.INTEROP,
   codex: TOOL_CATEGORIES.CODEX,
   gemini: TOOL_CATEGORIES.GEMINI,
+  antigravity: TOOL_CATEGORIES.ANTIGRAVITY,
   'shared-memory': TOOL_CATEGORIES.SHARED_MEMORY,
   deepinit: TOOL_CATEGORIES.DEEPINIT,
   'deepinit-manifest': TOOL_CATEGORIES.DEEPINIT,

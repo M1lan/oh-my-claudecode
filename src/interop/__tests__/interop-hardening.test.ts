@@ -21,9 +21,8 @@ describe('omx mailbox concurrency (locking)', () => {
   });
 
   it('concurrent sendOmxDirectMessage to one worker keeps every message', async () => {
-    const { sendOmxDirectMessage, listOmxMailboxMessages } = await import(
-      '../omx-team-state.js'
-    );
+    const { sendOmxDirectMessage, listOmxMailboxMessages } =
+      await import('../omx-team-state.js');
 
     const team = 'alpha';
     const toWorker = 'worker-1';
@@ -69,11 +68,20 @@ describe('omx team path traversal guards', () => {
   });
 
   it('allows ordinary team/worker names', async () => {
-    const { sendOmxDirectMessage, listOmxMailboxMessages } = await import(
-      '../omx-team-state.js'
+    const { sendOmxDirectMessage, listOmxMailboxMessages } =
+      await import('../omx-team-state.js');
+    await sendOmxDirectMessage(
+      'alpha-team',
+      'omc-bridge',
+      'worker-1',
+      'ok',
+      tempDir,
     );
-    await sendOmxDirectMessage('alpha-team', 'omc-bridge', 'worker-1', 'ok', tempDir);
-    const messages = await listOmxMailboxMessages('alpha-team', 'worker-1', tempDir);
+    const messages = await listOmxMailboxMessages(
+      'alpha-team',
+      'worker-1',
+      tempDir,
+    );
     expect(messages.map((m) => m.body)).toContain('ok');
   });
 });

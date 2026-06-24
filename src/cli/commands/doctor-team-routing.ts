@@ -26,6 +26,7 @@ const PROVIDER_BINARY: Record<TeamRoleProvider, string> = {
   gemini: 'gemini',
   grok: 'grok',
   cursor: 'cursor-agent',
+  antigravity: 'agy',
 };
 
 function probeProvider(provider: TeamRoleProvider): ProviderProbe {
@@ -74,7 +75,8 @@ function collectConfiguredProviders(): Set<TeamRoleProvider> {
       provider === 'codex' ||
       provider === 'gemini' ||
       provider === 'grok' ||
-      provider === 'cursor'
+      provider === 'cursor' ||
+      provider === 'antigravity'
     ) {
       providers.add(provider);
     }

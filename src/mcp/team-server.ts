@@ -224,7 +224,9 @@ function loadJobFromDisk(jobId: string): OmcTeamJob | undefined {
   }
 }
 
-async function loadPaneIds(jobId: string): Promise<{
+async function loadPaneIds(
+  jobId: string,
+): Promise<{
   paneIds: string[];
   leaderPaneId: string;
   sessionName?: string;
@@ -338,7 +340,9 @@ const startSchema = z.object({
   teamName: z.string().describe('Slug name for the team (e.g. "auth-review")'),
   agentTypes: z
     .array(z.string())
-    .describe('Agent type per worker: "claude", "codex", or "gemini"'),
+    .describe(
+      'Agent type per worker: "claude", "codex", "gemini", or "antigravity"',
+    ),
   tasks: z
     .array(
       z.object({
@@ -795,7 +799,8 @@ const TOOLS = [
         agentTypes: {
           type: 'array',
           items: { type: 'string' },
-          description: '"claude", "codex", or "gemini" per worker',
+          description:
+            '"claude", "codex", "gemini", or "antigravity" per worker',
         },
         tasks: {
           type: 'array',

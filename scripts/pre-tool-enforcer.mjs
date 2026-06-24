@@ -8,11 +8,12 @@
 
 import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'fs';
 import { createHash } from 'crypto';
-import { dirname, join, resolve } from 'path';
+import { dirname, join, resolve, basename } from 'path';
 import { homedir } from 'os';
 import { execSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
+import { encodeProjectPath } from './lib/encode-project-path.mjs';
 import { evaluateAgentHeavyPreflight } from './lib/pre-tool-enforcer-preflight.mjs';
 import { evaluateForceAgentDelegation } from './lib/force-agent-delegation-preflight.mjs';
 import { resolveOmcStateRoot } from './lib/state-root.mjs';
@@ -527,13 +528,12 @@ function resolveTranscriptPath(transcriptPath, cwd) {
     }).trim();
 
     if (mainRepoRoot !== worktreeTop) {
-      const lastSep = transcriptPath.lastIndexOf('/');
-      const sessionFile = lastSep !== -1 ? transcriptPath.substring(lastSep + 1) : '';
+      const sessionFile = basename(transcriptPath);
       if (sessionFile) {
         const configDir = getClaudeConfigDir();
         const projectsDir = join(configDir, 'projects');
         if (existsSync(projectsDir)) {
-          const encodedMain = mainRepoRoot.replace(/[/\\]/g, '-');
+          const encodedMain = encodeProjectPath(mainRepoRoot);
           const resolvedPath = join(projectsDir, encodedMain, sessionFile);
           try {
             if (existsSync(resolvedPath)) return resolvedPath;
@@ -967,18 +967,18 @@ function generateAgentSpawnMessage(toolInput, stateDir, todoStatus, sessionId) {
   const bg = toolInput.run_in_background ? ' [BACKGROUND]' : '';
   const tracking = getAgentTrackingInfo(stateDir);
 
-  // Team-routing enforcement (issue #1006):
-  // When team state is active and Task is called WITHOUT team_name,
-  // inject a redirect message to use team agents instead of subagents.
+  // Team-routing guidance:
+  // Claude Code 2.1.178+ removed TeamCreate/TeamDelete. When OMC team state is
+  // active, teammates should be spawned into the session's implicit agent team by
+  // giving each Agent/Task call a distinct name. team_name is ignored by native
+  // Claude Code and should only be treated as legacy metadata.
   const teamState = getActiveTeamState(stateDir, sessionId);
-  if (teamState && !toolInput.team_name) {
+  if (teamState && !toolInput.name) {
     const teamName = teamState.team_name || teamState.teamName || 'team';
-    return `[TEAM ROUTING REQUIRED] Team "${teamName}" is active but you are spawning a regular subagent ` +
-      `without team_name. You MUST use TeamCreate first (if not already created), then spawn teammates with ` +
-      `Task(team_name="${teamName}", name="worker-N", subagent_type="${agentType}"). ` +
-      `Do NOT use Task without team_name during an active team session. ` +
-      `If TeamCreate is not available in your tools, tell the user to verify ` +
-      'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1 is set in [$CLAUDE_CONFIG_DIR|~/.claude]/settings.json. Restart Claude Code.';
+    return `[TEAM ROUTING REQUIRED] Team "${teamName}" is active but you are spawning an unnamed subagent. ` +
+      `Claude Code 2.1.178+ uses the session's implicit native agent team; TeamCreate and TeamDelete are removed. ` +
+      `Spawn teammates directly with Agent/Task name="worker-N" and subagent_type="${agentType}". ` +
+      `Do NOT rely on team_name for routing; native Claude Code accepts it only as ignored legacy metadata.`;
   }
 
   if (QUIET_LEVEL >= 2) return '';

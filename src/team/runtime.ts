@@ -10,6 +10,7 @@ import {
   isPromptModeAgent,
   getPromptModeArgs,
   resolveClaudeWorkerModel,
+  assertHeadlessSupported,
 } from './model-contract.js';
 import { validateTeamName } from './team-name.js';
 import {
@@ -436,8 +437,13 @@ export async function startTeam(config: TeamConfig): Promise<TeamRuntime> {
   validateTeamName(teamName);
 
   // Validate CLIs once and pin absolute binary paths for consistent spawn behavior.
+  // Reject headless-unsupported providers (e.g. antigravity on Windows) here in
+  // preflight — BEFORE writing any team state or creating the tmux session — so an
+  // unsupported provider can never leave stale `.omc/state/team` files or a leader
+  // session behind. (spawnWorkerForTask keeps its own guard for the watchdog path.)
   const resolvedBinaryPaths: Partial<Record<CliAgentType, string>> = {};
   for (const agentType of [...new Set(agentTypes)]) {
+    assertHeadlessSupported(agentType);
     resolvedBinaryPaths[agentType] = resolveValidatedBinaryPath(agentType);
   }
 
@@ -807,6 +813,17 @@ export async function spawnWorkerForTask(
   const taskId = String(taskIndex + 1);
   const task = runtime.config.tasks[taskIndex];
   if (!task) return '';
+
+  const workerIndex = parseWorkerIndex(workerNameValue);
+  const agentType =
+    runtime.config.agentTypes[workerIndex % runtime.config.agentTypes.length] ??
+    runtime.config.agentTypes[0] ??
+    'claude';
+  // Guard headless-unsupported providers (e.g. antigravity on Windows) BEFORE any
+  // task-state mutation or pane split, so legacy v1 startup rejects cleanly instead
+  // of leaving a task stuck `in_progress` with a stray pane (parity with v2/scale-up).
+  assertHeadlessSupported(agentType);
+
   const marked = await markTaskInProgress(
     root,
     taskId,
@@ -835,11 +852,6 @@ export async function spawnWorkerForTask(
     return '';
   }
 
-  const workerIndex = parseWorkerIndex(workerNameValue);
-  const agentType =
-    runtime.config.agentTypes[workerIndex % runtime.config.agentTypes.length] ??
-    runtime.config.agentTypes[0] ??
-    'claude';
   const usePromptMode = isPromptModeAgent(agentType);
 
   // Build the initial task instruction and write inbox before spawn.
@@ -889,6 +901,13 @@ export async function spawnWorkerForTask(
         undefined
       );
     }
+    if (agentType === 'antigravity') {
+      return (
+        process.env.OMC_EXTERNAL_MODELS_DEFAULT_ANTIGRAVITY_MODEL ||
+        process.env.OMC_ANTIGRAVITY_DEFAULT_MODEL ||
+        undefined
+      );
+    }
     if (agentType === 'grok') {
       return (
         process.env.OMC_EXTERNAL_MODELS_DEFAULT_GROK_MODEL ||
@@ -911,8 +930,9 @@ export async function spawnWorkerForTask(
     model: modelForAgent,
   });
 
-  // For prompt-mode agents (e.g. Gemini Ink TUI), pass instruction via CLI
-  // flag so tmux send-keys never needs to interact with the TUI input widget.
+  // For prompt-mode agents (e.g. Gemini Ink TUI, Antigravity --print), pass
+  // instruction via CLI flag so tmux send-keys never needs to interact with
+  // the TUI input widget.
   // Codex and Claude team workers are persistent interactive panes and are
   // nudged through the inbox transport instead of `codex exec`/print modes.
   if (usePromptMode) {
@@ -1132,6 +1152,7 @@ export async function shutdownTeam(
     'gemini',
     'grok',
     'cursor',
+    'antigravity',
   ]);
   const agentTypes: string[] = configData?.agentTypes ?? [];
   const isCliWorkerTeam =

@@ -73,6 +73,7 @@ import {
   resolveOpenQuestionsPlanPath,
 } from '../config/plan-output.js';
 import { formatAutopilotRuntimeInsight } from './autopilot/runtime-insight.js';
+import type { AutopilotState } from './autopilot/types.js';
 import {
   writeSkillActiveState,
   isCanonicalWorkflowSkill,
@@ -849,8 +850,13 @@ async function seedAutopilotStartupState(
   prompt: string,
   sessionId?: string,
 ): Promise<void> {
-  const { readAutopilotState, writeAutopilotState, DEFAULT_CONFIG } =
-    await import('./autopilot/index.js');
+  const {
+    readAutopilotState,
+    writeAutopilotState,
+    DEFAULT_CONFIG,
+    resolvePipelineConfig,
+    buildPipelineTracking,
+  } = await import('./autopilot/index.js');
   const existingState = readAutopilotState(directory, sessionId);
   const existingAutopilotRecord = existingState as unknown as Record<
     string,
@@ -864,58 +870,65 @@ async function seedAutopilotStartupState(
     return;
   }
 
+  const config = loadConfig();
   const now = new Date().toISOString();
-  const wrote = writeAutopilotState(
-    directory,
-    {
-      active: true,
-      phase: 'expansion',
-      current_phase: 'expansion',
-      iteration: 1,
-      max_iterations: DEFAULT_CONFIG.maxIterations ?? 10,
-      originalIdea: prompt,
-      expansion: {
-        analyst_complete: false,
-        architect_complete: false,
-        spec_path: null,
-        requirements_summary: '',
-        tech_stack: [],
-      },
-      planning: {
-        plan_path: null,
-        architect_iterations: 0,
-        approved: false,
-      },
-      execution: {
-        ralph_iterations: 0,
-        ultrawork_active: false,
-        tasks_completed: 0,
-        tasks_total: 0,
-        files_created: [],
-        files_modified: [],
-      },
-      qa: {
-        ultraqa_cycles: 0,
-        build_status: 'pending',
-        lint_status: 'pending',
-        test_status: 'pending',
-      },
-      validation: {
-        architects_spawned: 0,
-        verdicts: [],
-        all_approved: false,
-        validation_rounds: 0,
-      },
-      started_at: now,
-      completed_at: null,
-      phase_durations: {},
-      total_agents_spawned: 0,
-      wisdom_entries: 0,
-      session_id: sessionId,
-      project_path: directory,
+  const state: AutopilotState = {
+    active: true,
+    phase: 'expansion',
+    current_phase: 'expansion',
+    iteration: 1,
+    max_iterations: DEFAULT_CONFIG.maxIterations ?? 10,
+    originalIdea: prompt,
+    expansion: {
+      analyst_complete: false,
+      architect_complete: false,
+      spec_path: null,
+      requirements_summary: '',
+      tech_stack: [],
     },
-    sessionId,
-  );
+    planning: {
+      plan_path: null,
+      architect_iterations: 0,
+      approved: false,
+    },
+    execution: {
+      ralph_iterations: 0,
+      ultrawork_active: false,
+      tasks_completed: 0,
+      tasks_total: 0,
+      files_created: [],
+      files_modified: [],
+    },
+    qa: {
+      ultraqa_cycles: 0,
+      build_status: 'pending',
+      lint_status: 'pending',
+      test_status: 'pending',
+    },
+    validation: {
+      architects_spawned: 0,
+      verdicts: [],
+      all_approved: false,
+      validation_rounds: 0,
+    },
+    started_at: now,
+    completed_at: null,
+    phase_durations: {},
+    total_agents_spawned: 0,
+    wisdom_entries: 0,
+    session_id: sessionId,
+    project_path: directory,
+  };
+
+  const autopilotConfig = config.autopilot;
+  const shouldUsePipeline = autopilotConfig?.execution === 'team';
+  if (shouldUsePipeline) {
+    const pipelineConfig = resolvePipelineConfig(autopilotConfig);
+    (state as unknown as Record<string, unknown>).pipeline =
+      buildPipelineTracking(pipelineConfig);
+  }
+
+  const wrote = writeAutopilotState(directory, state, sessionId);
   if (wrote) {
     markModeAwaitingConfirmation(directory, sessionId, 'autopilot');
   }
@@ -1353,7 +1366,7 @@ function getPromptText(input: HookInput): string {
 }
 
 function isExplicitAskSlashInvocation(promptText: string): boolean {
-  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini|grok|cursor)\b/i.test(
+  return /^\s*\/(?:oh-my-claudecode:)?ask\s+(?:claude|codex|gemini|antigravity|agy|grok|cursor)\b/i.test(
     promptText,
   );
 }
@@ -1828,7 +1841,8 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
 
       case 'codex':
       case 'gemini':
-      case 'cursor': {
+      case 'cursor':
+      case 'antigravity': {
         const teamStartCommand = formatOmcCliInvocation(
           `team start --agent ${keywordType} --count N --task "<task from user message>"`,
         );
@@ -3144,8 +3158,12 @@ async function processAutopilot(input: HookInput): Promise<HookOutput> {
   const directory = resolveToWorktreeRoot(input.directory);
 
   // Lazy-load autopilot module
-  const { readAutopilotState, getPhasePrompt } =
-    await import('./autopilot/index.js');
+  const {
+    readAutopilotState,
+    getPhasePrompt,
+    hasPipelineTracking,
+    generatePipelinePrompt,
+  } = await import('./autopilot/index.js');
 
   const state = readAutopilotState(directory, input.sessionId);
 
@@ -3153,8 +3171,25 @@ async function processAutopilot(input: HookInput): Promise<HookOutput> {
     return { continue: true };
   }
 
-  // Check phase and inject appropriate prompt
   const config = loadConfig();
+
+  if (hasPipelineTracking(state)) {
+    const pipelinePrompt = generatePipelinePrompt(directory, input.sessionId);
+    const runtimeInsight = formatAutopilotRuntimeInsight(
+      directory,
+      input.sessionId,
+    );
+    if (pipelinePrompt || runtimeInsight) {
+      const detailParts = [runtimeInsight, pipelinePrompt].filter(Boolean);
+      return {
+        continue: true,
+        message: `[AUTOPILOT - Pipeline]\n\n${detailParts.join('\n\n')}`,
+      };
+    }
+    return { continue: true };
+  }
+
+  // Check phase and inject appropriate prompt
   const context = {
     idea: state.originalIdea,
     specPath: state.expansion.spec_path || '.omc/autopilot/spec.md',

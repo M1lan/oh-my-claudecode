@@ -28,9 +28,9 @@ Complete reference for oh-my-claudecode. For quick start, see the main [README.m
 
 ## Installation
 
-**Only the Claude Code Plugin method is supported.** Other installation methods (pnpm, bun, curl) are deprecated and may not work correctly.
+OMC has two supported public surfaces. Use the Claude Code plugin for in-session slash commands, hooks, agents, skills, and statusline behavior. Use the npm-installed `omc` CLI for terminal commands, setup/update automation, and CI-safe checks.
 
-### Claude Code Plugin (Required)
+### Claude Code Plugin
 
 ```bash
 # Step 1: Add the marketplace
@@ -42,7 +42,14 @@ Complete reference for oh-my-claudecode. For quick start, see the main [README.m
 
 This integrates directly with Claude Code's plugin system and uses Node.js hooks.
 
-> **Note**: Direct pnpm/bun global installs are **not supported** for the plugin install flow. When you only need the packaged CLI surface, the published package exposes both `oh-my-claudecode` and `omc`; use `omc` in examples unless troubleshooting needs the long alias.
+### Terminal CLI
+
+```bash
+npm i -g oh-my-claude-sisyphus@latest
+omc setup
+```
+
+The npm package exposes both `oh-my-claudecode` and `omc`; examples prefer `omc` unless troubleshooting needs the long alias. The CLI does not make in-session slash skills available by itself; install the plugin for `/autopilot`, `/ralph`, `/team`, and other interactive skills.
 
 ### Requirements
 
@@ -107,8 +114,9 @@ If both configurations exist, **project-scoped takes precedence** over global:
 | `OMC_BRIDGE_SCRIPT`        | _(auto-detected)_    | Path to the Python bridge script                                                                                                                                                                                                                                            |
 | `OMC_PARALLEL_EXECUTION`   | `true`               | Enable/disable parallel agent execution                                                                                                                                                                                                                                     |
 | `OMC_CODEX_DEFAULT_MODEL`  | _(provider default)_ | Default model for Codex CLI workers                                                                                                                                                                                                                                         |
-| `OMC_GEMINI_DEFAULT_MODEL` | _(provider default)_ | Default model for Gemini CLI workers                                                                                                                                                                                                                                        |
-| `OMC_GROK_DEFAULT_MODEL`   | _(provider default)_ | Default model for Grok Build CLI workers                                                                                                                                                                                                                                    |
+| `OMC_GEMINI_DEFAULT_MODEL`       | _(provider default)_ | Default model for Gemini CLI workers                                                                                                                                                                                                                                    |
+| `OMC_ANTIGRAVITY_DEFAULT_MODEL`  | _(provider default)_ | Default model for Antigravity CLI (`agy`) workers                                                                                                                                                                                                                       |
+| `OMC_GROK_DEFAULT_MODEL`         | _(provider default)_ | Default model for Grok Build CLI workers                                                                                                                                                                                                                                |
 | `OMC_LSP_TIMEOUT_MS`       | `15000`              | Timeout (ms) for LSP requests. Increase for large repos or slow language servers                                                                                                                                                                                            |
 | `OMC_MIGRATE_LEGACY_STATE` | _(unset)_            | Set to `1` to enable one-shot legacy→session-scoped state migration on next read. See [Legacy state migration](#legacy-state-migration-omc_migrate_legacy_state) below.                                                                                                      |
 | `OMC_DISABLE_MULTIREPO`    | _(unset)_            | Set to `1` to disable workspace-marker resolution and fall back to git-root + cwd resolution order. `OMC_STATE_DIR` is still honoured. See [Rollback / disable multi-repo](#rollback--disable-multi-repo-omc_disable_multirepo) below.                                       |
@@ -127,6 +135,29 @@ export OMC_STATE_DIR="$HOME/.claude/omc"
 This resolves to `~/.claude/omc/{project-identifier}/` where the project identifier uses a hash of the git remote URL (stable across worktrees/clones) with a fallback to the directory path hash for local-only repos.
 
 If both a legacy `{worktree}/.omc/` directory and a centralized directory exist, OMC logs a notice and uses the centralized directory. You can then migrate data from the legacy directory and remove it.
+
+#### OMC state, gitignore, worktree, and workspace contract
+
+OMC's project-local state root is `.omc/` unless `OMC_STATE_DIR` or `.omc-workspace` changes the root resolution described below. The default root contains runtime and audit artifacts such as:
+
+- `.omc/state/` and `.omc/state/sessions/{sessionId}/` — mode state, session-scoped state, replay markers, and recovery metadata.
+- `.omc/notepad.md` and `.omc/project-memory.json` — local session notes and project memory.
+- `.omc/plans/`, `.omc/research/`, `.omc/logs/`, `.omc/artifacts/`, `.omc/handoffs/`, and `.omc/ultragoal/` — generated plans, research outputs, logs, advisor artifacts, team handoffs, and ultragoal ledgers.
+- `.omc/team/` — opt-in native team worker worktrees when team worktree mode creates them.
+- `.omc/skills/` — the only project-local `.omc` subtree intended to be committed when the team wants to share OMC-authored skills.
+
+Git handling is intentionally conservative. The repository `.gitignore` keeps `.omc/` itself visible, ignores `.omc/*`, and then re-includes `.omc/skills/` plus `.omc/skills/**`. That means generated state stays untracked by default, while project skills can be reviewed and committed explicitly. Do not force-add runtime `.omc` files unless you are deliberately attaching a sanitized artifact to an issue or test fixture; runtime state can include prompts, transcripts, absolute paths, machine identifiers, and workflow history.
+
+Worktree behavior follows the resolved state root:
+
+- **Default single repo / monorepo**: `getOmcRoot()` uses the git toplevel, so every package below one git root shares `{repo}/.omc/`.
+- **Linked git worktrees**: without `OMC_STATE_DIR`, each linked worktree has its own `{worktree}/.omc/`; removing that worktree removes its local OMC state. Re-run setup from the worktree you are actively using so installed hooks and generated instructions match that checkout.
+- **Persistent state across worktree deletion**: set `OMC_STATE_DIR`; OMC writes to `$OMC_STATE_DIR/{project-id}/`, where the project id is stable across linked worktrees when a remote or primary git dir is available.
+- **Multi-repo workspace**: add `.omc-workspace` to a non-git parent when independent sibling repos should share `{parent}/.omc/`. This is for multi-repo workspaces, not ordinary monorepos.
+
+Plan persistence follows the same rule. Default generated plans under `.omc/plans/` are local operational artifacts and are ignored. If a plan should become durable project documentation, move it to a tracked docs path or configure `planOutput.directory` to a reviewed directory such as `docs/plans`; keep machine-local session state in `.omc/`.
+
+Cleanup rule of thumb: after OMC sessions are stopped, it is safe to delete ignored runtime subtrees such as `.omc/state/`, `.omc/logs/`, `.omc/artifacts/`, `.omc/research/`, or `.omc/ultragoal/` if you no longer need their recovery/audit history. Do not delete `.omc/skills/` unless you intend to remove project-scoped skills.
 
 #### Multi-repo workspaces with `.omc-workspace`
 
@@ -158,7 +189,7 @@ Once a workspace is anchored, multiple Claude Code sessions in different sub-rep
 
 **Only the `team` skill writes to `.omc/handoffs/`.** All other code that reads the directory does so read-only. This is enforced by the lint test `tests/lint/handoffs-writers.test.ts`, which scans `src/**` and `templates/**` and fails if any file outside `src/team/` or `src/hooks/team-pipeline/` references `handoffs/` as a write target.
 
-- Handoff files survive `TeamDelete` and session cancellation intentionally — they are post-mortem artifacts.
+- Handoff files survive team cancellation and OMC state cleanup intentionally — they are post-mortem artifacts. Claude Code 2.1.178+ has no `TeamDelete`.
 - Do **not** session-scope `.omc/handoffs/` unless the `team` skill explicitly evolves to per-session inboxes (tracked as a follow-up in the ADR).
 
 #### Branded path types (`ReadPath` / `WritePath`)
@@ -238,7 +269,7 @@ Multi-plan layout, enabled by `--plan-id <id>` or `--auto-plan-id` on `omc ultra
 - **Different machines**: Run on each machine where you use Claude Code
 - **New projects**: Run `/oh-my-claudecode:omc-setup --local` in each project that needs omc
 
-> **NOTE**: After updating the plugin (via `pnpm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
+> **NOTE**: After updating the plugin (via `npm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
 
 ### Remote OMC / Remote MCP Access
 
@@ -495,15 +526,16 @@ claude --plugin-dir /path/to/oh-my-claudecode
 omc ask claude "review this patch"
 omc ask codex "review this patch from a security perspective"
 omc ask gemini --prompt "suggest UX improvements"
+omc ask antigravity --prompt "suggest UX improvements"
 omc ask cursor --prompt "apply this implementation plan"
 omc ask claude --agent-prompt executor --prompt "create an implementation plan"
 ```
 
-- Provider matrix: `claude | codex | gemini | grok | cursor`
+- Provider matrix: `claude | codex | gemini | antigravity | grok | cursor`
 - Artifacts: `.omc/artifacts/ask/{provider}-{slug}-{timestamp}.md`
 - Canonical env vars: `OMC_ASK_ADVISOR_SCRIPT`, `OMC_ASK_ORIGINAL_TASK`
 - Phase-1 aliases (deprecated warning): `OMX_ASK_ADVISOR_SCRIPT`, `OMX_ASK_ORIGINAL_TASK`
-- Skill entrypoint: `/oh-my-claudecode:ask <claude|codex|gemini|grok|cursor> <prompt>` routes to this command
+- Skill entrypoint: `/oh-my-claudecode:ask <claude|codex|gemini|antigravity|grok|cursor> <prompt>` routes to this command
 
 ### `omc team` (CLI runtime surface)
 
@@ -536,6 +568,17 @@ omc session search provider-routing --project all --json
 - Use `--project all` to search across all local Claude project transcripts
 - Supports `--limit`, `--session`, `--since`, `--context`, `--case-sensitive`, and `--json`
 - MCP/tool surface: `session_search` returns structured JSON for agents and automations
+
+### Non-interactive automation and CI/CD
+
+Use OMC's terminal and library surfaces in non-interactive environments:
+
+- Run CLI commands that have deterministic exit codes, for example `omc setup`, `omc ask ...`, `omc session search ... --json`, or repo-owned verification scripts such as `npm run sync-metadata:verify`.
+- Provide authentication through runner environment variables (`ANTHROPIC_API_KEY`) or pre-authenticated provider CLIs for `codex`, `gemini`, `antigravity`, `grok`, or `cursor` when using `omc ask` / `omc team`.
+- Keep state explicit for ephemeral runners by setting `OMC_STATE_DIR` when state must survive worktree deletion or checkout replacement.
+- Avoid interactive slash skills (`/autopilot`, `/ralph`, `/ultrawork`, `/deep-interview`, `/team`) in CI jobs; they require an active Claude Code session and user-visible conversation loop.
+- OMC does not currently provide a VS Code extension or VS Code-specific automation contract. The documented IDE path is to use Claude Code's own integrations, then install OMC through the Claude Code plugin surface.
+- Programmatic Agent SDK usage is supported through the exported TypeScript helpers and the in-process MCP server helpers in this package; it is a Node.js library surface, not an interactive plugin installer.
 
 ---
 
@@ -718,7 +761,7 @@ Marketplace/plugin installs compact the native plugin `skills/*/SKILL.md` files 
 | Skill                     | Description                                                      | Manual Command                              |
 | ------------------------- | ---------------------------------------------------------------- | ------------------------------------------- |
 | `ai-slop-cleaner`         | Anti-slop cleanup workflow with optional reviewer-only `--review` pass | `/oh-my-claudecode:ai-slop-cleaner`         |
-| `ask`                     | Ask Claude, Codex, Gemini, or Grok via local CLI and capture a reusable artifact | `/oh-my-claudecode:ask`               |
+| `ask`                     | Ask Claude, Codex, Gemini, Antigravity, or Grok via local CLI and capture a reusable artifact | `/oh-my-claudecode:ask`               |
 | `autoresearch`            | Stateful single-mission evaluator-driven improvement loop           | `/oh-my-claudecode:autoresearch`            |
 | `autopilot`               | Full autonomous execution from idea to working code              | `/oh-my-claudecode:autopilot`               |
 | `cancel`                  | Unified cancellation for active modes                            | `/oh-my-claudecode:cancel`                  |
@@ -736,7 +779,7 @@ Marketplace/plugin installs compact the native plugin `skills/*/SKILL.md` files 
 | `omc-plan`                | Planning workflow (`/plan` safe alias; bundled directory ID is `plan`) | `/oh-my-claudecode:plan`                    |
 | `omc-reference`           | Detailed OMC agent/tools/team/commit reference skill             | Auto-loaded reference only                  |
 | `omc-setup`               | One-time setup wizard                                            | `/oh-my-claudecode:omc-setup`               |
-| `omc-teams`               | Spawn `claude`/`codex`/`gemini` tmux workers for parallel execution | `/oh-my-claudecode:omc-teams`             |
+| `omc-teams`               | Spawn `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor` tmux workers for parallel execution | `/oh-my-claudecode:omc-teams`             |
 | `project-session-manager` | Manage isolated dev environments (git worktrees + tmux)          | `/oh-my-claudecode:project-session-manager` |
 | `psm` | **Deprecated** compatibility alias for `project-session-manager` | `/oh-my-claudecode:psm` |
 | `ralph`                   | Persistence loop until verified completion                       | `/oh-my-claudecode:ralph`                   |
@@ -764,7 +807,7 @@ Most installed skills are exposed as `/oh-my-claudecode:<skill-name>`. Deep Inte
 | Command                                                  | Description                                                                                   |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `/oh-my-claudecode:ai-slop-cleaner <target>`             | Run the anti-slop cleanup workflow (`--review` for reviewer-only pass)                        |
-| `/oh-my-claudecode:ask <claude\|codex\|gemini\|grok\|cursor> <prompt>` | Route a prompt through the selected advisor CLI and capture an ask artifact                   |
+| `/oh-my-claudecode:ask <claude\|codex\|gemini\|antigravity\|grok\|cursor> <prompt>` | Route a prompt through the selected advisor CLI and capture an ask artifact                   |
 | `/oh-my-claudecode:autopilot <task>`                     | Full autonomous execution                                                                     |
 | `/oh-my-claudecode:configure-notifications`              | Configure notification integrations                                                           |
 | `/oh-my-claudecode:compact [note]`                        | Prepare an OMC-safe manual handoff telling the user to run bare `/compact [note]`              |
@@ -775,7 +818,7 @@ Most installed skills are exposed as `/oh-my-claudecode:<skill-name>`. Deep Inte
 | `/oh-my-claudecode:omc-doctor`                           | Diagnose and fix installation issues                                                          |
 | `/oh-my-claudecode:plan <description>`                   | Start planning session (supports consensus structured deliberation)                           |
 | `/oh-my-claudecode:omc-setup`                            | One-time setup wizard                                                                         |
-| `/oh-my-claudecode:omc-teams <N>:<agent> <task>`         | Spawn `claude`/`codex`/`gemini` tmux workers for legacy parallel execution                    |
+| `/oh-my-claudecode:omc-teams <N>:<agent> <task>`         | Spawn `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor` tmux workers for legacy parallel execution                    |
 | `/oh-my-claudecode:project-session-manager <arguments>`  | Manage isolated dev environments with git worktrees + tmux                                    |
 | `/oh-my-claudecode:psm <arguments>`                      | Deprecated alias for project session manager                                                  |
 | `/oh-my-claudecode:ralph <task>`                         | Self-referential loop until task completion (`--critic=architect \| critic \| codex`)       |
@@ -827,7 +870,7 @@ Key contract points:
 
 ## Hooks System
 
-OMC registers 20 hook scripts across 11 Claude Code lifecycle events. For detailed documentation, see [HOOKS.md](./HOOKS.md).
+OMC registers 21 hook scripts across 11 Claude Code lifecycle events. For detailed documentation, see [HOOKS.md](./HOOKS.md).
 
 ### Hooks by Lifecycle Event
 
@@ -842,7 +885,7 @@ OMC registers 20 hook scripts across 11 Claude Code lifecycle events. For detail
 | **SubagentStart**      | `subagent-tracker.mjs start`                                                                                      | 3s               |
 | **SubagentStop**       | `subagent-tracker.mjs stop`, `verify-deliverables.mjs`                                                            | 5s, 5s           |
 | **PreCompact**         | `pre-compact.mjs`, `project-memory-precompact.mjs`                                                                | 10s, 5s          |
-| **Stop**               | `context-guard-stop.mjs`, `persistent-mode.cjs`, `code-simplifier.mjs`                                            | 5s, 10s, 5s      |
+| **Stop**               | `context-guard-stop.mjs`, `workflow-drift-guard.mjs`, `persistent-mode.cjs`, `code-simplifier.mjs`                | 5s, 3s, 10s, 5s  |
 | **SessionEnd**         | `session-end.mjs`                                                                                                 | 30s              |
 
 > **Note**: autopilot, ralph, ultrawork, and ultraqa are **skills** (activated via keyword-detector), not hooks. The `persistent-mode.cjs` hook enforces their continuation by blocking the Stop event.
@@ -904,7 +947,7 @@ Use these trigger phrases in natural language prompts to activate enhanced modes
 | `autopilot`, `build me`, `I want a`, `handle it all`, `end to end`, `e2e this` | Full autonomous execution                                                                     |
 | `deslop`, `anti-slop`, cleanup/refactor + slop smells                          | Anti-slop cleanup workflow (`ai-slop-cleaner`)                                                |
 | `ralph`, `don't stop`, `must complete`, `until done`                           | Persistence until verified complete                                                           |
-| `ccg`, `claude-codex-gemini`                                                   | Claude-Codex-Gemini orchestration                                                             |
+| `ccg`, `claude-codex-gemini`                                                   | Claude-Codex-Gemini orchestration (use `antigravity` when using the Antigravity CLI)         |
 | `ralplan`                                                                      | Iterative planning consensus with structured deliberation (`--deliberate` for high-risk mode) |
 | `deep interview`, `ouroboros`                                                  | Deep Socratic interview with mathematical clarity gating                                      |
 | `deepsearch`, `search the codebase`, `find in codebase`                        | Codebase-focused search mode                                                                  |
@@ -990,7 +1033,7 @@ stopomc
 
 > **Note**: Bash hooks are fully portable across macOS and Linux (no GNU-specific dependencies).
 
-> **Windows**: Native Windows (win32) support is experimental. OMC requires tmux, which is not available on native Windows. **WSL2 is strongly recommended** for Windows users. See the [WSL2 installation guide](https://learn.microsoft.com/en-us/windows/wsl/install). Native Windows issues may have limited support.
+> **Windows**: Native Windows (win32) support is experimental. Features that launch tmux-backed worker panes require a tmux-compatible binary. OMC supports native [psmux](https://github.com/psmux/psmux) for PowerShell 7+ users who want visible Claude Code teammate panes in interactive team workflows, and recommends WSL2 as the fallback when no compatible `tmux` command is installed or native Windows behavior is insufficient. psmux does not force worktree agents, non-interactive/print-mode agents, or model-selected in-process agents into visible panes. Native Windows issues may have limited support.
 
 > **Advanced**: Set `OMC_USE_NODE_HOOKS=1` to use Node.js hooks on macOS/Linux.
 
@@ -1171,7 +1214,7 @@ Available presets: `minimal`, `focused`, `full`, `dense`, `analytics`, `opencode
 | Commands not found    | Re-run `/oh-my-claudecode:omc-setup`                                             |
 | Hooks not executing   | Check hook permissions: `chmod +x ~/.claude/hooks/**/*.sh`                       |
 | Agents not delegating | Verify CLAUDE.md is loaded: check `./.claude/CLAUDE.md` or `~/.claude/CLAUDE.md` |
-| LSP tools not working | Install language servers: `pnpm add -g typescript-language-server`            |
+| LSP tools not working | Install language servers: `npm install -g typescript-language-server`            |
 | Token limit errors    | Use `/oh-my-claudecode:` for token-efficient execution                           |
 
 ### Auto-Update

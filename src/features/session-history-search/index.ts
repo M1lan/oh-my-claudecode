@@ -9,6 +9,7 @@ import {
   getOmcRoot,
 } from '../../lib/worktree-paths.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
+import { encodeProjectPath } from '../../utils/encode-project-path.js';
 import type {
   SessionHistoryMatch,
   SessionHistorySearchOptions,
@@ -64,10 +65,6 @@ function parseSinceSpec(since?: string): number | undefined {
 
   const parsed = Date.parse(trimmed);
   return Number.isNaN(parsed) ? undefined : parsed;
-}
-
-function encodeProjectPath(projectPath: string): string {
-  return projectPath.replace(/[/\\.]/g, '-');
 }
 
 function getMainRepoRoot(projectRoot: string): string | null {
@@ -666,7 +663,7 @@ export async function searchSessionHistory(
   };
 }
 
-export { parseSinceSpec };
+export { encodeProjectPath, parseSinceSpec };
 export type {
   SessionHistoryMatch,
   SessionHistorySearchOptions,

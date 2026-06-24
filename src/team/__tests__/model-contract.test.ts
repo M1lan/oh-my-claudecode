@@ -8,6 +8,8 @@ import {
   parseCliOutput,
   isPromptModeAgent,
   getPromptModeArgs,
+  isHeadlessSupportedOnPlatform,
+  validateCliAvailable,
   isCliAvailable,
   shouldLoadShellRc,
   resolveCliBinaryPath,
@@ -211,8 +213,73 @@ describe('model-contract', () => {
       expect(c.binary).toBe('grok');
       expect(c.supportsPromptMode).toBe(true);
     });
+    it('returns contract for antigravity', () => {
+      const c = getContract('antigravity');
+      expect(c.agentType).toBe('antigravity');
+      expect(c.binary).toBe('agy');
+      expect(c.supportsPromptMode).toBe(true);
+      expect(c.promptModeFlag).toBe('-p');
+      // Points to official install instructions, not a raw pipe-to-shell command.
+      expect(c.installInstructions).toContain('antigravity.google');
+      expect(c.installInstructions).not.toContain('| bash');
+    });
     it('throws for unknown agent type', () => {
       expect(() => getContract('unknown' as any)).toThrow('Unknown agent type');
+    });
+
+    describe('antigravity Windows headless guard (omc team)', () => {
+      it('reports antigravity headless unsupported on win32, supported elsewhere', () => {
+        expect(isHeadlessSupportedOnPlatform('antigravity', 'win32')).toBe(
+          false,
+        );
+        expect(isHeadlessSupportedOnPlatform('antigravity', 'darwin')).toBe(
+          true,
+        );
+        expect(isHeadlessSupportedOnPlatform('antigravity', 'linux')).toBe(
+          true,
+        );
+        // Other prompt-mode providers stay supported on Windows.
+        expect(isHeadlessSupportedOnPlatform('gemini', 'win32')).toBe(true);
+        expect(isHeadlessSupportedOnPlatform('grok', 'win32')).toBe(true);
+      });
+
+      it('getPromptModeArgs throws for an antigravity team worker on Windows', () => {
+        const restore = setProcessPlatform('win32');
+        try {
+          expect(() =>
+            getPromptModeArgs('antigravity', '/path/to/inbox.md'),
+          ).toThrow(/not supported on Windows/);
+          // Still works for gemini on Windows (uses its own stdin-safe handling elsewhere).
+          expect(getPromptModeArgs('gemini', '/path/to/inbox.md')).toEqual([
+            '-p',
+            '/path/to/inbox.md',
+          ]);
+        } finally {
+          restore();
+        }
+      });
+
+      it('getPromptModeArgs builds antigravity args normally on non-Windows', () => {
+        const restore = setProcessPlatform('darwin');
+        try {
+          expect(getPromptModeArgs('antigravity', '/path/to/inbox.md')).toEqual(
+            ['-p', '/path/to/inbox.md'],
+          );
+        } finally {
+          restore();
+        }
+      });
+
+      it('validateCliAvailable refuses antigravity on Windows with a clear message', () => {
+        const restore = setProcessPlatform('win32');
+        try {
+          expect(() => validateCliAvailable('antigravity')).toThrow(
+            /not supported on Windows/,
+          );
+        } finally {
+          restore();
+        }
+      });
     });
 
     it('blocks codex when external LLM is disabled', async () => {
@@ -369,6 +436,50 @@ describe('model-contract', () => {
       expect(args).toContain('--approval-mode');
       expect(args).toContain('yolo');
       expect(args).not.toContain('-p');
+    });
+    it('antigravity leads with --dangerously-skip-permissions (no --print; -p is appended later by getPromptModeArgs)', () => {
+      const noModel = buildLaunchArgs('antigravity', {
+        teamName: 't',
+        workerName: 'w',
+        cwd: '/tmp',
+      });
+      expect(noModel).toEqual(['--dangerously-skip-permissions']);
+      expect(noModel).not.toContain('--model');
+      // -p is NOT in buildLaunchArgs: agy's -p takes the prompt as its value and
+      // is appended (with the instruction) by getPromptModeArgs.
+      expect(noModel).not.toContain('-p');
+      expect(noModel).not.toContain('--print');
+
+      const withModel = buildLaunchArgs('antigravity', {
+        teamName: 't',
+        workerName: 'w',
+        cwd: '/tmp',
+        model: 'Gemini 3.1 Pro (High)',
+      });
+      expect(withModel).toEqual([
+        '--dangerously-skip-permissions',
+        '--model',
+        'Gemini 3.1 Pro (High)',
+      ]);
+      // approval flag precedes --model
+      expect(withModel.indexOf('--dangerously-skip-permissions')).toBeLessThan(
+        withModel.indexOf('--model'),
+      );
+    });
+    it('antigravity appends extraFlags after the model flag', () => {
+      const args = buildLaunchArgs('antigravity', {
+        teamName: 't',
+        workerName: 'w',
+        cwd: '/tmp',
+        model: 'm',
+        extraFlags: ['--foo'],
+      });
+      expect(args).toEqual([
+        '--dangerously-skip-permissions',
+        '--model',
+        'm',
+        '--foo',
+      ]);
     });
     it('grok includes --always-approve with no model and appends --model <m> when given', () => {
       const noModel = buildLaunchArgs('grok', {
@@ -757,6 +868,18 @@ describe('model-contract', () => {
       const c = getContract('grok');
       expect(c.supportsPromptMode).toBe(true);
       expect(c.promptModeFlag).toBe('-p');
+    });
+
+    it('antigravity supports prompt mode', () => {
+      expect(isPromptModeAgent('antigravity')).toBe(true);
+      const c = getContract('antigravity');
+      expect(c.supportsPromptMode).toBe(true);
+      expect(c.promptModeFlag).toBe('-p');
+    });
+
+    it('getPromptModeArgs returns flag + instruction for antigravity', () => {
+      const args = getPromptModeArgs('antigravity', 'Read inbox');
+      expect(args).toEqual(['-p', 'Read inbox']);
     });
 
     it('getPromptModeArgs returns flag + instruction for grok', () => {

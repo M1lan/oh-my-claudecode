@@ -1,65 +1,42 @@
-# oh-my-claudecode v4.14.7: Team launcher, Windows tmux hardening, agent model routing
+# oh-my-claudecode v4.15.0: add antigravity (agy), surface usage hint
 
 ## Release Notes
 
-Patch release with **2 new features**, **11 bug fixes**, and **2 CI/test hardening updates** across the post-`v4.14.6` dev line.
+Release with **2 new features**, **8 bug fixes**, **2 other changes** across **22 merged PRs**.
 
 ### Highlights
 
-- **fix(team): launch single-worker prose teams and spawn cmux worker panes** (#3268 / #3267)
-- **fix(tmux): strip `PSMUX_SESSION` for detached psmux creation** (#3265)
-- **feat(routing): add Claude Fable 5 tier alias and model id support** (#3247 / #3246)
-- **fix(hooks): honor `agents.<name>.model` for native Task/Agent calls** (#3243 / #3242)
-- **fix: write refreshed OAuth tokens back to Keychain** (#3239 / #3238)
+- **feat(providers): add antigravity (agy) CLI as drop-in alternative to gemini** (#3315)
+- **feat(hud): surface usage hint for API-key users when built-in usage unavailable (#3277)** (#3277)
 
 ### New Features
 
-- **feat(routing): add Claude Fable 5 tier alias and model id support** (#3247 / #3246)
-- **[codex] add Cursor provider support** (#3251)
+- **feat(providers): add antigravity (agy) CLI as drop-in alternative to gemini** (#3315)
+- **feat(hud): surface usage hint for API-key users when built-in usage unavailable (#3277)** (#3277)
 
 ### Bug Fixes
 
-- **fix(team): launch single-worker prose teams and spawn cmux worker panes** (#3268 / #3267)
-- **fix(tmux): strip `PSMUX_SESSION` for detached psmux creation** (#3265)
-- **fix(post-tool-use-failure): add `DISABLE_OMC` / `OMC_SKIP_HOOKS` skip guard** (#3255 / #3253)
-- **fix(hooks): reconcile unmatched subagent fork stop events** (#3254 / #3252)
-- **fix(hooks): honor `agents.<name>.model` for native Task/Agent calls** (#3243 / #3242)
-- **fix(hooks): add `async:true` to SessionEnd hooks to prevent Windows shutdown cancellation** (#3241 / #3240)
-- **fix: write refreshed OAuth tokens back to Keychain** (#3239 / #3238)
-- **fix(wiki): create `environment.md` via dedicated reserved-safe write path** (#3237 / #3219)
-- **fix(agents): make verifier agent read-only** (#3236)
-- **fix(hooks): suppress verify-deliverables SubagentStop reinjection** (#3235 / #3233)
-- **fix(agents): extend final-output contract to advisory agents** (#3232)
+- **fix(hooks): encode project paths in transcript resolution**
+- **fix(jsonc): tolerate trailing commas in JSONC config files**
+- **fix(post-tool-rules-injector): honor existing skip guards**
+- **fix(team): verify cursor worker start submission** (#3296)
+- **fix: configurable magic keyword triggers** (#3289)
+- **fix(persistent-mode): bound thinking-only continuation loops** (#3280)
+- **fix(session-search): fix Windows worktree transcript resolution + converge the encoder** (#3276)
+- **fix(session-search): strip drive colon so current-scope search finds transcripts on Windows** (#3274)
 
-### CI / Test Hardening
+### Documentation
 
-- **ci(npm-pack-test): harden global tarball install against `ENOTEMPTY` rename** (#3257)
-- **ci(upgrade-test): harden v4.9.3 npm install against `ENOTEMPTY` rename failure/hang** (#3256)
-- **test(hud): cover z.ai Anthropic endpoint routing** (#3231)
+- **docs(release): include PR #3300 in v4.14.8 notes**
+- **docs: clarify psmux Windows team caveats** (#3312)
+- **docs: clarify OMC automation and SDK surfaces**
+- **docs: audit Claude Code changelog compatibility** (#3303)
 
-### Docs / Metadata
+### Other Changes
 
-- Add curated geobench profile, visibility spec, and schema follow-ups.
+- **ci: run path-handling tests on a real Windows runner**
+- **ci: move workflows to GitHub-hosted runners** (#3287)
 
 ### Stats
 
-- **16 PR-linked updates** | **2 new features** | **11 bug fixes** | **3 CI/test hardening updates**
-
-### Install / Update
-
-```bash
-pnpm add -g oh-my-claude-sisyphus@4.14.7
-```
-
-Or reinstall the plugin:
-```bash
-claude /install-plugin oh-my-claudecode
-```
-
-**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.14.6...v4.14.7
-
-## Contributors
-
-Thank you to all contributors who made this release possible!
-
-@Yeachan-Heo
+- **22 PRs merged** | **2 new features** | **8 bug fixes** | **0 security/hardening improvements** | **2 other changes**

@@ -875,7 +875,7 @@ export async function launchCommand(args: string[]): Promise<void> {
     console.error(
       '[omc] Error: claude CLI not found. Install Claude Code first:',
     );
-    console.error('  pnpm add -g @anthropic-ai/claude-code');
+    console.error('  https://code.claude.com/docs/en/setup');
     process.exit(1);
   }
 

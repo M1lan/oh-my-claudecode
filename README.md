@@ -64,10 +64,10 @@ Then:
 /plugin install oh-my-claudecode
 ```
 
-If you prefer the pnpm CLI/runtime path instead of the marketplace flow:
+If you prefer the npm CLI/runtime path instead of the marketplace flow:
 
 ```bash
-pnpm add -g oh-my-claude-sisyphus@latest
+npm i -g oh-my-claude-sisyphus@latest
 ```
 
 > **Known npm warning:** npm may print `deprecated prebuild-install@7.1.3` during the CLI install.
@@ -106,16 +106,22 @@ That's it. Everything else is automatic.
 
 OMC exposes two different surfaces:
 
-- **Terminal CLI commands**: run `omc ...` from your shell after installing the pnpm/runtime path (`pnpm add -g oh-my-claude-sisyphus@latest`) or from a local checkout.
+- **Terminal CLI commands**: run `omc ...` from your shell after installing the npm/runtime path (`npm i -g oh-my-claude-sisyphus@latest`) or from a local checkout.
 - **In-session skills**: run `/...` inside a Claude Code session after installing the plugin/setup flow.
 
 | Feature                                        | Terminal CLI                                  | In-session skill                                                        | Notes                                                                                                                                |
 | ---------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Setup                                          | `omc setup`                                   | `/setup` or `/omc-setup`                                                | Both are real entrypoints. `/setup` is the easiest plugin-first path.                                                                |
-| Ask providers                                  | `omc ask codex "review this patch"`           | `/ask codex "review this patch"`                                        | Both route through the same advisor flow. Providers: `claude`, `codex`, `gemini`, `grok`, `cursor`.                                            |
+| Ask providers                                  | `omc ask codex "review this patch"`           | `/ask codex "review this patch"`                                        | Both route through the same advisor flow. Providers: `claude`, `codex`, `gemini`, `antigravity`, `grok`, `cursor`.                                            |
 | Team orchestration                             | `omc team 2:codex "review auth flow"`         | `/team 3:executor "fix all TypeScript errors"`                          | Both exist, but they are different runtimes: `omc team` launches tmux CLI workers; `/team` runs the in-session native team workflow. |
 | Autopilot / Ralph / Ultrawork / Deep Interview | —                                             | `/autopilot ...`, `/ralph ...`, `/ultrawork ...`, `/deep-interview ...` | These are in-session skills. There is no `omc autopilot` / `omc ralph` / `omc ultrawork` CLI subcommand in this repo.                |
 | Autoresearch                                   | `omc autoresearch` (**hard-deprecated shim**) | `/deep-interview --autoresearch ...` + `/oh-my-claudecode:autoresearch` | Setup stays in deep-interview; execution now belongs to the stateful skill.                                                          |
+
+### VS Code, Agent SDK, and automation scope
+
+- **VS Code / IDE extension**: OMC does not ship a VS Code extension and does not document extension-specific install or automation flows. Use the Claude Code plugin or terminal CLI surfaces above; IDE integrations are only an optional way to access Claude Code itself.
+- **Agent SDK / programmatic usage**: the npm package exports TypeScript helpers such as `createOmcSession()` and prompt expansion utilities for local Node.js programs using `@anthropic-ai/claude-agent-sdk`. This is a library surface, not a replacement for the Claude Code plugin UI.
+- **CI/CD and headless automation**: prefer deterministic terminal commands (`omc setup`, `omc ask`, `omc session search`, repository scripts such as `npm run sync-metadata:verify`) and set `ANTHROPIC_API_KEY` or provider-specific CLI auth in the runner environment. Do not rely on interactive slash commands (`/autopilot`, `/ralph`, `/team`) in CI; they require an active Claude Code session.
 
 ### Not Sure Where to Start?
 
@@ -153,14 +159,16 @@ Enable Claude Code native teams in `~/.claude/settings.json`:
 
 > If teams are disabled, OMC will warn you and fall back to non-team execution where possible.
 
-### tmux CLI Workers — Codex & Gemini (v4.4.0+)
+### tmux CLI Workers — Codex, Gemini & Antigravity (v4.4.0+)
 
 **v4.4.0 removes the Codex/Gemini MCP servers** (`x`, `g` providers). Use the CLI-first Team runtime (`omc team ...`) to spawn real tmux worker panes:
 
 ```bash
 omc team 2:codex "review auth module for security issues"
 omc team 2:gemini "redesign UI components for accessibility"
+omc team 2:antigravity "redesign UI components for accessibility"
 omc team 1:claude "implement the payment flow"
+omc team 1:cursor "implement the payment flow"
 omc team status auth-review
 omc team shutdown auth-review
 ```
@@ -173,29 +181,44 @@ For mixed Codex + Gemini work in one command, use the **`/ccg`** skill (routes v
 /ccg Review this PR — architecture (Codex) and UI components (Gemini)
 ```
 
-| Surface                   | Workers                  | Best For                                     |
-| ------------------------- | ------------------------ | -------------------------------------------- |
-| `omc team N:codex "..."`  | N Codex CLI panes        | Code review, security analysis, architecture |
-| `omc team N:gemini "..."` | N Gemini CLI panes       | UI/UX design, docs, large-context tasks      |
-| `omc team N:grok "..."`   | N Grok Build CLI panes   | Code review, analysis cross-check            |
-| `omc team N:claude "..."` | N Claude CLI panes       | General tasks via Claude CLI in tmux         |
-| `/ccg`                    | /ask codex + /ask gemini | Tri-model advisor synthesis                  |
+| Surface                         | Workers                       | Best For                                     |
+| ------------------------------- | ----------------------------- | -------------------------------------------- |
+| `omc team N:codex "..."`        | N Codex CLI panes             | Code review, security analysis, architecture |
+| `omc team N:gemini "..."`       | N Gemini CLI panes            | UI/UX design, docs, large-context tasks (enterprise/API-key) |
+| `omc team N:antigravity "..."`  | N Antigravity (`agy`) panes   | UI/UX design, docs, large-context tasks                      |
+| `omc team N:grok "..."`         | N Grok Build CLI panes        | Code review, analysis cross-check            |
+| `omc team N:cursor "..."`       | N Cursor agent panes          | Executor-style implementation tasks          |
+| `omc team N:claude "..."`       | N Claude CLI panes            | General tasks via Claude CLI in tmux         |
+| `/ccg`                          | /ask codex + /ask gemini      | Tri-model advisor synthesis                  |
 
-Workers spawn on-demand and die when their task completes — no idle resource usage. Requires `codex` / `gemini` CLIs installed and an active tmux session.
+Workers spawn on-demand and die when their task completes — no idle resource usage. Requires the selected CLI (`codex`, `gemini`, `agy` (antigravity), `grok`, or `cursor-agent`) installed/authenticated and an active tmux session.
+
+Autopilot can prefer Cursor executor workers during team execution via `.claude/omc.jsonc`:
+
+```jsonc
+{
+  "autopilot": {
+    "execution": "team",
+    "team": { "agentTypes": ["cursor"] }
+  }
+}
+```
+
+This config makes the autopilot execution stage use `omc team 1:cursor "..."` or `/omc-teams 1:cursor "..."` for executor-style implementation work. Reviewer, critic, security-review, validation verdict, and final approval roles remain native Claude/OMC reviewer roles; Cursor requires an installed/authenticated `cursor-agent`.
 
 Native team worker worktrees are being added behind an opt-in/config gate. See [Native Team Worktree Mode](docs/TEAM-WORKTREE-MODE.md) for the workspace contract, canonical state-root rules, dirty-worktree preservation policy, and verification checklist.
 
-> **Note: Package naming** — The project is branded as **oh-my-claudecode** (repo, plugin, commands), but the npm package is published as [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). If you install or upgrade the CLI tools via pnpm/bun, use `pnpm add -g oh-my-claude-sisyphus@latest`; the package installs both `oh-my-claudecode` and the short `omc` command aliases.
+> **Note: Package naming** — The project is branded as **oh-my-claudecode** (repo, plugin, commands), but the npm package is published as [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). If you install or upgrade the CLI tools via npm/bun, use `npm i -g oh-my-claude-sisyphus@latest`; the package installs both `oh-my-claudecode` and the short `omc` command aliases.
 
 ### Updating
 
-If you installed OMC via pnpm, upgrade with the published package name:
+If you installed OMC via npm, upgrade with the published package name:
 
 ```bash
-pnpm add -g oh-my-claude-sisyphus@latest
+npm i -g oh-my-claude-sisyphus@latest
 ```
 
-> **Package naming note:** the repo, plugin, and commands are branded **oh-my-claudecode**, but the published package name remains `oh-my-claude-sisyphus`. Global installs expose both `oh-my-claudecode` and `omc`; examples prefer `omc` for brevity.
+> **Package naming note:** the repo, plugin, and commands are branded **oh-my-claudecode**, but the published npm package name remains `oh-my-claude-sisyphus`. npm installs expose both `oh-my-claudecode` and `omc`; examples prefer `omc` for brevity.
 
 If you installed OMC via the Claude Code marketplace/plugin flow, update with:
 
@@ -247,7 +270,7 @@ Multiple strategies for different use cases — from Team-backed orchestration t
 | Mode                        | What it is                                                                              | Use For                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Team (recommended)**      | Canonical staged pipeline (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Coordinated Claude agents on a shared task list                         |
-| **omc team (CLI)**          | tmux CLI workers — real `claude`/`codex`/`gemini`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
+| **omc team (CLI)**          | tmux CLI workers — real `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Antigravity/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
 | **ccg**                     | Tri-model advisors via `/ask codex` + `/ask gemini`, Claude synthesizes                 | Mixed backend+UI work needing both Codex and Gemini                     |
 | **Autopilot**               | Autonomous execution (single lead agent)                                                | End-to-end feature work with minimal ceremony                           |
 | **Ultrawork**               | Maximum parallelism (non-team)                                                          | Burst parallel fixes/refactors where Team isn't needed                  |
@@ -310,6 +333,12 @@ Wrap handler at server.py:42 in try/except ClientDisconnectedError...
 
 Project-scoped OMC-authored skills are stored in `.omc/skills/` and are intended to be committed when you want them shared. During slash/skill execution OMC also reads Claude Code workspace skills from `.claude/skills/` and compatibility skills from `.agents/skills/`, so existing workspace-local `SKILL.md` packages remain callable without copying them into user-global skills. If you create project-local skills inside a linked git worktree and do not commit them, they disappear when that worktree is removed.
 
+### `.omc/` state and git
+
+OMC writes runtime state, session data, plans, logs, handoffs, research notes, and local artifacts under `.omc/` by default. The repository `.gitignore` keeps that runtime data local with one intentional exception: `.omc/skills/**` remains committable for project-scoped skills you want to share with the team. Treat everything else under `.omc/` as local operational state that may contain prompts, transcripts, or machine-specific paths.
+
+For linked git worktrees, the default `.omc/` directory lives inside that worktree, so deleting the worktree deletes its local OMC state. Set `OMC_STATE_DIR` if you want state to survive worktree deletion, or add a `.omc-workspace` marker when several independent repos should share one parent-level state root. See [OMC state, gitignore, worktree, and workspace contract](docs/REFERENCE.md#omc-state-gitignore-worktree-and-workspace-contract).
+
 [Full feature list →](docs/REFERENCE.md)
 
 ### Multi-repo workspaces
@@ -363,6 +392,7 @@ Run local provider CLIs and save a markdown artifact under `.omc/artifacts/ask/`
 omc ask claude "review this migration plan"
 omc ask codex --prompt "identify architecture risks"
 omc ask gemini --prompt "propose UI polish ideas"
+omc ask antigravity --prompt "propose UI polish ideas"
 omc ask grok --prompt "cross-check this code review"
 omc ask cursor --prompt "apply this implementation plan"
 omc ask claude --agent-prompt executor --prompt "draft implementation steps"
@@ -370,6 +400,7 @@ omc ask claude --agent-prompt executor --prompt "draft implementation steps"
 # Inside a Claude Code / OMC session
 /ask claude "review this migration plan"
 /ask codex "identify architecture risks"
+/ask antigravity "propose UI polish ideas"
 /ask cursor "apply this implementation plan"
 ```
 
@@ -505,7 +536,7 @@ Forward Claude Code session events to an [OpenClaw](https://openclaw.ai/) gatewa
 | `OPENCLAW_REPLY_TARGET`  | Channel ID                     |
 | `OPENCLAW_REPLY_THREAD`  | Thread ID                      |
 
-See `scripts/openclaw-gateway-demo.mjs` for a reference gateway that relays OpenClaw payloads to Discord via ClawdBot.
+See `scripts/openclaw-gateway-demo.mjs` for a reference gateway that relays OpenClaw payloads to a custom HTTPS automation endpoint.
 
 ---
 
@@ -549,13 +580,16 @@ OMC features like `omc team` and rate-limit detection require **tmux**:
 
 OMC can optionally orchestrate external AI providers for cross-validation and design consistency. These are **not required** — OMC works fully without them.
 
-| Provider                                                  | Install                             | What it enables                                  |
-| --------------------------------------------------------- | ----------------------------------- | ------------------------------------------------ |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Design review, UI consistency (1M token context) |
-| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Architecture validation, code review cross-check |
-| [Grok Build](https://build.grok.com)                      | Download from build.grok.com (`grok` at `~/.grok/bin/grok`) | Code review, analysis cross-check                |
+| Provider                                                                | Install                                                      | What it enables                                                           |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| [Antigravity CLI](https://antigravity.google) (`agy`)                   | Install per the [official instructions](https://antigravity.google) (provides the `agy` binary) | Design review, UI consistency — Google's successor to the Gemini CLI |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli)               | `npm install -g @google/gemini-cli`                          | Design review, UI consistency (1M token context) — enterprise/API-key access unaffected |
+| [Codex CLI](https://github.com/openai/codex)                            | `npm install -g @openai/codex`                               | Architecture validation, code review cross-check                          |
+| [Grok Build](https://build.grok.com)                                    | Download from build.grok.com (`grok` at `~/.grok/bin/grok`) | Code review, analysis cross-check                                         |
 
-**Cost:** 3 Pro plans (Claude + Gemini + ChatGPT) cover everything for ~$60/month.
+> **Migrating from Gemini CLI:** Per Google's announcement, the Gemini CLI is being superseded by the Antigravity CLI (`agy`); see the [official Antigravity docs](https://antigravity.google). Use `omc team N:antigravity` and `omc ask antigravity` wherever you previously used `gemini`. Windows headless support for `agy` is unknown/untested — report issues upstream.
+
+**Cost:** 3 Pro plans (Claude + Antigravity/Gemini + ChatGPT) cover everything for ~$60/month.
 
 ---
 
@@ -578,19 +612,19 @@ MIT
 
 Top personal non-fork, non-archived repos from all-time OMC contributors (100+ GitHub stars).
 
-- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 36k)
-- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 3.6k)
-- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 2.4k)
-- [@BowTiedSwan](https://github.com/BowTiedSwan) — [buildflow](https://github.com/BowTiedSwan/buildflow) (⭐ 292)
-- [@J-Pster](https://github.com/J-Pster) — [Psters_AI_Workflow](https://github.com/J-Pster/Psters_AI_Workflow) (⭐ 290)
-- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 267)
-- [@jcwleo](https://github.com/jcwleo) — [random-network-distillation-pytorch](https://github.com/jcwleo/random-network-distillation-pytorch) (⭐ 262)
-- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 261)
-- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 216)
-- [@HaD0Yun](https://github.com/HaD0Yun) — [Doyunha-Gopeak](https://github.com/HaD0Yun/Doyunha-Gopeak) (⭐ 205)
+- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 37k)
+- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 3.9k)
+- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 2.6k)
+- [@BowTiedSwan](https://github.com/BowTiedSwan) — [buildflow](https://github.com/BowTiedSwan/buildflow) (⭐ 294)
+- [@J-Pster](https://github.com/J-Pster) — [Psters_AI_Workflow](https://github.com/J-Pster/Psters_AI_Workflow) (⭐ 291)
+- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 279)
+- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 270)
+- [@jcwleo](https://github.com/jcwleo) — [random-network-distillation-pytorch](https://github.com/jcwleo/random-network-distillation-pytorch) (⭐ 263)
+- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 220)
+- [@HaD0Yun](https://github.com/HaD0Yun) — [Doyunha-Gopeak](https://github.com/HaD0Yun/Doyunha-Gopeak) (⭐ 216)
 - [@emgeee](https://github.com/emgeee) — [mean-tutorial](https://github.com/emgeee/mean-tutorial) (⭐ 200)
+- [@devswha](https://github.com/devswha) — [patina](https://github.com/devswha/patina) (⭐ 176)
 - [@anduinnn](https://github.com/anduinnn) — [HiFiNi-Auto-CheckIn](https://github.com/anduinnn/HiFiNi-Auto-CheckIn) (⭐ 171)
-- [@devswha](https://github.com/devswha) — [patina](https://github.com/devswha/patina) (⭐ 156)
 - [@Znuff](https://github.com/Znuff) — [consolas-powerline](https://github.com/Znuff/consolas-powerline) (⭐ 146)
 
 <!-- OMC:FEATURED-CONTRIBUTORS:END -->

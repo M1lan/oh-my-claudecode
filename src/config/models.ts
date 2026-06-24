@@ -55,6 +55,7 @@ export const CLAUDE_FAMILY_HIGH_VARIANTS: Record<ClaudeModelFamily, string> = {
 export const BUILTIN_EXTERNAL_MODEL_DEFAULTS = {
   codexModel: 'gpt-5.3-codex',
   geminiModel: 'gemini-3.1-pro-preview',
+  antigravityModel: 'Gemini 3.1 Pro (High)',
 } as const;
 
 /**
@@ -210,11 +211,12 @@ export function getClaudeHighVariantFromModel(modelId: string): string | null {
 
 /** Get built-in default model for an external provider */
 export function getBuiltinExternalDefaultModel(
-  provider: 'codex' | 'gemini',
+  provider: 'codex' | 'gemini' | 'antigravity',
 ): string {
-  return provider === 'codex'
-    ? BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel
-    : BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
+  if (provider === 'codex') return BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel;
+  if (provider === 'antigravity')
+    return BUILTIN_EXTERNAL_MODEL_DEFAULTS.antigravityModel;
+  return BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
 }
 
 function hasBedrockModelId(modelIds: readonly string[]): boolean {

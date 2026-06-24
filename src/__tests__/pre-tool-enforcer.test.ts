@@ -361,7 +361,7 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
 
   // === Team-routing enforcement tests (issue #1006) ===
 
-  it('injects team-routing redirect when Task called without team_name during active team session', () => {
+  it('injects team-routing redirect when Task called without teammate name during active team session', () => {
     const sessionId = 'session-1006';
     writeJson(
       join(tempDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
@@ -392,10 +392,28 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       'TEAM ROUTING REQUIRED',
     );
     expect(hookSpecificOutput.additionalContext).toContain('fix-ts-errors');
-    expect(hookSpecificOutput.additionalContext).toContain('team_name=');
+    expect(hookSpecificOutput.additionalContext).toContain('name="worker-N"');
+    expect(hookSpecificOutput.additionalContext).toContain(
+      'TeamCreate and TeamDelete are removed',
+    );
+    expect(hookSpecificOutput.additionalContext).toContain(
+      'team_name for routing',
+    );
+    expect(hookSpecificOutput.additionalContext).toContain(
+      'ignored legacy metadata',
+    );
+    expect(hookSpecificOutput.additionalContext).not.toContain(
+      'CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
+    );
+    expect(hookSpecificOutput.additionalContext).not.toContain(
+      'verify CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
+    );
+    expect(hookSpecificOutput.additionalContext).not.toContain(
+      'Restart Claude Code',
+    );
   });
 
-  it('does NOT inject team-routing redirect when Task called WITH team_name', () => {
+  it('does NOT inject team-routing redirect when Task called WITH teammate name', () => {
     const sessionId = 'session-1006b';
     writeJson(
       join(tempDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
@@ -410,7 +428,6 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
       tool_name: 'Task',
       toolInput: {
         subagent_type: 'oh-my-claudecode:executor',
-        team_name: 'fix-ts-errors',
         name: 'worker-1',
         description: 'Fix type errors',
         prompt: 'Fix all type errors in src/auth/',
@@ -431,6 +448,104 @@ describe('pre-tool-enforcer fallback gating (issue #970)', () => {
     expect(String(hookSpecificOutput.additionalContext)).toContain(
       'Spawning agent',
     );
+  });
+
+  it('injects team-routing redirect when Agent called without teammate name during active team session', () => {
+    const sessionId = 'session-3323-agent';
+    writeJson(
+      join(tempDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      {
+        active: true,
+        session_id: sessionId,
+        team_name: 'native-team-compat',
+      },
+    );
+
+    const output = runPreToolEnforcer({
+      tool_name: 'Agent',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:executor',
+        description: 'Fix type errors',
+        prompt: 'Fix all type errors in src/auth/',
+      },
+      cwd: tempDir,
+      session_id: sessionId,
+    });
+
+    const hookSpecificOutput = output.hookSpecificOutput as Record<
+      string,
+      unknown
+    >;
+    const context = String(hookSpecificOutput.additionalContext);
+    expect(output.continue).toBe(true);
+    expect(context).toContain('TEAM ROUTING REQUIRED');
+    expect(context).toContain('native-team-compat');
+    expect(context).toContain('name="worker-N"');
+    expect(context).toContain('TeamCreate and TeamDelete are removed');
+    expect(context).not.toContain(
+      'verify CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS',
+    );
+    expect(context).not.toContain('CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS');
+    expect(context).not.toContain('Restart Claude Code');
+  });
+
+  it('does NOT inject team-routing redirect when Agent called WITH teammate name', () => {
+    const sessionId = 'session-3323-agent-named';
+    writeJson(
+      join(tempDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      {
+        active: true,
+        session_id: sessionId,
+        team_name: 'native-team-compat',
+      },
+    );
+
+    const output = runPreToolEnforcer({
+      tool_name: 'Agent',
+      toolInput: {
+        subagent_type: 'oh-my-claudecode:executor',
+        name: 'worker-1',
+        description: 'Fix type errors',
+        prompt: 'Fix all type errors in src/auth/',
+      },
+      cwd: tempDir,
+      session_id: sessionId,
+    });
+
+    const hookSpecificOutput = output.hookSpecificOutput as Record<
+      string,
+      unknown
+    >;
+    const context = String(hookSpecificOutput.additionalContext);
+    expect(output.continue).toBe(true);
+    expect(context).not.toContain('TEAM ROUTING REQUIRED');
+    expect(context).toContain('Spawning agent');
+  });
+
+  it('keeps team skill guidance on the Claude Code 2.1.x implicit team contract', () => {
+    const skillSource = readFileSync(
+      join(process.cwd(), 'skills', 'team', 'SKILL.md'),
+      'utf-8',
+    );
+
+    expect(skillSource).toContain('implicit Claude Code team');
+    expect(skillSource).toContain('Agent/Task');
+    expect(skillSource).toContain('name="worker-N"');
+    expect(skillSource).toContain('Do **not** call `TeamCreate`');
+    expect(skillSource).toContain('no `TeamDelete`');
+    expect(
+      skillSource
+        .split('\n')
+        .filter(
+          (line) =>
+            /call\s+`?TeamCreate/i.test(line) &&
+            !/not.*call\s+`?TeamCreate/i.test(line),
+        ),
+    ).toEqual([]);
+    expect(skillSource).not.toMatch(/TeamCreate\s*\(/);
+    expect(skillSource).not.toMatch(/TeamDelete\s*\(/);
+    expect(skillSource).not.toContain('If `TeamCreate` is not available');
+    expect(skillSource).not.toContain('Restart Claude Code');
   });
 
   it('does NOT inject team-routing redirect when no team state is active', () => {

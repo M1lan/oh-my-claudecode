@@ -100,6 +100,8 @@ export function getTeamMembers(
       else if (worker.agentType === 'tmux-claude') backend = 'tmux-claude';
       else if (worker.agentType === 'tmux-codex') backend = 'tmux-codex';
       else if (worker.agentType === 'tmux-gemini') backend = 'tmux-gemini';
+      else if (worker.agentType === 'tmux-antigravity')
+        backend = 'tmux-antigravity';
       else backend = 'mcp-codex';
       const capabilities = getDefaultCapabilities(backend);
 

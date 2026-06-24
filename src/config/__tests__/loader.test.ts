@@ -468,7 +468,7 @@ describe('team.roleRouting (Option E)', () => {
     }
   });
 
-  it('accepts cursor as team defaultAgentType and roleRouting provider', () => {
+  it('accepts cursor as team defaultAgentType and executor roleRouting provider', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'omc-team-routing-cursor-'));
     try {
       const claudeDir = join(tempDir, '.claude');
@@ -490,6 +490,32 @@ describe('team.roleRouting (Option E)', () => {
       expect(config.team?.roleRouting?.executor).toEqual({
         provider: 'cursor',
       });
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects cursor for non-executor team roleRouting providers', () => {
+    const tempDir = mkdtempSync(
+      join(tmpdir(), 'omc-team-routing-cursor-reviewer-'),
+    );
+    try {
+      const claudeDir = join(tempDir, '.claude');
+      require('node:fs').mkdirSync(claudeDir, { recursive: true });
+      writeFileSync(
+        join(claudeDir, 'omc.jsonc'),
+        JSON.stringify({
+          team: {
+            roleRouting: {
+              'code-reviewer': { provider: 'cursor' },
+            },
+          },
+        }),
+      );
+      process.chdir(tempDir);
+      expect(() => loadConfig()).toThrow(
+        /cursor is only supported for executor-style roles/,
+      );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -724,5 +750,62 @@ describe('delegation routing deprecation warnings', () => {
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('loadConfig() — autopilot team worker config', () => {
+  const originalCwd = process.cwd();
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'omc-autopilot-config-'));
+    process.chdir(tempDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('loads autopilot.execution=team with Cursor team agentTypes', () => {
+    require('node:fs').mkdirSync(join(tempDir, '.claude'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.claude', 'omc.jsonc'),
+      `{
+        "autopilot": {
+          "execution": "team",
+          "team": { "agentTypes": ["cursor"] }
+        }
+      }`,
+    );
+
+    const config = loadConfig();
+
+    expect(config.autopilot?.execution).toBe('team');
+    expect(config.autopilot?.team?.agentTypes).toEqual(['cursor']);
+  });
+
+  it('rejects unsupported autopilot team agentTypes', () => {
+    require('node:fs').mkdirSync(join(tempDir, '.claude'), { recursive: true });
+    writeFileSync(
+      join(tempDir, '.claude', 'omc.jsonc'),
+      `{
+        "autopilot": {
+          "execution": "team",
+          "team": { "agentTypes": ["security-review"] }
+        }
+      }`,
+    );
+
+    expect(() => loadConfig()).toThrow(/autopilot\.team\.agentTypes/);
+  });
+
+  it('advertises autopilot.team.agentTypes in generated config schema', () => {
+    const schema = generateConfigSchema() as {
+      properties?: Record<string, { properties?: Record<string, unknown> }>;
+    };
+
+    expect(schema.properties?.autopilot).toBeDefined();
+    expect(schema.properties?.autopilot?.properties?.team).toBeDefined();
   });
 });

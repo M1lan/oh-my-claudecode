@@ -156,6 +156,15 @@ describe('stage-router resolveRoleAssignment', () => {
       expect(out.agent).toBe('executor');
     });
 
+    it('rejects provider=cursor for reviewer/verdict roles', () => {
+      const cfg: PluginConfig = {
+        team: { roleRouting: { 'code-reviewer': { provider: 'cursor' } } },
+      };
+      expect(() => resolveRoleAssignment('code-reviewer', cfg)).toThrow(
+        /cursor is only supported for executor-style roles/,
+      );
+    });
+
     it('grok resolves configured externalModels.defaults.grokModel when model omitted', () => {
       const cfg: PluginConfig = {
         externalModels: { defaults: { grokModel: 'grok-code-fast-1' } },

@@ -74,6 +74,8 @@ vi.mock('../model-contract.js', () => ({
   isPromptModeAgent: modelContractMocks.isPromptModeAgent,
   getPromptModeArgs: modelContractMocks.getPromptModeArgs,
   resolveClaudeWorkerModel: modelContractMocks.resolveClaudeWorkerModel,
+  assertHeadlessSupported: () => {},
+  isHeadlessSupportedOnPlatform: () => true,
 }));
 
 vi.mock('../tmux-session.js', async (importOriginal) => {

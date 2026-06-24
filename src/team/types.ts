@@ -31,7 +31,7 @@ export interface BridgeConfig {
 export interface BridgeWorkerPermissions {
   allowedPaths: string[]; // glob patterns relative to workingDirectory
   deniedPaths: string[]; // glob patterns that override allowed
-  allowedCommands: string[]; // command prefixes (e.g., 'pnpm test', 'tsc')
+  allowedCommands: string[]; // command prefixes (e.g., 'npm test', 'tsc')
   maxFileSize: number; // max bytes per file write
 }
 
@@ -117,7 +117,7 @@ export interface McpWorkerMember {
 export interface HeartbeatData {
   workerName: string;
   teamName: string;
-  provider: 'codex' | 'gemini' | 'claude' | 'cursor' | 'grok';
+  provider: 'codex' | 'gemini' | 'claude' | 'cursor' | 'grok' | 'antigravity';
   pid: number;
   lastPollAt: string; // ISO timestamp of last poll cycle
   currentTaskId?: string; // task being executed, if any
@@ -160,7 +160,8 @@ export type WorkerBackend =
   | 'tmux-codex'
   | 'tmux-gemini'
   | 'tmux-cursor'
-  | 'tmux-grok';
+  | 'tmux-grok'
+  | 'tmux-antigravity';
 
 /** Worker capability tag */
 export type WorkerCapability =
@@ -304,7 +305,13 @@ export interface WorkerInfo {
   name: string;
   index: number;
   role: string;
-  worker_cli?: 'codex' | 'claude' | 'gemini' | 'cursor' | 'grok';
+  worker_cli?:
+    | 'codex'
+    | 'claude'
+    | 'gemini'
+    | 'cursor'
+    | 'grok'
+    | 'antigravity';
   assigned_tasks: string[];
   pid?: number;
   pane_id?: string;

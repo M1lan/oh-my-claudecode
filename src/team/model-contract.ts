@@ -9,7 +9,13 @@ import {
 } from '../config/models.js';
 import { isExternalLLMDisabled } from '../lib/security-config.js';
 
-export type CliAgentType = 'claude' | 'codex' | 'gemini' | 'cursor' | 'grok';
+export type CliAgentType =
+  | 'claude'
+  | 'codex'
+  | 'gemini'
+  | 'cursor'
+  | 'grok'
+  | 'antigravity';
 
 export interface CliAgentContract {
   agentType: CliAgentType;
@@ -222,7 +228,7 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
   codex: {
     agentType: 'codex',
     binary: 'codex',
-    installInstructions: 'Install Codex CLI: pnpm add -g @openai/codex',
+    installInstructions: 'Install Codex CLI: npm install -g @openai/codex',
     // Team workers must be persistent interactive panes. Do not use `codex exec`
     // or positional prompt mode here; runtime dispatch writes inbox.md and nudges
     // the live Codex TUI with `codex` as the worker process.
@@ -254,7 +260,8 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
   gemini: {
     agentType: 'gemini',
     binary: 'gemini',
-    installInstructions: 'Install Gemini CLI: pnpm add -g @google/gemini-cli',
+    installInstructions:
+      'Install Gemini CLI: npm install -g @google/gemini-cli',
     supportsPromptMode: true,
     promptModeFlag: '-p',
     buildLaunchArgs(model?: string, extraFlags: string[] = []): string[] {
@@ -274,6 +281,27 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
     promptModeFlag: '-p',
     buildLaunchArgs(model?: string, extraFlags: string[] = []): string[] {
       const args = ['--always-approve'];
+      if (model) args.push('--model', model);
+      return [...args, ...extraFlags];
+    },
+    parseOutput(rawOutput: string): string {
+      return rawOutput.trim();
+    },
+  },
+  antigravity: {
+    agentType: 'antigravity',
+    binary: 'agy',
+    installInstructions:
+      'Install the Antigravity CLI (agy) per the official instructions at https://antigravity.google, then verify with `agy --version`.',
+    supportsPromptMode: true,
+    promptModeFlag: '-p',
+    buildLaunchArgs(model?: string, extraFlags: string[] = []): string[] {
+      // agy's `-p`/`--print` is appended by getPromptModeArgs as `-p <instruction>`,
+      // where the prompt is the VALUE of `-p` (not a boolean). All other flags
+      // MUST precede that `-p`, so buildLaunchArgs returns only the leading flags
+      // (like grok). --dangerously-skip-permissions suppresses approval prompts,
+      // so no trust-confirm send-keys is needed (unlike gemini). Verified agy 1.0.10.
+      const args = ['--dangerously-skip-permissions'];
       if (model) args.push('--model', model);
       return [...args, ...extraFlags];
     },
@@ -376,6 +404,10 @@ export function isCliAvailable(agentType: CliAgentType): boolean {
 }
 
 export function validateCliAvailable(agentType: CliAgentType): void {
+  // Platform support first: a clear "unsupported on this OS" error is more useful
+  // than a binary-not-found message when the binary exists but headless mode is
+  // unsupported here (e.g. antigravity on Windows).
+  assertHeadlessSupported(agentType);
   if (!isCliAvailable(agentType)) {
     const contract = getContract(agentType);
     throw new Error(
@@ -445,6 +477,8 @@ const WORKER_MODEL_ENV_ALLOWLIST = [
   'OMC_GEMINI_DEFAULT_MODEL',
   'OMC_EXTERNAL_MODELS_DEFAULT_GROK_MODEL',
   'OMC_GROK_DEFAULT_MODEL',
+  'OMC_EXTERNAL_MODELS_DEFAULT_ANTIGRAVITY_MODEL',
+  'OMC_ANTIGRAVITY_DEFAULT_MODEL',
 ] as const;
 
 export function getWorkerEnv(
@@ -543,6 +577,35 @@ export function resolveClaudeWorkerModel(
  * Get the extra CLI args needed to pass an instruction in prompt mode.
  * Returns empty array if the agent does not support prompt mode.
  */
+/**
+ * Whether a CLI agent's headless/prompt mode is supported on the given platform.
+ * Antigravity (`agy`) `-p`/`--print` takes the prompt as an argv value and cannot
+ * read it from stdin; on Windows that argv path is unreliable and `agy` has known
+ * upstream Windows `-p` limitations. This centralizes the same platform support
+ * decision the advisor (`scripts/run-provider-advisor.js`) enforces for `omc ask`.
+ */
+export function isHeadlessSupportedOnPlatform(
+  agentType: CliAgentType,
+  platform: NodeJS.Platform = process.platform,
+): boolean {
+  if (agentType === 'antigravity' && platform === 'win32') {
+    return false;
+  }
+  return true;
+}
+
+/** Throw a clear, actionable error if the agent's headless mode is unsupported here. */
+export function assertHeadlessSupported(agentType: CliAgentType): void {
+  if (!isHeadlessSupportedOnPlatform(agentType)) {
+    throw new Error(
+      `CLI agent '${agentType}' headless/prompt mode is not supported on Windows: ` +
+        `\`agy --print\` takes the prompt as an argv value (it cannot read stdin) and has ` +
+        `known upstream Windows \`-p\` limitations. Run '${agentType}' team workers on ` +
+        `macOS/Linux, or use the 'gemini' provider on Windows.`,
+    );
+  }
+}
+
 export function getPromptModeArgs(
   agentType: CliAgentType,
   instruction: string,
@@ -551,6 +614,10 @@ export function getPromptModeArgs(
   if (!contract.supportsPromptMode) {
     return [];
   }
+  // Centralized platform guard: refuse unsupported headless paths (e.g. antigravity
+  // on Windows) before building `-p <prompt>`, so the team path fails clearly here
+  // instead of attempting an unreliable argv spawn that fails/hangs opaquely.
+  assertHeadlessSupported(agentType);
   // If a flag is defined (e.g. gemini's '-p'), prepend it; otherwise the
   // instruction is passed as a positional argument (e.g. codex [PROMPT]).
   if (contract.promptModeFlag) {

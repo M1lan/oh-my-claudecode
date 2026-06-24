@@ -16,6 +16,46 @@ export interface AgentConfig {
   defaultModel?: string;
 }
 
+export type AutopilotExecutionBackend = 'team' | 'solo';
+export type AutopilotPlanningMode = 'ralplan' | 'direct' | false;
+export type AutopilotTeamAgentType =
+  | 'claude'
+  | 'codex'
+  | 'gemini'
+  | 'grok'
+  | 'cursor'
+  | 'antigravity';
+
+export interface AutopilotConfigBlock {
+  /** Maximum total iterations across all phases. */
+  maxIterations?: number;
+  /** Maximum QA test-fix cycles. */
+  maxQaCycles?: number;
+  /** Maximum validation rounds before giving up. */
+  maxValidationRounds?: number;
+  /** Pause for user confirmation after expansion. */
+  pauseAfterExpansion?: boolean;
+  /** Pause for user confirmation after planning. */
+  pauseAfterPlanning?: boolean;
+  /** Skip QA phase entirely. */
+  skipQa?: boolean;
+  /** Skip validation phase entirely. */
+  skipValidation?: boolean;
+  /** Planning stage: 'ralplan' for consensus, 'direct' for simple planning, false to skip. */
+  planning?: AutopilotPlanningMode;
+  /** Execution backend: 'team' for multi-worker execution, 'solo' for current-session execution. */
+  execution?: AutopilotExecutionBackend;
+  /** Verification config, or false to skip verification. */
+  verification?: { engine: 'ralph'; maxIterations: number } | false;
+  /** Whether to run QA build/lint/test cycling. */
+  qa?: boolean;
+  /** Team execution options used when execution is 'team'. */
+  team?: {
+    /** Preferred CLI worker types for executor-style implementation tasks. */
+    agentTypes?: AutopilotTeamAgentType[];
+  };
+}
+
 export interface PluginConfig {
   // Agent model overrides
   agents?: {
@@ -138,6 +178,9 @@ export interface PluginConfig {
 
   // /team role routing configuration (scoped to /team only; distinct from delegationRouting)
   team?: TeamConfigBlock;
+
+  // /autopilot pipeline and team execution configuration
+  autopilot?: AutopilotConfigBlock;
 
   // Plan output configuration (issue #1636)
   planOutput?: {
@@ -276,7 +319,7 @@ export interface HookResult {
 /**
  * External model provider type
  */
-export type ExternalModelProvider = 'codex' | 'gemini';
+export type ExternalModelProvider = 'codex' | 'gemini' | 'antigravity';
 
 /**
  * External model configuration for a specific role or task
@@ -294,6 +337,7 @@ export interface ExternalModelsDefaults {
   codexModel?: string;
   geminiModel?: string;
   grokModel?: string;
+  antigravityModel?: string;
 }
 
 /**
@@ -414,13 +458,17 @@ export const CANONICAL_TEAM_ROLES = [
 
 export type CanonicalTeamRole = (typeof CANONICAL_TEAM_ROLES)[number];
 
+/** Cursor team workers are currently supported only for executor-style tasks. */
+export const CURSOR_EXECUTOR_TEAM_ROLES = ['executor'] as const;
+
 /** Provider for /team role routing. */
 export type TeamRoleProvider =
   | 'claude'
   | 'codex'
   | 'gemini'
   | 'grok'
-  | 'cursor';
+  | 'cursor'
+  | 'antigravity';
 
 /** Tier name accepted in role-assignment `model` field. */
 export type TeamRoleTier = 'HIGH' | 'MEDIUM' | 'LOW';
