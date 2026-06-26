@@ -23,7 +23,7 @@ describe('antigravity is rejected by the MCP team backend', () => {
     // so antigravity can never spawn an MCP bridge subprocess.
     expect(bridgeSource).toContain("Must be 'codex' or 'gemini'");
     expect(bridgeSource).toContain(
-      'provider !== "codex" && provider !== "gemini"',
+      "provider !== 'codex' && provider !== 'gemini'",
     );
     // The provider literal type stays codex/gemini-only; antigravity is absent.
     expect(bridgeSource).not.toMatch(/['"]antigravity['"]/);

@@ -210,7 +210,7 @@ describe('release generation', () => {
 
   it('configures the workflow to use one custom release body source with github auth', () => {
     const workflow = readFileSync(
-      resolve(process.cwd(), '.github/workflows/release.yml'),
+      resolve(process.cwd(), '.github/workflows/release.yml.disabled'),
       'utf-8',
     );
 

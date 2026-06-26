@@ -809,12 +809,21 @@ describe('doctor-conflicts: legacy skills collision check (issue #1101)', () => 
     }
     resetTestDirs();
     mkdirSync(TEST_PROJECT_CLAUDE_DIR, { recursive: true });
+    // Isolate ambient OMC env so runConflictCheck() reflects only the
+    // fixtures under test, not the developer's shell or real ~/.omc state.
+    delete process.env.OMC_SKIP_HOOKS;
+    delete process.env.DISABLE_OMC;
+    process.env.OMC_MCP_REGISTRY_PATH = join(
+      TEST_PROJECT_DIR,
+      'no-mcp-registry.json',
+    );
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
   });
 
   afterEach(() => {
     cwdSpy?.mockRestore();
     delete process.env.CLAUDE_PLUGIN_ROOT;
+    delete process.env.OMC_MCP_REGISTRY_PATH;
     for (const dir of [TEST_CLAUDE_DIR, TEST_PROJECT_DIR]) {
       if (dir && existsSync(dir)) {
         rmSync(dir, { recursive: true, force: true });
@@ -1015,6 +1024,10 @@ describe('doctor-conflicts: config known fields (issue #1499)', () => {
     );
     process.env.OMC_HOME = join(TEST_PROJECT_DIR, '.omc');
     process.env.CODEX_HOME = join(TEST_PROJECT_DIR, '.codex');
+    // Isolate ambient OMC env so runConflictCheck() reflects only the
+    // config fixture under test, not the developer's shell flags.
+    delete process.env.OMC_SKIP_HOOKS;
+    delete process.env.DISABLE_OMC;
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
   });
 
@@ -1117,6 +1130,15 @@ describe('doctor-conflicts: workspace marker check (Wave F.2)', () => {
     cwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(TEST_PROJECT_DIR);
     savedOmcStateDir = process.env.OMC_STATE_DIR;
     delete process.env.OMC_STATE_DIR;
+    // Isolate ambient OMC env so runConflictCheck() reflects only the
+    // workspace-marker state under test, not the developer's shell flags
+    // or real ~/.omc MCP registry.
+    delete process.env.OMC_SKIP_HOOKS;
+    delete process.env.DISABLE_OMC;
+    process.env.OMC_MCP_REGISTRY_PATH = join(
+      TEST_PROJECT_DIR,
+      'no-mcp-registry.json',
+    );
     tempDir = mkdtempSync(join(tmpdir(), 'omc-ws-marker-test-'));
   });
 
@@ -1124,6 +1146,7 @@ describe('doctor-conflicts: workspace marker check (Wave F.2)', () => {
     cwdSpy?.mockRestore();
     delete process.env.CLAUDE_CONFIG_DIR;
     delete process.env.CLAUDE_MCP_CONFIG_PATH;
+    delete process.env.OMC_MCP_REGISTRY_PATH;
     if (savedOmcStateDir === undefined) {
       delete process.env.OMC_STATE_DIR;
     } else {

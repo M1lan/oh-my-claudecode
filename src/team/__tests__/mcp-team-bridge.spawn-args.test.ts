@@ -9,15 +9,15 @@ describe('mcp-team-bridge spawn args', () => {
   );
 
   it('includes bypass approvals/sandbox and --skip-git-repo-check for Codex bridge spawns', () => {
-    expect(source).toContain('"exec"');
-    expect(source).toContain('"--dangerously-bypass-approvals-and-sandbox"');
-    expect(source).toContain('"--skip-git-repo-check"');
+    expect(source).toContain("'exec'");
+    expect(source).toContain("'--dangerously-bypass-approvals-and-sandbox'");
+    expect(source).toContain("'--skip-git-repo-check'");
   });
 
   it('keeps Gemini bridge spawn args with --approval-mode yolo', () => {
-    expect(source).toContain('"--approval-mode"');
-    expect(source).toContain('"yolo"');
-    expect(source).not.toContain('"-i"');
-    expect(source).toMatch(/cmd = "gemini";/);
+    expect(source).toContain("'--approval-mode'");
+    expect(source).toContain("'yolo'");
+    expect(source).not.toContain("'-i'");
+    expect(source).toMatch(/cmd = 'gemini';/);
   });
 });

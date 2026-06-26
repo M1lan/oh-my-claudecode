@@ -1555,10 +1555,7 @@ program
   .description('Run OMC setup to sync all components (hooks, agents, skills)')
   .option('-f, --force', 'Force reinstall even if already up to date')
   .option('-q, --quiet', 'Suppress output except for errors')
-  .option(
-    '--no-plugin',
-    'Install bundled skills from the current package instead of relying on plugin-provided skills',
-  )
+  .option('--no-plugin', 'Force local bundled skill installation')
   .option(
     '--plugin-dir-mode',
     'Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)',

@@ -1,4 +1,12 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeEach,
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 function makeStdin(withRateLimits = false) {
   return {
@@ -189,8 +197,24 @@ describe('HUD watch mode initialization', () => {
   });
 
   afterEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
+    // Only restore spies and process.stdin here. Module mocks are intentionally
+    // NOT unmocked/reset in afterEach: importHudModule() calls vi.resetModules()
+    // and re-registers every vi.doMock fresh at the start of each test, which is
+    // the authoritative setup. Queueing doUnmock here (which only takes effect on
+    // the *next* resetModules) raced with that re-registration and produced
+    // nondeterministic "real module ran" failures (e.g. resolveToWorktreeRoot
+    // returning the real cwd, getUsage never invoked).
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    if (originalIsTTY) {
+      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
+    }
+  });
+
+  // Tear down the shared worker's mock registry at the file boundary so these
+  // doMock registrations (identical resolved paths to the other HUD test files)
+  // do not bleed across files when vitest reuses the worker.
+  afterAll(() => {
     vi.doUnmock('../../hud/stdin.js');
     vi.doUnmock('../../hud/transcript.js');
     vi.doUnmock('../../hud/state.js');
@@ -204,11 +228,8 @@ describe('HUD watch mode initialization', () => {
     vi.doUnmock('../../lib/version.js');
     vi.doUnmock('../../features/auto-update.js');
     vi.doUnmock('../../lib/worktree-paths.js');
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    if (originalIsTTY) {
-      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
-    }
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   it('skips HUD initialization during watch polls after the first render', async () => {

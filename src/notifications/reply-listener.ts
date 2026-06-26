@@ -1108,10 +1108,8 @@ export function startReplyListener(
   ensureStateDir();
 
   // Fork a new process for the daemon
-  const modulePath = resolveDaemonModulePath(__filename, [
-    'notifications',
-    'reply-listener.js',
-  ]);
+  const segments = ['notifications', 'reply-listener.js'] as const;
+  const modulePath = resolveDaemonModulePath(__filename, segments);
   const moduleUrl = pathToFileURL(modulePath).href;
   const daemonScript = `
     import(${JSON.stringify(moduleUrl)}).then(({ pollLoop }) => {

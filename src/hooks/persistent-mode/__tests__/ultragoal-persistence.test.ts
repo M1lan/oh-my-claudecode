@@ -65,7 +65,7 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       cwd,
       session_id: 'session-a',
       tool_name: 'Bash',
-      tool_input: { command: 'npm test' },
+      tool_input: { command: 'ls -la' },
       goal: {
         objective: 'Complete issue #3098 ultragoal persistence.',
         status: 'active',
@@ -106,7 +106,7 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       cwd,
       session_id: 'session-a',
       tool_name: 'Bash',
-      tool_input: { command: 'npm test' },
+      tool_input: { command: 'ls -la' },
     });
 
     expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');

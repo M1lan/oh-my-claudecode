@@ -1,4 +1,12 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeEach,
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -144,8 +152,28 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
   });
 
   afterEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
+    // Only restore spies, process.stdin, and the temp config dir here. Module
+    // mocks are intentionally NOT unmocked/reset in afterEach: importHudModule()
+    // calls vi.resetModules() and re-registers every vi.doMock fresh at the
+    // start of each test, which is the authoritative setup. Queueing doUnmock
+    // here (which only takes effect on the *next* resetModules) raced with that
+    // re-registration and produced nondeterministic "real module ran" failures.
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    if (originalIsTTY) {
+      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
+    }
+    try {
+      rmSync(tempConfigDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  });
+
+  // Tear down the shared worker's mock registry at the file boundary so these
+  // doMock registrations (identical resolved paths to the other HUD test files)
+  // do not bleed across files when vitest reuses the worker.
+  afterAll(() => {
     vi.doUnmock('../../hud/stdin.js');
     vi.doUnmock('../../hud/transcript.js');
     vi.doUnmock('../../hud/state.js');
@@ -159,17 +187,10 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     vi.doUnmock('../../lib/version.js');
     vi.doUnmock('../../features/auto-update.js');
     vi.doUnmock('../../lib/worktree-paths.js');
-    vi.doUnmock('../../utils/paths.js');
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    if (originalIsTTY) {
-      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
-    }
-    try {
-      rmSync(tempConfigDir, { recursive: true, force: true });
-    } catch {
-      /* ignore */
-    }
+    // This file mocks config-dir.js (not paths.js); unmock what was mocked.
+    vi.doUnmock('../../utils/config-dir.js');
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   it('shows diagnostic with version and preset when no stdin and no cache', async () => {

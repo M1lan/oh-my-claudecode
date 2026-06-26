@@ -229,12 +229,9 @@ function getLegacyCachePath(): string {
  * Get the provider-specific cache file path
  */
 function getCachePath(source: 'anthropic' | 'zai' | 'minimax'): string {
-  return join(
-    getClaudeConfigDir(),
-    'plugins',
-    'oh-my-claudecode',
-    `.usage-cache-${source}.json`,
-  );
+  // prettier-ignore
+  const relative = join('plugins', 'oh-my-claudecode', `.usage-cache-${source}.json`);
+  return join(getClaudeConfigDir(), relative);
 }
 
 /**
