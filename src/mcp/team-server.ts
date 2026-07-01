@@ -224,9 +224,7 @@ function loadJobFromDisk(jobId: string): OmcTeamJob | undefined {
   }
 }
 
-async function loadPaneIds(
-  jobId: string,
-): Promise<{
+async function loadPaneIds(jobId: string): Promise<{
   paneIds: string[];
   leaderPaneId: string;
   sessionName?: string;

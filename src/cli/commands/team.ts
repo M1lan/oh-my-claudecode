@@ -627,9 +627,7 @@ export function parseTeamArgs(
   };
 }
 
-export function buildStartupTasks(
-  parsed: ParsedTeamArgs,
-): Array<{
+export function buildStartupTasks(parsed: ParsedTeamArgs): Array<{
   subject: string;
   description: string;
   owner?: string;
