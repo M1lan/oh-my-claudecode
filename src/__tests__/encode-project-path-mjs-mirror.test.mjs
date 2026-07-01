@@ -17,7 +17,7 @@ describe('encode-project-path.mjs (hook-runtime mirror)', () => {
   });
 
   it('stays in sync with the canonical TS encoder (src/utils/encode-project-path.ts)', () => {
-    for (const p of ['C:\\Users\\me\\my.app', '/home/me/my.service', 'D:\\a.b\\c', '/x/y/z']) {
+    for (const p of ['C:\\Users\\me\\my.app', '/home/me/my.service', 'D:\\a.b\\c', '/x/y/z', '/home/me/00_proj/My App']) {
       expect(mjsEncode(p)).toBe(tsEncode(p));
     }
   });

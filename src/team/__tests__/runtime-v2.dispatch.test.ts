@@ -360,6 +360,260 @@ describe('runtime v2 startup inbox dispatch', () => {
     expect(inbox).toContain('only when explicitly allowed by the leader');
   });
 
+  it('preserves startup failure evidence when a worker launch throws after scaffolding', async () => {
+    cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-startup-failure-'));
+    mocks.spawnWorkerInPane.mockRejectedValueOnce(
+      new Error('claude launch exploded'),
+    );
+    const { startTeamV2 } = await import('../runtime-v2.js');
+
+    await expect(
+      startTeamV2({
+        teamName: 'dispatch-team',
+        workerCount: 1,
+        agentTypes: ['claude'],
+        tasks: [
+          {
+            subject: 'Dispatch test',
+            description: 'Verify startup failure evidence',
+          },
+        ],
+        cwd,
+      }),
+    ).rejects.toThrow('claude launch exploded');
+
+    const markerPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'team',
+      'dispatch-team',
+      'startup-failure.json',
+    );
+    const marker = JSON.parse(await readFile(markerPath, 'utf-8')) as {
+      reason?: string;
+      error?: string;
+      recorded_at?: string;
+    };
+    expect(marker.reason).toBe('startup_failed_before_config_persisted');
+    expect(marker.error).toContain('claude launch exploded');
+    expect(marker.recorded_at).toBeTruthy();
+    expect(mocks.killTeamSession).toHaveBeenCalledWith(
+      'dispatch-session',
+      [],
+      '%1',
+      { sessionMode: 'split-pane' },
+    );
+  });
+
+  it('does not persist sensitive cmux worker command payloads in startup failure evidence', async () => {
+    cwd = await mkdtemp(
+      join(tmpdir(), 'omc-runtime-v2-redacted-startup-failure-'),
+    );
+    const secret = 'SECRET_TOKEN_SHOULD_NOT_LEAK';
+    modelContractMocks.getWorkerEnv.mockImplementation(() => ({
+      OMC_TEAM_WORKER: 'dispatch-team/worker-1',
+      SECRET_ENV: secret,
+    }));
+    modelContractMocks.buildWorkerArgv.mockReturnValue([
+      '/usr/bin/claude',
+      '--api-key',
+      secret,
+    ]);
+    mocks.spawnWorkerInPane.mockRejectedValueOnce(
+      new Error(
+        'cmux command failed for both current and legacy forms: current=send-surface ([redacted]); legacy=send ([redacted])',
+      ),
+    );
+    const { startTeamV2 } = await import('../runtime-v2.js');
+
+    await expect(
+      startTeamV2({
+        teamName: 'dispatch-team',
+        workerCount: 1,
+        agentTypes: ['claude'],
+        tasks: [
+          {
+            subject: 'Dispatch test',
+            description: 'Verify redacted startup failure evidence',
+          },
+        ],
+        cwd,
+      }),
+    ).rejects.toThrow(/cmux command failed for both current and legacy forms/);
+
+    const markerPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'team',
+      'dispatch-team',
+      'startup-failure.json',
+    );
+    const markerText = await readFile(markerPath, 'utf-8');
+    expect(markerText).toContain('current=send-surface');
+    expect(markerText).toContain('legacy=send');
+    expect(markerText).not.toContain(secret);
+    expect(markerText).not.toContain('SECRET_ENV');
+    expect(markerText).not.toContain('--api-key');
+  });
+
+  it('does not persist sensitive primary cmux failure payloads in startup failure evidence', async () => {
+    cwd = await mkdtemp(
+      join(tmpdir(), 'omc-runtime-v2-redacted-primary-failure-'),
+    );
+    const secret = 'SECRET_TOKEN_SHOULD_NOT_LEAK';
+    modelContractMocks.getWorkerEnv.mockImplementation(() => ({
+      OMC_TEAM_WORKER: 'dispatch-team/worker-1',
+      SECRET_ENV: secret,
+    }));
+    modelContractMocks.buildWorkerArgv.mockReturnValue([
+      '/usr/bin/claude',
+      '--api-key',
+      secret,
+    ]);
+    mocks.spawnWorkerInPane.mockRejectedValueOnce(
+      new Error(
+        'cmux command failed for current form: current=send-surface (cmux transport timed out after partial write [redacted])',
+      ),
+    );
+    const { startTeamV2 } = await import('../runtime-v2.js');
+
+    await expect(
+      startTeamV2({
+        teamName: 'dispatch-team',
+        workerCount: 1,
+        agentTypes: ['claude'],
+        tasks: [
+          {
+            subject: 'Dispatch test',
+            description: 'Verify redacted primary failure evidence',
+          },
+        ],
+        cwd,
+      }),
+    ).rejects.toThrow(/cmux command failed for current form/);
+
+    const markerPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'team',
+      'dispatch-team',
+      'startup-failure.json',
+    );
+    const markerText = await readFile(markerPath, 'utf-8');
+    expect(markerText).toContain('current=send-surface');
+    expect(markerText).toContain(
+      'cmux transport timed out after partial write',
+    );
+    expect(markerText).not.toContain(secret);
+    expect(markerText).not.toContain('SECRET_ENV');
+    expect(markerText).not.toContain('--api-key');
+  });
+
+  it('keeps dirty worktree preservation metadata when startup rollback records failure evidence', async () => {
+    cwd = await mkdtemp(
+      join(tmpdir(), 'omc-runtime-v2-dirty-startup-failure-'),
+    );
+    execFileSync('git', ['init'], { cwd, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+      cwd,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['config', 'user.name', 'Test User'], {
+      cwd,
+      stdio: 'pipe',
+    });
+    await writeFile(
+      join(cwd, 'README.md'),
+      'dirty startup failure test\n',
+      'utf-8',
+    );
+    await writeFile(join(cwd, 'AGENTS.md'), 'root agents\n', 'utf-8');
+    execFileSync('git', ['add', 'README.md', 'AGENTS.md'], {
+      cwd,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['commit', '-m', 'initial'], { cwd, stdio: 'pipe' });
+    mocks.spawnWorkerInPane.mockImplementationOnce(
+      async (_session, _pane, paneConfig: { cwd?: string }) => {
+        await writeFile(
+          join(paneConfig.cwd ?? cwd, 'dirty-startup.txt'),
+          'preserve me\n',
+          'utf-8',
+        );
+        throw new Error('claude launch exploded after dirty worktree');
+      },
+    );
+    const { startTeamV2 } = await import('../runtime-v2.js');
+
+    await expect(
+      startTeamV2({
+        teamName: 'dispatch-team',
+        workerCount: 1,
+        agentTypes: ['claude'],
+        pluginConfig: { team: { ops: { worktreeMode: 'named' } } },
+        tasks: [
+          {
+            subject: 'Dispatch test',
+            description: 'Verify dirty worktree preservation evidence',
+          },
+        ],
+        cwd,
+      }),
+    ).rejects.toThrow('claude launch exploded after dirty worktree');
+
+    const markerPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'team',
+      'dispatch-team',
+      'startup-failure.json',
+    );
+    const marker = JSON.parse(await readFile(markerPath, 'utf-8')) as {
+      error?: string;
+      preserved?: Array<{
+        workerName?: string;
+        path?: string;
+        reason?: string;
+      }>;
+    };
+    const backupPath = join(
+      cwd,
+      '.omc',
+      'state',
+      'team',
+      'dispatch-team',
+      'workers',
+      'worker-1',
+      'worktree-root-agents.json',
+    );
+    const worktreePath = join(
+      cwd,
+      '.omc',
+      'team',
+      'dispatch-team',
+      'worktrees',
+      'worker-1',
+    );
+    expect(marker.error).toContain(
+      'claude launch exploded after dirty worktree',
+    );
+    expect(marker.preserved?.[0]).toMatchObject({
+      workerName: 'worker-1',
+      path: worktreePath,
+    });
+    expect(marker.preserved?.[0]?.reason).toContain('worktree_dirty');
+    await expect(readFile(backupPath, 'utf-8')).resolves.toContain(
+      'root agents',
+    );
+    await expect(
+      readFile(join(worktreePath, 'dirty-startup.txt'), 'utf-8'),
+    ).resolves.toBe('preserve me\n');
+  });
+
   it('persists runtime-v2 worktree contract fields for split-pane teams', async () => {
     cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-worktree-contract-'));
     execFileSync('git', ['init'], { cwd, stdio: 'pipe' });

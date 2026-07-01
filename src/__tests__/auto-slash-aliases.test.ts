@@ -438,13 +438,13 @@ Deep interview body`,
       '`node "$CLAUDE_PLUGIN_ROOT"/bridge/cli.cjs ask codex "<codex prompt>"`',
     );
     expect(result.replacementText).toContain(
-      '`node "$CLAUDE_PLUGIN_ROOT"/bridge/cli.cjs ask gemini "<gemini prompt>"`',
+      '`node "$CLAUDE_PLUGIN_ROOT"/bridge/cli.cjs ask antigravity "<antigravity prompt>"`',
     );
     expect(result.replacementText).not.toContain(
       '`omc ask codex "<codex prompt>"`',
     );
     expect(result.replacementText).not.toContain(
-      '`omc ask gemini "<gemini prompt>"`',
+      '`omc ask antigravity "<antigravity prompt>"`',
     );
   });
 });

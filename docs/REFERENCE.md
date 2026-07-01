@@ -569,6 +569,18 @@ omc session search provider-routing --project all --json
 - Supports `--limit`, `--session`, `--since`, `--context`, `--case-sensitive`, and `--json`
 - MCP/tool surface: `session_search` returns structured JSON for agents and automations
 
+### `omc session friction report`
+
+```bash
+omc session friction report --since 24h
+omc session friction report --project all --json
+```
+
+- Local-only/offline report over Claude transcript files, `.omc/sessions/*.json`, and `.omc/state/agent-replay-*.jsonl`
+- Does not print raw prompt, response, or tool-result content by default; output uses counts, sizes, timestamps, and signal codes
+- Highlights context-bloat and operator-friction indicators such as high estimated context usage, large JSONL entries, tool error rates, long idle gaps, failed agents, and hook noise
+- Supports `--limit`, `--session`, `--since`, `--project`, and `--json`
+
 ### Non-interactive automation and CI/CD
 
 Use OMC's terminal and library surfaces in non-interactive environments:
@@ -765,7 +777,7 @@ Marketplace/plugin installs compact the native plugin `skills/*/SKILL.md` files 
 | `autoresearch`            | Stateful single-mission evaluator-driven improvement loop           | `/oh-my-claudecode:autoresearch`            |
 | `autopilot`               | Full autonomous execution from idea to working code              | `/oh-my-claudecode:autopilot`               |
 | `cancel`                  | Unified cancellation for active modes                            | `/oh-my-claudecode:cancel`                  |
-| `ccg`                     | Tri-model workflow via `ask codex` + `ask gemini`, then Claude synthesis | `/oh-my-claudecode:ccg`                     |
+| `ccg`                     | Tri-model workflow via `ask codex` + `ask antigravity`, then Claude synthesis | `/oh-my-claudecode:ccg`                     |
 | `configure-notifications` | Configure notification integrations (Telegram, Discord, Slack) via natural language | `/oh-my-claudecode:configure-notifications` |
 | `deep-dive`               | Two-stage trace → deep-interview pipeline with context handoff   | `/oh-my-claudecode:deep-dive`               |
 | `deep-interview`          | Socratic deep interview with ambiguity gating                    | `/deep-interview`                           |
