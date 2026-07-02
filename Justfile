@@ -664,6 +664,7 @@ omc-install:
     source ~/.config/sh/fnm-init.sh 2>/dev/null || true
     REPO_DIR="{{justfile_directory()}}"
     echo "── omc-install: installing from $REPO_DIR ──"
+    pnpm run build
     pnpm add -g "$REPO_DIR"
     echo "omc-install: installed ✓"
     echo "  $(type -af omc 2>/dev/null | head -1)"
