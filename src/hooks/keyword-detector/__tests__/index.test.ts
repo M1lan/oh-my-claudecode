@@ -471,6 +471,29 @@ Final draft.`);
         expect(ralphProblem.find((r) => r.type === 'ralph')).toBeDefined();
       });
 
+      it('should detect later directive occurrence after earlier informational same keyword mention', () => {
+        const result = detectKeywordsWithType(
+          'The old docs call ralph deprecated. Please ralph and fix the flaky tests.',
+        );
+        expect(result).toEqual([
+          expect.objectContaining({ type: 'ralph', keyword: 'ralph' }),
+        ]);
+      });
+
+      it('should NOT detect earlier informational ralph because a later quoted phrase says please ralph', () => {
+        const result = detectKeywordsWithType(
+          'The docs say ralph is triggered by the phrase "please ralph".',
+        );
+        expect(result.find((r) => r.type === 'ralph')).toBeUndefined();
+      });
+
+      it('should NOT detect earlier informational autopilot because a later quoted phrase says please autopilot', () => {
+        const result = detectKeywordsWithType(
+          'The docs say autopilot is triggered by the phrase "please autopilot".',
+        );
+        expect(result.find((r) => r.type === 'autopilot')).toBeUndefined();
+      });
+
       it('should NOT detect "don\'t stop" phrase', () => {
         const result = detectKeywordsWithType("Don't stop until done");
         const ralphMatch = result.find((r) => r.type === 'ralph');
@@ -1093,6 +1116,111 @@ This article argues that fake popularity signals damage trust in open source.`;
         const result = detectKeywordsWithType('`ask codex`');
         const codexMatch = result.find((r) => r.type === 'codex');
         expect(codexMatch).toBeUndefined();
+      });
+    });
+
+    describe('quoted-span exemption (issue #3380)', () => {
+      it('should NOT detect autopilot inside a quoted example sentence', () => {
+        const text =
+          'Your last message contained "I thought if I told it to use autopilot, it would just continue..." — that\'s reported speech about a hypothetical.';
+        const result = detectKeywordsWithType(text);
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeUndefined();
+      });
+
+      it('should still detect autopilot when unquoted', () => {
+        const result = detectKeywordsWithType('use autopilot on this task');
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeDefined();
+      });
+
+      it('should NOT detect ralph inside a quoted example sentence', () => {
+        const text = 'The docs give "run ralph on this" as an example of an activating phrase.';
+        const result = detectKeywordsWithType(text);
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(ralphMatch).toBeUndefined();
+      });
+
+      it('should still detect ralph when quoted for emphasis alongside an execution directive', () => {
+        const result = detectKeywordsWithType('"ralph" fix the auth bug');
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(ralphMatch).toBeDefined();
+      });
+
+      it('should still detect autopilot when quoted for emphasis alongside an execution directive', () => {
+        const result = detectKeywordsWithType('"autopilot" implement the login page');
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeDefined();
+      });
+
+      it('should NOT detect the quoted keyword when an unrelated genuine command with a directive appears elsewhere in the same message', () => {
+        const result = detectKeywordsWithType(
+          'Docs say "use autopilot" as an example, but can you run ralph now to fix the deployment script?',
+        );
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(autopilotMatch).toBeUndefined();
+        expect(ralphMatch).toBeDefined();
+      });
+
+      it('should NOT detect autopilot when a bug-report prompt describes fixing the false positive itself', () => {
+        const result = detectKeywordsWithType(
+          'Please fix the detector: it activates when the user writes "use autopilot" in a bug report.',
+        );
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeUndefined();
+      });
+
+      it('should NOT detect autopilot when asked to implement a regression test for the quoted phrase', () => {
+        const result = detectKeywordsWithType(
+          'Implement a regression test for the sentence "use autopilot" so it no longer activates.',
+        );
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeUndefined();
+      });
+
+      it('should NOT detect ralph when asked to address a false positive describing the quoted phrase', () => {
+        const result = detectKeywordsWithType(
+          'Please address this false positive: "run ralph on this" should be treated as docs text.',
+        );
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(ralphMatch).toBeUndefined();
+      });
+
+      it('should NOT detect autopilot when the execution directive is INSIDE the quoted text itself', () => {
+        const result = detectKeywordsWithType(
+          'The old ticket said "please fix autopilot" and closed without action.',
+        );
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeUndefined();
+      });
+
+      it('should NOT detect autopilot for a narrated quote containing a directive, while still detecting an unrelated genuine command', () => {
+        const result = detectKeywordsWithType(
+          'The FAQ says "please fix autopilot" is a common typo people made in 2023. Separately, ralph the test suite until it passes.',
+        );
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(autopilotMatch).toBeUndefined();
+        expect(ralphMatch).toBeDefined();
+      });
+
+      it('should still detect ralph when the mode name alone is quoted for emphasis after an activation verb', () => {
+        const result = detectKeywordsWithType('run "ralph" on this issue');
+        const ralphMatch = result.find((r) => r.type === 'ralph');
+        expect(ralphMatch).toBeDefined();
+      });
+
+      it('should still detect autopilot when the mode name alone is quoted for emphasis after an activation verb', () => {
+        const result = detectKeywordsWithType('use "autopilot" on this task');
+        const autopilotMatch = result.find((r) => r.type === 'autopilot');
+        expect(autopilotMatch).toBeDefined();
+      });
+
+      it('should still detect ultrawork when the mode name alone is quoted for emphasis after an activation verb', () => {
+        const result = detectKeywordsWithType('start "ultrawork" on this repo');
+        const ultraworkMatch = result.find((r) => r.type === 'ultrawork');
+        expect(ultraworkMatch).toBeDefined();
       });
     });
 

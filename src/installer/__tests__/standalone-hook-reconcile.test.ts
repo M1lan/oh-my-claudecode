@@ -5,7 +5,9 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -83,6 +85,13 @@ function shippedStandaloneHookPayload(filename: string, location: 'hooks' | 'hoo
     return readFileSync(join(process.cwd(), 'scripts', 'lib', filename), 'utf-8');
   }
   return readFileSync(join(process.cwd(), 'templates', 'hooks', 'lib', filename), 'utf-8');
+}
+
+function listTemplateHookLibPayload(): string[] {
+  const templatesLibDir = join(process.cwd(), 'templates', 'hooks', 'lib');
+  return readdirSync(templatesLibDir)
+    .filter(filename => statSync(join(templatesLibDir, filename)).isFile())
+    .sort();
 }
 
 describe('install() standalone hook reconciliation', () => {
@@ -186,6 +195,29 @@ describe('install() standalone hook reconciliation', () => {
         'utf-8',
       ),
     ).toContain('Code Simplifier');
+  });
+
+  it('mirrors the complete standalone templates/hooks/lib payload', async () => {
+    const templatesLibDir = join(process.cwd(), 'templates', 'hooks', 'lib');
+    const futureHelper = `future-helper-${process.pid}.mjs`;
+    const futureHelperPath = join(templatesLibDir, futureHelper);
+
+    writeFileSync(futureHelperPath, 'export const futureHelper = true;\n');
+    try {
+      const { install } = await loadInstaller();
+      const result = install({
+        force: true,
+        skipClaudeCheck: true,
+      });
+
+      expect(result.success).toBe(true);
+      for (const filename of listTemplateHookLibPayload()) {
+        expect(existsSync(join(testClaudeDir, 'hooks', 'lib', filename)), filename).toBe(true);
+      }
+      expect(readFileSync(join(testClaudeDir, 'hooks', 'lib', futureHelper), 'utf-8')).toBe('export const futureHelper = true;\n');
+    } finally {
+      rmSync(futureHelperPath, { force: true });
+    }
   });
 
   it('installs standalone hooks with all runtime helper imports', async () => {

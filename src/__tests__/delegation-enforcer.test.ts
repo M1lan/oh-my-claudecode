@@ -78,7 +78,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5'
       };
 
       const result = enforceModel(input);
@@ -127,7 +127,7 @@ describe('delegation-enforcer', () => {
       const result = enforceModel(input);
 
       expect(result.injected).toBe(true);
-      expect(result.modifiedInput.model).toBe('sonnet'); // executor defaults to claude-sonnet-4-6
+      expect(result.modifiedInput.model).toBe('sonnet'); // executor defaults to claude-sonnet-5
       expect(result.originalInput.model).toBeUndefined();
     });
 
@@ -141,7 +141,7 @@ describe('delegation-enforcer', () => {
       const result = enforceModel(input);
 
       expect(result.injected).toBe(true);
-      expect(result.modifiedInput.model).toBe('sonnet'); // debugger defaults to claude-sonnet-4-6
+      expect(result.modifiedInput.model).toBe('sonnet'); // debugger defaults to claude-sonnet-5
     });
 
     it('rewrites deprecated aliases to canonical agent names before injecting model', () => {
@@ -187,7 +187,7 @@ describe('delegation-enforcer', () => {
       const resultWithDebug = enforceModel(input);
       expect(resultWithDebug.warning).toBeDefined();
       expect(resultWithDebug.warning).toContain('Auto-injecting model');
-      expect(resultWithDebug.warning).toContain('claude-sonnet-4-6');
+      expect(resultWithDebug.warning).toContain('claude-sonnet-5');
       expect(resultWithDebug.warning).toContain('executor');
     });
 

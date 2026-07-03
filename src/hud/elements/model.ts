@@ -19,11 +19,16 @@ import {
  *       'claude-haiku-4-5-20251001' -> '4.5'
  *       'claude-3-5-sonnet-20241022' -> '3.5'
  *       'claude-3-opus-20240229' -> '3'
+ *       'claude-sonnet-5' -> '5'
  */
 function extractVersion(modelId: string): string | null {
   // Match hyphenated ID patterns like opus-4-6, sonnet-4-5, haiku-4-5
   const idMatch = modelId.match(/(?:opus|sonnet|haiku)-(\d+)-(\d+)/i);
   if (idMatch) return `${idMatch[1]}.${idMatch[2]}`;
+
+  // Match Claude family IDs with a single trailing numeric version like claude-sonnet-5
+  const singleSegmentIdMatch = modelId.match(/(?:^|[.-])claude-(?:opus|sonnet|haiku)-(\d+)$/i);
+  if (singleSegmentIdMatch) return singleSegmentIdMatch[1];
 
   // Match legacy raw ID patterns like claude-3-5-sonnet-20241022 and claude-3-opus-20240229
   const legacyIdMatch = modelId.match(

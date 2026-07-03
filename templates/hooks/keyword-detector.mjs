@@ -482,6 +482,24 @@ function isWithinQuotedSpan(text, position) {
   return false;
 }
 
+// Bounds of the specific quoted span containing `position`, or null if none.
+// Used to scope the execution-directive check for the quote exemption to
+// this keyword's own quote — not the generic ±80-char context window, which
+// can otherwise pick up an unrelated genuine command elsewhere in the same
+// message and wrongly neutralize the exemption for a keyword that is purely
+// quoted as an example.
+function findQuotedSpanBounds(text, position) {
+  for (const match of text.matchAll(QUOTED_SPAN_PATTERN)) {
+    if (match.index === undefined) continue;
+    const start = match.index;
+    const end = start + match[0].length;
+    if (position >= start && position < end) {
+      return { start, end };
+    }
+  }
+  return null;
+}
+
 function stripQuotedSpans(text) {
   return text.replace(QUOTED_SPAN_PATTERN, ' ');
 }
@@ -528,6 +546,23 @@ function hasDirectInvocationPrefix(text, position) {
   return /^\s*(?:[$/!]\s*|force:\s*|oh-my-(?:claudecode|codex):\s*)?$/i.test(prefix);
 }
 
+function hasConversationalInvocationNearKeyword(text, position, _keywordLength, _keywordText) {
+  if (isWithinQuotedSpan(text, position)) {
+    return false;
+  }
+
+  const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
+  const prefix = stripQuotedSpans(text.slice(start, position));
+  const conversationalInvocationPatterns = [
+    /\bplease\s+$/i,
+    /\blet['’]?s\s+$/i,
+    /\bi\s+(?:want|need|would\s+like)\s+(?:a|an)\s+$/i,
+    /\b(?:can|could|would|will)\s+you\s+$/i,
+  ];
+
+  return conversationalInvocationPatterns.some((pattern) => pattern.test(prefix));
+}
+
 function hasExplicitInvocationContext(text, position, keywordLength, keywordText) {
   if (hasDirectInvocationPrefix(text, position)) {
     return true;
@@ -536,7 +571,11 @@ function hasExplicitInvocationContext(text, position, keywordLength, keywordText
   const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
   const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
   const context = text.slice(start, end);
-  return hasActivationIntentNearKeyword(context, keywordText);
+  if (hasActivationIntentNearKeyword(context, keywordText)) {
+    return true;
+  }
+
+  return hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText);
 }
 
 function hasDiagnosticIntentNearKeyword(context, keyword) {
@@ -593,9 +632,53 @@ function isInformationalKeywordContext(text, position, keywordLength, keywordTex
   const line = text.slice(lineBounds.start, lineBounds.end);
   const questionOutsideQuotes = stripQuotedSpans(text);
   const keywordInsideQuotes = isWithinQuotedSpan(text, position);
+  const hasExecutionDirective = /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(context);
+
+  // A keyword occurrence inside a quoted span is usually reported/example
+  // text, not a command directed at the assistant — e.g. an example sentence
+  // like `"use autopilot"` inside a paragraph discussing that exact phrasing.
+  // But a quoted keyword paired with a nearby execution directive OR
+  // activation verb (e.g. `"ralph" fix the auth bug`, or `run "ralph" on
+  // this issue`) is still a genuine request stylistically wrapped in quotes,
+  // so the exemption only applies when neither is present.
+  //
+  // This check is scoped to text immediately OUTSIDE this keyword's own
+  // quoted span (±28 chars before/after the span's bounds), not the generic
+  // ±80-char context window used elsewhere in this function, and NOT the
+  // quote's own interior. Three failure modes this avoids:
+  // - Scoping to the wide window: an unrelated genuine command elsewhere in
+  //   the same message could sit inside it and wrongly neutralize the
+  //   exemption for a keyword that is purely quoted as an example.
+  // - Scoping to (or including) the quote's own interior: a directive or
+  //   activation word used INSIDE the quoted text itself — extremely common
+  //   in narrated examples and bug reports, e.g. `"please fix autopilot"
+  //   they said` or `"...told it to use autopilot..."` — would make the
+  //   quote self-report as command-bearing and defeat the exemption for
+  //   exactly the reported-speech case it exists to catch.
+  // - Checking only execution-directive verbs (fix/debug/...) and not
+  //   activation verbs (use/run/start/...): genuine commands stylistically
+  //   quoting just the mode name, e.g. `run "ralph" on this issue` or
+  //   `use "autopilot" on this task`, would be wrongly suppressed even
+  //   though they activated before this exemption existed.
+  if (keywordInsideQuotes) {
+    const span = findQuotedSpanBounds(text, position);
+    const hasGenuineCommandNearQuote = span
+      ? /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build|use|run|start|enable|activate|invoke|trigger|launch)\b/i.test(
+          text.slice(Math.max(0, span.start - 28), span.start) +
+            ' ' +
+            text.slice(span.end, Math.min(text.length, span.end + 28)),
+        )
+      : hasExecutionDirective;
+    if (!hasGenuineCommandNearQuote) {
+      return true;
+    }
+  }
 
   if (keywordText) {
     if (hasActivationIntentNearKeyword(context, keywordText)) {
+      return false;
+    }
+    if (hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText)) {
       return false;
     }
     if (isRalphUltraworkMetaOrBanterContext(context, keywordText)) {

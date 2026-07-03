@@ -29,6 +29,10 @@ describe('model element', () => {
       expect(formatModelName('claude-sonnet-4-6-20260217', 'versioned')).toBe(
         'Sonnet 4.6',
       );
+      expect(formatModelName('claude-sonnet-5', 'versioned')).toBe('Sonnet 5');
+      expect(
+        formatModelName('global.anthropic.claude-sonnet-5', 'versioned'),
+      ).toBe('Sonnet 5');
       expect(formatModelName('claude-haiku-4-5-20251001', 'versioned')).toBe(
         'Haiku 4.5',
       );

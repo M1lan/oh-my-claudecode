@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, normalize, relative } from 'node:path';
 
 const PACKAGE_ROOT = process.cwd();
@@ -211,6 +211,14 @@ function getPackedFiles(): Set<string> {
   return packedFilesCache;
 }
 
+function listTemplateHookLibFiles(): string[] {
+  const templatesLibDir = join(PACKAGE_ROOT, 'templates', 'hooks', 'lib');
+  return readdirSync(templatesLibDir)
+    .filter(filename => statSync(join(templatesLibDir, filename)).isFile())
+    .map(filename => `templates/hooks/lib/${filename}`)
+    .sort();
+}
+
 describe('npm package hook surface regression', () => {
   it('does not explicitly reference the auto-loaded standard hooks manifest from plugin.json', () => {
     const pluginJson = JSON.parse(
@@ -256,6 +264,15 @@ describe('npm package hook surface regression', () => {
     const missing = [...requiredFiles]
       .filter((file) => !packedFiles.has(file))
       .sort();
+    expect(missing).toEqual([]);
+  });
+
+  it('packs the complete templates/hooks/lib payload for standalone hook installs', () => {
+    const packedFiles = getPackedFiles();
+    const hookLibFiles = listTemplateHookLibFiles();
+
+    expect(hookLibFiles).not.toHaveLength(0);
+    const missing = hookLibFiles.filter(file => !packedFiles.has(file));
     expect(missing).toEqual([]);
   });
 });

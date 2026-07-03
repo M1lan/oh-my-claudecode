@@ -190,10 +190,8 @@ World`);
 
   describe('switcher - getHighVariant', () => {
     describe('Claude models', () => {
-      it('should return high variant for claude-sonnet-4-6', () => {
-        expect(getHighVariant('claude-sonnet-4-6')).toBe(
-          'claude-sonnet-4-6-high',
-        );
+      it('should return high variant for claude-sonnet-5', () => {
+        expect(getHighVariant('claude-sonnet-5')).toBe('claude-sonnet-5-high');
       });
 
       it('should return high variant for claude-opus-4-8', () => {
@@ -201,9 +199,7 @@ World`);
       });
 
       it('should return high variant for claude-3-5-sonnet', () => {
-        expect(getHighVariant('claude-3-5-sonnet')).toBe(
-          'claude-sonnet-4-6-high',
-        );
+        expect(getHighVariant('claude-3-5-sonnet')).toBe('claude-sonnet-5-high');
       });
 
       it('should return high variant for claude-3-opus', () => {
@@ -211,9 +207,7 @@ World`);
       });
 
       it('should handle version with dot notation', () => {
-        expect(getHighVariant('claude-sonnet-4.5')).toBe(
-          'claude-sonnet-4-6-high',
-        );
+        expect(getHighVariant('claude-sonnet-4.5')).toBe('claude-sonnet-5-high');
       });
     });
 
@@ -262,7 +256,7 @@ World`);
     describe('Prefixed models', () => {
       it('should preserve prefix in high variant', () => {
         expect(getHighVariant('vertex_ai/claude-sonnet-4-5')).toBe(
-          'vertex_ai/claude-sonnet-4-6-high',
+          'vertex_ai/claude-sonnet-5-high',
         );
       });
 
@@ -552,7 +546,7 @@ World`);
         };
         const state = hook.processChatParams('test-session', input);
         expect(state.modelSwitched).toBe(true);
-        expect(input.message.model?.modelId).toBe('claude-sonnet-4-6-high');
+        expect(input.message.model?.modelId).toBe('claude-sonnet-5-high');
       });
 
       it('should not switch already high variant', () => {
