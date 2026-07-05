@@ -310,7 +310,8 @@ export function generateReleaseBody(
   let body = changelog;
 
   body += `\n### Install / Update\n\n`;
-  body += 'The npm CLI and the Claude Code marketplace/plugin are separate install tracks, not either/or replacements. Update whichever track you use; if you have both installed, update both. CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI from the npm package.\n\n';
+  body +=
+    'The npm CLI and the Claude Code marketplace/plugin are separate install tracks, not either/or replacements. Update whichever track you use; if you have both installed, update both. CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI from the npm package.\n\n';
   body += '**CLI / runtime:**\n\n';
   body += '```bash\n';
   body += `pnpm add -g oh-my-claude-sisyphus@${version}\n`;

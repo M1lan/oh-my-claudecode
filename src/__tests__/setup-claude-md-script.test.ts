@@ -482,7 +482,12 @@ Use the real docs file.
           Stop: [
             {
               matcher: '',
-              hooks: [{ type: 'command', command: 'node /opt/vendor/hooks/third-party-stop.js' }],
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node /opt/vendor/hooks/third-party-stop.js',
+                },
+              ],
             },
           ],
         },
@@ -500,7 +505,9 @@ Use the real docs file.
     });
 
     expect(result.status).toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).not.toContain('legacy OMC hook entries');
+    expect(`${result.stdout}\n${result.stderr}`).not.toContain(
+      'legacy OMC hook entries',
+    );
   });
 
   it('warns when settings hooks reference a legacy OMC hook command', () => {
@@ -522,7 +529,12 @@ Use the real docs file.
           UserPromptSubmit: [
             {
               matcher: '',
-              hooks: [{ type: 'command', command: '$HOME/.claude/hooks/keyword-detector.sh' }],
+              hooks: [
+                {
+                  type: 'command',
+                  command: '$HOME/.claude/hooks/keyword-detector.sh',
+                },
+              ],
             },
           ],
         },
@@ -540,7 +552,9 @@ Use the real docs file.
     });
 
     expect(result.status).toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('legacy OMC hook entries');
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'legacy OMC hook entries',
+    );
   });
 
   it('does not advise deleting the whole hooks section when hooks are mixed', () => {
@@ -563,8 +577,14 @@ Use the real docs file.
             {
               matcher: '',
               hooks: [
-                { type: 'command', command: 'node /opt/vendor/hooks/third-party-stop.js' },
-                { type: 'command', command: '$HOME/.claude/hooks/session-start.sh' },
+                {
+                  type: 'command',
+                  command: 'node /opt/vendor/hooks/third-party-stop.js',
+                },
+                {
+                  type: 'command',
+                  command: '$HOME/.claude/hooks/session-start.sh',
+                },
               ],
             },
           ],

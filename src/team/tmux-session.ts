@@ -584,15 +584,19 @@ async function verifyWorkerStartCommandSubmitted(
   if (isCmuxSurfaceTarget(paneId)) return true;
   const expected = normalizeTmuxCapture(startCmd);
   const compactExpected = normalizeTmuxCaptureForDelivery(startCmd);
-  const timeoutMs = Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
-    ? Number(opts.timeoutMs)
-    : resolvePositiveIntegerEnv('OMC_TEAM_START_SUBMIT_TIMEOUT_MS', 8_000);
-  const maxPollIntervalMs = Number.isFinite(opts.maxPollIntervalMs) && (opts.maxPollIntervalMs ?? 0) > 0
-    ? Number(opts.maxPollIntervalMs)
-    : 500;
-  let pollIntervalMs = Number.isFinite(opts.initialPollIntervalMs) && (opts.initialPollIntervalMs ?? 0) > 0
-    ? Number(opts.initialPollIntervalMs)
-    : 50;
+  const timeoutMs =
+    Number.isFinite(opts.timeoutMs) && (opts.timeoutMs ?? 0) > 0
+      ? Number(opts.timeoutMs)
+      : resolvePositiveIntegerEnv('OMC_TEAM_START_SUBMIT_TIMEOUT_MS', 8_000);
+  const maxPollIntervalMs =
+    Number.isFinite(opts.maxPollIntervalMs) && (opts.maxPollIntervalMs ?? 0) > 0
+      ? Number(opts.maxPollIntervalMs)
+      : 500;
+  let pollIntervalMs =
+    Number.isFinite(opts.initialPollIntervalMs) &&
+    (opts.initialPollIntervalMs ?? 0) > 0
+      ? Number(opts.initialPollIntervalMs)
+      : 50;
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
@@ -608,7 +612,10 @@ async function verifyWorkerStartCommandSubmitted(
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) break;
     await sleep(Math.min(pollIntervalMs, remainingMs));
-    pollIntervalMs = Math.min(Math.max(pollIntervalMs * 2, pollIntervalMs + 1), maxPollIntervalMs);
+    pollIntervalMs = Math.min(
+      Math.max(pollIntervalMs * 2, pollIntervalMs + 1),
+      maxPollIntervalMs,
+    );
   }
   return false;
 }

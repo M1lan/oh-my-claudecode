@@ -35,7 +35,10 @@ describe('renderCwd', () => {
     });
 
     it('does not collapse a sibling prefix under the home directory name', () => {
-      const result = renderCwd('/Users/testuser2/workspace/project', 'relative');
+      const result = renderCwd(
+        '/Users/testuser2/workspace/project',
+        'relative',
+      );
       expect(result).toContain('/Users/testuser2/workspace/project');
       expect(result).not.toContain('~2');
     });
@@ -104,7 +107,10 @@ describe('renderCwd', () => {
     });
 
     it('collapses a forward-slash cwd under a backslash home to ~', () => {
-      const result = renderCwd('C:/Users/testuser/workspace/project', 'relative');
+      const result = renderCwd(
+        'C:/Users/testuser/workspace/project',
+        'relative',
+      );
       expect(result).toContain('~/workspace/project');
       expect(result).not.toContain('C:');
     });
@@ -116,7 +122,10 @@ describe('renderCwd', () => {
     });
 
     it('does not collapse a sibling prefix under the Windows home directory name', () => {
-      const result = renderCwd('C:/Users/testuser2/workspace/project', 'relative');
+      const result = renderCwd(
+        'C:/Users/testuser2/workspace/project',
+        'relative',
+      );
       expect(result).toContain('C:/Users/testuser2/workspace/project');
       expect(result).not.toContain('~2');
     });

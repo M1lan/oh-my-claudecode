@@ -22,7 +22,9 @@ describe('encodeProjectPath', () => {
   it('replaces underscores so paths with underscored segments still match', () => {
     // Regression for #3329: `_` was left intact, so current-scope session_search
     // looked up ~/.claude/projects/<dir> that never existed for any path with "_".
-    expect(encodeProjectPath('/home/me/00_proj/01_x')).toBe('-home-me-00-proj-01-x');
+    expect(encodeProjectPath('/home/me/00_proj/01_x')).toBe(
+      '-home-me-00-proj-01-x',
+    );
   });
 
   it('replaces spaces and other non-alphanumerics while preserving case', () => {

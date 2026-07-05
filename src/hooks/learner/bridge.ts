@@ -239,7 +239,7 @@ interface SessionState {
  * Get state file path for a project.
  */
 function getStateFilePath(projectRoot: string): string {
-  return join(getOmcRoot(projectRoot), "state", "skill-sessions.json");
+  return join(getOmcRoot(projectRoot), 'state', 'skill-sessions.json');
 }
 
 /**

@@ -83,15 +83,18 @@ const OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS = [
 ];
 
 function hasOmcRateLimitScreenText(content: string): boolean {
-  return OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS.some(pattern => pattern.test(content));
+  return OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS.some((pattern) =>
+    pattern.test(content),
+  );
 }
 
 function hasSavedTranscriptContext(content: string): boolean {
   return content
     .split('\n')
-    .some(line =>
-      SAVED_TRANSCRIPT_COMMAND_PATTERN.test(line) ||
-      SAVED_TRANSCRIPT_LABEL_PATTERN.test(line)
+    .some(
+      (line) =>
+        SAVED_TRANSCRIPT_COMMAND_PATTERN.test(line) ||
+        SAVED_TRANSCRIPT_LABEL_PATTERN.test(line),
     );
 }
 
@@ -101,15 +104,18 @@ function hasLiveOmcHudEvidence(content: string): boolean {
   }
   const nonEmptyLines = content
     .split('\n')
-    .map(line => line.trimEnd())
-    .filter(line => line.trim().length > 0);
-  const hudStatusIndex = nonEmptyLines.findIndex(line => OMC_HUD_STATUS_LINE_PATTERN.test(line));
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
+  const hudStatusIndex = nonEmptyLines.findIndex((line) =>
+    OMC_HUD_STATUS_LINE_PATTERN.test(line),
+  );
   if (hudStatusIndex === -1) {
     return false;
   }
 
-  const modeLineIndex = nonEmptyLines.findIndex((line, index) =>
-    index > hudStatusIndex && OMC_HUD_MODE_LINE_PATTERN.test(line)
+  const modeLineIndex = nonEmptyLines.findIndex(
+    (line, index) =>
+      index > hudStatusIndex && OMC_HUD_MODE_LINE_PATTERN.test(line),
   );
   if (modeLineIndex === -1) {
     return false;
@@ -333,7 +339,8 @@ export function analyzePaneContent(content: string): PaneAnalysisResult {
   );
   const hasLiveOmcHud = hasLiveOmcHudEvidence(cleanedContent);
   const hasClaudeCode =
-    hasClaudeText || (hasLiveOmcHud && hasOmcRateLimitScreenText(cleanedContent));
+    hasClaudeText ||
+    (hasLiveOmcHud && hasOmcRateLimitScreenText(cleanedContent));
 
   // Check for rate limit messages
   const rateLimitMatches = RATE_LIMIT_PATTERNS.filter((pattern) =>

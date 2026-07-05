@@ -83,8 +83,11 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       cwd,
       session_id: 'session-a',
       tool_name: 'Bash',
-      tool_input: { command: 'npm test' },
-      goal: { objective: 'Standalone Claude Code aggregate goal', status: 'active' },
+      tool_input: { command: 'pnpm test' },
+      goal: {
+        objective: 'Standalone Claude Code aggregate goal',
+        status: 'active',
+      },
     });
 
     expect(result.hookSpecificOutput?.permissionDecision).not.toBe('deny');
@@ -121,7 +124,9 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       cwd,
       session_id: 'session-a',
       tool_name: 'Read',
-      tool_input: { file_path: join(process.cwd(), 'skills', 'cancel', 'SKILL.md') },
+      tool_input: {
+        file_path: join(process.cwd(), 'skills', 'cancel', 'SKILL.md'),
+      },
     });
     const invokeCancelSkill = runHook(preToolScript, {
       cwd,
@@ -136,8 +141,12 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       tool_input: { mode: 'ultragoal' },
     });
 
-    expect(readCancelSkill.hookSpecificOutput?.permissionDecision).not.toBe('deny');
-    expect(invokeCancelSkill.hookSpecificOutput?.permissionDecision).not.toBe('deny');
+    expect(readCancelSkill.hookSpecificOutput?.permissionDecision).not.toBe(
+      'deny',
+    );
+    expect(invokeCancelSkill.hookSpecificOutput?.permissionDecision).not.toBe(
+      'deny',
+    );
     expect(clearState.hookSpecificOutput?.permissionDecision).not.toBe('deny');
   });
 

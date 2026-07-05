@@ -78,7 +78,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'claude-sonnet-5'
+        model: 'claude-sonnet-5',
       };
 
       const result = enforceModel(input);

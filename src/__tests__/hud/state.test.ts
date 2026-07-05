@@ -39,7 +39,7 @@ describe('readHudConfig', () => {
 
       const config = readHudConfig();
 
-      expect(config.preset).toBe("focused");
+      expect(config.preset).toBe('focused');
       expect(config.elements.gitBranch).toBe(PRESET_CONFIGS.focused.gitBranch);
       expect(config.elements.gitStatus).toBe(PRESET_CONFIGS.focused.gitStatus);
       expect(config.elements.useBars).toBe(PRESET_CONFIGS.focused.useBars);

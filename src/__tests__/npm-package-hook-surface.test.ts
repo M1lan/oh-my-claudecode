@@ -214,8 +214,8 @@ function getPackedFiles(): Set<string> {
 function listTemplateHookLibFiles(): string[] {
   const templatesLibDir = join(PACKAGE_ROOT, 'templates', 'hooks', 'lib');
   return readdirSync(templatesLibDir)
-    .filter(filename => statSync(join(templatesLibDir, filename)).isFile())
-    .map(filename => `templates/hooks/lib/${filename}`)
+    .filter((filename) => statSync(join(templatesLibDir, filename)).isFile())
+    .map((filename) => `templates/hooks/lib/${filename}`)
     .sort();
 }
 
@@ -272,7 +272,7 @@ describe('npm package hook surface regression', () => {
     const hookLibFiles = listTemplateHookLibFiles();
 
     expect(hookLibFiles).not.toHaveLength(0);
-    const missing = hookLibFiles.filter(file => !packedFiles.has(file));
+    const missing = hookLibFiles.filter((file) => !packedFiles.has(file));
     expect(missing).toEqual([]);
   });
 });

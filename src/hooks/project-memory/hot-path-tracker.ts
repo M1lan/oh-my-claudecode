@@ -23,7 +23,7 @@ export function trackAccess(
   // (a no-op on POSIX, where paths already use forward slashes).
   const relativePath = (
     path.isAbsolute(filePath) ? path.relative(projectRoot, filePath) : filePath
-  ).replace(/\\/g, "/");
+  ).replace(/\\/g, '/');
 
   const normalizedHotPaths = ensureHotPathList(hotPaths);
 
@@ -144,7 +144,7 @@ function getScopeAffinityScore(
   // (backslashes on Windows), while scopePath is already normalized to forward
   // slashes by normalizeScopePath(). Normalize the separators so the comparisons
   // below match on every OS (a no-op on POSIX).
-  const normalizedHotPath = hotPath.replace(/\\/g, "/");
+  const normalizedHotPath = hotPath.replace(/\\/g, '/');
 
   if (normalizedHotPath === scopePath) {
     return 400;

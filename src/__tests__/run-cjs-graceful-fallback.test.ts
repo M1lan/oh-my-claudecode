@@ -69,21 +69,41 @@ describe('run.cjs — graceful fallback for stale plugin paths', () => {
   }
 
   it('keeps UserPromptSubmit manifest timeouts aligned for prompt hooks', () => {
-    const hooksJson = JSON.parse(readFileSync(join(__dirname, '..', '..', 'hooks', 'hooks.json'), 'utf-8'));
-    const promptHooks = hooksJson.hooks.UserPromptSubmit.flatMap((entry: any) => entry.hooks);
+    const hooksJson = JSON.parse(
+      readFileSync(join(__dirname, '..', '..', 'hooks', 'hooks.json'), 'utf-8'),
+    );
+    const promptHooks = hooksJson.hooks.UserPromptSubmit.flatMap(
+      (entry: any) => entry.hooks,
+    );
 
-    const keywordDetector = promptHooks.find((hook: any) => hook.command.includes('keyword-detector.mjs'));
-    const skillInjector = promptHooks.find((hook: any) => hook.command.includes('skill-injector.mjs'));
+    const keywordDetector = promptHooks.find((hook: any) =>
+      hook.command.includes('keyword-detector.mjs'),
+    );
+    const skillInjector = promptHooks.find((hook: any) =>
+      hook.command.includes('skill-injector.mjs'),
+    );
 
     expect(keywordDetector?.timeout).toBe(10);
     expect(skillInjector?.timeout).toBe(15);
 
-    const hooksDoc = readFileSync(join(__dirname, '..', '..', 'docs', 'HOOKS.md'), 'utf-8');
-    const referenceDoc = readFileSync(join(__dirname, '..', '..', 'docs', 'REFERENCE.md'), 'utf-8');
+    const hooksDoc = readFileSync(
+      join(__dirname, '..', '..', 'docs', 'HOOKS.md'),
+      'utf-8',
+    );
+    const referenceDoc = readFileSync(
+      join(__dirname, '..', '..', 'docs', 'REFERENCE.md'),
+      'utf-8',
+    );
 
-    expect(hooksDoc).toContain('| `keyword-detector.mjs` | Detects magic keywords and invokes the corresponding skill | 10s |');
-    expect(hooksDoc).toContain('| `skill-injector.mjs` | Injects skill prompts | 15s |');
-    expect(referenceDoc).toContain('| **UserPromptSubmit**   | `keyword-detector.mjs`, `skill-injector.mjs`');
+    expect(hooksDoc).toContain(
+      '| `keyword-detector.mjs` | Detects magic keywords and invokes the corresponding skill | 10s |',
+    );
+    expect(hooksDoc).toContain(
+      '| `skill-injector.mjs` | Injects skill prompts | 15s |',
+    );
+    expect(referenceDoc).toContain(
+      '| **UserPromptSubmit**   | `keyword-detector.mjs`, `skill-injector.mjs`',
+    );
     expect(referenceDoc).toContain('| 10s, 15s');
   });
 
@@ -276,7 +296,9 @@ describe('run.cjs — graceful fallback for stale plugin paths', () => {
 
     expect(result.status).toBe(0);
     expect(result.stdout).not.toContain('slow-stop-done');
-    expect(result.stderr).toContain('[run.cjs] Hook slow-stop-hook.cjs timed out after 1500ms; exiting fail-open.');
+    expect(result.stderr).toContain(
+      '[run.cjs] Hook slow-stop-hook.cjs timed out after 1500ms; exiting fail-open.',
+    );
     expect(result.stderr).not.toContain('timed out after 2000ms');
     expect(elapsedMs).toBeLessThan(2000);
   });

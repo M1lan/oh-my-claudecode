@@ -119,7 +119,8 @@ vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
           ? 'cursor-agent ready\n'
           : '';
         if (mockedCalls.submitClearsAfterCaptures > 0) {
-          mockedCalls.delayedSubmitCapturesRemaining = mockedCalls.submitClearsAfterCaptures;
+          mockedCalls.delayedSubmitCapturesRemaining =
+            mockedCalls.submitClearsAfterCaptures;
           mockedCalls.delayedSubmitReplacement = replacement;
         } else {
           mockedCalls.paneCapture = replacement;

@@ -751,8 +751,7 @@ describe('tmux-detector', () => {
 
     it('does not report non-Claude panes with copied HUD and rate-limit output', () => {
       vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      vi.mocked(tmuxExec)
-        .mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
+      vi.mocked(tmuxExec).mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
         .mockReturnValueOnce(`
           $ cat copied-hud.txt
           [OMC#4.15.1L] | Model: Opus 4.8 | 5h:100% wk:14% | thinking | session:80m | ctx:14%

@@ -2,10 +2,20 @@ import { execSync } from 'child_process';
 import { createReadStream, existsSync, readdirSync, statSync } from 'fs';
 import { dirname, join, normalize, resolve } from 'path';
 import { createInterface } from 'readline';
-import { getOmcRoot, resolveToWorktreeRoot, validateSessionId, validateWorkingDirectory } from '../../lib/worktree-paths.js';
+import {
+  getOmcRoot,
+  resolveToWorktreeRoot,
+  validateSessionId,
+  validateWorkingDirectory,
+} from '../../lib/worktree-paths.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
 import { encodeProjectPath } from '../../utils/encode-project-path.js';
-import type { SessionFrictionReport, SessionFrictionReportOptions, SessionFrictionSession, SessionFrictionSignal } from './types.js';
+import type {
+  SessionFrictionReport,
+  SessionFrictionReportOptions,
+  SessionFrictionSession,
+  SessionFrictionSignal,
+} from './types.js';
 
 const DEFAULT_LIMIT = 10;
 const DEFAULT_CONTEXT_WINDOW = 200_000;
@@ -16,7 +26,11 @@ const IDLE_GAP_WARN_MINUTES = 45;
 
 interface ScanTarget {
   filePath: string;
-  sourceType: 'project-transcript' | 'legacy-transcript' | 'omc-session-summary' | 'omc-session-replay';
+  sourceType:
+    | 'project-transcript'
+    | 'legacy-transcript'
+    | 'omc-session-summary'
+    | 'omc-session-replay';
 }
 
 interface MutableSessionStats {
@@ -102,7 +116,10 @@ function listJsonFiles(rootDir: string): string[] {
       const fullPath = join(current, entry.name);
       if (entry.isDirectory()) {
         stack.push(fullPath);
-      } else if (entry.isFile() && (entry.name.endsWith('.jsonl') || entry.name.endsWith('.json'))) {
+      } else if (
+        entry.isFile() &&
+        (entry.name.endsWith('.jsonl') || entry.name.endsWith('.json'))
+      ) {
         files.push(fullPath);
       }
     }
@@ -110,32 +127,52 @@ function listJsonFiles(rootDir: string): string[] {
   return files;
 }
 
-function isWithinProject(projectPath: string | undefined, projectRoots: string[]): boolean {
+function isWithinProject(
+  projectPath: string | undefined,
+  projectRoots: string[],
+): boolean {
   if (!projectPath) return false;
-  const normalizedProjectPath = normalize(resolve(projectPath)).replace(/\\/g, '/');
+  const normalizedProjectPath = normalize(resolve(projectPath)).replace(
+    /\\/g,
+    '/',
+  );
   return projectRoots.some((root) => {
     const normalizedRoot = normalize(resolve(root)).replace(/\\/g, '/');
-    return normalizedProjectPath === normalizedRoot || normalizedProjectPath.startsWith(`${normalizedRoot}/`);
+    return (
+      normalizedProjectPath === normalizedRoot ||
+      normalizedProjectPath.startsWith(`${normalizedRoot}/`)
+    );
   });
 }
 
-function buildScopeMode(project: string | undefined): 'current' | 'project' | 'all' {
+function buildScopeMode(
+  project: string | undefined,
+): 'current' | 'project' | 'all' {
   if (!project || project === 'current') return 'current';
   if (project === 'all') return 'all';
   return 'project';
 }
 
-function matchesProjectFilter(projectPath: string | undefined, projectFilter: string | undefined): boolean {
+function matchesProjectFilter(
+  projectPath: string | undefined,
+  projectFilter: string | undefined,
+): boolean {
   if (!projectFilter || projectFilter === 'all') return true;
   if (!projectPath) return false;
   return projectPath.toLowerCase().includes(projectFilter.toLowerCase());
 }
 
 function isOmcSource(sourceType: ScanTarget['sourceType']): boolean {
-  return sourceType === 'omc-session-summary' || sourceType === 'omc-session-replay';
+  return (
+    sourceType === 'omc-session-summary' || sourceType === 'omc-session-replay'
+  );
 }
 
-function matchesProjectScope(sourceType: ScanTarget['sourceType'], projectPath: string | undefined, projectFilter: string | undefined): boolean {
+function matchesProjectScope(
+  sourceType: ScanTarget['sourceType'],
+  projectPath: string | undefined,
+  projectFilter: string | undefined,
+): boolean {
   if (!projectFilter || projectFilter === 'all') return true;
   if (!projectPath) return isOmcSource(sourceType);
   return matchesProjectFilter(projectPath, projectFilter);
@@ -157,7 +194,11 @@ function uniqueSortedTargets(targets: ScanTarget[]): ScanTarget[] {
     });
 }
 
-function buildTargets(projectRoot: string, projectRoots: string[], scopeMode: 'current' | 'project' | 'all'): ScanTarget[] {
+function buildTargets(
+  projectRoot: string,
+  projectRoots: string[],
+  scopeMode: 'current' | 'project' | 'all',
+): ScanTarget[] {
   const claudeDir = getClaudeConfigDir();
   const targets: ScanTarget[] = [];
 
@@ -170,7 +211,9 @@ function buildTargets(projectRoot: string, projectRoots: string[], scopeMode: 'c
     }
   } else {
     for (const root of projectRoots) {
-      for (const filePath of listJsonFiles(join(claudeDir, 'projects', encodeProjectPath(root)))) {
+      for (const filePath of listJsonFiles(
+        join(claudeDir, 'projects', encodeProjectPath(root)),
+      )) {
         targets.push({ filePath, sourceType: 'project-transcript' });
       }
     }
@@ -194,7 +237,10 @@ function buildTargets(projectRoot: string, projectRoots: string[], scopeMode: 'c
 
 function byteLength(value: unknown): number {
   if (value === undefined || value === null) return 0;
-  return Buffer.byteLength(typeof value === 'string' ? value : JSON.stringify(value), 'utf-8');
+  return Buffer.byteLength(
+    typeof value === 'string' ? value : JSON.stringify(value),
+    'utf-8',
+  );
 }
 
 function getMessageContent(record: Record<string, unknown>): unknown {
@@ -206,19 +252,35 @@ function getMessageContent(record: Record<string, unknown>): unknown {
 
 function countToolUse(content: unknown): number {
   if (!Array.isArray(content)) return 0;
-  return content.filter((block) => block && typeof block === 'object' && (block as Record<string, unknown>).type === 'tool_use').length;
+  return content.filter(
+    (block) =>
+      block &&
+      typeof block === 'object' &&
+      (block as Record<string, unknown>).type === 'tool_use',
+  ).length;
 }
 
 function countToolResult(content: unknown): number {
   if (!Array.isArray(content)) return 0;
-  return content.filter((block) => block && typeof block === 'object' && (block as Record<string, unknown>).type === 'tool_result').length;
+  return content.filter(
+    (block) =>
+      block &&
+      typeof block === 'object' &&
+      (block as Record<string, unknown>).type === 'tool_result',
+  ).length;
 }
 
 function isErrorResult(record: Record<string, unknown>): boolean {
   if (record.is_error === true || record.isError === true) return true;
   const content = getMessageContent(record);
   if (!Array.isArray(content)) return false;
-  return content.some((block) => block && typeof block === 'object' && ((block as Record<string, unknown>).is_error === true || (block as Record<string, unknown>).isError === true));
+  return content.some(
+    (block) =>
+      block &&
+      typeof block === 'object' &&
+      ((block as Record<string, unknown>).is_error === true ||
+        (block as Record<string, unknown>).isError === true),
+  );
 }
 
 function timestampOf(record: Record<string, unknown>): string | undefined {
@@ -244,20 +306,40 @@ function sessionIdOf(record: Record<string, unknown>): string | undefined {
 
 function updateTimeRange(stats: MutableSessionStats, timestamp?: string): void {
   if (!timestamp || Number.isNaN(Date.parse(timestamp))) return;
-  if (!stats.firstTimestamp || Date.parse(timestamp) < Date.parse(stats.firstTimestamp)) stats.firstTimestamp = timestamp;
-  if (!stats.lastTimestamp || Date.parse(timestamp) > Date.parse(stats.lastTimestamp)) stats.lastTimestamp = timestamp;
+  if (
+    !stats.firstTimestamp ||
+    Date.parse(timestamp) < Date.parse(stats.firstTimestamp)
+  )
+    stats.firstTimestamp = timestamp;
+  if (
+    !stats.lastTimestamp ||
+    Date.parse(timestamp) > Date.parse(stats.lastTimestamp)
+  )
+    stats.lastTimestamp = timestamp;
 }
 
-function updateIdleGap(stats: MutableSessionStats, previousTimestamp: string | undefined, timestamp: string | undefined): void {
+function updateIdleGap(
+  stats: MutableSessionStats,
+  previousTimestamp: string | undefined,
+  timestamp: string | undefined,
+): void {
   if (!previousTimestamp || !timestamp) return;
   const previous = Date.parse(previousTimestamp);
   const current = Date.parse(timestamp);
-  if (!Number.isFinite(previous) || !Number.isFinite(current) || current < previous) return;
+  if (
+    !Number.isFinite(previous) ||
+    !Number.isFinite(current) ||
+    current < previous
+  )
+    return;
   const gap = Math.round((current - previous) / 60_000);
   stats.maxIdleGapMinutes = Math.max(stats.maxIdleGapMinutes ?? 0, gap);
 }
 
-function getStats(map: Map<string, MutableSessionStats>, sessionId: string): MutableSessionStats {
+function getStats(
+  map: Map<string, MutableSessionStats>,
+  sessionId: string,
+): MutableSessionStats {
   let stats = map.get(sessionId);
   if (!stats) {
     stats = {
@@ -287,77 +369,159 @@ function getStats(map: Map<string, MutableSessionStats>, sessionId: string): Mut
   return stats;
 }
 
-function updateContextEstimate(stats: MutableSessionStats, record: Record<string, unknown>): void {
-  const windowValue = typeof record.context_window === 'number' ? record.context_window : null;
-  const inputValue = typeof record.input_tokens === 'number' ? record.input_tokens : null;
+function updateContextEstimate(
+  stats: MutableSessionStats,
+  record: Record<string, unknown>,
+): void {
+  const windowValue =
+    typeof record.context_window === 'number' ? record.context_window : null;
+  const inputValue =
+    typeof record.input_tokens === 'number' ? record.input_tokens : null;
   if (windowValue && inputValue !== null) {
     stats.contextWindowTokens = windowValue;
     stats.inputTokens = inputValue;
-    stats.estimatedContextPercent = Math.round((inputValue / windowValue) * 100);
+    stats.estimatedContextPercent = Math.round(
+      (inputValue / windowValue) * 100,
+    );
   }
 }
 
-function addSignal(signals: SessionFrictionSignal[], severity: SessionFrictionSignal['severity'], code: string, message: string, evidence: SessionFrictionSignal['evidence']): void {
+function addSignal(
+  signals: SessionFrictionSignal[],
+  severity: SessionFrictionSignal['severity'],
+  code: string,
+  message: string,
+  evidence: SessionFrictionSignal['evidence'],
+): void {
   signals.push({ severity, code, message, evidence });
 }
 
-function computeSignals(stats: MutableSessionStats): { score: number; signals: SessionFrictionSignal[] } {
+function computeSignals(stats: MutableSessionStats): {
+  score: number;
+  signals: SessionFrictionSignal[];
+} {
   const signals: SessionFrictionSignal[] = [];
   let score = 0;
 
   if ((stats.estimatedContextPercent ?? 0) >= 90) {
     score += 35;
-    addSignal(signals, 'critical', 'context-critical', 'Estimated context usage is at or above 90%.', { estimatedContextPercent: stats.estimatedContextPercent });
+    addSignal(
+      signals,
+      'critical',
+      'context-critical',
+      'Estimated context usage is at or above 90%.',
+      { estimatedContextPercent: stats.estimatedContextPercent },
+    );
   } else if ((stats.estimatedContextPercent ?? 0) >= 75) {
     score += 20;
-    addSignal(signals, 'warn', 'context-high', 'Estimated context usage is above the normal guard threshold.', { estimatedContextPercent: stats.estimatedContextPercent });
+    addSignal(
+      signals,
+      'warn',
+      'context-high',
+      'Estimated context usage is above the normal guard threshold.',
+      { estimatedContextPercent: stats.estimatedContextPercent },
+    );
   }
 
   if (stats.largestMessageBytes >= LARGE_MESSAGE_BYTES) {
     score += 15;
-    addSignal(signals, 'warn', 'large-message', 'A very large transcript message was observed by size only.', { largestMessageBytes: stats.largestMessageBytes });
+    addSignal(
+      signals,
+      'warn',
+      'large-message',
+      'A very large transcript message was observed by size only.',
+      { largestMessageBytes: stats.largestMessageBytes },
+    );
   }
 
   if (stats.maxLineBytes >= LARGE_LINE_BYTES) {
     score += 10;
-    addSignal(signals, 'warn', 'large-jsonl-line', 'A large transcript JSONL line may indicate pasted logs or bulky tool output.', { maxLineBytes: stats.maxLineBytes });
+    addSignal(
+      signals,
+      'warn',
+      'large-jsonl-line',
+      'A large transcript JSONL line may indicate pasted logs or bulky tool output.',
+      { maxLineBytes: stats.maxLineBytes },
+    );
   }
 
-  if (stats.toolResults > 0 && stats.errorResults / stats.toolResults >= ERROR_RATE_WARN) {
+  if (
+    stats.toolResults > 0 &&
+    stats.errorResults / stats.toolResults >= ERROR_RATE_WARN
+  ) {
     score += 20;
-    addSignal(signals, 'warn', 'tool-error-rate', 'Tool-result error rate is high enough to create retry friction.', { errorResults: stats.errorResults, toolResults: stats.toolResults });
+    addSignal(
+      signals,
+      'warn',
+      'tool-error-rate',
+      'Tool-result error rate is high enough to create retry friction.',
+      { errorResults: stats.errorResults, toolResults: stats.toolResults },
+    );
   }
 
   if ((stats.maxIdleGapMinutes ?? 0) >= IDLE_GAP_WARN_MINUTES) {
     score += 10;
-    addSignal(signals, 'info', 'long-idle-gap', 'A long idle gap may make the session harder to resume.', { maxIdleGapMinutes: stats.maxIdleGapMinutes });
+    addSignal(
+      signals,
+      'info',
+      'long-idle-gap',
+      'A long idle gap may make the session harder to resume.',
+      { maxIdleGapMinutes: stats.maxIdleGapMinutes },
+    );
   }
 
   if (stats.replayAgentsFailed > 0) {
     score += 15;
-    addSignal(signals, 'warn', 'agent-failures', 'Replay logs include failed agent completions.', { replayAgentsFailed: stats.replayAgentsFailed });
+    addSignal(
+      signals,
+      'warn',
+      'agent-failures',
+      'Replay logs include failed agent completions.',
+      { replayAgentsFailed: stats.replayAgentsFailed },
+    );
   }
 
   if (stats.replayHooksFired > 30) {
     score += 5;
-    addSignal(signals, 'info', 'hook-noise', 'Replay logs show frequent hook activity.', { replayHooksFired: stats.replayHooksFired });
+    addSignal(
+      signals,
+      'info',
+      'hook-noise',
+      'Replay logs show frequent hook activity.',
+      { replayHooksFired: stats.replayHooksFired },
+    );
   }
 
   if (signals.length === 0) {
-    addSignal(signals, 'info', 'no-obvious-friction', 'No obvious friction signal was detected from local metadata.', { transcriptBytes: stats.transcriptBytes, toolCalls: stats.toolCalls });
+    addSignal(
+      signals,
+      'info',
+      'no-obvious-friction',
+      'No obvious friction signal was detected from local metadata.',
+      { transcriptBytes: stats.transcriptBytes, toolCalls: stats.toolCalls },
+    );
   }
 
   return { score: Math.min(100, score), signals };
 }
 
-async function scanJsonlTarget(target: ScanTarget, sessions: Map<string, MutableSessionStats>, filters: {
-  sessionId?: string;
-  sinceEpoch?: number;
-  projectFilter?: string;
-  projectRoots?: string[];
-}): Promise<void> {
-  const fileMtime = existsSync(target.filePath) ? statSync(target.filePath).mtimeMs : 0;
-  const reader = createInterface({ input: createReadStream(target.filePath, { encoding: 'utf-8' }), crlfDelay: Infinity });
+async function scanJsonlTarget(
+  target: ScanTarget,
+  sessions: Map<string, MutableSessionStats>,
+  filters: {
+    sessionId?: string;
+    sinceEpoch?: number;
+    projectFilter?: string;
+    projectRoots?: string[];
+  },
+): Promise<void> {
+  const fileMtime = existsSync(target.filePath)
+    ? statSync(target.filePath).mtimeMs
+    : 0;
+  const reader = createInterface({
+    input: createReadStream(target.filePath, { encoding: 'utf-8' }),
+    crlfDelay: Infinity,
+  });
   const lastTimestamps = new Map<string, string>();
 
   try {
@@ -371,13 +535,33 @@ async function scanJsonlTarget(target: ScanTarget, sessions: Map<string, Mutable
       }
 
       const sessionId = sessionIdOf(record);
-      if (!sessionId || (filters.sessionId && sessionId !== filters.sessionId)) continue;
-      const projectPath = typeof record.cwd === 'string' ? record.cwd : undefined;
-      if (filters.projectRoots && filters.projectRoots.length > 0 && projectPath && !isWithinProject(projectPath, filters.projectRoots)) continue;
-      if (!matchesProjectScope(target.sourceType, projectPath, filters.projectFilter)) continue;
+      if (!sessionId || (filters.sessionId && sessionId !== filters.sessionId))
+        continue;
+      const projectPath =
+        typeof record.cwd === 'string' ? record.cwd : undefined;
+      if (
+        filters.projectRoots &&
+        filters.projectRoots.length > 0 &&
+        projectPath &&
+        !isWithinProject(projectPath, filters.projectRoots)
+      )
+        continue;
+      if (
+        !matchesProjectScope(
+          target.sourceType,
+          projectPath,
+          filters.projectFilter,
+        )
+      )
+        continue;
       const timestamp = timestampOf(record);
       const entryEpoch = timestamp ? Date.parse(timestamp) : fileMtime;
-      if (filters.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < filters.sinceEpoch) continue;
+      if (
+        filters.sinceEpoch &&
+        Number.isFinite(entryEpoch) &&
+        entryEpoch < filters.sinceEpoch
+      )
+        continue;
 
       const stats = getStats(sessions, sessionId);
       stats.sources.add(target.sourceType);
@@ -390,13 +574,18 @@ async function scanJsonlTarget(target: ScanTarget, sessions: Map<string, Mutable
       stats.transcriptBytes += lineBytes + 1;
       stats.transcriptLines += 1;
       stats.maxLineBytes = Math.max(stats.maxLineBytes, lineBytes);
-      stats.largestMessageBytes = Math.max(stats.largestMessageBytes, byteLength(getMessageContent(record)));
+      stats.largestMessageBytes = Math.max(
+        stats.largestMessageBytes,
+        byteLength(getMessageContent(record)),
+      );
 
-      const role = typeof (record.message as Record<string, unknown> | undefined)?.role === 'string'
-        ? (record.message as Record<string, unknown>).role
-        : typeof record.type === 'string'
-          ? record.type
-          : undefined;
+      const role =
+        typeof (record.message as Record<string, unknown> | undefined)?.role ===
+        'string'
+          ? (record.message as Record<string, unknown>).role
+          : typeof record.type === 'string'
+            ? record.type
+            : undefined;
       if (role === 'user') stats.userTurns += 1;
       if (role === 'assistant') stats.assistantTurns += 1;
 
@@ -409,7 +598,8 @@ async function scanJsonlTarget(target: ScanTarget, sessions: Map<string, Mutable
       if (target.sourceType === 'omc-session-replay') {
         stats.replayEvents += 1;
         if (record.event === 'agent_start') stats.replayAgentsSpawned += 1;
-        if (record.event === 'agent_stop' && record.success === false) stats.replayAgentsFailed += 1;
+        if (record.event === 'agent_stop' && record.success === false)
+          stats.replayAgentsFailed += 1;
         if (record.event === 'tool_end') stats.replayToolCalls += 1;
         if (record.event === 'hook_fire') stats.replayHooksFired += 1;
       }
@@ -419,50 +609,85 @@ async function scanJsonlTarget(target: ScanTarget, sessions: Map<string, Mutable
   }
 }
 
-async function scanJsonTarget(target: ScanTarget, sessions: Map<string, MutableSessionStats>, filters: {
-  sessionId?: string;
-  sinceEpoch?: number;
-  projectFilter?: string;
-  projectRoots?: string[];
-}): Promise<void> {
+async function scanJsonTarget(
+  target: ScanTarget,
+  sessions: Map<string, MutableSessionStats>,
+  filters: {
+    sessionId?: string;
+    sinceEpoch?: number;
+    projectFilter?: string;
+    projectRoots?: string[];
+  },
+): Promise<void> {
   let record: Record<string, unknown>;
   try {
     const { readFile } = await import('fs/promises');
-    record = JSON.parse(await readFile(target.filePath, 'utf-8')) as Record<string, unknown>;
+    record = JSON.parse(await readFile(target.filePath, 'utf-8')) as Record<
+      string,
+      unknown
+    >;
   } catch {
     return;
   }
   const sessionId = sessionIdOf(record);
-  if (!sessionId || (filters.sessionId && sessionId !== filters.sessionId)) return;
+  if (!sessionId || (filters.sessionId && sessionId !== filters.sessionId))
+    return;
   const projectPath = typeof record.cwd === 'string' ? record.cwd : undefined;
-  if (filters.projectRoots && filters.projectRoots.length > 0 && projectPath && !isWithinProject(projectPath, filters.projectRoots)) return;
-  if (!matchesProjectScope(target.sourceType, projectPath, filters.projectFilter)) return;
+  if (
+    filters.projectRoots &&
+    filters.projectRoots.length > 0 &&
+    projectPath &&
+    !isWithinProject(projectPath, filters.projectRoots)
+  )
+    return;
+  if (
+    !matchesProjectScope(target.sourceType, projectPath, filters.projectFilter)
+  )
+    return;
   const timestamp = timestampOf(record);
-  const fileMtime = existsSync(target.filePath) ? statSync(target.filePath).mtimeMs : 0;
+  const fileMtime = existsSync(target.filePath)
+    ? statSync(target.filePath).mtimeMs
+    : 0;
   const entryEpoch = timestamp ? Date.parse(timestamp) : fileMtime;
-  if (filters.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < filters.sinceEpoch) return;
+  if (
+    filters.sinceEpoch &&
+    Number.isFinite(entryEpoch) &&
+    entryEpoch < filters.sinceEpoch
+  )
+    return;
 
   const stats = getStats(sessions, sessionId);
   stats.sources.add(target.sourceType);
   if (projectPath) stats.projectPath = projectPath;
   updateTimeRange(stats, timestamp);
-  const bytes = existsSync(target.filePath) ? statSync(target.filePath).size : 0;
+  const bytes = existsSync(target.filePath)
+    ? statSync(target.filePath).size
+    : 0;
   stats.transcriptBytes += bytes;
   stats.transcriptLines += 1;
 }
 
-export async function generateSessionFrictionReport(rawOptions: SessionFrictionReportOptions = {}): Promise<SessionFrictionReport> {
+export async function generateSessionFrictionReport(
+  rawOptions: SessionFrictionReportOptions = {},
+): Promise<SessionFrictionReport> {
   if (rawOptions.sessionId) validateSessionId(rawOptions.sessionId);
   const limit = Math.max(1, rawOptions.limit ?? DEFAULT_LIMIT);
   const sinceEpoch = parseSinceSpec(rawOptions.since);
-  const workingDirectory = validateWorkingDirectory(rawOptions.workingDirectory);
+  const workingDirectory = validateWorkingDirectory(
+    rawOptions.workingDirectory,
+  );
   const currentProjectRoot = resolveToWorktreeRoot(workingDirectory);
   const scopeMode = buildScopeMode(rawOptions.project);
-  const literalWorkingDirectory = rawOptions.workingDirectory ? resolve(rawOptions.workingDirectory) : workingDirectory;
+  const literalWorkingDirectory = rawOptions.workingDirectory
+    ? resolve(rawOptions.workingDirectory)
+    : workingDirectory;
   const projectRoots = [currentProjectRoot, literalWorkingDirectory]
     .concat(getMainRepoRoot(currentProjectRoot) ?? [])
     .concat(getClaudeWorktreeParent(currentProjectRoot) ?? [])
-    .filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
+    .filter(
+      (value, index, arr): value is string =>
+        Boolean(value) && arr.indexOf(value) === index,
+    );
   const targets = buildTargets(currentProjectRoot, projectRoots, scopeMode);
   const sessions = new Map<string, MutableSessionStats>();
 
@@ -480,27 +705,48 @@ export async function generateSessionFrictionReport(rawOptions: SessionFrictionR
     }
   }
 
-  const sessionReports: SessionFrictionSession[] = Array.from(sessions.values()).map((stats) => {
-    if (stats.estimatedContextPercent === null && stats.contextWindowTokens === null && stats.inputTokens === null) {
-      const approximatePercent = Math.round((stats.transcriptBytes / DEFAULT_CONTEXT_WINDOW) * 100);
-      stats.estimatedContextPercent = approximatePercent > 0 ? Math.min(100, approximatePercent) : null;
-    }
-    const { score, signals } = computeSignals(stats);
-    return {
-      ...stats,
-      sources: Array.from(stats.sources).sort(),
-      frictionScore: score,
-      signals,
-    };
-  }).sort((a, b) => {
-    if (a.frictionScore !== b.frictionScore) return b.frictionScore - a.frictionScore;
-    const aTime = a.lastTimestamp ? Date.parse(a.lastTimestamp) : 0;
-    const bTime = b.lastTimestamp ? Date.parse(b.lastTimestamp) : 0;
-    return bTime - aTime;
-  }).slice(0, limit);
+  const sessionReports: SessionFrictionSession[] = Array.from(sessions.values())
+    .map((stats) => {
+      if (
+        stats.estimatedContextPercent === null &&
+        stats.contextWindowTokens === null &&
+        stats.inputTokens === null
+      ) {
+        const approximatePercent = Math.round(
+          (stats.transcriptBytes / DEFAULT_CONTEXT_WINDOW) * 100,
+        );
+        stats.estimatedContextPercent =
+          approximatePercent > 0 ? Math.min(100, approximatePercent) : null;
+      }
+      const { score, signals } = computeSignals(stats);
+      return {
+        ...stats,
+        sources: Array.from(stats.sources).sort(),
+        frictionScore: score,
+        signals,
+      };
+    })
+    .sort((a, b) => {
+      if (a.frictionScore !== b.frictionScore)
+        return b.frictionScore - a.frictionScore;
+      const aTime = a.lastTimestamp ? Date.parse(a.lastTimestamp) : 0;
+      const bTime = b.lastTimestamp ? Date.parse(b.lastTimestamp) : 0;
+      return bTime - aTime;
+    })
+    .slice(0, limit);
 
-  const criticalSignals = sessionReports.reduce((count, session) => count + session.signals.filter((signal) => signal.severity === 'critical').length, 0);
-  const warningSignals = sessionReports.reduce((count, session) => count + session.signals.filter((signal) => signal.severity === 'warn').length, 0);
+  const criticalSignals = sessionReports.reduce(
+    (count, session) =>
+      count +
+      session.signals.filter((signal) => signal.severity === 'critical').length,
+    0,
+  );
+  const warningSignals = sessionReports.reduce(
+    (count, session) =>
+      count +
+      session.signals.filter((signal) => signal.severity === 'warn').length,
+    0,
+  );
 
   return {
     generatedAt: new Date().toISOString(),
@@ -513,14 +759,28 @@ export async function generateSessionFrictionReport(rawOptions: SessionFrictionR
     privacy: {
       localOnly: true,
       rawContentIncluded: false,
-      summary: 'Report uses local transcript/session metadata only and does not include raw prompt, response, or tool-result content.',
+      summary:
+        'Report uses local transcript/session metadata only and does not include raw prompt, response, or tool-result content.',
     },
     totals: {
       sessions: sessionReports.length,
-      transcriptBytes: sessionReports.reduce((sum, session) => sum + session.transcriptBytes, 0),
-      transcriptLines: sessionReports.reduce((sum, session) => sum + session.transcriptLines, 0),
-      toolCalls: sessionReports.reduce((sum, session) => sum + session.toolCalls + session.replayToolCalls, 0),
-      errorResults: sessionReports.reduce((sum, session) => sum + session.errorResults + session.replayAgentsFailed, 0),
+      transcriptBytes: sessionReports.reduce(
+        (sum, session) => sum + session.transcriptBytes,
+        0,
+      ),
+      transcriptLines: sessionReports.reduce(
+        (sum, session) => sum + session.transcriptLines,
+        0,
+      ),
+      toolCalls: sessionReports.reduce(
+        (sum, session) => sum + session.toolCalls + session.replayToolCalls,
+        0,
+      ),
+      errorResults: sessionReports.reduce(
+        (sum, session) =>
+          sum + session.errorResults + session.replayAgentsFailed,
+        0,
+      ),
       criticalSignals,
       warningSignals,
     },

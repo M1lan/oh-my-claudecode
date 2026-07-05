@@ -477,7 +477,10 @@ function isWithinQuotedSpan(text: string, position: number): boolean {
  * neutralize the exemption for a keyword that is purely quoted as an
  * example.
  */
-function findQuotedSpanBounds(text: string, position: number): { start: number; end: number } | null {
+function findQuotedSpanBounds(
+  text: string,
+  position: number,
+): { start: number; end: number } | null {
   for (const match of text.matchAll(QUOTED_SPAN_PATTERN)) {
     if (match.index === undefined) continue;
     const start = match.index;
@@ -585,7 +588,9 @@ function hasConversationalInvocationNearKeyword(
     /\b(?:can|could|would|will)\s+you\s+$/i,
   ];
 
-  return conversationalInvocationPatterns.some((pattern) => pattern.test(prefix));
+  return conversationalInvocationPatterns.some((pattern) =>
+    pattern.test(prefix),
+  );
 }
 
 function hasExplicitInvocationContext(
@@ -724,7 +729,10 @@ function isInformationalKeywordContext(
   const line = text.slice(lineBounds.start, lineBounds.end);
   const questionOutsideQuotes = stripQuotedSpans(text);
   const keywordInsideQuotes = isWithinQuotedSpan(text, position);
-  const hasExecutionDirective = /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(context);
+  const hasExecutionDirective =
+    /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(
+      context,
+    );
 
   // A keyword occurrence inside a quoted span is usually reported/example
   // text, not a command directed at the assistant — e.g. an example sentence
@@ -791,7 +799,14 @@ function isInformationalKeywordContext(
       return false;
     }
 
-    if (hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText)) {
+    if (
+      hasConversationalInvocationNearKeyword(
+        text,
+        position,
+        keywordLength,
+        keywordText,
+      )
+    ) {
       return false;
     }
 

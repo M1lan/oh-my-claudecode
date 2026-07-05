@@ -5,24 +5,24 @@ import { TOOL_CATEGORIES, type ToolCategory } from '../constants/index.js';
  * Supports both canonical names and common aliases.
  */
 export const DISABLE_TOOLS_GROUP_MAP: Record<string, ToolCategory> = {
-  'lsp': TOOL_CATEGORIES.LSP,
-  'ast': TOOL_CATEGORIES.AST,
-  'python': TOOL_CATEGORIES.PYTHON,
+  lsp: TOOL_CATEGORIES.LSP,
+  ast: TOOL_CATEGORIES.AST,
+  python: TOOL_CATEGORIES.PYTHON,
   'python-repl': TOOL_CATEGORIES.PYTHON,
-  'trace': TOOL_CATEGORIES.TRACE,
-  'state': TOOL_CATEGORIES.STATE,
-  'notepad': TOOL_CATEGORIES.NOTEPAD,
-  'memory': TOOL_CATEGORIES.MEMORY,
+  trace: TOOL_CATEGORIES.TRACE,
+  state: TOOL_CATEGORIES.STATE,
+  notepad: TOOL_CATEGORIES.NOTEPAD,
+  memory: TOOL_CATEGORIES.MEMORY,
   'project-memory': TOOL_CATEGORIES.MEMORY,
-  'skills': TOOL_CATEGORIES.SKILLS,
-  'interop': TOOL_CATEGORIES.INTEROP,
-  'codex': TOOL_CATEGORIES.CODEX,
-  'gemini': TOOL_CATEGORIES.GEMINI,
-  'antigravity': TOOL_CATEGORIES.ANTIGRAVITY,
+  skills: TOOL_CATEGORIES.SKILLS,
+  interop: TOOL_CATEGORIES.INTEROP,
+  codex: TOOL_CATEGORIES.CODEX,
+  gemini: TOOL_CATEGORIES.GEMINI,
+  antigravity: TOOL_CATEGORIES.ANTIGRAVITY,
   'shared-memory': TOOL_CATEGORIES.SHARED_MEMORY,
-  'deepinit': TOOL_CATEGORIES.DEEPINIT,
+  deepinit: TOOL_CATEGORIES.DEEPINIT,
   'deepinit-manifest': TOOL_CATEGORIES.DEEPINIT,
-  'wiki': TOOL_CATEGORIES.WIKI,
+  wiki: TOOL_CATEGORIES.WIKI,
 };
 
 /**
@@ -58,7 +58,7 @@ export function tagCategory<T extends { name: string }>(
   tools: T[],
   category: ToolCategory,
 ): (T & { category: ToolCategory })[] {
-  return tools.map(t => ({ ...t, category }));
+  return tools.map((t) => ({ ...t, category }));
 }
 
 export function filterDisabledTools<T extends { category?: ToolCategory }>(
@@ -68,5 +68,7 @@ export function filterDisabledTools<T extends { category?: ToolCategory }>(
   const disabledGroups = parseDisabledGroups(envValue);
   if (disabledGroups.size === 0) return tools;
 
-  return tools.filter(tool => !tool.category || !disabledGroups.has(tool.category));
+  return tools.filter(
+    (tool) => !tool.category || !disabledGroups.has(tool.category),
+  );
 }

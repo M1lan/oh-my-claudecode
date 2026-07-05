@@ -836,7 +836,14 @@ diff --git a/a b/b
       sessionId,
     );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
-    const autopilotStatePath = join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json');
+    const autopilotStatePath = join(
+      cwd,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+      'autopilot-state.json',
+    );
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
@@ -844,14 +851,24 @@ diff --git a/a b/b
   });
 
   it('still activates ralph when quoted for emphasis alongside an execution directive (issue #3380 regression guard)', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-directive-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-directive-'),
+    );
     const sessionId = 'session-quoted-directive-3380';
-    const output = runKeywordDetector('"ralph" fix the auth bug', cwd, sessionId);
+    const output = runKeywordDetector(
+      '"ralph" fix the auth bug',
+      cwd,
+      sessionId,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(output.continue).toBe(true);
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'),
+      ),
+    ).toBe(true);
   });
 
   // Regression (issue #3380, QA round 2): the execution-directive check that
@@ -873,14 +890,27 @@ diff --git a/a b/b
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   // Regression (issue #3382): an informational/reference occurrence of a
   // keyword earlier in the same prompt must not suppress a later directive
   // occurrence of that same keyword.
   it('activates ralph for a later directive after an earlier informational mention', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-info-then-directive-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-info-then-directive-'),
+    );
     const sessionId = 'session-info-then-directive-3382';
     const output = runKeywordDetector(
       'The old docs call ralph deprecated. Please ralph and fix the flaky tests.',
@@ -891,11 +921,17 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'),
+      ),
+    ).toBe(true);
   });
 
   it('does not activate ralph for an informational mention followed by a quoted please phrase', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-please-ralph-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-please-ralph-'),
+    );
     const sessionId = 'session-quoted-please-ralph-3382';
     const output = runKeywordDetector(
       'The docs say ralph is triggered by the phrase "please ralph".',
@@ -906,11 +942,17 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'),
+      ),
+    ).toBe(false);
   });
 
   it('does not activate autopilot for an informational mention followed by a quoted please phrase', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-please-autopilot-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-please-autopilot-'),
+    );
     const sessionId = 'session-quoted-please-autopilot-3382';
     const output = runKeywordDetector(
       'The docs say autopilot is triggered by the phrase "please autopilot".',
@@ -921,7 +963,18 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   // Regression (issue #3380, repo-owner review bot finding against the round-1
@@ -941,7 +994,18 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('does not activate autopilot when asked to implement a regression test for the quoted phrase', () => {
@@ -956,7 +1020,18 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('does not activate ralph when asked to address a false positive describing the quoted phrase', () => {
@@ -971,7 +1046,11 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'),
+      ),
+    ).toBe(false);
   });
 
   // Regression (issue #3380, QA round 3): the execution-directive check must
@@ -981,7 +1060,9 @@ diff --git a/a b/b
   // quote self-report as directive-bearing and defeats the exemption for
   // exactly the reported-speech case issue #3380 exists to catch.
   it('does not activate autopilot when the execution directive is INSIDE the quoted text itself', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-inside-quote-directive-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-inside-quote-directive-'),
+    );
     const sessionId = 'session-inside-quote-directive-3380';
     const output = runKeywordDetector(
       'The old ticket said "please fix autopilot" and closed without action.',
@@ -992,11 +1073,24 @@ diff --git a/a b/b
 
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   it('does not activate autopilot for a narrated quote containing a directive, while still detecting an unrelated genuine command', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-inside-quote-mixed-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-inside-quote-mixed-'),
+    );
     const sessionId = 'session-inside-quote-mixed-3380';
     const output = runKeywordDetector(
       'The FAQ says "please fix autopilot" is a common typo people made in 2023. Separately, ralph the test suite until it passes.',
@@ -1008,7 +1102,18 @@ diff --git a/a b/b
     expect(output.continue).toBe(true);
     expect(context).not.toContain('[MAGIC KEYWORD: AUTOPILOT]');
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(false);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(false);
   });
 
   // Regression (issue #3380, repo-owner review bot finding against commit
@@ -1019,36 +1124,80 @@ diff --git a/a b/b
   // issue`) is wrongly suppressed, even though it activated before the
   // quote-exemption existed.
   it('still activates ralph when the mode name alone is quoted for emphasis after an activation verb', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-activation-verb-ralph-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-activation-verb-ralph-'),
+    );
     const sessionId = 'session-quoted-activation-verb-ralph-3380';
-    const output = runKeywordDetector('run "ralph" on this issue', cwd, sessionId);
+    const output = runKeywordDetector(
+      'run "ralph" on this issue',
+      cwd,
+      sessionId,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(output.continue).toBe(true);
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(cwd, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json'),
+      ),
+    ).toBe(true);
   });
 
   it('still activates autopilot when the mode name alone is quoted for emphasis after an activation verb', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-activation-verb-autopilot-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-activation-verb-autopilot-'),
+    );
     const sessionId = 'session-quoted-activation-verb-autopilot-3380';
-    const output = runKeywordDetector('use "autopilot" on this task', cwd, sessionId);
+    const output = runKeywordDetector(
+      'use "autopilot" on this task',
+      cwd,
+      sessionId,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(output.continue).toBe(true);
     expect(context).toContain('[MAGIC KEYWORD: AUTOPILOT]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'autopilot-state.json',
+        ),
+      ),
+    ).toBe(true);
   });
 
   it('still activates ultrawork when the mode name alone is quoted for emphasis after an activation verb', () => {
-    const cwd = mkdtempSync(join(tmpdir(), 'keyword-detector-quoted-activation-verb-ultrawork-'));
+    const cwd = mkdtempSync(
+      join(tmpdir(), 'keyword-detector-quoted-activation-verb-ultrawork-'),
+    );
     const sessionId = 'session-quoted-activation-verb-ultrawork-3380';
-    const output = runKeywordDetector('start "ultrawork" on this repo', cwd, sessionId);
+    const output = runKeywordDetector(
+      'start "ultrawork" on this repo',
+      cwd,
+      sessionId,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(output.continue).toBe(true);
     expect(context).toContain('[MAGIC KEYWORD: ULTRAWORK]');
-    expect(existsSync(join(cwd, '.omc', 'state', 'sessions', sessionId, 'ultrawork-state.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(
+          cwd,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+          'ultrawork-state.json',
+        ),
+      ),
+    ).toBe(true);
   });
 
   // Japanese full-width katakana variants must fire on the deployed runtime

@@ -31,14 +31,20 @@ function formatTimestamp(timestamp?: string): string {
 }
 
 function topSignal(session: SessionFrictionSession): string {
-  const signal = session.signals.find((candidate) => candidate.severity !== 'info') ?? session.signals[0];
+  const signal =
+    session.signals.find((candidate) => candidate.severity !== 'info') ??
+    session.signals[0];
   return signal ? `${signal.code}: ${signal.message}` : 'no-obvious-friction';
 }
 
-export function formatSessionFrictionReport(report: SessionFrictionReport): string {
+export function formatSessionFrictionReport(
+  report: SessionFrictionReport,
+): string {
   const lines: string[] = [
     chalk.blue('Local session friction report'),
-    chalk.gray(`Scope: ${report.scope.mode}${report.scope.since ? ` since ${report.scope.since}` : ''}`),
+    chalk.gray(
+      `Scope: ${report.scope.mode}${report.scope.since ? ` since ${report.scope.since}` : ''}`,
+    ),
     chalk.gray(report.privacy.summary),
     '',
     `Sessions: ${report.totals.sessions}`,
@@ -48,19 +54,33 @@ export function formatSessionFrictionReport(report: SessionFrictionReport): stri
   ];
 
   if (report.sessions.length === 0) {
-    lines.push('', chalk.yellow('No local session artifacts found for this scope.'));
+    lines.push(
+      '',
+      chalk.yellow('No local session artifacts found for this scope.'),
+    );
     return lines.join('\n');
   }
 
   lines.push('', chalk.bold('Highest-friction sessions:'));
   report.sessions.forEach((session, index) => {
-    const context = session.estimatedContextPercent === null ? 'unknown' : `${session.estimatedContextPercent}%`;
-    lines.push(`${index + 1}. ${chalk.bold(session.sessionId)} — score ${session.frictionScore}/100`);
+    const context =
+      session.estimatedContextPercent === null
+        ? 'unknown'
+        : `${session.estimatedContextPercent}%`;
+    lines.push(
+      `${index + 1}. ${chalk.bold(session.sessionId)} — score ${session.frictionScore}/100`,
+    );
     lines.push(`   Last activity: ${formatTimestamp(session.lastTimestamp)}`);
     if (session.projectPath) lines.push(`   Project: ${session.projectPath}`);
-    lines.push(`   Size/turns: ${formatBytes(session.transcriptBytes)}, ${session.userTurns} user turns, ${session.assistantTurns} assistant turns`);
-    lines.push(`   Tools/errors: ${session.toolCalls + session.replayToolCalls} tool events, ${session.errorResults + session.replayAgentsFailed} error/failure markers`);
-    lines.push(`   Context estimate: ${context}; largest message: ${formatBytes(session.largestMessageBytes)}`);
+    lines.push(
+      `   Size/turns: ${formatBytes(session.transcriptBytes)}, ${session.userTurns} user turns, ${session.assistantTurns} assistant turns`,
+    );
+    lines.push(
+      `   Tools/errors: ${session.toolCalls + session.replayToolCalls} tool events, ${session.errorResults + session.replayAgentsFailed} error/failure markers`,
+    );
+    lines.push(
+      `   Context estimate: ${context}; largest message: ${formatBytes(session.largestMessageBytes)}`,
+    );
     lines.push(`   Main signal: ${topSignal(session)}`);
   });
 
@@ -79,6 +99,10 @@ export async function sessionFrictionReportCommand(
     workingDirectory: options.workingDirectory,
   });
 
-  logger.log(options.json ? JSON.stringify(report, null, 2) : formatSessionFrictionReport(report));
+  logger.log(
+    options.json
+      ? JSON.stringify(report, null, 2)
+      : formatSessionFrictionReport(report),
+  );
   return report;
 }

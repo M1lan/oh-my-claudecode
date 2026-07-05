@@ -53,13 +53,22 @@ export interface ToolDef {
 export const allTools: ToolDef[] = [
   ...tagCategory(lspTools as unknown as ToolDef[], TOOL_CATEGORIES.LSP),
   ...tagCategory(astTools as unknown as ToolDef[], TOOL_CATEGORIES.AST),
-  { ...(pythonReplTool as unknown as ToolDef), category: TOOL_CATEGORIES.PYTHON },
+  {
+    ...(pythonReplTool as unknown as ToolDef),
+    category: TOOL_CATEGORIES.PYTHON,
+  },
   ...tagCategory(stateTools as unknown as ToolDef[], TOOL_CATEGORIES.STATE),
   ...tagCategory(notepadTools as unknown as ToolDef[], TOOL_CATEGORIES.NOTEPAD),
   ...tagCategory(memoryTools as unknown as ToolDef[], TOOL_CATEGORIES.MEMORY),
   ...tagCategory(traceTools as unknown as ToolDef[], TOOL_CATEGORIES.TRACE),
-  ...tagCategory(sharedMemoryTools as unknown as ToolDef[], TOOL_CATEGORIES.SHARED_MEMORY),
-  { ...(deepinitManifestTool as unknown as ToolDef), category: TOOL_CATEGORIES.DEEPINIT },
+  ...tagCategory(
+    sharedMemoryTools as unknown as ToolDef[],
+    TOOL_CATEGORIES.SHARED_MEMORY,
+  ),
+  {
+    ...(deepinitManifestTool as unknown as ToolDef),
+    category: TOOL_CATEGORIES.DEEPINIT,
+  },
   ...tagCategory(wikiTools as unknown as ToolDef[], TOOL_CATEGORIES.WIKI),
   ...tagCategory(skillsTools as unknown as ToolDef[], TOOL_CATEGORIES.SKILLS),
 ];
@@ -171,7 +180,9 @@ export interface ListToolsEntry {
  * Build the ListTools response payload exactly as standalone-server.ts sends it.
  * Tests call this directly to exercise the same code path as the live server.
  */
-export function buildListToolsResponse(envValue?: string): { tools: ListToolsEntry[] } {
+export function buildListToolsResponse(envValue?: string): {
+  tools: ListToolsEntry[];
+} {
   return {
     tools: getEnabledTools(envValue).map((tool) => ({
       name: tool.name,

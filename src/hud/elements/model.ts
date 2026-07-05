@@ -27,7 +27,9 @@ function extractVersion(modelId: string): string | null {
   if (idMatch) return `${idMatch[1]}.${idMatch[2]}`;
 
   // Match Claude family IDs with a single trailing numeric version like claude-sonnet-5
-  const singleSegmentIdMatch = modelId.match(/(?:^|[.-])claude-(?:opus|sonnet|haiku)-(\d+)$/i);
+  const singleSegmentIdMatch = modelId.match(
+    /(?:^|[.-])claude-(?:opus|sonnet|haiku)-(\d+)$/i,
+  );
   if (singleSegmentIdMatch) return singleSegmentIdMatch[1];
 
   // Match legacy raw ID patterns like claude-3-5-sonnet-20241022 and claude-3-opus-20240229

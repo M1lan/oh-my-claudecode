@@ -1135,7 +1135,8 @@ This article argues that fake popularity signals damage trust in open source.`;
       });
 
       it('should NOT detect ralph inside a quoted example sentence', () => {
-        const text = 'The docs give "run ralph on this" as an example of an activating phrase.';
+        const text =
+          'The docs give "run ralph on this" as an example of an activating phrase.';
         const result = detectKeywordsWithType(text);
         const ralphMatch = result.find((r) => r.type === 'ralph');
         expect(ralphMatch).toBeUndefined();
@@ -1148,7 +1149,9 @@ This article argues that fake popularity signals damage trust in open source.`;
       });
 
       it('should still detect autopilot when quoted for emphasis alongside an execution directive', () => {
-        const result = detectKeywordsWithType('"autopilot" implement the login page');
+        const result = detectKeywordsWithType(
+          '"autopilot" implement the login page',
+        );
         const autopilotMatch = result.find((r) => r.type === 'autopilot');
         expect(autopilotMatch).toBeDefined();
       });

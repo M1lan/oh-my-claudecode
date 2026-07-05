@@ -73,24 +73,36 @@ function writeCompletePluginPayload(root: string): void {
   );
 }
 
-function shippedStandaloneHookPayload(filename: string, location: 'hooks' | 'hooks/lib'): string {
+function shippedStandaloneHookPayload(
+  filename: string,
+  location: 'hooks' | 'hooks/lib',
+): string {
   if (location === 'hooks') {
     if (filename === 'find-node.sh') {
       return readFileSync(join(process.cwd(), 'scripts', filename), 'utf-8');
     }
-    return readFileSync(join(process.cwd(), 'templates', 'hooks', filename), 'utf-8');
+    return readFileSync(
+      join(process.cwd(), 'templates', 'hooks', filename),
+      'utf-8',
+    );
   }
 
   if (filename === 'config-dir.mjs' || filename === 'config-dir.sh') {
-    return readFileSync(join(process.cwd(), 'scripts', 'lib', filename), 'utf-8');
+    return readFileSync(
+      join(process.cwd(), 'scripts', 'lib', filename),
+      'utf-8',
+    );
   }
-  return readFileSync(join(process.cwd(), 'templates', 'hooks', 'lib', filename), 'utf-8');
+  return readFileSync(
+    join(process.cwd(), 'templates', 'hooks', 'lib', filename),
+    'utf-8',
+  );
 }
 
 function listTemplateHookLibPayload(): string[] {
   const templatesLibDir = join(process.cwd(), 'templates', 'hooks', 'lib');
   return readdirSync(templatesLibDir)
-    .filter(filename => statSync(join(templatesLibDir, filename)).isFile())
+    .filter((filename) => statSync(join(templatesLibDir, filename)).isFile())
     .sort();
 }
 
@@ -212,9 +224,17 @@ describe('install() standalone hook reconciliation', () => {
 
       expect(result.success).toBe(true);
       for (const filename of listTemplateHookLibPayload()) {
-        expect(existsSync(join(testClaudeDir, 'hooks', 'lib', filename)), filename).toBe(true);
+        expect(
+          existsSync(join(testClaudeDir, 'hooks', 'lib', filename)),
+          filename,
+        ).toBe(true);
       }
-      expect(readFileSync(join(testClaudeDir, 'hooks', 'lib', futureHelper), 'utf-8')).toBe('export const futureHelper = true;\n');
+      expect(
+        readFileSync(
+          join(testClaudeDir, 'hooks', 'lib', futureHelper),
+          'utf-8',
+        ),
+      ).toBe('export const futureHelper = true;\n');
     } finally {
       rmSync(futureHelperPath, { force: true });
     }
@@ -644,15 +664,31 @@ describe('install() plugin-provided hook deduplication (#2252)', () => {
       'find-node.sh',
     ];
     for (const filename of legacyFiles) {
-      writeFileSync(join(hooksDir, filename), shippedStandaloneHookPayload(filename, 'hooks'));
+      writeFileSync(
+        join(hooksDir, filename),
+        shippedStandaloneHookPayload(filename, 'hooks'),
+      );
     }
-    for (const filename of ['atomic-write.mjs', 'config-dir.mjs', 'config-dir.sh', 'model-routing-override-message.mjs', 'state-root.mjs', 'stdin.mjs']) {
-      writeFileSync(join(hooksLibDir, filename), shippedStandaloneHookPayload(filename, 'hooks/lib'));
+    for (const filename of [
+      'atomic-write.mjs',
+      'config-dir.mjs',
+      'config-dir.sh',
+      'model-routing-override-message.mjs',
+      'state-root.mjs',
+      'stdin.mjs',
+    ]) {
+      writeFileSync(
+        join(hooksLibDir, filename),
+        shippedStandaloneHookPayload(filename, 'hooks/lib'),
+      );
     }
 
     writeFileSync(join(hooksDir, 'notify-mac.sh'), 'user hook');
     writeFileSync(join(hooksLibDir, 'user-helper.mjs'), 'user helper');
-    writeFileSync(join(hooksDir, 'attention', 'notify.mjs'), 'user nested hook');
+    writeFileSync(
+      join(hooksDir, 'attention', 'notify.mjs'),
+      'user nested hook',
+    );
 
     const { install } = await loadInstaller();
     const result = install({ force: true, skipClaudeCheck: true });
@@ -663,9 +699,15 @@ describe('install() plugin-provided hook deduplication (#2252)', () => {
     }
     expect(existsSync(join(hooksLibDir, 'atomic-write.mjs'))).toBe(false);
     expect(existsSync(join(hooksLibDir, 'config-dir.sh'))).toBe(false);
-    expect(readFileSync(join(hooksDir, 'notify-mac.sh'), 'utf-8')).toBe('user hook');
-    expect(readFileSync(join(hooksLibDir, 'user-helper.mjs'), 'utf-8')).toBe('user helper');
-    expect(readFileSync(join(hooksDir, 'attention', 'notify.mjs'), 'utf-8')).toBe('user nested hook');
+    expect(readFileSync(join(hooksDir, 'notify-mac.sh'), 'utf-8')).toBe(
+      'user hook',
+    );
+    expect(readFileSync(join(hooksLibDir, 'user-helper.mjs'), 'utf-8')).toBe(
+      'user helper',
+    );
+    expect(
+      readFileSync(join(hooksDir, 'attention', 'notify.mjs'), 'utf-8'),
+    ).toBe('user nested hook');
   });
 
   it('preserves same-basename non-OMC hook files while pruning shipped OMC payloads', async () => {
@@ -675,18 +717,34 @@ describe('install() plugin-provided hook deduplication (#2252)', () => {
     const hooksLibDir = join(hooksDir, 'lib');
     mkdirSync(hooksLibDir, { recursive: true });
 
-    writeFileSync(join(hooksDir, 'keyword-detector.mjs'), 'console.log("user-owned keyword detector");\n');
-    writeFileSync(join(hooksDir, 'session-start.mjs'), shippedStandaloneHookPayload('session-start.mjs', 'hooks'));
-    writeFileSync(join(hooksLibDir, 'config-dir.mjs'), 'export function getClaudeConfigDir() { return "/user"; }\n');
-    writeFileSync(join(hooksLibDir, 'state-root.mjs'), shippedStandaloneHookPayload('state-root.mjs', 'hooks/lib'));
+    writeFileSync(
+      join(hooksDir, 'keyword-detector.mjs'),
+      'console.log("user-owned keyword detector");\n',
+    );
+    writeFileSync(
+      join(hooksDir, 'session-start.mjs'),
+      shippedStandaloneHookPayload('session-start.mjs', 'hooks'),
+    );
+    writeFileSync(
+      join(hooksLibDir, 'config-dir.mjs'),
+      'export function getClaudeConfigDir() { return "/user"; }\n',
+    );
+    writeFileSync(
+      join(hooksLibDir, 'state-root.mjs'),
+      shippedStandaloneHookPayload('state-root.mjs', 'hooks/lib'),
+    );
 
     const { install } = await loadInstaller();
     const result = install({ force: true, skipClaudeCheck: true });
 
     expect(result.success).toBe(true);
-    expect(readFileSync(join(hooksDir, 'keyword-detector.mjs'), 'utf-8')).toBe('console.log("user-owned keyword detector");\n');
+    expect(readFileSync(join(hooksDir, 'keyword-detector.mjs'), 'utf-8')).toBe(
+      'console.log("user-owned keyword detector");\n',
+    );
     expect(existsSync(join(hooksDir, 'session-start.mjs'))).toBe(false);
-    expect(readFileSync(join(hooksLibDir, 'config-dir.mjs'), 'utf-8')).toBe('export function getClaudeConfigDir() { return "/user"; }\n');
+    expect(readFileSync(join(hooksLibDir, 'config-dir.mjs'), 'utf-8')).toBe(
+      'export function getClaudeConfigDir() { return "/user"; }\n',
+    );
     expect(existsSync(join(hooksLibDir, 'state-root.mjs'))).toBe(false);
   });
 
@@ -699,7 +757,9 @@ describe('install() plugin-provided hook deduplication (#2252)', () => {
     const result = install({ force: true, skipClaudeCheck: true });
 
     expect(result.success).toBe(true);
-    expect(readFileSync(join(hooksDir, 'keyword-detector.mjs'), 'utf-8')).toContain('Ralph keywords');
+    expect(
+      readFileSync(join(hooksDir, 'keyword-detector.mjs'), 'utf-8'),
+    ).toContain('Ralph keywords');
   });
 
   it('preserves non-OMC hooks in settings.json when pruning plugin duplicates', async () => {
