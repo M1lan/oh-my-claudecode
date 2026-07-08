@@ -1,34 +1,73 @@
-# oh-my-claudecode v4.15.2: HUD, hooks, and workflow reliability fixes
+# oh-my-claudecode v4.15.3: support disabled keyword, support native TypeScript, add antigravity (agy)
 
 ## Release Notes
 
-Patch release focused on default HUD correctness, hook timeout reliability, Windows/path handling, and workflow guardrails since v4.15.1.
+Release with **4 new features**, **31 bug fixes**, **4 other changes** across **69 merged PRs**.
 
 ### Highlights
 
-- Fix fresh/default HUD config so the `focused` preset is applied even when `settings.json` has no `omcHud` key (#3400, fixes #3399).
-- Raise and align UserPromptSubmit hook timeout handling so the skill-injector/keyword-detector path fails open before Claude Code discards output (#3398).
-- Respect `OMC_STATE_DIR` for learner skill-session state paths (#3397).
-- Improve slow team worker startup tolerance and HUD rate-limit detection (#3395, #3392).
-- Fix setup legacy hook warnings, keyword detector informational occurrence scanning, quoted keyword exemptions, and Windows hook child-process hiding (#3389, #3386, #3385).
-- Improve HUD/model/currency/cwd behavior and Windows path handling (#3375, #3367, #3360, #3359, #3357).
-- Support Claude Sonnet 5 defaults and correct model-routing counting in indented code blocks (#3370, #3364).
-- Clarify install tracks and update the Discord invite in docs (#3362, #3373).
+- **feat(keyword-detector): support disabled keyword config**
+- **feat(lsp): support native TypeScript 7 server** (#3405)
+- **feat(providers): add antigravity (agy) CLI as drop-in alternative to gemini** (#3315)
+- **feat(hud): surface usage hint for API-key users when built-in usage unavailable (#3277)** (#3277)
+
+### New Features
+
+- **feat(keyword-detector): support disabled keyword config**
+- **feat(lsp): support native TypeScript 7 server** (#3405)
+- **feat(providers): add antigravity (agy) CLI as drop-in alternative to gemini** (#3315)
+- **feat(hud): surface usage hint for API-key users when built-in usage unavailable (#3277)** (#3277)
 
 ### Bug Fixes
 
-- Default HUD fallback now routes through the preset merge path (#3400).
-- UserPromptSubmit hook timeout budgets now match real cold-start behavior (#3398, #3387).
-- Learner state paths honor `OMC_STATE_DIR` (#3397).
-- Team startup, HUD rate-limit panes, setup legacy hooks, keyword scanning, standalone hook deployment, and Windows hook process behavior received targeted reliability fixes (#3395, #3392, #3389, #3386, #3385).
-- HUD model extraction, enterprise cost display, cwd rendering, and project-memory Windows path normalization were corrected (#3375, #3367, #3360, #3359, #3357).
-- Model-routing defaults/counting were updated for Claude Sonnet 5 and indented code blocks (#3370, #3364).
+- **fix(keyword-detector): stop ralph false-firing on proper-noun/identifier mentions** (#3435)
+- **fix(rules-injector): parse multi-line rule arrays authored with CRLF** (#3415)
+- **fix(subagent-tracker): mark unmatched stop telemetry** (#3417)
+- **fix(installer): deploy hook libs before entrypoints** (#3407)
+- **fix(hooks): raise UserPromptSubmit timeouts to stop 3s skill-injector abort** (#3398)
+- **fix(learner): respect OMC_STATE_DIR in skill-sessions state path** (#3397)
+- **fix(team): tolerate slow worker start submit repaint** (#3395)
+- **fix: hide nested hook child processes on Windows** (#3385)
+- **fix(keyword-detector): exempt quoted spans from activation-intent checks**
+- **fix(hud): show enterprise billing-period spend for non-USD currencies** (#3367)
+- **fix(model-routing): support Claude Sonnet 5 defaults** (#3370)
+- **fix(model-routing): stop halving the indented code-block count** (#3364)
+- **fix: respect home path boundary in HUD cwd** (#3360)
+- **fix(hud): render cwd as ~ and forward slashes on Windows** (#3359)
+- **fix(project-memory): normalize hot-path separators for Windows scope affinity** (#3357)
+- **fix(worktree): anchor .omc state to superproject, not git submodule** (#3350)
+- **fix(perf): widen CI envelope for subagent-lock benchmark (#3352)** (#3352)
+- **fix: honor disabled tools in standalone MCP** (#3346)
+- **fix(installer): prune legacy standalone hook files** (#3342)
+- **fix(persistent-mode): keep stop reinforcement quiet while a delegated subagent is running** (#3338)
+- **fix: let ultragoal guard escape standalone deadlock** (#3343)
+- **fix(session-search): encode underscores in project dir name (current-scope returns 0 matches)** (#3330)
+- **fix(ccg): default to antigravity advisor** (#3327)
+- **fix(hooks): encode project paths in transcript resolution**
+- **fix(jsonc): tolerate trailing commas in JSONC config files**
+- **fix(post-tool-rules-injector): honor existing skip guards**
+- **fix(team): verify cursor worker start submission** (#3296)
+- **fix: configurable magic keyword triggers** (#3289)
+- **fix(persistent-mode): bound thinking-only continuation loops** (#3280)
+- **fix(session-search): fix Windows worktree transcript resolution + converge the encoder** (#3276)
+- **fix(session-search): strip drive colon so current-scope search finds transcripts on Windows** (#3274)
 
 ### Documentation
 
-- Clarified release/install tracks and updated community invite links (#3362, #3373).
+- **docs(readme): update Discord invite link** (#3373)
+- **docs(release): clarify install tracks** (#3362)
+- **docs(release): include PR #3300 in v4.14.8 notes**
+- **docs: clarify psmux Windows team caveats** (#3312)
+- **docs: clarify OMC automation and SDK surfaces**
+- **docs: audit Claude Code changelog compatibility** (#3303)
+
+### Other Changes
+
+- **ci(guard): fail PRs that commit dist/ or bridge/ build artifacts** (#3351)
+- **chore: rebuild session search encoder artifacts** (#3333)
+- **ci: run path-handling tests on a real Windows runner**
+- **ci: move workflows to GitHub-hosted runners** (#3287)
 
 ### Stats
 
-- Covers the dev changes after v4.15.1 through merge commit `38ea6d136fddf7c4af47a7f0533d434d90734145`.
-- Includes 20 post-v4.15.1 dev commits, including PRs #3357 through #3400.
+- **69 PRs merged** | **4 new features** | **31 bug fixes** | **0 security/hardening improvements** | **4 other changes**

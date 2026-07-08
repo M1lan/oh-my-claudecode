@@ -23,13 +23,78 @@ import { fileURLToPath, pathToFileURL } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const { getClaudeConfigDir } = await import(pathToFileURL(join(__dirname, 'lib', 'config-dir.mjs')).href);
 
-// Dynamic import for the shared stdin module
+const SAFE_CONTINUE = { continue: true, suppressOutput: true };
+const DEFAULT_SAFETY_TIMEOUT_MS = 8500;
+const SAFE_EXIT_FLUSH_TIMEOUT_MS = 100;
+
+
+function getSafetyTimeoutMs() {
+  const parsed = Number.parseInt(process.env.OMC_PERSISTENT_MODE_TIMEOUT_MS || "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_SAFETY_TIMEOUT_MS;
+}
+
+function writeSafeContinue(onFlushed) {
+  let settled = false;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    if (onFlushed) onFlushed();
+  };
+
+  try {
+    const ok = process.stdout.write(JSON.stringify(SAFE_CONTINUE) + "\n", finish);
+    if (!ok) {
+      process.stdout.once("drain", finish);
+    }
+    const timeout = setTimeout(finish, SAFE_EXIT_FLUSH_TIMEOUT_MS);
+    if (!onFlushed) timeout.unref?.();
+  } catch {
+    // If stdout is unavailable, exiting still prevents a wedged Stop hook.
+    finish();
+  }
+}
+
+function shouldSkipPersistentModeHook() {
+  const skipHooks = (process.env.OMC_SKIP_HOOKS || "")
+    .split(",")
+    .map((hook) => hook.trim())
+    .filter(Boolean);
+
+  return (
+    process.env.DISABLE_OMC === "1" ||
+    process.env.DISABLE_OMC === "true" ||
+    skipHooks.includes("persistent-mode") ||
+    skipHooks.includes("stop-continuation")
+  );
+}
+
+function forceSafeExit(message) {
+  try {
+    if (message) process.stderr.write(message + "\n");
+  } catch {
+    // Ignore stderr failures; the JSON decision is what matters.
+  }
+  writeSafeContinue(() => process.exit(0));
+}
+
+const safetyTimeout = setTimeout(() => {
+  forceSafeExit("[persistent-mode] Safety timeout reached, forcing exit");
+}, getSafetyTimeoutMs());
+
+process.on("uncaughtException", (error) => {
+  forceSafeExit(`[persistent-mode] Uncaught exception: ${error?.message || error}`);
+});
+
+process.on("unhandledRejection", (error) => {
+  forceSafeExit(`[persistent-mode] Unhandled rejection: ${error?.message || error}`);
+});
+
+const { getClaudeConfigDir } = await import(pathToFileURL(join(__dirname, "lib", "config-dir.mjs")).href);
 const { readStdin } = await import(
   pathToFileURL(join(__dirname, "lib", "stdin.mjs")).href
 );
-const { resolveOmcStateRoot } = await import(pathToFileURL(join(__dirname, 'lib', 'state-root.mjs')).href);
+const { resolveOmcStateRoot } = await import(pathToFileURL(join(__dirname, "lib", "state-root.mjs")).href);
 
 function readJsonFile(path) {
   try {
@@ -764,13 +829,18 @@ function isScheduledWakeupStop(data) {
 
 async function main() {
   try {
+    if (shouldSkipPersistentModeHook()) {
+      writeSafeContinue();
+      return;
+    }
+
     const input = await readStdin();
     let data = {};
     try {
       data = JSON.parse(input);
     } catch {
       // Invalid JSON - allow stop to prevent hanging
-      process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
+      writeSafeContinue();
       return;
     }
 
@@ -1300,66 +1370,10 @@ async function main() {
     } catch {
       // Ignore stderr errors - we just need to return valid JSON
     }
-    try {
-      process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
-    } catch {
-      // If stdout write fails, the hook will timeout and Claude Code will proceed
-      // This is better than hanging forever
-      process.exit(0);
-    }
+    writeSafeContinue();
   }
 }
 
-// Global error handlers to prevent hook from hanging on uncaught errors (issue #319)
-process.on("uncaughtException", (error) => {
-  try {
-    process.stderr.write(
-      `[persistent-mode] Uncaught exception: ${error?.message || error}\n`,
-    );
-  } catch {
-    // Ignore
-  }
-  try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
-  } catch {
-    // If we can't write, just exit
-  }
-  process.exit(0);
-});
-
-process.on("unhandledRejection", (error) => {
-  try {
-    process.stderr.write(
-      `[persistent-mode] Unhandled rejection: ${error?.message || error}\n`,
-    );
-  } catch {
-    // Ignore
-  }
-  try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
-  } catch {
-    // If we can't write, just exit
-  }
-  process.exit(0);
-});
-
-// Safety timeout: if hook doesn't complete in 10 seconds, force exit
-// This prevents infinite hangs from any unforeseen issues
-const safetyTimeout = setTimeout(() => {
-  try {
-    process.stderr.write(
-      "[persistent-mode] Safety timeout reached, forcing exit\n",
-    );
-  } catch {
-    // Ignore
-  }
-  try {
-    process.stdout.write(JSON.stringify({ continue: true, suppressOutput: true }) + "\n");
-  } catch {
-    // If we can't write, just exit
-  }
-  process.exit(0);
-}, 10000);
 
 main().finally(() => {
   clearTimeout(safetyTimeout);

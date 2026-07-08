@@ -148,7 +148,7 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     const sid = 'sess-real-ralph';
 
     const output = runKeywordDetector(
-      'ralph로 이 문제 계속 고쳐주세요',
+      '/ralph 이 문제 계속 고쳐주세요',
       cwd,
       sid,
     );
@@ -170,7 +170,7 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     const sid = 'sess-task-standalone';
 
     const output = runKeywordDetector(
-      'Task: ralph로 이 문제 계속 고쳐주세요',
+      'Task: run ralph on 이 문제 계속 고쳐주세요',
       cwd,
       sid,
     );
@@ -198,7 +198,7 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     const prompt = [
       '[RALPH LOOP - ITERATION 2/100] Work is NOT done.',
       'Task: previous task',
-      'ralph로 새 작업 계속 진행',
+      'run ralph on 새 작업 계속 진행',
     ].join('\n');
 
     const output = runKeywordDetector(prompt, cwd, sid);
@@ -229,7 +229,7 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
       '[RALPH LOOP - ITERATION 4/100] Work is NOT done.',
       'Task: previous task',
       '',
-      'ralph로 새 작업 계속해줘',
+      'run ralph on 새 작업 계속해줘',
     ].join('\n');
 
     const output = runKeywordDetector(prompt, cwd, sid);
@@ -254,7 +254,7 @@ describe('keyword-detector.mjs — state.prompt sanitization', () => {
     const cwd = makeCwd('kd-prompt-len-');
     const sid = 'sess-prompt-len';
     const longTail = 'x'.repeat(2000);
-    const prompt = `ralph로 다음 긴 지시사항을 수행해주세요:\n${longTail}`;
+    const prompt = `/ralph 다음 긴 지시사항을 수행해주세요:\n${longTail}`;
 
     runKeywordDetector(prompt, cwd, sid);
     const path = stateFile(cwd, sid, 'ralph');
@@ -269,7 +269,7 @@ describe('keyword-detector.mjs — state.prompt sanitization', () => {
     const cwd = makeCwd('kd-setat-ralph-');
     const sid = 'sess-setat-ralph';
 
-    runKeywordDetector('ralph로 시작해주세요', cwd, sid);
+    runKeywordDetector('/ralph 시작해주세요', cwd, sid);
     const path = stateFile(cwd, sid, 'ralph');
     expect(existsSync(path)).toBe(true);
 

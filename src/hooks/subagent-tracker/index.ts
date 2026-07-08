@@ -51,6 +51,9 @@ export interface SubagentInfo {
   tool_usage?: ToolUsageEntry[];
   token_usage?: TokenUsage;
   model?: string;
+  synthetic?: boolean;
+  telemetry_status?: 'unmatched_stop';
+  telemetry_note?: string;
 }
 
 export interface ToolUsageEntry {
@@ -149,6 +152,9 @@ const MAX_COMPLETED_AGENTS = 100;
 const WRITE_DEBOUNCE_MS = 100;
 const MAX_FLUSH_RETRIES = 3;
 const FLUSH_RETRY_BASE_MS = 50;
+const UNTRACKED_NATIVE_FORK_AGENT_TYPE = 'untracked-native-fork';
+const UNMATCHED_STOP_TELEMETRY_NOTE =
+  'SubagentStop arrived without a matching SubagentStart; native Agent/Task start telemetry was not observed.';
 
 // Lock options — short timeout for hot-path writes; stale detection generous
 // so healthy writers aren't mistakenly treated as abandoned.
@@ -872,21 +878,23 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
         } else if (input.agent_id) {
           // No exact or fallback match. Reap any stale running agents so unmatched
           // fork stops cannot accumulate "running" entries forever, then record
-          // this stop as a synthetic closed entry (create-and-close) so the event
-          // is not silently dropped.
+          // this stop as an explicitly synthetic closed entry. Avoid duration_ms: 0
+          // and agent_type: "unknown" because those look like real telemetry.
           reapStaleRunningAgents(state, nowIso);
 
           const synthetic: SubagentInfo = {
             agent_id: input.agent_id,
-            agent_type: input.agent_type || 'unknown',
+            agent_type: input.agent_type || UNTRACKED_NATIVE_FORK_AGENT_TYPE,
             started_at: nowIso,
             parent_mode: detectParentMode(input.cwd),
             status: succeeded ? 'completed' : 'failed',
             completed_at: nowIso,
-            duration_ms: 0,
             output_summary: input.output
               ? input.output.substring(0, 500)
               : undefined,
+            synthetic: true,
+            telemetry_status: 'unmatched_stop',
+            telemetry_note: UNMATCHED_STOP_TELEMETRY_NOTE,
           };
           state.agents.push(synthetic);
           agentIndex = state.agents.length - 1;
@@ -932,7 +940,9 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
           // Fix: SDK doesn't populate agent_type in SubagentStop, so use tracked state
           try {
             const agentType =
-              stoppedAgent?.agent_type || input.agent_type || 'unknown';
+              stoppedAgent?.agent_type ||
+              input.agent_type ||
+              UNTRACKED_NATIVE_FORK_AGENT_TYPE;
             recordAgentStop(
               input.cwd,
               input.session_id,
@@ -940,6 +950,13 @@ export function processSubagentStop(input: SubagentStopInput): HookOutput {
               agentType,
               succeeded,
               stoppedAgent?.duration_ms,
+              stoppedAgent?.synthetic
+                ? {
+                    synthetic: true,
+                    telemetry_status: stoppedAgent.telemetry_status,
+                    reason: stoppedAgent.telemetry_note,
+                  }
+                : undefined,
             );
           } catch {
             /* best-effort */

@@ -54,6 +54,8 @@ export interface ReplayEvent {
   task?: string;
   success?: boolean;
   reason?: string;
+  synthetic?: boolean;
+  telemetry_status?: 'unmatched_stop';
   parent_mode?: string;
   model?: string;
   /** Hook name (e.g., "keyword-detector") */
@@ -91,6 +93,7 @@ export interface ReplaySummary {
   agents_spawned: number;
   agents_completed: number;
   agents_failed: number;
+  agents_untracked_stops?: number;
   tool_summary: Record<
     string,
     { count: number; total_ms: number; avg_ms: number; max_ms: number }
@@ -215,6 +218,12 @@ export function recordAgentStart(
   });
 }
 
+export interface AgentStopReplayMetadata {
+  synthetic?: boolean;
+  telemetry_status?: 'unmatched_stop';
+  reason?: string;
+}
+
 /**
  * Record agent stop event
  */
@@ -225,6 +234,7 @@ export function recordAgentStop(
   agentType: string,
   success: boolean,
   durationMs?: number,
+  metadata?: AgentStopReplayMetadata,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: agentId.substring(0, 7),
@@ -232,6 +242,9 @@ export function recordAgentStop(
     event: 'agent_stop',
     success,
     duration_ms: durationMs,
+    synthetic: metadata?.synthetic,
+    telemetry_status: metadata?.telemetry_status,
+    reason: metadata?.reason,
   });
 }
 
@@ -413,6 +426,11 @@ export function getReplaySummary(
         }
         break;
       case 'agent_stop':
+        if (event.synthetic || event.telemetry_status === 'unmatched_stop') {
+          summary.agents_untracked_stops =
+            (summary.agents_untracked_stops || 0) + 1;
+          break;
+        }
         if (event.success) summary.agents_completed++;
         else summary.agents_failed++;
         if (event.agent_type && event.duration_ms) {

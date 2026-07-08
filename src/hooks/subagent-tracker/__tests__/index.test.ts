@@ -25,6 +25,7 @@ import {
   type ToolUsageEntry,
 } from '../index.js';
 import { readMissionBoardState } from '../../../hud/mission-board.js';
+import { readReplayEvents } from '../session-replay.js';
 
 describe('subagent-tracker', () => {
   let testDir: string;
@@ -873,6 +874,23 @@ describe('subagent-tracker', () => {
         (a) => a.agent_id === 'native-fork-id',
       );
       expect(synthetic?.status).toBe('completed');
+      expect(synthetic?.agent_type).toBe('untracked-native-fork');
+      expect(synthetic?.duration_ms).toBeUndefined();
+      expect(synthetic?.synthetic).toBe(true);
+      expect(synthetic?.telemetry_status).toBe('unmatched_stop');
+      expect(synthetic?.telemetry_note).toContain(
+        'without a matching SubagentStart',
+      );
+      const replayStop = readReplayEvents(
+        testDir,
+        'session-unmatched-ambiguous',
+      ).find(
+        (event) => event.event === 'agent_stop' && event.agent === 'native-',
+      );
+      expect(replayStop?.agent_type).toBe('untracked-native-fork');
+      expect(replayStop?.duration_ms).toBeUndefined();
+      expect(replayStop?.synthetic).toBe(true);
+      expect(replayStop?.telemetry_status).toBe('unmatched_stop');
       expect(state.total_failed).toBe(2);
       expect(state.total_completed).toBe(1);
     });
@@ -915,6 +933,13 @@ describe('subagent-tracker', () => {
       expect(
         state.agents.find((a) => a.agent_id === 'native-fork-id')?.status,
       ).toBe('completed');
+      const synthetic = state.agents.find(
+        (a) => a.agent_id === 'native-fork-id',
+      );
+      expect(synthetic?.agent_type).toBe('untracked-native-fork');
+      expect(synthetic?.duration_ms).toBeUndefined();
+      expect(synthetic?.synthetic).toBe(true);
+      expect(synthetic?.telemetry_status).toBe('unmatched_stop');
       expect(state.total_completed).toBe(1);
       expect(state.total_failed).toBe(0);
     });

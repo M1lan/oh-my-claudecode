@@ -398,6 +398,7 @@ const INFORMATIONAL_INTENT_PATTERNS = [
   /(?:뭐야|뭔데|무엇(?:이야|인가요)?|어떻게|설명(?!서\s*(?:작성|만들|생성|추가|업데이트|수정|편집|쓰))|사용법|알려\s?줘|알려줄래|소개해?\s?줘|소개\s*부탁|설명해\s?줘|뭐가\s*달라|어떤\s*기능|기능\s*(?:알려|설명|뭐)|방법\s*(?:알려|설명|뭐))/u,
   /(?:とは|って何|使い方|説明|(?:について|に関して|違い)[^\n]{0,24}(?:教えて|説明|知りたい)|(?:どう|何が|どこが)違う)/u,
   /(?:什么是|什麼是|怎(?:么|樣)用|如何使用|解释|說明|说明)/u,
+  /(?:ทำไม|อะไร|ยังไง|อย่างไร|คืออะไร|หมายถึง|แปลว่า|อธิบาย|มั้ย|ไหม|เหรอ|หรอ|หรือไม่|หรือเปล่า|ใช่ไหม|ถูกมั้ย|เกี่ยวกับ|เหมือน)/u,
 ];
 const INFORMATIONAL_CONTEXT_WINDOW = 80;
 const QUOTED_SPAN_PATTERN =
@@ -406,6 +407,7 @@ const REFERENCE_META_PATTERNS = [
   /\b(?:vs\.?|versus|compared\s+to|comparison|compare|article|blog\s+post|documentation|docs?|reference)\b/i,
   /(?:비교|차이|설명|정리|문서|자료|가이드|이\s*(?:글|비교|문서)는|블로그)/u,
   /\b(?:this\s+(?:article|comparison|guide|documentation|doc)|quoted|quote(?:d)?)\b/i,
+  /(?:เปรียบเทียบ|ต่างกัน|ความต่าง|เอกสาร|บทความ|ไกด์|คู่มือ|เกี่ยวกับ|เหมือน)/u,
 ];
 const REFERENCE_EXPLANATION_PATTERNS = [
   /(?:^|\n)\s*(?:결론|특징|예시|요약|장점|단점|설명)\s*[:：]/u,
@@ -416,6 +418,7 @@ const REFERENCE_EXPLANATION_PATTERNS = [
 const QUESTION_FOLLOWUP_PATTERNS = [
   /\b(?:how\s+many|how\s+much|why|what\s+happened|what\s+went\s+wrong|token\s+budget|cost|pricing)\b/i,
   /(?:왜|얼마|몇\s*번|몇번|토큰|가격|비용|질문)/u,
+  /(?:ทำไม|อะไร|ยังไง|อย่างไร|เท่าไหร่|กี่|มั้ย|ไหม|เหรอ|หรอ|หรือไม่|หรือเปล่า|ใช่ไหม|ถูกมั้ย)/u,
 ];
 
 // Patterns that identify system-generated echoes (hook outputs) which can be
@@ -652,6 +655,37 @@ function hasExplicitInvocationContext(text, position, keywordLength, keywordText
   return hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText);
 }
 
+function hasExplicitRalphInvocationContext(text, position, keywordLength, keywordText) {
+  const normalizedKeyword = (keywordText || '').toLowerCase().replace(/\s+/g, '');
+  const prefix = text.slice(0, position);
+  const suffix = text.slice(position + keywordLength);
+
+  if (/^\s*(?:[$/!]\s*|force:\s*|\/?oh-my-(?:claudecode|codex):\s*)$/i.test(prefix)) {
+    return true;
+  }
+
+  const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
+  const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
+  const context = text.slice(start, end);
+  if (hasActivationIntentNearKeyword(context, keywordText)) {
+    return true;
+  }
+
+  if (normalizedKeyword === '랄프' || normalizedKeyword === 'ラルフ') {
+    return /^\s*(?:켜|켜줘|실행|시작|돌려|돌려줘|써|써줘|사용해|진행해|起動|開始|実行|使って|やって|を?実行|を?起動|を?開始)/u.test(suffix);
+  }
+
+  if (normalizedKeyword !== 'ralph') {
+    return false;
+  }
+
+  if (/^\s*[:：]\s*\S/.test(suffix)) {
+    return true;
+  }
+
+  return /^['"]?\s+(?:this\b|and\s+)?(?:fix\b|debug\b|investigate\b|resolve\b|handle\b|patch\b|address\b|implement\b|run\b|start\b|enable\b|activate\b|invoke\b|trigger\b|launch\b)|^['"]?\s+this\b|^\s+the\s+[^.?!\n]{0,60}\buntil\b/i.test(suffix);
+}
+
 function hasDiagnosticIntentNearKeyword(context, keyword) {
   const escaped = escapeRegExp((keyword || '').trim());
   if (!escaped) return false;
@@ -666,6 +700,19 @@ function hasDiagnosticIntentNearKeyword(context, keyword) {
   ];
 
   return patterns.some((pattern) => pattern.test(context));
+}
+
+function isAutopilotCreationAlias(keywordText) {
+  const normalized = (keywordText || '').toLowerCase().trim();
+  return /^(?:build|create|make)\s+me\b/.test(normalized) || /^i\s+want\s+an?(?:\s+(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension))?\s*$/.test(normalized);
+}
+
+function hasActionableCommandAfterSeparator(text, position, keywordLength) {
+  const suffix = text.slice(position + keywordLength).match(/^\s*[:：]\s*([^\n]{0,80})/u)?.[1] ?? '';
+  if (/\?|？|\b(?:what(?:'s|\s+is)|how\s+(?:to|do\s+i)\s+use|explain|describe|tell\s+me\s+about)\b/iu.test(suffix)) {
+    return false;
+  }
+  return /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build|create|make|run|start|enable|activate|invoke|trigger|launch)\b|(?:ทำ|ทํา|สร้าง|แก้|เปิด|รัน|เรียก|เริ่ม)/iu.test(suffix);
 }
 
 function isRalphUltraworkMetaOrBanterContext(context, keywordText) {
@@ -702,11 +749,17 @@ function isInformationalKeywordContext(text, position, keywordLength, keywordTex
   const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
   const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
   const context = text.slice(start, end);
+  const hasInformationalIntent = INFORMATIONAL_INTENT_PATTERNS.some((pattern) => pattern.test(context));
+  const hasStrongHelpQueryIntent = /\?|？|\b(?:how\s+(?:to|do\s+i)\s+use|what(?:'s|\s+is)|explain|describe|tell\s+me\s+about)\b|(?:사용법|使い方|什么是|怎么用|如何使用)/iu.test(context);
   const lineBounds = getLineBounds(text, position);
   const line = text.slice(lineBounds.start, lineBounds.end);
   const questionOutsideQuotes = stripQuotedSpans(text);
   const keywordInsideQuotes = isWithinQuotedSpan(text, position);
   const hasExecutionDirective = /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(context);
+  const hasCommandSeparatorInvocation =
+    hasDirectInvocationPrefix(text, position) && /^\s*[:：]/.test(text.slice(position + keywordLength));
+  const hasActionableCommandSeparatorInvocation =
+    hasCommandSeparatorInvocation && hasActionableCommandAfterSeparator(text, position, keywordLength);
 
   // A keyword occurrence inside a quoted span is usually reported/example
   // text, not a command directed at the assistant — e.g. an example sentence
@@ -749,7 +802,21 @@ function isInformationalKeywordContext(text, position, keywordLength, keywordTex
   }
 
   if (keywordText) {
-    if (hasActivationIntentNearKeyword(context, keywordText)) {
+    const hasActivationIntent = hasActivationIntentNearKeyword(context, keywordText);
+    if (hasActionableCommandSeparatorInvocation) {
+      return false;
+    }
+
+    if (isAutopilotCreationAlias(keywordText)) {
+      return false;
+    }
+    if (hasActivationIntent && hasExecutionDirective) {
+      return false;
+    }
+    if (hasInformationalIntent && hasStrongHelpQueryIntent) {
+      return true;
+    }
+    if (hasActivationIntent) {
       return false;
     }
     if (hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText)) {
@@ -775,7 +842,7 @@ function isInformationalKeywordContext(text, position, keywordLength, keywordTex
     return true;
   }
 
-  return INFORMATIONAL_INTENT_PATTERNS.some((pattern) => pattern.test(context));
+  return hasInformationalIntent;
 }
 
 function hasActionableKeyword(text, pattern) {
@@ -837,6 +904,33 @@ function hasExplicitActionableKeyword(text, pattern) {
     }
 
     if (!hasExplicitWorkflowInvocationContext(searchText, match.index, match[0].length, match[0])) {
+      continue;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+function hasActionableRalphKeyword(text, pattern) {
+  const searchText = looksLikeSystemEcho(text)
+    ? stripSystemEchoes(text)
+    : text;
+
+  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const globalPattern = new RegExp(pattern.source, flags);
+
+  for (const match of searchText.matchAll(globalPattern)) {
+    if (match.index === undefined) {
+      continue;
+    }
+
+    if (isInformationalKeywordContext(searchText, match.index, match[0].length, match[0])) {
+      continue;
+    }
+
+    if (!hasExplicitRalphInvocationContext(searchText, match.index, match[0].length, match[0])) {
       continue;
     }
 
@@ -1074,6 +1168,116 @@ function isTeamEnabled() {
   }
 }
 
+// Read the OMC JSONC config the way src/config/loader.ts does, inlined so the
+// standalone hook stays build-independent (mirrors scripts/lib/agent-model-config.mjs).
+function getOmcUserConfigDir() {
+  if (process.platform === 'win32') {
+    return process.env.APPDATA || join(homedir(), 'AppData', 'Roaming');
+  }
+  return process.env.XDG_CONFIG_HOME || join(homedir(), '.config');
+}
+
+// Mirrors src/utils/jsonc.ts:stripJsoncComments (strips comments AND trailing commas)
+function stripJsoncComments(content) {
+  return stripTrailingCommas(stripComments(content));
+}
+
+function stripComments(content) {
+  let result = '';
+  let i = 0;
+  while (i < content.length) {
+    if (content[i] === '/' && content[i + 1] === '/') {
+      while (i < content.length && content[i] !== '\n') i++;
+      continue;
+    }
+    if (content[i] === '/' && content[i + 1] === '*') {
+      i += 2;
+      while (i < content.length && !(content[i] === '*' && content[i + 1] === '/')) i++;
+      i += 2;
+      continue;
+    }
+    if (content[i] === '"') {
+      result += content[i++];
+      while (i < content.length && content[i] !== '"') {
+        if (content[i] === '\\') {
+          result += content[i++];
+          if (i < content.length) result += content[i++];
+          continue;
+        }
+        result += content[i++];
+      }
+      if (i < content.length) result += content[i++];
+      continue;
+    }
+    result += content[i++];
+  }
+  return result;
+}
+
+// Mirrors src/utils/jsonc.ts:stripTrailingCommas (comma before a closing } or ]).
+function stripTrailingCommas(content) {
+  let result = '';
+  let i = 0;
+  while (i < content.length) {
+    if (content[i] === '"') {
+      result += content[i++];
+      while (i < content.length && content[i] !== '"') {
+        if (content[i] === '\\') {
+          result += content[i++];
+          if (i < content.length) result += content[i++];
+          continue;
+        }
+        result += content[i++];
+      }
+      if (i < content.length) result += content[i++];
+      continue;
+    }
+    if (content[i] === ',') {
+      let j = i + 1;
+      while (j < content.length && /\s/.test(content[j])) j++;
+      if (content[j] === '}' || content[j] === ']') {
+        i++;
+        continue;
+      }
+    }
+    result += content[i++];
+  }
+  return result;
+}
+
+function loadJsoncConfig(path) {
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(stripJsoncComments(readFileSync(path, 'utf-8')));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Skills the user opted out of via `keywordDetector.disabled` in the OMC
+ * config: project `.claude/omc.jsonc` first, then user
+ * `~/.config/claude-omc/config.jsonc`, the same JSONC surface
+ * src/config/loader.ts reads. Empty when unset, so default behavior is
+ * unchanged. `cancel` is never disableable: it is the emergency stop.
+ * @param {string} directory project working directory
+ * @returns {Set<string>} disabled skill names (never includes 'cancel')
+ */
+function loadDisabledKeywords(directory) {
+  const configPaths = [
+    join(directory || process.cwd(), '.claude', 'omc.jsonc'),
+    join(getOmcUserConfigDir(), 'claude-omc', 'config.jsonc'),
+  ];
+  for (const configPath of configPaths) {
+    const config = loadJsoncConfig(configPath);
+    const disabled = config?.keywordDetector?.disabled;
+    if (Array.isArray(disabled)) {
+      return new Set(disabled.filter((name) => name !== 'cancel'));
+    }
+  }
+  return new Set();
+}
+
 /**
  * Create a compact skill invocation guide without inlining SKILL.md bodies.
  * Full skill text remains available by path, avoiding UserPromptSubmit token blowups.
@@ -1251,7 +1455,7 @@ async function main() {
     }
 
     // Ralph keywords
-    if (hasActionableKeyword(cleanPrompt, /\b(ralph|don't stop|must complete|until done)\b|(랄프)(?!로렌)|(ラルフ)(?!・?ローレン)/i)) {
+    if (hasActionableRalphKeyword(cleanPrompt, /\b(ralph)\b|(랄프)(?!로렌)|(ラルフ)(?!・?ローレン)/i)) {
       matches.push({ name: 'ralph', args: '' });
     }
 
@@ -1262,8 +1466,8 @@ async function main() {
     // templates/hooks/keyword-detector.mjs, which already exclude it.
     if (hasActionableKeyword(cleanPrompt, /\b(autopilot|auto pilot|auto-pilot|full auto|fullsend)\b|(오토파일럿)|(オートパイロット)/i) ||
         hasActionableKeyword(cleanPrompt, /\b(build|create|make)\s+me\s+(an?\s+)?(app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b/i) ||
-        hasActionableKeyword(cleanPrompt, /\bi\s+want\s+a\s+/i) ||
-        hasActionableKeyword(cleanPrompt, /\bi\s+want\s+an\s+/i) ||
+        hasActionableKeyword(cleanPrompt, /\bi\s+want\s+a\s+(app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b/i) ||
+        hasActionableKeyword(cleanPrompt, /\bi\s+want\s+an\s+(app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b/i) ||
         hasActionableKeyword(cleanPrompt, /\bhandle\s+it\s+all\b/i) ||
         hasActionableKeyword(cleanPrompt, /\bend\s+to\s+end\b/i) ||
         hasActionableKeyword(cleanPrompt, /\be2e\s+this\b/i)) {
@@ -1346,10 +1550,15 @@ async function main() {
       matches.push({ name: 'wiki', args: '' });
     }
 
-    // Deduplicate matches by keyword name before conflict resolution
+    // Drop user-disabled keywords, then dedupe before conflict resolution.
+    // This chokepoint covers both magic-keyword and mode-injection keywords.
+    const disabledKeywords = loadDisabledKeywords(directory);
     const seen = new Set();
     const uniqueMatches = [];
     for (const m of matches) {
+      if (disabledKeywords.has(m.name)) {
+        continue;
+      }
       if (!seen.has(m.name)) {
         seen.add(m.name);
         uniqueMatches.push(m);
@@ -1427,11 +1636,11 @@ async function main() {
       }
     }
 
-    // No matches - pass through.
+    // Nothing left to act on (no keywords, or all opted out) - pass through.
     // Keep this after approved follow-up handling so short post-ralplan
     // prompts like "team" can launch the approved execution path even
     // though generic team keyword auto-detection is disabled.
-    if (matches.length === 0) {
+    if (resolved.length === 0) {
       console.log(JSON.stringify({ continue: true, suppressOutput: true }));
       return;
     }
