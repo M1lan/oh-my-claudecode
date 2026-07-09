@@ -385,9 +385,12 @@ describe('run.cjs — graceful fallback for stale plugin paths', () => {
     mkdirSync(hooksDir, { recursive: true });
 
     const slowTarget = join(scriptsDir, 'non-prompt-slow.cjs');
+    // Hook sleeps well past the 1500ms inner timeout so the elapsed-time
+    // bound below can tolerate loaded-CI spawn overhead while still
+    // distinguishing "killed at 1500ms" from "waited for hook completion".
     writeFileSync(
       slowTarget,
-      'setTimeout(() => { process.stdout.write("non-prompt-done\\n"); process.exit(0); }, 3000);',
+      'setTimeout(() => { process.stdout.write("non-prompt-done\\n"); process.exit(0); }, 6000);',
     );
     writeFileSync(
       join(hooksDir, 'hooks.json'),
@@ -425,7 +428,10 @@ describe('run.cjs — graceful fallback for stale plugin paths', () => {
     expect(result.stderr).toContain(
       '[run.cjs] Hook non-prompt-slow.cjs timed out after 1500ms; exiting fail-open.',
     );
-    expect(elapsedMs).toBeLessThan(2000);
+    // 1500ms kill + generous cushion for loaded-CI spawn overhead; the
+    // waiting path would take >= 6000ms (hook sleep), so < 4000ms still
+    // proves the inner timeout fired.
+    expect(elapsedMs).toBeLessThan(4000);
   });
 
   it('keeps prompt hook timeout diagnostics quiet by default and visible in hook debug mode', () => {

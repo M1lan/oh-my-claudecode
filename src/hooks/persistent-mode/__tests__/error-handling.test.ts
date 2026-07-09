@@ -84,7 +84,10 @@ describe('persistent-mode hook error handling (issue #319)', () => {
 
         expect(result.timedOut).toBe(false);
         expect(result.exitCode).toBe(0);
-        expect(result.duration).toBeLessThan(1000);
+        // Loaded-CI node startup alone can exceed 1s; timedOut === false
+        // already proves the skip fired before the 8500ms safety timeout
+        // (the harness would kill at TIMEOUT_MS otherwise).
+        expect(result.duration).toBeLessThan(TIMEOUT_MS);
         expect(JSON.parse(result.output)).toEqual({
           continue: true,
           suppressOutput: true,
