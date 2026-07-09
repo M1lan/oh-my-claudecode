@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    setupFiles: ['./vitest.setup.ts'],
     // 60s (not 30s): the full ~10k-test suite saturates all fork workers, and
     // disk-heavy skill-loading tests (skills.test.ts reloads ~80 SKILL.md files
     // per test) get scheduler-starved past 30s under that contention. They pass

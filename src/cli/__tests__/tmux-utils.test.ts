@@ -30,6 +30,7 @@ import {
   killTmuxPane,
   listHudWatchPaneIdsInCurrentWindow,
   resolveLaunchPolicy,
+  resolveRmuxInvocation,
   tmuxExec,
   tmuxEnv,
   tmuxSpawn,
@@ -306,6 +307,127 @@ describe('tmuxEnv', () => {
     expect(lastCall).toBeDefined();
     const passedEnv = (lastCall![2] as { env?: NodeJS.ProcessEnv }).env;
     expect(passedEnv?.PSMUX_SESSION).toBe('psmux-session-1');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveRmuxInvocation — rmux session detection
+// ---------------------------------------------------------------------------
+describe('resolveRmuxInvocation', () => {
+  it('detects rmux via TERM_PROGRAM and derives bin + socket', () => {
+    const result = resolveRmuxInvocation({
+      TERM_PROGRAM: 'rmux',
+      TMUX_PROGRAM: '/tmp/rmux-shim-abc/tmux',
+      TMUX: '/private/tmp/rmux-502/default,42222,7',
+    });
+    expect(result).toEqual({
+      bin: '/tmp/rmux-shim-abc/tmux',
+      socketArgs: ['-S', '/private/tmp/rmux-502/default'],
+    });
+  });
+
+  it('detects rmux via the rmux-shim TMUX_PROGRAM path even without TERM_PROGRAM', () => {
+    const result = resolveRmuxInvocation({
+      TMUX_PROGRAM: '/var/folders/x/rmux-shim-8b4/tmux',
+      TMUX: '/tmp/rmux-0/default,1,0',
+    });
+    expect(result?.bin).toBe('/var/folders/x/rmux-shim-8b4/tmux');
+    expect(result?.socketArgs).toEqual(['-S', '/tmp/rmux-0/default']);
+  });
+
+  it('returns null for a plain tmux session (no rmux markers)', () => {
+    expect(
+      resolveRmuxInvocation({
+        TMUX: '/tmp/tmux-501/default,1234,0',
+        TMUX_PROGRAM: '/opt/homebrew/bin/tmux',
+      }),
+    ).toBeNull();
+  });
+
+  it('returns null when TMUX is absent (no socket to target)', () => {
+    expect(
+      resolveRmuxInvocation({
+        TERM_PROGRAM: 'rmux',
+        TMUX_PROGRAM: '/tmp/rmux-shim-abc/tmux',
+      }),
+    ).toBeNull();
+  });
+
+  it('returns null on native Windows (rmux is POSIX-only)', () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
+    expect(
+      resolveRmuxInvocation({
+        TERM_PROGRAM: 'rmux',
+        TMUX_PROGRAM: 'C:/rmux-shim/tmux',
+        TMUX: 'sock,1,0',
+      }),
+    ).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// rmux command routing — tmuxExec drives the rmux server with -S <socket>
+// ---------------------------------------------------------------------------
+describe('rmux command routing', () => {
+  it('routes tmuxExec through TMUX_PROGRAM with -S <socket> prepended', () => {
+    vi.stubEnv('TERM_PROGRAM', 'rmux');
+    vi.stubEnv('TMUX_PROGRAM', '/tmp/rmux-shim-abc/tmux');
+    vi.stubEnv('TMUX', '/private/tmp/rmux-502/default,42222,7');
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('%7\n' as any);
+
+    tmuxExec(['display-message', '-p', '#{pane_id}']);
+
+    expect(mockedExecFileSync).toHaveBeenLastCalledWith(
+      '/tmp/rmux-shim-abc/tmux',
+      [
+        '-S',
+        '/private/tmp/rmux-502/default',
+        'display-message',
+        '-p',
+        '#{pane_id}',
+      ],
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+  });
+
+  it('preserves the rmux socket even when stripTmux removes TMUX from the child env', () => {
+    vi.stubEnv('TERM_PROGRAM', 'rmux');
+    vi.stubEnv('TMUX_PROGRAM', '/tmp/rmux-shim-abc/tmux');
+    vi.stubEnv('TMUX', '/private/tmp/rmux-502/default,42222,7');
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('' as any);
+
+    tmuxExec(['list-sessions'], { stripTmux: true });
+
+    const lastCall = mockedExecFileSync.mock.calls.at(-1);
+    expect(lastCall?.[0]).toBe('/tmp/rmux-shim-abc/tmux');
+    expect(lastCall?.[1]).toEqual([
+      '-S',
+      '/private/tmp/rmux-502/default',
+      'list-sessions',
+    ]);
+    // socket arg survives even though TMUX is stripped from the spawned env
+    expect((lastCall?.[2] as { env?: NodeJS.ProcessEnv }).env?.TMUX).toBe(
+      undefined,
+    );
+  });
+
+  it('falls back to plain tmux when no rmux markers are present', () => {
+    vi.stubEnv('TMUX', '/tmp/tmux-501/default,1,0');
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('' as any);
+
+    tmuxExec(['kill-pane', '-t', '%3']);
+
+    expect(mockedExecFileSync).toHaveBeenLastCalledWith(
+      'tmux',
+      ['kill-pane', '-t', '%3'],
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
   });
 });
 

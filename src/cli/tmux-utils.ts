@@ -44,6 +44,53 @@ interface TmuxCommandInvocation {
   args: string[];
 }
 
+/** How to drive an rmux server: its own binary plus explicit `-S <socket>`. */
+export interface RmuxInvocation {
+  bin: string;
+  socketArgs: string[];
+}
+
+/**
+ * Detect an rmux session and resolve how to drive its multiplexer server.
+ *
+ * rmux (a tmux-compatible multiplexer) exports TMUX_PROGRAM — the path to its
+ * own binary under an `rmux-shim-*` dir — plus TMUX="<socket>,<pid>,<session>".
+ * The plain `tmux` on PATH is a shim that, whenever $TMUX is set, defers to the
+ * real tmux; real tmux then cannot talk to rmux's socket and dies with
+ * "server exited unexpectedly" (which is what breaks `omc interop` inside rmux).
+ * Driving TMUX_PROGRAM directly with an explicit `-S <socket>` bypasses the
+ * shim and targets rmux's own server. rmux is POSIX-only, so this never applies
+ * on native Windows.
+ *
+ * @returns the rmux binary + socket args when inside rmux, else null (plain tmux).
+ */
+export function resolveRmuxInvocation(
+  env: NodeJS.ProcessEnv = process.env,
+): RmuxInvocation | null {
+  if (process.platform === 'win32') return null;
+  const program = env.TMUX_PROGRAM;
+  const tmux = env.TMUX;
+  const looksLikeRmux =
+    env.TERM_PROGRAM === 'rmux' ||
+    (typeof program === 'string' && program.includes('rmux-shim'));
+  if (!looksLikeRmux || !program || !tmux) return null;
+  const socket = tmux.split(',')[0];
+  if (!socket) return null;
+  return { bin: program, socketArgs: ['-S', socket] };
+}
+
+/**
+ * Shell-command prefix for the active multiplexer (rmux `bin -S sock`, or plain
+ * `tmux`). Used by the string-based shell wrappers below.
+ */
+function tmuxShellCommandPrefix(): string {
+  const rmux = resolveRmuxInvocation();
+  if (rmux) {
+    return [rmux.bin, ...rmux.socketArgs].map(quoteShellArg).join(' ');
+  }
+  return 'tmux';
+}
+
 function isUnixLikeOnWindows(): boolean {
   return (
     process.platform === 'win32' &&
@@ -66,6 +113,10 @@ function escapeForCmdSet(value: string): string {
 }
 
 function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
+  const rmux = resolveRmuxInvocation();
+  if (rmux) {
+    return { command: rmux.bin, args: [...rmux.socketArgs, ...args] };
+  }
   const resolvedBinary = resolveTmuxBinaryPath();
   if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
     const comspec = process.env.COMSPEC || 'cmd.exe';
@@ -123,7 +174,7 @@ export function tmuxShell(
     },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
-  return execSync(`tmux ${command}`, {
+  return execSync(`${tmuxShellCommandPrefix()} ${command}`, {
     encoding: 'utf-8',
     ...execOpts,
     env: resolveEnv(opts),
@@ -135,7 +186,7 @@ export async function tmuxShellAsync(
   opts?: TmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
-  return promisify(exec)(`tmux ${command}`, {
+  return promisify(exec)(`${tmuxShellCommandPrefix()} ${command}`, {
     encoding: 'utf-8',
     env: resolveEnv(opts),
     ...(timeout !== undefined ? { timeout } : {}),
