@@ -11,7 +11,7 @@ import {
   isTmuxAvailable,
   isClaudeAvailable,
   tmuxExec,
-  buildTmuxShellCommand,
+  buildTmuxShellCommandWithEnv,
   wrapWithLoginShell,
   killTmuxPane,
 } from './tmux-utils.js';
@@ -23,6 +23,27 @@ export type InteropMode = 'off' | 'observe' | 'active';
 const CLAUDE_YOLO_FLAG = '--dangerously-skip-permissions';
 /** Bypass flag passed to Codex (OMX) when --yolo is set. */
 const CODEX_YOLO_FLAG = '--dangerously-bypass-approvals-and-sandbox';
+
+/**
+ * Env var exported into the Codex (OMX) pane at interop launch. oh-my-codex
+ * reads it on startup and — via its readiness-aware pane injection — activates
+ * the caveman skill at this level, deterministically (the primary path).
+ * Name is a cross-repo contract: it must match the reader in oh-my-codex.
+ */
+export const INTEROP_CAVEMAN_LEVEL_ENV = 'OMX_INTEROP_CAVEMAN_LEVEL';
+/**
+ * Caveman level OMX speaks inside interop: classical Chinese, max compression.
+ * Must be one of oh-my-codex's INTEROP_CAVEMAN_LEVELS (interop-caveman.ts); an
+ * unknown value is warned + ignored on the codex side, disabling activation.
+ */
+export const INTEROP_CAVEMAN_LEVEL = 'wenyan-ultra';
+/**
+ * Natural-language activation the Codex caveman skill recognizes ("use caveman"
+ * + level). Typed into the pane as a fallback for Codex builds that predate the
+ * INTEROP_CAVEMAN_LEVEL_ENV startup hook. Idempotent: re-activating the same
+ * level is a no-op, so it is safe even when the env path already fired.
+ */
+export const INTEROP_CAVEMAN_ACTIVATION = `use caveman ${INTEROP_CAVEMAN_LEVEL} mode`;
 
 export interface InteropRuntimeFlags {
   enabled: boolean;
@@ -76,6 +97,26 @@ function isCodexAvailable(): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Type the caveman activation into the Codex (OMX) pane. Sent as a literal
+ * string (`-l`) followed by Enter so shell/tmux never reinterpret its spaces —
+ * mirrors the autoresearch setup injection. Failures are swallowed: the OMX
+ * pane simply stays at its global caveman level.
+ */
+export function sendInteropCavemanActivation(
+  paneId: string,
+  activation: string = INTEROP_CAVEMAN_ACTIVATION,
+): void {
+  try {
+    tmuxExec(['send-keys', '-t', paneId, '-l', activation], {
+      stdio: 'ignore',
+    });
+    tmuxExec(['send-keys', '-t', paneId, 'Enter'], { stdio: 'ignore' });
+  } catch {
+    // Non-fatal — the deterministic env-hook path in oh-my-codex is primary.
   }
 }
 
@@ -182,7 +223,9 @@ export function launchInteropSession(
       // (spawnSync inherits this process's env) — already see. Capture the new
       // pane id (-P -F) so failures can clean it up.
       const codexCommand = wrapWithLoginShell(
-        buildTmuxShellCommand('codex', yolo ? [CODEX_YOLO_FLAG] : []),
+        buildTmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
+          [INTEROP_CAVEMAN_LEVEL_ENV]: INTEROP_CAVEMAN_LEVEL,
+        }),
       );
       const splitOutput = tmuxExec([
         'split-window',
@@ -198,6 +241,14 @@ export function launchInteropSession(
       ]);
       const newPaneId = splitOutput.split('\n')[0]?.trim() ?? '';
       codexPaneId = newPaneId.startsWith('%') ? newPaneId : null;
+
+      // Fallback caveman activation for the OMX pane. The deterministic path is
+      // the INTEROP_CAVEMAN_LEVEL_ENV startup hook in oh-my-codex; this typed
+      // command covers older codex builds without that hook. Gated to --yolo:
+      // only then does codex bypass its "Trust this directory?" prompt, so the
+      // literal keystrokes can never race that prompt and answer it by accident.
+      // In non-yolo runs the readiness-aware codex hook is the sole activation.
+      if (yolo && codexPaneId) sendInteropCavemanActivation(codexPaneId);
 
       // Select left pane (original/current)
       tmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
