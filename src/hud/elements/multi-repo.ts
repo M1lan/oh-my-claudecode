@@ -76,6 +76,7 @@ function isGitRepo(dir: string): boolean {
       timeout: 1000,
       stdio: ['pipe', 'pipe', 'pipe'],
       shell: process.platform === 'win32' ? 'cmd.exe' : undefined,
+      windowsHide: true,
     });
     return true;
   } catch {

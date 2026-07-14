@@ -128,6 +128,7 @@ describe('resolveNodeBinary', () => {
     expect(mockedExecSync).toHaveBeenCalledWith('which node', {
       encoding: 'utf-8',
       stdio: 'pipe',
+      windowsHide: true,
     });
   });
 

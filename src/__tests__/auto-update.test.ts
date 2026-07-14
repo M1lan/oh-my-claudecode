@@ -151,7 +151,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -411,7 +411,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         if (normalized.endsWith('/plugins/installed_plugins.json')) {
@@ -509,6 +509,9 @@ describe('auto-update reconciliation', () => {
         ) {
           return true;
         }
+        if (normalized.endsWith('/bridge/claude-md-coordinator.cjs')) {
+          return false;
+        }
         if (normalized.endsWith('/dist/hooks/skill-bridge.cjs')) {
           return false;
         }
@@ -522,7 +525,7 @@ describe('auto-update reconciliation', () => {
     expect(result.errors).toEqual(
       expect.arrayContaining([
         expect.stringContaining('Plugin cache sync failed:'),
-        expect.stringContaining('dist/hooks/skill-bridge.cjs'),
+        expect.stringContaining('bridge/claude-md-coordinator.cjs'),
       ]),
     );
   });
@@ -569,7 +572,7 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -652,7 +655,7 @@ describe('auto-update reconciliation', () => {
       'C:\\Users\\bellman\\.claude\\plugins\\cache\\omc\\oh-my-claudecode\\4.14.1';
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\node_modules\r\n';
       }
       return '';
@@ -728,7 +731,7 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -805,7 +808,7 @@ describe('auto-update reconciliation', () => {
     const versionedCacheRoot = join(cacheRoot, '4.14.1');
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -847,7 +850,7 @@ describe('auto-update reconciliation', () => {
         }
         if (
           normalized ===
-          `${versionedCacheRoot.replace(/\\/g, '/')}/dist/hooks/skill-bridge.cjs`
+          `${versionedCacheRoot.replace(/\\/g, '/')}/bridge/claude-md-coordinator.cjs`
         ) {
           return false;
         }
@@ -866,7 +869,7 @@ describe('auto-update reconciliation', () => {
 
     expect(result.synced).toBe(false);
     expect(result.errors).toContain(
-      `${versionedCacheRoot}: Missing required plugin payload file: dist/hooks/skill-bridge.cjs`,
+      `${versionedCacheRoot}: Missing required plugin payload file: bridge/claude-md-coordinator.cjs`,
     );
     expect(
       mockedWriteFileSync.mock.calls.some(([path]) =>
@@ -891,7 +894,7 @@ describe('auto-update reconciliation', () => {
     const versionedCacheRoot = `${cacheRoot}/4.9.0`;
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -917,7 +920,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -941,7 +944,9 @@ describe('auto-update reconciliation', () => {
             normalized.endsWith('/package.json') ||
             normalized.endsWith('/.claude-plugin/plugin.json') ||
             normalized.endsWith('/dist/hooks/skill-bridge.cjs') ||
+            normalized.endsWith('/bridge') ||
             normalized.endsWith('/bridge/cli.cjs') ||
+            normalized.endsWith('/bridge/claude-md-coordinator.cjs') ||
             normalized.endsWith('/hooks/hooks.json') ||
             normalized.endsWith('/commands') ||
             normalized.endsWith('/commands/omc-setup.md') ||
@@ -957,7 +962,7 @@ describe('auto-update reconciliation', () => {
 
     expect(result).toEqual({ synced: true, skipped: false, errors: [] });
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'pnpm root -g',
+      'npm root -g',
       expect.objectContaining({
         encoding: 'utf-8',
         stdio: 'pipe',
@@ -975,6 +980,11 @@ describe('auto-update reconciliation', () => {
     expect(mockedCpSync).toHaveBeenCalledWith(
       '/usr/lib/node_modules/oh-my-claude-sisyphus/package.json',
       `${versionedCacheRoot}/package.json`,
+      expect.objectContaining({ recursive: true, force: true }),
+    );
+    expect(mockedCpSync).toHaveBeenCalledWith(
+      '/usr/lib/node_modules/oh-my-claude-sisyphus/bridge',
+      `${versionedCacheRoot}/bridge`,
       expect.objectContaining({ recursive: true, force: true }),
     );
     expect(consoleLogSpy).toHaveBeenCalledWith(
@@ -1007,7 +1017,7 @@ describe('auto-update reconciliation', () => {
 
     expect(result).toEqual({ synced: false, skipped: true, errors: [] });
     expect(mockedExecSync).not.toHaveBeenCalledWith(
-      'pnpm root -g',
+      'npm root -g',
       expect.anything(),
     );
     expect(mockedCpSync).not.toHaveBeenCalled();
@@ -1027,7 +1037,7 @@ describe('auto-update reconciliation', () => {
     const versionedCacheRoot = `${cacheRoot}/4.9.0`;
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -1053,7 +1063,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -1077,7 +1087,9 @@ describe('auto-update reconciliation', () => {
             normalized.endsWith('/package.json') ||
             normalized.endsWith('/.claude-plugin/plugin.json') ||
             normalized.endsWith('/dist/hooks/skill-bridge.cjs') ||
+            normalized.endsWith('/bridge') ||
             normalized.endsWith('/bridge/cli.cjs') ||
+            normalized.endsWith('/bridge/claude-md-coordinator.cjs') ||
             normalized.endsWith('/hooks/hooks.json') ||
             normalized.endsWith('/commands') ||
             normalized.endsWith('/commands/omc-setup.md') ||
@@ -1099,6 +1111,7 @@ describe('auto-update reconciliation', () => {
     expect(result.skipped).toBe(false);
     expect(result.errors).toEqual([
       `Failed to sync dist to ${versionedCacheRoot}: copy failed`,
+      `Failed to sync bridge to ${versionedCacheRoot}: copy failed`,
       `Failed to sync skills to ${versionedCacheRoot}: copy failed`,
       `Failed to sync commands to ${versionedCacheRoot}: copy failed`,
       `Failed to sync package.json to ${versionedCacheRoot}: copy failed`,
@@ -1161,7 +1174,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         if (normalized.endsWith('/plugins/installed_plugins.json')) {
@@ -1254,10 +1267,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
       return '';
@@ -1286,12 +1299,12 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'pnpm add -g oh-my-claude-sisyphus@latest',
+      'npm install -g oh-my-claude-sisyphus@latest',
       expect.any(Object),
     );
   });
 
-  it('restores global Claude Code when a pnpm update removes an existing global install', async () => {
+  it('restores global Claude Code when npm removes an existing global install during update', async () => {
     const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     process.env.OMC_UPDATE_RECONCILE = '1';
 
@@ -1358,7 +1371,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -1366,10 +1379,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1378,8 +1391,8 @@ describe('auto-update reconciliation', () => {
     mockedExecFileSync.mockImplementation(
       (command: string, args?: readonly string[]) => {
         if (
-          command === 'pnpm' &&
-          args?.join(' ') === 'add -g @anthropic-ai/claude-code@1.2.3'
+          command === 'npm' &&
+          args?.join(' ') === 'install -g @anthropic-ai/claude-code@1.2.3'
         ) {
           return '';
         }
@@ -1394,12 +1407,12 @@ describe('auto-update reconciliation', () => {
 
       expect(result.success).toBe(true);
       expect(mockedExecFileSync).toHaveBeenCalledWith(
-        'pnpm',
-        ['add', '-g', '@anthropic-ai/claude-code@1.2.3'],
+        'npm',
+        ['install', '-g', '@anthropic-ai/claude-code@1.2.3'],
         expect.any(Object),
       );
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        '[omc update] Restoring global @anthropic-ai/claude-code@1.2.3 after pnpm update...',
+        '[omc update] Restoring global @anthropic-ai/claude-code@1.2.3 after npm update...',
       );
       expect(consoleLogSpy).toHaveBeenCalledWith(
         '[omc update] Restored global @anthropic-ai/claude-code',
@@ -1451,10 +1464,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1464,12 +1477,12 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).not.toHaveBeenCalledWith(
-      'pnpm add -g @anthropic-ai/claude-code@latest',
+      'npm install -g @anthropic-ai/claude-code@latest',
       expect.any(Object),
     );
     expect(mockedExecFileSync).not.toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
+      'npm',
+      ['install', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
       expect.any(Object),
     );
   });
@@ -1509,16 +1522,16 @@ describe('auto-update reconciliation', () => {
       },
     );
 
-    let pnpmRootCalls = 0;
+    let npmRootCalls = 0;
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
-        pnpmRootCalls += 1;
-        if (pnpmRootCalls === 1) {
+      if (command === 'npm root -g') {
+        npmRootCalls += 1;
+        if (npmRootCalls === 1) {
           throw new Error('cannot inspect global root');
         }
         return '/usr/lib/node_modules\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1528,8 +1541,8 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecFileSync).not.toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
+      'npm',
+      ['install', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
       expect.any(Object),
     );
   });
@@ -1600,7 +1613,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -1608,10 +1621,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return '/usr/lib/node_modules\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1620,8 +1633,8 @@ describe('auto-update reconciliation', () => {
     mockedExecFileSync.mockImplementation(
       (command: string, args?: readonly string[]) => {
         if (
-          command === 'pnpm' &&
-          args?.join(' ') === 'add -g @anthropic-ai/claude-code@1.2.3'
+          command === 'npm' &&
+          args?.join(' ') === 'install -g @anthropic-ai/claude-code@1.2.3'
         ) {
           return '';
         }
@@ -1635,13 +1648,13 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecFileSync).toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', '@anthropic-ai/claude-code@1.2.3'],
+      'npm',
+      ['install', '-g', '@anthropic-ai/claude-code@1.2.3'],
       expect.any(Object),
     );
   });
 
-  it('detects native Windows Claude Code via claude --version and does not attempt pnpm restore', async () => {
+  it('detects native Windows Claude Code via claude --version and does not attempt npm restore', async () => {
     mockPlatform('win32');
     process.env.OMC_UPDATE_RECONCILE = '1';
 
@@ -1684,10 +1697,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\node_modules\r\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1726,12 +1739,12 @@ describe('auto-update reconciliation', () => {
       }),
     );
     expect(mockedExecSync).not.toHaveBeenCalledWith(
-      'pnpm add -g @anthropic-ai/claude-code@2.1.142',
+      'npm install -g @anthropic-ai/claude-code@2.1.142',
       expect.any(Object),
     );
     expect(mockedExecFileSync).not.toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
+      'npm',
+      ['install', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
       expect.any(Object),
     );
   });
@@ -1779,10 +1792,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\node_modules\r\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1811,17 +1824,17 @@ describe('auto-update reconciliation', () => {
       }),
     );
     expect(mockedExecSync).not.toHaveBeenCalledWith(
-      'pnpm add -g @anthropic-ai/claude-code@latest',
+      'npm install -g @anthropic-ai/claude-code@latest',
       expect.any(Object),
     );
     expect(mockedExecFileSync).not.toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
+      'npm',
+      ['install', '-g', expect.stringContaining('@anthropic-ai/claude-code@')],
       expect.any(Object),
     );
   });
 
-  it('uses Windows-safe pnpm options when restoring global Claude Code', async () => {
+  it('uses Windows-safe npm options when restoring global Claude Code', async () => {
     mockPlatform('win32');
     process.env.OMC_UPDATE_RECONCILE = '1';
 
@@ -1888,7 +1901,7 @@ describe('auto-update reconciliation', () => {
           return JSON.stringify({
             version: '4.1.5',
             installedAt: '2026-02-09T00:00:00.000Z',
-            installMethod: 'pnpm',
+            installMethod: 'npm',
           });
         }
         return '';
@@ -1896,13 +1909,13 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\node_modules\r\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
-      if (command === 'pnpm add -g @anthropic-ai/claude-code@1.2.3') {
+      if (command === 'npm install -g @anthropic-ai/claude-code@1.2.3') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -1912,21 +1925,21 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'pnpm add -g @anthropic-ai/claude-code@1.2.3',
+      'npm install -g @anthropic-ai/claude-code@1.2.3',
       expect.objectContaining({
         windowsHide: true,
       }),
     );
     expect(mockedExecFileSync).not.toHaveBeenCalledWith(
-      'pnpm',
-      ['add', '-g', '@anthropic-ai/claude-code@1.2.3'],
+      'npm',
+      ['install', '-g', '@anthropic-ai/claude-code@1.2.3'],
       expect.any(Object),
     );
   });
 
   it('runs reconciliation as part of performUpdate without plugin hook reinjection', async () => {
     // Set env var so performUpdate takes the direct reconciliation path
-    // (simulates being in the re-exec'd process after pnpm add)
+    // (simulates being in the re-exec'd process after npm install)
     process.env.OMC_UPDATE_RECONCILE = '1';
     process.env.CLAUDE_PLUGIN_ROOT = join(
       CLAUDE_CONFIG_DIR,
@@ -1959,7 +1972,7 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'pnpm add -g oh-my-claude-sisyphus@latest',
+      'npm install -g oh-my-claude-sisyphus@latest',
       expect.any(Object),
     );
     expect(mockedInstall).toHaveBeenCalledWith({
@@ -2269,10 +2282,10 @@ describe('auto-update reconciliation', () => {
     );
 
     mockedExecSync.mockImplementation((command: string) => {
-      if (command === 'pnpm root -g') {
+      if (command === 'npm root -g') {
         return 'C:\\Users\\bellman\\AppData\\Roaming\\npm\\node_modules\r\n';
       }
-      if (command === 'pnpm add -g oh-my-claude-sisyphus@latest') {
+      if (command === 'npm install -g oh-my-claude-sisyphus@latest') {
         return '';
       }
       throw new Error(`Unexpected execSync command: ${command}`);
@@ -2292,7 +2305,7 @@ describe('auto-update reconciliation', () => {
 
     expect(result.success).toBe(true);
     expect(mockedExecSync).toHaveBeenCalledWith(
-      'pnpm add -g oh-my-claude-sisyphus@latest',
+      'npm install -g oh-my-claude-sisyphus@latest',
       expect.objectContaining({
         windowsHide: true,
       }),

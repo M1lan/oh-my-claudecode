@@ -37,6 +37,10 @@ function writeCompletePluginPayload(root: string): void {
   );
   writePluginFile(join(root, 'bridge', 'cli.cjs'), 'console.log("bridge");\n');
   writePluginFile(
+    join(root, 'bridge', 'claude-md-coordinator.cjs'),
+    'console.log("CLAUDE.md coordinator");\n',
+  );
+  writePluginFile(
     join(root, 'hooks', 'hooks.json'),
     JSON.stringify({
       hooks: {
@@ -70,6 +74,10 @@ function writeCompletePluginPayload(root: string): void {
       null,
       2,
     ),
+  );
+  writePluginFile(
+    join(root, 'docs', 'CLAUDE.md'),
+    readFileSync(join(process.cwd(), 'docs', 'CLAUDE.md'), 'utf-8'),
   );
 }
 
@@ -457,7 +465,7 @@ describe('install() standalone hook reconciliation', () => {
       '4.1.5',
     );
 
-    mkdirSync(pluginRoot, { recursive: true });
+    writeCompletePluginPayload(pluginRoot);
     mkdirSync(testClaudeDir, { recursive: true });
     writeFileSync(
       settingsPath,

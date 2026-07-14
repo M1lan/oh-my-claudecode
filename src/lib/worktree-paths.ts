@@ -74,6 +74,8 @@ const MAX_WORKTREE_CACHE_SIZE = 8;
 const worktreeCacheMap = new Map<string, string>();
 /** LRU cache for literal git-toplevel lookups (getGitTopLevel, no submodule climb). */
 const toplevelCacheMap = new Map<string, string>();
+/** LRU cache for outermost superproject root lookups, including negative results. */
+const superprojectCacheMap = new Map<string, string | null>();
 
 /**
  * LRU cache for workspace marker lookups.
@@ -171,9 +173,31 @@ export function readWorkspaceMarkerConfig(
  * `--show-superproject-working-tree` anchors state to the superproject, walking
  * up through nested submodules until no superproject remains.
  */
+function isDefinitiveNonGitError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const { status, stderr } = error as { status?: unknown; stderr?: unknown };
+  if (status !== 128) return false;
+  const output =
+    typeof stderr === 'string'
+      ? stderr
+      : Buffer.isBuffer(stderr)
+        ? stderr.toString()
+        : '';
+  return /not a git repository/i.test(output);
+}
+
 function resolveSuperprojectRoot(cwd: string): string | null {
+  const cacheKey = resolve(cwd);
+  if (superprojectCacheMap.has(cacheKey)) {
+    const cached = superprojectCacheMap.get(cacheKey) ?? null;
+    superprojectCacheMap.delete(cacheKey);
+    superprojectCacheMap.set(cacheKey, cached);
+    return cached;
+  }
+
   let anchor: string | null = null;
-  let probeCwd = cwd;
+  let probeCwd = cacheKey;
+  let completed = false;
   // Bounded by submodule nesting depth; guard against pathological loops.
   for (let depth = 0; depth < 32; depth++) {
     let superRoot: string;
@@ -182,14 +206,27 @@ function resolveSuperprojectRoot(cwd: string): string | null {
         cwd: probeCwd,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
         timeout: 5000,
       }).trim();
-    } catch {
+    } catch (error) {
+      completed = depth === 0 && isDefinitiveNonGitError(error);
       break;
     }
-    if (!superRoot) break;
+    if (!superRoot) {
+      completed = true;
+      break;
+    }
     anchor = superRoot;
     probeCwd = superRoot;
+  }
+
+  if (completed) {
+    if (superprojectCacheMap.size >= MAX_WORKTREE_CACHE_SIZE) {
+      const oldest = superprojectCacheMap.keys().next().value;
+      if (oldest !== undefined) superprojectCacheMap.delete(oldest);
+    }
+    superprojectCacheMap.set(cacheKey, anchor);
   }
   return anchor;
 }
@@ -242,6 +279,7 @@ export function getGitTopLevel(cwd?: string): string | null {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
       timeout: 5000,
     }).trim();
 
@@ -516,6 +554,7 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
       cwd: root,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
     }).trim();
     source = remoteUrl || root;
   } catch {
@@ -536,6 +575,7 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
         cwd: root,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
         timeout: 5000,
       },
     ).trim();
@@ -800,6 +840,7 @@ export function ensureAllOmcDirs(worktreeRoot?: string): void {
 export function clearWorktreeCache(): void {
   worktreeCacheMap.clear();
   toplevelCacheMap.clear();
+  superprojectCacheMap.clear();
   workspaceCacheMap.clear();
 }
 
@@ -1255,6 +1296,7 @@ export function resolveTranscriptPath(
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
     }).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
@@ -1276,6 +1318,7 @@ export function resolveTranscriptPath(
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
     }).trim();
 
     if (mainRepoRoot !== worktreeTop) {
@@ -1389,6 +1432,7 @@ function getGitCommonDir(cwd: string): string | null {
         cwd,
         encoding: 'utf-8',
         stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
         timeout: 5000,
       },
     ).trim();

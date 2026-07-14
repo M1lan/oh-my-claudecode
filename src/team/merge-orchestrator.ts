@@ -102,6 +102,9 @@ export interface OrchestratorConfig {
   pollIntervalMs?: number;
   /** Bound on `drainAndStop`. Defaults to 10000ms. */
   drainTimeoutMs?: number;
+  /** Persistent owner generation; stale attempts must not tear down its services. */
+  serviceGeneration?: number;
+  serviceAttemptId?: string;
 }
 
 export interface OrchestratorHandle {
@@ -132,7 +135,13 @@ export interface OrchestratorHandle {
 
 interface PersistedState {
   lastShas: Record<string, string>;
+  service?: { generation: number; attemptId: string };
 }
+
+const liveServiceOwners = new Map<
+  string,
+  { generation: number; attemptId: string }
+>();
 
 interface WorkerEntry {
   workerName: string;
@@ -414,6 +423,30 @@ export async function startMergeOrchestrator(
       persisted = { lastShas: {} };
     }
   }
+  const service =
+    config.serviceGeneration === undefined ||
+    config.serviceAttemptId === undefined
+      ? undefined
+      : {
+          generation: config.serviceGeneration,
+          attemptId: config.serviceAttemptId,
+        };
+  const live = liveServiceOwners.get(config.teamName);
+  if (
+    service &&
+    live &&
+    (live.generation > service.generation ||
+      (live.generation === service.generation &&
+        live.attemptId !== service.attemptId))
+  ) {
+    throw new Error('auto_merge_service_owned_by_live_generation');
+  }
+  if (service) liveServiceOwners.set(config.teamName, service);
+  const ownsService = (): boolean =>
+    !service ||
+    (liveServiceOwners.get(config.teamName)?.generation ===
+      service.generation &&
+      liveServiceOwners.get(config.teamName)?.attemptId === service.attemptId);
 
   const workers = new Map<string, WorkerEntry>();
   const pausedWorkers = new Set<string>(); // workers mid-rebase (cadence paused)
@@ -428,6 +461,7 @@ export async function startMergeOrchestrator(
           w.lastObservedSha,
         ]),
       ),
+      ...(service ? { service } : {}),
     };
     atomicWriteJson(persistedPath, payload);
   }
@@ -659,7 +693,7 @@ export async function startMergeOrchestrator(
   }
 
   async function runPollOnce(): Promise<void> {
-    if (stopped) return;
+    if (stopped || !ownsService()) return;
     for (const entry of workers.values()) {
       // Apply per-worker exponential backoff: skip ticks based on consecutiveFailures.
       // Cap so we never fully starve a worker.
@@ -774,6 +808,7 @@ export async function startMergeOrchestrator(
   // ----- Public handle -----
   return {
     async registerWorker(workerName: string): Promise<void> {
+      if (!ownsService()) return;
       if (workers.has(workerName)) return;
       const workerBranch = getBranchName(config.teamName, workerName);
       // Defence-in-depth: reject worker branch names that could be misread as
@@ -810,6 +845,7 @@ export async function startMergeOrchestrator(
     },
 
     async unregisterWorker(workerName: string): Promise<void> {
+      if (!ownsService()) return;
       workers.delete(workerName);
       pausedWorkers.delete(workerName);
       try {
@@ -826,6 +862,7 @@ export async function startMergeOrchestrator(
     async drainAndStop(): Promise<{
       unmerged: Array<{ workerName: string; reason: string }>;
     }> {
+      if (!ownsService()) return { unmerged: [] };
       stopped = true;
       clearInterval(interval);
 
@@ -892,6 +929,7 @@ export async function startMergeOrchestrator(
         }
       }
 
+      if (service && ownsService()) liveServiceOwners.delete(config.teamName);
       return { unmerged };
     },
 

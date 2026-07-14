@@ -103,6 +103,10 @@ function writeMinimallyCompletePluginPayload(pluginRoot: string): void {
     join(pluginRoot, 'bridge', 'cli.cjs'),
     'console.log("bridge");\n',
   );
+  writeFileSync(
+    join(pluginRoot, 'bridge', 'claude-md-coordinator.cjs'),
+    'console.log("CLAUDE.md coordinator");\n',
+  );
   mkdirSync(join(pluginRoot, 'hooks'), { recursive: true });
   writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), '{}\n');
   mkdirSync(join(pluginRoot, 'commands'), { recursive: true });

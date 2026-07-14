@@ -244,6 +244,10 @@ describe('plugin skill context budget gate (issues #2943, #2986)', () => {
         join(sourceRoot, 'bridge', 'cli.cjs'),
         'console.log("bridge");\n',
       );
+      writeFileSync(
+        join(sourceRoot, 'bridge', 'claude-md-coordinator.cjs'),
+        'console.log("CLAUDE.md coordinator");\n',
+      );
       writeFileSync(join(sourceRoot, 'hooks', 'hooks.json'), '{}\n');
       writeFileSync(
         join(sourceRoot, 'skills', 'plan', 'SKILL.md'),

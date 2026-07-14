@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, mkdir, rm, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { canonicalizeTeamConfigWorkers } from '../worker-canonicalization.js';
 
 const mocks = vi.hoisted(() => ({
   getWorkerLiveness: vi.fn(async () => 'alive'),
@@ -282,49 +283,49 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     expect(snapshot?.nonReportingWorkers).toEqual([]);
   });
 
-  it('deduplicates duplicate worker rows from persisted config during monitoring', async () => {
+  it('monitors a valid config canonicalized from duplicate legacy worker rows', async () => {
     cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-monitor-dedup-'));
     await writeConfigAndTask('pending');
     const root = join(cwd, '.omc', 'state', 'team', 'demo-team');
+    const config = canonicalizeTeamConfigWorkers({
+      name: 'demo-team',
+      task: 'demo',
+      agent_type: 'claude',
+      worker_launch_mode: 'interactive',
+      worker_count: 2,
+      max_workers: 20,
+      workers: [
+        { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: ['1'] },
+        {
+          name: 'worker-1',
+          index: 0,
+          role: 'claude',
+          assigned_tasks: [],
+          pane_id: '%2',
+          working_dir: cwd,
+        },
+      ],
+      created_at: new Date().toISOString(),
+      tmux_session: 'demo-session:0',
+      leader_pane_id: '%1',
+      hud_pane_id: null,
+      resize_hook_name: null,
+      resize_hook_target: null,
+      next_task_id: 2,
+      team_state_root: join(cwd, '.omc', 'state', 'team', 'demo-team'),
+      workspace_mode: 'single',
+    } as any);
+    expect(config.workers).toEqual([
+      expect.objectContaining({
+        name: 'worker-1',
+        index: 1,
+        pane_id: '%2',
+        assigned_tasks: ['1'],
+      }),
+    ]);
     await writeFile(
       join(root, 'config.json'),
-      JSON.stringify(
-        {
-          name: 'demo-team',
-          task: 'demo',
-          agent_type: 'claude',
-          worker_launch_mode: 'interactive',
-          worker_count: 2,
-          max_workers: 20,
-          workers: [
-            {
-              name: 'worker-1',
-              index: 1,
-              role: 'claude',
-              assigned_tasks: ['1'],
-            },
-            {
-              name: 'worker-1',
-              index: 0,
-              role: 'claude',
-              assigned_tasks: [],
-              pane_id: '%2',
-              working_dir: cwd,
-            },
-          ],
-          created_at: new Date().toISOString(),
-          tmux_session: 'demo-session:0',
-          leader_pane_id: '%1',
-          hud_pane_id: null,
-          resize_hook_name: null,
-          resize_hook_target: null,
-          next_task_id: 2,
-          team_state_root: join(cwd, '.omc', 'state', 'team', 'demo-team'),
-          workspace_mode: 'single',
-        },
-        null,
-        2,
-      ),
+      JSON.stringify(config, null, 2),
       'utf-8',
     );
 

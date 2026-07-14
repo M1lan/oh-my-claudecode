@@ -36,7 +36,7 @@ async function initTeamState(teamName: string, wd: string): Promise<void> {
   await writeFile(
     join(base, 'config.json'),
     JSON.stringify({
-      team_name: teamName,
+      name: teamName,
       task: 'test',
       agent_type: 'executor',
       worker_count: 1,
@@ -44,6 +44,7 @@ async function initTeamState(teamName: string, wd: string): Promise<void> {
         { name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] },
       ],
       created_at: new Date().toISOString(),
+      tmux_session: 'test-session:0',
     }),
   );
 }
@@ -258,6 +259,7 @@ describe('teamCommand api operations', () => {
             { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
           ],
           created_at: new Date().toISOString(),
+          tmux_session: 'stale-session:0',
           next_task_id: 1,
         },
         null,

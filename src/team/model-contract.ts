@@ -8,6 +8,7 @@ import {
   isProviderSpecificModelId,
 } from '../config/models.js';
 import { isExternalLLMDisabled } from '../lib/security-config.js';
+import type { WorkerLaunchDescriptor } from './types.js';
 
 export type CliAgentType =
   | 'claude'
@@ -445,6 +446,54 @@ export function buildWorkerArgv(
     : resolveBinaryPath(contract.binary);
   const args = buildLaunchArgs(agentType, config);
   return [binary, ...args];
+}
+
+export function validateWorkerLaunchDescriptor(
+  value: unknown,
+): WorkerLaunchDescriptor {
+  const descriptor = value as Partial<WorkerLaunchDescriptor> | null;
+  if (
+    !descriptor ||
+    descriptor.schema_version !== 1 ||
+    typeof descriptor.provider !== 'string' ||
+    !Object.prototype.hasOwnProperty.call(descriptor, 'model') ||
+    (descriptor.model !== null &&
+      (typeof descriptor.model !== 'string' ||
+        descriptor.model.length === 0)) ||
+    typeof descriptor.binary !== 'string' ||
+    descriptor.binary.length === 0 ||
+    descriptor.binary.includes('\0') ||
+    !(
+      isAbsolute(descriptor.binary) || win32Path.isAbsolute(descriptor.binary)
+    ) ||
+    !Array.isArray(descriptor.args) ||
+    descriptor.args.some((arg) => typeof arg !== 'string' || arg.includes('\0'))
+  ) {
+    throw new Error('Invalid worker launch descriptor');
+  }
+  getContract(descriptor.provider as CliAgentType);
+  return {
+    schema_version: 1,
+    provider: descriptor.provider as CliAgentType,
+    model: descriptor.model,
+    binary: descriptor.binary,
+    args: [...descriptor.args],
+  };
+}
+
+export function buildValidatedWorkerLaunchDescriptor(
+  agentType: CliAgentType,
+  config: WorkerLaunchConfig,
+  appendedArgs: readonly string[] = [],
+): WorkerLaunchDescriptor {
+  const [binary, ...args] = buildWorkerArgv(agentType, config);
+  return validateWorkerLaunchDescriptor({
+    schema_version: 1,
+    provider: agentType,
+    model: config.model ?? null,
+    binary,
+    args: [...args, ...appendedArgs],
+  });
 }
 
 export function buildWorkerCommand(

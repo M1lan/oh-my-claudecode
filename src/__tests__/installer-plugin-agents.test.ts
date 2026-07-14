@@ -77,6 +77,10 @@ function writeCompletePluginPayload(root: string): void {
     'console.log("skill bridge");\n',
   );
   writePluginFile(join(root, 'bridge', 'cli.cjs'), 'console.log("bridge");\n');
+  writePluginFile(
+    join(root, 'bridge', 'claude-md-coordinator.cjs'),
+    'console.log("coordinator");\n',
+  );
   writePluginFile(join(root, 'hooks', 'hooks.json'), '{}\n');
   writePluginFile(join(root, 'skills', 'plan', 'SKILL.md'), '# plan\n');
   writePluginFile(
@@ -177,12 +181,19 @@ describe('installer legacy agent sync gating (issue #1502)', () => {
     );
 
     const installer = await loadInstallerWithEnv(claudeConfigDir, homeDir);
+    expect(installer.validatePluginCachePayload(pluginInstallPath)).toEqual({
+      valid: true,
+      errors: [],
+    });
     const result = installer.install({
       skipClaudeCheck: true,
       skipHud: true,
     });
 
-    expect(result.success).toBe(true);
+    expect(
+      result.success,
+      `${result.message}\n${result.errors.join('\n')}`,
+    ).toBe(true);
     expect(result.installedAgents).toEqual([]);
     expect(installer.hasPluginProvidedAgentFiles()).toBe(true);
     expect(existsSync(join(claudeConfigDir, 'agents'))).toBe(false);

@@ -18,6 +18,8 @@ import {
   resolveClaudeWorkerModel,
   shouldUseClaudeBareMode,
   _testInternals,
+  buildValidatedWorkerLaunchDescriptor,
+  validateWorkerLaunchDescriptor,
 } from '../model-contract.js';
 
 vi.mock('child_process', async (importOriginal) => {
@@ -1024,6 +1026,94 @@ describe('model-contract', () => {
         'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       );
       vi.unstubAllEnvs();
+    });
+  });
+  describe('worker launch descriptors', () => {
+    it('captures exact binary model and appended prompt argv', () => {
+      const descriptor = buildValidatedWorkerLaunchDescriptor(
+        'gemini',
+        {
+          teamName: 'team',
+          workerName: 'worker-1',
+          cwd: '/tmp',
+          model: 'gemini-2.5-pro',
+          resolvedBinaryPath: '/usr/bin/gemini',
+        },
+        ['-p', 'read inbox'],
+      );
+      expect(descriptor).toEqual({
+        schema_version: 1,
+        provider: 'gemini',
+        model: 'gemini-2.5-pro',
+        binary: '/usr/bin/gemini',
+        args: [
+          '--approval-mode',
+          'yolo',
+          '--model',
+          'gemini-2.5-pro',
+          '-p',
+          'read inbox',
+        ],
+      });
+    });
+
+    it.each([
+      {
+        schema_version: 2,
+        provider: 'claude',
+        model: null,
+        binary: '/usr/bin/claude',
+        args: [],
+      },
+      {
+        schema_version: 1,
+        provider: 'unknown',
+        model: null,
+        binary: '/usr/bin/unknown',
+        args: [],
+      },
+      {
+        schema_version: 1,
+        provider: 'claude',
+        binary: '/usr/bin/claude',
+        args: [],
+      },
+      {
+        schema_version: 1,
+        provider: 'claude',
+        model: null,
+        binary: 'claude',
+        args: [],
+      },
+      {
+        schema_version: 1,
+        provider: 'claude',
+        model: null,
+        binary: '/usr/bin/claude\0x',
+        args: [],
+      },
+      {
+        schema_version: 1,
+        provider: 'claude',
+        model: null,
+        binary: '/usr/bin/claude',
+        args: ['ok\0bad'],
+      },
+    ])('rejects malformed persisted descriptor %#', (value) => {
+      expect(() => validateWorkerLaunchDescriptor(value)).toThrow();
+    });
+
+    it('returns a defensive argv copy', () => {
+      const source = {
+        schema_version: 1 as const,
+        provider: 'codex' as const,
+        model: null,
+        binary: '/usr/bin/codex',
+        args: ['--flag'],
+      };
+      const validated = validateWorkerLaunchDescriptor(source);
+      validated.args.push('--changed');
+      expect(source.args).toEqual(['--flag']);
     });
   });
 });

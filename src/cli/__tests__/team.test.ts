@@ -9,6 +9,8 @@ import {
 } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { canonicalizeTeamConfigWorkers } from '../../team/worker-canonicalization.js';
+import type { TeamConfig } from '../../team/types.js';
 
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
@@ -676,7 +678,7 @@ describe('team cli', () => {
         max_workers: 20,
         workers: [],
         created_at: new Date().toISOString(),
-        tmux_session: '',
+        tmux_session: 'demo-session:0',
         leader_pane_id: null,
         hud_pane_id: null,
         resize_hook_name: null,
@@ -744,7 +746,7 @@ describe('team cli', () => {
           { name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] },
         ],
         created_at: new Date().toISOString(),
-        tmux_session: '',
+        tmux_session: 'demo-session:0',
         leader_pane_id: null,
         hud_pane_id: null,
         resize_hook_name: null,
@@ -1018,32 +1020,34 @@ describe('team cli', () => {
     const cwd = mkdtempSync(join(tmpdir(), 'omc-team-cli-v2-status-dedup-'));
     const root = join(cwd, '.omc', 'state', 'team', 'demo-team');
     mkdirSync(root, { recursive: true });
+    const duplicateWorkerConfig = canonicalizeTeamConfigWorkers({
+      name: 'demo-team',
+      task: 'demo',
+      agent_type: 'executor',
+      worker_launch_mode: 'interactive',
+      worker_count: 2,
+      max_workers: 20,
+      tmux_session: 'demo-session:0',
+      workers: [
+        {
+          name: 'worker-1',
+          index: 1,
+          role: 'executor',
+          assigned_tasks: [],
+          pane_id: '%1',
+        },
+        { name: 'worker-1', index: 2, role: 'executor', assigned_tasks: [] },
+      ],
+      created_at: new Date().toISOString(),
+      next_task_id: 2,
+      leader_pane_id: '%0',
+      hud_pane_id: null,
+      resize_hook_name: null,
+      resize_hook_target: null,
+    } as TeamConfig);
     writeFileSync(
       join(root, 'config.json'),
-      JSON.stringify({
-        name: 'demo-team',
-        task: 'demo',
-        agent_type: 'executor',
-        worker_count: 2,
-        max_workers: 20,
-        tmux_session: 'demo-session:0',
-        workers: [
-          {
-            name: 'worker-1',
-            index: 1,
-            role: 'executor',
-            assigned_tasks: [],
-            pane_id: '%1',
-          },
-          { name: 'worker-1', index: 0, role: 'executor', assigned_tasks: [] },
-        ],
-        created_at: new Date().toISOString(),
-        next_task_id: 2,
-        leader_pane_id: '%0',
-        hud_pane_id: null,
-        resize_hook_name: null,
-        resize_hook_target: null,
-      }),
+      JSON.stringify(duplicateWorkerConfig),
     );
 
     await teamCommand(['status', 'demo-team', '--json', '--cwd', cwd]);
