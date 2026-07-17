@@ -40,7 +40,6 @@ yarn.lock
 
 __pycache__/
 *.py[cod]
-<<<<<<< HEAD
 .forks/
 .beads/
 
@@ -50,9 +49,6 @@ __pycache__/
 .beads-credential-key
 .beads/proxieddb/
 .grepai/
-||||||| 590fb988
-=======
 
 # codegraph local index — machine-local, regenerable, never commit
 .codegraph/
->>>>>>> main
