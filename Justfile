@@ -1,20 +1,15 @@
-# ── oh-my-claudecode Justfile -- TypeScript / Node multi-agent build harness ──
+# ── oh-my-claudecode Justfile ─────────────────────────────────────────────────
 #
-# Style (per AGENTS.md "Justfile Style Guide"):
-#   - bash strict mode, kebab-case recipes, doc comments, fzf+bat previews
-#   - composite recipes chain via dependencies, not shell `&&`
-#   - `verify` is the full pre-push gate
+# TypeScript / Node multi-agent build harness. Thin Justfile: TUI + logic live
+# in .just/helpers/*.bash (GNU Bash >= 5.3). Recipes are one-liners.
 #
-# Quick start:
-#   just                  # show grouped recipe list
-#   just info             # tool versions and project status
-#   just doctor           # diagnose missing tooling
-#   just b / t / v        # build / test / verify aliases
-#   just fzf              # interactive recipe picker (just --choose powered)
-#   just menu             # curated categorized launcher
+# Start here:  bare `just`  -> info splash + launchers
+#   just menu   guided command builder (gum)
+#   just fzf    flat power launcher (fzf, multi-select)
+#   just help   plain grouped recipe list
+#   just doctor diagnose the toolchain
 #
-# Package manager: pnpm only (canonical, declared in
-# package.json#packageManager). npm and yarn are not supported.
+# Package manager: pnpm only (declared in package.json#packageManager).
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 set dotenv-load := false
@@ -24,15 +19,14 @@ set ignore-comments := true
 export FORCE_COLOR := "1"
 export NODE_OPTIONS := env_var_or_default("NODE_OPTIONS", "--enable-source-maps")
 
-# Single-source-of-truth package manager: pnpm only.
 PM := "pnpm"
-
-# Editor for *-edit / pick / search / notepad recipes.
 EDITOR_CMD := env_var_or_default("EDITOR", "vim")
+helpers := justfile_directory() / ".just" / "helpers"
 
 # ── Aliases ──────────────────────────────────────────────────────────────────
-# One-letter accelerators for the recipes you'll type 100x/day.
 
+alias m   := menu
+alias f   := fzf
 alias b   := build
 alias bf  := build-fast
 alias t   := test
@@ -42,127 +36,55 @@ alias tf  := test-file
 alias l   := lint
 alias lf  := lint-fix
 alias ff  := fmt-fix
-alias f   := fmt
 alias fc  := fmt-check
 alias c   := check
 alias v   := verify
 alias vf  := verify-fast
 alias d   := dev
-alias df  := dev-full
 alias h   := help
 alias i   := info
 alias doc := doctor
-alias n   := notepad
-alias p   := pick
-alias s   := search
-alias gs  := git-status
-alias gl  := git-log
-alias gb  := git-branch
 
 # ── Meta ─────────────────────────────────────────────────────────────────────
 
-# Default: show grouped recipe list (sorted within each group)
+# Bare `just`: info splash + launchers (always shows the splash, never --list)
+[private]
+default:
+    @'{{helpers}}/info-screen.bash'
+
+# Guided command builder (gum): pick + parametrize + run a recipe
+[no-exit-message]
+[group('meta')]
+menu:
+    @'{{helpers}}/menu.bash'
+
+# Flat power launcher (fzf): multi-select recipes and batch-run them
+[no-exit-message]
+[group('meta')]
+fzf:
+    @'{{helpers}}/fzf.bash'
+
+# Plain grouped recipe list
 [group('meta')]
 help:
     @just --list --list-heading $'oh-my-claudecode -- pick a recipe (group: alpha)\n'
 
-# Print project + tooling versions in one tidy table
+# Static info splash (no countdown) -- identity, facts, tool summary
 [group('meta')]
-info: _info-header _info-runtime _info-cli _info-project
+info:
+    @'{{helpers}}/info-screen.bash' --static
 
-[private]
-_info-header:
-    @printf '── oh-my-claudecode @ %s ──\n' "$(node -p "require('./package.json').version" 2>/dev/null || echo '?')"
-
-[private]
-_info-runtime:
-    @printf '%-10s %s\n' \
-        "node"      "$(node -v 2>/dev/null               || echo '(missing)')" \
-        "{{PM}}"    "$({{PM}} -v 2>/dev/null             || echo '(missing)')" \
-        "tsc"       "$(pnpm exec tsc --version 2>/dev/null || echo '(not installed)')" \
-        "vitest"    "$(pnpm exec vitest --version 2>/dev/null            || echo '(missing)')" \
-        "just"      "$(just --version 2>/dev/null        || echo '?')"
-
-[private]
-_info-cli:
-    @for tool in rg fd bat jq watchexec gh dust rumdl shellcheck typos tokei scc knip; do \
-        if command -v $tool >/dev/null 2>&1; then \
-            printf '%-10s %s\n' "$tool" "$($tool --version 2>/dev/null | head -1)"; \
-        else \
-            printf '%-10s %s\n' "$tool" "(not installed)"; \
-        fi \
-    done
-
-[private]
-_info-project:
-    @printf '\n── repo ──\n'
-    @printf '%-10s %s\n' \
-        "branch"    "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')" \
-        "head"      "$(git log -1 --pretty='%h %s' 2>/dev/null     || echo '?')" \
-        "dirty"     "$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ') files modified"
-
-# Diagnose toolchain -- exits non-zero if a required tool is missing
+# Diagnose the toolchain (exits non-zero if a required tool is missing)
 [group('meta')]
-doctor:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    miss=0
-    require() {
-        if command -v "$1" >/dev/null 2>&1; then
-            printf '  ✓ %-12s %s\n' "$1" "$($1 --version 2>/dev/null | head -1)"
-        else
-            printf '  ✗ %-12s MISSING -- %s\n' "$1" "$2"
-            miss=$((miss + 1))
-        fi
-    }
-    suggest() {
-        if command -v "$1" >/dev/null 2>&1; then
-            printf '  ✓ %-12s %s\n' "$1" "$($1 --version 2>/dev/null | head -1)"
-        else
-            printf '  · %-12s optional -- %s\n' "$1" "$2"
-        fi
-    }
-    echo "── required ──"
-    require node "install via nodesource or nvm"
-    require {{PM}} "corepack enable && corepack prepare pnpm@latest --activate"
-    require git "install via OS package manager"
-    echo
-    echo "── recommended ──"
-    require rg "brew install ripgrep"
-    require fd "brew install fd"
-    require bat "brew install bat"
-    require jq "brew install jq"
-    require fzf "brew install fzf"
-    require watchexec "brew install watchexec"
-    require gh "brew install gh"
-    echo
-    echo "── optional ──"
-    suggest dust "brew install dust  -- for bundle-size"
-    suggest rumdl "cargo install rumdl-cli  -- for mdlint"
-    suggest shellcheck "brew install shellcheck"
-    suggest typos "cargo install typos-cli"
-    suggest tokei "brew install tokei  -- for loc"
-    suggest scc "brew install scc"
-    suggest knip "{{PM}} add -D knip  -- for deadcode"
-    echo
-    if (( miss > 0 )); then
-        printf '\n%d required tool(s) missing.\n' "$miss" >&2
-        exit 1
-    fi
-    echo "doctor: all required tools present ✓"
+doctor *args:
+    @'{{helpers}}/doctor.bash' "$@"
 
-# Count recipes by group (useful for Justfile gardening)
+# Count recipes per group (Justfile gardening)
 [group('meta')]
 recipes:
-    @printf 'recipes: %s\n' "$(just --summary 2>/dev/null | tr ' ' '\n' | rg -c '.')"
-    @printf 'groups:  %s\n' "$(just --groups 2>/dev/null | tail -n +2 | rg -c '.')"
+    @printf 'recipes: %s\n' "$(just --summary 2>/dev/null | wc -w | tr -d ' ')"
+    @printf 'groups:  %s\n' "$(just --groups 2>/dev/null | tail -n +2 | rg -c '.' || echo 0)"
     @printf 'aliases: %s\n' "$(rg -c '^alias\s' Justfile 2>/dev/null || echo 0)"
-    @echo
-    @just --groups | tail -n +2 | rg -o '\S+' | while read -r g; do \
-        count=$(just --list 2>/dev/null | awk -v g="$g" \
-            'BEGIN{pat="\\[" g "\\]"} $0 ~ pat && NF==1 {f=1;next} /^$/{f=0} f && /^[[:space:]]+[a-z]/{c++} END{print c+0}'); \
-        printf '  %-12s %s\n' "$g" "$count recipes"; \
-    done
 
 # ── Install ──────────────────────────────────────────────────────────────────
 
@@ -201,12 +123,12 @@ build-fast: build-ts
 # Compile TypeScript only (no bundling, no doc compose)
 [group('build')]
 build-ts:
-    pnpm exec tsc
+    {{PM}} exec tsc
 
 # Type-check without emitting
 [group('build')]
 typecheck:
-    pnpm exec tsc --noEmit
+    {{PM}} exec tsc --noEmit
 
 # Build the unified CLI bundle
 [group('build')]
@@ -243,15 +165,11 @@ build-team-server:
 compose-docs:
     {{PM}} run compose-docs
 
-# Show bundle sizes (uses dust if installed; falls back to du)
+# Show bundle sizes (dust if installed; falls back to du)
 [group('build')]
 bundle-size:
     @if [[ ! -d dist ]]; then echo "no dist/ -- run 'just build' first"; exit 0; fi
-    @if command -v dust >/dev/null 2>&1; then \
-        dust -d 2 dist; \
-    else \
-        du -sh dist/* 2>/dev/null | sort -rh; \
-    fi
+    @if command -v dust >/dev/null 2>&1; then dust -d 2 dist; else du -sh dist/* 2>/dev/null | sort -rh; fi
 
 # ── Dev ──────────────────────────────────────────────────────────────────────
 
@@ -268,10 +186,8 @@ dev-full:
 # Re-run any recipe whenever src/ or scripts/ changes (requires watchexec)
 [group('dev')]
 watch recipe='check':
-    @if ! command -v watchexec >/dev/null 2>&1; then \
-        echo "watchexec not installed -- brew install watchexec"; exit 1; \
-    fi
-    watchexec --restart --clear --exts ts,mjs,cjs,js,json,md \
+    @if ! command -v watchexec >/dev/null 2>&1; then echo "watchexec not installed -- brew install watchexec"; exit 1; fi
+    watchexec --restart --exts ts,mjs,cjs,js,json,md \
               --ignore 'dist/**' --ignore 'node_modules/**' --ignore '.omc/**' \
               -- just '{{recipe}}'
 
@@ -280,7 +196,7 @@ watch recipe='check':
 # Run the compiled binary entry
 [group('run')]
 run *args:
-    @if [[ ! -f dist/index.js ]]; then echo "dist/index.js missing -- running 'just build-fast' first"; just build-fast; fi
+    @if [[ ! -f dist/index.js ]]; then echo "dist/index.js missing -- building first"; just build-fast; fi
     node dist/index.js "$@"
 
 # Run the local CLI shim directly (omc)
@@ -302,7 +218,6 @@ mcp-smoke:
         echo "bridge/mcp-server.cjs missing -- run 'just build-mcp' first" >&2
         exit 1
     fi
-    # MCP servers speak JSON-RPC over stdio; sending nothing and EOF should exit cleanly.
     timeout 3 node bridge/mcp-server.cjs </dev/null >/dev/null 2>&1 \
         && echo "mcp-smoke: MCP server boots ✓" \
         || { code=$?; if (( code == 124 )); then echo "mcp-smoke: server is alive (timed out as expected)"; else echo "mcp-smoke: server failed to boot (exit $code)" >&2; exit 1; fi; }
@@ -322,17 +237,17 @@ test-run *args:
 # Only run tests for files changed since last commit (vitest --changed)
 [group('test')]
 test-changed:
-    pnpm exec vitest run --changed
+    {{PM}} exec vitest run --changed
 
 # Run tests in files matching a glob pattern (use 'tf <glob>')
 [group('test')]
 test-file pattern:
-    pnpm exec vitest run "{{pattern}}"
+    {{PM}} exec vitest run "{{pattern}}"
 
 # Run tests whose test name matches a substring (vitest -t)
 [group('test')]
 test-filter pattern:
-    pnpm exec vitest run -t "{{pattern}}"
+    {{PM}} exec vitest run -t "{{pattern}}"
 
 # Run vitest with the interactive UI
 [group('test')]
@@ -347,11 +262,7 @@ test-coverage:
 # Open the HTML coverage report (run test-coverage first)
 [group('test')]
 coverage-open:
-    @if [[ -f coverage/index.html ]]; then \
-        open coverage/index.html 2>/dev/null || xdg-open coverage/index.html 2>/dev/null || echo "open coverage/index.html manually"; \
-    else \
-        echo "no coverage/index.html -- run 'just test-coverage' first"; \
-    fi
+    @if [[ -f coverage/index.html ]]; then open coverage/index.html 2>/dev/null || xdg-open coverage/index.html 2>/dev/null || echo "open coverage/index.html manually"; else echo "no coverage/index.html -- run 'just test-coverage' first"; fi
 
 # ── Benchmark ────────────────────────────────────────────────────────────────
 
@@ -380,7 +291,7 @@ lint:
 # Run eslint with auto-fix
 [group('lint')]
 lint-fix:
-    pnpm exec eslint src --fix
+    {{PM}} exec eslint src --fix
 
 # Apply prettier formatting
 [group('lint')]
@@ -394,48 +305,39 @@ fmt-fix: fmt lint-fix
 # Check prettier formatting (CI gate; does not modify files)
 [group('lint')]
 fmt-check:
-    pnpm exec prettier --check "src/**/*.ts"
+    {{PM}} exec prettier --check "src/**/*.ts"
 
 # Lint markdown via rumdl (no-op when rumdl is missing)
 [group('lint')]
 mdlint:
-    @if command -v rumdl >/dev/null 2>&1; then \
-        rumdl check --respect-gitignore "**/*.md"; \
-    else \
-        echo "rumdl not installed -- skipping (cargo install rumdl-cli)"; \
-    fi
+    @if command -v rumdl >/dev/null 2>&1; then rumdl check --respect-gitignore "**/*.md"; else echo "rumdl not installed -- skipping (cargo install rumdl-cli)"; fi
 
-# Run shellcheck on every .sh under scripts/ (uses fd to enumerate)
+# Lint shell (helpers + scripts) via shellcheck (no-op when missing)
 [group('lint')]
-shellcheck:
-    @if ! command -v shellcheck >/dev/null 2>&1; then \
-        echo "shellcheck not installed -- skipping"; exit 0; \
-    fi
-    @if command -v fd >/dev/null 2>&1; then \
-        fd -e sh . scripts -X shellcheck; \
-    else \
-        find scripts -type f -name '*.sh' -print0 | xargs -0 -r shellcheck; \
-    fi
+shell-lint:
+    @if ! command -v shellcheck >/dev/null 2>&1; then echo "shellcheck not installed -- skipping (brew install shellcheck)"; exit 0; fi
+    shellcheck -x -S warning -P '{{helpers}}' {{helpers}}/*.bash
+    @if command -v fd >/dev/null 2>&1; then fd -e sh . scripts -X shellcheck || true; fi
+
+# Check shell formatting of helpers via shfmt (no-op when missing)
+[group('lint')]
+shell-fmt-check:
+    @if command -v shfmt >/dev/null 2>&1; then shfmt -d -i 2 -ci -sr {{helpers}}/*.bash; else echo "shfmt not installed -- skipping (brew install shfmt)"; fi
+
+# Apply shfmt formatting to the helpers
+[group('lint')]
+shell-fmt:
+    @if command -v shfmt >/dev/null 2>&1; then shfmt -w -i 2 -ci -sr {{helpers}}/*.bash; else echo "shfmt not installed -- skipping (brew install shfmt)"; fi
 
 # Spell-check via typos (no-op when typos is missing)
 [group('lint')]
 typoscheck:
-    @if command -v typos >/dev/null 2>&1; then \
-        typos; \
-    else \
-        echo "typos not installed -- skipping (cargo install typos-cli)"; \
-    fi
+    @if command -v typos >/dev/null 2>&1; then typos; else echo "typos not installed -- skipping (cargo install typos-cli)"; fi
 
 # Find unused exports / dead code (knip if installed; else hint)
 [group('lint')]
 deadcode:
-    @if pnpm exec knip --version >/dev/null 2>&1; then \
-        pnpm exec knip; \
-    elif command -v knip >/dev/null 2>&1; then \
-        knip; \
-    else \
-        echo "knip not installed -- {{PM}} add -D knip"; \
-    fi
+    @if {{PM}} exec knip --version >/dev/null 2>&1; then {{PM}} exec knip; elif command -v knip >/dev/null 2>&1; then knip; else echo "knip not installed -- {{PM}} add -D knip"; fi
 
 # ── Check & Verify ───────────────────────────────────────────────────────────
 
@@ -452,11 +354,11 @@ check: typecheck lint test-run
 [group('verify')]
 verify-fast: fmt-check typecheck lint test-run
     @echo
-    @echo "── verify-fast: GREEN ✓ (skipped audit, mdlint, shellcheck, typoscheck)"
+    @echo "── verify-fast: GREEN ✓ (skipped audit, mdlint, shell-lint, typoscheck)"
 
 # Full pre-push gate -- run before opening a PR
 [group('verify')]
-verify: fmt-check typecheck lint test-run mdlint shellcheck typoscheck
+verify: fmt-check typecheck lint test-run mdlint shell-lint shell-fmt-check typoscheck
     @echo
     @echo "═══════════════════════════════════════"
     @echo "  verify: ALL GREEN  ✓"
@@ -480,25 +382,12 @@ docs:
 # Open the compiled README in the default markdown viewer
 [group('docs')]
 docs-open:
-    @if [[ -f dist/COMPOSED.md ]]; then \
-        "${PAGER:-bat}" dist/COMPOSED.md; \
-    else \
-        echo "dist/COMPOSED.md not found -- run 'just docs' first"; \
-    fi
+    @if [[ -f dist/COMPOSED.md ]]; then "${PAGER:-bat}" dist/COMPOSED.md; else echo "dist/COMPOSED.md not found -- run 'just docs' first"; fi
 
-# Lines of code by language (tokei > scc > wc fallback)
+# Lines of code by language (tokei > scc > fd fallback)
 [group('docs')]
 loc:
-    @if command -v tokei >/dev/null 2>&1; then tokei .; \
-    elif command -v scc >/dev/null 2>&1; then scc .; \
-    else \
-        echo "tokei/scc not installed -- crude fallback:"; \
-        if command -v fd >/dev/null 2>&1; then \
-            fd -e ts -e mjs -e cjs -e js --exclude dist --exclude node_modules -X wc -l | tail -1; \
-        else \
-            find . -type f \( -name '*.ts' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.js' \) -not -path './node_modules/*' -not -path './dist/*' -exec wc -l {} + | tail -1; \
-        fi \
-    fi
+    @if command -v tokei >/dev/null 2>&1; then tokei .; elif command -v scc >/dev/null 2>&1; then scc .; elif command -v fd >/dev/null 2>&1; then fd -e ts -e mjs -e cjs -e js --exclude dist --exclude node_modules -X wc -l | tail -1; else echo "install tokei or scc for a loc report"; fi
 
 # ── Release & Publish ────────────────────────────────────────────────────────
 
@@ -561,7 +450,7 @@ release-notes ref='':
 clean:
     rm -rf dist
     rm -f tsconfig.tsbuildinfo
-    rm -f shellcheck_output.log
+    rm -f shellcheck_output.log scripts/shellcheck_output.log
 
 # Deep clean (also node_modules + lockfile caches)
 [group('clean')]
@@ -596,12 +485,7 @@ git-log:
 [no-exit-message]
 [group('git')]
 git-branch:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    branch=$(git branch --all --color=never | sed 's/^..//' | \
-        fzf --preview "git log --oneline --color=always {} | head -50" || true)
-    [[ -z "${branch:-}" ]] && exit 0
-    git switch "$(echo "$branch" | sed 's@remotes/origin/@@')"
+    @'{{helpers}}/pick.bash' branch
 
 # Stage everything, commit with message, push
 [group('git')]
@@ -634,7 +518,7 @@ git-pr-checks:
     @if ! command -v gh >/dev/null 2>&1; then echo "gh not installed -- brew install gh"; exit 1; fi
     gh pr checks --watch
 
-# ── OMC Install / Uninstall ──────────────────────────────────────────────────
+# ── OMC ──────────────────────────────────────────────────────────────────────
 
 # Uninstall all global omc installations (pnpm global remove)
 [group('omc')]
@@ -673,8 +557,6 @@ omc-install:
 [group('omc')]
 omc-reinstall: omc-uninstall omc-install
 
-# ── OMC Project-Specific ─────────────────────────────────────────────────────
-
 # Open .omc/notepad.md in $EDITOR (creates if missing)
 [group('omc')]
 notepad:
@@ -685,219 +567,67 @@ notepad:
 # Pretty-print every active mode-state file under .omc/state/
 [group('omc')]
 state:
-    @if [[ ! -d .omc/state ]]; then echo "(no .omc/state directory)"; exit 0; fi
-    @if command -v fd >/dev/null 2>&1; then \
-        files=$(fd -e json . .omc/state 2>/dev/null); \
-    else \
-        files=$(find .omc/state -type f -name '*.json' 2>/dev/null); \
-    fi; \
-    if [[ -z "$files" ]]; then echo "(no active mode states)"; exit 0; fi; \
-    for f in $files; do \
-        echo "── $f ──"; \
-        if command -v jq >/dev/null 2>&1; then jq . "$f"; else cat "$f"; fi; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [[ ! -d .omc/state ]]; then echo "(no .omc/state directory)"; exit 0; fi
+    mapfile -t files < <(fd -e json . .omc/state 2>/dev/null || find .omc/state -type f -name '*.json' 2>/dev/null)
+    if (( ${#files[@]} == 0 )); then echo "(no active mode states)"; exit 0; fi
+    for f in "${files[@]}"; do
+        echo "── $f ──"
+        if command -v jq >/dev/null 2>&1; then jq . "$f"; else cat "$f"; fi
     done
 
 # List every agent definition under agents/ with one-line summaries
 [group('omc')]
 agents-list:
-    @if command -v fd >/dev/null 2>&1; then \
-        fd -e md . agents -E AGENTS.md | sort | while read -r f; do \
-            name=$(basename "$f" .md); \
-            desc=$(rg -No '^description:\s*"?(.*?)"?$' --replace '$1' "$f" 2>/dev/null | head -1); \
-            printf '  %-28s %s\n' "$name" "${desc:-(no description)}"; \
-        done \
-    else \
-        find agents -name '*.md' -not -name 'AGENTS.md' -print | sort; \
-    fi
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fd -e md . agents -E AGENTS.md | sort | while read -r f; do
+        name=$(basename "$f" .md)
+        desc=$(rg -No '^description:\s*"?(.*?)"?$' --replace '$1' "$f" 2>/dev/null | head -1)
+        printf '  %-28s %s\n' "$name" "${desc:-(no description)}"
+    done
 
 # List every skill SKILL.md under skills/ with its name + summary
 [group('omc')]
 skills-list:
-    @if command -v fd >/dev/null 2>&1; then \
-        fd SKILL.md skills -t f | sort | while read -r f; do \
-            name=$(rg -No '^name:\s*(.*)' --replace '$1' "$f" 2>/dev/null | head -1); \
-            desc=$(rg -No '^description:\s*"?(.*?)"?$' --replace '$1' "$f" 2>/dev/null | head -1 | head -c 80); \
-            printf '  %-28s %s\n' "${name:-?}" "${desc:-(no description)}"; \
-        done \
-    else \
-        find skills -name 'SKILL.md' | sort; \
-    fi
+    #!/usr/bin/env bash
+    set -euo pipefail
+    fd SKILL.md skills -t f | sort | while read -r f; do
+        name=$(rg -No '^name:\s*(.*)' --replace '$1' "$f" 2>/dev/null | head -1)
+        desc=$(rg -No '^description:\s*"?(.*?)"?$' --replace '$1' "$f" 2>/dev/null | head -1 | head -c 80)
+        printf '  %-28s %s\n' "${name:-?}" "${desc:-(no description)}"
+    done
 
 # Tail the most recent log file under .omc/logs
 [group('omc')]
 tail-log:
-    @if command -v fd >/dev/null 2>&1; then \
-        latest=$(fd -e log . .omc/logs 2>/dev/null | sort | tail -1); \
-    else \
-        latest=$(find .omc/logs -type f -name '*.log' 2>/dev/null | sort | tail -1); \
-    fi; \
-    if [[ -n "$latest" ]]; then \
-        echo "tailing $latest"; \
-        tail -f "$latest"; \
-    else \
-        echo "no logs under .omc/logs"; \
-    fi
+    #!/usr/bin/env bash
+    set -euo pipefail
+    latest=$(fd -e log . .omc/logs 2>/dev/null | sort | tail -1)
+    if [[ -n "$latest" ]]; then echo "tailing $latest"; tail -f "$latest"; else echo "no logs under .omc/logs"; fi
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 
-# fzf-pick a source file and open it in $EDITOR (uses fd, bat preview)
+# fzf-pick a source file and open it in $EDITOR (fd + bat preview)
 [no-exit-message]
 [group('util')]
 pick:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    file=$(fd -e ts -e mjs -e cjs -e js -e json -e md -e toml -e yml -e yaml \
-        --exclude node_modules --exclude dist --exclude .git \
-        | fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" || true)
-    [[ -z "${file:-}" ]] && exit 0
-    {{EDITOR_CMD}} "$file"
+    @'{{helpers}}/pick.bash' file
 
-# Live-grep across the repo via fzf+rg, open match in $EDITOR
-[no-exit-message]
-[group('util')]
-search query='':
-    #!/usr/bin/env bash
-    set -euo pipefail
-    line=$(rg --line-number --no-heading --color=never \
-              --glob '!node_modules' --glob '!dist' --glob '!.git' \
-              "{{query}}" 2>/dev/null \
-        | fzf --delimiter=':' \
-              --preview "bat --color=always --style=numbers --highlight-line {2} {1}" \
-              --preview-window=right:60% || true)
-    [[ -z "${line:-}" ]] && exit 0
-    file=$(echo "$line" | cut -d: -f1)
-    lno=$(echo  "$line" | cut -d: -f2)
-    {{EDITOR_CMD}} "+${lno}" "$file"
-
-# Edit any markdown doc via fzf
+# fzf-pick a markdown doc and open it in $EDITOR
 [no-exit-message]
 [group('util')]
 edit-doc:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    file=$(fd -e md --exclude node_modules --exclude dist \
-        | fzf --preview "bat --color=always --style=numbers --line-range=:500 {}" || true)
-    [[ -z "${file:-}" ]] && exit 0
-    {{EDITOR_CMD}} "$file"
+    @'{{helpers}}/pick.bash' doc
 
-# Show resolved value of a Justfile variable / show recipe body
+# Live-grep across the repo via rg+fzf, open the match in $EDITOR
+[no-exit-message]
+[group('util')]
+search query='':
+    @'{{helpers}}/search.bash' "{{query}}"
+
+# Show the body (and resolved values) of a recipe
 [group('util')]
 show recipe:
     @just --show {{recipe}}
-
-# ── fzf Workflows ────────────────────────────────────────────────────────────
-
-# Auto-generated fzf picker -- uses `just --choose` so new recipes appear automatically
-[no-exit-message]
-[group('fzf')]
-fzf:
-    @just --choose --chooser "fzf --header='oh-my-claudecode -- pick a recipe' \
-        --preview 'just --show {} 2>/dev/null'"
-
-# Curated, categorized launcher (the entry point of last resort)
-[no-exit-message]
-[group('fzf')]
-menu:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    choice=$(printf '%s\n' \
-        '── INSTALL ──' \
-        '* install                 -- pnpm install' \
-        '  outdated                -- show outdated deps' \
-        '  update                  -- interactive deps update' \
-        '── BUILD ──' \
-        '* build                   -- full build (TS + bundles + docs)' \
-        '* build-fast              -- tsc only (incremental)' \
-        '  build-cli               -- bundle cli' \
-        '  build-mcp               -- bundle mcp server' \
-        '  build-bridge            -- bundle skill bridge' \
-        '  bundle-size             -- du-style report on dist/' \
-        '  compose-docs            -- compose docs into one bundle' \
-        '── DEV ──' \
-        '* dev                     -- tsc --watch' \
-        '  dev-full                -- all watchers concurrently' \
-        '  watch                   -- rerun any recipe on change' \
-        '── RUN ──' \
-        '  run                     -- node dist/index.js' \
-        '  cli                     -- bridge/cli.cjs' \
-        '  status                  -- omc status smoke test' \
-        '  mcp-smoke               -- mcp server boot smoke test' \
-        '── TEST ──' \
-        '* test                    -- vitest watch' \
-        '* test-run                -- vitest run (CI)' \
-        '* test-changed            -- only files changed since last commit' \
-        '  test-file <glob>        -- file-glob filter' \
-        '  test-filter <name>      -- test-name filter' \
-        '  test-coverage           -- vitest run --coverage' \
-        '  coverage-open           -- open html report' \
-        '  test-ui                 -- vitest UI' \
-        '── BENCH ──' \
-        '  bench                   -- run prompt benchmarks' \
-        '  bench-save              -- save baseline' \
-        '  bench-compare           -- compare to baseline' \
-        '── LINT & FORMAT ──' \
-        '* lint                    -- eslint src' \
-        '* fmt                     -- prettier write' \
-        '* fmt-fix                 -- prettier + eslint --fix' \
-        '  lint-fix                -- eslint --fix' \
-        '  fmt-check               -- prettier check' \
-        '  typecheck               -- tsc --noEmit' \
-        '  mdlint                  -- rumdl check' \
-        '  shellcheck              -- shellcheck scripts/' \
-        '  typoscheck              -- typos' \
-        '  deadcode                -- knip / unused exports' \
-        '── VERIFY ──' \
-        '* verify                  -- full pre-push gate' \
-        '* verify-fast             -- skip slow file-type linters' \
-        '* ci                      -- full CI pipeline' \
-        '  check                   -- typecheck + lint + test-run' \
-        '  audit                   -- dependency audit' \
-        '── DOCS ──' \
-        '  docs                    -- build composed docs' \
-        '  docs-open               -- view dist/COMPOSED.md' \
-        '  loc                     -- lines of code report' \
-        '── RELEASE ──' \
-        '  release                 -- interactive release' \
-        '  release-notes <ref>     -- generate notes from git log' \
-        '  sync-version            -- sync versions' \
-        '  sync-metadata           -- sync metadata' \
-        '  sync-contributors       -- sync contributor list' \
-        '  prepublish              -- verify + build' \
-        '── CLEAN ──' \
-        '  clean                   -- rm dist' \
-        '  clean-cache             -- rm .omc/cache only' \
-        '  clean-deep              -- + node_modules' \
-        '  clean-omc               -- rm .omc/{cache,state} .clawhip' \
-        '── GIT ──' \
-        '  git-status              -- short status' \
-        '  git-log                 -- last 20 commits' \
-        '  git-branch              -- fzf branch switch' \
-        '  git-ship <msg>          -- add+commit+push' \
-        '  git-amend               -- amend last commit' \
-        '  git-fixup <hash>        -- fixup commit' \
-        '  git-pr <title> [body]   -- gh pr create' \
-        '  git-pr-checks           -- gh pr checks --watch' \
-        '── OMC ──' \
-        '* omc-reinstall           -- uninstall + reinstall from local repo' \
-        '  omc-uninstall           -- remove all global omc installs' \
-        '  omc-install             -- install omc from this local checkout' \
-        '* notepad                 -- open .omc/notepad.md' \
-        '  state                   -- show .omc/state/*.json' \
-        '  agents-list             -- list agent definitions' \
-        '  skills-list             -- list skill SKILL.md files' \
-        '  tail-log                -- tail latest .omc log' \
-        '── UTIL ──' \
-        '  pick                    -- fzf-pick a file' \
-        '  search <q>              -- live-grep' \
-        '  edit-doc                -- fzf-pick a markdown doc' \
-        '  show <recipe>           -- show recipe body' \
-        '  info                    -- versions' \
-        '  doctor                  -- diagnose toolchain' \
-        '  recipes                 -- recipe count' \
-        | fzf --preview='just --show "$(echo {} | tr -d "*" | awk "{print \$1}")" 2>/dev/null || echo "(section header)"' \
-              --header='oh-my-claudecode -- pick a recipe' || true)
-    [[ -z "${choice:-}" ]] && exit 0
-    recipe=$(echo "$choice" | tr -d '*' | awk '{print $1}')
-    [[ -z "${recipe:-}" || "${recipe:-}" == "──" ]] && exit 0
-    just "$recipe"
-
