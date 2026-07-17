@@ -112,6 +112,9 @@ export type {
   PipelineStageAdapter,
   PipelineStageState,
   PipelineTracking,
+  WorkflowDescriptor,
+  PipelineActivationBoundary,
+  PipelineCompletionObservation,
 } from './pipeline-types.js';
 
 export {
@@ -125,6 +128,8 @@ export {
   resolvePipelineConfig,
   getDeprecationWarning,
   buildPipelineTracking,
+  createWorkflowDescriptor,
+  verifyWorkflowDescriptor,
   getActiveAdapters,
   readPipelineTracking,
   writePipelineTracking,

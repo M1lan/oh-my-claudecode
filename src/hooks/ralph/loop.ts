@@ -10,7 +10,7 @@
  * Ported from oh-my-opencode's ralph hook.
  */
 
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { basename, join } from 'path';
 import {
@@ -301,10 +301,11 @@ export function createRalphLoopHook(directory: string): RalphLoopHook {
 
     let branchName = 'ralph/task';
     try {
-      branchName = execSync('git rev-parse --abbrev-ref HEAD', {
+      branchName = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
         cwd: directory,
         encoding: 'utf-8',
         timeout: 5000,
+        windowsHide: true,
       }).trim();
     } catch {
       // Fallback outside git repos.

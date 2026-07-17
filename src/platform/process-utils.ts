@@ -9,6 +9,20 @@ import * as fsPromises from 'fs/promises';
 
 const execFileAsync = promisify(execFile);
 
+function remainingDeadlineMs(deadlineAt?: number): number | undefined {
+  if (deadlineAt === undefined) return undefined;
+  return Math.max(0, deadlineAt - Date.now());
+}
+
+function isDeadlineExceeded(deadlineAt?: number): boolean {
+  return deadlineAt !== undefined && remainingDeadlineMs(deadlineAt) === 0;
+}
+
+function parseDeadline(deadlineAt: string): number | undefined {
+  const value = Date.parse(deadlineAt);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 /**
  * Kill a process and optionally its entire process tree.
  *
@@ -94,21 +108,24 @@ export function isProcessAlive(pid: number): boolean {
  */
 export async function getProcessStartTime(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
-  if (!Number.isInteger(pid) || pid <= 0) return undefined;
+  if (!Number.isInteger(pid) || pid <= 0 || isDeadlineExceeded(deadlineAt))
+    return undefined;
 
   if (process.platform === 'win32') {
-    return getProcessStartTimeWindows(pid);
+    return getProcessStartTimeWindows(pid, deadlineAt);
   } else if (process.platform === 'darwin') {
-    return getProcessStartTimeMacOS(pid);
+    return getProcessStartTimeMacOS(pid, deadlineAt);
   } else if (process.platform === 'linux') {
-    return getProcessStartTimeLinux(pid);
+    return getProcessStartTimeLinux(pid, deadlineAt);
   }
   return undefined;
 }
 
 async function getProcessStartTimeWindows(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
@@ -121,7 +138,13 @@ async function getProcessStartTimeWindows(
         'CreationDate',
         '/format:csv',
       ],
-      { timeout: 5000, windowsHide: true },
+      {
+        timeout: Math.max(
+          1,
+          Math.min(5000, remainingDeadlineMs(deadlineAt) ?? 5000),
+        ),
+        windowsHide: true,
+      },
     );
 
     const wmicTime = parseWmicCreationDate(stdout);
@@ -130,10 +153,16 @@ async function getProcessStartTimeWindows(
     // WMIC is deprecated on newer Windows builds; fall back to PowerShell.
   }
 
-  const cimTime = await getProcessStartTimeWindowsPowerShellCim(pid);
+  if (isDeadlineExceeded(deadlineAt)) return undefined;
+  const cimTime = await getProcessStartTimeWindowsPowerShellCim(
+    pid,
+    deadlineAt,
+  );
   if (cimTime !== undefined) return cimTime;
 
-  return getProcessStartTimeWindowsPowerShellProcess(pid);
+  return isDeadlineExceeded(deadlineAt)
+    ? undefined
+    : getProcessStartTimeWindowsPowerShellProcess(pid, deadlineAt);
 }
 
 function parseWmicCreationDate(stdout: string): number | undefined {
@@ -170,6 +199,7 @@ function parseWindowsEpochMilliseconds(stdout: string): number | undefined {
 
 async function getProcessStartTimeWindowsPowerShellCim(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
@@ -180,7 +210,13 @@ async function getProcessStartTimeWindowsPowerShellCim(
         '-Command',
         `$p = Get-CimInstance Win32_Process -Filter "ProcessId = ${pid}" -ErrorAction Stop; if ($p -and $p.CreationDate) { [DateTimeOffset]$p.CreationDate | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`,
       ],
-      { timeout: 5000, windowsHide: true },
+      {
+        timeout: Math.max(
+          1,
+          Math.min(5000, remainingDeadlineMs(deadlineAt) ?? 5000),
+        ),
+        windowsHide: true,
+      },
     );
     return parseWindowsEpochMilliseconds(stdout);
   } catch {
@@ -190,6 +226,7 @@ async function getProcessStartTimeWindowsPowerShellCim(
 
 async function getProcessStartTimeWindowsPowerShellProcess(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
@@ -200,7 +237,13 @@ async function getProcessStartTimeWindowsPowerShellProcess(
         '-Command',
         `$p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue; if ($p -and $p.StartTime) { [DateTimeOffset]$p.StartTime | ForEach-Object { $_.ToUnixTimeMilliseconds() } }`,
       ],
-      { timeout: 5000, windowsHide: true },
+      {
+        timeout: Math.max(
+          1,
+          Math.min(5000, remainingDeadlineMs(deadlineAt) ?? 5000),
+        ),
+        windowsHide: true,
+      },
     );
     return parseWindowsEpochMilliseconds(stdout);
   } catch {
@@ -210,6 +253,7 @@ async function getProcessStartTimeWindowsPowerShellProcess(
 
 async function getProcessStartTimeMacOS(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
   try {
     const { stdout } = await execFileAsync(
@@ -217,6 +261,10 @@ async function getProcessStartTimeMacOS(
       ['-p', String(pid), '-o', 'lstart='],
       {
         env: { ...process.env, LC_ALL: 'C' },
+        timeout: Math.max(
+          1,
+          Math.min(5000, remainingDeadlineMs(deadlineAt) ?? 5000),
+        ),
         windowsHide: true,
       },
     );
@@ -229,7 +277,9 @@ async function getProcessStartTimeMacOS(
 
 async function getProcessStartTimeLinux(
   pid: number,
+  deadlineAt?: number,
 ): Promise<number | undefined> {
+  if (isDeadlineExceeded(deadlineAt)) return undefined;
   try {
     const stat = await fsPromises.readFile(`/proc/${pid}/stat`, 'utf8');
     const closeParen = stat.lastIndexOf(')');
@@ -264,4 +314,98 @@ export async function gracefulKill(
 
   await new Promise((r) => setTimeout(r, 1000));
   return isProcessAlive(pid) ? 'failed' : 'forced';
+}
+
+/** Stable PID-reuse identity suitable for a durable worker manifest. */
+export async function getProcessStartIdentity(
+  pid: number,
+  deadlineAt?: number,
+): Promise<string | null> {
+  const startTime = await getProcessStartTime(pid, deadlineAt);
+  return startTime === undefined || isDeadlineExceeded(deadlineAt)
+    ? null
+    : String(startTime);
+}
+
+export async function isProcessIdentityLive(
+  pid: number,
+  expectedStartIdentity: string,
+  deadlineAt?: number,
+): Promise<'live' | 'dead' | 'mismatch' | 'unknown'> {
+  if (
+    !Number.isInteger(pid) ||
+    pid <= 0 ||
+    !expectedStartIdentity ||
+    isDeadlineExceeded(deadlineAt)
+  ) {
+    return isDeadlineExceeded(deadlineAt) ? 'unknown' : 'dead';
+  }
+  if (!isProcessAlive(pid)) return 'dead';
+
+  const identity = await getProcessStartIdentity(pid, deadlineAt);
+  if (identity === null) return isProcessAlive(pid) ? 'unknown' : 'dead';
+  return identity === expectedStartIdentity ? 'live' : 'mismatch';
+}
+
+export interface TerminateOwnedProcessTreeOptions {
+  pid: number;
+  expectedStartIdentity: string;
+  deadlineAt: string;
+  force?: boolean;
+}
+
+/**
+ * Terminate only a process whose durable start identity still matches. The
+ * Windows path is asynchronous and receives the worker's remaining deadline,
+ * preventing taskkill from holding SessionEnd for its legacy five seconds.
+ */
+export async function terminateOwnedProcessTree(
+  options: TerminateOwnedProcessTreeOptions,
+): Promise<
+  | 'terminated'
+  | 'already-dead'
+  | 'identity-mismatch'
+  | 'unknown'
+  | 'deadline-exceeded'
+> {
+  const deadline = parseDeadline(options.deadlineAt);
+  if (deadline === undefined || isDeadlineExceeded(deadline))
+    return 'deadline-exceeded';
+
+  const liveness = await isProcessIdentityLive(
+    options.pid,
+    options.expectedStartIdentity,
+    deadline,
+  );
+  if (liveness === 'dead') return 'already-dead';
+  if (liveness === 'mismatch') return 'identity-mismatch';
+  if (liveness === 'unknown') {
+    return isDeadlineExceeded(deadline) ? 'deadline-exceeded' : 'unknown';
+  }
+  if (isDeadlineExceeded(deadline)) return 'deadline-exceeded';
+
+  if (process.platform !== 'win32') {
+    return killProcessTreeUnix(
+      options.pid,
+      options.force ? 'SIGKILL' : 'SIGTERM',
+    )
+      ? 'terminated'
+      : isProcessAlive(options.pid)
+        ? 'unknown'
+        : 'already-dead';
+  }
+
+  const timeout = remainingDeadlineMs(deadline);
+  if (!timeout) return 'deadline-exceeded';
+  try {
+    const args = ['/T', '/PID', String(options.pid)];
+    if (options.force) args.unshift('/F');
+    await execFileAsync('taskkill.exe', args, { windowsHide: true, timeout });
+    return 'terminated';
+  } catch (error: unknown) {
+    if (isDeadlineExceeded(deadline)) return 'deadline-exceeded';
+    const status = (error as { status?: number }).status;
+    if (status === 128 || !isProcessAlive(options.pid)) return 'already-dead';
+    return 'unknown';
+  }
 }

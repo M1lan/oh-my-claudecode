@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
@@ -19,6 +20,10 @@ import {
   getPipelineStatus,
   formatPipelineHUD,
   hasPipelineTracking,
+  generatePipelinePrompt,
+  createWorkflowDescriptor,
+  verifyWorkflowDescriptor,
+  canonicalizeJson,
 } from '../pipeline.js';
 
 import {
@@ -41,7 +46,7 @@ import {
   getAdapterById,
 } from '../adapters/index.js';
 
-import { readAutopilotState } from '../state.js';
+import { readAutopilotState, writeAutopilotState } from '../state.js';
 
 describe('Pipeline Types', () => {
   it('should have 4 stages in canonical order', () => {
@@ -350,8 +355,8 @@ describe('Pipeline Orchestrator (with state)', () => {
         verification: false,
       });
       const tracking = readPipelineTracking(state!);
-      expect(tracking!.pipelineConfig.execution).toBe('team');
-      expect(tracking!.pipelineConfig.verification).toBe(false);
+      expect(tracking!.pipelineConfig!.execution).toBe('team');
+      expect(tracking!.pipelineConfig!.verification).toBe(false);
       expect(tracking!.stages[2].status).toBe('skipped'); // ralph skipped
     });
 
@@ -365,7 +370,7 @@ describe('Pipeline Orchestrator (with state)', () => {
         'ultrawork',
       );
       const tracking = readPipelineTracking(state!);
-      expect(tracking!.pipelineConfig.execution).toBe('team');
+      expect(tracking!.pipelineConfig!.execution).toBe('team');
     });
   });
 
@@ -385,6 +390,142 @@ describe('Pipeline Orchestrator (with state)', () => {
       const adapter = getCurrentStageAdapter(tracking!);
       expect(adapter).toBe(executionAdapter);
     });
+  });
+
+  it('generates prompts only for structurally valid named workflow state', () => {
+    const sessionId = '11111111-1111-4111-8111-111111111111';
+    const base = initPipeline(testDir, 'legacy task', sessionId)!;
+    const named = {
+      ...base,
+      phase: 'ralplan',
+      prompt: 'named task',
+      workflow: createWorkflowDescriptor('release-flow', {
+        version: 1,
+        stages: ['ralplan', 'execution'],
+      })!,
+      workflowRunId: '22222222-2222-4222-8222-222222222222',
+      pipelineTracking: {
+        stages: [
+          {
+            id: 'ralplan' as const,
+            status: 'active' as const,
+            iterations: 0,
+            startedAt: new Date().toISOString(),
+          },
+          {
+            id: 'execution' as const,
+            status: 'pending' as const,
+            iterations: 0,
+          },
+        ],
+        currentStageIndex: 0,
+        trackingRevision: 0,
+        activationBoundary: {
+          transcriptPath: join(testDir, `${sessionId}.jsonl`),
+          transcriptRoot: testDir,
+          transcriptBasename: `${sessionId}.jsonl`,
+          sessionId,
+          byteOffset: 0,
+          fileIdentity: {
+            device: 0,
+            inode: 0,
+            size: 0,
+            mtimeNs: '0',
+            ctimeNs: '0',
+            contentSha256: '0'.repeat(64),
+          },
+        },
+        completionObservations: [],
+      },
+    } as typeof base;
+    delete (named as Partial<typeof named>).pipeline;
+    delete (named as Partial<typeof named>).expansion;
+    delete (named as Partial<typeof named>).planning;
+    writeAutopilotState(testDir, named, sessionId);
+
+    expect(generatePipelinePrompt(testDir, sessionId)).toContain(
+      '## PIPELINE STAGE: RALPLAN',
+    );
+    expect(generatePipelinePrompt(testDir)).toBeNull();
+
+    expect(advanceStage(testDir, sessionId)).toEqual({
+      adapter: null,
+      phase: 'failed',
+    });
+  });
+
+  it.each([
+    ['partial', (state: Record<string, unknown>) => delete state.workflowRunId],
+    [
+      'tampered descriptor',
+      (state: Record<string, unknown>) => {
+        (state.workflow as Record<string, unknown>).profileHash = '0'.repeat(
+          64,
+        );
+      },
+    ],
+    [
+      'mismatched session',
+      (state: Record<string, unknown>) => {
+        state.session_id = 'other-session';
+      },
+    ],
+    [
+      'corrupt tracking',
+      (state: Record<string, unknown>) => {
+        (state.pipelineTracking as Record<string, unknown>).trackingRevision =
+          1;
+      },
+    ],
+  ])('fails closed for %s named workflow markers', (_kind, corrupt) => {
+    const sessionId = '11111111-1111-4111-8111-111111111111';
+    const base = initPipeline(testDir, 'legacy task', sessionId)!;
+    const state = {
+      ...base,
+      phase: 'ralplan',
+      prompt: 'named task',
+      workflow: createWorkflowDescriptor('release-flow', {
+        version: 1,
+        stages: ['ralplan', 'execution'],
+      })!,
+      workflowRunId: '22222222-2222-4222-8222-222222222222',
+      pipelineTracking: {
+        stages: [
+          {
+            id: 'ralplan',
+            status: 'active',
+            iterations: 0,
+            startedAt: new Date().toISOString(),
+          },
+          { id: 'execution', status: 'pending', iterations: 0 },
+        ],
+        currentStageIndex: 0,
+        trackingRevision: 0,
+        activationBoundary: {
+          transcriptPath: join(testDir, `${sessionId}.jsonl`),
+          transcriptRoot: testDir,
+          transcriptBasename: `${sessionId}.jsonl`,
+          sessionId,
+          byteOffset: 0,
+          fileIdentity: {
+            device: 0,
+            inode: 0,
+            size: 0,
+            mtimeNs: '0',
+            ctimeNs: '0',
+            contentSha256: '0'.repeat(64),
+          },
+        },
+        completionObservations: [],
+      },
+    } as Record<string, unknown>;
+    delete state.pipeline;
+    delete state.expansion;
+    delete state.planning;
+    corrupt(state);
+    writeAutopilotState(testDir, state as unknown as typeof base, sessionId);
+
+    expect(generatePipelinePrompt(testDir, sessionId)).toBeNull();
   });
 
   describe('getCurrentCompletionSignal', () => {
@@ -580,4 +721,100 @@ describe('autopilot team CLI worker configuration', () => {
     expect(prompt).not.toContain('Task with `team_name`');
     expect(prompt).not.toContain('CLI Team Runtime Required');
   });
+});
+
+describe('workflow profile descriptor contract (#3487)', () => {
+  const profile = {
+    version: 1,
+    stages: ['ralplan', 'execution', 'qa'],
+  } as const;
+
+  it('uses recursively lexicographically sorted compact JSON for the descriptor hash', () => {
+    const descriptor = createWorkflowDescriptor('release-flow', profile);
+
+    expect(
+      canonicalizeJson({
+        workflowName: 'release-flow',
+        stages: profile.stages,
+        profileVersion: 1,
+        descriptorVersion: 1,
+      }),
+    ).toBe(
+      '{"descriptorVersion":1,"profileVersion":1,"stages":["ralplan","execution","qa"],"workflowName":"release-flow"}',
+    );
+    expect(canonicalizeJson({ z: { y: 1, a: 2 }, a: [{ b: 1, a: 2 }] })).toBe(
+      '{"a":[{"a":2,"b":1}],"z":{"a":2,"y":1}}',
+    );
+    expect(descriptor?.profileHash).toBe(
+      'e602fea6c1edb149161950e94145182b017ea964499b06a5a45adcb1eac5c351',
+    );
+  });
+
+  it('hashes canonical descriptors deterministically and rejects tampering', () => {
+    const first = createWorkflowDescriptor('release-flow', profile);
+    const second = createWorkflowDescriptor('release-flow', profile);
+    expect(first).toEqual(second);
+    expect(first).toMatchObject({
+      descriptorVersion: 1,
+      workflowName: 'release-flow',
+      profileVersion: 1,
+      stages: ['ralplan', 'execution', 'qa'],
+    });
+    expect(verifyWorkflowDescriptor(first)).toBe(true);
+    expect(
+      verifyWorkflowDescriptor({ ...first!, stages: ['ralplan', 'execution'] }),
+    ).toBe(false);
+    expect(
+      verifyWorkflowDescriptor({ ...first!, profileHash: '0'.repeat(64) }),
+    ).toBe(false);
+    expect(verifyWorkflowDescriptor({ ...first!, extra: true })).toBe(false);
+  });
+
+  it('rejects reserved workflow identities even with a recomputed canonical hash', () => {
+    expect(createWorkflowDescriptor('autopilot', profile)).toBeNull();
+    const descriptor = {
+      descriptorVersion: 1,
+      workflowName: 'autopilot',
+      profileVersion: 1,
+      stages: profile.stages,
+    };
+    const recomputed = {
+      ...descriptor,
+      profileHash: createHash('sha256')
+        .update(canonicalizeJson(descriptor))
+        .digest('hex'),
+    };
+    expect(verifyWorkflowDescriptor(recomputed)).toBe(false);
+  });
+
+  it('rejects comma-collapsed and nested stage structures before descriptor creation', () => {
+    expect(
+      createWorkflowDescriptor('release-flow', {
+        version: 1,
+        stages: ['ralplan', 'execution,qa'],
+      }),
+    ).toBeNull();
+    expect(
+      createWorkflowDescriptor('release-flow', {
+        version: 1,
+        stages: [['ralplan', 'execution']],
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    ['ralplan,execution', ['ralplan', 'execution']],
+    ['ralplan,execution,ralph', ['ralplan', 'execution', 'ralph']],
+    ['ralplan,execution,qa', ['ralplan', 'execution', 'qa']],
+    ['ralplan,execution,ralph,qa', ['ralplan', 'execution', 'ralph', 'qa']],
+  ] as const)(
+    'creates descriptors only for selected stages in %s',
+    (_name, stages) => {
+      const descriptor = createWorkflowDescriptor('release-flow', {
+        version: 1,
+        stages,
+      });
+      expect(descriptor?.stages).toEqual(stages);
+    },
+  );
 });

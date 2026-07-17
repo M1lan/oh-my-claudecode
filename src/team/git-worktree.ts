@@ -121,6 +121,7 @@ function git(repoRoot: string, args: string[], cwd = repoRoot): string {
     cwd,
     encoding: 'utf-8',
     stdio: 'pipe',
+    windowsHide: true,
   }).trim();
 }
 
@@ -208,6 +209,7 @@ function isDetached(wtPath: string): boolean {
       cwd: wtPath,
       encoding: 'utf-8',
       stdio: 'pipe',
+      windowsHide: true,
     }).trim();
     return branch.length === 0;
   } catch {
@@ -252,6 +254,7 @@ function isWorktreeDirtyExcept(
       cwd: wtPath,
       encoding: 'utf-8',
       stdio: 'pipe',
+      windowsHide: true,
     })
       .split('\n')
       .filter((line) => line.trim().length > 0);
@@ -649,6 +652,7 @@ export function ensureWorkerWorktree(
     execFileSync('git', ['worktree', 'prune'], {
       cwd: repoRoot,
       stdio: 'pipe',
+      windowsHide: true,
     });
   } catch {
     /* ignore */
@@ -684,7 +688,11 @@ export function ensureWorkerWorktree(
     mode === 'named'
       ? ['worktree', 'add', '-b', branch, wtPath, options.baseRef ?? 'HEAD']
       : ['worktree', 'add', '--detach', wtPath, options.baseRef ?? 'HEAD'];
-  execFileSync('git', args, { cwd: repoRoot, stdio: 'pipe' });
+  execFileSync('git', args, {
+    cwd: repoRoot,
+    stdio: 'pipe',
+    windowsHide: true,
+  });
 
   const info: EnsureWorkerWorktreeResult = {
     path: wtPath,
@@ -830,6 +838,7 @@ export function removeWorkerWorktree(
       execFileSync('git', ['worktree', 'remove', wtPath], {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       });
     } catch (err) {
       if (wasRegisteredWorktree) {
@@ -848,6 +857,7 @@ export function removeWorkerWorktree(
       execFileSync('git', ['worktree', 'prune'], {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       });
     } catch {
       /* ignore */
@@ -857,6 +867,7 @@ export function removeWorkerWorktree(
       execFileSync('git', ['branch', '-D', branch], {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       });
     } catch {
       /* branch may not exist */

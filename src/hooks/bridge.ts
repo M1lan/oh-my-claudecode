@@ -1600,6 +1600,20 @@ async function processKeywordDetector(input: HookInput): Promise<HookOutput> {
   // ralplan path additionally returns the legacy [RALPLAN INIT] context
   // injection so existing routing tests remain green.
   const explicitSlash = parseExplicitWorkflowSlashInvocation(promptText);
+  // Named autopilot workflows are activated atomically by the installed
+  // plugin/template hook runtime. This bridge has no equivalent authenticated
+  // activation API, so reject every explicit --workflow form before the
+  // generic slash and keyword paths can seed legacy autopilot state.
+  if (
+    explicitSlash?.skill === 'autopilot' &&
+    /^--workflow(?:\s|$|=)/.test(explicitSlash.args)
+  ) {
+    return {
+      continue: true,
+      message:
+        '[AUTOPILOT NAMED WORKFLOW UNSUPPORTED] Named workflow activation is unavailable through the TypeScript bridge. State was left unchanged; use the installed keyword-detector hook.',
+    };
+  }
   if (explicitSlash) {
     seedWorkflowSlotForSkill(
       directory,
@@ -2061,6 +2075,9 @@ async function processSessionStart(input: HookInput): Promise<HookOutput> {
 
   writeSessionStartedMarker(directory, sessionId);
   await reconcileAbandonedSessionStarts(directory, sessionId);
+  void import('./session-end/worker.js')
+    .then(({ reconcileSessionEndJobs }) => reconcileSessionEndJobs(directory))
+    .catch(() => undefined);
 
   // Lazy-load session-start dependencies
   const { initSilentAutoUpdate } = await import('../features/auto-update.js');
@@ -3307,11 +3324,6 @@ export async function processHook(
           reason: (rawSE.reason as SessionEndInput['reason']) ?? 'other',
         };
         const result = await handleSessionEnd(sessionEndInput);
-        _openclaw.wake('session-end', {
-          sessionId: sessionEndInput.session_id,
-          projectPath: sessionEndInput.cwd,
-          reason: sessionEndInput.reason,
-        });
         return result;
       }
 

@@ -749,6 +749,7 @@ describe('Installer Constants', () => {
         'config-dir.mjs',
         'state-root.mjs',
         'model-routing-override-message.mjs',
+        'bounded-git-timeout.mjs',
       ];
       for (const file of requiredFiles) {
         expect(libFiles).toContain(file);

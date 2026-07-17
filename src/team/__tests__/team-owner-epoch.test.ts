@@ -31,6 +31,12 @@ import type { TeamConfig } from '../types.js';
 let cwd: string;
 const teamName = 'owner-team';
 const start = currentProcessStartIdentity();
+const otherStart =
+  process.platform === 'darwin'
+    ? 'darwin:1:0'
+    : process.platform === 'win32'
+      ? 'win32:1'
+      : 'linux:1';
 const baseConfig = (overrides: Record<string, unknown> = {}) =>
   ({
     state_revision: 7,
@@ -79,7 +85,7 @@ describe('runtime owner epochs', () => {
   it('rejects a successor-election loser that observes another process identity as winner', () => {
     const winner = publishOwnerEpoch(cwd, teamName, 1, {
       pid: process.pid,
-      processStartedAt: 'linux:1',
+      processStartedAt: otherStart,
       nonce: 'winner',
     });
     const loserObserved = publishOwnerEpoch(cwd, teamName, 1, {
@@ -111,7 +117,11 @@ describe('runtime owner epochs', () => {
     expect(exec).toHaveBeenCalledWith(
       '/usr/sbin/sysctl',
       ['-b', 'kern.proc.pid.42'],
-      { encoding: null, maxBuffer: 1024 * 1024 },
+      {
+        encoding: null,
+        maxBuffer: 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
     );
     expect(exec).toHaveBeenCalledWith(
       'powershell.exe',
@@ -126,12 +136,34 @@ describe('runtime owner epochs', () => {
     expect(processStartIdentityForPlatform(42, 'darwin', reused)).toBe(
       'darwin:1783701296:654321',
     );
-    const missingNativeHelper = vi.fn(() => {
-      throw new Error('sysctl missing');
+    const fallback = vi.fn((file: string) => {
+      if (file === '/usr/sbin/sysctl') throw new Error('sysctl missing');
+      return 'Wed Jul 15 23:00:00 2026\n';
+    }) as unknown as typeof import('node:child_process').execFileSync;
+    expect(processStartIdentityForPlatform(42, 'darwin', fallback)).toBe(
+      `darwin:${Math.floor(Date.parse('Wed Jul 15 23:00:00 2026') / 1000)}:0`,
+    );
+    expect(fallback).toHaveBeenCalledWith('ps', ['-o', 'lstart=', '-p', '42'], {
+      encoding: 'utf8',
+      env: { ...process.env, LC_ALL: 'C', LANG: 'C' },
+    });
+    const missingHelpers = vi.fn(() => {
+      throw new Error('missing');
     }) as unknown as typeof import('node:child_process').execFileSync;
     expect(
-      processStartIdentityForPlatform(42, 'darwin', missingNativeHelper),
+      processStartIdentityForPlatform(42, 'darwin', missingHelpers),
     ).toBeNull();
+  });
+  it('does not declare a live Darwin process dead when precision falls back to seconds', () => {
+    if (process.platform !== 'darwin') return;
+    expect(start).toMatch(/^darwin:[1-9]\d*:0$/);
+    const nativePrecisionIdentity = start!.replace(/:0$/, ':123456');
+    expect(
+      isProcessIdentityDead({
+        pid: process.pid,
+        process_started_at: nativePrecisionIdentity,
+      }),
+    ).toBe(false);
   });
   it('refuses a successor while a process remains live even when its heartbeat is stale, but allows confirmed-dead takeover', () => {
     publishOwnerEpoch(cwd, teamName, 1, {
@@ -150,7 +182,7 @@ describe('runtime owner epochs', () => {
     rmSync(absPath(cwd, TeamPaths.ownerEpochs(teamName)), { recursive: true });
     publishOwnerEpoch(cwd, teamName, 1, {
       pid: process.pid,
-      processStartedAt: 'linux:1',
+      processStartedAt: otherStart,
       nonce: 'dead',
     });
     expect(
@@ -187,7 +219,7 @@ describe('runtime owner epochs', () => {
       epoch: 1,
       nonce: 'one',
       pid: process.pid,
-      process_started_at: 'linux:1',
+      process_started_at: otherStart,
       created_at: '2026-01-01T00:00:00.000Z',
     };
     const attempt = {

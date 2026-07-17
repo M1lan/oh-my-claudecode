@@ -356,6 +356,7 @@ export function buildTmuxSessionName(cwd: string): string {
       cwd,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
+      windowsHide: true,
     }).trim();
     if (branch) {
       branchToken = sanitizeTmuxToken(branch);

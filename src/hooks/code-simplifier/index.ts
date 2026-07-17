@@ -16,7 +16,7 @@ import {
   unlinkSync,
 } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { getGlobalOmcConfigCandidates } from '../../utils/paths.js';
 
 /** Config shape for the code-simplifier feature */
@@ -85,11 +85,12 @@ export function getModifiedFiles(
   maxFiles: number = DEFAULT_MAX_FILES,
 ): string[] {
   try {
-    const output = execSync('git diff HEAD --name-only', {
+    const output = execFileSync('git', ['diff', 'HEAD', '--name-only'], {
       cwd,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 5000,
+      windowsHide: true,
     });
 
     return output

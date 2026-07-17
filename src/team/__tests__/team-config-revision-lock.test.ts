@@ -36,6 +36,12 @@ import {
 
 let cwd: string;
 const teamName = 'config-lock-team';
+const deadProcessStart =
+  process.platform === 'darwin'
+    ? 'darwin:1:0'
+    : process.platform === 'win32'
+      ? 'win32:1'
+      : 'linux:1';
 
 function initialConfig(): TeamConfig {
   return {
@@ -294,7 +300,7 @@ describe('team config revision transaction', () => {
       JSON.stringify({
         schema_version: 1,
         pid: 2_147_483_647,
-        process_started_at: 'linux:1',
+        process_started_at: deadProcessStart,
         nonce: 'dead-lock',
         created_at: new Date().toISOString(),
       }),
@@ -906,7 +912,7 @@ describe('team config revision transaction', () => {
       JSON.stringify({
         schema_version: 1,
         pid: 2_147_483_647,
-        process_started_at: 'linux:1',
+        process_started_at: deadProcessStart,
         nonce: 'dead-scaling-lock',
         created_at: new Date().toISOString(),
       }),

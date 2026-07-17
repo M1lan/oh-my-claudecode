@@ -13,19 +13,17 @@
  */
 
 import { randomUUID } from 'crypto';
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  unlinkSync,
-  mkdirSync,
-} from 'fs';
+import { existsSync, readFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import {
   resolveSessionStatePath,
   ensureSessionStateDir,
   getOmcRoot,
 } from '../../lib/worktree-paths.js';
+import {
+  clearStateFileLocked,
+  writeStateFileLocked,
+} from '../../lib/mode-state-io.js';
 import { formatOmcCliInvocation } from '../../utils/omc-cli-rendering.js';
 import type { UserStory } from './prd.js';
 import type { RalphCriticMode } from './loop.js';
@@ -163,12 +161,10 @@ export function writeVerificationState(
     }
   }
 
-  try {
-    writeFileSync(statePath, JSON.stringify(state, null, 2));
-    return true;
-  } catch {
-    return false;
-  }
+  return writeStateFileLocked(
+    statePath,
+    state as unknown as Record<string, unknown>,
+  );
 }
 
 /**
@@ -180,15 +176,7 @@ export function clearVerificationState(
   sessionId?: string,
 ): boolean {
   const statePath = getVerificationStatePath(directory, sessionId);
-  if (existsSync(statePath)) {
-    try {
-      unlinkSync(statePath);
-      return true;
-    } catch {
-      return false;
-    }
-  }
-  return true;
+  return clearStateFileLocked(statePath);
 }
 
 /**

@@ -56,12 +56,14 @@ export function configureHarnessMergeAttributes(repoRoot: string): void {
   execFileSync('git', ['config', 'merge.ours.driver', 'true'], {
     cwd: repoRoot,
     stdio: 'pipe',
+    windowsHide: true,
   });
 
   const commonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
     cwd: repoRoot,
     encoding: 'utf-8',
     stdio: 'pipe',
+    windowsHide: true,
   }).trim();
   const resolvedCommonDir = isAbsolute(commonDir)
     ? commonDir
@@ -114,7 +116,12 @@ export function checkMergeConflicts(
     execFileSync(
       'git',
       ['merge-tree', '--write-tree', baseBranch, workerBranch],
-      { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+      {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      },
     );
     // Exit code 0 means no conflicts
     return [];
@@ -141,18 +148,33 @@ export function checkMergeConflicts(
   const mergeBase = execFileSync(
     'git',
     ['merge-base', baseBranch, workerBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
 
   const baseDiff = execFileSync(
     'git',
     ['diff', '--name-only', mergeBase, baseBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
   const workerDiff = execFileSync(
     'git',
     ['diff', '--name-only', mergeBase, workerBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] },
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
 
   if (!baseDiff || !workerDiff) {
@@ -187,6 +209,7 @@ export function mergeWorkerBranch(
       execFileSync('git', ['diff-index', '--quiet', 'HEAD', '--'], {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       });
     } catch {
       throw new Error(
@@ -198,6 +221,7 @@ export function mergeWorkerBranch(
     execFileSync('git', ['checkout', baseBranch], {
       cwd: repoRoot,
       stdio: 'pipe',
+      windowsHide: true,
     });
 
     // Attempt merge
@@ -213,6 +237,7 @@ export function mergeWorkerBranch(
       {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       },
     );
 
@@ -221,6 +246,7 @@ export function mergeWorkerBranch(
       cwd: repoRoot,
       encoding: 'utf-8',
       stdio: 'pipe',
+      windowsHide: true,
     }).trim();
 
     return {
@@ -236,6 +262,7 @@ export function mergeWorkerBranch(
       execFileSync('git', ['merge', '--abort'], {
         cwd: repoRoot,
         stdio: 'pipe',
+        windowsHide: true,
       });
     } catch {
       /* may not be in merge state */
@@ -272,6 +299,7 @@ export function mergeAllWorkerBranches(
       cwd: repoRoot,
       encoding: 'utf-8',
       stdio: 'pipe',
+      windowsHide: true,
     }).trim();
 
   validateBranchName(base);
