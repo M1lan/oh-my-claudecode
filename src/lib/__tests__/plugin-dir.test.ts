@@ -20,11 +20,15 @@ describe('resolvePluginDirArg', () => {
   });
 
   it('throws for an empty string', () => {
-    expect(() => resolvePluginDirArg('')).toThrow('--plugin-dir requires a non-empty path argument');
+    expect(() => resolvePluginDirArg('')).toThrow(
+      '--plugin-dir requires a non-empty path argument',
+    );
   });
 
   it('throws for a whitespace-only string', () => {
-    expect(() => resolvePluginDirArg('   ')).toThrow('--plugin-dir requires a non-empty path argument');
+    expect(() => resolvePluginDirArg('   ')).toThrow(
+      '--plugin-dir requires a non-empty path argument',
+    );
   });
 
   // Tilde limitation: path.resolve() does NOT expand `~`.

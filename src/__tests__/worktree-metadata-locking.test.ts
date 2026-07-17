@@ -11,18 +11,29 @@ describe('git-worktree removeWorkerWorktree locking', () => {
   beforeEach(() => {
     repoDir = mkdtempSync(join(tmpdir(), 'git-worktree-lock-test-'));
     execFileSync('git', ['init'], { cwd: repoDir, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: repoDir, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: repoDir, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'test@test.com'], {
+      cwd: repoDir,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['config', 'user.name', 'Test'], {
+      cwd: repoDir,
+      stdio: 'pipe',
+    });
     writeFileSync(join(repoDir, 'README.md'), '# Test\n');
     execFileSync('git', ['add', '.'], { cwd: repoDir, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'Initial commit'], { cwd: repoDir, stdio: 'pipe' });
+    execFileSync('git', ['commit', '-m', 'Initial commit'], {
+      cwd: repoDir,
+      stdio: 'pipe',
+    });
   });
 
   afterEach(() => {
     try {
       const { cleanupTeamWorktrees } = require('../team/git-worktree.js');
       cleanupTeamWorktrees(teamName, repoDir);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     rmSync(repoDir, { recursive: true, force: true });
   });
 
@@ -45,9 +56,8 @@ describe('git-worktree removeWorkerWorktree locking', () => {
   });
 
   it('removeWorkerWorktree correctly removes metadata entries', async () => {
-    const { createWorkerWorktree, removeWorkerWorktree, listTeamWorktrees } = await import(
-      '../team/git-worktree.js'
-    );
+    const { createWorkerWorktree, removeWorkerWorktree, listTeamWorktrees } =
+      await import('../team/git-worktree.js');
 
     createWorkerWorktree(teamName, 'worker-a', repoDir);
     createWorkerWorktree(teamName, 'worker-b', repoDir);

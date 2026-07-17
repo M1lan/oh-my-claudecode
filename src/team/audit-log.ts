@@ -9,8 +9,20 @@
 
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { existsSync, readFileSync, statSync, renameSync, writeFileSync, lstatSync, unlinkSync } from 'node:fs';
-import { appendFileWithMode, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import {
+  existsSync,
+  readFileSync,
+  statSync,
+  renameSync,
+  writeFileSync,
+  lstatSync,
+  unlinkSync,
+} from 'node:fs';
+import {
+  appendFileWithMode,
+  ensureDirWithMode,
+  validateResolvedPath,
+} from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 
 export type AuditEventType =
@@ -46,7 +58,11 @@ export interface AuditEvent {
 const DEFAULT_MAX_LOG_SIZE = 5 * 1024 * 1024; // 5MB
 
 function getLogPath(workingDirectory: string, teamName: string): string {
-  return join(getOmcRoot(workingDirectory), 'logs', `team-bridge-${teamName}.jsonl`);
+  return join(
+    getOmcRoot(workingDirectory),
+    'logs',
+    `team-bridge-${teamName}.jsonl`,
+  );
 }
 
 /**
@@ -55,7 +71,7 @@ function getLogPath(workingDirectory: string, teamName: string): string {
  */
 export function logAuditEvent(
   workingDirectory: string,
-  event: AuditEvent
+  event: AuditEvent,
 ): void {
   const logPath = getLogPath(workingDirectory, event.teamName);
   const dir = join(getOmcRoot(workingDirectory), 'logs');
@@ -79,13 +95,13 @@ export function readAuditLog(
     workerName?: string;
     since?: string;
     limit?: number;
-  }
+  },
 ): AuditEvent[] {
   const logPath = getLogPath(workingDirectory, teamName);
   if (!existsSync(logPath)) return [];
 
   const content = readFileSync(logPath, 'utf-8');
-  const lines = content.split('\n').filter(l => l.trim());
+  const lines = content.split('\n').filter((l) => l.trim());
 
   const maxResults = filter?.limit;
   const events: AuditEvent[] = [];
@@ -94,7 +110,9 @@ export function readAuditLog(
     let event: AuditEvent;
     try {
       event = JSON.parse(line);
-    } catch { continue; /* skip malformed */ }
+    } catch {
+      continue; /* skip malformed */
+    }
 
     // Apply filters inline for early-exit optimization
     if (filter) {
@@ -119,7 +137,7 @@ export function readAuditLog(
 export function rotateAuditLog(
   workingDirectory: string,
   teamName: string,
-  maxSizeBytes: number = DEFAULT_MAX_LOG_SIZE
+  maxSizeBytes: number = DEFAULT_MAX_LOG_SIZE,
 ): void {
   const logPath = getLogPath(workingDirectory, teamName);
   if (!existsSync(logPath)) return;
@@ -128,7 +146,7 @@ export function rotateAuditLog(
   if (stat.size <= maxSizeBytes) return;
 
   const content = readFileSync(logPath, 'utf-8');
-  const lines = content.split('\n').filter(l => l.trim());
+  const lines = content.split('\n').filter((l) => l.trim());
 
   // Keep the most recent half
   const keepFrom = Math.floor(lines.length / 2);

@@ -1,22 +1,26 @@
-import type { ShellHook } from "./types.js"
-import { HOOK_NAME, NON_INTERACTIVE_ENV, SHELL_COMMAND_PATTERNS } from "./constants.js"
+import type { ShellHook } from './types.js';
+import {
+  HOOK_NAME,
+  NON_INTERACTIVE_ENV,
+  SHELL_COMMAND_PATTERNS,
+} from './constants.js';
 
-export * from "./constants.js"
-export * from "./detector.js"
-export * from "./types.js"
+export * from './constants.js';
+export * from './detector.js';
+export * from './types.js';
 
 const BANNED_ENTRIES: { pattern: RegExp; name: string }[] =
   SHELL_COMMAND_PATTERNS.banned
-    .filter((cmd: string) => !cmd.includes("("))
-    .map((cmd: string) => ({ pattern: new RegExp(`\\b${cmd}\\b`), name: cmd }))
+    .filter((cmd: string) => !cmd.includes('('))
+    .map((cmd: string) => ({ pattern: new RegExp(`\\b${cmd}\\b`), name: cmd }));
 
 function detectBannedCommand(command: string): string | undefined {
   for (const entry of BANNED_ENTRIES) {
     if (entry.pattern.test(command)) {
-      return entry.name
+      return entry.name;
     }
   }
-  return undefined
+  return undefined;
 }
 
 /**
@@ -25,12 +29,12 @@ function detectBannedCommand(command: string): string | undefined {
  */
 function shellEscape(value: string): string {
   // Empty string needs quotes
-  if (value === "") return "''"
+  if (value === '') return "''";
   // If contains special chars, wrap in single quotes (escape existing single quotes)
   if (/[^a-zA-Z0-9_\-.:\/]/.test(value)) {
-    return `'${value.replace(/'/g, "'\\''")}'`
+    return `'${value.replace(/'/g, "'\\''")}'`;
   }
-  return value
+  return value;
 }
 
 /**
@@ -43,8 +47,8 @@ function shellEscape(value: string): string {
 function buildEnvPrefix(env: Record<string, string>): string {
   const exports = Object.entries(env)
     .map(([key, value]) => `${key}=${shellEscape(value)}`)
-    .join(" ")
-  return `export ${exports};`
+    .join(' ');
+  return `export ${exports};`;
 }
 
 /**
@@ -58,25 +62,27 @@ function buildEnvPrefix(env: Record<string, string>): string {
 export const nonInteractiveEnvHook: ShellHook = {
   name: HOOK_NAME,
 
-  async beforeCommand(command: string): Promise<{ command: string; warning?: string }> {
+  async beforeCommand(
+    command: string,
+  ): Promise<{ command: string; warning?: string }> {
     // Check for banned interactive commands
-    const bannedCmd = detectBannedCommand(command)
+    const bannedCmd = detectBannedCommand(command);
     const warning = bannedCmd
       ? `Warning: '${bannedCmd}' is an interactive command that may hang in non-interactive environments.`
-      : undefined
+      : undefined;
 
     // Only prepend env vars for git commands (editor blocking, pager, etc.)
-    const isGitCommand = /\bgit\b/.test(command)
+    const isGitCommand = /\bgit\b/.test(command);
     if (!isGitCommand) {
-      return { command, warning }
+      return { command, warning };
     }
 
     // Prepend export statement to command to ensure non-interactive behavior
     // Uses `export VAR=val;` format to ensure variables apply to ALL commands
     // in a chain (e.g., `git add file && git rebase --continue`).
-    const envPrefix = buildEnvPrefix(NON_INTERACTIVE_ENV)
-    const modifiedCommand = `${envPrefix} ${command}`
+    const envPrefix = buildEnvPrefix(NON_INTERACTIVE_ENV);
+    const modifiedCommand = `${envPrefix} ${command}`;
 
-    return { command: modifiedCommand, warning }
+    return { command: modifiedCommand, warning };
   },
-}
+};

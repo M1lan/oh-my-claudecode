@@ -18,7 +18,15 @@
  * @see https://github.com/anthropics/oh-my-claudecode/issues/1119
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync, readdirSync, renameSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+  readdirSync,
+  renameSync,
+} from 'fs';
 import { join } from 'path';
 import { getOmcRoot } from './worktree-paths.js';
 import { withFileLockSync } from './file-lock.js';
@@ -82,10 +90,14 @@ const SHARED_MEMORY_DIR = 'state/shared-memory';
 /** Validate namespace: alphanumeric, hyphens, underscores, dots. Max 128 chars. */
 function validateNamespace(namespace: string): void {
   if (!namespace || namespace.length > 128) {
-    throw new Error(`Invalid namespace: must be 1-128 characters (got ${namespace.length})`);
+    throw new Error(
+      `Invalid namespace: must be 1-128 characters (got ${namespace.length})`,
+    );
   }
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(namespace)) {
-    throw new Error(`Invalid namespace: must be alphanumeric with hyphens/underscores/dots (got "${namespace}")`);
+    throw new Error(
+      `Invalid namespace: must be alphanumeric with hyphens/underscores/dots (got "${namespace}")`,
+    );
   }
   if (namespace.includes('..')) {
     throw new Error('Invalid namespace: path traversal not allowed');
@@ -95,10 +107,14 @@ function validateNamespace(namespace: string): void {
 /** Validate key: alphanumeric, hyphens, underscores, dots. Max 128 chars. */
 function validateKey(key: string): void {
   if (!key || key.length > 128) {
-    throw new Error(`Invalid key: must be 1-128 characters (got ${key.length})`);
+    throw new Error(
+      `Invalid key: must be 1-128 characters (got ${key.length})`,
+    );
   }
   if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(key)) {
-    throw new Error(`Invalid key: must be alphanumeric with hyphens/underscores/dots (got "${key}")`);
+    throw new Error(
+      `Invalid key: must be alphanumeric with hyphens/underscores/dots (got "${key}")`,
+    );
   }
   if (key.includes('..')) {
     throw new Error('Invalid key: path traversal not allowed');
@@ -113,7 +129,11 @@ function getNamespaceDir(namespace: string, worktreeRoot?: string): string {
 }
 
 /** Get the file path for a specific key within a namespace. */
-function getEntryPath(namespace: string, key: string, worktreeRoot?: string): string {
+function getEntryPath(
+  namespace: string,
+  key: string,
+  worktreeRoot?: string,
+): string {
   validateKey(key);
   return join(getNamespaceDir(namespace, worktreeRoot), `${key}.json`);
 }
@@ -162,7 +182,9 @@ export function writeEntry(
     let existingCreatedAt = now;
     if (existsSync(filePath)) {
       try {
-        const existing: SharedMemoryEntry = JSON.parse(readFileSync(filePath, 'utf-8'));
+        const existing: SharedMemoryEntry = JSON.parse(
+          readFileSync(filePath, 'utf-8'),
+        );
         existingCreatedAt = existing.createdAt || now;
       } catch {
         // Corrupted file, treat as new
@@ -190,14 +212,19 @@ export function writeEntry(
     try {
       const legacyTmp = filePath + '.tmp';
       if (existsSync(legacyTmp)) unlinkSync(legacyTmp);
-    } catch { /* best-effort cleanup */ }
+    } catch {
+      /* best-effort cleanup */
+    }
 
     return entry;
   };
 
   // Try with lock; fall back to unlocked if lock fails (best-effort)
   try {
-    return withFileLockSync(lockPath, doWrite, { timeoutMs: 500, retryDelayMs: 25 });
+    return withFileLockSync(lockPath, doWrite, {
+      timeoutMs: 500,
+      retryDelayMs: 25,
+    });
   } catch {
     return doWrite();
   }
@@ -221,11 +248,17 @@ export function readEntry(
   if (!existsSync(filePath)) return null;
 
   try {
-    const entry: SharedMemoryEntry = JSON.parse(readFileSync(filePath, 'utf-8'));
+    const entry: SharedMemoryEntry = JSON.parse(
+      readFileSync(filePath, 'utf-8'),
+    );
 
     // Auto-cleanup expired entries
     if (isExpired(entry)) {
-      try { unlinkSync(filePath); } catch { /* ignore */ }
+      try {
+        unlinkSync(filePath);
+      } catch {
+        /* ignore */
+      }
       return null;
     }
 
@@ -252,11 +285,13 @@ export function listEntries(
   const items: SharedMemoryListItem[] = [];
 
   try {
-    const files = readdirSync(dir).filter(f => f.endsWith('.json'));
+    const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
     for (const file of files) {
       try {
         const filePath = join(dir, file);
-        const entry: SharedMemoryEntry = JSON.parse(readFileSync(filePath, 'utf-8'));
+        const entry: SharedMemoryEntry = JSON.parse(
+          readFileSync(filePath, 'utf-8'),
+        );
         if (!isExpired(entry)) {
           items.push({
             key: entry.key,
@@ -341,11 +376,13 @@ export function cleanupExpired(
 
     let nsRemoved = 0;
     try {
-      const files = readdirSync(nsDir).filter(f => f.endsWith('.json'));
+      const files = readdirSync(nsDir).filter((f) => f.endsWith('.json'));
       for (const file of files) {
         try {
           const filePath = join(nsDir, file);
-          const entry: SharedMemoryEntry = JSON.parse(readFileSync(filePath, 'utf-8'));
+          const entry: SharedMemoryEntry = JSON.parse(
+            readFileSync(filePath, 'utf-8'),
+          );
           if (isExpired(entry)) {
             unlinkSync(filePath);
             nsRemoved++;
@@ -379,8 +416,8 @@ export function listNamespaces(worktreeRoot?: string): string[] {
   try {
     const entries = readdirSync(sharedMemDir, { withFileTypes: true });
     return entries
-      .filter(entry => entry.isDirectory())
-      .map(entry => entry.name)
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
       .sort();
   } catch {
     return [];

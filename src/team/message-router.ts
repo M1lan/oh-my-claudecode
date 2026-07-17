@@ -10,7 +10,11 @@
 
 import { join } from 'node:path';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
-import { appendFileWithMode, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import {
+  appendFileWithMode,
+  ensureDirWithMode,
+  validateResolvedPath,
+} from './fs-utils.js';
 import { getTeamMembers } from './unified-team.js';
 import { sanitizeName } from './tmux-session.js';
 import type { InboxMessage } from './types.js';
@@ -34,10 +38,10 @@ export function routeMessage(
   teamName: string,
   recipientName: string,
   content: string,
-  workingDirectory: string
+  workingDirectory: string,
 ): RouteResult {
   const members = getTeamMembers(teamName, workingDirectory);
-  const member = members.find(m => m.name === recipientName);
+  const member = members.find((m) => m.name === recipientName);
 
   if (!member) {
     return {
@@ -82,7 +86,7 @@ export function routeMessage(
 export function broadcastToTeam(
   teamName: string,
   content: string,
-  workingDirectory: string
+  workingDirectory: string,
 ): BroadcastResult {
   const members = getTeamMembers(teamName, workingDirectory);
   const nativeRecipients: string[] = [];

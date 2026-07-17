@@ -15,24 +15,24 @@ import {
 } from '../task-size-detector/index.js';
 
 export type KeywordType =
-  | 'cancel'      // Priority 1
-  | 'ralph'       // Priority 2
-  | 'autopilot'   // Priority 3
-  | 'team'        // Priority 4.5 (team mode)
-  | 'ultrawork'   // Priority 5
-  | 'ralplan'     // Priority 8
-  | 'tdd'         // Priority 9
+  | 'cancel' // Priority 1
+  | 'ralph' // Priority 2
+  | 'autopilot' // Priority 3
+  | 'team' // Priority 4.5 (team mode)
+  | 'ultrawork' // Priority 5
+  | 'ralplan' // Priority 8
+  | 'tdd' // Priority 9
   | 'code-review' // Priority 10
   | 'security-review' // Priority 10.5
-  | 'ultrathink'  // Priority 11
-  | 'deepsearch'  // Priority 12
+  | 'ultrathink' // Priority 11
+  | 'deepsearch' // Priority 12
   | 'deep-interview' // Priority 13.5
-  | 'analyze'     // Priority 13
-  | 'codex'       // Priority 15
-  | 'gemini'      // Priority 16
-  | 'cursor'      // Priority 17
+  | 'analyze' // Priority 13
+  | 'codex' // Priority 15
+  | 'gemini' // Priority 16
+  | 'cursor' // Priority 17
   | 'antigravity' // Priority 18
-  | 'ccg';        // Priority 8.5 (Claude-Codex-Gemini orchestration)
+  | 'ccg'; // Priority 8.5 (Claude-Codex-Gemini orchestration)
 
 export interface DetectedKeyword {
   type: KeywordType;
@@ -46,24 +46,30 @@ export interface DetectedKeyword {
 const KEYWORD_PATTERNS: Record<KeywordType, RegExp> = {
   cancel: /\b(cancelomc|stopomc)\b/i,
   ralph: /\b(ralph)\b(?!-)|(랄프)(?!로렌)|(ラルフ)(?!・?ローレン)/i,
-  autopilot: /\b(autopilot|auto[\s-]?pilot|fullsend|full\s+auto)\b|\b(?:build|create|make)\s+me\s+(?:an?\s+)?(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b|\bi\s+want\s+an?\s+(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b|(오토파일럿)|(オートパイロット)/i,
+  autopilot:
+    /\b(autopilot|auto[\s-]?pilot|fullsend|full\s+auto)\b|\b(?:build|create|make)\s+me\s+(?:an?\s+)?(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b|\bi\s+want\s+an?\s+(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension)\b|(오토파일럿)|(オートパイロット)/i,
   ultrawork: /\b(ultrawork|ulw)\b|(울트라워크)|(ウルトラワーク)/i,
   // Team keyword detection disabled — team mode is now explicit-only via /team skill.
   // This prevents infinite spawning when Claude workers receive prompts containing "team".
-  team: /(?!x)x/,  // never-match placeholder (type system requires the key)
+  team: /(?!x)x/, // never-match placeholder (type system requires the key)
   ralplan: /\b(ralplan)\b|(랄플랜)|(ラルプラン)/i,
   tdd: /\b(tdd)\b|\btest\s+first\b|(테스트\s?퍼스트)|(テスト\s?ファースト)/i,
-  'code-review': /\b(code\s+review|review\s+code)\b|(코드\s?리뷰)(?!어)|(コード\s?レビュー)(?!ア)/i,
-  'security-review': /\b(security\s+review|review\s+security)\b|(보안\s?리뷰)(?!어)|(セキュリティ[ー]?\s?レビュー)(?!ア)/i,
+  'code-review':
+    /\b(code\s+review|review\s+code)\b|(코드\s?리뷰)(?!어)|(コード\s?レビュー)(?!ア)/i,
+  'security-review':
+    /\b(security\s+review|review\s+security)\b|(보안\s?리뷰)(?!어)|(セキュリティ[ー]?\s?レビュー)(?!ア)/i,
   ultrathink: /\b(ultrathink)\b|(울트라씽크)|(ウルトラシンク)/i,
-  deepsearch: /\b(deepsearch)\b|\bsearch\s+the\s+codebase\b|\bfind\s+in\s+(the\s+)?codebase\b|(딥\s?서치)|(ディープ\s?サーチ)/i,
-  analyze: /\b(deep[\s-]?analyze|deepanalyze)\b|(딥\s?분석)|(ディープ\s?アナライズ)/i,
-  'deep-interview': /\b(deep[\s-]interview|ouroboros)\b|(딥인터뷰)|(ディープインタビュー)/i,
+  deepsearch:
+    /\b(deepsearch)\b|\bsearch\s+the\s+codebase\b|\bfind\s+in\s+(the\s+)?codebase\b|(딥\s?서치)|(ディープ\s?サーチ)/i,
+  analyze:
+    /\b(deep[\s-]?analyze|deepanalyze)\b|(딥\s?분석)|(ディープ\s?アナライズ)/i,
+  'deep-interview':
+    /\b(deep[\s-]interview|ouroboros)\b|(딥인터뷰)|(ディープインタビュー)/i,
   ccg: /\b(ccg|claude-codex-gemini)\b|(씨씨지)|(シーシージー)/i,
   codex: /\b(ask|use|delegate\s+to)\s+(codex|gpt)\b/i,
   gemini: /\b(ask|use|delegate\s+to)\s+gemini\b/i,
   cursor: /\b(ask|use|delegate\s+to)\s+cursor\b/i,
-  antigravity: /\b(ask|use|delegate\s+to)\s+(antigravity|agy)\b/i
+  antigravity: /\b(ask|use|delegate\s+to)\s+(antigravity|agy)\b/i,
 };
 
 /**
@@ -84,7 +90,9 @@ const OUROBOROS_BRAND_AT_START = /^\s*\/?(?:ouroboros|ooo)\b/i;
  * `/ouroboros:auto`. The predicate defers to the upstream CLI in those
  * cases without changing what the trigger recognizes elsewhere.
  */
-const KEYWORD_SKIP_PREDICATES: Partial<Record<KeywordType, (text: string) => boolean>> = {
+const KEYWORD_SKIP_PREDICATES: Partial<
+  Record<KeywordType, (text: string) => boolean>
+> = {
   'deep-interview': (text) => OUROBOROS_BRAND_AT_START.test(text),
 };
 
@@ -92,9 +100,24 @@ const KEYWORD_SKIP_PREDICATES: Partial<Record<KeywordType, (text: string) => boo
  * Priority order for keyword detection
  */
 const KEYWORD_PRIORITY: KeywordType[] = [
-  'cancel', 'ralph', 'autopilot', 'team', 'ultrawork',
-  'ccg', 'ralplan', 'tdd', 'code-review', 'security-review',
-  'ultrathink', 'deepsearch', 'analyze', 'deep-interview', 'codex', 'gemini', 'cursor', 'antigravity'
+  'cancel',
+  'ralph',
+  'autopilot',
+  'team',
+  'ultrawork',
+  'ccg',
+  'ralplan',
+  'tdd',
+  'code-review',
+  'security-review',
+  'ultrathink',
+  'deepsearch',
+  'analyze',
+  'deep-interview',
+  'codex',
+  'gemini',
+  'cursor',
+  'antigravity',
 ];
 
 /**
@@ -137,9 +160,9 @@ const SLASH_SKILL_TO_KEYWORD_TYPE: Partial<
 
 const WORKFLOW_SLASH_PATTERN = new RegExp(
   '^\\s*/(?:oh-my-claudecode:|omc:)?(' +
-    CANONICAL_WORKFLOW_SLASH_SKILLS
-      .map((skill) => skill.replace(/-/g, '\\-'))
-      .join('|') +
+    CANONICAL_WORKFLOW_SLASH_SKILLS.map((skill) =>
+      skill.replace(/-/g, '\\-'),
+    ).join('|') +
     ')(?=\\s|$|[?!.,;:])',
   'i',
 );
@@ -289,7 +312,10 @@ function stripPastedCommandPayloads(text: string): string {
       continue;
     }
 
-    if (USER_REQUEST_LINE_PATTERN.test(line) || SKILL_TRANSCRIPT_LINE_PATTERN.test(line)) {
+    if (
+      USER_REQUEST_LINE_PATTERN.test(line) ||
+      SKILL_TRANSCRIPT_LINE_PATTERN.test(line)
+    ) {
       previousLineWasUserRequest = USER_REQUEST_LINE_PATTERN.test(line);
       continue;
     }
@@ -299,7 +325,9 @@ function stripPastedCommandPayloads(text: string): string {
     }
 
     if (insideDiffBlock) {
-      if (GIT_DIFF_CONTINUATION_PATTERNS.some((pattern) => pattern.test(trimmed))) {
+      if (
+        GIT_DIFF_CONTINUATION_PATTERNS.some((pattern) => pattern.test(trimmed))
+      ) {
         continue;
       }
       insideDiffBlock = false;
@@ -315,7 +343,6 @@ function stripPastedCommandPayloads(text: string): string {
 
   return sanitized.join('\n');
 }
-
 
 /**
  * Regex matching non-Latin script characters for prompt translation detection.
@@ -363,7 +390,7 @@ const FILE_PATH_PATTERN = new RegExp(
 /* eslint-enable no-misleading-character-class */
 
 /**
-* Sanitize text for keyword detection by removing structural noise.
+ * Sanitize text for keyword detection by removing structural noise.
  * Strips XML tags, URLs, file paths, and code blocks.
  */
 export function sanitizeForKeywordDetection(text: string): string {
@@ -422,7 +449,10 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function getLineBounds(text: string, position: number): { start: number; end: number } {
+function getLineBounds(
+  text: string,
+  position: number,
+): { start: number; end: number } {
   const start = text.lastIndexOf('\n', Math.max(0, position - 1)) + 1;
   const nextNewline = text.indexOf('\n', position);
   const end = nextNewline === -1 ? text.length : nextNewline;
@@ -450,7 +480,10 @@ function isWithinQuotedSpan(text: string, position: number): boolean {
  * neutralize the exemption for a keyword that is purely quoted as an
  * example.
  */
-function findQuotedSpanBounds(text: string, position: number): { start: number; end: number } | null {
+function findQuotedSpanBounds(
+  text: string,
+  position: number,
+): { start: number; end: number } | null {
   for (const match of text.matchAll(QUOTED_SPAN_PATTERN)) {
     if (match.index === undefined) continue;
     const start = match.index;
@@ -469,14 +502,20 @@ function stripQuotedSpans(text: string): string {
 function countDistinctModeReferences(text: string): number {
   const matches = text.match(MODE_REFERENCE_PATTERN) ?? [];
   const normalized = new Set(
-    matches.map((match) => match.toLowerCase().replace(/\s+/g, '').replace(/-/g, '')),
+    matches.map((match) =>
+      match.toLowerCase().replace(/\s+/g, '').replace(/-/g, ''),
+    ),
   );
   return normalized.size;
 }
 
 function looksLikeReferenceContent(text: string): boolean {
-  const hasReferenceMeta = REFERENCE_META_PATTERNS.some((pattern) => pattern.test(text));
-  const hasExplanationShape = REFERENCE_EXPLANATION_PATTERNS.some((pattern) => pattern.test(text));
+  const hasReferenceMeta = REFERENCE_META_PATTERNS.some((pattern) =>
+    pattern.test(text),
+  );
+  const hasExplanationShape = REFERENCE_EXPLANATION_PATTERNS.some((pattern) =>
+    pattern.test(text),
+  );
   const hasAnyModeMention = countDistinctModeReferences(text) >= 1;
   const hasMultipleModeMentions = countDistinctModeReferences(text) >= 2;
   const hasQuestionOutsideQuotes = QUESTION_FOLLOWUP_PATTERNS.some((pattern) =>
@@ -484,13 +523,18 @@ function looksLikeReferenceContent(text: string): boolean {
   );
 
   return (
-    (hasReferenceMeta && (hasExplanationShape || hasAnyModeMention || hasQuestionOutsideQuotes)) ||
-    (hasExplanationShape && (hasMultipleModeMentions || hasQuestionOutsideQuotes)) ||
+    (hasReferenceMeta &&
+      (hasExplanationShape || hasAnyModeMention || hasQuestionOutsideQuotes)) ||
+    (hasExplanationShape &&
+      (hasMultipleModeMentions || hasQuestionOutsideQuotes)) ||
     (hasMultipleModeMentions && hasQuestionOutsideQuotes)
   );
 }
 
-function hasActivationIntentNearKeyword(context: string, keyword: string): boolean {
+function hasActivationIntentNearKeyword(
+  context: string,
+  keyword: string,
+): boolean {
   const escaped = escapeRegExp(keyword.trim());
   if (!escaped) return false;
 
@@ -498,16 +542,24 @@ function hasActivationIntentNearKeyword(context: string, keyword: string): boole
   // treated as activation intent.
   const helpQuestionPatterns = [
     new RegExp(`\\bhow\\s+do\\s+i\\s+use\\b[^\\n]{0,40}\\b${escaped}\\b`, 'i'),
-    new RegExp(`\\bwhat(?:'s|\\s+is)\\b[^\\n]{0,40}\\b${escaped}\\b[^\\n]{0,40}\\bhow\\s+to\\s+use\\b`, 'i'),
+    new RegExp(
+      `\\bwhat(?:'s|\\s+is)\\b[^\\n]{0,40}\\b${escaped}\\b[^\\n]{0,40}\\bhow\\s+to\\s+use\\b`,
+      'i',
+    ),
   ];
   if (helpQuestionPatterns.some((pattern) => pattern.test(context))) {
     return false;
   }
 
   const patterns = [
-    new RegExp(`\\b(?:use|run|start|enable|activate|invoke|trigger|launch)\\b[^\\n]{0,28}\\b${escaped}\\b`, 'i'),
-    new RegExp(`\\b(?:fix|debug|investigate|resolve|handle|patch|address)\\b[^\\n]{0,28}\\b(?:issue|bug|problem|error)\\b[^\\n]{0,12}\\b(?:with|in)\\s+\\b${escaped}\\b`, 'i'),
-
+    new RegExp(
+      `\\b(?:use|run|start|enable|activate|invoke|trigger|launch)\\b[^\\n]{0,28}\\b${escaped}\\b`,
+      'i',
+    ),
+    new RegExp(
+      `\\b(?:fix|debug|investigate|resolve|handle|patch|address)\\b[^\\n]{0,28}\\b(?:issue|bug|problem|error)\\b[^\\n]{0,12}\\b(?:with|in)\\s+\\b${escaped}\\b`,
+      'i',
+    ),
   ];
 
   return patterns.some((pattern) => pattern.test(context));
@@ -515,7 +567,9 @@ function hasActivationIntentNearKeyword(context: string, keyword: string): boole
 
 function hasDirectInvocationPrefix(text: string, position: number): boolean {
   const prefix = text.slice(0, position);
-  return /^\s*(?:[$/!]\s*|force:\s*|oh-my-(?:claudecode|codex):\s*)?$/i.test(prefix);
+  return /^\s*(?:[$/!]\s*|force:\s*|oh-my-(?:claudecode|codex):\s*)?$/i.test(
+    prefix,
+  );
 }
 
 function hasConversationalInvocationNearKeyword(
@@ -537,7 +591,9 @@ function hasConversationalInvocationNearKeyword(
     /\b(?:can|could|would|will)\s+you\s+$/i,
   ];
 
-  return conversationalInvocationPatterns.some((pattern) => pattern.test(prefix));
+  return conversationalInvocationPatterns.some((pattern) =>
+    pattern.test(prefix),
+  );
 }
 
 function hasExplicitInvocationContext(
@@ -551,45 +607,92 @@ function hasExplicitInvocationContext(
   }
 
   const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
-  const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
+  const end = Math.min(
+    text.length,
+    position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW,
+  );
   const context = text.slice(start, end);
   if (hasActivationIntentNearKeyword(context, keywordText)) {
     return true;
   }
 
-  return hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText);
+  return hasConversationalInvocationNearKeyword(
+    text,
+    position,
+    keywordLength,
+    keywordText,
+  );
 }
 
-function hasDiagnosticIntentNearKeyword(context: string, keyword: string): boolean {
+function hasDiagnosticIntentNearKeyword(
+  context: string,
+  keyword: string,
+): boolean {
   const escaped = escapeRegExp(keyword.trim());
   if (!escaped) return false;
 
   const patterns = [
-    new RegExp(`\\b${escaped}\\b[^\\n]{0,48}\\b(?:keeps?\\s+(?:looping|re-?running)|has\\s+(?:a\\s+)?(?:bug|issue|problem|error)|is\\s+(?:stuck|broken|failing)|loop(?:ing)?)\\b`, 'i'),
-    new RegExp(`\\b(?:bug|issue|problem|error)\\b[^\\n]{0,16}\\b(?:with|in)\\s+\\b${escaped}\\b`, 'i'),
-    new RegExp(`${escaped}.{0,14}(?:자꾸|계속).{0,14}(?:재실행|반복|루프|멈추)`, 'u'),
+    new RegExp(
+      `\\b${escaped}\\b[^\\n]{0,48}\\b(?:keeps?\\s+(?:looping|re-?running)|has\\s+(?:a\\s+)?(?:bug|issue|problem|error)|is\\s+(?:stuck|broken|failing)|loop(?:ing)?)\\b`,
+      'i',
+    ),
+    new RegExp(
+      `\\b(?:bug|issue|problem|error)\\b[^\\n]{0,16}\\b(?:with|in)\\s+\\b${escaped}\\b`,
+      'i',
+    ),
+    new RegExp(
+      `${escaped}.{0,14}(?:자꾸|계속).{0,14}(?:재실행|반복|루프|멈추)`,
+      'u',
+    ),
     // Japanese: repeated-failure complaint — direct mirror of the Korean 자꾸/계속 line above
     // (frequency adverb + problem verb). No P2 subject-particle pattern / no work-request escape: Korean parity.
-    new RegExp(`${escaped}[^\\n]{0,16}(?:また|何度も|ずっと|頻繁|繰り返|いつも)[^\\n]{0,16}(?:失敗|エラー|ループ|止ま|落ち|再実行|動かな|フリーズ|壊れ|クラッシュ|こけ|暴走|無限)`, 'u'),
+    new RegExp(
+      `${escaped}[^\\n]{0,16}(?:また|何度も|ずっと|頻繁|繰り返|いつも)[^\\n]{0,16}(?:失敗|エラー|ループ|止ま|落ち|再実行|動かな|フリーズ|壊れ|クラッシュ|こけ|暴走|無限)`,
+      'u',
+    ),
   ];
 
   return patterns.some((pattern) => pattern.test(context));
 }
 
-function isRalphUltraworkMetaOrBanterContext(context: string, keywordText: string): boolean {
+function isRalphUltraworkMetaOrBanterContext(
+  context: string,
+  keywordText: string,
+): boolean {
   const normalizedKeyword = keywordText.toLowerCase().replace(/\s+/g, '');
-  if (!['ralph', '랄프', 'ラルフ', 'ultrawork', 'ulw', 'uw', '울트라워크', 'ウルトラワーク'].includes(normalizedKeyword)) {
+  if (
+    ![
+      'ralph',
+      '랄프',
+      'ラルフ',
+      'ultrawork',
+      'ulw',
+      'uw',
+      '울트라워크',
+      'ウルトラワーク',
+    ].includes(normalizedKeyword)
+  ) {
     return false;
   }
 
-  const currentKeywordAliases = normalizedKeyword === 'ralph' || normalizedKeyword === '랄프' || normalizedKeyword === 'ラルフ'
-    ? ['랄프', 'ラルフ']
-    : ['울트라워크', 'ウルトラワーク'];
+  const currentKeywordAliases =
+    normalizedKeyword === 'ralph' ||
+    normalizedKeyword === '랄프' ||
+    normalizedKeyword === 'ラルフ'
+      ? ['랄프', 'ラルフ']
+      : ['울트라워크', 'ウルトラワーク'];
   const currentKeywordPattern = currentKeywordAliases.join('|');
-  const imperativeVerbPattern = '켜|켜줘|실행|시작|돌려|돌려줘|써|써줘|사용해|진행해';
+  const imperativeVerbPattern =
+    '켜|켜줘|실행|시작|돌려|돌려줘|써|써줘|사용해|진행해';
   const koreanImperativePatterns = [
-    new RegExp(`(?:${currentKeywordPattern})[^?？\n]{0,16}(?:${imperativeVerbPattern})`, 'u'),
-    new RegExp(`(?:${imperativeVerbPattern})[^?？\n]{0,16}(?:${currentKeywordPattern})`, 'u'),
+    new RegExp(
+      `(?:${currentKeywordPattern})[^?？\n]{0,16}(?:${imperativeVerbPattern})`,
+      'u',
+    ),
+    new RegExp(
+      `(?:${imperativeVerbPattern})[^?？\n]{0,16}(?:${currentKeywordPattern})`,
+      'u',
+    ),
   ];
   if (koreanImperativePatterns.some((pattern) => pattern.test(context))) {
     return false;
@@ -608,32 +711,68 @@ function isRalphUltraworkMetaOrBanterContext(context: string, keywordText: strin
 
 function isAutopilotCreationAlias(keywordText: string): boolean {
   const normalized = keywordText.toLowerCase().trim();
-  return /^(?:build|create|make)\s+me\b/.test(normalized) || /^i\s+want\s+an?(?:\s+(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension))?\s*$/.test(normalized);
+  return (
+    /^(?:build|create|make)\s+me\b/.test(normalized) ||
+    /^i\s+want\s+an?(?:\s+(?:app|feature|project|tool|plugin|website|api|server|cli|script|system|service|dashboard|bot|extension))?\s*$/.test(
+      normalized,
+    )
+  );
 }
 
-function hasActionableCommandAfterSeparator(text: string, position: number, keywordLength: number): boolean {
-  const suffix = text.slice(position + keywordLength).match(/^\s*[:：]\s*([^\n]{0,80})/u)?.[1] ?? '';
-  if (/\?|？|\b(?:what(?:'s|\s+is)|how\s+(?:to|do\s+i)\s+use|explain|describe|tell\s+me\s+about)\b/iu.test(suffix)) {
+function hasActionableCommandAfterSeparator(
+  text: string,
+  position: number,
+  keywordLength: number,
+): boolean {
+  const suffix =
+    text
+      .slice(position + keywordLength)
+      .match(/^\s*[:：]\s*([^\n]{0,80})/u)?.[1] ?? '';
+  if (
+    /\?|？|\b(?:what(?:'s|\s+is)|how\s+(?:to|do\s+i)\s+use|explain|describe|tell\s+me\s+about)\b/iu.test(
+      suffix,
+    )
+  ) {
     return false;
   }
-  return /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build|create|make|run|start|enable|activate|invoke|trigger|launch)\b|(?:ทำ|ทํา|สร้าง|แก้|เปิด|รัน|เรียก|เริ่ม)/iu.test(suffix);
+  return /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build|create|make|run|start|enable|activate|invoke|trigger|launch)\b|(?:ทำ|ทํา|สร้าง|แก้|เปิด|รัน|เรียก|เริ่ม)/iu.test(
+    suffix,
+  );
 }
 
-function isInformationalKeywordContext(text: string, position: number, keywordLength: number, keywordText?: string): boolean {
+function isInformationalKeywordContext(
+  text: string,
+  position: number,
+  keywordLength: number,
+  keywordText?: string,
+): boolean {
   const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
-  const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
+  const end = Math.min(
+    text.length,
+    position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW,
+  );
   const context = text.slice(start, end);
-  const hasInformationalIntent = INFORMATIONAL_INTENT_PATTERNS.some((pattern) => pattern.test(context));
-  const hasStrongHelpQueryIntent = /\?|？|\b(?:how\s+(?:to|do\s+i)\s+use|what(?:'s|\s+is)|explain|describe|tell\s+me\s+about)\b|(?:사용법|使い方|什么是|怎么用|如何使用)/iu.test(context);
+  const hasInformationalIntent = INFORMATIONAL_INTENT_PATTERNS.some((pattern) =>
+    pattern.test(context),
+  );
+  const hasStrongHelpQueryIntent =
+    /\?|？|\b(?:how\s+(?:to|do\s+i)\s+use|what(?:'s|\s+is)|explain|describe|tell\s+me\s+about)\b|(?:사용법|使い方|什么是|怎么用|如何使用)/iu.test(
+      context,
+    );
   const lineBounds = getLineBounds(text, position);
   const line = text.slice(lineBounds.start, lineBounds.end);
   const questionOutsideQuotes = stripQuotedSpans(text);
   const keywordInsideQuotes = isWithinQuotedSpan(text, position);
-  const hasExecutionDirective = /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(context);
+  const hasExecutionDirective =
+    /\b(?:fix|debug|investigate|resolve|handle|patch|address|implement|build)\b/i.test(
+      context,
+    );
   const hasCommandSeparatorInvocation =
-    hasDirectInvocationPrefix(text, position) && /^\s*[:：]/.test(text.slice(position + keywordLength));
+    hasDirectInvocationPrefix(text, position) &&
+    /^\s*[:：]/.test(text.slice(position + keywordLength));
   const hasActionableCommandSeparatorInvocation =
-    hasCommandSeparatorInvocation && hasActionableCommandAfterSeparator(text, position, keywordLength);
+    hasCommandSeparatorInvocation &&
+    hasActionableCommandAfterSeparator(text, position, keywordLength);
 
   // A keyword occurrence inside a quoted span is usually reported/example
   // text, not a command directed at the assistant — e.g. an example sentence
@@ -679,7 +818,10 @@ function isInformationalKeywordContext(text: string, position: number, keywordLe
   }
 
   if (keywordText) {
-    const hasActivationIntent = hasActivationIntentNearKeyword(context, keywordText);
+    const hasActivationIntent = hasActivationIntentNearKeyword(
+      context,
+      keywordText,
+    );
     if (hasActionableCommandSeparatorInvocation) {
       return false;
     }
@@ -704,7 +846,14 @@ function isInformationalKeywordContext(text: string, position: number, keywordLe
       return false;
     }
 
-    if (hasConversationalInvocationNearKeyword(text, position, keywordLength, keywordText)) {
+    if (
+      hasConversationalInvocationNearKeyword(
+        text,
+        position,
+        keywordLength,
+        keywordText,
+      )
+    ) {
       return false;
     }
 
@@ -721,7 +870,12 @@ function isInformationalKeywordContext(text: string, position: number, keywordLe
     return true;
   }
 
-  if (keywordInsideQuotes && QUESTION_FOLLOWUP_PATTERNS.some((pattern) => pattern.test(questionOutsideQuotes))) {
+  if (
+    keywordInsideQuotes &&
+    QUESTION_FOLLOWUP_PATTERNS.some((pattern) =>
+      pattern.test(questionOutsideQuotes),
+    )
+  ) {
     return true;
   }
 
@@ -736,7 +890,9 @@ function findActionableKeywordMatch(
   text: string,
   pattern: RegExp,
 ): Omit<DetectedKeyword, 'type'> | null {
-  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const flags = pattern.flags.includes('g')
+    ? pattern.flags
+    : `${pattern.flags}g`;
   const globalPattern = new RegExp(pattern.source, flags);
 
   for (const match of text.matchAll(globalPattern)) {
@@ -745,7 +901,9 @@ function findActionableKeywordMatch(
     }
 
     const keyword = match[0];
-    if (isInformationalKeywordContext(text, match.index, keyword.length, keyword)) {
+    if (
+      isInformationalKeywordContext(text, match.index, keyword.length, keyword)
+    ) {
       continue;
     }
 
@@ -762,7 +920,9 @@ function findActionableRalplanMatch(
   text: string,
   pattern: RegExp,
 ): Omit<DetectedKeyword, 'type'> | null {
-  const flags = pattern.flags.includes('g') ? pattern.flags : `${pattern.flags}g`;
+  const flags = pattern.flags.includes('g')
+    ? pattern.flags
+    : `${pattern.flags}g`;
   const globalPattern = new RegExp(pattern.source, flags);
 
   for (const match of text.matchAll(globalPattern)) {
@@ -771,11 +931,15 @@ function findActionableRalplanMatch(
     }
 
     const keyword = match[0];
-    if (isInformationalKeywordContext(text, match.index, keyword.length, keyword)) {
+    if (
+      isInformationalKeywordContext(text, match.index, keyword.length, keyword)
+    ) {
       continue;
     }
 
-    if (!hasExplicitInvocationContext(text, match.index, keyword.length, keyword)) {
+    if (
+      !hasExplicitInvocationContext(text, match.index, keyword.length, keyword)
+    ) {
       continue;
     }
 
@@ -792,11 +956,11 @@ function findActionableRalplanMatch(
  * Extract prompt text from message parts
  */
 export function extractPromptText(
-  parts: Array<{ type: string; text?: string; [key: string]: unknown }>
+  parts: Array<{ type: string; text?: string; [key: string]: unknown }>,
 ): string {
   return parts
-    .filter(p => p.type === 'text' && p.text)
-    .map(p => p.text!)
+    .filter((p) => p.type === 'text' && p.text)
+    .map((p) => p.text!)
     .join(' ');
 }
 
@@ -805,7 +969,7 @@ export function extractPromptText(
  */
 export function detectKeywordsWithType(
   text: string,
-  _agentName?: string
+  _agentName?: string,
 ): DetectedKeyword[] {
   const detected: DetectedKeyword[] = [];
 
@@ -879,18 +1043,18 @@ export function getAllKeywords(text: string): KeywordType[] {
 
   if (detected.length === 0) return [];
 
-  let types = [...new Set(detected.map(d => d.type))];
+  let types = [...new Set(detected.map((d) => d.type))];
 
   // Exclusive: cancel suppresses everything
   if (types.includes('cancel')) return ['cancel'];
 
   // Mutual exclusion: team beats autopilot
   if (types.includes('team') && types.includes('autopilot')) {
-    types = types.filter(t => t !== 'autopilot');
+    types = types.filter((t) => t !== 'autopilot');
   }
 
   // Sort by priority order
-  return KEYWORD_PRIORITY.filter(k => types.includes(k));
+  return KEYWORD_PRIORITY.filter((k) => types.includes(k));
 }
 
 /**
@@ -949,7 +1113,7 @@ export function getAllKeywordsWithSizeCheck(
   }
 
   const suppressedKeywords: KeywordType[] = [];
-  const filteredKeywords = keywords.filter(keyword => {
+  const filteredKeywords = keywords.filter((keyword) => {
     if (isHeavyMode(keyword)) {
       suppressedKeywords.push(keyword);
       return false;
@@ -979,7 +1143,7 @@ export function getPrimaryKeyword(text: string): DetectedKeyword | null {
 
   // Find the original detected keyword for this type
   const detected = detectKeywordsWithType(text);
-  const match = detected.find(d => d.type === primaryType);
+  const match = detected.find((d) => d.type === primaryType);
 
   return match || null;
 }
@@ -1054,13 +1218,15 @@ export function isUnderspecifiedForExecution(text: string): boolean {
   }
 
   // If any well-specified signal is present, pass through
-  if (WELL_SPECIFIED_SIGNALS.some(p => p.test(trimmed))) return false;
+  if (WELL_SPECIFIED_SIGNALS.some((p) => p.test(trimmed))) return false;
 
   // Strip mode keywords for effective word counting
   const stripped = trimmed
     .replace(/\b(?:ralph|autopilot|team|ultrawork|ulw)\b/gi, '')
     .trim();
-  const effectiveWords = stripped.split(/\s+/).filter(w => w.length > 0).length;
+  const effectiveWords = stripped
+    .split(/\s+/)
+    .filter((w) => w.length > 0).length;
 
   // Short prompts without well-specified signals are underspecified
   if (effectiveWords <= 15) return true;
@@ -1077,7 +1243,11 @@ export function isUnderspecifiedForExecution(text: string): boolean {
 export function applyRalplanGate(
   keywords: KeywordType[],
   text: string,
-): { keywords: KeywordType[]; gateApplied: boolean; gatedKeywords: KeywordType[] } {
+): {
+  keywords: KeywordType[];
+  gateApplied: boolean;
+  gatedKeywords: KeywordType[];
+} {
   if (keywords.length === 0) {
     return { keywords, gateApplied: false, gatedKeywords: [] };
   }
@@ -1093,7 +1263,9 @@ export function applyRalplanGate(
   }
 
   // Check if any execution keywords are present
-  const executionKeywords = keywords.filter(k => EXECUTION_GATE_KEYWORDS.has(k));
+  const executionKeywords = keywords.filter((k) =>
+    EXECUTION_GATE_KEYWORDS.has(k),
+  );
   if (executionKeywords.length === 0) {
     return { keywords, gateApplied: false, gatedKeywords: [] };
   }
@@ -1104,10 +1276,14 @@ export function applyRalplanGate(
   }
 
   // Gate: replace execution keywords with ralplan
-  const filtered = keywords.filter(k => !EXECUTION_GATE_KEYWORDS.has(k));
+  const filtered = keywords.filter((k) => !EXECUTION_GATE_KEYWORDS.has(k));
   if (!filtered.includes('ralplan')) {
     filtered.push('ralplan');
   }
 
-  return { keywords: filtered, gateApplied: true, gatedKeywords: executionKeywords };
+  return {
+    keywords: filtered,
+    gateApplied: true,
+    gatedKeywords: executionKeywords,
+  };
 }

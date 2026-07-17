@@ -6,24 +6,32 @@ import {
 
 describe('team api command dialect resolution', () => {
   it('defaults to omc team api', () => {
-    expect(resolveTeamApiCliCommand({} as NodeJS.ProcessEnv)).toBe('omc team api');
+    expect(resolveTeamApiCliCommand({} as NodeJS.ProcessEnv)).toBe(
+      'omc team api',
+    );
   });
 
   it('uses omx team api when running in OMX worker context', () => {
-    expect(resolveTeamApiCliCommand({
-      OMX_TEAM_WORKER: 'demo-team/worker-1',
-    } as NodeJS.ProcessEnv)).toBe('omx team api');
+    expect(
+      resolveTeamApiCliCommand({
+        OMX_TEAM_WORKER: 'demo-team/worker-1',
+      } as NodeJS.ProcessEnv),
+    ).toBe('omx team api');
 
-    expect(resolveTeamApiCliCommand({
-      OMX_TEAM_STATE_ROOT: '/tmp/project/.omx/state',
-    } as NodeJS.ProcessEnv)).toBe('omx team api');
+    expect(
+      resolveTeamApiCliCommand({
+        OMX_TEAM_STATE_ROOT: '/tmp/project/.omx/state',
+      } as NodeJS.ProcessEnv),
+    ).toBe('omx team api');
   });
 
   it('prefers omc team api when both contexts are present', () => {
-    expect(resolveTeamApiCliCommand({
-      OMC_TEAM_WORKER: 'demo-team/worker-1',
-      OMX_TEAM_WORKER: 'demo-team/worker-2',
-    } as NodeJS.ProcessEnv)).toBe('omc team api');
+    expect(
+      resolveTeamApiCliCommand({
+        OMC_TEAM_WORKER: 'demo-team/worker-1',
+        OMX_TEAM_WORKER: 'demo-team/worker-2',
+      } as NodeJS.ProcessEnv),
+    ).toBe('omc team api');
   });
 
   it('builds legacy deprecation hint with omx command in OMX context', () => {

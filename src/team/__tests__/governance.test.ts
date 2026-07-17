@@ -41,6 +41,8 @@ describe('team governance normalization', () => {
   });
 
   it('fills missing governance with defaults', () => {
-    expect(normalizeTeamGovernance(undefined, undefined)).toEqual(DEFAULT_TEAM_GOVERNANCE);
+    expect(normalizeTeamGovernance(undefined, undefined)).toEqual(
+      DEFAULT_TEAM_GOVERNANCE,
+    );
   });
 });

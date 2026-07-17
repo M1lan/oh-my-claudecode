@@ -9,17 +9,17 @@
  * - Caching: `!cache 300s git log -10`
  * - Conditional: `!if-modified src/** then git diff src/`
  * - Conditional: `!if-branch feat/* then echo "feature branch"`
- * - Once per session: `!only-once npm install`
+ * - Once per session: `!only-once pnpm install`
  * - Output formats: `!json docker inspect ...`, `!table ...`, `!diff git diff`
  * - Multi-line: `!begin-script bash` ... `!end-script`
  * - Security allowlist via .omc/config/live-data-policy.json
  */
 
-import { execFileSync, execSync } from "child_process";
-import { existsSync, readFileSync } from "fs";
-import { join } from "path";
-import safe from "safe-regex";
-import { getWorktreeRoot, getOmcRoot } from "../../lib/worktree-paths.js";
+import { execFileSync, execSync } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+import safe from 'safe-regex';
+import { getWorktreeRoot, getOmcRoot } from '../../lib/worktree-paths.js';
 
 const TIMEOUT_MS = 10_000;
 const MAX_OUTPUT_BYTES = 50 * 1024;
@@ -60,7 +60,7 @@ interface SecurityPolicy {
   require_approval?: string[];
 }
 
-type OutputFormat = "json" | "table" | "diff" | null;
+type OutputFormat = 'json' | 'table' | 'diff' | null;
 
 // ─── Cache ───────────────────────────────────────────────────────────────────
 
@@ -69,12 +69,12 @@ const onceCommands = new Set<string>();
 
 /** Default TTL heuristics for common commands */
 const DEFAULT_TTL: Record<string, number> = {
-  "git status": 1,
-  "git branch": 5,
-  "git log": 60,
-  "docker ps": 5,
-  "node --version": 3600,
-  "npm --version": 3600,
+  'git status': 1,
+  'git branch': 5,
+  'git log': 60,
+  'docker ps': 5,
+  'node --version': 3600,
+  'pnpm --version': 3600,
 };
 
 function getDefaultTtl(command: string): number {
@@ -137,15 +137,15 @@ let policyLoadedFrom: string | null = null;
 function loadSecurityPolicy(): SecurityPolicy {
   const root = getWorktreeRoot() || process.cwd();
   const policyPaths = [
-    join(getOmcRoot(root), "config", "live-data-policy.json"),
-    join(root, ".claude", "live-data-policy.json"),
+    join(getOmcRoot(root), 'config', 'live-data-policy.json'),
+    join(root, '.claude', 'live-data-policy.json'),
   ];
 
   for (const p of policyPaths) {
     if (p === policyLoadedFrom && cachedPolicy) return cachedPolicy;
     if (existsSync(p)) {
       try {
-        cachedPolicy = JSON.parse(readFileSync(p, "utf-8")) as SecurityPolicy;
+        cachedPolicy = JSON.parse(readFileSync(p, 'utf-8')) as SecurityPolicy;
         policyLoadedFrom = p;
         return cachedPolicy;
       } catch {
@@ -278,12 +278,12 @@ function isInsideCodeBlock(
 
 interface ParsedDirective {
   type:
-    | "basic"
-    | "cache"
-    | "if-modified"
-    | "if-branch"
-    | "only-once"
-    | "format";
+    | 'basic'
+    | 'cache'
+    | 'if-modified'
+    | 'if-branch'
+    | 'only-once'
+    | 'format';
   command: string;
   format?: OutputFormat;
   ttl?: number;
@@ -291,12 +291,12 @@ interface ParsedDirective {
 }
 
 function parseDirective(raw: string): ParsedDirective {
-  const trimmed = raw.replace(/^\s*!/, "").trim();
+  const trimmed = raw.replace(/^\s*!/, '').trim();
 
   const cacheMatch = trimmed.match(CACHE_DIRECTIVE_PATTERN);
   if (cacheMatch) {
     return {
-      type: "cache",
+      type: 'cache',
       ttl: parseInt(cacheMatch[1], 10),
       command: cacheMatch[2],
     };
@@ -305,7 +305,7 @@ function parseDirective(raw: string): ParsedDirective {
   const ifModifiedMatch = trimmed.match(IF_MODIFIED_DIRECTIVE_PATTERN);
   if (ifModifiedMatch) {
     return {
-      type: "if-modified",
+      type: 'if-modified',
       pattern: ifModifiedMatch[1],
       command: ifModifiedMatch[2],
     };
@@ -314,7 +314,7 @@ function parseDirective(raw: string): ParsedDirective {
   const ifBranchMatch = trimmed.match(IF_BRANCH_DIRECTIVE_PATTERN);
   if (ifBranchMatch) {
     return {
-      type: "if-branch",
+      type: 'if-branch',
       pattern: ifBranchMatch[1],
       command: ifBranchMatch[2],
     };
@@ -322,43 +322,43 @@ function parseDirective(raw: string): ParsedDirective {
 
   const onlyOnceMatch = trimmed.match(ONLY_ONCE_DIRECTIVE_PATTERN);
   if (onlyOnceMatch) {
-    return { type: "only-once", command: onlyOnceMatch[1] };
+    return { type: 'only-once', command: onlyOnceMatch[1] };
   }
 
   const formatMatch = trimmed.match(FORMAT_DIRECTIVE_PATTERN);
   if (formatMatch) {
     return {
-      type: "format",
+      type: 'format',
       format: formatMatch[1] as OutputFormat,
       command: formatMatch[2],
     };
   }
 
-  return { type: "basic", command: trimmed };
+  return { type: 'basic', command: trimmed };
 }
 
 // ─── Conditional Helpers ─────────────────────────────────────────────────────
 
 function globToRegex(glob: string): RegExp {
   const escaped = glob
-    .replace(REGEX_ESCAPE_PATTERN, "\\$&")
-    .replace(/\*\*/g, "⟨GLOBSTAR⟩")
-    .replace(/\*/g, "[^/]*")
-    .replace(/⟨GLOBSTAR⟩/g, ".*")
-    .replace(/\?/g, ".");
+    .replace(REGEX_ESCAPE_PATTERN, '\\$&')
+    .replace(/\*\*/g, '⟨GLOBSTAR⟩')
+    .replace(/\*/g, '[^/]*')
+    .replace(/⟨GLOBSTAR⟩/g, '.*')
+    .replace(/\?/g, '.');
   return new RegExp(`^${escaped}$`);
 }
 
 function checkIfModified(pattern: string): boolean {
   try {
-    const output = execFileSync("git", ["diff", "--name-only"], {
+    const output = execFileSync('git', ['diff', '--name-only'], {
       timeout: 5000,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     });
     const regex = globToRegex(pattern);
-    return output.split("\n").some((f) => regex.test(f.trim()));
+    return output.split('\n').some((f) => regex.test(f.trim()));
   } catch {
     return false;
   }
@@ -366,10 +366,10 @@ function checkIfModified(pattern: string): boolean {
 
 function checkIfBranch(pattern: string): boolean {
   try {
-    const branch = execFileSync("git", ["branch", "--show-current"], {
+    const branch = execFileSync('git', ['branch', '--show-current'], {
       timeout: 5000,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     }).trim();
     return globToRegex(pattern).test(branch);
@@ -385,21 +385,21 @@ function executeCommand(command: string): { stdout: string; error: boolean } {
     const stdout = execSync(command, {
       timeout: TIMEOUT_MS,
       maxBuffer: MAX_OUTPUT_BYTES + 1024,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    let output = stdout ?? "";
+    let output = stdout ?? '';
     let truncated = false;
 
-    if (Buffer.byteLength(output, "utf-8") > MAX_OUTPUT_BYTES) {
-      const buf = Buffer.from(output, "utf-8").subarray(0, MAX_OUTPUT_BYTES);
-      output = buf.toString("utf-8");
+    if (Buffer.byteLength(output, 'utf-8') > MAX_OUTPUT_BYTES) {
+      const buf = Buffer.from(output, 'utf-8').subarray(0, MAX_OUTPUT_BYTES);
+      output = buf.toString('utf-8');
       truncated = true;
     }
 
     if (truncated) {
-      output += "\n... [output truncated at 50KB]";
+      output += '\n... [output truncated at 50KB]';
     }
 
     return { stdout: output, error: false };
@@ -417,11 +417,11 @@ function executeCommand(command: string): { stdout: string; error: boolean } {
 /** Escape characters that are special in XML/HTML attributes and content. */
 function escapeHtml(s: string): string {
   return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 // ─── Output Formatting ──────────────────────────────────────────────────────
@@ -434,15 +434,15 @@ function formatOutput(
 ): string {
   const escapedCommand = escapeHtml(command);
   const escapedOutput = escapeHtml(output);
-  const formatAttr = format ? ` format="${format}"` : "";
-  const errorAttr = error ? ' error="true"' : "";
+  const formatAttr = format ? ` format="${format}"` : '';
+  const errorAttr = error ? ' error="true"' : '';
 
-  if (format === "diff" && !error) {
+  if (format === 'diff' && !error) {
     const addLines = (output.match(DIFF_ADDED_LINES_PATTERN) || []).length;
     const delLines = (output.match(DIFF_DELETED_LINES_PATTERN) || []).length;
     const files = new Set(
       (output.match(DIFF_FILE_HEADER_PATTERN) || []).map((l) =>
-        l.replace(DIFF_HEADER_PREFIX_PATTERN, ""),
+        l.replace(DIFF_HEADER_PREFIX_PATTERN, ''),
       ),
     ).size;
     return `<live-data command="${escapedCommand}"${formatAttr} files="${files}" +="${addLines}" -="${delLines}"${errorAttr}>${escapedOutput}</live-data>`;
@@ -485,7 +485,7 @@ function extractScriptBlocks(
         startLine: current.startLine,
         endLine: i,
         shell: current.shell,
-        body: current.bodyLines.join("\n"),
+        body: current.bodyLines.join('\n'),
       });
       current = null;
       continue;
@@ -505,7 +505,7 @@ function extractScriptBlocks(
  * Lines inside fenced code blocks are skipped.
  */
 export function resolveLiveData(content: string): string {
-  const lines = content.split("\n");
+  const lines = content.split('\n');
   const codeBlockRanges = getCodeBlockRanges(lines);
 
   // First pass: extract and resolve multi-line script blocks
@@ -522,7 +522,7 @@ export function resolveLiveData(content: string): string {
     if (!security.allowed) {
       scriptReplacements.set(
         block.startLine,
-        `<live-data command="script:${escapeHtml(block.shell)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`,
+        `<live-data command="script:${escapeHtml(block.shell)}" error="true">blocked: ${escapeHtml(security.reason ?? '')}</live-data>`,
       );
       continue;
     }
@@ -533,12 +533,12 @@ export function resolveLiveData(content: string): string {
         input: block.body,
         timeout: TIMEOUT_MS,
         maxBuffer: MAX_OUTPUT_BYTES + 1024,
-        encoding: "utf-8",
-        stdio: ["pipe", "pipe", "pipe"],
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       scriptReplacements.set(
         block.startLine,
-        `<live-data command="script:${escapeHtml(block.shell)}">${escapeHtml(result ?? "")}</live-data>`,
+        `<live-data command="script:${escapeHtml(block.shell)}">${escapeHtml(result ?? '')}</live-data>`,
       );
     } catch (err: unknown) {
       const message =
@@ -574,13 +574,13 @@ export function resolveLiveData(content: string): string {
     const security = checkSecurity(directive.command);
     if (!security.allowed) {
       result.push(
-        `<live-data command="${escapeHtml(directive.command)}" error="true">blocked: ${escapeHtml(security.reason ?? "")}</live-data>`,
+        `<live-data command="${escapeHtml(directive.command)}" error="true">blocked: ${escapeHtml(security.reason ?? '')}</live-data>`,
       );
       continue;
     }
 
     switch (directive.type) {
-      case "if-modified": {
+      case 'if-modified': {
         if (!checkIfModified(directive.pattern!)) {
           result.push(
             `<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: no files matching '${escapeHtml(directive.pattern!)}' modified</live-data>`,
@@ -592,7 +592,7 @@ export function resolveLiveData(content: string): string {
         break;
       }
 
-      case "if-branch": {
+      case 'if-branch': {
         if (!checkIfBranch(directive.pattern!)) {
           result.push(
             `<live-data command="${escapeHtml(directive.command)}" skipped="true">condition not met: branch does not match '${escapeHtml(directive.pattern!)}'</live-data>`,
@@ -604,7 +604,7 @@ export function resolveLiveData(content: string): string {
         break;
       }
 
-      case "only-once": {
+      case 'only-once': {
         if (onceCommands.has(directive.command)) {
           result.push(
             `<live-data command="${escapeHtml(directive.command)}" skipped="true">already executed this session</live-data>`,
@@ -617,7 +617,7 @@ export function resolveLiveData(content: string): string {
         break;
       }
 
-      case "cache": {
+      case 'cache': {
         const ttl = directive.ttl!;
         const cached = getCached(directive.command);
         if (cached) {
@@ -627,7 +627,7 @@ export function resolveLiveData(content: string): string {
               cached.output,
               cached.error,
               null,
-            ).replace("<live-data", '<live-data cached="true"'),
+            ).replace('<live-data', '<live-data cached="true"'),
           );
         } else {
           const { stdout, error } = executeCommand(directive.command);
@@ -637,7 +637,7 @@ export function resolveLiveData(content: string): string {
         break;
       }
 
-      case "format": {
+      case 'format': {
         const ttl = getDefaultTtl(directive.command);
         const cached = ttl > 0 ? getCached(directive.command) : null;
         if (cached) {
@@ -647,7 +647,7 @@ export function resolveLiveData(content: string): string {
               cached.output,
               cached.error,
               directive.format!,
-            ).replace("<live-data", '<live-data cached="true"'),
+            ).replace('<live-data', '<live-data cached="true"'),
           );
         } else {
           const { stdout, error } = executeCommand(directive.command);
@@ -659,7 +659,7 @@ export function resolveLiveData(content: string): string {
         break;
       }
 
-      case "basic":
+      case 'basic':
       default: {
         const ttl = getDefaultTtl(directive.command);
         const cached = ttl > 0 ? getCached(directive.command) : null;
@@ -670,7 +670,7 @@ export function resolveLiveData(content: string): string {
               cached.output,
               cached.error,
               null,
-            ).replace("<live-data", '<live-data cached="true"'),
+            ).replace('<live-data', '<live-data cached="true"'),
           );
         } else {
           const { stdout, error } = executeCommand(directive.command);
@@ -682,5 +682,5 @@ export function resolveLiveData(content: string): string {
     }
   }
 
-  return result.join("\n");
+  return result.join('\n');
 }

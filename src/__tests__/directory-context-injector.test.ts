@@ -21,7 +21,10 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
   let sessionId: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `omc-test-context-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `omc-test-context-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     sessionId = `test-session-${Date.now()}`;
   });
@@ -55,14 +58,19 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
 
   describe('AGENTS.md discovery', () => {
     it('should find AGENTS.md in working directory root', () => {
-      writeFileSync(join(testDir, 'AGENTS.md'), '# Root AGENTS\n\nProject docs for AI agents.');
+      writeFileSync(
+        join(testDir, 'AGENTS.md'),
+        '# Root AGENTS\n\nProject docs for AI agents.',
+      );
       mkdirSync(join(testDir, 'src'), { recursive: true });
       writeFileSync(join(testDir, 'src', 'dummy.ts'), 'const x = 1;');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const files = hook.getContextFilesForFile(join(testDir, 'src', 'dummy.ts'));
+      const files = hook.getContextFilesForFile(
+        join(testDir, 'src', 'dummy.ts'),
+      );
 
-      expect(files.some(f => f.endsWith('AGENTS.md'))).toBe(true);
+      expect(files.some((f) => f.endsWith('AGENTS.md'))).toBe(true);
     });
 
     it('should find both README.md and AGENTS.md in same directory', () => {
@@ -72,10 +80,12 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const files = hook.getContextFilesForFile(join(testDir, 'src', 'index.ts'));
+      const files = hook.getContextFilesForFile(
+        join(testDir, 'src', 'index.ts'),
+      );
 
-      const readmes = files.filter(f => f.endsWith('README.md'));
-      const agents = files.filter(f => f.endsWith('AGENTS.md'));
+      const readmes = files.filter((f) => f.endsWith('README.md'));
+      const agents = files.filter((f) => f.endsWith('AGENTS.md'));
 
       expect(readmes).toHaveLength(1);
       expect(agents).toHaveLength(1);
@@ -88,9 +98,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'hooks', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const files = hook.getContextFilesForFile(join(testDir, 'src', 'hooks', 'index.ts'));
+      const files = hook.getContextFilesForFile(
+        join(testDir, 'src', 'hooks', 'index.ts'),
+      );
 
-      const agentsFiles = files.filter(f => f.endsWith('AGENTS.md'));
+      const agentsFiles = files.filter((f) => f.endsWith('AGENTS.md'));
       // Should find root AGENTS.md and src/AGENTS.md
       expect(agentsFiles).toHaveLength(2);
     });
@@ -100,9 +112,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const files = hook.getContextFilesForFile(join(testDir, 'src', 'index.ts'));
+      const files = hook.getContextFilesForFile(
+        join(testDir, 'src', 'index.ts'),
+      );
 
-      expect(files.filter(f => f.endsWith('AGENTS.md'))).toHaveLength(0);
+      expect(files.filter((f) => f.endsWith('AGENTS.md'))).toHaveLength(0);
     });
 
     it('should return files in root-to-leaf order', () => {
@@ -112,9 +126,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const files = hook.getContextFilesForFile(join(testDir, 'src', 'index.ts'));
+      const files = hook.getContextFilesForFile(
+        join(testDir, 'src', 'index.ts'),
+      );
 
-      const agentsFiles = files.filter(f => f.endsWith('AGENTS.md'));
+      const agentsFiles = files.filter((f) => f.endsWith('AGENTS.md'));
       // Root should come before src
       expect(agentsFiles[0]).toContain(join(testDir, 'AGENTS.md'));
       expect(agentsFiles[1]).toContain(join(testDir, 'src', 'AGENTS.md'));
@@ -131,12 +147,20 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       const hook = createDirectoryReadmeInjectorHook(testDir);
 
       // First access should inject
-      const first = hook.processToolExecution('read', join(testDir, 'src', 'a.ts'), sessionId);
+      const first = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'a.ts'),
+        sessionId,
+      );
       expect(first).toContain('AGENTS');
       expect(first).toContain('Root agents docs');
 
       // Second access in same session should NOT re-inject
-      const second = hook.processToolExecution('read', join(testDir, 'src', 'b.ts'), sessionId);
+      const second = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'b.ts'),
+        sessionId,
+      );
       expect(second).not.toContain('Root agents docs');
     });
 
@@ -147,7 +171,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const output = hook.processToolExecution('read', join(testDir, 'src', 'index.ts'), sessionId);
+      const output = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'index.ts'),
+        sessionId,
+      );
 
       // Both should be injected
       expect(output).toContain('Project README content');
@@ -162,7 +190,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const output = hook.processToolExecution('bash', join(testDir, 'src', 'index.ts'), sessionId);
+      const output = hook.processToolExecution(
+        'bash',
+        join(testDir, 'src', 'index.ts'),
+        sessionId,
+      );
 
       expect(output).toBe('');
     });
@@ -175,7 +207,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const output = hook.processToolExecution('read', join(testDir, 'src', 'index.ts'), sessionId);
+      const output = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'index.ts'),
+        sessionId,
+      );
 
       expect(output).toContain('[Project AGENTS:');
       expect(output).toContain('AGENTS.md]');
@@ -187,7 +223,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const output = hook.processToolExecution('read', join(testDir, 'src', 'index.ts'), sessionId);
+      const output = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'index.ts'),
+        sessionId,
+      );
 
       expect(output).toContain('[Project README:');
       expect(output).toContain('README.md]');
@@ -203,7 +243,11 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       writeFileSync(join(testDir, 'src', 'index.ts'), 'export {};');
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
-      const output = hook.processToolExecution('read', join(testDir, 'src', 'index.ts'), sessionId);
+      const output = hook.processToolExecution(
+        'read',
+        join(testDir, 'src', 'index.ts'),
+        sessionId,
+      );
 
       expect(output).toContain('[Note: Content was truncated');
       // Should not contain the full content
@@ -220,7 +264,7 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
       const hook = createDirectoryReadmeInjectorHook(testDir);
       // Deprecated function should still work
       const files = hook.getReadmesForFile(join(testDir, 'src', 'index.ts'));
-      expect(files.some(f => f.endsWith('README.md'))).toBe(true);
+      expect(files.some((f) => f.endsWith('README.md'))).toBe(true);
     });
 
     it('getReadmesForFile should also find AGENTS.md', () => {
@@ -230,7 +274,7 @@ describe('Directory Context Injector - AGENTS.md support (issue #613)', () => {
 
       const hook = createDirectoryReadmeInjectorHook(testDir);
       const files = hook.getReadmesForFile(join(testDir, 'src', 'index.ts'));
-      expect(files.some(f => f.endsWith('AGENTS.md'))).toBe(true);
+      expect(files.some((f) => f.endsWith('AGENTS.md'))).toBe(true);
     });
   });
 });

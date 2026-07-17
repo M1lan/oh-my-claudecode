@@ -7,24 +7,24 @@
 
 /** Hook events that can trigger OpenClaw gateway calls */
 export type OpenClawHookEvent =
-  | "session-start"
-  | "session-end"
-  | "pre-tool-use"
-  | "post-tool-use"
-  | "stop"
-  | "keyword-detector"
-  | "ask-user-question";
+  | 'session-start'
+  | 'session-end'
+  | 'pre-tool-use'
+  | 'post-tool-use'
+  | 'stop'
+  | 'keyword-detector'
+  | 'ask-user-question';
 
 /** HTTP gateway configuration (default when type is absent or "http") */
 export interface OpenClawHttpGatewayConfig {
   /** Gateway type discriminator (optional for backward compat) */
-  type?: "http";
+  type?: 'http';
   /** Gateway endpoint URL (HTTPS required, HTTP allowed for localhost) */
   url: string;
   /** Optional custom headers (e.g., Authorization) */
   headers?: Record<string, string>;
   /** HTTP method (default: POST) */
-  method?: "POST" | "PUT";
+  method?: 'POST' | 'PUT';
   /** Per-request timeout in ms (default: 10000) */
   timeout?: number;
 }
@@ -32,7 +32,7 @@ export interface OpenClawHttpGatewayConfig {
 /** CLI command gateway configuration */
 export interface OpenClawCommandGatewayConfig {
   /** Gateway type discriminator */
-  type: "command";
+  type: 'command';
   /** Command template with {{variable}} placeholders.
    *  Variables are shell-escaped automatically before interpolation. */
   command: string;
@@ -41,7 +41,9 @@ export interface OpenClawCommandGatewayConfig {
 }
 
 /** Gateway configuration — HTTP or CLI command */
-export type OpenClawGatewayConfig = OpenClawHttpGatewayConfig | OpenClawCommandGatewayConfig;
+export type OpenClawGatewayConfig =
+  | OpenClawHttpGatewayConfig
+  | OpenClawCommandGatewayConfig;
 
 /** Per-hook-event mapping to a gateway + instruction */
 export interface OpenClawHookMapping {
@@ -65,24 +67,24 @@ export interface OpenClawConfig {
 
 /** Normalized signal kinds for downstream routing */
 export type OpenClawSignalKind =
-  | "session"
-  | "tool"
-  | "test"
-  | "pull-request"
-  | "question"
-  | "keyword";
+  | 'session'
+  | 'tool'
+  | 'test'
+  | 'pull-request'
+  | 'question'
+  | 'keyword';
 
 /** Supported lifecycle phases for normalized signals */
 export type OpenClawSignalPhase =
-  | "started"
-  | "finished"
-  | "failed"
-  | "idle"
-  | "detected"
-  | "requested";
+  | 'started'
+  | 'finished'
+  | 'failed'
+  | 'idle'
+  | 'detected'
+  | 'requested';
 
 /** Relative priority for downstream routing */
-export type OpenClawSignalPriority = "high" | "low";
+export type OpenClawSignalPriority = 'high' | 'low';
 
 /** Canonical normalized signal routed alongside the raw hook event */
 export interface OpenClawSignal {
@@ -178,5 +180,5 @@ export interface OpenClawResult {
   /** HTTP status code if available */
   statusCode?: number;
   /** Internal skip marker for burst-deduped events */
-  skipped?: "deduped";
+  skipped?: 'deduped';
 }

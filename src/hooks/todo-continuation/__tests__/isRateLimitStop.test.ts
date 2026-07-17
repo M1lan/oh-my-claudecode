@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { isRateLimitStop, isScheduledWakeupStop, type StopContext } from '../index.js';
+import {
+  isRateLimitStop,
+  isScheduledWakeupStop,
+  type StopContext,
+} from '../index.js';
 
 describe('isRateLimitStop (fix #777 - ralph infinite retry loop)', () => {
   it('should return false for undefined context', () => {
@@ -59,11 +63,15 @@ describe('isRateLimitStop (fix #777 - ralph infinite retry loop)', () => {
 
   // Compound patterns with prefixes/suffixes
   it('should return true for "api_rate_limit_exceeded"', () => {
-    expect(isRateLimitStop({ stop_reason: 'api_rate_limit_exceeded' })).toBe(true);
+    expect(isRateLimitStop({ stop_reason: 'api_rate_limit_exceeded' })).toBe(
+      true,
+    );
   });
 
   it('should return true for "error_too_many_requests"', () => {
-    expect(isRateLimitStop({ stop_reason: 'error_too_many_requests' })).toBe(true);
+    expect(isRateLimitStop({ stop_reason: 'error_too_many_requests' })).toBe(
+      true,
+    );
   });
 
   // Case insensitivity
@@ -122,7 +130,9 @@ describe('isScheduledWakeupStop (fix #2693 - scheduled resume should bypass pers
 
   it('should detect scheduled wakeup from tool name', () => {
     expect(isScheduledWakeupStop({ tool_name: 'ScheduleWakeup' })).toBe(true);
-    expect(isScheduledWakeupStop({ toolName: 'native.schedule_wakeup' })).toBe(true);
+    expect(isScheduledWakeupStop({ toolName: 'native.schedule_wakeup' })).toBe(
+      true,
+    );
   });
 
   it('should return false for ordinary stop reasons', () => {

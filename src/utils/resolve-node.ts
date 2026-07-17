@@ -3,14 +3,27 @@ import { execSync } from 'child_process';
 import { join } from 'path';
 import { homedir } from 'os';
 
-const EPHEMERAL_NODE_PATH_MARKERS = ['hostedtoolcache', '/runner/', '\\runner\\'];
-const SYSTEM_NODE_PATHS = ['/opt/homebrew/bin/node', '/usr/local/bin/node', '/usr/bin/node'];
+const EPHEMERAL_NODE_PATH_MARKERS = [
+  'hostedtoolcache',
+  '/runner/',
+  '\\runner\\',
+];
+const SYSTEM_NODE_PATHS = [
+  '/opt/homebrew/bin/node',
+  '/usr/local/bin/node',
+  '/usr/bin/node',
+];
 
 function isKnownEphemeralNodePath(nodePath: string): boolean {
-  return EPHEMERAL_NODE_PATH_MARKERS.some(marker => nodePath.includes(marker));
+  return EPHEMERAL_NODE_PATH_MARKERS.some((marker) =>
+    nodePath.includes(marker),
+  );
 }
 
-function resolveLatestVersionedNode(baseDir: string, nodeSegments: string[]): string | undefined {
+function resolveLatestVersionedNode(
+  baseDir: string,
+  nodeSegments: string[],
+): string | undefined {
   if (!existsSync(baseDir)) return undefined;
 
   try {
@@ -49,7 +62,11 @@ export function resolveNodeBinary(): string {
   // symlink (for example /opt/homebrew/bin/node instead of a Cellar version).
   try {
     const cmd = process.platform === 'win32' ? 'where node' : 'which node';
-    const result = execSync(cmd, { encoding: 'utf-8', stdio: 'pipe', windowsHide: true })
+    const result = execSync(cmd, {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      windowsHide: true,
+    })
       .trim()
       .split('\n')[0]
       .trim();
@@ -62,7 +79,11 @@ export function resolveNodeBinary(): string {
 
   // 2. Current process's node — usable fallback, but not preferred because it
   // may point to unstable locations (CI toolcache, runner paths, Cellar bins).
-  if (process.execPath && existsSync(process.execPath) && !isKnownEphemeralNodePath(process.execPath)) {
+  if (
+    process.execPath &&
+    existsSync(process.execPath) &&
+    !isKnownEphemeralNodePath(process.execPath)
+  ) {
     return process.execPath;
   }
 
@@ -74,7 +95,10 @@ export function resolveNodeBinary(): string {
   const home = homedir();
 
   // 3. nvm: ~/.nvm/versions/node/<version>/bin/node
-  const nvmNode = resolveLatestVersionedNode(join(home, '.nvm', 'versions', 'node'), ['bin', 'node']);
+  const nvmNode = resolveLatestVersionedNode(
+    join(home, '.nvm', 'versions', 'node'),
+    ['bin', 'node'],
+  );
   if (nvmNode) return nvmNode;
 
   // 4. fnm: multiple possible base directories
@@ -84,7 +108,11 @@ export function resolveNodeBinary(): string {
     join(home, '.local', 'share', 'fnm', 'node-versions'),
   ];
   for (const fnmBase of fnmBases) {
-    const fnmNode = resolveLatestVersionedNode(fnmBase, ['installation', 'bin', 'node']);
+    const fnmNode = resolveLatestVersionedNode(fnmBase, [
+      'installation',
+      'bin',
+      'node',
+    ]);
     if (fnmNode) return fnmNode;
   }
 
@@ -106,10 +134,16 @@ export function pickLatestVersion(versions: string[]): string | undefined {
   if (versions.length === 0) return undefined;
 
   return versions
-    .filter(v => /^v?\d/.test(v))
+    .filter((v) => /^v?\d/.test(v))
     .sort((a, b) => {
-      const pa = a.replace(/^v/, '').split('.').map(s => parseInt(s, 10) || 0);
-      const pb = b.replace(/^v/, '').split('.').map(s => parseInt(s, 10) || 0);
+      const pa = a
+        .replace(/^v/, '')
+        .split('.')
+        .map((s) => parseInt(s, 10) || 0);
+      const pb = b
+        .replace(/^v/, '')
+        .split('.')
+        .map((s) => parseInt(s, 10) || 0);
       for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
         const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
         if (diff !== 0) return diff;

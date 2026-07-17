@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -25,8 +31,20 @@ function writeWorkflowLedger(
       session_id: sessionId,
       mode_state_path: `${skill}-state.json`,
       initialized_mode: skill,
-      initialized_state_path: join(tempDir, '.omc', 'state', 'skill-active-state.json'),
-      initialized_session_state_path: join(tempDir, '.omc', 'state', 'sessions', sessionId, 'skill-active-state.json'),
+      initialized_state_path: join(
+        tempDir,
+        '.omc',
+        'state',
+        'skill-active-state.json',
+      ),
+      initialized_session_state_path: join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'skill-active-state.json',
+      ),
     };
   }
   const payload = JSON.stringify({ version: 2, active_skills }, null, 2);
@@ -45,17 +63,21 @@ function writeRalphState(tempDir: string, sessionId: string): void {
   mkdirSync(stateDir, { recursive: true });
   writeFileSync(
     join(stateDir, 'ralph-state.json'),
-    JSON.stringify({
-      active: true,
-      iteration: 1,
-      max_iterations: 10,
-      started_at: new Date().toISOString(),
-      last_checked_at: new Date().toISOString(),
-      prompt: 'Test task',
-      session_id: sessionId,
-      project_path: tempDir,
-      linked_ultrawork: false,
-    }, null, 2),
+    JSON.stringify(
+      {
+        active: true,
+        iteration: 1,
+        max_iterations: 10,
+        started_at: new Date().toISOString(),
+        last_checked_at: new Date().toISOString(),
+        prompt: 'Test task',
+        session_id: sessionId,
+        project_path: tempDir,
+        linked_ultrawork: false,
+      },
+      null,
+      2,
+    ),
   );
 }
 
@@ -67,15 +89,28 @@ function writeModeState(
 ): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
-  writeFileSync(join(stateDir, `${mode}-state.json`), JSON.stringify(state, null, 2));
+  writeFileSync(
+    join(stateDir, `${mode}-state.json`),
+    JSON.stringify(state, null, 2),
+  );
 }
 
-function readSessionWorkflowLedger(tempDir: string, sessionId: string): {
+function readSessionWorkflowLedger(
+  tempDir: string,
+  sessionId: string,
+): {
   active_skills: Record<string, { completed_at?: string | null }>;
 } {
   return JSON.parse(
     readFileSync(
-      join(tempDir, '.omc', 'state', 'sessions', sessionId, 'skill-active-state.json'),
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'skill-active-state.json',
+      ),
       'utf-8',
     ),
   );
@@ -85,7 +120,10 @@ function readRootWorkflowLedger(tempDir: string): {
   active_skills: Record<string, { completed_at?: string | null }>;
 } {
   return JSON.parse(
-    readFileSync(join(tempDir, '.omc', 'state', 'skill-active-state.json'), 'utf-8'),
+    readFileSync(
+      join(tempDir, '.omc', 'state', 'skill-active-state.json'),
+      'utf-8',
+    ),
   );
 }
 
@@ -155,7 +193,7 @@ describe('workflow-gating: tombstoned slot suppresses stale mode files (spec j)'
 
       // Write workflow ledger with ralph slot tombstoned
       writeWorkflowLedger(tempDir, sessionId, {
-        'ralph': { completedAt: new Date(Date.now() - 60_000).toISOString() },
+        ralph: { completedAt: new Date(Date.now() - 60_000).toISOString() },
       });
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -176,22 +214,26 @@ describe('workflow-gating: tombstoned slot suppresses stale mode files (spec j)'
       mkdirSync(stateDir, { recursive: true });
       writeFileSync(
         join(stateDir, 'autopilot-state.json'),
-        JSON.stringify({
-          active: true,
-          iteration: 1,
-          max_iterations: 5,
-          started_at: new Date().toISOString(),
-          last_checked_at: new Date().toISOString(),
-          session_id: sessionId,
-          project_path: tempDir,
-          phase: 'plan',
-          prd: { stories: [] },
-        }, null, 2),
+        JSON.stringify(
+          {
+            active: true,
+            iteration: 1,
+            max_iterations: 5,
+            started_at: new Date().toISOString(),
+            last_checked_at: new Date().toISOString(),
+            session_id: sessionId,
+            project_path: tempDir,
+            phase: 'plan',
+            prd: { stories: [] },
+          },
+          null,
+          2,
+        ),
       );
 
       // Tombstone the autopilot slot
       writeWorkflowLedger(tempDir, sessionId, {
-        'autopilot': { completedAt: new Date(Date.now() - 60_000).toISOString() },
+        autopilot: { completedAt: new Date(Date.now() - 60_000).toISOString() },
       });
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -210,18 +252,22 @@ describe('workflow-gating: tombstoned slot suppresses stale mode files (spec j)'
       mkdirSync(stateDir, { recursive: true });
       writeFileSync(
         join(stateDir, 'ralplan-state.json'),
-        JSON.stringify({
-          active: true,
-          phase: 'planner',
-          session_id: sessionId,
-          started_at: new Date().toISOString(),
-          last_checked_at: new Date().toISOString(),
-          awaiting_confirmation: false,
-        }, null, 2),
+        JSON.stringify(
+          {
+            active: true,
+            phase: 'planner',
+            session_id: sessionId,
+            started_at: new Date().toISOString(),
+            last_checked_at: new Date().toISOString(),
+            awaiting_confirmation: false,
+          },
+          null,
+          2,
+        ),
       );
 
       writeWorkflowLedger(tempDir, sessionId, {
-        'ralplan': { completedAt: new Date(Date.now() - 60_000).toISOString() },
+        ralplan: { completedAt: new Date(Date.now() - 60_000).toISOString() },
       });
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -240,19 +286,23 @@ describe('workflow-gating: tombstoned slot suppresses stale mode files (spec j)'
       mkdirSync(stateDir, { recursive: true });
       writeFileSync(
         join(stateDir, 'ultrawork-state.json'),
-        JSON.stringify({
-          active: true,
-          session_id: sessionId,
-          started_at: new Date().toISOString(),
-          last_checked_at: new Date().toISOString(),
-          awaiting_confirmation: false,
-          tasks: [],
-          current_task_index: 0,
-        }, null, 2),
+        JSON.stringify(
+          {
+            active: true,
+            session_id: sessionId,
+            started_at: new Date().toISOString(),
+            last_checked_at: new Date().toISOString(),
+            awaiting_confirmation: false,
+            tasks: [],
+            current_task_index: 0,
+          },
+          null,
+          2,
+        ),
       );
 
       writeWorkflowLedger(tempDir, sessionId, {
-        'ultrawork': { completedAt: new Date(Date.now() - 60_000).toISOString() },
+        ultrawork: { completedAt: new Date(Date.now() - 60_000).toISOString() },
       });
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -271,7 +321,7 @@ describe('workflow-gating: tombstoned slot suppresses stale mode files (spec j)'
 
       // Write workflow ledger with ralph slot LIVE (no completed_at)
       writeWorkflowLedger(tempDir, sessionId, {
-        'ralph': {},
+        ralph: {},
       });
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -303,8 +353,12 @@ describe('workflow-gating: terminal mode state tombstones stale workflow slots (
 
       const sessionLedger = readSessionWorkflowLedger(tempDir, sessionId);
       const rootLedger = readRootWorkflowLedger(tempDir);
-      expect(sessionLedger.active_skills.autopilot?.completed_at).toEqual(expect.any(String));
-      expect(rootLedger.active_skills.autopilot?.completed_at).toEqual(expect.any(String));
+      expect(sessionLedger.active_skills.autopilot?.completed_at).toEqual(
+        expect.any(String),
+      );
+      expect(rootLedger.active_skills.autopilot?.completed_at).toEqual(
+        expect.any(String),
+      );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -328,8 +382,12 @@ describe('workflow-gating: terminal mode state tombstones stale workflow slots (
 
       const sessionLedger = readSessionWorkflowLedger(tempDir, sessionId);
       const rootLedger = readRootWorkflowLedger(tempDir);
-      expect(sessionLedger.active_skills.ralplan?.completed_at).toEqual(expect.any(String));
-      expect(rootLedger.active_skills.ralplan?.completed_at).toEqual(expect.any(String));
+      expect(sessionLedger.active_skills.ralplan?.completed_at).toEqual(
+        expect.any(String),
+      );
+      expect(rootLedger.active_skills.ralplan?.completed_at).toEqual(
+        expect.any(String),
+      );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -355,8 +413,12 @@ describe('workflow-gating: terminal mode state tombstones stale workflow slots (
 
       const sessionLedger = readSessionWorkflowLedger(tempDir, sessionId);
       const rootLedger = readRootWorkflowLedger(tempDir);
-      expect(sessionLedger.active_skills.ralph?.completed_at).toEqual(expect.any(String));
-      expect(rootLedger.active_skills.ralph?.completed_at).toEqual(expect.any(String));
+      expect(sessionLedger.active_skills.ralph?.completed_at).toEqual(
+        expect.any(String),
+      );
+      expect(rootLedger.active_skills.ralph?.completed_at).toEqual(
+        expect.any(String),
+      );
     } finally {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -383,8 +445,8 @@ describe('workflow-gating: authority-first ordering for nested skills (spec f)',
     try {
       // Write autopilot as root with ralph as tombstoned child — ledger authority = autopilot
       writeWorkflowLedger(tempDir, sessionId, {
-        'autopilot': {},
-        'ralph': { completedAt: new Date(Date.now() - 30_000).toISOString() },
+        autopilot: {},
+        ralph: { completedAt: new Date(Date.now() - 30_000).toISOString() },
       });
 
       // No mode state files → no actual blocking (tests the routing path, not blocking)

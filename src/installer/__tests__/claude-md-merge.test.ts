@@ -20,8 +20,12 @@ describe('mergeClaudeMd', () => {
       expect(result).toContain(START_MARKER);
       expect(result).toContain(END_MARKER);
       expect(result).toContain(omcContent);
-      expect(result.indexOf(START_MARKER)).toBeLessThan(result.indexOf(omcContent));
-      expect(result.indexOf(omcContent)).toBeLessThan(result.indexOf(END_MARKER));
+      expect(result.indexOf(START_MARKER)).toBeLessThan(
+        result.indexOf(omcContent),
+      );
+      expect(result.indexOf(omcContent)).toBeLessThan(
+        result.indexOf(END_MARKER),
+      );
     });
 
     it('has correct structure for fresh install', () => {
@@ -39,7 +43,7 @@ describe('mergeClaudeMd', () => {
       expect(result).toContain(omcContent);
       expect(result).toContain(USER_CUSTOMIZATIONS);
       expect(result).toContain('Some header content');
-      expect(result).toContain('User\'s custom content');
+      expect(result).toContain("User's custom content");
       expect(result).not.toContain('Old OMC Content');
       expect(result).not.toContain('Old stuff here');
       expect((result.match(/<!-- OMC:START -->/g) || []).length).toBe(1);
@@ -52,7 +56,9 @@ describe('mergeClaudeMd', () => {
       const existingContent = `${beforeContent}${START_MARKER}\nOld content\n${END_MARKER}${afterContent}`;
       const result = mergeClaudeMd(existingContent, omcContent);
 
-      expect(result.startsWith(`${START_MARKER}\n${omcContent}\n${END_MARKER}`)).toBe(true);
+      expect(
+        result.startsWith(`${START_MARKER}\n${omcContent}\n${END_MARKER}`),
+      ).toBe(true);
       expect(result).toContain(USER_CUSTOMIZATIONS);
       expect(result).toContain('This is before the marker');
       expect(result).toContain('This is after the marker');
@@ -63,7 +69,9 @@ describe('mergeClaudeMd', () => {
       const existingContent = `Header\n${START_MARKER}\nOld\n${END_MARKER}\nFooter`;
       const result = mergeClaudeMd(existingContent, omcContent);
 
-      expect(result).toBe(`${START_MARKER}\n${omcContent}\n${END_MARKER}\n\n${USER_CUSTOMIZATIONS}\nHeader\nFooter`);
+      expect(result).toBe(
+        `${START_MARKER}\n${omcContent}\n${END_MARKER}\n\n${USER_CUSTOMIZATIONS}\nHeader\nFooter`,
+      );
     });
   });
 
@@ -110,9 +118,14 @@ describe('mergeClaudeMd', () => {
       `Some content\n${END_MARKER}\nMore content`,
       `${END_MARKER}\nContent\n${START_MARKER}`,
       `${START_MARKER}\nUser custom config`,
-    ])('fails closed without rewriting malformed existing content', existingContent => {
-      expect(() => mergeClaudeMd(existingContent, omcContent)).toThrow('Existing CLAUDE.md has corrupt OMC markers');
-    });
+    ])(
+      'fails closed without rewriting malformed existing content',
+      (existingContent) => {
+        expect(() => mergeClaudeMd(existingContent, omcContent)).toThrow(
+          'Existing CLAUDE.md has corrupt OMC markers',
+        );
+      },
+    );
   });
 
   describe('Edge cases', () => {
@@ -200,7 +213,9 @@ User added custom stuff here`;
       const result = mergeClaudeMd(oldContent, omcContent);
 
       // New OMC content should be at the top with markers
-      expect(result.indexOf(START_MARKER)).toBeLessThan(result.indexOf('# Legacy CLAUDE.md'));
+      expect(result.indexOf(START_MARKER)).toBeLessThan(
+        result.indexOf('# Legacy CLAUDE.md'),
+      );
       expect(result).toContain(omcContent);
       expect(result).toContain(oldContent);
       expect(result).toContain(USER_CUSTOMIZATIONS);
@@ -327,7 +342,9 @@ Second user note`;
       const result = mergeClaudeMd(existingContent, omcContent);
 
       expect((result.match(/<!-- User customizations/g) || []).length).toBe(3);
-      expect(result).toContain(`${USER_CUSTOMIZATIONS}\n\n<!-- User customizations (migrated from previous CLAUDE.md) -->\nFirst user note\n\n<!-- User customizations -->\nSecond user note`);
+      expect(result).toContain(
+        `${USER_CUSTOMIZATIONS}\n\n<!-- User customizations (migrated from previous CLAUDE.md) -->\nFirst user note\n\n<!-- User customizations -->\nSecond user note`,
+      );
     });
   });
 });

@@ -19,11 +19,14 @@ import { writePage, ensureWikiDir } from '../storage.js';
 import { WIKI_SCHEMA_VERSION } from '../types.js';
 import type { WikiPage } from '../types.js';
 
-function makePage(filename: string, opts: {
-  title?: string;
-  tags?: string[];
-  content?: string;
-} = {}): WikiPage {
+function makePage(
+  filename: string,
+  opts: {
+    title?: string;
+    tags?: string[];
+    content?: string;
+  } = {},
+): WikiPage {
   return {
     filename,
     frontmatter: {
@@ -37,7 +40,8 @@ function makePage(filename: string, opts: {
       confidence: 'medium' as const,
       schemaVersion: WIKI_SCHEMA_VERSION,
     },
-    content: opts.content || `\n# ${opts.title || filename}\n\nDefault content.\n`,
+    content:
+      opts.content || `\n# ${opts.title || filename}\n\nDefault content.\n`,
   };
 }
 
@@ -130,11 +134,14 @@ describe('queryWiki with CJK content', () => {
   });
 
   it('should find pages with Korean content', () => {
-    writePage(tempDir, makePage('auth.md', {
-      title: '인증 아키텍처',
-      tags: ['인증'],
-      content: '\n# 인증 아키텍처\n\nJWT 기반 인증 흐름 설명.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('auth.md', {
+        title: '인증 아키텍처',
+        tags: ['인증'],
+        content: '\n# 인증 아키텍처\n\nJWT 기반 인증 흐름 설명.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, '인증');
     expect(results.length).toBe(1);
@@ -142,20 +149,26 @@ describe('queryWiki with CJK content', () => {
   });
 
   it('should find pages with Chinese content', () => {
-    writePage(tempDir, makePage('db.md', {
-      title: '数据库架构',
-      content: '\n# 数据库\n\n数据库设计文档.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('db.md', {
+        title: '数据库架构',
+        content: '\n# 数据库\n\n数据库设计文档.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, '数据库');
     expect(results.length).toBe(1);
   });
 
   it('should find pages with mixed language query', () => {
-    writePage(tempDir, makePage('mixed.md', {
-      title: 'Auth 인증 Module',
-      content: '\n# Auth 인증\n\nAuthentication module with 인증 support.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('mixed.md', {
+        title: 'Auth 인증 Module',
+        content: '\n# Auth 인증\n\nAuthentication module with 인증 support.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, 'Auth 인증');
     expect(results.length).toBe(1);

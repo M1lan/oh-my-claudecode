@@ -82,7 +82,9 @@ describe('parseUsageResponse — extra_usage', () => {
       extra_usage: { spent_usd: 3.1, limit_usd: 17, resets_at: resetIso },
     });
     expect(result!.extraUsageResetsAt).toBeInstanceOf(Date);
-    expect(result!.extraUsageResetsAt!.getTime()).toBe(new Date(resetIso).getTime());
+    expect(result!.extraUsageResetsAt!.getTime()).toBe(
+      new Date(resetIso).getTime(),
+    );
   });
 
   it('treats invalid resets_at as null', () => {
@@ -103,20 +105,23 @@ describe('parseUsageResponse — extra_usage', () => {
   });
 
   it('parses Max organization overage used_credits as extra usage without enterprise fields', () => {
-    const result = parseUsageResponse({
-      five_hour: { utilization: 3 },
-      seven_day: { utilization: 16 },
-      seven_day_sonnet: { utilization: 0 },
-      extra_usage: {
-        is_enabled: true,
-        used_credits: 2726,
-        monthly_limit: 5000,
-        currency: 'USD',
+    const result = parseUsageResponse(
+      {
+        five_hour: { utilization: 3 },
+        seven_day: { utilization: 16 },
+        seven_day_sonnet: { utilization: 0 },
+        extra_usage: {
+          is_enabled: true,
+          used_credits: 2726,
+          monthly_limit: 5000,
+          currency: 'USD',
+        },
       },
-    }, {
-      subscriptionType: 'max',
-      rateLimitTier: 'default_claude_max_20x',
-    });
+      {
+        subscriptionType: 'max',
+        rateLimitTier: 'default_claude_max_20x',
+      },
+    );
 
     expect(result).not.toBeNull();
     expect(result!.fiveHourPercent).toBe(3);
@@ -131,15 +136,18 @@ describe('parseUsageResponse — extra_usage', () => {
   });
 
   it('uses API utilization for non-enterprise used_credits overage when present', () => {
-    const result = parseUsageResponse({
-      five_hour: { utilization: 10 },
-      extra_usage: {
-        used_credits: 1000,
-        monthly_limit: 5000,
-        utilization: 30,
-        currency: 'USD',
+    const result = parseUsageResponse(
+      {
+        five_hour: { utilization: 10 },
+        extra_usage: {
+          used_credits: 1000,
+          monthly_limit: 5000,
+          utilization: 30,
+          currency: 'USD',
+        },
       },
-    }, { subscriptionType: 'pro', rateLimitTier: 'default' });
+      { subscriptionType: 'pro', rateLimitTier: 'default' },
+    );
 
     expect(result).not.toBeNull();
     expect(result!.extraUsagePercent).toBe(30);
@@ -171,8 +179,8 @@ describe('renderRateLimits — extra usage', () => {
     const limits: RateLimits = {
       ...base,
       extraUsagePercent: 18,
-      extraUsageSpentUsd: 3.10,
-      extraUsageLimitUsd: 17.00,
+      extraUsageSpentUsd: 3.1,
+      extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimits(limits);
     expect(result).toContain('extra:');
@@ -186,7 +194,7 @@ describe('renderRateLimits — extra usage', () => {
       ...base,
       extraUsagePercent: 0,
       extraUsageSpentUsd: 0,
-      extraUsageLimitUsd: 17.00,
+      extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimits(limits);
     expect(result).toContain('extra:');
@@ -285,8 +293,8 @@ describe('renderRateLimitsWithBar — extra usage', () => {
     const limits: RateLimits = {
       fiveHourPercent: 10,
       extraUsagePercent: 18,
-      extraUsageSpentUsd: 3.10,
-      extraUsageLimitUsd: 17.00,
+      extraUsageSpentUsd: 3.1,
+      extraUsageLimitUsd: 17.0,
     };
     const result = renderRateLimitsWithBar(limits);
     expect(result).toContain('extra:');

@@ -11,7 +11,13 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync } from 'node:child_process';
@@ -42,8 +48,14 @@ describe('multi-repo workspace team writes', () => {
     api = join(parent, 'api');
     mkdirSync(api, { recursive: true });
     execFileSync('git', ['init'], { cwd: api, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.email', 'test@test.com'], { cwd: api, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.name', 'Test'], { cwd: api, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'test@test.com'], {
+      cwd: api,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['config', 'user.name', 'Test'], {
+      cwd: api,
+      stdio: 'pipe',
+    });
     writeFileSync(join(api, 'README.md'), '# api\n');
     execFileSync('git', ['add', '.'], { cwd: api, stdio: 'pipe' });
     execFileSync('git', ['commit', '-m', 'init'], { cwd: api, stdio: 'pipe' });
@@ -53,7 +65,9 @@ describe('multi-repo workspace team writes', () => {
   afterEach(() => {
     try {
       cleanupTeamWorktrees(teamName, api);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     clearWorktreeCache();
     if (parent) rmSync(parent, { recursive: true, force: true });
   });
@@ -73,7 +87,9 @@ describe('multi-repo workspace team writes', () => {
     const logPath = join(sharedOmc(), 'logs', `team-bridge-${teamName}.jsonl`);
     expect(existsSync(logPath)).toBe(true);
     // Must NOT have written into the sub-repo's local .omc.
-    expect(existsSync(join(api, '.omc', 'logs', `team-bridge-${teamName}.jsonl`))).toBe(false);
+    expect(
+      existsSync(join(api, '.omc', 'logs', `team-bridge-${teamName}.jsonl`)),
+    ).toBe(false);
     expect(readAuditLog(api, teamName)).toHaveLength(1);
   });
 
@@ -99,7 +115,13 @@ describe('multi-repo workspace team writes', () => {
   it('restart state writes under the shared .omc without traversal error', () => {
     expect(() => recordRestart(api, teamName, 'worker1')).not.toThrow();
 
-    const statePath = join(sharedOmc(), 'state', 'team-bridge', teamName, 'worker1.restart.json');
+    const statePath = join(
+      sharedOmc(),
+      'state',
+      'team-bridge',
+      teamName,
+      'worker1.restart.json',
+    );
     expect(existsSync(statePath)).toBe(true);
 
     const state = readRestartState(api, teamName, 'worker1');
@@ -115,12 +137,26 @@ describe('multi-repo workspace team writes', () => {
     // Worktree and metadata live under the shared workspace .omc, above the repo.
     expect(info.path.startsWith(join(sharedOmc(), 'team'))).toBe(true);
     expect(existsSync(info.path)).toBe(true);
-    expect(existsSync(join(sharedOmc(), 'state', 'team', teamName, 'worktrees.json'))).toBe(true);
-    expect(listTeamWorktrees(teamName, api).map(w => w.workerName)).toContain('worker1');
+    expect(
+      existsSync(
+        join(sharedOmc(), 'state', 'team', teamName, 'worktrees.json'),
+      ),
+    ).toBe(true);
+    expect(listTeamWorktrees(teamName, api).map((w) => w.workerName)).toContain(
+      'worker1',
+    );
 
     expect(() =>
-      installWorktreeRootAgents(teamName, 'worker1', api, info.path, '# overlay\n'),
+      installWorktreeRootAgents(
+        teamName,
+        'worker1',
+        api,
+        info.path,
+        '# overlay\n',
+      ),
     ).not.toThrow();
-    expect(() => restoreWorktreeRootAgents(teamName, 'worker1', api, info.path)).not.toThrow();
+    expect(() =>
+      restoreWorktreeRootAgents(teamName, 'worker1', api, info.path),
+    ).not.toThrow();
   });
 });

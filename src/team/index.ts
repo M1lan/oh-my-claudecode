@@ -100,10 +100,7 @@ export { runBridge, sanitizePromptContent } from './mcp-team-bridge.js';
 export { logAuditEvent, readAuditLog, rotateAuditLog } from './audit-log.js';
 export type { AuditEventType, AuditEvent } from './audit-log.js';
 
-export {
-  getWorkerHealthReports,
-  checkWorkerHealth,
-} from './worker-health.js';
+export { getWorkerHealthReports, checkWorkerHealth } from './worker-health.js';
 
 export type { WorkerHealthReport } from './worker-health.js';
 
@@ -150,7 +147,11 @@ export {
   generateUsageReport,
 } from './usage-tracker.js';
 
-export type { TaskUsageRecord, WorkerUsageSummary, TeamUsageReport } from './usage-tracker.js';
+export type {
+  TaskUsageRecord,
+  WorkerUsageSummary,
+  TeamUsageReport,
+} from './usage-tracker.js';
 
 export {
   checkMergeConflicts,
@@ -187,7 +188,11 @@ export type {
 
 // New tmux-based multi-CLI team modules
 // model-contract: getWorkerEnv is exported via worker-bootstrap (single source of truth)
-export type { CliAgentType, CliAgentContract, WorkerLaunchConfig } from './model-contract.js';
+export type {
+  CliAgentType,
+  CliAgentContract,
+  WorkerLaunchConfig,
+} from './model-contract.js';
 export {
   getContract,
   isCliAvailable as isCliAvailableForAgent,
@@ -233,7 +238,11 @@ export type { LayoutStabilizerOptions } from './layout-stabilizer.js';
 
 // phase-controller
 export type { TeamPhase, PhaseableTask } from './phase-controller.js';
-export { inferPhase, getPhaseTransitionLog, isTerminalPhase } from './phase-controller.js';
+export {
+  inferPhase,
+  getPhaseTransitionLog,
+  isTerminalPhase,
+} from './phase-controller.js';
 
 // runtime: WorkerStatus conflicts with team-status.ts; export as RuntimeWorkerStatus
 export type {
@@ -243,7 +252,14 @@ export type {
   TeamSnapshot,
   WatchdogCompletionEvent,
 } from './runtime.js';
-export { startTeam, monitorTeam, assignTask, shutdownTeam, resumeTeam, watchdogCliWorkers } from './runtime.js';
+export {
+  startTeam,
+  monitorTeam,
+  assignTask,
+  shutdownTeam,
+  resumeTeam,
+  watchdogCliWorkers,
+} from './runtime.js';
 export {
   setRuntimeOwnerRecoveryClient,
   recoverDeadWorkerV2,
@@ -267,7 +283,10 @@ export type {
 } from './recovery-request-store.js';
 
 export { teamPublishTaskRecoveryCheckpoint } from './team-ops.js';
-export type { PublishTaskRecoveryCheckpointInput, PublishTaskRecoveryCheckpointResult } from './task-recovery-checkpoint.js';
+export type {
+  PublishTaskRecoveryCheckpointInput,
+  PublishTaskRecoveryCheckpointResult,
+} from './task-recovery-checkpoint.js';
 
 export { injectToLeaderPane } from './tmux-session.js';
 
@@ -283,16 +302,20 @@ export {
 export type { TeamApiOperation, TeamApiEnvelope } from './api-interop.js';
 
 // scaling (dynamic worker scaling)
-export {
-  isScalingEnabled,
-  scaleUp,
-  scaleDown,
+export { isScalingEnabled, scaleUp, scaleDown } from './scaling.js';
+
+export type {
+  ScaleUpResult,
+  ScaleDownResult,
+  ScaleError,
+  ScaleDownOptions,
 } from './scaling.js';
 
-export type { ScaleUpResult, ScaleDownResult, ScaleError, ScaleDownOptions } from './scaling.js';
-
 // team-leader-nudge-hook
-export { checkLeaderStaleness, maybeNudgeLeader } from '../hooks/team-leader-nudge-hook.js';
+export {
+  checkLeaderStaleness,
+  maybeNudgeLeader,
+} from '../hooks/team-leader-nudge-hook.js';
 export type { TmuxRunner } from '../hooks/team-leader-nudge-hook.js';
 
 // contracts

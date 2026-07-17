@@ -83,7 +83,9 @@ describe('shouldSkipEntry', () => {
   });
 
   it('skips entries matching custom ignorePatterns', () => {
-    expect(shouldSkipEntry('generated-code.ts', false, ['generated'])).toBe(true);
+    expect(shouldSkipEntry('generated-code.ts', false, ['generated'])).toBe(
+      true,
+    );
   });
 
   it('does not skip entries that do not match custom ignorePatterns', () => {
@@ -111,20 +113,28 @@ describe('extractPackageMetadata', () => {
   });
 
   it('returns package name and description', () => {
-    writeFile(tempDir, 'package.json', JSON.stringify({
-      name: 'my-package',
-      description: 'A test package',
-    }));
+    writeFile(
+      tempDir,
+      'package.json',
+      JSON.stringify({
+        name: 'my-package',
+        description: 'A test package',
+      }),
+    );
     const meta = extractPackageMetadata(tempDir);
     expect(meta).toContain('Package: my-package');
     expect(meta).toContain('Description: A test package');
   });
 
   it('lists scripts (up to 8)', () => {
-    writeFile(tempDir, 'package.json', JSON.stringify({
-      name: 'my-package',
-      scripts: { build: 'tsc', test: 'vitest', lint: 'eslint .' },
-    }));
+    writeFile(
+      tempDir,
+      'package.json',
+      JSON.stringify({
+        name: 'my-package',
+        scripts: { build: 'tsc', test: 'vitest', lint: 'eslint .' },
+      }),
+    );
     const meta = extractPackageMetadata(tempDir);
     expect(meta).toContain('Scripts:');
     expect(meta).toContain('build');
@@ -285,7 +295,9 @@ describe('generateCodebaseMap', () => {
   it('respects custom ignorePatterns', () => {
     writeFile(tempDir, 'generated-api.ts', '');
     writeFile(tempDir, 'index.ts', '');
-    const result = generateCodebaseMap(tempDir, { ignorePatterns: ['generated'] });
+    const result = generateCodebaseMap(tempDir, {
+      ignorePatterns: ['generated'],
+    });
     expect(result.map).not.toContain('generated-api.ts');
     expect(result.map).toContain('index.ts');
   });

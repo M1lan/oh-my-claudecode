@@ -29,7 +29,11 @@ export interface LspAggregationResult {
 /**
  * Recursively find files with given extensions
  */
-function findFiles(directory: string, extensions: string[], ignoreDirs: string[] = []): string[] {
+function findFiles(
+  directory: string,
+  extensions: string[],
+  ignoreDirs: string[] = [],
+): string[] {
   const results: string[] = [];
   const ignoreDirSet = new Set(ignoreDirs);
 
@@ -77,10 +81,15 @@ function findFiles(directory: string, extensions: string[], ignoreDirs: string[]
  */
 export async function runLspAggregatedDiagnostics(
   directory: string,
-  extensions: string[] = ['.ts', '.tsx', '.js', '.jsx']
+  extensions: string[] = ['.ts', '.tsx', '.js', '.jsx'],
 ): Promise<LspAggregationResult> {
   // Find all matching files
-  const files = findFiles(directory, extensions, ['node_modules', 'dist', 'build', '.git']);
+  const files = findFiles(directory, extensions, [
+    'node_modules',
+    'dist',
+    'build',
+    '.git',
+  ]);
 
   const allDiagnostics: LspDiagnosticWithFile[] = [];
   let filesChecked = 0;
@@ -90,7 +99,10 @@ export async function runLspAggregatedDiagnostics(
   for (const file of files) {
     // Guards future callers passing custom extensions with no registered LSP; redundant under default extension list.
     if (!getServerForFile(file)) {
-      skippedFiles.push({ file, reason: 'no language server registered for extension' });
+      skippedFiles.push({
+        file,
+        reason: 'no language server registered for extension',
+      });
       continue;
     }
 
@@ -111,7 +123,7 @@ export async function runLspAggregatedDiagnostics(
         for (const diagnostic of diagnostics) {
           allDiagnostics.push({
             file,
-            diagnostic
+            diagnostic,
           });
         }
 
@@ -121,10 +133,15 @@ export async function runLspAggregatedDiagnostics(
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       // Regex pinned to throw at src/tools/lsp/client.ts:186 — keep header literal in formatLspResult in sync.
-      const match = message.match(/^Language server '([^']+)' not found\.\nInstall with: (.+)$/s);
+      const match = message.match(
+        /^Language server '([^']+)' not found\.\nInstall with: (.+)$/s,
+      );
       if (match) {
         installHintSet.add(match[2].trim());
-        skippedFiles.push({ file, reason: `missing language server: ${match[1]}` });
+        skippedFiles.push({
+          file,
+          reason: `missing language server: ${match[1]}`,
+        });
       } else {
         skippedFiles.push({ file, reason: message });
       }
@@ -132,8 +149,12 @@ export async function runLspAggregatedDiagnostics(
   }
 
   // Count errors and warnings
-  const errorCount = allDiagnostics.filter(d => d.diagnostic.severity === 1).length;
-  const warningCount = allDiagnostics.filter(d => d.diagnostic.severity === 2).length;
+  const errorCount = allDiagnostics.filter(
+    (d) => d.diagnostic.severity === 1,
+  ).length;
+  const warningCount = allDiagnostics.filter(
+    (d) => d.diagnostic.severity === 2,
+  ).length;
   const installHints = Array.from(installHintSet);
   const allFilesSkipped = filesChecked === 0 && files.length > 0;
 

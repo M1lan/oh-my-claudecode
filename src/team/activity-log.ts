@@ -45,26 +45,46 @@ const CATEGORY_MAP: Record<AuditEventType, ActivityEntry['category']> = {
 /** Map audit event types to human-readable action descriptions */
 function describeEvent(event: AuditEvent): string {
   switch (event.eventType) {
-    case 'bridge_start': return 'Started bridge daemon';
-    case 'bridge_shutdown': return 'Shut down bridge daemon';
-    case 'worker_ready': return 'Worker ready and accepting tasks';
-    case 'task_claimed': return `Claimed task ${event.taskId || '(unknown)'}`;
-    case 'task_started': return `Started working on task ${event.taskId || '(unknown)'}`;
-    case 'task_completed': return `Completed task ${event.taskId || '(unknown)'}`;
-    case 'task_failed': return `Task ${event.taskId || '(unknown)'} failed`;
-    case 'task_permanently_failed': return `Task ${event.taskId || '(unknown)'} permanently failed`;
-    case 'worker_quarantined': return 'Self-quarantined due to errors';
-    case 'worker_idle': return 'Standing by (idle)';
-    case 'inbox_rotated': return 'Rotated inbox log';
-    case 'outbox_rotated': return 'Rotated outbox log';
-    case 'cli_spawned': return `Spawned CLI process`;
-    case 'cli_timeout': return `CLI process timed out`;
-    case 'cli_error': return `CLI process error`;
-    case 'shutdown_received': return 'Received shutdown signal';
-    case 'shutdown_ack': return 'Acknowledged shutdown';
-    case 'permission_violation': return `Permission violation on task ${event.taskId || '(unknown)'}`;
-    case 'permission_audit': return `Permission audit warning on task ${event.taskId || '(unknown)'}`;
-    default: return event.eventType;
+    case 'bridge_start':
+      return 'Started bridge daemon';
+    case 'bridge_shutdown':
+      return 'Shut down bridge daemon';
+    case 'worker_ready':
+      return 'Worker ready and accepting tasks';
+    case 'task_claimed':
+      return `Claimed task ${event.taskId || '(unknown)'}`;
+    case 'task_started':
+      return `Started working on task ${event.taskId || '(unknown)'}`;
+    case 'task_completed':
+      return `Completed task ${event.taskId || '(unknown)'}`;
+    case 'task_failed':
+      return `Task ${event.taskId || '(unknown)'} failed`;
+    case 'task_permanently_failed':
+      return `Task ${event.taskId || '(unknown)'} permanently failed`;
+    case 'worker_quarantined':
+      return 'Self-quarantined due to errors';
+    case 'worker_idle':
+      return 'Standing by (idle)';
+    case 'inbox_rotated':
+      return 'Rotated inbox log';
+    case 'outbox_rotated':
+      return 'Rotated outbox log';
+    case 'cli_spawned':
+      return `Spawned CLI process`;
+    case 'cli_timeout':
+      return `CLI process timed out`;
+    case 'cli_error':
+      return `CLI process error`;
+    case 'shutdown_received':
+      return 'Received shutdown signal';
+    case 'shutdown_ack':
+      return 'Acknowledged shutdown';
+    case 'permission_violation':
+      return `Permission violation on task ${event.taskId || '(unknown)'}`;
+    case 'permission_audit':
+      return `Permission audit warning on task ${event.taskId || '(unknown)'}`;
+    default:
+      return event.eventType;
   }
 }
 
@@ -80,7 +100,7 @@ export function getActivityLog(
     limit?: number;
     category?: ActivityEntry['category'];
     actor?: string;
-  }
+  },
 ): ActivityEntry[] {
   // Read raw audit events
   const auditFilter: { since?: string; workerName?: string } = {};
@@ -90,7 +110,7 @@ export function getActivityLog(
   const events = readAuditLog(workingDirectory, teamName, auditFilter);
 
   // Transform to activity entries
-  let activities: ActivityEntry[] = events.map(event => ({
+  let activities: ActivityEntry[] = events.map((event) => ({
     timestamp: event.timestamp,
     actor: event.workerName,
     action: describeEvent(event),
@@ -101,7 +121,7 @@ export function getActivityLog(
 
   // Apply category filter
   if (options?.category) {
-    activities = activities.filter(a => a.category === options.category);
+    activities = activities.filter((a) => a.category === options.category);
   }
 
   // Apply limit

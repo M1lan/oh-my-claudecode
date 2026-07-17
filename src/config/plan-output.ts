@@ -1,23 +1,23 @@
-import { join, posix } from "path";
-import type { PluginConfig } from "../shared/types.js";
-import { validatePath } from "../lib/worktree-paths.js";
+import { join, posix } from 'path';
+import type { PluginConfig } from '../shared/types.js';
+import { validatePath } from '../lib/worktree-paths.js';
 
-export const DEFAULT_PLAN_OUTPUT_DIRECTORY = ".omc/plans";
-export const DEFAULT_PLAN_OUTPUT_FILENAME_TEMPLATE = "{{name}}.md";
+export const DEFAULT_PLAN_OUTPUT_DIRECTORY = '.omc/plans';
+export const DEFAULT_PLAN_OUTPUT_FILENAME_TEMPLATE = '{{name}}.md';
 
-export type PlanOutputKind = "autopilot-impl" | "open-questions";
+export type PlanOutputKind = 'autopilot-impl' | 'open-questions';
 
 function sanitizePlanOutputSegment(value: string): string {
   const sanitized = value
     .trim()
     .toLowerCase()
-    .replace(/\.\./g, "")
-    .replace(/[\/]/g, "-")
-    .replace(/[^a-z0-9_-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replace(/\.\./g, '')
+    .replace(/[\/]/g, '-')
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 
-  return sanitized || "plan";
+  return sanitized || 'plan';
 }
 
 export function getPlanOutputDirectory(config?: PluginConfig): string {
@@ -37,9 +37,9 @@ export function getPlanOutputFilenameTemplate(config?: PluginConfig): string {
   if (!template) return DEFAULT_PLAN_OUTPUT_FILENAME_TEMPLATE;
 
   if (
-    template.includes("/") ||
-    template.includes("\\") ||
-    template.includes("..")
+    template.includes('/') ||
+    template.includes('\\') ||
+    template.includes('..')
   ) {
     return DEFAULT_PLAN_OUTPUT_FILENAME_TEMPLATE;
   }
@@ -54,20 +54,20 @@ export function resolvePlanOutputFilename(
   const safeKind = sanitizePlanOutputSegment(kind);
   const template = getPlanOutputFilenameTemplate(config);
   const rendered = template
-    .replaceAll("{{name}}", safeKind)
-    .replaceAll("{{kind}}", safeKind)
+    .replaceAll('{{name}}', safeKind)
+    .replaceAll('{{kind}}', safeKind)
     .trim();
 
   const fallback = DEFAULT_PLAN_OUTPUT_FILENAME_TEMPLATE.replace(
-    "{{name}}",
+    '{{name}}',
     safeKind,
   );
   const filename = rendered || fallback;
 
   if (
-    filename.includes("/") ||
-    filename.includes("\\") ||
-    filename.includes("..")
+    filename.includes('/') ||
+    filename.includes('\\') ||
+    filename.includes('..')
   ) {
     return fallback;
   }
@@ -94,9 +94,9 @@ export function resolvePlanOutputAbsolutePath(
 }
 
 export function resolveAutopilotPlanPath(config?: PluginConfig): string {
-  return resolvePlanOutputPath("autopilot-impl", config);
+  return resolvePlanOutputPath('autopilot-impl', config);
 }
 
 export function resolveOpenQuestionsPlanPath(config?: PluginConfig): string {
-  return resolvePlanOutputPath("open-questions", config);
+  return resolvePlanOutputPath('open-questions', config);
 }

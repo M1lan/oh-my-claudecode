@@ -52,7 +52,14 @@ export interface RebaseConflictArgs {
  * Pure: same input → same output.
  */
 export function formatMergeConflictForLeader(args: MergeConflictArgs): string {
-  const { workerName, workerBranch, leaderBranch, conflictingFiles, mergeBaseSha, observedAt } = args;
+  const {
+    workerName,
+    workerBranch,
+    leaderBranch,
+    conflictingFiles,
+    mergeBaseSha,
+    observedAt,
+  } = args;
   const ts = new Date(observedAt).toISOString();
   const safeFiles = conflictingFiles.map(sanitizeConflictPath);
   const fileList = safeFiles.map((f) => `- \`${f}\``).join('\n');
@@ -82,8 +89,18 @@ Or abort with \`git merge --abort\` to defer resolution.`;
  * Format a rebase conflict notification destined for a worker inbox.
  * Pure: same input → same output.
  */
-export function formatRebaseConflictForWorker(args: RebaseConflictArgs): string {
-  const { workerName, workerBranch, leaderBranch, conflictingFiles, baseSha, worktreePath, observedAt } = args;
+export function formatRebaseConflictForWorker(
+  args: RebaseConflictArgs,
+): string {
+  const {
+    workerName,
+    workerBranch,
+    leaderBranch,
+    conflictingFiles,
+    baseSha,
+    worktreePath,
+    observedAt,
+  } = args;
   const ts = new Date(observedAt).toISOString();
   const safeFiles = conflictingFiles.map(sanitizeConflictPath);
   const fileList = safeFiles.map((f) => `- \`${f}\``).join('\n');
@@ -125,7 +142,9 @@ export interface DeliverRebaseConflictArgs {
  * Deliver a merge conflict message to the leader inbox.
  * Delegates to leader-inbox.appendToLeaderInbox.
  */
-export async function deliverMergeConflictToLeader(args: DeliverMergeConflictArgs): Promise<void> {
+export async function deliverMergeConflictToLeader(
+  args: DeliverMergeConflictArgs,
+): Promise<void> {
   const { teamName, cwd, message } = args;
   await appendToLeaderInbox(teamName, message, cwd);
 }
@@ -134,7 +153,9 @@ export async function deliverMergeConflictToLeader(args: DeliverMergeConflictArg
  * Deliver a rebase conflict message to a worker inbox.
  * Delegates to worker-bootstrap.appendToInbox.
  */
-export async function deliverRebaseConflictToWorker(args: DeliverRebaseConflictArgs): Promise<void> {
+export async function deliverRebaseConflictToWorker(
+  args: DeliverRebaseConflictArgs,
+): Promise<void> {
   const { teamName, workerName, cwd, message } = args;
   await appendToInbox(teamName, workerName, message, cwd);
 }

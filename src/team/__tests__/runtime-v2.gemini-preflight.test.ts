@@ -14,20 +14,44 @@ const mocks = vi.hoisted(() => ({
 }));
 
 const modelContractMocks = vi.hoisted(() => ({
-  buildWorkerArgv: vi.fn((agentType?: string, config?: { resolvedBinaryPath?: string }) => [config?.resolvedBinaryPath ?? agentType ?? 'claude']),
+  buildWorkerArgv: vi.fn(
+    (agentType?: string, config?: { resolvedBinaryPath?: string }) => [
+      config?.resolvedBinaryPath ?? agentType ?? 'claude',
+    ],
+  ),
   resolveValidatedBinaryPath: vi.fn((agentType?: string) => {
-    if (agentType === 'gemini') throw new Error('Resolved CLI binary \'gemini\' to untrusted location: /tmp/gemini');
+    if (agentType === 'gemini')
+      throw new Error(
+        "Resolved CLI binary 'gemini' to untrusted location: /tmp/gemini",
+      );
     return `/usr/bin/${agentType ?? 'claude'}`;
   }),
-  getContract: vi.fn((agentType?: string) => ({ binary: agentType ?? 'claude' })),
+  getContract: vi.fn((agentType?: string) => ({
+    binary: agentType ?? 'claude',
+  })),
   getWorkerEnv: vi.fn(() => ({ OMC_TEAM_WORKER: 'issue2675-team/worker-1' })),
   isPromptModeAgent: vi.fn(() => false),
   getPromptModeArgs: vi.fn(() => []),
   resolveClaudeWorkerModel: vi.fn(() => undefined),
-  buildValidatedWorkerLaunchDescriptor: vi.fn((agentType: string, config: { model?: string; resolvedBinaryPath?: string }, appendedArgs: string[] = []) => {
-    const [binary, ...args] = modelContractMocks.buildWorkerArgv(agentType, config);
-    return { schema_version: 1, provider: agentType, model: config.model ?? null, binary, args: [...args, ...appendedArgs] };
-  }),
+  buildValidatedWorkerLaunchDescriptor: vi.fn(
+    (
+      agentType: string,
+      config: { model?: string; resolvedBinaryPath?: string },
+      appendedArgs: string[] = [],
+    ) => {
+      const [binary, ...args] = modelContractMocks.buildWorkerArgv(
+        agentType,
+        config,
+      );
+      return {
+        schema_version: 1,
+        provider: agentType,
+        model: config.model ?? null,
+        binary,
+        args: [...args, ...appendedArgs],
+      };
+    },
+  ),
   validateWorkerLaunchDescriptor: vi.fn((value: unknown) => value),
 }));
 
@@ -54,8 +78,10 @@ vi.mock('../model-contract.js', () => ({
   isPromptModeAgent: modelContractMocks.isPromptModeAgent,
   getPromptModeArgs: modelContractMocks.getPromptModeArgs,
   resolveClaudeWorkerModel: modelContractMocks.resolveClaudeWorkerModel,
-  buildValidatedWorkerLaunchDescriptor: modelContractMocks.buildValidatedWorkerLaunchDescriptor,
-  validateWorkerLaunchDescriptor: modelContractMocks.validateWorkerLaunchDescriptor,
+  buildValidatedWorkerLaunchDescriptor:
+    modelContractMocks.buildValidatedWorkerLaunchDescriptor,
+  validateWorkerLaunchDescriptor:
+    modelContractMocks.validateWorkerLaunchDescriptor,
   // gemini is supported on all platforms, so the preflight headless guard is a no-op here.
   assertHeadlessSupported: () => {},
   isHeadlessSupportedOnPlatform: () => true,
@@ -85,7 +111,11 @@ describe('runtime-v2 Gemini preflight routing', () => {
       }
       return { stdout: '', stderr: '' };
     });
-    mocks.queueInboxInstruction.mockResolvedValue({ ok: true, reason: 'transport_direct', transport: 'transport_direct' });
+    mocks.queueInboxInstruction.mockResolvedValue({
+      ok: true,
+      reason: 'transport_direct',
+      transport: 'transport_direct',
+    });
   });
 
   afterEach(async () => {
@@ -100,7 +130,13 @@ describe('runtime-v2 Gemini preflight routing', () => {
       teamName: 'issue2675-team',
       workerCount: 1,
       agentTypes: ['gemini'],
-      tasks: [{ subject: 'Review code', description: 'Review code', role: 'executor' }],
+      tasks: [
+        {
+          subject: 'Review code',
+          description: 'Review code',
+          role: 'executor',
+        },
+      ],
       cwd,
       pluginConfig: {
         team: { roleRouting: { executor: { provider: 'gemini' } } },

@@ -45,7 +45,10 @@ describe('Project Environment Detector', () => {
         },
       };
 
-      await fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+      await fs.writeFile(
+        path.join(tempDir, 'package.json'),
+        JSON.stringify(packageJson, null, 2),
+      );
       await fs.writeFile(path.join(tempDir, 'tsconfig.json'), '{}');
       await fs.writeFile(path.join(tempDir, 'pnpm-lock.yaml'), '');
 
@@ -53,11 +56,13 @@ describe('Project Environment Detector', () => {
 
       // Check languages (may detect both JavaScript/TypeScript and TypeScript)
       expect(memory.techStack.languages.length).toBeGreaterThanOrEqual(1);
-      const hasTypeScript = memory.techStack.languages.some(l => l.name.includes('TypeScript'));
+      const hasTypeScript = memory.techStack.languages.some((l) =>
+        l.name.includes('TypeScript'),
+      );
       expect(hasTypeScript).toBe(true);
 
       // Check frameworks
-      const frameworkNames = memory.techStack.frameworks.map(f => f.name);
+      const frameworkNames = memory.techStack.frameworks.map((f) => f.name);
       expect(frameworkNames).toContain('react');
       expect(frameworkNames).toContain('vite');
       expect(frameworkNames).toContain('vitest');
@@ -103,7 +108,7 @@ tokio = { version = "1", features = ["full"] }
       expect(memory.techStack.packageManager).toBe('cargo');
 
       // Check frameworks
-      const frameworkNames = memory.techStack.frameworks.map(f => f.name);
+      const frameworkNames = memory.techStack.frameworks.map((f) => f.name);
       expect(frameworkNames).toContain('axum');
 
       // Check build commands
@@ -160,8 +165,14 @@ pytest = "^7.4.0"
         workspaces: ['packages/*', 'apps/*'],
       };
 
-      await fs.writeFile(path.join(tempDir, 'package.json'), JSON.stringify(packageJson, null, 2));
-      await fs.writeFile(path.join(tempDir, 'pnpm-workspace.yaml'), 'packages:\n  - "packages/*"');
+      await fs.writeFile(
+        path.join(tempDir, 'package.json'),
+        JSON.stringify(packageJson, null, 2),
+      );
+      await fs.writeFile(
+        path.join(tempDir, 'pnpm-workspace.yaml'),
+        'packages:\n  - "packages/*"',
+      );
 
       const memory = await detectProjectEnvironment(tempDir);
 
@@ -190,7 +201,9 @@ pytest = "^7.4.0"
     it('does not infer build or test commands from unrelated targets', async () => {
       await fs.writeFile(
         path.join(tempDir, 'Makefile'),
-        ['install:', '\t./scripts/install.sh', 'clean:', '\trm -rf tmp'].join('\n')
+        ['install:', '\t./scripts/install.sh', 'clean:', '\trm -rf tmp'].join(
+          '\n',
+        ),
       );
 
       const memory = await detectProjectEnvironment(tempDir);
@@ -202,7 +215,7 @@ pytest = "^7.4.0"
     it('detects explicit build and test targets', async () => {
       await fs.writeFile(
         path.join(tempDir, 'Makefile'),
-        ['build:', '\tnpm run build', 'test lint:', '\tnpm test'].join('\n')
+        ['build:', '\tnpm run build', 'test lint:', '\tnpm test'].join('\n'),
       );
 
       const memory = await detectProjectEnvironment(tempDir);

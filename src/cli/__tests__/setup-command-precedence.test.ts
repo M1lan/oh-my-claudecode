@@ -37,9 +37,9 @@ const installMock = vi.fn(() => ({
 }));
 
 vi.mock('../../installer/index.js', async () => {
-  const actual = await vi.importActual<typeof import('../../installer/index.js')>(
-    '../../installer/index.js'
-  );
+  const actual = await vi.importActual<
+    typeof import('../../installer/index.js')
+  >('../../installer/index.js');
   return {
     ...actual,
     install: installMock,
@@ -50,9 +50,9 @@ vi.mock('../../installer/index.js', async () => {
 
 // Stub auto-update so the setup action doesn't try to read real install state.
 vi.mock('../../features/auto-update.js', async () => {
-  const actual = await vi.importActual<typeof import('../../features/auto-update.js')>(
-    '../../features/auto-update.js'
-  );
+  const actual = await vi.importActual<
+    typeof import('../../features/auto-update.js')
+  >('../../features/auto-update.js');
   return {
     ...actual,
     getInstalledVersion: () => ({ version: 'test', installPath: '/tmp' }),

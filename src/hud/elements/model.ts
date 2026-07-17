@@ -6,7 +6,11 @@
 
 import { cyan } from '../colors.js';
 import { truncateToWidth } from '../../utils/string-width.js';
-import { DEFAULT_HUD_LABELS, type HudLabels, type ModelFormat } from '../types.js';
+import {
+  DEFAULT_HUD_LABELS,
+  type HudLabels,
+  type ModelFormat,
+} from '../types.js';
 
 /**
  * Extract version from a model ID string.
@@ -23,17 +27,25 @@ function extractVersion(modelId: string): string | null {
   if (idMatch) return `${idMatch[1]}.${idMatch[2]}`;
 
   // Match Claude family IDs with a single trailing numeric version like claude-sonnet-5
-  const singleSegmentIdMatch = modelId.match(/(?:^|[.-])claude-(?:opus|sonnet|haiku)-(\d+)$/i);
+  const singleSegmentIdMatch = modelId.match(
+    /(?:^|[.-])claude-(?:opus|sonnet|haiku)-(\d+)$/i,
+  );
   if (singleSegmentIdMatch) return singleSegmentIdMatch[1];
 
   // Match legacy raw ID patterns like claude-3-5-sonnet-20241022 and claude-3-opus-20240229
-  const legacyIdMatch = modelId.match(/claude-(\d+)(?:-(\d+))?-(?:opus|sonnet|haiku)/i);
+  const legacyIdMatch = modelId.match(
+    /claude-(\d+)(?:-(\d+))?-(?:opus|sonnet|haiku)/i,
+  );
   if (legacyIdMatch) {
-    return legacyIdMatch[2] ? `${legacyIdMatch[1]}.${legacyIdMatch[2]}` : legacyIdMatch[1];
+    return legacyIdMatch[2]
+      ? `${legacyIdMatch[1]}.${legacyIdMatch[2]}`
+      : legacyIdMatch[1];
   }
 
   // Match display name patterns like "Sonnet 4.5", "Opus 4.8"
-  const displayMatch = modelId.match(/(?:opus|sonnet|haiku)\s+(\d+(?:\.\d+)?)/i);
+  const displayMatch = modelId.match(
+    /(?:opus|sonnet|haiku)\s+(\d+(?:\.\d+)?)/i,
+  );
   if (displayMatch) return displayMatch[1];
 
   return null;
@@ -43,7 +55,10 @@ function extractVersion(modelId: string): string | null {
  * Format model name for display.
  * Converts model IDs to friendly names based on the requested format.
  */
-export function formatModelName(modelId: string | null | undefined, format: ModelFormat = 'short'): string | null {
+export function formatModelName(
+  modelId: string | null | undefined,
+  format: ModelFormat = 'short',
+): string | null {
   if (!modelId) return null;
 
   if (format === 'full') {

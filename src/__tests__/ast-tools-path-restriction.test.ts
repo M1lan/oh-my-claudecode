@@ -54,11 +54,15 @@ describe('validateToolPath', () => {
     });
 
     it('rejects paths that traverse above project root', () => {
-      expect(() => validateToolPath('../../.ssh/id_rsa')).toThrow('Path restricted');
+      expect(() => validateToolPath('../../.ssh/id_rsa')).toThrow(
+        'Path restricted',
+      );
     });
 
     it('rejects home directory paths', () => {
-      expect(() => validateToolPath('/Users/someone/.ssh')).toThrow('Path restricted');
+      expect(() => validateToolPath('/Users/someone/.ssh')).toThrow(
+        'Path restricted',
+      );
     });
 
     it('includes helpful message in error', () => {

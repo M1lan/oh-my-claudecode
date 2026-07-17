@@ -37,7 +37,7 @@ export function runTscDiagnostics(directory: string): TscResult {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
     };
   }
 
@@ -45,13 +45,13 @@ export function runTscDiagnostics(directory: string): TscResult {
     execFileSync('tsc', ['--noEmit', '--pretty', 'false'], {
       cwd: directory,
       encoding: 'utf-8',
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
     return {
       success: true,
       diagnostics: [],
       errorCount: 0,
-      warningCount: 0
+      warningCount: 0,
     };
   } catch (error: any) {
     const output = error.stdout || error.stderr || '';
@@ -77,17 +77,19 @@ function parseTscOutput(output: string): TscResult {
       column: parseInt(match[3], 10),
       severity: match[4] as 'error' | 'warning',
       code: match[5],
-      message: match[6]
+      message: match[6],
     });
   }
 
-  const errorCount = diagnostics.filter(d => d.severity === 'error').length;
-  const warningCount = diagnostics.filter(d => d.severity === 'warning').length;
+  const errorCount = diagnostics.filter((d) => d.severity === 'error').length;
+  const warningCount = diagnostics.filter(
+    (d) => d.severity === 'warning',
+  ).length;
 
   return {
     success: errorCount === 0,
     diagnostics,
     errorCount,
-    warningCount
+    warningCount,
   };
 }

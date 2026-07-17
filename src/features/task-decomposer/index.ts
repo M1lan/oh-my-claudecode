@@ -14,7 +14,7 @@ import type {
   ProjectContext,
   TaskType,
   ComponentRole,
-  DecompositionStrategy
+  DecompositionStrategy,
 } from './types.js';
 
 // Re-export types
@@ -28,7 +28,7 @@ export type {
   TaskType,
   ComponentRole,
   FileOwnership,
-  DecompositionStrategy
+  DecompositionStrategy,
 } from './types.js';
 
 /**
@@ -36,7 +36,7 @@ export type {
  */
 export async function decomposeTask(
   task: string,
-  projectContext: ProjectContext = { rootDir: process.cwd() }
+  projectContext: ProjectContext = { rootDir: process.cwd() },
 ): Promise<DecompositionResult> {
   // Step 1: Analyze the task
   const analysis = analyzeTask(task, projectContext);
@@ -66,7 +66,7 @@ export async function decomposeTask(
     sharedFiles,
     executionOrder,
     strategy: explainStrategy(analysis, components),
-    warnings
+    warnings,
   };
 }
 
@@ -75,7 +75,7 @@ export async function decomposeTask(
  */
 export function analyzeTask(
   task: string,
-  context: ProjectContext
+  context: ProjectContext,
 ): TaskAnalysis {
   const lower = task.toLowerCase();
 
@@ -108,7 +108,7 @@ export function analyzeTask(
     areas,
     technologies,
     filePatterns,
-    dependencies
+    dependencies,
   };
 }
 
@@ -117,7 +117,7 @@ export function analyzeTask(
  */
 export function identifyComponents(
   analysis: TaskAnalysis,
-  context: ProjectContext
+  context: ProjectContext,
 ): Component[] {
   if (!analysis.isParallelizable) {
     // Single component for non-parallelizable tasks
@@ -130,8 +130,8 @@ export function identifyComponents(
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: analysis.technologies
-      }
+        technologies: analysis.technologies,
+      },
     ];
   }
 
@@ -148,7 +148,7 @@ export function identifyComponents(
 export function generateSubtasks(
   components: Component[],
   analysis: TaskAnalysis,
-  context: ProjectContext
+  context: ProjectContext,
 ): Subtask[] {
   return components.map((component) => {
     const subtask: Subtask = {
@@ -160,13 +160,13 @@ export function generateSubtasks(
         componentId: component.id,
         patterns: [],
         files: [],
-        potentialConflicts: []
+        potentialConflicts: [],
       },
       blockedBy: component.dependencies,
       agentType: selectAgentType(component),
       modelTier: selectModelTier(component),
       acceptanceCriteria: generateAcceptanceCriteria(component, analysis),
-      verification: generateVerificationSteps(component, analysis)
+      verification: generateVerificationSteps(component, analysis),
     };
 
     return subtask;
@@ -179,7 +179,7 @@ export function generateSubtasks(
 export function assignFileOwnership(
   subtasks: Subtask[],
   sharedFiles: SharedFile[],
-  context: ProjectContext
+  context: ProjectContext,
 ): void {
   const assignments = new Map<string, Set<string>>();
 
@@ -223,7 +223,7 @@ export function assignFileOwnership(
  */
 export function identifySharedFiles(
   components: Component[],
-  context: ProjectContext
+  context: ProjectContext,
 ): SharedFile[] {
   const sharedFiles: SharedFile[] = [];
 
@@ -239,7 +239,7 @@ export function identifySharedFiles(
     '.env',
     '.env.example',
     'docker-compose.yml',
-    'Dockerfile'
+    'Dockerfile',
   ];
 
   for (const file of commonShared) {
@@ -250,18 +250,21 @@ export function identifySharedFiles(
         pattern: file,
         reason: 'Common configuration file',
         sharedBy,
-        requiresOrchestration: true
+        requiresOrchestration: true,
       });
     }
   }
 
   // Detect framework-specific shared files
-  if (context.technologies?.includes('react') || context.technologies?.includes('next')) {
+  if (
+    context.technologies?.includes('react') ||
+    context.technologies?.includes('next')
+  ) {
     sharedFiles.push({
       pattern: 'src/types/**',
       reason: 'Shared TypeScript types',
       sharedBy: components.map((c) => c.id),
-      requiresOrchestration: false
+      requiresOrchestration: false,
     });
   }
 
@@ -351,7 +354,7 @@ function estimateComplexity(task: string, type: TaskType): number {
     infrastructure: 0.8,
     migration: 0.8,
     optimization: 0.7,
-    unknown: 0.5
+    unknown: 0.5,
   };
 
   score = typeComplexity[type];
@@ -370,7 +373,7 @@ function estimateComplexity(task: string, type: TaskType): number {
     'architecture',
     'scalable',
     'real-time',
-    'distributed'
+    'distributed',
   ];
 
   for (const keyword of complexKeywords) {
@@ -392,7 +395,7 @@ function extractAreas(task: string, _type: TaskType): string[] {
     auth: ['auth', 'authentication', 'login', 'user'],
     testing: ['test', 'testing', 'spec', 'unit test'],
     docs: ['document', 'docs', 'readme', 'guide'],
-    config: ['config', 'setup', 'environment']
+    config: ['config', 'setup', 'environment'],
   };
 
   for (const [area, keywords] of Object.entries(areaKeywords)) {
@@ -404,10 +407,7 @@ function extractAreas(task: string, _type: TaskType): string[] {
   return areas.length > 0 ? areas : ['main'];
 }
 
-function extractTechnologies(
-  task: string,
-  context: ProjectContext
-): string[] {
+function extractTechnologies(task: string, context: ProjectContext): string[] {
   const techs: string[] = [];
 
   const techKeywords = [
@@ -427,7 +427,7 @@ function extractTechnologies(
     'mongodb',
     'redis',
     'docker',
-    'kubernetes'
+    'kubernetes',
   ];
 
   for (const tech of techKeywords) {
@@ -464,7 +464,7 @@ function extractFilePatterns(task: string, _context: ProjectContext): string[] {
 
 function analyzeDependencies(
   areas: string[],
-  _type: TaskType
+  _type: TaskType,
 ): Array<{ from: string; to: string }> {
   const deps: Array<{ from: string; to: string }> = [];
 
@@ -517,7 +517,10 @@ const fullstackStrategy: DecompositionStrategy = {
     // Frontend component
     if (analysis.areas.includes('frontend') || analysis.areas.includes('ui')) {
       // Only depend on backend if a backend component is also being created
-      const frontendDeps = (analysis.areas.includes('backend') || analysis.areas.includes('api')) ? ['backend'] : [];
+      const frontendDeps =
+        analysis.areas.includes('backend') || analysis.areas.includes('api')
+          ? ['backend']
+          : [];
       components.push({
         id: 'frontend',
         name: 'Frontend',
@@ -527,8 +530,8 @@ const fullstackStrategy: DecompositionStrategy = {
         dependencies: frontendDeps,
         effort: 0.4,
         technologies: analysis.technologies.filter((t) =>
-          ['react', 'vue', 'angular', 'next'].includes(t)
-        )
+          ['react', 'vue', 'angular', 'next'].includes(t),
+        ),
       });
     }
 
@@ -543,8 +546,8 @@ const fullstackStrategy: DecompositionStrategy = {
         dependencies: analysis.areas.includes('database') ? ['database'] : [],
         effort: 0.4,
         technologies: analysis.technologies.filter((t) =>
-          ['express', 'fastify', 'nest', 'node'].includes(t)
-        )
+          ['express', 'fastify', 'nest', 'node'].includes(t),
+        ),
       });
     }
 
@@ -559,8 +562,8 @@ const fullstackStrategy: DecompositionStrategy = {
         dependencies: [],
         effort: 0.2,
         technologies: analysis.technologies.filter((t) =>
-          ['postgres', 'mysql', 'mongodb'].includes(t)
-        )
+          ['postgres', 'mysql', 'mongodb'].includes(t),
+        ),
       });
     }
 
@@ -573,11 +576,11 @@ const fullstackStrategy: DecompositionStrategy = {
       canParallelize: true,
       dependencies: [],
       effort: 0.2,
-      technologies: []
+      technologies: [],
     });
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const refactoringStrategy: DecompositionStrategy = {
@@ -596,12 +599,12 @@ const refactoringStrategy: DecompositionStrategy = {
         canParallelize: true,
         dependencies: [],
         effort: analysis.complexity / analysis.areas.length,
-        technologies: []
+        technologies: [],
       });
     }
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const bugFixStrategy: DecompositionStrategy = {
@@ -618,12 +621,12 @@ const bugFixStrategy: DecompositionStrategy = {
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: []
-      }
+        technologies: [],
+      },
     ];
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const featureStrategy: DecompositionStrategy = {
@@ -642,12 +645,12 @@ const featureStrategy: DecompositionStrategy = {
         canParallelize: true,
         dependencies: [],
         effort: analysis.complexity / analysis.areas.length,
-        technologies: []
+        technologies: [],
       });
     }
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 const defaultStrategy: DecompositionStrategy = {
@@ -663,12 +666,12 @@ const defaultStrategy: DecompositionStrategy = {
         canParallelize: false,
         dependencies: [],
         effort: analysis.complexity,
-        technologies: []
-      }
+        technologies: [],
+      },
     ];
 
     return { components, sharedFiles: [] };
-  }
+  },
 };
 
 // ============================================================================
@@ -678,7 +681,7 @@ const defaultStrategy: DecompositionStrategy = {
 function generatePromptForComponent(
   component: Component,
   analysis: TaskAnalysis,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string {
   let prompt = `${component.description}\n\n`;
 
@@ -714,7 +717,7 @@ function selectAgentType(component: Component): string {
     testing: 'oh-my-claudecode:qa-tester',
     docs: 'oh-my-claudecode:writer',
     config: 'oh-my-claudecode:executor',
-    module: 'oh-my-claudecode:executor'
+    module: 'oh-my-claudecode:executor',
   };
 
   return roleToAgent[component.role] || 'oh-my-claudecode:executor';
@@ -728,7 +731,7 @@ function selectModelTier(component: Component): 'low' | 'medium' | 'high' {
 
 function generateAcceptanceCriteria(
   component: Component,
-  _analysis: TaskAnalysis
+  _analysis: TaskAnalysis,
 ): string[] {
   const criteria: string[] = [];
 
@@ -756,7 +759,7 @@ function generateAcceptanceCriteria(
 
 function generateVerificationSteps(
   component: Component,
-  _analysis: TaskAnalysis
+  _analysis: TaskAnalysis,
 ): string[] {
   const steps: string[] = [];
 
@@ -777,7 +780,7 @@ function generateVerificationSteps(
 
 function inferFilePatterns(
   component: Component,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string[] {
   const patterns: string[] = [];
 
@@ -817,7 +820,7 @@ function inferFilePatterns(
 
 function inferSpecificFiles(
   _component: Component,
-  _context: ProjectContext
+  _context: ProjectContext,
 ): string[] {
   const files: string[] = [];
 
@@ -864,7 +867,7 @@ function calculateExecutionOrder(subtasks: Subtask[]): string[][] {
 
 function validateDecomposition(
   subtasks: Subtask[],
-  sharedFiles: SharedFile[]
+  sharedFiles: SharedFile[],
 ): string[] {
   const warnings: string[] = [];
 
@@ -885,7 +888,7 @@ function validateDecomposition(
       const isShared = sharedFiles.some((sf) => sf.pattern === pattern);
       if (!isShared) {
         warnings.push(
-          `Pattern "${pattern}" is owned by multiple subtasks: ${owners.join(', ')}`
+          `Pattern "${pattern}" is owned by multiple subtasks: ${owners.join(', ')}`,
         );
       }
     }
@@ -904,7 +907,10 @@ function validateDecomposition(
   return warnings;
 }
 
-function explainStrategy(analysis: TaskAnalysis, components: Component[]): string {
+function explainStrategy(
+  analysis: TaskAnalysis,
+  components: Component[],
+): string {
   let explanation = `Task Type: ${analysis.type}\n`;
   explanation += `Parallelizable: ${analysis.isParallelizable ? 'Yes' : 'No'}\n`;
   explanation += `Components: ${components.length}\n\n`;

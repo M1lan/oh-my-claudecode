@@ -31,7 +31,9 @@ describe('getWorkerLiveness', () => {
   });
 
   it('treats missing pane errors as dead after successful cleanup kills', async () => {
-    const error = new Error('display-message failed') as Error & { stderr?: string };
+    const error = new Error('display-message failed') as Error & {
+      stderr?: string;
+    };
     error.stderr = "can't find pane: %1";
     tmuxMocks.tmuxCmdAsync.mockRejectedValueOnce(error);
 
@@ -39,8 +41,11 @@ describe('getWorkerLiveness', () => {
   });
 
   it('keeps ambiguous tmux failures unknown', async () => {
-    const error = new Error('tmux server unavailable') as Error & { stderr?: string };
-    error.stderr = 'error connecting to /tmp/tmux-1000/default (No such file or directory)';
+    const error = new Error('tmux server unavailable') as Error & {
+      stderr?: string;
+    };
+    error.stderr =
+      'error connecting to /tmp/tmux-1000/default (No such file or directory)';
     tmuxMocks.tmuxCmdAsync.mockRejectedValueOnce(error);
 
     await expect(getWorkerLiveness('%1')).resolves.toBe('unknown');

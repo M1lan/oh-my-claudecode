@@ -7,11 +7,11 @@
  * and contributors all reflect the same release dataset.
  *
  * Usage:
- *   npm run release -- patch              # Bump patch version
- *   npm run release -- minor              # Bump minor version
- *   npm run release -- major              # Bump major version
- *   npm run release -- 4.9.0              # Set explicit version
- *   npm run release -- patch --dry-run    # Preview without writing
+ *   pnpm run release -- patch              # Bump patch version
+ *   pnpm run release -- minor              # Bump minor version
+ *   pnpm run release -- major              # Bump major version
+ *   pnpm run release -- 4.9.0              # Set explicit version
+ *   pnpm run release -- patch --dry-run    # Preview without writing
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'fs';
@@ -265,13 +265,13 @@ function bumpVersionFiles(newVersion: string, dryRun: boolean): string[] {
 
   if (!dryRun) {
     try {
-      execSync('npm install --package-lock-only --ignore-scripts 2>/dev/null', { cwd: ROOT });
-      changes.push('package-lock.json: regenerated');
+      execSync('pnpm install --lockfile-only --ignore-scripts 2>/dev/null', { cwd: ROOT });
+      changes.push('pnpm-lock.yaml: regenerated');
     } catch {
-      changes.push('package-lock.json: FAILED to regenerate');
+      changes.push('pnpm-lock.yaml: FAILED to regenerate');
     }
   } else {
-    changes.push('package-lock.json: would regenerate');
+    changes.push('pnpm-lock.yaml: would regenerate');
   }
 
   return changes;
@@ -309,13 +309,13 @@ async function main(): Promise<void> {
 ${clr('Release Automation', c.bold)}
 
 ${clr('Usage:', c.cyan)}
-  npm run release -- <patch|minor|major|X.Y.Z> [--dry-run]
+  pnpm run release -- <patch|minor|major|X.Y.Z> [--dry-run]
 
 ${clr('Examples:', c.cyan)}
-  npm run release -- patch              # 4.8.1 → 4.8.2
-  npm run release -- minor              # 4.8.1 → 4.9.0
-  npm run release -- 5.0.0              # Set explicit version
-  npm run release -- patch --dry-run    # Preview without writing
+  pnpm run release -- patch              # 4.8.1 → 4.8.2
+  pnpm run release -- minor              # 4.8.1 → 4.9.0
+  pnpm run release -- 5.0.0              # Set explicit version
+  pnpm run release -- patch --dry-run    # Preview without writing
 
 ${clr('What it does:', c.cyan)}
   1. Bumps version in all 5 files (package.json, plugin.json, marketplace.json, docs/CLAUDE.md, lockfile)
@@ -329,7 +329,7 @@ ${clr('After running:', c.cyan)}
   # Wait for CI green, then:
   git checkout main && git merge dev && git push origin main
   git tag -a vX.Y.Z -m "vX.Y.Z" && git push origin vX.Y.Z
-  # release.yml handles npm publish + GitHub release
+  # release.yml handles pnpm publish + GitHub release
 `);
     return;
   }
@@ -409,7 +409,7 @@ ${clr('After running:', c.cyan)}
   console.log(clr('\n🔄 Sync Metadata', c.cyan));
   if (!dryRun) {
     try {
-      execSync('npx tsx scripts/sync-metadata.ts', { cwd: ROOT, stdio: 'inherit' });
+      execSync('pnpm exec tsx scripts/sync-metadata.ts', { cwd: ROOT, stdio: 'inherit' });
     } catch {
       console.log(`  ${clr('⚠', c.yellow)} sync-metadata had warnings (non-fatal)`);
     }
@@ -425,7 +425,7 @@ ${clr('After running:', c.cyan)}
     console.log('  3. Wait for CI green');
     console.log(`  4. ${clr('git checkout main && git merge dev && git push origin main', c.cyan)}`);
     console.log(`  5. ${clr(`git tag -a v${newVersion} -m "v${newVersion}" && git push origin v${newVersion}`, c.cyan)}`);
-    console.log('  6. release.yml handles npm publish + GitHub release automatically');
+    console.log('  6. release.yml handles pnpm publish + GitHub release automatically');
   }
 }
 

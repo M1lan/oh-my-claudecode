@@ -41,19 +41,27 @@ describe('GitHubProvider', () => {
 
   describe('detectFromRemote', () => {
     it('returns true for github.com URLs', () => {
-      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(true);
+      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(
+        true,
+      );
     });
 
     it('returns true for github.com SSH URLs', () => {
-      expect(provider.detectFromRemote('git@github.com:user/repo.git')).toBe(true);
+      expect(provider.detectFromRemote('git@github.com:user/repo.git')).toBe(
+        true,
+      );
     });
 
     it('returns false for non-GitHub URLs', () => {
-      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(
+        false,
+      );
     });
 
     it('returns false for bitbucket URLs', () => {
-      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(
+        false,
+      );
     });
   });
 
@@ -73,7 +81,13 @@ describe('GitHubProvider', () => {
 
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'gh',
-        ['pr', 'view', '42', '--json', 'title,headRefName,baseRefName,body,url,author'],
+        [
+          'pr',
+          'view',
+          '42',
+          '--json',
+          'title,headRefName,baseRefName,body,url,author',
+        ],
         expect.objectContaining({ encoding: 'utf-8' }),
       );
       expect(result).toEqual({
@@ -87,20 +101,30 @@ describe('GitHubProvider', () => {
     });
 
     it('includes --repo flag when owner and repo are provided', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'PR',
-        headRefName: 'feat',
-        baseRefName: 'main',
-        body: '',
-        url: '',
-        author: { login: 'u' },
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'PR',
+          headRefName: 'feat',
+          baseRefName: 'main',
+          body: '',
+          url: '',
+          author: { login: 'u' },
+        }),
+      );
 
       provider.viewPR(1, 'owner', 'repo');
 
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'gh',
-        ['pr', 'view', '1', '--repo', 'owner/repo', '--json', 'title,headRefName,baseRefName,body,url,author'],
+        [
+          'pr',
+          'view',
+          '1',
+          '--repo',
+          'owner/repo',
+          '--json',
+          'title,headRefName,baseRefName,body,url,author',
+        ],
         expect.any(Object),
       );
     });
@@ -147,18 +171,28 @@ describe('GitHubProvider', () => {
     });
 
     it('includes --repo flag when owner and repo are provided', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'Issue',
-        body: '',
-        labels: [],
-        url: '',
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'Issue',
+          body: '',
+          labels: [],
+          url: '',
+        }),
+      );
 
       provider.viewIssue(5, 'owner', 'repo');
 
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'gh',
-        ['issue', 'view', '5', '--repo', 'owner/repo', '--json', 'title,body,labels,url'],
+        [
+          'issue',
+          'view',
+          '5',
+          '--repo',
+          'owner/repo',
+          '--json',
+          'title,body,labels,url',
+        ],
         expect.any(Object),
       );
     });

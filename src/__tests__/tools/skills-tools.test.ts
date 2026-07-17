@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { loadLocalTool, loadGlobalTool, listSkillsTool } from '../../tools/skills-tools.js';
+import {
+  loadLocalTool,
+  loadGlobalTool,
+  listSkillsTool,
+} from '../../tools/skills-tools.js';
 
 describe('skills-tools', () => {
   describe('loadLocalTool', () => {
@@ -17,13 +21,15 @@ describe('skills-tools', () => {
     });
 
     it('should reject path traversal in projectRoot', async () => {
-      await expect(loadLocalTool.handler({ projectRoot: '../../etc' }))
-        .rejects.toThrow('path traversal');
+      await expect(
+        loadLocalTool.handler({ projectRoot: '../../etc' }),
+      ).rejects.toThrow('path traversal');
     });
 
     it('should reject absolute paths outside allowed dirs', async () => {
-      await expect(loadLocalTool.handler({ projectRoot: '/etc' }))
-        .rejects.toThrow('outside allowed directories');
+      await expect(
+        loadLocalTool.handler({ projectRoot: '/etc' }),
+      ).rejects.toThrow('outside allowed directories');
     });
 
     it('should not expose absolute home paths in output', async () => {
@@ -61,13 +67,15 @@ describe('skills-tools', () => {
     });
 
     it('should reject path traversal in projectRoot', async () => {
-      await expect(listSkillsTool.handler({ projectRoot: '../../../tmp' }))
-        .rejects.toThrow('path traversal');
+      await expect(
+        listSkillsTool.handler({ projectRoot: '../../../tmp' }),
+      ).rejects.toThrow('path traversal');
     });
 
     it('should reject absolute paths outside allowed dirs', async () => {
-      await expect(listSkillsTool.handler({ projectRoot: '/tmp/evil' }))
-        .rejects.toThrow('outside allowed directories');
+      await expect(
+        listSkillsTool.handler({ projectRoot: '/tmp/evil' }),
+      ).rejects.toThrow('outside allowed directories');
     });
   });
 });

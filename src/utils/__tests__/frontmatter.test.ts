@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { stripOptionalQuotes, parseFrontmatter, parseFrontmatterAliases } from '../frontmatter.js';
+import {
+  stripOptionalQuotes,
+  parseFrontmatter,
+  parseFrontmatterAliases,
+} from '../frontmatter.js';
 
 describe('stripOptionalQuotes', () => {
   it('strips double quotes', () => {
@@ -132,7 +136,11 @@ Line 3`;
 
 describe('parseFrontmatterAliases', () => {
   it('parses inline YAML list', () => {
-    expect(parseFrontmatterAliases('[foo, bar, baz]')).toEqual(['foo', 'bar', 'baz']);
+    expect(parseFrontmatterAliases('[foo, bar, baz]')).toEqual([
+      'foo',
+      'bar',
+      'baz',
+    ]);
   });
 
   it('parses single value', () => {
@@ -168,6 +176,10 @@ describe('parseFrontmatterAliases', () => {
   });
 
   it('handles list with spaces around items', () => {
-    expect(parseFrontmatterAliases('[ foo , bar , baz ]')).toEqual(['foo', 'bar', 'baz']);
+    expect(parseFrontmatterAliases('[ foo , bar , baz ]')).toEqual([
+      'foo',
+      'bar',
+      'baz',
+    ]);
   });
 });

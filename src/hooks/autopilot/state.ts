@@ -7,8 +7,8 @@
  * - State machine operations
  */
 
-import { mkdirSync, statSync } from "fs";
-import { join } from "path";
+import { mkdirSync, statSync } from 'fs';
+import { join } from 'path';
 import {
   writeModeState,
   readModeState,
@@ -16,40 +16,40 @@ import {
   emergencyMutateStateFileIf,
   recoverEmergencyStateFile,
   writeStateFileLockedIf,
-} from "../../lib/mode-state-io.js";
+} from '../../lib/mode-state-io.js';
 import {
   resolveStatePath,
   resolveSessionStatePath,
   getOmcRoot,
-} from "../../lib/worktree-paths.js";
+} from '../../lib/worktree-paths.js';
 import type {
   AutopilotState,
   AutopilotPhase,
   AutopilotConfig,
-} from "./types.js";
-import { DEFAULT_CONFIG } from "./types.js";
+} from './types.js';
+import { DEFAULT_CONFIG } from './types.js';
 
-import { loadConfig } from "../../config/loader.js";
-import { resolvePlanOutputAbsolutePath } from "../../config/plan-output.js";
+import { loadConfig } from '../../config/loader.js';
+import { resolvePlanOutputAbsolutePath } from '../../config/plan-output.js';
 import {
   readRalphState,
   writeRalphState,
   clearRalphState,
   clearLinkedUltraworkState,
-} from "../ralph/index.js";
+} from '../ralph/index.js';
 import {
   startUltraQA,
   clearUltraQAState,
   readUltraQAState,
-} from "../ultraqa/index.js";
-import { canStartMode } from "../mode-registry/index.js";
+} from '../ultraqa/index.js';
+import { canStartMode } from '../mode-registry/index.js';
 import {
   namedWorkflowRuntimeSupported,
   validateNamedWorkflowState,
   validateNamedWorkflowStateStructure,
-} from "./named-workflow-resume-validator.js";
+} from './named-workflow-resume-validator.js';
 
-const SPEC_DIR = "autopilot";
+const SPEC_DIR = 'autopilot';
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -72,16 +72,14 @@ export function readAutopilotState(
   sessionId?: string,
 ): AutopilotState | null {
   const stateFile = sessionId
-    ? resolveSessionStatePath("autopilot", sessionId, directory)
-    : resolveStatePath("autopilot", directory);
+    ? resolveSessionStatePath('autopilot', sessionId, directory)
+    : resolveStatePath('autopilot', directory);
   if (!recoverEmergencyStateFile(stateFile)) {
     return null;
   }
-  const state = readModeState<AutopilotState & { current_phase?: AutopilotPhase }>(
-    "autopilot",
-    directory,
-    sessionId,
-  );
+  const state = readModeState<
+    AutopilotState & { current_phase?: AutopilotPhase }
+  >('autopilot', directory, sessionId);
 
   if (state && !state.phase && state.current_phase) {
     state.phase = state.current_phase;
@@ -109,30 +107,26 @@ export function writeAutopilotState(
   sessionId?: string,
 ): boolean {
   const stateRecord = state as unknown as Record<string, unknown>;
-  const phase = typeof stateRecord.phase === "string"
-    ? stateRecord.phase
-    : typeof stateRecord.current_phase === "string"
-      ? stateRecord.current_phase
-      : undefined;
+  const phase =
+    typeof stateRecord.phase === 'string'
+      ? stateRecord.phase
+      : typeof stateRecord.current_phase === 'string'
+        ? stateRecord.current_phase
+        : undefined;
   const normalizedState = phase
     ? { ...stateRecord, phase, current_phase: phase }
     : stateRecord;
 
-  return writeModeState(
-    "autopilot",
-    normalizedState,
-    directory,
-    sessionId,
-  );
+  return writeModeState('autopilot', normalizedState, directory, sessionId);
 }
 
 function hasNamedWorkflowMarkers(state: unknown): boolean {
   return Boolean(
     state &&
-      typeof state === "object" &&
-      ["workflow", "workflowRunId", "pipelineTracking"].some((marker) =>
-        Object.prototype.hasOwnProperty.call(state, marker),
-      ),
+    typeof state === 'object' &&
+    ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) =>
+      Object.prototype.hasOwnProperty.call(state, marker),
+    ),
   );
 }
 
@@ -151,26 +145,51 @@ export function clearAutopilotState(
     if (!valid) return false;
     if (!namedWorkflowRuntimeSupported()) {
       const stateFile = sessionId
-        ? resolveSessionStatePath("autopilot", sessionId, directory)
-        : resolveStatePath("autopilot", directory);
-      const expectedSnapshot = canonicalStateJson(Object.fromEntries(Object.entries(expectedState as unknown as Record<string, unknown>).filter(([key]) => key !== "_meta")));
+        ? resolveSessionStatePath('autopilot', sessionId, directory)
+        : resolveStatePath('autopilot', directory);
+      const expectedSnapshot = canonicalStateJson(
+        Object.fromEntries(
+          Object.entries(
+            expectedState as unknown as Record<string, unknown>,
+          ).filter(([key]) => key !== '_meta'),
+        ),
+      );
       return emergencyMutateStateFileIf(
         stateFile,
-        (current) => canonicalStateJson(Object.fromEntries(Object.entries(current).filter(([key]) => key !== "_meta"))) === expectedSnapshot,
+        (current) =>
+          canonicalStateJson(
+            Object.fromEntries(
+              Object.entries(current).filter(([key]) => key !== '_meta'),
+            ),
+          ) === expectedSnapshot,
         null,
       );
     }
   }
-  return clearModeStateFile("autopilot", directory, sessionId, expectedState as unknown as Record<string, unknown> | undefined);
+  return clearModeStateFile(
+    'autopilot',
+    directory,
+    sessionId,
+    expectedState as unknown as Record<string, unknown> | undefined,
+  );
 }
 
-function sameAutopilotRun(current: Record<string, unknown>, observed: AutopilotState): boolean {
-  const currentWorkflow = current.workflow as Record<string, unknown> | undefined;
-  const observedWorkflow = observed.workflow as unknown as Record<string, unknown> | undefined;
-  return current.session_id === observed.session_id &&
+function sameAutopilotRun(
+  current: Record<string, unknown>,
+  observed: AutopilotState,
+): boolean {
+  const currentWorkflow = current.workflow as
+    | Record<string, unknown>
+    | undefined;
+  const observedWorkflow = observed.workflow as unknown as
+    | Record<string, unknown>
+    | undefined;
+  return (
+    current.session_id === observed.session_id &&
     current.started_at === observed.started_at &&
     current.workflowRunId === observed.workflowRunId &&
-    currentWorkflow?.profileHash === observedWorkflow?.profileHash;
+    currentWorkflow?.profileHash === observedWorkflow?.profileHash
+  );
 }
 
 export function updateAutopilotStateIfCurrent(
@@ -180,26 +199,47 @@ export function updateAutopilotStateIfCurrent(
   sessionId?: string,
 ): AutopilotState | null {
   const stateFile = sessionId
-    ? resolveSessionStatePath("autopilot", sessionId, directory)
-    : resolveStatePath("autopilot", directory);
+    ? resolveSessionStatePath('autopilot', sessionId, directory)
+    : resolveStatePath('autopilot', directory);
   if (hasNamedWorkflowMarkers(observed)) {
     const valid = namedWorkflowRuntimeSupported()
       ? validateNamedWorkflowState(observed, sessionId)
       : validateNamedWorkflowStateStructure(observed, sessionId);
     if (!valid) return null;
     if (!namedWorkflowRuntimeSupported()) {
-      const observedSnapshot = canonicalStateJson(Object.fromEntries(Object.entries(observed as unknown as Record<string, unknown>).filter(([key]) => key !== "_meta")));
+      const observedSnapshot = canonicalStateJson(
+        Object.fromEntries(
+          Object.entries(observed as unknown as Record<string, unknown>).filter(
+            ([key]) => key !== '_meta',
+          ),
+        ),
+      );
       return emergencyMutateStateFileIf(
         stateFile,
-        (current) => canonicalStateJson(Object.fromEntries(Object.entries(current).filter(([key]) => key !== "_meta"))) === observedSnapshot,
+        (current) =>
+          canonicalStateJson(
+            Object.fromEntries(
+              Object.entries(current).filter(([key]) => key !== '_meta'),
+            ),
+          ) === observedSnapshot,
         (current) => ({ ...current, ...update }),
-      ) ? readAutopilotState(directory, sessionId) : null;
+      )
+        ? readAutopilotState(directory, sessionId)
+        : null;
     }
   }
   let updated: AutopilotState | null = null;
   const result = writeStateFileLockedIf(
     stateFile,
-    (current) => sameAutopilotRun(current, observed) && (!hasNamedWorkflowMarkers(observed) || Boolean(validateNamedWorkflowState(current as unknown as AutopilotState, sessionId))),
+    (current) =>
+      sameAutopilotRun(current, observed) &&
+      (!hasNamedWorkflowMarkers(observed) ||
+        Boolean(
+          validateNamedWorkflowState(
+            current as unknown as AutopilotState,
+            sessionId,
+          ),
+        )),
     (current) => {
       const next = { ...current, ...update } as unknown as AutopilotState;
       updated = next;
@@ -210,10 +250,14 @@ export function updateAutopilotStateIfCurrent(
 }
 
 function canonicalStateJson(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonicalStateJson).join(",")}]`;
-  if (value && typeof value === "object") {
+  if (Array.isArray(value))
+    return `[${value.map(canonicalStateJson).join(',')}]`;
+  if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${canonicalStateJson(record[key])}`).join(",")}}`;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalStateJson(record[key])}`)
+      .join(',')}}`;
   }
   return JSON.stringify(value);
 }
@@ -238,30 +282,45 @@ export function updateAutopilotStateIfExact(
   validateCurrent: (current: AutopilotState) => boolean,
 ): AutopilotState | null {
   const stateFile = sessionId
-    ? resolveSessionStatePath("autopilot", sessionId, directory)
-    : resolveStatePath("autopilot", directory);
-  const observedSnapshot = canonicalStateJson(Object.fromEntries(Object.entries(observed as unknown as Record<string, unknown>).filter(([key]) => key !== "_meta")));
+    ? resolveSessionStatePath('autopilot', sessionId, directory)
+    : resolveStatePath('autopilot', directory);
+  const observedSnapshot = canonicalStateJson(
+    Object.fromEntries(
+      Object.entries(observed as unknown as Record<string, unknown>).filter(
+        ([key]) => key !== '_meta',
+      ),
+    ),
+  );
   if (!namedWorkflowRuntimeSupported()) {
     return emergencyMutateStateFileIf(
       stateFile,
       (current) =>
         current.workflowRunId === observed.workflowRunId &&
-        canonicalStateJson(Object.fromEntries(Object.entries(current).filter(([key]) => key !== "_meta"))) === observedSnapshot &&
+        canonicalStateJson(
+          Object.fromEntries(
+            Object.entries(current).filter(([key]) => key !== '_meta'),
+          ),
+        ) === observedSnapshot &&
         validateCurrent(current as unknown as AutopilotState),
       (current) => ({ ...current, ...update }),
-    ) ? readAutopilotState(directory, sessionId) : null;
+    )
+      ? readAutopilotState(directory, sessionId)
+      : null;
   }
   let updated: AutopilotState | null = null;
   const result = writeStateFileLockedIf(
     stateFile,
-    (current) => namedResumeIdentity(current) === namedResumeIdentity(observed as unknown as Record<string, unknown>) && validateCurrent(current as unknown as AutopilotState),
+    (current) =>
+      namedResumeIdentity(current) ===
+        namedResumeIdentity(observed as unknown as Record<string, unknown>) &&
+      validateCurrent(current as unknown as AutopilotState),
     (current) => {
       const next = { ...current, ...update } as unknown as AutopilotState;
       updated = next;
       return next as unknown as Record<string, unknown>;
     },
   );
-  return result === "written" ? updated : null;
+  return result === 'written' ? updated : null;
 }
 
 /**
@@ -273,14 +332,14 @@ export function getAutopilotStateAge(
   sessionId?: string,
 ): number | null {
   const stateFile = sessionId
-    ? resolveSessionStatePath("autopilot", sessionId, directory)
-    : resolveStatePath("autopilot", directory);
+    ? resolveSessionStatePath('autopilot', sessionId, directory)
+    : resolveStatePath('autopilot', directory);
   if (!recoverEmergencyStateFile(stateFile)) return null;
   try {
     const stats = statSync(stateFile);
     return Date.now() - stats.mtimeMs;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
     }
     return null;
@@ -298,7 +357,6 @@ export function isAutopilotActive(
   return state !== null && state.active === true;
 }
 
-
 /**
  * Initialize a new autopilot session
  */
@@ -309,7 +367,7 @@ export function initAutopilot(
   config?: Partial<AutopilotConfig>,
 ): AutopilotState | null {
   // Mutual exclusion check via mode-registry
-  const canStart = canStartMode("autopilot", directory);
+  const canStart = canStartMode('autopilot', directory);
   if (!canStart.allowed) {
     console.error(canStart.message);
     return null;
@@ -320,8 +378,8 @@ export function initAutopilot(
 
   const state: AutopilotState = {
     active: true,
-    phase: "expansion",
-    current_phase: "expansion",
+    phase: 'expansion',
+    current_phase: 'expansion',
     iteration: 1,
     max_iterations: mergedConfig.maxIterations ?? 10,
     originalIdea: idea,
@@ -330,7 +388,7 @@ export function initAutopilot(
       analyst_complete: false,
       architect_complete: false,
       spec_path: null,
-      requirements_summary: "",
+      requirements_summary: '',
       tech_stack: [],
     },
 
@@ -351,9 +409,9 @@ export function initAutopilot(
 
     qa: {
       ultraqa_cycles: 0,
-      build_status: "pending",
-      lint_status: "pending",
-      test_status: "pending",
+      build_status: 'pending',
+      lint_status: 'pending',
+      test_status: 'pending',
     },
 
     validation: {
@@ -404,10 +462,11 @@ export function transitionPhase(
 
   // Transition to new phase and record start time
   state.phase = newPhase;
-  (state as AutopilotState & { current_phase?: AutopilotPhase }).current_phase = newPhase;
+  (state as AutopilotState & { current_phase?: AutopilotPhase }).current_phase =
+    newPhase;
   state.phase_durations[`${newPhase}_start_ms`] = Date.now();
 
-  if (newPhase === "complete" || newPhase === "failed") {
+  if (newPhase === 'complete' || newPhase === 'failed') {
     state.completed_at = now;
     state.active = false;
   }
@@ -436,7 +495,7 @@ export function incrementAgentCount(
  */
 export function updateExpansion(
   directory: string,
-  updates: Partial<AutopilotState["expansion"]>,
+  updates: Partial<AutopilotState['expansion']>,
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
@@ -451,7 +510,7 @@ export function updateExpansion(
  */
 export function updatePlanning(
   directory: string,
-  updates: Partial<AutopilotState["planning"]>,
+  updates: Partial<AutopilotState['planning']>,
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
@@ -466,7 +525,7 @@ export function updatePlanning(
  */
 export function updateExecution(
   directory: string,
-  updates: Partial<AutopilotState["execution"]>,
+  updates: Partial<AutopilotState['execution']>,
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
@@ -481,7 +540,7 @@ export function updateExecution(
  */
 export function updateQA(
   directory: string,
-  updates: Partial<AutopilotState["qa"]>,
+  updates: Partial<AutopilotState['qa']>,
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
@@ -496,7 +555,7 @@ export function updateQA(
  */
 export function updateValidation(
   directory: string,
-  updates: Partial<AutopilotState["validation"]>,
+  updates: Partial<AutopilotState['validation']>,
   sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
@@ -510,7 +569,7 @@ export function updateValidation(
  * Get the spec file path
  */
 export function getSpecPath(directory: string): string {
-  return join(getOmcRoot(directory), SPEC_DIR, "spec.md");
+  return join(getOmcRoot(directory), SPEC_DIR, 'spec.md');
 }
 
 /**
@@ -519,7 +578,7 @@ export function getSpecPath(directory: string): string {
 export function getPlanPath(directory: string): string {
   return resolvePlanOutputAbsolutePath(
     directory,
-    "autopilot-impl",
+    'autopilot-impl',
     loadConfig(),
   );
 }
@@ -549,10 +608,10 @@ export function transitionRalphToUltraQA(
 ): TransitionResult {
   const autopilotState = readAutopilotState(directory, sessionId);
 
-  if (!autopilotState || autopilotState.phase !== "execution") {
+  if (!autopilotState || autopilotState.phase !== 'execution') {
     return {
       success: false,
-      error: "Not in execution phase - cannot transition to QA",
+      error: 'Not in execution phase - cannot transition to QA',
     };
   }
 
@@ -573,7 +632,7 @@ export function transitionRalphToUltraQA(
   if (!executionUpdated) {
     return {
       success: false,
-      error: "Failed to update execution state",
+      error: 'Failed to update execution state',
     };
   }
 
@@ -587,7 +646,7 @@ export function transitionRalphToUltraQA(
   }
 
   // Step 3: Transition to QA phase
-  const newState = transitionPhase(directory, "qa", sessionId);
+  const newState = transitionPhase(directory, 'qa', sessionId);
   if (!newState) {
     // Rollback: re-activate Ralph
     if (ralphState) {
@@ -595,12 +654,12 @@ export function transitionRalphToUltraQA(
     }
     return {
       success: false,
-      error: "Failed to transition to QA phase",
+      error: 'Failed to transition to QA phase',
     };
   }
 
   // Step 4: Start UltraQA (Ralph is deactivated, mutual exclusion passes)
-  const qaResult = startUltraQA(directory, "tests", sessionId, {
+  const qaResult = startUltraQA(directory, 'tests', sessionId, {
     maxCycles: 5,
   });
 
@@ -609,12 +668,12 @@ export function transitionRalphToUltraQA(
     if (ralphState) {
       writeRalphState(directory, ralphState, sessionId);
     }
-    transitionPhase(directory, "execution", sessionId);
+    transitionPhase(directory, 'execution', sessionId);
     updateExecution(directory, { ralph_completed_at: undefined }, sessionId);
 
     return {
       success: false,
-      error: qaResult.error || "Failed to start UltraQA",
+      error: qaResult.error || 'Failed to start UltraQA',
     };
   }
 
@@ -636,10 +695,10 @@ export function transitionUltraQAToValidation(
 ): TransitionResult {
   const autopilotState = readAutopilotState(directory, sessionId);
 
-  if (!autopilotState || autopilotState.phase !== "qa") {
+  if (!autopilotState || autopilotState.phase !== 'qa') {
     return {
       success: false,
-      error: "Not in QA phase - cannot transition to validation",
+      error: 'Not in QA phase - cannot transition to validation',
     };
   }
 
@@ -658,7 +717,7 @@ export function transitionUltraQAToValidation(
   if (!qaUpdated) {
     return {
       success: false,
-      error: "Failed to update QA state",
+      error: 'Failed to update QA state',
     };
   }
 
@@ -666,11 +725,11 @@ export function transitionUltraQAToValidation(
   clearUltraQAState(directory, sessionId);
 
   // Transition to validation
-  const newState = transitionPhase(directory, "validation", sessionId);
+  const newState = transitionPhase(directory, 'validation', sessionId);
   if (!newState) {
     return {
       success: false,
-      error: "Failed to transition to validation phase",
+      error: 'Failed to transition to validation phase',
     };
   }
 
@@ -687,12 +746,12 @@ export function transitionToComplete(
   directory: string,
   sessionId?: string,
 ): TransitionResult {
-  const state = transitionPhase(directory, "complete", sessionId);
+  const state = transitionPhase(directory, 'complete', sessionId);
 
   if (!state) {
     return {
       success: false,
-      error: "Failed to transition to complete phase",
+      error: 'Failed to transition to complete phase',
     };
   }
 
@@ -707,12 +766,12 @@ export function transitionToFailed(
   error: string,
   sessionId?: string,
 ): TransitionResult {
-  const state = transitionPhase(directory, "failed", sessionId);
+  const state = transitionPhase(directory, 'failed', sessionId);
 
   if (!state) {
     return {
       success: false,
-      error: "Failed to transition to failed phase",
+      error: 'Failed to transition to failed phase',
     };
   }
 
@@ -726,7 +785,7 @@ export function getTransitionPrompt(
   fromPhase: string,
   toPhase: string,
 ): string {
-  if (fromPhase === "execution" && toPhase === "qa") {
+  if (fromPhase === 'execution' && toPhase === 'qa') {
     return `## PHASE TRANSITION: Execution → QA
 
 The execution phase is complete. Transitioning to QA phase.
@@ -749,7 +808,7 @@ Signal when QA passes: QA_COMPLETE
 `;
   }
 
-  if (fromPhase === "qa" && toPhase === "validation") {
+  if (fromPhase === 'qa' && toPhase === 'validation') {
     return `## PHASE TRANSITION: QA → Validation
 
 All QA checks have passed. Transitioning to validation phase.
@@ -779,7 +838,7 @@ Aggregate verdicts:
 `;
   }
 
-  if (fromPhase === "expansion" && toPhase === "planning") {
+  if (fromPhase === 'expansion' && toPhase === 'planning') {
     return `## PHASE TRANSITION: Expansion → Planning
 
 The idea has been expanded into a detailed specification.
@@ -790,7 +849,7 @@ Signal when Critic approves the plan: PLANNING_COMPLETE
 `;
   }
 
-  if (fromPhase === "planning" && toPhase === "execution") {
+  if (fromPhase === 'planning' && toPhase === 'execution') {
     return `## PHASE TRANSITION: Planning → Execution
 
 The plan has been approved. Starting execution phase with Ralph + Ultrawork.
@@ -801,5 +860,5 @@ Signal when all tasks complete: EXECUTION_COMPLETE
 `;
   }
 
-  return "";
+  return '';
 }

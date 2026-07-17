@@ -4,7 +4,11 @@ import * as net from 'net';
 import * as os from 'os';
 import * as path from 'path';
 
-import { getBridgePortPath, getBridgeSocketPath, getSessionDir } from '../paths.js';
+import {
+  getBridgePortPath,
+  getBridgeSocketPath,
+  getSessionDir,
+} from '../paths.js';
 import { sendSocketRequest } from '../socket-client.js';
 
 // =============================================================================
@@ -49,11 +53,12 @@ describe('sendSocketRequest TCP fallback', () => {
         if (nl !== -1) {
           const line = buf.slice(0, nl);
           const req = JSON.parse(line);
-          const response = JSON.stringify({
-            jsonrpc: '2.0',
-            id: req.id,
-            result: { status: 'ok', method: req.method },
-          }) + '\n';
+          const response =
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: req.id,
+              result: { status: 'ok', method: req.method },
+            }) + '\n';
           conn.write(response);
         }
       });
@@ -78,7 +83,7 @@ describe('sendSocketRequest TCP fallback', () => {
       `tcp:${serverPort}`,
       'ping',
       {},
-      5000
+      5000,
     );
 
     expect(result.status).toBe('ok');
@@ -97,11 +102,12 @@ describe('sendSocketRequest TCP fallback', () => {
         if (nl !== -1) {
           const line = buf.slice(0, nl);
           const req = JSON.parse(line);
-          const response = JSON.stringify({
-            jsonrpc: '2.0',
-            id: req.id,
-            result: { params: req.params },
-          }) + '\n';
+          const response =
+            JSON.stringify({
+              jsonrpc: '2.0',
+              id: req.id,
+              result: { params: req.params },
+            }) + '\n';
           conn.write(response);
         }
       });
@@ -118,7 +124,7 @@ describe('sendSocketRequest TCP fallback', () => {
       `tcp:${port}`,
       'execute',
       { code: 'print("hello")' },
-      5000
+      5000,
     );
 
     expect(result.params).toEqual({ code: 'print("hello")' });
@@ -127,7 +133,7 @@ describe('sendSocketRequest TCP fallback', () => {
   it('falls back to path-based socket for non-tcp: prefixes', async () => {
     // Attempting to connect to a non-existent socket path should throw SocketConnectionError
     await expect(
-      sendSocketRequest('/tmp/nonexistent-test-socket.sock', 'ping', {}, 1000)
+      sendSocketRequest('/tmp/nonexistent-test-socket.sock', 'ping', {}, 1000),
     ).rejects.toThrow(/socket/i);
   });
 });

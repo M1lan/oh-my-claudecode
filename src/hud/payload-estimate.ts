@@ -7,15 +7,15 @@
  * screenshot/tool-output-heavy sessions, not an exact API payload byte count.
  */
 
-import { closeSync, existsSync, openSync, readSync, statSync } from "fs";
+import { closeSync, existsSync, openSync, readSync, statSync } from 'fs';
 
 export const ANTHROPIC_REQUEST_PAYLOAD_LIMIT_BYTES = 32_000_000;
 export const PAYLOAD_WARNING_BYTES = 22_000_000;
 export const PAYLOAD_CRITICAL_BYTES = 26_000_000;
 
-export type PayloadPressure = "normal" | "warning" | "critical";
+export type PayloadPressure = 'normal' | 'warning' | 'critical';
 
-const COMPACT_BOUNDARY_MARKER = "compact_boundary";
+const COMPACT_BOUNDARY_MARKER = 'compact_boundary';
 const COMPACT_BOUNDARY_MARKER_BYTES = Buffer.from(COMPACT_BOUNDARY_MARKER);
 const SCAN_CHUNK_BYTES = 64 * 1024;
 const MAX_BOUNDARY_LINE_BYTES = 256 * 1024;
@@ -32,9 +32,9 @@ export interface PayloadEstimate {
 }
 
 function toPressure(bytes: number): PayloadPressure {
-  if (bytes >= PAYLOAD_CRITICAL_BYTES) return "critical";
-  if (bytes >= PAYLOAD_WARNING_BYTES) return "warning";
-  return "normal";
+  if (bytes >= PAYLOAD_CRITICAL_BYTES) return 'critical';
+  if (bytes >= PAYLOAD_WARNING_BYTES) return 'warning';
+  return 'normal';
 }
 
 export function formatPayloadMegabytes(bytes: number): string {
@@ -63,7 +63,7 @@ export function createPayloadEstimate(
   };
 }
 function containsCompactBoundaryMarker(value: unknown): boolean {
-  if (!value || typeof value !== "object") return false;
+  if (!value || typeof value !== 'object') return false;
 
   if (Array.isArray(value)) {
     return value.some(containsCompactBoundaryMarker);
@@ -72,10 +72,10 @@ function containsCompactBoundaryMarker(value: unknown): boolean {
   return Object.entries(value).some(([key, nestedValue]) => {
     if (key === COMPACT_BOUNDARY_MARKER) return true;
     if (
-      (key === "type" ||
-        key === "subtype" ||
-        key === "event" ||
-        key === "kind") &&
+      (key === 'type' ||
+        key === 'subtype' ||
+        key === 'event' ||
+        key === 'kind') &&
       nestedValue === COMPACT_BOUNDARY_MARKER
     ) {
       return true;
@@ -85,7 +85,7 @@ function containsCompactBoundaryMarker(value: unknown): boolean {
 }
 
 function isCompactBoundaryLine(line: Buffer): boolean {
-  const text = line.toString("utf8").trim();
+  const text = line.toString('utf8').trim();
   if (!text.includes(COMPACT_BOUNDARY_MARKER)) return false;
   if (text === COMPACT_BOUNDARY_MARKER) return true;
 
@@ -160,7 +160,7 @@ function findLastCompactBoundaryEndOffset(
 ): number | null {
   if (size <= 0) return null;
 
-  const fd = openSync(transcriptPath, "r");
+  const fd = openSync(transcriptPath, 'r');
   try {
     let end = size;
     const buffer = Buffer.allocUnsafe(Math.min(SCAN_CHUNK_BYTES, size));

@@ -14,38 +14,54 @@ export const ALLOWED_PATH_PREFIX = '.omc/';
 /** Path patterns that orchestrator IS allowed to modify directly.
  *  Paths are normalized to forward slashes before matching (via toForwardSlash). */
 export const ALLOWED_PATH_PATTERNS = [
-  /^\.omc\//,                    // .omc/**
-  /^\.claude\//,                 // .claude/** (local)
-  /^~?\/\.claude\//,             // legacy ~/.claude/** references
-  /\/\.claude\//,                // any /.claude/ path
-  /CLAUDE\.md$/,                 // **/CLAUDE.md
-  /AGENTS\.md$/,                 // **/AGENTS.md
+  /^\.omc\//, // .omc/**
+  /^\.claude\//, // .claude/** (local)
+  /^~?\/\.claude\//, // legacy ~/.claude/** references
+  /\/\.claude\//, // any /.claude/ path
+  /CLAUDE\.md$/, // **/CLAUDE.md
+  /AGENTS\.md$/, // **/AGENTS.md
 ];
 
 /** Source file extensions that should trigger delegation warnings */
 export const WARNED_EXTENSIONS = [
   // JavaScript/TypeScript
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
   // Python
-  '.py', '.pyw',
+  '.py',
+  '.pyw',
   // Go
   '.go',
   // Rust
   '.rs',
   // Java/JVM
-  '.java', '.kt', '.scala',
+  '.java',
+  '.kt',
+  '.scala',
   // C/C++
-  '.c', '.cpp', '.cc', '.h', '.hpp',
+  '.c',
+  '.cpp',
+  '.cc',
+  '.h',
+  '.hpp',
   // Ruby
   '.rb',
   // PHP
   '.php',
   // Frontend frameworks
-  '.svelte', '.vue',
+  '.svelte',
+  '.vue',
   // GraphQL
-  '.graphql', '.gql',
+  '.graphql',
+  '.gql',
   // Shell
-  '.sh', '.bash', '.zsh',
+  '.sh',
+  '.bash',
+  '.zsh',
 ];
 
 /** Tools that perform file modifications */

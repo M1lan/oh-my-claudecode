@@ -1,13 +1,21 @@
 import { describe, it, expect, vi } from 'vitest';
 import { existsSync } from 'fs';
 import { execSync } from 'child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
-const tmuxMocks = vi.hoisted(() => ({ getWorkerLiveness: vi.fn(async () => 'dead' as const) }));
-vi.mock('../tmux-session.js', async importOriginal => ({
-  ...await importOriginal<typeof import('../tmux-session.js')>(),
+const tmuxMocks = vi.hoisted(() => ({
+  getWorkerLiveness: vi.fn(async () => 'dead' as const),
+}));
+vi.mock('../tmux-session.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../tmux-session.js')>()),
   getWorkerLiveness: tmuxMocks.getWorkerLiveness,
 }));
 import { processCliWorkerVerdicts } from '../runtime-v2.js';
@@ -39,9 +47,16 @@ describe.skipIf(!SHOULD_RUN)('critic CLI worker integration (AC-7)', () => {
       const teamName = 'critic-int';
       const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
       mkdirSync(join(teamRoot, 'tasks'), { recursive: true });
-      mkdirSync(join(teamRoot, 'workers', 'worker-critic'), { recursive: true });
+      mkdirSync(join(teamRoot, 'workers', 'worker-critic'), {
+        recursive: true,
+      });
 
-      const outputFile = join(teamRoot, 'workers', 'worker-critic', 'verdict.json');
+      const outputFile = join(
+        teamRoot,
+        'workers',
+        'worker-critic',
+        'verdict.json',
+      );
 
       writeFileSync(
         join(teamRoot, 'config.json'),
@@ -114,7 +129,9 @@ describe.skipIf(!SHOULD_RUN)('critic CLI worker integration (AC-7)', () => {
       );
 
       const { readTeamConfig } = await import('../monitor.js');
-      expect((await readTeamConfig(teamName, cwd))?.workers[0]?.output_file).toBe(outputFile);
+      expect(
+        (await readTeamConfig(teamName, cwd))?.workers[0]?.output_file,
+      ).toBe(outputFile);
       const results = await processCliWorkerVerdicts(teamName, cwd);
       expect(tmuxMocks.getWorkerLiveness).toHaveBeenCalledWith('%dead');
       expect(results).toHaveLength(1);

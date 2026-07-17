@@ -36,8 +36,10 @@ let mockTasks: Array<{
 }> = [];
 
 vi.mock('../team/task-file-ops.js', () => ({
-  listTaskIds: vi.fn(() => mockTasks.map(t => t.id)),
-  readTask: vi.fn((_, id: string) => mockTasks.find(t => t.id === id) || null),
+  listTaskIds: vi.fn(() => mockTasks.map((t) => t.id)),
+  readTask: vi.fn(
+    (_, id: string) => mockTasks.find((t) => t.id === id) || null,
+  ),
 }));
 
 import { getTeamStatus } from '../team/team-status.js';
@@ -57,7 +59,9 @@ describe('team-status failed count', () => {
       { id: '4', status: 'in_progress' },
     ];
 
-    const status = getTeamStatus('test-team', '/tmp/test', 30000, { includeUsage: false });
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
+      includeUsage: false,
+    });
 
     expect(status.taskSummary.total).toBe(4);
     expect(status.taskSummary.completed).toBe(1);
@@ -65,8 +69,11 @@ describe('team-status failed count', () => {
     expect(status.taskSummary.pending).toBe(1);
     expect(status.taskSummary.inProgress).toBe(1);
     // Verify sum equals total
-    const sum = status.taskSummary.completed + status.taskSummary.failed +
-                status.taskSummary.pending + status.taskSummary.inProgress;
+    const sum =
+      status.taskSummary.completed +
+      status.taskSummary.failed +
+      status.taskSummary.pending +
+      status.taskSummary.inProgress;
     expect(sum).toBe(status.taskSummary.total);
   });
 
@@ -79,16 +86,21 @@ describe('team-status failed count', () => {
       { id: '5', status: 'in_progress' },
     ];
 
-    const status = getTeamStatus('test-team', '/tmp/test', 30000, { includeUsage: false });
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
+      includeUsage: false,
+    });
 
     expect(status.taskSummary.total).toBe(5);
-    expect(status.taskSummary.completed).toBe(1);  // only clean completions
-    expect(status.taskSummary.failed).toBe(2);      // 1 failed + 1 permanentlyFailed
+    expect(status.taskSummary.completed).toBe(1); // only clean completions
+    expect(status.taskSummary.failed).toBe(2); // 1 failed + 1 permanentlyFailed
     expect(status.taskSummary.pending).toBe(1);
     expect(status.taskSummary.inProgress).toBe(1);
     // Verify sum equals total
-    const sum = status.taskSummary.completed + status.taskSummary.failed +
-                status.taskSummary.pending + status.taskSummary.inProgress;
+    const sum =
+      status.taskSummary.completed +
+      status.taskSummary.failed +
+      status.taskSummary.pending +
+      status.taskSummary.inProgress;
     expect(sum).toBe(status.taskSummary.total);
   });
 
@@ -99,15 +111,20 @@ describe('team-status failed count', () => {
       { id: '3', status: 'pending' },
     ];
 
-    const status = getTeamStatus('test-team', '/tmp/test', 30000, { includeUsage: false });
+    const status = getTeamStatus('test-team', '/tmp/test', 30000, {
+      includeUsage: false,
+    });
 
     expect(status.taskSummary.total).toBe(3);
     expect(status.taskSummary.completed).toBe(2);
     expect(status.taskSummary.failed).toBe(0);
     expect(status.taskSummary.pending).toBe(1);
     expect(status.taskSummary.inProgress).toBe(0);
-    const sum = status.taskSummary.completed + status.taskSummary.failed +
-                status.taskSummary.pending + status.taskSummary.inProgress;
+    const sum =
+      status.taskSummary.completed +
+      status.taskSummary.failed +
+      status.taskSummary.pending +
+      status.taskSummary.inProgress;
     expect(sum).toBe(status.taskSummary.total);
   });
 });

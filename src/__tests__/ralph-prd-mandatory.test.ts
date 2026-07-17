@@ -29,7 +29,10 @@ describe('Ralph PRD-Mandatory', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `ralph-prd-mandatory-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-prd-mandatory-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     // Create .omc/state directory for ralph state files
     mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
@@ -91,11 +94,15 @@ describe('Ralph PRD-Mandatory', () => {
 
   describe('detectCriticModeFlag', () => {
     it('detects --critic=critic', () => {
-      expect(detectCriticModeFlag('ralph --critic=critic fix this')).toBe('critic');
+      expect(detectCriticModeFlag('ralph --critic=critic fix this')).toBe(
+        'critic',
+      );
     });
 
     it('detects --critic codex', () => {
-      expect(detectCriticModeFlag('ralph --critic codex fix this')).toBe('codex');
+      expect(detectCriticModeFlag('ralph --critic codex fix this')).toBe(
+        'codex',
+      );
     });
 
     it('returns null for invalid critic mode', () => {
@@ -105,11 +112,15 @@ describe('Ralph PRD-Mandatory', () => {
 
   describe('stripCriticModeFlag', () => {
     it('removes --critic=critic', () => {
-      expect(stripCriticModeFlag('ralph --critic=critic fix this')).toBe('ralph fix this');
+      expect(stripCriticModeFlag('ralph --critic=critic fix this')).toBe(
+        'ralph fix this',
+      );
     });
 
     it('removes --critic codex', () => {
-      expect(stripCriticModeFlag('ralph --critic codex fix this')).toBe('ralph fix this');
+      expect(stripCriticModeFlag('ralph --critic codex fix this')).toBe(
+        'ralph fix this',
+      );
     });
   });
 
@@ -125,7 +136,12 @@ describe('Ralph PRD-Mandatory', () => {
     });
 
     it('should create scaffold with single story from prompt', () => {
-      initPrd(testDir, 'TestProject', 'ralph/feature', 'Add user authentication');
+      initPrd(
+        testDir,
+        'TestProject',
+        'ralph/feature',
+        'Add user authentication',
+      );
       const prd = readPrd(testDir);
       expect(prd).not.toBeNull();
       expect(prd!.project).toBe('TestProject');
@@ -138,8 +154,12 @@ describe('Ralph PRD-Mandatory', () => {
     it('should have default generic acceptance criteria in scaffold', () => {
       initPrd(testDir, 'TestProject', 'main', 'Implement feature X');
       const prd = readPrd(testDir);
-      expect(prd!.userStories[0].acceptanceCriteria).toContain('Implementation is complete');
-      expect(prd!.userStories[0].acceptanceCriteria).toContain('Code compiles/runs without errors');
+      expect(prd!.userStories[0].acceptanceCriteria).toContain(
+        'Implementation is complete',
+      );
+      expect(prd!.userStories[0].acceptanceCriteria).toContain(
+        'Code compiles/runs without errors',
+      );
     });
 
     it('should NOT overwrite existing prd.json', () => {
@@ -167,7 +187,9 @@ describe('Ralph PRD-Mandatory', () => {
       // Reading should return the pre-existing PRD (not overwritten)
       const prd = readPrd(testDir);
       expect(prd!.project).toBe('Existing');
-      expect(prd!.userStories[0].acceptanceCriteria).toContain('Custom criterion');
+      expect(prd!.userStories[0].acceptanceCriteria).toContain(
+        'Custom criterion',
+      );
     });
   });
 
@@ -270,11 +292,21 @@ describe('Ralph PRD-Mandatory', () => {
       expect(hook.startLoop('session-a', 'implement feature A')).toBe(true);
       expect(hook.startLoop('session-b', 'implement feature B')).toBe(true);
 
-      expect(findPrdPath(testDir, 'session-a')).toBe(getSessionPrdPath(testDir, 'session-a'));
-      expect(findPrdPath(testDir, 'session-b')).toBe(getSessionPrdPath(testDir, 'session-b'));
-      expect(readPrd(testDir, 'session-a')?.description).toBe('implement feature A');
-      expect(readPrd(testDir, 'session-b')?.description).toBe('implement feature B');
-      expect(readPrd(testDir, 'session-a')?.description).not.toBe(readPrd(testDir, 'session-b')?.description);
+      expect(findPrdPath(testDir, 'session-a')).toBe(
+        getSessionPrdPath(testDir, 'session-a'),
+      );
+      expect(findPrdPath(testDir, 'session-b')).toBe(
+        getSessionPrdPath(testDir, 'session-b'),
+      );
+      expect(readPrd(testDir, 'session-a')?.description).toBe(
+        'implement feature A',
+      );
+      expect(readPrd(testDir, 'session-b')?.description).toBe(
+        'implement feature B',
+      );
+      expect(readPrd(testDir, 'session-a')?.description).not.toBe(
+        readPrd(testDir, 'session-b')?.description,
+      );
     });
 
     it('should refuse to start when an existing prd.json is invalid', () => {
@@ -318,11 +350,16 @@ describe('Ralph PRD-Mandatory', () => {
         passes: false,
       };
 
-      const prompt = getArchitectVerificationPrompt(baseVerificationState, story);
+      const prompt = getArchitectVerificationPrompt(
+        baseVerificationState,
+        story,
+      );
 
       expect(prompt).toContain('US-001');
       expect(prompt).toContain('Add login form');
-      expect(prompt).toContain('Login form renders with email and password fields');
+      expect(prompt).toContain(
+        'Login form renders with email and password fields',
+      );
       expect(prompt).toContain('Submit button calls the auth API');
       expect(prompt).toContain('Error message shown on invalid credentials');
       expect(prompt).toContain('Verify EACH acceptance criterion');
@@ -331,16 +368,23 @@ describe('Ralph PRD-Mandatory', () => {
     it('should fall back to generic prompt when no story provided', () => {
       const prompt = getArchitectVerificationPrompt(baseVerificationState);
 
-      expect(prompt).toContain('Are ALL requirements from the original task met?');
+      expect(prompt).toContain(
+        'Are ALL requirements from the original task met?',
+      );
       expect(prompt).toContain('Is the implementation complete, not partial?');
       expect(prompt).not.toContain('Verify EACH acceptance criterion');
       expect(prompt).toContain('concise review summary under 100 words');
     });
 
     it('should fall back to generic prompt when story is undefined', () => {
-      const prompt = getArchitectVerificationPrompt(baseVerificationState, undefined);
+      const prompt = getArchitectVerificationPrompt(
+        baseVerificationState,
+        undefined,
+      );
 
-      expect(prompt).toContain('Are ALL requirements from the original task met?');
+      expect(prompt).toContain(
+        'Are ALL requirements from the original task met?',
+      );
       expect(prompt).not.toContain('Acceptance Criteria to Verify');
     });
 
@@ -368,7 +412,9 @@ describe('Ralph PRD-Mandatory', () => {
 
       expect(prompt).toContain('[CRITIC VERIFICATION REQUIRED');
       expect(prompt).toContain('Task(subagent_type="critic"');
-      expect(prompt).toContain('<ralph-approved critic="critic" request-id="req-critic">VERIFIED_COMPLETE</ralph-approved>');
+      expect(prompt).toContain(
+        '<ralph-approved critic="critic" request-id="req-critic">VERIFIED_COMPLETE</ralph-approved>',
+      );
     });
 
     it('should support codex verification prompts', () => {
@@ -380,19 +426,37 @@ describe('Ralph PRD-Mandatory', () => {
 
       expect(prompt).toContain('[CODEX CRITIC VERIFICATION REQUIRED');
       expect(prompt).toContain('omc ask codex --agent-prompt critic');
-      expect(prompt).toContain('<ralph-approved critic="codex" request-id="req-codex">VERIFIED_COMPLETE</ralph-approved>');
+      expect(prompt).toContain(
+        '<ralph-approved critic="codex" request-id="req-codex">VERIFIED_COMPLETE</ralph-approved>',
+      );
     });
 
     it('detects generic Ralph approval markers', () => {
-      expect(detectArchitectApproval('<ralph-approved critic="codex">VERIFIED_COMPLETE</ralph-approved>')).toBe(true);
+      expect(
+        detectArchitectApproval(
+          '<ralph-approved critic="codex">VERIFIED_COMPLETE</ralph-approved>',
+        ),
+      ).toBe(true);
     });
 
     it('requires matching correlated approval attributes when expected', () => {
-      const staleApproval = '<ralph-approved critic="codex" request-id="old-request" story-id="US-001">VERIFIED_COMPLETE</ralph-approved>';
-      const freshApproval = '<ralph-approved critic="codex" request-id="new-request" story-id="US-001">VERIFIED_COMPLETE</ralph-approved>';
+      const staleApproval =
+        '<ralph-approved critic="codex" request-id="old-request" story-id="US-001">VERIFIED_COMPLETE</ralph-approved>';
+      const freshApproval =
+        '<ralph-approved critic="codex" request-id="new-request" story-id="US-001">VERIFIED_COMPLETE</ralph-approved>';
 
-      expect(detectArchitectApproval(`${staleApproval}\n${freshApproval}`, { request_id: 'new-request', story_id: 'US-001' })).toBe(true);
-      expect(detectArchitectApproval(staleApproval, { request_id: 'new-request', story_id: 'US-001' })).toBe(false);
+      expect(
+        detectArchitectApproval(`${staleApproval}\n${freshApproval}`, {
+          request_id: 'new-request',
+          story_id: 'US-001',
+        }),
+      ).toBe(true);
+      expect(
+        detectArchitectApproval(staleApproval, {
+          request_id: 'new-request',
+          story_id: 'US-001',
+        }),
+      ).toBe(false);
     });
 
     it('ignores approval tags embedded inside the verification prompt itself', () => {
@@ -404,11 +468,18 @@ describe('Ralph PRD-Mandatory', () => {
       };
       const prompt = getArchitectVerificationPrompt(state);
 
-      expect(detectArchitectApproval(prompt, { request_id: 'req-injected', story_id: 'US-001' })).toBe(false);
+      expect(
+        detectArchitectApproval(prompt, {
+          request_id: 'req-injected',
+          story_id: 'US-001',
+        }),
+      ).toBe(false);
     });
 
     it('detects codex-style rejection language', () => {
-      const result = detectArchitectRejection('Codex reviewer found issues: Missing tests.');
+      const result = detectArchitectRejection(
+        'Codex reviewer found issues: Missing tests.',
+      );
       expect(result.rejected).toBe(true);
       expect(result.feedback).toContain('Missing tests');
     });
@@ -466,11 +537,16 @@ describe('Ralph PRD-Mandatory', () => {
 
       // Generate verification prompt with the current story (US-001)
       const currentStory = prd.userStories[0];
-      const prompt = getArchitectVerificationPrompt(verificationState, currentStory);
+      const prompt = getArchitectVerificationPrompt(
+        verificationState,
+        currentStory,
+      );
 
       // Verify the prompt includes ALL acceptance criteria from US-001
       expect(prompt).toContain('Cache middleware intercepts GET requests');
-      expect(prompt).toContain('Cache TTL is configurable via environment variable');
+      expect(prompt).toContain(
+        'Cache TTL is configurable via environment variable',
+      );
       expect(prompt).toContain('Cache invalidation on POST/PUT/DELETE');
       expect(prompt).toContain('Tests cover all three scenarios');
       expect(prompt).toContain('Implement caching');

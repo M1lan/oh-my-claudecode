@@ -12,10 +12,18 @@ import {
   updateAutopilotStateIfCurrent,
   updateAutopilotStateIfExact,
 } from './state.js';
-import { clearRalphState, clearLinkedUltraworkState, readRalphState } from '../ralph/index.js';
+import {
+  clearRalphState,
+  clearLinkedUltraworkState,
+  readRalphState,
+} from '../ralph/index.js';
 import { clearUltraQAState, readUltraQAState } from '../ultraqa/index.js';
 import type { AutopilotState } from './types.js';
-import { namedWorkflowRuntimeSupported, validateNamedWorkflowState, validateNamedWorkflowStateStructure } from './named-workflow-resume-validator.js';
+import {
+  namedWorkflowRuntimeSupported,
+  validateNamedWorkflowState,
+  validateNamedWorkflowStateStructure,
+} from './named-workflow-resume-validator.js';
 import { clearModeStateFile, readModeState } from '../../lib/mode-state-io.js';
 
 export interface CancelResult {
@@ -28,28 +36,47 @@ function hasNamedWorkflowMarkers(state: unknown): boolean {
   return Boolean(
     state &&
     typeof state === 'object' &&
-    ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) => Object.prototype.hasOwnProperty.call(state, marker)),
+    ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) =>
+      Object.prototype.hasOwnProperty.call(state, marker),
+    ),
   );
 }
 
-function validNamedWorkflowForMutation(state: AutopilotState, sessionId?: string): boolean {
-  return hasNamedWorkflowMarkers(state) && Boolean(
-    validateNamedWorkflowStateStructure(state, sessionId),
+function validNamedWorkflowForMutation(
+  state: AutopilotState,
+  sessionId?: string,
+): boolean {
+  return (
+    hasNamedWorkflowMarkers(state) &&
+    Boolean(validateNamedWorkflowStateStructure(state, sessionId))
   );
 }
 
-function validNamedWorkflowForResume(state: AutopilotState, sessionId?: string): boolean {
-  return hasNamedWorkflowMarkers(state) && Boolean(
-    namedWorkflowRuntimeSupported()
-      ? validateNamedWorkflowState(state, sessionId)
-      : validateNamedWorkflowStateStructure(state, sessionId),
+function validNamedWorkflowForResume(
+  state: AutopilotState,
+  sessionId?: string,
+): boolean {
+  return (
+    hasNamedWorkflowMarkers(state) &&
+    Boolean(
+      namedWorkflowRuntimeSupported()
+        ? validateNamedWorkflowState(state, sessionId)
+        : validateNamedWorkflowStateStructure(state, sessionId),
+    )
   );
 }
 
-function clearSessionOwnedNestedRalplanState(directory: string, sessionId?: string): boolean | null {
+function clearSessionOwnedNestedRalplanState(
+  directory: string,
+  sessionId?: string,
+): boolean | null {
   if (!sessionId) return null;
 
-  const state = readModeState<Record<string, unknown>>('ralplan', directory, sessionId);
+  const state = readModeState<Record<string, unknown>>(
+    'ralplan',
+    directory,
+    sessionId,
+  );
   if (!state || state.session_id !== sessionId) return null;
 
   return clearModeStateFile('ralplan', directory, sessionId, state);
@@ -65,13 +92,16 @@ function safePhase(phase: unknown): string {
  * Cancel autopilot and clean up all related state
  * Progress is preserved for potential resume
  */
-export function cancelAutopilot(directory: string, sessionId?: string): CancelResult {
+export function cancelAutopilot(
+  directory: string,
+  sessionId?: string,
+): CancelResult {
   const state = readAutopilotState(directory, sessionId);
 
   if (!state) {
     return {
       success: false,
-      message: 'No active autopilot session found'
+      message: 'No active autopilot session found',
     };
   }
 
@@ -85,7 +115,7 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
   if (!state.active && !namedWorkflow) {
     return {
       success: false,
-      message: 'Autopilot is not currently active'
+      message: 'Autopilot is not currently active',
     };
   }
 
@@ -100,9 +130,17 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
         sessionId,
         (current) => validNamedWorkflowForMutation(current, sessionId),
       )
-    : updateAutopilotStateIfCurrent(directory, state, { active: false }, sessionId);
+    : updateAutopilotStateIfCurrent(
+        directory,
+        state,
+        { active: false },
+        sessionId,
+      );
   if (!cancelledState) {
-    return { success: false, message: 'Autopilot run changed before cancellation; retry /cancel.' };
+    return {
+      success: false,
+      message: 'Autopilot run changed before cancellation; retry /cancel.',
+    };
   }
 
   const cleanedUp: string[] = [];
@@ -116,16 +154,25 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
     else if (cleared === false) failedCleanup.push('ralplan');
   }
 
-  const ralphState = sessionId ? readRalphState(directory, sessionId) : readRalphState(directory);
+  const ralphState = sessionId
+    ? readRalphState(directory, sessionId)
+    : readRalphState(directory);
   if (ralphState?.active) {
     let mayClearRalph = true;
     if (ralphState.linked_ultrawork) {
-      const cleared = sessionId ? clearLinkedUltraworkState(directory, sessionId) : clearLinkedUltraworkState(directory);
+      const cleared = sessionId
+        ? clearLinkedUltraworkState(directory, sessionId)
+        : clearLinkedUltraworkState(directory);
       if (cleared) cleanedUp.push('ultrawork');
-      else { failedCleanup.push('ultrawork'); mayClearRalph = false; }
+      else {
+        failedCleanup.push('ultrawork');
+        mayClearRalph = false;
+      }
     }
     if (mayClearRalph) {
-      const cleared = sessionId ? clearRalphState(directory, sessionId) : clearRalphState(directory);
+      const cleared = sessionId
+        ? clearRalphState(directory, sessionId)
+        : clearRalphState(directory);
       if (cleared) cleanedUp.push('ralph');
       else failedCleanup.push('ralph');
     } else {
@@ -133,14 +180,19 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
     }
   }
 
-  const ultraqaState = sessionId ? readUltraQAState(directory, sessionId) : readUltraQAState(directory);
+  const ultraqaState = sessionId
+    ? readUltraQAState(directory, sessionId)
+    : readUltraQAState(directory);
   if (ultraqaState?.active) {
-    const cleared = sessionId ? clearUltraQAState(directory, sessionId) : clearUltraQAState(directory);
+    const cleared = sessionId
+      ? clearUltraQAState(directory, sessionId)
+      : clearUltraQAState(directory);
     if (cleared) cleanedUp.push('ultraqa');
     else failedCleanup.push('ultraqa');
   }
 
-  const cleanupMsg = cleanedUp.length > 0 ? ` Cleaned up: ${cleanedUp.join(', ')}.` : '';
+  const cleanupMsg =
+    cleanedUp.length > 0 ? ` Cleaned up: ${cleanedUp.join(', ')}.` : '';
   if (failedCleanup.length > 0) {
     return {
       success: false,
@@ -151,31 +203,39 @@ export function cancelAutopilot(directory: string, sessionId?: string): CancelRe
   return {
     success: true,
     message: `Autopilot cancelled at phase: ${safePhase(cancelledState.phase)}.${cleanupMsg} Progress preserved for resume.`,
-    preservedState: cancelledState
+    preservedState: cancelledState,
   };
 }
 
 /**
  * Fully clear autopilot state (no preserve)
  */
-export function clearAutopilot(directory: string, sessionId?: string): CancelResult {
+export function clearAutopilot(
+  directory: string,
+  sessionId?: string,
+): CancelResult {
   const state = readAutopilotState(directory, sessionId);
 
   if (!state) {
     return {
       success: true,
-      message: 'No autopilot state to clear'
+      message: 'No autopilot state to clear',
     };
   }
 
-  if (hasNamedWorkflowMarkers(state) && !validNamedWorkflowForMutation(state, sessionId)) {
+  if (
+    hasNamedWorkflowMarkers(state) &&
+    !validNamedWorkflowForMutation(state, sessionId)
+  ) {
     return { success: false, message: 'workflow_descriptor_integrity_failed' };
   }
 
-
   // Delete the primary run before deleting any linked lifecycle state.
   if (!clearAutopilotState(directory, sessionId, state)) {
-    return { success: false, message: 'Autopilot run changed before clear; retry /cancel.' };
+    return {
+      success: false,
+      message: 'Autopilot run changed before clear; retry /cancel.',
+    };
   }
 
   const failedCleanup: string[] = [];
@@ -184,33 +244,49 @@ export function clearAutopilot(directory: string, sessionId?: string): CancelRes
     const cleared = clearSessionOwnedNestedRalplanState(directory, sessionId);
     if (cleared === false) failedCleanup.push('ralplan');
   }
-  const ralphState = sessionId ? readRalphState(directory, sessionId) : readRalphState(directory);
+  const ralphState = sessionId
+    ? readRalphState(directory, sessionId)
+    : readRalphState(directory);
   if (ralphState) {
     let mayClearRalph = true;
     if (ralphState.linked_ultrawork) {
-      const cleared = sessionId ? clearLinkedUltraworkState(directory, sessionId) : clearLinkedUltraworkState(directory);
-      if (!cleared) { failedCleanup.push('ultrawork'); mayClearRalph = false; }
+      const cleared = sessionId
+        ? clearLinkedUltraworkState(directory, sessionId)
+        : clearLinkedUltraworkState(directory);
+      if (!cleared) {
+        failedCleanup.push('ultrawork');
+        mayClearRalph = false;
+      }
     }
     if (mayClearRalph) {
-      const cleared = sessionId ? clearRalphState(directory, sessionId) : clearRalphState(directory);
+      const cleared = sessionId
+        ? clearRalphState(directory, sessionId)
+        : clearRalphState(directory);
       if (!cleared) failedCleanup.push('ralph');
     } else {
       failedCleanup.push('ralph');
     }
   }
 
-  const ultraqaState = sessionId ? readUltraQAState(directory, sessionId) : readUltraQAState(directory);
+  const ultraqaState = sessionId
+    ? readUltraQAState(directory, sessionId)
+    : readUltraQAState(directory);
   if (ultraqaState) {
-    const cleared = sessionId ? clearUltraQAState(directory, sessionId) : clearUltraQAState(directory);
+    const cleared = sessionId
+      ? clearUltraQAState(directory, sessionId)
+      : clearUltraQAState(directory);
     if (!cleared) failedCleanup.push('ultraqa');
   }
 
   if (failedCleanup.length > 0) {
-    return { success: false, message: `Autopilot state cleared, but linked cleanup failed for: ${failedCleanup.join(', ')}. Retry /cancel --force.` };
+    return {
+      success: false,
+      message: `Autopilot state cleared, but linked cleanup failed for: ${failedCleanup.join(', ')}. Retry /cancel --force.`,
+    };
   }
   return {
     success: true,
-    message: 'Autopilot state cleared completely'
+    message: 'Autopilot state cleared completely',
   };
 }
 
@@ -226,7 +302,10 @@ export const STALE_STATE_MAX_AGE_MS = 60 * 60 * 1000;
  * - Rejects stale states older than STALE_STATE_MAX_AGE_MS
  * - Auto-cleans stale state files to prevent future false positives
  */
-export function canResumeAutopilot(directory: string, sessionId?: string): {
+export function canResumeAutopilot(
+  directory: string,
+  sessionId?: string,
+): {
   canResume: boolean;
   state?: AutopilotState;
   resumePhase?: string;
@@ -241,10 +320,19 @@ export function canResumeAutopilot(directory: string, sessionId?: string): {
 
   if (hasNamedWorkflowMarkers(state)) {
     if (!validNamedWorkflowForResume(state, sessionId)) {
-      return { canResume: false, resumePhase: state.phase, integrityFailed: true };
+      return {
+        canResume: false,
+        resumePhase: state.phase,
+        integrityFailed: true,
+      };
     }
     if (!namedWorkflowRuntimeSupported()) {
-      return { canResume: false, state, resumePhase: state.phase, unsupportedRuntime: true };
+      return {
+        canResume: false,
+        state,
+        resumePhase: state.phase,
+        unsupportedRuntime: true,
+      };
     }
   }
 
@@ -271,19 +359,23 @@ export function canResumeAutopilot(directory: string, sessionId?: string): {
   return {
     canResume: true,
     state,
-    resumePhase: state.phase
+    resumePhase: state.phase,
   };
 }
 
 /**
  * Resume a paused autopilot session
  */
-export function resumeAutopilot(directory: string, sessionId?: string): {
+export function resumeAutopilot(
+  directory: string,
+  sessionId?: string,
+): {
   success: boolean;
   message: string;
   state?: AutopilotState;
 } {
-  const { canResume, state, integrityFailed, unsupportedRuntime } = canResumeAutopilot(directory, sessionId);
+  const { canResume, state, integrityFailed, unsupportedRuntime } =
+    canResumeAutopilot(directory, sessionId);
 
   if (!canResume || !state) {
     return {
@@ -292,7 +384,7 @@ export function resumeAutopilot(directory: string, sessionId?: string): {
         ? 'unsupported-runtime'
         : integrityFailed
           ? 'workflow_descriptor_integrity_failed'
-          : 'No autopilot session available to resume'
+          : 'No autopilot session available to resume',
     };
   }
 
@@ -314,14 +406,16 @@ export function resumeAutopilot(directory: string, sessionId?: string): {
   if (!resumedState) {
     return {
       success: false,
-      message: hasNamedWorkflowMarkers(state) ? 'workflow_descriptor_integrity_failed' : 'Autopilot run changed before resume; retry.'
+      message: hasNamedWorkflowMarkers(state)
+        ? 'workflow_descriptor_integrity_failed'
+        : 'Autopilot run changed before resume; retry.',
     };
   }
 
   return {
     success: true,
     message: `Resuming autopilot at phase: ${state.phase}`,
-    state: resumedState
+    state: resumedState,
   };
 }
 
@@ -333,13 +427,7 @@ export function formatCancelMessage(result: CancelResult): string {
     return `[AUTOPILOT] ${result.message}`;
   }
 
-  const lines: string[] = [
-    '',
-    '[AUTOPILOT CANCELLED]',
-    '',
-    result.message,
-    ''
-  ];
+  const lines: string[] = ['', '[AUTOPILOT CANCELLED]', '', result.message, ''];
 
   if (result.preservedState) {
     const state = result.preservedState;
@@ -349,8 +437,12 @@ export function formatCancelMessage(result: CancelResult): string {
     } else {
       lines.push('Progress Summary:');
       lines.push(`- Phase reached: ${safePhase(state.phase)}`);
-      lines.push(`- Files created: ${state.execution?.files_created?.length ?? 0}`);
-      lines.push(`- Files modified: ${state.execution?.files_modified?.length ?? 0}`);
+      lines.push(
+        `- Files created: ${state.execution?.files_created?.length ?? 0}`,
+      );
+      lines.push(
+        `- Files modified: ${state.execution?.files_modified?.length ?? 0}`,
+      );
       lines.push(`- Agents used: ${state.total_agents_spawned ?? 0}`);
       lines.push('');
       lines.push('Run /autopilot to resume from where you left off.');

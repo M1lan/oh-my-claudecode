@@ -9,7 +9,10 @@
  */
 
 import { getBackgroundManager } from '../../features/background-agent/index.js';
-import type { BackgroundManager, BackgroundTask } from '../../features/background-agent/index.js';
+import type {
+  BackgroundManager,
+  BackgroundTask,
+} from '../../features/background-agent/index.js';
 import type {
   BackgroundNotificationHookConfig,
   BackgroundNotificationHookInput,
@@ -34,7 +37,8 @@ export const HOOK_NAME = 'background-notification';
 function formatTaskNotification(task: BackgroundTask): string {
   const status = task.status.toUpperCase();
   const duration = formatDuration(task.startedAt, task.completedAt);
-  const emoji = task.status === 'completed' ? '✓' : task.status === 'error' ? '✗' : '○';
+  const emoji =
+    task.status === 'completed' ? '✓' : task.status === 'error' ? '✗' : '○';
 
   const lines = [
     `${emoji} [${status}] ${task.description}`,
@@ -84,12 +88,13 @@ function defaultFormatNotification(tasks: BackgroundTask[]): string {
     return '';
   }
 
-  const header = tasks.length === 1
-    ? '\n[BACKGROUND TASK COMPLETED]\n'
-    : `\n[${tasks.length} BACKGROUND TASKS COMPLETED]\n`;
+  const header =
+    tasks.length === 1
+      ? '\n[BACKGROUND TASK COMPLETED]\n'
+      : `\n[${tasks.length} BACKGROUND TASKS COMPLETED]\n`;
 
   const taskDescriptions = tasks
-    .map(task => formatTaskNotification(task))
+    .map((task) => formatTaskNotification(task))
     .join('\n\n');
 
   return `${header}\n${taskDescriptions}\n`;
@@ -101,7 +106,7 @@ function defaultFormatNotification(tasks: BackgroundTask[]): string {
 export function checkBackgroundNotifications(
   sessionId: string,
   manager: BackgroundManager,
-  config?: BackgroundNotificationHookConfig
+  config?: BackgroundNotificationHookConfig,
 ): NotificationCheckResult {
   // Get pending notifications for this session
   const tasks = manager.getPendingNotifications(sessionId);
@@ -129,7 +134,7 @@ export function checkBackgroundNotifications(
  */
 export function processBackgroundNotification(
   input: BackgroundNotificationHookInput,
-  config?: BackgroundNotificationHookConfig
+  config?: BackgroundNotificationHookConfig,
 ): BackgroundNotificationHookOutput {
   const sessionId = input.sessionId;
 
@@ -166,7 +171,7 @@ export function processBackgroundNotification(
  */
 export function handleBackgroundEvent(
   event: { type: string; properties?: Record<string, unknown> },
-  manager: BackgroundManager
+  manager: BackgroundManager,
 ): void {
   // Handle task completion events
   if (event.type === 'task.completed' || event.type === 'task.failed') {
@@ -185,7 +190,7 @@ export function handleBackgroundEvent(
  */
 export function createBackgroundNotificationHook(
   manager: BackgroundManager,
-  config?: BackgroundNotificationHookConfig
+  config?: BackgroundNotificationHookConfig,
 ) {
   return {
     /**
@@ -196,7 +201,9 @@ export function createBackgroundNotificationHook(
     /**
      * Process an event (for shell hook compatibility)
      */
-    event: async (input: BackgroundNotificationHookInput): Promise<BackgroundNotificationHookOutput> => {
+    event: async (
+      input: BackgroundNotificationHookInput,
+    ): Promise<BackgroundNotificationHookOutput> => {
       // Handle event if provided
       if (input.event) {
         handleBackgroundEvent(input.event, manager);
@@ -234,7 +241,7 @@ export function createBackgroundNotificationHook(
  */
 export async function processBackgroundNotificationHook(
   input: BackgroundNotificationHookInput,
-  config?: BackgroundNotificationHookConfig
+  config?: BackgroundNotificationHookConfig,
 ): Promise<BackgroundNotificationHookOutput> {
   const manager = getBackgroundManager();
   const hook = createBackgroundNotificationHook(manager, config);

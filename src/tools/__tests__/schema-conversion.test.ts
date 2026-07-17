@@ -10,7 +10,11 @@
 
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
-import { toSdkToolFormat, createZodSchema, GenericToolDefinition } from '../index.js';
+import {
+  toSdkToolFormat,
+  createZodSchema,
+  GenericToolDefinition,
+} from '../index.js';
 
 /**
  * Helper: Create a minimal tool definition for testing schema conversion.
@@ -208,7 +212,10 @@ describe('zodToJsonSchema - Nested Objects', () => {
     expect(prop).toBeDefined();
     // Nested object should have type: 'object' and properties
     expect((prop as Record<string, unknown>).type).toBe('object');
-    const nestedProps = (prop as Record<string, unknown>).properties as Record<string, unknown>;
+    const nestedProps = (prop as Record<string, unknown>).properties as Record<
+      string,
+      unknown
+    >;
     expect(nestedProps.name).toEqual({ type: 'string' });
     expect(nestedProps.port).toEqual({ type: 'number' });
   });
@@ -262,9 +269,18 @@ describe('zodToJsonSchema - Output Validity', () => {
 
     expect(result.type).toBe('object');
     expect(result.required).toEqual(['file', 'line', 'character']);
-    expect(result.properties.file).toEqual({ type: 'string', description: 'Path to source file' });
-    expect(result.properties.line).toEqual({ type: 'integer', description: 'Line number' });
-    expect(result.properties.character).toEqual({ type: 'integer', description: 'Character offset' });
+    expect(result.properties.file).toEqual({
+      type: 'string',
+      description: 'Path to source file',
+    });
+    expect(result.properties.line).toEqual({
+      type: 'integer',
+      description: 'Line number',
+    });
+    expect(result.properties.character).toEqual({
+      type: 'integer',
+      description: 'Character offset',
+    });
     expect(result.properties.includeDeclaration).toEqual({ type: 'boolean' });
   });
 

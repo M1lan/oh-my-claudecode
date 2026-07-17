@@ -17,11 +17,11 @@ import type { RuleMetadata, MatchResult } from './types.js';
 function matchGlob(pattern: string, filePath: string): boolean {
   // Convert glob pattern to regex
   const regexStr = pattern
-    .replace(/\./g, '\\.')           // Escape dots
-    .replace(/\*\*/g, '<<<GLOBSTAR>>>')  // Temporarily replace **
-    .replace(/\*/g, '[^/]*')         // * matches any characters except /
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/\*\*/g, '<<<GLOBSTAR>>>') // Temporarily replace **
+    .replace(/\*/g, '[^/]*') // * matches any characters except /
     .replace(/<<<GLOBSTAR>>>/g, '.*') // ** matches anything including /
-    .replace(/\?/g, '.');            // ? matches single character
+    .replace(/\?/g, '.'); // ? matches single character
 
   const regex = new RegExp(`^${regexStr}$`);
   return regex.test(filePath);
@@ -33,7 +33,7 @@ function matchGlob(pattern: string, filePath: string): boolean {
 export function shouldApplyRule(
   metadata: RuleMetadata,
   currentFilePath: string,
-  projectRoot: string | null
+  projectRoot: string | null,
 ): MatchResult {
   if (metadata.alwaysApply === true) {
     return { applies: true, reason: 'alwaysApply' };
@@ -68,7 +68,10 @@ export function shouldApplyRule(
 /**
  * Check if realPath already exists in cache (symlink deduplication).
  */
-export function isDuplicateByRealPath(realPath: string, cache: Set<string>): boolean {
+export function isDuplicateByRealPath(
+  realPath: string,
+  cache: Set<string>,
+): boolean {
   return cache.has(realPath);
 }
 
@@ -82,6 +85,9 @@ export function createContentHash(content: string): string {
 /**
  * Check if content hash already exists in cache.
  */
-export function isDuplicateByContentHash(hash: string, cache: Set<string>): boolean {
+export function isDuplicateByContentHash(
+  hash: string,
+  cache: Set<string>,
+): boolean {
   return cache.has(hash);
 }

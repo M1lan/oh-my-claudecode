@@ -42,19 +42,27 @@ describe('loadAgentPrompt', () => {
 
   describe('security: path traversal prevention', () => {
     test('rejects agent names with path traversal sequences', () => {
-      expect(() => loadAgentPrompt('../etc/passwd')).toThrow('Invalid agent name');
-      expect(() => loadAgentPrompt('../../etc/passwd')).toThrow('Invalid agent name');
+      expect(() => loadAgentPrompt('../etc/passwd')).toThrow(
+        'Invalid agent name',
+      );
+      expect(() => loadAgentPrompt('../../etc/passwd')).toThrow(
+        'Invalid agent name',
+      );
       expect(() => loadAgentPrompt('foo/../bar')).toThrow('Invalid agent name');
     });
 
     test('rejects agent names with forward slashes', () => {
       expect(() => loadAgentPrompt('foo/bar')).toThrow('Invalid agent name');
-      expect(() => loadAgentPrompt('/etc/passwd')).toThrow('Invalid agent name');
+      expect(() => loadAgentPrompt('/etc/passwd')).toThrow(
+        'Invalid agent name',
+      );
     });
 
     test('rejects agent names with backslashes', () => {
       expect(() => loadAgentPrompt('foo\\bar')).toThrow('Invalid agent name');
-      expect(() => loadAgentPrompt('..\\..\\etc\\passwd')).toThrow('Invalid agent name');
+      expect(() => loadAgentPrompt('..\\..\\etc\\passwd')).toThrow(
+        'Invalid agent name',
+      );
     });
 
     test('rejects agent names with special characters', () => {

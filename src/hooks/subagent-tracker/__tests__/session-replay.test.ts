@@ -19,7 +19,10 @@ describe('session-replay', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `replay-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `replay-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
     resetSessionStartTimes();
   });
@@ -31,7 +34,9 @@ describe('session-replay', () => {
   describe('getReplayFilePath', () => {
     it('should return correct path for session', () => {
       const path = getReplayFilePath(testDir, 'test-session');
-      expect(path).toContain(join('.omc', 'state', 'agent-replay-test-session.jsonl'));
+      expect(path).toContain(
+        join('.omc', 'state', 'agent-replay-test-session.jsonl'),
+      );
     });
 
     it('should sanitize session ID', () => {
@@ -59,9 +64,21 @@ describe('session-replay', () => {
     });
 
     it('should append multiple events', () => {
-      appendReplayEvent(testDir, 'sess2', { agent: 'a1', event: 'agent_start' });
-      appendReplayEvent(testDir, 'sess2', { agent: 'a1', event: 'tool_start', tool: 'Read' });
-      appendReplayEvent(testDir, 'sess2', { agent: 'a1', event: 'tool_end', tool: 'Read', duration_ms: 100 });
+      appendReplayEvent(testDir, 'sess2', {
+        agent: 'a1',
+        event: 'agent_start',
+      });
+      appendReplayEvent(testDir, 'sess2', {
+        agent: 'a1',
+        event: 'tool_start',
+        tool: 'Read',
+      });
+      appendReplayEvent(testDir, 'sess2', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Read',
+        duration_ms: 100,
+      });
 
       const events = readReplayEvents(testDir, 'sess2');
       expect(events).toHaveLength(3);
@@ -72,7 +89,15 @@ describe('session-replay', () => {
 
   describe('event helpers', () => {
     it('recordAgentStart should record start event', () => {
-      recordAgentStart(testDir, 'sess3', 'agent-123', 'oh-my-claudecode:executor', 'Fix the bug', 'ultrawork', 'sonnet');
+      recordAgentStart(
+        testDir,
+        'sess3',
+        'agent-123',
+        'oh-my-claudecode:executor',
+        'Fix the bug',
+        'ultrawork',
+        'sonnet',
+      );
 
       const events = readReplayEvents(testDir, 'sess3');
       expect(events).toHaveLength(1);
@@ -83,7 +108,14 @@ describe('session-replay', () => {
     });
 
     it('recordAgentStop should record stop event', () => {
-      recordAgentStop(testDir, 'sess4', 'agent-456', 'oh-my-claudecode:architect', true, 5000);
+      recordAgentStop(
+        testDir,
+        'sess4',
+        'agent-456',
+        'oh-my-claudecode:architect',
+        true,
+        5000,
+      );
 
       const events = readReplayEvents(testDir, 'sess4');
       expect(events).toHaveLength(1);
@@ -93,7 +125,15 @@ describe('session-replay', () => {
     });
 
     it('recordToolEvent should record tool events', () => {
-      recordToolEvent(testDir, 'sess5', 'agent-789', 'Edit', 'tool_end', 250, true);
+      recordToolEvent(
+        testDir,
+        'sess5',
+        'agent-789',
+        'Edit',
+        'tool_end',
+        250,
+        true,
+      );
 
       const events = readReplayEvents(testDir, 'sess5');
       expect(events[0].tool).toBe('Edit');
@@ -110,7 +150,12 @@ describe('session-replay', () => {
     });
 
     it('recordIntervention should record intervention', () => {
-      recordIntervention(testDir, 'sess7', 'agent-def', 'Agent stale for 6 minutes');
+      recordIntervention(
+        testDir,
+        'sess7',
+        'agent-def',
+        'Agent stale for 6 minutes',
+      );
 
       const events = readReplayEvents(testDir, 'sess7');
       expect(events[0].event).toBe('intervention');
@@ -121,12 +166,39 @@ describe('session-replay', () => {
   describe('getReplaySummary', () => {
     it('should generate summary with tool statistics', () => {
       // Simulate a session with multiple events
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'agent_start', agent_type: 'executor' });
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'tool_end', tool: 'Read', duration_ms: 100 });
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'tool_end', tool: 'Read', duration_ms: 200 });
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'tool_end', tool: 'Edit', duration_ms: 500 });
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'file_touch', file: 'src/test.ts' });
-      appendReplayEvent(testDir, 'summary-test', { agent: 'a1', event: 'agent_stop', success: true });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'agent_start',
+        agent_type: 'executor',
+      });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Read',
+        duration_ms: 100,
+      });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Read',
+        duration_ms: 200,
+      });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Edit',
+        duration_ms: 500,
+      });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'file_touch',
+        file: 'src/test.ts',
+      });
+      appendReplayEvent(testDir, 'summary-test', {
+        agent: 'a1',
+        event: 'agent_stop',
+        success: true,
+      });
 
       const summary = getReplaySummary(testDir, 'summary-test');
 
@@ -142,9 +214,24 @@ describe('session-replay', () => {
 
     it('should detect bottlenecks', () => {
       // Create events with slow tool
-      appendReplayEvent(testDir, 'bottleneck-test', { agent: 'a1', event: 'tool_end', tool: 'Bash', duration_ms: 5000 });
-      appendReplayEvent(testDir, 'bottleneck-test', { agent: 'a1', event: 'tool_end', tool: 'Bash', duration_ms: 6000 });
-      appendReplayEvent(testDir, 'bottleneck-test', { agent: 'a1', event: 'tool_end', tool: 'Read', duration_ms: 100 });
+      appendReplayEvent(testDir, 'bottleneck-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Bash',
+        duration_ms: 5000,
+      });
+      appendReplayEvent(testDir, 'bottleneck-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Bash',
+        duration_ms: 6000,
+      });
+      appendReplayEvent(testDir, 'bottleneck-test', {
+        agent: 'a1',
+        event: 'tool_end',
+        tool: 'Read',
+        duration_ms: 100,
+      });
 
       const summary = getReplaySummary(testDir, 'bottleneck-test');
 

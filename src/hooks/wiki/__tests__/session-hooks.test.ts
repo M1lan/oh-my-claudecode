@@ -18,7 +18,9 @@ describe('Wiki Session Hooks', () => {
 
   beforeEach(async () => {
     tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'wiki-session-hooks-'));
-    configDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'wiki-session-config-'));
+    configDir = await fsp.mkdtemp(
+      path.join(os.tmpdir(), 'wiki-session-config-'),
+    );
     originalClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
     process.env.CLAUDE_CONFIG_DIR = configDir;
   });
@@ -42,10 +44,14 @@ describe('Wiki Session Hooks', () => {
 
     const wikiDir = ensureWikiDir(tempDir);
 
-    expect(onSessionEnd({ cwd: tempDir, session_id: 'session-12345678' })).toEqual({ continue: true });
+    expect(
+      onSessionEnd({ cwd: tempDir, session_id: 'session-12345678' }),
+    ).toEqual({ continue: true });
 
     const wikiEntries = fs.readdirSync(wikiDir);
-    expect(wikiEntries.filter(entry => entry.startsWith('session-log-'))).toHaveLength(0);
+    expect(
+      wikiEntries.filter((entry) => entry.startsWith('session-log-')),
+    ).toHaveLength(0);
     expect(fs.existsSync(path.join(wikiDir, 'log.md'))).toBe(false);
   });
 });
@@ -74,7 +80,10 @@ describe('feedProjectMemory (environment.md)', () => {
 
   function writeProjectMemory(memory: Record<string, unknown>): void {
     const omcRoot = path.dirname(getWikiDir(tempDir));
-    fs.writeFileSync(path.join(omcRoot, 'project-memory.json'), JSON.stringify(memory));
+    fs.writeFileSync(
+      path.join(omcRoot, 'project-memory.json'),
+      JSON.stringify(memory),
+    );
   }
 
   it('creates environment.md from project-memory.json on session start', () => {

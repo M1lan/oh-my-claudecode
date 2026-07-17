@@ -41,8 +41,12 @@ describe.skipIf(!HAS_TMUX)('tmux env forwarding — integration', () => {
   afterAll(() => {
     // Kill session if it still exists
     try {
-      execFileSync('tmux', ['kill-session', '-t', SESSION_NAME], { stdio: 'ignore' });
-    } catch { /* already gone */ }
+      execFileSync('tmux', ['kill-session', '-t', SESSION_NAME], {
+        stdio: 'ignore',
+      });
+    } catch {
+      /* already gone */
+    }
     if (tempDir) {
       rmSync(tempDir, { recursive: true, force: true });
     }
@@ -68,16 +72,16 @@ describe.skipIf(!HAS_TMUX)('tmux env forwarding — integration', () => {
     const shellCmd = wrapWithLoginShell(innerCmd);
 
     // Create a detached tmux session (same as runClaudeOutsideTmux)
-    execFileSync('tmux', [
-      'new-session', '-d', '-s', SESSION_NAME, shellCmd,
-    ]);
+    execFileSync('tmux', ['new-session', '-d', '-s', SESSION_NAME, shellCmd]);
 
     // Wait for the command to finish (it's just a printenv, should be instant)
     const deadline = Date.now() + 5000;
     while (Date.now() < deadline) {
       // Session disappears once the command exits
       try {
-        execFileSync('tmux', ['has-session', '-t', SESSION_NAME], { stdio: 'ignore' });
+        execFileSync('tmux', ['has-session', '-t', SESSION_NAME], {
+          stdio: 'ignore',
+        });
         // Still running, wait a bit
         execFileSync('sleep', ['0.1']);
       } catch {
@@ -110,13 +114,19 @@ describe.skipIf(!HAS_TMUX)('tmux env forwarding — integration', () => {
 
     try {
       execFileSync('tmux', [
-        'new-session', '-d', '-s', specialSession, shellCmd,
+        'new-session',
+        '-d',
+        '-s',
+        specialSession,
+        shellCmd,
       ]);
 
       const deadline = Date.now() + 5000;
       while (Date.now() < deadline) {
         try {
-          execFileSync('tmux', ['has-session', '-t', specialSession], { stdio: 'ignore' });
+          execFileSync('tmux', ['has-session', '-t', specialSession], {
+            stdio: 'ignore',
+          });
           execFileSync('sleep', ['0.1']);
         } catch {
           break;
@@ -128,8 +138,12 @@ describe.skipIf(!HAS_TMUX)('tmux env forwarding — integration', () => {
       expect(result).toBe(testValue);
     } finally {
       try {
-        execFileSync('tmux', ['kill-session', '-t', specialSession], { stdio: 'ignore' });
-      } catch { /* already gone */ }
+        execFileSync('tmux', ['kill-session', '-t', specialSession], {
+          stdio: 'ignore',
+        });
+      } catch {
+        /* already gone */
+      }
     }
   });
 });

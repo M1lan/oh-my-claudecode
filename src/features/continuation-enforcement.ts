@@ -8,8 +8,15 @@
  * - Provides background task execution guidance
  */
 
-import type { HookDefinition, HookContext, HookResult } from '../shared/types.js';
-import { getBackgroundTaskGuidance, DEFAULT_MAX_BACKGROUND_TASKS } from './background-tasks.js';
+import type {
+  HookDefinition,
+  HookContext,
+  HookResult,
+} from '../shared/types.js';
+import {
+  getBackgroundTaskGuidance,
+  DEFAULT_MAX_BACKGROUND_TASKS,
+} from './background-tasks.js';
 
 /**
  * Messages to remind agents to continue
@@ -20,14 +27,16 @@ const CONTINUATION_REMINDERS = [
   '[TODO CONTINUATION ENFORCED] Your todo list has incomplete items. The boulder does not stop. Continue working on pending tasks immediately. Do not ask for permission - just execute.',
   '[OMC REMINDER] You attempted to stop with incomplete work. This is not permitted. Check your todo list and continue working on the next pending task.',
   '[CONTINUATION REQUIRED] Incomplete tasks detected. You are BOUND to your todo list. Continue executing until all tasks show completed status.',
-  '[THE BOULDER NEVER STOPS] Your work is not done. Resume working on incomplete tasks immediately. Verify completion before any further stop attempts.'
+  '[THE BOULDER NEVER STOPS] Your work is not done. Resume working on incomplete tasks immediately. Verify completion before any further stop attempts.',
 ];
 
 /**
  * Get a random continuation reminder
  */
 function getRandomReminder(): string {
-  return CONTINUATION_REMINDERS[Math.floor(Math.random() * CONTINUATION_REMINDERS.length)];
+  return CONTINUATION_REMINDERS[
+    Math.floor(Math.random() * CONTINUATION_REMINDERS.length)
+  ];
 }
 
 /**
@@ -56,14 +65,14 @@ export function createContinuationHook(): HookDefinition {
       if (hasIncompleteTasks) {
         return {
           continue: true,
-          message: getRandomReminder()
+          message: getRandomReminder(),
         };
       }
 
       return {
-        continue: true
+        continue: true,
       };
-    }
+    },
   };
 }
 
@@ -145,23 +154,23 @@ export function detectCompletionSignals(response: string): {
     /all (?:tasks?|work|items?) (?:are |is )?(?:now )?(?:complete|done|finished)/i,
     /I(?:'ve| have) (?:completed|finished|done) (?:all|everything)/i,
     /everything (?:is|has been) (?:complete|done|finished)/i,
-    /no (?:more|remaining|outstanding) (?:tasks?|work|items?)/i
+    /no (?:more|remaining|outstanding) (?:tasks?|work|items?)/i,
   ];
 
   const uncertaintyPatterns = [
     /(?:should|might|could) (?:be|have)/i,
     /I think|I believe|probably|maybe/i,
-    /unless|except|but/i
+    /unless|except|but/i,
   ];
 
-  const hasCompletion = completionPatterns.some(p => p.test(response));
-  const hasUncertainty = uncertaintyPatterns.some(p => p.test(response));
+  const hasCompletion = completionPatterns.some((p) => p.test(response));
+  const hasUncertainty = uncertaintyPatterns.some((p) => p.test(response));
 
   if (!hasCompletion) {
     return {
       claimed: false,
       confidence: 'high',
-      reason: 'No completion claim detected'
+      reason: 'No completion claim detected',
     };
   }
 
@@ -169,14 +178,14 @@ export function detectCompletionSignals(response: string): {
     return {
       claimed: true,
       confidence: 'low',
-      reason: 'Completion claimed with uncertainty language'
+      reason: 'Completion claimed with uncertainty language',
     };
   }
 
   return {
     claimed: true,
     confidence: 'high',
-    reason: 'Clear completion claim detected'
+    reason: 'Clear completion claim detected',
   };
 }
 

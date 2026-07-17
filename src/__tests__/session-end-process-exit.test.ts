@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -13,7 +20,9 @@ const SESSION_END_SCRIPTS = [
 ] as const;
 const COMMAND_CEILING_MS = 500;
 const SEQUENTIAL_CEILING_MS = 1_000;
-const HAS_GENERATED_DIST = existsSync(join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'worker.js'));
+const HAS_GENERATED_DIST = existsSync(
+  join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'worker.js'),
+);
 
 interface ExitResult {
   elapsedMs: number;
@@ -33,7 +42,11 @@ function runUntilClose(
     const startedAt = Date.now();
     const child = spawn(process.execPath, [RUN_CJS, script], {
       cwd,
-      env: { ...process.env, ...extraEnv, CLAUDE_CONFIG_DIR: join(cwd, '.claude') },
+      env: {
+        ...process.env,
+        ...extraEnv,
+        CLAUDE_CONFIG_DIR: join(cwd, '.claude'),
+      },
       stdio: ['pipe', 'ignore', 'ignore'],
       windowsHide: true,
     });
@@ -52,7 +65,10 @@ function runUntilClose(
   });
 }
 
-function expectPromptExit(result: ExitResult, ceilingMs = COMMAND_CEILING_MS): void {
+function expectPromptExit(
+  result: ExitResult,
+  ceilingMs = COMMAND_CEILING_MS,
+): void {
   expect(result.timedOut).toBe(false);
   expect(result.signal).toBeNull();
   expect(result.code).toBe(0);
@@ -73,10 +89,19 @@ function validSessionEndInput(cwd: string, sessionId: string): string {
 function configureDeferredAdapters(cwd: string): void {
   const configDir = join(cwd, '.claude');
   mkdirSync(configDir, { recursive: true });
-  writeFileSync(join(configDir, '.omc-config.json'), JSON.stringify({
-    notifications: { enabled: true },
-    stopHookCallbacks: { file: { enabled: true, path: join(cwd, 'callback.md'), format: 'markdown' } },
-  }));
+  writeFileSync(
+    join(configDir, '.omc-config.json'),
+    JSON.stringify({
+      notifications: { enabled: true },
+      stopHookCallbacks: {
+        file: {
+          enabled: true,
+          path: join(cwd, 'callback.md'),
+          format: 'markdown',
+        },
+      },
+    }),
+  );
 }
 
 describe('SessionEnd run.cjs process exit regressions (#3477)', () => {
@@ -84,7 +109,12 @@ describe('SessionEnd run.cjs process exit regressions (#3477)', () => {
 
   afterEach(() => {
     for (const directory of tempDirs.splice(0)) {
-      rmSync(directory, { recursive: true, force: true, maxRetries: 5, retryDelay: 25 });
+      rmSync(directory, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 25,
+      });
     }
   });
 
@@ -95,101 +125,192 @@ describe('SessionEnd run.cjs process exit regressions (#3477)', () => {
     return cwd;
   }
 
-  it.each(SESSION_END_SCRIPTS)('%s exits with no bytes and an open stdin pipe', async (_name, script) => {
-    const result = await runUntilClose(script, createProject(), undefined);
-    expectPromptExit(result);
-  });
+  it.each(SESSION_END_SCRIPTS)(
+    '%s exits with no bytes and an open stdin pipe',
+    async (_name, script) => {
+      const result = await runUntilClose(script, createProject(), undefined);
+      expectPromptExit(result);
+    },
+  );
 
-  it.skipIf(!HAS_GENERATED_DIST).each(SESSION_END_SCRIPTS)('%s exits after promptly closed valid SessionEnd JSON with configured adapters', async (_name, script) => {
-    const cwd = createProject();
-    configureDeferredAdapters(cwd);
-    const sessionId = `configured-${_name}`;
+  it.skipIf(!HAS_GENERATED_DIST).each(SESSION_END_SCRIPTS)(
+    '%s exits after promptly closed valid SessionEnd JSON with configured adapters',
+    async (_name, script) => {
+      const cwd = createProject();
+      configureDeferredAdapters(cwd);
+      const sessionId = `configured-${_name}`;
 
-    const result = await runUntilClose(script, cwd, validSessionEndInput(cwd, sessionId));
-    expectPromptExit(result);
+      const result = await runUntilClose(
+        script,
+        cwd,
+        validSessionEndInput(cwd, sessionId),
+      );
+      expectPromptExit(result);
 
-    if (_name === 'session-end') {
-      const manifestPath = join(cwd, '.omc', 'state', 'session-end-jobs', `${sessionId}.json`);
-      const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as { actions: Record<string, { phase: string }> };
+      if (_name === 'session-end') {
+        const manifestPath = join(
+          cwd,
+          '.omc',
+          'state',
+          'session-end-jobs',
+          `${sessionId}.json`,
+        );
+        const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
+          actions: Record<string, { phase: string }>;
+        };
+        expect(manifest.actions.callback.phase).toBe('deferred-best-effort');
+        expect(manifest.actions.notification.phase).toBe(
+          'deferred-best-effort',
+        );
+      }
+    },
+  );
+
+  it.skipIf(!HAS_GENERATED_DIST)(
+    'uses the generated dist closure: the shipped worker imports and can execute',
+    async () => {
+      const distWorker = join(
+        REPO_ROOT,
+        'dist',
+        'hooks',
+        'session-end',
+        'worker.js',
+      );
+      const distManifest = join(
+        REPO_ROOT,
+        'dist',
+        'hooks',
+        'session-end',
+        'cleanup-manifest.js',
+      );
+      expect(readFileSync(distWorker, 'utf8')).toContain(
+        'getProcessStartIdentity',
+      );
+
+      const {
+        prepareCoreManifest,
+        sealCoreManifest,
+        sealWikiManifest,
+        mutateSessionEndJob,
+        readSessionEndJob,
+      } = (await import(
+        pathToFileURL(distManifest).href
+      )) as typeof import('../hooks/session-end/cleanup-manifest.js');
+      const { processSessionEndWorker } = (await import(
+        pathToFileURL(distWorker).href
+      )) as typeof import('../hooks/session-end/worker.js');
+      const cwd = createProject();
+      const sessionId = 'dist-worker-executes';
+      expect(prepareCoreManifest(cwd, sessionId, {})).not.toBeNull();
+      expect(sealCoreManifest(cwd, sessionId)).not.toBeNull();
+      expect(sealWikiManifest(cwd, sessionId)).not.toBeNull();
+      let manifest = readSessionEndJob(cwd, sessionId)!;
+      for (const name of Object.keys(manifest.actions)) {
+        manifest = mutateSessionEndJob(
+          cwd,
+          sessionId,
+          manifest.revision,
+          (job) => {
+            const action = job.actions[name as keyof typeof job.actions];
+            action.status = 'completed';
+            action.runner = {
+              attempt: 1,
+              runnerNonce: `${name}-terminal`,
+              phase: 'terminal',
+              deadlineAt: new Date().toISOString(),
+            };
+          },
+        )!;
+      }
+
+      await processSessionEndWorker({ directory: cwd, sessionId });
+      expect(readSessionEndJob(cwd, sessionId)).toMatchObject({
+        phase: 'complete',
+        owner: null,
+      });
+    },
+  );
+
+  it.skipIf(!HAS_GENERATED_DIST)(
+    'keeps configured callbacks, proxies, and custom CA out of the foreground process',
+    async () => {
+      const cwd = createProject();
+      configureDeferredAdapters(cwd);
+      const caPath = join(cwd, 'test-ca.pem');
+      writeFileSync(caPath, 'not a certificate');
+
+      const result = await runUntilClose(
+        join(REPO_ROOT, 'scripts', 'session-end.mjs'),
+        cwd,
+        validSessionEndInput(cwd, 'configured-network-routing'),
+        COMMAND_CEILING_MS,
+        {
+          HTTPS_PROXY: 'http://127.0.0.1:9',
+          HTTP_PROXY: 'http://127.0.0.1:9',
+          NODE_EXTRA_CA_CERTS: caPath,
+        },
+      );
+      expectPromptExit(result);
+      const manifest = JSON.parse(
+        readFileSync(
+          join(
+            cwd,
+            '.omc',
+            'state',
+            'session-end-jobs',
+            'configured-network-routing.json',
+          ),
+          'utf8',
+        ),
+      ) as { actions: Record<string, { phase: string }> };
       expect(manifest.actions.callback.phase).toBe('deferred-best-effort');
       expect(manifest.actions.notification.phase).toBe('deferred-best-effort');
-    }
-  });
+    },
+  );
 
-  it.skipIf(!HAS_GENERATED_DIST)('uses the generated dist closure: the shipped worker imports and can execute', async () => {
-    const distWorker = join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'worker.js');
-    const distManifest = join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'cleanup-manifest.js');
-    expect(readFileSync(distWorker, 'utf8')).toContain("getProcessStartIdentity");
+  it.skipIf(!HAS_GENERATED_DIST)(
+    'wiki-session-end exits without waiting for a live wiki lock',
+    async () => {
+      const cwd = createProject();
+      configureDeferredAdapters(cwd);
+      const wikiDir = join(cwd, '.omc', 'wiki');
+      mkdirSync(wikiDir, { recursive: true });
+      writeFileSync(
+        join(cwd, '.omc', '.omc-config.json'),
+        JSON.stringify({ wiki: { autoCapture: true } }),
+      );
+      writeFileSync(
+        join(wikiDir, '.wiki-lock.lock'),
+        JSON.stringify({ pid: process.pid, timestamp: Date.now() }),
+      );
 
-    const { prepareCoreManifest, sealCoreManifest, sealWikiManifest, mutateSessionEndJob, readSessionEndJob } =
-      await import(pathToFileURL(distManifest).href) as typeof import('../hooks/session-end/cleanup-manifest.js');
-    const { processSessionEndWorker } = await import(pathToFileURL(distWorker).href) as typeof import('../hooks/session-end/worker.js');
-    const cwd = createProject();
-    const sessionId = 'dist-worker-executes';
-    expect(prepareCoreManifest(cwd, sessionId, {})).not.toBeNull();
-    expect(sealCoreManifest(cwd, sessionId)).not.toBeNull();
-    expect(sealWikiManifest(cwd, sessionId)).not.toBeNull();
-    let manifest = readSessionEndJob(cwd, sessionId)!;
-    for (const name of Object.keys(manifest.actions)) {
-      manifest = mutateSessionEndJob(cwd, sessionId, manifest.revision, (job) => {
-        const action = job.actions[name as keyof typeof job.actions];
-        action.status = 'completed';
-        action.runner = { attempt: 1, runnerNonce: `${name}-terminal`, phase: 'terminal', deadlineAt: new Date().toISOString() };
-      })!;
-    }
+      const result = await runUntilClose(
+        join(REPO_ROOT, 'scripts', 'wiki-session-end.mjs'),
+        cwd,
+        validSessionEndInput(cwd, 'wiki-live-lock'),
+      );
+      expectPromptExit(result);
+    },
+  );
 
-    await processSessionEndWorker({ directory: cwd, sessionId });
-    expect(readSessionEndJob(cwd, sessionId)).toMatchObject({ phase: 'complete', owner: null });
-  });
+  it.skipIf(!HAS_GENERATED_DIST)(
+    'runs the SessionEnd pair sequentially within the combined foreground budget',
+    async () => {
+      const cwd = createProject();
+      configureDeferredAdapters(cwd);
+      const startedAt = Date.now();
 
-  it.skipIf(!HAS_GENERATED_DIST)('keeps configured callbacks, proxies, and custom CA out of the foreground process', async () => {
-    const cwd = createProject();
-    configureDeferredAdapters(cwd);
-    const caPath = join(cwd, 'test-ca.pem');
-    writeFileSync(caPath, 'not a certificate');
+      for (const [name, script] of SESSION_END_SCRIPTS) {
+        expectPromptExit(
+          await runUntilClose(
+            script,
+            cwd,
+            validSessionEndInput(cwd, `sequential-${name}`),
+          ),
+        );
+      }
 
-    const result = await runUntilClose(
-      join(REPO_ROOT, 'scripts', 'session-end.mjs'),
-      cwd,
-      validSessionEndInput(cwd, 'configured-network-routing'),
-      COMMAND_CEILING_MS,
-      {
-        HTTPS_PROXY: 'http://127.0.0.1:9',
-        HTTP_PROXY: 'http://127.0.0.1:9',
-        NODE_EXTRA_CA_CERTS: caPath,
-      },
-    );
-    expectPromptExit(result);
-    const manifest = JSON.parse(readFileSync(join(cwd, '.omc', 'state', 'session-end-jobs', 'configured-network-routing.json'), 'utf8')) as { actions: Record<string, { phase: string }> };
-    expect(manifest.actions.callback.phase).toBe('deferred-best-effort');
-    expect(manifest.actions.notification.phase).toBe('deferred-best-effort');
-  });
-
-  it.skipIf(!HAS_GENERATED_DIST)('wiki-session-end exits without waiting for a live wiki lock', async () => {
-    const cwd = createProject();
-    configureDeferredAdapters(cwd);
-    const wikiDir = join(cwd, '.omc', 'wiki');
-    mkdirSync(wikiDir, { recursive: true });
-    writeFileSync(join(cwd, '.omc', '.omc-config.json'), JSON.stringify({ wiki: { autoCapture: true } }));
-    writeFileSync(join(wikiDir, '.wiki-lock.lock'), JSON.stringify({ pid: process.pid, timestamp: Date.now() }));
-
-    const result = await runUntilClose(
-      join(REPO_ROOT, 'scripts', 'wiki-session-end.mjs'),
-      cwd,
-      validSessionEndInput(cwd, 'wiki-live-lock'),
-    );
-    expectPromptExit(result);
-  });
-
-  it.skipIf(!HAS_GENERATED_DIST)('runs the SessionEnd pair sequentially within the combined foreground budget', async () => {
-    const cwd = createProject();
-    configureDeferredAdapters(cwd);
-    const startedAt = Date.now();
-
-    for (const [name, script] of SESSION_END_SCRIPTS) {
-      expectPromptExit(await runUntilClose(script, cwd, validSessionEndInput(cwd, `sequential-${name}`)));
-    }
-
-    expect(Date.now() - startedAt).toBeLessThanOrEqual(SEQUENTIAL_CEILING_MS);
-  });
+      expect(Date.now() - startedAt).toBeLessThanOrEqual(SEQUENTIAL_CEILING_MS);
+    },
+  );
 });

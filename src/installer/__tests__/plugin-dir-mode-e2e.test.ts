@@ -12,7 +12,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdtempSync, rmSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  rmSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { OMC_PLUGIN_ROOT_ENV } from '../../lib/env-vars.js';
@@ -24,7 +31,9 @@ const SAVED_ENV_KEYS = [
   'OMC_DEV',
 ] as const;
 
-type EnvSnapshot = Partial<Record<(typeof SAVED_ENV_KEYS)[number], string | undefined>>;
+type EnvSnapshot = Partial<
+  Record<(typeof SAVED_ENV_KEYS)[number], string | undefined>
+>;
 
 let testDir: string;
 let savedEnv: EnvSnapshot;
@@ -59,7 +68,9 @@ afterEach(() => {
   }
   try {
     rmSync(testDir, { recursive: true, force: true });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 });
 
 describe('install() — plugin-dir-mode end-to-end filesystem shape', () => {

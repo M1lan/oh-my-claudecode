@@ -4,7 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 
 vi.mock('../callbacks.js', async () => {
-  const actual = await vi.importActual<typeof import('../callbacks.js')>('../callbacks.js');
+  const actual =
+    await vi.importActual<typeof import('../callbacks.js')>('../callbacks.js');
   return {
     ...actual,
     triggerStopCallbacks: vi.fn(async () => undefined),
@@ -23,9 +24,9 @@ vi.mock('../../../features/auto-update.js', () => ({
 }));
 
 vi.mock('../../../notifications/config.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../notifications/config.js')>(
-    '../../../notifications/config.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../notifications/config.js')
+  >('../../../notifications/config.js');
   return {
     ...actual,
     buildConfigFromEnv: vi.fn(() => null),
@@ -54,16 +55,29 @@ const workerMocks = vi.hoisted(() => ({
 
 vi.mock('../worker.js', () => workerMocks);
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js',
-  );
-  return { ...actual, resolveToWorktreeRoot: vi.fn((directory?: string) => directory ?? process.cwd()) };
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
+  return {
+    ...actual,
+    resolveToWorktreeRoot: vi.fn(
+      (directory?: string) => directory ?? process.cwd(),
+    ),
+  };
 });
 
-import { processSessionEnd, runSessionEndCallbacks, runSessionEndNotifications } from '../index.js';
+import {
+  processSessionEnd,
+  runSessionEndCallbacks,
+  runSessionEndNotifications,
+} from '../index.js';
 import { readSessionEndJob } from '../cleanup-manifest.js';
 import { getOMCConfig } from '../../../features/auto-update.js';
-import { buildConfigFromEnv, getEnabledPlatforms, getNotificationConfig } from '../../../notifications/config.js';
+import {
+  buildConfigFromEnv,
+  getEnabledPlatforms,
+  getNotificationConfig,
+} from '../../../notifications/config.js';
 import { notify } from '../../../notifications/index.js';
 
 describe('processSessionEnd notification deduplication (issue #1440)', () => {
@@ -126,13 +140,23 @@ describe('processSessionEnd notification deduplication (issue #1440)', () => {
     });
 
     const manifest = readSessionEndJob(tmpDir, 'session-legacy-only');
-    expect(manifest).toEqual(expect.objectContaining({
-      producers: expect.objectContaining({ core: expect.objectContaining({ state: 'sealed' }) }),
-      actions: expect.objectContaining({
-        callback: expect.objectContaining({ status: 'pending', payload: expect.objectContaining({ transcriptPath, reason: 'clear' }) }),
-        notification: expect.objectContaining({ status: 'pending' }),
+    expect(manifest).toEqual(
+      expect.objectContaining({
+        producers: expect.objectContaining({
+          core: expect.objectContaining({ state: 'sealed' }),
+        }),
+        actions: expect.objectContaining({
+          callback: expect.objectContaining({
+            status: 'pending',
+            payload: expect.objectContaining({
+              transcriptPath,
+              reason: 'clear',
+            }),
+          }),
+          notification: expect.objectContaining({ status: 'pending' }),
+        }),
       }),
-    }));
+    );
     expect(workerMocks.spawnSessionEndWorker).toHaveBeenCalledWith({
       directory: tmpDir,
       sessionId: 'session-legacy-only',
@@ -192,11 +216,15 @@ describe('processSessionEnd notification deduplication (issue #1440)', () => {
     });
 
     const manifest = readSessionEndJob(tmpDir, 'session-new-discord');
-    expect(manifest?.actions.callback).toEqual(expect.objectContaining({ status: 'pending' }));
-    expect(manifest?.actions.notification).toEqual(expect.objectContaining({
-      status: 'pending',
-      payload: expect.objectContaining({ transcriptPath, reason: 'clear' }),
-    }));
+    expect(manifest?.actions.callback).toEqual(
+      expect.objectContaining({ status: 'pending' }),
+    );
+    expect(manifest?.actions.notification).toEqual(
+      expect.objectContaining({
+        status: 'pending',
+        payload: expect.objectContaining({ transcriptPath, reason: 'clear' }),
+      }),
+    );
     expect(notify).not.toHaveBeenCalled();
 
     await runSessionEndCallbacks(tmpDir, 'session-new-discord');

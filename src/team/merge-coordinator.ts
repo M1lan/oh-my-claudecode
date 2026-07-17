@@ -22,7 +22,9 @@ const BRANCH_NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9/_.-]*$/;
  */
 export function validateBranchName(branch: string): void {
   if (!BRANCH_NAME_RE.test(branch)) {
-    throw new Error(`Invalid branch name: "${branch}" — must match ${BRANCH_NAME_RE}`);
+    throw new Error(
+      `Invalid branch name: "${branch}" — must match ${BRANCH_NAME_RE}`,
+    );
   }
 }
 
@@ -63,7 +65,9 @@ export function configureHarnessMergeAttributes(repoRoot: string): void {
     stdio: 'pipe',
     windowsHide: true,
   }).trim();
-  const resolvedCommonDir = isAbsolute(commonDir) ? commonDir : join(repoRoot, commonDir);
+  const resolvedCommonDir = isAbsolute(commonDir)
+    ? commonDir
+    : join(repoRoot, commonDir);
   const infoDir = join(resolvedCommonDir, 'info');
   mkdirSync(infoDir, { recursive: true });
 
@@ -102,7 +106,7 @@ export interface MergeResult {
 export function checkMergeConflicts(
   workerBranch: string,
   baseBranch: string,
-  repoRoot: string
+  repoRoot: string,
 ): string[] {
   validateBranchName(workerBranch);
   validateBranchName(baseBranch);
@@ -110,8 +114,14 @@ export function checkMergeConflicts(
   // Try git merge-tree --write-tree (Git 2.38+) for accurate conflict detection
   try {
     execFileSync(
-      'git', ['merge-tree', '--write-tree', baseBranch, workerBranch],
-      { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }
+      'git',
+      ['merge-tree', '--write-tree', baseBranch, workerBranch],
+      {
+        cwd: repoRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      },
     );
     // Exit code 0 means no conflicts
     return [];
@@ -127,34 +137,54 @@ export function checkMergeConflicts(
           conflicts.push(match[1].trim());
         }
       }
-      return conflicts.length > 0 ? conflicts : ['(merge-tree reported conflicts)'];
+      return conflicts.length > 0
+        ? conflicts
+        : ['(merge-tree reported conflicts)'];
     }
     // If merge-tree --write-tree is not supported, fall back to overlap heuristic
   }
 
   // Fallback: file-overlap heuristic for Git < 2.38
   const mergeBase = execFileSync(
-    'git', ['merge-base', baseBranch, workerBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }
+    'git',
+    ['merge-base', baseBranch, workerBranch],
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
 
   const baseDiff = execFileSync(
-    'git', ['diff', '--name-only', mergeBase, baseBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }
+    'git',
+    ['diff', '--name-only', mergeBase, baseBranch],
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
   const workerDiff = execFileSync(
-    'git', ['diff', '--name-only', mergeBase, workerBranch],
-    { cwd: repoRoot, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true }
+    'git',
+    ['diff', '--name-only', mergeBase, workerBranch],
+    {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+      windowsHide: true,
+    },
   ).trim();
 
   if (!baseDiff || !workerDiff) {
     return [];
   }
 
-  const baseFiles = new Set(baseDiff.split('\n').filter(f => f));
-  const workerFiles = workerDiff.split('\n').filter(f => f);
+  const baseFiles = new Set(baseDiff.split('\n').filter((f) => f));
+  const workerFiles = workerDiff.split('\n').filter((f) => f);
 
-  return workerFiles.filter(f => baseFiles.has(f));
+  return workerFiles.filter((f) => baseFiles.has(f));
 }
 
 /**
@@ -165,7 +195,7 @@ export function checkMergeConflicts(
 export function mergeWorkerBranch(
   workerBranch: string,
   baseBranch: string,
-  repoRoot: string
+  repoRoot: string,
 ): MergeResult {
   validateBranchName(workerBranch);
   validateBranchName(baseBranch);
@@ -177,25 +207,46 @@ export function mergeWorkerBranch(
     // Uses diff-index which ignores untracked files (e.g. .omc/ worktree metadata).
     try {
       execFileSync('git', ['diff-index', '--quiet', 'HEAD', '--'], {
-        cwd: repoRoot, stdio: 'pipe', windowsHide: true
+        cwd: repoRoot,
+        stdio: 'pipe',
+        windowsHide: true,
       });
     } catch {
-      throw new Error('Working tree has uncommitted changes — commit or stash before merging');
+      throw new Error(
+        'Working tree has uncommitted changes — commit or stash before merging',
+      );
     }
 
     // Ensure we're on the base branch
     execFileSync('git', ['checkout', baseBranch], {
-      cwd: repoRoot, stdio: 'pipe', windowsHide: true
+      cwd: repoRoot,
+      stdio: 'pipe',
+      windowsHide: true,
     });
 
     // Attempt merge
-    execFileSync('git', ['merge', '--no-ff', '-m', `Merge ${workerBranch} into ${baseBranch}`, workerBranch], {
-      cwd: repoRoot, stdio: 'pipe', windowsHide: true
-    });
+    execFileSync(
+      'git',
+      [
+        'merge',
+        '--no-ff',
+        '-m',
+        `Merge ${workerBranch} into ${baseBranch}`,
+        workerBranch,
+      ],
+      {
+        cwd: repoRoot,
+        stdio: 'pipe',
+        windowsHide: true,
+      },
+    );
 
     // Get merge commit hash
     const mergeCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: repoRoot, encoding: 'utf-8', stdio: 'pipe', windowsHide: true
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      windowsHide: true,
     }).trim();
 
     return {
@@ -208,8 +259,14 @@ export function mergeWorkerBranch(
   } catch (_err) {
     // Abort the failed merge
     try {
-      execFileSync('git', ['merge', '--abort'], { cwd: repoRoot, stdio: 'pipe', windowsHide: true });
-    } catch { /* may not be in merge state */ }
+      execFileSync('git', ['merge', '--abort'], {
+        cwd: repoRoot,
+        stdio: 'pipe',
+        windowsHide: true,
+      });
+    } catch {
+      /* may not be in merge state */
+    }
 
     // Try to detect conflicting files
     const conflicts = checkMergeConflicts(workerBranch, baseBranch, repoRoot);
@@ -230,15 +287,20 @@ export function mergeWorkerBranch(
 export function mergeAllWorkerBranches(
   teamName: string,
   repoRoot: string,
-  baseBranch?: string
+  baseBranch?: string,
 ): MergeResult[] {
   const worktrees = listTeamWorktrees(teamName, repoRoot);
   if (worktrees.length === 0) return [];
 
   // Determine base branch
-  const base = baseBranch || execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-    cwd: repoRoot, encoding: 'utf-8', stdio: 'pipe', windowsHide: true
-  }).trim();
+  const base =
+    baseBranch ||
+    execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+      cwd: repoRoot,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      windowsHide: true,
+    }).trim();
 
   validateBranchName(base);
 

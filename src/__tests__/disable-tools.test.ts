@@ -6,7 +6,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { parseDisabledGroups, DISABLE_TOOLS_GROUP_MAP } from '../mcp/omc-tools-server.js';
+import {
+  parseDisabledGroups,
+  DISABLE_TOOLS_GROUP_MAP,
+} from '../mcp/omc-tools-server.js';
 import { TOOL_CATEGORIES } from '../constants/index.js';
 
 describe('OMC_DISABLE_TOOLS', () => {
@@ -121,7 +124,9 @@ describe('OMC_DISABLE_TOOLS', () => {
       });
 
       it('disables all issue-722 specified groups', () => {
-        const result = parseDisabledGroups('lsp,ast,python-repl,gemini,codex,trace,state,notepad,project-memory');
+        const result = parseDisabledGroups(
+          'lsp,ast,python-repl,gemini,codex,trace,state,notepad,project-memory',
+        );
         expect(result.has(TOOL_CATEGORIES.LSP)).toBe(true);
         expect(result.has(TOOL_CATEGORIES.AST)).toBe(true);
         expect(result.has(TOOL_CATEGORIES.PYTHON)).toBe(true);
@@ -195,24 +200,42 @@ describe('OMC_DISABLE_TOOLS', () => {
 
   describe('DISABLE_TOOLS_GROUP_MAP', () => {
     it('contains all issue-722 specified group names', () => {
-      const requiredGroups = ['lsp', 'ast', 'python-repl', 'gemini', 'codex', 'trace', 'state', 'notepad', 'project-memory', 'interop'];
+      const requiredGroups = [
+        'lsp',
+        'ast',
+        'python-repl',
+        'gemini',
+        'codex',
+        'trace',
+        'state',
+        'notepad',
+        'project-memory',
+        'interop',
+      ];
       for (const group of requiredGroups) {
         expect(DISABLE_TOOLS_GROUP_MAP).toHaveProperty(group);
       }
     });
 
     it('maps python-repl and python to the same category', () => {
-      expect(DISABLE_TOOLS_GROUP_MAP['python-repl']).toBe(DISABLE_TOOLS_GROUP_MAP['python']);
+      expect(DISABLE_TOOLS_GROUP_MAP['python-repl']).toBe(
+        DISABLE_TOOLS_GROUP_MAP['python'],
+      );
     });
 
     it('maps project-memory and memory to the same category', () => {
-      expect(DISABLE_TOOLS_GROUP_MAP['project-memory']).toBe(DISABLE_TOOLS_GROUP_MAP['memory']);
+      expect(DISABLE_TOOLS_GROUP_MAP['project-memory']).toBe(
+        DISABLE_TOOLS_GROUP_MAP['memory'],
+      );
     });
 
     it('maps to valid ToolCategory values', () => {
       const validCategories = new Set(Object.values(TOOL_CATEGORIES));
       for (const [name, category] of Object.entries(DISABLE_TOOLS_GROUP_MAP)) {
-        expect(validCategories.has(category), `${name} should map to a valid ToolCategory`).toBe(true);
+        expect(
+          validCategories.has(category),
+          `${name} should map to a valid ToolCategory`,
+        ).toBe(true);
       }
     });
   });

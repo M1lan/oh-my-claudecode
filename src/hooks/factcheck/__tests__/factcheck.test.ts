@@ -24,7 +24,15 @@ function defaultPolicy(): FactcheckPolicy {
     forbidden_path_prefixes: [join(getClaudeConfigDir(), 'plugins/cache/omc/')],
     forbidden_path_substrings: ['/.omc/', '.omc-config.json'],
     readonly_command_prefixes: [
-      'ls ', 'cat ', 'find ', 'grep ', 'head ', 'tail ', 'stat ', 'echo ', 'wc ',
+      'ls ',
+      'cat ',
+      'find ',
+      'grep ',
+      'head ',
+      'tail ',
+      'stat ',
+      'echo ',
+      'wc ',
     ],
     warn_on_cwd_mismatch: true,
     enforce_cwd_parity_in_quick: false,
@@ -73,17 +81,14 @@ describe('Factcheck Guard (issue #1155)', () => {
     const policy = defaultPolicy();
     const claims = baseClaims();
 
-    const result = runChecks(
-      claims,
-      'quick',
-      policy,
-      join(tempDir, 'other'),
-    );
+    const result = runChecks(claims, 'quick', policy, join(tempDir, 'other'));
 
     // Quick mode skips cwd parity by default, and no source files
     // means unverified gates are ignored → PASS
     expect(result.verdict).toBe('PASS');
-    expect(result.mismatches.every(m => m.check !== 'argv_parity')).toBe(true);
+    expect(result.mismatches.every((m) => m.check !== 'argv_parity')).toBe(
+      true,
+    );
   });
 
   it('strict mode fails on false gates and cwd mismatch', () => {
@@ -93,7 +98,7 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'strict', policy, tempDir);
 
     expect(result.verdict).toBe('FAIL');
-    const checks = new Set(result.mismatches.map(m => m.check));
+    const checks = new Set(result.mismatches.map((m) => m.check));
     expect(checks.has('B')).toBe(true);
     expect(checks.has('argv_parity')).toBe(true);
   });
@@ -118,7 +123,7 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'declared', policy, '/tmp/original');
 
     expect(result.verdict).toBe('FAIL');
-    expect(result.mismatches.some(m => m.check === 'H')).toBe(true);
+    expect(result.mismatches.some((m) => m.check === 'H')).toBe(true);
   });
 
   it('missing required fields produce FAIL', () => {
@@ -128,7 +133,7 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'quick', policy, tempDir);
 
     expect(result.verdict).toBe('FAIL');
-    expect(result.mismatches.some(m => m.check === 'A')).toBe(true);
+    expect(result.mismatches.some((m) => m.check === 'A')).toBe(true);
   });
 
   it('all gates true in strict mode with matching cwd passes', () => {
@@ -159,9 +164,12 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'quick', policy, tempDir);
 
     expect(result.verdict).toBe('FAIL');
-    expect(result.mismatches.some(
-      m => m.check === 'H' && m.detail.includes('Forbidden mutating command'),
-    )).toBe(true);
+    expect(
+      result.mismatches.some(
+        (m) =>
+          m.check === 'H' && m.detail.includes('Forbidden mutating command'),
+      ),
+    ).toBe(true);
   });
 
   it('readonly command in forbidden path is allowed', () => {
@@ -176,9 +184,11 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'quick', policy, tempDir);
 
     // Should not have any command-related failures
-    expect(result.mismatches.every(
-      m => !m.detail.includes('Forbidden mutating command'),
-    )).toBe(true);
+    expect(
+      result.mismatches.every(
+        (m) => !m.detail.includes('Forbidden mutating command'),
+      ),
+    ).toBe(true);
   });
 
   it('declared mode warns on false gates when source files exist', () => {
@@ -193,8 +203,8 @@ describe('Factcheck Guard (issue #1155)', () => {
     const result = runChecks(claims, 'declared', policy, '/tmp/original');
 
     expect(result.verdict).toBe('WARN');
-    expect(result.mismatches.some(
-      m => m.check === 'B' && m.severity === 'WARN',
-    )).toBe(true);
+    expect(
+      result.mismatches.some((m) => m.check === 'B' && m.severity === 'WARN'),
+    ).toBe(true);
   });
 });

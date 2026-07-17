@@ -19,8 +19,20 @@ describe('task-router', () => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  function registerWorker(name: string, provider: 'codex' | 'gemini' = 'codex', status: 'polling' | 'executing' | 'quarantined' = 'polling') {
-    registerMcpWorker(teamName, name, provider, provider === 'codex' ? 'gpt-5.3-codex' : 'gemini-3-pro', `${teamName}-${name}`, testDir, testDir);
+  function registerWorker(
+    name: string,
+    provider: 'codex' | 'gemini' = 'codex',
+    status: 'polling' | 'executing' | 'quarantined' = 'polling',
+  ) {
+    registerMcpWorker(
+      teamName,
+      name,
+      provider,
+      provider === 'codex' ? 'gpt-5.3-codex' : 'gemini-3-pro',
+      `${teamName}-${name}`,
+      testDir,
+      testDir,
+    );
     writeHeartbeat(testDir, {
       workerName: name,
       teamName,
@@ -112,7 +124,7 @@ describe('task-router', () => {
 
       expect(decisions).toHaveLength(2);
       // Should assign to different workers for load balance
-      const assignees = new Set(decisions.map(d => d.assignedTo));
+      const assignees = new Set(decisions.map((d) => d.assignedTo));
       expect(assignees.size).toBe(2);
     });
 

@@ -28,20 +28,27 @@ describe('release generation', () => {
   });
 
   it('identifies release PRs by release branch or release title', () => {
-    expect(isReleasePullRequest({
-      title: 'release: 4.10.2',
-      headRefName: 'release/4.10.2',
-    })).toBe(true);
+    expect(
+      isReleasePullRequest({
+        title: 'release: 4.10.2',
+        headRefName: 'release/4.10.2',
+      }),
+    ).toBe(true);
 
-    expect(isReleasePullRequest({
-      title: 'chore(release): bump version to v4.10.2',
-      headRefName: null,
-    })).toBe(true);
+    expect(
+      isReleasePullRequest({
+        title: 'chore(release): bump version to v4.10.2',
+        headRefName: null,
+      }),
+    ).toBe(true);
 
-    expect(isReleasePullRequest({
-      title: 'fix(hud): replace misleading CLI error with installation diagnostic',
-      headRefName: 'fix/hud-cli-diagnostic',
-    })).toBe(false);
+    expect(
+      isReleasePullRequest({
+        title:
+          'fix(hud): replace misleading CLI error with installation diagnostic',
+        headRefName: 'fix/hud-cli-diagnostic',
+      }),
+    ).toBe(false);
   });
 
   it('derives sorted deduped contributor handles from PR and compare metadata', () => {
@@ -66,37 +73,105 @@ describe('release generation', () => {
 
   it('keeps non-conventional PRs in other changes and renders exact PR counts', () => {
     const pullRequests = [
-      { number: '2107', title: 'fix(pre-tool-enforcer): deny subagent_type calls whose agent definition has a bare Anthropic model ID on Bedrock', author: 'EthanJStark', headRefName: 'fix/agent-def-model-routing-bedrock' },
-      { number: '2108', title: 'chore: enforce dev base branch and gitignore build artifacts', author: 'EthanJStark', headRefName: 'fix/contributor-guardrails' },
-      { number: '2122', title: 'fix(state-tools): add skill-active to STATE_TOOL_MODES so cancel can clear it', author: 'tjsingleton', headRefName: 'fix/cancel-clear-skill-active-state' },
-      { number: '2127', title: 'fix(hud): show worktree name instead of volatile main repo HEAD', author: 'blue-int', headRefName: 'fix/hud-worktree-name' },
-      { number: '2129', title: 'fix(hud): replace misleading CLI error with installation diagnostic', author: 'DdangJin', headRefName: 'fix/hud-cli-diagnostic' },
-      { number: '2137', title: 'Fix team tmux pane geometry collapse and bundled agent path resolution', author: 'Yeachan-Heo', headRefName: 'fix-issue-2135-pane-geometry' },
-      { number: '2144', title: 'fix: preserve existing global CLAUDE.md during setup', author: 'Yeachan-Heo', headRefName: 'issue-2143-safe-setup-config' },
-      { number: '2146', title: 'fix: follow up #2143 with explicit overwrite choice + omc launch profile', author: 'Yeachan-Heo', headRefName: 'issue-2143-omc-launch-followup' },
-      { number: '2149', title: 'fix: resolve global HUD npm package lookup outside Node projects', author: 'Yeachan-Heo', headRefName: 'fix/issue-2148-hud-global-npm' },
-      { number: '2151', title: 'feat(hud): make call-count icon rendering configurable', author: 'Yeachan-Heo', headRefName: 'issue-2150-hud-call-count-icons' },
+      {
+        number: '2107',
+        title:
+          'fix(pre-tool-enforcer): deny subagent_type calls whose agent definition has a bare Anthropic model ID on Bedrock',
+        author: 'EthanJStark',
+        headRefName: 'fix/agent-def-model-routing-bedrock',
+      },
+      {
+        number: '2108',
+        title: 'chore: enforce dev base branch and gitignore build artifacts',
+        author: 'EthanJStark',
+        headRefName: 'fix/contributor-guardrails',
+      },
+      {
+        number: '2122',
+        title:
+          'fix(state-tools): add skill-active to STATE_TOOL_MODES so cancel can clear it',
+        author: 'tjsingleton',
+        headRefName: 'fix/cancel-clear-skill-active-state',
+      },
+      {
+        number: '2127',
+        title:
+          'fix(hud): show worktree name instead of volatile main repo HEAD',
+        author: 'blue-int',
+        headRefName: 'fix/hud-worktree-name',
+      },
+      {
+        number: '2129',
+        title:
+          'fix(hud): replace misleading CLI error with installation diagnostic',
+        author: 'DdangJin',
+        headRefName: 'fix/hud-cli-diagnostic',
+      },
+      {
+        number: '2137',
+        title:
+          'Fix team tmux pane geometry collapse and bundled agent path resolution',
+        author: 'Yeachan-Heo',
+        headRefName: 'fix-issue-2135-pane-geometry',
+      },
+      {
+        number: '2144',
+        title: 'fix: preserve existing global CLAUDE.md during setup',
+        author: 'Yeachan-Heo',
+        headRefName: 'issue-2143-safe-setup-config',
+      },
+      {
+        number: '2146',
+        title:
+          'fix: follow up #2143 with explicit overwrite choice + omc launch profile',
+        author: 'Yeachan-Heo',
+        headRefName: 'issue-2143-omc-launch-followup',
+      },
+      {
+        number: '2149',
+        title:
+          'fix: resolve global HUD pnpm package lookup outside Node projects',
+        author: 'Yeachan-Heo',
+        headRefName: 'fix/issue-2148-hud-global-pnpm',
+      },
+      {
+        number: '2151',
+        title: 'feat(hud): make call-count icon rendering configurable',
+        author: 'Yeachan-Heo',
+        headRefName: 'issue-2150-hud-call-count-icons',
+      },
     ];
 
     const categories = categorizeReleaseNoteEntries(
       buildReleaseNoteEntriesFromPullRequests(pullRequests),
     );
-    const changelog = generateChangelog('4.10.2', categories, pullRequests.length);
+    const changelog = generateChangelog(
+      '4.10.2',
+      categories,
+      pullRequests.length,
+    );
 
     expect(changelog).toContain('across **10 merged PRs**.');
     expect(changelog).toContain('### Other Changes');
-    expect(changelog).toContain('Fix team tmux pane geometry collapse and bundled agent path resolution');
+    expect(changelog).toContain(
+      'Fix team tmux pane geometry collapse and bundled agent path resolution',
+    );
     expect(changelog).not.toContain('1+ PRs merged');
   });
-
 
   it('excludes the current release tag when resolving the previous tag', () => {
     const repoDir = mkdtempSync(join(tmpdir(), 'release-tag-test-'));
 
     try {
       execSync('git init', { cwd: repoDir, stdio: 'ignore' });
-      execSync('git config user.name "Test User"', { cwd: repoDir, stdio: 'ignore' });
-      execSync('git config user.email "test@example.com"', { cwd: repoDir, stdio: 'ignore' });
+      execSync('git config user.name "Test User"', {
+        cwd: repoDir,
+        stdio: 'ignore',
+      });
+      execSync('git config user.email "test@example.com"', {
+        cwd: repoDir,
+        stdio: 'ignore',
+      });
 
       writeFileSync(join(repoDir, 'notes.txt'), 'first\n');
       execSync('git add notes.txt', { cwd: repoDir, stdio: 'ignore' });
@@ -109,7 +184,9 @@ describe('release generation', () => {
       execSync('git tag v4.11.0', { cwd: repoDir, stdio: 'ignore' });
 
       expect(getLatestTag({ cwd: repoDir })).toBe('v4.11.0');
-      expect(getLatestTag({ cwd: repoDir, excludeTag: 'v4.11.0' })).toBe('v4.10.2');
+      expect(getLatestTag({ cwd: repoDir, excludeTag: 'v4.11.0' })).toBe(
+        'v4.10.2',
+      );
     } finally {
       rmSync(repoDir, { recursive: true, force: true });
     }
@@ -123,19 +200,25 @@ describe('release generation', () => {
       'v4.10.1',
     );
 
-    expect(body).toContain('The npm CLI and the Claude Code marketplace/plugin are separate install tracks');
+    expect(body).toContain(
+      'The npm CLI and the Claude Code marketplace/plugin are separate install tracks',
+    );
     expect(body).toContain('if you have both installed, update both');
-    expect(body).toContain('CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI');
-    expect(body).toContain('npm install -g oh-my-claude-sisyphus@4.10.2');
+    expect(body).toContain(
+      'CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI',
+    );
+    expect(body).toContain('pnpm add -g oh-my-claude-sisyphus@4.10.2');
     expect(body).toContain('/plugin marketplace update omc');
-    expect(body).toContain('https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.10.1...v4.10.2');
+    expect(body).toContain(
+      'https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.10.1...v4.10.2',
+    );
     expect(body).toContain('@blue-int @DdangJin @Yeachan-Heo');
     expect(body.match(/## Contributors/g)).toHaveLength(1);
   });
 
   it('enforces the release publication boundary around one exact archive', () => {
     const workflow = readFileSync(
-      resolve(process.cwd(), '.github/workflows/release.yml'),
+      resolve(process.cwd(), '.github/workflows/release.yml.disabled'),
       'utf-8',
     );
     const stepIndex = (name: string): number => {
@@ -144,7 +227,9 @@ describe('release generation', () => {
       return index;
     };
 
-    expect(workflow).toContain('group: release-${{ github.event.inputs.tag || github.ref_name }}');
+    expect(workflow).toContain(
+      'group: release-${{ github.event.inputs.tag || github.ref_name }}',
+    );
     expect(workflow).toContain('cancel-in-progress: false');
     expect(workflow).toContain('body_path: release-notes.md');
     expect(workflow).toContain('GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}');
@@ -194,7 +279,9 @@ describe('release generation', () => {
     expect(workflow).toContain(
       'TAG_OBJECT=$(git rev-parse --verify "refs/tags/$GITHUB_REF_NAME")',
     );
-    expect(workflow).toContain('test "$(git cat-file -t "$TAG_OBJECT")" = "tag"');
+    expect(workflow).toContain(
+      'test "$(git cat-file -t "$TAG_OBJECT")" = "tag"',
+    );
     expect(workflow).toContain(
       'RELEASE_SHA=$(git rev-parse --verify "refs/tags/$GITHUB_REF_NAME^{}")',
     );
@@ -209,7 +296,9 @@ describe('release generation', () => {
     const tagObject = workflow.indexOf(
       'TAG_OBJECT=$(git rev-parse --verify "refs/tags/$GITHUB_REF_NAME")',
     );
-    const tagType = workflow.indexOf('test "$(git cat-file -t "$TAG_OBJECT")" = "tag"');
+    const tagType = workflow.indexOf(
+      'test "$(git cat-file -t "$TAG_OBJECT")" = "tag"',
+    );
     const peeledReleaseSha = workflow.indexOf(
       'RELEASE_SHA=$(git rev-parse --verify "refs/tags/$GITHUB_REF_NAME^{}")',
     );
@@ -226,9 +315,7 @@ describe('release generation', () => {
     expect(workflow).toContain(
       'node scripts/release-boundary.mjs assert-npm-absent --package oh-my-claude-sisyphus --version "$VERSION"',
     );
-    expect(workflow).toContain(
-      'git cat-file -e HEAD:.github/release-body.md',
-    );
+    expect(workflow).toContain('git cat-file -e HEAD:.github/release-body.md');
     expect(workflow).toContain('test -s .github/release-body.md');
     expect(workflow).toContain('cp .github/release-body.md release-notes.md');
     expect(workflow).not.toContain('Falling back to minimal release notes');
@@ -263,11 +350,15 @@ describe('release generation', () => {
     expect(workflow).toContain(
       '"$SMOKE_PREFIX/node_modules/.bin/omc-cli" team api --help',
     );
-    expect(workflow).toContain('*recover-worker*write-task-checkpoint*read-recovery-result*');
+    expect(workflow).toContain(
+      '*recover-worker*write-task-checkpoint*read-recovery-result*',
+    );
     expect(workflow).toContain('uses: actions/upload-artifact@v4');
     expect(workflow).toContain('${{ runner.temp }}/final/*.tgz');
     expect(workflow).toContain('${{ runner.temp }}/release-evidence.json');
-    expect(workflow).toContain('name: npm-release-boundary-final-${{ github.ref_name }}');
+    expect(workflow).toContain(
+      'name: npm-release-boundary-final-${{ github.ref_name }}',
+    );
 
     const seedPack = workflow.indexOf(
       'npm pack --ignore-scripts --pack-destination "$SEED_DIR" --silent',
@@ -289,7 +380,6 @@ describe('release generation', () => {
     expect(finalPack).toBeLessThan(archiveAssertion);
     expect(archiveAssertion).toBeLessThan(evidenceWrite);
     expect(evidenceWrite).toBeLessThan(smoke);
-
 
     const publishCommands = [...workflow.matchAll(/npm publish [^\n]+/g)].map(
       (match) => match[0],
@@ -378,7 +468,9 @@ describe('release generation', () => {
     expect(evidenceAssertion).toBeLessThan(fallbackPublish);
     expect(fallbackPublish).toBeLessThan(fallbackVerification);
 
-    const fallbackPropagationLimit = workflow.indexOf('MAX_FALLBACK_PROPAGATION_ATTEMPTS=6');
+    const fallbackPropagationLimit = workflow.indexOf(
+      'MAX_FALLBACK_PROPAGATION_ATTEMPTS=6',
+    );
     const fallbackPropagationLoop = workflow.indexOf(
       'while [ "$FALLBACK_ATTEMPT" -le "$MAX_FALLBACK_PROPAGATION_ATTEMPTS" ]; do',
     );
@@ -396,7 +488,9 @@ describe('release generation', () => {
     expect(fallbackPropagationLimit).toBeLessThan(fallbackPropagationLoop);
     expect(fallbackPropagationLoop).toBeLessThan(fallbackVerification);
     expect(fallbackVerification).toBeLessThan(fallbackPropagationExhaustion);
-    expect(fallbackPropagationExhaustion).toBeLessThan(fallbackPropagationFailure);
+    expect(fallbackPropagationExhaustion).toBeLessThan(
+      fallbackPropagationFailure,
+    );
     expect(fallbackPropagationFailure).toBeLessThan(fallbackPropagationExit);
     expect(workflow).toContain(
       'workflow_dispatch:\n    inputs:\n      tag:\n        description: Exact annotated release tag to recover\n        required: true\n        type: string\n      sha:\n        description: Exact 40-character hexadecimal commit SHA to recover\n        required: true\n        type: string',
@@ -407,9 +501,13 @@ describe('release generation', () => {
       workflow.indexOf('  recover:'),
     );
     const recoveryJob = workflow.slice(workflow.indexOf('  recover:'));
-    expect(releaseJob).toContain('if: github.event_name == \'push\'');
-    expect(releaseJob).toContain('permissions:\n      contents: write\n      id-token: write');
-    expect(recoveryJob).toContain('if: github.event_name == \'workflow_dispatch\'');
+    expect(releaseJob).toContain("if: github.event_name == 'push'");
+    expect(releaseJob).toContain(
+      'permissions:\n      contents: write\n      id-token: write',
+    );
+    expect(recoveryJob).toContain(
+      "if: github.event_name == 'workflow_dispatch'",
+    );
     expect(recoveryJob).toContain('permissions:\n      contents: write');
     expect(recoveryJob).not.toContain('id-token: write');
 
@@ -433,7 +531,9 @@ describe('release generation', () => {
     const propagationLoop = releaseJob.indexOf(
       'while [ "$ATTEMPT" -le "$MAX_PROPAGATION_ATTEMPTS" ]; do',
     );
-    const propagationCleanup = releaseJob.indexOf('rm -rf "$VERIFICATION_PREFIX"');
+    const propagationCleanup = releaseJob.indexOf(
+      'rm -rf "$VERIFICATION_PREFIX"',
+    );
     const propagationInstall = releaseJob.indexOf(
       'npm install --ignore-scripts --no-audit --no-fund --prefix "$VERIFICATION_PREFIX" "oh-my-claude-sisyphus@$VERSION"',
     );
@@ -480,13 +580,17 @@ describe('release generation', () => {
     expect(recoveryJob).toContain(
       'TAG_OBJECT=$(git rev-parse --verify "refs/tags/$RECOVERY_TAG")',
     );
-    expect(recoveryJob).toContain('test "$(git cat-file -t "$TAG_OBJECT")" = "tag"');
+    expect(recoveryJob).toContain(
+      'test "$(git cat-file -t "$TAG_OBJECT")" = "tag"',
+    );
 
     expect(recoveryJob).toContain(
       'TAG_SHA=$(git rev-parse --verify "refs/tags/$RECOVERY_TAG^{}")',
     );
     expect(recoveryJob).toContain('test "$TAG_SHA" = "$RECOVERY_SHA"');
-    expect(recoveryJob).toContain('test "$(git rev-parse HEAD)" = "$RECOVERY_SHA"');
+    expect(recoveryJob).toContain(
+      'test "$(git rev-parse HEAD)" = "$RECOVERY_SHA"',
+    );
     expect(recoveryJob).toContain(
       'node scripts/release-boundary.mjs assert-trigger --tag "$RECOVERY_TAG" --sha "$RECOVERY_SHA"',
     );
@@ -560,29 +664,35 @@ describe('release generation', () => {
     const recoveryCheckout = stepIndex('Checkout recovery source');
     const recoveryTagIdentity = stepIndex('Assert recovered tag identity');
     const recoverySetup = stepIndex('Setup recovery Node.js');
-    const recoveryNpmPin = stepIndex('Pin npm for recovery attestation verification');
+    const recoveryNpmPin = stepIndex(
+      'Pin npm for recovery attestation verification',
+    );
     const recoveryTrigger = stepIndex('Assert recovery trigger');
     expect(recoveryInputValidation).toBeLessThan(recoveryCheckout);
     expect(recoveryCheckout).toBeLessThan(recoveryTagIdentity);
     expect(recoveryTagIdentity).toBeLessThan(recoverySetup);
     expect(recoverySetup).toBeLessThan(recoveryNpmPin);
     expect(recoveryNpmPin).toBeLessThan(recoveryTrigger);
-    const recoveryStepNames = [...recoveryJob.matchAll(/- name: ([^\n]+)/g)].map(
-      (match) => match[1],
-    );
+    const recoveryStepNames = [
+      ...recoveryJob.matchAll(/- name: ([^\n]+)/g),
+    ].map((match) => match[1]);
     expect(recoveryStepNames.slice(0, 3)).toEqual([
       'Validate recovery inputs',
       'Checkout recovery source',
       'Assert recovered tag identity',
     ]);
 
-    const recoveryArchive = stepIndex('Download published archive and generate recovery evidence');
+    const recoveryArchive = stepIndex(
+      'Download published archive and generate recovery evidence',
+    );
     const recoveryProvenance = stepIndex('Verify recovered package provenance');
 
     const recoveryArtifact = stepIndex('Upload recovered release evidence');
     const recoveryAbsence = stepIndex('Assert GitHub Release is absent');
     const recoveredRelease = stepIndex('Create recovered GitHub Release');
-    const recoveryReleaseVerification = stepIndex('Verify recovered GitHub Release');
+    const recoveryReleaseVerification = stepIndex(
+      'Verify recovered GitHub Release',
+    );
     const recoveryArtifactStep = recoveryJob.slice(
       recoveryJob.indexOf('- name: Upload recovered release evidence'),
       recoveryJob.indexOf('- name: Assert GitHub Release is absent'),
@@ -598,13 +708,19 @@ describe('release generation', () => {
     const recoveryVerificationStep = recoveryJob.slice(
       recoveryJob.indexOf('- name: Verify recovered GitHub Release'),
     );
-    expect(recoveryArtifactStep).toContain('${{ runner.temp }}/recovery-archive/*.tgz');
-    expect(recoveryArtifactStep).toContain('${{ runner.temp }}/recovery-evidence.json');
+    expect(recoveryArtifactStep).toContain(
+      '${{ runner.temp }}/recovery-archive/*.tgz',
+    );
+    expect(recoveryArtifactStep).toContain(
+      '${{ runner.temp }}/recovery-evidence.json',
+    );
     expect(recoveryArtifactStep).toContain(
       '${{ runner.temp }}/recovery-provenance-verification/audit-signatures.json',
     );
     expect(recoveryArtifactStep).toContain('uses: actions/upload-artifact@v4');
-    expect(recoveryArtifactStep).toContain('name: npm-release-boundary-recovery-v4.15.4');
+    expect(recoveryArtifactStep).toContain(
+      'name: npm-release-boundary-recovery-v4.15.4',
+    );
     expect(recoveryArtifactStep).toContain('if-no-files-found: error');
     expect(recoveryArtifactStep).toContain('retention-days: 30');
     expect(recoveryArtifact).toBeLessThan(recoveredRelease);
@@ -614,8 +730,12 @@ describe('release generation', () => {
     expect(recoveryAbsenceStep).toContain(
       'if gh api --include "repos/$GITHUB_REPOSITORY/releases/tags/$RECOVERY_TAG" > "$RECOVERY_RELEASE_HTTP"; then',
     );
-    expect(recoveryAbsenceStep).toContain('case "$GH_STATUS:$HTTP_STATUS" in\n            1:404) ;;');
-    expect(recoveryAbsenceStep).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}');
+    expect(recoveryAbsenceStep).toContain(
+      'case "$GH_STATUS:$HTTP_STATUS" in\n            1:404) ;;',
+    );
+    expect(recoveryAbsenceStep).toContain(
+      'GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}',
+    );
     expect(recoveryAbsence).toBeLessThan(recoveredRelease);
 
     expect(recoveredReleaseStep).toContain(
@@ -626,7 +746,9 @@ describe('release generation', () => {
     expect(recoveryVerificationStep).toContain(
       'if gh api --include "repos/$GITHUB_REPOSITORY/releases/tags/$RECOVERY_TAG" > "$RECOVERY_RELEASE_HTTP"; then',
     );
-    expect(recoveryVerificationStep).toContain('case "$GH_STATUS:$HTTP_STATUS" in\n            0:200) ;;');
+    expect(recoveryVerificationStep).toContain(
+      'case "$GH_STATUS:$HTTP_STATUS" in\n            0:200) ;;',
+    );
     expect(recoveryVerificationStep).toContain(
       'git fetch --no-tags --force origin "refs/tags/$RECOVERY_TAG:refs/tags/$RECOVERY_TAG"',
     );
@@ -657,14 +779,15 @@ describe('release generation', () => {
     const postCreateTagBinding = recoveryVerificationStep.indexOf(
       'test "$POST_CREATE_TAG_SHA" = "$RECOVERY_SHA"',
     );
-    const postCreateReleaseApi = recoveryVerificationStep.indexOf('gh api --include');
+    const postCreateReleaseApi =
+      recoveryVerificationStep.indexOf('gh api --include');
     expect(postCreateTagFetch).toBeLessThan(postCreateTagObject);
     expect(postCreateTagObject).toBeLessThan(postCreateTagType);
     expect(postCreateTagType).toBeLessThan(postCreateTagSha);
     expect(postCreateTagSha).toBeLessThan(postCreateTagBinding);
     expect(postCreateTagBinding).toBeLessThan(postCreateReleaseApi);
     expect(recoveryVerificationStep).toContain(
-      'const expectedBody = readFileSync(\'.github/release-body.md\', \'utf8\');',
+      "const expectedBody = readFileSync('.github/release-body.md', 'utf8');",
     );
     expect(recoveryVerificationStep).toContain(
       'if (release.tag_name !== process.env.RECOVERY_TAG)',
@@ -672,8 +795,12 @@ describe('release generation', () => {
     expect(recoveryVerificationStep).toContain(
       'if (release.draft !== false || release.prerelease !== false)',
     );
-    expect(recoveryVerificationStep).toContain('if (release.body !== expectedBody)');
-    expect(recoveryVerificationStep).toContain('GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}');
+    expect(recoveryVerificationStep).toContain(
+      'if (release.body !== expectedBody)',
+    );
+    expect(recoveryVerificationStep).toContain(
+      'GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}',
+    );
     expect(recoveryVerificationStep.indexOf('- name:', 1)).toBe(-1);
   });
 });

@@ -3,10 +3,10 @@
  * Self-contained module with no external dependencies.
  */
 
-import * as fs from "fs/promises";
-import * as fsSync from "fs";
-import * as path from "path";
-import * as crypto from "crypto";
+import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
+import * as path from 'path';
+import * as crypto from 'crypto';
 
 /**
  * Create directory recursively (inline implementation).
@@ -24,7 +24,7 @@ export function ensureDirSync(dir: string): void {
   } catch (err) {
     // If directory was created by another process between exists check and mkdir,
     // that's fine - verify it exists now
-    if ((err as NodeJS.ErrnoException).code === "EEXIST") {
+    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
       return;
     }
     throw err;
@@ -32,7 +32,7 @@ export function ensureDirSync(dir: string): void {
 }
 
 function writeAllSync(fd: number, content: string, label: string): void {
-  const bytes = Buffer.from(content, "utf-8");
+  const bytes = Buffer.from(content, 'utf-8');
   let offset = 0;
   while (offset < bytes.length) {
     const written = fsSync.writeSync(fd, bytes, offset, bytes.length - offset);
@@ -45,7 +45,6 @@ function writeAllSync(fd: number, content: string, label: string): void {
     throw new Error(`${label} size verification failed`);
   }
 }
-
 
 /**
  * Write JSON data atomically to a file.
@@ -70,10 +69,10 @@ export async function atomicWriteJson(
     ensureDirSync(dir);
 
     // Serialize data to JSON
-    const jsonContent = Buffer.from(JSON.stringify(data, null, 2), "utf-8");
+    const jsonContent = Buffer.from(JSON.stringify(data, null, 2), 'utf-8');
 
     // Write to temp file with exclusive creation (wx = O_CREAT | O_EXCL | O_WRONLY)
-    const fd = await fs.open(tempPath, "wx", 0o600);
+    const fd = await fs.open(tempPath, 'wx', 0o600);
     try {
       let offset = 0;
       while (offset < jsonContent.length) {
@@ -84,7 +83,7 @@ export async function atomicWriteJson(
           offset,
         );
         if (bytesWritten === 0) {
-          throw new Error("Failed to write complete JSON payload");
+          throw new Error('Failed to write complete JSON payload');
         }
         offset += bytesWritten;
       }
@@ -102,7 +101,7 @@ export async function atomicWriteJson(
 
     // Best-effort directory fsync to ensure rename is durable
     try {
-      const dirFd = await fs.open(dir, "r");
+      const dirFd = await fs.open(dir, 'r');
       try {
         await dirFd.sync();
       } finally {
@@ -141,7 +140,7 @@ export function atomicWriteSync(filePath: string, content: string): void {
     // Write to temp file with exclusive creation
     const fd = fsSync.openSync(tempPath, 'wx', 0o600);
     try {
-      writeAllSync(fd, content, "atomic write");
+      writeAllSync(fd, content, 'atomic write');
       // Sync file data to disk before rename
       fsSync.fsyncSync(fd);
     } finally {
@@ -204,10 +203,10 @@ export function atomicWriteFileSync(filePath: string, content: string): void {
     ensureDirSync(dir);
 
     // Open temp file with exclusive creation (O_CREAT | O_EXCL | O_WRONLY)
-    fd = fsSync.openSync(tempPath, "wx", 0o600);
+    fd = fsSync.openSync(tempPath, 'wx', 0o600);
 
     // Write content
-    writeAllSync(fd, content, "atomic write");
+    writeAllSync(fd, content, 'atomic write');
 
     // Sync file data to disk before rename
     fsSync.fsyncSync(fd);
@@ -223,7 +222,7 @@ export function atomicWriteFileSync(filePath: string, content: string): void {
 
     // Best-effort directory fsync to ensure rename is durable
     try {
-      const dirFd = fsSync.openSync(dir, "r");
+      const dirFd = fsSync.openSync(dir, 'r');
       try {
         fsSync.fsyncSync(dirFd);
       } finally {
@@ -287,19 +286,26 @@ export function atomicWriteBatchSync(writes: AtomicBatchWrite[]): void {
   const targets = new Set<string>();
   let totalBytes = 0;
   const pending = writes.map((write) => {
-    if (!write.path || typeof write.content !== "string") {
-      throw new TypeError("Atomic batch writes require a path and string content");
+    if (!write.path || typeof write.content !== 'string') {
+      throw new TypeError(
+        'Atomic batch writes require a path and string content',
+      );
     }
-    if (write.mode !== undefined && (!Number.isInteger(write.mode) || write.mode < 0 || write.mode > 0o777)) {
-      throw new RangeError("Atomic batch write mode must be a valid file mode");
+    if (
+      write.mode !== undefined &&
+      (!Number.isInteger(write.mode) || write.mode < 0 || write.mode > 0o777)
+    ) {
+      throw new RangeError('Atomic batch write mode must be a valid file mode');
     }
     if (targets.has(write.path)) {
       throw new Error(`Atomic batch contains duplicate target: ${write.path}`);
     }
     targets.add(write.path);
-    totalBytes += Buffer.byteLength(write.content, "utf-8");
+    totalBytes += Buffer.byteLength(write.content, 'utf-8');
     if (totalBytes > ATOMIC_BATCH_MAX_CONTENT_BYTES) {
-      throw new Error(`Atomic batch exceeds ${ATOMIC_BATCH_MAX_CONTENT_BYTES} bytes`);
+      throw new Error(
+        `Atomic batch exceeds ${ATOMIC_BATCH_MAX_CONTENT_BYTES} bytes`,
+      );
     }
 
     const dir = path.dirname(write.path);
@@ -307,16 +313,19 @@ export function atomicWriteBatchSync(writes: AtomicBatchWrite[]): void {
     return {
       ...write,
       dir,
-      tempPath: path.join(dir, `.${path.basename(write.path)}.tmp.${crypto.randomUUID()}`),
+      tempPath: path.join(
+        dir,
+        `.${path.basename(write.path)}.tmp.${crypto.randomUUID()}`,
+      ),
     };
   });
 
   const renamedDirectories = new Set<string>();
   try {
     for (const write of pending) {
-      const fd = fsSync.openSync(write.tempPath, "wx", write.mode ?? 0o600);
+      const fd = fsSync.openSync(write.tempPath, 'wx', write.mode ?? 0o600);
       try {
-        writeAllSync(fd, write.content, "atomic batch write");
+        writeAllSync(fd, write.content, 'atomic batch write');
         fsSync.fsyncSync(fd);
       } finally {
         fsSync.closeSync(fd);
@@ -330,7 +339,7 @@ export function atomicWriteBatchSync(writes: AtomicBatchWrite[]): void {
 
     for (const dir of renamedDirectories) {
       try {
-        const dirFd = fsSync.openSync(dir, "r");
+        const dirFd = fsSync.openSync(dir, 'r');
         try {
           fsSync.fsyncSync(dirFd);
         } finally {
@@ -357,7 +366,7 @@ export async function safeReadJson<T>(filePath: string): Promise<T | null> {
     await fs.access(filePath);
 
     // Read file content
-    const content = await fs.readFile(filePath, "utf-8");
+    const content = await fs.readFile(filePath, 'utf-8');
 
     // Parse JSON
     return JSON.parse(content) as T;
@@ -365,7 +374,7 @@ export async function safeReadJson<T>(filePath: string): Promise<T | null> {
     const error = err as NodeJS.ErrnoException;
 
     // File doesn't exist - return null
-    if (error.code === "ENOENT") {
+    if (error.code === 'ENOENT') {
       return null;
     }
 

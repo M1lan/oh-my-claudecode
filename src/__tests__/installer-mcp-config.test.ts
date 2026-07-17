@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -21,15 +28,23 @@ vi.mock('fs', async () => {
   return {
     ...actual,
     existsSync: vi.fn((pathLike: Parameters<typeof actual.existsSync>[0]) =>
-      actual.existsSync(withRedirect(pathLike))
+      actual.existsSync(withRedirect(pathLike)),
     ),
-    readFileSync: vi.fn((pathLike: Parameters<typeof actual.readFileSync>[0], options?: Parameters<typeof actual.readFileSync>[1]) =>
-      actual.readFileSync(withRedirect(pathLike), options as never)
+    readFileSync: vi.fn(
+      (
+        pathLike: Parameters<typeof actual.readFileSync>[0],
+        options?: Parameters<typeof actual.readFileSync>[1],
+      ) => actual.readFileSync(withRedirect(pathLike), options as never),
     ),
   };
 });
 
-async function loadInstallerWithEnv(claudeConfigDir: string, homeDir: string, codexHome: string, omcHome: string) {
+async function loadInstallerWithEnv(
+  claudeConfigDir: string,
+  homeDir: string,
+  codexHome: string,
+  omcHome: string,
+) {
   vi.resetModules();
   process.env.CLAUDE_CONFIG_DIR = claudeConfigDir;
   process.env.HOME = homeDir;
@@ -75,22 +90,34 @@ describe('installer MCP config ownership (issue #1802)', () => {
     const codexConfigPath = join(codexHome, 'config.toml');
     const registryPath = join(omcHome, 'mcp-registry.json');
 
-    writeFileSync(settingsPath, JSON.stringify({
-      theme: 'dark',
-      statusLine: {
-        type: 'command',
-        command: 'node hud.mjs',
-      },
-      mcpServers: {
-        gitnexus: {
-          command: 'gitnexus',
-          args: ['mcp'],
-          timeout: 15,
+    writeFileSync(
+      settingsPath,
+      JSON.stringify(
+        {
+          theme: 'dark',
+          statusLine: {
+            type: 'command',
+            command: 'node hud.mjs',
+          },
+          mcpServers: {
+            gitnexus: {
+              command: 'gitnexus',
+              args: ['mcp'],
+              timeout: 15,
+            },
+          },
         },
-      },
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
-    const installer = await loadInstallerWithEnv(claudeConfigDir, homeDir, codexHome, omcHome);
+    const installer = await loadInstallerWithEnv(
+      claudeConfigDir,
+      homeDir,
+      codexHome,
+      omcHome,
+    );
     const result = installer.install({
       skipClaudeCheck: true,
       skipHud: true,
@@ -102,7 +129,10 @@ describe('installer MCP config ownership (issue #1802)', () => {
     expect(existsSync(registryPath)).toBe(true);
     expect(existsSync(codexConfigPath)).toBe(true);
 
-    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8')) as Record<string, unknown>;
+    const settings = JSON.parse(readFileSync(settingsPath, 'utf-8')) as Record<
+      string,
+      unknown
+    >;
     expect(settings).toEqual({
       theme: 'dark',
       statusLine: {
@@ -120,7 +150,9 @@ describe('installer MCP config ownership (issue #1802)', () => {
     });
     expect(settings).not.toHaveProperty('mcpServers');
 
-    const claudeRootConfig = JSON.parse(readFileSync(claudeRootConfigPath, 'utf-8')) as Record<string, unknown>;
+    const claudeRootConfig = JSON.parse(
+      readFileSync(claudeRootConfigPath, 'utf-8'),
+    ) as Record<string, unknown>;
     expect(claudeRootConfig).toEqual({
       mcpServers: {
         gitnexus: {

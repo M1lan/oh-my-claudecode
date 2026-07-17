@@ -71,7 +71,9 @@ export interface VerificationProtocol {
   /** Whether all required checks must pass */
   strictMode: boolean;
   /** Optional custom validation function */
-  customValidator?: (checklist: VerificationChecklist) => Promise<ValidationResult>;
+  customValidator?: (
+    checklist: VerificationChecklist,
+  ) => Promise<ValidationResult>;
 }
 
 /**

@@ -7,10 +7,14 @@ const availability = vi.hoisted(() => ({
 }));
 
 vi.mock('../team/model-contract.js', () => ({
-  isCliAvailable: (agentType: 'claude' | 'codex' | 'gemini') => availability[agentType],
+  isCliAvailable: (agentType: 'claude' | 'codex' | 'gemini') =>
+    availability[agentType],
 }));
 
-import { clearSkillsCache, getBuiltinSkill } from '../features/builtin-skills/skills.js';
+import {
+  clearSkillsCache,
+  getBuiltinSkill,
+} from '../features/builtin-skills/skills.js';
 import { renderSkillRuntimeGuidance } from '../features/builtin-skills/runtime-guidance.js';
 
 describe('deep-interview provider-aware approval-gated recommendations', () => {
@@ -54,30 +58,52 @@ describe('deep-interview provider-aware approval-gated recommendations', () => {
 
     const skill = getBuiltinSkill('deep-interview');
 
-    expect(skill?.template).toContain('## Provider-Aware Execution Recommendations');
+    expect(skill?.template).toContain(
+      '## Provider-Aware Execution Recommendations',
+    );
     expect(skill?.template).toContain('/ralplan --architect codex');
     expect(skill?.template).toContain('/ralplan --critic codex');
     expect(skill?.template).toContain('/ralph --critic codex');
     expect(skill?.template).toContain('higher cost than Claude-only ralplan');
-    expect(skill?.template).toContain('Refine with omc-plan consensus (Recommended)');
-    expect(skill?.template).toContain('pending approval → separate execution approval');
-    expect(skill?.template).toContain('do not automatically invoke autopilot or any other execution skill');
+    expect(skill?.template).toContain(
+      'Refine with omc-plan consensus (Recommended)',
+    );
+    expect(skill?.template).toContain(
+      'pending approval → separate execution approval',
+    );
+    expect(skill?.template).toContain(
+      'do not automatically invoke autopilot or any other execution skill',
+    );
     expect(skill?.template).not.toContain('Ralplan → Autopilot (Recommended)');
-    expect(skill?.template).not.toContain('Execute with autopilot (skip ralplan)');
+    expect(skill?.template).not.toContain(
+      'Execute with autopilot (skip ralplan)',
+    );
   });
 
   it('falls back to approval-gated Claude-only defaults when external providers are unavailable', () => {
     const skill = getBuiltinSkill('deep-interview');
 
-    expect(skill?.template).not.toContain('## Provider-Aware Execution Recommendations');
-    expect(skill?.template).toContain('Refine with omc-plan consensus (Recommended)');
-    expect(skill?.template).toContain('pending approval → separate execution approval');
-    expect(skill?.template).toContain('do not automatically invoke autopilot or any other execution skill');
+    expect(skill?.template).not.toContain(
+      '## Provider-Aware Execution Recommendations',
+    );
+    expect(skill?.template).toContain(
+      'Refine with omc-plan consensus (Recommended)',
+    );
+    expect(skill?.template).toContain(
+      'pending approval → separate execution approval',
+    );
+    expect(skill?.template).toContain(
+      'do not automatically invoke autopilot or any other execution skill',
+    );
     expect(skill?.template).toContain('Execute with autopilot');
-    expect(skill?.template).toContain('only after the user explicitly selects this execution option');
+    expect(skill?.template).toContain(
+      'only after the user explicitly selects this execution option',
+    );
     expect(skill?.template).toContain('Execute with ralph');
     expect(skill?.template).not.toContain('Ralplan → Autopilot (Recommended)');
-    expect(skill?.template).not.toContain('Execute with autopilot (skip ralplan)');
+    expect(skill?.template).not.toContain(
+      'Execute with autopilot (skip ralplan)',
+    );
   });
 
   it('documents supported Codex architect/critic overrides for consensus planning', () => {

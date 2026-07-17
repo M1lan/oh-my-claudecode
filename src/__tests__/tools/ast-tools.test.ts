@@ -67,8 +67,8 @@ describe('ast-tools', () => {
     it('should handle multiple meta-variables with $ in captured text', () => {
       const template = '$FN($EXPR)';
       const captures: Record<string, string> = {
-        '$FN': 'process',
-        '$EXPR': "data.replace(/\\d+/g, '$&')",
+        $FN: 'process',
+        $EXPR: "data.replace(/\\d+/g, '$&')",
       };
 
       let finalReplacement = template;

@@ -5,10 +5,7 @@
  * a recovery reminder to guide corrective action.
  */
 
-import {
-  EDIT_ERROR_PATTERNS,
-  EDIT_ERROR_REMINDER,
-} from './constants.js';
+import { EDIT_ERROR_PATTERNS, EDIT_ERROR_REMINDER } from './constants.js';
 import type { RecoveryResult } from './types.js';
 
 /**
@@ -17,7 +14,7 @@ import type { RecoveryResult } from './types.js';
 export function detectEditError(output: string): boolean {
   const outputLower = output.toLowerCase();
   return EDIT_ERROR_PATTERNS.some((pattern) =>
-    outputLower.includes(pattern.toLowerCase())
+    outputLower.includes(pattern.toLowerCase()),
   );
 }
 
@@ -36,7 +33,7 @@ export function injectEditErrorRecovery(output: string): string {
  */
 export function handleEditErrorRecovery(
   toolName: string,
-  output: string
+  output: string,
 ): RecoveryResult {
   if (toolName.toLowerCase() !== 'edit') {
     return {

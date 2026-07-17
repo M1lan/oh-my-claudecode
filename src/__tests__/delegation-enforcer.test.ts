@@ -8,7 +8,7 @@ import {
   isAgentCall,
   processPreToolUse,
   getModelForAgent,
-  type AgentInput
+  type AgentInput,
 } from '../features/delegation-enforcer.js';
 import { resolveDelegation } from '../features/delegation-routing/resolver.js';
 
@@ -16,7 +16,23 @@ describe('delegation-enforcer', () => {
   let originalDebugEnv: string | undefined;
   // Save/restore env vars that trigger non-Claude provider detection (issue #1201)
   // so existing tests run in a standard Claude environment
-  const providerEnvKeys = ['ANTHROPIC_BASE_URL', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL', 'OMC_ROUTING_FORCE_INHERIT', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX', 'CLAUDE_CODE_BEDROCK_OPUS_MODEL', 'CLAUDE_CODE_BEDROCK_SONNET_MODEL', 'CLAUDE_CODE_BEDROCK_HAIKU_MODEL', 'ANTHROPIC_DEFAULT_OPUS_MODEL', 'ANTHROPIC_DEFAULT_SONNET_MODEL', 'ANTHROPIC_DEFAULT_HAIKU_MODEL', 'OMC_MODEL_HIGH', 'OMC_MODEL_MEDIUM', 'OMC_MODEL_LOW'];
+  const providerEnvKeys = [
+    'ANTHROPIC_BASE_URL',
+    'CLAUDE_MODEL',
+    'ANTHROPIC_MODEL',
+    'OMC_ROUTING_FORCE_INHERIT',
+    'CLAUDE_CODE_USE_BEDROCK',
+    'CLAUDE_CODE_USE_VERTEX',
+    'CLAUDE_CODE_BEDROCK_OPUS_MODEL',
+    'CLAUDE_CODE_BEDROCK_SONNET_MODEL',
+    'CLAUDE_CODE_BEDROCK_HAIKU_MODEL',
+    'ANTHROPIC_DEFAULT_OPUS_MODEL',
+    'ANTHROPIC_DEFAULT_SONNET_MODEL',
+    'ANTHROPIC_DEFAULT_HAIKU_MODEL',
+    'OMC_MODEL_HIGH',
+    'OMC_MODEL_MEDIUM',
+    'OMC_MODEL_LOW',
+  ];
   const savedProviderEnv: Record<string, string | undefined> = {};
 
   beforeEach(() => {
@@ -48,7 +64,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'haiku'
+        model: 'haiku',
       };
 
       const result = enforceModel(input);
@@ -62,7 +78,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'claude-sonnet-5'
+        model: 'claude-sonnet-5',
       };
 
       const result = enforceModel(input);
@@ -76,7 +92,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'claude-fable-5'
+        model: 'claude-fable-5',
       };
 
       const result = enforceModel(input);
@@ -90,20 +106,22 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'us.anthropic.claude-sonnet-4-6-v1:0'
+        model: 'us.anthropic.claude-sonnet-4-6-v1:0',
       };
 
       const result = enforceModel(input);
 
       expect(result.injected).toBe(false);
-      expect(result.modifiedInput.model).toBe('us.anthropic.claude-sonnet-4-6-v1:0');
+      expect(result.modifiedInput.model).toBe(
+        'us.anthropic.claude-sonnet-4-6-v1:0',
+      );
     });
 
     it('injects model from agent definition when not specified', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'oh-my-claudecode:executor'
+        subagent_type: 'oh-my-claudecode:executor',
       };
 
       const result = enforceModel(input);
@@ -117,7 +135,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'debugger'
+        subagent_type: 'debugger',
       };
 
       const result = enforceModel(input);
@@ -130,13 +148,15 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'oh-my-claudecode:build-fixer'
+        subagent_type: 'oh-my-claudecode:build-fixer',
       };
 
       const result = enforceModel(input);
 
       expect(result.injected).toBe(true);
-      expect(result.modifiedInput.subagent_type).toBe('oh-my-claudecode:debugger');
+      expect(result.modifiedInput.subagent_type).toBe(
+        'oh-my-claudecode:debugger',
+      );
       expect(result.modifiedInput.model).toBe('sonnet');
     });
 
@@ -144,7 +164,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'unknown-agent'
+        subagent_type: 'unknown-agent',
       };
 
       expect(() => enforceModel(input)).toThrow('Unknown agent type');
@@ -154,7 +174,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       // Without debug flag
@@ -175,7 +195,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       process.env.OMC_DEBUG = 'false';
@@ -192,14 +212,14 @@ describe('delegation-enforcer', () => {
         { agent: 'debugger', expectedModel: 'sonnet' },
         { agent: 'verifier', expectedModel: 'sonnet' },
         { agent: 'code-reviewer', expectedModel: 'opus' },
-        { agent: 'test-engineer', expectedModel: 'sonnet' }
+        { agent: 'test-engineer', expectedModel: 'sonnet' },
       ];
 
       for (const testCase of testCases) {
         const input: AgentInput = {
           description: 'Test',
           prompt: 'Test',
-          subagent_type: testCase.agent
+          subagent_type: testCase.agent,
         };
 
         const result = enforceModel(input);
@@ -214,7 +234,7 @@ describe('delegation-enforcer', () => {
       const toolInput = {
         description: 'Test',
         prompt: 'Test',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       expect(isAgentCall('Agent', toolInput)).toBe(true);
@@ -224,7 +244,7 @@ describe('delegation-enforcer', () => {
       const toolInput = {
         description: 'Test',
         prompt: 'Test',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       expect(isAgentCall('Task', toolInput)).toBe(true);
@@ -234,7 +254,7 @@ describe('delegation-enforcer', () => {
       const toolInput = {
         description: 'Test',
         prompt: 'Test',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       expect(isAgentCall('Bash', toolInput)).toBe(false);
@@ -264,7 +284,7 @@ describe('delegation-enforcer', () => {
         description: 'Test',
         prompt: 'Test',
         subagent_type: 'quality-reviewer',
-        model: 'opus'
+        model: 'opus',
       };
 
       const result = processPreToolUse('Task', toolInput);
@@ -275,12 +295,11 @@ describe('delegation-enforcer', () => {
       });
     });
 
-
     it('enforces model for agent calls', () => {
       const toolInput: AgentInput = {
         description: 'Test',
         prompt: 'Test',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       const result = processPreToolUse('Agent', toolInput);
@@ -293,7 +312,7 @@ describe('delegation-enforcer', () => {
         description: 'Test',
         prompt: 'Test',
         subagent_type: 'executor',
-        model: 'haiku'
+        model: 'haiku',
       };
 
       const result = processPreToolUse('Agent', toolInput);
@@ -306,7 +325,7 @@ describe('delegation-enforcer', () => {
       const toolInput: AgentInput = {
         description: 'Test',
         prompt: 'Test',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       // Without debug
@@ -379,45 +398,58 @@ describe('delegation-enforcer', () => {
 
   describe('env-resolved agent defaults (issue #1415)', () => {
     it('preserves Bedrock family env IDs without auto-enabling forceInherit from tier env alone', () => {
-      process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL = 'us.anthropic.claude-sonnet-4-6-v1:0';
+      process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL =
+        'us.anthropic.claude-sonnet-4-6-v1:0';
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       const result = enforceModel(input);
 
       expect(result.injected).toBe(true);
       expect(result.model).toBe('us.anthropic.claude-sonnet-4-6-v1:0');
-      expect(result.modifiedInput.model).toBe('us.anthropic.claude-sonnet-4-6-v1:0');
+      expect(result.modifiedInput.model).toBe(
+        'us.anthropic.claude-sonnet-4-6-v1:0',
+      );
     });
 
     it('preserves Bedrock family env model IDs when forceInherit is explicitly disabled', () => {
       process.env.OMC_ROUTING_FORCE_INHERIT = 'false';
-      process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL = 'us.anthropic.claude-sonnet-4-6-v1:0';
+      process.env.CLAUDE_CODE_BEDROCK_SONNET_MODEL =
+        'us.anthropic.claude-sonnet-4-6-v1:0';
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
 
       const result = enforceModel(input);
 
       expect(result.injected).toBe(true);
       expect(result.model).toBe('us.anthropic.claude-sonnet-4-6-v1:0');
-      expect(result.modifiedInput.model).toBe('us.anthropic.claude-sonnet-4-6-v1:0');
+      expect(result.modifiedInput.model).toBe(
+        'us.anthropic.claude-sonnet-4-6-v1:0',
+      );
     });
 
     it('getModelForAgent preserves provider-specific IDs from Bedrock env vars', () => {
-      process.env.CLAUDE_CODE_BEDROCK_OPUS_MODEL = 'us.anthropic.claude-opus-4-6-v1:0';
-      expect(getModelForAgent('architect')).toBe('us.anthropic.claude-opus-4-6-v1:0');
+      process.env.CLAUDE_CODE_BEDROCK_OPUS_MODEL =
+        'us.anthropic.claude-opus-4-6-v1:0';
+      expect(getModelForAgent('architect')).toBe(
+        'us.anthropic.claude-opus-4-6-v1:0',
+      );
     });
   });
 
   describe('modelAliases config override (issue #1211)', () => {
     const savedEnv: Record<string, string | undefined> = {};
-    const aliasEnvKeys = ['OMC_MODEL_ALIAS_HAIKU', 'OMC_MODEL_ALIAS_SONNET', 'OMC_MODEL_ALIAS_OPUS'];
+    const aliasEnvKeys = [
+      'OMC_MODEL_ALIAS_HAIKU',
+      'OMC_MODEL_ALIAS_SONNET',
+      'OMC_MODEL_ALIAS_OPUS',
+    ];
 
     beforeEach(() => {
       for (const key of aliasEnvKeys) {
@@ -441,7 +473,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'explore' // explore defaults to haiku
+        subagent_type: 'explore', // explore defaults to haiku
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -453,7 +485,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'explore' // explore defaults to haiku
+        subagent_type: 'explore', // explore defaults to haiku
       };
       const result = enforceModel(input);
       expect(result.model).toBe('sonnet');
@@ -466,7 +498,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'executor'
+        subagent_type: 'executor',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('sonnet');
@@ -479,7 +511,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'explore',
-        model: 'opus' // explicit param wins
+        model: 'opus', // explicit param wins
       };
       const result = enforceModel(input);
       expect(result.model).toBe('opus');
@@ -492,7 +524,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'explore'
+        subagent_type: 'explore',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -504,7 +536,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'architect' // architect defaults to opus
+        subagent_type: 'architect', // architect defaults to opus
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -517,7 +549,7 @@ describe('delegation-enforcer', () => {
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
-        subagent_type: 'explore'
+        subagent_type: 'explore',
       };
       const result = enforceModel(input);
       expect(result.warning).toContain('aliased from haiku');
@@ -526,7 +558,11 @@ describe('delegation-enforcer', () => {
 
   describe('non-Claude provider support (issue #1201)', () => {
     const savedEnv: Record<string, string | undefined> = {};
-    const envKeys = ['CLAUDE_MODEL', 'ANTHROPIC_BASE_URL', 'OMC_ROUTING_FORCE_INHERIT'];
+    const envKeys = [
+      'CLAUDE_MODEL',
+      'ANTHROPIC_BASE_URL',
+      'OMC_ROUTING_FORCE_INHERIT',
+    ];
 
     beforeEach(() => {
       for (const key of envKeys) {
@@ -546,12 +582,13 @@ describe('delegation-enforcer', () => {
     });
 
     it('strips model when Bedrock ARN auto-enables forceInherit', () => {
-      process.env.ANTHROPIC_MODEL = 'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
+      process.env.ANTHROPIC_MODEL =
+        'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
       const input: AgentInput = {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'sonnet'
+        model: 'sonnet',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -565,7 +602,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'sonnet'
+        model: 'sonnet',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -578,7 +615,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:architect',
-        model: 'opus'
+        model: 'opus',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('inherit');
@@ -590,7 +627,7 @@ describe('delegation-enforcer', () => {
         description: 'Test task',
         prompt: 'Do something',
         subagent_type: 'oh-my-claudecode:executor',
-        model: 'haiku'
+        model: 'haiku',
       };
       const result = enforceModel(input);
       expect(result.model).toBe('haiku');

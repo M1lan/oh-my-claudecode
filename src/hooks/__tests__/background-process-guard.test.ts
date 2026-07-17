@@ -6,7 +6,8 @@ import { processHook, resetSkipHooksCache, type HookInput } from '../bridge.js';
 
 // Mock the background-tasks module
 vi.mock('../../hud/background-tasks.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../hud/background-tasks.js')>();
+  const actual =
+    await importOriginal<typeof import('../../hud/background-tasks.js')>();
   return {
     ...actual,
     getRunningTaskCount: vi.fn().mockReturnValue(0),
@@ -20,7 +21,8 @@ vi.mock('../../hud/background-tasks.js', async (importOriginal) => {
 
 // Mock the config loader
 vi.mock('../../config/loader.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../config/loader.js')>();
+  const actual =
+    await importOriginal<typeof import('../../config/loader.js')>();
   return {
     ...actual,
     loadConfig: vi.fn().mockReturnValue({
@@ -41,10 +43,14 @@ import { loadConfig } from '../../config/loader.js';
 
 const mockedAddBackgroundTask = vi.mocked(addBackgroundTask);
 const mockedCompleteBackgroundTask = vi.mocked(completeBackgroundTask);
-const mockedCompleteMostRecentMatchingBackgroundTask = vi.mocked(completeMostRecentMatchingBackgroundTask);
+const mockedCompleteMostRecentMatchingBackgroundTask = vi.mocked(
+  completeMostRecentMatchingBackgroundTask,
+);
 const mockedGetRunningTaskCount = vi.mocked(getRunningTaskCount);
 const mockedRemapBackgroundTaskId = vi.mocked(remapBackgroundTaskId);
-const mockedRemapMostRecentMatchingBackgroundTaskId = vi.mocked(remapMostRecentMatchingBackgroundTaskId);
+const mockedRemapMostRecentMatchingBackgroundTaskId = vi.mocked(
+  remapMostRecentMatchingBackgroundTaskId,
+);
 const mockedLoadConfig = vi.mocked(loadConfig);
 
 describe('Background Process Guard (issue #302)', () => {
@@ -52,10 +58,16 @@ describe('Background Process Guard (issue #302)', () => {
   const resolvedDirectory = process.cwd();
   let claudeConfigDir: string;
 
-  const writeClaudePermissions = (allow: string[] = [], ask: string[] = []): void => {
+  const writeClaudePermissions = (
+    allow: string[] = [],
+    ask: string[] = [],
+  ): void => {
     const settingsPath = join(claudeConfigDir, 'settings.local.json');
     mkdirSync(claudeConfigDir, { recursive: true });
-    writeFileSync(settingsPath, JSON.stringify({ permissions: { allow, ask } }, null, 2));
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ permissions: { allow, ask } }, null, 2),
+    );
   };
 
   beforeEach(() => {
@@ -313,7 +325,10 @@ describe('Background Process Guard (issue #302)', () => {
           run_in_background: true,
         },
         tool_use_id: 'tool-use-bg-2',
-        toolOutput: ['Async agent launched successfully', 'agentId: a8de3dd'].join('\n'),
+        toolOutput: [
+          'Async agent launched successfully',
+          'agentId: a8de3dd',
+        ].join('\n'),
         directory: '/tmp/test',
       } as unknown as HookInput;
 
@@ -326,7 +341,9 @@ describe('Background Process Guard (issue #302)', () => {
         'test-session',
       );
       expect(mockedCompleteBackgroundTask).not.toHaveBeenCalled();
-      expect(mockedRemapMostRecentMatchingBackgroundTaskId).not.toHaveBeenCalled();
+      expect(
+        mockedRemapMostRecentMatchingBackgroundTaskId,
+      ).not.toHaveBeenCalled();
     });
 
     it('marks failed Task launches as failed in HUD state', async () => {
@@ -356,7 +373,10 @@ describe('Background Process Guard (issue #302)', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         toolName: 'TaskOutput',
-        toolOutput: ['<task_id>a8de3dd</task_id>', '<status>completed</status>'].join('\n'),
+        toolOutput: [
+          '<task_id>a8de3dd</task_id>',
+          '<status>completed</status>',
+        ].join('\n'),
         directory: '/tmp/test',
       };
 
@@ -374,7 +394,10 @@ describe('Background Process Guard (issue #302)', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         toolName: 'TaskOutput',
-        toolOutput: ['<task_id>a8de3dd</task_id>', '<status>error</status>'].join('\n'),
+        toolOutput: [
+          '<task_id>a8de3dd</task_id>',
+          '<status>error</status>',
+        ].join('\n'),
         directory: '/tmp/test',
       };
 
@@ -402,7 +425,9 @@ describe('Background Process Guard (issue #302)', () => {
 
       const result = await processHook('post-tool-use', input);
       expect(result.continue).toBe(true);
-      expect(mockedCompleteMostRecentMatchingBackgroundTask).toHaveBeenCalledWith(
+      expect(
+        mockedCompleteMostRecentMatchingBackgroundTask,
+      ).toHaveBeenCalledWith(
         'foreground task',
         resolvedDirectory,
         false,
@@ -420,7 +445,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm run lint',
+          command: 'pnpm run lint',
           run_in_background: true,
         },
         directory: '/tmp/test',
@@ -438,7 +463,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm test',
+          command: 'pnpm test',
         },
         directory: '/tmp/test',
       };
@@ -469,7 +494,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm run lint',
+          command: 'pnpm run lint',
           run_in_background: true,
         },
         directory: '/tmp/test',
@@ -485,7 +510,10 @@ describe('Background Process Guard (issue #302)', () => {
       const relativeRoot = 'tmp-bg-readonly';
       const repoDir = join(resolvedDirectory, relativeRoot);
       mkdirSync(join(repoDir, 'src'), { recursive: true });
-      writeFileSync(join(repoDir, 'src', 'sample.ts'), 'export const value = 1;\n');
+      writeFileSync(
+        join(repoDir, 'src', 'sample.ts'),
+        'export const value = 1;\n',
+      );
 
       try {
         const input: HookInput = {
@@ -509,7 +537,10 @@ describe('Background Process Guard (issue #302)', () => {
     it('should block repo-scoped inspection Bash commands from non-git temp dirs', async () => {
       const nonGitDir = mkdtempSync(join(tmpdir(), 'omc-bg-readonly-non-git-'));
       mkdirSync(join(nonGitDir, 'src'), { recursive: true });
-      writeFileSync(join(nonGitDir, 'src', 'sample.ts'), 'export const value = 1;\n');
+      writeFileSync(
+        join(nonGitDir, 'src', 'sample.ts'),
+        'export const value = 1;\n',
+      );
 
       try {
         const input: HookInput = {
@@ -534,7 +565,10 @@ describe('Background Process Guard (issue #302)', () => {
       const relativeRoot = 'tmp-bg-testcmd';
       const repoDir = join(resolvedDirectory, relativeRoot);
       mkdirSync(join(repoDir, 'src', '__tests__'), { recursive: true });
-      writeFileSync(join(repoDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+      writeFileSync(
+        join(repoDir, 'src', '__tests__', 'sample.test.ts'),
+        'test("x", () => {});\n',
+      );
 
       try {
         const input: HookInput = {
@@ -558,7 +592,10 @@ describe('Background Process Guard (issue #302)', () => {
     it('should block single-test Bash commands from non-git temp dirs', async () => {
       const nonGitDir = mkdtempSync(join(tmpdir(), 'omc-bg-testcmd-non-git-'));
       mkdirSync(join(nonGitDir, 'src', '__tests__'), { recursive: true });
-      writeFileSync(join(nonGitDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+      writeFileSync(
+        join(nonGitDir, 'src', '__tests__', 'sample.test.ts'),
+        'test("x", () => {});\n',
+      );
 
       try {
         const input: HookInput = {
@@ -602,7 +639,7 @@ describe('Background Process Guard (issue #302)', () => {
         sessionId: 'test-session',
         toolName: 'Bash',
         toolInput: {
-          command: 'npm test',
+          command: 'pnpm test',
           run_in_background: true,
         },
         directory: '/tmp/test',
@@ -726,5 +763,4 @@ describe('Background Process Guard (issue #302)', () => {
       expect(result.continue).toBe(true);
     });
   });
-
 });

@@ -57,7 +57,11 @@ export interface TmuxRunner {
   sendKeys(target: string, text: string, literal?: boolean): Promise<void>;
 }
 
-async function defaultTmuxSendKeys(target: string, text: string, literal = false): Promise<void> {
+async function defaultTmuxSendKeys(
+  target: string,
+  text: string,
+  literal = false,
+): Promise<void> {
   const { tmuxExecAsync } = await import('../cli/tmux-utils.js');
   const args = literal
     ? ['send-keys', '-t', target, '-l', text]
@@ -139,10 +143,17 @@ export async function checkLeaderStaleness(params: {
   // Read config to get worker list
   const configPath = join(teamDir, 'config.json');
   const manifestPath = join(teamDir, 'manifest.v2.json');
-  const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
+  const srcPath = existsSync(manifestPath)
+    ? manifestPath
+    : existsSync(configPath)
+      ? configPath
+      : null;
   if (!srcPath) return { ...notStale, reason: 'no_config' };
 
-  const config = await readJsonSafe<{ workers?: Array<{ name: string }>; leader_pane_id?: string }>(srcPath, { workers: [] });
+  const config = await readJsonSafe<{
+    workers?: Array<{ name: string }>;
+    leader_pane_id?: string;
+  }>(srcPath, { workers: [] });
   const workers = config.workers ?? [];
   if (workers.length === 0) return { ...notStale, reason: 'no_workers' };
 
@@ -153,14 +164,28 @@ export async function checkLeaderStaleness(params: {
 
   for (const worker of workers) {
     const statusPath = join(teamDir, 'workers', worker.name, 'status.json');
-    const status = await readJsonSafe<{ state?: string; updated_at?: string }>(statusPath, {});
-    const heartbeatPath = join(teamDir, 'workers', worker.name, 'heartbeat.json');
-    const heartbeat = await readJsonSafe<{ last_turn_at?: string; alive?: boolean }>(heartbeatPath, {});
+    const status = await readJsonSafe<{ state?: string; updated_at?: string }>(
+      statusPath,
+      {},
+    );
+    const heartbeatPath = join(
+      teamDir,
+      'workers',
+      worker.name,
+      'heartbeat.json',
+    );
+    const heartbeat = await readJsonSafe<{
+      last_turn_at?: string;
+      alive?: boolean;
+    }>(heartbeatPath, {});
 
     if (heartbeat.alive !== false) {
       aliveWorkerCount++;
-      const lastTurnMs = heartbeat.last_turn_at ? Date.parse(heartbeat.last_turn_at) : 0;
-      const isFresh = Number.isFinite(lastTurnMs) && (nowMs - lastTurnMs) < staleThresholdMs;
+      const lastTurnMs = heartbeat.last_turn_at
+        ? Date.parse(heartbeat.last_turn_at)
+        : 0;
+      const isFresh =
+        Number.isFinite(lastTurnMs) && nowMs - lastTurnMs < staleThresholdMs;
       if (!isFresh) {
         nonReportingWorkerCount++;
       }
@@ -184,7 +209,10 @@ export async function checkLeaderStaleness(params: {
       const entries = await readdir(tasksDir);
       for (const entry of entries) {
         if (!entry.endsWith('.json') || entry.startsWith('.')) continue;
-        const task = await readJsonSafe<{ status?: string }>(join(tasksDir, entry), {});
+        const task = await readJsonSafe<{ status?: string }>(
+          join(tasksDir, entry),
+          {},
+        );
         if (task.status === 'pending') {
           pendingTaskCount++;
         } else if (task.status === 'blocked') {
@@ -198,13 +226,20 @@ export async function checkLeaderStaleness(params: {
         }
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   const totalWorkerCount = workers.length;
-  const activeTaskCount = pendingTaskCount + blockedTaskCount + inProgressTaskCount;
+  const activeTaskCount =
+    pendingTaskCount + blockedTaskCount + inProgressTaskCount;
 
   // Leader should step in if the team has reached a terminal task state and all workers are idle.
-  if (idleWorkerCount === totalWorkerCount && activeTaskCount === 0 && (completedTaskCount + failedTaskCount) > 0) {
+  if (
+    idleWorkerCount === totalWorkerCount &&
+    activeTaskCount === 0 &&
+    completedTaskCount + failedTaskCount > 0
+  ) {
     return {
       stale: true,
       reason: `all_workers_idle_with_terminal_tasks:idle=${idleWorkerCount},completed=${completedTaskCount},failed=${failedTaskCount}`,
@@ -238,7 +273,11 @@ export async function checkLeaderStaleness(params: {
   }
 
   // Leader is stale if: alive workers exist, but none are reporting progress while active tasks remain.
-  if (aliveWorkerCount > 0 && nonReportingWorkerCount >= aliveWorkerCount && activeTaskCount > 0) {
+  if (
+    aliveWorkerCount > 0 &&
+    nonReportingWorkerCount >= aliveWorkerCount &&
+    activeTaskCount > 0
+  ) {
     return {
       stale: true,
       reason: `no_fresh_workers_with_active_tasks:alive=${aliveWorkerCount},active=${activeTaskCount}`,
@@ -321,20 +360,33 @@ export async function maybeNudgeLeader(params: {
   const maxNudgeCount = resolveMaxNudgeCount();
 
   if (nudgeState.nudge_count >= maxNudgeCount) {
-    return { nudged: false, reason: `max_nudge_count_reached:${maxNudgeCount}` };
+    return {
+      nudged: false,
+      reason: `max_nudge_count_reached:${maxNudgeCount}`,
+    };
   }
 
-  if (nudgeState.last_nudge_at_ms > 0 && (nowMs - nudgeState.last_nudge_at_ms) < cooldownMs) {
+  if (
+    nudgeState.last_nudge_at_ms > 0 &&
+    nowMs - nudgeState.last_nudge_at_ms < cooldownMs
+  ) {
     return { nudged: false, reason: 'cooldown' };
   }
 
   // Find leader pane
   const configPath = join(teamDir, 'config.json');
   const manifestPath = join(teamDir, 'manifest.v2.json');
-  const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
+  const srcPath = existsSync(manifestPath)
+    ? manifestPath
+    : existsSync(configPath)
+      ? configPath
+      : null;
   if (!srcPath) return { nudged: false, reason: 'no_config' };
 
-  const cfgForPane = await readJsonSafe<{ leader_pane_id?: string }>(srcPath, {});
+  const cfgForPane = await readJsonSafe<{ leader_pane_id?: string }>(
+    srcPath,
+    {},
+  );
   const leaderPaneId = safeString(cfgForPane.leader_pane_id).trim();
   if (!leaderPaneId) return { nudged: false, reason: 'no_leader_pane_id' };
 
@@ -346,9 +398,9 @@ export async function maybeNudgeLeader(params: {
 
   try {
     await tmux.sendKeys(leaderPaneId, message, true);
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
 
     // Update nudge state
@@ -357,13 +409,17 @@ export async function maybeNudgeLeader(params: {
       last_nudge_at_ms: nowMs,
       last_nudge_at: nowIso,
     }).catch(logNudgePersistenceFailure);
-    await appendTeamEvent(teamName, {
-      type: 'team_leader_nudge',
-      worker: 'leader-fixed',
-      reason: guidance.reason,
-      next_action: guidance.nextAction,
-      message: guidance.message,
-    }, params.cwd).catch(logNudgePersistenceFailure);
+    await appendTeamEvent(
+      teamName,
+      {
+        type: 'team_leader_nudge',
+        worker: 'leader-fixed',
+        reason: guidance.reason,
+        next_action: guidance.nextAction,
+        message: guidance.message,
+      },
+      params.cwd,
+    ).catch(logNudgePersistenceFailure);
 
     return { nudged: true, reason: guidance.reason };
   } catch {

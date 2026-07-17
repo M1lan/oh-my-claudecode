@@ -26,11 +26,13 @@ export async function checkRateLimitStatus(): Promise<RateLimitStatus | null> {
     }
 
     const usage = result.rateLimits;
-    const fiveHourLimited = (usage.fiveHourPercent ?? 0) >= RATE_LIMIT_THRESHOLD;
+    const fiveHourLimited =
+      (usage.fiveHourPercent ?? 0) >= RATE_LIMIT_THRESHOLD;
     const weeklyLimited = (usage.weeklyPercent ?? 0) >= RATE_LIMIT_THRESHOLD;
     const monthlyLimited = (usage.monthlyPercent ?? 0) >= RATE_LIMIT_THRESHOLD;
     const isLimited = fiveHourLimited || weeklyLimited || monthlyLimited;
-    const usingStaleData = result.error === 'rate_limited' && !!result.rateLimits;
+    const usingStaleData =
+      result.error === 'rate_limited' && !!result.rateLimits;
 
     // Determine next reset time
     let nextResetAt: Date | null = null;
@@ -53,7 +55,7 @@ export async function checkRateLimitStatus(): Promise<RateLimitStatus | null> {
       if (resets.length > 0) {
         // Find earliest reset
         nextResetAt = resets.reduce((earliest, current) =>
-          current < earliest ? current : earliest
+          current < earliest ? current : earliest,
         );
         timeUntilResetMs = Math.max(0, nextResetAt.getTime() - now);
       }
@@ -158,7 +160,9 @@ export function formatRateLimitStatus(status: RateLimitStatus): string {
 /**
  * Whether the underlying usage API is currently degraded by 429/stale-cache behavior.
  */
-export function isRateLimitStatusDegraded(status: RateLimitStatus | null): boolean {
+export function isRateLimitStatusDegraded(
+  status: RateLimitStatus | null,
+): boolean {
   return status?.apiErrorReason === 'rate_limited';
 }
 
@@ -168,6 +172,8 @@ export function isRateLimitStatusDegraded(status: RateLimitStatus | null): boole
  * Degraded usage-api 429/stale-cache states remain visible to the user, but
  * they are intentionally excluded from daemon pane blocking behavior.
  */
-export function shouldMonitorBlockedPanes(status: RateLimitStatus | null): boolean {
+export function shouldMonitorBlockedPanes(
+  status: RateLimitStatus | null,
+): boolean {
   return !!status?.isLimited;
 }

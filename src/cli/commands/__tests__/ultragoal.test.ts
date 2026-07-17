@@ -19,12 +19,16 @@ async function withTempCwd<T>(run: (cwd: string) => Promise<T>): Promise<T> {
 function captureConsole() {
   const out: string[] = [];
   const err: string[] = [];
-  const log = vi.spyOn(console, 'log').mockImplementation((...args: unknown[]) => {
-    out.push(args.map(String).join(' '));
-  });
-  const error = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
-    err.push(args.map(String).join(' '));
-  });
+  const log = vi
+    .spyOn(console, 'log')
+    .mockImplementation((...args: unknown[]) => {
+      out.push(args.map(String).join(' '));
+    });
+  const error = vi
+    .spyOn(console, 'error')
+    .mockImplementation((...args: unknown[]) => {
+      err.push(args.map(String).join(' '));
+    });
   return {
     out,
     err,
@@ -62,15 +66,26 @@ describe('omc ultragoal CLI', () => {
       await ultragoalCommand(['create-goals', '- First story\n- Second story']);
       expect(process.exitCode).toBe(0);
 
-      const goals = JSON.parse(await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8')) as { goals: Array<{ id: string }>; claudeGoalMode: string };
+      const goals = JSON.parse(
+        await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8'),
+      ) as { goals: Array<{ id: string }>; claudeGoalMode: string };
       expect(goals.claudeGoalMode).toBe('aggregate');
-      expect(goals.goals.map((g) => g.id)).toEqual(['G001-first-story', 'G002-second-story']);
+      expect(goals.goals.map((g) => g.id)).toEqual([
+        'G001-first-story',
+        'G002-second-story',
+      ]);
 
-      const brief = await readFile(join(cwd, '.omc/ultragoal/brief.md'), 'utf-8');
+      const brief = await readFile(
+        join(cwd, '.omc/ultragoal/brief.md'),
+        'utf-8',
+      );
       expect(brief).toMatch(/First story/);
       expect(brief).toMatch(/Second story/);
 
-      const ledger = await readFile(join(cwd, '.omc/ultragoal/ledger.jsonl'), 'utf-8');
+      const ledger = await readFile(
+        join(cwd, '.omc/ultragoal/ledger.jsonl'),
+        'utf-8',
+      );
       expect(ledger).toMatch(/"event":"plan_created"/);
     });
   });
@@ -79,10 +94,14 @@ describe('omc ultragoal CLI', () => {
     await withTempCwd(async () => {
       await ultragoalCommand([
         'create-goals',
-        '--brief', 'brief',
-        '--goal', 'First::Complete first milestone.',
-        '--goal', 'Second::Complete second milestone.',
-        '--claude-goal-mode', 'aggregate',
+        '--brief',
+        'brief',
+        '--goal',
+        'First::Complete first milestone.',
+        '--goal',
+        'Second::Complete second milestone.',
+        '--claude-goal-mode',
+        'aggregate',
       ]);
       captured.out.length = 0;
 
@@ -101,28 +120,45 @@ describe('omc ultragoal CLI', () => {
     await withTempCwd(async (cwd) => {
       await ultragoalCommand([
         'create-goals',
-        '--brief', 'brief',
-        '--goal', 'First::Complete first milestone.',
-        '--goal', 'Second::Complete second milestone.',
+        '--brief',
+        'brief',
+        '--goal',
+        'First::Complete first milestone.',
+        '--goal',
+        'Second::Complete second milestone.',
       ]);
-      const plan = JSON.parse(await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8')) as { claudeObjective: string };
+      const plan = JSON.parse(
+        await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8'),
+      ) as { claudeObjective: string };
 
       await ultragoalCommand(['complete-goals']);
       captured.out.length = 0;
 
-      const snapshot = JSON.stringify({ goal: { objective: plan.claudeObjective, status: 'active' } });
+      const snapshot = JSON.stringify({
+        goal: { objective: plan.claudeObjective, status: 'active' },
+      });
       await ultragoalCommand([
         'checkpoint',
-        '--goal-id', 'G001-first',
-        '--status', 'complete',
-        '--evidence', 'unit tests passed',
-        '--claude-goal-json', snapshot,
+        '--goal-id',
+        'G001-first',
+        '--status',
+        'complete',
+        '--evidence',
+        'unit tests passed',
+        '--claude-goal-json',
+        snapshot,
       ]);
       expect(process.exitCode).toBe(0);
 
-      const updated = JSON.parse(await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8')) as { goals: Array<{ id: string; status: string }> };
-      expect(updated.goals.find((g) => g.id === 'G001-first')?.status).toBe('complete');
-      expect(updated.goals.find((g) => g.id === 'G002-second')?.status).toBe('pending');
+      const updated = JSON.parse(
+        await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8'),
+      ) as { goals: Array<{ id: string; status: string }> };
+      expect(updated.goals.find((g) => g.id === 'G001-first')?.status).toBe(
+        'complete',
+      );
+      expect(updated.goals.find((g) => g.id === 'G002-second')?.status).toBe(
+        'pending',
+      );
     });
   });
 
@@ -130,18 +166,35 @@ describe('omc ultragoal CLI', () => {
     await withTempCwd(async (cwd) => {
       await ultragoalCommand([
         'create-goals',
-        '--brief', 'brief',
-        '--goal', 'First::Complete first milestone.',
+        '--brief',
+        'brief',
+        '--goal',
+        'First::Complete first milestone.',
       ]);
-      const plan = JSON.parse(await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8')) as { claudeObjective: string };
+      const plan = JSON.parse(
+        await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8'),
+      ) as { claudeObjective: string };
       await ultragoalCommand(['complete-goals']);
 
       const snapshotPath = join(cwd, 'goal-snapshot.json');
-      await writeFile(snapshotPath, JSON.stringify({ goal: { objective: plan.claudeObjective, status: 'complete' } }));
+      await writeFile(
+        snapshotPath,
+        JSON.stringify({
+          goal: { objective: plan.claudeObjective, status: 'complete' },
+        }),
+      );
       const qualityGate = {
         aiSlopCleaner: { status: 'passed', evidence: 'cleaner ran' },
-        verification: { status: 'passed', commands: ['npm test'], evidence: 'tests passed' },
-        codeReview: { recommendation: 'APPROVE', architectStatus: 'CLEAR', evidence: 'review clean' },
+        verification: {
+          status: 'passed',
+          commands: ['npm test'],
+          evidence: 'tests passed',
+        },
+        codeReview: {
+          recommendation: 'APPROVE',
+          architectStatus: 'CLEAR',
+          evidence: 'review clean',
+        },
       };
       const qualityPath = join(cwd, 'quality.json');
       await writeFile(qualityPath, JSON.stringify(qualityGate));
@@ -149,15 +202,22 @@ describe('omc ultragoal CLI', () => {
       captured.out.length = 0;
       await ultragoalCommand([
         'checkpoint',
-        '--goal-id', 'G001-first',
-        '--status', 'complete',
-        '--evidence', 'final gates passed',
-        '--claude-goal-json', 'goal-snapshot.json',
-        '--quality-gate-json', 'quality.json',
+        '--goal-id',
+        'G001-first',
+        '--status',
+        'complete',
+        '--evidence',
+        'final gates passed',
+        '--claude-goal-json',
+        'goal-snapshot.json',
+        '--quality-gate-json',
+        'quality.json',
       ]);
       expect(process.exitCode).toBe(0);
 
-      const updated = JSON.parse(await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8')) as { goals: Array<{ status: string }> };
+      const updated = JSON.parse(
+        await readFile(join(cwd, '.omc/ultragoal/goals.json'), 'utf-8'),
+      ) as { goals: Array<{ status: string }> };
       expect(updated.goals[0]?.status).toBe('complete');
     });
   });
@@ -166,7 +226,9 @@ describe('omc ultragoal CLI', () => {
     await withTempCwd(async () => {
       await ultragoalCommand(['frobnicate']);
       expect(process.exitCode).toBe(1);
-      expect(captured.err.join('\n')).toMatch(/\[ultragoal\] Unknown ultragoal command: frobnicate/);
+      expect(captured.err.join('\n')).toMatch(
+        /\[ultragoal\] Unknown ultragoal command: frobnicate/,
+      );
     });
   });
 });

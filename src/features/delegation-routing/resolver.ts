@@ -34,7 +34,9 @@ export const DEPRECATED_MCP_PROVIDER_WARNING =
  * 3. Default heuristic (role category → Claude subagent)
  * 4. defaultProvider
  */
-export function resolveDelegation(options: ResolveDelegationOptions): DelegationDecision {
+export function resolveDelegation(
+  options: ResolveDelegationOptions,
+): DelegationDecision {
   const { agentRole, explicitTool, explicitModel, config } = options;
   const canonicalAgentRole = normalizeDelegationRole(agentRole);
 
@@ -44,8 +46,11 @@ export function resolveDelegation(options: ResolveDelegationOptions): Delegation
   }
 
   // Priority 2: Configured routing (if enabled)
-  const configuredRoute = config?.roles?.[agentRole]
-    ?? (canonicalAgentRole !== agentRole ? config?.roles?.[canonicalAgentRole] : undefined);
+  const configuredRoute =
+    config?.roles?.[agentRole] ??
+    (canonicalAgentRole !== agentRole
+      ? config?.roles?.[canonicalAgentRole]
+      : undefined);
 
   if (config && isDelegationEnabled(config) && configuredRoute) {
     return resolveFromConfig(canonicalAgentRole, configuredRoute);
@@ -61,7 +66,7 @@ export function resolveDelegation(options: ResolveDelegationOptions): Delegation
 function resolveExplicitTool(
   tool: DelegationTool,
   model: string | undefined,
-  agentRole: string
+  agentRole: string,
 ): DelegationDecision {
   // Only 'Task' is supported - explicit tool invocation always uses Claude
   return {
@@ -91,7 +96,9 @@ function resolveFromConfig(
   if (isDeprecatedMcpProvider(provider)) {
     console.warn(DEPRECATED_MCP_PROVIDER_WARNING);
     const claudeAgent = route.agentType || agentRole;
-    const modelEvidence = route.model ? `; ignored external model "${route.model}"` : '';
+    const modelEvidence = route.model
+      ? `; ignored external model "${route.model}"`
+      : '';
     return {
       provider: 'claude',
       tool: 'Task',
@@ -103,7 +110,9 @@ function resolveFromConfig(
 
   // Only claude → Task is valid; correct any mismatch
   if (tool !== 'Task') {
-    console.warn(`[delegation-routing] Provider/tool mismatch: ${provider} with ${tool}. Correcting to Task.`);
+    console.warn(
+      `[delegation-routing] Provider/tool mismatch: ${provider} with ${tool}. Correcting to Task.`,
+    );
     tool = 'Task';
   }
 
@@ -121,7 +130,7 @@ function resolveFromConfig(
  */
 function resolveDefault(
   agentRole: string,
-  config: DelegationRoutingConfig | undefined
+  config: DelegationRoutingConfig | undefined,
 ): DelegationDecision {
   // Check if we have a default agent mapping for this role
   const defaultAgent = ROLE_CATEGORY_DEFAULTS[agentRole];
@@ -152,7 +161,9 @@ function resolveDefault(
 }
 
 export function isDeprecatedMcpProvider(
-  provider: DelegationRoute['provider'] | DelegationRoutingConfig['defaultProvider'],
+  provider:
+    | DelegationRoute['provider']
+    | DelegationRoutingConfig['defaultProvider'],
 ): provider is 'codex' | 'gemini' {
   return provider ? DEPRECATED_MCP_PROVIDERS.has(provider) : false;
 }
@@ -161,7 +172,7 @@ export function isDeprecatedMcpProvider(
  * Parse fallback chain format ["claude:explore", "codex:gpt-5"]
  */
 export function parseFallbackChain(
-  fallback: string[] | undefined
+  fallback: string[] | undefined,
 ): Array<{ provider: string; agentOrModel: string }> {
   if (!fallback || fallback.length === 0) {
     return [];
@@ -184,5 +195,8 @@ export function parseFallbackChain(
       // Invalid format, skip
       return null;
     })
-    .filter((item): item is { provider: string; agentOrModel: string } => item !== null);
+    .filter(
+      (item): item is { provider: string; agentOrModel: string } =>
+        item !== null,
+    );
 }

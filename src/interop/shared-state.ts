@@ -8,7 +8,13 @@
  */
 
 import { join } from 'path';
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+} from 'fs';
 import { z } from 'zod';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
 import { withFileLockSync } from '../lib/file-lock.js';
@@ -57,7 +63,10 @@ export interface SharedMessage {
 }
 
 const INTEROP_ARTIFACT_THRESHOLD_BYTES = 2048;
-type SharedStateArtifactCategory = 'task-description' | 'task-result' | 'message-content';
+type SharedStateArtifactCategory =
+  | 'task-description'
+  | 'task-result'
+  | 'message-content';
 
 type SharedStateTextHandoff = {
   text: string;
@@ -133,16 +142,20 @@ function createSharedStateTextHandoff(params: {
   return createArtifactHandoff({
     body: params.body,
     thresholdBytes: INTEROP_ARTIFACT_THRESHOLD_BYTES,
-    descriptorFactory: () => writeTextArtifact({
-      path: join(getInteropArtifactsDir(params.cwd, params.category), `${params.entityId}.md`),
-      content: params.body,
-      kind: params.category,
-      producer: {
-        system: params.source,
-        component: 'interop-shared-state',
-      },
-      retention: params.retention,
-    }),
+    descriptorFactory: () =>
+      writeTextArtifact({
+        path: join(
+          getInteropArtifactsDir(params.cwd, params.category),
+          `${params.entityId}.md`,
+        ),
+        content: params.body,
+        kind: params.category,
+        producer: {
+          system: params.source,
+          component: 'interop-shared-state',
+        },
+        retention: params.retention,
+      }),
   });
 }
 
@@ -186,7 +199,7 @@ export function getInteropDir(cwd: string): string {
 export function initInteropSession(
   sessionId: string,
   omcCwd: string,
-  omxCwd?: string
+  omxCwd?: string,
 ): InteropConfig {
   const interopDir = getInteropDir(omcCwd);
   mkdirSync(interopDir, { recursive: true });
@@ -229,7 +242,7 @@ export function readInteropConfig(cwd: string): InteropConfig | null {
  */
 export function addSharedTask(
   cwd: string,
-  task: Omit<SharedTask, 'id' | 'createdAt' | 'status'>
+  task: Omit<SharedTask, 'id' | 'createdAt' | 'status'>,
 ): SharedTask {
   const interopDir = getInteropDir(cwd);
 
@@ -264,18 +277,21 @@ export function addSharedTask(
 /**
  * Read all shared tasks
  */
-export function readSharedTasks(cwd: string, filter?: {
-  source?: 'omc' | 'omx';
-  target?: 'omc' | 'omx';
-  status?: SharedTask['status'];
-}): SharedTask[] {
+export function readSharedTasks(
+  cwd: string,
+  filter?: {
+    source?: 'omc' | 'omx';
+    target?: 'omc' | 'omx';
+    status?: SharedTask['status'];
+  },
+): SharedTask[] {
   const tasksDir = join(getInteropDir(cwd), 'tasks');
 
   if (!existsSync(tasksDir)) {
     return [];
   }
 
-  const files = readdirSync(tasksDir).filter(f => f.endsWith('.json'));
+  const files = readdirSync(tasksDir).filter((f) => f.endsWith('.json'));
   const tasks: SharedTask[] = [];
 
   for (const file of files) {
@@ -297,8 +313,8 @@ export function readSharedTasks(cwd: string, filter?: {
   }
 
   // Sort by creation time (newest first)
-  return tasks.sort((a, b) =>
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  return tasks.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 }
 
@@ -308,7 +324,7 @@ export function readSharedTasks(cwd: string, filter?: {
 export function updateSharedTask(
   cwd: string,
   taskId: string,
-  updates: Partial<Omit<SharedTask, 'id' | 'createdAt'>>
+  updates: Partial<Omit<SharedTask, 'id' | 'createdAt'>>,
 ): SharedTask | null {
   const taskPath = join(getInteropDir(cwd), 'tasks', `${taskId}.json`);
 
@@ -378,7 +394,7 @@ export function updateSharedTask(
  */
 export function addSharedMessage(
   cwd: string,
-  message: Omit<SharedMessage, 'id' | 'timestamp' | 'read'>
+  message: Omit<SharedMessage, 'id' | 'timestamp' | 'read'>,
 ): SharedMessage {
   const interopDir = getInteropDir(cwd);
 
@@ -413,18 +429,21 @@ export function addSharedMessage(
 /**
  * Read shared messages
  */
-export function readSharedMessages(cwd: string, filter?: {
-  source?: 'omc' | 'omx';
-  target?: 'omc' | 'omx';
-  unreadOnly?: boolean;
-}): SharedMessage[] {
+export function readSharedMessages(
+  cwd: string,
+  filter?: {
+    source?: 'omc' | 'omx';
+    target?: 'omc' | 'omx';
+    unreadOnly?: boolean;
+  },
+): SharedMessage[] {
   const messagesDir = join(getInteropDir(cwd), 'messages');
 
   if (!existsSync(messagesDir)) {
     return [];
   }
 
-  const files = readdirSync(messagesDir).filter(f => f.endsWith('.json'));
+  const files = readdirSync(messagesDir).filter((f) => f.endsWith('.json'));
   const messages: SharedMessage[] = [];
 
   for (const file of files) {
@@ -446,8 +465,8 @@ export function readSharedMessages(cwd: string, filter?: {
   }
 
   // Sort by timestamp (newest first)
-  return messages.sort((a, b) =>
-    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  return messages.sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
   );
 }
 
@@ -462,15 +481,23 @@ export function markMessageAsRead(cwd: string, messageId: string): boolean {
   }
 
   try {
-    const content = readFileSync(messagePath, 'utf-8');
-    const parsed = SharedMessageSchema.safeParse(JSON.parse(content));
-    if (!parsed.success) return false;
-    const message = parsed.data;
+    // Lock the read-modify-write so a concurrent reader (also marking read) or
+    // writer cannot lose the flag update. Mirrors updateSharedTask's locking.
+    return withFileLockSync(
+      messagePath + '.lock',
+      () => {
+        const content = readFileSync(messagePath, 'utf-8');
+        const parsed = SharedMessageSchema.safeParse(JSON.parse(content));
+        if (!parsed.success) return false;
+        const message = parsed.data;
 
-    message.read = true;
-    atomicWriteJsonSync(messagePath, message);
+        message.read = true;
+        atomicWriteJsonSync(messagePath, message);
 
-    return true;
+        return true;
+      },
+      { timeoutMs: 2000 },
+    );
   } catch {
     return false;
   }
@@ -480,24 +507,25 @@ export function markMessageAsRead(cwd: string, messageId: string): boolean {
  * Clean up interop session
  * Removes all tasks and messages for a session
  */
-export function cleanupInterop(cwd: string, options?: {
-  keepTasks?: boolean;
-  keepMessages?: boolean;
-  olderThan?: number; // milliseconds
-}): { tasksDeleted: number; messagesDeleted: number } {
+export function cleanupInterop(
+  cwd: string,
+  options?: {
+    keepTasks?: boolean;
+    keepMessages?: boolean;
+    olderThan?: number; // milliseconds
+  },
+): { tasksDeleted: number; messagesDeleted: number } {
   const interopDir = getInteropDir(cwd);
   let tasksDeleted = 0;
   let messagesDeleted = 0;
 
-  const cutoffTime = options?.olderThan
-    ? Date.now() - options.olderThan
-    : 0;
+  const cutoffTime = options?.olderThan ? Date.now() - options.olderThan : 0;
 
   // Clean up tasks
   if (!options?.keepTasks) {
     const tasksDir = join(interopDir, 'tasks');
     if (existsSync(tasksDir)) {
-      const files = readdirSync(tasksDir).filter(f => f.endsWith('.json'));
+      const files = readdirSync(tasksDir).filter((f) => f.endsWith('.json'));
 
       for (const file of files) {
         try {
@@ -525,7 +553,7 @@ export function cleanupInterop(cwd: string, options?: {
   if (!options?.keepMessages) {
     const messagesDir = join(interopDir, 'messages');
     if (existsSync(messagesDir)) {
-      const files = readdirSync(messagesDir).filter(f => f.endsWith('.json'));
+      const files = readdirSync(messagesDir).filter((f) => f.endsWith('.json'));
 
       for (const file of files) {
         try {

@@ -22,7 +22,9 @@ export interface SkillResourceSummary {
   entries: string[];
 }
 
-export function summarizeSkillResources(skillFilePath: string): SkillResourceSummary | undefined {
+export function summarizeSkillResources(
+  skillFilePath: string,
+): SkillResourceSummary | undefined {
   const skillDirectory = dirname(skillFilePath);
   if (!existsSync(skillDirectory)) {
     return undefined;
@@ -31,10 +33,12 @@ export function summarizeSkillResources(skillFilePath: string): SkillResourceSum
   let directoryEntries: string[] = [];
   try {
     directoryEntries = readdirSync(skillDirectory, { withFileTypes: true })
-      .filter((entry) => entry.name !== 'SKILL.md' && !entry.name.startsWith('.'))
+      .filter(
+        (entry) => entry.name !== 'SKILL.md' && !entry.name.startsWith('.'),
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
       .slice(0, MAX_RESOURCE_ENTRIES)
-      .map((entry) => entry.isDirectory() ? `${entry.name}/` : entry.name);
+      .map((entry) => (entry.isDirectory() ? `${entry.name}/` : entry.name));
   } catch {
     return undefined;
   }

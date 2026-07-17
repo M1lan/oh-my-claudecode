@@ -16,7 +16,9 @@ export function logSwallowedError(context: string, error: unknown): void {
   }
 }
 
-export function createSwallowedErrorLogger(context: string): (error: unknown) => void {
+export function createSwallowedErrorLogger(
+  context: string,
+): (error: unknown) => void {
   return (error: unknown) => {
     logSwallowedError(context, error);
   };

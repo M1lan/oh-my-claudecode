@@ -6,12 +6,7 @@
  * Ported from oh-my-opencode's rules-injector hook.
  */
 
-import {
-  existsSync,
-  readdirSync,
-  realpathSync,
-  statSync,
-} from 'fs';
+import { existsSync, readdirSync, realpathSync, statSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import {
   GITHUB_INSTRUCTIONS_PATTERN,
@@ -27,7 +22,9 @@ import type { RuleFileCandidate } from './types.js';
  * Check if a directory is a GitHub instructions directory.
  */
 function isGitHubInstructionsDir(dir: string): boolean {
-  return dir.includes('.github/instructions') || dir.endsWith('.github/instructions');
+  return (
+    dir.includes('.github/instructions') || dir.endsWith('.github/instructions')
+  );
 }
 
 /**
@@ -111,7 +108,7 @@ function safeRealpathSync(filePath: string): string {
 export function calculateDistance(
   rulePath: string,
   currentFile: string,
-  projectRoot: string | null
+  projectRoot: string | null,
 ): number {
   if (!projectRoot) {
     return 9999;
@@ -157,7 +154,7 @@ export function calculateDistance(
  */
 export function findRuleFiles(
   projectRoot: string | null,
-  currentFile: string
+  currentFile: string,
 ): RuleFileCandidate[] {
   const candidates: RuleFileCandidate[] = [];
   const seenRealPaths = new Set<string>();

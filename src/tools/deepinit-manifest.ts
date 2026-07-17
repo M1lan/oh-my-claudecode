@@ -14,7 +14,13 @@
  */
 
 import { z } from 'zod';
-import { readdirSync, statSync, readFileSync, existsSync, realpathSync } from 'node:fs';
+import {
+  readdirSync,
+  statSync,
+  readFileSync,
+  existsSync,
+  realpathSync,
+} from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { validateWorkingDirectory, getOmcRoot } from '../lib/worktree-paths.js';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
@@ -35,8 +41,13 @@ const MAX_DIRECTORIES = 10_000;
 
 /** Directories excluded by name (exact match) */
 const EXCLUDED_DIRS = new Set([
-  'node_modules', 'dist', 'build', '__pycache__',
-  'coverage', '.next', '.nuxt',
+  'node_modules',
+  'dist',
+  'build',
+  '__pycache__',
+  'coverage',
+  '.next',
+  '.nuxt',
 ]);
 
 // =============================================================================
@@ -82,23 +93,38 @@ interface DiffResult {
 // =============================================================================
 
 const deepinitManifestSchema = {
-  action: z.enum(['diff', 'save', 'check']).describe(
-    'Action: diff (compare current filesystem to saved manifest — compares directory file lists, not file contents), ' +
-    'save (write current filesystem state as manifest), ' +
-    'check (return whether manifest exists and is valid)'
-  ),
-  workingDirectory: z.string().optional().describe(
-    'Project root directory. Auto-detected from git worktree if omitted.'
-  ),
-  mode: z.enum(['incremental', 'full']).optional().default('incremental').describe(
-    'Only valid with action=diff. incremental (default) returns only changed dirs, full returns all dirs as added.'
-  ),
-  dryRun: z.boolean().optional().default(false).describe(
-    'Only valid with action=save. If true, return what would be saved without writing.'
-  ),
+  action: z
+    .enum(['diff', 'save', 'check'])
+    .describe(
+      'Action: diff (compare current filesystem to saved manifest — compares directory file lists, not file contents), ' +
+        'save (write current filesystem state as manifest), ' +
+        'check (return whether manifest exists and is valid)',
+    ),
+  workingDirectory: z
+    .string()
+    .optional()
+    .describe(
+      'Project root directory. Auto-detected from git worktree if omitted.',
+    ),
+  mode: z
+    .enum(['incremental', 'full'])
+    .optional()
+    .default('incremental')
+    .describe(
+      'Only valid with action=diff. incremental (default) returns only changed dirs, full returns all dirs as added.',
+    ),
+  dryRun: z
+    .boolean()
+    .optional()
+    .default(false)
+    .describe(
+      'Only valid with action=save. If true, return what would be saved without writing.',
+    ),
 };
 
-type DeepinitManifestInput = z.infer<z.ZodObject<typeof deepinitManifestSchema>>;
+type DeepinitManifestInput = z.infer<
+  z.ZodObject<typeof deepinitManifestSchema>
+>;
 
 // =============================================================================
 // CORE FUNCTIONS (exported for testing)
@@ -123,7 +149,9 @@ export function isExcluded(name: string): boolean {
  * @param projectRoot Absolute path to the project root
  * @returns Record keyed by relative path ('.' for root), value is DirectoryEntry
  */
-export function scanDirectories(projectRoot: string): Record<string, DirectoryEntry> {
+export function scanDirectories(
+  projectRoot: string,
+): Record<string, DirectoryEntry> {
   const result: Record<string, DirectoryEntry> = {};
   const visitedInodes = new Set<number>();
 
@@ -144,7 +172,10 @@ export function scanDirectories(projectRoot: string): Record<string, DirectoryEn
     // Symlink containment: verify resolved path is under project root
     try {
       const realDir = realpathSync(absDir);
-      if (realDir !== realProjectRoot && !realDir.startsWith(realProjectRoot + sep)) {
+      if (
+        realDir !== realProjectRoot &&
+        !realDir.startsWith(realProjectRoot + sep)
+      ) {
         return; // Symlink escapes project root — skip
       }
     } catch {
@@ -212,7 +243,8 @@ export function loadManifest(manifestPath: string): DeepInitManifest | null {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
 
     if (parsed.version !== MANIFEST_VERSION) return null;
-    if (typeof parsed.directories !== 'object' || parsed.directories === null) return null;
+    if (typeof parsed.directories !== 'object' || parsed.directories === null)
+      return null;
 
     return parsed as unknown as DeepInitManifest;
   } catch {
@@ -239,7 +271,11 @@ export function computeDiff(
   if (previous === null) {
     // First run: everything is added
     for (const path of Object.keys(current)) {
-      entries.set(path, { path, status: 'added', reason: 'first run (no manifest)' });
+      entries.set(path, {
+        path,
+        status: 'added',
+        reason: 'first run (no manifest)',
+      });
     }
   } else {
     // Check current directories against previous
@@ -251,16 +287,24 @@ export function computeDiff(
         const prevFiles = [...prev.files].sort();
         const currFiles = [...entry.files].sort();
 
-        if (prevFiles.length !== currFiles.length || prevFiles.some((f, i) => f !== currFiles[i])) {
+        if (
+          prevFiles.length !== currFiles.length ||
+          prevFiles.some((f, i) => f !== currFiles[i])
+        ) {
           // Compute what changed using Set for O(n+m) instead of O(n*m)
           const prevSet = new Set(prevFiles);
           const currSet = new Set(currFiles);
-          const added = currFiles.filter(f => !prevSet.has(f));
-          const removed = prevFiles.filter(f => !currSet.has(f));
+          const added = currFiles.filter((f) => !prevSet.has(f));
+          const removed = prevFiles.filter((f) => !currSet.has(f));
           const parts: string[] = [];
           if (added.length > 0) parts.push(`files added: ${added.join(', ')}`);
-          if (removed.length > 0) parts.push(`files removed: ${removed.join(', ')}`);
-          entries.set(path, { path, status: 'modified', reason: parts.join('; ') });
+          if (removed.length > 0)
+            parts.push(`files removed: ${removed.join(', ')}`);
+          entries.set(path, {
+            path,
+            status: 'modified',
+            reason: parts.join('; '),
+          });
         } else {
           entries.set(path, { path, status: 'unchanged' });
         }
@@ -270,14 +314,19 @@ export function computeDiff(
     // Check for deleted directories
     for (const path of Object.keys(previous)) {
       if (!(path in current)) {
-        entries.set(path, { path, status: 'deleted', reason: 'directory no longer exists' });
+        entries.set(path, {
+          path,
+          status: 'deleted',
+          reason: 'directory no longer exists',
+        });
       }
     }
   }
 
   // Ancestor cascading: mark parents of added/deleted dirs as modified
-  const cascadeTargets = [...entries.values()]
-    .filter(e => e.status === 'added' || e.status === 'deleted');
+  const cascadeTargets = [...entries.values()].filter(
+    (e) => e.status === 'added' || e.status === 'deleted',
+  );
 
   for (const target of cascadeTargets) {
     const parts = target.path.split('/');
@@ -307,13 +356,15 @@ export function computeDiff(
   }
 
   // Sort by path and build result
-  const sorted = [...entries.values()].sort((a, b) => a.path.localeCompare(b.path));
+  const sorted = [...entries.values()].sort((a, b) =>
+    a.path.localeCompare(b.path),
+  );
   const summary = {
     total: sorted.length,
-    added: sorted.filter(e => e.status === 'added').length,
-    deleted: sorted.filter(e => e.status === 'deleted').length,
-    modified: sorted.filter(e => e.status === 'modified').length,
-    unchanged: sorted.filter(e => e.status === 'unchanged').length,
+    added: sorted.filter((e) => e.status === 'added').length,
+    deleted: sorted.filter((e) => e.status === 'deleted').length,
+    modified: sorted.filter((e) => e.status === 'modified').length,
+    unchanged: sorted.filter((e) => e.status === 'unchanged').length,
   };
 
   return { entries: sorted, summary };
@@ -327,7 +378,10 @@ function resolveManifestPath(root: string): string {
   return join(getOmcRoot(root), 'deepinit-manifest.json');
 }
 
-function handleDiff(root: string, mode: string): { content: Array<{ type: 'text'; text: string }> } {
+function handleDiff(
+  root: string,
+  mode: string,
+): { content: Array<{ type: 'text'; text: string }> } {
   const current = scanDirectories(root);
   const manifestPath = resolveManifestPath(root);
 
@@ -346,10 +400,15 @@ function handleDiff(root: string, mode: string): { content: Array<{ type: 'text'
     ...diff,
   };
 
-  return { content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }] };
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(output, null, 2) }],
+  };
 }
 
-function handleSave(root: string, dryRun: boolean): { content: Array<{ type: 'text'; text: string }> } {
+function handleSave(
+  root: string,
+  dryRun: boolean,
+): { content: Array<{ type: 'text'; text: string }> } {
   const current = scanDirectories(root);
   const manifest: DeepInitManifest = {
     version: MANIFEST_VERSION,
@@ -359,10 +418,12 @@ function handleSave(root: string, dryRun: boolean): { content: Array<{ type: 'te
 
   if (dryRun) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: `Dry run — manifest NOT written.\n\nDirectories tracked: ${Object.keys(current).length}\n\n\`\`\`json\n${JSON.stringify(manifest, null, 2)}\n\`\`\``,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `Dry run — manifest NOT written.\n\nDirectories tracked: ${Object.keys(current).length}\n\n\`\`\`json\n${JSON.stringify(manifest, null, 2)}\n\`\`\``,
+        },
+      ],
     };
   }
 
@@ -370,23 +431,38 @@ function handleSave(root: string, dryRun: boolean): { content: Array<{ type: 'te
   atomicWriteJsonSync(manifestPath, manifest);
 
   return {
-    content: [{
-      type: 'text' as const,
-      text: `Manifest saved successfully.\n\nPath: ${manifestPath}\nDirectories tracked: ${Object.keys(current).length}\nGenerated at: ${manifest.generatedAt}`,
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: `Manifest saved successfully.\n\nPath: ${manifestPath}\nDirectories tracked: ${Object.keys(current).length}\nGenerated at: ${manifest.generatedAt}`,
+      },
+    ],
   };
 }
 
-function handleCheck(root: string): { content: Array<{ type: 'text'; text: string }> } {
+function handleCheck(root: string): {
+  content: Array<{ type: 'text'; text: string }>;
+} {
   const manifestPath = resolveManifestPath(root);
   const exists = existsSync(manifestPath);
 
   if (!exists) {
     return {
-      content: [{
-        type: 'text' as const,
-        text: JSON.stringify({ exists: false, valid: false, directoryCount: 0, generatedAt: null }, null, 2),
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: JSON.stringify(
+            {
+              exists: false,
+              valid: false,
+              directoryCount: 0,
+              generatedAt: null,
+            },
+            null,
+            2,
+          ),
+        },
+      ],
     };
   }
 
@@ -396,10 +472,16 @@ function handleCheck(root: string): { content: Array<{ type: 'text'; text: strin
   const generatedAt = valid ? manifest!.generatedAt : null;
 
   return {
-    content: [{
-      type: 'text' as const,
-      text: JSON.stringify({ exists, valid, directoryCount, generatedAt }, null, 2),
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: JSON.stringify(
+          { exists, valid, directoryCount, generatedAt },
+          null,
+          2,
+        ),
+      },
+    ],
   };
 }
 
@@ -407,7 +489,9 @@ function handleCheck(root: string): { content: Array<{ type: 'text'; text: strin
 // TOOL DEFINITION
 // =============================================================================
 
-export const deepinitManifestTool: ToolDefinition<typeof deepinitManifestSchema> = {
+export const deepinitManifestTool: ToolDefinition<
+  typeof deepinitManifestSchema
+> = {
   name: 'deepinit_manifest',
   description:
     'Manage the deepinit manifest for incremental AGENTS.md regeneration. ' +
@@ -421,13 +505,23 @@ export const deepinitManifestTool: ToolDefinition<typeof deepinitManifestSchema>
     // Per-action parameter validation
     if (action !== 'diff' && mode !== undefined && mode !== 'incremental') {
       return {
-        content: [{ type: 'text' as const, text: `Error: 'mode' parameter is only valid with action='diff'. Got action='${action}'.` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: 'mode' parameter is only valid with action='diff'. Got action='${action}'.`,
+          },
+        ],
         isError: true,
       };
     }
     if (action !== 'save' && dryRun) {
       return {
-        content: [{ type: 'text' as const, text: `Error: 'dryRun' parameter is only valid with action='save'. Got action='${action}'.` }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error: 'dryRun' parameter is only valid with action='save'. Got action='${action}'.`,
+          },
+        ],
         isError: true,
       };
     }
@@ -444,16 +538,20 @@ export const deepinitManifestTool: ToolDefinition<typeof deepinitManifestSchema>
           return handleCheck(root);
         default:
           return {
-            content: [{ type: 'text' as const, text: `Unknown action: ${action}` }],
+            content: [
+              { type: 'text' as const, text: `Unknown action: ${action}` },
+            ],
             isError: true,
           };
       }
     } catch (error) {
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Error in deepinit_manifest (${action}): ${error instanceof Error ? error.message : String(error)}`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error in deepinit_manifest (${action}): ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
         isError: true,
       };
     }

@@ -26,7 +26,10 @@ describe('rate-limit-monitor', () => {
 
   describe('checkRateLimitStatus', () => {
     it('should return null when getUsage returns null rateLimits', async () => {
-      vi.mocked(getUsage).mockResolvedValue({ rateLimits: null, error: 'no_credentials' });
+      vi.mocked(getUsage).mockResolvedValue({
+        rateLimits: null,
+        error: 'no_credentials',
+      });
 
       const result = await checkRateLimitStatus();
 

@@ -6,7 +6,7 @@ import { tmpdir } from 'os';
 import { spawnSync } from 'child_process';
 
 vi.mock('child_process', () => ({
-  spawnSync: vi.fn()
+  spawnSync: vi.fn(),
 }));
 
 const mockSpawnSync = vi.mocked(spawnSync);
@@ -16,7 +16,11 @@ function dockerInspectResult(payload: unknown): string {
   return JSON.stringify([payload]);
 }
 
-function writeDevContainerConfig(workspaceRoot: string, relativePath: string, config: object = { workspaceFolder: DEFAULT_WORKSPACE_FOLDER }): string {
+function writeDevContainerConfig(
+  workspaceRoot: string,
+  relativePath: string,
+  config: object = { workspaceFolder: DEFAULT_WORKSPACE_FOLDER },
+): string {
   const fullPath = join(workspaceRoot, relativePath);
   mkdirSync(dirname(fullPath), { recursive: true });
   writeFileSync(fullPath, JSON.stringify(config));
@@ -39,25 +43,35 @@ describe('devcontainer LSP helpers', () => {
   });
 
   it('prefers explicit container override and translates host/container paths and URIs', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer/devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/devcontainer.json',
+    );
     process.env.OMC_LSP_CONTAINER_ID = 'forced-container';
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'forced-container',
-            State: { Running: true },
-            Config: { Labels: {} },
-            Mounts: [{ Source: workspaceRoot, Destination: DEFAULT_WORKSPACE_FOLDER }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'forced-container',
+              State: { Running: true },
+              Config: { Labels: {} },
+              Mounts: [
+                {
+                  Source: workspaceRoot,
+                  Destination: DEFAULT_WORKSPACE_FOLDER,
+                },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(workspaceRoot);
@@ -66,84 +80,113 @@ describe('devcontainer LSP helpers', () => {
       containerId: 'forced-container',
       hostWorkspaceRoot: workspaceRoot,
       containerWorkspaceRoot: DEFAULT_WORKSPACE_FOLDER,
-      configFilePath
+      configFilePath,
     });
 
     const hostFile = join(workspaceRoot, 'src', 'index.ts');
-    expect(mod.hostPathToContainerPath(hostFile, context)).toBe('/workspaces/app/src/index.ts');
-    expect(mod.containerPathToHostPath('/workspaces/app/src/index.ts', context)).toBe(hostFile);
-    expect(mod.hostUriToContainerUri(pathToFileURL(hostFile).href, context)).toBe('file:///workspaces/app/src/index.ts');
-    expect(mod.containerUriToHostUri('file:///workspaces/app/src/index.ts', context)).toBe(pathToFileURL(hostFile).href);
+    expect(mod.hostPathToContainerPath(hostFile, context)).toBe(
+      '/workspaces/app/src/index.ts',
+    );
+    expect(
+      mod.containerPathToHostPath('/workspaces/app/src/index.ts', context),
+    ).toBe(hostFile);
+    expect(
+      mod.hostUriToContainerUri(pathToFileURL(hostFile).href, context),
+    ).toBe('file:///workspaces/app/src/index.ts');
+    expect(
+      mod.containerUriToHostUri('file:///workspaces/app/src/index.ts', context),
+    ).toBe(pathToFileURL(hostFile).href);
   });
 
   it('matches running devcontainer by labels and nested mount', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer/devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/devcontainer.json',
+    );
     const mountedParent = join(workspaceRoot, '..');
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'abc123\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'abc123\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'abc123',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': configFilePath
-              }
-            },
-            Mounts: [{ Source: mountedParent, Destination: '/workspaces' }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'abc123',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': configFilePath,
+                },
+              },
+              Mounts: [{ Source: mountedParent, Destination: '/workspaces' }],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(workspaceRoot);
 
     expect(context?.containerId).toBe('abc123');
-    expect(context?.containerWorkspaceRoot).toBe(`/workspaces/${workspaceRoot.split('/').pop()}`);
+    expect(context?.containerWorkspaceRoot).toBe(
+      `/workspaces/${workspaceRoot.split('/').pop()}`,
+    );
     expect(context?.configFilePath).toBe(configFilePath);
   });
 
   it('finds ancestor devcontainer config for nested workspace roots', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer/devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/devcontainer.json',
+    );
     const nestedWorkspaceRoot = join(workspaceRoot, 'packages', 'app');
     mkdirSync(nestedWorkspaceRoot, { recursive: true });
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'nested123\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'nested123\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'nested123',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': configFilePath
-              }
-            },
-            Mounts: [{ Source: workspaceRoot, Destination: DEFAULT_WORKSPACE_FOLDER }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'nested123',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': configFilePath,
+                },
+              },
+              Mounts: [
+                {
+                  Source: workspaceRoot,
+                  Destination: DEFAULT_WORKSPACE_FOLDER,
+                },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(nestedWorkspaceRoot);
@@ -152,38 +195,50 @@ describe('devcontainer LSP helpers', () => {
       containerId: 'nested123',
       hostWorkspaceRoot: nestedWorkspaceRoot,
       containerWorkspaceRoot: '/workspaces/app/packages/app',
-      configFilePath
+      configFilePath,
     });
   });
 
   it('supports .devcontainer.json at the workspace root', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer.json',
+    );
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'dotfile123\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'dotfile123\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'dotfile123',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': configFilePath
-              }
-            },
-            Mounts: [{ Source: workspaceRoot, Destination: DEFAULT_WORKSPACE_FOLDER }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'dotfile123',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': configFilePath,
+                },
+              },
+              Mounts: [
+                {
+                  Source: workspaceRoot,
+                  Destination: DEFAULT_WORKSPACE_FOLDER,
+                },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(workspaceRoot);
@@ -192,38 +247,50 @@ describe('devcontainer LSP helpers', () => {
       containerId: 'dotfile123',
       hostWorkspaceRoot: workspaceRoot,
       containerWorkspaceRoot: DEFAULT_WORKSPACE_FOLDER,
-      configFilePath
+      configFilePath,
     });
   });
 
   it('supports nested .devcontainer/<name>/devcontainer.json layouts', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer/custom/devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/custom/devcontainer.json',
+    );
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'nested-layout\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'nested-layout\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'nested-layout',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': configFilePath
-              }
-            },
-            Mounts: [{ Source: workspaceRoot, Destination: DEFAULT_WORKSPACE_FOLDER }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'nested-layout',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': configFilePath,
+                },
+              },
+              Mounts: [
+                {
+                  Source: workspaceRoot,
+                  Destination: DEFAULT_WORKSPACE_FOLDER,
+                },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(workspaceRoot);
@@ -232,40 +299,52 @@ describe('devcontainer LSP helpers', () => {
       containerId: 'nested-layout',
       hostWorkspaceRoot: workspaceRoot,
       containerWorkspaceRoot: DEFAULT_WORKSPACE_FOLDER,
-      configFilePath
+      configFilePath,
     });
   });
 
   it('finds ancestor .devcontainer.json for nested workspace roots', async () => {
-    const configFilePath = writeDevContainerConfig(workspaceRoot, '.devcontainer.json');
+    const configFilePath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer.json',
+    );
     const nestedWorkspaceRoot = join(workspaceRoot, 'packages', 'app');
     mkdirSync(nestedWorkspaceRoot, { recursive: true });
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'nested-dotfile\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'nested-dotfile\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'nested-dotfile',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': configFilePath
-              }
-            },
-            Mounts: [{ Source: workspaceRoot, Destination: DEFAULT_WORKSPACE_FOLDER }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'nested-dotfile',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': configFilePath,
+                },
+              },
+              Mounts: [
+                {
+                  Source: workspaceRoot,
+                  Destination: DEFAULT_WORKSPACE_FOLDER,
+                },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     const context = mod.resolveDevContainerContext(nestedWorkspaceRoot);
@@ -274,44 +353,66 @@ describe('devcontainer LSP helpers', () => {
       containerId: 'nested-dotfile',
       hostWorkspaceRoot: nestedWorkspaceRoot,
       containerWorkspaceRoot: '/workspaces/app/packages/app',
-      configFilePath
+      configFilePath,
     });
   });
 
   it('honors config discovery precedence for conflicting layouts in the same ancestor', async () => {
-    const primaryConfigPath = writeDevContainerConfig(workspaceRoot, '.devcontainer/devcontainer.json', { workspaceFolder: '/workspaces/primary' });
-    const dotfileConfigPath = writeDevContainerConfig(workspaceRoot, '.devcontainer.json', { workspaceFolder: '/workspaces/dotfile' });
-    const alphaNestedConfigPath = writeDevContainerConfig(workspaceRoot, '.devcontainer/alpha/devcontainer.json', { workspaceFolder: '/workspaces/alpha' });
-    writeDevContainerConfig(workspaceRoot, '.devcontainer/beta/devcontainer.json', { workspaceFolder: '/workspaces/beta' });
+    const primaryConfigPath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/devcontainer.json',
+      { workspaceFolder: '/workspaces/primary' },
+    );
+    const dotfileConfigPath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer.json',
+      { workspaceFolder: '/workspaces/dotfile' },
+    );
+    const alphaNestedConfigPath = writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/alpha/devcontainer.json',
+      { workspaceFolder: '/workspaces/alpha' },
+    );
+    writeDevContainerConfig(
+      workspaceRoot,
+      '.devcontainer/beta/devcontainer.json',
+      { workspaceFolder: '/workspaces/beta' },
+    );
 
     let expectedConfigPath = primaryConfigPath;
     let expectedWorkspaceFolder = '/workspaces/primary';
 
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'precedence123\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'precedence123\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'precedence123',
-            State: { Running: true },
-            Config: {
-              Labels: {
-                'devcontainer.local_folder': workspaceRoot,
-                'devcontainer.config_file': expectedConfigPath
-              }
-            },
-            Mounts: [{ Source: workspaceRoot, Destination: expectedWorkspaceFolder }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'precedence123',
+              State: { Running: true },
+              Config: {
+                Labels: {
+                  'devcontainer.local_folder': workspaceRoot,
+                  'devcontainer.config_file': expectedConfigPath,
+                },
+              },
+              Mounts: [
+                { Source: workspaceRoot, Destination: expectedWorkspaceFolder },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
 
@@ -339,26 +440,32 @@ describe('devcontainer LSP helpers', () => {
   });
 
   it('returns null when no matching running devcontainer exists', async () => {
-    mockSpawnSync.mockImplementation((command: string, args: ReadonlyArray<string> | undefined) => {
-      expect(command).toBe('docker');
-      if (args?.[0] === 'ps') {
-        return { status: 0, stdout: 'abc123\n' } as ReturnType<typeof spawnSync>;
-      }
+    mockSpawnSync.mockImplementation(
+      (command: string, args: ReadonlyArray<string> | undefined) => {
+        expect(command).toBe('docker');
+        if (args?.[0] === 'ps') {
+          return { status: 0, stdout: 'abc123\n' } as ReturnType<
+            typeof spawnSync
+          >;
+        }
 
-      if (args?.[0] === 'inspect') {
-        return {
-          status: 0,
-          stdout: dockerInspectResult({
-            Id: 'abc123',
-            State: { Running: true },
-            Config: { Labels: {} },
-            Mounts: [{ Source: '/tmp/other', Destination: '/workspaces/other' }]
-          })
-        } as ReturnType<typeof spawnSync>;
-      }
+        if (args?.[0] === 'inspect') {
+          return {
+            status: 0,
+            stdout: dockerInspectResult({
+              Id: 'abc123',
+              State: { Running: true },
+              Config: { Labels: {} },
+              Mounts: [
+                { Source: '/tmp/other', Destination: '/workspaces/other' },
+              ],
+            }),
+          } as ReturnType<typeof spawnSync>;
+        }
 
-      throw new Error(`Unexpected docker args: ${args}`);
-    });
+        throw new Error(`Unexpected docker args: ${args}`);
+      },
+    );
 
     const mod = await import('../devcontainer.js');
     expect(mod.resolveDevContainerContext(workspaceRoot)).toBeNull();

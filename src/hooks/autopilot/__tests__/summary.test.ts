@@ -7,14 +7,14 @@ import {
   formatSummary,
   formatCompactSummary,
   formatFailureSummary,
-  formatFileList
+  formatFileList,
 } from '../validation.js';
 import {
   initAutopilot,
   updateExecution,
   updateQA,
   transitionPhase,
-  readAutopilotState
+  readAutopilotState,
 } from '../state.js';
 
 describe('AutopilotSummary', () => {
@@ -41,12 +41,12 @@ describe('AutopilotSummary', () => {
       // Update execution with files
       updateExecution(testDir, {
         files_created: ['src/feature.ts', 'src/feature.test.ts'],
-        files_modified: ['src/index.ts']
+        files_modified: ['src/index.ts'],
       });
 
       // Update QA status
       updateQA(testDir, {
-        test_status: 'passing'
+        test_status: 'passing',
       });
 
       // Transition to complete
@@ -56,7 +56,10 @@ describe('AutopilotSummary', () => {
 
       expect(summary).not.toBeNull();
       expect(summary?.originalIdea).toBe('Build a test feature');
-      expect(summary?.filesCreated).toEqual(['src/feature.ts', 'src/feature.test.ts']);
+      expect(summary?.filesCreated).toEqual([
+        'src/feature.ts',
+        'src/feature.test.ts',
+      ]);
       expect(summary?.filesModified).toEqual(['src/index.ts']);
       expect(summary?.testsStatus).toBe('Passing');
       expect(summary?.duration).toBeGreaterThanOrEqual(0);
@@ -69,10 +72,10 @@ describe('AutopilotSummary', () => {
 
       // Manually update state to simulate completed phases
       updateExecution(testDir, {
-        ralph_completed_at: new Date().toISOString()
+        ralph_completed_at: new Date().toISOString(),
       });
       updateQA(testDir, {
-        qa_completed_at: new Date().toISOString()
+        qa_completed_at: new Date().toISOString(),
       });
 
       const summary = generateSummary(testDir);
@@ -115,7 +118,13 @@ describe('AutopilotSummary', () => {
         testsStatus: 'Passing',
         duration: 120000, // 2 minutes
         agentsSpawned: 5,
-        phasesCompleted: ['expansion', 'planning', 'execution', 'qa', 'validation'] as any[]
+        phasesCompleted: [
+          'expansion',
+          'planning',
+          'execution',
+          'qa',
+          'validation',
+        ] as any[],
       };
 
       const formatted = formatSummary(summary);
@@ -134,19 +143,22 @@ describe('AutopilotSummary', () => {
 
     it('should truncate long ideas', () => {
       const summary = {
-        originalIdea: 'This is a very long idea that exceeds the maximum display length and should be truncated',
+        originalIdea:
+          'This is a very long idea that exceeds the maximum display length and should be truncated',
         filesCreated: [],
         filesModified: [],
         testsStatus: 'Not run',
         duration: 1000,
         agentsSpawned: 0,
-        phasesCompleted: []
+        phasesCompleted: [],
       };
 
       const formatted = formatSummary(summary);
 
       // Should contain truncated version with ellipsis
-      expect(formatted).toContain('This is a very long idea that exceeds the maxim...');
+      expect(formatted).toContain(
+        'This is a very long idea that exceeds the maxim...',
+      );
       // Should not contain the end of the original string
       expect(formatted).not.toContain('truncated');
     });
@@ -159,7 +171,7 @@ describe('AutopilotSummary', () => {
         testsStatus: 'Not run',
         duration: 3661000, // 1h 1m 1s
         agentsSpawned: 0,
-        phasesCompleted: []
+        phasesCompleted: [],
       };
 
       const formatted = formatSummary(summary);
@@ -175,7 +187,7 @@ describe('AutopilotSummary', () => {
         testsStatus: 'Not run',
         duration: 45000, // 45s
         agentsSpawned: 0,
-        phasesCompleted: []
+        phasesCompleted: [],
       };
 
       const formatted = formatSummary(summary);
@@ -219,7 +231,7 @@ describe('AutopilotSummary', () => {
       state.phase = 'execution';
       updateExecution(testDir, {
         files_created: ['a.ts', 'b.ts'],
-        files_modified: ['c.ts']
+        files_modified: ['c.ts'],
       });
       state.execution.files_created = ['a.ts', 'b.ts'];
       state.execution.files_modified = ['c.ts'];
@@ -260,7 +272,7 @@ describe('AutopilotSummary', () => {
       }
       updateExecution(testDir, {
         files_created: ['a.ts'],
-        files_modified: ['b.ts']
+        files_modified: ['b.ts'],
       });
       transitionPhase(testDir, 'complete');
 
@@ -299,7 +311,9 @@ describe('AutopilotSummary', () => {
 
       expect(formatted).toContain('AUTOPILOT FAILED');
       expect(formatted).toContain('Failed at phase: EXECUTION');
-      expect(formatted).toContain('Progress preserved. Run /autopilot to resume.');
+      expect(formatted).toContain(
+        'Progress preserved. Run /autopilot to resume.',
+      );
       expect(formatted).toMatch(/^╭─+╮/m);
       expect(formatted).toMatch(/╰─+╯/m);
     });
@@ -311,7 +325,10 @@ describe('AutopilotSummary', () => {
       }
       state.phase = 'qa';
 
-      const formatted = formatFailureSummary(state, 'Build failed with exit code 1');
+      const formatted = formatFailureSummary(
+        state,
+        'Build failed with exit code 1',
+      );
 
       expect(formatted).toContain('AUTOPILOT FAILED');
       expect(formatted).toContain('Failed at phase: QA');
@@ -326,15 +343,20 @@ describe('AutopilotSummary', () => {
       }
       state.phase = 'validation';
 
-      const longError = 'This is a very long error message that exceeds the box width and should be wrapped across multiple lines to fit properly';
+      const longError =
+        'This is a very long error message that exceeds the box width and should be wrapped across multiple lines to fit properly';
 
       const formatted = formatFailureSummary(state, longError);
 
       expect(formatted).toContain('Error:');
       // Check that the error message appears somewhere in the output
-      expect(formatted).toContain('This is a very long error message that exceeds t');
+      expect(formatted).toContain(
+        'This is a very long error message that exceeds t',
+      );
       // Check that it wraps to multiple lines (second line should start with he box)
-      expect(formatted).toContain('he box width and should be wrapped across multip');
+      expect(formatted).toContain(
+        'he box width and should be wrapped across multip',
+      );
     });
 
     it('should limit error to 3 lines', () => {
@@ -347,9 +369,9 @@ describe('AutopilotSummary', () => {
       const formatted = formatFailureSummary(state, longError);
 
       // Count error lines (lines that start with │ and contain 'a')
-      const errorLines = formatted.split('\n').filter(line =>
-        line.includes('│  aaaa')
-      );
+      const errorLines = formatted
+        .split('\n')
+        .filter((line) => line.includes('│  aaaa'));
 
       expect(errorLines.length).toBeLessThanOrEqual(3);
     });

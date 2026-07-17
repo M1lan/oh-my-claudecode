@@ -21,7 +21,11 @@ const REPO_ROOT = join(__dirname, '..', '..');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function findFiles(dir: string, extensions: string[], excludeDirs: string[] = []): string[] {
+function findFiles(
+  dir: string,
+  extensions: string[],
+  excludeDirs: string[] = [],
+): string[] {
   const results: string[] = [];
   if (!existsSync(dir)) return results;
 
@@ -30,7 +34,7 @@ function findFiles(dir: string, extensions: string[], excludeDirs: string[] = []
     if (entry.isDirectory()) {
       if (excludeDirs.includes(entry.name)) continue;
       results.push(...findFiles(fullPath, extensions, excludeDirs));
-    } else if (extensions.some(ext => entry.name.endsWith(ext))) {
+    } else if (extensions.some((ext) => entry.name.endsWith(ext))) {
       results.push(fullPath);
     }
   }
@@ -46,7 +50,11 @@ function relPath(absPath: string): string {
  * Finds the enclosing function by scanning backward for `function <name>` declarations
  * and tracking brace nesting to confirm the match is within its body.
  */
-function isInsideFunction(lines: string[], matchLineIdx: number, functionNames: string[]): boolean {
+function isInsideFunction(
+  lines: string[],
+  matchLineIdx: number,
+  functionNames: string[],
+): boolean {
   // Simple approach: scan backward from the match line to find the nearest
   // `function <name>` declaration. If found before we leave the function body, return true.
   let braceDepth = 0;
@@ -133,11 +141,11 @@ describe('Contract 1: no join(homedir()...".claude") outside canonical helpers',
   it('has no unguarded join(homedir(), ".claude") in runtime TypeScript', () => {
     if (violations.length > 0) {
       const details = violations
-        .map(v => `  ${v.file}:${v.line}: ${v.text}`)
+        .map((v) => `  ${v.file}:${v.line}: ${v.text}`)
         .join('\n');
       expect.fail(
         `Found join(homedir(), '.claude') outside canonical helpers:\n${details}\n\n` +
-        `Use getClaudeConfigDir() instead of join(homedir(), '.claude').`
+          `Use getClaudeConfigDir() instead of join(homedir(), '.claude').`,
       );
     }
   });
@@ -178,7 +186,12 @@ describe('Contract 2: no unguarded $HOME/.claude in shell/script files', () => {
         if (DANGEROUS_PATTERN.test(line) && !SAFE_PATTERN.test(line)) {
           // Skip comment lines
           const trimmed = line.trim();
-          if (trimmed.startsWith('#') || trimmed.startsWith('//') || trimmed.startsWith('*')) continue;
+          if (
+            trimmed.startsWith('#') ||
+            trimmed.startsWith('//') ||
+            trimmed.startsWith('*')
+          )
+            continue;
           violations.push({ file: rel, line: i + 1, text: trimmed });
         }
       }
@@ -188,11 +201,11 @@ describe('Contract 2: no unguarded $HOME/.claude in shell/script files', () => {
   it('has no $HOME/.claude without ${CLAUDE_CONFIG_DIR:-...} guard in scripts', () => {
     if (violations.length > 0) {
       const details = violations
-        .map(v => `  ${v.file}:${v.line}: ${v.text}`)
+        .map((v) => `  ${v.file}:${v.line}: ${v.text}`)
         .join('\n');
       expect.fail(
         `Found $HOME/.claude without CLAUDE_CONFIG_DIR guard:\n${details}\n\n` +
-        `Replace with: \${CLAUDE_CONFIG_DIR:-$HOME/.claude}`
+          `Replace with: \${CLAUDE_CONFIG_DIR:-$HOME/.claude}`,
       );
     }
   });
@@ -237,7 +250,7 @@ describe('Contract 2b: setup jq writes are guarded against truncation', () => {
     if (missingPreflightViolations.length > 0) {
       expect.fail(
         `Setup files use jq without a command -v jq preflight:\n` +
-          missingPreflightViolations.map(file => `  ${file}`).join('\n')
+          missingPreflightViolations.map((file) => `  ${file}`).join('\n'),
       );
     }
   });
@@ -247,9 +260,9 @@ describe('Contract 2b: setup jq writes are guarded against truncation', () => {
       expect.fail(
         `Found destructive jq redirects that can truncate live setup files:\n` +
           directJqRedirectViolations
-            .map(v => `  ${v.file}: ${v.command}`)
+            .map((v) => `  ${v.file}: ${v.command}`)
             .join('\n') +
-          `\n\nWrite jq output to a temp file and mv it into place only after jq succeeds.`
+          `\n\nWrite jq output to a temp file and mv it into place only after jq succeeds.`,
       );
     }
   });
@@ -280,7 +293,11 @@ describe('Contract 3: no raw __dirname path resolution in installer outside getP
         if (isInsideFunction(lines, i, ['getPackageDir'])) continue;
         // Allow inside string literals (e.g., generated code written to files)
         if (isInsideStringLiteral(lines[i], DANGEROUS_PATTERN)) continue;
-        violations.push({ file: relPath(file), line: i + 1, text: lines[i].trim() });
+        violations.push({
+          file: relPath(file),
+          line: i + 1,
+          text: lines[i].trim(),
+        });
       }
     }
   }
@@ -288,11 +305,11 @@ describe('Contract 3: no raw __dirname path resolution in installer outside getP
   it('has no join(__dirname, ...) outside getPackageDir() in installer', () => {
     if (violations.length > 0) {
       const details = violations
-        .map(v => `  ${v.file}:${v.line}: ${v.text}`)
+        .map((v) => `  ${v.file}:${v.line}: ${v.text}`)
         .join('\n');
       expect.fail(
         `Found join(__dirname, ...) outside getPackageDir():\n${details}\n\n` +
-        `Use getPackageDir() instead of __dirname for path resolution.`
+          `Use getPackageDir() instead of __dirname for path resolution.`,
       );
     }
   });
@@ -323,7 +340,9 @@ describe('Contract 4: no absolute node binary paths in hook commands', () => {
     const violations: { event: string; command: string }[] = [];
 
     for (const [eventType, eventHooks] of Object.entries(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (absoluteNodePattern.test(hook.command)) {
             violations.push({ event: eventType, command: hook.command });
@@ -334,11 +353,11 @@ describe('Contract 4: no absolute node binary paths in hook commands', () => {
 
     if (violations.length > 0) {
       const details = violations
-        .map(v => `  ${v.event}: ${v.command}`)
+        .map((v) => `  ${v.event}: ${v.command}`)
         .join('\n');
       expect.fail(
         `Found absolute node binary paths in hook commands:\n${details}\n\n` +
-        `Hook commands must use bare 'node' or shell variable expansion, not resolved absolute paths.`
+          `Hook commands must use bare 'node' or shell variable expansion, not resolved absolute paths.`,
       );
     }
   });
@@ -357,7 +376,9 @@ describe('Contract 5: no hardcoded ~/.claude in LLM-consumed artifacts', () => {
   const SAFE_PORTABLE = /\[\$CLAUDE_CONFIG_DIR\|~\/\.claude\]/;
   const SAFE_ENV_FALLBACK = /\$\{CLAUDE_CONFIG_DIR:-/;
 
-  function scanForViolations(dir: string): { file: string; line: number; text: string }[] {
+  function scanForViolations(
+    dir: string,
+  ): { file: string; line: number; text: string }[] {
     const violations: { file: string; line: number; text: string }[] = [];
     const files = findFiles(dir, ['.md']);
 
@@ -367,12 +388,20 @@ describe('Contract 5: no hardcoded ~/.claude in LLM-consumed artifacts', () => {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        if (TILDE_CLAUDE_PATTERN.test(line) && !SAFE_PORTABLE.test(line) && !SAFE_ENV_FALLBACK.test(line)) {
+        if (
+          TILDE_CLAUDE_PATTERN.test(line) &&
+          !SAFE_PORTABLE.test(line) &&
+          !SAFE_ENV_FALLBACK.test(line)
+        ) {
           // Skip markdown comments
           const trimmed = line.trim();
           if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) continue;
           // Skip lines that are just describing what CLAUDE_CONFIG_DIR defaults to
-          if (/default.*~\/\.claude/i.test(line) || /fallback.*~\/\.claude/i.test(line)) continue;
+          if (
+            /default.*~\/\.claude/i.test(line) ||
+            /fallback.*~\/\.claude/i.test(line)
+          )
+            continue;
           // Skip lines documenting the config-dir behavior
           if (/CLAUDE_CONFIG_DIR/i.test(line)) continue;
           violations.push({ file: relPath(file), line: i + 1, text: trimmed });
@@ -386,10 +415,12 @@ describe('Contract 5: no hardcoded ~/.claude in LLM-consumed artifacts', () => {
     if (!existsSync(AGENTS_DIR)) return;
     const violations = scanForViolations(AGENTS_DIR);
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.file}:${v.line}: ${v.text}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.file}:${v.line}: ${v.text}`)
+        .join('\n');
       expect.fail(
         `Found unguarded ~/.claude in agent definitions:\n${details}\n\n` +
-        `Use [$CLAUDE_CONFIG_DIR|~/.claude] notation in LLM-consumed artifacts.`
+          `Use [$CLAUDE_CONFIG_DIR|~/.claude] notation in LLM-consumed artifacts.`,
       );
     }
   });
@@ -406,10 +437,18 @@ describe('Contract 5: no hardcoded ~/.claude in LLM-consumed artifacts', () => {
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (TILDE_CLAUDE_PATTERN.test(line) && !SAFE_PORTABLE.test(line) && !SAFE_ENV_FALLBACK.test(line)) {
+      if (
+        TILDE_CLAUDE_PATTERN.test(line) &&
+        !SAFE_PORTABLE.test(line) &&
+        !SAFE_ENV_FALLBACK.test(line)
+      ) {
         const trimmed = line.trim();
         if (trimmed.startsWith('<!--') && trimmed.endsWith('-->')) continue;
-        if (/default.*~\/\.claude/i.test(line) || /fallback.*~\/\.claude/i.test(line)) continue;
+        if (
+          /default.*~\/\.claude/i.test(line) ||
+          /fallback.*~\/\.claude/i.test(line)
+        )
+          continue;
         if (/CLAUDE_CONFIG_DIR/i.test(line)) continue;
         // Skip glob/permission patterns like ~/.claude/** (describes allowed paths, not path resolution)
         if (/~\/\.claude\/\*/.test(line)) continue;
@@ -418,10 +457,12 @@ describe('Contract 5: no hardcoded ~/.claude in LLM-consumed artifacts', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.file}:${v.line}: ${v.text}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.file}:${v.line}: ${v.text}`)
+        .join('\n');
       expect.fail(
         `Found unguarded ~/.claude in docs/CLAUDE.md:\n${details}\n\n` +
-        `Use [$CLAUDE_CONFIG_DIR|~/.claude] notation in LLM-consumed artifacts.`
+          `Use [$CLAUDE_CONFIG_DIR|~/.claude] notation in LLM-consumed artifacts.`,
       );
     }
   });
@@ -443,8 +484,12 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8'));
     const violations: { event: string; command: string }[] = [];
 
-    for (const [eventType, eventHooks] of Object.entries(hooksJson.hooks || {})) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ type: string; command: string }> }>) {
+    for (const [eventType, eventHooks] of Object.entries(
+      hooksJson.hooks || {},
+    )) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ type: string; command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (hook.type !== 'command') continue;
           if (!hook.command.includes('$CLAUDE_PLUGIN_ROOT')) {
@@ -455,14 +500,15 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event}: ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event}: ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found hook commands not using $CLAUDE_PLUGIN_ROOT:\n${details}\n\n` +
-        `All plugin hook commands must reference $CLAUDE_PLUGIN_ROOT for portability.`
+          `All plugin hook commands must reference $CLAUDE_PLUGIN_ROOT for portability.`,
       );
     }
   });
-
 
   it('source hook commands do not hardcode /bin/sh so native Windows can spawn them', () => {
     if (!existsSync(HOOKS_JSON_PATH)) return;
@@ -470,8 +516,12 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8'));
     const violations: { event: string; command: string }[] = [];
 
-    for (const [eventType, eventHooks] of Object.entries(hooksJson.hooks || {})) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ type: string; command: string }> }>) {
+    for (const [eventType, eventHooks] of Object.entries(
+      hooksJson.hooks || {},
+    )) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ type: string; command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (hook.type !== 'command') continue;
           if (hook.command.includes('/bin/sh')) {
@@ -482,14 +532,15 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event}: ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event}: ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found hook commands hardcoding /bin/sh:\n${details}\n\n` +
-        `Source hook commands must not use shell bootstraps; use direct node run.cjs commands.`
+          `Source hook commands must not use shell bootstraps; use direct node run.cjs commands.`,
       );
     }
   });
-
 
   it('source hook commands use direct node run.cjs without sh/find-node bootstraps', () => {
     if (!existsSync(HOOKS_JSON_PATH)) return;
@@ -497,25 +548,46 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8'));
     const violations: { event: string; command: string; reason: string }[] = [];
 
-    for (const [eventType, eventHooks] of Object.entries(hooksJson.hooks || {})) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ type: string; command: string }> }>) {
+    for (const [eventType, eventHooks] of Object.entries(
+      hooksJson.hooks || {},
+    )) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ type: string; command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (hook.type !== 'command') continue;
-          if (!hook.command.startsWith('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs ')) {
-            violations.push({ event: eventType, command: hook.command, reason: 'not direct node run.cjs' });
+          if (
+            !hook.command.startsWith(
+              'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs ',
+            )
+          ) {
+            violations.push({
+              event: eventType,
+              command: hook.command,
+              reason: 'not direct node run.cjs',
+            });
           }
-          if (/^(?:"\/bin\/sh"|sh)\s/.test(hook.command) || hook.command.includes('find-node.sh')) {
-            violations.push({ event: eventType, command: hook.command, reason: 'uses sh/find-node bootstrap' });
+          if (
+            /^(?:"\/bin\/sh"|sh)\s/.test(hook.command) ||
+            hook.command.includes('find-node.sh')
+          ) {
+            violations.push({
+              event: eventType,
+              command: hook.command,
+              reason: 'uses sh/find-node bootstrap',
+            });
           }
         }
       }
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event} (${v.reason}): ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event} (${v.reason}): ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found non-Windows-safe source hook commands in hooks.json:\n${details}\n\n` +
-        `Source plugin manifest commands must be direct: node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs ...`
+          `Source plugin manifest commands must be direct: node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs ...`,
       );
     }
   });
@@ -527,8 +599,12 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     const absoluteNodePattern = /^["']?\/[^\s"']*node["']?\s/;
     const violations: { event: string; command: string }[] = [];
 
-    for (const [eventType, eventHooks] of Object.entries(hooksJson.hooks || {})) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ type: string; command: string }> }>) {
+    for (const [eventType, eventHooks] of Object.entries(
+      hooksJson.hooks || {},
+    )) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ type: string; command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (hook.type !== 'command') continue;
           if (absoluteNodePattern.test(hook.command)) {
@@ -539,10 +615,12 @@ describe('Contract 9: hooks/hooks.json portability', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event}: ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event}: ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found absolute node binary paths in hooks.json:\n${details}\n\n` +
-        `This is the exact regression from issue #2348. Hook commands must use bare 'node', not resolved absolute paths.`
+          `This is the exact regression from issue #2348. Hook commands must use bare 'node', not resolved absolute paths.`,
       );
     }
   });
@@ -556,7 +634,9 @@ describe('Contract 10: installer manages stale OMC-created agents and skills', (
     const agentsDir = join(REPO_ROOT, 'agents');
     expect(existsSync(agentsDir)).toBe(true);
 
-    const agentFiles = readdirSync(agentsDir).filter(f => f.endsWith('.md') && f !== 'AGENTS.md');
+    const agentFiles = readdirSync(agentsDir).filter(
+      (f) => f.endsWith('.md') && f !== 'AGENTS.md',
+    );
     expect(agentFiles.length).toBeGreaterThan(5);
   });
 
@@ -564,21 +644,30 @@ describe('Contract 10: installer manages stale OMC-created agents and skills', (
     const skillsDir = join(REPO_ROOT, 'skills');
     expect(existsSync(skillsDir)).toBe(true);
 
-    const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
-      .filter(d => d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')));
+    const skillDirs = readdirSync(skillsDir, { withFileTypes: true }).filter(
+      (d) => d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')),
+    );
     expect(skillDirs.length).toBeGreaterThan(5);
   });
 
   it('syncBundledSkillDefinitions overwrites existing OMC skills (force copy)', () => {
     // The installer uses cpSync with { force: true } which overwrites stale versions
     // Verify this by checking the source code pattern
-    const installerSource = readFileSync(join(REPO_ROOT, 'src', 'installer', 'index.ts'), 'utf-8');
-    expect(installerSource).toContain('cpSync(sourceDir, targetDir, { recursive: true, force: true })');
+    const installerSource = readFileSync(
+      join(REPO_ROOT, 'src', 'installer', 'index.ts'),
+      'utf-8',
+    );
+    expect(installerSource).toContain(
+      'cpSync(sourceDir, targetDir, { recursive: true, force: true })',
+    );
   });
 
   it('install() overwrites existing agent files when force option is used', () => {
     // Verify the installer has the force-overwrite path for agents
-    const installerSource = readFileSync(join(REPO_ROOT, 'src', 'installer', 'index.ts'), 'utf-8');
+    const installerSource = readFileSync(
+      join(REPO_ROOT, 'src', 'installer', 'index.ts'),
+      'utf-8',
+    );
     // The installer checks: existsSync(filepath) && !options.force → skip
     // With force=true, it writes the file unconditionally
     expect(installerSource).toContain('existsSync(filepath) && !options.force');
@@ -587,7 +676,9 @@ describe('Contract 10: installer manages stale OMC-created agents and skills', (
   it('OMC agent filenames are all lowercase kebab-case .md files', () => {
     // Ensures agent filenames follow a consistent pattern so stale detection is reliable
     const agentsDir = join(REPO_ROOT, 'agents');
-    const agentFiles = readdirSync(agentsDir).filter(f => f.endsWith('.md') && f !== 'AGENTS.md');
+    const agentFiles = readdirSync(agentsDir).filter(
+      (f) => f.endsWith('.md') && f !== 'AGENTS.md',
+    );
 
     for (const file of agentFiles) {
       expect(file).toMatch(/^[a-z][a-z0-9-]*\.md$/);
@@ -596,8 +687,9 @@ describe('Contract 10: installer manages stale OMC-created agents and skills', (
 
   it('OMC skill directories match a consistent naming pattern', () => {
     const skillsDir = join(REPO_ROOT, 'skills');
-    const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
-      .filter(d => d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')));
+    const skillDirs = readdirSync(skillsDir, { withFileTypes: true }).filter(
+      (d) => d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')),
+    );
 
     for (const dir of skillDirs) {
       expect(dir.name).toMatch(/^[a-z][a-z0-9-]*$/);
@@ -605,10 +697,15 @@ describe('Contract 10: installer manages stale OMC-created agents and skills', (
   });
 });
 
-
 describe('OMC setup Ralph Ruby dependency guidance (issue #2969)', () => {
   it('checks Ruby during setup with product-facing Ralph remediation', () => {
-    const phasePath = join(REPO_ROOT, 'skills', 'omc-setup', 'phases', '02-configure.md');
+    const phasePath = join(
+      REPO_ROOT,
+      'skills',
+      'omc-setup',
+      'phases',
+      '02-configure.md',
+    );
     const content = readFileSync(phasePath, 'utf-8');
 
     expect(content).toContain('Step 2.0: Check Ralph Ruby Dependency');
@@ -630,7 +727,10 @@ describe('Contract 11: SessionEnd hooks are async (issue #3240)', () => {
     if (!existsSync(HOOKS_JSON_PATH)) return;
 
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8')) as {
-      hooks: Record<string, Array<{ hooks: Array<{ type: string; async?: boolean }> }>>;
+      hooks: Record<
+        string,
+        Array<{ hooks: Array<{ type: string; async?: boolean }> }>
+      >;
     };
 
     const sessionEndGroups = hooksJson.hooks?.['SessionEnd'] ?? [];
@@ -640,17 +740,19 @@ describe('Contract 11: SessionEnd hooks are async (issue #3240)', () => {
     for (const group of sessionEndGroups) {
       for (const hook of group.hooks ?? []) {
         if (hook.type === 'command' && hook.async !== true) {
-          violations.push({ command: (hook as { command?: string }).command ?? '(unknown)' });
+          violations.push({
+            command: (hook as { command?: string }).command ?? '(unknown)',
+          });
         }
       }
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.command}`).join('\n');
+      const details = violations.map((v) => `  ${v.command}`).join('\n');
       expect.fail(
         `SessionEnd hook entries missing async:true (issue #3240 regression):\n${details}\n\n` +
-        `On Windows shutdown, synchronous SessionEnd hooks are killed before completion. ` +
-        `Add "async": true to every SessionEnd command hook.`,
+          `On Windows shutdown, synchronous SessionEnd hooks are killed before completion. ` +
+          `Add "async": true to every SessionEnd command hook.`,
       );
     }
   });
@@ -659,22 +761,34 @@ describe('Contract 11: SessionEnd hooks are async (issue #3240)', () => {
     if (!existsSync(HOOKS_JSON_PATH)) return;
 
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8')) as {
-      hooks: Record<string, Array<{ hooks: Array<{ type: string; command?: string; async?: boolean }> }>>;
+      hooks: Record<
+        string,
+        Array<{
+          hooks: Array<{ type: string; command?: string; async?: boolean }>;
+        }>
+      >;
     };
     const commands = (hooksJson.hooks.SessionEnd ?? [])
-      .flatMap(group => group.hooks)
-      .filter(hook => hook.type === 'command')
-      .map(hook => hook.command);
+      .flatMap((group) => group.hooks)
+      .filter((hook) => hook.type === 'command')
+      .map((hook) => hook.command);
 
-    expect(commands).toContain('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/session-end.mjs');
-    expect(commands).toContain('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/wiki-session-end.mjs');
+    expect(commands).toContain(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/session-end.mjs',
+    );
+    expect(commands).toContain(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/wiki-session-end.mjs',
+    );
   });
 
   it('non-SessionEnd hooks do not unconditionally carry async:true', () => {
     if (!existsSync(HOOKS_JSON_PATH)) return;
 
     const hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf-8')) as {
-      hooks: Record<string, Array<{ hooks: Array<{ type: string; async?: boolean }> }>>;
+      hooks: Record<
+        string,
+        Array<{ hooks: Array<{ type: string; async?: boolean }> }>
+      >;
     };
 
     // Only SessionEnd should have async:true; verify at least one event type that

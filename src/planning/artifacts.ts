@@ -7,14 +7,14 @@
  * and extracts approved execution launch hints embedded in PRD markdown.
  */
 
-import { readdirSync, readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { getOmcRoot } from "../lib/worktree-paths.js";
+import { readdirSync, readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { getOmcRoot } from '../lib/worktree-paths.js';
 import {
   comparePlanningArtifactPaths,
   selectLatestPlanningArtifactPath,
   selectMatchingTestSpecsForPrd,
-} from "./artifact-names.js";
+} from './artifact-names.js';
 
 export interface PlanningArtifacts {
   prdPaths: string[];
@@ -22,7 +22,7 @@ export interface PlanningArtifacts {
 }
 
 export interface ApprovedExecutionLaunchHint {
-  mode: "team" | "ralph";
+  mode: 'team' | 'ralph';
   command: string;
   task: string;
   workerCount?: number;
@@ -39,35 +39,34 @@ interface ApprovedExecutionLaunchHintReadOptions {
 }
 
 export type ApprovedExecutionLaunchHintOutcome =
-  | { status: "absent" }
-  | { status: "ambiguous" }
-  | { status: "incomplete" }
-  | { status: "resolved"; hint: ApprovedExecutionLaunchHint };
+  | { status: 'absent' }
+  | { status: 'ambiguous' }
+  | { status: 'incomplete' }
+  | { status: 'resolved'; hint: ApprovedExecutionLaunchHint };
 
 function readFileSafe(path: string): string | null {
   try {
-    return readFileSync(path, "utf-8");
+    return readFileSync(path, 'utf-8');
   } catch {
     return null;
   }
 }
 
 function escapeRegex(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function getSectionContent(markdown: string, heading: string): string | null {
-  const headingRe = new RegExp(
-    `^##\\s+${escapeRegex(heading)}[ \\t]*$`,
-    "im",
-  );
+  const headingRe = new RegExp(`^##\\s+${escapeRegex(heading)}[ \\t]*$`, 'im');
   const headingMatch = headingRe.exec(markdown);
   if (!headingMatch || headingMatch.index === undefined) return null;
 
   const bodyStart = headingMatch.index + headingMatch[0].length;
-  const rest = markdown.slice(bodyStart).replace(/^\r?\n/, "");
+  const rest = markdown.slice(bodyStart).replace(/^\r?\n/, '');
   const nextHeadingMatch = /\r?\n##\s+/.exec(rest);
-  const body = (nextHeadingMatch ? rest.slice(0, nextHeadingMatch.index) : rest).trim();
+  const body = (
+    nextHeadingMatch ? rest.slice(0, nextHeadingMatch.index) : rest
+  ).trim();
   return body.length > 0 ? body : null;
 }
 
@@ -78,7 +77,7 @@ function hasRequiredSections(markdown: string, headings: string[]): boolean {
 }
 
 function getPlansDirCandidates(cwd: string): string[] {
-  return [join(getOmcRoot(cwd), "plans"), join(cwd, ".omx", "plans")];
+  return [join(getOmcRoot(cwd), 'plans'), join(cwd, '.omx', 'plans')];
 }
 
 function sortArtifactPathsDescending(paths: string[]): string[] {
@@ -101,13 +100,10 @@ function hasCompletePlanningPair(
 
   return (
     hasRequiredSections(prd, [
-      "Acceptance criteria",
-      "Requirement coverage map",
+      'Acceptance criteria',
+      'Requirement coverage map',
     ]) &&
-    hasRequiredSections(testSpec, [
-      "Unit coverage",
-      "Verification mapping",
-    ])
+    hasRequiredSections(testSpec, ['Unit coverage', 'Verification mapping'])
   );
 }
 
@@ -132,9 +128,9 @@ export function readPlanningArtifacts(cwd: string): PlanningArtifacts {
     }
 
     for (const entry of entries) {
-      if (entry.startsWith("prd-") && entry.endsWith(".md")) {
+      if (entry.startsWith('prd-') && entry.endsWith('.md')) {
         prdPaths.push(join(plansDir, entry));
-      } else if (entry.startsWith("test-spec-") && entry.endsWith(".md")) {
+      } else if (entry.startsWith('test-spec-') && entry.endsWith('.md')) {
         testSpecPaths.push(join(plansDir, entry));
       }
     }
@@ -165,10 +161,10 @@ export function isPlanningComplete(artifacts: PlanningArtifacts): boolean {
 }
 
 type LaunchHintSelection =
-  | { status: "no-match" }
-  | { status: "ambiguous" }
+  | { status: 'no-match' }
+  | { status: 'ambiguous' }
   | {
-      status: "unique";
+      status: 'unique';
       command: string;
       task: string;
       workerCount?: number;
@@ -192,15 +188,15 @@ function decodeQuotedValue(raw: string): string | null {
   }
 }
 
-function launchHintPattern(mode: "team" | "ralph"): RegExp {
-  return mode === "team"
+function launchHintPattern(mode: 'team' | 'ralph'): RegExp {
+  return mode === 'team'
     ? /(?<command>(?:om[cx]\s+team|\$team)(?:\s+ralph)?(?:\s+(?<count>\d+)(?::(?<role>[a-z][a-z0-9-]*))?)?\s+(?<task>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(?<flags>(?:\s+--[\w-]+)*))/gi
     : /(?<command>(?:om[cx]\s+ralph|\$ralph)\s+(?<task>"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')(?<flags>(?:\s+--[\w-]+)*))/gi;
 }
 
 function collectLaunchHintMatches(
   content: string,
-  mode: "team" | "ralph",
+  mode: 'team' | 'ralph',
 ): RegExpMatchArray[] {
   return [...content.matchAll(launchHintPattern(mode))];
 }
@@ -212,20 +208,25 @@ function selectLaunchHintMatch(
 ): LaunchHintSelection {
   const decodedMatches = matches.flatMap((match) => {
     const command = match[0]?.trim();
-    const task = match.groups?.task ? decodeQuotedValue(match.groups.task) : null;
+    const task = match.groups?.task
+      ? decodeQuotedValue(match.groups.task)
+      : null;
     if (!command || task == null) return [];
-    const flags = match.groups?.flags ?? "";
+    const flags = match.groups?.flags ?? '';
     const workerCount = match.groups?.count
       ? Number.parseInt(match.groups.count, 10)
       : undefined;
 
-    return [{
-      command,
-      task,
-      ...(workerCount == null ? {} : { workerCount }),
-      agentType: match.groups?.role || undefined,
-      linkedRalph: /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph,
-    }];
+    return [
+      {
+        command,
+        task,
+        ...(workerCount == null ? {} : { workerCount }),
+        agentType: match.groups?.role || undefined,
+        linkedRalph:
+          /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph,
+      },
+    ];
   });
 
   const matchesToConsider = normalizedCommand
@@ -234,9 +235,9 @@ function selectLaunchHintMatch(
       ? decodedMatches.filter((match) => match.task.trim() === normalizedTask)
       : decodedMatches;
 
-  if (matchesToConsider.length === 0) return { status: "no-match" };
-  if (matchesToConsider.length > 1) return { status: "ambiguous" };
-  return { status: "unique", ...matchesToConsider[0]! };
+  if (matchesToConsider.length === 0) return { status: 'no-match' };
+  if (matchesToConsider.length > 1) return { status: 'ambiguous' };
+  return { status: 'unique', ...matchesToConsider[0]! };
 }
 
 function parseFlags(flagStr: string): { linkedRalph: boolean } {
@@ -251,20 +252,20 @@ function parseFlags(flagStr: string): { linkedRalph: boolean } {
  */
 export function readApprovedExecutionLaunchHint(
   cwd: string,
-  mode: "team" | "ralph",
+  mode: 'team' | 'ralph',
   options: ApprovedExecutionLaunchHintReadOptions = {},
 ): ApprovedExecutionLaunchHint | null {
   const outcome = readApprovedExecutionLaunchHintOutcome(cwd, mode, options);
-  return outcome.status === "resolved" ? outcome.hint : null;
+  return outcome.status === 'resolved' ? outcome.hint : null;
 }
 
 export function readApprovedExecutionLaunchHintOutcome(
   cwd: string,
-  mode: "team" | "ralph",
+  mode: 'team' | 'ralph',
   options: ApprovedExecutionLaunchHintReadOptions = {},
 ): ApprovedExecutionLaunchHintOutcome {
   const artifacts = readPlanningArtifacts(cwd);
-  if (artifacts.prdPaths.length === 0) return { status: "absent" };
+  if (artifacts.prdPaths.length === 0) return { status: 'absent' };
 
   const prdPath = options.prdPath
     ? artifacts.prdPaths.includes(options.prdPath)
@@ -275,32 +276,32 @@ export function readApprovedExecutionLaunchHintOutcome(
     prdPath,
     artifacts.testSpecPaths,
   );
-  if (!prdPath) return { status: "absent" };
+  if (!prdPath) return { status: 'absent' };
   if (artifacts.testSpecPaths.length > 0 && matchingTestSpecs.length === 0) {
-    return { status: "absent" };
+    return { status: 'absent' };
   }
   const content = readFileSafe(prdPath);
-  if (!content) return { status: "absent" };
+  if (!content) return { status: 'absent' };
 
   const selected = selectLaunchHintMatch(
     collectLaunchHintMatches(content, mode),
     options.task?.trim(),
     options.command?.trim(),
   );
-  if (selected.status === "ambiguous") return { status: "ambiguous" };
-  if (selected.status !== "unique") return { status: "absent" };
+  if (selected.status === 'ambiguous') return { status: 'ambiguous' };
+  if (selected.status !== 'unique') return { status: 'absent' };
   if (
     options.requirePlanningComplete &&
     !hasCompletePlanningPair(prdPath, matchingTestSpecs)
   ) {
-    return { status: "incomplete" };
+    return { status: 'incomplete' };
   }
 
-  if (mode === "team") {
+  if (mode === 'team') {
     return {
-      status: "resolved",
+      status: 'resolved',
       hint: {
-        mode: "team",
+        mode: 'team',
         command: selected.command,
         task: selected.task,
         workerCount: selected.workerCount,
@@ -312,9 +313,9 @@ export function readApprovedExecutionLaunchHintOutcome(
   }
 
   return {
-    status: "resolved",
+    status: 'resolved',
     hint: {
-      mode: "ralph",
+      mode: 'ralph',
       command: selected.command,
       task: selected.task,
       linkedRalph: selected.linkedRalph,

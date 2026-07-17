@@ -13,7 +13,11 @@ import {
   formatDaemonState,
   shouldResumeBlockedPanesOnStatusChange,
 } from '../../features/rate-limit-wait/daemon.js';
-import type { DaemonState, DaemonConfig, RateLimitStatus } from '../../features/rate-limit-wait/types.js';
+import type {
+  DaemonState,
+  DaemonConfig,
+  RateLimitStatus,
+} from '../../features/rate-limit-wait/types.js';
 
 describe('daemon', () => {
   const testDir = join(tmpdir(), 'omc-daemon-test-' + Date.now());
@@ -314,7 +318,9 @@ describe('daemon', () => {
   });
 
   describe('resume guard', () => {
-    function createRateLimitStatus(overrides: Partial<RateLimitStatus> = {}): RateLimitStatus {
+    function createRateLimitStatus(
+      overrides: Partial<RateLimitStatus> = {},
+    ): RateLimitStatus {
       return {
         fiveHourLimited: false,
         weeklyLimited: false,
@@ -346,7 +352,9 @@ describe('daemon', () => {
         usingStaleData: true,
       });
 
-      expect(shouldResumeBlockedPanesOnStatusChange(previousStatus, degradedStatus)).toBe(false);
+      expect(
+        shouldResumeBlockedPanesOnStatusChange(previousStatus, degradedStatus),
+      ).toBe(false);
     });
 
     it('resumes blocked panes when a limited state becomes a clean non-limited status', () => {
@@ -362,7 +370,9 @@ describe('daemon', () => {
         weeklyPercent: 42,
       });
 
-      expect(shouldResumeBlockedPanesOnStatusChange(previousStatus, clearedStatus)).toBe(true);
+      expect(
+        shouldResumeBlockedPanesOnStatusChange(previousStatus, clearedStatus),
+      ).toBe(true);
     });
   });
 

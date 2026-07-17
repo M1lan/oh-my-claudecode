@@ -28,7 +28,10 @@ describe('team leader nudge hook logging', () => {
     vi.restoreAllMocks();
   });
 
-  async function writeJson(relativePath: string, value: unknown): Promise<void> {
+  async function writeJson(
+    relativePath: string,
+    value: unknown,
+  ): Promise<void> {
     const fullPath = join(cwd, relativePath);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
@@ -43,10 +46,13 @@ describe('team leader nudge hook logging', () => {
       state: 'idle',
       updated_at: new Date().toISOString(),
     });
-    await writeJson('.omc/state/team/demo-team/workers/worker-1/heartbeat.json', {
-      alive: true,
-      last_turn_at: new Date().toISOString(),
-    });
+    await writeJson(
+      '.omc/state/team/demo-team/workers/worker-1/heartbeat.json',
+      {
+        alive: true,
+        last_turn_at: new Date().toISOString(),
+      },
+    );
     await writeJson('.omc/state/team/demo-team/tasks/task-1.json', {
       status: 'pending',
     });

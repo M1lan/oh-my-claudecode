@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getGitRepoName, getGitBranch, getWorktreeInfo, renderGitRepo, renderGitBranch, resetGitCache } from '../../hud/elements/git.js';
+import {
+  getGitRepoName,
+  getGitBranch,
+  getWorktreeInfo,
+  renderGitRepo,
+  renderGitBranch,
+  resetGitCache,
+} from '../../hud/elements/git.js';
 
 // Mock child_process.execFileSync (preserve other exports so transitively
 // imported modules that use execFile/spawn still resolve).
@@ -56,7 +63,7 @@ describe('git elements', () => {
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'git',
         ['remote', 'get-url', 'origin'],
-        expect.objectContaining({ cwd: '/some/path', windowsHide: true })
+        expect.objectContaining({ cwd: '/some/path', windowsHide: true }),
       );
     });
   });
@@ -90,7 +97,7 @@ describe('git elements', () => {
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'git',
         ['branch', '--show-current'],
-        expect.objectContaining({ cwd: '/some/path', windowsHide: true })
+        expect.objectContaining({ cwd: '/some/path', windowsHide: true }),
       );
     });
   });
@@ -119,22 +126,28 @@ describe('git elements', () => {
 
   describe('getWorktreeInfo', () => {
     it('returns isWorktree false for normal repo', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
+          return '';
+        },
+      );
       const result = getWorktreeInfo('/some/repo');
       expect(result.isWorktree).toBe(false);
       expect(result.worktreeName).toBeNull();
     });
 
     it('detects linked worktree and extracts worktree name from git-dir', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'rev-parse --git-dir') return '/main-repo/.git/worktrees/my-wt\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '/main-repo/.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'rev-parse --git-dir')
+            return '/main-repo/.git/worktrees/my-wt\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir')
+            return '/main-repo/.git\n';
+          return '';
+        },
+      );
 
       const result = getWorktreeInfo('/some/worktree');
       expect(result.isWorktree).toBe(true);
@@ -142,11 +155,15 @@ describe('git elements', () => {
     });
 
     it('extracts worktree name with nested path segments', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'rev-parse --git-dir') return '/repo/.git/worktrees/feature-NAVERCAFE-12345\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '/repo/.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'rev-parse --git-dir')
+            return '/repo/.git/worktrees/feature-NAVERCAFE-12345\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir')
+            return '/repo/.git\n';
+          return '';
+        },
+      );
 
       const result = getWorktreeInfo('/some/worktree');
       expect(result.isWorktree).toBe(true);
@@ -163,16 +180,20 @@ describe('git elements', () => {
     });
 
     it('caches result for same cwd', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
+          return '';
+        },
+      );
 
       getWorktreeInfo('/cached/path');
       getWorktreeInfo('/cached/path');
 
-      const gitDirCalls = mockExecFileSync.mock.calls.filter(c => Array.isArray(c[1]) && c[1].join(' ') === 'rev-parse --git-dir');
+      const gitDirCalls = mockExecFileSync.mock.calls.filter(
+        (c) => Array.isArray(c[1]) && c[1].join(' ') === 'rev-parse --git-dir',
+      );
       expect(gitDirCalls).toHaveLength(1);
     });
   });
@@ -199,12 +220,16 @@ describe('git elements', () => {
     });
 
     it('shows worktree suffix with worktree name when in a linked worktree', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'branch --show-current') return 'feature-x\n';
-        if (args?.join(' ') === 'rev-parse --git-dir') return '/main/.git/worktrees/my-wt\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '/main/.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'branch --show-current') return 'feature-x\n';
+          if (args?.join(' ') === 'rev-parse --git-dir')
+            return '/main/.git/worktrees/my-wt\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir')
+            return '/main/.git\n';
+          return '';
+        },
+      );
 
       const result = renderGitBranch('/some/worktree');
       expect(result).toContain('branch:');
@@ -214,12 +239,14 @@ describe('git elements', () => {
     });
 
     it('does not show worktree suffix in normal repo', () => {
-      mockExecFileSync.mockImplementation((_file: string, args?: readonly string[]) => {
-        if (args?.join(' ') === 'branch --show-current') return 'main\n';
-        if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
-        if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
-        return '';
-      });
+      mockExecFileSync.mockImplementation(
+        (_file: string, args?: readonly string[]) => {
+          if (args?.join(' ') === 'branch --show-current') return 'main\n';
+          if (args?.join(' ') === 'rev-parse --git-dir') return '.git\n';
+          if (args?.join(' ') === 'rev-parse --git-common-dir') return '.git\n';
+          return '';
+        },
+      );
 
       const result = renderGitBranch('/some/repo');
       expect(result).toContain('branch:');

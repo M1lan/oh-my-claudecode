@@ -8,7 +8,20 @@
  * Bash hook scripts were removed in v3.9.0.
  */
 
-import { existsSync, mkdirSync, writeFileSync, readFileSync, copyFileSync, chmodSync, readdirSync, cpSync, unlinkSync, rmSync, realpathSync, statSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  copyFileSync,
+  chmodSync,
+  readdirSync,
+  cpSync,
+  unlinkSync,
+  rmSync,
+  realpathSync,
+  statSync,
+} from 'fs';
 import { createHash } from 'crypto';
 import { join, dirname, resolve, isAbsolute, basename } from 'path';
 import { fileURLToPath } from 'url';
@@ -29,7 +42,13 @@ import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
 import { buildHudWrapper } from '../lib/hud-wrapper-template.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import { syncOmcLearnedUserSkillsForClaudeCode } from '../utils/user-skill-compat.js';
-import { analyzeLegacyClaudeMd, OMC_END_MARKER, OMC_START_MARKER, parseClaudeMdMarkers, removeClaudeMdRanges } from './claude-md-analysis.js';
+import {
+  analyzeLegacyClaudeMd,
+  OMC_END_MARKER,
+  OMC_START_MARKER,
+  parseClaudeMdMarkers,
+  removeClaudeMdRanges,
+} from './claude-md-analysis.js';
 import { executeClaudeMdTransaction } from './claude-md-transaction.js';
 
 /** Claude Code configuration directory */
@@ -70,11 +89,7 @@ const CC_NATIVE_COMMANDS = new Set([
   'memory',
 ]);
 
-const SKININTHEGAMEBROS_ONLY_SKILLS = new Set([
-  'remember',
-  'verify',
-  'debug',
-]);
+const SKININTHEGAMEBROS_ONLY_SKILLS = new Set(['remember', 'verify', 'debug']);
 
 function currentAgentsDir(): string {
   return join(getClaudeConfigDir(), 'agents');
@@ -89,13 +104,21 @@ function currentSkillsDir(): string {
  * existing CLAUDE.md markers so an older CLI package cannot overwrite a
  * newer installation during `omc setup`.
  */
-function isComparableVersion(version: string | null | undefined): version is string {
+function isComparableVersion(
+  version: string | null | undefined,
+): version is string {
   return !!version && /^\d+\.\d+\.\d+(?:[-+][\w.-]+)?$/.test(version);
 }
 
 function compareVersions(a: string, b: string): number {
-  const partsA = a.replace(/^v/, '').split('.').map(part => parseInt(part, 10) || 0);
-  const partsB = b.replace(/^v/, '').split('.').map(part => parseInt(part, 10) || 0);
+  const partsA = a
+    .replace(/^v/, '')
+    .split('.')
+    .map((part) => parseInt(part, 10) || 0);
+  const partsB = b
+    .replace(/^v/, '')
+    .split('.')
+    .map((part) => parseInt(part, 10) || 0);
   const maxLength = Math.max(partsA.length, partsB.length);
 
   for (let i = 0; i < maxLength; i++) {
@@ -118,7 +141,9 @@ function getNewestInstalledVersionHint(): string | null {
 
   if (existsSync(VERSION_FILE)) {
     try {
-      const metadata = JSON.parse(readFileSync(VERSION_FILE, 'utf-8')) as { version?: string };
+      const metadata = JSON.parse(readFileSync(VERSION_FILE, 'utf-8')) as {
+        version?: string;
+      };
       if (isComparableVersion(metadata.version)) {
         candidates.push(metadata.version);
       }
@@ -135,7 +160,9 @@ function getNewestInstalledVersionHint(): string | null {
   for (const candidatePath of claudeCandidates) {
     if (!existsSync(candidatePath)) continue;
     try {
-      const detectedVersion = extractOmcVersionMarker(readFileSync(candidatePath, 'utf-8'));
+      const detectedVersion = extractOmcVersionMarker(
+        readFileSync(candidatePath, 'utf-8'),
+      );
       if (isComparableVersion(detectedVersion)) {
         candidates.push(detectedVersion);
       }
@@ -149,10 +176,9 @@ function getNewestInstalledVersionHint(): string | null {
   }
 
   return candidates.reduce((highest, candidate) =>
-    compareVersions(candidate, highest) > 0 ? candidate : highest
+    compareVersions(candidate, highest) > 0 ? candidate : highest,
   );
 }
-
 
 function normalizePath(value: string): string {
   return value.replace(/\\/g, '/').replace(/\/+$/, '');
@@ -209,15 +235,19 @@ function buildStatusLineCommand(
   return `node ${quoteShellArg(normalizedHudScriptPath)}`;
 }
 
-
-function generatedUserCustomizationHeaderRanges(markers: ReturnType<typeof parseClaudeMdMarkers>): Array<{ start: number; end: number }> {
+function generatedUserCustomizationHeaderRanges(
+  markers: ReturnType<typeof parseClaudeMdMarkers>,
+): Array<{ start: number; end: number }> {
   const ranges: Array<{ start: number; end: number }> = [];
-  const generatedHeaders = new Set(['<!-- User customizations -->', '<!-- User customizations (recovered from corrupted markers) -->']);
+  const generatedHeaders = new Set([
+    '<!-- User customizations -->',
+    '<!-- User customizations (recovered from corrupted markers) -->',
+  ]);
   for (let index = 1; index < markers.lines.length; index += 1) {
     const header = markers.lines[index];
     const separator = markers.lines[index - 1];
     if (!generatedHeaders.has(header.text) || separator.text !== '') continue;
-    if (markers.managedRanges.some(range => range.end === separator.start)) {
+    if (markers.managedRanges.some((range) => range.end === separator.start)) {
       ranges.push({ start: separator.start, end: header.eolEnd });
     }
   }
@@ -342,9 +372,7 @@ function listStandaloneHookLibPayloadFilenames(): Set<string> {
   return filenames;
 }
 
-const OMC_HOOK_EXTRA_FILENAMES = new Set([
-  'find-node.sh',
-]);
+const OMC_HOOK_EXTRA_FILENAMES = new Set(['find-node.sh']);
 function hashFileContents(path: string): string | null {
   try {
     return createHash('sha256').update(readFileSync(path)).digest('hex');
@@ -353,7 +381,10 @@ function hashFileContents(path: string): string | null {
   }
 }
 
-function getShippedStandaloneHookPayloadPath(filename: string, location: 'hooks' | 'hooks/lib'): string | null {
+function getShippedStandaloneHookPayloadPath(
+  filename: string,
+  location: 'hooks' | 'hooks/lib',
+): string | null {
   const packageDir = getPackageDir();
   if (location === 'hooks') {
     if (OMC_HOOK_FILENAMES.has(filename)) {
@@ -374,7 +405,11 @@ function getShippedStandaloneHookPayloadPath(filename: string, location: 'hooks'
   return join(packageDir, 'templates', 'hooks', 'lib', filename);
 }
 
-function isShippedStandaloneHookPayload(targetPath: string, filename: string, location: 'hooks' | 'hooks/lib'): boolean {
+function isShippedStandaloneHookPayload(
+  targetPath: string,
+  filename: string,
+  location: 'hooks' | 'hooks/lib',
+): boolean {
   const shippedPath = getShippedStandaloneHookPayloadPath(filename, location);
   if (!shippedPath || !existsSync(shippedPath)) {
     return false;
@@ -382,7 +417,9 @@ function isShippedStandaloneHookPayload(targetPath: string, filename: string, lo
 
   const targetHash = hashFileContents(targetPath);
   const shippedHash = hashFileContents(shippedPath);
-  return targetHash !== null && shippedHash !== null && targetHash === shippedHash;
+  return (
+    targetHash !== null && shippedHash !== null && targetHash === shippedHash
+  );
 }
 
 /**
@@ -409,7 +446,11 @@ export function isOmcHook(command: string): boolean {
   // Handles both Unix (.claude/hooks/) and Windows (.claude\hooks\) paths.
   const containsHooksDir = /hooks[/\\]/.test(lowerCommand);
   const hookFilenameMatch = lowerCommand.match(/([a-z0-9-]+\.mjs)(?:$|["'\s])/);
-  if (containsHooksDir && hookFilenameMatch && OMC_HOOK_FILENAMES.has(hookFilenameMatch[1])) {
+  if (
+    containsHooksDir &&
+    hookFilenameMatch &&
+    OMC_HOOK_FILENAMES.has(hookFilenameMatch[1])
+  ) {
     return true;
   }
   return false;
@@ -419,18 +460,26 @@ function isStandaloneOmcHookCommand(command: string): boolean {
   const lowerCommand = command.toLowerCase();
   const containsHooksDir = /hooks[/\\]/.test(lowerCommand);
   const hookFilenameMatch = lowerCommand.match(/([a-z0-9-]+\.mjs)(?:$|["'\s])/);
-  return !!(containsHooksDir && hookFilenameMatch && OMC_HOOK_FILENAMES.has(hookFilenameMatch[1]));
+  return !!(
+    containsHooksDir &&
+    hookFilenameMatch &&
+    OMC_HOOK_FILENAMES.has(hookFilenameMatch[1])
+  );
 }
 
 function getStandaloneOmcHookFilename(command: string): string | null {
   if (!isStandaloneOmcHookCommand(command)) {
     return null;
   }
-  const hookFilenameMatch = command.toLowerCase().match(/([a-z0-9-]+\.mjs)(?:$|["'\s])/);
+  const hookFilenameMatch = command
+    .toLowerCase()
+    .match(/([a-z0-9-]+\.mjs)(?:$|["'\s])/);
   return hookFilenameMatch?.[1] ?? null;
 }
 
-function collectActiveStandaloneOmcHookFilenames(hooks: Record<string, unknown>): Set<string> {
+function collectActiveStandaloneOmcHookFilenames(
+  hooks: Record<string, unknown>,
+): Set<string> {
   const active = new Set<string>();
 
   for (const groups of Object.values(hooks)) {
@@ -458,16 +507,19 @@ function collectActiveStandaloneOmcHookFilenames(hooks: Record<string, unknown>)
   return active;
 }
 
-
 /**
  * Check if the current Node.js version meets the minimum requirement
  */
-export function checkNodeVersion(): { valid: boolean; current: number; required: number } {
+export function checkNodeVersion(): {
+  valid: boolean;
+  current: number;
+  required: number;
+} {
   const current = parseInt(process.versions.node.split('.')[0], 10);
   return {
     valid: current >= MIN_NODE_VERSION,
     current,
-    required: MIN_NODE_VERSION
+    required: MIN_NODE_VERSION,
   };
 }
 
@@ -525,8 +577,12 @@ export function isProjectScopedPlugin(): boolean {
 
   // If the plugin root is NOT under the global plugin directory, it's project-scoped
   // Normalize paths for comparison (resolve symlinks, trailing slashes, etc.)
-  const normalizedPluginRoot = pluginRoot.replace(/\\/g, '/').replace(/\/$/, '');
-  const normalizedGlobalBase = globalPluginBase.replace(/\\/g, '/').replace(/\/$/, '');
+  const normalizedPluginRoot = pluginRoot
+    .replace(/\\/g, '/')
+    .replace(/\/$/, '');
+  const normalizedGlobalBase = globalPluginBase
+    .replace(/\\/g, '/')
+    .replace(/\/$/, '');
 
   return !normalizedPluginRoot.startsWith(normalizedGlobalBase);
 }
@@ -534,7 +590,10 @@ export function isProjectScopedPlugin(): boolean {
 type HookEntry = { type: string; command: string };
 type HookGroup = { hooks: HookEntry[] };
 
-function pruneLegacyStandaloneHookScripts(log: (msg: string) => void, activeStandaloneOmcHookFilenames = new Set<string>()): void {
+function pruneLegacyStandaloneHookScripts(
+  log: (msg: string) => void,
+  activeStandaloneOmcHookFilenames = new Set<string>(),
+): void {
   if (!existsSync(HOOKS_DIR)) {
     return;
   }
@@ -542,16 +601,19 @@ function pruneLegacyStandaloneHookScripts(log: (msg: string) => void, activeStan
   let removed = 0;
 
   for (const filename of readdirSync(HOOKS_DIR)) {
-    if (!OMC_HOOK_FILENAMES.has(filename) && !OMC_HOOK_EXTRA_FILENAMES.has(filename)) {
+    if (
+      !OMC_HOOK_FILENAMES.has(filename) &&
+      !OMC_HOOK_EXTRA_FILENAMES.has(filename)
+    ) {
       continue;
     }
 
     const targetPath = join(HOOKS_DIR, filename);
     try {
       if (
-        !activeStandaloneOmcHookFilenames.has(filename)
-        && statSync(targetPath).isFile()
-        && isShippedStandaloneHookPayload(targetPath, filename, 'hooks')
+        !activeStandaloneOmcHookFilenames.has(filename) &&
+        statSync(targetPath).isFile() &&
+        isShippedStandaloneHookPayload(targetPath, filename, 'hooks')
       ) {
         unlinkSync(targetPath);
         removed++;
@@ -563,7 +625,8 @@ function pruneLegacyStandaloneHookScripts(log: (msg: string) => void, activeStan
   }
 
   const hooksLibDir = join(HOOKS_DIR, 'lib');
-  const preserveSharedHookLibPayload = activeStandaloneOmcHookFilenames.size > 0;
+  const preserveSharedHookLibPayload =
+    activeStandaloneOmcHookFilenames.size > 0;
   if (existsSync(hooksLibDir) && !preserveSharedHookLibPayload) {
     for (const filename of readdirSync(hooksLibDir)) {
       if (!listStandaloneHookLibPayloadFilenames().has(filename)) {
@@ -572,7 +635,10 @@ function pruneLegacyStandaloneHookScripts(log: (msg: string) => void, activeStan
 
       const targetPath = join(hooksLibDir, filename);
       try {
-        if (statSync(targetPath).isFile() && isShippedStandaloneHookPayload(targetPath, filename, 'hooks/lib')) {
+        if (
+          statSync(targetPath).isFile() &&
+          isShippedStandaloneHookPayload(targetPath, filename, 'hooks/lib')
+        ) {
           unlinkSync(targetPath);
           removed++;
         }
@@ -591,7 +657,9 @@ function pruneLegacyStandaloneHookScripts(log: (msg: string) => void, activeStan
   }
 
   if (removed > 0) {
-    log(`  Removed ${removed} legacy hook script file${removed === 1 ? '' : 's'} from ${basename(CLAUDE_CONFIG_DIR)}/hooks`);
+    log(
+      `  Removed ${removed} legacy hook script file${removed === 1 ? '' : 's'} from ${basename(CLAUDE_CONFIG_DIR)}/hooks`,
+    );
   }
 }
 
@@ -610,16 +678,19 @@ function configureInstallerSettings(
   let settings = { ...baseSettings };
 
   {
-    const existingHooks = { ...((settings.hooks || {}) as Record<string, unknown>) };
+    const existingHooks = {
+      ...((settings.hooks || {}) as Record<string, unknown>),
+    };
     let legacyRemoved = 0;
 
     for (const [eventType, groups] of Object.entries(existingHooks)) {
       const groupList = groups as HookGroup[];
-      const filtered = groupList.filter(group => {
-        const isLegacy = group.hooks.every(h =>
-          h.type === 'command'
-          && typeof h.command === 'string'
-          && isStandaloneOmcHookCommand(h.command)
+      const filtered = groupList.filter((group) => {
+        const isLegacy = group.hooks.every(
+          (h) =>
+            h.type === 'command' &&
+            typeof h.command === 'string' &&
+            isStandaloneOmcHookCommand(h.command),
         );
         if (isLegacy) legacyRemoved++;
         return !isLegacy;
@@ -632,22 +703,36 @@ function configureInstallerSettings(
     }
 
     if (legacyRemoved > 0) {
-      context.log(`  Cleaned up ${legacyRemoved} legacy hook entries from settings.json`);
+      context.log(
+        `  Cleaned up ${legacyRemoved} legacy hook entries from settings.json`,
+      );
     }
 
-    const enabledOmcPlugin = context.runningAsPlugin || isOmcPluginEnabledInSettings(settings);
-    const pluginHandlesHooks = context.pluginProvidesHookFiles && enabledOmcPlugin;
+    const enabledOmcPlugin =
+      context.runningAsPlugin || isOmcPluginEnabledInSettings(settings);
+    const pluginHandlesHooks =
+      context.pluginProvidesHookFiles && enabledOmcPlugin;
     if (pluginHandlesHooks) {
-      const activeStandaloneOmcHookFilenames = collectActiveStandaloneOmcHookFilenames(existingHooks);
-      pruneLegacyStandaloneHookScripts(context.log, activeStandaloneOmcHookFilenames);
+      const activeStandaloneOmcHookFilenames =
+        collectActiveStandaloneOmcHookFilenames(existingHooks);
+      pruneLegacyStandaloneHookScripts(
+        context.log,
+        activeStandaloneOmcHookFilenames,
+      );
     }
 
-    const shouldConfigureSettingsHooks = (!context.runningAsPlugin || !!context.allowPluginHookRefresh) && !pluginHandlesHooks;
+    const shouldConfigureSettingsHooks =
+      (!context.runningAsPlugin || !!context.allowPluginHookRefresh) &&
+      !pluginHandlesHooks;
     if (shouldConfigureSettingsHooks) {
-      const desiredHooks = getHooksSettingsConfig().hooks as Record<string, HookGroup[]>;
+      const desiredHooks = getHooksSettingsConfig().hooks as Record<
+        string,
+        HookGroup[]
+      >;
 
       for (const [eventType, newOmcGroups] of Object.entries(desiredHooks)) {
-        const currentGroups = (existingHooks[eventType] as HookGroup[] | undefined) ?? [];
+        const currentGroups =
+          (existingHooks[eventType] as HookGroup[] | undefined) ?? [];
         existingHooks[eventType] = mergeHookGroups(
           eventType,
           currentGroups,
@@ -659,15 +744,22 @@ function configureInstallerSettings(
       }
     }
 
-    settings.hooks = Object.keys(existingHooks).length > 0 ? existingHooks : undefined;
+    settings.hooks =
+      Object.keys(existingHooks).length > 0 ? existingHooks : undefined;
     context.result.hooksConfigured = true;
   }
 
   if (context.hudScriptPath) {
     const nodeBin = resolveNodeBinary();
-    const absoluteCommand = '"' + nodeBin + '" "' + context.hudScriptPath.replace(/\\/g, '/') + '"';
+    const absoluteCommand =
+      '"' + nodeBin + '" "' + context.hudScriptPath.replace(/\\/g, '/') + '"';
     try {
-      const configDirHelperMjsSrc = join(getPackageDir(), 'scripts', 'lib', 'config-dir.mjs');
+      const configDirHelperMjsSrc = join(
+        getPackageDir(),
+        'scripts',
+        'lib',
+        'config-dir.mjs',
+      );
       const hudLibDir = join(HUD_DIR, 'lib');
       const configDirHelperMjsDest = join(hudLibDir, 'config-dir.mjs');
       if (!existsSync(hudLibDir)) {
@@ -683,9 +775,19 @@ function configureInstallerSettings(
       try {
         const findNodeSrc = join(getPackageDir(), 'scripts', 'find-node.sh');
         const findNodeDest = join(HUD_DIR, 'find-node.sh');
-        const cacheWrapperSrc = join(getPackageDir(), 'scripts', 'lib', 'hud-cache-wrapper.sh');
+        const cacheWrapperSrc = join(
+          getPackageDir(),
+          'scripts',
+          'lib',
+          'hud-cache-wrapper.sh',
+        );
         const cacheWrapperDest = join(HUD_DIR, 'omc-hud-cache.sh');
-        const configDirHelperSrc = join(getPackageDir(), 'scripts', 'lib', 'config-dir.sh');
+        const configDirHelperSrc = join(
+          getPackageDir(),
+          'scripts',
+          'lib',
+          'config-dir.sh',
+        );
         const hudLibDir = join(HUD_DIR, 'lib');
         const configDirHelperDest = join(hudLibDir, 'config-dir.sh');
         if (!existsSync(hudLibDir)) {
@@ -697,47 +799,71 @@ function configureInstallerSettings(
         chmodSync(findNodeDest, 0o755);
         chmodSync(cacheWrapperDest, 0o755);
         chmodSync(configDirHelperDest, 0o755);
-        statusLineCommand = buildStatusLineCommand(nodeBin, context.hudScriptPath.replace(/\\/g, '/'), findNodeDest, cacheWrapperDest);
+        statusLineCommand = buildStatusLineCommand(
+          nodeBin,
+          context.hudScriptPath.replace(/\\/g, '/'),
+          findNodeDest,
+          cacheWrapperDest,
+        );
       } catch {
-        statusLineCommand = buildStatusLineCommand(nodeBin, context.hudScriptPath.replace(/\\/g, '/'));
+        statusLineCommand = buildStatusLineCommand(
+          nodeBin,
+          context.hudScriptPath.replace(/\\/g, '/'),
+        );
       }
     } else {
-      statusLineCommand = buildStatusLineCommand(nodeBin, context.hudScriptPath);
+      statusLineCommand = buildStatusLineCommand(
+        nodeBin,
+        context.hudScriptPath,
+      );
     }
 
-    const needsMigration = typeof settings.statusLine === 'string'
-      && isOmcStatusLine(settings.statusLine);
+    const needsMigration =
+      typeof settings.statusLine === 'string' &&
+      isOmcStatusLine(settings.statusLine);
     if (!settings.statusLine || needsMigration) {
       settings.statusLine = {
         type: 'command',
-        command: statusLineCommand
+        command: statusLineCommand,
       };
-      context.log(needsMigration
-        ? '  Migrated statusLine from legacy string to object format'
-        : '  Configured statusLine');
+      context.log(
+        needsMigration
+          ? '  Migrated statusLine from legacy string to object format'
+          : '  Configured statusLine',
+      );
     } else if (context.options.force && isOmcStatusLine(settings.statusLine)) {
       settings.statusLine = {
         type: 'command',
-        command: statusLineCommand
+        command: statusLineCommand,
       };
       context.log('  Updated statusLine (--force)');
     } else if (context.options.force) {
-      context.log('  statusLine owned by another tool, preserving (use manual edit to override)');
+      context.log(
+        '  statusLine owned by another tool, preserving (use manual edit to override)',
+      );
     } else {
-      context.log('  statusLine already configured, skipping (use --force to override)');
+      context.log(
+        '  statusLine already configured, skipping (use --force to override)',
+      );
     }
   }
 
   const mcpSync = syncUnifiedMcpRegistryTargets(settings);
   settings = mcpSync.settings;
   if (mcpSync.result.bootstrappedFromClaude) {
-    context.log(`  Bootstrapped unified MCP registry: ${mcpSync.result.registryPath}`);
+    context.log(
+      `  Bootstrapped unified MCP registry: ${mcpSync.result.registryPath}`,
+    );
   }
   if (mcpSync.result.claudeChanged) {
-    context.log(`  Synced ${mcpSync.result.serverNames.length} MCP server(s) into Claude MCP config: ${mcpSync.result.claudeConfigPath}`);
+    context.log(
+      `  Synced ${mcpSync.result.serverNames.length} MCP server(s) into Claude MCP config: ${mcpSync.result.claudeConfigPath}`,
+    );
   }
   if (mcpSync.result.codexChanged) {
-    context.log(`  Synced ${mcpSync.result.serverNames.length} MCP server(s) into Codex config: ${mcpSync.result.codexConfigPath}`);
+    context.log(
+      `  Synced ${mcpSync.result.serverNames.length} MCP server(s) into Codex config: ${mcpSync.result.codexConfigPath}`,
+    );
   }
 
   return settings;
@@ -789,7 +915,12 @@ function ensureStandaloneHookScripts(log: (msg: string) => void): void {
   }
 
   // config-dir.mjs: canonical source is scripts/lib/, not templates (avoids duplication)
-  const configDirHelperMjs = join(packageDir, 'scripts', 'lib', 'config-dir.mjs');
+  const configDirHelperMjs = join(
+    packageDir,
+    'scripts',
+    'lib',
+    'config-dir.mjs',
+  );
   const configDirHelperMjsDest = join(hooksLibDir, 'config-dir.mjs');
   copyFileSync(configDirHelperMjs, configDirHelperMjsDest);
   if (!isWindows()) {
@@ -798,7 +929,12 @@ function ensureStandaloneHookScripts(log: (msg: string) => void): void {
   if (!isWindows()) {
     const findNodeSrc = join(packageDir, 'scripts', 'find-node.sh');
     const findNodeDest = join(HOOKS_DIR, 'find-node.sh');
-    const configDirHelperSrc = join(packageDir, 'scripts', 'lib', 'config-dir.sh');
+    const configDirHelperSrc = join(
+      packageDir,
+      'scripts',
+      'lib',
+      'config-dir.sh',
+    );
     const configDirHelperDest = join(hooksLibDir, 'config-dir.sh');
     copyFileSync(findNodeSrc, findNodeDest);
     copyFileSync(configDirHelperSrc, configDirHelperDest);
@@ -822,21 +958,29 @@ function mergeHookGroups(
   eventType: string,
   existingGroups: HookGroup[],
   newOmcGroups: HookGroup[],
-  options: { force?: boolean; forceHooks?: boolean; allowPluginHookRefresh?: boolean },
+  options: {
+    force?: boolean;
+    forceHooks?: boolean;
+    allowPluginHookRefresh?: boolean;
+  },
   log: (msg: string) => void,
   result: InstallResult,
 ): HookGroup[] {
-  const nonOmcGroups = existingGroups.filter(group =>
-    group.hooks.some(h => h.type === 'command' && !isOmcHook(h.command))
+  const nonOmcGroups = existingGroups.filter((group) =>
+    group.hooks.some((h) => h.type === 'command' && !isOmcHook(h.command)),
   );
   const hasNonOmcHook = nonOmcGroups.length > 0;
   const nonOmcCommand = hasNonOmcHook
-    ? nonOmcGroups[0].hooks.find(h => h.type === 'command' && !isOmcHook(h.command))?.command ?? ''
+    ? (nonOmcGroups[0].hooks.find(
+        (h) => h.type === 'command' && !isOmcHook(h.command),
+      )?.command ?? '')
     : '';
 
   if (options.forceHooks && !options.allowPluginHookRefresh) {
     if (hasNonOmcHook) {
-      log(`  Warning: Overwriting non-OMC ${eventType} hook with --force-hooks: ${nonOmcCommand}`);
+      log(
+        `  Warning: Overwriting non-OMC ${eventType} hook with --force-hooks: ${nonOmcCommand}`,
+      );
       result.hookConflicts.push({ eventType, existingCommand: nonOmcCommand });
     }
     log(`  Updated ${eventType} hook (--force-hooks)`);
@@ -845,7 +989,9 @@ function mergeHookGroups(
 
   if (options.force) {
     if (hasNonOmcHook) {
-      log(`  Merged ${eventType} hooks (updated OMC hooks, preserved non-OMC hook: ${nonOmcCommand})`);
+      log(
+        `  Merged ${eventType} hooks (updated OMC hooks, preserved non-OMC hook: ${nonOmcCommand})`,
+      );
       result.hookConflicts.push({ eventType, existingCommand: nonOmcCommand });
     } else {
       log(`  Updated ${eventType} hook (--force)`);
@@ -854,7 +1000,9 @@ function mergeHookGroups(
   }
 
   if (hasNonOmcHook) {
-    log(`  Warning: ${eventType} hook has non-OMC hook. Skipping. Use --force-hooks to override.`);
+    log(
+      `  Warning: ${eventType} hook has non-OMC hook. Skipping. Use --force-hooks to override.`,
+    );
     result.hookConflicts.push({ eventType, existingCommand: nonOmcCommand });
   } else {
     log(`  ${eventType} hook already configured, skipping`);
@@ -879,9 +1027,7 @@ export function cleanupStaleAgents(log: (msg: string) => void): string[] {
   const agentsDir = currentAgentsDir();
   if (!existsSync(agentsDir)) return [];
 
-  const currentAgentFiles = new Set(
-    Object.keys(loadAgentDefinitions()),
-  );
+  const currentAgentFiles = new Set(Object.keys(loadAgentDefinitions()));
 
   const removed: string[] = [];
   for (const file of readdirSync(agentsDir)) {
@@ -914,13 +1060,13 @@ export function cleanupStaleAgents(log: (msg: string) => void): string[] {
  * appear twice. Removes standalone copies with OMC frontmatter whose
  * filename matches a current package agent.
  */
-export function prunePluginDuplicateAgents(log: (msg: string) => void): string[] {
+export function prunePluginDuplicateAgents(
+  log: (msg: string) => void,
+): string[] {
   const agentsDir = currentAgentsDir();
   if (!existsSync(agentsDir)) return [];
 
-  const currentAgentFiles = new Set(
-    Object.keys(loadAgentDefinitions()),
-  );
+  const currentAgentFiles = new Set(Object.keys(loadAgentDefinitions()));
 
   const removed: string[] = [];
   for (const file of readdirSync(agentsDir)) {
@@ -960,7 +1106,9 @@ export function cleanupStaleSkills(log: (msg: string) => void): string[] {
   const currentSkillNames = new Set<string>();
 
   if (existsSync(packageSkillsDir)) {
-    for (const entry of readdirSync(packageSkillsDir, { withFileTypes: true })) {
+    for (const entry of readdirSync(packageSkillsDir, {
+      withFileTypes: true,
+    })) {
       if (entry.isDirectory()) {
         currentSkillNames.add(entry.name);
         // Also add the safe standalone name variant
@@ -968,7 +1116,10 @@ export function cleanupStaleSkills(log: (msg: string) => void): string[] {
         if (existsSync(skillMdPath)) {
           const content = readFileSync(skillMdPath, 'utf-8');
           const { metadata } = parseFrontmatter(content);
-          if (typeof metadata.name === 'string' && metadata.name.trim().length > 0) {
+          if (
+            typeof metadata.name === 'string' &&
+            metadata.name.trim().length > 0
+          ) {
             currentSkillNames.add(toSafeStandaloneSkillName(metadata.name));
           }
         }
@@ -1008,7 +1159,9 @@ export function cleanupStaleSkills(log: (msg: string) => void): string[] {
  * content-hashes match any installed plugin version, preserving user-authored
  * skills that happen to share a name.
  */
-export function prunePluginDuplicateSkills(log: (msg: string) => void): string[] {
+export function prunePluginDuplicateSkills(
+  log: (msg: string) => void,
+): string[] {
   const skillsDir = currentSkillsDir();
   if (!existsSync(skillsDir)) return [];
 
@@ -1029,7 +1182,10 @@ export function prunePluginDuplicateSkills(log: (msg: string) => void): string[]
       const content = readFileSync(skillMdPath, 'utf-8');
       const { metadata } = parseFrontmatter(content);
       let safeStandaloneName: string | null = null;
-      if (typeof metadata.name === 'string' && metadata.name.trim().length > 0) {
+      if (
+        typeof metadata.name === 'string' &&
+        metadata.name.trim().length > 0
+      ) {
         safeStandaloneName = toSafeStandaloneSkillName(metadata.name);
         pluginSkillNames.add(safeStandaloneName);
       }
@@ -1062,7 +1218,10 @@ export function prunePluginDuplicateSkills(log: (msg: string) => void): string[]
       const pluginContent = pluginSkillHashes.get(entry.name);
       const skillDir = join(skillsDir, entry.name);
 
-      if (pluginContent === standaloneContent || isOmcManagedSkillDir(skillDir)) {
+      if (
+        pluginContent === standaloneContent ||
+        isOmcManagedSkillDir(skillDir)
+      ) {
         rmSync(skillDir, { recursive: true, force: true });
         removed.push(entry.name);
         log(`  Pruned plugin-duplicate skill: ${entry.name}/`);
@@ -1081,8 +1240,8 @@ function directoryHasMarkdownFiles(directory: string): boolean {
   }
 
   try {
-    return readdirSync(directory, { withFileTypes: true }).some(entry =>
-      entry.isFile() && entry.name.endsWith('.md')
+    return readdirSync(directory, { withFileTypes: true }).some(
+      (entry) => entry.isFile() && entry.name.endsWith('.md'),
     );
   } catch {
     return false;
@@ -1103,8 +1262,10 @@ function directoryHasSkillDefinitions(directory: string): boolean {
   }
 
   try {
-    return readdirSync(directory, { withFileTypes: true }).some(entry =>
-      entry.isDirectory() && existsSync(join(directory, entry.name, 'SKILL.md'))
+    return readdirSync(directory, { withFileTypes: true }).some(
+      (entry) =>
+        entry.isDirectory() &&
+        existsSync(join(directory, entry.name, 'SKILL.md')),
     );
   } catch {
     return false;
@@ -1119,24 +1280,36 @@ export function getInstalledOmcPluginRoots(): string[] {
     pluginRoots.add(pluginRoot);
   }
 
-  const installedPluginsPath = join(CLAUDE_CONFIG_DIR, 'plugins', 'installed_plugins.json');
+  const installedPluginsPath = join(
+    CLAUDE_CONFIG_DIR,
+    'plugins',
+    'installed_plugins.json',
+  );
   if (!existsSync(installedPluginsPath)) {
     return Array.from(pluginRoots);
   }
 
   try {
-    const raw = JSON.parse(readFileSync(installedPluginsPath, 'utf-8')) as {
-      plugins?: Record<string, Array<{ installPath?: string }>>;
-    } | Record<string, Array<{ installPath?: string }>>;
+    const raw = JSON.parse(readFileSync(installedPluginsPath, 'utf-8')) as
+      | {
+          plugins?: Record<string, Array<{ installPath?: string }>>;
+        }
+      | Record<string, Array<{ installPath?: string }>>;
     const plugins = raw.plugins ?? raw;
 
     for (const [pluginId, entries] of Object.entries(plugins)) {
-      if (!pluginId.toLowerCase().includes('oh-my-claudecode') || !Array.isArray(entries)) {
+      if (
+        !pluginId.toLowerCase().includes('oh-my-claudecode') ||
+        !Array.isArray(entries)
+      ) {
         continue;
       }
 
       for (const entry of entries) {
-        if (typeof entry?.installPath === 'string' && entry.installPath.trim().length > 0) {
+        if (
+          typeof entry?.installPath === 'string' &&
+          entry.installPath.trim().length > 0
+        ) {
           pluginRoots.add(entry.installPath.trim());
         }
       }
@@ -1174,11 +1347,12 @@ const REQUIRED_PLUGIN_PAYLOAD_FILES = [
   'hooks/hooks.json',
 ] as const;
 
-const REQUIRED_PLUGIN_COMMAND_FILES = [
-  'commands/omc-setup.md',
-] as const;
+const REQUIRED_PLUGIN_COMMAND_FILES = ['commands/omc-setup.md'] as const;
 
-function readPluginManifest(root: string): { manifest: Record<string, unknown> | null; errors: string[] } {
+function readPluginManifest(root: string): {
+  manifest: Record<string, unknown> | null;
+  errors: string[];
+} {
   const manifestPath = join(root, '.claude-plugin', 'plugin.json');
   if (!existsSync(manifestPath)) {
     return { manifest: null, errors: [] };
@@ -1187,12 +1361,22 @@ function readPluginManifest(root: string): { manifest: Record<string, unknown> |
   try {
     const parsed = JSON.parse(readFileSync(manifestPath, 'utf-8')) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      return { manifest: null, errors: ['Invalid plugin manifest: .claude-plugin/plugin.json must be a JSON object'] };
+      return {
+        manifest: null,
+        errors: [
+          'Invalid plugin manifest: .claude-plugin/plugin.json must be a JSON object',
+        ],
+      };
     }
     return { manifest: parsed as Record<string, unknown>, errors: [] };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { manifest: null, errors: [`Invalid plugin manifest: .claude-plugin/plugin.json: ${message}`] };
+    return {
+      manifest: null,
+      errors: [
+        `Invalid plugin manifest: .claude-plugin/plugin.json: ${message}`,
+      ],
+    };
   }
 }
 
@@ -1202,13 +1386,18 @@ function normalizePluginRelPath(value: string): string {
 
 function isSafePluginRelPath(value: string): boolean {
   const normalized = normalizePluginRelPath(value);
-  return normalized.length > 0
-    && !isAbsolute(value)
-    && !/^[A-Za-z]:[\\/]/.test(value)
-    && !normalized.split('/').includes('..');
+  return (
+    normalized.length > 0 &&
+    !isAbsolute(value) &&
+    !/^[A-Za-z]:[\\/]/.test(value) &&
+    !normalized.split('/').includes('..')
+  );
 }
 
-function validatePluginManifestSchema(root: string, manifest: Record<string, unknown> | null): string[] {
+function validatePluginManifestSchema(
+  root: string,
+  manifest: Record<string, unknown> | null,
+): string[] {
   const errors: string[] = [];
 
   if (!manifest) {
@@ -1216,25 +1405,45 @@ function validatePluginManifestSchema(root: string, manifest: Record<string, unk
   }
 
   if (typeof manifest.name !== 'string' || manifest.name.trim().length === 0) {
-    errors.push('Invalid plugin manifest: .claude-plugin/plugin.json name must be a non-empty string');
+    errors.push(
+      'Invalid plugin manifest: .claude-plugin/plugin.json name must be a non-empty string',
+    );
   }
 
-  if (typeof manifest.commands !== 'string' || manifest.commands.trim().length === 0) {
-    errors.push('Invalid plugin manifest: .claude-plugin/plugin.json commands must be a non-empty relative path');
+  if (
+    typeof manifest.commands !== 'string' ||
+    manifest.commands.trim().length === 0
+  ) {
+    errors.push(
+      'Invalid plugin manifest: .claude-plugin/plugin.json commands must be a non-empty relative path',
+    );
   } else if (!isSafePluginRelPath(manifest.commands)) {
-    errors.push('Invalid plugin manifest: .claude-plugin/plugin.json commands must stay inside the plugin root');
-  } else if (!directoryHasMarkdownFiles(join(root, normalizePluginRelPath(manifest.commands)))) {
-    errors.push(`Missing declared plugin command markdown files in ${normalizePluginRelPath(manifest.commands)}/`);
+    errors.push(
+      'Invalid plugin manifest: .claude-plugin/plugin.json commands must stay inside the plugin root',
+    );
+  } else if (
+    !directoryHasMarkdownFiles(
+      join(root, normalizePluginRelPath(manifest.commands)),
+    )
+  ) {
+    errors.push(
+      `Missing declared plugin command markdown files in ${normalizePluginRelPath(manifest.commands)}/`,
+    );
   }
 
   if (!Array.isArray(manifest.skills) || manifest.skills.length === 0) {
-    errors.push('Invalid plugin manifest: .claude-plugin/plugin.json skills must be a non-empty array');
+    errors.push(
+      'Invalid plugin manifest: .claude-plugin/plugin.json skills must be a non-empty array',
+    );
   }
 
   return errors;
 }
 
-function validateDeclaredPluginSkills(root: string, manifest: Record<string, unknown> | null): string[] {
+function validateDeclaredPluginSkills(
+  root: string,
+  manifest: Record<string, unknown> | null,
+): string[] {
   const errors: string[] = [];
   const declaredSkills = manifest?.skills;
 
@@ -1243,18 +1452,27 @@ function validateDeclaredPluginSkills(root: string, manifest: Record<string, unk
   }
 
   for (const declaredSkill of declaredSkills) {
-    if (typeof declaredSkill !== 'string' || declaredSkill.trim().length === 0) {
-      errors.push('Invalid plugin skill declaration in .claude-plugin/plugin.json');
+    if (
+      typeof declaredSkill !== 'string' ||
+      declaredSkill.trim().length === 0
+    ) {
+      errors.push(
+        'Invalid plugin skill declaration in .claude-plugin/plugin.json',
+      );
       continue;
     }
 
     if (!isSafePluginRelPath(declaredSkill)) {
-      errors.push(`Invalid plugin skill declaration outside plugin root: ${declaredSkill}`);
+      errors.push(
+        `Invalid plugin skill declaration outside plugin root: ${declaredSkill}`,
+      );
       continue;
     }
 
     const relPath = normalizePluginRelPath(declaredSkill);
-    const skillPath = relPath.endsWith('/SKILL.md') ? relPath : `${relPath}/SKILL.md`;
+    const skillPath = relPath.endsWith('/SKILL.md')
+      ? relPath
+      : `${relPath}/SKILL.md`;
     if (!isRegularFile(join(root, skillPath))) {
       errors.push(`Missing declared plugin skill file: ${skillPath}`);
     }
@@ -1294,7 +1512,10 @@ function validatePluginSyncPayload(root: string): string[] {
   return errors;
 }
 
-export function validatePluginCachePayload(root: string): { valid: boolean; errors: string[] } {
+export function validatePluginCachePayload(root: string): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors = validatePluginSyncPayload(root);
   return { valid: errors.length === 0, errors };
 }
@@ -1314,30 +1535,46 @@ function countPluginSyncPayloadEntries(root: string): number {
 }
 
 function getKnownMarketplaceInstallRoots(): string[] {
-  const knownMarketplacesPath = join(CLAUDE_CONFIG_DIR, 'plugins', 'known_marketplaces.json');
+  const knownMarketplacesPath = join(
+    CLAUDE_CONFIG_DIR,
+    'plugins',
+    'known_marketplaces.json',
+  );
   if (!existsSync(knownMarketplacesPath)) {
     return [];
   }
 
   try {
-    const raw = JSON.parse(readFileSync(knownMarketplacesPath, 'utf-8')) as Record<string, {
-      installLocation?: unknown;
-      source?: { path?: unknown };
-    }>;
+    const raw = JSON.parse(
+      readFileSync(knownMarketplacesPath, 'utf-8'),
+    ) as Record<
+      string,
+      {
+        installLocation?: unknown;
+        source?: { path?: unknown };
+      }
+    >;
     const roots = new Set<string>();
 
     for (const [marketplaceId, entry] of Object.entries(raw)) {
-      const isOmcMarketplace = marketplaceId.toLowerCase().includes('omc')
-        || marketplaceId.toLowerCase().includes('oh-my-claudecode');
+      const isOmcMarketplace =
+        marketplaceId.toLowerCase().includes('omc') ||
+        marketplaceId.toLowerCase().includes('oh-my-claudecode');
       if (!isOmcMarketplace) {
         continue;
       }
 
-      if (typeof entry?.installLocation === 'string' && entry.installLocation.trim().length > 0) {
+      if (
+        typeof entry?.installLocation === 'string' &&
+        entry.installLocation.trim().length > 0
+      ) {
         roots.add(entry.installLocation.trim());
       }
 
-      if (typeof entry?.source?.path === 'string' && entry.source.path.trim().length > 0) {
+      if (
+        typeof entry?.source?.path === 'string' &&
+        entry.source.path.trim().length > 0
+      ) {
         roots.add(entry.source.path.trim());
       }
     }
@@ -1350,12 +1587,14 @@ function getKnownMarketplaceInstallRoots(): string[] {
 
 function getGlobalInstalledPackageRoot(): string | null {
   try {
-    const npmRoot = String(execSync('npm root -g', {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 10000,
-      ...(process.platform === 'win32' ? { windowsHide: true } : {}),
-    }) ?? '').trim();
+    const npmRoot = String(
+      execSync('npm root -g', {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 10000,
+        ...(process.platform === 'win32' ? { windowsHide: true } : {}),
+      }) ?? '',
+    ).trim();
 
     if (!npmRoot) {
       return null;
@@ -1371,18 +1610,30 @@ function getGlobalInstalledPackageRoot(): string | null {
 function isCacheInstalledPluginRoot(root: string): boolean {
   const normalizedRoot = normalizePath(root);
   const cacheBase = normalizePath(join(CLAUDE_CONFIG_DIR, 'plugins', 'cache'));
-  if (!(normalizedRoot === cacheBase || normalizedRoot.startsWith(`${cacheBase}/`))) {
+  if (
+    !(
+      normalizedRoot === cacheBase || normalizedRoot.startsWith(`${cacheBase}/`)
+    )
+  ) {
     return false;
   }
 
   const canonicalRoot = canonicalizeExistingPath(root);
   const canonicalCacheBase = canonicalizeExistingPath(cacheBase);
-  return canonicalRoot === canonicalCacheBase || canonicalRoot.startsWith(`${canonicalCacheBase}/`);
+  return (
+    canonicalRoot === canonicalCacheBase ||
+    canonicalRoot.startsWith(`${canonicalCacheBase}/`)
+  );
 }
 
-function resolveBestPluginSyncSource(targetRoots: string[]): { sourceRoot: string | null; errors: string[] } {
+function resolveBestPluginSyncSource(targetRoots: string[]): {
+  sourceRoot: string | null;
+  errors: string[];
+} {
   const excludedRoots = new Set(targetRoots.map(normalizePath));
-  const excludedCanonicalRoots = new Set(targetRoots.map(canonicalizeExistingPath));
+  const excludedCanonicalRoots = new Set(
+    targetRoots.map(canonicalizeExistingPath),
+  );
   const seen = new Set<string>();
   const globalPackageRoot = getGlobalInstalledPackageRoot();
   const candidates = [
@@ -1398,12 +1649,19 @@ function resolveBestPluginSyncSource(targetRoots: string[]): { sourceRoot: strin
 
   for (const [order, candidate] of candidates.entries()) {
     const normalizedCandidate = normalizePath(candidate);
-    if (seen.has(normalizedCandidate) || excludedRoots.has(normalizedCandidate) || !existsSync(candidate)) {
+    if (
+      seen.has(normalizedCandidate) ||
+      excludedRoots.has(normalizedCandidate) ||
+      !existsSync(candidate)
+    ) {
       continue;
     }
 
     const canonicalCandidate = canonicalizeExistingPath(candidate);
-    if (seen.has(canonicalCandidate) || excludedCanonicalRoots.has(canonicalCandidate)) {
+    if (
+      seen.has(canonicalCandidate) ||
+      excludedCanonicalRoots.has(canonicalCandidate)
+    ) {
       continue;
     }
 
@@ -1412,7 +1670,9 @@ function resolveBestPluginSyncSource(targetRoots: string[]): { sourceRoot: strin
 
     const sourceValidationErrors = validatePluginSyncPayload(candidate);
     if (sourceValidationErrors.length > 0) {
-      errors.push(...sourceValidationErrors.map(error => `${candidate}: ${error}`));
+      errors.push(
+        ...sourceValidationErrors.map((error) => `${candidate}: ${error}`),
+      );
       continue;
     }
 
@@ -1431,15 +1691,19 @@ function resolveBestPluginSyncSource(targetRoots: string[]): { sourceRoot: strin
   return { sourceRoot: bestRoot, errors: bestRoot ? [] : errors };
 }
 
-
 function extractFrontmatterBlock(content: string): string | null {
   const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   return match?.[1] ?? null;
 }
 
-function getFrontmatterStringValue(metadata: Record<string, unknown>, key: string): string | null {
+function getFrontmatterStringValue(
+  metadata: Record<string, unknown>,
+  key: string,
+): string | null {
   const value = metadata[key];
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
+  return typeof value === 'string' && value.trim().length > 0
+    ? value.trim()
+    : null;
 }
 
 function normalizeCompactSkillDescription(description: string): string {
@@ -1451,32 +1715,51 @@ function normalizeCompactSkillDescription(description: string): string {
   return `${normalized.slice(0, 237).trimEnd()}...`;
 }
 
-function upsertYamlStringField(frontmatter: string, key: string, value: string): string {
+function upsertYamlStringField(
+  frontmatter: string,
+  key: string,
+  value: string,
+): string {
   const escaped = JSON.stringify(value);
   const line = `${key}: ${escaped}`;
-  const pattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:.*$`, 'm');
+  const pattern = new RegExp(
+    `^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:.*$`,
+    'm',
+  );
   if (pattern.test(frontmatter)) {
     return frontmatter.replace(pattern, line);
   }
   return `${frontmatter.trimEnd()}\n${line}`;
 }
 
-function renderCompactPluginSkillShim(skillDirName: string, content: string): string {
+function renderCompactPluginSkillShim(
+  skillDirName: string,
+  content: string,
+): string {
   const parsed = parseFrontmatter(content);
   let frontmatter = extractFrontmatterBlock(content) ?? `name: ${skillDirName}`;
-  const rawDescription = getFrontmatterStringValue(parsed.metadata, 'short_description')
-    ?? getFrontmatterStringValue(parsed.metadata, 'description')
-    ?? `Invoke the ${skillDirName} OMC skill.`;
+  const rawDescription =
+    getFrontmatterStringValue(parsed.metadata, 'short_description') ??
+    getFrontmatterStringValue(parsed.metadata, 'description') ??
+    `Invoke the ${skillDirName} OMC skill.`;
   const description = normalizeCompactSkillDescription(rawDescription);
   const fullBodyRelPath = `../../${PLUGIN_FULL_SKILL_BODIES_DIR}/${skillDirName}/SKILL.md`;
 
   frontmatter = upsertYamlStringField(frontmatter, 'description', description);
-  frontmatter = upsertYamlStringField(frontmatter, 'omc-full-body', fullBodyRelPath);
+  frontmatter = upsertYamlStringField(
+    frontmatter,
+    'omc-full-body',
+    fullBodyRelPath,
+  );
 
   return `---\n${frontmatter.trim()}\n---\n\n${PLUGIN_COMPACT_SKILL_SHIM_MARKER}\n\n# ${skillDirName}\n\nThis is a compact Claude Code plugin registry shim. It keeps startup skill descriptions small while preserving the full OMC skill body for on-demand invocation.\n\nWhen this skill is invoked, read and follow the full bundled instructions from the active plugin root:\n\n\`${'${CLAUDE_PLUGIN_ROOT:-${OMC_PLUGIN_ROOT}}'}/${PLUGIN_FULL_SKILL_BODIES_DIR}/${skillDirName}/SKILL.md\`\n\nThe plugin root is the directory containing both \`skills/\` and \`${PLUGIN_FULL_SKILL_BODIES_DIR}/\`. Do not resolve \`${PLUGIN_FULL_SKILL_BODIES_DIR}/${skillDirName}/SKILL.md\` under this shim's \`skills/${skillDirName}/\` directory; \`${PLUGIN_FULL_SKILL_BODIES_DIR}/\` is a direct child of the plugin root. The same archived body path is recorded in frontmatter as \`omc-full-body: ${fullBodyRelPath}\` for hosts that understand plugin-root-relative metadata.\n`;
 }
 
-export function compactPluginSkillPayload(targetRoot: string): { compacted: number; totalBytes: number; errors: string[] } {
+export function compactPluginSkillPayload(targetRoot: string): {
+  compacted: number;
+  totalBytes: number;
+  errors: string[];
+} {
   const skillsDir = join(targetRoot, 'skills');
   const fullBodiesDir = join(targetRoot, PLUGIN_FULL_SKILL_BODIES_DIR);
   const errors: string[] = [];
@@ -1491,7 +1774,11 @@ export function compactPluginSkillPayload(targetRoot: string): { compacted: numb
     mkdirSync(fullBodiesDir, { recursive: true });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { compacted, totalBytes, errors: [`Failed to create ${fullBodiesDir}: ${message}`] };
+    return {
+      compacted,
+      totalBytes,
+      errors: [`Failed to create ${fullBodiesDir}: ${message}`],
+    };
   }
 
   const skillEntries = (() => {
@@ -1534,7 +1821,10 @@ export function compactPluginSkillPayload(targetRoot: string): { compacted: numb
   return { compacted, totalBytes, errors };
 }
 
-export function copyPluginSyncPayload(sourceRoot: string, targetRoots: string[]): { synced: boolean; errors: string[] } {
+export function copyPluginSyncPayload(
+  sourceRoot: string,
+  targetRoots: string[],
+): { synced: boolean; errors: string[] } {
   if (targetRoots.length === 0) {
     return { synced: false, errors: [] };
   }
@@ -1543,7 +1833,7 @@ export function copyPluginSyncPayload(sourceRoot: string, targetRoots: string[])
   if (sourceValidationErrors.length > 0) {
     return {
       synced: false,
-      errors: sourceValidationErrors.map(error => `${sourceRoot}: ${error}`),
+      errors: sourceValidationErrors.map((error) => `${sourceRoot}: ${error}`),
     };
   }
 
@@ -1584,10 +1874,15 @@ export function copyPluginSyncPayload(sourceRoot: string, targetRoots: string[])
 
     if (copiedToTarget) {
       const targetValidationErrors = validatePluginSyncPayload(targetRoot);
-      errors.push(...targetValidationErrors.map(error => `${targetRoot}: ${error}`));
+      errors.push(
+        ...targetValidationErrors.map((error) => `${targetRoot}: ${error}`),
+      );
     }
 
-    synced = synced || (copiedToTarget && !errors.some(error => error.startsWith(`${targetRoot}: `)));
+    synced =
+      synced ||
+      (copiedToTarget &&
+        !errors.some((error) => error.startsWith(`${targetRoot}: `)));
   }
 
   return { synced, errors };
@@ -1599,8 +1894,9 @@ export function syncInstalledPluginPayload(): {
   sourceRoot: string | null;
   targetRoots: string[];
 } {
-  const targetRoots = getInstalledOmcPluginRoots()
-    .filter(root => existsSync(root) && isCacheInstalledPluginRoot(root));
+  const targetRoots = getInstalledOmcPluginRoots().filter(
+    (root) => existsSync(root) && isCacheInstalledPluginRoot(root),
+  );
 
   if (targetRoots.length === 0) {
     return { synced: false, errors: [], sourceRoot: null, targetRoots: [] };
@@ -1609,7 +1905,9 @@ export function syncInstalledPluginPayload(): {
   const sourceResolution = resolveBestPluginSyncSource(targetRoots);
   const sourceRoot = sourceResolution.sourceRoot;
   if (!sourceRoot) {
-    if (targetRoots.every(root => validatePluginSyncPayload(root).length === 0)) {
+    if (
+      targetRoots.every((root) => validatePluginSyncPayload(root).length === 0)
+    ) {
       return { synced: false, errors: [], sourceRoot: null, targetRoots };
     }
     return {
@@ -1632,20 +1930,26 @@ export function syncInstalledPluginPayload(): {
  * markdown files, so the legacy ~/.claude/agents copy can be skipped.
  */
 export function hasPluginProvidedAgentFiles(): boolean {
-  return getInstalledOmcPluginRoots().some(pluginRoot =>
-    hasCompletePluginPayload(pluginRoot) && directoryHasMarkdownFiles(join(pluginRoot, 'agents'))
+  return getInstalledOmcPluginRoots().some(
+    (pluginRoot) =>
+      hasCompletePluginPayload(pluginRoot) &&
+      directoryHasMarkdownFiles(join(pluginRoot, 'agents')),
   );
 }
 
 export function hasPluginProvidedSkillFiles(): boolean {
-  return getInstalledOmcPluginRoots().some(pluginRoot =>
-    hasCompletePluginPayload(pluginRoot) && directoryHasSkillDefinitions(join(pluginRoot, 'skills'))
+  return getInstalledOmcPluginRoots().some(
+    (pluginRoot) =>
+      hasCompletePluginPayload(pluginRoot) &&
+      directoryHasSkillDefinitions(join(pluginRoot, 'skills')),
   );
 }
 
 export function hasPluginProvidedHookFiles(): boolean {
-  return getInstalledOmcPluginRoots().some(pluginRoot =>
-    hasCompletePluginPayload(pluginRoot) && existsSync(join(pluginRoot, 'hooks', 'hooks.json'))
+  return getInstalledOmcPluginRoots().some(
+    (pluginRoot) =>
+      hasCompletePluginPayload(pluginRoot) &&
+      existsSync(join(pluginRoot, 'hooks', 'hooks.json')),
   );
 }
 
@@ -1672,15 +1976,23 @@ export function hasEnabledOmcPlugin(): boolean {
     // an enabled OMC plugin entry in either field.
     for (const candidate of [settings.enabledPlugins, settings.plugins]) {
       if (Array.isArray(candidate)) {
-        if (candidate.some(plugin =>
-          typeof plugin === 'string' && plugin.toLowerCase().includes('oh-my-claudecode')
-        )) {
+        if (
+          candidate.some(
+            (plugin) =>
+              typeof plugin === 'string' &&
+              plugin.toLowerCase().includes('oh-my-claudecode'),
+          )
+        ) {
           return true;
         }
       } else if (candidate && typeof candidate === 'object') {
-        if (Object.entries(candidate as Record<string, unknown>).some(([pluginId, value]) =>
-          pluginId.toLowerCase().includes('oh-my-claudecode') && value !== false
-        )) {
+        if (
+          Object.entries(candidate as Record<string, unknown>).some(
+            ([pluginId, value]) =>
+              pluginId.toLowerCase().includes('oh-my-claudecode') &&
+              value !== false,
+          )
+        ) {
           return true;
         }
       }
@@ -1692,18 +2004,28 @@ export function hasEnabledOmcPlugin(): boolean {
   return false;
 }
 
-function isOmcPluginEnabledInSettings(settings: Record<string, unknown>): boolean {
+function isOmcPluginEnabledInSettings(
+  settings: Record<string, unknown>,
+): boolean {
   for (const candidate of [settings.enabledPlugins, settings.plugins]) {
     if (Array.isArray(candidate)) {
-      if (candidate.some(plugin =>
-        typeof plugin === 'string' && plugin.toLowerCase().includes('oh-my-claudecode')
-      )) {
+      if (
+        candidate.some(
+          (plugin) =>
+            typeof plugin === 'string' &&
+            plugin.toLowerCase().includes('oh-my-claudecode'),
+        )
+      ) {
         return true;
       }
     } else if (candidate && typeof candidate === 'object') {
-      if (Object.entries(candidate as Record<string, unknown>).some(([pluginId, value]) =>
-        pluginId.toLowerCase().includes('oh-my-claudecode') && value !== false
-      )) {
+      if (
+        Object.entries(candidate as Record<string, unknown>).some(
+          ([pluginId, value]) =>
+            pluginId.toLowerCase().includes('oh-my-claudecode') &&
+            value !== false,
+        )
+      ) {
         return true;
       }
     }
@@ -1818,7 +2140,10 @@ function isOmcManagedSkillDir(skillDir: string): boolean {
   return existsSync(getManagedSkillMarkerPath(skillDir));
 }
 
-function syncBundledSkillDefinitions(log: (msg: string) => void, options?: { safeStandaloneNames?: boolean }): string[] {
+function syncBundledSkillDefinitions(
+  log: (msg: string) => void,
+  options?: { safeStandaloneNames?: boolean },
+): string[] {
   const skillsDir = join(getPackageDir(), 'skills');
   const installedSkills: string[] = [];
 
@@ -1830,7 +2155,10 @@ function syncBundledSkillDefinitions(log: (msg: string) => void, options?: { saf
 
   for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    if (SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) && !isSkininthegamebrosUser()) {
+    if (
+      SKININTHEGAMEBROS_ONLY_SKILLS.has(entry.name) &&
+      !isSkininthegamebrosUser()
+    ) {
       continue;
     }
 
@@ -1842,9 +2170,10 @@ function syncBundledSkillDefinitions(log: (msg: string) => void, options?: { saf
     if (options?.safeStandaloneNames) {
       const content = readFileSync(sourceSkillPath, 'utf-8');
       const { metadata } = parseFrontmatter(content);
-      const rawName = typeof metadata.name === 'string' && metadata.name.trim().length > 0
-        ? metadata.name
-        : entry.name;
+      const rawName =
+        typeof metadata.name === 'string' && metadata.name.trim().length > 0
+          ? metadata.name
+          : entry.name;
       targetDirName = toSafeStandaloneSkillName(rawName);
     }
 
@@ -1867,12 +2196,13 @@ function syncUserSkillCompatShims(log: (msg: string) => void): string[] {
   const synced = syncOmcLearnedUserSkillsForClaudeCode();
 
   for (const skillName of synced) {
-    log(`  Synced user skill compatibility shim: ${join(skillName, 'SKILL.md').replace(/\\/g, '/')}`);
+    log(
+      `  Synced user skill compatibility shim: ${join(skillName, 'SKILL.md').replace(/\\/g, '/')}`,
+    );
   }
 
   return synced;
 }
-
 
 /**
  * Extract the embedded OMC version from a CLAUDE.md file.
@@ -1881,16 +2211,22 @@ function syncUserSkillCompatShims(log: (msg: string) => void): string[] {
  * Falls back to legacy headings that may include a version string inline.
  */
 export function extractOmcVersionFromClaudeMd(content: string): string | null {
-  const versionMarkerMatch = content.match(/<!--\s*OMC:VERSION:([^\s]+)\s*-->/i);
+  const versionMarkerMatch = content.match(
+    /<!--\s*OMC:VERSION:([^\s]+)\s*-->/i,
+  );
   if (versionMarkerMatch?.[1]) {
     const markerVersion = versionMarkerMatch[1].trim();
     return markerVersion.startsWith('v') ? markerVersion : `v${markerVersion}`;
   }
 
-  const headingMatch = content.match(/^#\s+oh-my-claudecode.*?\b(v?\d+\.\d+\.\d+(?:[-+][^\s]+)?)\b/m);
+  const headingMatch = content.match(
+    /^#\s+oh-my-claudecode.*?\b(v?\d+\.\d+\.\d+(?:[-+][^\s]+)?)\b/m,
+  );
   if (headingMatch?.[1]) {
     const headingVersion = headingMatch[1].trim();
-    return headingVersion.startsWith('v') ? headingVersion : `v${headingVersion}`;
+    return headingVersion.startsWith('v')
+      ? headingVersion
+      : `v${headingVersion}`;
   }
 
   return null;
@@ -1909,7 +2245,8 @@ export function syncPersistedSetupVersion(options?: {
   version?: string;
   onlyIfConfigured?: boolean;
 }): boolean {
-  const configPath = options?.configPath ?? join(CLAUDE_CONFIG_DIR, OMC_CONFIG_FILE_REL);
+  const configPath =
+    options?.configPath ?? join(CLAUDE_CONFIG_DIR, OMC_CONFIG_FILE_REL);
   let config: Record<string, unknown> = {};
 
   if (existsSync(configPath)) {
@@ -1920,21 +2257,29 @@ export function syncPersistedSetupVersion(options?: {
   }
 
   const onlyIfConfigured = options?.onlyIfConfigured ?? true;
-  const isConfigured = typeof config.setupCompleted === 'string' || typeof config.setupVersion === 'string';
+  const isConfigured =
+    typeof config.setupCompleted === 'string' ||
+    typeof config.setupVersion === 'string';
   if (onlyIfConfigured && !isConfigured) {
     return false;
   }
 
   let detectedVersion = options?.version?.trim();
   if (!detectedVersion) {
-    const claudeMdPath = options?.claudeMdPath ?? join(CLAUDE_CONFIG_DIR, 'CLAUDE.md');
+    const claudeMdPath =
+      options?.claudeMdPath ?? join(CLAUDE_CONFIG_DIR, 'CLAUDE.md');
     if (existsSync(claudeMdPath)) {
-      detectedVersion = extractOmcVersionFromClaudeMd(readFileSync(claudeMdPath, 'utf-8')) ?? undefined;
+      detectedVersion =
+        extractOmcVersionFromClaudeMd(readFileSync(claudeMdPath, 'utf-8')) ??
+        undefined;
     }
   }
 
   const normalizedVersion = (() => {
-    const candidate = (detectedVersion && detectedVersion !== 'unknown') ? detectedVersion : VERSION;
+    const candidate =
+      detectedVersion && detectedVersion !== 'unknown'
+        ? detectedVersion
+        : VERSION;
     return candidate.startsWith('v') ? candidate : `v${candidate}`;
   })();
 
@@ -1943,7 +2288,10 @@ export function syncPersistedSetupVersion(options?: {
   }
 
   mkdirSync(dirname(configPath), { recursive: true });
-  writeFileSync(configPath, JSON.stringify({ ...config, setupVersion: normalizedVersion }, null, 2));
+  writeFileSync(
+    configPath,
+    JSON.stringify({ ...config, setupVersion: normalizedVersion }, null, 2),
+  );
   return true;
 }
 
@@ -1953,7 +2301,11 @@ export function syncPersistedSetupVersion(options?: {
  * @param omcContent - New OMC content to inject
  * @returns Merged content with markers
  */
-export function mergeClaudeMd(existingContent: string | null, omcContent: string, version?: string): string {
+export function mergeClaudeMd(
+  existingContent: string | null,
+  omcContent: string,
+  version?: string,
+): string {
   const START_MARKER = OMC_START_MARKER;
   const END_MARKER = OMC_END_MARKER;
   const USER_CUSTOMIZATIONS = '<!-- User customizations -->';
@@ -1961,15 +2313,25 @@ export function mergeClaudeMd(existingContent: string | null, omcContent: string
   // Idempotency guard: accept the current managed representation as input.
   let cleanOmcContent = omcContent;
   const sourceMarkers = parseClaudeMdMarkers(omcContent);
-  if (sourceMarkers.state === 'corrupt' || sourceMarkers.managedRanges.length > 1) {
-    throw new Error('OMC content must contain at most one complete managed block');
+  if (
+    sourceMarkers.state === 'corrupt' ||
+    sourceMarkers.managedRanges.length > 1
+  ) {
+    throw new Error(
+      'OMC content must contain at most one complete managed block',
+    );
   }
   if (sourceMarkers.managedRanges.length === 1) {
     const managed = sourceMarkers.managedRanges[0];
-    cleanOmcContent = omcContent.slice(managed.contentStart, managed.contentEnd).trim();
+    cleanOmcContent = omcContent
+      .slice(managed.contentStart, managed.contentEnd)
+      .trim();
   }
 
-  cleanOmcContent = cleanOmcContent.replace(/<!-- OMC:VERSION:[^\s]*? -->\n?/, '');
+  cleanOmcContent = cleanOmcContent.replace(
+    /<!-- OMC:VERSION:[^\s]*? -->\n?/,
+    '',
+  );
   const versionMarker = version ? `<!-- OMC:VERSION:${version} -->\n` : '';
   if (!existingContent) {
     return `${START_MARKER}\n${versionMarker}${cleanOmcContent}\n${END_MARKER}\n`;
@@ -1977,7 +2339,9 @@ export function mergeClaudeMd(existingContent: string | null, omcContent: string
 
   const existingMarkers = parseClaudeMdMarkers(existingContent);
   if (existingMarkers.state === 'corrupt') {
-    throw new Error(`Existing CLAUDE.md has corrupt OMC markers: ${existingMarkers.diagnostics.join(', ')}`);
+    throw new Error(
+      `Existing CLAUDE.md has corrupt OMC markers: ${existingMarkers.diagnostics.join(', ')}`,
+    );
   }
 
   const legacy = analyzeLegacyClaudeMd(existingContent);
@@ -2004,7 +2368,7 @@ export function install(options: InstallOptions = {}): InstallResult {
     installedSkills: [],
     hooksConfigured: false,
     hookConflicts: [],
-    errors: []
+    errors: [],
   };
 
   const log = (msg: string) => {
@@ -2016,7 +2380,9 @@ export function install(options: InstallOptions = {}): InstallResult {
   // Check Node.js version (required for Node.js hooks)
   const nodeCheck = checkNodeVersion();
   if (!nodeCheck.valid) {
-    result.errors.push(`Node.js ${nodeCheck.required}+ is required. Found: ${nodeCheck.current}`);
+    result.errors.push(
+      `Node.js ${nodeCheck.required}+ is required. Found: ${nodeCheck.current}`,
+    );
     result.message = `Installation failed: Node.js ${nodeCheck.required}+ required`;
     return result;
   }
@@ -2024,9 +2390,11 @@ export function install(options: InstallOptions = {}): InstallResult {
   const targetVersion = options.version ?? VERSION;
   const installedVersionHint = getNewestInstalledVersionHint();
 
-  if (isComparableVersion(targetVersion)
-    && isComparableVersion(installedVersionHint)
-    && compareVersions(targetVersion, installedVersionHint) < 0) {
+  if (
+    isComparableVersion(targetVersion) &&
+    isComparableVersion(installedVersionHint) &&
+    compareVersions(targetVersion, installedVersionHint) < 0
+  ) {
     const message = `Skipping install: installed OMC ${installedVersionHint} is newer than CLI package ${targetVersion}. Run "omc update" to update the CLI package, then rerun "omc setup".`;
     log(message);
     result.success = true;
@@ -2047,17 +2415,25 @@ export function install(options: InstallOptions = {}): InstallResult {
       log(`Plugin cache sync error: ${error}`);
     }
     if (pluginPayloadSync.targetRoots.length > 0) {
-      result.errors.push(...pluginPayloadSync.errors.map(error => `Plugin cache sync failed: ${error}`));
-      result.message = 'Installation failed: OMC plugin cache is incomplete and could not be repaired';
+      result.errors.push(
+        ...pluginPayloadSync.errors.map(
+          (error) => `Plugin cache sync failed: ${error}`,
+        ),
+      );
+      result.message =
+        'Installation failed: OMC plugin cache is incomplete and could not be repaired';
       return result;
     }
   }
   if (pluginPayloadSync.synced) {
-    const targetSummary = pluginPayloadSync.targetRoots.length > 0
-      ? pluginPayloadSync.targetRoots.join(', ')
-      : 'installed plugin roots';
+    const targetSummary =
+      pluginPayloadSync.targetRoots.length > 0
+        ? pluginPayloadSync.targetRoots.join(', ')
+        : 'installed plugin roots';
     const sourceSummary = pluginPayloadSync.sourceRoot ?? 'unknown source';
-    log(`Repaired installed OMC plugin payload from ${sourceSummary} -> ${targetSummary}`);
+    log(
+      `Repaired installed OMC plugin payload from ${sourceSummary} -> ${targetSummary}`,
+    );
   }
 
   const pluginProvidesAgentFiles = hasPluginProvidedAgentFiles();
@@ -2069,35 +2445,53 @@ export function install(options: InstallOptions = {}): InstallResult {
   // so skip copying them into <configDir>. Auto-detected via OMC_PLUGIN_ROOT in CLI.
   // `noPlugin` still wins (CLI enforces precedence and warns), so we ignore
   // `pluginDirMode` whenever `noPlugin` is set.
-  const pluginDirMode = options.pluginDirMode === true && options.noPlugin !== true;
+  const pluginDirMode =
+    options.pluginDirMode === true && options.noPlugin !== true;
   if (pluginDirMode) {
-    log('Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)');
+    log(
+      'Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)',
+    );
   }
-  const shouldInstallLegacyAgents = !runningAsPlugin && !pluginProvidesAgentFiles && !pluginDirMode;
+  const shouldInstallLegacyAgents =
+    !runningAsPlugin && !pluginProvidesAgentFiles && !pluginDirMode;
   const shouldInstallBundledSkills =
-    !pluginDirMode && (options.noPlugin === true || !enabledOmcPlugin || !pluginProvidesSkillFiles);
-  const allowPluginHookRefresh = runningAsPlugin && options.refreshHooksInPlugin && !projectScoped;
+    !pluginDirMode &&
+    (options.noPlugin === true ||
+      !enabledOmcPlugin ||
+      !pluginProvidesSkillFiles);
+  const allowPluginHookRefresh =
+    runningAsPlugin && options.refreshHooksInPlugin && !projectScoped;
   if (runningAsPlugin) {
-    log('Detected Claude Code plugin context - skipping agent/command file installation');
+    log(
+      'Detected Claude Code plugin context - skipping agent/command file installation',
+    );
     log('Plugin files are managed by Claude Code plugin system');
     if (projectScoped) {
-      log('Detected project-scoped plugin - skipping global HUD/settings modifications');
+      log(
+        'Detected project-scoped plugin - skipping global HUD/settings modifications',
+      );
     } else {
       log('Will still install HUD statusline...');
       if (allowPluginHookRefresh) {
-        log('Will refresh global hooks/settings for plugin runtime reconciliation');
+        log(
+          'Will refresh global hooks/settings for plugin runtime reconciliation',
+        );
       }
     }
     // Don't return early - continue to install HUD (unless project-scoped)
   } else if (pluginProvidesAgentFiles) {
-    log('Detected installed OMC plugin agent definitions - skipping legacy ~/.claude/agents sync');
+    log(
+      'Detected installed OMC plugin agent definitions - skipping legacy ~/.claude/agents sync',
+    );
   }
 
   // Check Claude installation (optional)
   if (!options.skipClaudeCheck && !isClaudeInstalled()) {
     log('Warning: Claude Code not found. Install it first:');
     if (isWindows()) {
-      log('  Visit https://docs.anthropic.com/claude-code for Windows installation');
+      log(
+        '  Visit https://docs.anthropic.com/claude-code for Windows installation',
+      );
     } else {
       log('  curl -fsSL https://claude.ai/install.sh | bash');
     }
@@ -2106,7 +2500,10 @@ export function install(options: InstallOptions = {}): InstallResult {
 
   try {
     // Ensure base config directory exists (skip for project-scoped plugins)
-    if ((!projectScoped || shouldInstallBundledSkills) && !existsSync(CLAUDE_CONFIG_DIR)) {
+    if (
+      (!projectScoped || shouldInstallBundledSkills) &&
+      !existsSync(CLAUDE_CONFIG_DIR)
+    ) {
       mkdirSync(CLAUDE_CONFIG_DIR, { recursive: true });
     }
 
@@ -2133,7 +2530,9 @@ export function install(options: InstallOptions = {}): InstallResult {
       // Install agents
       if (shouldInstallLegacyAgents) {
         log('Installing agent definitions...');
-        for (const [filename, content] of Object.entries(loadAgentDefinitions())) {
+        for (const [filename, content] of Object.entries(
+          loadAgentDefinitions(),
+        )) {
           const filepath = join(AGENTS_DIR, filename);
           if (existsSync(filepath) && !options.force) {
             log(`  Skipping ${filename} (already exists)`);
@@ -2144,7 +2543,9 @@ export function install(options: InstallOptions = {}): InstallResult {
           }
         }
       } else {
-        log('Skipping legacy agent file installation (plugin-provided agents are available)');
+        log(
+          'Skipping legacy agent file installation (plugin-provided agents are available)',
+        );
         // Remove standalone copies that duplicate plugin-provided agents (#2252)
         const prunedAgents = prunePluginDuplicateAgents(log);
         if (prunedAgents.length > 0) {
@@ -2163,10 +2564,14 @@ export function install(options: InstallOptions = {}): InstallResult {
       // Skip command installation - all commands are now plugin-scoped skills
       // Commands are accessible via the plugin system (${CLAUDE_PLUGIN_ROOT}/commands/)
       // and are managed by Claude Code's skill discovery mechanism.
-      log('Skipping slash command installation (all commands are now plugin-scoped skills)');
+      log(
+        'Skipping slash command installation (all commands are now plugin-scoped skills)',
+      );
 
       // The command installation loop is disabled - CORE_COMMANDS is empty
-      for (const [filename, content] of Object.entries(loadCommandDefinitions())) {
+      for (const [filename, content] of Object.entries(
+        loadCommandDefinitions(),
+      )) {
         // All commands are skipped - they're managed by the plugin system
         if (!CORE_COMMANDS.includes(filename)) {
           log(`  Skipping ${filename} (plugin-scoped skill)`);
@@ -2203,7 +2608,9 @@ export function install(options: InstallOptions = {}): InstallResult {
       if (!(pluginProvidesHookFiles && enabledOmcPlugin)) {
         ensureStandaloneHookScripts(log);
       } else {
-        log('Skipping standalone hook scripts (plugin-provided hooks are available)');
+        log(
+          'Skipping standalone hook scripts (plugin-provided hooks are available)',
+        );
       }
       result.hooksConfigured = true; // Will be set properly after consolidated settings.json write
     } else {
@@ -2211,16 +2618,22 @@ export function install(options: InstallOptions = {}): InstallResult {
     }
 
     if (shouldInstallBundledSkills) {
-      log(options.noPlugin
-        ? 'Installing bundled skills from local package (--no-plugin)...'
-        : !enabledOmcPlugin
-          ? 'Installing bundled skills from local package (no enabled OMC plugin detected)...'
-          : 'Installing bundled skills from local package (enabled plugin skill files not found)...');
-      result.installedSkills.push(...syncBundledSkillDefinitions(log, {
-        safeStandaloneNames: !enabledOmcPlugin || options.noPlugin === true,
-      }));
+      log(
+        options.noPlugin
+          ? 'Installing bundled skills from local package (--no-plugin)...'
+          : !enabledOmcPlugin
+            ? 'Installing bundled skills from local package (no enabled OMC plugin detected)...'
+            : 'Installing bundled skills from local package (enabled plugin skill files not found)...',
+      );
+      result.installedSkills.push(
+        ...syncBundledSkillDefinitions(log, {
+          safeStandaloneNames: !enabledOmcPlugin || options.noPlugin === true,
+        }),
+      );
     } else if (pluginProvidesSkillFiles) {
-      log('Skipping bundled skill installation (plugin-provided skills are available). Use --no-plugin to force local skill sync.');
+      log(
+        'Skipping bundled skill installation (plugin-provided skills are available). Use --no-plugin to force local skill sync.',
+      );
       // Remove standalone copies that duplicate plugin-provided skills (#2252)
       const prunedSkills = prunePluginDuplicateSkills(log);
       if (prunedSkills.length > 0) {
@@ -2241,7 +2654,9 @@ export function install(options: InstallOptions = {}): InstallResult {
     if (existsSync(SKILLS_DIR)) {
       const syncedUserSkillCompat = syncUserSkillCompatShims(log);
       if (syncedUserSkillCompat.length > 0) {
-        log(`Synced ${syncedUserSkillCompat.length} user skill compatibility shim(s)`);
+        log(
+          `Synced ${syncedUserSkillCompat.length} user skill compatibility shim(s)`,
+        );
       }
     }
 
@@ -2256,11 +2671,18 @@ export function install(options: InstallOptions = {}): InstallResult {
         sourceRoot: getPackageDir(),
         version: targetVersion,
       });
-      if (!transaction.ok) throw new Error(transaction.error ?? 'CLAUDE.md transaction failed');
-      for (const backupPath of transaction.backups) log(`Backed up existing CLAUDE.md to ${backupPath}`);
-      log(transaction.operations.some(operation => operation.existedBefore && operation.path === claudeMdPath)
-        ? 'Updated CLAUDE.md (merged with existing content)'
-        : 'Created CLAUDE.md');
+      if (!transaction.ok)
+        throw new Error(transaction.error ?? 'CLAUDE.md transaction failed');
+      for (const backupPath of transaction.backups)
+        log(`Backed up existing CLAUDE.md to ${backupPath}`);
+      log(
+        transaction.operations.some(
+          (operation) =>
+            operation.existedBefore && operation.path === claudeMdPath,
+        )
+          ? 'Updated CLAUDE.md (merged with existing content)'
+          : 'Created CLAUDE.md',
+      );
     }
 
     // Install HUD statusline (skip for project-scoped plugins, skipHud option, or hudEnabled config)
@@ -2269,7 +2691,9 @@ export function install(options: InstallOptions = {}): InstallResult {
     const hudDisabledByConfig = !isHudEnabledInConfig();
     const skipHud = projectScoped || hudDisabledByOption || hudDisabledByConfig;
     if (projectScoped) {
-      log('Skipping HUD statusline (project-scoped plugin should not modify global settings)');
+      log(
+        'Skipping HUD statusline (project-scoped plugin should not modify global settings)',
+      );
     } else if (hudDisabledByOption) {
       log('Skipping HUD statusline (user opted out)');
     } else if (hudDisabledByConfig) {
@@ -2277,27 +2701,28 @@ export function install(options: InstallOptions = {}): InstallResult {
     } else {
       log('Installing HUD statusline...');
     }
-    if (!skipHud) try {
-      if (!existsSync(HUD_DIR)) {
-        mkdirSync(HUD_DIR, { recursive: true });
-      }
+    if (!skipHud)
+      try {
+        if (!existsSync(HUD_DIR)) {
+          mkdirSync(HUD_DIR, { recursive: true });
+        }
 
-      // Build the HUD script content (compiled from src/hud/index.ts).
-      // The wrapper body is read by buildHudWrapper() in src/lib/hud-wrapper-template.ts —
-      // the single TS source of truth, mirrored by scripts/lib/hud-wrapper-template.mjs
-      // for scripts/plugin-setup.mjs. Drift enforced by hud-wrapper-template-sync.test.ts.
-      hudScriptPath = join(HUD_DIR, 'omc-hud.mjs').replace(/\\/g, '/');
-      const hudScript = buildHudWrapper(getPackageDir());
+        // Build the HUD script content (compiled from src/hud/index.ts).
+        // The wrapper body is read by buildHudWrapper() in src/lib/hud-wrapper-template.ts —
+        // the single TS source of truth, mirrored by scripts/lib/hud-wrapper-template.mjs
+        // for scripts/plugin-setup.mjs. Drift enforced by hud-wrapper-template-sync.test.ts.
+        hudScriptPath = join(HUD_DIR, 'omc-hud.mjs').replace(/\\/g, '/');
+        const hudScript = buildHudWrapper(getPackageDir());
 
-      writeFileSync(hudScriptPath, hudScript);
-      if (!isWindows()) {
-        chmodSync(hudScriptPath, 0o755);
+        writeFileSync(hudScriptPath, hudScript);
+        if (!isWindows()) {
+          chmodSync(hudScriptPath, 0o755);
+        }
+        log('  Installed omc-hud.mjs');
+      } catch (_e) {
+        log('  Warning: Could not install HUD statusline script (non-fatal)');
+        hudScriptPath = null;
       }
-      log('  Installed omc-hud.mjs');
-    } catch (_e) {
-      log('  Warning: Could not install HUD statusline script (non-fatal)');
-      hudScriptPath = null;
-    }
 
     // Consolidated settings.json write (atomic: read once, modify, write once)
     // Skip for project-scoped plugins to avoid affecting global settings
@@ -2306,66 +2731,72 @@ export function install(options: InstallOptions = {}): InstallResult {
     } else {
       log('Configuring settings.json...');
     }
-    if (!projectScoped) try {
-      let existingSettings: Record<string, unknown> = {};
-      let initialSettingsSnapshot = '{}';
-      if (existsSync(SETTINGS_FILE)) {
-        const settingsContent = readFileSync(SETTINGS_FILE, 'utf-8');
-        existingSettings = JSON.parse(settingsContent);
-        initialSettingsSnapshot = JSON.stringify(existingSettings);
-      }
-
-      existingSettings = configureInstallerSettings(existingSettings, {
-        allowPluginHookRefresh: !!allowPluginHookRefresh,
-        hudScriptPath,
-        log,
-        options,
-        pluginProvidesHookFiles,
-        result,
-        runningAsPlugin,
-      });
-
-      // 3. Persist the detected node binary path into .omc-config.json so that
-      //    find-node.sh (used in hooks/hooks.json) can locate it at hook runtime
-      //    even when node is not on PATH (nvm/fnm users, issue #892).
+    if (!projectScoped)
       try {
-        const configPath = join(CLAUDE_CONFIG_DIR, OMC_CONFIG_FILE_REL);
-        let omcConfig: Record<string, unknown> = {};
-        if (existsSync(configPath)) {
-          omcConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+        let existingSettings: Record<string, unknown> = {};
+        let initialSettingsSnapshot = '{}';
+        if (existsSync(SETTINGS_FILE)) {
+          const settingsContent = readFileSync(SETTINGS_FILE, 'utf-8');
+          existingSettings = JSON.parse(settingsContent);
+          initialSettingsSnapshot = JSON.stringify(existingSettings);
         }
-        const detectedNode = resolveNodeBinary();
-        if (detectedNode !== 'node') {
-          omcConfig.nodeBinary = detectedNode;
-          writeFileSync(configPath, JSON.stringify(omcConfig, null, 2));
-          log(`  Saved node binary path to .omc-config.json: ${detectedNode}`);
-        }
-      } catch {
-        log('  Warning: Could not save node binary path (non-fatal)');
-      }
 
-      const staleSettings = existsSync(SETTINGS_FILE)
-        ? JSON.parse(readFileSync(SETTINGS_FILE, 'utf-8')) as Record<string, unknown>
-        : {};
-      if (JSON.stringify(staleSettings) !== initialSettingsSnapshot) {
-        existingSettings = configureInstallerSettings(staleSettings, {
+        existingSettings = configureInstallerSettings(existingSettings, {
           allowPluginHookRefresh: !!allowPluginHookRefresh,
           hudScriptPath,
-          log: () => {},
+          log,
           options,
           pluginProvidesHookFiles,
           result,
           runningAsPlugin,
         });
-      }
 
-      // 5. Single atomic write
-      writeFileSync(SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
-      log('  settings.json updated');
-    } catch (_e) {
-      log('  Warning: Could not configure settings.json (non-fatal)');
-      result.hooksConfigured = false;
-    }
+        // 3. Persist the detected node binary path into .omc-config.json so that
+        //    find-node.sh (used in hooks/hooks.json) can locate it at hook runtime
+        //    even when node is not on PATH (nvm/fnm users, issue #892).
+        try {
+          const configPath = join(CLAUDE_CONFIG_DIR, OMC_CONFIG_FILE_REL);
+          let omcConfig: Record<string, unknown> = {};
+          if (existsSync(configPath)) {
+            omcConfig = JSON.parse(readFileSync(configPath, 'utf-8'));
+          }
+          const detectedNode = resolveNodeBinary();
+          if (detectedNode !== 'node') {
+            omcConfig.nodeBinary = detectedNode;
+            writeFileSync(configPath, JSON.stringify(omcConfig, null, 2));
+            log(
+              `  Saved node binary path to .omc-config.json: ${detectedNode}`,
+            );
+          }
+        } catch {
+          log('  Warning: Could not save node binary path (non-fatal)');
+        }
+
+        const staleSettings = existsSync(SETTINGS_FILE)
+          ? (JSON.parse(readFileSync(SETTINGS_FILE, 'utf-8')) as Record<
+              string,
+              unknown
+            >)
+          : {};
+        if (JSON.stringify(staleSettings) !== initialSettingsSnapshot) {
+          existingSettings = configureInstallerSettings(staleSettings, {
+            allowPluginHookRefresh: !!allowPluginHookRefresh,
+            hudScriptPath,
+            log: () => {},
+            options,
+            pluginProvidesHookFiles,
+            result,
+            runningAsPlugin,
+          });
+        }
+
+        // 5. Single atomic write
+        writeFileSync(SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
+        log('  settings.json updated');
+      } catch (_e) {
+        log('  Warning: Could not configure settings.json (non-fatal)');
+        result.hooksConfigured = false;
+      }
 
     // Save version metadata (skip for project-scoped plugins)
     if (!projectScoped) {
@@ -2373,7 +2804,7 @@ export function install(options: InstallOptions = {}): InstallResult {
         version: targetVersion,
         installedAt: new Date().toISOString(),
         installMethod: 'npm' as const,
-        lastCheckAt: new Date().toISOString()
+        lastCheckAt: new Date().toISOString(),
       };
       writeFileSync(VERSION_FILE, JSON.stringify(versionMetadata, null, 2));
       log('Saved version metadata');
@@ -2385,16 +2816,18 @@ export function install(options: InstallOptions = {}): InstallResult {
         const templateVersionStamp = {
           version: targetVersion,
           installedAt: new Date().toISOString(),
-          pluginRoot: process.env.CLAUDE_PLUGIN_ROOT ?? null
+          pluginRoot: process.env.CLAUDE_PLUGIN_ROOT ?? null,
         };
         writeFileSync(
           join(omcRoot, 'template-version.json'),
-          JSON.stringify(templateVersionStamp, null, 2)
+          JSON.stringify(templateVersionStamp, null, 2),
         );
         log('Saved template-version stamp');
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        log(`  Warning: Could not write template-version stamp (non-fatal): ${message}`);
+        log(
+          `  Warning: Could not write template-version stamp (non-fatal): ${message}`,
+        );
       }
     } else {
       log('Skipping version metadata (project-scoped plugin)');
@@ -2410,12 +2843,13 @@ export function install(options: InstallOptions = {}): InstallResult {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      log(`  Warning: Could not refresh setupVersion metadata (non-fatal): ${message}`);
+      log(
+        `  Warning: Could not refresh setupVersion metadata (non-fatal): ${message}`,
+      );
     }
 
     result.success = true;
-    result.message = `Successfully installed ${result.installedAgents.length} agents, ${result.installedCommands.length} commands, ${result.installedSkills.length} skills`; 
-
+    result.message = `Successfully installed ${result.installedAgents.length} agents, ${result.installedCommands.length} commands, ${result.installedSkills.length} skills`;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     result.errors.push(errorMessage);
@@ -2429,13 +2863,20 @@ export function install(options: InstallOptions = {}): InstallResult {
  * Check if OMC is already installed
  */
 export function isInstalled(): boolean {
-  return existsSync(VERSION_FILE) && (existsSync(AGENTS_DIR) || hasPluginProvidedAgentFiles());
+  return (
+    existsSync(VERSION_FILE) &&
+    (existsSync(AGENTS_DIR) || hasPluginProvidedAgentFiles())
+  );
 }
 
 /**
  * Get installation info
  */
-export function getInstallInfo(): { version: string; installedAt: string; method: string } | null {
+export function getInstallInfo(): {
+  version: string;
+  installedAt: string;
+  method: string;
+} | null {
   if (!existsSync(VERSION_FILE)) {
     return null;
   }
@@ -2445,7 +2886,7 @@ export function getInstallInfo(): { version: string; installedAt: string; method
     return {
       version: data.version,
       installedAt: data.installedAt,
-      method: data.installMethod
+      method: data.installMethod,
     };
   } catch {
     return null;

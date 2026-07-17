@@ -26,7 +26,7 @@ describe('unified-team', () => {
       agentType === 'mcp-codex' ? 'gpt-5.3-codex' : 'gemini-3.1-pro-preview',
       `tmux-${name}`,
       testDir,
-      testDir
+      testDir,
     );
   }
 
@@ -43,12 +43,12 @@ describe('unified-team', () => {
       const members = getTeamMembers(teamName, testDir);
       expect(members).toHaveLength(2);
 
-      const codex = members.find(m => m.name === 'codex-1');
+      const codex = members.find((m) => m.name === 'codex-1');
       expect(codex).toBeDefined();
       expect(codex!.backend).toBe('mcp-codex');
       expect(codex!.capabilities).toContain('code-review');
 
-      const gemini = members.find(m => m.name === 'gemini-1');
+      const gemini = members.find((m) => m.name === 'gemini-1');
       expect(gemini).toBeDefined();
       expect(gemini!.backend).toBe('mcp-gemini');
       expect(gemini!.capabilities).toContain('ui-design');

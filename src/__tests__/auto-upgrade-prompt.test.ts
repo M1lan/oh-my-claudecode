@@ -5,7 +5,9 @@ vi.mock('child_process', () => ({
 }));
 
 vi.mock('../installer/index.js', async () => {
-  const actual = await vi.importActual<typeof import('../installer/index.js')>('../installer/index.js');
+  const actual = await vi.importActual<typeof import('../installer/index.js')>(
+    '../installer/index.js',
+  );
   return {
     ...actual,
     install: vi.fn(),
@@ -51,9 +53,11 @@ describe('auto-upgrade prompt config', () => {
 
   it('defaults autoUpgradePrompt to true when field is not set in config', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({
-      silentAutoUpdate: false,
-    }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        silentAutoUpdate: false,
+      }),
+    );
 
     const config = getOMCConfig();
     expect(config.autoUpgradePrompt).toBeUndefined();
@@ -62,10 +66,12 @@ describe('auto-upgrade prompt config', () => {
 
   it('returns true when autoUpgradePrompt is explicitly true', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({
-      silentAutoUpdate: false,
-      autoUpgradePrompt: true,
-    }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        silentAutoUpdate: false,
+        autoUpgradePrompt: true,
+      }),
+    );
 
     expect(isAutoUpgradePromptEnabled()).toBe(true);
     expect(getOMCConfig().autoUpgradePrompt).toBe(true);
@@ -73,10 +79,12 @@ describe('auto-upgrade prompt config', () => {
 
   it('returns false when autoUpgradePrompt is explicitly false', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({
-      silentAutoUpdate: false,
-      autoUpgradePrompt: false,
-    }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        silentAutoUpdate: false,
+        autoUpgradePrompt: false,
+      }),
+    );
 
     expect(isAutoUpgradePromptEnabled()).toBe(false);
     expect(getOMCConfig().autoUpgradePrompt).toBe(false);
@@ -84,10 +92,12 @@ describe('auto-upgrade prompt config', () => {
 
   it('autoUpgradePrompt and silentAutoUpdate are independent', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({
-      silentAutoUpdate: true,
-      autoUpgradePrompt: false,
-    }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        silentAutoUpdate: true,
+        autoUpgradePrompt: false,
+      }),
+    );
 
     expect(isSilentAutoUpdateEnabled()).toBe(true);
     expect(isAutoUpgradePromptEnabled()).toBe(false);
@@ -103,13 +113,16 @@ describe('auto-upgrade prompt config', () => {
   it('silentAutoUpdate blocked by security config (OMC_SECURITY=strict)', async () => {
     // When security config disables auto-update, silentAutoUpdate=true is overridden
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({
-      silentAutoUpdate: true,
-    }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({
+        silentAutoUpdate: true,
+      }),
+    );
 
     const originalSecurity = process.env.OMC_SECURITY;
     process.env.OMC_SECURITY = 'strict';
-    const { clearSecurityConfigCache } = await import('../lib/security-config.js');
+    const { clearSecurityConfigCache } =
+      await import('../lib/security-config.js');
     clearSecurityConfigCache();
 
     expect(isSilentAutoUpdateEnabled()).toBe(false);

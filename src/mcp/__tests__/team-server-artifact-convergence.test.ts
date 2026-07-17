@@ -13,7 +13,8 @@ const tmuxMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../team/tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../team/tmux-session.js')>();
+  const actual =
+    await importOriginal<typeof import('../../team/tmux-session.js')>();
   return {
     ...actual,
     killWorkerPanes: tmuxMocks.killWorkerPanes,
@@ -42,7 +43,10 @@ describe('team-server artifact convergence + scoped cleanup', () => {
   let jobsDir: string;
 
   beforeEach(() => {
-    testRoot = join(tmpdir(), `omc-team-server-test-${process.pid}-${Date.now()}`);
+    testRoot = join(
+      tmpdir(),
+      `omc-team-server-test-${process.pid}-${Date.now()}`,
+    );
     jobsDir = join(testRoot, 'jobs');
     mkdirSync(jobsDir, { recursive: true });
   });
@@ -73,7 +77,11 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     writeFileSync(
       join(jobsDir, `${jobId}-result.json`),
-      JSON.stringify({ status: 'completed', teamName: 'artifact-team', taskResults: [] }),
+      JSON.stringify({
+        status: 'completed',
+        teamName: 'artifact-team',
+        taskResults: [],
+      }),
       'utf-8',
     );
 
@@ -81,9 +89,14 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     const payload = parseResponseText(response.content[0].text);
 
     expect(payload.status).toBe('completed');
-    expect(payload.result).toMatchObject({ status: 'completed', teamName: 'artifact-team' });
+    expect(payload.result).toMatchObject({
+      status: 'completed',
+      teamName: 'artifact-team',
+    });
 
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.status).toBe('completed');
   });
 
@@ -111,7 +124,9 @@ describe('team-server artifact convergence + scoped cleanup', () => {
       error: { code: 'RESULT_ARTIFACT_PARSE_FAILED' },
     });
 
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.status).toBe('failed');
   });
 
@@ -130,7 +145,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
     writeFileSync(
@@ -156,7 +176,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
     writeFileSync(
@@ -170,12 +195,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     expect(response.content[0].text).toContain('worker_panes_still_alive:%2');
     expect(existsSync(teamDir)).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.cleanedUpAt).toBeUndefined();
     expect(persisted.cleanupBlockedReason).toBe('worker_panes_still_alive:%2');
   });
-
-
 
   it('handleCleanup preserves state when pane liveness probe is unknown', async () => {
     const { handleCleanup } = await importTeamServerWithJobsDir(jobsDir);
@@ -186,7 +211,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     mkdirSync(teamDir, { recursive: true });
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
     writeFileSync(
@@ -200,7 +230,9 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     expect(response.content[0].text).toContain('worker_liveness_unknown:%9');
     expect(existsSync(teamDir)).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.cleanedUpAt).toBeUndefined();
     expect(persisted.cleanupBlockedReason).toBe('worker_liveness_unknown:%9');
   });
@@ -212,8 +244,14 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     const cwd = join(testRoot, 'workspace-dirty-worktree');
     mkdirSync(cwd, { recursive: true });
     execFileSync('git', ['init'], { cwd, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.name', 'Test User'], { cwd, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+      cwd,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['config', 'user.name', 'Test User'], {
+      cwd,
+      stdio: 'pipe',
+    });
     writeFileSync(join(cwd, 'README.md'), 'hello\n', 'utf-8');
     execFileSync('git', ['add', 'README.md'], { cwd, stdio: 'pipe' });
     execFileSync('git', ['commit', '-m', 'init'], { cwd, stdio: 'pipe' });
@@ -225,7 +263,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
     writeFileSync(
@@ -239,12 +282,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     expect(response.content[0].text).toContain('preserved');
     expect(existsSync(worktree.path)).toBe(true);
     expect(existsSync(teamDir)).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.cleanedUpAt).toBeUndefined();
     expect(persisted.cleanupBlockedReason).toBe('worktrees_preserved:1');
   });
-
-
 
   it('handleCleanup preserves state when pane evidence is missing and config still has workers', async () => {
     const { handleCleanup } = await importTeamServerWithJobsDir(jobsDir);
@@ -253,39 +296,54 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     const cwd = join(testRoot, 'workspace-unknown-liveness');
     const teamDir = join(cwd, '.omc', 'state', 'team', 'team-one');
     mkdirSync(teamDir, { recursive: true });
-    writeFileSync(join(teamDir, 'config.json'), JSON.stringify({
-      name: 'team-one',
-      task: 'demo',
-      agent_type: 'claude',
-      worker_launch_mode: 'interactive',
-      worker_count: 1,
-      max_workers: 20,
-      workers: [{ name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] }],
-      created_at: new Date().toISOString(),
-      tmux_session: 'team-one-session:0',
-      leader_pane_id: null,
-      hud_pane_id: null,
-      resize_hook_name: null,
-      resize_hook_target: null,
-      next_task_id: 1,
-    }), 'utf-8');
+    writeFileSync(
+      join(teamDir, 'config.json'),
+      JSON.stringify({
+        name: 'team-one',
+        task: 'demo',
+        agent_type: 'claude',
+        worker_launch_mode: 'interactive',
+        worker_count: 1,
+        max_workers: 20,
+        workers: [
+          { name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] },
+        ],
+        created_at: new Date().toISOString(),
+        tmux_session: 'team-one-session:0',
+        leader_pane_id: null,
+        hud_pane_id: null,
+        resize_hook_name: null,
+        resize_hook_target: null,
+        next_task_id: 1,
+      }),
+      'utf-8',
+    );
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
 
     const response = await handleCleanup({ job_id: jobId, grace_ms: 0 });
 
-    expect(response.content[0].text).toContain('worker_liveness_unknown:no_worker_pane_ids');
+    expect(response.content[0].text).toContain(
+      'worker_liveness_unknown:no_worker_pane_ids',
+    );
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
     expect(existsSync(teamDir)).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.cleanedUpAt).toBeUndefined();
-    expect(persisted.cleanupBlockedReason).toBe('worker_liveness_unknown:no_worker_pane_ids');
+    expect(persisted.cleanupBlockedReason).toBe(
+      'worker_liveness_unknown:no_worker_pane_ids',
+    );
   });
-
-
 
   it('handleCleanup preserves team state when only a worktree-root AGENTS backup remains', async () => {
     const { handleCleanup } = await importTeamServerWithJobsDir(jobsDir);
@@ -293,28 +351,55 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     const jobId = 'omc-art8';
     const cwd = join(testRoot, 'workspace-backup-only');
     const teamDir = join(cwd, '.omc', 'state', 'team', 'team-one');
-    const backupPath = join(teamDir, 'workers', 'worker-1', 'worktree-root-agents.json');
+    const backupPath = join(
+      teamDir,
+      'workers',
+      'worker-1',
+      'worktree-root-agents.json',
+    );
     mkdirSync(join(teamDir, 'workers', 'worker-1'), { recursive: true });
-    writeFileSync(backupPath, JSON.stringify({
-      worktreePath: join(cwd, '.omc', 'team', 'team-one', 'worktrees', 'worker-1'),
-      hadOriginal: true,
-      originalContent: 'original',
-      installedContent: 'managed',
-      installedAt: new Date().toISOString(),
-    }), 'utf-8');
     writeFileSync(
-      join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      backupPath,
+      JSON.stringify({
+        worktreePath: join(
+          cwd,
+          '.omc',
+          'team',
+          'team-one',
+          'worktrees',
+          'worker-1',
+        ),
+        hadOriginal: true,
+        originalContent: 'original',
+        installedContent: 'managed',
+        installedAt: new Date().toISOString(),
+      }),
       'utf-8',
     );
-    writeFileSync(join(jobsDir, `${jobId}-panes.json`), JSON.stringify({ paneIds: [], leaderPaneId: '%1' }), 'utf-8');
+    writeFileSync(
+      join(jobsDir, `${jobId}.json`),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
+      'utf-8',
+    );
+    writeFileSync(
+      join(jobsDir, `${jobId}-panes.json`),
+      JSON.stringify({ paneIds: [], leaderPaneId: '%1' }),
+      'utf-8',
+    );
 
     const response = await handleCleanup({ job_id: jobId, grace_ms: 0 });
 
     expect(response.content[0].text).toContain('preserved');
     expect(existsSync(teamDir)).toBe(true);
     expect(existsSync(backupPath)).toBe(true);
-    const persisted = JSON.parse(readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8')) as Record<string, unknown>;
+    const persisted = JSON.parse(
+      readFileSync(join(jobsDir, `${jobId}.json`), 'utf-8'),
+    ) as Record<string, unknown>;
     expect(persisted.cleanedUpAt).toBeUndefined();
     expect(persisted.cleanupBlockedReason).toBeTruthy();
   });
@@ -326,8 +411,14 @@ describe('team-server artifact convergence + scoped cleanup', () => {
     const cwd = join(testRoot, 'workspace-worktree');
     mkdirSync(cwd, { recursive: true });
     execFileSync('git', ['init'], { cwd, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd, stdio: 'pipe' });
-    execFileSync('git', ['config', 'user.name', 'Test User'], { cwd, stdio: 'pipe' });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+      cwd,
+      stdio: 'pipe',
+    });
+    execFileSync('git', ['config', 'user.name', 'Test User'], {
+      cwd,
+      stdio: 'pipe',
+    });
     writeFileSync(join(cwd, 'README.md'), 'hello\n', 'utf-8');
     execFileSync('git', ['add', 'README.md'], { cwd, stdio: 'pipe' });
     execFileSync('git', ['commit', '-m', 'init'], { cwd, stdio: 'pipe' });
@@ -339,7 +430,12 @@ describe('team-server artifact convergence + scoped cleanup', () => {
 
     writeFileSync(
       join(jobsDir, `${jobId}.json`),
-      JSON.stringify({ status: 'running', startedAt: Date.now(), cwd, teamName: 'team-one' }),
+      JSON.stringify({
+        status: 'running',
+        startedAt: Date.now(),
+        cwd,
+        teamName: 'team-one',
+      }),
       'utf-8',
     );
     writeFileSync(

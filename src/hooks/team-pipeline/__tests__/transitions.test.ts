@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { initTeamPipelineState, markTeamPhase } from '../state.js';
-import { transitionTeamPhase, isNonNegativeFiniteInteger } from '../transitions.js';
+import {
+  transitionTeamPhase,
+  isNonNegativeFiniteInteger,
+} from '../transitions.js';
 
 describe('team pipeline transitions', () => {
   it('allows canonical plan -> prd -> exec transitions', () => {
@@ -38,7 +41,10 @@ describe('team pipeline transitions', () => {
     const exhausted = {
       ...toFix1.state,
       phase: 'team-fix' as const,
-      fix_loop: { ...toFix1.state.fix_loop, attempt: toFix1.state.fix_loop.max_attempts },
+      fix_loop: {
+        ...toFix1.state.fix_loop,
+        attempt: toFix1.state.fix_loop.max_attempts,
+      },
     };
 
     const overflow = markTeamPhase(exhausted, 'team-fix', 'retry');

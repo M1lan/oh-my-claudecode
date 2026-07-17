@@ -13,26 +13,40 @@
  * - Magic keywords: Special triggers for enhanced behaviors
  */
 
-import { loadConfig, findContextFiles, loadContextFromFiles } from './config/loader.js';
+import {
+  loadConfig,
+  findContextFiles,
+  loadContextFromFiles,
+} from './config/loader.js';
 import { getAgentDefinitions, omcSystemPrompt } from './agents/definitions.js';
 import { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
 import { omcToolsServer, getOmcToolNames } from './mcp/omc-tools-server.js';
-import { createMagicKeywordProcessor, detectMagicKeywords } from './features/magic-keywords.js';
+import {
+  createMagicKeywordProcessor,
+  detectMagicKeywords,
+} from './features/magic-keywords.js';
 import { continuationSystemPromptAddition } from './features/continuation-enforcement.js';
 import { appendSkininthegamebrosGuidance } from './agents/skininthegamebros-guidance.js';
 import {
   createBackgroundTaskManager,
   shouldRunInBackground as shouldRunInBackgroundFn,
   type BackgroundTaskManager,
-  type TaskExecutionDecision
+  type TaskExecutionDecision,
 } from './features/background-tasks.js';
 import type { PluginConfig, SessionState } from './shared/types.js';
 
 export { loadConfig, getAgentDefinitions, omcSystemPrompt };
 export { getDefaultMcpServers, toSdkMcpFormat } from './mcp/servers.js';
 export { lspTools, astTools, allCustomTools } from './tools/index.js';
-export { omcToolsServer, omcToolNames, getOmcToolNames } from './mcp/omc-tools-server.js';
-export { createMagicKeywordProcessor, detectMagicKeywords } from './features/magic-keywords.js';
+export {
+  omcToolsServer,
+  omcToolNames,
+  getOmcToolNames,
+} from './mcp/omc-tools-server.js';
+export {
+  createMagicKeywordProcessor,
+  detectMagicKeywords,
+} from './features/magic-keywords.js';
 export {
   createBackgroundTaskManager,
   shouldRunInBackground,
@@ -41,7 +55,7 @@ export {
   LONG_RUNNING_PATTERNS,
   BLOCKING_PATTERNS,
   type BackgroundTaskManager,
-  type TaskExecutionDecision
+  type TaskExecutionDecision,
 } from './features/background-tasks.js';
 export {
   // Auto-update types
@@ -63,13 +77,12 @@ export {
   formatUpdateNotification,
   shouldCheckForUpdates,
   backgroundUpdateCheck,
-  compareVersions
+  compareVersions,
 } from './features/auto-update.js';
 export * from './shared/index.js';
 
 // Hooks module exports
 export * from './hooks/index.js';
-
 
 // Team recovery and worker checkpoint public clients.
 export {
@@ -131,9 +144,15 @@ export {
   type MessageContext,
   type OutputPart,
   type InjectionStrategy,
-  type InjectionResult
+  type InjectionResult,
 } from './features/index.js';
-export { searchSessionHistory, parseSinceSpec, type SessionHistoryMatch, type SessionHistorySearchOptions, type SessionHistorySearchReport } from './features/index.js';
+export {
+  searchSessionHistory,
+  parseSinceSpec,
+  type SessionHistoryMatch,
+  type SessionHistorySearchOptions,
+  type SessionHistorySearchReport,
+} from './features/index.js';
 
 // Agent module exports (modular agent system)
 export {
@@ -199,7 +218,7 @@ export {
   expandCommands,
   getCommandsDir,
   type CommandInfo,
-  type ExpandedCommand
+  type ExpandedCommand,
 } from './commands/index.js';
 
 // Installer exports
@@ -213,7 +232,7 @@ export {
   COMMANDS_DIR,
   VERSION as INSTALLER_VERSION,
   type InstallResult,
-  type InstallOptions
+  type InstallOptions,
 } from './installer/index.js';
 
 /**
@@ -242,7 +261,15 @@ export interface OmcSession {
   queryOptions: {
     options: {
       systemPrompt: string;
-      agents: Record<string, { description: string; prompt: string; tools?: string[]; model?: string }>;
+      agents: Record<
+        string,
+        {
+          description: string;
+          prompt: string;
+          tools?: string[];
+          model?: string;
+        }
+      >;
       mcpServers: Record<string, { command: string; args: string[] }>;
       allowedTools: string[];
       permissionMode: string;
@@ -290,12 +317,15 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   const loadedConfig = options?.skipConfigLoad ? {} : loadConfig();
   const config: PluginConfig = {
     ...loadedConfig,
-    ...options?.config
+    ...options?.config,
   };
 
   // Find and load context files
   let contextAddition = '';
-  if (!options?.skipContextInjection && config.features?.autoContextInjection !== false) {
+  if (
+    !options?.skipContextInjection &&
+    config.features?.autoContextInjection !== false
+  ) {
     const contextFiles = findContextFiles(options?.workingDirectory);
     if (contextFiles.length > 0) {
       contextAddition = `\n\n## Project Context\n\n${loadContextFromFiles(contextFiles)}`;
@@ -327,12 +357,18 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   const externalMcpServers = getDefaultMcpServers({
     exaApiKey: config.mcpServers?.exa?.apiKey,
     enableExa: config.mcpServers?.exa?.enabled,
-    enableContext7: config.mcpServers?.context7?.enabled
+    enableContext7: config.mcpServers?.context7?.enabled,
   });
 
   // Build allowed tools list
   const allowedTools: string[] = [
-    'Read', 'Glob', 'Grep', 'WebSearch', 'WebFetch', 'Task', 'TodoWrite'
+    'Read',
+    'Glob',
+    'Grep',
+    'WebSearch',
+    'WebFetch',
+    'Task',
+    'TodoWrite',
   ];
 
   if (config.permissions?.allowBash !== false) {
@@ -356,7 +392,7 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   const omcTools = getOmcToolNames({
     includeLsp: config.features?.lspTools !== false,
     includeAst: config.features?.astTools !== false,
-    includePython: true
+    includePython: true,
   });
   allowedTools.push(...omcTools);
 
@@ -367,7 +403,7 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
   const state: SessionState = {
     activeAgents: new Map(),
     backgroundTasks: [],
-    contextFiles: findContextFiles(options?.workingDirectory)
+    contextFiles: findContextFiles(options?.workingDirectory),
   };
 
   // Create background task manager
@@ -380,22 +416,24 @@ export function createOmcSession(options?: OmcOptions): OmcSession {
         agents,
         mcpServers: {
           ...toSdkMcpFormat(externalMcpServers),
-          't': omcToolsServer as any
+          t: omcToolsServer as any,
         },
         allowedTools,
-        permissionMode: 'acceptEdits'
-      }
+        permissionMode: 'acceptEdits',
+      },
     },
     state,
     config,
     processPrompt,
-    detectKeywords: (prompt: string) => detectMagicKeywords(prompt, config.magicKeywords),
+    detectKeywords: (prompt: string) =>
+      detectMagicKeywords(prompt, config.magicKeywords),
     backgroundTasks: backgroundTaskManager,
-    shouldRunInBackground: (command: string) => shouldRunInBackgroundFn(
-      command,
-      backgroundTaskManager.getRunningCount(),
-      backgroundTaskManager.getMaxTasks()
-    )
+    shouldRunInBackground: (command: string) =>
+      shouldRunInBackgroundFn(
+        command,
+        backgroundTaskManager.getRunningCount(),
+        backgroundTaskManager.getMaxTasks(),
+      ),
   };
 }
 

@@ -3,8 +3,12 @@ import { mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
-  writeHeartbeat, readHeartbeat, listHeartbeats,
-  isWorkerAlive, deleteHeartbeat, cleanupTeamHeartbeats
+  writeHeartbeat,
+  readHeartbeat,
+  listHeartbeats,
+  isWorkerAlive,
+  deleteHeartbeat,
+  cleanupTeamHeartbeats,
 } from '../heartbeat.js';
 import type { HeartbeatData } from '../types.js';
 

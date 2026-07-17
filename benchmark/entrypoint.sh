@@ -26,10 +26,10 @@ if [ "$RUN_MODE" = "omc" ]; then
     # Check if OMC source is mounted
     if [ -d "/workspace/omc-source" ]; then
         echo "Installing OMC from mounted source..."
-        cd /workspace/omc-source && npm install && npm link
+        cd /workspace/omc-source && pnpm install && pnpm link
     else
-        echo "Installing OMC from npm..."
-        npm install -g oh-my-claudecode
+        echo "Installing OMC from the registry..."
+        pnpm add -g oh-my-claudecode
     fi
 
     # Initialize OMC configuration

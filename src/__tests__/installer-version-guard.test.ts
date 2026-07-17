@@ -13,13 +13,21 @@ vi.mock('fs', async () => {
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { homedir } from 'os';
 import { join } from 'path';
-import { install, CLAUDE_CONFIG_DIR, VERSION_FILE } from '../installer/index.js';
+import {
+  install,
+  CLAUDE_CONFIG_DIR,
+  VERSION_FILE,
+} from '../installer/index.js';
 
 const mockedExistsSync = vi.mocked(existsSync);
 const mockedReadFileSync = vi.mocked(readFileSync);
 const mockedWriteFileSync = vi.mocked(writeFileSync);
 
-function withUnixPaths(pathLike: Parameters<typeof existsSync>[0] | Parameters<typeof readFileSync>[0]): string {
+function withUnixPaths(
+  pathLike:
+    | Parameters<typeof existsSync>[0]
+    | Parameters<typeof readFileSync>[0],
+): string {
   return String(pathLike).replace(/\\/g, '/');
 }
 
@@ -34,7 +42,10 @@ describe('install downgrade protection (issue #1382)', () => {
   it('skips syncing when installed version metadata is newer than the CLI package version', () => {
     mockedExistsSync.mockImplementation((pathLike) => {
       const path = withUnixPaths(pathLike);
-      return path === withUnixPaths(VERSION_FILE) || path === withUnixPaths(claudeMdPath);
+      return (
+        path === withUnixPaths(VERSION_FILE) ||
+        path === withUnixPaths(claudeMdPath)
+      );
     });
 
     mockedReadFileSync.mockImplementation((pathLike) => {

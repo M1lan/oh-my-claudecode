@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -26,11 +32,11 @@ describe('persistent-mode ralph max iteration handling (#635)', () => {
             prompt: 'Finish all todos',
             session_id: sessionId,
             project_path: tempDir,
-            linked_ultrawork: true
+            linked_ultrawork: true,
           },
           null,
-          2
-        )
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir);
@@ -38,7 +44,9 @@ describe('persistent-mode ralph max iteration handling (#635)', () => {
       expect(result.mode).toBe('ralph');
       expect(result.message).toContain('[RALPH - ITERATION 11/20]');
 
-      const updated = JSON.parse(readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8')) as {
+      const updated = JSON.parse(
+        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
+      ) as {
         iteration: number;
         max_iterations: number;
       };

@@ -28,8 +28,8 @@ export function buildAgentRegistry(agents: AgentConfig[]): string {
   const lines: string[] = ['## Available Subagents', ''];
 
   // Group agents by tier (base vs variants)
-  const baseAgents = agents.filter(a => !a.name.includes('-'));
-  const tieredAgents = agents.filter(a => a.name.includes('-'));
+  const baseAgents = agents.filter((a) => !a.name.includes('-'));
+  const tieredAgents = agents.filter((a) => a.name.includes('-'));
 
   // Base agents
   if (baseAgents.length > 0) {
@@ -44,9 +44,15 @@ export function buildAgentRegistry(agents: AgentConfig[]): string {
   // Tiered variants
   if (tieredAgents.length > 0) {
     lines.push('### Tiered Variants');
-    lines.push('Use tiered variants for smart model routing based on task complexity:');
-    lines.push('- **HIGH tier (opus)**: Complex analysis, architecture, debugging');
-    lines.push('- **MEDIUM tier (sonnet)**: Standard tasks, moderate complexity');
+    lines.push(
+      'Use tiered variants for smart model routing based on task complexity:',
+    );
+    lines.push(
+      '- **HIGH tier (opus)**: Complex analysis, architecture, debugging',
+    );
+    lines.push(
+      '- **MEDIUM tier (sonnet)**: Standard tasks, moderate complexity',
+    );
     lines.push('- **LOW tier (haiku)**: Simple lookups, trivial operations');
     lines.push('');
 
@@ -67,7 +73,9 @@ export function buildTriggerTable(agents: AgentConfig[]): string {
   const lines: string[] = ['## Key Triggers', ''];
 
   // Filter agents with metadata triggers
-  const agentsWithTriggers = agents.filter(a => a.metadata?.triggers && a.metadata.triggers.length > 0);
+  const agentsWithTriggers = agents.filter(
+    (a) => a.metadata?.triggers && a.metadata.triggers.length > 0,
+  );
 
   if (agentsWithTriggers.length === 0) {
     return '';
@@ -156,7 +164,9 @@ export function buildDelegationMatrix(agents: AgentConfig[]): string {
       const catDisplay = i === 0 ? categoryName : '';
       const model = agent.model || 'sonnet';
       const useCase = agent.metadata?.useWhen?.[0] || agent.description;
-      lines.push(`| ${catDisplay} | **${agent.name}** | ${model} | ${useCase} |`);
+      lines.push(
+        `| ${catDisplay} | **${agent.name}** | ${model} | ${useCase} |`,
+      );
     }
   }
 

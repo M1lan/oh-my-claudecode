@@ -40,7 +40,9 @@ const DEBUG_FILE = path.join(tmpdir(), 'empty-message-sanitizer-debug.log');
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] ${DEBUG_PREFIX} ${args
-      .map((a) => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)))
+      .map((a) =>
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
+      )
       .join(' ')}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
@@ -78,7 +80,7 @@ export function hasValidContent(parts: MessagePart[]): boolean {
 export function sanitizeMessage(
   message: MessageWithParts,
   isLastMessage: boolean,
-  placeholderText: string = PLACEHOLDER_TEXT
+  placeholderText: string = PLACEHOLDER_TEXT,
 ): boolean {
   const isAssistant = message.info.role === 'assistant';
 
@@ -158,7 +160,7 @@ export function sanitizeMessage(
  */
 export function sanitizeMessages(
   input: EmptyMessageSanitizerInput,
-  config?: EmptyMessageSanitizerConfig
+  config?: EmptyMessageSanitizerConfig,
 ): EmptyMessageSanitizerOutput {
   const { messages } = input;
   const placeholderText = config?.placeholderText ?? PLACEHOLDER_TEXT;
@@ -171,7 +173,11 @@ export function sanitizeMessages(
     const message = messages[i];
     const isLastMessage = i === messages.length - 1;
 
-    const wasSanitized = sanitizeMessage(message, isLastMessage, placeholderText);
+    const wasSanitized = sanitizeMessage(
+      message,
+      isLastMessage,
+      placeholderText,
+    );
     if (wasSanitized) {
       sanitizedCount++;
     }
@@ -192,14 +198,18 @@ export function sanitizeMessages(
  * This hook ensures all messages have valid content before being sent to the API.
  * It should be called at the last stage of message processing.
  */
-export function createEmptyMessageSanitizerHook(config?: EmptyMessageSanitizerConfig) {
+export function createEmptyMessageSanitizerHook(
+  config?: EmptyMessageSanitizerConfig,
+) {
   debugLog('createEmptyMessageSanitizerHook called', { config });
 
   return {
     /**
      * Sanitize messages (called during message transform phase)
      */
-    sanitize: (input: EmptyMessageSanitizerInput): EmptyMessageSanitizerOutput => {
+    sanitize: (
+      input: EmptyMessageSanitizerInput,
+    ): EmptyMessageSanitizerOutput => {
       return sanitizeMessages(input, config);
     },
 

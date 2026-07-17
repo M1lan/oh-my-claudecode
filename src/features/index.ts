@@ -5,14 +5,14 @@
 export {
   createMagicKeywordProcessor,
   detectMagicKeywords,
-  builtInMagicKeywords
+  builtInMagicKeywords,
 } from './magic-keywords.js';
 
 export {
   createContinuationHook,
   continuationSystemPromptAddition,
   detectCompletionSignals,
-  generateVerificationPrompt
+  generateVerificationPrompt,
 } from './continuation-enforcement.js';
 
 export {
@@ -48,7 +48,7 @@ export {
   getPendingUpdateVersion,
   initSilentAutoUpdate,
   // Auto-upgrade prompt
-  isAutoUpgradePromptEnabled
+  isAutoUpgradePromptEnabled,
 } from './auto-update.js';
 
 // Boulder State - session/plan tracking
@@ -77,7 +77,7 @@ export {
   createBoulderState,
   getPlanSummaries,
   hasBoulder,
-  getActivePlanPath
+  getActivePlanPath,
 } from './boulder-state/index.js';
 
 // Context Injector - multi-source context collection and injection
@@ -98,7 +98,7 @@ export {
   type MessageContext,
   type OutputPart,
   type InjectionStrategy,
-  type InjectionResult
+  type InjectionResult,
 } from './context-injector/index.js';
 
 // Background Agent - background task management
@@ -115,7 +115,7 @@ export {
   type BackgroundTaskConfig,
   type LaunchInput,
   type ResumeInput,
-  type TaskProgress
+  type TaskProgress,
 } from './background-agent/index.js';
 
 // Builtin Skills - bundled skill definitions
@@ -127,7 +127,7 @@ export {
   // Types
   type BuiltinSkill,
   type SkillMcpConfig,
-  type SkillRegistry
+  type SkillRegistry,
 } from './builtin-skills/index.js';
 
 // Session Friction Report - local context-bloat and operator-friction summaries
@@ -207,7 +207,7 @@ export {
   // Types
   type WisdomEntry,
   type WisdomCategory,
-  type PlanWisdom
+  type PlanWisdom,
 } from './notepad-wisdom/index.js';
 
 // Delegation Categories - semantic task routing
@@ -232,7 +232,7 @@ export {
   type CategoryConfig,
   type ResolvedCategory,
   type CategoryContext,
-  type ThinkingBudget
+  type ThinkingBudget,
 } from './delegation-categories/index.js';
 
 // State Manager - unified state file management
@@ -264,9 +264,8 @@ export {
   type ListStatesOptions,
   type CleanupOptions,
   type CleanupResult,
-  type StateData
+  type StateData,
 } from './state-manager/index.js';
-
 
 // Verification - verification protocol for ralph, ultrawork, autopilot
 export {
@@ -288,7 +287,7 @@ export {
   type VerificationSummary,
   type ValidationResult,
   type VerificationOptions,
-  type ReportOptions
+  type ReportOptions,
 } from './verification/index.js';
 
 // Task Decomposer - task decomposition and file ownership
@@ -310,9 +309,8 @@ export {
   type TaskType,
   type ComponentRole,
   type FileOwnership,
-  type DecompositionStrategy
+  type DecompositionStrategy,
 } from './task-decomposer/index.js';
-
 
 // Session History Search - local transcript/session artifact search
 export {
@@ -322,4 +320,3 @@ export {
   type SessionHistorySearchOptions,
   type SessionHistorySearchReport,
 } from './session-history-search/index.js';
-

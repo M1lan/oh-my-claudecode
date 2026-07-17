@@ -26,11 +26,7 @@ import {
   PLACEHOLDER_TEXT,
   RECOVERY_MESSAGES,
 } from './constants.js';
-import type {
-  MessageData,
-  RecoveryResult,
-  RecoveryConfig,
-} from './types.js';
+import type { MessageData, RecoveryResult, RecoveryConfig } from './types.js';
 
 /**
  * Recovery error types
@@ -48,7 +44,9 @@ export type RecoveryErrorType =
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [session-recovery] ${args
-      .map((a) => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)))
+      .map((a) =>
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
+      )
       .join(' ')}\n`;
     appendFileSync(DEBUG_FILE, msg);
   }
@@ -116,7 +114,10 @@ export function detectErrorType(error: unknown): RecoveryErrorType {
     return 'thinking_block_order';
   }
 
-  if (message.includes('thinking is disabled') && message.includes('cannot contain')) {
+  if (
+    message.includes('thinking is disabled') &&
+    message.includes('cannot contain')
+  ) {
     return 'thinking_disabled_violation';
   }
 
@@ -141,11 +142,9 @@ export function isRecoverableError(error: unknown): boolean {
  * Extract tool_use IDs from message parts
  */
 function extractToolUseIds(
-  parts: Array<{ type: string; id?: string; callID?: string }>
+  parts: Array<{ type: string; id?: string; callID?: string }>,
 ): string[] {
-  return parts
-    .filter((p) => p.type === 'tool_use' && !!p.id)
-    .map((p) => p.id!);
+  return parts.filter((p) => p.type === 'tool_use' && !!p.id).map((p) => p.id!);
 }
 
 /**
@@ -153,9 +152,12 @@ function extractToolUseIds(
  */
 async function _recoverToolResultMissing(
   sessionID: string,
-  failedAssistantMsg: MessageData
+  failedAssistantMsg: MessageData,
 ): Promise<boolean> {
-  debugLog('recoverToolResultMissing', { sessionID, msgId: failedAssistantMsg.info?.id });
+  debugLog('recoverToolResultMissing', {
+    sessionID,
+    msgId: failedAssistantMsg.info?.id,
+  });
 
   // Try API parts first, fallback to filesystem if empty
   let parts = failedAssistantMsg.parts || [];
@@ -195,15 +197,21 @@ async function _recoverToolResultMissing(
 async function recoverThinkingBlockOrder(
   sessionID: string,
   _failedAssistantMsg: MessageData,
-  error: unknown
+  error: unknown,
 ): Promise<boolean> {
   debugLog('recoverThinkingBlockOrder', { sessionID });
 
   const targetIndex = extractMessageIndex(error);
   if (targetIndex !== null) {
-    const targetMessageID = findMessageByIndexNeedingThinking(sessionID, targetIndex);
+    const targetMessageID = findMessageByIndexNeedingThinking(
+      sessionID,
+      targetIndex,
+    );
     if (targetMessageID) {
-      debugLog('Found target message by index', { targetIndex, targetMessageID });
+      debugLog('Found target message by index', {
+        targetIndex,
+        targetMessageID,
+      });
       return prependThinkingPart(sessionID, targetMessageID);
     }
   }
@@ -232,7 +240,7 @@ async function recoverThinkingBlockOrder(
  */
 async function recoverThinkingDisabledViolation(
   sessionID: string,
-  _failedAssistantMsg: MessageData
+  _failedAssistantMsg: MessageData,
 ): Promise<boolean> {
   debugLog('recoverThinkingDisabledViolation', { sessionID });
 
@@ -261,7 +269,7 @@ async function recoverThinkingDisabledViolation(
 async function recoverEmptyContentMessage(
   sessionID: string,
   failedAssistantMsg: MessageData,
-  error: unknown
+  error: unknown,
 ): Promise<boolean> {
   debugLog('recoverEmptyContentMessage', { sessionID });
 
@@ -329,7 +337,7 @@ export async function handleSessionRecovery(
   sessionID: string,
   error: unknown,
   failedMessage?: MessageData,
-  config?: RecoveryConfig
+  config?: RecoveryConfig,
 ): Promise<RecoveryResult> {
   debugLog('handleSessionRecovery', { sessionID, error });
 

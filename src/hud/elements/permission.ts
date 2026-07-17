@@ -12,7 +12,9 @@ import { dim, yellow } from '../colors.js';
  *
  * Format: APPROVE? edit:filename.ts
  */
-export function renderPermission(pending: PendingPermission | null): string | null {
+export function renderPermission(
+  pending: PendingPermission | null,
+): string | null {
   if (!pending) return null;
   return `${yellow('APPROVE?')} ${dim(pending.toolName.toLowerCase())}:${pending.targetSummary}`;
 }

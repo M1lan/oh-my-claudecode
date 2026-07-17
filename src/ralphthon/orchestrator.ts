@@ -126,10 +126,9 @@ export function sendKeysToPane(paneId: string, text: string): boolean {
  */
 export function capturePaneContent(paneId: string, lines = 50): string {
   try {
-    return tmuxExec(
-      ['capture-pane', '-t', paneId, '-p', '-S', `-${lines}`],
-      { timeout: 5000 },
-    ).trim();
+    return tmuxExec(['capture-pane', '-t', paneId, '-p', '-S', `-${lines}`], {
+      timeout: 5000,
+    }).trim();
   } catch {
     return '';
   }
@@ -183,7 +182,7 @@ export function detectCompletionSignal(paneId: string): boolean {
     /no\s+(?:new\s+)?issues?\s+found/i,
   ];
 
-  return completionPatterns.some(p => p.test(content));
+  return completionPatterns.some((p) => p.test(content));
 }
 
 // ============================================================================
@@ -234,7 +233,15 @@ export function initOrchestrator(
 export function getNextAction(
   directory: string,
   sessionId?: string,
-): { action: 'inject_task' | 'inject_hardening' | 'generate_hardening' | 'complete' | 'wait'; prompt?: string } {
+): {
+  action:
+    | 'inject_task'
+    | 'inject_hardening'
+    | 'generate_hardening'
+    | 'complete'
+    | 'wait';
+  prompt?: string;
+} {
   const state = readRalphthonState(directory, sessionId);
   if (!state || !state.active) {
     return { action: 'complete' };
@@ -258,7 +265,10 @@ export function getNextAction(
       if (status.nextTask) {
         return {
           action: 'inject_task',
-          prompt: formatTaskPrompt(status.nextTask.storyId, status.nextTask.task),
+          prompt: formatTaskPrompt(
+            status.nextTask.storyId,
+            status.nextTask.task,
+          ),
         };
       }
 
@@ -387,7 +397,11 @@ export function endHardeningWave(
   writeRalphthonState(directory, state, sessionId);
 
   if (onEvent) {
-    onEvent({ type: 'hardening_wave_end', wave: state.currentWave, newIssues: newIssueCount });
+    onEvent({
+      type: 'hardening_wave_end',
+      wave: state.currentWave,
+      newIssues: newIssueCount,
+    });
   }
 
   const shouldTerminate =

@@ -69,7 +69,7 @@ export function createRulesInjectorHook(workingDirectory: string) {
    */
   function processFilePathForRules(
     filePath: string,
-    sessionId: string
+    sessionId: string,
   ): RuleToInject[] {
     const resolved = resolveFilePath(filePath);
     if (!resolved) return [];
@@ -97,7 +97,8 @@ export function createRulesInjectorHook(workingDirectory: string) {
         }
 
         const contentHash = createContentHash(body);
-        if (isDuplicateByContentHash(contentHash, cache.contentHashes)) continue;
+        if (isDuplicateByContentHash(contentHash, cache.contentHashes))
+          continue;
 
         const relativePath = projectRoot
           ? relative(projectRoot, candidate.path)
@@ -146,7 +147,7 @@ export function createRulesInjectorHook(workingDirectory: string) {
     processToolExecution: (
       toolName: string,
       filePath: string,
-      sessionId: string
+      sessionId: string,
     ): string => {
       if (!TRACKED_TOOLS.includes(toolName.toLowerCase())) {
         return '';
@@ -177,7 +178,11 @@ export function createRulesInjectorHook(workingDirectory: string) {
           if (candidate.isSingleFile) {
             matchReason = 'copilot-instructions (always apply)';
           } else {
-            const matchResult = shouldApplyRule(metadata, resolved, projectRoot);
+            const matchResult = shouldApplyRule(
+              metadata,
+              resolved,
+              projectRoot,
+            );
             if (!matchResult.applies) continue;
             matchReason = matchResult.reason ?? 'matched';
           }
@@ -220,7 +225,10 @@ export function createRulesInjectorHook(workingDirectory: string) {
 /**
  * Get rules for a file path (simple utility function).
  */
-export function getRulesForPath(filePath: string, workingDirectory?: string): RuleToInject[] {
+export function getRulesForPath(
+  filePath: string,
+  workingDirectory?: string,
+): RuleToInject[] {
   const cwd = workingDirectory || process.cwd();
   const hook = createRulesInjectorHook(cwd);
   return hook.getRulesForFile(filePath);

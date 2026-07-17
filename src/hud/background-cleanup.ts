@@ -29,7 +29,7 @@ function getTaskStartMs(task: BackgroundTask): number {
 export async function cleanupStaleBackgroundTasks(
   thresholdMs: number = STALE_TASK_THRESHOLD_MS,
   directory?: string,
-  sessionId?: string
+  sessionId?: string,
 ): Promise<number> {
   const state = readHudState(directory, sessionId);
 
@@ -65,7 +65,7 @@ export async function cleanupStaleBackgroundTasks(
   // Filter out expired completed/failed tasks (consistent with cleanupTasks()
   // in background-tasks.ts: running tasks always kept, completed/failed expire
   // based on completedAt)
-  state.backgroundTasks = state.backgroundTasks.filter(task => {
+  state.backgroundTasks = state.backgroundTasks.filter((task) => {
     // Running tasks always kept (stale ones were already marked failed above)
     if (task.status === 'running') return true;
 
@@ -82,9 +82,9 @@ export async function cleanupStaleBackgroundTasks(
   // Limit history to 20 most recent — preserve running tasks (consistent with
   // cleanupTasks() in background-tasks.ts)
   if (state.backgroundTasks.length > 20) {
-    const running = state.backgroundTasks.filter(t => t.status === 'running');
+    const running = state.backgroundTasks.filter((t) => t.status === 'running');
     const nonRunning = state.backgroundTasks
-      .filter(t => t.status !== 'running')
+      .filter((t) => t.status !== 'running')
       .slice(-Math.max(0, 20 - running.length));
     state.backgroundTasks = [...running, ...nonRunning];
   }
@@ -154,7 +154,7 @@ export async function markOrphanedTasksAsStale(
   let marked = 0;
 
   for (const orphanedTask of orphaned) {
-    const task = state.backgroundTasks.find(t => t.id === orphanedTask.id);
+    const task = state.backgroundTasks.find((t) => t.id === orphanedTask.id);
     if (task && task.status === 'running') {
       task.status = 'completed'; // Mark as completed to remove from active display
       marked++;

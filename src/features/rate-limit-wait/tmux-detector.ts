@@ -83,15 +83,18 @@ const OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS = [
 ];
 
 function hasOmcRateLimitScreenText(content: string): boolean {
-  return OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS.some(pattern => pattern.test(content));
+  return OMC_HUD_RATE_LIMIT_SCREEN_PATTERNS.some((pattern) =>
+    pattern.test(content),
+  );
 }
 
 function hasSavedTranscriptContext(content: string): boolean {
   return content
     .split('\n')
-    .some(line =>
-      SAVED_TRANSCRIPT_COMMAND_PATTERN.test(line) ||
-      SAVED_TRANSCRIPT_LABEL_PATTERN.test(line)
+    .some(
+      (line) =>
+        SAVED_TRANSCRIPT_COMMAND_PATTERN.test(line) ||
+        SAVED_TRANSCRIPT_LABEL_PATTERN.test(line),
     );
 }
 
@@ -101,15 +104,18 @@ function hasLiveOmcHudEvidence(content: string): boolean {
   }
   const nonEmptyLines = content
     .split('\n')
-    .map(line => line.trimEnd())
-    .filter(line => line.trim().length > 0);
-  const hudStatusIndex = nonEmptyLines.findIndex(line => OMC_HUD_STATUS_LINE_PATTERN.test(line));
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim().length > 0);
+  const hudStatusIndex = nonEmptyLines.findIndex((line) =>
+    OMC_HUD_STATUS_LINE_PATTERN.test(line),
+  );
   if (hudStatusIndex === -1) {
     return false;
   }
 
-  const modeLineIndex = nonEmptyLines.findIndex((line, index) =>
-    index > hudStatusIndex && OMC_HUD_MODE_LINE_PATTERN.test(line)
+  const modeLineIndex = nonEmptyLines.findIndex(
+    (line, index) =>
+      index > hudStatusIndex && OMC_HUD_MODE_LINE_PATTERN.test(line),
   );
   if (modeLineIndex === -1) {
     return false;
@@ -136,13 +142,13 @@ const WEEKLY_RATE_LIMIT_PATTERN =
  * messages from producing false-positive "weekly / assistant / conversation" hits.
  */
 const GIT_OUTPUT_LINE_PATTERNS: RegExp[] = [
-  /^commit\s+[0-9a-f]{6,40}\b/,         // git log commit hash
-  /^Author:\s+\S/,                        // git log author
-  /^Date:\s+\S/,                          // git log date
-  /^Merge:\s+[0-9a-f]{6,}/,              // git log merge line
-  /^diff\s+--git\s+a\//,                 // git diff header
-  /^(?:---|\+\+\+)\s+[ab]\//,            // git diff file paths
-  /^@@\s+-\d+/,                           // git diff hunk header
+  /^commit\s+[0-9a-f]{6,40}\b/, // git log commit hash
+  /^Author:\s+\S/, // git log author
+  /^Date:\s+\S/, // git log date
+  /^Merge:\s+[0-9a-f]{6,}/, // git log merge line
+  /^diff\s+--git\s+a\//, // git diff header
+  /^(?:---|\+\+\+)\s+[ab]\//, // git diff file paths
+  /^@@\s+-\d+/, // git diff hunk header
 ];
 
 /**
@@ -153,15 +159,17 @@ const GIT_OUTPUT_LINE_PATTERNS: RegExp[] = [
 function stripGitOutputLines(content: string): string {
   return content
     .split('\n')
-    .filter(line => !GIT_OUTPUT_LINE_PATTERNS.some(p => p.test(line.trimStart())))
+    .filter(
+      (line) => !GIT_OUTPUT_LINE_PATTERNS.some((p) => p.test(line.trimStart())),
+    )
     .join('\n');
 }
 
 /** Patterns that indicate the pane is waiting for user input */
 const WAITING_PATTERNS = [
-  /\[\d+\]/,              // Menu selection prompt like [1], [2], [3]
-  /^\s*❯?\s*\d+\.\s/m,     // Menu selection prompt like "❯ 1. ..." or "  2. ..."
-  /continue\?/i,           // Continue prompt
+  /\[\d+\]/, // Menu selection prompt like [1], [2], [3]
+  /^\s*❯?\s*\d+\.\s/m, // Menu selection prompt like "❯ 1. ..." or "  2. ..."
+  /continue\?/i, // Continue prompt
   /press enter/i,
   /waiting for/i,
   /select an option/i,
@@ -175,7 +183,11 @@ const WAITING_PATTERNS = [
  */
 export function isTmuxAvailable(): boolean {
   try {
-    const result = tmuxSpawn(['-V'], { stripTmux: true, stdio: 'pipe', timeout: 3000 });
+    const result = tmuxSpawn(['-V'], {
+      stripTmux: true,
+      stdio: 'pipe',
+      timeout: 3000,
+    });
     return result.status === 0;
   } catch {
     return false;
@@ -199,7 +211,8 @@ export function listTmuxPanes(): TmuxPane[] {
 
   try {
     // Format: session_name:window_index.pane_index pane_id pane_active window_name pane_title
-    const format = '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_active} #{window_name} #{pane_title}';
+    const format =
+      '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_active} #{window_name} #{pane_title}';
     const result = tmuxExec(['list-panes', '-a', '-F', format], {
       stripTmux: true,
       timeout: 5000,
@@ -287,10 +300,13 @@ export function capturePaneContent(paneId: string, lines = 15): string {
 
   try {
     // Capture the last N lines from the pane
-    const result = tmuxExec(['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`], {
-      stripTmux: true,
-      timeout: 5000,
-    });
+    const result = tmuxExec(
+      ['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`],
+      {
+        stripTmux: true,
+        timeout: 5000,
+      },
+    );
     return result;
   } catch (error) {
     console.error(`[TmuxDetector] Error capturing pane ${paneId}:`, error);
@@ -318,19 +334,24 @@ export function analyzePaneContent(content: string): PaneAnalysisResult {
   // Check for Claude Code indicators. OMC HUD footer evidence only counts as a
   // Claude pane when paired with live limit-screen wording; copied HUD footers
   // next to unrelated API/log rate-limit text must not impersonate a blocked pane.
-  const hasClaudeText = CLAUDE_CODE_PATTERNS.some((pattern) => pattern.test(cleanedContent));
+  const hasClaudeText = CLAUDE_CODE_PATTERNS.some((pattern) =>
+    pattern.test(cleanedContent),
+  );
   const hasLiveOmcHud = hasLiveOmcHudEvidence(cleanedContent);
   const hasClaudeCode =
-    hasClaudeText || (hasLiveOmcHud && hasOmcRateLimitScreenText(cleanedContent));
+    hasClaudeText ||
+    (hasLiveOmcHud && hasOmcRateLimitScreenText(cleanedContent));
 
   // Check for rate limit messages
   const rateLimitMatches = RATE_LIMIT_PATTERNS.filter((pattern) =>
-    pattern.test(cleanedContent)
+    pattern.test(cleanedContent),
   );
   const hasRateLimitMessage = rateLimitMatches.length > 0;
 
   // Check if waiting for user input
-  const isWaiting = WAITING_PATTERNS.some((pattern) => pattern.test(cleanedContent));
+  const isWaiting = WAITING_PATTERNS.some((pattern) =>
+    pattern.test(cleanedContent),
+  );
 
   // Determine rate limit type
   let rateLimitType: 'five_hour' | 'weekly' | 'unknown' | undefined;
@@ -373,7 +394,10 @@ export function analyzePaneContent(content: string): PaneAnalysisResult {
  *                   rate-limit messages from re-alerting after blockers are resolved.
  *                   When omitted, falls back to a plain capturePaneContent call.
  */
-export function scanForBlockedPanes(lines = 15, stateDir?: string): BlockedPane[] {
+export function scanForBlockedPanes(
+  lines = 15,
+  stateDir?: string,
+): BlockedPane[] {
   const panes = listTmuxPanes();
   const blocked: BlockedPane[] = [];
 
@@ -433,7 +457,10 @@ export function sendResumeSequence(paneId: string): boolean {
     // Note: In real usage, we should verify the pane state changed
     return true;
   } catch (error) {
-    console.error(`[TmuxDetector] Error sending resume to pane ${paneId}:`, error);
+    console.error(
+      `[TmuxDetector] Error sending resume to pane ${paneId}:`,
+      error,
+    );
     return false;
   }
 }
@@ -441,7 +468,11 @@ export function sendResumeSequence(paneId: string): boolean {
 /**
  * Send custom text to a tmux pane
  */
-export function sendToPane(paneId: string, text: string, pressEnter = true): boolean {
+export function sendToPane(
+  paneId: string,
+  text: string,
+  pressEnter = true,
+): boolean {
   if (!isTmuxAvailable()) {
     return false;
   }
@@ -496,7 +527,9 @@ export function formatBlockedPanesSummary(blockedPanes: BlockedPane[]): string {
         : ' [RESUME FAILED]'
       : '';
 
-    lines.push(`  • ${location} (${pane.id}) - ${limitType} limit, ${confidence}% confidence${status}`);
+    lines.push(
+      `  • ${location} (${pane.id}) - ${limitType} limit, ${confidence}% confidence${status}`,
+    );
   }
 
   return lines.join('\n');

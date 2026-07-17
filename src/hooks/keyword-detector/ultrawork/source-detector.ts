@@ -1,4 +1,9 @@
-export type UltraworkSource = 'planner' | 'gpt' | 'gemini' | 'antigravity' | 'default';
+export type UltraworkSource =
+  | 'planner'
+  | 'gpt'
+  | 'gemini'
+  | 'antigravity'
+  | 'default';
 
 function normalizeToken(value?: string): string {
   return value?.trim().toLowerCase() ?? '';
@@ -29,18 +34,12 @@ export function isGptModel(modelId?: string): boolean {
 
 export function isGeminiModel(modelId?: string): boolean {
   const normalized = normalizeToken(modelId);
-  return (
-    normalized.includes('gemini') ||
-    normalized.includes('google')
-  );
+  return normalized.includes('gemini') || normalized.includes('google');
 }
 
 export function isAntigravityModel(modelId?: string): boolean {
   const normalized = normalizeToken(modelId);
-  return (
-    normalized.includes('antigravity') ||
-    normalized.includes('agy')
-  );
+  return normalized.includes('antigravity') || normalized.includes('agy');
 }
 
 /**

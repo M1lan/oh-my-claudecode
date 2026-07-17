@@ -21,7 +21,7 @@ import {
   formatStory,
   PRD_FILENAME,
   type PRD,
-  type UserStory
+  type UserStory,
 } from '../hooks/ralph/index.js';
 
 describe('Ralph PRD Module', () => {
@@ -29,7 +29,10 @@ describe('Ralph PRD Module', () => {
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `ralph-prd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-prd-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -85,7 +88,7 @@ describe('Ralph PRD Module', () => {
           acceptanceCriteria: ['Criterion 1', 'Criterion 2'],
           priority: 1,
           passes: false,
-          architectVerified: false
+          architectVerified: false,
         },
         {
           id: 'US-002',
@@ -94,9 +97,9 @@ describe('Ralph PRD Module', () => {
           acceptanceCriteria: ['Criterion A'],
           priority: 2,
           passes: true,
-          architectVerified: true
-        }
-      ]
+          architectVerified: true,
+        },
+      ],
     };
 
     it('should return null when reading non-existent prd', () => {
@@ -121,15 +124,15 @@ describe('Ralph PRD Module', () => {
         ...samplePrd,
         project: 'Session A',
         userStories: [
-          { ...samplePrd.userStories[0], id: 'US-A', title: 'A story' }
-        ]
+          { ...samplePrd.userStories[0], id: 'US-A', title: 'A story' },
+        ],
       };
       const prdB: PRD = {
         ...samplePrd,
         project: 'Session B',
         userStories: [
-          { ...samplePrd.userStories[0], id: 'US-B', title: 'B story' }
-        ]
+          { ...samplePrd.userStories[0], id: 'US-B', title: 'B story' },
+        ],
       };
 
       expect(writePrd(testDir, prdA, sessionA)).toBe(true);
@@ -139,8 +142,12 @@ describe('Ralph PRD Module', () => {
       expect(readPrd(testDir, sessionA)?.userStories[0].id).toBe('US-A');
       expect(readPrd(testDir, sessionB)?.project).toBe('Session B');
       expect(readPrd(testDir, sessionB)?.userStories[0].id).toBe('US-B');
-      expect(findPrdPath(testDir, sessionA)).toBe(getSessionPrdPath(testDir, sessionA));
-      expect(findPrdPath(testDir, sessionB)).toBe(getSessionPrdPath(testDir, sessionB));
+      expect(findPrdPath(testDir, sessionA)).toBe(
+        getSessionPrdPath(testDir, sessionA),
+      );
+      expect(findPrdPath(testDir, sessionB)).toBe(
+        getSessionPrdPath(testDir, sessionB),
+      );
       expect(existsSync(join(testDir, '.omc', 'prd.json'))).toBe(false);
     });
 
@@ -150,12 +157,21 @@ describe('Ralph PRD Module', () => {
       mkdirSync(join(testDir, '.omc'), { recursive: true });
       writeFileSync(legacyPath, JSON.stringify(legacyPrd, null, 2));
 
-      const result = ensurePrdForStartup(testDir, 'New Project', 'branch', 'New task', undefined, 'session-a');
+      const result = ensurePrdForStartup(
+        testDir,
+        'New Project',
+        'branch',
+        'New task',
+        undefined,
+        'session-a',
+      );
 
       expect(result.ok).toBe(true);
       expect(result.path).toBe(getSessionPrdPath(testDir, 'session-a'));
       expect(readPrd(testDir, 'session-a')?.project).toBe('Legacy Project');
-      expect(JSON.parse(readFileSync(legacyPath, 'utf-8')).project).toBe('Legacy Project');
+      expect(JSON.parse(readFileSync(legacyPath, 'utf-8')).project).toBe(
+        'Legacy Project',
+      );
     });
 
     it('should return null for malformed JSON', () => {
@@ -178,10 +194,34 @@ describe('Ralph PRD Module', () => {
         branchName: 'test',
         description: 'Test',
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false },
-          { id: 'US-003', title: 'C', description: '', acceptanceCriteria: [], priority: 3, passes: false, architectVerified: false }
-        ]
+          {
+            id: 'US-001',
+            title: 'A',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: 'US-002',
+            title: 'B',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: 'US-003',
+            title: 'C',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 3,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
@@ -199,9 +239,25 @@ describe('Ralph PRD Module', () => {
         branchName: 'test',
         description: 'Test',
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [], priority: 2, passes: true, architectVerified: true }
-        ]
+          {
+            id: 'US-001',
+            title: 'A',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: 'US-002',
+            title: 'B',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: true,
+            architectVerified: true,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
@@ -216,10 +272,34 @@ describe('Ralph PRD Module', () => {
         branchName: 'test',
         description: 'Test',
         userStories: [
-          { id: 'US-001', title: 'Low', description: '', acceptanceCriteria: [], priority: 3, passes: false, architectVerified: false },
-          { id: 'US-002', title: 'High', description: '', acceptanceCriteria: [], priority: 1, passes: false, architectVerified: false },
-          { id: 'US-003', title: 'Med', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false }
-        ]
+          {
+            id: 'US-001',
+            title: 'Low',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 3,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: 'US-002',
+            title: 'High',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: false,
+            architectVerified: false,
+          },
+          {
+            id: 'US-003',
+            title: 'Med',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
 
       const status = getPrdStatus(prd);
@@ -231,7 +311,7 @@ describe('Ralph PRD Module', () => {
         project: 'Test',
         branchName: 'test',
         description: 'Test',
-        userStories: []
+        userStories: [],
       };
 
       const status = getPrdStatus(prd);
@@ -248,8 +328,16 @@ describe('Ralph PRD Module', () => {
         branchName: 'test',
         description: 'Test',
         userStories: [
-          { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 1, passes: false, architectVerified: false }
-        ]
+          {
+            id: 'US-001',
+            title: 'A',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
       writePrd(testDir, prd);
     });
@@ -273,7 +361,9 @@ describe('Ralph PRD Module', () => {
 
     it('should mark story as architect verified', () => {
       markStoryComplete(testDir, 'US-001');
-      expect(markStoryArchitectVerified(testDir, 'US-001', 'Approved')).toBe(true);
+      expect(markStoryArchitectVerified(testDir, 'US-001', 'Approved')).toBe(
+        true,
+      );
       const prd = readPrd(testDir);
       expect(prd?.userStories[0].passes).toBe(true);
       expect(prd?.userStories[0].architectVerified).toBe(true);
@@ -297,9 +387,25 @@ describe('Ralph PRD Module', () => {
         branchName: 'test',
         description: 'Test',
         userStories: [
-          { id: 'US-001', title: 'First', description: '', acceptanceCriteria: [], priority: 1, passes: true, architectVerified: true },
-          { id: 'US-002', title: 'Second', description: '', acceptanceCriteria: [], priority: 2, passes: false, architectVerified: false }
-        ]
+          {
+            id: 'US-001',
+            title: 'First',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 1,
+            passes: true,
+            architectVerified: true,
+          },
+          {
+            id: 'US-002',
+            title: 'Second',
+            description: '',
+            acceptanceCriteria: [],
+            priority: 2,
+            passes: false,
+            architectVerified: false,
+          },
+        ],
       };
       writePrd(testDir, prd);
     });
@@ -323,7 +429,7 @@ describe('Ralph PRD Module', () => {
     it('should create PRD with auto-assigned priorities', () => {
       const prd = createPrd('Project', 'branch', 'Description', [
         { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [] },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] },
       ]);
 
       expect(prd.userStories[0].priority).toBe(1);
@@ -336,8 +442,14 @@ describe('Ralph PRD Module', () => {
 
     it('should respect provided priorities', () => {
       const prd = createPrd('Project', 'branch', 'Description', [
-        { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [], priority: 10 },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+        {
+          id: 'US-001',
+          title: 'A',
+          description: '',
+          acceptanceCriteria: [],
+          priority: 10,
+        },
+        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] },
       ]);
 
       expect(prd.userStories[0].priority).toBe(10);
@@ -373,9 +485,11 @@ describe('Ralph PRD Module', () => {
     it('should initialize PRD with custom stories', () => {
       const stories = [
         { id: 'US-001', title: 'A', description: '', acceptanceCriteria: [] },
-        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] }
+        { id: 'US-002', title: 'B', description: '', acceptanceCriteria: [] },
       ];
-      expect(initPrd(testDir, 'Project', 'branch', 'Description', stories)).toBe(true);
+      expect(
+        initPrd(testDir, 'Project', 'branch', 'Description', stories),
+      ).toBe(true);
       const prd = readPrd(testDir);
       expect(prd?.userStories.length).toBe(2);
     });
@@ -383,7 +497,12 @@ describe('Ralph PRD Module', () => {
 
   describe('ensurePrdForStartup', () => {
     it('creates a scaffold when startup has no prd.json', () => {
-      const result = ensurePrdForStartup(testDir, 'Project', 'branch', 'Description');
+      const result = ensurePrdForStartup(
+        testDir,
+        'Project',
+        'branch',
+        'Description',
+      );
 
       expect(result.ok).toBe(true);
       expect(result.created).toBe(true);
@@ -393,7 +512,12 @@ describe('Ralph PRD Module', () => {
     it('fails clearly when an existing prd.json is invalid', () => {
       writeFileSync(join(testDir, PRD_FILENAME), '{ invalid json');
 
-      const result = ensurePrdForStartup(testDir, 'Project', 'branch', 'Description');
+      const result = ensurePrdForStartup(
+        testDir,
+        'Project',
+        'branch',
+        'Description',
+      );
 
       expect(result.ok).toBe(false);
       expect(result.created).toBe(false);
@@ -408,8 +532,15 @@ describe('Ralph PRD Module', () => {
         completed: 1,
         pending: 2,
         allComplete: false,
-        nextStory: { id: 'US-002', title: 'Next', description: '', acceptanceCriteria: [], priority: 2, passes: false },
-        incompleteIds: ['US-002', 'US-003']
+        nextStory: {
+          id: 'US-002',
+          title: 'Next',
+          description: '',
+          acceptanceCriteria: [],
+          priority: 2,
+          passes: false,
+        },
+        incompleteIds: ['US-002', 'US-003'],
       };
 
       const formatted = formatPrdStatus(status);
@@ -425,7 +556,7 @@ describe('Ralph PRD Module', () => {
         pending: 0,
         allComplete: true,
         nextStory: null,
-        incompleteIds: []
+        incompleteIds: [],
       };
 
       const formatted = formatPrdStatus(status);
@@ -441,7 +572,7 @@ describe('Ralph PRD Module', () => {
         priority: 1,
         passes: false,
         architectVerified: false,
-        notes: 'Some notes'
+        notes: 'Some notes',
       };
 
       const formatted = formatStory(story);
@@ -460,7 +591,7 @@ describe('Ralph PRD Module', () => {
         acceptanceCriteria: ['Criterion'],
         priority: 2,
         passes: true,
-        architectVerified: false
+        architectVerified: false,
       };
 
       const formatted = formatStory(story);

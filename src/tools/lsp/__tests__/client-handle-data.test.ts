@@ -23,7 +23,7 @@ const SERVER_CONFIG = {
   command: 'test-ls',
   args: ['--stdio'],
   extensions: ['.ts'],
-  installHint: 'npm i test-ls',
+  installHint: 'pnpm add test-ls',
 };
 
 /** Build a well-formed LSP message with correct byte-length header. */

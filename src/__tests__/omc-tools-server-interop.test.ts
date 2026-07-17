@@ -23,7 +23,9 @@ describe('omc-tools-server interop gating', () => {
 
   it('does not register interop tools by default', async () => {
     const mod = await importFresh();
-    expect(mod.omcToolNames.some((name) => name.includes('interop_'))).toBe(false);
+    expect(mod.omcToolNames.some((name) => name.includes('interop_'))).toBe(
+      false,
+    );
   }, 15000);
 
   it('registers interop tools when OMC_INTEROP_TOOLS_ENABLED=1', async () => {
@@ -42,6 +44,8 @@ describe('omc-tools-server interop gating', () => {
     const withoutInterop = mod.getOmcToolNames({ includeInterop: false });
 
     expect(withInterop.some((name) => name.includes('interop_'))).toBe(true);
-    expect(withoutInterop.some((name) => name.includes('interop_'))).toBe(false);
+    expect(withoutInterop.some((name) => name.includes('interop_'))).toBe(
+      false,
+    );
   });
 });

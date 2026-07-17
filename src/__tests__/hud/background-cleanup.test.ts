@@ -38,7 +38,7 @@ describe('background-cleanup', () => {
       const writtenState = mockWriteHudState.mock.calls[0][0];
 
       const staleTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'stale-running'
+        (t: { id: string }) => t.id === 'stale-running',
       );
       expect(staleTask).toBeDefined();
       expect(staleTask!.status).toBe('failed');
@@ -66,7 +66,7 @@ describe('background-cleanup', () => {
       const writtenState = mockWriteHudState.mock.calls[0][0];
       expect(writtenState.timestamp).not.toBe(oldTimestamp);
       expect(new Date(writtenState.timestamp).getTime()).toBeGreaterThan(
-        new Date(oldTimestamp).getTime()
+        new Date(oldTimestamp).getTime(),
       );
     });
 
@@ -163,20 +163,20 @@ describe('background-cleanup', () => {
       const writtenState = mockWriteHudState.mock.calls[0][0];
 
       const staleTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'stale-running'
+        (t: { id: string }) => t.id === 'stale-running',
       );
       expect(staleTask).toBeDefined();
       expect(staleTask!.status).toBe('failed');
       expect(staleTask!.completedAt).toBeDefined();
 
       const completedTask = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'recent-completed'
+        (t: { id: string }) => t.id === 'recent-completed',
       );
       expect(completedTask).toBeDefined();
       expect(completedTask!.status).toBe('completed');
 
       const recentRunning = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'recent-running'
+        (t: { id: string }) => t.id === 'recent-running',
       );
       expect(recentRunning).toBeDefined();
       expect(recentRunning!.status).toBe('running');
@@ -185,7 +185,9 @@ describe('background-cleanup', () => {
     it('uses strict > comparison (task within threshold stays running)', async () => {
       const threshold = 30 * 60 * 1000;
       // Use threshold - 100ms to avoid race between test setup and function execution
-      const withinThreshold = new Date(Date.now() - threshold + 100).toISOString();
+      const withinThreshold = new Date(
+        Date.now() - threshold + 100,
+      ).toISOString();
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
@@ -225,7 +227,7 @@ describe('background-cleanup', () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'just-past'
+        (t: { id: string }) => t.id === 'just-past',
       );
       expect(task!.status).toBe('failed');
     });
@@ -250,7 +252,7 @@ describe('background-cleanup', () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'legacy-task'
+        (t: { id: string }) => t.id === 'legacy-task',
       );
       expect(task).toBeDefined();
       expect(task!.status).toBe('failed');
@@ -275,7 +277,7 @@ describe('background-cleanup', () => {
       expect(mockWriteHudState).toHaveBeenCalledTimes(1);
       const writtenState = mockWriteHudState.mock.calls[0][0];
       const task = writtenState.backgroundTasks.find(
-        (t: { id: string }) => t.id === 'bad-timestamp'
+        (t: { id: string }) => t.id === 'bad-timestamp',
       );
       expect(task).toBeDefined();
       expect(task!.status).toBe('failed');
@@ -332,7 +334,7 @@ describe('background-cleanup', () => {
 
       // All 3 recent running tasks must be preserved
       const runningTasks = writtenState.backgroundTasks.filter(
-        (t: { status: string }) => t.status === 'running'
+        (t: { status: string }) => t.status === 'running',
       );
       expect(runningTasks).toHaveLength(3);
 

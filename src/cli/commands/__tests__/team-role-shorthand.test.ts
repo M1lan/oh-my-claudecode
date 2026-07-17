@@ -12,7 +12,8 @@ const agentUtilsMocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../team/runtime-v2.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../team/runtime-v2.js')>();
+  const actual =
+    await importOriginal<typeof import('../../../team/runtime-v2.js')>();
   return {
     ...actual,
     isRuntimeV2Enabled: runtimeV2Mocks.isRuntimeV2Enabled,
@@ -42,7 +43,9 @@ describe('teamCommand role-only shorthand', () => {
     runtimeV2Mocks.monitorTeamV2.mockResolvedValue({
       tasks: { total: 2, pending: 0, in_progress: 2, completed: 0, failed: 0 },
     });
-    agentUtilsMocks.loadAgentPrompt.mockImplementation((role: string) => `prompt:${role}`);
+    agentUtilsMocks.loadAgentPrompt.mockImplementation(
+      (role: string) => `prompt:${role}`,
+    );
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
   });
@@ -60,33 +63,43 @@ describe('teamCommand role-only shorthand', () => {
 
     await teamCommand(['1:claude:executor', 'reply with exactly: PONG']);
 
-    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(expect.objectContaining({
-      workerCount: 1,
-      agentTypes: ['claude'],
-      workerRoles: ['executor'],
-      roleName: 'executor',
-      rolePrompt: 'prompt:executor',
-      tasks: [
-        {
-          subject: 'reply with exactly: PONG',
-          description: 'reply with exactly: PONG',
-          owner: 'worker-1',
-          role: 'executor',
-        },
-      ],
-    }));
+    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workerCount: 1,
+        agentTypes: ['claude'],
+        workerRoles: ['executor'],
+        roleName: 'executor',
+        rolePrompt: 'prompt:executor',
+        tasks: [
+          {
+            subject: 'reply with exactly: PONG',
+            description: 'reply with exactly: PONG',
+            owner: 'worker-1',
+            role: 'executor',
+          },
+        ],
+      }),
+    );
     expect(logSpy).toHaveBeenCalledWith('Team started: fix-the-bug');
-    expect(logSpy.mock.calls.flat().join('\n')).not.toContain('Usage: omc team');
+    expect(logSpy.mock.calls.flat().join('\n')).not.toContain(
+      'Usage: omc team',
+    );
   });
 
   it('surfaces startup failures without appending the generic team usage block', async () => {
-    runtimeV2Mocks.startTeamV2.mockRejectedValueOnce(new Error('leader_worktree_dirty: commit or stash changes before launch'));
+    runtimeV2Mocks.startTeamV2.mockRejectedValueOnce(
+      new Error('leader_worktree_dirty: commit or stash changes before launch'),
+    );
     const { teamCommand } = await import('../team.js');
 
     await teamCommand(['1:claude:executor', 'reply with exactly: PONG']);
 
-    expect(errorSpy).toHaveBeenCalledWith('leader_worktree_dirty: commit or stash changes before launch');
-    expect(logSpy.mock.calls.flat().join('\n')).not.toContain('Usage: omc team');
+    expect(errorSpy).toHaveBeenCalledWith(
+      'leader_worktree_dirty: commit or stash changes before launch',
+    );
+    expect(logSpy.mock.calls.flat().join('\n')).not.toContain(
+      'Usage: omc team',
+    );
     expect(process.exitCode).toBe(1);
   });
 
@@ -96,17 +109,29 @@ describe('teamCommand role-only shorthand', () => {
     await teamCommand(['2:executor', 'fix the bug']);
 
     expect(agentUtilsMocks.loadAgentPrompt).toHaveBeenCalledWith('executor');
-    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(expect.objectContaining({
-      workerCount: 2,
-      agentTypes: ['claude', 'claude'],
-      workerRoles: ['executor', 'executor'],
-      roleName: 'executor',
-      rolePrompt: 'prompt:executor',
-      tasks: [
-        { subject: 'Worker 1 (executor): fix the bug', description: 'fix the bug', owner: 'worker-1', role: 'executor' },
-        { subject: 'Worker 2 (executor): fix the bug', description: 'fix the bug', owner: 'worker-2', role: 'executor' },
-      ],
-    }));
+    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workerCount: 2,
+        agentTypes: ['claude', 'claude'],
+        workerRoles: ['executor', 'executor'],
+        roleName: 'executor',
+        rolePrompt: 'prompt:executor',
+        tasks: [
+          {
+            subject: 'Worker 1 (executor): fix the bug',
+            description: 'fix the bug',
+            owner: 'worker-1',
+            role: 'executor',
+          },
+          {
+            subject: 'Worker 2 (executor): fix the bug',
+            description: 'fix the bug',
+            owner: 'worker-2',
+            role: 'executor',
+          },
+        ],
+      }),
+    );
   });
 
   it('threads broad-task delegation evidence guards through teamCommand startup', async () => {
@@ -114,31 +139,33 @@ describe('teamCommand role-only shorthand', () => {
 
     await teamCommand(['2:codex', 'investigate flaky runtime behavior']);
 
-    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(expect.objectContaining({
-      workerCount: 2,
-      agentTypes: ['codex', 'codex'],
-      tasks: [
-        expect.objectContaining({
-          subject: 'Worker 1: investigate flaky runtime behavior',
-          description: 'investigate flaky runtime behavior',
-          owner: 'worker-1',
-          delegation: expect.objectContaining({
-            mode: 'auto',
-            required_parallel_probe: true,
-            skip_allowed_reason_required: true,
+    expect(runtimeV2Mocks.startTeamV2).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workerCount: 2,
+        agentTypes: ['codex', 'codex'],
+        tasks: [
+          expect.objectContaining({
+            subject: 'Worker 1: investigate flaky runtime behavior',
+            description: 'investigate flaky runtime behavior',
+            owner: 'worker-1',
+            delegation: expect.objectContaining({
+              mode: 'auto',
+              required_parallel_probe: true,
+              skip_allowed_reason_required: true,
+            }),
           }),
-        }),
-        expect.objectContaining({
-          subject: 'Worker 2: investigate flaky runtime behavior',
-          description: 'investigate flaky runtime behavior',
-          owner: 'worker-2',
-          delegation: expect.objectContaining({
-            mode: 'auto',
-            required_parallel_probe: true,
-            skip_allowed_reason_required: true,
+          expect.objectContaining({
+            subject: 'Worker 2: investigate flaky runtime behavior',
+            description: 'investigate flaky runtime behavior',
+            owner: 'worker-2',
+            delegation: expect.objectContaining({
+              mode: 'auto',
+              required_parallel_probe: true,
+              skip_allowed_reason_required: true,
+            }),
           }),
-        }),
-      ],
-    }));
+        ],
+      }),
+    );
   });
 });

@@ -1,10 +1,22 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, statSync, realpathSync } from 'fs';
+import {
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  statSync,
+  realpathSync,
+} from 'fs';
 import { join } from 'path';
 import { homedir, tmpdir } from 'os';
 import type { BridgeConfig, TaskFile, OutboxMessage } from '../types.js';
 import { readTask, updateTask } from '../task-file-ops.js';
-import { checkShutdownSignal, writeShutdownSignal, appendOutbox } from '../inbox-outbox.js';
+import {
+  checkShutdownSignal,
+  writeShutdownSignal,
+  appendOutbox,
+} from '../inbox-outbox.js';
 import { writeHeartbeat, readHeartbeat } from '../heartbeat.js';
 import { sanitizeName } from '../tmux-session.js';
 import { logAuditEvent, readAuditLog } from '../audit-log.js';
@@ -20,7 +32,10 @@ const TASKS_DIR = join(WORK_DIR, '.omc', 'state', 'team', TEST_TEAM, 'tasks');
 
 function writeTask(task: TaskFile): void {
   mkdirSync(TASKS_DIR, { recursive: true });
-  writeFileSync(join(TASKS_DIR, `${task.id}.json`), JSON.stringify(task, null, 2));
+  writeFileSync(
+    join(TASKS_DIR, `${task.id}.json`),
+    JSON.stringify(task, null, 2),
+  );
 }
 
 function readOutbox(): OutboxMessage[] {
@@ -29,8 +44,8 @@ function readOutbox(): OutboxMessage[] {
   return readFileSync(outboxFile, 'utf-8')
     .trim()
     .split('\n')
-    .filter(l => l.trim())
-    .map(l => JSON.parse(l));
+    .filter((l) => l.trim())
+    .map((l) => JSON.parse(l));
 }
 
 function makeConfig(overrides?: Partial<BridgeConfig>): BridgeConfig {
@@ -39,7 +54,7 @@ function makeConfig(overrides?: Partial<BridgeConfig>): BridgeConfig {
     workerName: 'worker1',
     provider: 'codex',
     workingDirectory: WORK_DIR,
-    pollIntervalMs: 100,        // Fast polling for tests
+    pollIntervalMs: 100, // Fast polling for tests
     taskTimeoutMs: 5000,
     maxConsecutiveErrors: 3,
     outboxMaxLines: 100,
@@ -76,7 +91,11 @@ describe('Bridge Integration', () => {
         status: 'polling',
       });
 
-      const hb = readHeartbeat(config.workingDirectory, config.teamName, config.workerName);
+      const hb = readHeartbeat(
+        config.workingDirectory,
+        config.teamName,
+        config.workerName,
+      );
       expect(hb).not.toBeNull();
       expect(hb?.status).toBe('polling');
       expect(hb?.workerName).toBe('worker1');
@@ -84,8 +103,13 @@ describe('Bridge Integration', () => {
 
     it('task can transition pending -> in_progress -> completed', () => {
       writeTask({
-        id: '1', subject: 'Test task', description: 'Do something',
-        status: 'pending', owner: 'worker1', blocks: [], blockedBy: [],
+        id: '1',
+        subject: 'Test task',
+        description: 'Do something',
+        status: 'pending',
+        owner: 'worker1',
+        blocks: [],
+        blockedBy: [],
       });
 
       updateTask(TEST_TEAM, '1', { status: 'in_progress' }, { cwd: WORK_DIR });
@@ -103,10 +127,17 @@ describe('Bridge Integration', () => {
       const config = makeConfig();
 
       // No signal initially
-      expect(checkShutdownSignal(config.teamName, config.workerName)).toBeNull();
+      expect(
+        checkShutdownSignal(config.teamName, config.workerName),
+      ).toBeNull();
 
       // Write signal
-      writeShutdownSignal(config.teamName, config.workerName, 'req-001', 'Task complete');
+      writeShutdownSignal(
+        config.teamName,
+        config.workerName,
+        'req-001',
+        'Task complete',
+      );
       const signal = checkShutdownSignal(config.teamName, config.workerName);
       expect(signal).not.toBeNull();
       expect(signal?.requestId).toBe('req-001');
@@ -127,7 +158,11 @@ describe('Bridge Integration', () => {
         status: 'quarantined',
       });
 
-      const hb = readHeartbeat(config.workingDirectory, config.teamName, config.workerName);
+      const hb = readHeartbeat(
+        config.workingDirectory,
+        config.teamName,
+        config.workerName,
+      );
       expect(hb?.status).toBe('quarantined');
       expect(hb?.consecutiveErrors).toBe(3);
     });
@@ -136,17 +171,29 @@ describe('Bridge Integration', () => {
   describe('Task with blockers', () => {
     it('blocked task not picked up until blocker completes', async () => {
       writeTask({
-        id: '1', subject: 'Blocker', description: 'Must finish first',
-        status: 'pending', owner: 'other', blocks: ['2'], blockedBy: [],
+        id: '1',
+        subject: 'Blocker',
+        description: 'Must finish first',
+        status: 'pending',
+        owner: 'other',
+        blocks: ['2'],
+        blockedBy: [],
       });
       writeTask({
-        id: '2', subject: 'Blocked', description: 'Depends on 1',
-        status: 'pending', owner: 'worker1', blocks: [], blockedBy: ['1'],
+        id: '2',
+        subject: 'Blocked',
+        description: 'Depends on 1',
+        status: 'pending',
+        owner: 'worker1',
+        blocks: [],
+        blockedBy: ['1'],
       });
 
       // Task 2 should not be found — blocker is pending
       const { findNextTask } = await import('../task-file-ops.js');
-      expect(await findNextTask(TEST_TEAM, 'worker1', { cwd: WORK_DIR })).toBeNull();
+      expect(
+        await findNextTask(TEST_TEAM, 'worker1', { cwd: WORK_DIR }),
+      ).toBeNull();
 
       // Complete blocker
       updateTask(TEST_TEAM, '1', { status: 'completed' }, { cwd: WORK_DIR });
@@ -180,7 +227,7 @@ describe('Bridge Integration', () => {
 
       const messages = readOutbox();
       expect(messages.length).toBeGreaterThanOrEqual(1);
-      const readyMsg = messages.find(m => m.type === 'ready');
+      const readyMsg = messages.find((m) => m.type === 'ready');
       expect(readyMsg).toBeDefined();
       expect(readyMsg!.type).toBe('ready');
       expect(readyMsg!.message).toContain('worker1');
@@ -206,8 +253,8 @@ describe('Bridge Integration', () => {
       });
 
       const messages = readOutbox();
-      const readyIdx = messages.findIndex(m => m.type === 'ready');
-      const idleIdx = messages.findIndex(m => m.type === 'idle');
+      const readyIdx = messages.findIndex((m) => m.type === 'ready');
+      const idleIdx = messages.findIndex((m) => m.type === 'idle');
       expect(readyIdx).toBeLessThan(idleIdx);
     });
 
@@ -270,7 +317,11 @@ describe('Bridge Integration', () => {
         status: 'ready',
       });
 
-      const hb = readHeartbeat(config.workingDirectory, config.teamName, config.workerName);
+      const hb = readHeartbeat(
+        config.workingDirectory,
+        config.teamName,
+        config.workerName,
+      );
       expect(hb).not.toBeNull();
       expect(hb?.status).toBe('ready');
 
@@ -285,7 +336,11 @@ describe('Bridge Integration', () => {
         status: 'polling',
       });
 
-      const hb2 = readHeartbeat(config.workingDirectory, config.teamName, config.workerName);
+      const hb2 = readHeartbeat(
+        config.workingDirectory,
+        config.teamName,
+        config.workerName,
+      );
       expect(hb2?.status).toBe('polling');
     });
   });
@@ -303,24 +358,32 @@ describe('validateBridgeWorkingDirectory logic', () => {
       throw new Error(`workingDirectory does not exist: ${workingDirectory}`);
     }
     if (!stat.isDirectory()) {
-      throw new Error(`workingDirectory is not a directory: ${workingDirectory}`);
+      throw new Error(
+        `workingDirectory is not a directory: ${workingDirectory}`,
+      );
     }
     const resolved = realpathSync(workingDirectory);
     const home = homedir();
     if (!resolved.startsWith(home + '/') && resolved !== home) {
-      throw new Error(`workingDirectory is outside home directory: ${resolved}`);
+      throw new Error(
+        `workingDirectory is outside home directory: ${resolved}`,
+      );
     }
   }
 
   it('rejects /etc as working directory', () => {
-    expect(() => validateBridgeWorkingDirectory('/etc')).toThrow('outside home directory');
+    expect(() => validateBridgeWorkingDirectory('/etc')).toThrow(
+      'outside home directory',
+    );
   });
 
   it('rejects /tmp as working directory (outside home)', () => {
     // /tmp is typically outside $HOME
     const home = homedir();
     if (!'/tmp'.startsWith(home)) {
-      expect(() => validateBridgeWorkingDirectory('/tmp')).toThrow('outside home directory');
+      expect(() => validateBridgeWorkingDirectory('/tmp')).toThrow(
+        'outside home directory',
+      );
     }
   });
 
@@ -335,8 +398,9 @@ describe('validateBridgeWorkingDirectory logic', () => {
   });
 
   it('rejects nonexistent directory', () => {
-    expect(() => validateBridgeWorkingDirectory('/nonexistent/path/xyz'))
-      .toThrow('does not exist');
+    expect(() =>
+      validateBridgeWorkingDirectory('/nonexistent/path/xyz'),
+    ).toThrow('does not exist');
   });
 });
 
@@ -353,7 +417,10 @@ describe('Config name sanitization', () => {
 
   it('config names are sanitized before use', () => {
     // Simulates what bridge-entry.ts does with config
-    const config = makeConfig({ teamName: 'unsafe!team@', workerName: 'bad$worker' });
+    const config = makeConfig({
+      teamName: 'unsafe!team@',
+      workerName: 'bad$worker',
+    });
     config.teamName = sanitizeName(config.teamName);
     config.workerName = sanitizeName(config.workerName);
     expect(config.teamName).toBe('unsafeteam');

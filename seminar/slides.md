@@ -1080,14 +1080,14 @@ Note: Analytics help you understand where tokens are going and optimize your usa
 
 **Method 2: NPM Global**
 ```bash
-npm install -g oh-my-claudecode
+pnpm add -g oh-my-claudecode
 ```
 
 **Method 3: Manual Git Clone**
 ```bash
 git clone https://github.com/Yeachan-Heo/oh-my-claudecode.git
 cd oh-my-claudecode
-npm install && npm run build
+pnpm install && pnpm run build
 ```
 
 **Requirements:**
@@ -1194,7 +1194,7 @@ yeachan-heo.github.io/oh-my-claudecode-website
 
 **NPM Package**
 ```
-npm install -g oh-my-claudecode
+pnpm add -g oh-my-claudecode
 ```
 
 **Documentation Directory**

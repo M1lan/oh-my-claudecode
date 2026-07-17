@@ -19,7 +19,8 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return {
     ...actual,
     tmuxExecAsync: mocks.tmuxExecAsync,
@@ -43,13 +44,19 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     mocks.execFile.mockReset();
     mocks.tmuxExecAsync.mockReset();
     mocks.getWorkerLiveness.mockResolvedValue('alive');
-    mocks.execFile.mockImplementation((_cmd: string, args: string[], cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-      if (args[0] === 'capture-pane') {
-        cb(null, '> \n', '');
-        return;
-      }
-      cb(null, '', '');
-    });
+    mocks.execFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        cb: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
+        if (args[0] === 'capture-pane') {
+          cb(null, '> \n', '');
+          return;
+        }
+        cb(null, '', '');
+      },
+    );
     mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
         return { stdout: '> \n', stderr: '' };
@@ -62,43 +69,63 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     if (cwd) await rm(cwd, { recursive: true, force: true });
   });
 
-  async function writeConfigAndTask(taskStatus: 'pending' | 'in_progress' = 'pending'): Promise<void> {
+  async function writeConfigAndTask(
+    taskStatus: 'pending' | 'in_progress' = 'pending',
+  ): Promise<void> {
     const teamRoot = join(cwd, '.omc', 'state', 'team', 'demo-team');
     await mkdir(join(teamRoot, 'tasks'), { recursive: true });
     await mkdir(join(teamRoot, 'workers', 'worker-1'), { recursive: true });
-    await writeFile(join(teamRoot, 'config.json'), JSON.stringify({
-      name: 'demo-team',
-      task: 'demo',
-      agent_type: 'claude',
-      worker_launch_mode: 'interactive',
-      worker_count: 1,
-      max_workers: 20,
-      workers: [{
-        name: 'worker-1',
-        index: 1,
-        role: 'claude',
-        assigned_tasks: ['1'],
-        pane_id: '%2',
-        working_dir: cwd,
-      }],
-      created_at: new Date().toISOString(),
-      tmux_session: 'demo-session:0',
-      leader_pane_id: '%1',
-      hud_pane_id: null,
-      resize_hook_name: null,
-      resize_hook_target: null,
-      next_task_id: 2,
-      team_state_root: join(cwd, '.omc', 'state', 'team', 'demo-team'),
-      workspace_mode: 'single',
-    }, null, 2), 'utf-8');
-    await writeFile(join(teamRoot, 'tasks', '1.json'), JSON.stringify({
-      id: '1',
-      subject: 'Demo task',
-      description: 'Investigate a worker stall',
-      status: taskStatus,
-      owner: taskStatus === 'in_progress' ? 'worker-1' : undefined,
-      created_at: new Date().toISOString(),
-    }, null, 2), 'utf-8');
+    await writeFile(
+      join(teamRoot, 'config.json'),
+      JSON.stringify(
+        {
+          name: 'demo-team',
+          task: 'demo',
+          agent_type: 'claude',
+          worker_launch_mode: 'interactive',
+          worker_count: 1,
+          max_workers: 20,
+          workers: [
+            {
+              name: 'worker-1',
+              index: 1,
+              role: 'claude',
+              assigned_tasks: ['1'],
+              pane_id: '%2',
+              working_dir: cwd,
+            },
+          ],
+          created_at: new Date().toISOString(),
+          tmux_session: 'demo-session:0',
+          leader_pane_id: '%1',
+          hud_pane_id: null,
+          resize_hook_name: null,
+          resize_hook_target: null,
+          next_task_id: 2,
+          team_state_root: join(cwd, '.omc', 'state', 'team', 'demo-team'),
+          workspace_mode: 'single',
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
+    await writeFile(
+      join(teamRoot, 'tasks', '1.json'),
+      JSON.stringify(
+        {
+          id: '1',
+          subject: 'Demo task',
+          description: 'Investigate a worker stall',
+          status: taskStatus,
+          owner: taskStatus === 'in_progress' ? 'worker-1' : undefined,
+          created_at: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
   }
 
   it('flags pane-idle workers with assigned work but no work-start evidence', async () => {
@@ -115,19 +142,29 @@ describe('monitorTeamV2 pane-based stall inference', () => {
   });
 
   it('surfaces missing blocker task ids in monitor recommendations', async () => {
-    cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-monitor-missing-blocker-'));
+    cwd = await mkdtemp(
+      join(tmpdir(), 'omc-runtime-v2-monitor-missing-blocker-'),
+    );
     await writeConfigAndTask('pending');
     const teamRoot = join(cwd, '.omc', 'state', 'team', 'demo-team');
-    await writeFile(join(teamRoot, 'tasks', '1.json'), JSON.stringify({
-      id: '1',
-      subject: 'Blocked task',
-      description: 'Depends on missing task 13',
-      status: 'pending',
-      owner: 'worker-1',
-      blocked_by: ['13'],
-      depends_on: ['13'],
-      created_at: new Date().toISOString(),
-    }, null, 2), 'utf-8');
+    await writeFile(
+      join(teamRoot, 'tasks', '1.json'),
+      JSON.stringify(
+        {
+          id: '1',
+          subject: 'Blocked task',
+          description: 'Depends on missing task 13',
+          status: 'pending',
+          owner: 'worker-1',
+          blocked_by: ['13'],
+          depends_on: ['13'],
+          created_at: new Date().toISOString(),
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
 
     const { monitorTeamV2 } = await import('../runtime-v2.js');
     const snapshot = await monitorTeamV2('demo-team', cwd);
@@ -144,16 +181,25 @@ describe('monitorTeamV2 pane-based stall inference', () => {
   it('does not flag a worker when pane evidence shows active work despite missing reports', async () => {
     cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-monitor-active-'));
     await writeConfigAndTask('in_progress');
-    mocks.execFile.mockImplementation((_cmd: string, args: string[], cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-      if (args[0] === 'capture-pane') {
-        cb(null, 'Working on task...\n  esc to interrupt\n', '');
-        return;
-      }
-      cb(null, '', '');
-    });
+    mocks.execFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        cb: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
+        if (args[0] === 'capture-pane') {
+          cb(null, 'Working on task...\n  esc to interrupt\n', '');
+          return;
+        }
+        cb(null, '', '');
+      },
+    );
     mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
-        return { stdout: 'Working on task...\n  esc to interrupt\n', stderr: '' };
+        return {
+          stdout: 'Working on task...\n  esc to interrupt\n',
+          stderr: '',
+        };
       }
       return { stdout: '', stderr: '' };
     });
@@ -164,22 +210,30 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     expect(snapshot?.nonReportingWorkers).toEqual([]);
   });
 
-
-
   it('does not mark unknown pane liveness as dead or recommend reassignment', async () => {
-    cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-monitor-unknown-liveness-'));
+    cwd = await mkdtemp(
+      join(tmpdir(), 'omc-runtime-v2-monitor-unknown-liveness-'),
+    );
     await writeConfigAndTask('in_progress');
     const teamRoot = join(cwd, '.omc', 'state', 'team', 'demo-team');
-    await writeFile(join(teamRoot, 'monitor-snapshot.json'), JSON.stringify({
-      taskStatusById: { 1: 'in_progress' },
-      workerAliveByName: { 'worker-1': true },
-      workerLivenessByName: { 'worker-1': 'alive' },
-      workerStateByName: { 'worker-1': 'working' },
-      workerTurnCountByName: { 'worker-1': 1 },
-      workerTaskIdByName: { 'worker-1': '1' },
-      mailboxNotifiedByMessageId: {},
-      completedEventTaskIds: {},
-    }, null, 2), 'utf-8');
+    await writeFile(
+      join(teamRoot, 'monitor-snapshot.json'),
+      JSON.stringify(
+        {
+          taskStatusById: { 1: 'in_progress' },
+          workerAliveByName: { 'worker-1': true },
+          workerLivenessByName: { 'worker-1': 'alive' },
+          workerStateByName: { 'worker-1': 'working' },
+          workerTurnCountByName: { 'worker-1': 1 },
+          workerTaskIdByName: { 'worker-1': '1' },
+          mailboxNotifiedByMessageId: {},
+          completedEventTaskIds: {},
+        },
+        null,
+        2,
+      ),
+      'utf-8',
+    );
     mocks.getWorkerLiveness.mockResolvedValueOnce('unknown');
 
     const { monitorTeamV2 } = await import('../runtime-v2.js');
@@ -189,23 +243,36 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     expect(snapshot?.workers[0]?.alive).toBe(false);
     expect(snapshot?.workers[0]?.liveness).toBe('unknown');
     expect(snapshot?.deadWorkers).toEqual([]);
-    expect(snapshot?.recommendations).not.toContain('Reassign task-1 from dead worker-1');
-    await expect(readTeamEventsByType('demo-team', 'worker_stopped', cwd)).resolves.toEqual([]);
+    expect(snapshot?.recommendations).not.toContain(
+      'Reassign task-1 from dead worker-1',
+    );
+    await expect(
+      readTeamEventsByType('demo-team', 'worker_stopped', cwd),
+    ).resolves.toEqual([]);
   });
 
   it('does not flag a worker when pane evidence shows startup bootstrapping instead of idle readiness', async () => {
     cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-v2-monitor-bootstrap-'));
     await writeConfigAndTask('pending');
-    mocks.execFile.mockImplementation((_cmd: string, args: string[], cb: (err: Error | null, stdout: string, stderr: string) => void) => {
-      if (args[0] === 'capture-pane') {
-        cb(null, 'model: loading\ngpt-5.3-codex high · 80% left\n', '');
-        return;
-      }
-      cb(null, '', '');
-    });
+    mocks.execFile.mockImplementation(
+      (
+        _cmd: string,
+        args: string[],
+        cb: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
+        if (args[0] === 'capture-pane') {
+          cb(null, 'model: loading\ngpt-5.3-codex high · 80% left\n', '');
+          return;
+        }
+        cb(null, '', '');
+      },
+    );
     mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
-        return { stdout: 'model: loading\ngpt-5.3-codex high · 80% left\n', stderr: '' };
+        return {
+          stdout: 'model: loading\ngpt-5.3-codex high · 80% left\n',
+          stderr: '',
+        };
       }
       return { stdout: '', stderr: '' };
     });
@@ -229,7 +296,14 @@ describe('monitorTeamV2 pane-based stall inference', () => {
       max_workers: 20,
       workers: [
         { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: ['1'] },
-        { name: 'worker-1', index: 0, role: 'claude', assigned_tasks: [], pane_id: '%2', working_dir: cwd },
+        {
+          name: 'worker-1',
+          index: 0,
+          role: 'claude',
+          assigned_tasks: [],
+          pane_id: '%2',
+          working_dir: cwd,
+        },
       ],
       created_at: new Date().toISOString(),
       tmux_session: 'demo-session:0',
@@ -241,10 +315,19 @@ describe('monitorTeamV2 pane-based stall inference', () => {
       team_state_root: join(cwd, '.omc', 'state', 'team', 'demo-team'),
       workspace_mode: 'single',
     } as any);
-    expect(config.workers).toEqual([expect.objectContaining({
-      name: 'worker-1', index: 1, pane_id: '%2', assigned_tasks: ['1'],
-    })]);
-    await writeFile(join(root, 'config.json'), JSON.stringify(config, null, 2), 'utf-8');
+    expect(config.workers).toEqual([
+      expect.objectContaining({
+        name: 'worker-1',
+        index: 1,
+        pane_id: '%2',
+        assigned_tasks: ['1'],
+      }),
+    ]);
+    await writeFile(
+      join(root, 'config.json'),
+      JSON.stringify(config, null, 2),
+      'utf-8',
+    );
 
     const { monitorTeamV2 } = await import('../runtime-v2.js');
     const snapshot = await monitorTeamV2('demo-team', cwd);

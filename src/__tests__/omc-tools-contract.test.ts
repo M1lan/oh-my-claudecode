@@ -26,7 +26,9 @@ interface ToolDef {
   name: string;
   description: string;
   schema: Record<string, unknown> | z.ZodRawShape;
-  handler: (args: unknown) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
+  handler: (
+    args: unknown,
+  ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
 }
 
 // Aggregate all tool arrays
@@ -84,7 +86,7 @@ describe('MCP Tools Contract - Required Fields', () => {
 
 describe('MCP Tools Contract - Name Uniqueness', () => {
   it('should have no duplicate tool names', () => {
-    const names = allTools.map(t => t.name);
+    const names = allTools.map((t) => t.name);
     const uniqueNames = new Set(names);
 
     if (names.length !== uniqueNames.size) {
@@ -145,44 +147,44 @@ describe('MCP Tools Contract - Schema Validity', () => {
 
 describe('MCP Tools Contract - Category Counts', () => {
   it('should have LSP tools', () => {
-    const lsp = allToolArrays.find(c => c.category === 'lsp');
+    const lsp = allToolArrays.find((c) => c.category === 'lsp');
     expect(lsp).toBeDefined();
     expect(lsp!.tools.length).toBeGreaterThan(0);
   });
 
   it('should have AST tools', () => {
-    const ast = allToolArrays.find(c => c.category === 'ast');
+    const ast = allToolArrays.find((c) => c.category === 'ast');
     expect(ast).toBeDefined();
     expect(ast!.tools.length).toBeGreaterThan(0);
   });
 
   it('should have exactly 1 python REPL tool', () => {
-    const python = allToolArrays.find(c => c.category === 'python');
+    const python = allToolArrays.find((c) => c.category === 'python');
     expect(python).toBeDefined();
     expect(python!.tools.length).toBe(1);
     expect(python!.tools[0].name).toBe('python_repl');
   });
 
   it('should have state tools', () => {
-    const state = allToolArrays.find(c => c.category === 'state');
+    const state = allToolArrays.find((c) => c.category === 'state');
     expect(state).toBeDefined();
     expect(state!.tools.length).toBeGreaterThan(0);
   });
 
   it('should have notepad tools', () => {
-    const notepad = allToolArrays.find(c => c.category === 'notepad');
+    const notepad = allToolArrays.find((c) => c.category === 'notepad');
     expect(notepad).toBeDefined();
     expect(notepad!.tools.length).toBeGreaterThan(0);
   });
 
   it('should have memory tools', () => {
-    const memory = allToolArrays.find(c => c.category === 'memory');
+    const memory = allToolArrays.find((c) => c.category === 'memory');
     expect(memory).toBeDefined();
     expect(memory!.tools.length).toBeGreaterThan(0);
   });
 
   it('should have trace tools', () => {
-    const trace = allToolArrays.find(c => c.category === 'trace');
+    const trace = allToolArrays.find((c) => c.category === 'trace');
     expect(trace).toBeDefined();
     expect(trace!.tools.length).toBeGreaterThan(0);
   });

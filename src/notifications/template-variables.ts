@@ -1,6 +1,6 @@
 /**
  * Template Variables for Notification System
- * 
+ *
  * Complete reference of all template variables available for custom
  * integrations (webhooks and CLI commands).
  */
@@ -20,113 +20,120 @@ export const TEMPLATE_VARIABLES: Record<string, TemplateVariable> = {
   sessionId: {
     description: 'Unique session identifier',
     example: 'sess_abc123def456',
-    availableIn: ['session-start', 'session-end', 'session-stop', 'session-idle', 'ask-user-question']
+    availableIn: [
+      'session-start',
+      'session-end',
+      'session-stop',
+      'session-idle',
+      'ask-user-question',
+    ],
   },
   projectPath: {
     description: 'Full path to project directory',
     example: '/home/user/projects/my-app',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   projectName: {
     description: 'Project directory name (basename)',
     example: 'my-app',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   timestamp: {
     description: 'ISO 8601 timestamp',
     example: '2026-03-05T14:30:00Z',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   event: {
     description: 'Hook event name',
     example: 'session-end',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
 
   // Session metrics (session-end only)
   durationMs: {
     description: 'Session duration in milliseconds',
     example: '45000',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
   duration: {
     description: 'Human-readable duration',
     example: '45s',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
   agentsSpawned: {
     description: 'Number of agents spawned',
     example: '5',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
   agentsCompleted: {
     description: 'Number of agents completed',
     example: '4',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
   reason: {
     description: 'Session end reason',
     example: 'completed',
-    availableIn: ['session-end', 'session-stop']
+    availableIn: ['session-end', 'session-stop'],
   },
 
   // Context info
   contextSummary: {
     description: 'Summary of session context',
     example: 'Task completed successfully',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
   tmuxSession: {
     description: 'tmux session name',
     example: 'claude:my-project',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   tmuxPaneId: {
     description: 'tmux pane identifier',
     example: '%42',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
 
   // Ask user question
   question: {
     description: 'Question text when input is needed',
     example: 'Which file should I edit?',
-    availableIn: ['ask-user-question']
+    availableIn: ['ask-user-question'],
   },
   questionOptions: {
-    description: 'Formatted AskUserQuestion options, including the Other/free-text choice when available',
+    description:
+      'Formatted AskUserQuestion options, including the Other/free-text choice when available',
     example: '1. PostgreSQL — relational DB\n2. Other — reply with free text',
-    availableIn: ['ask-user-question']
+    availableIn: ['ask-user-question'],
   },
 
   // Mode info
   activeMode: {
     description: 'Currently active OMC mode',
     example: 'ralph',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   modesUsed: {
     description: 'Comma-separated list of modes used',
     example: 'autopilot,ultrawork',
-    availableIn: ['session-end']
+    availableIn: ['session-end'],
   },
 
   // Computed/display helpers
   time: {
     description: 'Locale time string',
     example: '2:30 PM',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   footer: {
     description: 'tmux + project info line',
     example: 'tmux:my-session | project:my-app',
-    availableIn: ['*']
+    availableIn: ['*'],
   },
   projectDisplay: {
     description: 'Project name with fallbacks',
     example: 'my-app (~/projects)',
-    availableIn: ['*']
-  }
+    availableIn: ['*'],
+  },
 } as const;
 
 export type TemplateVariableName = keyof typeof TEMPLATE_VARIABLES;
@@ -136,8 +143,10 @@ export type TemplateVariableName = keyof typeof TEMPLATE_VARIABLES;
  */
 export function getVariablesForEvent(event: string): TemplateVariableName[] {
   return Object.entries(TEMPLATE_VARIABLES)
-    .filter(([_, variable]) => 
-      variable.availableIn.includes('*') || variable.availableIn.includes(event)
+    .filter(
+      ([_, variable]) =>
+        variable.availableIn.includes('*') ||
+        variable.availableIn.includes(event),
     )
     .map(([name, _]) => name as TemplateVariableName);
 }
@@ -147,10 +156,10 @@ export function getVariablesForEvent(event: string): TemplateVariableName[] {
  */
 export function getVariableDocumentation(): string {
   const lines: string[] = ['Available Template Variables:', ''];
-  
+
   for (const [name, variable] of Object.entries(TEMPLATE_VARIABLES)) {
-    const events = variable.availableIn.includes('*') 
-      ? 'all events' 
+    const events = variable.availableIn.includes('*')
+      ? 'all events'
       : variable.availableIn.join(', ');
     lines.push(`  {{${name}}}`);
     lines.push(`    ${variable.description}`);
@@ -158,6 +167,6 @@ export function getVariableDocumentation(): string {
     lines.push(`    Available in: ${events}`);
     lines.push('');
   }
-  
+
   return lines.join('\n');
 }

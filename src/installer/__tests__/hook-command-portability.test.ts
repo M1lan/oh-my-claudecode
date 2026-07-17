@@ -46,7 +46,9 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
 
     const commands: string[] = [];
     for (const eventHooks of Object.values(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           commands.push(hook.command);
         }
@@ -75,7 +77,9 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
     const violations: { event: string; command: string }[] = [];
 
     for (const [eventType, eventHooks] of Object.entries(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (absoluteNodePattern.test(hook.command)) {
             violations.push({ event: eventType, command: hook.command });
@@ -85,10 +89,12 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event}: ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event}: ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found absolute node binary paths in hook commands (issue #2348 regression):\n${details}\n\n` +
-        `Hook commands must use bare 'node', not resolved absolute paths like /opt/hostedtoolcache/...`
+          `Hook commands must use bare 'node', not resolved absolute paths like /opt/hostedtoolcache/...`,
       );
     }
   });
@@ -105,7 +111,9 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
     const violations: { event: string; command: string }[] = [];
 
     for (const [eventType, eventHooks] of Object.entries(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           if (hardcodedHomePattern.test(hook.command)) {
             violations.push({ event: eventType, command: hook.command });
@@ -115,10 +123,12 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
     }
 
     if (violations.length > 0) {
-      const details = violations.map(v => `  ${v.event}: ${v.command}`).join('\n');
+      const details = violations
+        .map((v) => `  ${v.event}: ${v.command}`)
+        .join('\n');
       expect.fail(
         `Found hardcoded home directory paths in hook commands:\n${details}\n\n` +
-        `Hook commands must use $HOME or \${CLAUDE_CONFIG_DIR:-$HOME/.claude}, not resolved absolute home paths.`
+          `Hook commands must use $HOME or \${CLAUDE_CONFIG_DIR:-$HOME/.claude}, not resolved absolute home paths.`,
       );
     }
   });
@@ -132,7 +142,9 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
 
     const commands: string[] = [];
     for (const eventHooks of Object.values(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           commands.push(hook.command);
         }
@@ -157,7 +169,9 @@ describe('Contract 7: hook command portability (#2084, #2348)', () => {
 
     const commands: string[] = [];
     for (const eventHooks of Object.values(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           commands.push(hook.command);
         }
@@ -190,16 +204,23 @@ describe('Contract 8: hook commands reference existing template files', () => {
 
     // Extract filenames from hook commands
     const filenamePattern = /([a-z0-9-]+\.mjs)(?:$|["'\s])/;
-    const missingFiles: { event: string; filename: string; command: string }[] = [];
+    const missingFiles: { event: string; filename: string; command: string }[] =
+      [];
 
     for (const [eventType, eventHooks] of Object.entries(config.hooks)) {
-      for (const hookGroup of eventHooks as Array<{ hooks: Array<{ command: string }> }>) {
+      for (const hookGroup of eventHooks as Array<{
+        hooks: Array<{ command: string }>;
+      }>) {
         for (const hook of hookGroup.hooks) {
           const match = hook.command.match(filenamePattern);
           if (match) {
             const filename = match[1];
             if (!templateFiles.has(filename)) {
-              missingFiles.push({ event: eventType, filename, command: hook.command });
+              missingFiles.push({
+                event: eventType,
+                filename,
+                command: hook.command,
+              });
             }
           }
         }
@@ -208,11 +229,11 @@ describe('Contract 8: hook commands reference existing template files', () => {
 
     if (missingFiles.length > 0) {
       const details = missingFiles
-        .map(v => `  ${v.event}: ${v.filename} (command: ${v.command})`)
+        .map((v) => `  ${v.event}: ${v.filename} (command: ${v.command})`)
         .join('\n');
       expect.fail(
         `Hook commands reference files not found in templates/hooks/:\n${details}\n\n` +
-        `Ensure all referenced hook scripts exist in templates/hooks/.`
+          `Ensure all referenced hook scripts exist in templates/hooks/.`,
       );
     }
   });

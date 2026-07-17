@@ -5,8 +5,14 @@
  * (ralplan, team, ralph, ultraqa) into the PipelineStageAdapter interface.
  */
 
-export { ralplanAdapter, RALPLAN_COMPLETION_SIGNAL } from './ralplan-adapter.js';
-export { executionAdapter, EXECUTION_COMPLETION_SIGNAL } from './execution-adapter.js';
+export {
+  ralplanAdapter,
+  RALPLAN_COMPLETION_SIGNAL,
+} from './ralplan-adapter.js';
+export {
+  executionAdapter,
+  EXECUTION_COMPLETION_SIGNAL,
+} from './execution-adapter.js';
 export { ralphAdapter, RALPH_COMPLETION_SIGNAL } from './ralph-adapter.js';
 export { qaAdapter, QA_COMPLETION_SIGNAL } from './qa-adapter.js';
 
@@ -32,5 +38,5 @@ export const ALL_ADAPTERS: readonly PipelineStageAdapter[] = [
  * Look up an adapter by stage ID.
  */
 export function getAdapterById(id: string): PipelineStageAdapter | undefined {
-  return ALL_ADAPTERS.find(a => a.id === id);
+  return ALL_ADAPTERS.find((a) => a.id === id);
 }

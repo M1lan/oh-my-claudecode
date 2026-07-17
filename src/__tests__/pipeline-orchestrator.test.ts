@@ -41,7 +41,10 @@ describe('Pipeline Orchestrator', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `pipeline-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `pipeline-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -110,7 +113,7 @@ describe('Pipeline Orchestrator', () => {
     it('creates 4 stages matching STAGE_ORDER', () => {
       const tracking = buildPipelineTracking(DEFAULT_PIPELINE_CONFIG);
       expect(tracking.stages).toHaveLength(4);
-      expect(tracking.stages.map(s => s.id)).toEqual(STAGE_ORDER);
+      expect(tracking.stages.map((s) => s.id)).toEqual(STAGE_ORDER);
     });
 
     it('all stages are pending for default config', () => {
@@ -122,11 +125,15 @@ describe('Pipeline Orchestrator', () => {
     });
 
     it('marks skipped stages when config disables them', () => {
-      const config = { ...DEFAULT_PIPELINE_CONFIG, qa: false, planning: false as const };
+      const config = {
+        ...DEFAULT_PIPELINE_CONFIG,
+        qa: false,
+        planning: false as const,
+      };
       const tracking = buildPipelineTracking(config);
 
-      const ralplan = tracking.stages.find(s => s.id === 'ralplan')!;
-      const qa = tracking.stages.find(s => s.id === 'qa')!;
+      const ralplan = tracking.stages.find((s) => s.id === 'ralplan')!;
+      const qa = tracking.stages.find((s) => s.id === 'qa')!;
       expect(ralplan.status).toBe('skipped');
       expect(qa.status).toBe('skipped');
 
@@ -147,7 +154,11 @@ describe('Pipeline Orchestrator', () => {
     });
 
     it('returns fewer adapters when stages are skipped', () => {
-      const config = { ...DEFAULT_PIPELINE_CONFIG, qa: false, planning: false as const };
+      const config = {
+        ...DEFAULT_PIPELINE_CONFIG,
+        qa: false,
+        planning: false as const,
+      };
       const full = getActiveAdapters(DEFAULT_PIPELINE_CONFIG);
       const reduced = getActiveAdapters(config);
       expect(reduced.length).toBeLessThan(full.length);
@@ -197,7 +208,14 @@ describe('Pipeline Orchestrator', () => {
     });
 
     it('applies deprecated mode config', () => {
-      const state = initPipeline(testDir, 'task', 'sess-2', undefined, undefined, 'ultrawork');
+      const state = initPipeline(
+        testDir,
+        'task',
+        'sess-2',
+        undefined,
+        undefined,
+        'ultrawork',
+      );
       expect(state).not.toBeNull();
       // Pipeline tracking should reflect team execution
       const extended = state as any;

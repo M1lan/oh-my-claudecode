@@ -19,7 +19,10 @@ function isWindowsStylePath(value: string): boolean {
   return /^[a-zA-Z]:[\\/]/.test(value) || value.startsWith('\\\\');
 }
 
-function selectPathApi(baseDir: string, candidatePath: string): path.PlatformPath {
+function selectPathApi(
+  baseDir: string,
+  candidatePath: string,
+): path.PlatformPath {
   if (process.platform === 'win32') {
     return path.win32;
   }
@@ -33,9 +36,14 @@ function isPathWithinBaseDir(baseDir: string, candidatePath: string): boolean {
   const pathApi = selectPathApi(baseDir, candidatePath);
   const resolvedBase = pathApi.resolve(baseDir);
   const resolvedCandidate = pathApi.resolve(baseDir, candidatePath);
-  const caseInsensitive = pathApi === path.win32 || process.platform === 'darwin';
-  const baseForCompare = caseInsensitive ? resolvedBase.toLowerCase() : resolvedBase;
-  const candidateForCompare = caseInsensitive ? resolvedCandidate.toLowerCase() : resolvedCandidate;
+  const caseInsensitive =
+    pathApi === path.win32 || process.platform === 'darwin';
+  const baseForCompare = caseInsensitive
+    ? resolvedBase.toLowerCase()
+    : resolvedBase;
+  const candidateForCompare = caseInsensitive
+    ? resolvedCandidate.toLowerCase()
+    : resolvedCandidate;
   const rel = pathApi.relative(baseForCompare, candidateForCompare);
 
   return rel === '' || (!rel.startsWith('..') && !pathApi.isAbsolute(rel));
@@ -57,7 +65,7 @@ Complete the task directly with your available tools.`;
 export function validateContextFilePaths(
   paths: string[],
   baseDir: string,
-  allowExternal = false
+  allowExternal = false,
 ): { validPaths: string[]; errors: string[] } {
   const validPaths: string[] = [];
   const errors: string[] = [];
@@ -65,7 +73,9 @@ export function validateContextFilePaths(
   for (const p of paths) {
     // Injection check: reject control characters (\n, \r, \0)
     if (/[\n\r\0]/.test(p)) {
-      errors.push(`E_CONTEXT_FILE_INJECTION: Path contains control characters: ${p.slice(0, 80)}`);
+      errors.push(
+        `E_CONTEXT_FILE_INJECTION: Path contains control characters: ${p.slice(0, 80)}`,
+      );
       continue;
     }
 
@@ -92,12 +102,14 @@ export function validateContextFilePaths(
 export function buildPromptWithSystemContext(
   userPrompt: string,
   fileContext: string | undefined,
-  systemPrompt: string | undefined
+  systemPrompt: string | undefined,
 ): string {
   const parts: string[] = [SUBAGENT_HEADER];
 
   if (systemPrompt) {
-    parts.push(`<system-instructions>\n${systemPrompt}\n</system-instructions>`);
+    parts.push(
+      `<system-instructions>\n${systemPrompt}\n</system-instructions>`,
+    );
   }
 
   if (fileContext) {

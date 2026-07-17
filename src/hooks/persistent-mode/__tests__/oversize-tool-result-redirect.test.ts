@@ -4,7 +4,10 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
 import { checkPersistentModes } from '../index.js';
-import { isOversizeToolResultRedirectStop, type StopContext } from '../../todo-continuation/index.js';
+import {
+  isOversizeToolResultRedirectStop,
+  type StopContext,
+} from '../../todo-continuation/index.js';
 
 function makeRalphWorktree(sessionId: string): string {
   const tempDir = mkdtempSync(join(tmpdir(), 'ralph-oversize-tool-result-'));
@@ -13,16 +16,20 @@ function makeRalphWorktree(sessionId: string): string {
   mkdirSync(stateDir, { recursive: true });
   writeFileSync(
     join(stateDir, 'ralph-state.json'),
-    JSON.stringify({
-      active: true,
-      iteration: 1,
-      max_iterations: 10,
-      started_at: new Date().toISOString(),
-      prompt: 'Finish the task',
-      session_id: sessionId,
-      project_path: tempDir,
-      linked_ultrawork: false,
-    }, null, 2)
+    JSON.stringify(
+      {
+        active: true,
+        iteration: 1,
+        max_iterations: 10,
+        started_at: new Date().toISOString(),
+        prompt: 'Finish the task',
+        session_id: sessionId,
+        project_path: tempDir,
+        linked_ultrawork: false,
+      },
+      null,
+      2,
+    ),
   );
   return tempDir;
 }
@@ -34,9 +41,11 @@ const redirectedToolResultMessage = [
 
 describe('oversize tool-result redirect stop guard (issue #2988)', () => {
   it('classifies redirected tool-result file pointers from stop context text', () => {
-    expect(isOversizeToolResultRedirectStop({
-      message: redirectedToolResultMessage,
-    })).toBe(true);
+    expect(
+      isOversizeToolResultRedirectStop({
+        message: redirectedToolResultMessage,
+      }),
+    ).toBe(true);
   });
 
   it('classifies redirected tool-result file pointers from transcript tail', async () => {
@@ -46,17 +55,22 @@ describe('oversize tool-result redirect stop guard (issue #2988)', () => {
     writeFileSync(
       transcriptPath,
       [
-        JSON.stringify({ type: 'assistant', message: { content: 'ordinary work' } }),
+        JSON.stringify({
+          type: 'assistant',
+          message: { content: 'ordinary work' },
+        }),
         JSON.stringify({
           type: 'assistant',
           message: {
-            content: [{
-              type: 'text',
-              text: 'Response exceeded the tool result size limit; output written to tool-results/grep-output.txt',
-            }],
+            content: [
+              {
+                type: 'text',
+                text: 'Response exceeded the tool result size limit; output written to tool-results/grep-output.txt',
+              },
+            ],
           },
         }),
-      ].join('\n')
+      ].join('\n'),
     );
 
     try {
@@ -83,14 +97,17 @@ describe('oversize tool-result redirect stop guard (issue #2988)', () => {
         JSON.stringify({
           type: 'assistant',
           message: {
-            content: 'Tool result was too large; full output written to tool-results/old-output.txt',
+            content:
+              'Tool result was too large; full output written to tool-results/old-output.txt',
           },
         }),
         JSON.stringify({
           type: 'assistant',
-          message: { content: 'ordinary follow-up stop without redirected output' },
+          message: {
+            content: 'ordinary follow-up stop without redirected output',
+          },
         }),
-      ].join('\n')
+      ].join('\n'),
     );
 
     try {
@@ -137,7 +154,11 @@ describe('oversize tool-result redirect stop guard (issue #2988)', () => {
       await checkPersistentModes(sessionId, tempDir, stopContext);
       await checkPersistentModes(sessionId, tempDir, stopContext);
       await checkPersistentModes(sessionId, tempDir, stopContext);
-      const result = await checkPersistentModes(sessionId, tempDir, stopContext);
+      const result = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        stopContext,
+      );
 
       expect(result.shouldBlock).toBe(true);
       expect(result.mode).toBe('ralph');

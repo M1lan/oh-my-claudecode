@@ -1,9 +1,13 @@
-import { execFileSync } from "child_process";
-import { existsSync, readdirSync, readFileSync } from "fs";
-import { join, relative } from "path";
-import { readModeState, writeModeState } from "../../lib/mode-state-io.js";
-import { MODE_NAMES, MODE_STATE_FILE_MAP } from "../../lib/mode-names.js";
-import { getOmcRoot, resolveToWorktreeRoot, validateSessionId } from "../../lib/worktree-paths.js";
+import { execFileSync } from 'child_process';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join, relative } from 'path';
+import { readModeState, writeModeState } from '../../lib/mode-state-io.js';
+import { MODE_NAMES, MODE_STATE_FILE_MAP } from '../../lib/mode-names.js';
+import {
+  getOmcRoot,
+  resolveToWorktreeRoot,
+  validateSessionId,
+} from '../../lib/worktree-paths.js';
 import {
   computeCorrectnessRate,
   hasRequiredDimensionCoverage,
@@ -14,7 +18,7 @@ import {
   scoreMCQResponse,
   type MergeReadinessMCQAnswer,
   type MergeReadinessMCQQuestion,
-} from "./mcq.js";
+} from './mcq.js';
 import type {
   MergeReadinessAttempt,
   MergeReadinessDimension,
@@ -23,21 +27,21 @@ import type {
   MergeReadinessPromptResult,
   MergeReadinessResult,
   MergeReadinessState,
-} from "./types.js";
+} from './types.js';
 
-const MODE = "merge-readiness";
+const MODE = 'merge-readiness';
 
 // The MCP caller controls session_id, so it is only a state-scope selector and
 // must never be used as override authority. The server launcher injects the
 // authenticated principal and the allowlist; neither value is accepted from a
 // tool call or slash-command argument.
-const MAINTAINER_PRINCIPAL_ENV = "OMC_MERGE_READINESS_AUTHENTICATED_PRINCIPAL";
-const MAINTAINER_ALLOWLIST_ENV = "OMC_MERGE_READINESS_MAINTAINERS";
+const MAINTAINER_PRINCIPAL_ENV = 'OMC_MERGE_READINESS_AUTHENTICATED_PRINCIPAL';
+const MAINTAINER_ALLOWLIST_ENV = 'OMC_MERGE_READINESS_MAINTAINERS';
 
 function resolveAuthenticatedMaintainerPrincipal(): string | null {
   const principal = process.env[MAINTAINER_PRINCIPAL_ENV]?.trim();
-  const allowedPrincipals = (process.env[MAINTAINER_ALLOWLIST_ENV] ?? "")
-    .split(",")
+  const allowedPrincipals = (process.env[MAINTAINER_ALLOWLIST_ENV] ?? '')
+    .split(',')
     .map((entry) => entry.trim())
     .filter(Boolean);
 
@@ -45,41 +49,52 @@ function resolveAuthenticatedMaintainerPrincipal(): string | null {
   return principal;
 }
 
-export function parseMergeReadinessProfile(promptText: string): MergeReadinessProfile {
-  if (/\B--deep\b/i.test(promptText)) return "deep";
-  if (/\B--quick\b/i.test(promptText)) return "quick";
-  return "standard";
+export function parseMergeReadinessProfile(
+  promptText: string,
+): MergeReadinessProfile {
+  if (/\B--deep\b/i.test(promptText)) return 'deep';
+  if (/\B--quick\b/i.test(promptText)) return 'quick';
+  return 'standard';
 }
 
 export function slugifyMergeReadiness(input: string): string {
   const slug = input
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
     .slice(0, 48);
-  return slug || "change";
+  return slug || 'change';
 }
 
-function runGit(directory: string, args: string[]): { stdout: string; error?: string } {
+function runGit(
+  directory: string,
+  args: string[],
+): { stdout: string; error?: string } {
   try {
-    const stdout = execFileSync("git", args, {
+    const stdout = execFileSync('git', args, {
       cwd: directory,
-      encoding: "utf-8",
-      stdio: ["ignore", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
       timeout: 10000,
       maxBuffer: 10 * 1024 * 1024,
     });
     return { stdout: stdout.trim() };
   } catch (e) {
-    const err = e as NodeJS.ErrnoException & { status?: number; stderr?: string };
-    const timedOut = err?.code === "ETIMEDOUT" || /timed out/i.test(String(err?.message || ""));
-    const stderr = typeof err?.stderr === "string" ? err.stderr.trim().slice(0, 200) : "";
+    const err = e as NodeJS.ErrnoException & {
+      status?: number;
+      stderr?: string;
+    };
+    const timedOut =
+      err?.code === 'ETIMEDOUT' ||
+      /timed out/i.test(String(err?.message || ''));
+    const stderr =
+      typeof err?.stderr === 'string' ? err.stderr.trim().slice(0, 200) : '';
     const exit = err?.status;
     const error = timedOut
       ? `git ${args[0]} timed out (>10s)`
-      : `git ${args[0]} failed (exit ${exit ?? "?"})${stderr ? ": " + stderr : ""}`;
-    return { stdout: "", error };
+      : `git ${args[0]} failed (exit ${exit ?? '?'})${stderr ? ': ' + stderr : ''}`;
+    return { stdout: '', error };
   }
 }
 
@@ -93,7 +108,11 @@ const EVIDENCE_MODE_STATE_FILES = new Set<string>([
   MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH],
 ]);
 
-const NON_EVIDENCE_STATE_SUFFIXES = ["-stop-breaker.json", "-last-steer-at", "-continue-steer.lock"];
+const NON_EVIDENCE_STATE_SUFFIXES = [
+  '-stop-breaker.json',
+  '-last-steer-at',
+  '-continue-steer.lock',
+];
 
 function isNonEvidenceStateFile(name: string): boolean {
   return NON_EVIDENCE_STATE_SUFFIXES.some((suffix) => name.endsWith(suffix));
@@ -101,13 +120,20 @@ function isNonEvidenceStateFile(name: string): boolean {
 
 function modeStateRecordsRun(filePath: string): boolean {
   try {
-    const raw = readFileSync(filePath, "utf-8");
+    const raw = readFileSync(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (parsed && typeof parsed === "object") {
+    if (parsed && typeof parsed === 'object') {
       if (parsed.active === true) return true;
-      if (typeof parsed.iteration === "number" && parsed.iteration > 0) return true;
-      if (typeof parsed.started_at === "string" && parsed.started_at.length > 0) return true;
-      if (typeof parsed.phase === "string" && parsed.phase.length > 0 && parsed.phase !== "init") return true;
+      if (typeof parsed.iteration === 'number' && parsed.iteration > 0)
+        return true;
+      if (typeof parsed.started_at === 'string' && parsed.started_at.length > 0)
+        return true;
+      if (
+        typeof parsed.phase === 'string' &&
+        parsed.phase.length > 0 &&
+        parsed.phase !== 'init'
+      )
+        return true;
     }
   } catch {
     // Unreadable/unparseable state is not evidence.
@@ -117,16 +143,16 @@ function modeStateRecordsRun(filePath: string): boolean {
 
 function listArtifactFiles(directory: string, sessionId?: string): string[] {
   const root = getOmcRoot(directory);
-  const dirCandidates = ["plans", "artifacts", "logs", "specs", "interviews"]
+  const dirCandidates = ['plans', 'artifacts', 'logs', 'specs', 'interviews']
     .map((segment) => join(root, segment))
     .filter((path) => existsSync(path));
   const found: string[] = [];
   const seen = new Set<string>();
 
   const pushRelative = (full: string): void => {
-    const relativePath = relative(root, full).replace(/\\/g, "/");
-    if (relativePath.startsWith("artifacts/merge-readiness/")) return;
-    if (relativePath.includes("merge-readiness-state")) return;
+    const relativePath = relative(root, full).replace(/\\/g, '/');
+    if (relativePath.startsWith('artifacts/merge-readiness/')) return;
+    if (relativePath.includes('merge-readiness-state')) return;
     if (seen.has(relativePath)) return;
     seen.add(relativePath);
     found.push(relativePath);
@@ -150,7 +176,10 @@ function listArtifactFiles(directory: string, sessionId?: string): string[] {
           const full = join(current, entry.name);
           if (entry.isDirectory()) {
             stack.push(full);
-          } else if (entry.isFile() && /\.(md|json|txt|log)$/i.test(entry.name)) {
+          } else if (
+            entry.isFile() &&
+            /\.(md|json|txt|log)$/i.test(entry.name)
+          ) {
             pushRelative(full);
             perRoot++;
           }
@@ -166,12 +195,12 @@ function listArtifactFiles(directory: string, sessionId?: string): string[] {
   // legacy/global state dir AND the current session's session-scoped state dir,
   // so a --from-artifacts run after a session-scoped workflow (ralph/team/etc.)
   // counts the current session's mode state as evidence.
-  const stateDir = join(root, "state");
+  const stateDir = join(root, 'state');
   const scanStateDir = (dir: string): void => {
     if (!existsSync(dir)) return;
     try {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (!entry.isFile() || !entry.name.endsWith(".json")) continue;
+        if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
         if (isNonEvidenceStateFile(entry.name)) continue;
         if (!EVIDENCE_MODE_STATE_FILES.has(entry.name)) continue;
         const full = join(dir, entry.name);
@@ -184,13 +213,17 @@ function listArtifactFiles(directory: string, sessionId?: string): string[] {
   };
   scanStateDir(stateDir);
   if (sessionId) {
-    scanStateDir(join(stateDir, "sessions", sessionId));
+    scanStateDir(join(stateDir, 'sessions', sessionId));
   }
 
   return found.sort();
 }
 
-export function collectMergeReadinessEvidence(directory: string, baseRef?: string, sessionId?: string): MergeReadinessEvidence {
+export function collectMergeReadinessEvidence(
+  directory: string,
+  baseRef?: string,
+  sessionId?: string,
+): MergeReadinessEvidence {
   const worktree = resolveToWorktreeRoot(directory);
   const gitErrors: string[] = [];
   const git = (args: string[]): string => {
@@ -198,77 +231,135 @@ export function collectMergeReadinessEvidence(directory: string, baseRef?: strin
     if (r.error) gitErrors.push(r.error);
     return r.stdout;
   };
-  const changedFiles = git(["diff", "--name-only", "HEAD"]).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const stagedFiles = git(["diff", "--cached", "--name-only"]).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const untrackedFiles = git(["ls-files", "--others", "--exclude-standard"]).split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-  const resolvedBase = baseRef || git(["rev-parse", "--abbrev-ref", "@{upstream}"]) || git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"]);
-  const committedBase = resolvedBase ? git(["merge-base", resolvedBase, "HEAD"]) : "";
-  const committedFiles = /^[0-9a-f]{7,40}$/.test(committedBase || "")
-    ? git(["diff", "--name-only", committedBase + "...HEAD"]).split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
+  const changedFiles = git(['diff', '--name-only', 'HEAD'])
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const stagedFiles = git(['diff', '--cached', '--name-only'])
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const untrackedFiles = git(['ls-files', '--others', '--exclude-standard'])
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const resolvedBase =
+    baseRef ||
+    git(['rev-parse', '--abbrev-ref', '@{upstream}']) ||
+    git(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']);
+  const committedBase = resolvedBase
+    ? git(['merge-base', resolvedBase, 'HEAD'])
+    : '';
+  const committedFiles = /^[0-9a-f]{7,40}$/.test(committedBase || '')
+    ? git(['diff', '--name-only', committedBase + '...HEAD'])
+        .split(/\r?\n/)
+        .map((l) => l.trim())
+        .filter(Boolean)
     : [];
-  const trackedChangedFiles = Array.from(new Set([...changedFiles, ...stagedFiles, ...committedFiles])).sort();
-  const status = git(["status", "--short"]);
-  const diffStat = git(["diff", "--stat", "HEAD"]) || (committedBase ? git(["diff", "--stat", committedBase + "...HEAD"]) : "") || git(["diff", "--cached", "--stat"]);
+  const trackedChangedFiles = Array.from(
+    new Set([...changedFiles, ...stagedFiles, ...committedFiles]),
+  ).sort();
+  const status = git(['status', '--short']);
+  const diffStat =
+    git(['diff', '--stat', 'HEAD']) ||
+    (committedBase ? git(['diff', '--stat', committedBase + '...HEAD']) : '') ||
+    git(['diff', '--cached', '--stat']);
   const sourceArtifacts = listArtifactFiles(worktree, sessionId);
-  const evidenceText = sourceArtifacts.join("\n").toLowerCase();
-  const testEvidence = sourceArtifacts.filter((file) => /test|spec|qa|verify|validation/i.test(file));
-  const reviewEvidence = sourceArtifacts.filter((file) => /review|risk|security|readiness|verdict/i.test(file));
+  const evidenceText = sourceArtifacts.join('\n').toLowerCase();
+  const testEvidence = sourceArtifacts.filter((file) =>
+    /test|spec|qa|verify|validation/i.test(file),
+  );
+  const reviewEvidence = sourceArtifacts.filter((file) =>
+    /review|risk|security|readiness|verdict/i.test(file),
+  );
   const missingEvidence: string[] = [];
   if (trackedChangedFiles.length === 0 && !status) {
-    missingEvidence.push("No changed files or git status evidence were detected.");
+    missingEvidence.push(
+      'No changed files or git status evidence were detected.',
+    );
   }
   if (!diffStat) {
-    missingEvidence.push("No diff stat was detected for the current worktree.");
+    missingEvidence.push('No diff stat was detected for the current worktree.');
   }
   if (!/test|spec|qa|verify|validation/.test(evidenceText)) {
-    missingEvidence.push("No test or verification artifact was detected under .omc.");
+    missingEvidence.push(
+      'No test or verification artifact was detected under .omc.',
+    );
   }
   if (!/review|risk|security|verdict/.test(evidenceText)) {
-    missingEvidence.push("No review or risk artifact was detected under .omc.");
+    missingEvidence.push('No review or risk artifact was detected under .omc.');
   }
   for (const gerr of gitErrors) missingEvidence.push(gerr);
-  return { changedFiles: trackedChangedFiles, untrackedFiles, status, diffStat, sourceArtifacts, testEvidence, reviewEvidence, missingEvidence, base_ref: resolvedBase };
+  return {
+    changedFiles: trackedChangedFiles,
+    untrackedFiles,
+    status,
+    diffStat,
+    sourceArtifacts,
+    testEvidence,
+    reviewEvidence,
+    missingEvidence,
+    base_ref: resolvedBase,
+  };
 }
 
 function extractChangeSummary(promptText: string): string {
   return promptText
-    .replace(/^\s*\/(?:oh-my-claudecode:|omc:)?merge-readiness\b/i, "")
-    .replace(/\B--(?:quick|standard|deep|from-diff|from-artifacts)\b/gi, "")
+    .replace(/^\s*\/(?:oh-my-claudecode:|omc:)?merge-readiness\b/i, '')
+    .replace(/\B--(?:quick|standard|deep|from-diff|from-artifacts)\b/gi, '')
     .trim();
 }
 
 /** True when the collected evidence lacks the minimal diff/change signal needed to quiz on. */
 function hasMinimalEvidence(evidence: MergeReadinessEvidence): boolean {
-  return evidence.changedFiles.length > 0 || Boolean(evidence.status) || Boolean(evidence.diffStat) || evidence.sourceArtifacts.length > 0;
+  return (
+    evidence.changedFiles.length > 0 ||
+    Boolean(evidence.status) ||
+    Boolean(evidence.diffStat) ||
+    evidence.sourceArtifacts.length > 0
+  );
 }
 
-function parseMergeReadinessSourceMode(promptText: string): { mode?: "diff" | "artifacts"; error?: string } {
+function parseMergeReadinessSourceMode(promptText: string): {
+  mode?: 'diff' | 'artifacts';
+  error?: string;
+} {
   const fromDiff = /(?:^|\s)--from-diff(?=\s|$)/i.test(promptText);
   const fromArtifacts = /(?:^|\s)--from-artifacts(?=\s|$)/i.test(promptText);
-  if (fromDiff && fromArtifacts) return { error: "--from-diff and --from-artifacts cannot be used together." };
-  if (fromDiff) return { mode: "diff" };
-  if (fromArtifacts) return { mode: "artifacts" };
+  if (fromDiff && fromArtifacts)
+    return {
+      error: '--from-diff and --from-artifacts cannot be used together.',
+    };
+  if (fromDiff) return { mode: 'diff' };
+  if (fromArtifacts) return { mode: 'artifacts' };
   return {};
 }
 
 function hasModeStateArtifact(evidence: MergeReadinessEvidence): boolean {
   return evidence.sourceArtifacts.some((path) => {
-    const name = path.slice(path.lastIndexOf("/") + 1);
+    const name = path.slice(path.lastIndexOf('/') + 1);
     return EVIDENCE_MODE_STATE_FILES.has(name);
   });
 }
 
-function hasMinimalEvidenceForMode(evidence: MergeReadinessEvidence, mode: "diff" | "artifacts" | undefined): boolean {
-  const hasDiff = evidence.changedFiles.length > 0 || Boolean(evidence.diffStat);
-  const hasRelevantArtifact = evidence.testEvidence.length > 0
-    || evidence.reviewEvidence.length > 0
-    || hasModeStateArtifact(evidence);
-  if (mode === "diff") return hasDiff;
-  if (mode === "artifacts") return hasRelevantArtifact;
+function hasMinimalEvidenceForMode(
+  evidence: MergeReadinessEvidence,
+  mode: 'diff' | 'artifacts' | undefined,
+): boolean {
+  const hasDiff =
+    evidence.changedFiles.length > 0 || Boolean(evidence.diffStat);
+  const hasRelevantArtifact =
+    evidence.testEvidence.length > 0 ||
+    evidence.reviewEvidence.length > 0 ||
+    hasModeStateArtifact(evidence);
+  if (mode === 'diff') return hasDiff;
+  if (mode === 'artifacts') return hasRelevantArtifact;
   return hasDiff || hasRelevantArtifact;
 }
 
-function pickNextQuestion(state: MergeReadinessState): MergeReadinessMCQQuestion | undefined {
+function pickNextQuestion(
+  state: MergeReadinessState,
+): MergeReadinessMCQQuestion | undefined {
   if (state.questions.length === 0) return undefined;
   const answered = new Set(state.answers.map((a) => a.questionId));
   const unanswered = state.questions.filter((q) => !answered.has(q.id));
@@ -308,11 +399,15 @@ function allRequiredAnswered(state: MergeReadinessState): boolean {
       .map((a) => state.questions.find((q) => q.id === a.questionId)?.dimension)
       .filter((d): d is MergeReadinessDimension => Boolean(d)),
   );
-  const coverageOk = state.required_dimensions.every((d) => answeredDimensions.has(d));
+  const coverageOk = state.required_dimensions.every((d) =>
+    answeredDimensions.has(d),
+  );
   // And every generated question should be answered (no half-finished quiz),
   // unless the profile max rounds caps the count below questions.length.
   const cap = Math.min(state.questions.length, state.max_rounds);
-  const answeredInRange = state.answers.filter((a) => answered.has(a.questionId)).length;
+  const answeredInRange = state.answers.filter((a) =>
+    answered.has(a.questionId),
+  ).length;
   return coverageOk && answeredInRange >= cap;
 }
 
@@ -327,8 +422,8 @@ function finalizeIfReady(state: MergeReadinessState, now: string): void {
   recomputeReadiness(state);
 
   if (!hasMinimalEvidence(state.evidence)) {
-    state.phase = "complete";
-    state.result = "blocked";
+    state.phase = 'complete';
+    state.result = 'blocked';
     state.completed_at = now;
     delete state.pending_question;
     return;
@@ -348,8 +443,8 @@ function finalizeIfReady(state: MergeReadinessState, now: string): void {
 
   if (isCorrectnessPass(rate, state.threshold) && coverageOk) {
     state.active = false;
-    state.phase = "complete";
-    state.result = "pass";
+    state.phase = 'complete';
+    state.result = 'pass';
     state.completed_at = now;
     delete state.pending_question;
     return;
@@ -360,13 +455,16 @@ function finalizeIfReady(state: MergeReadinessState, now: string): void {
   // /merge-readiness and passes. v1 is advisory: checkMergeReadiness is not
   // wired to the Stop hook, so this does not block the session; the gate
   // remains active until pass/override/cancel.
-  state.phase = "complete";
-  state.result = "paused";
+  state.phase = 'complete';
+  state.result = 'paused';
   state.completed_at = now;
   delete state.pending_question;
 }
 
-export function readMergeReadinessState(directory: string, sessionId?: string): MergeReadinessState | null {
+export function readMergeReadinessState(
+  directory: string,
+  sessionId?: string,
+): MergeReadinessState | null {
   return readModeState<MergeReadinessState>(MODE, directory, sessionId) ?? null;
 }
 
@@ -375,7 +473,12 @@ export function writeMergeReadinessState(
   state: MergeReadinessState,
   sessionId?: string,
 ): boolean {
-  return writeModeState(MODE, state as unknown as Record<string, unknown>, directory, sessionId);
+  return writeModeState(
+    MODE,
+    state as unknown as Record<string, unknown>,
+    directory,
+    sessionId,
+  );
 }
 
 /**
@@ -385,17 +488,21 @@ export function writeMergeReadinessState(
  * otherwise report a terminal release (active=false) instead force-block so the
  * operator must resolve the session id and re-run.
  */
-function persistOrFailClosed(workingDir: string, state: MergeReadinessState, sessionId: string | undefined): MergeReadinessState {
+function persistOrFailClosed(
+  workingDir: string,
+  state: MergeReadinessState,
+  sessionId: string | undefined,
+): MergeReadinessState {
   const persisted = writeMergeReadinessState(workingDir, state, sessionId);
   if (persisted) return state;
   state.active = true;
-  state.phase = "complete";
-  state.result = "blocked";
+  state.phase = 'complete';
+  state.result = 'blocked';
   state.awaiting_content = false;
   delete state.pending_question;
   state.validation_errors = [
     ...(state.validation_errors ?? []),
-    "Merge-readiness state could not be persisted (invalid session id or state path). Resolve the session id and re-run merge_readiness_start.",
+    'Merge-readiness state could not be persisted (invalid session id or state path). Resolve the session id and re-run merge_readiness_start.',
   ];
   // Return the fail-closed state directly. Do NOT recurse: re-invoking
   // writeMergeReadinessState with the same session id/path will fail
@@ -431,12 +538,15 @@ export function createInitialMergeReadinessState(
   const sourceModeResult = parseMergeReadinessSourceMode(promptText);
   const sourceMode = sourceModeResult.mode;
   const evidence = collectMergeReadinessEvidence(directory, baseRef, sessionId);
-  const missingEvidence = unsupportedFromPr || Boolean(sourceModeResult.error) || !hasMinimalEvidenceForMode(evidence, sourceMode);
+  const missingEvidence =
+    unsupportedFromPr ||
+    Boolean(sourceModeResult.error) ||
+    !hasMinimalEvidenceForMode(evidence, sourceMode);
   const state: MergeReadinessState = {
     active: true,
     session_id: sessionId,
     current_phase: MODE,
-    phase: "content",
+    phase: 'content',
     profile,
     threshold: profileThreshold(profile),
     max_rounds: profileMaxRounds(profile),
@@ -448,24 +558,28 @@ export function createInitialMergeReadinessState(
     evidence,
     readiness_score: 0,
     dimension_scores: {},
-    result: missingEvidence ? "blocked" : "pending",
-    why: "",
-    whatChanged: "",
-    tradeoffs: "",
-    risksConsidered: "",
-    teamUnderstanding: "",
+    result: missingEvidence ? 'blocked' : 'pending',
+    why: '',
+    whatChanged: '',
+    tradeoffs: '',
+    risksConsidered: '',
+    teamUnderstanding: '',
     started_at: now,
     updated_at: now,
     change_summary: changeSummary,
-    slug: slugifyMergeReadiness(changeSummary || "merge-readiness"),
+    slug: slugifyMergeReadiness(changeSummary || 'merge-readiness'),
     source_mode: sourceMode,
   };
   if (missingEvidence) {
     state.validation_errors = unsupportedFromPr
-      ? ["--from-pr is unsupported: merge-readiness uses local git and .omc evidence only."]
+      ? [
+          '--from-pr is unsupported: merge-readiness uses local git and .omc evidence only.',
+        ]
       : sourceModeResult.error
         ? [sourceModeResult.error]
-        : ["No minimal evidence for the selected source mode was detected; produce it before running /merge-readiness."];
+        : [
+            'No minimal evidence for the selected source mode was detected; produce it before running /merge-readiness.',
+          ];
   }
   let prior: MergeReadinessState | null = null;
   try {
@@ -481,8 +595,8 @@ export function createInitialMergeReadinessState(
   // prior-attempt audit record. Force the operator to cancel (which records a
   // cancel_owner audit entry) or let the attempt finalize first. Paused and
   // terminal priors fall through to the retention branch below and may resume.
-  if (prior && prior.result === "pending") {
-    const phase = prior.phase ?? "content";
+  if (prior && prior.result === 'pending') {
+    const phase = prior.phase ?? 'content';
     const answerCount = (prior.answers ?? []).length;
     throw new Error(
       `An active merge-readiness attempt is still in progress (phase: ${phase}, ${answerCount} answer(s) recorded). ` +
@@ -490,7 +604,7 @@ export function createInitialMergeReadinessState(
         `Cancel it first via merge_readiness_cancel, or let it pass/pause; the prior attempt is retained in the audit history once terminal.`,
     );
   }
-  if (prior && prior.result !== "pending" && prior.completed_at) {
+  if (prior && prior.result !== 'pending' && prior.completed_at) {
     const priorAttempt: MergeReadinessAttempt = {
       profile: prior.profile,
       threshold: prior.threshold,
@@ -511,7 +625,10 @@ export function createInitialMergeReadinessState(
       cancel_owner: prior.cancel_owner,
       readiness_score: prior.readiness_score,
       dimension_scores: { ...prior.dimension_scores },
-      questions: prior.questions.map((q) => ({ ...q, options: q.options.map((o) => ({ ...o })) })),
+      questions: prior.questions.map((q) => ({
+        ...q,
+        options: q.options.map((o) => ({ ...o })),
+      })),
       answers: prior.answers.map((a) => ({ ...a })),
       evidence_summary: {
         changedFiles: [...prior.evidence.changedFiles],
@@ -527,7 +644,7 @@ export function createInitialMergeReadinessState(
   const persisted = writeMergeReadinessState(directory, state, sessionId);
   if (!persisted) {
     throw new Error(
-      "Merge-readiness could not create durable state. The workflow was not started; restore state storage and retry.",
+      'Merge-readiness could not create durable state. The workflow was not started; restore state storage and retry.',
     );
   }
   return state;
@@ -559,13 +676,15 @@ export function setMergeReadinessContent(
   // merge_readiness_start (which re-collects evidence) rather than a content
   // re-submit. The prior attempt is appended to prior_attempts on re-start, so
   // the audit history is retained across retries.
-  if (state.result === "blocked" || state.result === "paused") {
-    state.validation_errors ??= [state.result === "blocked"
-      ? "Blocked: no minimal evidence for the selected source mode. Produce it before submitting content."
-      : "Paused: the quiz was not passed. Re-run merge_readiness_start to collect fresh evidence and retry; the prior attempt is retained in the audit history."];
-    if (state.result === "blocked") {
+  if (state.result === 'blocked' || state.result === 'paused') {
+    state.validation_errors ??= [
+      state.result === 'blocked'
+        ? 'Blocked: no minimal evidence for the selected source mode. Produce it before submitting content.'
+        : 'Paused: the quiz was not passed. Re-run merge_readiness_start to collect fresh evidence and retry; the prior attempt is retained in the audit history.',
+    ];
+    if (state.result === 'blocked') {
       state.awaiting_content = true;
-      state.phase = "content";
+      state.phase = 'content';
     }
     state.updated_at = now;
     return persistOrFailClosed(workingDir, state, sessionId);
@@ -574,11 +693,11 @@ export function setMergeReadinessContent(
   if (errors.length > 0) {
     state.validation_errors = errors;
     state.awaiting_content = true;
-    state.phase = "content";
+    state.phase = 'content';
     state.answers = [];
     state.readiness_score = 0;
     state.dimension_scores = {};
-    state.result = "pending";
+    state.result = 'pending';
     delete state.pending_question;
     delete state.completed_at;
     delete state.override_reason;
@@ -596,12 +715,12 @@ export function setMergeReadinessContent(
   state.answers = [];
   state.readiness_score = 0;
   state.dimension_scores = {};
-  state.result = "pending";
+  state.result = 'pending';
   delete state.completed_at;
   delete state.override_reason;
   delete state.validation_errors;
   state.awaiting_content = false;
-  state.phase = "questioning";
+  state.phase = 'questioning';
   state.updated_at = now;
   state.pending_question = pickNextQuestion(state);
   return persistOrFailClosed(workingDir, state, sessionId);
@@ -620,11 +739,12 @@ export function recordMergeReadinessMCQAnswer(
   const workingDir = resolveToWorktreeRoot(directory);
   const state = readMergeReadinessState(workingDir, sessionId);
   if (!state?.active) return state ?? null;
-  if (state.awaiting_content || state.phase !== "questioning") return null;
+  if (state.awaiting_content || state.phase !== 'questioning') return null;
   const question = state.questions.find((q) => q.id === questionId);
   if (!question || state.pending_question?.id !== questionId) return null;
   const normalizedOptionId = selectedOptionId.trim();
-  if (!question.options.some((option) => option.id === normalizedOptionId)) return null;
+  if (!question.options.some((option) => option.id === normalizedOptionId))
+    return null;
   const now = new Date().toISOString();
   const isCorrect = scoreMCQResponse(question, normalizedOptionId);
   // Replace any prior answer to the same question (idempotent re-answer).
@@ -639,7 +759,7 @@ export function recordMergeReadinessMCQAnswer(
   state.updated_at = now;
   delete state.pending_question;
   finalizeIfReady(state, now);
-  if (state.active && state.phase === "questioning") {
+  if (state.active && state.phase === 'questioning') {
     state.pending_question = pickNextQuestion(state);
   } else {
     delete state.pending_question;
@@ -654,46 +774,98 @@ export function recordMergeReadinessAskUserQuestionResult(
   toolOutput: unknown,
   sessionId?: string,
 ): MergeReadinessState | null {
-  const state = readMergeReadinessState(resolveToWorktreeRoot(directory), sessionId);
+  const state = readMergeReadinessState(
+    resolveToWorktreeRoot(directory),
+    sessionId,
+  );
   const pending = state?.pending_question;
   if (!state?.active || !pending) return state ?? null;
-  const inputText = JSON.stringify(toolInput ?? "");
+  const inputText = JSON.stringify(toolInput ?? '');
   if (!inputText.includes(`[MERGE READINESS:${pending.id}]`)) return state;
-  const outputText = typeof toolOutput === "string" ? toolOutput : JSON.stringify(toolOutput ?? "");
+  const outputText =
+    typeof toolOutput === 'string'
+      ? toolOutput
+      : JSON.stringify(toolOutput ?? '');
   const selected = pending.options.filter((option) =>
-    new RegExp(`(?:^|[\\s\\[\"'])${option.id.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}(?:$|[\\s\\]\"',:])`).test(outputText),
+    new RegExp(
+      `(?:^|[\\s\\[\"'])${option.id.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}(?:$|[\\s\\]\"',:])`,
+    ).test(outputText),
   );
   return selected.length === 1
-    ? recordMergeReadinessMCQAnswer(directory, pending.id, selected[0].id, sessionId)
+    ? recordMergeReadinessMCQAnswer(
+        directory,
+        pending.id,
+        selected[0].id,
+        sessionId,
+      )
     : state;
 }
 
 export function validateMergeReadinessContent(
-  content: { why: string; whatChanged: string; tradeoffs: string; risksConsidered: string; teamUnderstanding: string; questions: MergeReadinessMCQQuestion[] },
-  state: Pick<MergeReadinessState, "required_dimensions" | "max_rounds">,
+  content: {
+    why: string;
+    whatChanged: string;
+    tradeoffs: string;
+    risksConsidered: string;
+    teamUnderstanding: string;
+    questions: MergeReadinessMCQQuestion[];
+  },
+  state: Pick<MergeReadinessState, 'required_dimensions' | 'max_rounds'>,
 ): string[] {
   const errors: string[] = [];
-  const sections: Array<[string, string]> = [["why", content.why], ["whatChanged", content.whatChanged], ["tradeoffs", content.tradeoffs], ["risksConsidered", content.risksConsidered], ["teamUnderstanding", content.teamUnderstanding]];
-  for (const [name, value] of sections) if (!value?.trim()) errors.push(`Narrative section '${name}' is required.`);
-  if (!Array.isArray(content.questions) || content.questions.length < state.required_dimensions.length) errors.push("Questions must cover every required dimension.");
-  if (content.questions.length > state.max_rounds) errors.push(`Questions exceed the ${state.max_rounds}-question profile limit.`);
+  const sections: Array<[string, string]> = [
+    ['why', content.why],
+    ['whatChanged', content.whatChanged],
+    ['tradeoffs', content.tradeoffs],
+    ['risksConsidered', content.risksConsidered],
+    ['teamUnderstanding', content.teamUnderstanding],
+  ];
+  for (const [name, value] of sections)
+    if (!value?.trim()) errors.push(`Narrative section '${name}' is required.`);
+  if (
+    !Array.isArray(content.questions) ||
+    content.questions.length < state.required_dimensions.length
+  )
+    errors.push('Questions must cover every required dimension.');
+  if (content.questions.length > state.max_rounds)
+    errors.push(
+      `Questions exceed the ${state.max_rounds}-question profile limit.`,
+    );
   const ids = new Set<string>();
   const dimensions = new Set<MergeReadinessDimension>();
   for (const question of content.questions ?? []) {
-    if (!question.id?.trim() || ids.has(question.id)) errors.push("Question ids must be non-empty and unique.");
+    if (!question.id?.trim() || ids.has(question.id))
+      errors.push('Question ids must be non-empty and unique.');
     ids.add(question.id);
     dimensions.add(question.dimension);
-    if (!question.stem?.trim()) errors.push(`Question '${question.id}' needs a stem.`);
-    if (!Array.isArray(question.options) || question.options.length < 2) errors.push(`Question '${question.id}' needs at least two options.`);
-    const optionIds = new Set(question.options?.map((option) => option.id) ?? []);
-    if (optionIds.size !== (question.options?.length ?? 0) || [...optionIds].some((id) => !id?.trim())) errors.push(`Question '${question.id}' has invalid option ids.`);
-    if (!optionIds.has(question.correctOptionId)) errors.push(`Question '${question.id}' correctOptionId must identify an option.`);
+    if (!question.stem?.trim())
+      errors.push(`Question '${question.id}' needs a stem.`);
+    if (!Array.isArray(question.options) || question.options.length < 2)
+      errors.push(`Question '${question.id}' needs at least two options.`);
+    const optionIds = new Set(
+      question.options?.map((option) => option.id) ?? [],
+    );
+    if (
+      optionIds.size !== (question.options?.length ?? 0) ||
+      [...optionIds].some((id) => !id?.trim())
+    )
+      errors.push(`Question '${question.id}' has invalid option ids.`);
+    if (!optionIds.has(question.correctOptionId))
+      errors.push(
+        `Question '${question.id}' correctOptionId must identify an option.`,
+      );
   }
-  for (const dimension of state.required_dimensions) if (!dimensions.has(dimension)) errors.push(`No question covers required dimension '${dimension}'.`);
+  for (const dimension of state.required_dimensions)
+    if (!dimensions.has(dimension))
+      errors.push(`No question covers required dimension '${dimension}'.`);
   return errors;
 }
 
-export function overrideMergeReadiness(directory: string, reason: string, sessionId?: string): MergeReadinessState | null {
+export function overrideMergeReadiness(
+  directory: string,
+  reason: string,
+  sessionId?: string,
+): MergeReadinessState | null {
   const workingDir = resolveToWorktreeRoot(directory);
   const state = readMergeReadinessState(workingDir, sessionId);
   if (!state?.active || !reason.trim()) return state ?? null;
@@ -701,17 +873,19 @@ export function overrideMergeReadiness(directory: string, reason: string, sessio
   if (!principal) {
     state.validation_errors = [
       ...(state.validation_errors ?? []),
-      "Override rejected: no authenticated maintainer principal is available for this MCP server. Configure OMC_MERGE_READINESS_AUTHENTICATED_PRINCIPAL and OMC_MERGE_READINESS_MAINTAINERS in the trusted server launcher.",
+      'Override rejected: no authenticated maintainer principal is available for this MCP server. Configure OMC_MERGE_READINESS_AUTHENTICATED_PRINCIPAL and OMC_MERGE_READINESS_MAINTAINERS in the trusted server launcher.',
     ];
     return persistOrFailClosed(workingDir, state, sessionId);
   }
-  if (state.result === "blocked") {
-    state.validation_errors ??= ["Blocked: resolve the validation errors before overriding."];
+  if (state.result === 'blocked') {
+    state.validation_errors ??= [
+      'Blocked: resolve the validation errors before overriding.',
+    ];
     return persistOrFailClosed(workingDir, state, sessionId);
   }
   state.active = false;
-  state.phase = "complete";
-  state.result = "overridden";
+  state.phase = 'complete';
+  state.result = 'overridden';
   state.override_reason = reason.trim();
   state.override_owner = principal;
   state.completed_at = state.updated_at = new Date().toISOString();
@@ -719,58 +893,65 @@ export function overrideMergeReadiness(directory: string, reason: string, sessio
   return persistOrFailClosed(workingDir, state, sessionId);
 }
 
-export function cancelMergeReadiness(directory: string, sessionId?: string): MergeReadinessState | null {
+export function cancelMergeReadiness(
+  directory: string,
+  sessionId?: string,
+): MergeReadinessState | null {
   const workingDir = resolveToWorktreeRoot(directory);
   const state = readMergeReadinessState(workingDir, sessionId);
   if (!state?.active) return state ?? null;
   state.active = false;
-  state.phase = "complete";
-  state.result = "cancelled";
+  state.phase = 'complete';
+  state.result = 'cancelled';
   // Record who cancelled for audit parity with override_owner. The state_clear
   // bulk/legacy path cancels with no session id; record a synthetic owner there
   // rather than rejecting (cancel is an abandonment, not a discretionary bypass).
-  state.cancel_owner = sessionId ?? "legacy";
+  state.cancel_owner = sessionId ?? 'legacy';
   state.completed_at = state.updated_at = new Date().toISOString();
   delete state.pending_question;
   return persistOrFailClosed(workingDir, state, sessionId);
 }
 
-export function formatMergeReadinessQuestionMessage(state: MergeReadinessState): string {
+export function formatMergeReadinessQuestionMessage(
+  state: MergeReadinessState,
+): string {
   const scorePct = Math.round(state.readiness_score * 100);
   const thresholdPct = Math.round(state.threshold * 100);
-  const scoreLine = state.result === "pending"
-    ? `Score: hidden until completion / threshold ${thresholdPct}%`
-    : `Score: ${scorePct}% / threshold ${thresholdPct}%`;
+  const scoreLine =
+    state.result === 'pending'
+      ? `Score: hidden until completion / threshold ${thresholdPct}%`
+      : `Score: ${scorePct}% / threshold ${thresholdPct}%`;
 
-  if (state.result === "blocked") {
-    const noDiff = state.evidence.changedFiles.length === 0 && !state.evidence.diffStat;
+  if (state.result === 'blocked') {
+    const noDiff =
+      state.evidence.changedFiles.length === 0 && !state.evidence.diffStat;
     const baseRef = state.evidence.base_ref;
     const diffHint = baseRef
       ? `call merge_readiness_start with summary "--from-diff" and baseRef "${baseRef}"`
-      : "call merge_readiness_start with summary \"--from-diff\" and an explicit baseRef";
+      : 'call merge_readiness_start with summary "--from-diff" and an explicit baseRef';
     const evidenceGuidance = noDiff
       ? `No diff detected. If changes are committed, ${diffHint}; if relying on .omc artifacts, use --from-artifacts. If there are truly no changes, a merge-readiness gate is not needed.`
-      : "Produce the test/review evidence under .omc, then re-run /merge-readiness (merge_readiness_start).";
+      : 'Produce the test/review evidence under .omc, then re-run /merge-readiness (merge_readiness_start).';
     return [
-      "[MERGE READINESS BLOCKED]",
-      "Do not merge yet. Minimal evidence for the change is missing.",
+      '[MERGE READINESS BLOCKED]',
+      'Do not merge yet. Minimal evidence for the change is missing.',
       evidenceGuidance,
       ...(state.validation_errors ?? []),
-    ].join("\n");
+    ].join('\n');
   }
 
   if (state.awaiting_content) {
     return [
-      "[MERGE READINESS BLOCKED]",
-      "Do not merge yet. The runtime is awaiting the AI-generated explanation doc + MCQs.",
-      "Audit record: authoritative session state",
+      '[MERGE READINESS BLOCKED]',
+      'Do not merge yet. The runtime is awaiting the AI-generated explanation doc + MCQs.',
+      'Audit record: authoritative session state',
       `Profile: ${state.profile} | threshold ${thresholdPct}% | max rounds ${state.max_rounds}`,
-      `Required dimensions: ${state.required_dimensions.join(", ")}`,
-      "",
-      "AI step: call setMergeReadinessContent with the 5-section doc + up to " +
+      `Required dimensions: ${state.required_dimensions.join(', ')}`,
+      '',
+      'AI step: call setMergeReadinessContent with the 5-section doc + up to ' +
         `${state.max_rounds} MCQs (each with correctOptionId), then present each MCQ ` +
-        "one-per-round via AskUserQuestion and record answers via recordMergeReadinessMCQAnswer.",
-    ].join("\n");
+        'one-per-round via AskUserQuestion and record answers via recordMergeReadinessMCQAnswer.',
+    ].join('\n');
   }
 
   const pending = state.pending_question;
@@ -779,22 +960,28 @@ export function formatMergeReadinessQuestionMessage(state: MergeReadinessState):
   }
 
   const answeredCount = state.answers.length;
-  const total = Math.min(state.questions.length || state.max_rounds, state.max_rounds);
+  const total = Math.min(
+    state.questions.length || state.max_rounds,
+    state.max_rounds,
+  );
   const options = Array.isArray(pending.options)
-    ? pending.options.map((opt) => `  [${opt.id}] ${opt.text}`).join("\n")
-    : "";
-  const stem = pending.stem || (pending as { question?: string }).question || "";
-  const dimension = pending.dimension ?? "why";
+    ? pending.options.map((opt) => `  [${opt.id}] ${opt.text}`).join('\n')
+    : '';
+  const stem =
+    pending.stem || (pending as { question?: string }).question || '';
+  const dimension = pending.dimension ?? 'why';
   return [
-    "[MERGE READINESS BLOCKED]",
-    "Do not merge yet. This post-task gate checks whether the human can explain the change.",
-    "Audit record: authoritative session state",
+    '[MERGE READINESS BLOCKED]',
+    'Do not merge yet. This post-task gate checks whether the human can explain the change.',
+    'Audit record: authoritative session state',
     scoreLine,
     `Answered: ${answeredCount}/${total}`,
-    "",
+    '',
     `Question [${dimension}] (${answeredCount + 1}/${total}): ${stem}`,
     options,
-  ].filter((line) => line.length > 0).join("\n");
+  ]
+    .filter((line) => line.length > 0)
+    .join('\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -807,10 +994,21 @@ export function formatMergeReadinessQuestionMessage(state: MergeReadinessState):
 function scoreAnswer(answer: string): number {
   const normalized = answer.trim().toLowerCase();
   if (!normalized) return 0;
-  if (/(不知道|不清楚|说不出|答不出|not sure|don't know|do not know|unknown)/i.test(normalized)) {
+  if (
+    /(不知道|不清楚|说不出|答不出|not sure|don't know|do not know|unknown)/i.test(
+      normalized,
+    )
+  ) {
     return 0.1;
   }
-  const lengthScore = normalized.length >= 140 ? 0.65 : normalized.length >= 70 ? 0.48 : normalized.length >= 30 ? 0.32 : 0.15;
+  const lengthScore =
+    normalized.length >= 140
+      ? 0.65
+      : normalized.length >= 70
+        ? 0.48
+        : normalized.length >= 30
+          ? 0.32
+          : 0.15;
   const signalPatterns = [
     /because|why|为了|因为|目标|原因/,
     /change|changed|改了|变化|行为|影响/,
@@ -818,7 +1016,10 @@ function scoreAnswer(answer: string): number {
     /test|review|verify|验证|测试|评审/,
     /team|maintain|approve|团队|维护|批准|理解/,
   ];
-  const signalScore = signalPatterns.reduce((sum, pattern) => sum + (pattern.test(normalized) ? 0.07 : 0), 0);
+  const signalScore = signalPatterns.reduce(
+    (sum, pattern) => sum + (pattern.test(normalized) ? 0.07 : 0),
+    0,
+  );
   return Math.min(1, lengthScore + signalScore);
 }
 
@@ -868,10 +1069,13 @@ export function handleMergeReadinessPromptSubmit(
   if (!state?.active) {
     return { handled: false };
   }
-  const override = /^\/(?:oh-my-claudecode:|omc:)?merge-readiness\s+--override\s+(.+)$/i.exec(promptText.trim());
+  const override =
+    /^\/(?:oh-my-claudecode:|omc:)?merge-readiness\s+--override\s+(.+)$/i.exec(
+      promptText.trim(),
+    );
   if (!override) return { handled: false };
   const updated = overrideMergeReadiness(workingDir, override[1], sessionId);
-  if (!updated || updated.result !== "overridden") return { handled: false };
+  if (!updated || updated.result !== 'overridden') return { handled: false };
   return {
     handled: true,
     message: formatMergeReadinessQuestionMessage(updated),
@@ -886,16 +1090,24 @@ export async function checkMergeReadiness(
   sessionId: string | undefined,
   directory: string,
   cancelInProgress: boolean,
-): Promise<{ shouldBlock: boolean; message: string; result: MergeReadinessResult } | null> {
+): Promise<{
+  shouldBlock: boolean;
+  message: string;
+  result: MergeReadinessResult;
+} | null> {
   if (cancelInProgress) return null;
   const workingDir = resolveToWorktreeRoot(directory);
   const state = readMergeReadinessState(workingDir, sessionId);
   if (!state?.active) return null;
-  if (state.result === "pass") return null;
+  if (state.result === 'pass') return null;
 
   const now = new Date().toISOString();
   state.updated_at = now;
-  if (!state.awaiting_content && !state.pending_question && state.result === "pending") {
+  if (
+    !state.awaiting_content &&
+    !state.pending_question &&
+    state.result === 'pending'
+  ) {
     state.pending_question = pickNextQuestion(state);
     if (!state.pending_question) {
       finalizeIfReady(state, now);
@@ -912,8 +1124,9 @@ export async function checkMergeReadiness(
     if (!persisted) {
       return {
         shouldBlock: true,
-        message: "Merge-readiness state could not be persisted (invalid session id or state path). Resolve the session id and re-run merge_readiness_start.",
-        result: "blocked",
+        message:
+          'Merge-readiness state could not be persisted (invalid session id or state path). Resolve the session id and re-run merge_readiness_start.',
+        result: 'blocked',
       };
     }
     return null;
@@ -926,4 +1139,4 @@ export async function checkMergeReadiness(
 }
 
 // Re-export deprecated types for callers that still import them from runtime.
-export type { MergeReadinessRound } from "./types.js";
+export type { MergeReadinessRound } from './types.js';

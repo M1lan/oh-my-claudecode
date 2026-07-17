@@ -6,8 +6,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const FEATURED_CONTRIBUTORS_START_MARKER = '<!-- OMC:FEATURED-CONTRIBUTORS:START -->';
-export const FEATURED_CONTRIBUTORS_END_MARKER = '<!-- OMC:FEATURED-CONTRIBUTORS:END -->';
+export const FEATURED_CONTRIBUTORS_START_MARKER =
+  '<!-- OMC:FEATURED-CONTRIBUTORS:START -->';
+export const FEATURED_CONTRIBUTORS_END_MARKER =
+  '<!-- OMC:FEATURED-CONTRIBUTORS:END -->';
 export const FEATURED_CONTRIBUTORS_TITLE = '## Featured by OmC Contributors';
 export const FEATURED_CONTRIBUTORS_MIN_STARS = 100;
 const DEFAULT_README_PATH = 'README.md';
@@ -122,7 +124,9 @@ function parseNextLink(linkHeader: string | null): string | null {
   return null;
 }
 
-async function fetchGitHubJson<T>(url: string): Promise<{ data: T; headers: Headers }> {
+async function fetchGitHubJson<T>(
+  url: string,
+): Promise<{ data: T; headers: Headers }> {
   const response = await fetch(url, {
     headers: getGitHubHeaders(),
   });
@@ -134,11 +138,13 @@ async function fetchGitHubJson<T>(url: string): Promise<{ data: T; headers: Head
       throw new Error(
         `GitHub API request failed with 403 for ${url}. ` +
           'Set GITHUB_TOKEN/GH_TOKEN or slow down requests if you hit secondary rate limits. ' +
-          `Response: ${details}`
+          `Response: ${details}`,
       );
     }
 
-    throw new Error(`GitHub API request failed with ${response.status} for ${url}: ${details}`);
+    throw new Error(
+      `GitHub API request failed with ${response.status} for ${url}: ${details}`,
+    );
   }
 
   return {
@@ -167,9 +173,13 @@ async function fetchAllPages<T>(url: string): Promise<T[]> {
 }
 
 export function extractRepoSlug(repositoryUrl: string): string {
-  const match = repositoryUrl.match(/github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i);
+  const match = repositoryUrl.match(
+    /github\.com[/:]([^/]+\/[^/]+?)(?:\.git)?$/i,
+  );
   if (!match?.[1]) {
-    throw new Error(`Could not determine GitHub repository slug from: ${repositoryUrl}`);
+    throw new Error(
+      `Could not determine GitHub repository slug from: ${repositoryUrl}`,
+    );
   }
 
   return match[1];
@@ -207,46 +217,57 @@ export function formatStarCount(stars: number): string {
   return String(stars);
 }
 
-export function sortFeaturedContributors(entries: FeaturedContributor[]): FeaturedContributor[] {
+export function sortFeaturedContributors(
+  entries: FeaturedContributor[],
+): FeaturedContributor[] {
   return [...entries].sort(
-    (left, right) => right.stars - left.stars || left.login.localeCompare(right.login)
+    (left, right) =>
+      right.stars - left.stars || left.login.localeCompare(right.login),
   );
 }
 
-export function pickTopPersonalRepo(login: string, repos: GitHubRepo[]): GitHubRepo | null {
+export function pickTopPersonalRepo(
+  login: string,
+  repos: GitHubRepo[],
+): GitHubRepo | null {
   const eligibleRepos = repos.filter(
     (repo) =>
       !repo.fork &&
       !repo.archived &&
       repo.owner.login === login &&
-      repo.owner.type === 'User'
+      repo.owner.type === 'User',
   );
 
   if (eligibleRepos.length === 0) {
     return null;
   }
 
-  return [...eligibleRepos].sort(
-    (left, right) =>
-      right.stargazers_count - left.stargazers_count || left.full_name.localeCompare(right.full_name)
-  )[0] ?? null;
+  return (
+    [...eligibleRepos].sort(
+      (left, right) =>
+        right.stargazers_count - left.stargazers_count ||
+        left.full_name.localeCompare(right.full_name),
+    )[0] ?? null
+  );
 }
 
-async function fetchAllTimeContributors(repoSlug: string): Promise<GitHubContributor[]> {
+async function fetchAllTimeContributors(
+  repoSlug: string,
+): Promise<GitHubContributor[]> {
   return fetchAllPages<GitHubContributor>(
-    `https://api.github.com/repos/${repoSlug}/contributors?per_page=100`
+    `https://api.github.com/repos/${repoSlug}/contributors?per_page=100`,
   );
 }
 
 async function fetchOwnedRepos(login: string): Promise<GitHubRepo[]> {
   return fetchAllPages<GitHubRepo>(
-    `https://api.github.com/users/${login}/repos?type=owner&per_page=100`
+    `https://api.github.com/users/${login}/repos?type=owner&per_page=100`,
   );
 }
 
 export async function collectFeaturedContributors(
   repoSlug: string,
-  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS
+  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS,
 ): Promise<FeaturedContributor[]> {
   const contributors = await fetchAllTimeContributors(repoSlug);
   const seen = new Set<string>();
@@ -281,7 +302,7 @@ export async function collectFeaturedContributors(
 
 export function renderFeaturedContributorsSection(
   entries: FeaturedContributor[],
-  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS
+  minStars: number = FEATURED_CONTRIBUTORS_MIN_STARS,
 ): string {
   const sortedEntries = sortFeaturedContributors(entries);
   const lines = [
@@ -293,11 +314,13 @@ export function renderFeaturedContributorsSection(
   ];
 
   if (sortedEntries.length === 0) {
-    lines.push(`_No contributors currently meet the ${minStars}+ star threshold._`);
+    lines.push(
+      `_No contributors currently meet the ${minStars}+ star threshold._`,
+    );
   } else {
     for (const entry of sortedEntries) {
       lines.push(
-        `- [@${entry.login}](${entry.profileUrl}) — [${entry.repoName}](${entry.repoUrl}) (⭐ ${formatStarCount(entry.stars)})`
+        `- [@${entry.login}](${entry.profileUrl}) — [${entry.repoName}](${entry.repoUrl}) (⭐ ${formatStarCount(entry.stars)})`,
       );
     }
   }
@@ -310,7 +333,7 @@ export function renderFeaturedContributorsSection(
 export function upsertFeaturedContributorsSection(
   readmeContent: string,
   featuredSection: string,
-  anchor: string = DEFAULT_INSERTION_ANCHOR
+  anchor: string = DEFAULT_INSERTION_ANCHOR,
 ): string {
   const startIndex = readmeContent.indexOf(FEATURED_CONTRIBUTORS_START_MARKER);
   const endIndex = readmeContent.indexOf(FEATURED_CONTRIBUTORS_END_MARKER);
@@ -333,10 +356,13 @@ export function upsertFeaturedContributorsSection(
 }
 
 export async function syncFeaturedContributorsReadme(
-  options: SyncFeaturedContributorsOptions = {}
+  options: SyncFeaturedContributorsOptions = {},
 ): Promise<SyncFeaturedContributorsResult> {
   const projectRoot = options.projectRoot ?? resolve(__dirname, '../..');
-  const readmePath = join(projectRoot, options.readmePath ?? DEFAULT_README_PATH);
+  const readmePath = join(
+    projectRoot,
+    options.readmePath ?? DEFAULT_README_PATH,
+  );
   const repoSlug = options.repoSlug ?? loadRepoSlugFromPackageJson(projectRoot);
   const minStars = options.minStars ?? FEATURED_CONTRIBUTORS_MIN_STARS;
 
@@ -347,7 +373,10 @@ export async function syncFeaturedContributorsReadme(
   const entries = await collectFeaturedContributors(repoSlug, minStars);
   const originalContent = readFileSync(readmePath, 'utf-8');
   const featuredSection = renderFeaturedContributorsSection(entries, minStars);
-  const updatedContent = upsertFeaturedContributorsSection(originalContent, featuredSection);
+  const updatedContent = upsertFeaturedContributorsSection(
+    originalContent,
+    featuredSection,
+  );
   const changed = updatedContent !== originalContent;
 
   if (changed && !options.dryRun) {
@@ -399,7 +428,9 @@ function parseCliOptions(args: string[]): CliOptions {
   return options;
 }
 
-export async function runFeaturedContributorsCli(args: string[] = process.argv.slice(2)): Promise<void> {
+export async function runFeaturedContributorsCli(
+  args: string[] = process.argv.slice(2),
+): Promise<void> {
   const options = parseCliOptions(args);
 
   if (options.help) {
@@ -407,9 +438,9 @@ export async function runFeaturedContributorsCli(args: string[] = process.argv.s
 Featured Contributors README Generator
 
 Usage:
-  npm run sync-featured-contributors
-  npm run sync-featured-contributors -- --dry-run
-  npm run sync-featured-contributors -- --verify
+  pnpm run sync-featured-contributors
+  pnpm run sync-featured-contributors -- --dry-run
+  pnpm run sync-featured-contributors -- --verify
 
 Options:
   --repo=<owner/name>     Override the GitHub repository slug from package.json
@@ -430,16 +461,18 @@ Notes:
 
   if (result.changed) {
     console.log(
-      `${options.verify ? '✗' : options.dryRun ? '📝' : '✓'} ${DEFAULT_README_PATH} — featured contributors block`
+      `${options.verify ? '✗' : options.dryRun ? '📝' : '✓'} ${DEFAULT_README_PATH} — featured contributors block`,
     );
   } else {
-    console.log(`✓ ${DEFAULT_README_PATH} — featured contributors block already up to date`);
+    console.log(
+      `✓ ${DEFAULT_README_PATH} — featured contributors block already up to date`,
+    );
   }
 
   console.log(`Featured contributors: ${result.entries.length}`);
 
   if (options.verify && result.changed) {
-    console.error('Run: npm run sync-featured-contributors');
+    console.error('Run: pnpm run sync-featured-contributors');
     process.exit(1);
   }
 }

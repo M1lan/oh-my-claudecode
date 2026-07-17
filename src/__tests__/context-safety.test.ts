@@ -15,19 +15,23 @@ function makeTempDir(): string {
   return dir;
 }
 
-function writeTranscript(dir: string, inputTokens: number, contextWindow: number): string {
+function writeTranscript(
+  dir: string,
+  inputTokens: number,
+  contextWindow: number,
+): string {
   const transcriptPath = join(dir, 'transcript.jsonl');
   writeFileSync(
     transcriptPath,
     `${JSON.stringify({ message: { usage: { input_tokens: inputTokens, context_window: contextWindow } } })}\n`,
-    'utf-8'
+    'utf-8',
   );
   return transcriptPath;
 }
 
 function runContextSafety(
   input: Record<string, unknown>,
-  env: NodeJS.ProcessEnv = {}
+  env: NodeJS.ProcessEnv = {},
 ): { stdout: string; stderr: string; exitCode: number } {
   try {
     const stdout = execFileSync('node', [SCRIPT_PATH], {
@@ -65,7 +69,10 @@ describe('context-safety hook (issues #1006, #1597)', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ continue: true, suppressOutput: true });
+    expect(JSON.parse(result.stdout)).toEqual({
+      continue: true,
+      suppressOutput: true,
+    });
   });
 
   it('does NOT block ExitPlanMode even when transcript shows high context', () => {
@@ -80,11 +87,14 @@ describe('context-safety hook (issues #1006, #1597)', () => {
         session_id: 'session-1597',
         cwd: dir,
       },
-      { OMC_CONTEXT_SAFETY_THRESHOLD: '55' }
+      { OMC_CONTEXT_SAFETY_THRESHOLD: '55' },
     );
 
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ continue: true, suppressOutput: true });
+    expect(JSON.parse(result.stdout)).toEqual({
+      continue: true,
+      suppressOutput: true,
+    });
   });
 
   it('allows unknown tools through without blocking', () => {
@@ -96,7 +106,10 @@ describe('context-safety hook (issues #1006, #1597)', () => {
     });
 
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ continue: true, suppressOutput: true });
+    expect(JSON.parse(result.stdout)).toEqual({
+      continue: true,
+      suppressOutput: true,
+    });
   });
 });
 
@@ -104,12 +117,17 @@ describe('context-safety hook matcher', () => {
   it('does not register a dedicated ExitPlanMode context-safety matcher', () => {
     const hooksJson = JSON.parse(readFileSync(HOOKS_PATH, 'utf-8')) as {
       hooks: {
-        PreToolUse: Array<{ matcher: string; hooks: Array<{ command: string }> }>;
+        PreToolUse: Array<{
+          matcher: string;
+          hooks: Array<{ command: string }>;
+        }>;
       };
     };
 
-    const contextSafetyHook = hooksJson.hooks.PreToolUse.find(entry =>
-      entry.hooks.some(hook => hook.command.includes('scripts/context-safety.mjs'))
+    const contextSafetyHook = hooksJson.hooks.PreToolUse.find((entry) =>
+      entry.hooks.some((hook) =>
+        hook.command.includes('scripts/context-safety.mjs'),
+      ),
     );
 
     expect(contextSafetyHook).toBeUndefined();

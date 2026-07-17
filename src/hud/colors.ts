@@ -88,7 +88,10 @@ export function getContextColor(percent: number): string {
 /**
  * Get color code based on ralph iteration.
  */
-export function getRalphColor(iteration: number, maxIterations: number): string {
+export function getRalphColor(
+  iteration: number,
+  maxIterations: number,
+): string {
   const warningThreshold = Math.floor(maxIterations * 0.7);
   const criticalThreshold = Math.floor(maxIterations * 0.9);
 
@@ -166,7 +169,7 @@ export function coloredBar(percent: number, width: number = 10): string {
 export function coloredValue(
   value: number,
   total: number,
-  getColor: (value: number, total: number) => string
+  getColor: (value: number, total: number) => string,
 ): string {
   const color = getColor(value, total);
   return `${color}${value}/${total}${RESET}`;

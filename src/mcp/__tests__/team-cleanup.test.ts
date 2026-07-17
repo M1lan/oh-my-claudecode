@@ -14,7 +14,11 @@ import { join } from 'path';
 import { mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
 import { readFile } from 'fs/promises';
 
-type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void;
+type ExecFileCallback = (
+  error: Error | null,
+  stdout: string,
+  stderr: string,
+) => void;
 
 // ─── killWorkerPanes + killTeamSession ───────────────────────────────────────
 
@@ -23,7 +27,9 @@ vi.mock('child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('child_process')>();
   return {
     ...actual,
-    execFile: vi.fn((_cmd: string, _args: string[], cb: ExecFileCallback) => cb(null, '', '')),
+    execFile: vi.fn((_cmd: string, _args: string[], cb: ExecFileCallback) =>
+      cb(null, '', ''),
+    ),
     execFileSync: actual.execFileSync,
     execSync: actual.execSync,
   };
@@ -38,7 +44,11 @@ beforeEach(async () => {
   killedPanes = [];
   killedSessions = [];
   const cp = await import('child_process');
-  vi.mocked(cp.execFile).mockImplementation(((_cmd: string, args: string[], cb: ExecFileCallback) => {
+  vi.mocked(cp.execFile).mockImplementation(((
+    _cmd: string,
+    args: string[],
+    cb: ExecFileCallback,
+  ) => {
     if (args[0] === 'kill-pane') killedPanes.push(args[2]);
     if (args[0] === 'kill-session') killedSessions.push(args[2]);
     cb(null, '', '');
@@ -54,7 +64,12 @@ afterEach(() => {
 
 describe('killWorkerPanes', () => {
   it('is a no-op when paneIds is empty', async () => {
-    await killWorkerPanes({ paneIds: [], teamName: 'myteam', cwd: tmpdir(), graceMs: 0 });
+    await killWorkerPanes({
+      paneIds: [],
+      teamName: 'myteam',
+      cwd: tmpdir(),
+      graceMs: 0,
+    });
     expect(killedPanes).toHaveLength(0);
   });
 
@@ -77,7 +92,7 @@ describe('killWorkerPanes', () => {
       cwd: tmpdir(),
       graceMs: 0,
     });
-    expect(killedPanes).not.toContain('%1');   // leader guarded
+    expect(killedPanes).not.toContain('%1'); // leader guarded
     expect(killedPanes).toContain('%2');
     expect(killedPanes).toContain('%3');
   });
@@ -111,7 +126,7 @@ describe('killWorkerPanes', () => {
         teamName: 'nonexistent-team',
         cwd: '/tmp/does-not-exist-omc-test',
         graceMs: 0,
-      })
+      }),
     ).resolves.toBeUndefined();
     expect(killedPanes).toContain('%2');
   });
@@ -189,19 +204,30 @@ describe('validateJobId regex (/^omc-[a-z0-9]{1,16}$/)', () => {
 
 describe('team start validation wiring', () => {
   it('validates teamName at omc_run_team_start API boundary', () => {
-    const source = readFileSync(join(__dirname, '..', 'team-server.ts'), 'utf-8');
-    expect(source).toContain("import { validateTeamName } from '../team/team-name.js'");
+    const source = readFileSync(
+      join(__dirname, '..', 'team-server.ts'),
+      'utf-8',
+    );
+    expect(source).toContain(
+      "import { validateTeamName } from '../team/team-name.js'",
+    );
     expect(source).toContain('validateTeamName(input.teamName);');
   });
 
   it('starts runtime-cli with process.execPath rather than bare PATH node', () => {
-    const source = readFileSync(join(__dirname, '..', 'team-server.ts'), 'utf-8');
+    const source = readFileSync(
+      join(__dirname, '..', 'team-server.ts'),
+      'utf-8',
+    );
     expect(source).toContain('spawn(process.execPath, [runtimeCliPath]');
     expect(source).not.toContain("spawn('node', [runtimeCliPath]");
   });
 
   it('contains timeoutSeconds deprecation guard in omc_run_team_start', () => {
-    const source = readFileSync(join(__dirname, '..', 'team-server.ts'), 'utf-8');
+    const source = readFileSync(
+      join(__dirname, '..', 'team-server.ts'),
+      'utf-8',
+    );
     expect(source).toContain("hasOwnProperty.call(args, 'timeoutSeconds')");
     expect(source).toContain('no longer accepts timeoutSeconds');
   });
@@ -214,9 +240,9 @@ describe('team start validation wiring', () => {
 // while still testing the runtime rejection path as a unit.
 function handleStartGuard(args: unknown): void {
   if (
-    typeof args === 'object'
-    && args !== null
-    && Object.prototype.hasOwnProperty.call(args, 'timeoutSeconds')
+    typeof args === 'object' &&
+    args !== null &&
+    Object.prototype.hasOwnProperty.call(args, 'timeoutSeconds')
   ) {
     throw new Error(
       'omc_run_team_start no longer accepts timeoutSeconds. Remove timeoutSeconds and use omc_run_team_wait timeout_ms to limit the wait call only (workers keep running until completion or explicit omc_run_team_cleanup).',
@@ -226,33 +252,39 @@ function handleStartGuard(args: unknown): void {
 
 describe('omc_run_team_start timeoutSeconds rejection', () => {
   it('throws when timeoutSeconds is present', () => {
-    expect(() => handleStartGuard({
-      teamName: 'test',
-      agentTypes: ['claude'],
-      tasks: [{ subject: 'x', description: 'y' }],
-      cwd: '/tmp',
-      timeoutSeconds: 60,
-    })).toThrow('no longer accepts timeoutSeconds');
+    expect(() =>
+      handleStartGuard({
+        teamName: 'test',
+        agentTypes: ['claude'],
+        tasks: [{ subject: 'x', description: 'y' }],
+        cwd: '/tmp',
+        timeoutSeconds: 60,
+      }),
+    ).toThrow('no longer accepts timeoutSeconds');
   });
 
   it('error message includes migration guidance (omc_run_team_wait + omc_run_team_cleanup)', () => {
-    expect(() => handleStartGuard({
-      teamName: 'test',
-      agentTypes: ['claude'],
-      tasks: [],
-      cwd: '/tmp',
-      timeoutSeconds: 30,
-    })).toThrow('omc_run_team_wait timeout_ms');
+    expect(() =>
+      handleStartGuard({
+        teamName: 'test',
+        agentTypes: ['claude'],
+        tasks: [],
+        cwd: '/tmp',
+        timeoutSeconds: 30,
+      }),
+    ).toThrow('omc_run_team_wait timeout_ms');
   });
 
   it('does not throw when timeoutSeconds is absent', () => {
     // Should not throw — the guard passes for well-formed input
-    expect(() => handleStartGuard({
-      teamName: 'test',
-      agentTypes: ['claude'],
-      tasks: [],
-      cwd: '/tmp',
-    })).not.toThrow();
+    expect(() =>
+      handleStartGuard({
+        teamName: 'test',
+        agentTypes: ['claude'],
+        tasks: [],
+        cwd: '/tmp',
+      }),
+    ).not.toThrow();
   });
 
   it('does not throw when args is null or non-object', () => {
@@ -272,6 +304,8 @@ function exitCodeFor(status: string): number {
 describe('exitCodeFor (runtime-cli doShutdown exit codes)', () => {
   it('returns 0 for completed', () => expect(exitCodeFor('completed')).toBe(0));
   it('returns 1 for failed', () => expect(exitCodeFor('failed')).toBe(1));
-  it('returns 1 for timeout (no dedicated timeout exit code)', () => expect(exitCodeFor('timeout')).toBe(1));
-  it('returns 1 for unknown status', () => expect(exitCodeFor('unknown')).toBe(1));
+  it('returns 1 for timeout (no dedicated timeout exit code)', () =>
+    expect(exitCodeFor('timeout')).toBe(1));
+  it('returns 1 for unknown status', () =>
+    expect(exitCodeFor('unknown')).toBe(1));
 });

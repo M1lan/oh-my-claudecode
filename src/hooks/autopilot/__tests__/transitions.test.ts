@@ -106,7 +106,13 @@ describe('Autopilot State Machine Transitions', () => {
     it('should walk through the full lifecycle: expansion -> planning -> execution -> qa -> validation -> complete', () => {
       initAutopilot(testDir, 'full lifecycle test');
 
-      const phases: AutopilotPhase[] = ['planning', 'execution', 'qa', 'validation', 'complete'];
+      const phases: AutopilotPhase[] = [
+        'planning',
+        'execution',
+        'qa',
+        'validation',
+        'complete',
+      ];
 
       for (const phase of phases) {
         const state = transitionPhase(testDir, phase);
@@ -154,7 +160,10 @@ describe('Autopilot State Machine Transitions', () => {
 
     it('transitionToFailed helper should work', () => {
       initAutopilot(testDir, 'test');
-      const result: TransitionResult = transitionToFailed(testDir, 'Something went wrong');
+      const result: TransitionResult = transitionToFailed(
+        testDir,
+        'Something went wrong',
+      );
 
       expect(result.success).toBe(true);
       expect(result.state?.phase).toBe('failed');
@@ -293,7 +302,9 @@ describe('Autopilot State Machine Transitions', () => {
       const updatedState = readAutopilotState(testDir);
       // The expansion duration should be recorded
       expect(updatedState!.phase_durations['expansion']).toBeDefined();
-      expect(updatedState!.phase_durations['expansion']).toBeGreaterThanOrEqual(0);
+      expect(updatedState!.phase_durations['expansion']).toBeGreaterThanOrEqual(
+        0,
+      );
     });
   });
 
@@ -304,7 +315,10 @@ describe('Autopilot State Machine Transitions', () => {
   describe('phase data updates during transitions', () => {
     it('should preserve expansion data across transitions', () => {
       initAutopilot(testDir, 'test');
-      updateExpansion(testDir, { analyst_complete: true, requirements_summary: 'Build a REST API' });
+      updateExpansion(testDir, {
+        analyst_complete: true,
+        requirements_summary: 'Build a REST API',
+      });
       transitionPhase(testDir, 'planning');
 
       const state = readAutopilotState(testDir);
@@ -337,7 +351,11 @@ describe('Autopilot State Machine Transitions', () => {
     it('should preserve QA data across transitions', () => {
       initAutopilot(testDir, 'test');
       transitionPhase(testDir, 'qa');
-      updateQA(testDir, { build_status: 'passing', lint_status: 'passing', test_status: 'passing' });
+      updateQA(testDir, {
+        build_status: 'passing',
+        lint_status: 'passing',
+        test_status: 'passing',
+      });
       transitionPhase(testDir, 'validation');
 
       const state = readAutopilotState(testDir);

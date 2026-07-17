@@ -147,7 +147,11 @@ function resolveProvider(providerId: string, modelId: string): string {
     const modelLower = modelId.toLowerCase();
     if (modelLower.includes('claude')) return 'anthropic';
     if (modelLower.includes('gemini')) return 'google';
-    if (modelLower.includes('gpt') || modelLower.includes('o1') || modelLower.includes('o3')) {
+    if (
+      modelLower.includes('gpt') ||
+      modelLower.includes('o1') ||
+      modelLower.includes('o3')
+    ) {
       return 'openai';
     }
   }
@@ -157,7 +161,9 @@ function resolveProvider(providerId: string, modelId: string): string {
 /**
  * Check if provider has thinking configuration.
  */
-function isThinkingProvider(provider: string): provider is keyof typeof THINKING_CONFIGS {
+function isThinkingProvider(
+  provider: string,
+): provider is keyof typeof THINKING_CONFIGS {
   return provider in THINKING_CONFIGS;
 }
 
@@ -167,7 +173,7 @@ function isThinkingProvider(provider: string): provider is keyof typeof THINKING
  */
 export function getThinkingConfig(
   providerId: string,
-  modelId: string
+  modelId: string,
 ): ThinkingConfig | null {
   const normalized = normalizeModelId(modelId);
   const { base } = extractModelPrefix(normalized);
@@ -192,7 +198,7 @@ export function getThinkingConfig(
   // Check capability using base model name
   const baseLower = base.toLowerCase();
   const isCapable = capablePatterns.some((pattern) =>
-    baseLower.includes(pattern.toLowerCase())
+    baseLower.includes(pattern.toLowerCase()),
   );
 
   return isCapable ? config : null;

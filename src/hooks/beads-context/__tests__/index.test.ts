@@ -150,7 +150,11 @@ describe('beads-context', () => {
   describe('clearBeadsContext', () => {
     it('should remove beads entry from collector', () => {
       clearBeadsContext('session-1');
-      expect(mockRemoveEntry).toHaveBeenCalledWith('session-1', 'beads', 'beads-instructions');
+      expect(mockRemoveEntry).toHaveBeenCalledWith(
+        'session-1',
+        'beads',
+        'beads-instructions',
+      );
     });
   });
 

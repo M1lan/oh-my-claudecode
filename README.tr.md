@@ -68,7 +68,7 @@ Claude Code native teams'i `~/.claude/settings.json` dosyasında etkinleştirin:
 
 > Teams devre dışıysa, OMC sizi uyaracak ve mümkün olduğunda Team olmadan çalışmaya geçecektir.
 
-> **Not: Paket adlandırması** — Proje **oh-my-claudecode** markasını kullanır (repo, plugin, komutlar), ancak npm paketi [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) olarak yayınlanmaktadır. CLI araçlarını npm/bun ile kuruyorsanız, `npm install -g oh-my-claude-sisyphus` kullanın.
+> **Not: Paket adlandırması** — Proje **oh-my-claudecode** markasını kullanır (repo, plugin, komutlar), ancak npm paketi [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) olarak yayınlanmaktadır. CLI araçlarını pnpm/bun ile kuruyorsanız, `pnpm add -g oh-my-claude-sisyphus` kullanın.
 
 ### Güncelleme
 
@@ -313,8 +313,8 @@ OMC, çapraz doğrulama ve tasarım tutarlılığı için isteğe bağlı olarak
 
 | Sağlayıcı                                                 | Kurulum                             | Ne sağlar                                            |
 | --------------------------------------------------------- | ----------------------------------- | ---------------------------------------------------- |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Tasarım incelemesi, UI tutarlılığı (1M token bağlam) |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Mimari doğrulama, kod incelemesi çapraz kontrolü     |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Tasarım incelemesi, UI tutarlılığı (1M token bağlam) |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Mimari doğrulama, kod incelemesi çapraz kontrolü     |
 
 **Maliyet:** 3 Pro plan (Claude + Gemini + ChatGPT) her şeyi aylık ~$60'a karşılar.
 

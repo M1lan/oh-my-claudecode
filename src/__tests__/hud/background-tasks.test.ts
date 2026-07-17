@@ -11,7 +11,11 @@ vi.mock('../../hud/state.js', () => ({
 }));
 
 import { clearBackgroundTasks } from '../../hud/background-tasks.js';
-import { readHudState, writeHudState, createEmptyHudState } from '../../hud/state.js';
+import {
+  readHudState,
+  writeHudState,
+  createEmptyHudState,
+} from '../../hud/state.js';
 
 const mockReadHudState = vi.mocked(readHudState);
 const mockWriteHudState = vi.mocked(writeHudState);
@@ -72,8 +76,18 @@ describe('background-tasks', () => {
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
-          { id: 'a', description: 'Task A', startedAt: new Date().toISOString(), status: 'running' },
-          { id: 'b', description: 'Task B', startedAt: new Date().toISOString(), status: 'completed' },
+          {
+            id: 'a',
+            description: 'Task A',
+            startedAt: new Date().toISOString(),
+            status: 'running',
+          },
+          {
+            id: 'b',
+            description: 'Task B',
+            startedAt: new Date().toISOString(),
+            status: 'completed',
+          },
         ],
       });
 
@@ -88,7 +102,12 @@ describe('background-tasks', () => {
       mockReadHudState.mockReturnValue({
         timestamp: new Date().toISOString(),
         backgroundTasks: [
-          { id: 'x', description: 'X', startedAt: new Date().toISOString(), status: 'running' },
+          {
+            id: 'x',
+            description: 'X',
+            startedAt: new Date().toISOString(),
+            status: 'running',
+          },
         ],
         sessionStartTimestamp: sessionStart,
         sessionId: 'dir-session',

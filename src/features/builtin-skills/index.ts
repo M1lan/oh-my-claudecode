@@ -7,4 +7,8 @@
  */
 
 export * from './types.js';
-export { createBuiltinSkills, getBuiltinSkill, listBuiltinSkillNames } from './skills.js';
+export {
+  createBuiltinSkills,
+  getBuiltinSkill,
+  listBuiltinSkillNames,
+} from './skills.js';

@@ -10,7 +10,12 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 
-const PACKAGED_COMMANDS_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'commands');
+const PACKAGED_COMMANDS_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  '..',
+  '..',
+  'commands',
+);
 export interface CommandInfo {
   name: string;
   description: string;
@@ -34,7 +39,10 @@ export function getCommandsDir(): string {
 /**
  * Parse command frontmatter and content
  */
-function parseCommandFile(content: string): { description: string; template: string } {
+function parseCommandFile(content: string): {
+  description: string;
+  template: string;
+} {
   const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
 
   if (!frontmatterMatch) {
@@ -79,7 +87,7 @@ export function getCommand(name: string): CommandInfo | null {
       name,
       description,
       template,
-      filePath
+      filePath,
     };
   } catch (error) {
     console.error(`Error reading command ${name}:`, error);
@@ -99,7 +107,9 @@ export function getAllCommands(): CommandInfo[] {
     }
 
     try {
-      for (const file of readdirSync(commandsDir).filter(f => f.endsWith('.md'))) {
+      for (const file of readdirSync(commandsDir).filter((f) =>
+        f.endsWith('.md'),
+      )) {
         commandNames.add(file.replace('.md', ''));
       }
     } catch (error) {
@@ -108,7 +118,7 @@ export function getAllCommands(): CommandInfo[] {
   }
 
   return Array.from(commandNames)
-    .map(name => getCommand(name))
+    .map((name) => getCommand(name))
     .filter((c): c is CommandInfo => c !== null);
 }
 
@@ -116,7 +126,7 @@ export function getAllCommands(): CommandInfo[] {
  * List available command names
  */
 export function listCommands(): string[] {
-  return getAllCommands().map(c => c.name);
+  return getAllCommands().map((c) => c.name);
 }
 
 /**
@@ -134,7 +144,10 @@ export function listCommands(): string[] {
  * // Returns the full ralph template with "Build a REST API" substituted
  * ```
  */
-export function expandCommand(name: string, args: string = ''): ExpandedCommand | null {
+export function expandCommand(
+  name: string,
+  args: string = '',
+): ExpandedCommand | null {
   const command = getCommand(name);
 
   if (!command) {
@@ -147,7 +160,7 @@ export function expandCommand(name: string, args: string = ''): ExpandedCommand 
   return {
     name,
     prompt: prompt.trim(),
-    description: command.description
+    description: command.description,
   };
 }
 
@@ -169,7 +182,10 @@ export function expandCommand(name: string, args: string = ''): ExpandedCommand 
  * }
  * ```
  */
-export function expandCommandPrompt(name: string, args: string = ''): string | null {
+export function expandCommandPrompt(
+  name: string,
+  args: string = '',
+): string | null {
   const expanded = expandCommand(name, args);
   return expanded ? expanded.prompt : null;
 }
@@ -184,7 +200,9 @@ export function commandExists(name: string): boolean {
 /**
  * Batch expand multiple commands
  */
-export function expandCommands(commands: Array<{ name: string; args?: string }>): ExpandedCommand[] {
+export function expandCommands(
+  commands: Array<{ name: string; args?: string }>,
+): ExpandedCommand[] {
   return commands
     .map(({ name, args }) => expandCommand(name, args))
     .filter((c): c is ExpandedCommand => c !== null);

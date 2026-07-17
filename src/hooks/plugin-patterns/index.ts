@@ -60,7 +60,7 @@ const DEFAULT_FORMATTERS: Record<string, string> = {
   '.md': 'prettier --write',
   '.py': 'black',
   '.go': 'gofmt -w',
-  '.rs': 'rustfmt'
+  '.rs': 'rustfmt',
 };
 
 /**
@@ -83,10 +83,17 @@ export function isFormatterAvailable(command: string): boolean {
 /**
  * Format a file using the appropriate formatter
  */
-export function formatFile(filePath: string): { success: boolean; message: string } {
+export function formatFile(filePath: string): {
+  success: boolean;
+  message: string;
+} {
   // Validate file path for security
   if (!isValidFilePath(filePath)) {
-    return { success: false, message: 'Invalid file path: contains unsafe characters or path traversal' };
+    return {
+      success: false,
+      message:
+        'Invalid file path: contains unsafe characters or path traversal',
+    };
   }
 
   const ext = extname(filePath);
@@ -102,7 +109,10 @@ export function formatFile(filePath: string): { success: boolean; message: strin
 
   try {
     const [formatterBin, ...formatterArgs] = formatter.split(' ');
-    execFileSync(formatterBin, [...formatterArgs, filePath], { encoding: 'utf-8', stdio: 'pipe' });
+    execFileSync(formatterBin, [...formatterArgs, filePath], {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+    });
     return { success: true, message: `Formatted ${filePath}` };
   } catch (_error) {
     return { success: false, message: `Format failed: ${_error}` };
@@ -129,7 +139,7 @@ const DEFAULT_LINTERS: Record<string, string> = {
   '.jsx': 'eslint --fix',
   '.py': 'ruff check --fix',
   '.go': 'golangci-lint run',
-  '.rs': 'cargo clippy'
+  '.rs': 'cargo clippy',
 };
 
 /**
@@ -142,10 +152,17 @@ export function getLinter(ext: string): string | null {
 /**
  * Run linter on a file
  */
-export function lintFile(filePath: string): { success: boolean; message: string } {
+export function lintFile(filePath: string): {
+  success: boolean;
+  message: string;
+} {
   // Validate file path for security
   if (!isValidFilePath(filePath)) {
-    return { success: false, message: 'Invalid file path: contains unsafe characters or path traversal' };
+    return {
+      success: false,
+      message:
+        'Invalid file path: contains unsafe characters or path traversal',
+    };
   }
 
   const ext = extname(filePath);
@@ -164,7 +181,10 @@ export function lintFile(filePath: string): { success: boolean; message: string 
 
   try {
     const [linterCmd, ...linterArgs] = linter.split(' ');
-    execFileSync(linterCmd, [...linterArgs, filePath], { encoding: 'utf-8', stdio: 'pipe' });
+    execFileSync(linterCmd, [...linterArgs, filePath], {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+    });
     return { success: true, message: `Lint passed for ${filePath}` };
   } catch (_error) {
     return { success: false, message: `Lint errors in ${filePath}` };
@@ -187,27 +207,28 @@ export interface CommitConfig {
 }
 
 const DEFAULT_COMMIT_TYPES = [
-  'feat',     // New feature
-  'fix',      // Bug fix
-  'docs',     // Documentation
-  'style',    // Formatting, no code change
+  'feat', // New feature
+  'fix', // Bug fix
+  'docs', // Documentation
+  'style', // Formatting, no code change
   'refactor', // Refactoring
-  'perf',     // Performance improvement
-  'test',     // Adding tests
-  'build',    // Build system changes
-  'ci',       // CI configuration
-  'chore',    // Maintenance
-  'revert'    // Revert previous commit
+  'perf', // Performance improvement
+  'test', // Adding tests
+  'build', // Build system changes
+  'ci', // CI configuration
+  'chore', // Maintenance
+  'revert', // Revert previous commit
 ];
 
-const CONVENTIONAL_COMMIT_REGEX = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?(!)?:\s.+$/;
+const CONVENTIONAL_COMMIT_REGEX =
+  /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?(!)?:\s.+$/;
 
 /**
  * Validate a commit message against conventional commit format
  */
 export function validateCommitMessage(
   message: string,
-  config?: Partial<CommitConfig>
+  config?: Partial<CommitConfig>,
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   const lines = message.trim().split('\n');
@@ -220,15 +241,20 @@ export function validateCommitMessage(
   }
 
   // Determine effective types: prefer config.types when non-empty
-  const effectiveTypes = config?.types?.length ? config.types : DEFAULT_COMMIT_TYPES;
-  const commitRegex = effectiveTypes === DEFAULT_COMMIT_TYPES
-    ? CONVENTIONAL_COMMIT_REGEX
-    : new RegExp(`^(${effectiveTypes.join('|')})(\\([a-z0-9-]+\\))?(!)?:\\s.+$`);
+  const effectiveTypes = config?.types?.length
+    ? config.types
+    : DEFAULT_COMMIT_TYPES;
+  const commitRegex =
+    effectiveTypes === DEFAULT_COMMIT_TYPES
+      ? CONVENTIONAL_COMMIT_REGEX
+      : new RegExp(
+          `^(${effectiveTypes.join('|')})(\\([a-z0-9-]+\\))?(!)?:\\s.+$`,
+        );
 
   // Check conventional commit format
   if (!commitRegex.test(subject)) {
     errors.push(
-      'Subject must follow conventional commit format: type(scope?): description'
+      'Subject must follow conventional commit format: type(scope?): description',
     );
     errors.push(`Allowed types: ${effectiveTypes.join(', ')}`);
   }
@@ -264,7 +290,10 @@ export function validateCommitMessage(
 /**
  * Run TypeScript type checking
  */
-export function runTypeCheck(directory: string): { success: boolean; message: string } {
+export function runTypeCheck(directory: string): {
+  success: boolean;
+  message: string;
+} {
   const tsconfigPath = join(directory, 'tsconfig.json');
 
   if (!existsSync(tsconfigPath)) {
@@ -277,8 +306,8 @@ export function runTypeCheck(directory: string): { success: boolean; message: st
     return { success: true, message: 'TypeScript not installed' };
   }
 
-  // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npx.cmd (CVE-2024-27980). #2721
-  const tscResult = spawnSync('npx', ['tsc', '--noEmit'], {
+  // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
+  const tscResult = spawnSync('pnpm', ['exec', 'tsc', '--noEmit'], {
     cwd: directory,
     stdio: 'pipe',
     shell: process.platform === 'win32',
@@ -296,18 +325,21 @@ export function runTypeCheck(directory: string): { success: boolean; message: st
 /**
  * Detect and run tests for a project
  */
-export function runTests(directory: string): { success: boolean; message: string } {
+export function runTests(directory: string): {
+  success: boolean;
+  message: string;
+} {
   const packageJsonPath = join(directory, 'package.json');
 
   if (existsSync(packageJsonPath)) {
     try {
       const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
       if (pkg.scripts?.test) {
-        execFileSync('npm', ['test'], {
+        execFileSync('pnpm', ['test'], {
           cwd: directory,
           encoding: 'utf-8',
           stdio: 'pipe',
-          // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npm.cmd (CVE-2024-27980). #2721
+          // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
           shell: process.platform === 'win32',
         });
         return { success: true, message: 'Tests passed' };
@@ -318,9 +350,16 @@ export function runTests(directory: string): { success: boolean; message: string
   }
 
   // Check for pytest
-  if (existsSync(join(directory, 'pytest.ini')) || existsSync(join(directory, 'pyproject.toml'))) {
+  if (
+    existsSync(join(directory, 'pytest.ini')) ||
+    existsSync(join(directory, 'pyproject.toml'))
+  ) {
     try {
-      execFileSync('pytest', [], { cwd: directory, encoding: 'utf-8', stdio: 'pipe' });
+      execFileSync('pytest', [], {
+        cwd: directory,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
       return { success: true, message: 'Tests passed' };
     } catch (_error) {
       return { success: false, message: 'Tests failed' };
@@ -337,7 +376,10 @@ export function runTests(directory: string): { success: boolean; message: string
 /**
  * Run project-level lint checks
  */
-export function runLint(directory: string): { success: boolean; message: string } {
+export function runLint(directory: string): {
+  success: boolean;
+  message: string;
+} {
   const packageJsonPath = join(directory, 'package.json');
 
   if (existsSync(packageJsonPath)) {
@@ -345,11 +387,11 @@ export function runLint(directory: string): { success: boolean; message: string 
       const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
       if (pkg.scripts?.lint) {
         try {
-          execFileSync('npm', ['run', 'lint'], {
+          execFileSync('pnpm', ['run', 'lint'], {
             cwd: directory,
             encoding: 'utf-8',
             stdio: 'pipe',
-            // shell:true on Windows avoids Node 20.12+ EINVAL when spawning npm.cmd (CVE-2024-27980). #2721
+            // shell:true on Windows avoids Node 20.12+ EINVAL when spawning pnpm.cmd (CVE-2024-27980). #2721
             shell: process.platform === 'win32',
           });
           return { success: true, message: 'Lint passed' };
@@ -383,7 +425,7 @@ export interface PreCommitResult {
  */
 export function runPreCommitChecks(
   directory: string,
-  commitMessage?: string
+  commitMessage?: string,
 ): PreCommitResult {
   const checks: PreCommitResult['checks'] = [];
 
@@ -392,7 +434,7 @@ export function runPreCommitChecks(
   checks.push({
     name: 'Type Check',
     passed: typeCheck.success,
-    message: typeCheck.message
+    message: typeCheck.message,
   });
 
   // Test runner
@@ -400,7 +442,7 @@ export function runPreCommitChecks(
   checks.push({
     name: 'Tests',
     passed: testCheck.success,
-    message: testCheck.message
+    message: testCheck.message,
   });
 
   // Lint
@@ -408,7 +450,7 @@ export function runPreCommitChecks(
   checks.push({
     name: 'Lint',
     passed: lintCheck.success,
-    message: lintCheck.message
+    message: lintCheck.message,
   });
 
   // Commit message validation
@@ -417,12 +459,14 @@ export function runPreCommitChecks(
     checks.push({
       name: 'Commit Message',
       passed: commitCheck.valid,
-      message: commitCheck.valid ? 'Valid format' : commitCheck.errors.join('; ')
+      message: commitCheck.valid
+        ? 'Valid format'
+        : commitCheck.errors.join('; '),
     });
   }
 
   // All checks must pass
-  const canCommit = checks.every(c => c.passed);
+  const canCommit = checks.every((c) => c.passed);
 
   return { canCommit, checks };
 }
@@ -439,14 +483,14 @@ export function getPreCommitReminderMessage(result: PreCommitResult): string {
     return '';
   }
 
-  const failedChecks = result.checks.filter(c => !c.passed);
+  const failedChecks = result.checks.filter((c) => !c.passed);
 
   return `<pre-commit-validation>
 
 [PRE-COMMIT CHECKS FAILED]
 
 The following checks did not pass:
-${failedChecks.map(c => `- ${c.name}: ${c.message}`).join('\n')}
+${failedChecks.map((c) => `- ${c.name}: ${c.message}`).join('\n')}
 
 Please fix these issues before committing.
 
@@ -460,7 +504,10 @@ Please fix these issues before committing.
 /**
  * Generate auto-format reminder message
  */
-export function getAutoFormatMessage(filePath: string, result: { success: boolean; message: string }): string {
+export function getAutoFormatMessage(
+  filePath: string,
+  result: { success: boolean; message: string },
+): string {
   if (result.success) {
     return '';
   }

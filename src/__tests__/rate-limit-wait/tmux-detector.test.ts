@@ -15,7 +15,8 @@ import type { BlockedPane } from '../../features/rate-limit-wait/types.js';
 
 // Mock tmux-utils wrappers
 vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return { ...actual, tmuxExec: vi.fn(), tmuxSpawn: vi.fn() };
 });
 
@@ -404,7 +405,7 @@ describe('tmux-detector', () => {
       });
 
       vi.mocked(tmuxExec).mockReturnValue(
-        'main:0.0 %0 1 dev Claude\nmain:0.1 %1 0 dev Other\n'
+        'main:0.0 %0 1 dev Claude\nmain:0.1 %1 0 dev Other\n',
       );
 
       const panes = listTmuxPanes();
@@ -464,7 +465,7 @@ describe('tmux-detector', () => {
       expect(content).toBe('Line 1\nLine 2\nLine 3\n');
       expect(tmuxExec).toHaveBeenCalledWith(
         ['capture-pane', '-t', '%0', '-p', '-S', '-3'],
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -534,7 +535,7 @@ describe('tmux-detector', () => {
       capturePaneContent('%0', -5);
       expect(tmuxExec).toHaveBeenCalledWith(
         expect.arrayContaining(['-S', '-1']),
-        expect.any(Object)
+        expect.any(Object),
       );
 
       // Should clamp excessive values to 100
@@ -542,7 +543,7 @@ describe('tmux-detector', () => {
       capturePaneContent('%0', 1000);
       expect(tmuxExec).toHaveBeenCalledWith(
         expect.arrayContaining(['-S', '-100']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
   });
@@ -712,7 +713,11 @@ describe('tmux-detector', () => {
 
       expect(blocked).toHaveLength(0);
       // getNewPaneTail must be called with the provided stateDir
-      expect(getNewPaneTail).toHaveBeenCalledWith('%0', '/project/.omc/state', 15);
+      expect(getNewPaneTail).toHaveBeenCalledWith(
+        '%0',
+        '/project/.omc/state',
+        15,
+      );
     });
 
     it('detects a blocked pane from fresh delta lines when stateDir is provided', () => {
@@ -720,7 +725,7 @@ describe('tmux-detector', () => {
       vi.mocked(tmuxExec).mockReturnValue('main:0.0 %0 1 dev Claude\n');
       // getNewPaneTail returns new rate-limit content
       vi.mocked(getNewPaneTail).mockReturnValue(
-        'Claude Code\nYou\'ve hit your limit · resets Feb 17 at 2pm\n❯ 1. Stop and wait\nEnter to confirm',
+        "Claude Code\nYou've hit your limit · resets Feb 17 at 2pm\n❯ 1. Stop and wait\nEnter to confirm",
       );
 
       const blocked = scanForBlockedPanes(15, '/project/.omc/state');
@@ -735,7 +740,7 @@ describe('tmux-detector', () => {
       // listTmuxPanes + capturePaneContent both use tmuxExec
       vi.mocked(tmuxExec)
         .mockReturnValueOnce('main:0.0 %0 1 dev Claude\n') // listTmuxPanes
-        .mockReturnValueOnce('');                           // capturePaneContent → empty
+        .mockReturnValueOnce(''); // capturePaneContent → empty
 
       const blocked = scanForBlockedPanes(15);
 
@@ -746,8 +751,7 @@ describe('tmux-detector', () => {
 
     it('does not report non-Claude panes with copied HUD and rate-limit output', () => {
       vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      vi.mocked(tmuxExec)
-        .mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
+      vi.mocked(tmuxExec).mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
         .mockReturnValueOnce(`
           $ cat copied-hud.txt
           [OMC#4.15.1L] | Model: Opus 4.8 | 5h:100% wk:14% | thinking | session:80m | ctx:14%

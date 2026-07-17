@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { findPermissionViolations, getEffectivePermissions, isPathAllowed } from '../team/permissions.js';
+import {
+  findPermissionViolations,
+  getEffectivePermissions,
+  isPathAllowed,
+} from '../team/permissions.js';
 
 const cwd = '/tmp/protected-mode-project';
 
@@ -38,10 +42,15 @@ describe('Protected-mode regression: secure deny defaults', () => {
     const violations = findPermissionViolations(
       ['src/app.ts', '.git/HEAD', 'config/.env.production', 'src/utils.ts'],
       perms,
-      cwd
+      cwd,
     );
 
-    expect(violations.map(v => v.path)).toEqual(['.git/HEAD', 'config/.env.production']);
-    expect(violations.every(v => /denied pattern/i.test(v.reason))).toBe(true);
+    expect(violations.map((v) => v.path)).toEqual([
+      '.git/HEAD',
+      'config/.env.production',
+    ]);
+    expect(violations.every((v) => /denied pattern/i.test(v.reason))).toBe(
+      true,
+    );
   });
 });

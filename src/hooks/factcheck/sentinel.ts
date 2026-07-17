@@ -47,7 +47,9 @@ export function getReasonCoverageRate(stats: SentinelStats): number {
  * Normalize a verdict string to PASS, WARN, or FAIL.
  */
 function extractVerdict(entry: SentinelLogEntry): 'PASS' | 'WARN' | 'FAIL' {
-  const raw = String(entry.verdict ?? '').toUpperCase().trim();
+  const raw = String(entry.verdict ?? '')
+    .toUpperCase()
+    .trim();
   if (raw === 'PASS') return 'PASS';
   if (raw === 'WARN') return 'WARN';
   return 'FAIL';
@@ -101,7 +103,7 @@ export function analyzeLog(logPath: string): SentinelStats {
     return stats;
   }
 
-  const lines = content.split('\n').filter(line => line.trim().length > 0);
+  const lines = content.split('\n').filter((line) => line.trim().length > 0);
 
   for (const line of lines) {
     let entry: SentinelLogEntry;

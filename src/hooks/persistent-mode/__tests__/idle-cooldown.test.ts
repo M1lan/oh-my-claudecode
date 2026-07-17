@@ -51,7 +51,7 @@ const SESSION_COOLDOWN_PATH = join(
   TEST_STATE_DIR,
   'sessions',
   TEST_SESSION_ID,
-  'idle-notif-cooldown.json'
+  'idle-notif-cooldown.json',
 );
 function getConfigPaths(): string[] {
   return getGlobalOmcConfigCandidates('config.json');
@@ -107,7 +107,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('returns configured value when set in config', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 120 } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 120 } }),
     );
 
     const [configPath] = getConfigPaths();
@@ -125,20 +125,28 @@ describe('getIdleNotificationCooldownSeconds', () => {
     if (candidates.length < 2) {
       // Only one candidate (macOS) — XDG and legacy are identical.
       // Verify the single path is read and returns the configured value.
-      (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === legacyConfigPath);
+      (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => p === legacyConfigPath,
+      );
       (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-        JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 45 } })
+        JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 45 } }),
       );
     } else {
       // Two distinct candidates (Linux) — first is XDG, second is legacy.
       // Mock XDG as absent, legacy as present with the configured value.
-      (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === legacyConfigPath);
-      (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-        if (p === legacyConfigPath) {
-          return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 45 } });
-        }
-        throw new Error('not found');
-      });
+      (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => p === legacyConfigPath,
+      );
+      (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+        (p: string) => {
+          if (p === legacyConfigPath) {
+            return JSON.stringify({
+              notificationCooldown: { sessionIdleSeconds: 45 },
+            });
+          }
+          throw new Error('not found');
+        },
+      );
     }
 
     expect(getIdleNotificationCooldownSeconds()).toBe(45);
@@ -148,7 +156,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('returns 0 when cooldown is disabled in config', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 0 } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 0 } }),
     );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(0);
@@ -157,7 +165,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('returns 60 when notificationCooldown key is absent', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ someOtherKey: true })
+      JSON.stringify({ someOtherKey: true }),
     );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(60);
@@ -165,7 +173,9 @@ describe('getIdleNotificationCooldownSeconds', () => {
 
   it('returns 60 when config is malformed JSON', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
-    (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue('not valid json{{');
+    (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
+      'not valid json{{',
+    );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(60);
   });
@@ -173,7 +183,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('returns 60 when sessionIdleSeconds is not a number', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 'sixty' } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 'sixty' } }),
     );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(60);
@@ -182,7 +192,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('clamps negative sessionIdleSeconds to 0', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: -10 } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: -10 } }),
     );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(0);
@@ -191,7 +201,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('returns 60 when sessionIdleSeconds is NaN', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: null } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: null } }),
     );
     // null parses as non-number → falls through to default
     expect(getIdleNotificationCooldownSeconds()).toBe(60);
@@ -205,7 +215,9 @@ describe('getIdleNotificationCooldownSeconds', () => {
       // then we test that Number.isFinite guard rejects Infinity by
       // returning raw JSON with null (non-number path → default 60).
       // The real Infinity guard is tested via shouldSendIdleNotification below.
-      return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: null } });
+      return JSON.stringify({
+        notificationCooldown: { sessionIdleSeconds: null },
+      });
     });
     expect(getIdleNotificationCooldownSeconds()).toBe(60);
   });
@@ -213,7 +225,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
   it('clamps large finite positive values without capping (returns as-is when positive)', () => {
     (existsSync as ReturnType<typeof vi.fn>).mockReturnValue(true);
     (readFileSync as ReturnType<typeof vi.fn>).mockReturnValue(
-      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 9999999 } })
+      JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 9999999 } }),
     );
 
     expect(getIdleNotificationCooldownSeconds()).toBe(9999999);
@@ -246,10 +258,13 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false; // config missing → default 60s
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(false);
   });
@@ -260,10 +275,13 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false; // config missing → default 60s
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: oldTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: oldTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
   });
@@ -276,13 +294,18 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      const [configPath] = getConfigPaths();
-      if (p === configPath)
-        return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 0 } });
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const [configPath] = getConfigPaths();
+        if (p === configPath)
+          return JSON.stringify({
+            notificationCooldown: { sessionIdleSeconds: 0 },
+          });
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
   });
@@ -292,10 +315,13 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) return JSON.stringify({ someOtherField: 'value' });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ someOtherField: 'value' });
+        throw new Error('not found');
+      },
+    );
 
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
   });
@@ -305,10 +331,12 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) return 'not valid json{{';
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) return 'not valid json{{';
+        throw new Error('not found');
+      },
+    );
 
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
   });
@@ -321,13 +349,18 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      const [configPath] = getConfigPaths();
-      if (p === configPath)
-        return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 5 } });
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const [configPath] = getConfigPaths();
+        if (p === configPath)
+          return JSON.stringify({
+            notificationCooldown: { sessionIdleSeconds: 5 },
+          });
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     // 10s elapsed, cooldown is 5s → should send
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
@@ -341,50 +374,77 @@ describe('shouldSendIdleNotification', () => {
       if (p === SESSION_COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      const [configPath] = getConfigPaths();
-      if (p === configPath) {
-        return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 30 } });
-      }
-      if (p === SESSION_COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const [configPath] = getConfigPaths();
+        if (p === configPath) {
+          return JSON.stringify({
+            notificationCooldown: { sessionIdleSeconds: 30 },
+          });
+        }
+        if (p === SESSION_COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldSendIdleNotification(TEST_STATE_DIR, TEST_SESSION_ID)).toBe(false);
+    expect(shouldSendIdleNotification(TEST_STATE_DIR, TEST_SESSION_ID)).toBe(
+      false,
+    );
   });
 
   it('suppresses repeated zero-backlog nudges across follow-up sessions when the global repo snapshot is unchanged', () => {
     const oldTimestamp = new Date(Date.now() - 90_000).toISOString();
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === COOLDOWN_PATH);
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: oldTimestamp,
-          repoSignature: zeroBacklogState.signature,
-          backlogZero: true,
-        });
-      }
-      throw new Error('not found');
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => p === COOLDOWN_PATH,
+    );
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: oldTimestamp,
+            repoSignature: zeroBacklogState.signature,
+            backlogZero: true,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldSendIdleNotification(TEST_STATE_DIR, TEST_SESSION_ID, zeroBacklogState)).toBe(false);
+    expect(
+      shouldSendIdleNotification(
+        TEST_STATE_DIR,
+        TEST_SESSION_ID,
+        zeroBacklogState,
+      ),
+    ).toBe(false);
   });
 
   it('re-enables zero-backlog nudges across follow-up sessions when the repo snapshot changes', () => {
     const recentTimestamp = new Date(Date.now() - 5_000).toISOString();
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === COOLDOWN_PATH);
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: recentTimestamp,
-          repoSignature: zeroBacklogState.signature,
-          backlogZero: true,
-        });
-      }
-      throw new Error('not found');
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => p === COOLDOWN_PATH,
+    );
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: recentTimestamp,
+            repoSignature: zeroBacklogState.signature,
+            backlogZero: true,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldSendIdleNotification(TEST_STATE_DIR, TEST_SESSION_ID, changedBacklogState)).toBe(true);
+    expect(
+      shouldSendIdleNotification(
+        TEST_STATE_DIR,
+        TEST_SESSION_ID,
+        changedBacklogState,
+      ),
+    ).toBe(true);
   });
 
   it('blocks notification when within custom shorter cooldown', () => {
@@ -395,13 +455,18 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      const [configPath] = getConfigPaths();
-      if (p === configPath)
-        return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: 30 } });
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const [configPath] = getConfigPaths();
+        if (p === configPath)
+          return JSON.stringify({
+            notificationCooldown: { sessionIdleSeconds: 30 },
+          });
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     // 10s elapsed, cooldown is 30s → should NOT send
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(false);
@@ -415,13 +480,18 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      const [configPath] = getConfigPaths();
-      if (p === configPath)
-        return JSON.stringify({ notificationCooldown: { sessionIdleSeconds: -30 } });
-      if (p === COOLDOWN_PATH) return JSON.stringify({ lastSentAt: recentTimestamp });
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        const [configPath] = getConfigPaths();
+        if (p === configPath)
+          return JSON.stringify({
+            notificationCooldown: { sessionIdleSeconds: -30 },
+          });
+        if (p === COOLDOWN_PATH)
+          return JSON.stringify({ lastSentAt: recentTimestamp });
+        throw new Error('not found');
+      },
+    );
 
     // Negative cooldown clamped to 0 → treated as disabled → should send
     expect(shouldSendIdleNotification(TEST_STATE_DIR)).toBe(true);
@@ -433,18 +503,22 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: oldTimestamp,
-          repoSignature: zeroBacklogState.signature,
-          backlogZero: true,
-        });
-      }
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: oldTimestamp,
+            repoSignature: zeroBacklogState.signature,
+            backlogZero: true,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldSendIdleNotification(TEST_STATE_DIR, undefined, zeroBacklogState)).toBe(false);
+    expect(
+      shouldSendIdleNotification(TEST_STATE_DIR, undefined, zeroBacklogState),
+    ).toBe(false);
   });
 
   it('allows immediate idle notification when repo state changes even inside cooldown', () => {
@@ -453,18 +527,26 @@ describe('shouldSendIdleNotification', () => {
       if (p === COOLDOWN_PATH) return true;
       return false;
     });
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: recentTimestamp,
-          repoSignature: zeroBacklogState.signature,
-          backlogZero: true,
-        });
-      }
-      throw new Error('not found');
-    });
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: recentTimestamp,
+            repoSignature: zeroBacklogState.signature,
+            backlogZero: true,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldSendIdleNotification(TEST_STATE_DIR, undefined, changedBacklogState)).toBe(true);
+    expect(
+      shouldSendIdleNotification(
+        TEST_STATE_DIR,
+        undefined,
+        changedBacklogState,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -478,36 +560,56 @@ describe('shouldWakeOpenClawOnStop', () => {
 
   it('suppresses stop wakes when the zero-backlog repo snapshot is unchanged', () => {
     const oldTimestamp = new Date(Date.now() - 90_000).toISOString();
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === COOLDOWN_PATH);
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: oldTimestamp,
-          repoSignature: zeroBacklogState.signature,
-          backlogZero: true,
-        });
-      }
-      throw new Error('not found');
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => p === COOLDOWN_PATH,
+    );
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: oldTimestamp,
+            repoSignature: zeroBacklogState.signature,
+            backlogZero: true,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldWakeOpenClawOnStop(TEST_STATE_DIR, TEST_SESSION_ID, zeroBacklogState)).toBe(false);
+    expect(
+      shouldWakeOpenClawOnStop(
+        TEST_STATE_DIR,
+        TEST_SESSION_ID,
+        zeroBacklogState,
+      ),
+    ).toBe(false);
   });
 
   it('still allows stop wakes when only the ordinary cooldown is active', () => {
     const recentTimestamp = new Date(Date.now() - 5_000).toISOString();
-    (existsSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => p === COOLDOWN_PATH);
-    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation((p: string) => {
-      if (p === COOLDOWN_PATH) {
-        return JSON.stringify({
-          lastSentAt: recentTimestamp,
-          repoSignature: changedBacklogState.signature,
-          backlogZero: false,
-        });
-      }
-      throw new Error('not found');
-    });
+    (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => p === COOLDOWN_PATH,
+    );
+    (readFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (p: string) => {
+        if (p === COOLDOWN_PATH) {
+          return JSON.stringify({
+            lastSentAt: recentTimestamp,
+            repoSignature: changedBacklogState.signature,
+            backlogZero: false,
+          });
+        }
+        throw new Error('not found');
+      },
+    );
 
-    expect(shouldWakeOpenClawOnStop(TEST_STATE_DIR, TEST_SESSION_ID, zeroBacklogState)).toBe(true);
+    expect(
+      shouldWakeOpenClawOnStop(
+        TEST_STATE_DIR,
+        TEST_SESSION_ID,
+        zeroBacklogState,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -524,7 +626,9 @@ describe('recordIdleNotificationSent', () => {
     const after = Date.now();
 
     expect(atomicWriteJsonSync).toHaveBeenCalledOnce();
-    const [calledPath, calledData] = (atomicWriteJsonSync as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [calledPath, calledData] = (
+      atomicWriteJsonSync as ReturnType<typeof vi.fn>
+    ).mock.calls[0];
     expect(calledPath).toBe(COOLDOWN_PATH);
 
     const written = calledData as { lastSentAt: string };
@@ -537,12 +641,17 @@ describe('recordIdleNotificationSent', () => {
     recordIdleNotificationSent(TEST_STATE_DIR, TEST_SESSION_ID);
 
     expect(atomicWriteJsonSync).toHaveBeenCalledOnce();
-    const [calledPath] = (atomicWriteJsonSync as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [calledPath] = (atomicWriteJsonSync as ReturnType<typeof vi.fn>).mock
+      .calls[0];
     expect(calledPath).toBe(SESSION_COOLDOWN_PATH);
   });
 
   it('mirrors zero-backlog metadata to the global cooldown file for follow-up sessions', () => {
-    recordIdleNotificationSent(TEST_STATE_DIR, TEST_SESSION_ID, zeroBacklogState);
+    recordIdleNotificationSent(
+      TEST_STATE_DIR,
+      TEST_SESSION_ID,
+      zeroBacklogState,
+    );
 
     expect(atomicWriteJsonSync).toHaveBeenCalledTimes(2);
     expect(atomicWriteJsonSync).toHaveBeenCalledWith(
@@ -551,7 +660,7 @@ describe('recordIdleNotificationSent', () => {
         lastSentAt: expect.any(String),
         repoSignature: zeroBacklogState.signature,
         backlogZero: true,
-      })
+      }),
     );
     expect(atomicWriteJsonSync).toHaveBeenCalledWith(
       COOLDOWN_PATH,
@@ -559,7 +668,7 @@ describe('recordIdleNotificationSent', () => {
         lastSentAt: expect.any(String),
         repoSignature: zeroBacklogState.signature,
         backlogZero: true,
-      })
+      }),
     );
   });
 
@@ -567,7 +676,8 @@ describe('recordIdleNotificationSent', () => {
     recordIdleNotificationSent(TEST_STATE_DIR);
 
     expect(atomicWriteJsonSync).toHaveBeenCalledOnce();
-    const [calledPath] = (atomicWriteJsonSync as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [calledPath] = (atomicWriteJsonSync as ReturnType<typeof vi.fn>).mock
+      .calls[0];
     expect(calledPath).toBe(COOLDOWN_PATH);
   });
 

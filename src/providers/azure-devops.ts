@@ -22,17 +22,25 @@ export class AzureDevOpsProvider implements GitProvider {
   viewPR(number: number): PRInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const raw = execFileSync('az', ['repos', 'pr', 'show', '--id', String(number), '--output', 'json'], {
-        encoding: 'utf-8',
-        timeout: 15000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const raw = execFileSync(
+        'az',
+        ['repos', 'pr', 'show', '--id', String(number), '--output', 'json'],
+        {
+          encoding: 'utf-8',
+          timeout: 15000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      );
       const data = JSON.parse(raw);
       const createdBy = data.createdBy as Record<string, unknown> | undefined;
       return {
         title: data.title as string,
-        headBranch: data.sourceRefName ? stripRefPrefix(data.sourceRefName as string) : undefined,
-        baseBranch: data.targetRefName ? stripRefPrefix(data.targetRefName as string) : undefined,
+        headBranch: data.sourceRefName
+          ? stripRefPrefix(data.sourceRefName as string)
+          : undefined,
+        baseBranch: data.targetRefName
+          ? stripRefPrefix(data.targetRefName as string)
+          : undefined,
         url: data.url as string | undefined,
         body: data.description as string | undefined,
         author: createdBy?.displayName as string | undefined,
@@ -45,11 +53,23 @@ export class AzureDevOpsProvider implements GitProvider {
   viewIssue(number: number): IssueInfo | null {
     if (!Number.isInteger(number) || number < 1) return null;
     try {
-      const raw = execFileSync('az', ['boards', 'work-item', 'show', '--id', String(number), '--output', 'json'], {
-        encoding: 'utf-8',
-        timeout: 15000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
+      const raw = execFileSync(
+        'az',
+        [
+          'boards',
+          'work-item',
+          'show',
+          '--id',
+          String(number),
+          '--output',
+          'json',
+        ],
+        {
+          encoding: 'utf-8',
+          timeout: 15000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        },
+      );
       const data = JSON.parse(raw);
       const fields = data.fields as Record<string, unknown> | undefined;
       return {

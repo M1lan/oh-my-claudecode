@@ -10,14 +10,16 @@ export { BEADS_INSTRUCTIONS, BEADS_RUST_INSTRUCTIONS } from './constants.js';
  * Instructions map for each task tool variant.
  */
 const INSTRUCTIONS_MAP: Record<Exclude<TaskTool, 'builtin'>, string> = {
-  'beads': BEADS_INSTRUCTIONS,
+  beads: BEADS_INSTRUCTIONS,
   'beads-rust': BEADS_RUST_INSTRUCTIONS,
 };
 
 /**
  * Get beads instructions for the given tool variant.
  */
-export function getBeadsInstructions(tool: Exclude<TaskTool, 'builtin'>): string {
+export function getBeadsInstructions(
+  tool: Exclude<TaskTool, 'builtin'>,
+): string {
   const instructions = INSTRUCTIONS_MAP[tool];
   if (!instructions) {
     throw new Error(`Unknown task tool: ${tool}`);

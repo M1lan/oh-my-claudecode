@@ -14,7 +14,7 @@ export const MODES = {
   TEAM: 'team',
   RALPLAN: 'ralplan',
 } as const;
-export type ModeName = typeof MODES[keyof typeof MODES];
+export type ModeName = (typeof MODES)[keyof typeof MODES];
 
 // Tool categories
 export const TOOL_CATEGORIES = {
@@ -34,7 +34,8 @@ export const TOOL_CATEGORIES = {
   DEEPINIT: 'deepinit',
   WIKI: 'wiki',
 } as const;
-export type ToolCategory = typeof TOOL_CATEGORIES[keyof typeof TOOL_CATEGORIES];
+export type ToolCategory =
+  (typeof TOOL_CATEGORIES)[keyof typeof TOOL_CATEGORIES];
 
 // Hook event names
 export const HOOK_EVENTS = {
@@ -46,4 +47,4 @@ export const HOOK_EVENTS = {
   USER_PROMPT_SUBMIT: 'UserPromptSubmit',
   PRE_COMPACT: 'PreCompact',
 } as const;
-export type HookEvent = typeof HOOK_EVENTS[keyof typeof HOOK_EVENTS];
+export type HookEvent = (typeof HOOK_EVENTS)[keyof typeof HOOK_EVENTS];

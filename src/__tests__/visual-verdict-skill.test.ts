@@ -9,12 +9,19 @@ const PROJECT_ROOT = join(__dirname, '../..');
 
 const visualVerdictSkill = readFileSync(
   join(PROJECT_ROOT, 'skills', 'visual-verdict', 'SKILL.md'),
-  'utf-8'
+  'utf-8',
 );
 
 describe('visual-verdict skill contract', () => {
   it('documents required JSON fields', () => {
-    for (const field of ['"score"', '"verdict"', '"category_match"', '"differences"', '"suggestions"', '"reasoning"']) {
+    for (const field of [
+      '"score"',
+      '"verdict"',
+      '"category_match"',
+      '"differences"',
+      '"suggestions"',
+      '"reasoning"',
+    ]) {
       expect(visualVerdictSkill).toContain(field);
     }
   });

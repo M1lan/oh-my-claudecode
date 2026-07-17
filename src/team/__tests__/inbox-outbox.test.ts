@@ -2,11 +2,19 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import {
-  appendOutbox, rotateOutboxIfNeeded, readNewInboxMessages,
-  readAllInboxMessages, clearInbox, writeShutdownSignal,
-  checkShutdownSignal, deleteShutdownSignal, writeDrainSignal,
-  checkDrainSignal, deleteDrainSignal, cleanupWorkerFiles,
-  rotateInboxIfNeeded
+  appendOutbox,
+  rotateOutboxIfNeeded,
+  readNewInboxMessages,
+  readAllInboxMessages,
+  clearInbox,
+  writeShutdownSignal,
+  checkShutdownSignal,
+  deleteShutdownSignal,
+  writeDrainSignal,
+  checkDrainSignal,
+  deleteDrainSignal,
+  cleanupWorkerFiles,
+  rotateInboxIfNeeded,
 } from '../inbox-outbox.js';
 import { sanitizeName } from '../tmux-session.js';
 import { validateResolvedPath } from '../fs-utils.js';
@@ -28,10 +36,16 @@ afterEach(() => {
 
 describe('appendOutbox', () => {
   it('appends JSONL message', () => {
-    const msg: OutboxMessage = { type: 'idle', message: 'standing by', timestamp: '2026-01-01T00:00:00Z' };
+    const msg: OutboxMessage = {
+      type: 'idle',
+      message: 'standing by',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
     appendOutbox(TEST_TEAM, 'w1', msg);
     appendOutbox(TEST_TEAM, 'w1', { ...msg, type: 'heartbeat' });
-    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8').trim().split('\n');
+    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
+      .trim()
+      .split('\n');
     expect(lines).toHaveLength(2);
     expect(JSON.parse(lines[0]).type).toBe('idle');
   });
@@ -39,21 +53,31 @@ describe('appendOutbox', () => {
 
 describe('rotateOutboxIfNeeded', () => {
   it('rotates when exceeding maxLines', () => {
-    const msg: OutboxMessage = { type: 'heartbeat', timestamp: '2026-01-01T00:00:00Z' };
+    const msg: OutboxMessage = {
+      type: 'heartbeat',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
     for (let i = 0; i < 20; i++) {
       appendOutbox(TEST_TEAM, 'w1', { ...msg, message: `msg-${i}` });
     }
     rotateOutboxIfNeeded(TEST_TEAM, 'w1', 10);
-    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8').trim().split('\n');
+    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
+      .trim()
+      .split('\n');
     expect(lines.length).toBeLessThanOrEqual(10);
     // Should keep recent messages
     expect(JSON.parse(lines[lines.length - 1]).message).toBe('msg-19');
   });
 
   it('no-op when under limit', () => {
-    appendOutbox(TEST_TEAM, 'w1', { type: 'idle', timestamp: '2026-01-01T00:00:00Z' });
+    appendOutbox(TEST_TEAM, 'w1', {
+      type: 'idle',
+      timestamp: '2026-01-01T00:00:00Z',
+    });
     rotateOutboxIfNeeded(TEST_TEAM, 'w1', 100);
-    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8').trim().split('\n');
+    const lines = readFileSync(join(TEAMS_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
+      .trim()
+      .split('\n');
     expect(lines).toHaveLength(1);
   });
 });
@@ -61,8 +85,16 @@ describe('rotateOutboxIfNeeded', () => {
 describe('readNewInboxMessages', () => {
   it('reads new messages with offset cursor', () => {
     const inbox = join(TEAMS_DIR, 'inbox', 'w1.jsonl');
-    const msg1: InboxMessage = { type: 'message', content: 'hello', timestamp: '2026-01-01T00:00:00Z' };
-    const msg2: InboxMessage = { type: 'context', content: 'ctx', timestamp: '2026-01-01T00:01:00Z' };
+    const msg1: InboxMessage = {
+      type: 'message',
+      content: 'hello',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
+    const msg2: InboxMessage = {
+      type: 'context',
+      content: 'ctx',
+      timestamp: '2026-01-01T00:01:00Z',
+    };
 
     writeFileSync(inbox, JSON.stringify(msg1) + '\n');
     const batch1 = readNewInboxMessages(TEST_TEAM, 'w1');
@@ -83,12 +115,20 @@ describe('readNewInboxMessages', () => {
 
   it('handles file truncation (cursor reset)', () => {
     const inbox = join(TEAMS_DIR, 'inbox', 'w1.jsonl');
-    const longMsg: InboxMessage = { type: 'message', content: 'a'.repeat(100), timestamp: '2026-01-01T00:00:00Z' };
+    const longMsg: InboxMessage = {
+      type: 'message',
+      content: 'a'.repeat(100),
+      timestamp: '2026-01-01T00:00:00Z',
+    };
     writeFileSync(inbox, JSON.stringify(longMsg) + '\n');
     readNewInboxMessages(TEST_TEAM, 'w1'); // sets cursor past EOF
 
     // Truncate file to something smaller
-    const shortMsg: InboxMessage = { type: 'message', content: 'new', timestamp: '2026-01-01T00:01:00Z' };
+    const shortMsg: InboxMessage = {
+      type: 'message',
+      content: 'new',
+      timestamp: '2026-01-01T00:01:00Z',
+    };
     writeFileSync(inbox, JSON.stringify(shortMsg) + '\n');
     const msgs = readNewInboxMessages(TEST_TEAM, 'w1');
     expect(msgs).toHaveLength(1);
@@ -99,9 +139,20 @@ describe('readNewInboxMessages', () => {
 describe('readAllInboxMessages', () => {
   it('reads all messages regardless of cursor', () => {
     const inbox = join(TEAMS_DIR, 'inbox', 'w1.jsonl');
-    const msg1: InboxMessage = { type: 'message', content: 'first', timestamp: '2026-01-01T00:00:00Z' };
-    const msg2: InboxMessage = { type: 'message', content: 'second', timestamp: '2026-01-01T00:01:00Z' };
-    writeFileSync(inbox, JSON.stringify(msg1) + '\n' + JSON.stringify(msg2) + '\n');
+    const msg1: InboxMessage = {
+      type: 'message',
+      content: 'first',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
+    const msg2: InboxMessage = {
+      type: 'message',
+      content: 'second',
+      timestamp: '2026-01-01T00:01:00Z',
+    };
+    writeFileSync(
+      inbox,
+      JSON.stringify(msg1) + '\n' + JSON.stringify(msg2) + '\n',
+    );
 
     const all = readAllInboxMessages(TEST_TEAM, 'w1');
     expect(all).toHaveLength(2);
@@ -117,7 +168,11 @@ describe('readAllInboxMessages', () => {
 describe('clearInbox', () => {
   it('truncates inbox and resets cursor', () => {
     const inbox = join(TEAMS_DIR, 'inbox', 'w1.jsonl');
-    const msg: InboxMessage = { type: 'message', content: 'hello', timestamp: '2026-01-01T00:00:00Z' };
+    const msg: InboxMessage = {
+      type: 'message',
+      content: 'hello',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
     writeFileSync(inbox, JSON.stringify(msg) + '\n');
     readNewInboxMessages(TEST_TEAM, 'w1'); // advance cursor
 
@@ -173,7 +228,10 @@ describe('drain signals', () => {
 
 describe('cleanupWorkerFiles', () => {
   it('removes inbox, outbox, cursor, signal files', () => {
-    appendOutbox(TEST_TEAM, 'w1', { type: 'idle', timestamp: '2026-01-01T00:00:00Z' });
+    appendOutbox(TEST_TEAM, 'w1', {
+      type: 'idle',
+      timestamp: '2026-01-01T00:00:00Z',
+    });
     writeShutdownSignal(TEST_TEAM, 'w1', 'req', 'test');
     writeDrainSignal(TEST_TEAM, 'w1', 'req', 'test');
     writeFileSync(join(TEAMS_DIR, 'inbox', 'w1.jsonl'), '{}');
@@ -194,7 +252,11 @@ describe('MAX_INBOX_READ_SIZE buffer cap', () => {
     // Write many messages to create a large file
     const msgs: string[] = [];
     for (let i = 0; i < 1000; i++) {
-      const msg: InboxMessage = { type: 'message', content: `msg-${i}-${'x'.repeat(100)}`, timestamp: '2026-01-01T00:00:00Z' };
+      const msg: InboxMessage = {
+        type: 'message',
+        content: `msg-${i}-${'x'.repeat(100)}`,
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       msgs.push(JSON.stringify(msg));
     }
     writeFileSync(inbox, msgs.join('\n') + '\n');
@@ -210,7 +272,11 @@ describe('rotateInboxIfNeeded', () => {
     // Write enough data to exceed a small threshold
     const msgs: string[] = [];
     for (let i = 0; i < 50; i++) {
-      const msg: InboxMessage = { type: 'message', content: `msg-${i}`, timestamp: '2026-01-01T00:00:00Z' };
+      const msg: InboxMessage = {
+        type: 'message',
+        content: `msg-${i}`,
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       msgs.push(JSON.stringify(msg));
     }
     writeFileSync(inbox, msgs.join('\n') + '\n');
@@ -227,7 +293,11 @@ describe('rotateInboxIfNeeded', () => {
 
   it('no-op when inbox is under maxSizeBytes', () => {
     const inbox = join(TEAMS_DIR, 'inbox', 'w1.jsonl');
-    const msg: InboxMessage = { type: 'message', content: 'small', timestamp: '2026-01-01T00:00:00Z' };
+    const msg: InboxMessage = {
+      type: 'message',
+      content: 'small',
+      timestamp: '2026-01-01T00:00:00Z',
+    };
     writeFileSync(inbox, JSON.stringify(msg) + '\n');
 
     const { statSync } = require('fs');
@@ -250,13 +320,18 @@ describe('path traversal guard on teamsDir', () => {
   });
 
   it('validateResolvedPath catches paths that escape base', () => {
-    expect(() => validateResolvedPath('/home/user/../escape', '/home/user'))
-      .toThrow('Path traversal');
+    expect(() =>
+      validateResolvedPath('/home/user/../escape', '/home/user'),
+    ).toThrow('Path traversal');
   });
 
   it('all-special-char team name throws from sanitizeName', () => {
     // A name made entirely of special chars produces empty string → throws
-    expect(() => appendOutbox('...///...', 'w1', { type: 'idle', timestamp: '2026-01-01T00:00:00Z' }))
-      .toThrow();
+    expect(() =>
+      appendOutbox('...///...', 'w1', {
+        type: 'idle',
+        timestamp: '2026-01-01T00:00:00Z',
+      }),
+    ).toThrow();
   });
 });

@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -74,14 +82,24 @@ describe('install() CLAUDE.md target resolution', () => {
     expect(result.success).toBe(true);
     expect(updatedConfig).toContain(`<!-- OMC:VERSION:${VERSION} -->`);
     expect(updatedConfig).not.toContain('stale installer content');
-    expect(readFileSync(homeClaudePath, 'utf-8')).toBe('# Home CLAUDE\nkeep me\n');
+    expect(readFileSync(homeClaudePath, 'utf-8')).toBe(
+      '# Home CLAUDE\nkeep me\n',
+    );
 
-    const backups = readdirSync(testClaudeDir).filter(name => name.startsWith('CLAUDE.md.backup.'));
+    const backups = readdirSync(testClaudeDir).filter((name) =>
+      name.startsWith('CLAUDE.md.backup.'),
+    );
     expect(backups).toHaveLength(1);
   });
 
   it('preserves project-scoped behavior by skipping global CLAUDE.md writes', async () => {
-    process.env.CLAUDE_PLUGIN_ROOT = join(tempRoot, 'project', '.claude', 'plugins', 'oh-my-claudecode');
+    process.env.CLAUDE_PLUGIN_ROOT = join(
+      tempRoot,
+      'project',
+      '.claude',
+      'plugins',
+      'oh-my-claudecode',
+    );
     writeFileSync(join(testHomeDir, 'CLAUDE.md'), '# Home CLAUDE\nkeep me\n');
 
     const { install } = await loadInstaller();

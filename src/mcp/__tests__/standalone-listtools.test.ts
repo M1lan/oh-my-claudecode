@@ -46,7 +46,9 @@ describe('standalone MCP server – ListTools E2E drift guard', () => {
       trace: 'trace_timeline',
     };
 
-    for (const [family, representative] of Object.entries(FAMILY_REPRESENTATIVES)) {
+    for (const [family, representative] of Object.entries(
+      FAMILY_REPRESENTATIVES,
+    )) {
       it(`exposes at least one ${family} tool (representative: ${representative})`, () => {
         expect(names).toContain(representative);
       });
@@ -60,7 +62,9 @@ describe('standalone MCP server – ListTools E2E drift guard', () => {
     const unique = new Set(names);
     if (unique.size !== names.length) {
       const seen = new Set<string>();
-      const dupes = names.filter((n) => (seen.has(n) ? true : (seen.add(n), false)));
+      const dupes = names.filter((n) =>
+        seen.has(n) ? true : (seen.add(n), false),
+      );
       throw new Error(`Duplicate tool names detected: ${dupes.join(', ')}`);
     }
   });

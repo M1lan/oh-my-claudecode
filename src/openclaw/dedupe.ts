@@ -8,17 +8,21 @@ import {
   statSync,
   unlinkSync,
   writeSync,
-} from "fs";
-import { createHash, randomUUID } from "crypto";
-import { join } from "path";
+} from 'fs';
+import { createHash, randomUUID } from 'crypto';
+import { join } from 'path';
 
-import { atomicWriteJsonSync } from "../lib/atomic-write.js";
-import { isProcessAlive } from "../platform/index.js";
-import type { OpenClawContext, OpenClawHookEvent, OpenClawSignal } from "./types.js";
+import { atomicWriteJsonSync } from '../lib/atomic-write.js';
+import { isProcessAlive } from '../platform/index.js';
+import type {
+  OpenClawContext,
+  OpenClawHookEvent,
+  OpenClawSignal,
+} from './types.js';
 
-const STATE_DIR = [".omc", "state"];
-const STATE_FILE = "openclaw-event-dedupe.json";
-const LOCK_FILE = "openclaw-event-dedupe.lock";
+const STATE_DIR = ['.omc', 'state'];
+const STATE_FILE = 'openclaw-event-dedupe.json';
+const LOCK_FILE = 'openclaw-event-dedupe.lock';
 
 const START_WINDOW_MS = 10_000;
 const PROMPT_WINDOW_MS = 4_000;
@@ -103,12 +107,18 @@ function readState(projectPath: string): DedupeState {
   }
 
   try {
-    const parsed = JSON.parse(readFileSync(statePath, "utf-8")) as Partial<DedupeState>;
+    const parsed = JSON.parse(
+      readFileSync(statePath, 'utf-8'),
+    ) as Partial<DedupeState>;
     return {
       updatedAt:
-        typeof parsed.updatedAt === "string" ? parsed.updatedAt : new Date(0).toISOString(),
+        typeof parsed.updatedAt === 'string'
+          ? parsed.updatedAt
+          : new Date(0).toISOString(),
       records:
-        parsed.records && typeof parsed.records === "object" ? parsed.records as Record<string, DedupeStateRecord> : {},
+        parsed.records && typeof parsed.records === 'object'
+          ? (parsed.records as Record<string, DedupeStateRecord>)
+          : {},
     };
   } catch {
     return { updatedAt: new Date(0).toISOString(), records: {} };
@@ -122,7 +132,7 @@ function writeState(projectPath: string, state: DedupeState): void {
 
 function readLockSnapshot(projectPath: string): LockFileSnapshot | null {
   try {
-    const raw = readFileSync(getLockPath(projectPath), "utf-8");
+    const raw = readFileSync(getLockPath(projectPath), 'utf-8');
     const trimmed = raw.trim();
     if (!trimmed) {
       return { raw, pid: null, token: null };
@@ -132,8 +142,14 @@ function readLockSnapshot(projectPath: string): LockFileSnapshot | null {
       const parsed = JSON.parse(trimmed) as { pid?: unknown; token?: unknown };
       return {
         raw,
-        pid: typeof parsed.pid === "number" && Number.isFinite(parsed.pid) ? parsed.pid : null,
-        token: typeof parsed.token === "string" && parsed.token.length > 0 ? parsed.token : null,
+        pid:
+          typeof parsed.pid === 'number' && Number.isFinite(parsed.pid)
+            ? parsed.pid
+            : null,
+        token:
+          typeof parsed.token === 'string' && parsed.token.length > 0
+            ? parsed.token
+            : null,
       };
     } catch {
       return { raw, pid: null, token: null };
@@ -143,9 +159,12 @@ function readLockSnapshot(projectPath: string): LockFileSnapshot | null {
   }
 }
 
-function removeLockIfUnchanged(projectPath: string, snapshot: LockFileSnapshot): boolean {
+function removeLockIfUnchanged(
+  projectPath: string,
+  snapshot: LockFileSnapshot,
+): boolean {
   try {
-    const currentRaw = readFileSync(getLockPath(projectPath), "utf-8");
+    const currentRaw = readFileSync(getLockPath(projectPath), 'utf-8');
     if (currentRaw !== snapshot.raw) {
       return false;
     }
@@ -173,11 +192,16 @@ function acquireLock(projectPath: string): LockHandle | null {
         constants.O_CREAT | constants.O_EXCL | constants.O_WRONLY,
         0o600,
       );
-      writeSync(fd, JSON.stringify({ pid: process.pid, token, acquiredAt: Date.now() }), null, "utf-8");
+      writeSync(
+        fd,
+        JSON.stringify({ pid: process.pid, token, acquiredAt: Date.now() }),
+        null,
+        'utf-8',
+      );
       return { fd, token };
     } catch (error) {
       const err = error as NodeJS.ErrnoException;
-      if (err.code !== "EEXIST") {
+      if (err.code !== 'EEXIST') {
         throw error;
       }
 
@@ -234,11 +258,11 @@ function withProjectLock<T>(projectPath: string, callback: () => T): T {
 }
 
 function normalizePrompt(prompt: string): string {
-  return prompt.replace(/\s+/g, " ").trim().slice(0, 400);
+  return prompt.replace(/\s+/g, ' ').trim().slice(0, 400);
 }
 
 function promptHash(prompt: string): string {
-  return createHash("sha1").update(prompt).digest("hex").slice(0, 12);
+  return createHash('sha1').update(prompt).digest('hex').slice(0, 12);
 }
 
 function buildDescriptor(
@@ -251,13 +275,16 @@ function buildDescriptor(
   const scope = `${projectPath}::${tmuxSession}`;
 
   switch (event) {
-    case "session-start":
+    case 'session-start':
       return {
         key: `session.started::${scope}`,
         windowMs: START_WINDOW_MS,
       };
-    case "keyword-detector": {
-      const prompt = typeof context.prompt === "string" ? normalizePrompt(context.prompt) : "";
+    case 'keyword-detector': {
+      const prompt =
+        typeof context.prompt === 'string'
+          ? normalizePrompt(context.prompt)
+          : '';
       if (!prompt) {
         return null;
       }
@@ -266,12 +293,12 @@ function buildDescriptor(
         windowMs: PROMPT_WINDOW_MS,
       };
     }
-    case "stop":
+    case 'stop':
       return {
         key: `session.stopped::${scope}`,
         windowMs: STOP_WINDOW_MS,
       };
-    case "session-end":
+    case 'session-end':
       return {
         key: `session.finished::${scope}`,
         windowMs: STOP_WINDOW_MS,
@@ -297,7 +324,7 @@ function pruneState(state: DedupeState, nowMs: number): void {
  * session.stopped  = a `stop` (idle) event fired for this scope
  * session.finished = a `session-end` event fired for this scope
  */
-const TERMINAL_KEYS = ["session.stopped", "session.finished"] as const;
+const TERMINAL_KEYS = ['session.stopped', 'session.finished'] as const;
 
 /**
  * Returns true when `event` is a late lifecycle event that has been rendered
@@ -318,7 +345,7 @@ export function isObsoleteAfterTerminalState(
   projectPath: string,
   nowMs: number,
 ): boolean {
-  if (event !== "session-start" && event !== "stop") {
+  if (event !== 'session-start' && event !== 'stop') {
     return false;
   }
 
@@ -327,7 +354,7 @@ export function isObsoleteAfterTerminalState(
   // stop is only suppressed by session.finished (the harder terminal state);
   // a prior stop alone does not suppress another stop.
   const keysToCheck: readonly string[] =
-    event === "session-start" ? TERMINAL_KEYS : (["session.finished"] as const);
+    event === 'session-start' ? TERMINAL_KEYS : (['session.finished'] as const);
 
   return keysToCheck.some((prefix) => {
     const record = state.records[`${prefix}::${scope}`];
@@ -351,7 +378,13 @@ export function shouldCollapseOpenClawBurst(
     return false;
   }
 
-  const descriptor = buildDescriptor(event, signal, context, tmuxSession, projectPath);
+  const descriptor = buildDescriptor(
+    event,
+    signal,
+    context,
+    tmuxSession,
+    projectPath,
+  );
   if (!descriptor) {
     return false;
   }
@@ -365,14 +398,23 @@ export function shouldCollapseOpenClawBurst(
     // arrive after the session has already reached a terminal state.
     // Do NOT update dedupe state here so the terminal record stays alive for
     // further suppression checks within the window.
-    if (isObsoleteAfterTerminalState(event, state, tmuxSession, projectPath, nowMs)) {
+    if (
+      isObsoleteAfterTerminalState(
+        event,
+        state,
+        tmuxSession,
+        projectPath,
+        nowMs,
+      )
+    ) {
       return true;
     }
 
     const nowIso = new Date(nowMs).toISOString();
     const existing = state.records[descriptor.key];
     const lastSeenMs = existing ? Date.parse(existing.lastSeenAt) : Number.NaN;
-    const shouldCollapse = Number.isFinite(lastSeenMs) && nowMs - lastSeenMs < descriptor.windowMs;
+    const shouldCollapse =
+      Number.isFinite(lastSeenMs) && nowMs - lastSeenMs < descriptor.windowMs;
 
     state.records[descriptor.key] = {
       event,

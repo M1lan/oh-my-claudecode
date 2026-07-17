@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { resolveRoleAssignment, buildResolvedRoutingSnapshot } from '../stage-router.js';
+import {
+  resolveRoleAssignment,
+  buildResolvedRoutingSnapshot,
+} from '../stage-router.js';
 import { CANONICAL_TEAM_ROLES } from '../../shared/types.js';
-import type { CanonicalTeamRole, PluginConfig, RoleAssignment } from '../../shared/types.js';
+import type {
+  CanonicalTeamRole,
+  PluginConfig,
+  RoleAssignment,
+} from '../../shared/types.js';
 
 /**
  * AC-3: With empty `team.roleRouting`, snapshot must mirror pre-patch behavior:
@@ -59,7 +66,9 @@ describe('AC-3: behavior snapshot — empty config preserves pre-patch /team sem
     // Siblings: every other role still claude
     for (const role of CANONICAL_TEAM_ROLES) {
       if (role === 'critic') continue;
-      expect(snap[role].primary.provider, `sibling role=${role}`).toBe('claude');
+      expect(snap[role].primary.provider, `sibling role=${role}`).toBe(
+        'claude',
+      );
     }
   });
 

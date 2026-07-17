@@ -14,7 +14,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getBuiltinSkill, clearSkillsCache } from '../features/builtin-skills/skills.js';
+import {
+  getBuiltinSkill,
+  clearSkillsCache,
+} from '../features/builtin-skills/skills.js';
 
 /**
  * Extract a markdown section by heading using regex.
@@ -45,7 +48,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toContain('AskUserQuestion');
     });
@@ -54,7 +60,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toContain('Skill("oh-my-claudecode:ralph")');
     });
@@ -63,7 +72,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toMatch(/\*\*MUST\*\*.*invoke.*Skill/i);
     });
@@ -72,7 +84,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toMatch(/Do NOT implement directly/i);
     });
@@ -81,7 +96,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const interviewSection = extractSection(skill!.template, 'Interview Mode');
+      const interviewSection = extractSection(
+        skill!.template,
+        'Interview Mode',
+      );
       expect(interviewSection).toBeDefined();
       expect(interviewSection).toContain('Classify the request');
       expect(interviewSection).toContain('Ask one focused question');
@@ -112,18 +130,26 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const escalation = extractTagContent(skill!.template, 'Escalation_And_Stop_Conditions');
+      const escalation = extractTagContent(
+        skill!.template,
+        'Escalation_And_Stop_Conditions',
+      );
       expect(escalation).toBeDefined();
       expect(escalation).toContain('Skill("oh-my-claudecode:ralph")');
       // Old vague language should be gone
-      expect(escalation).not.toContain('transition to execution mode (ralph or executor)');
+      expect(escalation).not.toContain(
+        'transition to execution mode (ralph or executor)',
+      );
     });
 
     it('should require RALPLAN-DR structured deliberation in consensus mode', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toContain('RALPLAN-DR');
       expect(consensusSection).toContain('**Principles** (3-5)');
@@ -136,7 +162,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toContain('ADR');
       expect(consensusSection).toContain('**Decision**');
@@ -151,13 +180,18 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
       expect(consensusSection).toContain('**Deliberate**');
       expect(consensusSection).toContain('`--deliberate`');
       expect(consensusSection).toContain('pre-mortem');
       expect(consensusSection).toContain('expanded test plan');
-      expect(consensusSection).toContain('unit / integration / e2e / observability');
+      expect(consensusSection).toContain(
+        'unit / integration / e2e / observability',
+      );
     });
   });
 
@@ -166,12 +200,17 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
 
       // Step ordering: Planner must come before User feedback,
       // User feedback must come before Architect
-      const plannerIdx = consensusSection!.indexOf('**Planner** creates initial plan');
+      const plannerIdx = consensusSection!.indexOf(
+        '**Planner** creates initial plan',
+      );
       const feedbackIdx = consensusSection!.indexOf('**User feedback**');
       const architectIdx = consensusSection!.indexOf('**Architect** reviews');
 
@@ -187,7 +226,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
 
       // The user feedback step must use MUST + AskUserQuestion
@@ -198,7 +240,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
 
       expect(consensusSection).toContain('Proceed to review');
@@ -210,7 +255,10 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
 
       const architectIdx = consensusSection!.indexOf('**Architect** reviews');
@@ -225,15 +273,21 @@ describe('Issue #595: Consensus mode execution handoff', () => {
       const skill = getBuiltinSkill('omc-plan');
       expect(skill).toBeDefined();
 
-      const consensusSection = extractSection(skill!.template, 'Consensus Mode');
+      const consensusSection = extractSection(
+        skill!.template,
+        'Consensus Mode',
+      );
       expect(consensusSection).toBeDefined();
-      expect(consensusSection).toContain('steelman counterargument (antithesis)');
+      expect(consensusSection).toContain(
+        'steelman counterargument (antithesis)',
+      );
       expect(consensusSection).toContain('tradeoff tension');
-      expect(consensusSection).toContain('Critic **MUST** explicitly reject shallow alternatives');
+      expect(consensusSection).toContain(
+        'Critic **MUST** explicitly reject shallow alternatives',
+      );
       expect(consensusSection).toContain('driver contradictions');
       expect(consensusSection).toContain('weak verification');
     });
-
   });
 });
 describe('Issue #2945: planning modules require explicit execution consent', () => {
@@ -247,23 +301,34 @@ describe('Issue #2945: planning modules require explicit execution consent', () 
 
     expect(skill!.template).toContain('Planning/execution boundary');
     expect(skill!.template).toContain('pending approval');
-    expect(skill!.template).toMatch(/MUST NOT run mutation-oriented shell commands/i);
+    expect(skill!.template).toMatch(
+      /MUST NOT run mutation-oriented shell commands/i,
+    );
     expect(skill!.template).toMatch(/edit (source )?files/i);
     expect(skill!.template).toMatch(/commit, push, open PRs/i);
     expect(skill!.template).toMatch(/delegate implementation tasks/i);
-    expect(skill!.template).toContain('Without `--interactive`, skip both prompts, mark the plan `pending approval`, output the final plan, and stop.');
+    expect(skill!.template).toContain(
+      'Without `--interactive`, skip both prompts, mark the plan `pending approval`, output the final plan, and stop.',
+    );
   });
 
   it('plan no longer treats just-do-it wording as implicit approval to invoke ralph', () => {
     const skill = getBuiltinSkill('omc-plan');
     expect(skill).toBeDefined();
 
-    const escalation = extractTagContent(skill!.template, 'Escalation_And_Stop_Conditions');
+    const escalation = extractTagContent(
+      skill!.template,
+      'Escalation_And_Stop_Conditions',
+    );
     expect(escalation).toBeDefined();
     expect(escalation).toContain('without explicitly naming an execution path');
     expect(escalation).toContain('pending approval');
-    expect(escalation).toContain('Do NOT invoke `Skill("oh-my-claudecode:ralph")`');
-    expect(escalation).not.toMatch(/skip planning[\s\S]{0,120}MUST[\s\S]{0,80}Skill\("oh-my-claudecode:ralph"\)/i);
+    expect(escalation).toContain(
+      'Do NOT invoke `Skill("oh-my-claudecode:ralph")`',
+    );
+    expect(escalation).not.toMatch(
+      /skip planning[\s\S]{0,120}MUST[\s\S]{0,80}Skill\("oh-my-claudecode:ralph"\)/i,
+    );
   });
 
   it('ralplan documents the same planning/execution boundary', () => {
@@ -272,22 +337,36 @@ describe('Issue #2945: planning modules require explicit execution consent', () 
 
     expect(skill!.template).toContain('Planning/Execution Boundary');
     expect(skill!.template).toContain('pending approval');
-    expect(skill!.template).toMatch(/MUST NOT run mutation-oriented shell commands/i);
+    expect(skill!.template).toMatch(
+      /MUST NOT run mutation-oriented shell commands/i,
+    );
     expect(skill!.template).toMatch(/commit, push, open PRs/i);
     expect(skill!.template).toContain('stop before any mutation or delegation');
-    expect(skill!.template).toContain('`just do it` / `skip planning` alone only ends planning with a `pending approval` artifact');
+    expect(skill!.template).toContain(
+      '`just do it` / `skip planning` alone only ends planning with a `pending approval` artifact',
+    );
   });
 
   it('deep-interview writes pending-approval specs and stops before execution without explicit selection', () => {
     const skill = getBuiltinSkill('deep-interview');
     expect(skill).toBeDefined();
 
-    expect(skill!.template).toContain('pending approval → explicitly approved execution');
+    expect(skill!.template).toContain(
+      'pending approval → explicitly approved execution',
+    );
     expect(skill!.template).toContain('mark it `pending approval`');
-    expect(skill!.template).toMatch(/MUST NOT run mutation-oriented shell commands/i);
-    expect(skill!.template).toMatch(/open PRs, invoke execution skills, or delegate implementation tasks/i);
-    expect(skill!.template).toContain('do not automatically invoke autopilot or any other execution skill');
-    expect(skill!.template).toContain('Without explicit execution selection, stop with the spec marked `pending approval`.');
+    expect(skill!.template).toMatch(
+      /MUST NOT run mutation-oriented shell commands/i,
+    );
+    expect(skill!.template).toMatch(
+      /open PRs, invoke execution skills, or delegate implementation tasks/i,
+    );
+    expect(skill!.template).toContain(
+      'do not automatically invoke autopilot or any other execution skill',
+    );
+    expect(skill!.template).toContain(
+      'Without explicit execution selection, stop with the spec marked `pending approval`.',
+    );
     expect(skill!.template).not.toContain('autopilot with consensus plan');
   });
 });

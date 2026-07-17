@@ -6,10 +6,7 @@
  * Adapted from oh-my-opencode's auto-slash-command hook.
  */
 
-import {
-  SLASH_COMMAND_PATTERN,
-  EXCLUDED_COMMANDS,
-} from './constants.js';
+import { SLASH_COMMAND_PATTERN, EXCLUDED_COMMANDS } from './constants.js';
 import type { ParsedSlashCommand } from './types.js';
 
 /** Pattern to match code blocks */
@@ -84,7 +81,7 @@ export function detectSlashCommand(text: string): ParsedSlashCommand | null {
  * Extract text content from message parts array
  */
 export function extractPromptText(
-  parts: Array<{ type: string; text?: string }>
+  parts: Array<{ type: string; text?: string }>,
 ): string {
   return parts
     .filter((p) => p.type === 'text')

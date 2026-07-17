@@ -63,7 +63,9 @@ describe('isUserAbort', () => {
   });
 
   it('should return false for "operation_cancelled_by_timeout"', () => {
-    expect(isUserAbort({ stop_reason: 'operation_cancelled_by_timeout' })).toBe(false);
+    expect(isUserAbort({ stop_reason: 'operation_cancelled_by_timeout' })).toBe(
+      false,
+    );
   });
 
   it('should return false for "auto_interrupt"', () => {
@@ -99,10 +101,12 @@ describe('isUserAbort', () => {
   });
 
   it('should prioritize explicit flags over stop_reason', () => {
-    expect(isUserAbort({
-      user_requested: true,
-      stop_reason: 'context_limit'
-    })).toBe(true);
+    expect(
+      isUserAbort({
+        user_requested: true,
+        stop_reason: 'context_limit',
+      }),
+    ).toBe(true);
   });
 
   // Test that exact patterns only match exactly (issue #210 fix)
@@ -130,16 +134,20 @@ describe('isUserAbort', () => {
   // Combined field test - snake_case is checked first, then camelCase
   it('should check snake_case first, fallback to camelCase', () => {
     // snake_case has value, so camelCase is not checked
-    expect(isUserAbort({
-      stop_reason: 'unrelated',
-      stopReason: 'cancel'
-    })).toBe(false);
+    expect(
+      isUserAbort({
+        stop_reason: 'unrelated',
+        stopReason: 'cancel',
+      }),
+    ).toBe(false);
   });
 
   it('should prefer snake_case when both present and valid', () => {
-    expect(isUserAbort({
-      stop_reason: 'cancel',
-      stopReason: 'unrelated'
-    })).toBe(true);
+    expect(
+      isUserAbort({
+        stop_reason: 'cancel',
+        stopReason: 'unrelated',
+      }),
+    ).toBe(true);
   });
 });

@@ -46,7 +46,9 @@ describe('leaderInboxPath', () => {
   });
 
   it('is pure: same input → same output', () => {
-    expect(leaderInboxPath(TEST_TEAM, TEST_CWD)).toBe(leaderInboxPath(TEST_TEAM, TEST_CWD));
+    expect(leaderInboxPath(TEST_TEAM, TEST_CWD)).toBe(
+      leaderInboxPath(TEST_TEAM, TEST_CWD),
+    );
   });
 });
 
@@ -126,7 +128,10 @@ describe('appendToLeaderInbox', () => {
 
   it('creates parent directories if missing', async () => {
     // Fresh cwd with no pre-existing dirs
-    const freshCwd = join(tmpdir(), `omc-test-leader-inbox-fresh-${process.pid}`);
+    const freshCwd = join(
+      tmpdir(),
+      `omc-test-leader-inbox-fresh-${process.pid}`,
+    );
     try {
       mkdirSync(freshCwd, { recursive: true });
       await appendToLeaderInbox('newteam', 'msg', freshCwd);
@@ -155,7 +160,7 @@ describe('extendLeaderBootstrapPrompt', () => {
 
   it('is pure: same input → same output', () => {
     expect(extendLeaderBootstrapPrompt(TEST_TEAM)).toBe(
-      extendLeaderBootstrapPrompt(TEST_TEAM)
+      extendLeaderBootstrapPrompt(TEST_TEAM),
     );
   });
 
@@ -165,7 +170,9 @@ describe('extendLeaderBootstrapPrompt', () => {
     // team-name segment of the path must not contain '!' or spaces.
     expect(prompt).not.toContain('!');
     // Extract the path segment from the prompt and verify no spaces in it
-    const pathMatch = prompt.match(/\.omc\/state\/team\/([^/]+)\/leader\/inbox\.md/);
+    const pathMatch = prompt.match(
+      /\.omc\/state\/team\/([^/]+)\/leader\/inbox\.md/,
+    );
     expect(pathMatch).not.toBeNull();
     expect(pathMatch![1]).not.toContain('!');
     expect(pathMatch![1]).not.toContain(' ');

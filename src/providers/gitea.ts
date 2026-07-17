@@ -71,7 +71,11 @@ export class GiteaProvider implements GitProvider {
     return this.viewPRviaRest(number, owner, repo);
   }
 
-  private viewPRviaRest(number: number, owner?: string, repo?: string): PRInfo | null {
+  private viewPRviaRest(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): PRInfo | null {
     const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? '');
     const token = process.env.GITEA_TOKEN;
     if (!baseUrl || !owner || !repo) return null;
@@ -122,7 +126,11 @@ export class GiteaProvider implements GitProvider {
     return this.viewIssueviaRest(number, owner, repo);
   }
 
-  private viewIssueviaRest(number: number, owner?: string, repo?: string): IssueInfo | null {
+  private viewIssueviaRest(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): IssueInfo | null {
     const baseUrl = validateGiteaUrl(process.env.GITEA_URL ?? '');
     const token = process.env.GITEA_TOKEN;
     if (!baseUrl || !owner || !repo) return null;

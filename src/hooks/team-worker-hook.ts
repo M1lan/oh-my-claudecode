@@ -13,7 +13,14 @@
  *   all-workers-idle.json
  */
 
-import { readFile, writeFile, mkdir, appendFile, rename, stat } from 'fs/promises';
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  appendFile,
+  rename,
+  stat,
+} from 'fs/promises';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
@@ -36,15 +43,21 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
-export function parseTeamWorkerEnv(rawValue: unknown): { teamName: string; workerName: string } | null {
+export function parseTeamWorkerEnv(
+  rawValue: unknown,
+): { teamName: string; workerName: string } | null {
   if (typeof rawValue !== 'string') return null;
-  const match = /^([a-z0-9][a-z0-9-]{0,29})\/(worker-\d+)$/.exec(rawValue.trim());
+  const match = /^([a-z0-9][a-z0-9-]{0,29})\/(worker-\d+)$/.exec(
+    rawValue.trim(),
+  );
   if (!match) return null;
   return { teamName: match[1]!, workerName: match[2]! };
 }
 
 export function resolveWorkerIdleNotifyEnabled(): boolean {
-  const raw = safeString(process.env.OMC_TEAM_WORKER_IDLE_NOTIFY || '').trim().toLowerCase();
+  const raw = safeString(process.env.OMC_TEAM_WORKER_IDLE_NOTIFY || '')
+    .trim()
+    .toLowerCase();
   if (raw === 'false' || raw === '0' || raw === 'off') return false;
   return true;
 }
@@ -90,7 +103,7 @@ function parseIsoMs(value: unknown): number | null {
 function isFreshIso(value: unknown, maxAgeMs: number, nowMs: number): boolean {
   const ts = parseIsoMs(value);
   if (ts === null) return false;
-  return (nowMs - ts) <= maxAgeMs;
+  return nowMs - ts <= maxAgeMs;
 }
 
 // ── JSON helpers ───────────────────────────────────────────────────────────
@@ -119,7 +132,11 @@ export interface TmuxRunner {
   sendKeys(target: string, text: string, literal?: boolean): Promise<void>;
 }
 
-async function defaultTmuxSendKeys(target: string, text: string, literal = false): Promise<void> {
+async function defaultTmuxSendKeys(
+  target: string,
+  text: string,
+  literal = false,
+): Promise<void> {
   const { tmuxExecAsync } = await import('../cli/tmux-utils.js');
   const args = literal
     ? ['send-keys', '-t', target, '-l', text]
@@ -153,20 +170,32 @@ async function readWorkerStatusSnapshot(
   workerName: string,
   nowMs = Date.now(),
 ): Promise<WorkerStatusSnapshot> {
-  const statusPath = join(stateDir, 'team', teamName, 'workers', workerName, 'status.json');
+  const statusPath = join(
+    stateDir,
+    'team',
+    teamName,
+    'workers',
+    workerName,
+    'status.json',
+  );
   try {
-    if (!existsSync(statusPath)) return { state: 'unknown', updated_at: null, fresh: false };
+    if (!existsSync(statusPath))
+      return { state: 'unknown', updated_at: null, fresh: false };
     const raw = await readFile(statusPath, 'utf-8');
     const parsed = JSON.parse(raw);
-    const state = parsed && typeof parsed.state === 'string' ? parsed.state : 'unknown';
-    const updatedAt = parsed && typeof parsed.updated_at === 'string' ? parsed.updated_at : null;
+    const state =
+      parsed && typeof parsed.state === 'string' ? parsed.state : 'unknown';
+    const updatedAt =
+      parsed && typeof parsed.updated_at === 'string'
+        ? parsed.updated_at
+        : null;
     let fresh = false;
     if (updatedAt) {
       fresh = isFreshIso(updatedAt, resolveStatusStaleMs(), nowMs);
     } else {
       try {
         const st = await stat(statusPath);
-        fresh = (nowMs - st.mtimeMs) <= resolveStatusStaleMs();
+        fresh = nowMs - st.mtimeMs <= resolveStatusStaleMs();
       } catch {
         fresh = false;
       }
@@ -183,12 +212,23 @@ async function readWorkerHeartbeatSnapshot(
   workerName: string,
   nowMs = Date.now(),
 ): Promise<WorkerHeartbeatSnapshot> {
-  const heartbeatPath = join(stateDir, 'team', teamName, 'workers', workerName, 'heartbeat.json');
+  const heartbeatPath = join(
+    stateDir,
+    'team',
+    teamName,
+    'workers',
+    workerName,
+    'heartbeat.json',
+  );
   try {
-    if (!existsSync(heartbeatPath)) return { last_turn_at: null, fresh: false, missing: true };
+    if (!existsSync(heartbeatPath))
+      return { last_turn_at: null, fresh: false, missing: true };
     const raw = await readFile(heartbeatPath, 'utf-8');
     const parsed = JSON.parse(raw);
-    const lastTurnAt = parsed && typeof parsed.last_turn_at === 'string' ? parsed.last_turn_at : null;
+    const lastTurnAt =
+      parsed && typeof parsed.last_turn_at === 'string'
+        ? parsed.last_turn_at
+        : null;
     const fresh = isFreshIso(lastTurnAt, resolveHeartbeatStaleMs(), nowMs);
     return { last_turn_at: lastTurnAt, fresh, missing: false };
   } catch {
@@ -199,10 +239,18 @@ async function readWorkerHeartbeatSnapshot(
 async function readTeamWorkersForIdleCheck(
   stateDir: string,
   teamName: string,
-): Promise<{ workers: Array<{ name: string; index?: number }>; tmuxSession: string; leaderPaneId: string } | null> {
+): Promise<{
+  workers: Array<{ name: string; index?: number }>;
+  tmuxSession: string;
+  leaderPaneId: string;
+} | null> {
   const manifestPath = join(stateDir, 'team', teamName, 'manifest.v2.json');
   const configPath = join(stateDir, 'team', teamName, 'config.json');
-  const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
+  const srcPath = existsSync(manifestPath)
+    ? manifestPath
+    : existsSync(configPath)
+      ? configPath
+      : null;
   if (!srcPath) return null;
 
   try {
@@ -226,19 +274,30 @@ export async function updateWorkerHeartbeat(
   teamName: string,
   workerName: string,
 ): Promise<void> {
-  const heartbeatPath = join(stateDir, 'team', teamName, 'workers', workerName, 'heartbeat.json');
+  const heartbeatPath = join(
+    stateDir,
+    'team',
+    teamName,
+    'workers',
+    workerName,
+    'heartbeat.json',
+  );
   let turnCount = 0;
   try {
     const existing = JSON.parse(await readFile(heartbeatPath, 'utf-8'));
     turnCount = existing.turn_count || 0;
-  } catch { /* first heartbeat or malformed */ }
+  } catch {
+    /* first heartbeat or malformed */
+  }
   const heartbeat = {
     pid: process.ppid || process.pid,
     last_turn_at: new Date().toISOString(),
     turn_count: turnCount + 1,
     alive: true,
   };
-  await mkdir(join(stateDir, 'team', teamName, 'workers', workerName), { recursive: true }).catch(() => {});
+  await mkdir(join(stateDir, 'team', teamName, 'workers', workerName), {
+    recursive: true,
+  }).catch(() => {});
   await writeJsonAtomic(heartbeatPath, heartbeat);
 }
 
@@ -268,22 +327,30 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
   try {
     if (existsSync(statusPath)) {
       const parsed = JSON.parse(await readFile(statusPath, 'utf-8'));
-      if (parsed && typeof parsed.state === 'string') currentState = parsed.state;
-      if (parsed && typeof parsed.current_task_id === 'string') currentTaskId = parsed.current_task_id;
-      if (parsed && typeof parsed.reason === 'string') currentReason = parsed.reason;
-      const updatedAtField = parsed && typeof parsed.updated_at === 'string' ? parsed.updated_at : null;
+      if (parsed && typeof parsed.state === 'string')
+        currentState = parsed.state;
+      if (parsed && typeof parsed.current_task_id === 'string')
+        currentTaskId = parsed.current_task_id;
+      if (parsed && typeof parsed.reason === 'string')
+        currentReason = parsed.reason;
+      const updatedAtField =
+        parsed && typeof parsed.updated_at === 'string'
+          ? parsed.updated_at
+          : null;
       if (updatedAtField) {
         statusFresh = isFreshIso(updatedAtField, resolveStatusStaleMs(), nowMs);
       } else {
         try {
           const st = await stat(statusPath);
-          statusFresh = (nowMs - st.mtimeMs) <= resolveStatusStaleMs();
+          statusFresh = nowMs - st.mtimeMs <= resolveStatusStaleMs();
         } catch {
           statusFresh = false;
         }
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // Read previous state for transition detection
   const prevStatePath = join(workerDir, 'prev-notify-state.json');
@@ -293,20 +360,32 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
       const parsed = JSON.parse(await readFile(prevStatePath, 'utf-8'));
       if (parsed && typeof parsed.state === 'string') prevState = parsed.state;
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 
   // Always update prev state
   try {
     await mkdir(workerDir, { recursive: true });
-    await writeJsonAtomic(prevStatePath, { state: currentState, updated_at: nowIso });
-  } catch { /* best effort */ }
+    await writeJsonAtomic(prevStatePath, {
+      state: currentState,
+      updated_at: nowIso,
+    });
+  } catch {
+    /* best effort */
+  }
 
   // Only fire on working->idle transition
   if (currentState !== 'idle') return;
   if (!statusFresh) return;
   if (prevState === 'idle' || prevState === 'done') return;
 
-  const heartbeat = await readWorkerHeartbeatSnapshot(stateDir, teamName, workerName, nowMs);
+  const heartbeat = await readWorkerHeartbeatSnapshot(
+    stateDir,
+    teamName,
+    workerName,
+    nowMs,
+  );
   if (!heartbeat.fresh) return;
 
   // Per-worker cooldown
@@ -318,8 +397,10 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
       const parsed = JSON.parse(await readFile(cooldownPath, 'utf-8'));
       lastNotifiedMs = asNumber(parsed && parsed.last_notified_at_ms) ?? 0;
     }
-  } catch { /* ignore */ }
-  if ((nowMs - lastNotifiedMs) < cooldownMs) return;
+  } catch {
+    /* ignore */
+  }
+  if (nowMs - lastNotifiedMs < cooldownMs) return;
 
   // Read team config for tmux target
   const teamInfo = await readTeamWorkersForIdleCheck(stateDir, teamName);
@@ -339,9 +420,9 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
 
   try {
     await tmux.sendKeys(leaderPaneId, message, true);
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
 
     // Update cooldown state
@@ -367,8 +448,12 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
         created_at: nowIso,
       };
       await appendFile(eventsPath, JSON.stringify(event) + '\n');
-    } catch { /* best effort */ }
-  } catch { /* tmux send failure is non-fatal */ }
+    } catch {
+      /* best effort */
+    }
+  } catch {
+    /* tmux send failure is non-fatal */
+  }
 }
 
 export async function maybeNotifyLeaderAllWorkersIdle(params: {
@@ -383,9 +468,19 @@ export async function maybeNotifyLeaderAllWorkersIdle(params: {
   const nowIso = new Date(nowMs).toISOString();
 
   // Only trigger when this worker is idle
-  const mySnapshot = await readWorkerStatusSnapshot(stateDir, teamName, workerName, nowMs);
+  const mySnapshot = await readWorkerStatusSnapshot(
+    stateDir,
+    teamName,
+    workerName,
+    nowMs,
+  );
   if (mySnapshot.state !== 'idle' || !mySnapshot.fresh) return;
-  const myHeartbeat = await readWorkerHeartbeatSnapshot(stateDir, teamName, workerName, nowMs);
+  const myHeartbeat = await readWorkerHeartbeatSnapshot(
+    stateDir,
+    teamName,
+    workerName,
+    nowMs,
+  );
   if (!myHeartbeat.fresh) return;
 
   const teamInfo = await readTeamWorkersForIdleCheck(stateDir, teamName);
@@ -393,24 +488,49 @@ export async function maybeNotifyLeaderAllWorkersIdle(params: {
   const { workers, leaderPaneId } = teamInfo;
 
   // Check cooldown
-  const idleStatePath = join(stateDir, 'team', teamName, 'all-workers-idle.json');
-  const idleState = (await readJsonIfExists(idleStatePath, null)) as Record<string, unknown> | null ?? {};
+  const idleStatePath = join(
+    stateDir,
+    'team',
+    teamName,
+    'all-workers-idle.json',
+  );
+  const idleState =
+    ((await readJsonIfExists(idleStatePath, null)) as Record<
+      string,
+      unknown
+    > | null) ?? {};
   const cooldownMs = resolveAllWorkersIdleCooldownMs();
-  const lastNotifiedMs = asNumber((idleState as Record<string, unknown>).last_notified_at_ms) ?? 0;
-  if ((nowMs - lastNotifiedMs) < cooldownMs) return;
+  const lastNotifiedMs =
+    asNumber((idleState as Record<string, unknown>).last_notified_at_ms) ?? 0;
+  if (nowMs - lastNotifiedMs < cooldownMs) return;
 
   // Check ALL workers idle
   const snapshots = await Promise.all(
     workers.map(async (w) => {
       const worker = safeString(w && w.name ? w.name : '');
-      const status = await readWorkerStatusSnapshot(stateDir, teamName, worker, nowMs);
-      const heartbeat = await readWorkerHeartbeatSnapshot(stateDir, teamName, worker, nowMs);
+      const status = await readWorkerStatusSnapshot(
+        stateDir,
+        teamName,
+        worker,
+        nowMs,
+      );
+      const heartbeat = await readWorkerHeartbeatSnapshot(
+        stateDir,
+        teamName,
+        worker,
+        nowMs,
+      );
       return { worker, status, heartbeat };
     }),
   );
-  const allIdle = snapshots.length > 0 && snapshots.every(({ status, heartbeat }) =>
-    (status.state === 'idle' || status.state === 'done') && status.fresh && heartbeat.fresh,
-  );
+  const allIdle =
+    snapshots.length > 0 &&
+    snapshots.every(
+      ({ status, heartbeat }) =>
+        (status.state === 'idle' || status.state === 'done') &&
+        status.fresh &&
+        heartbeat.fresh,
+    );
   if (!allIdle) return;
 
   if (!leaderPaneId) return;
@@ -423,9 +543,9 @@ export async function maybeNotifyLeaderAllWorkersIdle(params: {
 
   try {
     await tmux.sendKeys(leaderPaneId, message, true);
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
     await tmux.sendKeys(leaderPaneId, 'C-m');
 
     await writeJsonAtomic(idleStatePath, {
@@ -449,8 +569,12 @@ export async function maybeNotifyLeaderAllWorkersIdle(params: {
         created_at: nowIso,
       };
       await appendFile(eventsPath, JSON.stringify(event) + '\n');
-    } catch { /* best effort */ }
-  } catch { /* tmux send failure is non-fatal */ }
+    } catch {
+      /* best effort */
+    }
+  } catch {
+    /* tmux send failure is non-fatal */
+  }
 }
 
 // ── Main handler ───────────────────────────────────────────────────────────
@@ -466,5 +590,10 @@ export async function handleWorkerTurn(
 
   await updateWorkerHeartbeat(stateDir, teamName, workerName);
   await maybeNotifyLeaderWorkerIdle({ cwd, stateDir, parsedTeamWorker, tmux });
-  await maybeNotifyLeaderAllWorkersIdle({ cwd, stateDir, parsedTeamWorker, tmux });
+  await maybeNotifyLeaderAllWorkersIdle({
+    cwd,
+    stateDir,
+    parsedTeamWorker,
+    tmux,
+  });
 }

@@ -2,19 +2,22 @@ import { describe, it, expect } from 'vitest';
 
 describe('Cleanup Validation', () => {
   it('omc-plan skill resolves correctly', async () => {
-    const { getBuiltinSkill } = await import('../features/builtin-skills/skills.js');
+    const { getBuiltinSkill } =
+      await import('../features/builtin-skills/skills.js');
     const skill = getBuiltinSkill('omc-plan');
     expect(skill).toBeDefined();
   });
 
   it('plan skill is blocked by CC native denylist', async () => {
-    const { getBuiltinSkill } = await import('../features/builtin-skills/skills.js');
+    const { getBuiltinSkill } =
+      await import('../features/builtin-skills/skills.js');
     const skill = getBuiltinSkill('plan');
     expect(skill).toBeUndefined();
   });
 
   it('old keywords do not match active patterns', async () => {
-    const { detectKeywordsWithType } = await import('../hooks/keyword-detector/index.js');
+    const { detectKeywordsWithType } =
+      await import('../hooks/keyword-detector/index.js');
     const result = detectKeywordsWithType('ultrapilot build this');
     expect(result).toEqual([]);
   });

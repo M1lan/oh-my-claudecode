@@ -30,7 +30,8 @@ function makeJob(overrides: Partial<JobStatus> = {}): JobStatus {
 
 describe('pre-compact: getActiveJobsSummary respects cwd', () => {
   beforeEach(async () => {
-    if (existsSync(TEST_BASE)) rmSync(TEST_BASE, { recursive: true, force: true });
+    if (existsSync(TEST_BASE))
+      rmSync(TEST_BASE, { recursive: true, force: true });
     mkdirSync(DIR_A, { recursive: true });
     mkdirSync(DIR_B, { recursive: true });
 
@@ -39,18 +40,26 @@ describe('pre-compact: getActiveJobsSummary respects cwd', () => {
     await initJobDb(DIR_B);
 
     // Insert distinct jobs into each worktree DB
-    upsertJob(makeJob({ jobId: 'job-worktree-a', agentRole: 'planner' }), DIR_A);
-    upsertJob(makeJob({ jobId: 'job-worktree-b', agentRole: 'executor' }), DIR_B);
+    upsertJob(
+      makeJob({ jobId: 'job-worktree-a', agentRole: 'planner' }),
+      DIR_A,
+    );
+    upsertJob(
+      makeJob({ jobId: 'job-worktree-b', agentRole: 'executor' }),
+      DIR_B,
+    );
   });
 
   afterEach(() => {
     closeAllJobDbs();
-    if (existsSync(TEST_BASE)) rmSync(TEST_BASE, { recursive: true, force: true });
+    if (existsSync(TEST_BASE))
+      rmSync(TEST_BASE, { recursive: true, force: true });
   });
 
   it('reads active jobs from worktree-a only when called with DIR_A', async () => {
     const checkpoint = await createCompactCheckpoint(DIR_A, 'auto');
-    const activeIds = checkpoint.background_jobs?.active.map(j => j.jobId) ?? [];
+    const activeIds =
+      checkpoint.background_jobs?.active.map((j) => j.jobId) ?? [];
 
     expect(activeIds).toContain('job-worktree-a');
     expect(activeIds).not.toContain('job-worktree-b');
@@ -58,7 +67,8 @@ describe('pre-compact: getActiveJobsSummary respects cwd', () => {
 
   it('reads active jobs from worktree-b only when called with DIR_B', async () => {
     const checkpoint = await createCompactCheckpoint(DIR_B, 'auto');
-    const activeIds = checkpoint.background_jobs?.active.map(j => j.jobId) ?? [];
+    const activeIds =
+      checkpoint.background_jobs?.active.map((j) => j.jobId) ?? [];
 
     expect(activeIds).toContain('job-worktree-b');
     expect(activeIds).not.toContain('job-worktree-a');

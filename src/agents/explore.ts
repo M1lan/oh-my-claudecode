@@ -15,7 +15,10 @@ export const EXPLORE_PROMPT_METADATA: AgentPromptMetadata = {
   cost: 'CHEAP',
   promptAlias: 'Explore',
   triggers: [
-    { domain: 'Internal codebase search', trigger: 'Finding implementations, patterns, files' },
+    {
+      domain: 'Internal codebase search',
+      trigger: 'Finding implementations, patterns, files',
+    },
     { domain: 'Project structure', trigger: 'Understanding code organization' },
     { domain: 'Code discovery', trigger: 'Locating specific code by pattern' },
   ],
@@ -37,9 +40,10 @@ export const EXPLORE_PROMPT_METADATA: AgentPromptMetadata = {
 
 export const exploreAgent: AgentConfig = {
   name: 'explore',
-  description: 'Fast codebase exploration and pattern search. Use for finding files, understanding structure, locating implementations. Searches INTERNAL codebase only; external docs, literature, papers, and reference databases belong to document-specialist.',
+  description:
+    'Fast codebase exploration and pattern search. Use for finding files, understanding structure, locating implementations. Searches INTERNAL codebase only; external docs, literature, papers, and reference databases belong to document-specialist.',
   prompt: loadAgentPrompt('explore'),
   model: 'haiku',
   defaultModel: 'haiku',
-  metadata: EXPLORE_PROMPT_METADATA
+  metadata: EXPLORE_PROMPT_METADATA,
 };

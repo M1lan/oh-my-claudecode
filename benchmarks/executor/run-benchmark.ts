@@ -5,7 +5,7 @@
  * against the old deep-executor prompt to measure implementation quality.
  *
  * Usage:
- *   npx tsx benchmarks/executor/run-benchmark.ts [options]
+ *   pnpm exec tsx benchmarks/executor/run-benchmark.ts [options]
  *
  * Options:
  *   --agent <name>       Run a single agent variant only

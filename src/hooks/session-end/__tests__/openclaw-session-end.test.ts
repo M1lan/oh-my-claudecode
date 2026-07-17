@@ -1,31 +1,32 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 vi.mock('../callbacks.js', async () => {
-  const actual = await vi.importActual<typeof import('../callbacks.js')>('../callbacks.js');
+  const actual =
+    await vi.importActual<typeof import('../callbacks.js')>('../callbacks.js');
   return {
     ...actual,
     triggerStopCallbacks: vi.fn(async () => undefined),
   };
 });
 
-vi.mock("../../../notifications/index.js", () => ({
+vi.mock('../../../notifications/index.js', () => ({
   notify: vi.fn(async () => undefined),
 }));
 
-vi.mock("../../../features/auto-update.js", () => ({
+vi.mock('../../../features/auto-update.js', () => ({
   getOMCConfig: vi.fn(() => ({})),
 }));
 
-vi.mock("../../../notifications/config.js", () => ({
+vi.mock('../../../notifications/config.js', () => ({
   buildConfigFromEnv: vi.fn(() => null),
   getEnabledPlatforms: vi.fn(() => []),
   getNotificationConfig: vi.fn(() => null),
 }));
 
-vi.mock("../../../tools/python-repl/bridge-manager.js", () => ({
+vi.mock('../../../tools/python-repl/bridge-manager.js', () => ({
   cleanupBridgeSessions: vi.fn(async () => ({
     requestedSessions: 0,
     foundSessions: 0,
@@ -34,8 +35,8 @@ vi.mock("../../../tools/python-repl/bridge-manager.js", () => ({
   })),
 }));
 
-vi.mock("../../../openclaw/index.js", () => ({
-  wakeOpenClaw: vi.fn().mockResolvedValue({ gateway: "test", success: true }),
+vi.mock('../../../openclaw/index.js', () => ({
+  wakeOpenClaw: vi.fn().mockResolvedValue({ gateway: 'test', success: true }),
 }));
 
 const workerMocks = vi.hoisted(() => ({
@@ -45,10 +46,15 @@ const workerMocks = vi.hoisted(() => ({
 
 vi.mock('../worker.js', () => workerMocks);
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js',
-  );
-  return { ...actual, resolveToWorktreeRoot: vi.fn((directory?: string) => directory ?? process.cwd()) };
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
+  return {
+    ...actual,
+    resolveToWorktreeRoot: vi.fn(
+      (directory?: string) => directory ?? process.cwd(),
+    ),
+  };
 });
 
 import { processHook, type HookInput } from '../../bridge.js';
@@ -56,21 +62,21 @@ import { processSessionEnd, runSessionEndOpenClaw } from '../index.js';
 import { readSessionEndJob } from '../cleanup-manifest.js';
 import { wakeOpenClaw } from '../../../openclaw/index.js';
 
-describe("session-end OpenClaw behavior (issue #1456)", () => {
+describe('session-end OpenClaw behavior (issue #1456)', () => {
   let tmpDir: string;
   let transcriptPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "omc-session-end-claw-"));
-    transcriptPath = path.join(tmpDir, "transcript.jsonl");
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-session-end-claw-'));
+    transcriptPath = path.join(tmpDir, 'transcript.jsonl');
     // Write a minimal transcript so processSessionEnd doesn't fail
     fs.writeFileSync(
       transcriptPath,
       JSON.stringify({
-        type: "assistant",
-        message: { content: [{ type: "text", text: "done" }] },
+        type: 'assistant',
+        message: { content: [{ type: 'text', text: 'done' }] },
       }),
-      "utf-8",
+      'utf-8',
     );
     vi.clearAllMocks();
   });
@@ -94,10 +100,12 @@ describe("session-end OpenClaw behavior (issue #1456)", () => {
     } as unknown as HookInput);
 
     const manifest = readSessionEndJob(tmpDir, 'session-claw-1');
-    expect(manifest?.actions.openclaw).toEqual(expect.objectContaining({
-      status: 'pending',
-      payload: expect.objectContaining({ transcriptPath, reason: 'clear' }),
-    }));
+    expect(manifest?.actions.openclaw).toEqual(
+      expect.objectContaining({
+        status: 'pending',
+        payload: expect.objectContaining({ transcriptPath, reason: 'clear' }),
+      }),
+    );
     expect(workerMocks.spawnSessionEndWorker).toHaveBeenCalledWith({
       directory: tmpDir,
       sessionId: 'session-claw-1',
@@ -159,6 +167,8 @@ describe("session-end OpenClaw behavior (issue #1456)", () => {
       reason: 'clear',
     });
 
-    await expect(runSessionEndOpenClaw(tmpDir, 'session-claw-4')).resolves.toBeUndefined();
+    await expect(
+      runSessionEndOpenClaw(tmpDir, 'session-claw-4'),
+    ).resolves.toBeUndefined();
   });
 });

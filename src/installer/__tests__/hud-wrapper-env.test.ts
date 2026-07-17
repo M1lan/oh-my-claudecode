@@ -13,7 +13,15 @@
 
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, copyFileSync, readFileSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  copyFileSync,
+  readFileSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -33,7 +41,13 @@ function makeStubConfigDir(rootDir: string): string {
   const configDir = join(rootDir, 'isolated-config');
   const stubDir = join(
     configDir,
-    'plugins', 'cache', 'omc', 'oh-my-claudecode', CACHE_STUB_VERSION, 'dist', 'hud',
+    'plugins',
+    'cache',
+    'omc',
+    'oh-my-claudecode',
+    CACHE_STUB_VERSION,
+    'dist',
+    'hud',
   );
   mkdirSync(stubDir, { recursive: true });
   writeFileSync(
@@ -60,7 +74,12 @@ function scrubbedEnv(extra: Record<string, string>): Record<string, string> {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..', '..', '..');
-const TEMPLATE_TXT = join(REPO_ROOT, 'scripts', 'lib', 'hud-wrapper-template.txt');
+const TEMPLATE_TXT = join(
+  REPO_ROOT,
+  'scripts',
+  'lib',
+  'hud-wrapper-template.txt',
+);
 const CONFIG_DIR_MJS = join(REPO_ROOT, 'scripts', 'lib', 'config-dir.mjs');
 
 const STDIN_PAYLOAD = JSON.stringify({
@@ -102,7 +121,10 @@ function stage(): StagedWrapper {
   return { dir, wrapperPath, fakePluginRoot };
 }
 
-function runWrapper(wrapperPath: string, env: Record<string, string | undefined>) {
+function runWrapper(
+  wrapperPath: string,
+  env: Record<string, string | undefined>,
+) {
   // Sanitize env: drop undefined keys.
   const finalEnv: Record<string, string> = {};
   for (const [k, v] of Object.entries(env)) {
@@ -134,10 +156,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
     // Point CLAUDE_CONFIG_DIR at a non-existent dir so cache/marketplace branches
     // cannot accidentally fire.
     const isolatedConfig = join(s.dir, 'isolated-config');
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: isolatedConfig,
-      [OMC_PLUGIN_ROOT_ENV]: s.fakePluginRoot,
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: isolatedConfig,
+        [OMC_PLUGIN_ROOT_ENV]: s.fakePluginRoot,
+      }),
+    );
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('FROM_OMC_PLUGIN_ROOT');
     // Pin: step 1 (OMC_PLUGIN_ROOT) fired, not the cache stub.
@@ -150,10 +175,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
     // pluginRoot has no dist/hud/index.js
     const emptyRoot = join(s.dir, 'empty-root');
     mkdirSync(emptyRoot, { recursive: true });
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: isolatedConfig,
-      [OMC_PLUGIN_ROOT_ENV]: emptyRoot,
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: isolatedConfig,
+        [OMC_PLUGIN_ROOT_ENV]: emptyRoot,
+      }),
+    );
     expect(result.status).toBe(0);
     // Pin: step 1 fell through, step 2 (cache) fired.
     expect(result.stdout).not.toContain('FROM_OMC_PLUGIN_ROOT');
@@ -164,10 +192,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
   it('case 3: OMC_PLUGIN_ROOT unset → cache step (step 2) fires', () => {
     const s = staged!;
     const isolatedConfig = makeStubConfigDir(s.dir);
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: isolatedConfig,
-      // OMC_PLUGIN_ROOT intentionally omitted
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: isolatedConfig,
+        // OMC_PLUGIN_ROOT intentionally omitted
+      }),
+    );
     expect(result.status).toBe(0);
     // Pin: step 1 skipped (env unset), step 2 (cache) fired.
     expect(result.stdout).not.toContain('FROM_OMC_PLUGIN_ROOT');
@@ -179,10 +210,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
     const s = staged!;
     const isolatedConfig = makeStubConfigDir(s.dir);
     const ghostRoot = join(s.dir, 'does-not-exist-anywhere');
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: isolatedConfig,
-      [OMC_PLUGIN_ROOT_ENV]: ghostRoot,
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: isolatedConfig,
+        [OMC_PLUGIN_ROOT_ENV]: ghostRoot,
+      }),
+    );
     expect(result.status).toBe(0);
     // Pin: step 1 fell through (ghost path), step 2 (cache) fired.
     expect(result.stdout).not.toContain('FROM_OMC_PLUGIN_ROOT');
@@ -193,7 +227,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
   it('case 6: cache step is semver-aware — stable beats prerelease with same [M.m.p]', () => {
     const s = staged!;
     const configDir = join(s.dir, 'isolated-config-semver');
-    const cacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      configDir,
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     // Two versions: 1.0.0-alpha (should lose) and 1.0.0 (should win).
     // A naive localeCompare(numeric) sort places "1.0.0-alpha" > "1.0.0" and picks the prerelease.
     const stableDir = join(cacheBase, '1.0.0', 'dist', 'hud');
@@ -211,10 +251,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
       'utf8',
     );
 
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: configDir,
-      // OMC_PLUGIN_ROOT intentionally omitted → cache step fires
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: configDir,
+        // OMC_PLUGIN_ROOT intentionally omitted → cache step fires
+      }),
+    );
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('FROM_STABLE_1_0_0');
     expect(result.stdout).not.toContain('FROM_PRERELEASE_1_0_0_ALPHA');
@@ -223,7 +266,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
   it('case 7: cache step orders prerelease tags numerically — rc.10 beats rc.2', () => {
     const s = staged!;
     const configDir = join(s.dir, 'isolated-config-pre-numeric');
-    const cacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      configDir,
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     // Two prerelease-only versions with the same [M.m.p]. A naive localeCompare
     // without { numeric: true } places "rc.2" above "rc.10".
     const rc10Dir = join(cacheBase, '1.0.0-rc.10', 'dist', 'hud');
@@ -241,9 +290,12 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
       'utf8',
     );
 
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: configDir,
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: configDir,
+      }),
+    );
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('FROM_RC_10');
     expect(result.stdout).not.toContain('FROM_RC_2');
@@ -252,7 +304,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
   it('case 8: cache step falls back to older built version when latest built version fails to import', () => {
     const s = staged!;
     const configDir = join(s.dir, 'isolated-config-cache-fallback');
-    const cacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      configDir,
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
 
     const latestBrokenDir = join(cacheBase, '4.11.3', 'dist', 'hud');
     const olderWorkingDir = join(cacheBase, '4.11.2', 'dist', 'hud');
@@ -270,10 +328,13 @@ describe('HUD wrapper — OMC_PLUGIN_ROOT resolution', () => {
       'utf8',
     );
 
-    const result = runWrapper(s.wrapperPath, scrubbedEnv({
-      CLAUDE_CONFIG_DIR: configDir,
-      // OMC_PLUGIN_ROOT intentionally omitted → cache step fires
-    }));
+    const result = runWrapper(
+      s.wrapperPath,
+      scrubbedEnv({
+        CLAUDE_CONFIG_DIR: configDir,
+        // OMC_PLUGIN_ROOT intentionally omitted → cache step fires
+      }),
+    );
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain('FROM_OLDER_WORKING_VERSION');

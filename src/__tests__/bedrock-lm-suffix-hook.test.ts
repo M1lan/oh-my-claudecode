@@ -41,32 +41,47 @@ import { saveAndClear, restore } from '../config/__tests__/test-helpers.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const HOOK_PATH = resolve(__dirname, '../../scripts/pre-tool-enforcer.mjs');
 
-const ENV_KEYS = ['ANTHROPIC_MODEL', 'CLAUDE_MODEL', 'OMC_ROUTING_FORCE_INHERIT', 'OMC_SUBAGENT_MODEL'] as const;
+const ENV_KEYS = [
+  'ANTHROPIC_MODEL',
+  'CLAUDE_MODEL',
+  'OMC_ROUTING_FORCE_INHERIT',
+  'OMC_SUBAGENT_MODEL',
+] as const;
 
 // ---------------------------------------------------------------------------
 // Hook ALLOW path: explicit model param is a valid provider-specific ID
 // ---------------------------------------------------------------------------
 describe('hook allow path — isSubagentSafeModelId(model) === true', () => {
   it('allows global. cross-region Bedrock profile (the standard escape hatch)', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6-v1:0')).toBe(true);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6-v1:0'),
+    ).toBe(true);
   });
 
   it('allows us. regional Bedrock cross-region inference profile', () => {
-    expect(isSubagentSafeModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0')).toBe(true);
+    expect(
+      isSubagentSafeModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+    ).toBe(true);
   });
 
   it('allows ap. regional Bedrock profile', () => {
-    expect(isSubagentSafeModelId('ap.anthropic.claude-sonnet-4-6-v1:0')).toBe(true);
+    expect(isSubagentSafeModelId('ap.anthropic.claude-sonnet-4-6-v1:0')).toBe(
+      true,
+    );
   });
 
   it('allows Bedrock ARN inference-profile format', () => {
-    expect(isSubagentSafeModelId(
-      'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0'
-    )).toBe(true);
+    expect(
+      isSubagentSafeModelId(
+        'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0',
+      ),
+    ).toBe(true);
   });
 
   it('allows Vertex AI model ID', () => {
-    expect(isSubagentSafeModelId('vertex_ai/claude-sonnet-4-6@20250514')).toBe(true);
+    expect(isSubagentSafeModelId('vertex_ai/claude-sonnet-4-6@20250514')).toBe(
+      true,
+    );
   });
 });
 
@@ -75,11 +90,15 @@ describe('hook allow path — isSubagentSafeModelId(model) === true', () => {
 // ---------------------------------------------------------------------------
 describe('hook deny path — explicit model param is invalid', () => {
   it('denies [1m]-suffixed model ID (the core bug case)', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]')).toBe(false);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(false);
   });
 
   it('denies [200k]-suffixed model ID', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[200k]')).toBe(false);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[200k]'),
+    ).toBe(false);
   });
 
   it('denies tier alias "sonnet"', () => {
@@ -105,25 +124,37 @@ describe('hook deny path — explicit model param is invalid', () => {
 // ---------------------------------------------------------------------------
 describe('session model [1m] detection — hasExtendedContextSuffix', () => {
   it('detects [1m] on the exact model from the bug report', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[1m]')).toBe(true);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(true);
   });
 
   it('detects [200k] on hypothetical future variant', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[200k]')).toBe(true);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[200k]'),
+    ).toBe(true);
   });
 
   it('does NOT flag the standard Bedrock profile without suffix', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6-v1:0')).toBe(false);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6-v1:0'),
+    ).toBe(false);
   });
 
   it('does NOT flag the opus env var from the bug report env', () => {
     // ANTHROPIC_DEFAULT_OPUS_MODEL=global.anthropic.claude-opus-4-6-v1 (no [1m])
-    expect(hasExtendedContextSuffix('global.anthropic.claude-opus-4-6-v1')).toBe(false);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-opus-4-6-v1'),
+    ).toBe(false);
   });
 
   it('does NOT flag the haiku env var from the bug report env', () => {
     // ANTHROPIC_DEFAULT_HAIKU_MODEL=global.anthropic.claude-haiku-4-5-20251001-v1:0
-    expect(hasExtendedContextSuffix('global.anthropic.claude-haiku-4-5-20251001-v1:0')).toBe(false);
+    expect(
+      hasExtendedContextSuffix(
+        'global.anthropic.claude-haiku-4-5-20251001-v1:0',
+      ),
+    ).toBe(false);
   });
 });
 
@@ -132,14 +163,20 @@ describe('session model [1m] detection — hasExtendedContextSuffix', () => {
 // ---------------------------------------------------------------------------
 describe('isProviderSpecificModelId — Bedrock IDs used in OMC_SUBAGENT_MODEL guidance', () => {
   it('accepts the model from the 400 error message', () => {
-    expect(isProviderSpecificModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0')).toBe(true);
+    expect(
+      isProviderSpecificModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+    ).toBe(true);
   });
 
   it('accepts [1m]-suffixed model as provider-specific (but it is NOT subagent-safe)', () => {
     // isProviderSpecificModelId detects the Bedrock prefix — the [1m] is a secondary check
-    expect(isProviderSpecificModelId('global.anthropic.claude-sonnet-4-6[1m]')).toBe(true);
+    expect(
+      isProviderSpecificModelId('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(true);
     // But isSubagentSafeModelId combines both checks and rejects it
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]')).toBe(false);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(false);
   });
 });
 
@@ -149,8 +186,12 @@ describe('isProviderSpecificModelId — Bedrock IDs used in OMC_SUBAGENT_MODEL g
 describe('environment-based session model detection', () => {
   let saved: Record<string, string | undefined>;
 
-  beforeEach(() => { saved = saveAndClear(ENV_KEYS); });
-  afterEach(() => { restore(saved); });
+  beforeEach(() => {
+    saved = saveAndClear(ENV_KEYS);
+  });
+  afterEach(() => {
+    restore(saved);
+  });
 
   // Helper matching the dual-check logic in pre-tool-enforcer.mjs
   const sessionHasLmSuffix = () =>
@@ -225,7 +266,10 @@ function runHook(
     try {
       const parsed = JSON.parse(line);
       if (parsed?.hookSpecificOutput?.permissionDecision === 'deny') {
-        return { denied: true, reason: parsed.hookSpecificOutput.permissionDecisionReason };
+        return {
+          denied: true,
+          reason: parsed.hookSpecificOutput.permissionDecisionReason,
+        };
       }
     } catch {
       // non-JSON line — skip
@@ -270,7 +314,8 @@ describe('hook integration — force-inherit + [1m] scenarios', () => {
       {},
       {
         ANTHROPIC_MODEL: 'global.anthropic.claude-sonnet-4-6[1m]',
-        ANTHROPIC_DEFAULT_SONNET_MODEL: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+        ANTHROPIC_DEFAULT_SONNET_MODEL:
+          'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       },
     );
     expect(result.denied).toBe(true);
@@ -306,10 +351,7 @@ describe('hook integration — force-inherit + [1m] scenarios', () => {
 
   it('denies no-model call when session model is a bare Anthropic ID with [1m] suffix', () => {
     // claude-sonnet-4-6[1m] → session has [1m] → deny with tier alias guidance
-    const result = runHook(
-      {},
-      { ANTHROPIC_MODEL: 'claude-sonnet-4-6[1m]' },
-    );
+    const result = runHook({}, { ANTHROPIC_MODEL: 'claude-sonnet-4-6[1m]' });
     expect(result.denied).toBe(true);
     expect(result.reason).toMatch(/model="sonnet"/);
     expect(result.reason).toMatch(/claude-sonnet-4-6\[1m\]/);
@@ -320,7 +362,8 @@ describe('hook integration — force-inherit + [1m] scenarios', () => {
       {},
       {
         ANTHROPIC_MODEL: 'claude-sonnet-4-6[1m]',
-        ANTHROPIC_DEFAULT_SONNET_MODEL: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+        ANTHROPIC_DEFAULT_SONNET_MODEL:
+          'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
       },
     );
     expect(result.denied).toBe(true);

@@ -4,7 +4,7 @@
  * Detects the current tmux session name for inclusion in notification payloads.
  */
 
-import { tmuxShell } from "../cli/tmux-utils.js";
+import { tmuxShell } from '../cli/tmux-utils.js';
 
 /**
  * Get the current tmux session name.
@@ -24,16 +24,16 @@ export function getCurrentTmuxSession(): string | null {
     if (paneId) {
       const lines = tmuxShell("list-panes -a -F '#{pane_id} #{session_name}'", {
         timeout: 3000,
-        stdio: ["pipe", "pipe", "pipe"],
-      }).split("\n");
-      const match = lines.find((l) => l.startsWith(paneId + " "));
-      if (match) return match.split(" ")[1] ?? null;
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }).split('\n');
+      const match = lines.find((l) => l.startsWith(paneId + ' '));
+      if (match) return match.split(' ')[1] ?? null;
     }
 
     // Fallback: ask the attached session (may differ when detached).
     const sessionName = tmuxShell("display-message -p '#S'", {
       timeout: 3000,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
 
     return sessionName || null;
@@ -46,18 +46,18 @@ export function getCurrentTmuxSession(): string | null {
  * List active omc-team tmux sessions for a given team.
  */
 export function getTeamTmuxSessions(teamName: string): string[] {
-  const sanitized = teamName.replace(/[^a-zA-Z0-9-]/g, "");
+  const sanitized = teamName.replace(/[^a-zA-Z0-9-]/g, '');
   if (!sanitized) return [];
 
   const prefix = `omc-team-${sanitized}-`;
   try {
     const output = tmuxShell("list-sessions -F '#{session_name}'", {
       timeout: 3000,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return output
       .trim()
-      .split("\n")
+      .split('\n')
       .filter((s) => s.startsWith(prefix))
       .map((s) => s.slice(prefix.length));
   } catch {
@@ -92,7 +92,7 @@ export function getCurrentTmuxPaneId(): string | null {
   try {
     const paneId = tmuxShell("display-message -p '#{pane_id}'", {
       timeout: 3000,
-      stdio: ["pipe", "pipe", "pipe"],
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
     return paneId && /^%\d+$/.test(paneId) ? paneId : null;
   } catch {

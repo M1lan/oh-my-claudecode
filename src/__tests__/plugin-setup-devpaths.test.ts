@@ -7,7 +7,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PACKAGE_ROOT = join(__dirname, '..', '..');
 const PLUGIN_SETUP_PATH = join(PACKAGE_ROOT, 'scripts', 'plugin-setup.mjs');
-const HUD_WRAPPER_TEMPLATE = join(PACKAGE_ROOT, 'scripts', 'lib', 'hud-wrapper-template.txt');
+const HUD_WRAPPER_TEMPLATE = join(
+  PACKAGE_ROOT,
+  'scripts',
+  'lib',
+  'hud-wrapper-template.txt',
+);
 
 /**
  * Plan binary-weaving-mountain replaced the brittle hardcoded `devPaths`
@@ -22,7 +27,9 @@ describe('HUD wrapper devPaths removal (binary-weaving-mountain)', () => {
   it('plugin-setup.mjs no longer contains an inline devPaths array', () => {
     const content = readFileSync(PLUGIN_SETUP_PATH, 'utf-8');
     expect(content).not.toMatch(/const devPaths\s*=\s*\[/);
-    expect(content).not.toContain('Workspace/oh-my-claudecode/dist/hud/index.js');
+    expect(content).not.toContain(
+      'Workspace/oh-my-claudecode/dist/hud/index.js',
+    );
     expect(content).not.toContain('OMC_DEV');
   });
 

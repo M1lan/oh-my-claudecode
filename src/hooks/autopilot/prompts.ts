@@ -1,19 +1,19 @@
 import {
   resolveAutopilotPlanPath,
   resolveOpenQuestionsPlanPath,
-} from "../../config/plan-output.js";
+} from '../../config/plan-output.js';
 /**
  * Autopilot Prompt Generation
  *
  * Generates phase-specific prompts that include Task tool invocations
  * for Claude to execute. This is the core of the agent invocation mechanism.
  */
-import type { PluginConfig } from "../../shared/types.js";
+import type { PluginConfig } from '../../shared/types.js';
 
 function resolvePromptPlanPath(
   planPathOrConfig?: string | PluginConfig,
 ): string {
-  return typeof planPathOrConfig === "string"
+  return typeof planPathOrConfig === 'string'
     ? planPathOrConfig
     : resolveAutopilotPlanPath(planPathOrConfig);
 }
@@ -21,7 +21,7 @@ function resolvePromptPlanPath(
 function resolvePromptOpenQuestionsPath(
   openQuestionsPathOrConfig?: string | PluginConfig,
 ): string {
-  return typeof openQuestionsPathOrConfig === "string"
+  return typeof openQuestionsPathOrConfig === 'string'
     ? openQuestionsPathOrConfig
     : resolveOpenQuestionsPlanPath(openQuestionsPathOrConfig);
 }
@@ -102,9 +102,13 @@ The Analyst is read-only and cannot write files, so you must persist its open qu
 Combine Analyst requirements + Architect technical spec into a single document.
 Save to: \`.omc/autopilot/spec.md\`
 
-${includeLegacyCompletion ? `### Step 4: Signal Completion
+${
+  includeLegacyCompletion
+    ? `### Step 4: Signal Completion
 
-When the spec is saved, signal: EXPANSION_COMPLETE` : ''}
+When the spec is saved, signal: EXPANSION_COMPLETE`
+    : ''
+}
 `;
 }
 
@@ -254,18 +258,18 @@ Run UltraQA cycles until build/lint/tests pass.
 ### QA Sequence
 
 1. **Build**: Run the project's build command:
-   - JavaScript/TypeScript: \`npm run build\` (or yarn/pnpm equivalent)
+   - JavaScript/TypeScript: \`pnpm run build\`
    - Python: \`python -m build\` (if applicable)
    - Go: \`go build ./...\`
    - Rust: \`cargo build\`
    - Java: \`mvn compile\` or \`gradle build\`
 2. **Lint**: Run the project's linter:
-   - JavaScript/TypeScript: \`npm run lint\`
+   - JavaScript/TypeScript: \`pnpm run lint\`
    - Python: \`ruff check .\` or \`flake8\`
    - Go: \`golangci-lint run\`
    - Rust: \`cargo clippy\`
 3. **Test**: Run the project's tests:
-   - JavaScript/TypeScript: \`npm test\`
+   - JavaScript/TypeScript: \`pnpm test\`
    - Python: \`pytest\`
    - Go: \`go test ./...\`
    - Rust: \`cargo test\`
@@ -394,10 +398,10 @@ When all approve: AUTOPILOT_COMPLETE
  */
 function escapeForPrompt(text: string): string {
   return text
-    .replace(/\\/g, "\\\\")
+    .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
-    .replace(/`/g, "\\`")
-    .replace(/\$/g, "\\$");
+    .replace(/`/g, '\\`')
+    .replace(/\$/g, '\\$');
 }
 
 /**
@@ -413,23 +417,23 @@ export function getPhasePrompt(
   },
 ): string {
   switch (phase) {
-    case "expansion":
+    case 'expansion':
       return getExpansionPrompt(
-        context.idea || "",
+        context.idea || '',
         context.openQuestionsPath || resolveOpenQuestionsPlanPath(),
       );
-    case "planning":
+    case 'planning':
       return getDirectPlanningPrompt(
-        context.specPath || ".omc/autopilot/spec.md",
+        context.specPath || '.omc/autopilot/spec.md',
         context.planPath || resolveAutopilotPlanPath(),
       );
-    case "execution":
+    case 'execution':
       return getExecutionPrompt(context.planPath || resolveAutopilotPlanPath());
-    case "qa":
+    case 'qa':
       return getQAPrompt();
-    case "validation":
-      return getValidationPrompt(context.specPath || ".omc/autopilot/spec.md");
+    case 'validation':
+      return getValidationPrompt(context.specPath || '.omc/autopilot/spec.md');
     default:
-      return "";
+      return '';
   }
 }

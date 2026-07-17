@@ -8,7 +8,13 @@
  * Files stored at: .omc/state/team-bridge/{team}/{worker}.heartbeat.json
  */
 
-import { readFileSync, existsSync, readdirSync, unlinkSync, rmdirSync } from 'fs';
+import {
+  readFileSync,
+  existsSync,
+  readdirSync,
+  unlinkSync,
+  rmdirSync,
+} from 'fs';
 import { join } from 'path';
 import type { HeartbeatData } from './types.js';
 import { sanitizeName } from './tmux-session.js';
@@ -16,21 +22,40 @@ import { atomicWriteJson } from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 
 /** Heartbeat file path */
-function heartbeatPath(workingDirectory: string, teamName: string, workerName: string): string {
-  return join(getOmcRoot(workingDirectory), 'state', 'team-bridge', sanitizeName(teamName), `${sanitizeName(workerName)}.heartbeat.json`);
+function heartbeatPath(
+  workingDirectory: string,
+  teamName: string,
+  workerName: string,
+): string {
+  return join(
+    getOmcRoot(workingDirectory),
+    'state',
+    'team-bridge',
+    sanitizeName(teamName),
+    `${sanitizeName(workerName)}.heartbeat.json`,
+  );
 }
 
 /** Heartbeat directory for a team */
 function heartbeatDir(workingDirectory: string, teamName: string): string {
-  return join(getOmcRoot(workingDirectory), 'state', 'team-bridge', sanitizeName(teamName));
+  return join(
+    getOmcRoot(workingDirectory),
+    'state',
+    'team-bridge',
+    sanitizeName(teamName),
+  );
 }
 
 /** Write/update heartbeat. Called every poll cycle by the bridge. */
 export function writeHeartbeat(
   workingDirectory: string,
-  data: HeartbeatData
+  data: HeartbeatData,
 ): void {
-  const filePath = heartbeatPath(workingDirectory, data.teamName, data.workerName);
+  const filePath = heartbeatPath(
+    workingDirectory,
+    data.teamName,
+    data.workerName,
+  );
   atomicWriteJson(filePath, data);
 }
 
@@ -38,7 +63,7 @@ export function writeHeartbeat(
 export function readHeartbeat(
   workingDirectory: string,
   teamName: string,
-  workerName: string
+  workerName: string,
 ): HeartbeatData | null {
   const filePath = heartbeatPath(workingDirectory, teamName, workerName);
   if (!existsSync(filePath)) return null;
@@ -53,19 +78,21 @@ export function readHeartbeat(
 /** List all heartbeat files for a team. Used by lead to check worker health. */
 export function listHeartbeats(
   workingDirectory: string,
-  teamName: string
+  teamName: string,
 ): HeartbeatData[] {
   const dir = heartbeatDir(workingDirectory, teamName);
   if (!existsSync(dir)) return [];
 
   try {
-    const files = readdirSync(dir).filter(f => f.endsWith('.heartbeat.json'));
+    const files = readdirSync(dir).filter((f) => f.endsWith('.heartbeat.json'));
     const heartbeats: HeartbeatData[] = [];
     for (const file of files) {
       try {
         const raw = readFileSync(join(dir, file), 'utf-8');
         heartbeats.push(JSON.parse(raw) as HeartbeatData);
-      } catch { /* skip malformed */ }
+      } catch {
+        /* skip malformed */
+      }
     }
     return heartbeats;
   } catch {
@@ -82,7 +109,7 @@ export function isWorkerAlive(
   workingDirectory: string,
   teamName: string,
   workerName: string,
-  maxAgeMs: number
+  maxAgeMs: number,
 ): boolean {
   const heartbeat = readHeartbeat(workingDirectory, teamName, workerName);
   if (!heartbeat) return false;
@@ -90,7 +117,7 @@ export function isWorkerAlive(
   try {
     const lastPoll = new Date(heartbeat.lastPollAt).getTime();
     if (isNaN(lastPoll)) return false; // Invalid date = dead
-    return (Date.now() - lastPoll) < maxAgeMs;
+    return Date.now() - lastPoll < maxAgeMs;
   } catch {
     return false;
   }
@@ -100,18 +127,22 @@ export function isWorkerAlive(
 export function deleteHeartbeat(
   workingDirectory: string,
   teamName: string,
-  workerName: string
+  workerName: string,
 ): void {
   const filePath = heartbeatPath(workingDirectory, teamName, workerName);
   if (existsSync(filePath)) {
-    try { unlinkSync(filePath); } catch { /* ignore */ }
+    try {
+      unlinkSync(filePath);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
 /** Delete all heartbeat files for a team */
 export function cleanupTeamHeartbeats(
   workingDirectory: string,
-  teamName: string
+  teamName: string,
 ): void {
   const dir = heartbeatDir(workingDirectory, teamName);
   if (!existsSync(dir)) return;
@@ -119,11 +150,19 @@ export function cleanupTeamHeartbeats(
   try {
     const files = readdirSync(dir);
     for (const file of files) {
-      try { unlinkSync(join(dir, file)); } catch { /* ignore */ }
+      try {
+        unlinkSync(join(dir, file));
+      } catch {
+        /* ignore */
+      }
     }
     // Try to remove the directory itself
     try {
       rmdirSync(dir);
-    } catch { /* ignore - may not be empty */ }
-  } catch { /* ignore */ }
+    } catch {
+      /* ignore - may not be empty */
+    }
+  } catch {
+    /* ignore */
+  }
 }

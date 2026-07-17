@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const SYNTHETIC_THINKING_CONTENT = '[Synthetic thinking block inserted to preserve message structure]';
+const SYNTHETIC_THINKING_CONTENT =
+  '[Synthetic thinking block inserted to preserve message structure]';
 
 describe('recovery storage issue #1386 regression', () => {
   const originalXdgDataHome = process.env.XDG_DATA_HOME;
@@ -73,7 +74,10 @@ describe('recovery storage issue #1386 regression', () => {
     expect(prependThinkingPart(sessionID, targetMessageID)).toBe(true);
 
     const insertedPart = JSON.parse(
-      readFileSync(join(targetPartDir, 'prt_0000000000_thinking.json'), 'utf-8'),
+      readFileSync(
+        join(targetPartDir, 'prt_0000000000_thinking.json'),
+        'utf-8',
+      ),
     ) as { type: string; thinking: string; synthetic?: boolean };
 
     expect(insertedPart).toMatchObject({

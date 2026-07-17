@@ -31,11 +31,14 @@ describe('validateTmux', () => {
     mockedExecSync.mockReturnValue(Buffer.from('tmux 3.4'));
 
     expect(() => validateTmux(false)).not.toThrow();
-    expect(mockedExecSync).toHaveBeenCalledWith('tmux -V', expect.objectContaining({
-      encoding: 'utf-8',
-      timeout: 5000,
-      stdio: 'pipe',
-    }));
+    expect(mockedExecSync).toHaveBeenCalledWith(
+      'tmux -V',
+      expect.objectContaining({
+        encoding: 'utf-8',
+        timeout: 5000,
+        stdio: 'pipe',
+      }),
+    );
   });
 
   it('throws install guidance when tmux is unavailable outside context', () => {

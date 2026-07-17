@@ -11,7 +11,8 @@ export function resolveDaemonModulePath(
   currentFilename: string,
   distSegments: readonly string[],
 ): string {
-  const isWindowsStylePath = /^[a-zA-Z]:\\/.test(currentFilename) || currentFilename.includes('\\');
+  const isWindowsStylePath =
+    /^[a-zA-Z]:\\/.test(currentFilename) || currentFilename.includes('\\');
   const pathApi = isWindowsStylePath ? win32 : { basename, dirname, join };
 
   const tsCompiledPath = currentFilename.replace(/\.ts$/, '.js');
@@ -20,7 +21,9 @@ export function resolveDaemonModulePath(
   }
 
   const currentDir = pathApi.dirname(currentFilename);
-  const inBundledCli = pathApi.basename(currentFilename) === 'cli.cjs' && pathApi.basename(currentDir) === 'bridge';
+  const inBundledCli =
+    pathApi.basename(currentFilename) === 'cli.cjs' &&
+    pathApi.basename(currentDir) === 'bridge';
   if (inBundledCli) {
     return pathApi.join(currentDir, '..', 'dist', ...distSegments);
   }

@@ -5,7 +5,10 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const hookScript = resolve(__dirname, '../../../templates/hooks/pre-tool-use.mjs');
+const hookScript = resolve(
+  __dirname,
+  '../../../templates/hooks/pre-tool-use.mjs',
+);
 
 function runPreToolUseHook(command: string) {
   const payload = {

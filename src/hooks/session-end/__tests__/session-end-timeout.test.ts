@@ -13,16 +13,21 @@ vi.mock('../worker.js', () => ({
 }));
 
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
   return {
     ...actual,
-    resolveToWorktreeRoot: vi.fn((directory?: string) => directory ?? process.cwd()),
+    resolveToWorktreeRoot: vi.fn(
+      (directory?: string) => directory ?? process.cwd(),
+    ),
   };
 });
 
-import { processSessionEnd, resolveSessionEndCleanupBudgetMs } from '../index.js';
+import {
+  processSessionEnd,
+  resolveSessionEndCleanupBudgetMs,
+} from '../index.js';
 import { readSessionEndJob } from '../cleanup-manifest.js';
 
 describe('SessionEnd foreground manifest handoff (issue #1700)', () => {
@@ -34,7 +39,10 @@ describe('SessionEnd foreground manifest handoff (issue #1700)', () => {
     transcriptPath = path.join(tmpDir, 'transcript.jsonl');
     fs.writeFileSync(
       transcriptPath,
-      JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'done' }] } }),
+      JSON.stringify({
+        type: 'assistant',
+        message: { content: [{ type: 'text', text: 'done' }] },
+      }),
       'utf-8',
     );
     vi.clearAllMocks();
@@ -45,7 +53,10 @@ describe('SessionEnd foreground manifest handoff (issue #1700)', () => {
   });
 
   it('keeps the SessionEnd manifest timeout at least 30 seconds', () => {
-    const hooksJsonPath = path.resolve(__dirname, '../../../../hooks/hooks.json');
+    const hooksJsonPath = path.resolve(
+      __dirname,
+      '../../../../hooks/hooks.json',
+    );
     const hooksJson = JSON.parse(fs.readFileSync(hooksJsonPath, 'utf-8'));
 
     for (const entry of hooksJson.hooks.SessionEnd) {
@@ -59,39 +70,64 @@ describe('SessionEnd foreground manifest handoff (issue #1700)', () => {
     const sessionId = 'timeout-test-manifest';
     const startedAt = Date.now();
 
-    await expect(processSessionEnd({
-      session_id: sessionId,
-      transcript_path: transcriptPath,
-      cwd: tmpDir,
-      permission_mode: 'default',
-      hook_event_name: 'SessionEnd',
-      reason: 'clear',
-    })).resolves.toEqual({ continue: true });
+    await expect(
+      processSessionEnd({
+        session_id: sessionId,
+        transcript_path: transcriptPath,
+        cwd: tmpDir,
+        permission_mode: 'default',
+        hook_event_name: 'SessionEnd',
+        reason: 'clear',
+      }),
+    ).resolves.toEqual({ continue: true });
 
     expect(Date.now() - startedAt).toBeLessThanOrEqual(500);
-    expect(workerMocks.spawnSessionEndWorker).toHaveBeenCalledWith({ directory: tmpDir, sessionId });
+    expect(workerMocks.spawnSessionEndWorker).toHaveBeenCalledWith({
+      directory: tmpDir,
+      sessionId,
+    });
 
     const manifest = readSessionEndJob(tmpDir, sessionId);
-    expect(manifest).toEqual(expect.objectContaining({
-      sessionId,
-      producers: expect.objectContaining({ core: expect.objectContaining({ state: 'sealed' }) }),
-    }));
-    expect(manifest?.actions.callback).toEqual(expect.objectContaining({
-      class: 'best-effort',
-      phase: 'deferred-best-effort',
-      status: 'pending',
-    }));
-    expect(manifest?.actions.notification).toEqual(expect.objectContaining({
-      class: 'best-effort',
-      phase: 'deferred-best-effort',
-      status: 'pending',
-    }));
+    expect(manifest).toEqual(
+      expect.objectContaining({
+        sessionId,
+        producers: expect.objectContaining({
+          core: expect.objectContaining({ state: 'sealed' }),
+        }),
+      }),
+    );
+    expect(manifest?.actions.callback).toEqual(
+      expect.objectContaining({
+        class: 'best-effort',
+        phase: 'deferred-best-effort',
+        status: 'pending',
+      }),
+    );
+    expect(manifest?.actions.notification).toEqual(
+      expect.objectContaining({
+        class: 'best-effort',
+        phase: 'deferred-best-effort',
+        status: 'pending',
+      }),
+    );
   });
 
   it('resolves the legacy cleanup budget environment setting compatibly', () => {
     expect(resolveSessionEndCleanupBudgetMs({})).toBe(2000);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: '250' })).toBe(250);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: '25000' })).toBe(10000);
-    expect(resolveSessionEndCleanupBudgetMs({ OMC_SESSIONEND_CLEANUP_BUDGET_MS: 'not-a-number' })).toBe(2000);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: '250',
+      }),
+    ).toBe(250);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: '25000',
+      }),
+    ).toBe(10000);
+    expect(
+      resolveSessionEndCleanupBudgetMs({
+        OMC_SESSIONEND_CLEANUP_BUDGET_MS: 'not-a-number',
+      }),
+    ).toBe(2000);
   });
 });

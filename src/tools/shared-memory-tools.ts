@@ -14,7 +14,7 @@
 
 import { z } from 'zod';
 import { validateWorkingDirectory } from '../lib/worktree-paths.js';
-import { getClaudeConfigDir } from '../utils/config-dir.js'
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import {
   isSharedMemoryEnabled,
   writeEntry,
@@ -58,20 +58,46 @@ export const sharedMemoryWriteTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'shared_memory_write',
-  description: 'Write a key-value pair to shared memory for cross-agent handoffs. Namespace by session group or pipeline run. Supports optional TTL for auto-expiry.',
+  description:
+    'Write a key-value pair to shared memory for cross-agent handoffs. Namespace by session group or pipeline run. Supports optional TTL for auto-expiry.',
   schema: {
-    key: z.string().min(1).max(128).describe('Key identifier (alphanumeric, hyphens, underscores, dots)'),
+    key: z
+      .string()
+      .min(1)
+      .max(128)
+      .describe('Key identifier (alphanumeric, hyphens, underscores, dots)'),
     value: z.unknown().describe('JSON-serializable value to store'),
-    namespace: z.string().min(1).max(128).describe('Namespace for grouping (e.g., team name, pipeline run ID, session group)'),
-    ttl: z.number().int().min(1).max(604800).optional().describe('Time-to-live in seconds (max 7 days). Omit for no expiry.'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    namespace: z
+      .string()
+      .min(1)
+      .max(128)
+      .describe(
+        'Namespace for grouping (e.g., team name, pipeline run ID, session group)',
+      ),
+    ttl: z
+      .number()
+      .int()
+      .min(1)
+      .max(604800)
+      .optional()
+      .describe('Time-to-live in seconds (max 7 days). Omit for no expiry.'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     if (!isSharedMemoryEnabled()) return disabledResponse();
 
     try {
       const root = validateWorkingDirectory(args.workingDirectory);
-      const entry = writeEntry(args.namespace, args.key, args.value, args.ttl, root);
+      const entry = writeEntry(
+        args.namespace,
+        args.key,
+        args.value,
+        args.ttl,
+        root,
+      );
 
       let text = `Successfully wrote to shared memory.\n\n- **Namespace:** ${entry.namespace}\n- **Key:** ${entry.key}\n- **Updated:** ${entry.updatedAt}`;
       if (entry.ttl) {
@@ -80,7 +106,9 @@ export const sharedMemoryWriteTool: ToolDefinition<{
 
       return { content: [{ type: 'text' as const, text }] };
     } catch (error) {
-      return errorResponse(`Error writing shared memory: ${error instanceof Error ? error.message : String(error)}`);
+      return errorResponse(
+        `Error writing shared memory: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 };
@@ -95,11 +123,15 @@ export const sharedMemoryReadTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'shared_memory_read',
-  description: 'Read a value from shared memory by key and namespace. Returns null if the key does not exist or has expired.',
+  description:
+    'Read a value from shared memory by key and namespace. Returns null if the key does not exist or has expired.',
   schema: {
     key: z.string().min(1).max(128).describe('Key to read'),
     namespace: z.string().min(1).max(128).describe('Namespace to read from'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     if (!isSharedMemoryEnabled()) return disabledResponse();
@@ -110,10 +142,12 @@ export const sharedMemoryReadTool: ToolDefinition<{
 
       if (!entry) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Key "${args.key}" not found in namespace "${args.namespace}" (or has expired).`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Key "${args.key}" not found in namespace "${args.namespace}" (or has expired).`,
+            },
+          ],
         };
       }
 
@@ -128,13 +162,17 @@ export const sharedMemoryReadTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Shared Memory Entry\n\n${meta.join('\n')}\n\n### Value\n\n\`\`\`json\n${JSON.stringify(entry.value, null, 2)}\n\`\`\``,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `## Shared Memory Entry\n\n${meta.join('\n')}\n\n### Value\n\n\`\`\`json\n${JSON.stringify(entry.value, null, 2)}\n\`\`\``,
+          },
+        ],
       };
     } catch (error) {
-      return errorResponse(`Error reading shared memory: ${error instanceof Error ? error.message : String(error)}`);
+      return errorResponse(
+        `Error reading shared memory: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 };
@@ -148,10 +186,19 @@ export const sharedMemoryListTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'shared_memory_list',
-  description: 'List keys in a shared memory namespace, or list all namespaces if no namespace is provided.',
+  description:
+    'List keys in a shared memory namespace, or list all namespaces if no namespace is provided.',
   schema: {
-    namespace: z.string().min(1).max(128).optional().describe('Namespace to list keys from. Omit to list all namespaces.'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    namespace: z
+      .string()
+      .min(1)
+      .max(128)
+      .optional()
+      .describe('Namespace to list keys from. Omit to list all namespaces.'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     if (!isSharedMemoryEnabled()) return disabledResponse();
@@ -164,14 +211,21 @@ export const sharedMemoryListTool: ToolDefinition<{
         const namespaces = listNamespaces(root);
         if (namespaces.length === 0) {
           return {
-            content: [{ type: 'text' as const, text: 'No shared memory namespaces found.' }],
+            content: [
+              {
+                type: 'text' as const,
+                text: 'No shared memory namespaces found.',
+              },
+            ],
           };
         }
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## Shared Memory Namespaces\n\n${namespaces.map(ns => `- ${ns}`).join('\n')}`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `## Shared Memory Namespaces\n\n${namespaces.map((ns) => `- ${ns}`).join('\n')}`,
+            },
+          ],
         };
       }
 
@@ -179,27 +233,33 @@ export const sharedMemoryListTool: ToolDefinition<{
       const items = listEntries(args.namespace, root);
       if (items.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `No entries in namespace "${args.namespace}".`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `No entries in namespace "${args.namespace}".`,
+            },
+          ],
         };
       }
 
-      const lines = items.map(item => {
+      const lines = items.map((item) => {
         let line = `- **${item.key}** (updated: ${item.updatedAt})`;
         if (item.expiresAt) line += ` [expires: ${item.expiresAt}]`;
         return line;
       });
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Shared Memory: ${args.namespace}\n\n${items.length} entries:\n\n${lines.join('\n')}`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `## Shared Memory: ${args.namespace}\n\n${items.length} entries:\n\n${lines.join('\n')}`,
+          },
+        ],
       };
     } catch (error) {
-      return errorResponse(`Error listing shared memory: ${error instanceof Error ? error.message : String(error)}`);
+      return errorResponse(
+        `Error listing shared memory: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 };
@@ -218,7 +278,10 @@ export const sharedMemoryDeleteTool: ToolDefinition<{
   schema: {
     key: z.string().min(1).max(128).describe('Key to delete'),
     namespace: z.string().min(1).max(128).describe('Namespace to delete from'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     if (!isSharedMemoryEnabled()) return disabledResponse();
@@ -229,21 +292,27 @@ export const sharedMemoryDeleteTool: ToolDefinition<{
 
       if (!deleted) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `Key "${args.key}" not found in namespace "${args.namespace}".`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Key "${args.key}" not found in namespace "${args.namespace}".`,
+            },
+          ],
         };
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `Deleted key "${args.key}" from namespace "${args.namespace}".`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `Deleted key "${args.key}" from namespace "${args.namespace}".`,
+          },
+        ],
       };
     } catch (error) {
-      return errorResponse(`Error deleting shared memory: ${error instanceof Error ? error.message : String(error)}`);
+      return errorResponse(
+        `Error deleting shared memory: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 };
@@ -257,10 +326,19 @@ export const sharedMemoryCleanupTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'shared_memory_cleanup',
-  description: 'Remove expired entries from shared memory. Cleans a specific namespace or all namespaces.',
+  description:
+    'Remove expired entries from shared memory. Cleans a specific namespace or all namespaces.',
   schema: {
-    namespace: z.string().min(1).max(128).optional().describe('Namespace to clean. Omit to clean all namespaces.'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    namespace: z
+      .string()
+      .min(1)
+      .max(128)
+      .optional()
+      .describe('Namespace to clean. Omit to clean all namespaces.'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     if (!isSharedMemoryEnabled()) return disabledResponse();
@@ -271,21 +349,27 @@ export const sharedMemoryCleanupTool: ToolDefinition<{
 
       if (result.removed === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'No expired entries found.',
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text: 'No expired entries found.',
+            },
+          ],
         };
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Cleanup Results\n\n- **Removed:** ${result.removed} expired entries\n- **Namespaces cleaned:** ${result.namespaces.join(', ')}`,
-        }],
+        content: [
+          {
+            type: 'text' as const,
+            text: `## Cleanup Results\n\n- **Removed:** ${result.removed} expired entries\n- **Namespaces cleaned:** ${result.namespaces.join(', ')}`,
+          },
+        ],
       };
     } catch (error) {
-      return errorResponse(`Error cleaning shared memory: ${error instanceof Error ? error.message : String(error)}`);
+      return errorResponse(
+        `Error cleaning shared memory: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   },
 };

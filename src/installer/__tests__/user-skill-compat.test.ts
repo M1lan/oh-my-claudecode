@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -33,12 +40,19 @@ describe('install() user-skill compatibility shims', () => {
     );
 
     const installer = await import('../index.js');
-    const result = installer.install({ force: true, skipClaudeCheck: true, noPlugin: true, verbose: false });
+    const result = installer.install({
+      force: true,
+      skipClaudeCheck: true,
+      noPlugin: true,
+      verbose: false,
+    });
 
     expect(result.success).toBe(true);
 
     const flatSkillPath = join(tempDir, 'skills', 'expert-review', 'SKILL.md');
     expect(existsSync(flatSkillPath)).toBe(true);
-    expect(readFileSync(flatSkillPath, 'utf-8')).toContain('Use expert review.');
+    expect(readFileSync(flatSkillPath, 'utf-8')).toContain(
+      'Use expert review.',
+    );
   });
 });

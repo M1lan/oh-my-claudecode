@@ -7,7 +7,11 @@
  * or the maximum number of cycles is reached.
  */
 
-import type { PipelineStageAdapter, PipelineConfig, PipelineContext } from '../pipeline-types.js';
+import type {
+  PipelineStageAdapter,
+  PipelineConfig,
+  PipelineContext,
+} from '../pipeline-types.js';
 import { getQAPrompt } from '../prompts.js';
 
 export const QA_COMPLETION_SIGNAL = 'PIPELINE_QA_COMPLETE';

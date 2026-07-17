@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { inferPhase, type PhaseableTask } from '../phase-controller.js';
 
-function task(status: string, metadata?: PhaseableTask['metadata']): PhaseableTask {
+function task(
+  status: string,
+  metadata?: PhaseableTask['metadata'],
+): PhaseableTask {
   return { status, metadata };
 }
 
@@ -15,7 +18,9 @@ describe('inferPhase', () => {
   });
 
   it('any in_progress → executing', () => {
-    expect(inferPhase([task('in_progress'), task('pending')])).toBe('executing');
+    expect(inferPhase([task('in_progress'), task('pending')])).toBe(
+      'executing',
+    );
   });
 
   it('mixed completed + pending (no in_progress) → executing', () => {
@@ -32,20 +37,24 @@ describe('inferPhase', () => {
   });
 
   it('all genuinely completed → completed', () => {
-    expect(inferPhase([task('completed'), task('completed')])).toBe('completed');
+    expect(inferPhase([task('completed'), task('completed')])).toBe(
+      'completed',
+    );
   });
 
   it('failed with retries remaining → fixing', () => {
-    expect(inferPhase([
-      task('completed'),
-      task('failed', { retryCount: 0, maxRetries: 3 }),
-    ])).toBe('fixing');
+    expect(
+      inferPhase([
+        task('completed'),
+        task('failed', { retryCount: 0, maxRetries: 3 }),
+      ]),
+    ).toBe('fixing');
   });
 
   it('all failed with retries exhausted → failed', () => {
-    expect(inferPhase([
-      task('failed', { retryCount: 3, maxRetries: 3 }),
-    ])).toBe('failed');
+    expect(inferPhase([task('failed', { retryCount: 3, maxRetries: 3 })])).toBe(
+      'failed',
+    );
   });
 
   it('single in_progress → executing', () => {

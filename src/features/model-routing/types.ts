@@ -21,7 +21,8 @@ export type ComplexityTier = 'LOW' | 'MEDIUM' | 'HIGH';
  * OMC_MODEL_LOW) with built-in fallbacks. User/project config overrides
  * are applied later by the config loader.
  */
-export const TIER_MODELS: Record<ComplexityTier, string> = getDefaultTierModels();
+export const TIER_MODELS: Record<ComplexityTier, string> =
+  getDefaultTierModels();
 
 /**
  * Model tier to simple model type mapping
@@ -67,7 +68,12 @@ export interface StructuralSignals {
   /** Whether tests are required */
   hasTestRequirements: boolean;
   /** Domain specificity of the task */
-  domainSpecificity: 'generic' | 'frontend' | 'backend' | 'infrastructure' | 'security';
+  domainSpecificity:
+    | 'generic'
+    | 'frontend'
+    | 'backend'
+    | 'infrastructure'
+    | 'security';
   /** Whether external knowledge is needed */
   requiresExternalKnowledge: boolean;
   /** How reversible the changes are */
@@ -187,10 +193,13 @@ export interface RoutingConfig {
   /** Model mapping per tier */
   tierModels: Record<ComplexityTier, string>;
   /** Agent-specific overrides */
-  agentOverrides?: Record<string, {
-    tier: ComplexityTier;
-    reason: string;
-  }>;
+  agentOverrides?: Record<
+    string,
+    {
+      tier: ComplexityTier;
+      reason: string;
+    }
+  >;
   /** Keywords that force escalation */
   escalationKeywords?: string[];
   /** Keywords that suggest lower tier */
@@ -205,16 +214,29 @@ export interface RoutingConfig {
 export const DEFAULT_ROUTING_CONFIG: RoutingConfig = {
   enabled: true,
   defaultTier: 'MEDIUM',
-  escalationEnabled: false,  // Deprecated: orchestrator routes proactively
+  escalationEnabled: false, // Deprecated: orchestrator routes proactively
   maxEscalations: 0,
   tierModels: TIER_MODELS,
   agentOverrides: {},
   escalationKeywords: [
-    'critical', 'production', 'urgent', 'security', 'breaking',
-    'architecture', 'refactor', 'redesign', 'root cause',
+    'critical',
+    'production',
+    'urgent',
+    'security',
+    'breaking',
+    'architecture',
+    'refactor',
+    'redesign',
+    'root cause',
   ],
   simplificationKeywords: [
-    'find', 'list', 'show', 'where', 'search', 'locate', 'grep',
+    'find',
+    'list',
+    'show',
+    'where',
+    'search',
+    'locate',
+    'grep',
   ],
 };
 
@@ -236,20 +258,53 @@ export const AGENT_CATEGORY_TIERS: Record<string, ComplexityTier> = {
  */
 export const COMPLEXITY_KEYWORDS = {
   architecture: [
-    'architecture', 'refactor', 'redesign', 'restructure', 'reorganize',
-    'decouple', 'modularize', 'abstract', 'pattern', 'design',
+    'architecture',
+    'refactor',
+    'redesign',
+    'restructure',
+    'reorganize',
+    'decouple',
+    'modularize',
+    'abstract',
+    'pattern',
+    'design',
   ],
   debugging: [
-    'debug', 'diagnose', 'root cause', 'investigate', 'trace', 'analyze',
-    'why is', 'figure out', 'understand why', 'not working',
+    'debug',
+    'diagnose',
+    'root cause',
+    'investigate',
+    'trace',
+    'analyze',
+    'why is',
+    'figure out',
+    'understand why',
+    'not working',
   ],
   simple: [
-    'find', 'search', 'locate', 'list', 'show', 'where is', 'what is',
-    'get', 'fetch', 'display', 'print',
+    'find',
+    'search',
+    'locate',
+    'list',
+    'show',
+    'where is',
+    'what is',
+    'get',
+    'fetch',
+    'display',
+    'print',
   ],
   risk: [
-    'critical', 'production', 'urgent', 'security', 'breaking', 'dangerous',
-    'irreversible', 'data loss', 'migration', 'deploy',
+    'critical',
+    'production',
+    'urgent',
+    'security',
+    'breaking',
+    'dangerous',
+    'irreversible',
+    'data loss',
+    'migration',
+    'deploy',
   ],
 };
 
@@ -258,7 +313,10 @@ export const COMPLEXITY_KEYWORDS = {
  */
 export type PromptAdaptationStrategy = 'full' | 'balanced' | 'concise';
 
-export const TIER_PROMPT_STRATEGIES: Record<ComplexityTier, PromptAdaptationStrategy> = {
+export const TIER_PROMPT_STRATEGIES: Record<
+  ComplexityTier,
+  PromptAdaptationStrategy
+> = {
   HIGH: 'full',
   MEDIUM: 'balanced',
   LOW: 'concise',

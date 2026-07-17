@@ -2,7 +2,12 @@ import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-export type ClaudeGoalSnapshotStatus = 'active' | 'complete' | 'cancelled' | 'failed' | 'unknown';
+export type ClaudeGoalSnapshotStatus =
+  | 'active'
+  | 'complete'
+  | 'cancelled'
+  | 'failed'
+  | 'unknown';
 
 export interface ClaudeGoalSnapshot {
   available: boolean;
@@ -30,7 +35,9 @@ export interface ReconcileClaudeGoalOptions {
 export class ClaudeGoalSnapshotError extends Error {}
 
 function safeObject(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
 }
 
 function safeString(value: unknown): string {
@@ -38,15 +45,25 @@ function safeString(value: unknown): string {
 }
 
 function safeNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  return typeof value === 'number' && Number.isFinite(value)
+    ? value
+    : undefined;
 }
 
 function normalizeStatus(value: unknown): ClaudeGoalSnapshotStatus {
   const status = safeString(value).toLowerCase();
-  if (status === 'complete' || status === 'completed' || status === 'done') return 'complete';
-  if (status === 'cancelled' || status === 'canceled' || status === 'cleared') return 'cancelled';
+  if (status === 'complete' || status === 'completed' || status === 'done')
+    return 'complete';
+  if (status === 'cancelled' || status === 'canceled' || status === 'cleared')
+    return 'cancelled';
   if (status === 'failed' || status === 'failure') return 'failed';
-  if (status === 'active' || status === 'in_progress' || status === 'pending' || status === 'running') return 'active';
+  if (
+    status === 'active' ||
+    status === 'in_progress' ||
+    status === 'pending' ||
+    status === 'running'
+  )
+    return 'active';
   return 'unknown';
 }
 
@@ -76,21 +93,23 @@ export function parseClaudeGoalSnapshot(value: unknown): ClaudeGoalSnapshot {
 
   const goal = safeObject(goalValue);
   const objective = safeString(
-    goal.objective
-    ?? goal.condition
-    ?? goal.goal
-    ?? goal.description
-    ?? root.objective
-    ?? root.condition,
+    goal.objective ??
+      goal.condition ??
+      goal.goal ??
+      goal.description ??
+      root.objective ??
+      root.condition,
   );
   const status = normalizeStatus(goal.status ?? root.status);
   const tokenBudget = safeNumber(
-    goal.token_budget
-    ?? goal.tokenBudget
-    ?? root.token_budget
-    ?? root.tokenBudget,
+    goal.token_budget ??
+      goal.tokenBudget ??
+      root.token_budget ??
+      root.tokenBudget,
   );
-  const remainingTokens = safeNumber(root.remainingTokens ?? root.remaining_tokens);
+  const remainingTokens = safeNumber(
+    root.remainingTokens ?? root.remaining_tokens,
+  );
 
   return {
     available: Boolean(objective || status !== 'unknown'),
@@ -102,7 +121,10 @@ export function parseClaudeGoalSnapshot(value: unknown): ClaudeGoalSnapshot {
   };
 }
 
-export async function readClaudeGoalSnapshotInput(raw: string | undefined, cwd = process.cwd()): Promise<ClaudeGoalSnapshot | null> {
+export async function readClaudeGoalSnapshotInput(
+  raw: string | undefined,
+  cwd = process.cwd(),
+): Promise<ClaudeGoalSnapshot | null> {
   if (!raw?.trim()) return null;
   const trimmed = raw.trim();
   try {
@@ -110,12 +132,16 @@ export async function readClaudeGoalSnapshotInput(raw: string | undefined, cwd =
   } catch {
     const path = resolve(cwd, trimmed);
     if (!existsSync(path)) {
-      throw new ClaudeGoalSnapshotError(`Claude goal snapshot is neither valid JSON nor a readable path: ${trimmed}`);
+      throw new ClaudeGoalSnapshotError(
+        `Claude goal snapshot is neither valid JSON nor a readable path: ${trimmed}`,
+      );
     }
     try {
       return parseClaudeGoalSnapshot(JSON.parse(await readFile(path, 'utf-8')));
     } catch (error) {
-      throw new ClaudeGoalSnapshotError(`Claude goal snapshot path does not contain valid JSON: ${trimmed}${error instanceof Error ? ` (${error.message})` : ''}`);
+      throw new ClaudeGoalSnapshotError(
+        `Claude goal snapshot path does not contain valid JSON: ${trimmed}${error instanceof Error ? ` (${error.message})` : ''}`,
+      );
     }
   }
 }
@@ -129,10 +155,16 @@ export function reconcileClaudeGoalSnapshot(
   const warnings: string[] = [];
 
   if (!effectiveSnapshot.available) {
-    const message = 'Claude goal snapshot is absent or reports no active goal; ask the active Claude agent to share the current /goal condition and pass its JSON with --claude-goal-json.';
+    const message =
+      'Claude goal snapshot is absent or reports no active goal; ask the active Claude agent to share the current /goal condition and pass its JSON with --claude-goal-json.';
     if (options.requireSnapshot) errors.push(message);
     else warnings.push(message);
-    return { ok: errors.length === 0, snapshot: effectiveSnapshot, warnings, errors };
+    return {
+      ok: errors.length === 0,
+      snapshot: effectiveSnapshot,
+      warnings,
+      errors,
+    };
   }
 
   const expected = normalizeObjective(options.expectedObjective);
@@ -140,22 +172,37 @@ export function reconcileClaudeGoalSnapshot(
   if (!actual) {
     errors.push('Claude goal snapshot is missing objective text.');
   } else if (actual !== expected) {
-    errors.push(`Claude goal objective mismatch: expected "${expected}", got "${actual}".`);
+    errors.push(
+      `Claude goal objective mismatch: expected "${expected}", got "${actual}".`,
+    );
   }
 
-  const allowed = options.allowedStatuses ?? (options.requireComplete ? ['complete'] : ['active', 'complete']);
+  const allowed =
+    options.allowedStatuses ??
+    (options.requireComplete ? ['complete'] : ['active', 'complete']);
   const actualStatus = effectiveSnapshot.status ?? 'unknown';
   if (!allowed.includes(actualStatus)) {
-    errors.push(`Claude goal status mismatch: expected ${allowed.join(' or ')}, got ${actualStatus}.`);
+    errors.push(
+      `Claude goal status mismatch: expected ${allowed.join(' or ')}, got ${actualStatus}.`,
+    );
   }
   if (options.requireComplete && actualStatus !== 'complete') {
-    errors.push(`Claude goal is not complete; only after the active condition is genuinely satisfied (the /goal hook auto-clears, or you run /goal clear), share the fresh snapshot.`);
+    errors.push(
+      `Claude goal is not complete; only after the active condition is genuinely satisfied (the /goal hook auto-clears, or you run /goal clear), share the fresh snapshot.`,
+    );
   }
 
-  return { ok: errors.length === 0, snapshot: effectiveSnapshot, warnings, errors };
+  return {
+    ok: errors.length === 0,
+    snapshot: effectiveSnapshot,
+    warnings,
+    errors,
+  };
 }
 
-export function formatClaudeGoalReconciliation(reconciliation: ClaudeGoalReconciliation): string {
+export function formatClaudeGoalReconciliation(
+  reconciliation: ClaudeGoalReconciliation,
+): string {
   const parts = [...reconciliation.errors, ...reconciliation.warnings];
   return parts.join(' ');
 }

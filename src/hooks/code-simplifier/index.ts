@@ -8,7 +8,13 @@
  * Default: disabled (opt-in only)
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+} from 'fs';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
 import { getGlobalOmcConfigCandidates } from '../../utils/paths.js';
@@ -114,7 +120,11 @@ export function writeTriggerMarker(stateDir: string): void {
     if (!existsSync(stateDir)) {
       mkdirSync(stateDir, { recursive: true });
     }
-    writeFileSync(join(stateDir, TRIGGER_MARKER_FILENAME), new Date().toISOString(), 'utf-8');
+    writeFileSync(
+      join(stateDir, TRIGGER_MARKER_FILENAME),
+      new Date().toISOString(),
+      'utf-8',
+    );
   } catch {
     // Ignore write errors — marker is best-effort
   }

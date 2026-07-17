@@ -47,16 +47,26 @@ describe('MODEL ROUTING OVERRIDE message — three-site sync', () => {
     // of the hook entrypoints (which call main() at load time). Both lib copies
     // (scripts/lib/ and templates/hooks/lib/) are checked for mutual equality.
     const scriptsLibUrl = pathToFileURL(
-      resolve(__dirname, '../../scripts/lib/model-routing-override-message.mjs'),
+      resolve(
+        __dirname,
+        '../../scripts/lib/model-routing-override-message.mjs',
+      ),
     ).href;
     const scriptsLibMod = await import(scriptsLibUrl);
-    const scriptsSlice = extractOverrideBlock(scriptsLibMod.MODEL_ROUTING_OVERRIDE_MESSAGE);
+    const scriptsSlice = extractOverrideBlock(
+      scriptsLibMod.MODEL_ROUTING_OVERRIDE_MESSAGE,
+    );
 
     const templateLibUrl = pathToFileURL(
-      resolve(__dirname, '../../templates/hooks/lib/model-routing-override-message.mjs'),
+      resolve(
+        __dirname,
+        '../../templates/hooks/lib/model-routing-override-message.mjs',
+      ),
     ).href;
     const templateLibMod = await import(templateLibUrl);
-    const templateSlice = extractOverrideBlock(templateLibMod.MODEL_ROUTING_OVERRIDE_MESSAGE);
+    const templateSlice = extractOverrideBlock(
+      templateLibMod.MODEL_ROUTING_OVERRIDE_MESSAGE,
+    );
 
     const bridge = await import('../hooks/bridge.js');
     const result = await bridge.processHook('session-start', {

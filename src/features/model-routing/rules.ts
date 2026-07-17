@@ -21,7 +21,10 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
   {
     name: 'explicit-model-specified',
     condition: (ctx) => ctx.explicitModel !== undefined,
-    action: { tier: 'EXPLICIT' as any, reason: 'User specified model explicitly' },
+    action: {
+      tier: 'EXPLICIT' as any,
+      reason: 'User specified model explicitly',
+    },
     priority: 100,
   },
 
@@ -37,9 +40,12 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       ctx.agentType === 'architect' &&
       (signals.lexical.hasDebuggingKeywords ||
-       signals.lexical.hasArchitectureKeywords ||
-       signals.lexical.hasRiskKeywords),
-    action: { tier: 'HIGH', reason: 'Architect: Complex debugging/architecture decision' },
+        signals.lexical.hasArchitectureKeywords ||
+        signals.lexical.hasRiskKeywords),
+    action: {
+      tier: 'HIGH',
+      reason: 'Architect: Complex debugging/architecture decision',
+    },
     priority: 85,
   },
 
@@ -72,9 +78,12 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       ctx.agentType === 'planner' &&
       (signals.structural.impactScope === 'system-wide' ||
-       signals.lexical.hasArchitectureKeywords ||
-       signals.structural.estimatedSubtasks > 10),
-    action: { tier: 'HIGH', reason: 'Planner: Cross-domain strategic planning' },
+        signals.lexical.hasArchitectureKeywords ||
+        signals.structural.estimatedSubtasks > 10),
+    action: {
+      tier: 'HIGH',
+      reason: 'Planner: Cross-domain strategic planning',
+    },
     priority: 75,
   },
 
@@ -93,8 +102,12 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     name: 'critic-adversarial-review',
     condition: (ctx, signals) =>
       ctx.agentType === 'critic' &&
-      (signals.lexical.hasRiskKeywords || signals.structural.impactScope === 'system-wide'),
-    action: { tier: 'HIGH', reason: 'Critic: Adversarial review for critical system' },
+      (signals.lexical.hasRiskKeywords ||
+        signals.structural.impactScope === 'system-wide'),
+    action: {
+      tier: 'HIGH',
+      reason: 'Critic: Adversarial review for critical system',
+    },
     priority: 75,
   },
 
@@ -113,8 +126,12 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     name: 'analyst-risk-analysis',
     condition: (ctx, signals) =>
       ctx.agentType === 'analyst' &&
-      (signals.lexical.hasRiskKeywords || signals.structural.impactScope === 'system-wide'),
-    action: { tier: 'HIGH', reason: 'Analyst: Risk analysis and unknown-unknowns detection' },
+      (signals.lexical.hasRiskKeywords ||
+        signals.structural.impactScope === 'system-wide'),
+    action: {
+      tier: 'HIGH',
+      reason: 'Analyst: Risk analysis and unknown-unknowns detection',
+    },
     priority: 75,
   },
 
@@ -125,7 +142,10 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       signals.lexical.hasArchitectureKeywords &&
       signals.structural.impactScope === 'system-wide',
-    action: { tier: 'HIGH', reason: 'Architectural decisions with system-wide impact' },
+    action: {
+      tier: 'HIGH',
+      reason: 'Architectural decisions with system-wide impact',
+    },
     priority: 70,
   },
 
@@ -133,7 +153,10 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     name: 'security-domain',
     condition: (ctx, signals) =>
       signals.structural.domainSpecificity === 'security',
-    action: { tier: 'HIGH', reason: 'Security-related tasks require careful reasoning' },
+    action: {
+      tier: 'HIGH',
+      reason: 'Security-related tasks require careful reasoning',
+    },
     priority: 70,
   },
 
@@ -151,7 +174,10 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       signals.lexical.hasDebuggingKeywords &&
       signals.lexical.questionDepth === 'why',
-    action: { tier: 'HIGH', reason: 'Root cause analysis requires deep reasoning' },
+    action: {
+      tier: 'HIGH',
+      reason: 'Root cause analysis requires deep reasoning',
+    },
     priority: 65,
   },
 
@@ -160,7 +186,10 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       signals.structural.estimatedSubtasks > 5 &&
       signals.structural.crossFileDependencies,
-    action: { tier: 'HIGH', reason: 'Complex multi-step task with cross-file changes' },
+    action: {
+      tier: 'HIGH',
+      reason: 'Complex multi-step task with cross-file changes',
+    },
     priority: 60,
   },
 
@@ -192,14 +221,16 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
     condition: (ctx, signals) =>
       signals.structural.estimatedSubtasks > 1 &&
       signals.structural.estimatedSubtasks <= 5,
-    action: { tier: 'MEDIUM', reason: 'Moderate complexity with multiple subtasks' },
+    action: {
+      tier: 'MEDIUM',
+      reason: 'Moderate complexity with multiple subtasks',
+    },
     priority: 50,
   },
 
   {
     name: 'module-level-work',
-    condition: (ctx, signals) =>
-      signals.structural.impactScope === 'module',
+    condition: (ctx, signals) => signals.structural.impactScope === 'module',
     action: { tier: 'MEDIUM', reason: 'Module-level changes' },
     priority: 45,
   },
@@ -220,7 +251,7 @@ export const DEFAULT_ROUTING_RULES: RoutingRule[] = [
 export function evaluateRules(
   context: RoutingContext,
   signals: ComplexitySignals,
-  rules: RoutingRule[] = DEFAULT_ROUTING_RULES
+  rules: RoutingRule[] = DEFAULT_ROUTING_RULES,
 ): { tier: ComplexityTier | 'EXPLICIT'; reason: string; ruleName: string } {
   // Sort rules by priority (highest first)
   const sortedRules = [...rules].sort((a, b) => b.priority - a.priority);
@@ -249,9 +280,9 @@ export function evaluateRules(
 export function getMatchingRules(
   context: RoutingContext,
   signals: ComplexitySignals,
-  rules: RoutingRule[] = DEFAULT_ROUTING_RULES
+  rules: RoutingRule[] = DEFAULT_ROUTING_RULES,
 ): RoutingRule[] {
-  return rules.filter(rule => rule.condition(context, signals));
+  return rules.filter((rule) => rule.condition(context, signals));
 }
 
 /**
@@ -262,7 +293,7 @@ export function createRule(
   condition: (context: RoutingContext, signals: ComplexitySignals) => boolean,
   tier: ComplexityTier,
   reason: string,
-  priority: number
+  priority: number,
 ): RoutingRule {
   return {
     name,
@@ -277,9 +308,9 @@ export function createRule(
  */
 export function mergeRules(customRules: RoutingRule[]): RoutingRule[] {
   // Custom rules override defaults with the same name
-  const customNames = new Set(customRules.map(r => r.name));
+  const customNames = new Set(customRules.map((r) => r.name));
   const filteredDefaults = DEFAULT_ROUTING_RULES.filter(
-    r => !customNames.has(r.name)
+    (r) => !customNames.has(r.name),
   );
   return [...customRules, ...filteredDefaults];
 }

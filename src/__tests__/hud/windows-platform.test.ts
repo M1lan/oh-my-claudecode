@@ -47,10 +47,7 @@ describe('Windows HUD Platform Fixes (#739)', () => {
   // P0: NODE_PATH separator in bridge files
   // =========================================================================
   describe('P0: Bridge NODE_PATH separator', () => {
-    const bridgeFiles = [
-      'bridge/mcp-server.cjs',
-      'bridge/team-bridge.cjs',
-    ];
+    const bridgeFiles = ['bridge/mcp-server.cjs', 'bridge/team-bridge.cjs'];
 
     for (const file of bridgeFiles) {
       describe(file, () => {
@@ -61,7 +58,9 @@ describe('Windows HUD Platform Fixes (#739)', () => {
         });
 
         it('should NOT have hardcoded colon separator', () => {
-          expect(content).not.toMatch(/process\.env\.NODE_PATH \? ':' \+ process\.env\.NODE_PATH/);
+          expect(content).not.toMatch(
+            /process\.env\.NODE_PATH \? ':' \+ process\.env\.NODE_PATH/,
+          );
         });
 
         it('should use platform-aware separator variable', () => {
@@ -83,7 +82,9 @@ describe('Windows HUD Platform Fixes (#739)', () => {
       it(`${script} should use platform-aware separator in banner`, () => {
         const content = readFileSync(join(packageRoot, script), 'utf-8');
         expect(content).toContain("process.platform === 'win32' ? ';' : ':'");
-        expect(content).not.toMatch(/NODE_PATH \? ':' \+ process\.env\.NODE_PATH/);
+        expect(content).not.toMatch(
+          /NODE_PATH \? ':' \+ process\.env\.NODE_PATH/,
+        );
       });
     }
   });
@@ -108,8 +109,11 @@ describe('Windows HUD Platform Fixes (#739)', () => {
       const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules';
       const existingNodePath = 'C:\\some\\other\\path';
       const sep = getSeparator('win32');
-      const result = globalRoot + (existingNodePath ? sep + existingNodePath : '');
-      expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules;C:\\some\\other\\path');
+      const result =
+        globalRoot + (existingNodePath ? sep + existingNodePath : '');
+      expect(result).toBe(
+        'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules;C:\\some\\other\\path',
+      );
       expect(result).not.toContain(':C:\\');
     });
 
@@ -117,8 +121,11 @@ describe('Windows HUD Platform Fixes (#739)', () => {
       const globalRoot = 'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules';
       const existingNodePath = '';
       const sep = getSeparator('win32');
-      const result = globalRoot + (existingNodePath ? sep + existingNodePath : '');
-      expect(result).toBe('C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules');
+      const result =
+        globalRoot + (existingNodePath ? sep + existingNodePath : '');
+      expect(result).toBe(
+        'C:\\Users\\user\\AppData\\Roaming\\npm\\node_modules',
+      );
     });
   });
 
@@ -134,11 +141,12 @@ describe('Windows HUD Platform Fixes (#739)', () => {
     });
 
     it('should use emoji icons on macOS/Linux (current platform)', async () => {
-      const { renderCallCounts } = await import('../../hud/elements/call-counts.js');
+      const { renderCallCounts } =
+        await import('../../hud/elements/call-counts.js');
       const result = renderCallCounts(42, 7, 3);
       expect(result).toContain('\u{1F527}'); // wrench
       expect(result).toContain('\u{1F916}'); // robot
-      expect(result).toContain('\u26A1');    // zap
+      expect(result).toContain('\u26A1'); // zap
     });
 
     it('should use ASCII icons on Windows by default', async () => {
@@ -197,7 +205,8 @@ describe('Windows HUD Platform Fixes (#739)', () => {
     it('invokes git with separate argv and hidden Windows process options', async () => {
       const cwd = 'C:\\repo folder; & echo owned\\worktree';
       vi.mocked(execFileSync).mockReturnValue('feature/space;name\\branch\n');
-      const { getGitBranch, resetGitCache } = await import('../../hud/elements/git.js');
+      const { getGitBranch, resetGitCache } =
+        await import('../../hud/elements/git.js');
       resetGitCache();
 
       expect(getGitBranch(cwd)).toBe('feature/space;name\\branch');

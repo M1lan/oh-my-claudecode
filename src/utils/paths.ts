@@ -7,7 +7,15 @@
  */
 
 import { join } from 'path';
-import { existsSync, readFileSync, readdirSync, statSync, unlinkSync, rmSync, symlinkSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  unlinkSync,
+  rmSync,
+  symlinkSync,
+} from 'fs';
 import { homedir } from 'os';
 import { getClaudeConfigDir } from './config-dir.js';
 
@@ -173,7 +181,13 @@ export function getGlobalOmcStateCandidates(...segments: string[]): string[] {
  * Structure: <configDir>/plugins/cache/omc/oh-my-claudecode/
  */
 export function getPluginCacheBase(): string {
-  return join(getClaudeConfigDir(), 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+  return join(
+    getClaudeConfigDir(),
+    'plugins',
+    'cache',
+    'omc',
+    'oh-my-claudecode',
+  );
 }
 
 /**
@@ -251,8 +265,9 @@ const STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
  * Non-numeric segments fall back to 0.
  */
 function compareSemverDesc(a: string, b: string): number {
-  const parse = (s: string) => s.split('.').map(n => parseInt(n, 10) || 0);
-  const pa = parse(a), pb = parse(b);
+  const parse = (s: string) => s.split('.').map((n) => parseInt(n, 10) || 0);
+  const pa = parse(a),
+    pb = parse(b);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const diff = (pb[i] ?? 0) - (pa[i] ?? 0);
     if (diff !== 0) return diff;
@@ -260,8 +275,16 @@ function compareSemverDesc(a: string, b: string): number {
   return 0;
 }
 
-export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: boolean }): PurgeCacheResult {
-  const result: PurgeCacheResult = { removed: 0, removedPaths: [], symlinked: 0, symlinkPaths: [], errors: [] };
+export function purgeStalePluginCacheVersions(options?: {
+  skipGracePeriod?: boolean;
+}): PurgeCacheResult {
+  const result: PurgeCacheResult = {
+    removed: 0,
+    removedPaths: [],
+    symlinked: 0,
+    symlinkPaths: [],
+    errors: [],
+  };
 
   const configDir = getClaudeConfigDir();
   const pluginsDir = join(configDir, 'plugins');
@@ -277,8 +300,14 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
   try {
     const raw = JSON.parse(readFileSync(installedFile, 'utf-8'));
     const plugins = raw.plugins ?? raw;
-    if (typeof plugins !== 'object' || plugins === null || Array.isArray(plugins)) {
-      result.errors.push('installed_plugins.json has unexpected top-level structure');
+    if (
+      typeof plugins !== 'object' ||
+      plugins === null ||
+      Array.isArray(plugins)
+    ) {
+      result.errors.push(
+        'installed_plugins.json has unexpected top-level structure',
+      );
       return result;
     }
     activePaths = new Set<string>();
@@ -292,7 +321,9 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
       }
     }
   } catch (err) {
-    result.errors.push(`Failed to parse installed_plugins.json: ${err instanceof Error ? err.message : err}`);
+    result.errors.push(
+      `Failed to parse installed_plugins.json: ${err instanceof Error ? err.message : err}`,
+    );
     return result;
   }
 
@@ -300,8 +331,8 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
   let marketplaces: string[];
   try {
     marketplaces = readdirSync(cacheDir, { withFileTypes: true })
-      .filter(d => d.isDirectory())
-      .map(d => d.name);
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
   } catch {
     return result;
   }
@@ -314,26 +345,31 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
     let pluginNames: string[];
     try {
       pluginNames = readdirSync(marketDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
-    } catch { continue; }
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
+    } catch {
+      continue;
+    }
 
     for (const pluginName of pluginNames) {
       const pluginDir = join(marketDir, pluginName);
       let versions: string[];
       try {
         versions = readdirSync(pluginDir, { withFileTypes: true })
-          .filter(d => d.isDirectory())
-          .map(d => d.name);
-      } catch { continue; }
+          .filter((d) => d.isDirectory())
+          .map((d) => d.name);
+      } catch {
+        continue;
+      }
 
       for (const version of versions) {
         const versionDir = join(pluginDir, version);
         const normalised = stripTrailing(versionDir);
 
         // Check if this version or any of its subdirectories are referenced
-        const isActive = activePaths.has(normalised) ||
-          activePathsArray.some(ap => ap.startsWith(normalised + '/'));
+        const isActive =
+          activePaths.has(normalised) ||
+          activePathsArray.some((ap) => ap.startsWith(normalised + '/'));
 
         if (isActive) continue;
 
@@ -343,7 +379,9 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
           try {
             const stats = statSync(versionDir);
             if (now - stats.mtimeMs < STALE_THRESHOLD_MS) continue;
-          } catch { continue; }
+          } catch {
+            continue;
+          }
         }
 
         // When an active version exists in the same plugin namespace, replace the
@@ -352,20 +390,23 @@ export function purgeStalePluginCacheVersions(options?: { skipGracePeriod?: bool
         const pluginDirNorm = stripTrailing(pluginDir);
         const activeVersionDirsHere = dedupePaths(
           activePathsArray
-            .filter(ap => ap.startsWith(pluginDirNorm + '/'))
-            .map(ap => join(pluginDir, ap.slice(pluginDirNorm.length + 1).split('/')[0])),
+            .filter((ap) => ap.startsWith(pluginDirNorm + '/'))
+            .map((ap) =>
+              join(pluginDir, ap.slice(pluginDirNorm.length + 1).split('/')[0]),
+            ),
         );
 
         if (activeVersionDirsHere.length > 0) {
           const target = [...activeVersionDirsHere].sort((a, b) =>
-            compareSemverDesc(
-              a.split('/').pop() ?? a,
-              b.split('/').pop() ?? b,
-            ),
+            compareSemverDesc(a.split('/').pop() ?? a, b.split('/').pop() ?? b),
           )[0];
           if (safeRmSync(versionDir)) {
             try {
-              symlinkSync(target, versionDir, process.platform === 'win32' ? 'junction' : 'dir');
+              symlinkSync(
+                target,
+                versionDir,
+                process.platform === 'win32' ? 'junction' : 'dir',
+              );
               result.symlinked++;
               result.symlinkPaths.push(versionDir);
             } catch (err) {

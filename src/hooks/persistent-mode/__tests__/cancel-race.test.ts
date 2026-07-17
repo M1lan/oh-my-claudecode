@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, existsSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -20,45 +27,45 @@ function makeRalphSession(tempDir: string, sessionId: string): string {
         prompt: 'Finish all work',
         session_id: sessionId,
         project_path: tempDir,
-        linked_ultrawork: true
+        linked_ultrawork: true,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 
   return stateDir;
 }
 
 describe('persistent-mode cancel race guard (issue #921)', () => {
-  it.each([
-    '/oh-my-claudecode:cancel',
-    '/oh-my-claudecode:cancel --force'
-  ])('should not re-enforce while explicit cancel prompt is "%s"', async (cancelPrompt: string) => {
-    const sessionId = `session-921-${cancelPrompt.includes('force') ? 'force' : 'normal'}`;
-    const tempDir = mkdtempSync(join(tmpdir(), 'persistent-cancel-race-'));
+  it.each(['/oh-my-claudecode:cancel', '/oh-my-claudecode:cancel --force'])(
+    'should not re-enforce while explicit cancel prompt is "%s"',
+    async (cancelPrompt: string) => {
+      const sessionId = `session-921-${cancelPrompt.includes('force') ? 'force' : 'normal'}`;
+      const tempDir = mkdtempSync(join(tmpdir(), 'persistent-cancel-race-'));
 
-    try {
-      execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
-      const stateDir = makeRalphSession(tempDir, sessionId);
+      try {
+        execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
+        const stateDir = makeRalphSession(tempDir, sessionId);
 
-      const result = await checkPersistentModes(sessionId, tempDir, {
-        prompt: cancelPrompt
-      });
+        const result = await checkPersistentModes(sessionId, tempDir, {
+          prompt: cancelPrompt,
+        });
 
-      expect(result.shouldBlock).toBe(false);
-      expect(result.mode).toBe('none');
+        expect(result.shouldBlock).toBe(false);
+        expect(result.mode).toBe('none');
 
-      const ralphState = JSON.parse(
-        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8')
-      ) as { iteration: number; max_iterations: number };
-      expect(ralphState.iteration).toBe(10);
-      expect(ralphState.max_iterations).toBe(10);
-      expect(existsSync(join(stateDir, 'ultrawork-state.json'))).toBe(false);
-    } finally {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
-  });
+        const ralphState = JSON.parse(
+          readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
+        ) as { iteration: number; max_iterations: number };
+        expect(ralphState.iteration).toBe(10);
+        expect(ralphState.max_iterations).toBe(10);
+        expect(existsSync(join(stateDir, 'ultrawork-state.json'))).toBe(false);
+      } finally {
+        rmSync(tempDir, { recursive: true, force: true });
+      }
+    },
+  );
 
   it('should not trigger ralph max-iteration extension or ultrawork self-heal when cancel signal exists', async () => {
     const sessionId = 'session-921-cancel-signal';
@@ -75,22 +82,22 @@ describe('persistent-mode cancel race guard (issue #921)', () => {
             active: true,
             requested_at: new Date().toISOString(),
             expires_at: new Date(Date.now() + 30_000).toISOString(),
-            source: 'test'
+            source: 'test',
           },
           null,
-          2
-        )
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(sessionId, tempDir, {
-        stop_reason: 'end_turn'
+        stop_reason: 'end_turn',
       });
 
       expect(result.shouldBlock).toBe(false);
       expect(result.mode).toBe('none');
 
       const ralphState = JSON.parse(
-        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8')
+        readFileSync(join(stateDir, 'ralph-state.json'), 'utf-8'),
       ) as { iteration: number; max_iterations: number };
       expect(ralphState.iteration).toBe(10);
       expect(ralphState.max_iterations).toBe(10);
@@ -104,12 +111,20 @@ describe('persistent-mode cancel race guard (issue #921)', () => {
   it('should not re-enforce when a resumed session clears the owning session and writes a foreign cancel signal', async () => {
     const ownerSessionId = 'session-2743-owner';
     const resumedSessionId = 'session-2743-resumed';
-    const tempDir = mkdtempSync(join(tmpdir(), 'persistent-cross-session-cancel-'));
+    const tempDir = mkdtempSync(
+      join(tmpdir(), 'persistent-cross-session-cancel-'),
+    );
 
     try {
       execFileSync('git', ['init'], { cwd: tempDir, stdio: 'pipe' });
       const ownerDir = makeRalphSession(tempDir, ownerSessionId);
-      const resumedDir = join(tempDir, '.omc', 'state', 'sessions', resumedSessionId);
+      const resumedDir = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        resumedSessionId,
+      );
       mkdirSync(resumedDir, { recursive: true });
 
       writeFileSync(
@@ -120,22 +135,22 @@ describe('persistent-mode cancel race guard (issue #921)', () => {
             requested_at: new Date().toISOString(),
             expires_at: new Date(Date.now() + 30_000).toISOString(),
             mode: 'ralph',
-            source: 'state_clear'
+            source: 'state_clear',
           },
           null,
-          2
-        )
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(resumedSessionId, tempDir, {
-        stop_reason: 'end_turn'
+        stop_reason: 'end_turn',
       });
 
       expect(result.shouldBlock).toBe(false);
       expect(result.mode).toBe('none');
       expect(existsSync(join(ownerDir, 'ultrawork-state.json'))).toBe(false);
       const ralphState = JSON.parse(
-        readFileSync(join(ownerDir, 'ralph-state.json'), 'utf-8')
+        readFileSync(join(ownerDir, 'ralph-state.json'), 'utf-8'),
       ) as { iteration: number; max_iterations: number };
       expect(ralphState.iteration).toBe(10);
       expect(ralphState.max_iterations).toBe(10);

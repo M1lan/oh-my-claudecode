@@ -28,7 +28,10 @@ function formatElapsed(ms: number): string {
  * Format: ⏱13s  or  ⏱1m23s  or  ⏱2h3m
  * Falls back to HH:MM:SS timestamp if now is not provided.
  */
-export function renderPromptTime(promptTime: Date | null, now?: Date): string | null {
+export function renderPromptTime(
+  promptTime: Date | null,
+  now?: Date,
+): string | null {
   if (!promptTime) return null;
 
   if (now) {

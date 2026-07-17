@@ -52,7 +52,13 @@ describe('shared-state workspace-marker path resolution', () => {
     initInteropSession('test-session', subDir);
 
     // Expected: file is at workspace root
-    const expectedPath = join(workspaceRoot, '.omc', 'state', 'interop', 'config.json');
+    const expectedPath = join(
+      workspaceRoot,
+      '.omc',
+      'state',
+      'interop',
+      'config.json',
+    );
     // Regression: file would be at sub-repo root if the bug were present
     const wrongPath = join(subDir, '.omc', 'state', 'interop', 'config.json');
 

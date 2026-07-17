@@ -25,8 +25,8 @@ describe('BUG 4: session-start hooks clear timeout in finally', () => {
       'utf-8',
     );
 
-    // The checkNpmUpdate function should use finally for clearTimeout
-    // Look for the npm fetch section
+    // The checkPnpmUpdate function should use finally for clearTimeout
+    // Look for the pnpm fetch section
     const fetchSection = source.indexOf('registry.npmjs.org');
     expect(fetchSection).toBeGreaterThan(-1);
 

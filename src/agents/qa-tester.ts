@@ -20,9 +20,18 @@ export const QA_TESTER_PROMPT_METADATA: AgentPromptMetadata = {
   promptAlias: 'QATester',
   triggers: [
     { domain: 'CLI testing', trigger: 'Testing command-line applications' },
-    { domain: 'Service testing', trigger: 'Starting and testing background services' },
-    { domain: 'Integration testing', trigger: 'End-to-end CLI workflow verification' },
-    { domain: 'Interactive testing', trigger: 'Testing applications requiring user input' },
+    {
+      domain: 'Service testing',
+      trigger: 'Starting and testing background services',
+    },
+    {
+      domain: 'Integration testing',
+      trigger: 'End-to-end CLI workflow verification',
+    },
+    {
+      domain: 'Interactive testing',
+      trigger: 'Testing applications requiring user input',
+    },
   ],
   useWhen: [
     'Testing CLI applications that need interactive input',
@@ -40,9 +49,10 @@ export const QA_TESTER_PROMPT_METADATA: AgentPromptMetadata = {
 
 export const qaTesterAgent: AgentConfig = {
   name: 'qa-tester',
-  description: 'Interactive CLI testing specialist using tmux. Tests CLI applications, background services, and interactive tools. Manages test sessions, sends commands, verifies output, and ensures cleanup.',
+  description:
+    'Interactive CLI testing specialist using tmux. Tests CLI applications, background services, and interactive tools. Manages test sessions, sends commands, verifies output, and ensures cleanup.',
   prompt: loadAgentPrompt('qa-tester'),
   model: 'sonnet',
   defaultModel: 'sonnet',
-  metadata: QA_TESTER_PROMPT_METADATA
+  metadata: QA_TESTER_PROMPT_METADATA,
 };

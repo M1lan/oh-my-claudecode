@@ -85,7 +85,7 @@ fi
 
 # Verify OMC is built
 if [ ! -d "$PROJECT_ROOT/dist" ] || [ ! -f "$PROJECT_ROOT/dist/index.js" ]; then
-    log_error "oh-my-claudecode is not built. Run: npm run build"
+    log_error "oh-my-claudecode is not built. Run: pnpm run build"
     exit 1
 fi
 

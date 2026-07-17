@@ -4,7 +4,13 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const SCRIPT_PATH = join(__dirname, '..', '..', 'scripts', 'permission-handler.mjs');
+const SCRIPT_PATH = join(
+  __dirname,
+  '..',
+  '..',
+  'scripts',
+  'permission-handler.mjs',
+);
 const NODE = process.execPath;
 
 function initializeGitRepo(directory: string): void {
@@ -54,13 +60,25 @@ describe('scripts/permission-handler.mjs runtime entrypoint', () => {
     nonGitDir = join(tempDir, 'scratch');
 
     mkdirSync(join(gitDir, 'src', '__tests__'), { recursive: true });
-    writeFileSync(join(gitDir, 'src', 'sample.ts'), 'export const value = 1;\n');
-    writeFileSync(join(gitDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+    writeFileSync(
+      join(gitDir, 'src', 'sample.ts'),
+      'export const value = 1;\n',
+    );
+    writeFileSync(
+      join(gitDir, 'src', '__tests__', 'sample.test.ts'),
+      'test("x", () => {});\n',
+    );
     initializeGitRepo(gitDir);
 
     mkdirSync(join(nonGitDir, 'src', '__tests__'), { recursive: true });
-    writeFileSync(join(nonGitDir, 'src', 'sample.ts'), 'export const value = 1;\n');
-    writeFileSync(join(nonGitDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+    writeFileSync(
+      join(nonGitDir, 'src', 'sample.ts'),
+      'export const value = 1;\n',
+    );
+    writeFileSync(
+      join(nonGitDir, 'src', '__tests__', 'sample.test.ts'),
+      'test("x", () => {});\n',
+    );
   });
 
   afterEach(() => {
@@ -70,11 +88,18 @@ describe('scripts/permission-handler.mjs runtime entrypoint', () => {
   it('auto-allows repo-scoped inspection and single-file tests only inside a git worktree', () => {
     const inspectionResult = runPermissionHandler('cat src/sample.ts', gitDir);
     expect(inspectionResult.continue).toBe(true);
-    expect(inspectionResult.hookSpecificOutput?.decision?.behavior).toBe('allow');
+    expect(inspectionResult.hookSpecificOutput?.decision?.behavior).toBe(
+      'allow',
+    );
 
-    const targetedTestResult = runPermissionHandler('vitest run src/__tests__/sample.test.ts', gitDir);
+    const targetedTestResult = runPermissionHandler(
+      'vitest run src/__tests__/sample.test.ts',
+      gitDir,
+    );
     expect(targetedTestResult.continue).toBe(true);
-    expect(targetedTestResult.hookSpecificOutput?.decision?.behavior).toBe('allow');
+    expect(targetedTestResult.hookSpecificOutput?.decision?.behavior).toBe(
+      'allow',
+    );
   });
 
   it('does not auto-allow ripgrep directory or hidden sweeps inside a git worktree', () => {
@@ -82,24 +107,43 @@ describe('scripts/permission-handler.mjs runtime entrypoint', () => {
 
     const directorySweepResult = runPermissionHandler('rg -n SECRET .', gitDir);
     expect(directorySweepResult.continue).toBe(true);
-    expect(directorySweepResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+    expect(
+      directorySweepResult.hookSpecificOutput?.decision?.behavior,
+    ).not.toBe('allow');
 
-    const hiddenSweepResult = runPermissionHandler('rg --hidden SECRET .', gitDir);
+    const hiddenSweepResult = runPermissionHandler(
+      'rg --hidden SECRET .',
+      gitDir,
+    );
     expect(hiddenSweepResult.continue).toBe(true);
-    expect(hiddenSweepResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+    expect(hiddenSweepResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+      'allow',
+    );
   });
 
   it('does not auto-allow broad tests or non-git temp directories', () => {
-    const broadTestResult = runPermissionHandler('npm test', gitDir);
+    const broadTestResult = runPermissionHandler('pnpm test', gitDir);
     expect(broadTestResult.continue).toBe(true);
-    expect(broadTestResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+    expect(broadTestResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+      'allow',
+    );
 
-    const nonGitInspectionResult = runPermissionHandler('cat src/sample.ts', nonGitDir);
+    const nonGitInspectionResult = runPermissionHandler(
+      'cat src/sample.ts',
+      nonGitDir,
+    );
     expect(nonGitInspectionResult.continue).toBe(true);
-    expect(nonGitInspectionResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+    expect(
+      nonGitInspectionResult.hookSpecificOutput?.decision?.behavior,
+    ).not.toBe('allow');
 
-    const nonGitTargetedTestResult = runPermissionHandler('vitest run src/__tests__/sample.test.ts', nonGitDir);
+    const nonGitTargetedTestResult = runPermissionHandler(
+      'vitest run src/__tests__/sample.test.ts',
+      nonGitDir,
+    );
     expect(nonGitTargetedTestResult.continue).toBe(true);
-    expect(nonGitTargetedTestResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+    expect(
+      nonGitTargetedTestResult.hookSpecificOutput?.decision?.behavior,
+    ).not.toBe('allow');
   });
 });

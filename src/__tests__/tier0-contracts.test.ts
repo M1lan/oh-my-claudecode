@@ -36,8 +36,12 @@ describe('Tier-0 contract: skill aliases and canonical entrypoints', () => {
   });
 
   it('keeps Tier-0 skills unique in the loaded builtin catalog', () => {
-    const tier0Hits = createBuiltinSkills().filter((skill) => TIER0_SKILLS.includes(skill.name as typeof TIER0_SKILLS[number]));
-    expect(tier0Hits.map((skill) => skill.name).sort()).toEqual([...TIER0_SKILLS].sort());
+    const tier0Hits = createBuiltinSkills().filter((skill) =>
+      TIER0_SKILLS.includes(skill.name as (typeof TIER0_SKILLS)[number]),
+    );
+    expect(tier0Hits.map((skill) => skill.name).sort()).toEqual(
+      [...TIER0_SKILLS].sort(),
+    );
   });
 });
 
@@ -45,7 +49,10 @@ describe('Tier-0 contract: keyword routing fidelity', () => {
   it('routes canonical trigger words to their canonical mode types', () => {
     // Team keyword detection disabled — team is now explicit-only via /team skill
     // to prevent infinite spawning in team workers
-    const cases: Array<{ prompt: string; expected: (typeof TIER0_SKILLS)[number] }> = [
+    const cases: Array<{
+      prompt: string;
+      expected: (typeof TIER0_SKILLS)[number];
+    }> = [
       { prompt: 'autopilot build a dashboard', expected: 'autopilot' },
       { prompt: 'ultrawork fix these lint errors', expected: 'ultrawork' },
       { prompt: 'ralph finish this refactor', expected: 'ralph' },

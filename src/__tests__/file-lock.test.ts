@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, rmSync, existsSync, readFileSync, writeFileSync, utimesSync } from 'fs';
+import {
+  mkdirSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  utimesSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -113,7 +120,11 @@ describe('file-lock', () => {
       utimesSync(lockPath, oldTime, oldTime);
 
       // Acquire with retry -- should detect stale and reap on retry
-      const handle = acquireFileLockSync(lockPath, { timeoutMs: 1000, retryDelayMs: 50, staleLockMs: 1000 });
+      const handle = acquireFileLockSync(lockPath, {
+        timeoutMs: 1000,
+        retryDelayMs: 50,
+        staleLockMs: 1000,
+      });
       expect(handle).not.toBeNull();
 
       releaseFileLockSync(handle!);
@@ -129,7 +140,10 @@ describe('file-lock', () => {
       );
 
       const start = Date.now();
-      const handle = acquireFileLockSync(lockPath, { timeoutMs: 200, retryDelayMs: 50 });
+      const handle = acquireFileLockSync(lockPath, {
+        timeoutMs: 200,
+        retryDelayMs: 50,
+      });
       const elapsed = Date.now() - start;
 
       expect(handle).toBeNull();
@@ -204,7 +218,10 @@ describe('file-lock', () => {
         releaseFileLock(handle1!);
       }, 100);
 
-      const handle2 = await acquireFileLock(lockPath, { timeoutMs: 1000, retryDelayMs: 50 });
+      const handle2 = await acquireFileLock(lockPath, {
+        timeoutMs: 1000,
+        retryDelayMs: 50,
+      });
       expect(handle2).not.toBeNull();
 
       releaseFileLock(handle2!);
@@ -246,10 +263,14 @@ describe('file-lock', () => {
       const results: boolean[] = [];
       for (let i = 0; i < 10; i++) {
         try {
-          withFileLockSync(lockPath, () => {
-            const current = readFileSync(dataPath, 'utf-8');
-            writeFileSync(dataPath, current + `line-${i}\n`);
-          }, { timeoutMs: 5000 });
+          withFileLockSync(
+            lockPath,
+            () => {
+              const current = readFileSync(dataPath, 'utf-8');
+              writeFileSync(dataPath, current + `line-${i}\n`);
+            },
+            { timeoutMs: 5000 },
+          );
           results.push(true);
         } catch {
           results.push(false);
@@ -257,7 +278,7 @@ describe('file-lock', () => {
       }
 
       // All writes should succeed
-      expect(results.every(r => r)).toBe(true);
+      expect(results.every((r) => r)).toBe(true);
 
       // All 10 lines should be present (no data loss)
       const final = readFileSync(dataPath, 'utf-8');
@@ -275,11 +296,15 @@ describe('file-lock', () => {
 
       // Launch 10 concurrent async writers
       const writers = Array.from({ length: 10 }, (_, i) =>
-        withFileLock(lockPath, async () => {
-          const content = JSON.parse(readFileSync(dataPath, 'utf-8'));
-          content.items.push(`item-${i}`);
-          writeFileSync(dataPath, JSON.stringify(content));
-        }, { timeoutMs: 5000 }),
+        withFileLock(
+          lockPath,
+          async () => {
+            const content = JSON.parse(readFileSync(dataPath, 'utf-8'));
+            content.items.push(`item-${i}`);
+            writeFileSync(dataPath, JSON.stringify(content));
+          },
+          { timeoutMs: 5000 },
+        ),
       );
 
       await Promise.all(writers);

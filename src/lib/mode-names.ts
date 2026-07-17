@@ -31,7 +31,7 @@ export const DEPRECATED_MODE_NAMES = {
 } as const;
 
 /** Union type derived from the constant map. */
-export type ModeName = typeof MODE_NAMES[keyof typeof MODE_NAMES];
+export type ModeName = (typeof MODE_NAMES)[keyof typeof MODE_NAMES];
 
 /**
  * All mode names as an array (useful for iteration).
@@ -71,29 +71,68 @@ export const MODE_STATE_FILE_MAP: Readonly<Record<ModeName, string>> = {
  * Mode state files used by session-end cleanup.
  * Includes marker files for modes that use them.
  */
-export const SESSION_END_MODE_STATE_FILES: readonly { file: string; mode: string }[] = [
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT], mode: MODE_NAMES.AUTOPILOT },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH], mode: MODE_NAMES.AUTORESEARCH },
+export const SESSION_END_MODE_STATE_FILES: readonly {
+  file: string;
+  mode: string;
+}[] = [
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT],
+    mode: MODE_NAMES.AUTOPILOT,
+  },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH],
+    mode: MODE_NAMES.AUTORESEARCH,
+  },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.TEAM], mode: MODE_NAMES.TEAM },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.RALPH], mode: MODE_NAMES.RALPH },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK], mode: MODE_NAMES.ULTRAWORK },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK],
+    mode: MODE_NAMES.ULTRAWORK,
+  },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAQA], mode: MODE_NAMES.ULTRAQA },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.RALPLAN], mode: MODE_NAMES.RALPLAN },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.DEEP_INTERVIEW], mode: MODE_NAMES.DEEP_INTERVIEW },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE], mode: MODE_NAMES.SELF_IMPROVE },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.DEEP_INTERVIEW],
+    mode: MODE_NAMES.DEEP_INTERVIEW,
+  },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE],
+    mode: MODE_NAMES.SELF_IMPROVE,
+  },
   { file: 'skill-active-state.json', mode: 'skill-active' },
 ];
 
 /**
  * Modes detected by session-end for metrics reporting.
  */
-export const SESSION_METRICS_MODE_FILES: readonly { file: string; mode: string }[] = [
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT], mode: MODE_NAMES.AUTOPILOT },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH], mode: MODE_NAMES.AUTORESEARCH },
+export const SESSION_METRICS_MODE_FILES: readonly {
+  file: string;
+  mode: string;
+}[] = [
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTOPILOT],
+    mode: MODE_NAMES.AUTOPILOT,
+  },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.AUTORESEARCH],
+    mode: MODE_NAMES.AUTORESEARCH,
+  },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.RALPH], mode: MODE_NAMES.RALPH },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK], mode: MODE_NAMES.ULTRAWORK },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.ULTRAWORK],
+    mode: MODE_NAMES.ULTRAWORK,
+  },
   { file: MODE_STATE_FILE_MAP[MODE_NAMES.RALPLAN], mode: MODE_NAMES.RALPLAN },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.DEEP_INTERVIEW], mode: MODE_NAMES.DEEP_INTERVIEW },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.MERGE_READINESS], mode: MODE_NAMES.MERGE_READINESS },
-  { file: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE], mode: MODE_NAMES.SELF_IMPROVE },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.DEEP_INTERVIEW],
+    mode: MODE_NAMES.DEEP_INTERVIEW,
+  },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.MERGE_READINESS],
+    mode: MODE_NAMES.MERGE_READINESS,
+  },
+  {
+    file: MODE_STATE_FILE_MAP[MODE_NAMES.SELF_IMPROVE],
+    mode: MODE_NAMES.SELF_IMPROVE,
+  },
 ];

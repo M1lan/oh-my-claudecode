@@ -9,7 +9,7 @@ import {
   shouldRetryValidation,
   getIssuesToFix,
   getValidationSpawnPrompt,
-  formatValidationResults
+  formatValidationResults,
 } from '../validation.js';
 import { initAutopilot, transitionPhase } from '../state.js';
 
@@ -48,7 +48,7 @@ describe('AutopilotValidation', () => {
       expect(status?.verdicts[0]).toEqual({
         type: 'functional',
         verdict: 'APPROVED',
-        issues: undefined
+        issues: undefined,
       });
 
       // Check architects_spawned incremented
@@ -68,7 +68,7 @@ describe('AutopilotValidation', () => {
       expect(status?.verdicts[0]).toEqual({
         type: 'functional',
         verdict: 'REJECTED',
-        issues: ['Issue 1']
+        issues: ['Issue 1'],
       });
     });
 
@@ -100,7 +100,9 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
 
       recordValidationVerdict(testDir, 'functional', 'APPROVED');
-      recordValidationVerdict(testDir, 'security', 'REJECTED', ['Security issue']);
+      recordValidationVerdict(testDir, 'security', 'REJECTED', [
+        'Security issue',
+      ]);
       recordValidationVerdict(testDir, 'quality', 'APPROVED');
 
       const status = getValidationStatus(testDir);
@@ -161,7 +163,9 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
 
       recordValidationVerdict(testDir, 'functional', 'APPROVED');
-      recordValidationVerdict(testDir, 'security', 'REJECTED', ['Security issue 1']);
+      recordValidationVerdict(testDir, 'security', 'REJECTED', [
+        'Security issue 1',
+      ]);
 
       const status = getValidationStatus(testDir);
       expect(status?.success).toBe(false); // Only 2 out of 3 verdicts
@@ -174,7 +178,10 @@ describe('AutopilotValidation', () => {
       initAutopilot(testDir, 'test idea');
       transitionPhase(testDir, 'validation');
 
-      recordValidationVerdict(testDir, 'functional', 'REJECTED', ['Issue 1', 'Issue 2']);
+      recordValidationVerdict(testDir, 'functional', 'REJECTED', [
+        'Issue 1',
+        'Issue 2',
+      ]);
       recordValidationVerdict(testDir, 'security', 'APPROVED');
       recordValidationVerdict(testDir, 'quality', 'REJECTED', ['Issue 3']);
 
@@ -343,7 +350,9 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
       startValidationRound(testDir);
 
-      recordValidationVerdict(testDir, 'functional', 'NEEDS_FIX', ['Minor fix']);
+      recordValidationVerdict(testDir, 'functional', 'NEEDS_FIX', [
+        'Minor fix',
+      ]);
       recordValidationVerdict(testDir, 'security', 'APPROVED');
       recordValidationVerdict(testDir, 'quality', 'APPROVED');
 
@@ -396,13 +405,16 @@ describe('AutopilotValidation', () => {
       initAutopilot(testDir, 'test idea');
       transitionPhase(testDir, 'validation');
 
-      recordValidationVerdict(testDir, 'functional', 'REJECTED', ['Missing feature A', 'Incomplete feature B']);
+      recordValidationVerdict(testDir, 'functional', 'REJECTED', [
+        'Missing feature A',
+        'Incomplete feature B',
+      ]);
       recordValidationVerdict(testDir, 'security', 'APPROVED');
       recordValidationVerdict(testDir, 'quality', 'APPROVED');
 
       const issues = getIssuesToFix(testDir);
       expect(issues).toEqual([
-        '[FUNCTIONAL] Missing feature A, Incomplete feature B'
+        '[FUNCTIONAL] Missing feature A, Incomplete feature B',
       ]);
     });
 
@@ -411,13 +423,16 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
 
       recordValidationVerdict(testDir, 'functional', 'REJECTED', ['Issue 1']);
-      recordValidationVerdict(testDir, 'security', 'REJECTED', ['Issue 2', 'Issue 3']);
+      recordValidationVerdict(testDir, 'security', 'REJECTED', [
+        'Issue 2',
+        'Issue 3',
+      ]);
       recordValidationVerdict(testDir, 'quality', 'APPROVED');
 
       const issues = getIssuesToFix(testDir);
       expect(issues).toEqual([
         '[FUNCTIONAL] Issue 1',
-        '[SECURITY] Issue 2, Issue 3'
+        '[SECURITY] Issue 2, Issue 3',
       ]);
     });
 
@@ -436,7 +451,9 @@ describe('AutopilotValidation', () => {
       initAutopilot(testDir, 'test idea');
       transitionPhase(testDir, 'validation');
 
-      recordValidationVerdict(testDir, 'functional', 'NEEDS_FIX', ['Minor fix']);
+      recordValidationVerdict(testDir, 'functional', 'NEEDS_FIX', [
+        'Minor fix',
+      ]);
       recordValidationVerdict(testDir, 'security', 'APPROVED');
 
       const issues = getIssuesToFix(testDir);
@@ -522,7 +539,10 @@ describe('AutopilotValidation', () => {
       initAutopilot(testDir, 'test idea');
       const _state = transitionPhase(testDir, 'validation');
 
-      recordValidationVerdict(testDir, 'functional', 'REJECTED', ['Issue 1', 'Issue 2']);
+      recordValidationVerdict(testDir, 'functional', 'REJECTED', [
+        'Issue 1',
+        'Issue 2',
+      ]);
       const updatedState = transitionPhase(testDir, 'validation');
 
       const formatted = formatValidationResults(updatedState!);
@@ -551,7 +571,9 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
 
       recordValidationVerdict(testDir, 'functional', 'APPROVED');
-      recordValidationVerdict(testDir, 'security', 'REJECTED', ['Security flaw']);
+      recordValidationVerdict(testDir, 'security', 'REJECTED', [
+        'Security flaw',
+      ]);
       recordValidationVerdict(testDir, 'quality', 'APPROVED');
 
       const state = transitionPhase(testDir, 'validation');
@@ -578,7 +600,9 @@ describe('AutopilotValidation', () => {
       transitionPhase(testDir, 'validation');
 
       recordValidationVerdict(testDir, 'functional', 'APPROVED');
-      recordValidationVerdict(testDir, 'security', 'REJECTED', ['Security issue']);
+      recordValidationVerdict(testDir, 'security', 'REJECTED', [
+        'Security issue',
+      ]);
       recordValidationVerdict(testDir, 'quality', 'NEEDS_FIX', ['Minor fix']);
 
       const state = transitionPhase(testDir, 'validation');

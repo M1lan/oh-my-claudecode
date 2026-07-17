@@ -47,7 +47,9 @@ afterEach(() => {
   Object.assign(process.env, ORIG_ENV);
   try {
     rmSync(testDir, { recursive: true, force: true });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 });
 
 describe('install() with pluginDirMode option', () => {

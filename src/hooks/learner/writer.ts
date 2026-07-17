@@ -11,7 +11,11 @@ import { generateSkillFrontmatter } from './parser.js';
 import { validateExtractionRequest } from './validator.js';
 import { DEBUG_ENABLED } from './constants.js';
 import { ensureClaudeCodeUserSkillCompat } from '../../utils/user-skill-compat.js';
-import type { SkillMetadata, SkillExtractionRequest, QualityValidation } from './types.js';
+import type {
+  SkillMetadata,
+  SkillExtractionRequest,
+  QualityValidation,
+} from './types.js';
 
 /**
  * Generate a unique skill ID.
@@ -49,7 +53,7 @@ export interface WriteSkillResult {
 export function writeSkill(
   request: SkillExtractionRequest,
   projectRoot: string | null,
-  skillName: string
+  skillName: string,
 ): WriteSkillResult {
   // Validate first
   const validation = validateExtractionRequest(request);
@@ -138,17 +142,21 @@ ${request.solution}
  */
 export function checkDuplicateTriggers(
   triggers: string[],
-  projectRoot: string | null
+  projectRoot: string | null,
 ): { isDuplicate: boolean; existingSkillId?: string } {
   // Import dynamically to avoid circular dependency
   const { loadAllSkills } = require('./loader.js');
   const skills = loadAllSkills(projectRoot);
 
-  const normalizedTriggers = new Set(triggers.map(t => t.toLowerCase()));
+  const normalizedTriggers = new Set(triggers.map((t) => t.toLowerCase()));
 
   for (const skill of skills) {
-    const skillTriggers = skill.metadata.triggers.map((t: string) => t.toLowerCase());
-    const overlap = skillTriggers.filter((t: string) => normalizedTriggers.has(t));
+    const skillTriggers = skill.metadata.triggers.map((t: string) =>
+      t.toLowerCase(),
+    );
+    const overlap = skillTriggers.filter((t: string) =>
+      normalizedTriggers.has(t),
+    );
 
     if (overlap.length >= triggers.length * 0.5) {
       return {

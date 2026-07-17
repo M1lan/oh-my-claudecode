@@ -37,7 +37,10 @@ export function leaderInboxPath(teamName: string, cwd: string): string {
  * Idempotent: safe to call multiple times.
  * Validates path is within cwd to prevent traversal.
  */
-export async function ensureLeaderInbox(teamName: string, cwd: string): Promise<string> {
+export async function ensureLeaderInbox(
+  teamName: string,
+  cwd: string,
+): Promise<string> {
   const inboxPath = leaderInboxPath(teamName, cwd);
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });
@@ -52,7 +55,11 @@ export async function ensureLeaderInbox(teamName: string, cwd: string): Promise<
  * Mirrors appendToInbox for workers: appends `\n\n---\n${message}` to the inbox file.
  * Validates path is within cwd to prevent traversal.
  */
-export async function appendToLeaderInbox(teamName: string, message: string, cwd: string): Promise<void> {
+export async function appendToLeaderInbox(
+  teamName: string,
+  message: string,
+  cwd: string,
+): Promise<void> {
   const inboxPath = leaderInboxPath(teamName, cwd);
   validateResolvedPath(inboxPath, cwd);
   await mkdir(dirname(inboxPath), { recursive: true });

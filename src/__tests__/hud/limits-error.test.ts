@@ -7,12 +7,18 @@ import { renderRateLimitsError } from '../../hud/elements/limits.js';
 
 describe('renderRateLimitsError', () => {
   it('returns null for no_credentials (expected for API key users)', () => {
-    const result = renderRateLimitsError({ rateLimits: null, error: 'no_credentials' });
+    const result = renderRateLimitsError({
+      rateLimits: null,
+      error: 'no_credentials',
+    });
     expect(result).toBeNull();
   });
 
   it('returns yellow [API err] for network errors', () => {
-    const result = renderRateLimitsError({ rateLimits: null, error: 'network' });
+    const result = renderRateLimitsError({
+      rateLimits: null,
+      error: 'network',
+    });
     expect(result).not.toBeNull();
     expect(result).toContain('[API err]');
     // Verify yellow ANSI color code is present
@@ -28,7 +34,10 @@ describe('renderRateLimitsError', () => {
   });
 
   it('returns dimmed [API 429] for rate_limited errors', () => {
-    const result = renderRateLimitsError({ rateLimits: null, error: 'rate_limited' });
+    const result = renderRateLimitsError({
+      rateLimits: null,
+      error: 'rate_limited',
+    });
     expect(result).not.toBeNull();
     expect(result).toContain('[API 429]');
     // Verify dim ANSI code is present (not yellow)

@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdirSync, rmSync, existsSync, mkdtempSync, writeFileSync, symlinkSync, realpathSync } from 'fs';
+import {
+  mkdirSync,
+  rmSync,
+  existsSync,
+  mkdtempSync,
+  writeFileSync,
+  symlinkSync,
+  realpathSync,
+} from 'fs';
 import { execSync } from 'child_process';
 import { join, basename, resolve } from 'path';
 import { tmpdir } from 'os';
@@ -62,9 +70,10 @@ function canonicalTestPath(path: string): string {
   }
 
   const slashNormalized = canonical.replace(/\\/g, '/');
-  return process.platform === 'win32' ? slashNormalized.toLowerCase() : slashNormalized;
+  return process.platform === 'win32'
+    ? slashNormalized.toLowerCase()
+    : slashNormalized;
 }
-
 
 const TEST_DIR = join(tmpdir(), 'worktree-paths-test');
 
@@ -106,7 +115,9 @@ describe('worktree-paths', () => {
     });
 
     it('should reject paths that escape .omc boundary', () => {
-      expect(() => resolveOmcPath('../secret.txt', TEST_DIR)).toThrow('path traversal');
+      expect(() => resolveOmcPath('../secret.txt', TEST_DIR)).toThrow(
+        'path traversal',
+      );
     });
   });
 
@@ -118,7 +129,9 @@ describe('worktree-paths', () => {
 
     it('should handle input already having -state suffix', () => {
       const result = resolveStatePath('ultrawork-state', TEST_DIR);
-      expect(result).toBe(join(TEST_DIR, '.omc', 'state', 'ultrawork-state.json'));
+      expect(result).toBe(
+        join(TEST_DIR, '.omc', 'state', 'ultrawork-state.json'),
+      );
     });
 
     it('should resolve swarm as regular JSON path after #1131 removal', () => {
@@ -175,12 +188,16 @@ describe('worktree-paths', () => {
 
   describe('isPathUnderOmc', () => {
     it('should return true for paths under .omc', () => {
-      expect(isPathUnderOmc(join(TEST_DIR, '.omc', 'state', 'ralph.json'), TEST_DIR)).toBe(true);
+      expect(
+        isPathUnderOmc(join(TEST_DIR, '.omc', 'state', 'ralph.json'), TEST_DIR),
+      ).toBe(true);
       expect(isPathUnderOmc(join(TEST_DIR, '.omc'), TEST_DIR)).toBe(true);
     });
 
     it('should return false for paths outside .omc', () => {
-      expect(isPathUnderOmc(join(TEST_DIR, 'src', 'file.ts'), TEST_DIR)).toBe(false);
+      expect(isPathUnderOmc(join(TEST_DIR, 'src', 'file.ts'), TEST_DIR)).toBe(
+        false,
+      );
       expect(isPathUnderOmc('/etc/passwd', TEST_DIR)).toBe(false);
     });
   });
@@ -217,7 +234,9 @@ describe('worktree-paths', () => {
     });
 
     it('should fall back and log for non-git directories', () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       const nonGitDir = mkdtempSync(join(tmpdir(), 'worktree-paths-nongit-'));
 
       const result = resolveToWorktreeRoot(nonGitDir);
@@ -227,7 +246,7 @@ describe('worktree-paths', () => {
       expect(result).toBe(expectedRoot);
       expect(errorSpy).toHaveBeenCalledWith(
         '[worktree] non-git directory provided, falling back to process root',
-        { directory: nonGitDir }
+        { directory: nonGitDir },
       );
 
       errorSpy.mockRestore();
@@ -235,7 +254,9 @@ describe('worktree-paths', () => {
     });
 
     it('should handle bare repositories by falling back and logging', () => {
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
       const bareRepoDir = mkdtempSync(join(tmpdir(), 'worktree-paths-bare-'));
       execSync('git init --bare', { cwd: bareRepoDir, stdio: 'pipe' });
 
@@ -245,7 +266,7 @@ describe('worktree-paths', () => {
       expect(result).toBe(expectedRoot);
       expect(errorSpy).toHaveBeenCalledWith(
         '[worktree] non-git directory provided, falling back to process root',
-        { directory: bareRepoDir }
+        { directory: bareRepoDir },
       );
 
       errorSpy.mockRestore();
@@ -272,14 +293,20 @@ describe('worktree-paths', () => {
     it('should throw for directories outside the trusted root', () => {
       // tmpdir() is outside any repo worktree root and exists on every platform
       // (avoids '/etc' which is Linux-only and triggers ENOENT on Windows).
-      expect(() => validateWorkingDirectory(tmpdir())).toThrow('outside the trusted worktree root');
+      expect(() => validateWorkingDirectory(tmpdir())).toThrow(
+        'outside the trusted worktree root',
+      );
     });
 
     it('should reject a workingDirectory that resolves to a different git root', () => {
-      const nestedRepoDir = mkdtempSync(join(tmpdir(), 'worktree-paths-nested-'));
+      const nestedRepoDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-nested-'),
+      );
       execSync('git init', { cwd: nestedRepoDir, stdio: 'pipe' });
 
-      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
 
       const result = validateWorkingDirectory(nestedRepoDir);
 
@@ -291,7 +318,7 @@ describe('worktree-paths', () => {
           workingDirectory: nestedRepoDir,
           providedRoot: expect.any(String),
           trustedRoot: expect.any(String),
-        })
+        }),
       );
 
       errorSpy.mockRestore();
@@ -299,8 +326,12 @@ describe('worktree-paths', () => {
     });
 
     it('uses the submodule git top-level as the trusted validation boundary', () => {
-      const parentDir = mkdtempSync(join(tmpdir(), 'worktree-paths-validator-parent-'));
-      const subDir = mkdtempSync(join(tmpdir(), 'worktree-paths-validator-child-'));
+      const parentDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-validator-parent-'),
+      );
+      const subDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-validator-child-'),
+      );
       const originalCwd = process.cwd();
 
       try {
@@ -308,18 +339,33 @@ describe('worktree-paths', () => {
         execSync('git commit --allow-empty -m "sub init"', {
           cwd: subDir,
           stdio: 'pipe',
-          env: { ...process.env, GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@test.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@test.com' },
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test.com',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test.com',
+          },
         });
         execSync('git init', { cwd: parentDir, stdio: 'pipe' });
         execSync('git commit --allow-empty -m "parent init"', {
           cwd: parentDir,
           stdio: 'pipe',
-          env: { ...process.env, GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@test.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@test.com' },
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test.com',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test.com',
+          },
         });
-        execSync(`git -c protocol.file.allow=always submodule add "${subDir}" mysub`, {
-          cwd: parentDir,
-          stdio: 'pipe',
-        });
+        execSync(
+          `git -c protocol.file.allow=always submodule add "${subDir}" mysub`,
+          {
+            cwd: parentDir,
+            stdio: 'pipe',
+          },
+        );
         const submodulePath = join(parentDir, 'mysub');
         clearWorktreeCache();
         process.chdir(submodulePath);
@@ -327,8 +373,12 @@ describe('worktree-paths', () => {
         const expectedSubmoduleRoot = canonicalTestPath(submodulePath);
         const parentRoot = canonicalTestPath(parentDir);
         const defaultRoot = canonicalTestPath(validateWorkingDirectory());
-        const explicitParentRoot = canonicalTestPath(validateWorkingDirectory(parentDir));
-        const linkedParentRoot = canonicalTestPath(validateWorkingDirectoryOrLinkedWorktree(parentDir));
+        const explicitParentRoot = canonicalTestPath(
+          validateWorkingDirectory(parentDir),
+        );
+        const linkedParentRoot = canonicalTestPath(
+          validateWorkingDirectoryOrLinkedWorktree(parentDir),
+        );
 
         expect(defaultRoot).toBe(expectedSubmoduleRoot);
         expect(explicitParentRoot).toBe(expectedSubmoduleRoot);
@@ -436,10 +486,13 @@ describe('worktree-paths', () => {
         const repoDir2 = mkdtempSync(join(tmpdir(), 'worktree-paths-remote2-'));
         try {
           execSync('git init', { cwd: repoDir2, stdio: 'pipe' });
-          execSync('git remote add origin https://github.com/test/my-repo.git', {
-            cwd: repoDir2,
-            stdio: 'pipe',
-          });
+          execSync(
+            'git remote add origin https://github.com/test/my-repo.git',
+            {
+              cwd: repoDir2,
+              stdio: 'pipe',
+            },
+          );
           clearWorktreeCache();
 
           const id2 = getProjectIdentifier(repoDir2);
@@ -490,14 +543,23 @@ describe('worktree-paths', () => {
       try {
         // Set up a primary repo with a commit so worktree creation works
         execSync('git init', { cwd: primaryDir, stdio: 'pipe' });
-        execSync('git remote add origin https://github.com/test/worktree-id-test.git', {
-          cwd: primaryDir,
-          stdio: 'pipe',
-        });
+        execSync(
+          'git remote add origin https://github.com/test/worktree-id-test.git',
+          {
+            cwd: primaryDir,
+            stdio: 'pipe',
+          },
+        );
         execSync('git commit --allow-empty -m "init"', {
           cwd: primaryDir,
           stdio: 'pipe',
-          env: { ...process.env, GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@test.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@test.com' },
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test.com',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test.com',
+          },
         });
 
         // Create a linked worktree (sibling directory, different basename)
@@ -518,22 +580,34 @@ describe('worktree-paths', () => {
             cwd: primaryDir,
             stdio: 'pipe',
           });
-        } catch { /* may not exist */ }
+        } catch {
+          /* may not exist */
+        }
         rmSync(primaryDir, { recursive: true, force: true });
         rmSync(worktreeDir, { recursive: true, force: true });
       }
     });
 
     it('should not change identifier for submodules (avoid .git/modules resolution)', () => {
-      const parentDir = mkdtempSync(join(tmpdir(), 'worktree-paths-submod-parent-'));
-      const subDir = mkdtempSync(join(tmpdir(), 'worktree-paths-submod-child-'));
+      const parentDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-submod-parent-'),
+      );
+      const subDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-submod-child-'),
+      );
       try {
         // Create a repo to use as the submodule source
         execSync('git init', { cwd: subDir, stdio: 'pipe' });
         execSync('git commit --allow-empty -m "sub init"', {
           cwd: subDir,
           stdio: 'pipe',
-          env: { ...process.env, GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@test.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@test.com' },
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test.com',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test.com',
+          },
         });
 
         // Create the parent repo and add the submodule
@@ -541,12 +615,21 @@ describe('worktree-paths', () => {
         execSync('git commit --allow-empty -m "init"', {
           cwd: parentDir,
           stdio: 'pipe',
-          env: { ...process.env, GIT_AUTHOR_NAME: 'test', GIT_AUTHOR_EMAIL: 'test@test.com', GIT_COMMITTER_NAME: 'test', GIT_COMMITTER_EMAIL: 'test@test.com' },
+          env: {
+            ...process.env,
+            GIT_AUTHOR_NAME: 'test',
+            GIT_AUTHOR_EMAIL: 'test@test.com',
+            GIT_COMMITTER_NAME: 'test',
+            GIT_COMMITTER_EMAIL: 'test@test.com',
+          },
         });
-        execSync(`git -c protocol.file.allow=always submodule add "${subDir}" mysub`, {
-          cwd: parentDir,
-          stdio: 'pipe',
-        });
+        execSync(
+          `git -c protocol.file.allow=always submodule add "${subDir}" mysub`,
+          {
+            cwd: parentDir,
+            stdio: 'pipe',
+          },
+        );
         clearWorktreeCache();
 
         const submodulePath = `${parentDir}/mysub`;
@@ -563,7 +646,9 @@ describe('worktree-paths', () => {
     });
 
     it('should not change identifier for bare repos (avoid dirname going to parent)', () => {
-      const parentDir = mkdtempSync(join(tmpdir(), 'worktree-paths-bare-parent-'));
+      const parentDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-bare-parent-'),
+      );
       const bareDir = `${parentDir}/my-bare-repo.git`;
       try {
         execSync(`git init --bare "${bareDir}"`, { stdio: 'pipe' });
@@ -602,7 +687,9 @@ describe('worktree-paths', () => {
 
     it('should log warning when both legacy and centralized dirs exist', () => {
       const stateDir = mkdtempSync(join(tmpdir(), 'omc-state-dir-'));
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
       try {
         process.env.OMC_STATE_DIR = stateDir;
         const projectId = getProjectIdentifier(TEST_DIR);
@@ -615,10 +702,10 @@ describe('worktree-paths', () => {
         getOmcRoot(TEST_DIR);
 
         expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Both legacy state dir')
+          expect.stringContaining('Both legacy state dir'),
         );
         expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Using centralized dir')
+          expect.stringContaining('Using centralized dir'),
         );
       } finally {
         warnSpy.mockRestore();
@@ -628,7 +715,9 @@ describe('worktree-paths', () => {
 
     it('should not log warning when only centralized dir exists', () => {
       const stateDir = mkdtempSync(join(tmpdir(), 'omc-state-dir-'));
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
       try {
         process.env.OMC_STATE_DIR = stateDir;
         const projectId = getProjectIdentifier(TEST_DIR);
@@ -648,7 +737,9 @@ describe('worktree-paths', () => {
 
     it('should only log dual-dir warning once per path pair', () => {
       const stateDir = mkdtempSync(join(tmpdir(), 'omc-state-dir-'));
-      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+      const warnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
       try {
         process.env.OMC_STATE_DIR = stateDir;
         const projectId = getProjectIdentifier(TEST_DIR);
@@ -692,7 +783,9 @@ describe('worktree-paths', () => {
     it('resolveStatePath should resolve under centralized dir', () => {
       const result = resolveStatePath('ralph', TEST_DIR);
       const projectId = getProjectIdentifier(TEST_DIR);
-      expect(result).toBe(join(stateDir, projectId, 'state', 'ralph-state.json'));
+      expect(result).toBe(
+        join(stateDir, projectId, 'state', 'ralph-state.json'),
+      );
     });
 
     it('getWorktreeNotepadPath should resolve under centralized dir', () => {
@@ -716,7 +809,9 @@ describe('worktree-paths', () => {
     it('resolveResearchPath should resolve under centralized dir', () => {
       const result = resolveResearchPath('api-research', TEST_DIR);
       const projectId = getProjectIdentifier(TEST_DIR);
-      expect(result).toBe(join(stateDir, projectId, 'research', 'api-research'));
+      expect(result).toBe(
+        join(stateDir, projectId, 'research', 'api-research'),
+      );
     });
 
     it('resolveLogsPath should resolve under centralized dir', () => {
@@ -737,7 +832,9 @@ describe('worktree-paths', () => {
       expect(isPathUnderOmc(centralPath, TEST_DIR)).toBe(true);
 
       // Legacy path should NOT be under omc when centralized
-      expect(isPathUnderOmc(join(TEST_DIR, '.omc', 'state', 'ralph.json'), TEST_DIR)).toBe(false);
+      expect(
+        isPathUnderOmc(join(TEST_DIR, '.omc', 'state', 'ralph.json'), TEST_DIR),
+      ).toBe(false);
     });
 
     it('ensureAllOmcDirs should create dirs under centralized path', () => {
@@ -918,7 +1015,11 @@ describe('worktree-paths', () => {
           const found = findWorkspaceRoot(linkDir);
           expect(found).not.toBeNull();
         } finally {
-          try { rmSync(linkDir); } catch { /* ignore */ }
+          try {
+            rmSync(linkDir);
+          } catch {
+            /* ignore */
+          }
           rmSync(realDir, { recursive: true, force: true });
         }
       },
@@ -935,7 +1036,9 @@ describe('worktree-paths', () => {
 
     beforeEach(() => {
       anchorDir = resolve(mkdtempSync(join(tmpdir(), 'omc-sibling-anchor-')));
-      stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+      stderrSpy = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true);
       clearSiblingRetrofitWarnings();
     });
 
@@ -954,7 +1057,9 @@ describe('worktree-paths', () => {
       warnSiblingRetrofit(anchorDir);
 
       expect(stderrSpy).toHaveBeenCalledTimes(1);
-      const written = String((stderrSpy.mock.calls[0] as [string | Uint8Array])[0]);
+      const written = String(
+        (stderrSpy.mock.calls[0] as [string | Uint8Array])[0],
+      );
       expect(written).toContain('workspace-retrofit warning');
       expect(written).toContain(join(siblingA, '.omc'));
       expect(written).toContain(join(siblingB, '.omc'));
@@ -1002,7 +1107,12 @@ describe('worktree-paths', () => {
       const sessionId = 'marker-write-test';
       warnSiblingRetrofit(anchorDir, sessionId);
 
-      const markerPath = join(anchorDir, '.omc', 'state', `sibling-retrofit-warned-${sessionId}.json`);
+      const markerPath = join(
+        anchorDir,
+        '.omc',
+        'state',
+        `sibling-retrofit-warned-${sessionId}.json`,
+      );
       expect(existsSync(markerPath)).toBe(true);
     });
 
@@ -1028,7 +1138,12 @@ describe('worktree-paths', () => {
       // Clear both in-memory and disk markers
       clearSiblingRetrofitWarnings(join(anchorDir, '.omc'));
 
-      const markerPath = join(anchorDir, '.omc', 'state', `sibling-retrofit-warned-${sessionId}.json`);
+      const markerPath = join(
+        anchorDir,
+        '.omc',
+        'state',
+        `sibling-retrofit-warned-${sessionId}.json`,
+      );
       expect(existsSync(markerPath)).toBe(false);
 
       // Subsequent call should warn again
@@ -1066,7 +1181,14 @@ describe('worktree-paths', () => {
     it('with sessionId: effectiveWrite is the session-scoped path', () => {
       const sessionId = 'pid-99999-1234567890';
       const paths = resolveSessionStatePaths('ultrawork', sessionId, workDir);
-      const expectedSession = join(workDir, '.omc', 'state', 'sessions', sessionId, 'ultrawork-state.json');
+      const expectedSession = join(
+        workDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'ultrawork-state.json',
+      );
       expect(paths.effectiveWrite).toBe(expectedSession);
       expect(paths.sessionScoped).toBe(expectedSession);
     });
@@ -1080,8 +1202,17 @@ describe('worktree-paths', () => {
 
     it('effectiveRead === sessionScoped after session file is created', () => {
       const sessionId = 'pid-99999-2222222222';
-      const sessionScoped = join(workDir, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json');
-      mkdirSync(join(workDir, '.omc', 'state', 'sessions', sessionId), { recursive: true });
+      const sessionScoped = join(
+        workDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'ralph-state.json',
+      );
+      mkdirSync(join(workDir, '.omc', 'state', 'sessions', sessionId), {
+        recursive: true,
+      });
       writeFileSync(sessionScoped, '{}');
 
       const paths = resolveSessionStatePaths('ralph', sessionId, workDir);
@@ -1091,13 +1222,19 @@ describe('worktree-paths', () => {
     it('normalizes "ralph" and "ralph-state" to same output path', () => {
       const sessionId = 'pid-99999-3333333333';
       const paths1 = resolveSessionStatePaths('ralph', sessionId, workDir);
-      const paths2 = resolveSessionStatePaths('ralph-state', sessionId, workDir);
+      const paths2 = resolveSessionStatePaths(
+        'ralph-state',
+        sessionId,
+        workDir,
+      );
       expect(paths1.effectiveWrite).toBe(paths2.effectiveWrite);
       expect(paths1.sessionScoped).toBe(paths2.sessionScoped);
     });
 
     it('throws for invalid sessionId containing path traversal', () => {
-      expect(() => resolveSessionStatePaths('ralph', '../x', workDir)).toThrow();
+      expect(() =>
+        resolveSessionStatePaths('ralph', '../x', workDir),
+      ).toThrow();
     });
   });
 

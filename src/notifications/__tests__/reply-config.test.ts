@@ -1,18 +1,18 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 type RawConfig = Record<string, unknown> | null;
 
-const VALID_DISCORD_USER_ID = "123456789012345678";
+const VALID_DISCORD_USER_ID = '123456789012345678';
 const ORIGINAL_ENV = process.env;
 
 function mockConfigFile(rawConfig: RawConfig): void {
-  vi.doMock("fs", () => ({
+  vi.doMock('fs', () => ({
     existsSync: vi.fn(() => rawConfig !== null),
     readFileSync: vi.fn(() => JSON.stringify(rawConfig ?? {})),
   }));
 }
 
-describe("reply config", () => {
+describe('reply config', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.restoreAllMocks();
@@ -40,16 +40,16 @@ describe("reply config", () => {
     vi.restoreAllMocks();
   });
 
-  it("enables reply config when reply-capable platform exists only at event level", async () => {
+  it('enables reply config when reply-capable platform exists only at event level', async () => {
     mockConfigFile({
       notifications: {
         enabled: true,
         events: {
-          "ask-user-question": {
+          'ask-user-question': {
             telegram: {
               enabled: true,
-              botToken: "tg-token-event",
-              chatId: "tg-chat-event",
+              botToken: 'tg-token-event',
+              chatId: 'tg-chat-event',
             },
           },
         },
@@ -64,7 +64,7 @@ describe("reply config", () => {
       getReplyConfig,
       getNotificationConfig,
       getReplyListenerPlatformConfig,
-    } = await import("../config.js");
+    } = await import('../config.js');
 
     const replyConfig = getReplyConfig();
     expect(replyConfig).not.toBeNull();
@@ -72,17 +72,17 @@ describe("reply config", () => {
 
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
-    expect(runtime.telegramBotToken).toBe("tg-token-event");
-    expect(runtime.telegramChatId).toBe("tg-chat-event");
+    expect(runtime.telegramBotToken).toBe('tg-token-event');
+    expect(runtime.telegramChatId).toBe('tg-chat-event');
   });
 
-  it("returns null when reply is enabled but no reply-capable platform is configured", async () => {
+  it('returns null when reply is enabled but no reply-capable platform is configured', async () => {
     mockConfigFile({
       notifications: {
         enabled: true,
         discord: {
           enabled: true,
-          webhookUrl: "https://discord.com/api/webhooks/abc/123",
+          webhookUrl: 'https://discord.com/api/webhooks/abc/123',
         },
         reply: {
           enabled: true,
@@ -90,20 +90,20 @@ describe("reply config", () => {
       },
     });
 
-    const { getReplyConfig } = await import("../config.js");
+    const { getReplyConfig } = await import('../config.js');
     expect(getReplyConfig()).toBeNull();
   });
 
-  it("warns when discord-bot is enabled but authorizedDiscordUserIds is empty", async () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  it('warns when discord-bot is enabled but authorizedDiscordUserIds is empty', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     mockConfigFile({
       notifications: {
         enabled: true,
-        "discord-bot": {
+        'discord-bot': {
           enabled: true,
-          botToken: "discord-token",
-          channelId: "discord-channel",
+          botToken: 'discord-token',
+          channelId: 'discord-channel',
         },
         reply: {
           enabled: true,
@@ -111,7 +111,7 @@ describe("reply config", () => {
       },
     });
 
-    const { getReplyConfig } = await import("../config.js");
+    const { getReplyConfig } = await import('../config.js');
     const replyConfig = getReplyConfig();
 
     expect(replyConfig).not.toBeNull();
@@ -119,31 +119,31 @@ describe("reply config", () => {
     expect(warnSpy).toHaveBeenCalledOnce();
   });
 
-  it("applies environment overrides for reply settings and discord user IDs", async () => {
-    process.env.OMC_REPLY_POLL_INTERVAL_MS = "5000";
-    process.env.OMC_REPLY_RATE_LIMIT = "20";
-    process.env.OMC_REPLY_INCLUDE_PREFIX = "false";
+  it('applies environment overrides for reply settings and discord user IDs', async () => {
+    process.env.OMC_REPLY_POLL_INTERVAL_MS = '5000';
+    process.env.OMC_REPLY_RATE_LIMIT = '20';
+    process.env.OMC_REPLY_INCLUDE_PREFIX = 'false';
     process.env.OMC_REPLY_DISCORD_USER_IDS = `${VALID_DISCORD_USER_ID},invalid-id`;
 
     mockConfigFile({
       notifications: {
         enabled: true,
-        "discord-bot": {
+        'discord-bot': {
           enabled: true,
-          botToken: "discord-token",
-          channelId: "discord-channel",
+          botToken: 'discord-token',
+          channelId: 'discord-channel',
         },
         reply: {
           enabled: true,
           pollIntervalMs: 1000,
           rateLimitPerMinute: 5,
           includePrefix: true,
-          authorizedDiscordUserIds: ["999999999999999999"],
+          authorizedDiscordUserIds: ['999999999999999999'],
         },
       },
     });
 
-    const { getReplyConfig } = await import("../config.js");
+    const { getReplyConfig } = await import('../config.js');
     const replyConfig = getReplyConfig();
 
     expect(replyConfig).not.toBeNull();
@@ -155,15 +155,15 @@ describe("reply config", () => {
     ]);
   });
 
-  it("returns discordMention from top-level discord-bot config", async () => {
+  it('returns discordMention from top-level discord-bot config', async () => {
     mockConfigFile({
       notifications: {
         enabled: true,
-        "discord-bot": {
+        'discord-bot': {
           enabled: true,
-          botToken: "discord-token",
-          channelId: "discord-channel",
-          mention: "<@123456789012345678>",
+          botToken: 'discord-token',
+          channelId: 'discord-channel',
+          mention: '<@123456789012345678>',
         },
         reply: {
           enabled: true,
@@ -173,36 +173,36 @@ describe("reply config", () => {
     });
 
     const { getNotificationConfig, getReplyListenerPlatformConfig } =
-      await import("../config.js");
+      await import('../config.js');
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
 
-    expect(runtime.discordMention).toBe("<@123456789012345678>");
+    expect(runtime.discordMention).toBe('<@123456789012345678>');
   });
 
-  it("returns discordMention from env var OMC_DISCORD_MENTION", async () => {
-    process.env.OMC_DISCORD_NOTIFIER_BOT_TOKEN = "env-token";
-    process.env.OMC_DISCORD_NOTIFIER_CHANNEL = "env-channel";
-    process.env.OMC_DISCORD_MENTION = "<@987654321098765432>";
+  it('returns discordMention from env var OMC_DISCORD_MENTION', async () => {
+    process.env.OMC_DISCORD_NOTIFIER_BOT_TOKEN = 'env-token';
+    process.env.OMC_DISCORD_NOTIFIER_CHANNEL = 'env-channel';
+    process.env.OMC_DISCORD_MENTION = '<@987654321098765432>';
 
     mockConfigFile(null);
 
     const { getNotificationConfig, getReplyListenerPlatformConfig } =
-      await import("../config.js");
+      await import('../config.js');
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
 
-    expect(runtime.discordMention).toBe("<@987654321098765432>");
+    expect(runtime.discordMention).toBe('<@987654321098765432>');
   });
 
-  it("returns undefined discordMention when no mention is configured", async () => {
+  it('returns undefined discordMention when no mention is configured', async () => {
     mockConfigFile({
       notifications: {
         enabled: true,
-        "discord-bot": {
+        'discord-bot': {
           enabled: true,
-          botToken: "discord-token",
-          channelId: "discord-channel",
+          botToken: 'discord-token',
+          channelId: 'discord-channel',
         },
         reply: {
           enabled: true,
@@ -212,25 +212,25 @@ describe("reply config", () => {
     });
 
     const { getNotificationConfig, getReplyListenerPlatformConfig } =
-      await import("../config.js");
+      await import('../config.js');
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
 
     expect(runtime.discordMention).toBeUndefined();
   });
 
-  it("resolves discord credentials from event-level config and falls back to top-level tokens", async () => {
+  it('resolves discord credentials from event-level config and falls back to top-level tokens', async () => {
     mockConfigFile({
       notifications: {
         enabled: true,
-        "discord-bot": {
+        'discord-bot': {
           enabled: false,
-          botToken: "top-level-token",
-          channelId: "top-level-channel",
+          botToken: 'top-level-token',
+          channelId: 'top-level-channel',
         },
         events: {
-          "session-end": {
-            "discord-bot": {
+          'session-end': {
+            'discord-bot': {
               enabled: true,
             },
           },
@@ -242,13 +242,12 @@ describe("reply config", () => {
       },
     });
 
-    const { getNotificationConfig, getReplyListenerPlatformConfig } = await import(
-      "../config.js"
-    );
+    const { getNotificationConfig, getReplyListenerPlatformConfig } =
+      await import('../config.js');
     const notifConfig = getNotificationConfig();
     const runtime = getReplyListenerPlatformConfig(notifConfig);
 
-    expect(runtime.discordBotToken).toBe("top-level-token");
-    expect(runtime.discordChannelId).toBe("top-level-channel");
+    expect(runtime.discordBotToken).toBe('top-level-token');
+    expect(runtime.discordChannelId).toBe('top-level-channel');
   });
 });

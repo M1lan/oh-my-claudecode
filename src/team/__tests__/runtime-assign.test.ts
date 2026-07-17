@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -8,7 +14,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../tmux-session.js', async () => {
-  const actual = await vi.importActual<typeof import('../tmux-session.js')>('../tmux-session.js');
+  const actual =
+    await vi.importActual<typeof import('../tmux-session.js')>(
+      '../tmux-session.js',
+    );
   return {
     ...actual,
     sendToWorker: mocks.sendToWorker,
@@ -26,21 +35,28 @@ describe('assignTask trigger delivery', () => {
     const teamName = 'assign-team';
     const root = join(cwd, '.omc', 'state', 'team', teamName);
     mkdirSync(join(root, 'tasks'), { recursive: true });
-    writeFileSync(join(root, 'tasks', '1.json'), JSON.stringify({
-      id: '1',
-      subject: 's',
-      description: 'd',
-      status: 'pending',
-      owner: null,
-      createdAt: new Date().toISOString(),
-    }), 'utf-8');
+    writeFileSync(
+      join(root, 'tasks', '1.json'),
+      JSON.stringify({
+        id: '1',
+        subject: 's',
+        description: 'd',
+        status: 'pending',
+        owner: null,
+        createdAt: new Date().toISOString(),
+      }),
+      'utf-8',
+    );
 
     mocks.sendToWorker.mockResolvedValue(false);
 
-    await expect(assignTask(teamName, '1', 'worker-1', '%1', 'session:0', cwd))
-      .rejects.toThrow('worker_notify_failed:worker-1:new-task:1');
+    await expect(
+      assignTask(teamName, '1', 'worker-1', '%1', 'session:0', cwd),
+    ).rejects.toThrow('worker_notify_failed:worker-1:new-task:1');
 
-    const task = JSON.parse(readFileSync(join(root, 'tasks', '1.json'), 'utf-8')) as {
+    const task = JSON.parse(
+      readFileSync(join(root, 'tasks', '1.json'), 'utf-8'),
+    ) as {
       status: string;
       owner: string | null;
     };

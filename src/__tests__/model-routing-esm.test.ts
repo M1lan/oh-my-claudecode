@@ -15,7 +15,11 @@ describe('model-routing ESM compatibility', () => {
   });
 
   it('routeAndAdaptTask should handle optional parameters', () => {
-    const result = routeAndAdaptTask('Complex architecture refactoring', 'architect', 2);
+    const result = routeAndAdaptTask(
+      'Complex architecture refactoring',
+      'architect',
+      2,
+    );
 
     expect(result).toBeDefined();
     expect(result.decision).toBeDefined();
@@ -26,6 +30,8 @@ describe('model-routing ESM compatibility', () => {
   it('routeAndAdaptTask should return valid routing decision with tier', () => {
     const result = routeAndAdaptTask('Simple search task');
 
-    expect(['LOW', 'MEDIUM', 'HIGH', 'EXPLICIT']).toContain(result.decision.tier);
+    expect(['LOW', 'MEDIUM', 'HIGH', 'EXPLICIT']).toContain(
+      result.decision.tier,
+    );
   });
 });

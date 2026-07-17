@@ -1,5 +1,8 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
-import { createSwallowedErrorLogger, formatSwallowedError } from '../swallowed-error.js';
+import {
+  createSwallowedErrorLogger,
+  formatSwallowedError,
+} from '../swallowed-error.js';
 
 describe('swallowed-error helper', () => {
   afterEach(() => {

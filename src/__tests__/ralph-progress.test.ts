@@ -16,7 +16,7 @@ import {
   getProgressContext,
   PROGRESS_FILENAME,
   PATTERNS_HEADER,
-  ENTRY_SEPARATOR
+  ENTRY_SEPARATOR,
 } from '../hooks/ralph/index.js';
 
 describe('Ralph Progress Module', () => {
@@ -24,7 +24,10 @@ describe('Ralph Progress Module', () => {
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `ralph-progress-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-progress-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -125,7 +128,9 @@ ${ENTRY_SEPARATOR}
       const parsed = parseProgress(content);
       expect(parsed.entries.length).toBe(1);
       expect(parsed.entries[0].storyId).toBe('US-001');
-      expect(parsed.entries[0].implementation).toContain('Implemented feature A');
+      expect(parsed.entries[0].implementation).toContain(
+        'Implemented feature A',
+      );
       expect(parsed.entries[0].learnings).toContain('Use pattern X for Y');
     });
 
@@ -179,7 +184,7 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Did thing A', 'Did thing B'],
         filesChanged: ['file1.ts', 'file2.ts'],
-        learnings: ['Learned pattern X']
+        learnings: ['Learned pattern X'],
       });
 
       expect(result).toBe(true);
@@ -197,7 +202,7 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Test'],
         filesChanged: [],
-        learnings: []
+        learnings: [],
       });
 
       expect(result).toBe(true);
@@ -209,7 +214,7 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Test'],
         filesChanged: [],
-        learnings: []
+        learnings: [],
       });
 
       const content = readProgressRaw(testDir);
@@ -279,13 +284,13 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Test'],
         filesChanged: [],
-        learnings: ['Learning 1', 'Learning 2']
+        learnings: ['Learning 1', 'Learning 2'],
       });
       appendProgress(testDir, {
         storyId: 'US-002',
         implementation: ['Test'],
         filesChanged: [],
-        learnings: ['Learning 3']
+        learnings: ['Learning 3'],
       });
     });
 
@@ -318,7 +323,7 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Did something'],
         filesChanged: [],
-        learnings: ['Important learning']
+        learnings: ['Important learning'],
       });
     });
 
@@ -357,7 +362,7 @@ Just garbage`;
         storyId: 'US-001',
         implementation: ['Test'],
         filesChanged: [],
-        learnings: ['Learning']
+        learnings: ['Learning'],
       });
 
       const context = getProgressContext(testDir);

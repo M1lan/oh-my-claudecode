@@ -45,7 +45,10 @@ describe('GiteaProvider', () => {
     });
 
     it('supports Forgejo identity via constructor', () => {
-      const forgejo = new GiteaProvider({ name: 'forgejo', displayName: 'Forgejo' });
+      const forgejo = new GiteaProvider({
+        name: 'forgejo',
+        displayName: 'Forgejo',
+      });
       expect(forgejo.name).toBe('forgejo');
       expect(forgejo.displayName).toBe('Forgejo');
     });
@@ -53,9 +56,15 @@ describe('GiteaProvider', () => {
 
   describe('detectFromRemote', () => {
     it('always returns false for any URL', () => {
-      expect(provider.detectFromRemote('https://gitea.example.com/user/repo')).toBe(false);
-      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(false);
-      expect(provider.detectFromRemote('https://try.gitea.io/user/repo')).toBe(false);
+      expect(
+        provider.detectFromRemote('https://gitea.example.com/user/repo'),
+      ).toBe(false);
+      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(
+        false,
+      );
+      expect(provider.detectFromRemote('https://try.gitea.io/user/repo')).toBe(
+        false,
+      );
     });
   });
 
@@ -97,26 +106,35 @@ describe('GiteaProvider', () => {
         throw new Error('tea: not found');
       });
       // Second call (curl) returns data
-      mockExecFileSync.mockReturnValueOnce(JSON.stringify({
-        title: 'REST PR',
-        head: { ref: 'feature/rest' },
-        base: { ref: 'main' },
-        html_url: 'https://gitea.example.com/user/repo/pulls/3',
-        body: 'From REST',
-        user: { login: 'restuser' },
-      }));
+      mockExecFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          title: 'REST PR',
+          head: { ref: 'feature/rest' },
+          base: { ref: 'main' },
+          html_url: 'https://gitea.example.com/user/repo/pulls/3',
+          body: 'From REST',
+          user: { login: 'restuser' },
+        }),
+      );
 
       const result = provider.viewPR(3, 'user', 'repo');
 
       expect(mockExecFileSync).toHaveBeenCalledTimes(2);
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(1,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        1,
         'tea',
         ['pr', 'view', '3'],
         expect.any(Object),
       );
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(2,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        2,
         'curl',
-        ['-sS', '-H', 'Authorization: token test-token', 'https://gitea.example.com/api/v1/repos/user/repo/pulls/3'],
+        [
+          '-sS',
+          '-H',
+          'Authorization: token test-token',
+          'https://gitea.example.com/api/v1/repos/user/repo/pulls/3',
+        ],
         expect.any(Object),
       );
       expect(result).toEqual({
@@ -136,18 +154,21 @@ describe('GiteaProvider', () => {
       mockExecFileSync.mockImplementationOnce(() => {
         throw new Error('tea: not found');
       });
-      mockExecFileSync.mockReturnValueOnce(JSON.stringify({
-        title: 'Public PR',
-        head: { ref: 'feat' },
-        base: { ref: 'main' },
-        html_url: '',
-        body: '',
-        user: { login: 'u' },
-      }));
+      mockExecFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          title: 'Public PR',
+          head: { ref: 'feat' },
+          base: { ref: 'main' },
+          html_url: '',
+          body: '',
+          user: { login: 'u' },
+        }),
+      );
 
       provider.viewPR(1, 'owner', 'repo');
 
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(2,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        2,
         'curl',
         ['-sS', 'https://gitea.example.com/api/v1/repos/owner/repo/pulls/1'],
         expect.any(Object),
@@ -215,17 +236,20 @@ describe('GiteaProvider', () => {
       mockExecFileSync.mockImplementationOnce(() => {
         throw new Error('tea: not found');
       });
-      mockExecFileSync.mockReturnValueOnce(JSON.stringify({
-        title: 'REST Issue',
-        body: 'From REST',
-        html_url: 'https://gitea.example.com/user/repo/issues/7',
-        labels: [{ name: 'enhancement' }],
-      }));
+      mockExecFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          title: 'REST Issue',
+          body: 'From REST',
+          html_url: 'https://gitea.example.com/user/repo/issues/7',
+          labels: [{ name: 'enhancement' }],
+        }),
+      );
 
       const result = provider.viewIssue(7, 'user', 'repo');
 
       expect(mockExecFileSync).toHaveBeenCalledTimes(2);
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(2,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        2,
         'curl',
         ['-sS', 'https://gitea.example.com/api/v1/repos/user/repo/issues/7'],
         expect.any(Object),
@@ -261,18 +285,26 @@ describe('GiteaProvider', () => {
       mockExecFileSync.mockImplementationOnce(() => {
         throw new Error('tea: not found');
       });
-      mockExecFileSync.mockReturnValueOnce(JSON.stringify({
-        title: 'Auth Issue',
-        body: 'With auth',
-        html_url: 'https://gitea.example.com/user/repo/issues/42',
-        labels: [],
-      }));
+      mockExecFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          title: 'Auth Issue',
+          body: 'With auth',
+          html_url: 'https://gitea.example.com/user/repo/issues/42',
+          labels: [],
+        }),
+      );
 
       const result = provider.viewIssue(42, 'user', 'repo');
 
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(2,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        2,
         'curl',
-        ['-sS', '-H', 'Authorization: token test-token', 'https://gitea.example.com/api/v1/repos/user/repo/issues/42'],
+        [
+          '-sS',
+          '-H',
+          'Authorization: token test-token',
+          'https://gitea.example.com/api/v1/repos/user/repo/issues/42',
+        ],
         expect.any(Object),
       );
       expect(result).toEqual({
@@ -290,16 +322,19 @@ describe('GiteaProvider', () => {
       mockExecFileSync.mockImplementationOnce(() => {
         throw new Error('tea: not found');
       });
-      mockExecFileSync.mockReturnValueOnce(JSON.stringify({
-        title: 'No Auth Issue',
-        body: 'Without auth',
-        html_url: 'https://gitea.example.com/user/repo/issues/1',
-        labels: [],
-      }));
+      mockExecFileSync.mockReturnValueOnce(
+        JSON.stringify({
+          title: 'No Auth Issue',
+          body: 'Without auth',
+          html_url: 'https://gitea.example.com/user/repo/issues/1',
+          labels: [],
+        }),
+      );
 
       provider.viewIssue(1, 'user', 'repo');
 
-      expect(mockExecFileSync).toHaveBeenNthCalledWith(2,
+      expect(mockExecFileSync).toHaveBeenNthCalledWith(
+        2,
         'curl',
         ['-sS', 'https://gitea.example.com/api/v1/repos/user/repo/issues/1'],
         expect.any(Object),

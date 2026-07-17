@@ -17,13 +17,21 @@ describe('runtime-v2 explicit provider + role preservation', () => {
   // back to the default executor primary (Claude) just because a role was supplied.
   it('keeps an explicit antigravity provider when a role suffix is used (no role routing config)', () => {
     const assignment = resolveTaskAssignment(
-      { subject: 'Executor task', description: 'apply the implementation', role: 'executor' },
+      {
+        subject: 'Executor task',
+        description: 'apply the implementation',
+        role: 'executor',
+      },
       resolvedRouting,
       undefined,
       binaries,
       'antigravity',
     );
-    expect(assignment).toEqual({ agentType: 'antigravity', model: '', role: 'executor' });
+    expect(assignment).toEqual({
+      agentType: 'antigravity',
+      model: '',
+      role: 'executor',
+    });
   });
 
   it('preserves other explicit CLI providers + role too (e.g. gemini:reviewer)', () => {
@@ -41,7 +49,11 @@ describe('runtime-v2 explicit provider + role preservation', () => {
 
   it('still routes a role-only spec (default claude provider) normally', () => {
     const assignment = resolveTaskAssignment(
-      { subject: 'Executor task', description: 'apply the implementation', role: 'executor' },
+      {
+        subject: 'Executor task',
+        description: 'apply the implementation',
+        role: 'executor',
+      },
       resolvedRouting,
       undefined,
       binaries,

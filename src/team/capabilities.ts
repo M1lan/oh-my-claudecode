@@ -13,10 +13,20 @@ import type { UnifiedTeamMember } from './unified-team.js';
 /** Default capabilities by worker backend */
 const DEFAULT_CAPABILITIES: Record<WorkerBackend, WorkerCapability[]> = {
   'claude-native': ['code-edit', 'testing', 'general'],
-  'mcp-codex': ['code-review', 'security-review', 'architecture', 'refactoring'],
+  'mcp-codex': [
+    'code-review',
+    'security-review',
+    'architecture',
+    'refactoring',
+  ],
   'mcp-gemini': ['ui-design', 'documentation', 'research', 'code-edit'],
   'tmux-claude': ['code-edit', 'testing', 'general'],
-  'tmux-codex': ['code-review', 'security-review', 'architecture', 'refactoring'],
+  'tmux-codex': [
+    'code-review',
+    'security-review',
+    'architecture',
+    'refactoring',
+  ],
   'tmux-gemini': ['ui-design', 'documentation', 'research', 'code-edit'],
   'tmux-cursor': ['code-edit', 'refactoring', 'general'],
   'tmux-grok': ['code-edit', 'code-review', 'refactoring', 'general'],
@@ -26,7 +36,9 @@ const DEFAULT_CAPABILITIES: Record<WorkerBackend, WorkerCapability[]> = {
 /**
  * Get default capabilities for a worker backend.
  */
-export function getDefaultCapabilities(backend: WorkerBackend): WorkerCapability[] {
+export function getDefaultCapabilities(
+  backend: WorkerBackend,
+): WorkerCapability[] {
   return [...(DEFAULT_CAPABILITIES[backend] || ['general'])];
 }
 
@@ -42,7 +54,7 @@ export function getDefaultCapabilities(backend: WorkerBackend): WorkerCapability
  */
 export function scoreWorkerFitness(
   worker: UnifiedTeamMember,
-  requiredCapabilities: WorkerCapability[]
+  requiredCapabilities: WorkerCapability[],
 ): number {
   if (requiredCapabilities.length === 0) return 1.0; // No requirements = everyone fits
 
@@ -67,12 +79,15 @@ export function scoreWorkerFitness(
  */
 export function rankWorkersForTask(
   workers: UnifiedTeamMember[],
-  requiredCapabilities: WorkerCapability[]
+  requiredCapabilities: WorkerCapability[],
 ): UnifiedTeamMember[] {
   const scored = workers
-    .map(w => ({ worker: w, score: scoreWorkerFitness(w, requiredCapabilities) }))
-    .filter(s => s.score > 0)
+    .map((w) => ({
+      worker: w,
+      score: scoreWorkerFitness(w, requiredCapabilities),
+    }))
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score);
 
-  return scored.map(s => s.worker);
+  return scored.map((s) => s.worker);
 }

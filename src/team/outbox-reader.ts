@@ -8,12 +8,22 @@
  */
 
 import {
-  readFileSync, openSync, readSync, closeSync,
-  statSync, existsSync, readdirSync
+  readFileSync,
+  openSync,
+  readSync,
+  closeSync,
+  statSync,
+  existsSync,
+  readdirSync,
 } from 'fs';
 import { join } from 'path';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
-import { validateResolvedPath, writeFileWithMode, atomicWriteJson, ensureDirWithMode } from './fs-utils.js';
+import {
+  validateResolvedPath,
+  writeFileWithMode,
+  atomicWriteJson,
+  ensureDirWithMode,
+} from './fs-utils.js';
 import { sanitizeName } from './tmux-session.js';
 import type { OutboxMessage } from './types.js';
 
@@ -34,12 +44,22 @@ function teamsDir(): string {
  */
 export function readNewOutboxMessages(
   teamName: string,
-  workerName: string
+  workerName: string,
 ): OutboxMessage[] {
   const safeName = sanitizeName(teamName);
   const safeWorker = sanitizeName(workerName);
-  const outboxPath = join(teamsDir(), safeName, 'outbox', `${safeWorker}.jsonl`);
-  const cursorPath = join(teamsDir(), safeName, 'outbox', `${safeWorker}.outbox-offset`);
+  const outboxPath = join(
+    teamsDir(),
+    safeName,
+    'outbox',
+    `${safeWorker}.jsonl`,
+  );
+  const cursorPath = join(
+    teamsDir(),
+    safeName,
+    'outbox',
+    `${safeWorker}.outbox-offset`,
+  );
 
   validateResolvedPath(outboxPath, teamsDir());
   validateResolvedPath(cursorPath, teamsDir());
@@ -52,7 +72,9 @@ export function readNewOutboxMessages(
     try {
       const raw = readFileSync(cursorPath, 'utf-8');
       cursor = JSON.parse(raw);
-    } catch { cursor = { bytesRead: 0 }; }
+    } catch {
+      cursor = { bytesRead: 0 };
+    }
   }
 
   const stat = statSync(outboxPath);
@@ -61,7 +83,10 @@ export function readNewOutboxMessages(
     cursor = { bytesRead: 0 };
   }
 
-  const bytesToRead = Math.min(stat.size - cursor.bytesRead, MAX_OUTBOX_READ_SIZE);
+  const bytesToRead = Math.min(
+    stat.size - cursor.bytesRead,
+    MAX_OUTBOX_READ_SIZE,
+  );
   if (bytesToRead <= 0) return [];
 
   const buf = Buffer.alloc(bytesToRead);
@@ -81,18 +106,21 @@ export function readNewOutboxMessages(
   let completePortion = chunk;
   if (!chunk.endsWith('\n')) {
     const lastNewline = chunk.lastIndexOf('\n');
-    consumed = lastNewline >= 0
-      ? Buffer.byteLength(chunk.slice(0, lastNewline + 1), 'utf-8')
-      : 0;
+    consumed =
+      lastNewline >= 0
+        ? Buffer.byteLength(chunk.slice(0, lastNewline + 1), 'utf-8')
+        : 0;
     completePortion = lastNewline >= 0 ? chunk.slice(0, lastNewline + 1) : '';
   }
 
-  const lines = completePortion.split('\n').filter(l => l.trim());
+  const lines = completePortion.split('\n').filter((l) => l.trim());
   const messages: OutboxMessage[] = [];
   for (const line of lines) {
     try {
       messages.push(JSON.parse(line));
-    } catch { /* skip malformed lines */ }
+    } catch {
+      /* skip malformed lines */
+    }
   }
 
   // Update cursor atomically to prevent corruption on crash
@@ -108,14 +136,14 @@ export function readNewOutboxMessages(
  * Read new outbox messages from ALL workers in a team.
  */
 export function readAllTeamOutboxMessages(
-  teamName: string
+  teamName: string,
 ): { workerName: string; messages: OutboxMessage[] }[] {
   const safeName = sanitizeName(teamName);
   const outboxDir = join(teamsDir(), safeName, 'outbox');
 
   if (!existsSync(outboxDir)) return [];
 
-  const files = readdirSync(outboxDir).filter(f => f.endsWith('.jsonl'));
+  const files = readdirSync(outboxDir).filter((f) => f.endsWith('.jsonl'));
   const results: { workerName: string; messages: OutboxMessage[] }[] = [];
 
   for (const file of files) {
@@ -132,13 +160,15 @@ export function readAllTeamOutboxMessages(
 /**
  * Reset outbox cursor for a worker.
  */
-export function resetOutboxCursor(
-  teamName: string,
-  workerName: string
-): void {
+export function resetOutboxCursor(teamName: string, workerName: string): void {
   const safeName = sanitizeName(teamName);
   const safeWorker = sanitizeName(workerName);
-  const cursorPath = join(teamsDir(), safeName, 'outbox', `${safeWorker}.outbox-offset`);
+  const cursorPath = join(
+    teamsDir(),
+    safeName,
+    'outbox',
+    `${safeWorker}.outbox-offset`,
+  );
   validateResolvedPath(cursorPath, teamsDir());
   const cursorDir = join(teamsDir(), safeName, 'outbox');
   ensureDirWithMode(cursorDir);

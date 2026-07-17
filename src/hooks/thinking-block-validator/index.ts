@@ -21,19 +21,20 @@ import type {
   MessageWithParts,
   MessagesTransformHook,
   ValidationResult,
-} from "./types.js";
+} from './types.js';
 
 import {
   CONTENT_PART_TYPES,
   THINKING_PART_TYPES,
   SYNTHETIC_THINKING_ID_PREFIX,
   HOOK_NAME,
-} from "./constants.js";
+} from './constants.js';
 
-export * from "./types.js";
-export * from "./constants.js";
+export * from './types.js';
+export * from './constants.js';
 
-const SYNTHETIC_THINKING_CONTENT = "[Synthetic thinking block inserted to preserve message structure]";
+const SYNTHETIC_THINKING_CONTENT =
+  '[Synthetic thinking block inserted to preserve message structure]';
 
 function isContentPartType(type: string): boolean {
   return (CONTENT_PART_TYPES as readonly string[]).includes(type);
@@ -47,14 +48,14 @@ export function isExtendedThinkingModel(modelID: string): boolean {
   if (!modelID) return false;
   const lower = modelID.toLowerCase();
 
-  if (lower.includes("thinking") || lower.endsWith("-high")) {
+  if (lower.includes('thinking') || lower.endsWith('-high')) {
     return true;
   }
 
   return (
-    lower.includes("claude-sonnet-4") ||
-    lower.includes("claude-opus-4") ||
-    lower.includes("claude-3")
+    lower.includes('claude-sonnet-4') ||
+    lower.includes('claude-opus-4') ||
+    lower.includes('claude-3')
   );
 }
 
@@ -77,7 +78,7 @@ export function findPreviousThinkingContent(
 ): string {
   for (let i = currentIndex - 1; i >= 0; i--) {
     const msg = messages[i];
-    if (msg.info.role !== "assistant") continue;
+    if (msg.info.role !== 'assistant') continue;
 
     if (!msg.parts) continue;
     for (const part of msg.parts) {
@@ -85,7 +86,7 @@ export function findPreviousThinkingContent(
         const thinking = part.thinking || part.text;
         if (
           thinking &&
-          typeof thinking === "string" &&
+          typeof thinking === 'string' &&
           thinking.trim().length > 0
         ) {
           return thinking;
@@ -94,7 +95,7 @@ export function findPreviousThinkingContent(
     }
   }
 
-  return "";
+  return '';
 }
 
 export function prependThinkingBlock(
@@ -106,9 +107,9 @@ export function prependThinkingBlock(
   }
 
   const thinkingPart: MessagePart = {
-    type: "thinking",
+    type: 'thinking',
     id: SYNTHETIC_THINKING_ID_PREFIX,
-    sessionID: message.info.sessionID || "",
+    sessionID: message.info.sessionID || '',
     messageID: message.info.id,
     thinking: thinkingContent,
     synthetic: true,
@@ -123,7 +124,7 @@ export function validateMessage(
   index: number,
   modelID: string,
 ): ValidationResult {
-  if (message.info.role !== "assistant") {
+  if (message.info.role !== 'assistant') {
     return { valid: true, fixed: false };
   }
 
@@ -145,7 +146,7 @@ export function validateMessage(
     return {
       valid: false,
       fixed: true,
-      issue: "Assistant message has content but no thinking block",
+      issue: 'Assistant message has content but no thinking block',
       action: `Prepended synthetic thinking block: "${thinkingContent.substring(0, 50)}..."`,
     };
   }
@@ -155,7 +156,7 @@ export function validateMessage(
 
 export function createThinkingBlockValidatorHook(): MessagesTransformHook {
   return {
-    "experimental.chat.messages.transform": async (_input, output) => {
+    'experimental.chat.messages.transform': async (_input, output) => {
       const { messages } = output;
 
       if (!messages || messages.length === 0) {
@@ -164,12 +165,12 @@ export function createThinkingBlockValidatorHook(): MessagesTransformHook {
 
       let lastUserMessage: MessageWithParts | undefined;
       for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].info.role === "user") {
+        if (messages[i].info.role === 'user') {
           lastUserMessage = messages[i];
           break;
         }
       }
-      const modelID = lastUserMessage?.info?.modelID || "";
+      const modelID = lastUserMessage?.info?.modelID || '';
 
       if (!isExtendedThinkingModel(modelID)) {
         return;
@@ -179,7 +180,7 @@ export function createThinkingBlockValidatorHook(): MessagesTransformHook {
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
 
-        if (msg.info.role !== "assistant") continue;
+        if (msg.info.role !== 'assistant') continue;
 
         if (hasContentParts(msg.parts) && !startsWithThinkingBlock(msg.parts)) {
           prependThinkingBlock(msg, SYNTHETIC_THINKING_CONTENT);

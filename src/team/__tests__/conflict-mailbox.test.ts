@@ -80,7 +80,9 @@ describe('formatMergeConflictForLeader', () => {
 
   it('includes resolution recipe with correct branches', () => {
     const result = formatMergeConflictForLeader(BASE_MERGE_ARGS);
-    expect(result).toContain('git checkout omc-team/test-team-leader && git merge --no-ff omc-team/test-team/writer');
+    expect(result).toContain(
+      'git checkout omc-team/test-team-leader && git merge --no-ff omc-team/test-team/writer',
+    );
   });
 
   it('includes git add with all conflicting files', () => {
@@ -90,7 +92,7 @@ describe('formatMergeConflictForLeader', () => {
 
   it('is pure: same input → same output', () => {
     expect(formatMergeConflictForLeader(BASE_MERGE_ARGS)).toBe(
-      formatMergeConflictForLeader(BASE_MERGE_ARGS)
+      formatMergeConflictForLeader(BASE_MERGE_ARGS),
     );
   });
 });
@@ -152,7 +154,7 @@ describe('formatRebaseConflictForWorker', () => {
 
   it('is pure: same input → same output', () => {
     expect(formatRebaseConflictForWorker(BASE_REBASE_ARGS)).toBe(
-      formatRebaseConflictForWorker(BASE_REBASE_ARGS)
+      formatRebaseConflictForWorker(BASE_REBASE_ARGS),
     );
   });
 });
@@ -175,9 +177,16 @@ afterEach(() => {
 describe('deliverMergeConflictToLeader', () => {
   it('writes to .omc/state/team/{team}/leader/inbox.md', async () => {
     const message = formatMergeConflictForLeader(BASE_MERGE_ARGS);
-    await deliverMergeConflictToLeader({ teamName: TEST_TEAM, cwd: TEST_CWD, message });
+    await deliverMergeConflictToLeader({
+      teamName: TEST_TEAM,
+      cwd: TEST_CWD,
+      message,
+    });
 
-    const expectedPath = join(TEST_CWD, `.omc/state/team/${TEST_TEAM}/leader/inbox.md`);
+    const expectedPath = join(
+      TEST_CWD,
+      `.omc/state/team/${TEST_TEAM}/leader/inbox.md`,
+    );
     expect(existsSync(expectedPath)).toBe(true);
     const content = readFileSync(expectedPath, 'utf-8');
     expect(content).toContain(message);
@@ -185,8 +194,15 @@ describe('deliverMergeConflictToLeader', () => {
 
   it('appends separator before message', async () => {
     const message = 'first message';
-    await deliverMergeConflictToLeader({ teamName: TEST_TEAM, cwd: TEST_CWD, message });
-    const expectedPath = join(TEST_CWD, `.omc/state/team/${TEST_TEAM}/leader/inbox.md`);
+    await deliverMergeConflictToLeader({
+      teamName: TEST_TEAM,
+      cwd: TEST_CWD,
+      message,
+    });
+    const expectedPath = join(
+      TEST_CWD,
+      `.omc/state/team/${TEST_TEAM}/leader/inbox.md`,
+    );
     const content = readFileSync(expectedPath, 'utf-8');
     expect(content).toContain('\n\n---\n');
   });
@@ -202,7 +218,10 @@ describe('deliverRebaseConflictToWorker', () => {
       message,
     });
 
-    const expectedPath = join(TEST_CWD, `.omc/state/team/${TEST_TEAM}/workers/writer/inbox.md`);
+    const expectedPath = join(
+      TEST_CWD,
+      `.omc/state/team/${TEST_TEAM}/workers/writer/inbox.md`,
+    );
     expect(existsSync(expectedPath)).toBe(true);
     const content = readFileSync(expectedPath, 'utf-8');
     expect(content).toContain(message);
@@ -216,7 +235,10 @@ describe('deliverRebaseConflictToWorker', () => {
       cwd: TEST_CWD,
       message,
     });
-    const expectedPath = join(TEST_CWD, `.omc/state/team/${TEST_TEAM}/workers/writer/inbox.md`);
+    const expectedPath = join(
+      TEST_CWD,
+      `.omc/state/team/${TEST_TEAM}/workers/writer/inbox.md`,
+    );
     const content = readFileSync(expectedPath, 'utf-8');
     expect(content).toContain('\n\n---\n');
   });

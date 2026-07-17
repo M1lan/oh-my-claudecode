@@ -17,7 +17,10 @@ describe('team leader nudge hook', () => {
     vi.restoreAllMocks();
   });
 
-  async function writeJson(relativePath: string, value: unknown): Promise<void> {
+  async function writeJson(
+    relativePath: string,
+    value: unknown,
+  ): Promise<void> {
     const fullPath = join(cwd, relativePath);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
@@ -25,7 +28,12 @@ describe('team leader nudge hook', () => {
 
   async function seedTeamState(options: {
     taskStatuses: string[];
-    workerStates: Array<{ name: string; state: string; alive?: boolean; lastTurnAt?: string }>;
+    workerStates: Array<{
+      name: string;
+      state: string;
+      alive?: boolean;
+      lastTurnAt?: string;
+    }>;
   }): Promise<void> {
     const teamRoot = '.omc/state/team/demo-team';
     await writeJson(`${teamRoot}/config.json`, {
@@ -76,16 +84,17 @@ describe('team leader nudge hook', () => {
     expect(result.reason).toContain('all_alive_workers_idle');
     expect(sent[0]).toContain('reuse-current-team');
 
-    const eventsRaw = await readFile(join(cwd, '.omc', 'state', 'team', 'demo-team', 'events.jsonl'), 'utf-8');
+    const eventsRaw = await readFile(
+      join(cwd, '.omc', 'state', 'team', 'demo-team', 'events.jsonl'),
+      'utf-8',
+    );
     expect(eventsRaw).toContain('"next_action":"reuse-current-team"');
   });
 
   it('nudges leader to shut down when all tasks are terminal', async () => {
     await seedTeamState({
       taskStatuses: ['completed', 'completed'],
-      workerStates: [
-        { name: 'worker-1', state: 'idle' },
-      ],
+      workerStates: [{ name: 'worker-1', state: 'idle' }],
     });
 
     const sent: string[] = [];

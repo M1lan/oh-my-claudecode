@@ -2,7 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { loadAllSkills, findMatchingSkills } from '../../hooks/learner/loader.js';
+import {
+  loadAllSkills,
+  findMatchingSkills,
+} from '../../hooks/learner/loader.js';
 
 describe('Skill Loader', () => {
   let testDir: string;
@@ -26,7 +29,7 @@ description: "${metadata.description || 'Test skill'}"
 source: ${metadata.source || 'manual'}
 createdAt: "2024-01-19T12:00:00Z"
 triggers:
-${(metadata.triggers as string[] || ['test']).map(t => `  - "${t}"`).join('\n')}
+${((metadata.triggers as string[]) || ['test']).map((t) => `  - "${t}"`).join('\n')}
 ---
 
 # ${name}
@@ -43,19 +46,22 @@ Test content for ${name}.
     createSkillFile('skill-b', { triggers: ['beta'] });
 
     const skills = loadAllSkills(projectRoot);
-    const projectSkills = skills.filter(s => s.scope === 'project');
+    const projectSkills = skills.filter((s) => s.scope === 'project');
 
     // Should load at least the 2 project skills (may also load user-level skills)
     expect(projectSkills.length).toBe(2);
-    expect(projectSkills.map(s => s.metadata.id)).toContain('skill-a');
-    expect(projectSkills.map(s => s.metadata.id)).toContain('skill-b');
+    expect(projectSkills.map((s) => s.metadata.id)).toContain('skill-a');
+    expect(projectSkills.map((s) => s.metadata.id)).toContain('skill-b');
   });
 
   it('should find matching skills by trigger', () => {
     createSkillFile('react-skill', { triggers: ['react', 'component'] });
     createSkillFile('python-skill', { triggers: ['python', 'django'] });
 
-    const matches = findMatchingSkills('How do I create a React component?', projectRoot);
+    const matches = findMatchingSkills(
+      'How do I create a React component?',
+      projectRoot,
+    );
 
     expect(matches.length).toBe(1);
     expect(matches[0].metadata.id).toBe('react-skill');
@@ -74,7 +80,11 @@ Test content for ${name}.
     createSkillFile('skill-2', { triggers: ['test'] });
     createSkillFile('skill-3', { triggers: ['test'] });
 
-    const matches = findMatchingSkills('This is a test message', projectRoot, 2);
+    const matches = findMatchingSkills(
+      'This is a test message',
+      projectRoot,
+      2,
+    );
 
     expect(matches.length).toBeLessThanOrEqual(2);
   });

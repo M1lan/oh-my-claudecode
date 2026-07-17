@@ -16,7 +16,11 @@
  * - System prompt guidance for agents
  */
 
-import type { BackgroundTask, SessionState, PluginConfig } from '../shared/types.js';
+import type {
+  BackgroundTask,
+  SessionState,
+  PluginConfig,
+} from '../shared/types.js';
 
 /**
  * Default maximum concurrent background tasks
@@ -128,7 +132,7 @@ export interface TaskExecutionDecision {
 export function shouldRunInBackground(
   command: string,
   currentBackgroundCount: number = 0,
-  maxBackgroundTasks: number = DEFAULT_MAX_BACKGROUND_TASKS
+  maxBackgroundTasks: number = DEFAULT_MAX_BACKGROUND_TASKS,
 ): TaskExecutionDecision {
   // Check if at capacity
   if (currentBackgroundCount >= maxBackgroundTasks) {
@@ -136,7 +140,7 @@ export function shouldRunInBackground(
       runInBackground: false,
       reason: `At background task limit (${currentBackgroundCount}/${maxBackgroundTasks}). Wait for existing tasks or run blocking.`,
       estimatedDuration: 'unknown',
-      confidence: 'high'
+      confidence: 'high',
     };
   }
 
@@ -147,7 +151,7 @@ export function shouldRunInBackground(
         runInBackground: false,
         reason: 'Quick operation that should complete immediately.',
         estimatedDuration: 'quick',
-        confidence: 'high'
+        confidence: 'high',
       };
     }
   }
@@ -157,20 +161,24 @@ export function shouldRunInBackground(
     if (pattern.test(command)) {
       return {
         runInBackground: true,
-        reason: 'Long-running operation detected. Run in background to continue other work.',
+        reason:
+          'Long-running operation detected. Run in background to continue other work.',
         estimatedDuration: 'long',
-        confidence: 'high'
+        confidence: 'high',
       };
     }
   }
 
   // Heuristic: commands with multiple operations (piped or chained)
-  if ((command.match(/\|/g) || []).length > 2 || (command.match(/&&/g) || []).length > 2) {
+  if (
+    (command.match(/\|/g) || []).length > 2 ||
+    (command.match(/&&/g) || []).length > 2
+  ) {
     return {
       runInBackground: true,
       reason: 'Complex command chain that may take time.',
       estimatedDuration: 'medium',
-      confidence: 'medium'
+      confidence: 'medium',
     };
   }
 
@@ -179,7 +187,7 @@ export function shouldRunInBackground(
     runInBackground: false,
     reason: 'Unknown command type. Running blocking for immediate feedback.',
     estimatedDuration: 'unknown',
-    confidence: 'low'
+    confidence: 'low',
   };
 }
 
@@ -206,7 +214,12 @@ export interface BackgroundTaskManager {
   canStartNewTask(): boolean;
 
   /** Update task status */
-  updateTaskStatus(taskId: string, status: BackgroundTask['status'], result?: string, error?: string): void;
+  updateTaskStatus(
+    taskId: string,
+    status: BackgroundTask['status'],
+    result?: string,
+    error?: string,
+  ): void;
 
   /** Mark task as completed */
   completeTask(taskId: string, result: string): void;
@@ -229,9 +242,10 @@ export interface BackgroundTaskManager {
  */
 export function createBackgroundTaskManager(
   state: SessionState,
-  config: PluginConfig
+  config: PluginConfig,
 ): BackgroundTaskManager {
-  const maxBackgroundTasks = config.permissions?.maxBackgroundTasks ?? DEFAULT_MAX_BACKGROUND_TASKS;
+  const maxBackgroundTasks =
+    config.permissions?.maxBackgroundTasks ?? DEFAULT_MAX_BACKGROUND_TASKS;
 
   return {
     registerTask(agentName: string, prompt: string): BackgroundTask {
@@ -239,7 +253,7 @@ export function createBackgroundTaskManager(
         id: `task_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
         agentName,
         prompt,
-        status: 'pending'
+        status: 'pending',
       };
       state.backgroundTasks.push(task);
       return task;
@@ -250,19 +264,26 @@ export function createBackgroundTaskManager(
     },
 
     getTasksByStatus(status: BackgroundTask['status']): BackgroundTask[] {
-      return state.backgroundTasks.filter(t => t.status === status);
+      return state.backgroundTasks.filter((t) => t.status === status);
     },
 
     getRunningCount(): number {
-      return state.backgroundTasks.filter(t => t.status === 'running' || t.status === 'pending').length;
+      return state.backgroundTasks.filter(
+        (t) => t.status === 'running' || t.status === 'pending',
+      ).length;
     },
 
     canStartNewTask(): boolean {
       return this.getRunningCount() < maxBackgroundTasks;
     },
 
-    updateTaskStatus(taskId: string, status: BackgroundTask['status'], result?: string, error?: string): void {
-      const task = state.backgroundTasks.find(t => t.id === taskId);
+    updateTaskStatus(
+      taskId: string,
+      status: BackgroundTask['status'],
+      result?: string,
+      error?: string,
+    ): void {
+      const task = state.backgroundTasks.find((t) => t.id === taskId);
       if (task) {
         task.status = status;
         if (result !== undefined) task.result = result;
@@ -282,8 +303,8 @@ export function createBackgroundTaskManager(
       // Note: maxAge-based pruning would require tracking task completion timestamps
       // For now, just prune all completed/errored tasks
       const before = state.backgroundTasks.length;
-      state.backgroundTasks = state.backgroundTasks.filter(t =>
-        t.status !== 'completed' && t.status !== 'error'
+      state.backgroundTasks = state.backgroundTasks.filter(
+        (t) => t.status !== 'completed' && t.status !== 'error',
       );
       return before - state.backgroundTasks.length;
     },
@@ -293,8 +314,12 @@ export function createBackgroundTaskManager(
     },
 
     shouldRunInBackground(command: string): TaskExecutionDecision {
-      return shouldRunInBackground(command, this.getRunningCount(), maxBackgroundTasks);
-    }
+      return shouldRunInBackground(
+        command,
+        this.getRunningCount(),
+        maxBackgroundTasks,
+      );
+    },
   };
 }
 
@@ -304,7 +329,9 @@ export function createBackgroundTaskManager(
  * This text should be appended to the system prompt to guide agents
  * on when and how to use background execution.
  */
-export function getBackgroundTaskGuidance(maxBackgroundTasks: number = DEFAULT_MAX_BACKGROUND_TASKS): string {
+export function getBackgroundTaskGuidance(
+  maxBackgroundTasks: number = DEFAULT_MAX_BACKGROUND_TASKS,
+): string {
   return `
 ## Background Task Execution
 
@@ -313,7 +340,7 @@ For long-running operations, use the \`run_in_background\` parameter to avoid bl
 ### When to Use Background Execution
 
 **Run in Background** (set \`run_in_background: true\`):
-- Package installation (\`npm install\`, \`pip install\`, \`cargo build\`, etc.)
+- Package installation (\`pnpm install\`, \`pip install\`, \`cargo build\`, etc.)
 - Build processes (project build command, \`make\`, etc.)
 - Test suites (project test command, etc.)
 - Docker operations: \`docker build\`, \`docker pull\`

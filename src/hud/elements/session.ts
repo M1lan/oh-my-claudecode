@@ -15,9 +15,12 @@ import { green, red, yellow } from '../colors.js';
 export function renderSession(session: SessionHealth | null): string | null {
   if (!session) return null;
 
-  const colorize = session.health === 'critical' ? red
-    : session.health === 'warning' ? yellow
-    : green;
+  const colorize =
+    session.health === 'critical'
+      ? red
+      : session.health === 'warning'
+        ? yellow
+        : green;
 
   return `session:${colorize(`${session.durationMinutes}m`)}`;
 }

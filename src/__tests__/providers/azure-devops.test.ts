@@ -41,23 +41,37 @@ describe('AzureDevOpsProvider', () => {
 
   describe('detectFromRemote', () => {
     it('returns true for dev.azure.com URLs', () => {
-      expect(provider.detectFromRemote('https://dev.azure.com/org/project/_git/repo')).toBe(true);
+      expect(
+        provider.detectFromRemote(
+          'https://dev.azure.com/org/project/_git/repo',
+        ),
+      ).toBe(true);
     });
 
     it('returns true for ssh.dev.azure.com URLs', () => {
-      expect(provider.detectFromRemote('git@ssh.dev.azure.com:v3/org/project/repo')).toBe(true);
+      expect(
+        provider.detectFromRemote('git@ssh.dev.azure.com:v3/org/project/repo'),
+      ).toBe(true);
     });
 
     it('returns true for visualstudio.com URLs', () => {
-      expect(provider.detectFromRemote('https://org.visualstudio.com/project/_git/repo')).toBe(true);
+      expect(
+        provider.detectFromRemote(
+          'https://org.visualstudio.com/project/_git/repo',
+        ),
+      ).toBe(true);
     });
 
     it('returns false for GitHub URLs', () => {
-      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(
+        false,
+      );
     });
 
     it('returns false for GitLab URLs', () => {
-      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(
+        false,
+      );
     });
   });
 
@@ -91,14 +105,16 @@ describe('AzureDevOpsProvider', () => {
     });
 
     it('strips refs/heads/ prefix from branch names', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'PR',
-        sourceRefName: 'refs/heads/bugfix/issue-123',
-        targetRefName: 'refs/heads/develop',
-        url: '',
-        description: '',
-        createdBy: { displayName: 'user' },
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'PR',
+          sourceRefName: 'refs/heads/bugfix/issue-123',
+          targetRefName: 'refs/heads/develop',
+          url: '',
+          description: '',
+          createdBy: { displayName: 'user' },
+        }),
+      );
 
       const result = provider.viewPR(1);
 
@@ -107,11 +123,13 @@ describe('AzureDevOpsProvider', () => {
     });
 
     it('handles missing ref names', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'PR',
-        url: '',
-        description: '',
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'PR',
+          url: '',
+          description: '',
+        }),
+      );
 
       const result = provider.viewPR(1);
 
@@ -161,9 +179,11 @@ describe('AzureDevOpsProvider', () => {
     });
 
     it('handles missing fields gracefully', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        url: 'https://dev.azure.com/org/project/_apis/wit/workItems/1',
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          url: 'https://dev.azure.com/org/project/_apis/wit/workItems/1',
+        }),
+      );
 
       const result = provider.viewIssue(1);
 
@@ -194,7 +214,10 @@ describe('AzureDevOpsProvider', () => {
       expect(mockExecFileSync).toHaveBeenCalledWith(
         'az',
         ['account', 'show'],
-        expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'], timeout: 10000 }),
+        expect.objectContaining({
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: 10000,
+        }),
       );
     });
 

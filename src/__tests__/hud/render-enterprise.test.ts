@@ -4,7 +4,11 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '../../hud/render.js';
-import { DEFAULT_HUD_CONFIG, type HudRenderContext, type HudConfig } from '../../hud/types.js';
+import {
+  DEFAULT_HUD_CONFIG,
+  type HudRenderContext,
+  type HudConfig,
+} from '../../hud/types.js';
 
 // Mock git elements
 vi.mock('../../hud/elements/git.js', () => ({
@@ -22,7 +26,9 @@ function strip(s: string): string {
   return s.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
 }
 
-function createContext(overrides: Partial<HudRenderContext> = {}): HudRenderContext {
+function createContext(
+  overrides: Partial<HudRenderContext> = {},
+): HudRenderContext {
   return {
     contextPercent: 30,
     modelName: 'claude-sonnet-4-5',
@@ -53,7 +59,9 @@ function createContext(overrides: Partial<HudRenderContext> = {}): HudRenderCont
   };
 }
 
-function createConfig(overrides: Partial<HudConfig['elements']> = {}): HudConfig {
+function createConfig(
+  overrides: Partial<HudConfig['elements']> = {},
+): HudConfig {
   return {
     ...DEFAULT_HUD_CONFIG,
     elements: {

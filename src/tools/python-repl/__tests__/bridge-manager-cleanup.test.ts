@@ -8,7 +8,13 @@ import {
   cleanupStaleBridges,
   trackOwnedBridgeSession,
 } from '../bridge-manager.js';
-import { getBridgeMetaPath, getBridgeSocketPath, getSessionDir, getSessionLockPath, getRuntimeDir } from '../paths.js';
+import {
+  getBridgeMetaPath,
+  getBridgeSocketPath,
+  getSessionDir,
+  getSessionLockPath,
+  getRuntimeDir,
+} from '../paths.js';
 import type { BridgeMeta } from '../types.js';
 
 describe('bridge-manager cleanup', () => {
@@ -17,7 +23,9 @@ describe('bridge-manager cleanup', () => {
 
   beforeEach(() => {
     originalXdgRuntimeDir = process.env.XDG_RUNTIME_DIR;
-    tmpRuntimeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-bridge-cleanup-'));
+    tmpRuntimeRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'omc-bridge-cleanup-'),
+    );
     fs.chmodSync(tmpRuntimeRoot, 0o700);
     process.env.XDG_RUNTIME_DIR = tmpRuntimeRoot;
     fs.mkdirSync(getRuntimeDir(), { recursive: true });
@@ -45,8 +53,16 @@ describe('bridge-manager cleanup', () => {
       pythonEnv: { pythonPath: 'python3', type: 'venv' },
     };
 
-    fs.writeFileSync(getBridgeMetaPath(sessionId), JSON.stringify(meta), 'utf-8');
-    fs.writeFileSync(getBridgeSocketPath(sessionId), 'not-a-real-socket', 'utf-8');
+    fs.writeFileSync(
+      getBridgeMetaPath(sessionId),
+      JSON.stringify(meta),
+      'utf-8',
+    );
+    fs.writeFileSync(
+      getBridgeSocketPath(sessionId),
+      'not-a-real-socket',
+      'utf-8',
+    );
     fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
 
     const result = await cleanupStaleBridges();
@@ -77,7 +93,11 @@ describe('bridge-manager cleanup', () => {
       pythonEnv: { pythonPath: 'python3', type: 'venv' },
     };
 
-    fs.writeFileSync(getBridgeMetaPath(sessionId), JSON.stringify(meta), 'utf-8');
+    fs.writeFileSync(
+      getBridgeMetaPath(sessionId),
+      JSON.stringify(meta),
+      'utf-8',
+    );
     fs.writeFileSync(getBridgeSocketPath(sessionId), 'placeholder', 'utf-8');
     fs.writeFileSync(getSessionLockPath(sessionId), 'lock', 'utf-8');
 

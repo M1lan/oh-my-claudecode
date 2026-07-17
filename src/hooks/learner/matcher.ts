@@ -32,7 +32,7 @@ interface MatchOptions {
 export function matchSkills(
   prompt: string,
   skills: SkillInput[],
-  options: MatchOptions = {}
+  options: MatchOptions = {},
 ): MatchResult[] {
   const { threshold = 30, maxResults = 10 } = options;
   const trimmedPrompt = prompt.trim();
@@ -110,11 +110,14 @@ export function fuzzyMatch(text: string, pattern: string): number {
   if (!text.trim() || !pattern.trim()) return 0;
 
   // Check if pattern is a substring first (partial match bonus)
-  const words = text.split(/\s+/).filter(w => w.length > 0);
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
   for (const word of words) {
     if (word === pattern) return 100;
-    if (word.length > 0 && pattern.length > 0 &&
-        (word.includes(pattern) || pattern.includes(word))) {
+    if (
+      word.length > 0 &&
+      pattern.length > 0 &&
+      (word.includes(pattern) || pattern.includes(word))
+    ) {
       return 80;
     }
   }
@@ -158,7 +161,7 @@ function levenshteinDistance(str1: string, str2: string): number {
           Math.min(
             dp[i - 1][j], // deletion
             dp[i][j - 1], // insertion
-            dp[i - 1][j - 1] // substitution
+            dp[i - 1][j - 1], // substitution
           );
       }
     }
@@ -223,7 +226,7 @@ export function extractContext(prompt: string): MatchContext {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedErrors.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
@@ -239,7 +242,7 @@ export function extractContext(prompt: string): MatchContext {
     const matches = prompt.match(pattern);
     if (matches) {
       detectedFiles.push(
-        ...matches.map((m) => m.trim()).filter((m) => m.length > 0)
+        ...matches.map((m) => m.trim()).filter((m) => m.length > 0),
       );
     }
   }
@@ -278,7 +281,7 @@ export function extractContext(prompt: string): MatchContext {
 export function calculateConfidence(
   matches: number,
   total: number,
-  matchType: string
+  matchType: string,
 ): number {
   if (total === 0) return 0;
 

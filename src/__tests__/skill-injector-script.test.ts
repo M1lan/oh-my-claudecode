@@ -1,5 +1,12 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -14,8 +21,14 @@ function makeTempDir(prefix: string) {
   return directory;
 }
 
-function runSkillInjector(env: NodeJS.ProcessEnv = {}, payload: Record<string, unknown> = {}) {
-  const cwd = typeof payload.cwd === 'string' ? payload.cwd : makeTempDir('skill-injector-guard-');
+function runSkillInjector(
+  env: NodeJS.ProcessEnv = {},
+  payload: Record<string, unknown> = {},
+) {
+  const cwd =
+    typeof payload.cwd === 'string'
+      ? payload.cwd
+      : makeTempDir('skill-injector-guard-');
   const raw = execFileSync(NODE, [SCRIPT_PATH], {
     cwd,
     encoding: 'utf-8',
@@ -35,24 +48,34 @@ function runSkillInjector(env: NodeJS.ProcessEnv = {}, payload: Record<string, u
     },
     timeout: 15000,
   });
-  return JSON.parse(raw.trim()) as { continue: boolean; suppressOutput?: boolean; hookSpecificOutput?: { additionalContext: string } };
+  return JSON.parse(raw.trim()) as {
+    continue: boolean;
+    suppressOutput?: boolean;
+    hookSpecificOutput?: { additionalContext: string };
+  };
 }
 
 afterEach(() => {
-  for (const directory of tempDirs.splice(0)) rmSync(directory, { recursive: true, force: true });
+  for (const directory of tempDirs.splice(0))
+    rmSync(directory, { recursive: true, force: true });
 });
 
 describe('skill-injector.mjs early disable guard', () => {
   it.each([
     ['DISABLE_OMC=1', { DISABLE_OMC: '1' }],
     ['DISABLE_OMC=true', { DISABLE_OMC: 'true' }],
-    ['a trimmed skill-injector skip token', { OMC_SKIP_HOOKS: ' keyword-detector , skill-injector ' }],
+    [
+      'a trimmed skill-injector skip token',
+      { OMC_SKIP_HOOKS: ' keyword-detector , skill-injector ' },
+    ],
   ])('does not load the bridge for %s', (_label, guardEnv) => {
     const projectDir = makeTempDir('skill-injector-guard-project-');
     const poisonDir = makeTempDir('skill-injector-poison-');
     const sentinel = join(poisonDir, 'bridge-loaded');
     const poisonPath = join(poisonDir, 'poison-bridge.cjs');
-    writeFileSync(poisonPath, `
+    writeFileSync(
+      poisonPath,
+      `
 const Module = require('module');
 const fs = require('fs');
 const originalLoad = Module._load;
@@ -77,7 +100,8 @@ Module._load = function(request, parent, isMain) {
   if (request.includes('skill-bridge.cjs')) mark('bridge');
   return originalLoad.apply(this, arguments);
 };
-`);
+`,
+    );
 
     const output = runSkillInjector({
       ...guardEnv,
@@ -104,25 +128,33 @@ Module._load = function(request, parent, isMain) {
 describe('skill-injector.mjs learned skill injection', () => {
   function writeLearnedSkill(projectDir: string) {
     mkdirSync(join(projectDir, '.omc', 'skills'), { recursive: true });
-    writeFileSync(join(projectDir, '.omc', 'skills', 'release-notes.md'), `---
+    writeFileSync(
+      join(projectDir, '.omc', 'skills', 'release-notes.md'),
+      `---
 name: Release Notes
 triggers:
   - release notes
 ---
-Write concise release notes.`);
+Write concise release notes.`,
+    );
   }
 
   it('injects a matching learned skill when invoked directly', () => {
     const projectDir = makeTempDir('skill-injector-learned-');
     writeLearnedSkill(projectDir);
 
-    const output = runSkillInjector({}, {
-      cwd: projectDir,
-      session_id: 'direct-learned-skill',
-      prompt: 'Please prepare release notes.',
-    });
+    const output = runSkillInjector(
+      {},
+      {
+        cwd: projectDir,
+        session_id: 'direct-learned-skill',
+        prompt: 'Please prepare release notes.',
+      },
+    );
 
-    expect(output.hookSpecificOutput?.additionalContext).toContain('### Release Notes (project)');
+    expect(output.hookSpecificOutput?.additionalContext).toContain(
+      '### Release Notes (project)',
+    );
   });
 
   it('injects a matching learned skill through the trusted run.cjs Worker path', () => {
@@ -133,35 +165,66 @@ Write concise release notes.`);
     mkdirSync(libDir, { recursive: true });
     mkdirSync(join(pluginRoot, 'hooks'), { recursive: true });
     for (const file of ['config-dir.mjs', 'stdin.mjs', 'atomic-write.mjs']) {
-      writeFileSync(join(libDir, file), readFileSync(join(process.cwd(), 'scripts', 'lib', file)));
+      writeFileSync(
+        join(libDir, file),
+        readFileSync(join(process.cwd(), 'scripts', 'lib', file)),
+      );
     }
-    writeFileSync(join(scriptsDir, 'run.cjs'), readFileSync(join(process.cwd(), 'scripts', 'run.cjs')));
-    writeFileSync(join(scriptsDir, 'skill-injector.mjs'), readFileSync(SCRIPT_PATH));
-    writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: {
-        UserPromptSubmit: [{ matcher: '', hooks: [{
-          type: 'command',
-          command: 'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/skill-injector.mjs',
-          timeout: 15,
-        }] }],
-      },
-    }));
+    writeFileSync(
+      join(scriptsDir, 'run.cjs'),
+      readFileSync(join(process.cwd(), 'scripts', 'run.cjs')),
+    );
+    writeFileSync(
+      join(scriptsDir, 'skill-injector.mjs'),
+      readFileSync(SCRIPT_PATH),
+    );
+    writeFileSync(
+      join(pluginRoot, 'hooks', 'hooks.json'),
+      JSON.stringify({
+        hooks: {
+          UserPromptSubmit: [
+            {
+              matcher: '',
+              hooks: [
+                {
+                  type: 'command',
+                  command:
+                    'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/skill-injector.mjs',
+                  timeout: 15,
+                },
+              ],
+            },
+          ],
+        },
+      }),
+    );
     writeLearnedSkill(projectDir);
 
-    const result = spawnSync(NODE, [join(scriptsDir, 'run.cjs'), join(scriptsDir, 'skill-injector.mjs')], {
-      cwd: projectDir,
-      encoding: 'utf-8',
-      input: JSON.stringify({
-        hook_event_name: 'UserPromptSubmit',
+    const result = spawnSync(
+      NODE,
+      [join(scriptsDir, 'run.cjs'), join(scriptsDir, 'skill-injector.mjs')],
+      {
         cwd: projectDir,
-        session_id: 'worker-learned-skill',
-        prompt: 'Please prepare release notes.',
-      }),
-      env: { ...process.env, CLAUDE_PLUGIN_ROOT: pluginRoot, DISABLE_OMC: '', OMC_SKIP_HOOKS: '' },
-      timeout: 15000,
-    });
+        encoding: 'utf-8',
+        input: JSON.stringify({
+          hook_event_name: 'UserPromptSubmit',
+          cwd: projectDir,
+          session_id: 'worker-learned-skill',
+          prompt: 'Please prepare release notes.',
+        }),
+        env: {
+          ...process.env,
+          CLAUDE_PLUGIN_ROOT: pluginRoot,
+          DISABLE_OMC: '',
+          OMC_SKIP_HOOKS: '',
+        },
+        timeout: 15000,
+      },
+    );
 
     expect(result.status).toBe(0);
-    expect(JSON.parse(result.stdout).hookSpecificOutput.additionalContext).toContain('### Release Notes (project)');
+    expect(
+      JSON.parse(result.stdout).hookSpecificOutput.additionalContext,
+    ).toContain('### Release Notes (project)');
   });
 });

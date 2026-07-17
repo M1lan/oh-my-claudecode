@@ -19,30 +19,32 @@ import {
   detectKeywordsWithType,
   hasKeyword,
   getPrimaryKeyword,
-  type DetectedKeyword
+  type DetectedKeyword,
 } from '../hooks/keyword-detector/index.js';
 import {
   formatTodoStatus,
   getNextPendingTodo,
   type Todo,
-  type IncompleteTodosResult
+  type IncompleteTodosResult,
 } from '../hooks/todo-continuation/index.js';
-import {
-  resetTodoContinuationAttempts
-} from '../hooks/persistent-mode/index.js';
+import { resetTodoContinuationAttempts } from '../hooks/persistent-mode/index.js';
 import {
   startUltraQA,
   clearUltraQAState,
-  isRalphLoopActive
+  isRalphLoopActive,
 } from '../hooks/ultraqa/index.js';
 import {
   createRalphLoopHook,
   clearRalphState,
-  isUltraQAActive
+  isUltraQAActive,
 } from '../hooks/ralph/index.js';
 import { processHook, type HookInput } from '../hooks/bridge.js';
 
-function writeTranscriptWithContext(filePath: string, contextWindow: number, inputTokens: number): void {
+function writeTranscriptWithContext(
+  filePath: string,
+  contextWindow: number,
+  inputTokens: number,
+): void {
   writeFileSync(
     filePath,
     `${JSON.stringify({
@@ -58,7 +60,7 @@ describe('Keyword Detector', () => {
     it('should extract text from text parts', () => {
       const parts = [
         { type: 'text', text: 'Hello world' },
-        { type: 'text', text: 'How are you?' }
+        { type: 'text', text: 'How are you?' },
       ];
       expect(extractPromptText(parts)).toBe('Hello world How are you?');
     });
@@ -67,7 +69,7 @@ describe('Keyword Detector', () => {
       const parts = [
         { type: 'text', text: 'Hello' },
         { type: 'image', url: 'test.jpg' },
-        { type: 'text', text: 'world' }
+        { type: 'text', text: 'world' },
       ];
       expect(extractPromptText(parts)).toBe('Hello world');
     });
@@ -77,10 +79,7 @@ describe('Keyword Detector', () => {
     });
 
     it('should handle parts without text', () => {
-      const parts = [
-        { type: 'text' },
-        { type: 'text', text: undefined }
-      ];
+      const parts = [{ type: 'text' }, { type: 'text', text: undefined }];
       expect(extractPromptText(parts)).toBe('');
     });
 
@@ -88,7 +87,7 @@ describe('Keyword Detector', () => {
       const parts = [
         { type: 'text', text: 'analyze' },
         { type: 'text', text: 'this' },
-        { type: 'text', text: 'code' }
+        { type: 'text', text: 'code' },
       ];
       expect(extractPromptText(parts)).toBe('analyze this code');
     });
@@ -179,7 +178,7 @@ describe('Keyword Detector', () => {
       const patterns = [
         'search the codebase',
         'find in codebase',
-        'deepsearch for pattern'
+        'deepsearch for pattern',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
@@ -192,7 +191,7 @@ describe('Keyword Detector', () => {
       const patterns = [
         'deep analyze this code',
         'deepanalyze this code',
-        'deep-analyze the issue'
+        'deep-analyze the issue',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
@@ -232,7 +231,7 @@ describe('Keyword Detector', () => {
       const text = 'search the codebase and deep analyze the bug';
       const detected = detectKeywordsWithType(text);
       expect(detected.length).toBeGreaterThanOrEqual(2);
-      const types = detected.map(d => d.type);
+      const types = detected.map((d) => d.type);
       expect(types).toContain('deepsearch');
       expect(types).toContain('analyze');
     });
@@ -268,10 +267,7 @@ describe('Keyword Detector', () => {
     });
 
     it('should NOT detect "plan this" / "plan the" patterns (FP-prone, removed in #824)', () => {
-      const patterns = [
-        'plan this feature',
-        'plan the refactoring'
-      ];
+      const patterns = ['plan this feature', 'plan the refactoring'];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected).toHaveLength(0);
@@ -286,14 +282,11 @@ describe('Keyword Detector', () => {
     });
 
     it('should detect tdd patterns', () => {
-      const patterns = [
-        'test first development',
-        'use tdd approach'
-      ];
+      const patterns = ['test first development', 'use tdd approach'];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasTDD = detected.some(d => d.type === 'tdd');
+        const hasTDD = detected.some((d) => d.type === 'tdd');
         expect(hasTDD).toBe(true);
       }
     });
@@ -314,12 +307,12 @@ describe('Keyword Detector', () => {
       const patterns = [
         'search the codebase for errors',
         'find in codebase',
-        'find in the codebase'
+        'find in the codebase',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasDeepsearch = detected.some(d => d.type === 'deepsearch');
+        const hasDeepsearch = detected.some((d) => d.type === 'deepsearch');
         expect(hasDeepsearch).toBe(true);
       }
     });
@@ -328,11 +321,11 @@ describe('Keyword Detector', () => {
       const patterns = [
         'find the file',
         'find this function',
-        'search for help'
+        'search for help',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
-        const hasDeepsearch = detected.some(d => d.type === 'deepsearch');
+        const hasDeepsearch = detected.some((d) => d.type === 'deepsearch');
         expect(hasDeepsearch).toBe(false);
       }
     });
@@ -341,12 +334,12 @@ describe('Keyword Detector', () => {
       const patterns = [
         'deep analyze this code',
         'deepanalyze this issue',
-        'deep-analyze the problem'
+        'deep-analyze the problem',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
         expect(detected.length).toBeGreaterThan(0);
-        const hasAnalyze = detected.some(d => d.type === 'analyze');
+        const hasAnalyze = detected.some((d) => d.type === 'analyze');
         expect(hasAnalyze).toBe(true);
       }
     });
@@ -358,18 +351,18 @@ describe('Keyword Detector', () => {
         'review this code',
         'analyze without context',
         'investigate the bug',
-        'debug the issue'
+        'debug the issue',
       ];
       for (const pattern of patterns) {
         const detected = detectKeywordsWithType(pattern);
-        const hasAnalyze = detected.some(d => d.type === 'analyze');
+        const hasAnalyze = detected.some((d) => d.type === 'analyze');
         expect(hasAnalyze).toBe(false);
       }
     });
 
     it('should NOT trigger autopilot for "오토파일럿 설명" (bare 설명 is informational)', () => {
       const detected = detectKeywordsWithType('오토파일럿 설명');
-      const hasAutopilot = detected.some(d => d.type === 'autopilot');
+      const hasAutopilot = detected.some((d) => d.type === 'autopilot');
       expect(hasAutopilot).toBe(false);
     });
   });
@@ -479,18 +472,20 @@ describe('Keyword Detector', () => {
 
     it('should not detect ralph in ralph-init compound name', () => {
       const detected = detectKeywordsWithType('ralph-init "create a PRD"');
-      const ralphMatch = detected.find(d => d.type === 'ralph');
+      const ralphMatch = detected.find((d) => d.type === 'ralph');
       expect(ralphMatch).toBeUndefined();
     });
 
     it('should not detect ralph in /oh-my-claudecode:ralph-init', () => {
-      const primary = getPrimaryKeyword('/oh-my-claudecode:ralph-init "my project"');
+      const primary = getPrimaryKeyword(
+        '/oh-my-claudecode:ralph-init "my project"',
+      );
       expect(primary?.type).not.toBe('ralph');
     });
 
     it('should still detect ralph when standalone', () => {
       const detected = detectKeywordsWithType('use ralph for this task');
-      const ralphMatch = detected.find(d => d.type === 'ralph');
+      const ralphMatch = detected.find((d) => d.type === 'ralph');
       expect(ralphMatch).toBeDefined();
       expect(ralphMatch!.keyword).toBe('ralph');
     });
@@ -551,8 +546,13 @@ describe('Team staged workflow integration', () => {
   const sessionId = 'team-session-test';
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `omc-team-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    mkdirSync(join(testDir, '.omc', 'state', 'sessions', sessionId), { recursive: true });
+    testDir = join(
+      tmpdir(),
+      `omc-team-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(join(testDir, '.omc', 'state', 'sessions', sessionId), {
+      recursive: true,
+    });
     execSync('git init', { cwd: testDir });
   });
 
@@ -567,8 +567,8 @@ describe('Team staged workflow integration', () => {
         active: true,
         session_id: sessionId,
         stage: 'team-exec',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('session-start', {
@@ -627,7 +627,14 @@ schema
 
   it('keeps session-start under budget when only a tiny omission remainder remains', async () => {
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'ultrawork-state.json'),
+      join(
+        testDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'ultrawork-state.json',
+      ),
       JSON.stringify({
         active: true,
         session_id: sessionId,
@@ -662,8 +669,8 @@ ${'- preserve this startup guidance\n'.repeat(400)}
         active: true,
         session_id: sessionId,
         stage: 'team-exec',
-        team_name: 'budget-team'
-      })
+        team_name: 'budget-team',
+      }),
     );
     writeFileSync(
       join(testDir, 'AGENTS.md'),
@@ -677,7 +684,7 @@ ${'- preserve this startup guidance\n'.repeat(500)}
 
 <agent_catalog>${'- drop catalog\n'.repeat(500)}</agent_catalog>
 
-<skills>${'- drop skills\n'.repeat(500)}</skills>`
+<skills>${'- drop skills\n'.repeat(500)}</skills>`,
     );
 
     const result = await processHook('session-start', {
@@ -698,8 +705,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         session_id: sessionId,
         stage: 'team-fix',
         status: 'cancelled',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('session-start', {
@@ -708,7 +715,9 @@ ${'- preserve this startup guidance\n'.repeat(500)}
     });
 
     expect(result.continue).toBe(true);
-    expect(result.message || '').toContain('[TEAM MODE TERMINAL STATE DETECTED]');
+    expect(result.message || '').toContain(
+      '[TEAM MODE TERMINAL STATE DETECTED]',
+    );
     expect(result.message || '').toContain('cancel');
   });
 
@@ -719,8 +728,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: 'team-verify',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('persistent-mode', {
@@ -742,8 +751,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: 'team-fix',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('persistent-mode', {
@@ -765,8 +774,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: 'team-verify',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('persistent-mode', {
@@ -788,8 +797,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         session_id: sessionId,
         stage: 'team-verify',
         status: 'cancelled',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('persistent-mode', {
@@ -807,8 +816,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
       JSON.stringify({
         active: true,
         session_id: sessionId,
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const result = await processHook('persistent-mode', {
@@ -827,8 +836,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: { bad: true },
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const malformedResult = await processHook('persistent-mode', {
@@ -836,7 +845,9 @@ ${'- preserve this startup guidance\n'.repeat(500)}
       directory: testDir,
     });
     expect(malformedResult.continue).toBe(true);
-    expect(malformedResult.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(malformedResult.message || '').not.toContain(
+      '[TEAM MODE CONTINUATION]',
+    );
 
     writeFileSync(
       join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
@@ -844,8 +855,8 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: 'team-unknown',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
 
     const unknownResult = await processHook('persistent-mode', {
@@ -853,7 +864,9 @@ ${'- preserve this startup guidance\n'.repeat(500)}
       directory: testDir,
     });
     expect(unknownResult.continue).toBe(true);
-    expect(unknownResult.message || '').not.toContain('[TEAM MODE CONTINUATION]');
+    expect(unknownResult.message || '').not.toContain(
+      '[TEAM MODE CONTINUATION]',
+    );
   });
 
   it('trips Team continuation circuit breaker after max stop reinforcements', async () => {
@@ -863,12 +876,23 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         active: true,
         session_id: sessionId,
         stage: 'team-exec',
-        team_name: 'delivery-team'
-      })
+        team_name: 'delivery-team',
+      }),
     );
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'team-pipeline-stop-breaker.json'),
-      JSON.stringify({ count: 20, updated_at: new Date().toISOString() }, null, 2)
+      join(
+        testDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'team-pipeline-stop-breaker.json',
+      ),
+      JSON.stringify(
+        { count: 20, updated_at: new Date().toISOString() },
+        null,
+        2,
+      ),
     );
 
     const result = await processHook('persistent-mode', {
@@ -883,7 +907,14 @@ ${'- preserve this startup guidance\n'.repeat(500)}
   it('bypasses autopilot continuation when transcript context is critically exhausted', async () => {
     const transcriptPath = join(testDir, 'transcript.jsonl');
     writeFileSync(
-      join(testDir, '.omc', 'state', 'sessions', sessionId, 'autopilot-state.json'),
+      join(
+        testDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'autopilot-state.json',
+      ),
       JSON.stringify({
         active: true,
         phase: 'execution',
@@ -893,7 +924,7 @@ ${'- preserve this startup guidance\n'.repeat(500)}
         reinforcement_count: 0,
         last_checked_at: new Date().toISOString(),
         started_at: new Date().toISOString(),
-      })
+      }),
     );
     writeTranscriptWithContext(transcriptPath, 1000, 960);
 
@@ -917,8 +948,14 @@ describe('Persistent-mode reply cleanup behavior', () => {
   const sessionId = 'reply-cleanup-session';
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `omc-reply-cleanup-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tempHome = join(tmpdir(), `omc-reply-home-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `omc-reply-cleanup-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    tempHome = join(
+      tmpdir(),
+      `omc-reply-home-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     mkdirSync(tempHome, { recursive: true });
     execSync('git init', { cwd: testDir });
@@ -935,7 +972,12 @@ describe('Persistent-mode reply cleanup behavior', () => {
   });
 
   it('does not remove reply-session registry on idle Stop/persistent-mode', async () => {
-    const registryPath = join(homedir(), '.omc', 'state', 'reply-session-registry.jsonl');
+    const registryPath = join(
+      homedir(),
+      '.omc',
+      'state',
+      'reply-session-registry.jsonl',
+    );
     mkdirSync(join(homedir(), '.omc', 'state'), { recursive: true });
     writeFileSync(
       registryPath,
@@ -971,7 +1013,7 @@ describe('Todo Continuation', () => {
         count: 0,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: 'todo',
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (5 total)');
     });
@@ -981,7 +1023,7 @@ describe('Todo Continuation', () => {
         count: 3,
         todos: [],
         total: 10,
-        source: 'todo'
+        source: 'todo',
       };
       expect(formatTodoStatus(result)).toBe('7/10 completed, 3 remaining');
     });
@@ -991,7 +1033,7 @@ describe('Todo Continuation', () => {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: 'none',
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (0 total)');
     });
@@ -1001,7 +1043,7 @@ describe('Todo Continuation', () => {
         count: 5,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: 'todo',
       };
       expect(formatTodoStatus(result)).toBe('0/5 completed, 5 remaining');
     });
@@ -1011,7 +1053,7 @@ describe('Todo Continuation', () => {
         count: 1,
         todos: [],
         total: 10,
-        source: 'todo'
+        source: 'todo',
       };
       expect(formatTodoStatus(result)).toBe('9/10 completed, 1 remaining');
     });
@@ -1022,13 +1064,13 @@ describe('Todo Continuation', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'in_progress' },
-        { content: 'Task 3', status: 'pending' }
+        { content: 'Task 3', status: 'pending' },
       ];
       const result: IncompleteTodosResult = {
         count: 3,
         todos,
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1040,13 +1082,13 @@ describe('Todo Continuation', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'pending' },
-        { content: 'Task 3', status: 'completed' }
+        { content: 'Task 3', status: 'completed' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
-        todos: todos.filter(t => t.status !== 'completed'),
+        todos: todos.filter((t) => t.status !== 'completed'),
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1059,7 +1101,7 @@ describe('Todo Continuation', () => {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: 'none',
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -1070,7 +1112,7 @@ describe('Todo Continuation', () => {
         count: 0,
         todos: [],
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -1079,13 +1121,13 @@ describe('Todo Continuation', () => {
     it('should handle todos with priority field', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending', priority: 'low' },
-        { content: 'Task 2', status: 'in_progress', priority: 'high' }
+        { content: 'Task 2', status: 'in_progress', priority: 'high' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1095,13 +1137,13 @@ describe('Todo Continuation', () => {
     it('should handle todos with id field', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending', id: 'todo-1' },
-        { content: 'Task 2', status: 'pending', id: 'todo-2' }
+        { content: 'Task 2', status: 'pending', id: 'todo-2' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1111,13 +1153,13 @@ describe('Todo Continuation', () => {
     it('should ignore cancelled todos', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'cancelled' },
-        { content: 'Task 2', status: 'pending' }
+        { content: 'Task 2', status: 'pending' },
       ];
       const result: IncompleteTodosResult = {
         count: 1,
         todos: [todos[1]],
         total: 2,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1129,13 +1171,13 @@ describe('Todo Continuation', () => {
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'pending' },
         { content: 'Task 3', status: 'pending' },
-        { content: 'Task 4', status: 'in_progress' }
+        { content: 'Task 4', status: 'in_progress' },
       ];
       const result: IncompleteTodosResult = {
         count: 4,
         todos,
         total: 4,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -1146,14 +1188,19 @@ describe('Todo Continuation', () => {
 
   describe('Todo type validation', () => {
     it('should handle all valid status values', () => {
-      const statuses: Array<Todo['status']> = ['pending', 'in_progress', 'completed', 'cancelled'];
+      const statuses: Array<Todo['status']> = [
+        'pending',
+        'in_progress',
+        'completed',
+        'cancelled',
+      ];
       const todos: Todo[] = statuses.map((status, i) => ({
         content: `Task ${i + 1}`,
-        status
+        status,
       }));
 
       expect(todos).toHaveLength(4);
-      todos.forEach(todo => {
+      todos.forEach((todo) => {
         expect(todo.content).toBeTruthy();
         expect(statuses).toContain(todo.status);
       });
@@ -1164,7 +1211,7 @@ describe('Todo Continuation', () => {
         content: 'Test task',
         status: 'pending',
         priority: 'high',
-        id: 'test-123'
+        id: 'test-123',
       };
 
       expect(todo.content).toBe('Test task');
@@ -1176,7 +1223,7 @@ describe('Todo Continuation', () => {
     it('should handle minimal todo object', () => {
       const todo: Todo = {
         content: 'Minimal task',
-        status: 'pending'
+        status: 'pending',
       };
 
       expect(todo.content).toBe('Minimal task');
@@ -1190,13 +1237,13 @@ describe('Todo Continuation', () => {
     it('should maintain consistency between count and todos length', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending' },
-        { content: 'Task 2', status: 'in_progress' }
+        { content: 'Task 2', status: 'in_progress' },
       ];
       const result: IncompleteTodosResult = {
         count: todos.length,
         todos,
         total: 5,
-        source: 'todo'
+        source: 'todo',
       };
 
       expect(result.count).toBe(result.todos.length);
@@ -1209,7 +1256,7 @@ describe('Todo Continuation', () => {
         count: 0,
         todos: [],
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
 
       expect(result.count).toBeLessThanOrEqual(result.total);
@@ -1222,7 +1269,7 @@ describe('Hook Output Structure', () => {
     it('should create valid hook output with continue flag', () => {
       const output = {
         continue: true,
-        message: 'Test message'
+        message: 'Test message',
       };
 
       expect(output).toHaveProperty('continue');
@@ -1233,7 +1280,7 @@ describe('Hook Output Structure', () => {
 
     it('should create valid hook output without message', () => {
       const output = {
-        continue: false
+        continue: false,
       };
 
       expect(output).toHaveProperty('continue');
@@ -1243,7 +1290,7 @@ describe('Hook Output Structure', () => {
     it('should serialize to valid JSON', () => {
       const output = {
         continue: true,
-        message: 'ULTRAWORK MODE ACTIVATED'
+        message: 'ULTRAWORK MODE ACTIVATED',
       };
 
       const json = JSON.stringify(output);
@@ -1256,7 +1303,7 @@ describe('Hook Output Structure', () => {
     it('should handle multiline messages', () => {
       const output = {
         continue: true,
-        message: 'Line 1\nLine 2\nLine 3'
+        message: 'Line 1\nLine 2\nLine 3',
       };
 
       const json = JSON.stringify(output);
@@ -1269,7 +1316,7 @@ describe('Hook Output Structure', () => {
     it('should handle empty message', () => {
       const output = {
         continue: true,
-        message: ''
+        message: '',
       };
 
       expect(output.message).toBe('');
@@ -1278,7 +1325,7 @@ describe('Hook Output Structure', () => {
     it('should handle special characters in message', () => {
       const output = {
         continue: true,
-        message: 'Message with "quotes" and \'apostrophes\' and \\ backslashes'
+        message: 'Message with "quotes" and \'apostrophes\' and \\ backslashes',
       };
 
       const json = JSON.stringify(output);
@@ -1290,7 +1337,8 @@ describe('Hook Output Structure', () => {
 
   describe('Hook message formatting', () => {
     it('should format continuation message', () => {
-      const message = '[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain. Continue working.';
+      const message =
+        '[SYSTEM REMINDER - TODO CONTINUATION] Incomplete tasks remain. Continue working.';
       expect(message).toContain('[SYSTEM REMINDER');
       expect(message).toContain('TODO CONTINUATION');
       expect(message).toContain('Continue working');
@@ -1300,7 +1348,7 @@ describe('Hook Output Structure', () => {
       const keyword: DetectedKeyword = {
         type: 'ultrawork',
         keyword: 'ultrawork',
-        position: 0
+        position: 0,
       };
       const message = `ULTRAWORK MODE ACTIVATED - Detected keyword: ${keyword.keyword}`;
       expect(message).toContain('ULTRAWORK MODE');
@@ -1312,7 +1360,7 @@ describe('Hook Output Structure', () => {
         count: 2,
         todos: [],
         total: 5,
-        source: 'todo'
+        source: 'todo',
       };
       const status = formatTodoStatus(result);
       const message = `Todo Status: ${status}`;
@@ -1338,13 +1386,13 @@ Now deep analyze the bug
     `;
 
     const detected = detectKeywordsWithType(removeCodeBlocks(text));
-    const types = detected.map(d => d.type);
+    const types = detected.map((d) => d.type);
 
     expect(types).toContain('deepsearch');
     expect(types).toContain('analyze');
     // Should only detect the ones outside code blocks
-    expect(detected.filter(d => d.type === 'deepsearch')).toHaveLength(1);
-    expect(detected.filter(d => d.type === 'analyze')).toHaveLength(1);
+    expect(detected.filter((d) => d.type === 'deepsearch')).toHaveLength(1);
+    expect(detected.filter((d) => d.type === 'analyze')).toHaveLength(1);
   });
 
   it('should handle inline code with keywords', () => {
@@ -1353,11 +1401,12 @@ Now deep analyze the bug
     const detected = detectKeywordsWithType(cleanText);
 
     // The phrase 'find in codebase' should still be detected
-    expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+    expect(detected.some((d) => d.type === 'deepsearch')).toBe(true);
   });
 
   it('should prioritize ultrawork even with other keywords', () => {
-    const text = 'search the codebase, deep analyze the bug, and use ultrawork mode';
+    const text =
+      'search the codebase, deep analyze the bug, and use ultrawork mode';
     const primary = getPrimaryKeyword(text);
 
     expect(primary).not.toBeNull();
@@ -1398,7 +1447,7 @@ describe('Edge Cases', () => {
     it('should handle newlines and tabs', () => {
       const text = 'search\n\tthe\r\ncodebase';
       const detected = detectKeywordsWithType(text);
-      expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+      expect(detected.some((d) => d.type === 'deepsearch')).toBe(true);
     });
   });
 
@@ -1411,7 +1460,7 @@ describe('Edge Cases', () => {
     it('should handle mixed scripts', () => {
       const text = 'Please search the codebase 搜索 искать';
       const detected = detectKeywordsWithType(text);
-      expect(detected.some(d => d.type === 'deepsearch')).toBe(true);
+      expect(detected.some((d) => d.type === 'deepsearch')).toBe(true);
     });
   });
 
@@ -1433,7 +1482,7 @@ describe('UltraQA Loop', () => {
   describe('State Management', () => {
     it('should define valid UltraQA goal types', () => {
       const validGoalTypes = ['tests', 'build', 'lint', 'typecheck', 'custom'];
-      validGoalTypes.forEach(goalType => {
+      validGoalTypes.forEach((goalType) => {
         expect(typeof goalType).toBe('string');
       });
     });
@@ -1447,7 +1496,7 @@ describe('UltraQA Loop', () => {
         max_cycles: 5,
         failures: [],
         started_at: new Date().toISOString(),
-        session_id: 'test-session'
+        session_id: 'test-session',
       };
 
       expect(state.active).toBe(true);
@@ -1460,7 +1509,7 @@ describe('UltraQA Loop', () => {
     it('should track failure history', () => {
       const failures = ['Error 1', 'Error 2', 'Error 1'];
       expect(failures).toHaveLength(3);
-      expect(failures.filter(f => f === 'Error 1')).toHaveLength(2);
+      expect(failures.filter((f) => f === 'Error 1')).toHaveLength(2);
     });
   });
 
@@ -1468,7 +1517,7 @@ describe('UltraQA Loop', () => {
     it('should respect max cycles limit', () => {
       const state = {
         cycle: 5,
-        max_cycles: 5
+        max_cycles: 5,
       };
       expect(state.cycle).toBe(state.max_cycles);
       expect(state.cycle <= state.max_cycles).toBe(true);
@@ -1490,7 +1539,7 @@ describe('UltraQA Loop', () => {
       const result = {
         success: true,
         cycles: 3,
-        reason: 'goal_met' as const
+        reason: 'goal_met' as const,
       };
       expect(result.success).toBe(true);
       expect(result.reason).toBe('goal_met');
@@ -1501,7 +1550,7 @@ describe('UltraQA Loop', () => {
         success: false,
         cycles: 5,
         reason: 'max_cycles' as const,
-        diagnosis: 'Unable to fix recurring issue'
+        diagnosis: 'Unable to fix recurring issue',
       };
       expect(result.success).toBe(false);
       expect(result.reason).toBe('max_cycles');
@@ -1510,7 +1559,7 @@ describe('UltraQA Loop', () => {
 
     it('should detect same failure pattern', () => {
       const failures = ['Error A', 'Error A', 'Error A'];
-      const allSame = failures.every(f => f === failures[0]);
+      const allSame = failures.every((f) => f === failures[0]);
       expect(allSame).toBe(true);
     });
   });
@@ -1518,15 +1567,15 @@ describe('UltraQA Loop', () => {
   describe('Goal Commands', () => {
     it('should map goal types to commands', () => {
       const goalCommands: Record<string, string> = {
-        tests: 'npm test',
-        build: 'npm run build',
-        lint: 'npm run lint',
-        typecheck: 'npm run typecheck || tsc --noEmit'
+        tests: 'pnpm test',
+        build: 'pnpm run build',
+        lint: 'pnpm run lint',
+        typecheck: 'pnpm run typecheck || tsc --noEmit',
       };
 
-      expect(goalCommands.tests).toBe('npm test');
-      expect(goalCommands.build).toBe('npm run build');
-      expect(goalCommands.lint).toBe('npm run lint');
+      expect(goalCommands.tests).toBe('pnpm test');
+      expect(goalCommands.build).toBe('pnpm run build');
+      expect(goalCommands.lint).toBe('pnpm run lint');
     });
   });
 
@@ -1579,7 +1628,10 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `omc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `omc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     mkdirSync(join(testDir, '.omc'), { recursive: true });
     mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
@@ -1640,7 +1692,13 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     it('should fail to start UltraQA when Ralph is active', () => {
       // Activate Ralph first - write to session-scoped path since startUltraQA
       // passes sessionId which makes readRalphState check session path only
-      const sessionDir = join(testDir, '.omc', 'state', 'sessions', 'test-session');
+      const sessionDir = join(
+        testDir,
+        '.omc',
+        'state',
+        'sessions',
+        'test-session',
+      );
       mkdirSync(sessionDir, { recursive: true });
       const ralphStateFile = join(sessionDir, 'ralph-state.json');
       writeFileSync(ralphStateFile, JSON.stringify({ active: true }));
@@ -1649,7 +1707,9 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
       const result = startUltraQA(testDir, 'tests', 'test-session');
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Cannot start UltraQA while Ralph Loop is active');
+      expect(result.error).toContain(
+        'Cannot start UltraQA while Ralph Loop is active',
+      );
     });
 
     it('should succeed starting UltraQA when Ralph is not active', () => {
@@ -1679,7 +1739,13 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     it('should fail to start Ralph when UltraQA is active', () => {
       // Activate UltraQA first - write to session-scoped path since startLoop
       // passes sessionId which makes isUltraQAActive check session path only
-      const sessionDir = join(testDir, '.omc', 'state', 'sessions', 'test-session');
+      const sessionDir = join(
+        testDir,
+        '.omc',
+        'state',
+        'sessions',
+        'test-session',
+      );
       mkdirSync(sessionDir, { recursive: true });
       const ultraqaStateFile = join(sessionDir, 'ultraqa-state.json');
       writeFileSync(ultraqaStateFile, JSON.stringify({ active: true }));
@@ -1702,7 +1768,12 @@ describe('Mutual Exclusion - UltraQA and Ralph', () => {
     });
 
     it('should succeed starting Ralph when ultraqa state exists but inactive', () => {
-      const ultraqaStateFile = join(testDir, '.omc', 'state', 'ultraqa-state.json');
+      const ultraqaStateFile = join(
+        testDir,
+        '.omc',
+        'state',
+        'ultraqa-state.json',
+      );
       writeFileSync(ultraqaStateFile, JSON.stringify({ active: false }));
 
       const hook = createRalphLoopHook(testDir);
@@ -1746,7 +1817,10 @@ describe('Skill-active state lifecycle', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `hooks-skill-clear-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `hooks-skill-clear-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     execSync('git init', { cwd: testDir, stdio: 'pipe' });
   });
@@ -1756,7 +1830,11 @@ describe('Skill-active state lifecycle', () => {
   });
 
   it('clearSkillActiveState is a no-op for legacy/external skills without protection', async () => {
-    const { writeSkillActiveState, readSkillActiveState, clearSkillActiveState } = await import('../hooks/skill-state/index.js');
+    const {
+      writeSkillActiveState,
+      readSkillActiveState,
+      clearSkillActiveState,
+    } = await import('../hooks/skill-state/index.js');
 
     const sessionId = 'test-skill-clear-session';
     const written = writeSkillActiveState(testDir, 'code-review', sessionId);
@@ -1776,7 +1854,8 @@ describe('Skill-active state lifecycle', () => {
   });
 
   it('clearSkillActiveState is safe to call when no state exists', async () => {
-    const { clearSkillActiveState, readSkillActiveState } = await import('../hooks/skill-state/index.js');
+    const { clearSkillActiveState, readSkillActiveState } =
+      await import('../hooks/skill-state/index.js');
 
     // Should not throw even when no state file exists
     clearSkillActiveState(testDir, 'no-such-session');

@@ -5,9 +5,9 @@
  * backward compatibility with the old stopHookCallbacks format.
  */
 
-import { readFileSync, existsSync } from "fs";
-import { join } from "path";
-import { getClaudeConfigDir } from "../utils/config-dir.js";
+import { readFileSync, existsSync } from 'fs';
+import { join } from 'path';
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import type {
   NotificationConfig,
   NotificationEvent,
@@ -18,15 +18,14 @@ import type {
   TelegramNotificationConfig,
   SlackBotNotificationConfig,
   VerbosityLevel,
-} from "./types.js";
+} from './types.js';
 import {
   getHookConfig,
   mergeHookConfigIntoNotificationConfig,
-} from "./hook-config.js";
+} from './hook-config.js';
 
-const CONFIG_FILE = join(getClaudeConfigDir(), ".omc-config.json");
+const CONFIG_FILE = join(getClaudeConfigDir(), '.omc-config.json');
 const DEFAULT_TMUX_TAIL_LINES = 15;
-
 
 /**
  * Read raw config from .omc-config.json
@@ -34,7 +33,7 @@ const DEFAULT_TMUX_TAIL_LINES = 15;
 function readRawConfig(): Record<string, unknown> | null {
   if (!existsSync(CONFIG_FILE)) return null;
   try {
-    return JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
+    return JSON.parse(readFileSync(CONFIG_FILE, 'utf-8'));
   } catch {
     return null;
   }
@@ -55,7 +54,7 @@ function migrateStopHookCallbacks(
   const config: NotificationConfig = {
     enabled: true,
     events: {
-      "session-end": { enabled: true },
+      'session-end': { enabled: true },
     },
   };
 
@@ -64,8 +63,8 @@ function migrateStopHookCallbacks(
   if (telegram?.enabled) {
     const telegramConfig: TelegramNotificationConfig = {
       enabled: true,
-      botToken: (telegram.botToken as string) || "",
-      chatId: (telegram.chatId as string) || "",
+      botToken: (telegram.botToken as string) || '',
+      chatId: (telegram.chatId as string) || '',
     };
     config.telegram = telegramConfig;
   }
@@ -75,7 +74,7 @@ function migrateStopHookCallbacks(
   if (discord?.enabled) {
     const discordConfig: DiscordNotificationConfig = {
       enabled: true,
-      webhookUrl: (discord.webhookUrl as string) || "",
+      webhookUrl: (discord.webhookUrl as string) || '',
     };
     config.discord = discordConfig;
   }
@@ -113,7 +112,9 @@ export function validateMention(raw: string | undefined): string | undefined {
  * Rejects control characters, shell metacharacters, and path traversal sequences.
  * Returns the channel string if valid, undefined otherwise.
  */
-export function validateSlackChannel(raw: string | undefined): string | undefined {
+export function validateSlackChannel(
+  raw: string | undefined,
+): string | undefined {
   const channel = normalizeOptional(raw);
   if (!channel) return undefined;
   // Channel ID: C or G followed by alphanumeric (e.g., C1234567890)
@@ -129,7 +130,9 @@ export function validateSlackChannel(raw: string | undefined): string | undefine
  * Rejects control characters, shell metacharacters, and path traversal sequences.
  * Returns the username string if valid, undefined otherwise.
  */
-export function validateSlackUsername(raw: string | undefined): string | undefined {
+export function validateSlackUsername(
+  raw: string | undefined,
+): string | undefined {
   const username = normalizeOptional(raw);
   if (!username) return undefined;
   if (username.length > 80) return undefined;
@@ -143,7 +146,9 @@ export function validateSlackUsername(raw: string | undefined): string | undefin
  * Accepts: <@UXXXXXXXX> (user), <!channel>, <!here>, <!everyone>, <!subteam^SXXXXXXXXX> (user group).
  * Returns the mention string if valid, undefined otherwise.
  */
-export function validateSlackMention(raw: string | undefined): string | undefined {
+export function validateSlackMention(
+  raw: string | undefined,
+): string | undefined {
   const mention = normalizeOptional(raw);
   if (!mention) return undefined;
   // <@U...> user mention
@@ -158,9 +163,10 @@ export function validateSlackMention(raw: string | undefined): string | undefine
 /**
  * Parse a validated mention into allowed_mentions structure for Discord API.
  */
-export function parseMentionAllowedMentions(
-  mention: string | undefined,
-): { users?: string[]; roles?: string[] } {
+export function parseMentionAllowedMentions(mention: string | undefined): {
+  users?: string[];
+  roles?: string[];
+} {
   if (!mention) return {};
   const userMatch = mention.match(/^<@!?(\d{17,20})>$/);
   if (userMatch) return { users: [userMatch[1]] };
@@ -183,7 +189,7 @@ export function buildConfigFromEnv(): NotificationConfig | null {
   const discordBotToken = process.env.OMC_DISCORD_NOTIFIER_BOT_TOKEN;
   const discordChannel = process.env.OMC_DISCORD_NOTIFIER_CHANNEL;
   if (discordBotToken && discordChannel) {
-    config["discord-bot"] = {
+    config['discord-bot'] = {
       enabled: true,
       botToken: discordBotToken,
       channelId: discordChannel,
@@ -235,7 +241,7 @@ export function buildConfigFromEnv(): NotificationConfig | null {
   const slackBotToken = process.env.OMC_SLACK_BOT_TOKEN;
   const slackBotChannel = process.env.OMC_SLACK_BOT_CHANNEL;
   if (slackBotToken && slackBotChannel) {
-    config["slack-bot"] = {
+    config['slack-bot'] = {
       enabled: true,
       appToken: process.env.OMC_SLACK_APP_TOKEN,
       botToken: slackBotToken,
@@ -263,24 +269,26 @@ function mergeEnvIntoFileConfig(
   const merged = { ...fileConfig };
 
   // Merge discord-bot: if file doesn't have it but env does, add it
-  if (!merged["discord-bot"] && envConfig["discord-bot"]) {
-    merged["discord-bot"] = envConfig["discord-bot"];
-  } else if (merged["discord-bot"] && envConfig["discord-bot"]) {
+  if (!merged['discord-bot'] && envConfig['discord-bot']) {
+    merged['discord-bot'] = envConfig['discord-bot'];
+  } else if (merged['discord-bot'] && envConfig['discord-bot']) {
     // Fill missing fields from env (e.g., mention from env when file lacks it)
-    merged["discord-bot"] = {
-      ...merged["discord-bot"],
-      botToken: merged["discord-bot"].botToken || envConfig["discord-bot"].botToken,
-      channelId: merged["discord-bot"].channelId || envConfig["discord-bot"].channelId,
+    merged['discord-bot'] = {
+      ...merged['discord-bot'],
+      botToken:
+        merged['discord-bot'].botToken || envConfig['discord-bot'].botToken,
+      channelId:
+        merged['discord-bot'].channelId || envConfig['discord-bot'].channelId,
       mention:
-        merged["discord-bot"].mention !== undefined
-          ? validateMention(merged["discord-bot"].mention)
-          : envConfig["discord-bot"].mention,
+        merged['discord-bot'].mention !== undefined
+          ? validateMention(merged['discord-bot'].mention)
+          : envConfig['discord-bot'].mention,
     };
-  } else if (merged["discord-bot"]) {
+  } else if (merged['discord-bot']) {
     // Validate mention in existing file config
-    merged["discord-bot"] = {
-      ...merged["discord-bot"],
-      mention: validateMention(merged["discord-bot"].mention),
+    merged['discord-bot'] = {
+      ...merged['discord-bot'],
+      mention: validateMention(merged['discord-bot'].mention),
     };
   }
 
@@ -329,23 +337,24 @@ function mergeEnvIntoFileConfig(
   }
 
   // Merge slack-bot
-  if (!merged["slack-bot"] && envConfig["slack-bot"]) {
-    merged["slack-bot"] = envConfig["slack-bot"];
-  } else if (merged["slack-bot"] && envConfig["slack-bot"]) {
-    merged["slack-bot"] = {
-      ...merged["slack-bot"],
-      appToken: merged["slack-bot"].appToken || envConfig["slack-bot"].appToken,
-      botToken: merged["slack-bot"].botToken || envConfig["slack-bot"].botToken,
-      channelId: merged["slack-bot"].channelId || envConfig["slack-bot"].channelId,
+  if (!merged['slack-bot'] && envConfig['slack-bot']) {
+    merged['slack-bot'] = envConfig['slack-bot'];
+  } else if (merged['slack-bot'] && envConfig['slack-bot']) {
+    merged['slack-bot'] = {
+      ...merged['slack-bot'],
+      appToken: merged['slack-bot'].appToken || envConfig['slack-bot'].appToken,
+      botToken: merged['slack-bot'].botToken || envConfig['slack-bot'].botToken,
+      channelId:
+        merged['slack-bot'].channelId || envConfig['slack-bot'].channelId,
       mention:
-        merged["slack-bot"].mention !== undefined
-          ? validateSlackMention(merged["slack-bot"].mention)
-          : envConfig["slack-bot"].mention,
+        merged['slack-bot'].mention !== undefined
+          ? validateSlackMention(merged['slack-bot'].mention)
+          : envConfig['slack-bot'].mention,
     };
-  } else if (merged["slack-bot"]) {
-    merged["slack-bot"] = {
-      ...merged["slack-bot"],
-      mention: validateSlackMention(merged["slack-bot"].mention),
+  } else if (merged['slack-bot']) {
+    merged['slack-bot'] = {
+      ...merged['slack-bot'],
+      mention: validateSlackMention(merged['slack-bot'].mention),
     };
   }
 
@@ -381,11 +390,17 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   // platforms (not present in env) also receive the env mention.
   const envMention = validateMention(process.env.OMC_DISCORD_MENTION);
   if (envMention) {
-    if (merged["discord-bot"] && merged["discord-bot"].mention == null) {
-      merged = { ...merged, "discord-bot": { ...merged["discord-bot"], mention: envMention } };
+    if (merged['discord-bot'] && merged['discord-bot'].mention == null) {
+      merged = {
+        ...merged,
+        'discord-bot': { ...merged['discord-bot'], mention: envMention },
+      };
     }
     if (merged.discord && merged.discord.mention == null) {
-      merged = { ...merged, discord: { ...merged.discord, mention: envMention } };
+      merged = {
+        ...merged,
+        discord: { ...merged.discord, mention: envMention },
+      };
     }
   }
 
@@ -393,10 +408,16 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
   const envSlackMention = validateSlackMention(process.env.OMC_SLACK_MENTION);
   if (envSlackMention) {
     if (merged.slack && merged.slack.mention == null) {
-      merged = { ...merged, slack: { ...merged.slack, mention: envSlackMention } };
+      merged = {
+        ...merged,
+        slack: { ...merged.slack, mention: envSlackMention },
+      };
     }
-    if (merged["slack-bot"] && merged["slack-bot"].mention == null) {
-      merged = { ...merged, "slack-bot": { ...merged["slack-bot"], mention: envSlackMention } };
+    if (merged['slack-bot'] && merged['slack-bot'].mention == null) {
+      merged = {
+        ...merged,
+        'slack-bot': { ...merged['slack-bot'], mention: envSlackMention },
+      };
     }
   }
 
@@ -405,18 +426,18 @@ function applyEnvMerge(config: NotificationConfig): NotificationConfig {
 
 /** Valid verbosity level values */
 const VALID_VERBOSITY_LEVELS: ReadonlySet<string> = new Set([
-  "verbose",
-  "agent",
-  "session",
-  "minimal",
+  'verbose',
+  'agent',
+  'session',
+  'minimal',
 ]);
 
 /** Session events allowed at minimal/session verbosity */
 const SESSION_EVENTS: ReadonlySet<NotificationEvent> = new Set([
-  "session-start",
-  "session-stop",
-  "session-end",
-  "session-idle",
+  'session-start',
+  'session-stop',
+  'session-end',
+  'session-idle',
 ]);
 
 /**
@@ -433,7 +454,7 @@ export function getVerbosity(config: NotificationConfig): VerbosityLevel {
   if (config.verbosity && VALID_VERBOSITY_LEVELS.has(config.verbosity)) {
     return config.verbosity;
   }
-  return "session";
+  return 'session';
 }
 
 /**
@@ -443,13 +464,20 @@ export function getVerbosity(config: NotificationConfig): VerbosityLevel {
  * Invalid values are ignored (fall back to config or default).
  */
 export function getTmuxTailLines(config: NotificationConfig): number {
-  const envValue = Number.parseInt(process.env.OMC_NOTIFY_TMUX_TAIL_LINES ?? "", 10);
+  const envValue = Number.parseInt(
+    process.env.OMC_NOTIFY_TMUX_TAIL_LINES ?? '',
+    10,
+  );
   if (Number.isInteger(envValue) && envValue >= 1) {
     return envValue;
   }
 
   const configValue = config.tmuxTailLines;
-  if (typeof configValue === "number" && Number.isInteger(configValue) && configValue >= 1) {
+  if (
+    typeof configValue === 'number' &&
+    Number.isInteger(configValue) &&
+    configValue >= 1
+  ) {
     return configValue;
   }
 
@@ -470,12 +498,12 @@ export function isEventAllowedByVerbosity(
   event: NotificationEvent,
 ): boolean {
   switch (verbosity) {
-    case "verbose":
+    case 'verbose':
       return true;
-    case "agent":
-      return SESSION_EVENTS.has(event) || event === "agent-call";
-    case "session":
-    case "minimal":
+    case 'agent':
+      return SESSION_EVENTS.has(event) || event === 'agent-call';
+    case 'session':
+    case 'minimal':
       return SESSION_EVENTS.has(event);
     default:
       return SESSION_EVENTS.has(event);
@@ -488,7 +516,7 @@ export function isEventAllowedByVerbosity(
  * Returns true for session, agent, verbose. Returns false for minimal.
  */
 export function shouldIncludeTmuxTail(verbosity: VerbosityLevel): boolean {
-  return verbosity !== "minimal";
+  return verbosity !== 'minimal';
 }
 
 /**
@@ -506,16 +534,20 @@ export function shouldIncludeTmuxTail(verbosity: VerbosityLevel): boolean {
  *
  * @param profileName - Optional profile name (overrides OMC_NOTIFY_PROFILE env var)
  */
-export function getNotificationConfig(profileName?: string): NotificationConfig | null {
+export function getNotificationConfig(
+  profileName?: string,
+): NotificationConfig | null {
   const raw = readRawConfig();
   const effectiveProfile = profileName || process.env.OMC_NOTIFY_PROFILE;
 
   // Priority 0: Named profile from notificationProfiles
   if (effectiveProfile && raw) {
-    const profiles = raw.notificationProfiles as Record<string, NotificationConfig> | undefined;
+    const profiles = raw.notificationProfiles as
+      | Record<string, NotificationConfig>
+      | undefined;
     if (profiles && profiles[effectiveProfile]) {
       const profileConfig = profiles[effectiveProfile];
-      if (typeof profileConfig.enabled !== "boolean") {
+      if (typeof profileConfig.enabled !== 'boolean') {
         return null;
       }
       return applyHookAndEnvMerge(profileConfig);
@@ -530,7 +562,7 @@ export function getNotificationConfig(profileName?: string): NotificationConfig 
   if (raw) {
     const notifications = raw.notifications as NotificationConfig | undefined;
     if (notifications) {
-      if (typeof notifications.enabled !== "boolean") {
+      if (typeof notifications.enabled !== 'boolean') {
         return null;
       }
       return applyHookAndEnvMerge(notifications);
@@ -558,12 +590,12 @@ export function getNotificationConfig(profileName?: string): NotificationConfig 
  *   --webhook   -> OMC_WEBHOOK=1
  */
 function isPlatformActivated(platform: NotificationPlatform): boolean {
-  if (platform === "telegram") return process.env.OMC_TELEGRAM === "1";
-  if (platform === "discord" || platform === "discord-bot")
-    return process.env.OMC_DISCORD === "1";
-  if (platform === "slack" || platform === "slack-bot")
-    return process.env.OMC_SLACK === "1";
-  if (platform === "webhook") return process.env.OMC_WEBHOOK === "1";
+  if (platform === 'telegram') return process.env.OMC_TELEGRAM === '1';
+  if (platform === 'discord' || platform === 'discord-bot')
+    return process.env.OMC_DISCORD === '1';
+  if (platform === 'slack' || platform === 'slack-bot')
+    return process.env.OMC_SLACK === '1';
+  if (platform === 'webhook') return process.env.OMC_WEBHOOK === '1';
   return false;
 }
 
@@ -584,35 +616,36 @@ export function isEventEnabled(
   // If event has no specific config, check if any top-level platform is enabled
   if (!eventConfig) {
     return !!(
-      (isPlatformActivated("discord") && config.discord?.enabled) ||
-      (isPlatformActivated("discord-bot") && config["discord-bot"]?.enabled) ||
-      (isPlatformActivated("telegram") && config.telegram?.enabled) ||
-      (isPlatformActivated("slack") && config.slack?.enabled) ||
-      (isPlatformActivated("slack-bot") && config["slack-bot"]?.enabled) ||
-      (isPlatformActivated("webhook") && config.webhook?.enabled)
+      (isPlatformActivated('discord') && config.discord?.enabled) ||
+      (isPlatformActivated('discord-bot') && config['discord-bot']?.enabled) ||
+      (isPlatformActivated('telegram') && config.telegram?.enabled) ||
+      (isPlatformActivated('slack') && config.slack?.enabled) ||
+      (isPlatformActivated('slack-bot') && config['slack-bot']?.enabled) ||
+      (isPlatformActivated('webhook') && config.webhook?.enabled)
     );
   }
 
   // Check event-specific platform overrides
   if (
-    (isPlatformActivated("discord") && eventConfig.discord?.enabled) ||
-    (isPlatformActivated("discord-bot") && eventConfig["discord-bot"]?.enabled) ||
-    (isPlatformActivated("telegram") && eventConfig.telegram?.enabled) ||
-    (isPlatformActivated("slack") && eventConfig.slack?.enabled) ||
-    (isPlatformActivated("slack-bot") && eventConfig["slack-bot"]?.enabled) ||
-    (isPlatformActivated("webhook") && eventConfig.webhook?.enabled)
+    (isPlatformActivated('discord') && eventConfig.discord?.enabled) ||
+    (isPlatformActivated('discord-bot') &&
+      eventConfig['discord-bot']?.enabled) ||
+    (isPlatformActivated('telegram') && eventConfig.telegram?.enabled) ||
+    (isPlatformActivated('slack') && eventConfig.slack?.enabled) ||
+    (isPlatformActivated('slack-bot') && eventConfig['slack-bot']?.enabled) ||
+    (isPlatformActivated('webhook') && eventConfig.webhook?.enabled)
   ) {
     return true;
   }
 
   // Fall back to top-level platforms
   return !!(
-    (isPlatformActivated("discord") && config.discord?.enabled) ||
-    (isPlatformActivated("discord-bot") && config["discord-bot"]?.enabled) ||
-    (isPlatformActivated("telegram") && config.telegram?.enabled) ||
-    (isPlatformActivated("slack") && config.slack?.enabled) ||
-    (isPlatformActivated("slack-bot") && config["slack-bot"]?.enabled) ||
-    (isPlatformActivated("webhook") && config.webhook?.enabled)
+    (isPlatformActivated('discord') && config.discord?.enabled) ||
+    (isPlatformActivated('discord-bot') && config['discord-bot']?.enabled) ||
+    (isPlatformActivated('telegram') && config.telegram?.enabled) ||
+    (isPlatformActivated('slack') && config.slack?.enabled) ||
+    (isPlatformActivated('slack-bot') && config['slack-bot']?.enabled) ||
+    (isPlatformActivated('webhook') && config.webhook?.enabled)
   );
 }
 
@@ -638,8 +671,8 @@ export function getEnabledPlatforms(
       eventConfig?.[platform as keyof EventNotificationConfig];
     if (
       eventPlatform &&
-      typeof eventPlatform === "object" &&
-      "enabled" in eventPlatform
+      typeof eventPlatform === 'object' &&
+      'enabled' in eventPlatform
     ) {
       if ((eventPlatform as { enabled: boolean }).enabled) {
         platforms.push(platform);
@@ -651,20 +684,20 @@ export function getEnabledPlatforms(
     const topLevel = config[platform as keyof NotificationConfig];
     if (
       topLevel &&
-      typeof topLevel === "object" &&
-      "enabled" in topLevel &&
+      typeof topLevel === 'object' &&
+      'enabled' in topLevel &&
       (topLevel as { enabled: boolean }).enabled
     ) {
       platforms.push(platform);
     }
   };
 
-  checkPlatform("discord");
-  checkPlatform("discord-bot");
-  checkPlatform("telegram");
-  checkPlatform("slack");
-  checkPlatform("slack-bot");
-  checkPlatform("webhook");
+  checkPlatform('discord');
+  checkPlatform('discord-bot');
+  checkPlatform('telegram');
+  checkPlatform('slack');
+  checkPlatform('slack-bot');
+  checkPlatform('webhook');
 
   return platforms;
 }
@@ -674,11 +707,11 @@ export function getEnabledPlatforms(
  * Order matters for deterministic fallback when only event-level config exists.
  */
 const REPLY_PLATFORM_EVENTS: NotificationEvent[] = [
-  "session-start",
-  "ask-user-question",
-  "session-stop",
-  "session-idle",
-  "session-end",
+  'session-start',
+  'ask-user-question',
+  'session-stop',
+  'session-idle',
+  'session-end',
 ];
 
 /**
@@ -690,7 +723,7 @@ const REPLY_PLATFORM_EVENTS: NotificationEvent[] = [
  */
 function getEnabledReplyPlatformConfig<T extends { enabled: boolean }>(
   config: NotificationConfig,
-  platform: "discord-bot" | "telegram" | "slack-bot",
+  platform: 'discord-bot' | 'telegram' | 'slack-bot',
 ): T | undefined {
   const topLevel = config[platform] as T | undefined;
   if (topLevel?.enabled) {
@@ -704,8 +737,8 @@ function getEnabledReplyPlatformConfig<T extends { enabled: boolean }>(
 
     if (
       eventPlatform &&
-      typeof eventPlatform === "object" &&
-      "enabled" in eventPlatform &&
+      typeof eventPlatform === 'object' &&
+      'enabled' in eventPlatform &&
       (eventPlatform as { enabled: boolean }).enabled
     ) {
       return eventPlatform as T;
@@ -736,34 +769,30 @@ export function getReplyListenerPlatformConfig(
   const telegramConfig =
     getEnabledReplyPlatformConfig<TelegramNotificationConfig>(
       config,
-      "telegram",
+      'telegram',
     );
   const discordBotConfig =
     getEnabledReplyPlatformConfig<DiscordBotNotificationConfig>(
       config,
-      "discord-bot",
+      'discord-bot',
     );
   const slackBotConfig =
     getEnabledReplyPlatformConfig<SlackBotNotificationConfig>(
       config,
-      "slack-bot",
+      'slack-bot',
     );
 
   return {
     telegramBotToken: telegramConfig?.botToken || config.telegram?.botToken,
     telegramChatId: telegramConfig?.chatId || config.telegram?.chatId,
     discordBotToken:
-      discordBotConfig?.botToken || config["discord-bot"]?.botToken,
+      discordBotConfig?.botToken || config['discord-bot']?.botToken,
     discordChannelId:
-      discordBotConfig?.channelId || config["discord-bot"]?.channelId,
-    discordMention:
-      discordBotConfig?.mention || config["discord-bot"]?.mention,
-    slackAppToken:
-      slackBotConfig?.appToken || config["slack-bot"]?.appToken,
-    slackBotToken:
-      slackBotConfig?.botToken || config["slack-bot"]?.botToken,
-    slackChannelId:
-      slackBotConfig?.channelId || config["slack-bot"]?.channelId,
+      discordBotConfig?.channelId || config['discord-bot']?.channelId,
+    discordMention: discordBotConfig?.mention || config['discord-bot']?.mention,
+    slackAppToken: slackBotConfig?.appToken || config['slack-bot']?.appToken,
+    slackBotToken: slackBotConfig?.botToken || config['slack-bot']?.botToken,
+    slackChannelId: slackBotConfig?.channelId || config['slack-bot']?.channelId,
   };
 }
 
@@ -779,7 +808,7 @@ function parseSlackUserIds(
   // Try env var first (comma-separated list)
   if (envValue) {
     const ids = envValue
-      .split(",")
+      .split(',')
       .map((id) => id.trim())
       .filter((id) => /^[UW][A-Z0-9]{8,11}$/.test(id));
     if (ids.length > 0) return ids;
@@ -787,8 +816,9 @@ function parseSlackUserIds(
 
   // Try config array
   if (Array.isArray(configValue)) {
-    const ids = configValue
-      .filter((id) => typeof id === "string" && /^[UW][A-Z0-9]{8,11}$/.test(id));
+    const ids = configValue.filter(
+      (id) => typeof id === 'string' && /^[UW][A-Z0-9]{8,11}$/.test(id),
+    );
     if (ids.length > 0) return ids;
   }
 
@@ -806,7 +836,7 @@ function parseDiscordUserIds(
   // Try env var first (comma-separated list)
   if (envValue) {
     const ids = envValue
-      .split(",")
+      .split(',')
       .map((id) => id.trim())
       .filter((id) => /^\d{17,20}$/.test(id));
     if (ids.length > 0) return ids;
@@ -814,8 +844,9 @@ function parseDiscordUserIds(
 
   // Try config array
   if (Array.isArray(configValue)) {
-    const ids = configValue
-      .filter((id) => typeof id === "string" && /^\d{17,20}$/.test(id));
+    const ids = configValue.filter(
+      (id) => typeof id === 'string' && /^\d{17,20}$/.test(id),
+    );
     if (ids.length > 0) return ids;
   }
 
@@ -824,7 +855,7 @@ function parseDiscordUserIds(
 
 /** Parse an integer from a string, returning undefined for invalid/empty input. */
 function parseIntSafe(value: string | undefined): number | undefined {
-  if (value == null || value === "") return undefined;
+  if (value == null || value === '') return undefined;
   const parsed = parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
 }
@@ -847,31 +878,35 @@ function parseIntSafe(value: string | undefined): number | undefined {
  *
  * SECURITY: Logs warning when Discord bot is enabled but authorizedDiscordUserIds is empty.
  */
-export function getReplyConfig(): import("./types.js").ReplyConfig | null {
+export function getReplyConfig(): import('./types.js').ReplyConfig | null {
   const notifConfig = getNotificationConfig();
   if (!notifConfig?.enabled) return null;
 
   // Check if any reply-capable platform (discord-bot, telegram, or slack-bot) is enabled.
   // Supports event-level platform config (not just top-level defaults).
-  const hasDiscordBot = !!getEnabledReplyPlatformConfig<DiscordBotNotificationConfig>(
-    notifConfig,
-    "discord-bot",
-  );
-  const hasTelegram = !!getEnabledReplyPlatformConfig<TelegramNotificationConfig>(
-    notifConfig,
-    "telegram",
-  );
-  const hasSlackBot = !!getEnabledReplyPlatformConfig<SlackBotNotificationConfig>(
-    notifConfig,
-    "slack-bot",
-  );
+  const hasDiscordBot =
+    !!getEnabledReplyPlatformConfig<DiscordBotNotificationConfig>(
+      notifConfig,
+      'discord-bot',
+    );
+  const hasTelegram =
+    !!getEnabledReplyPlatformConfig<TelegramNotificationConfig>(
+      notifConfig,
+      'telegram',
+    );
+  const hasSlackBot =
+    !!getEnabledReplyPlatformConfig<SlackBotNotificationConfig>(
+      notifConfig,
+      'slack-bot',
+    );
   if (!hasDiscordBot && !hasTelegram && !hasSlackBot) return null;
 
   // Read reply-specific config
   const raw = readRawConfig();
   const replyRaw = (raw?.notifications as any)?.reply;
 
-  const enabled = process.env.OMC_REPLY_ENABLED === "true" || replyRaw?.enabled === true;
+  const enabled =
+    process.env.OMC_REPLY_ENABLED === 'true' || replyRaw?.enabled === true;
   if (!enabled) return null;
 
   const authorizedDiscordUserIds = parseDiscordUserIds(
@@ -882,8 +917,8 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
   // SECURITY: If Discord bot is enabled but no authorized user IDs, log warning
   if (hasDiscordBot && authorizedDiscordUserIds.length === 0) {
     console.warn(
-      "[notifications] Discord reply listening disabled: authorizedDiscordUserIds is empty. " +
-      "Set OMC_REPLY_DISCORD_USER_IDS or add to .omc-config.json notifications.reply.authorizedDiscordUserIds"
+      '[notifications] Discord reply listening disabled: authorizedDiscordUserIds is empty. ' +
+        'Set OMC_REPLY_DISCORD_USER_IDS or add to .omc-config.json notifications.reply.authorizedDiscordUserIds',
     );
   }
 
@@ -894,10 +929,18 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
 
   return {
     enabled: true,
-    pollIntervalMs: parseIntSafe(process.env.OMC_REPLY_POLL_INTERVAL_MS) ?? replyRaw?.pollIntervalMs ?? 3000,
+    pollIntervalMs:
+      parseIntSafe(process.env.OMC_REPLY_POLL_INTERVAL_MS) ??
+      replyRaw?.pollIntervalMs ??
+      3000,
     maxMessageLength: replyRaw?.maxMessageLength ?? 500,
-    rateLimitPerMinute: parseIntSafe(process.env.OMC_REPLY_RATE_LIMIT) ?? replyRaw?.rateLimitPerMinute ?? 10,
-    includePrefix: process.env.OMC_REPLY_INCLUDE_PREFIX !== "false" && (replyRaw?.includePrefix !== false),
+    rateLimitPerMinute:
+      parseIntSafe(process.env.OMC_REPLY_RATE_LIMIT) ??
+      replyRaw?.rateLimitPerMinute ??
+      10,
+    includePrefix:
+      process.env.OMC_REPLY_INCLUDE_PREFIX !== 'false' &&
+      replyRaw?.includePrefix !== false,
     authorizedDiscordUserIds,
     authorizedSlackUserIds,
   };
@@ -907,13 +950,13 @@ export function getReplyConfig(): import("./types.js").ReplyConfig | null {
 // CUSTOM INTEGRATION CONFIG (Added for Notification Refactor)
 // ============================================================================
 
-import type {
-  CustomIntegration,
-  CustomIntegrationsConfig,
-} from "./types.js";
-import { validateCustomIntegration, checkDuplicateIds } from "./validation.js";
+import type { CustomIntegration, CustomIntegrationsConfig } from './types.js';
+import { validateCustomIntegration, checkDuplicateIds } from './validation.js';
 
-const LEGACY_OPENCLAW_CONFIG = join(getClaudeConfigDir(), "omc_config.openclaw.json");
+const LEGACY_OPENCLAW_CONFIG = join(
+  getClaudeConfigDir(),
+  'omc_config.openclaw.json',
+);
 
 /**
  * Detect if legacy OpenClaw configuration exists.
@@ -929,15 +972,15 @@ export function migrateLegacyOpenClawConfig(): CustomIntegration | null {
   if (!existsSync(LEGACY_OPENCLAW_CONFIG)) return null;
 
   try {
-    const legacy = JSON.parse(readFileSync(LEGACY_OPENCLAW_CONFIG, "utf-8"));
-    
+    const legacy = JSON.parse(readFileSync(LEGACY_OPENCLAW_CONFIG, 'utf-8'));
+
     // Get first gateway (legacy format supported multiple, we take the first)
     const gateways = legacy.gateways as Record<string, any> | undefined;
     if (!gateways || Object.keys(gateways).length === 0) return null;
-    
+
     const gateway = Object.values(gateways)[0];
     const gatewayName = Object.keys(gateways)[0];
-    
+
     // Get enabled hooks as events
     const hooks = legacy.hooks as Record<string, any> | undefined;
     const events: string[] = [];
@@ -953,23 +996,27 @@ export function migrateLegacyOpenClawConfig(): CustomIntegration | null {
 
     const integration: CustomIntegration = {
       id: `migrated-${gatewayName}`,
-      type: "webhook",
-      preset: "openclaw",
+      type: 'webhook',
+      preset: 'openclaw',
       enabled: legacy.enabled !== false,
       config: {
-        url: gateway.url || "",
-        method: (gateway.method as any) || "POST",
-        headers: gateway.headers || { "Content-Type": "application/json" },
-        bodyTemplate: JSON.stringify({
-          event: "{{event}}",
-          instruction: "Session {{sessionId}} {{event}}",
-          timestamp: "{{timestamp}}",
-          context: {
-            projectPath: "{{projectPath}}",
-            projectName: "{{projectName}}",
-            sessionId: "{{sessionId}}"
-          }
-        }, null, 2),
+        url: gateway.url || '',
+        method: (gateway.method as any) || 'POST',
+        headers: gateway.headers || { 'Content-Type': 'application/json' },
+        bodyTemplate: JSON.stringify(
+          {
+            event: '{{event}}',
+            instruction: 'Session {{sessionId}} {{event}}',
+            timestamp: '{{timestamp}}',
+            context: {
+              projectPath: '{{projectPath}}',
+              projectName: '{{projectName}}',
+              sessionId: '{{sessionId}}',
+            },
+          },
+          null,
+          2,
+        ),
         timeout: gateway.timeout || 10000,
       },
       events: events as any,
@@ -988,7 +1035,9 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
   const raw = readRawConfig();
   if (!raw) return null;
 
-  const customIntegrations = raw.customIntegrations as CustomIntegrationsConfig | undefined;
+  const customIntegrations = raw.customIntegrations as
+    | CustomIntegrationsConfig
+    | undefined;
   if (!customIntegrations) return null;
 
   // Validate and filter out invalid integrations
@@ -999,7 +1048,7 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
       validIntegrations.push(integration);
     } else {
       console.warn(
-        `[notifications] Invalid custom integration "${integration.id}": ${result.errors.join(", ")}`
+        `[notifications] Invalid custom integration "${integration.id}": ${result.errors.join(', ')}`,
       );
     }
   }
@@ -1008,7 +1057,7 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
   const duplicates = checkDuplicateIds(validIntegrations);
   if (duplicates.length > 0) {
     console.warn(
-      `[notifications] Duplicate custom integration IDs found: ${duplicates.join(", ")}`
+      `[notifications] Duplicate custom integration IDs found: ${duplicates.join(', ')}`,
     );
   }
 
@@ -1022,13 +1071,13 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
  * Get all custom integrations enabled for a specific event.
  */
 export function getCustomIntegrationsForEvent(
-  event: string
+  event: string,
 ): CustomIntegration[] {
   const config = getCustomIntegrationsConfig();
   if (!config?.enabled) return [];
 
   return config.integrations.filter(
-    (i) => i.enabled && i.events.includes(event as any)
+    (i) => i.enabled && i.events.includes(event as any),
   );
 }
 
@@ -1040,6 +1089,6 @@ export function hasCustomIntegrationsEnabled(event?: string): boolean {
   if (!config?.enabled) return false;
   if (!event) return config.integrations.some((i) => i.enabled);
   return config.integrations.some(
-    (i) => i.enabled && i.events.includes(event as any)
+    (i) => i.enabled && i.events.includes(event as any),
   );
 }

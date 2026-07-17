@@ -37,7 +37,8 @@ function mapFactcheckToBlockers(result: FactcheckResult): string[] {
   }
 
   return result.mismatches.map(
-    mismatch => `[factcheck] ${mismatch.severity} ${mismatch.check}: ${mismatch.detail}`,
+    (mismatch) =>
+      `[factcheck] ${mismatch.severity} ${mismatch.check}: ${mismatch.detail}`,
   );
 }
 
@@ -61,8 +62,12 @@ function coerceArray(value: unknown): unknown[] {
 function sanitizeClaims(raw: Record<string, unknown>): Record<string, unknown> {
   const out = { ...raw };
   const arrayFields = [
-    'files_modified', 'files_created', 'files_deleted',
-    'artifacts_expected', 'commands_executed', 'models_used',
+    'files_modified',
+    'files_created',
+    'files_deleted',
+    'artifacts_expected',
+    'commands_executed',
+    'models_used',
   ];
   for (const field of arrayFields) {
     if (field in out) {
@@ -116,7 +121,9 @@ export function checkSentinelReadiness(
   if (!ranCheck) {
     return {
       ready: false,
-      blockers: ['[sentinel] gate enabled but no logPath or claims provided — cannot verify readiness'],
+      blockers: [
+        '[sentinel] gate enabled but no logPath or claims provided — cannot verify readiness',
+      ],
       skipped: true,
     };
   }
@@ -149,7 +156,7 @@ export async function waitForSentinelReadiness(
 
   const deadline = startedAt + timeoutMs;
   while (Date.now() < deadline) {
-    await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
+    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     attempts += 1;
     latest = checkSentinelReadiness(options);
     if (latest.ready) {

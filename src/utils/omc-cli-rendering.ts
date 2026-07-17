@@ -19,12 +19,16 @@ function commandExists(command: string, env: NodeJS.ProcessEnv): boolean {
 
 export function resolveOmcCliPrefix(options: OmcCliRenderOptions = {}): string {
   const env = options.env ?? process.env;
-  const omcAvailable = options.omcAvailable ?? commandExists(OMC_CLI_BINARY, env);
+  const omcAvailable =
+    options.omcAvailable ?? commandExists(OMC_CLI_BINARY, env);
   if (omcAvailable) {
     return OMC_CLI_BINARY;
   }
 
-  const pluginRoot = typeof env.CLAUDE_PLUGIN_ROOT === 'string' ? env.CLAUDE_PLUGIN_ROOT.trim() : '';
+  const pluginRoot =
+    typeof env.CLAUDE_PLUGIN_ROOT === 'string'
+      ? env.CLAUDE_PLUGIN_ROOT.trim()
+      : '';
   if (pluginRoot) {
     return OMC_PLUGIN_BRIDGE_PREFIX;
   }
@@ -61,8 +65,11 @@ export function rewriteOmcCliInvocations(
       const prefix = resolveInvocationPrefix(suffix, options);
       return `\`${prefix} ${suffix}\``;
     })
-    .replace(/(^|\n)([ \t>*-]*)omc ([^\n]+)/g, (_match, lineStart: string, leader: string, suffix: string) => {
-      const prefix = resolveInvocationPrefix(suffix, options);
-      return `${lineStart}${leader}${prefix} ${suffix}`;
-    });
+    .replace(
+      /(^|\n)([ \t>*-]*)omc ([^\n]+)/g,
+      (_match, lineStart: string, leader: string, suffix: string) => {
+        const prefix = resolveInvocationPrefix(suffix, options);
+        return `${lineStart}${leader}${prefix} ${suffix}`;
+      },
+    );
 }

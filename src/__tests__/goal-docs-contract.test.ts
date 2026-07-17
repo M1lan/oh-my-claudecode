@@ -1,13 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { dirname, extname, join, relative } from "node:path";
-import { fileURLToPath } from "node:url";
+import { describe, expect, it } from 'vitest';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { dirname, extname, join, relative } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const REPO_ROOT = join(__dirname, "..", "..");
+const REPO_ROOT = join(__dirname, '..', '..');
 
-const DOC_ROOTS = ["docs", "skills"] as const;
+const DOC_ROOTS = ['docs', 'skills'] as const;
 
 function markdownFiles(dir: string): string[] {
   if (!existsSync(dir)) return [];
@@ -18,9 +18,9 @@ function markdownFiles(dir: string): string[] {
   for (const entry of entries) {
     const fullPath = join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (entry.name === "node_modules") continue;
+      if (entry.name === 'node_modules') continue;
       files.push(...markdownFiles(fullPath));
-    } else if (extname(entry.name) === ".md") {
+    } else if (extname(entry.name) === '.md') {
       files.push(fullPath);
     }
   }
@@ -32,7 +32,7 @@ function readMarkdownDocs(): Array<{ path: string; content: string }> {
   return DOC_ROOTS.flatMap((root) => markdownFiles(join(REPO_ROOT, root))).map(
     (file) => ({
       path: relative(REPO_ROOT, file),
-      content: readFileSync(file, "utf-8"),
+      content: readFileSync(file, 'utf-8'),
     }),
   );
 }
@@ -45,8 +45,8 @@ function claudeGoalDocs() {
   );
 }
 
-describe("Claude Code /goal docs contract", () => {
-  it("does not use OpenAI or Codex documentation as authority for Claude Code /goal facts", () => {
+describe('Claude Code /goal docs contract', () => {
+  it('does not use OpenAI or Codex documentation as authority for Claude Code /goal facts', () => {
     const violations = claudeGoalDocs().flatMap(({ path, content }) => {
       const paragraphs = content.split(/\n\s*\n/);
       return paragraphs
@@ -67,14 +67,14 @@ describe("Claude Code /goal docs contract", () => {
         )
         .map(
           ({ index, paragraph }) =>
-            `${path} paragraph ${index + 1}: ${paragraph.replace(/\s+/g, " ").trim()}`,
+            `${path} paragraph ${index + 1}: ${paragraph.replace(/\s+/g, ' ').trim()}`,
         );
     });
 
     expect(violations).toEqual([]);
   });
 
-  it("keeps Claude Code /goal evaluator limitations explicit and evidence-based", () => {
+  it('keeps Claude Code /goal evaluator limitations explicit and evidence-based', () => {
     const violations = claudeGoalDocs().flatMap(({ path, content }) => {
       const forbiddenClaims = [
         /evaluator\s+(?:can|will|does)\s+(?:independently\s+)?(?:run|execute)s?\s+commands/i,
@@ -92,7 +92,7 @@ describe("Claude Code /goal docs contract", () => {
     expect(violations).toEqual([]);
   });
 
-  it("forbids warn-only loop conflict policy in Claude Code /goal docs", () => {
+  it('forbids warn-only loop conflict policy in Claude Code /goal docs', () => {
     const violations = claudeGoalDocs().flatMap(({ path, content }) => {
       const issues: string[] = [];
 
@@ -102,9 +102,9 @@ describe("Claude Code /goal docs contract", () => {
 
       if (/conflict[_ -]policy|loop authority|active loop/i.test(content)) {
         for (const requiredPolicy of [
-          "refuse",
-          "adopt_existing",
-          "artifact_only",
+          'refuse',
+          'adopt_existing',
+          'artifact_only',
         ]) {
           if (!content.includes(requiredPolicy)) {
             issues.push(`${path}: missing ${requiredPolicy} conflict policy`);

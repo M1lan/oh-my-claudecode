@@ -8,15 +8,32 @@
  */
 
 import {
-  readFileSync, existsSync,
-  statSync, unlinkSync, renameSync, openSync,
-  readSync, closeSync
+  readFileSync,
+  existsSync,
+  statSync,
+  unlinkSync,
+  renameSync,
+  openSync,
+  readSync,
+  closeSync,
 } from 'fs';
 import { join, dirname } from 'path';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
-import type { InboxMessage, OutboxMessage, ShutdownSignal, DrainSignal, InboxCursor } from './types.js';
+import type {
+  InboxMessage,
+  OutboxMessage,
+  ShutdownSignal,
+  DrainSignal,
+  InboxCursor,
+} from './types.js';
 import { sanitizeName } from './tmux-session.js';
-import { appendFileWithMode, writeFileWithMode, atomicWriteJson, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import {
+  appendFileWithMode,
+  writeFileWithMode,
+  atomicWriteJson,
+  ensureDirWithMode,
+  validateResolvedPath,
+} from './fs-utils.js';
 
 /** Maximum bytes to read from inbox in a single call (10 MB) */
 const MAX_INBOX_READ_SIZE = 10 * 1024 * 1024;
@@ -34,19 +51,35 @@ function inboxPath(teamName: string, workerName: string): string {
 }
 
 function inboxCursorPath(teamName: string, workerName: string): string {
-  return join(teamsDir(teamName), 'inbox', `${sanitizeName(workerName)}.offset`);
+  return join(
+    teamsDir(teamName),
+    'inbox',
+    `${sanitizeName(workerName)}.offset`,
+  );
 }
 
 function outboxPath(teamName: string, workerName: string): string {
-  return join(teamsDir(teamName), 'outbox', `${sanitizeName(workerName)}.jsonl`);
+  return join(
+    teamsDir(teamName),
+    'outbox',
+    `${sanitizeName(workerName)}.jsonl`,
+  );
 }
 
 function signalPath(teamName: string, workerName: string): string {
-  return join(teamsDir(teamName), 'signals', `${sanitizeName(workerName)}.shutdown`);
+  return join(
+    teamsDir(teamName),
+    'signals',
+    `${sanitizeName(workerName)}.shutdown`,
+  );
 }
 
 function drainSignalPath(teamName: string, workerName: string): string {
-  return join(teamsDir(teamName), 'signals', `${sanitizeName(workerName)}.drain`);
+  return join(
+    teamsDir(teamName),
+    'signals',
+    `${sanitizeName(workerName)}.drain`,
+  );
 }
 
 /** Ensure directory exists for a file path */
@@ -61,7 +94,11 @@ function ensureDir(filePath: string): void {
  * Append a message to the outbox JSONL file.
  * Creates directories if needed.
  */
-export function appendOutbox(teamName: string, workerName: string, message: OutboxMessage): void {
+export function appendOutbox(
+  teamName: string,
+  workerName: string,
+  message: OutboxMessage,
+): void {
   const filePath = outboxPath(teamName, workerName);
   ensureDir(filePath);
   appendFileWithMode(filePath, JSON.stringify(message) + '\n');
@@ -76,13 +113,17 @@ export function appendOutbox(teamName: string, workerName: string, message: Outb
  * on audit-log.ts. The caller (e.g., mcp-team-bridge.ts) should log rotation
  * events using the 'outbox_rotated' audit event type after calling this function.
  */
-export function rotateOutboxIfNeeded(teamName: string, workerName: string, maxLines: number): void {
+export function rotateOutboxIfNeeded(
+  teamName: string,
+  workerName: string,
+  maxLines: number,
+): void {
   const filePath = outboxPath(teamName, workerName);
   if (!existsSync(filePath)) return;
 
   try {
     const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').filter(l => l.trim());
+    const lines = content.split('\n').filter((l) => l.trim());
     if (lines.length <= maxLines) return;
 
     // Keep the most recent half
@@ -107,7 +148,11 @@ export function rotateOutboxIfNeeded(teamName: string, workerName: string, maxLi
  * on audit-log.ts. The caller (e.g., mcp-team-bridge.ts) should log rotation
  * events using the 'inbox_rotated' audit event type after calling this function.
  */
-export function rotateInboxIfNeeded(teamName: string, workerName: string, maxSizeBytes: number): void {
+export function rotateInboxIfNeeded(
+  teamName: string,
+  workerName: string,
+  maxSizeBytes: number,
+): void {
   const filePath = inboxPath(teamName, workerName);
   if (!existsSync(filePath)) return;
 
@@ -116,7 +161,7 @@ export function rotateInboxIfNeeded(teamName: string, workerName: string, maxSiz
     if (stat.size <= maxSizeBytes) return;
 
     const content = readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').filter(l => l.trim());
+    const lines = content.split('\n').filter((l) => l.trim());
 
     // Keep the most recent half
     const keepCount = Math.max(1, Math.floor(lines.length / 2));
@@ -147,7 +192,10 @@ export function rotateInboxIfNeeded(teamName: string, workerName: string, maxSiz
  *
  * Handles file truncation (cursor > file size) by resetting cursor.
  */
-export function readNewInboxMessages(teamName: string, workerName: string): InboxMessage[] {
+export function readNewInboxMessages(
+  teamName: string,
+  workerName: string,
+): InboxMessage[] {
   const inbox = inboxPath(teamName, workerName);
   const cursorFile = inboxCursorPath(teamName, workerName);
 
@@ -159,7 +207,9 @@ export function readNewInboxMessages(teamName: string, workerName: string): Inbo
     try {
       const cursor: InboxCursor = JSON.parse(readFileSync(cursorFile, 'utf-8'));
       offset = cursor.bytesRead;
-    } catch { /* reset to 0 */ }
+    } catch {
+      /* reset to 0 */
+    }
   }
 
   // Check file size
@@ -176,7 +226,9 @@ export function readNewInboxMessages(teamName: string, workerName: string): Inbo
   const readSize = stat.size - offset;
   const cappedSize = Math.min(readSize, MAX_INBOX_READ_SIZE);
   if (cappedSize < readSize) {
-    console.warn(`[inbox-outbox] Inbox for ${workerName} exceeds ${MAX_INBOX_READ_SIZE} bytes, reading truncated`);
+    console.warn(
+      `[inbox-outbox] Inbox for ${workerName} exceeds ${MAX_INBOX_READ_SIZE} bytes, reading truncated`,
+    );
   }
   const fd = openSync(inbox, 'r');
   const buffer = Buffer.alloc(cappedSize);
@@ -223,7 +275,9 @@ export function readNewInboxMessages(teamName: string, workerName: string): Inbo
     } catch {
       // Malformed JSONL line: log a warning, advance cursor past it, and continue.
       // Stopping here would permanently wedge the inbox cursor.
-      console.warn(`[inbox-outbox] Skipping malformed JSONL line for ${workerName}: ${cleanLine.slice(0, 80)}`);
+      console.warn(
+        `[inbox-outbox] Skipping malformed JSONL line for ${workerName}: ${cleanLine.slice(0, 80)}`,
+      );
       bytesProcessed += lineBytes;
     }
   }
@@ -231,14 +285,19 @@ export function readNewInboxMessages(teamName: string, workerName: string): Inbo
   // Advance cursor only through last successfully parsed content
   const newOffset = offset + (bytesProcessed > 0 ? bytesProcessed : 0);
   ensureDir(cursorFile);
-  const newCursor: InboxCursor = { bytesRead: newOffset > offset ? newOffset : offset };
+  const newCursor: InboxCursor = {
+    bytesRead: newOffset > offset ? newOffset : offset,
+  };
   atomicWriteJson(cursorFile, newCursor);
 
   return messages;
 }
 
 /** Read ALL inbox messages (for initial load or debugging) */
-export function readAllInboxMessages(teamName: string, workerName: string): InboxMessage[] {
+export function readAllInboxMessages(
+  teamName: string,
+  workerName: string,
+): InboxMessage[] {
   const inbox = inboxPath(teamName, workerName);
   if (!existsSync(inbox)) return [];
 
@@ -249,7 +308,9 @@ export function readAllInboxMessages(teamName: string, workerName: string): Inbo
       if (!line.trim()) continue;
       try {
         messages.push(JSON.parse(line));
-      } catch { /* skip malformed */ }
+      } catch {
+        /* skip malformed */
+      }
     }
     return messages;
   } catch {
@@ -263,17 +324,30 @@ export function clearInbox(teamName: string, workerName: string): void {
   const cursorFile = inboxCursorPath(teamName, workerName);
 
   if (existsSync(inbox)) {
-    try { writeFileWithMode(inbox, ''); } catch { /* ignore */ }
+    try {
+      writeFileWithMode(inbox, '');
+    } catch {
+      /* ignore */
+    }
   }
   if (existsSync(cursorFile)) {
-    try { writeFileWithMode(cursorFile, JSON.stringify({ bytesRead: 0 })); } catch { /* ignore */ }
+    try {
+      writeFileWithMode(cursorFile, JSON.stringify({ bytesRead: 0 }));
+    } catch {
+      /* ignore */
+    }
   }
 }
 
 // --- Shutdown signals ---
 
 /** Write a shutdown signal file */
-export function writeShutdownSignal(teamName: string, workerName: string, requestId: string, reason: string): void {
+export function writeShutdownSignal(
+  teamName: string,
+  workerName: string,
+  requestId: string,
+  reason: string,
+): void {
   const filePath = signalPath(teamName, workerName);
   ensureDir(filePath);
   const signal: ShutdownSignal = {
@@ -285,7 +359,10 @@ export function writeShutdownSignal(teamName: string, workerName: string, reques
 }
 
 /** Check if shutdown signal exists, return parsed content or null */
-export function checkShutdownSignal(teamName: string, workerName: string): ShutdownSignal | null {
+export function checkShutdownSignal(
+  teamName: string,
+  workerName: string,
+): ShutdownSignal | null {
   const filePath = signalPath(teamName, workerName);
   if (!existsSync(filePath)) return null;
   try {
@@ -297,17 +374,29 @@ export function checkShutdownSignal(teamName: string, workerName: string): Shutd
 }
 
 /** Delete the shutdown signal file after processing */
-export function deleteShutdownSignal(teamName: string, workerName: string): void {
+export function deleteShutdownSignal(
+  teamName: string,
+  workerName: string,
+): void {
   const filePath = signalPath(teamName, workerName);
   if (existsSync(filePath)) {
-    try { unlinkSync(filePath); } catch { /* ignore */ }
+    try {
+      unlinkSync(filePath);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
 // --- Drain signals ---
 
 /** Write a drain signal for a worker */
-export function writeDrainSignal(teamName: string, workerName: string, requestId: string, reason: string): void {
+export function writeDrainSignal(
+  teamName: string,
+  workerName: string,
+  requestId: string,
+  reason: string,
+): void {
   const filePath = drainSignalPath(teamName, workerName);
   ensureDir(filePath);
   const signal: DrainSignal = {
@@ -319,7 +408,10 @@ export function writeDrainSignal(teamName: string, workerName: string, requestId
 }
 
 /** Check if a drain signal exists for a worker */
-export function checkDrainSignal(teamName: string, workerName: string): DrainSignal | null {
+export function checkDrainSignal(
+  teamName: string,
+  workerName: string,
+): DrainSignal | null {
   const filePath = drainSignalPath(teamName, workerName);
   if (!existsSync(filePath)) return null;
   try {
@@ -334,7 +426,11 @@ export function checkDrainSignal(teamName: string, workerName: string): DrainSig
 export function deleteDrainSignal(teamName: string, workerName: string): void {
   const filePath = drainSignalPath(teamName, workerName);
   if (existsSync(filePath)) {
-    try { unlinkSync(filePath); } catch { /* ignore */ }
+    try {
+      unlinkSync(filePath);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -351,7 +447,11 @@ export function cleanupWorkerFiles(teamName: string, workerName: string): void {
   ];
   for (const f of files) {
     if (existsSync(f)) {
-      try { unlinkSync(f); } catch { /* ignore */ }
+      try {
+        unlinkSync(f);
+      } catch {
+        /* ignore */
+      }
     }
   }
 }

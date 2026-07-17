@@ -6,7 +6,18 @@
  * only removes old destination AFTER successfully creating new symlink.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, existsSync, lstatSync, unlinkSync, symlinkSync, readlinkSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  lstatSync,
+  unlinkSync,
+  symlinkSync,
+  readlinkSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import * as fs from 'fs';
@@ -15,7 +26,7 @@ import * as fs from 'fs';
 vi.mock('fs', async () => {
   const actual = await vi.importActual('fs');
   return {
-    ...actual as object,
+    ...(actual as object),
   };
 });
 
@@ -193,7 +204,7 @@ describe('ensureStdinSymlink', () => {
 
   it('is a no-op when pluginRoot does not exist', () => {
     expect(() =>
-      ensureStdinSymlink(join(tmpdir(), 'nonexistent-plugin-root-xyz'))
+      ensureStdinSymlink(join(tmpdir(), 'nonexistent-plugin-root-xyz')),
     ).not.toThrow();
   });
 

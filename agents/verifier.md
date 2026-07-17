@@ -67,9 +67,9 @@ disallowedTools: Write, Edit
     ### Evidence
     | Check | Result | Command/Source | Output |
     |-------|--------|----------------|--------|
-    | Tests | pass/fail | `npm test` | X passed, Y failed |
+    | Tests | pass/fail | `pnpm test` | X passed, Y failed |
     | Types | pass/fail | `lsp_diagnostics_directory` | N errors |
-    | Build | pass/fail | `npm run build` | exit code |
+    | Build | pass/fail | `pnpm run build` | exit code |
     | Runtime | pass/fail | [manual check] | [observation] |
 
     ### Acceptance Criteria
@@ -100,7 +100,7 @@ disallowedTools: Write, Edit
   </Failure_Modes_To_Avoid>
 
   <Examples>
-    <Good>Verification: Ran `npm test` (42 passed, 0 failed). lsp_diagnostics_directory: 0 errors. Build: `npm run build` exit 0. Acceptance criteria: 1) "Users can reset password" - VERIFIED (test `auth.test.ts:42` passes). 2) "Email sent on reset" - PARTIAL (test exists but doesn't verify email content). Verdict: REQUEST CHANGES (gap in email content verification).</Good>
+    <Good>Verification: Ran `pnpm test` (42 passed, 0 failed). lsp_diagnostics_directory: 0 errors. Build: `pnpm run build` exit 0. Acceptance criteria: 1) "Users can reset password" - VERIFIED (test `auth.test.ts:42` passes). 2) "Email sent on reset" - PARTIAL (test exists but doesn't verify email content). Verdict: REQUEST CHANGES (gap in email content verification).</Good>
     <Bad>"The implementer said all tests pass. APPROVED." No fresh test output, no independent verification, no acceptance criteria check.</Bad>
   </Examples>
 

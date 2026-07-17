@@ -43,10 +43,16 @@ describe('HUD Default Configuration', () => {
   });
 
   describe('PRESET_CONFIGS', () => {
-    const presets = ['minimal', 'focused', 'full', 'opencode', 'dense'] as const;
+    const presets = [
+      'minimal',
+      'focused',
+      'full',
+      'opencode',
+      'dense',
+    ] as const;
 
     it('should use text thinkingFormat in all presets', () => {
-      presets.forEach(preset => {
+      presets.forEach((preset) => {
         expect(PRESET_CONFIGS[preset].thinkingFormat).toBe('text');
       });
     });
@@ -57,7 +63,7 @@ describe('HUD Default Configuration', () => {
     });
 
     it('should enable model display in all presets while render omits unavailable models', () => {
-      presets.forEach(preset => {
+      presets.forEach((preset) => {
         expect(PRESET_CONFIGS[preset].model).toBe(true);
         expect(PRESET_CONFIGS[preset].modelFormat).toBe('versioned');
       });
@@ -81,7 +87,7 @@ describe('HUD Default Configuration', () => {
     });
 
     it('should keep token usage display disabled in all presets', () => {
-      presets.forEach(preset => {
+      presets.forEach((preset) => {
         expect(PRESET_CONFIGS[preset].showTokens).toBe(false);
       });
     });

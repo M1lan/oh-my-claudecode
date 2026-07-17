@@ -95,7 +95,9 @@ describe('Smart Skill Matcher', () => {
   describe('Context Extraction', () => {
     describe('Error Detection', () => {
       it('should detect TypeError', () => {
-        const ctx = extractContext('I got a TypeError: undefined is not a function');
+        const ctx = extractContext(
+          'I got a TypeError: undefined is not a function',
+        );
         expect(ctx.detectedErrors).toContain('TypeError');
       });
 
@@ -126,29 +128,39 @@ describe('Smart Skill Matcher', () => {
 
       it('should detect generic error keywords', () => {
         const ctx = extractContext('The build failed with error code 1');
-        expect(ctx.detectedErrors.some(e => /error|failed/i.test(e))).toBe(true);
+        expect(ctx.detectedErrors.some((e) => /error|failed/i.test(e))).toBe(
+          true,
+        );
       });
     });
 
     describe('File Path Detection', () => {
       it('should detect src/ paths', () => {
         const ctx = extractContext('check src/components/Button.tsx');
-        expect(ctx.detectedFiles.some(f => f.includes('src/'))).toBe(true);
+        expect(ctx.detectedFiles.some((f) => f.includes('src/'))).toBe(true);
       });
 
       it('should detect relative paths with extension', () => {
         const ctx = extractContext('edit ./bar.js file');
-        expect(ctx.detectedFiles.some(f => f.includes('bar.js'))).toBe(true);
+        expect(ctx.detectedFiles.some((f) => f.includes('bar.js'))).toBe(true);
       });
 
       it('should detect nested paths', () => {
         const ctx = extractContext('fix lib/utils/helpers.ts');
-        expect(ctx.detectedFiles.some(f => f.includes('helpers.ts') || f.includes('lib/'))).toBe(true);
+        expect(
+          ctx.detectedFiles.some(
+            (f) => f.includes('helpers.ts') || f.includes('lib/'),
+          ),
+        ).toBe(true);
       });
 
       it('should detect absolute paths', () => {
         const ctx = extractContext('open /home/user/project/main.py');
-        expect(ctx.detectedFiles.some(f => f.includes('main.py') || f.includes('/home/'))).toBe(true);
+        expect(
+          ctx.detectedFiles.some(
+            (f) => f.includes('main.py') || f.includes('/home/'),
+          ),
+        ).toBe(true);
       });
     });
 
@@ -213,24 +225,22 @@ describe('Smart Skill Matcher', () => {
       ];
       const results = matchSkills('help with typescript', skills);
       // Should have exact match for 'typescript'
-      const exactMatch = results.find(r => r.skillId === 'exact');
+      const exactMatch = results.find((r) => r.skillId === 'exact');
       expect(exactMatch).toBeDefined();
       expect(exactMatch!.confidence).toBe(100);
     });
 
     it('should filter results below threshold', () => {
-      const skills = [
-        { id: 'unrelated', triggers: ['zzznotmatch'] },
-      ];
+      const skills = [{ id: 'unrelated', triggers: ['zzznotmatch'] }];
       const results = matchSkills('build my app', skills, { threshold: 30 });
       expect(results.length).toBe(0);
     });
 
     it('should respect custom threshold', () => {
-      const skills = [
-        { id: 'test', triggers: ['typescript'] },
-      ];
-      const results = matchSkills('help with typescript', skills, { threshold: 50 });
+      const skills = [{ id: 'test', triggers: ['typescript'] }];
+      const results = matchSkills('help with typescript', skills, {
+        threshold: 50,
+      });
       expect(results.length).toBe(1);
       expect(results[0].confidence).toBeGreaterThanOrEqual(50);
     });
@@ -306,16 +316,20 @@ describe('Smart Skill Matcher', () => {
     });
 
     it('should handle unicode in prompt', () => {
-      const ctx = extractContext('fix the bug in function 函数名 with emoji 🚀');
+      const ctx = extractContext(
+        'fix the bug in function 函数名 with emoji 🚀',
+      );
       expect(ctx).toBeDefined();
     });
 
     it('should handle skill with tags', () => {
-      const skills = [{
-        id: 'multi-tag',
-        triggers: ['deploy'],
-        tags: ['production', 'release'],
-      }];
+      const skills = [
+        {
+          id: 'multi-tag',
+          triggers: ['deploy'],
+          tags: ['production', 'release'],
+        },
+      ];
       const results = matchSkills('release to production', skills);
       expect(results.length).toBe(1);
       expect(results[0].matchedTriggers).toContain('production');
@@ -336,7 +350,9 @@ describe('Smart Skill Matcher', () => {
     it('should deduplicate detected context items', () => {
       const ctx = extractContext('TypeError TypeError TypeError ENOENT ENOENT');
       // Should dedupe
-      const typeErrorCount = ctx.detectedErrors.filter(e => e === 'TypeError').length;
+      const typeErrorCount = ctx.detectedErrors.filter(
+        (e) => e === 'TypeError',
+      ).length;
       expect(typeErrorCount).toBe(1);
     });
   });
@@ -354,16 +370,14 @@ describe('Smart Skill Matcher', () => {
       const results = matchSkills(prompt, skills);
 
       expect(results.length).toBeGreaterThan(0);
-      const debugResult = results.find(r => r.skillId === 'debug');
+      const debugResult = results.find((r) => r.skillId === 'debug');
       expect(debugResult).toBeDefined();
       expect(debugResult!.context.detectedErrors).toContain('TypeError');
       expect(debugResult!.context.detectedFiles.length).toBeGreaterThan(0);
     });
 
     it('should prioritize exact matches over fuzzy', () => {
-      const skills = [
-        { id: 'typescript-skill', triggers: ['typescript'] },
-      ];
+      const skills = [{ id: 'typescript-skill', triggers: ['typescript'] }];
       const results = matchSkills('I need help with typescript', skills);
       expect(results[0].matchType).toBe('exact');
     });
@@ -374,11 +388,14 @@ describe('Smart Skill Matcher', () => {
         { id: 'pattern-match', triggers: ['/api/i'] },
         { id: 'fuzzy-match', triggers: ['typescrpt'] }, // typo for typescript
       ];
-      const results = matchSkills('deploy the API to typescript server', skills);
+      const results = matchSkills(
+        'deploy the API to typescript server',
+        skills,
+      );
       expect(results.length).toBeGreaterThanOrEqual(2);
 
-      const exactResult = results.find(r => r.skillId === 'exact-match');
-      const patternResult = results.find(r => r.skillId === 'pattern-match');
+      const exactResult = results.find((r) => r.skillId === 'exact-match');
+      const patternResult = results.find((r) => r.skillId === 'pattern-match');
       expect(exactResult).toBeDefined();
       expect(patternResult).toBeDefined();
     });

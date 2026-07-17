@@ -71,8 +71,17 @@ export function detectDirectivesFromMessage(message: string): UserDirective[] {
  * Check if directive is high priority
  */
 function isPriorityDirective(text: string): boolean {
-  const priorityKeywords = ['must', 'critical', 'important', 'always', 'never', 'requirement'];
-  return priorityKeywords.some(keyword => text.toLowerCase().includes(keyword));
+  const priorityKeywords = [
+    'must',
+    'critical',
+    'important',
+    'always',
+    'never',
+    'requirement',
+  ];
+  return priorityKeywords.some((keyword) =>
+    text.toLowerCase().includes(keyword),
+  );
 }
 
 /**
@@ -80,7 +89,7 @@ function isPriorityDirective(text: string): boolean {
  */
 export function inferDirectiveFromPattern(
   commandHistory: string[],
-  threshold: number = 3
+  threshold: number = 3,
 ): UserDirective | null {
   // Look for repeated command patterns
   const commandCounts = new Map<string, number>();
@@ -127,13 +136,13 @@ function normalizeCommand(cmd: string): string {
  */
 export function addDirective(
   directives: UserDirective[] | null | undefined,
-  newDirective: UserDirective
+  newDirective: UserDirective,
 ): UserDirective[] {
   const directiveList = Array.isArray(directives) ? directives : [];
 
   // Check for duplicates
-  const isDuplicate = directiveList.some(d =>
-    d.directive.toLowerCase() === newDirective.directive.toLowerCase()
+  const isDuplicate = directiveList.some(
+    (d) => d.directive.toLowerCase() === newDirective.directive.toLowerCase(),
   );
 
   if (!isDuplicate) {
@@ -158,14 +167,16 @@ export function addDirective(
 /**
  * Format directives for context injection
  */
-export function formatDirectivesForContext(directives: UserDirective[]): string {
+export function formatDirectivesForContext(
+  directives: UserDirective[],
+): string {
   if (directives.length === 0) return '';
 
   const lines = ['**User Directives (Must Follow):**'];
 
   // Group by priority
-  const highPriority = directives.filter(d => d.priority === 'high');
-  const normalPriority = directives.filter(d => d.priority === 'normal');
+  const highPriority = directives.filter((d) => d.priority === 'high');
+  const normalPriority = directives.filter((d) => d.priority === 'normal');
 
   if (highPriority.length > 0) {
     lines.push('');

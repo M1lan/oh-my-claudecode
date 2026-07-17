@@ -9,7 +9,11 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { runTscDiagnostics, TscDiagnostic, TscResult } from './tsc-runner.js';
-import { runLspAggregatedDiagnostics, LspDiagnosticWithFile, LspAggregationResult } from './lsp-aggregator.js';
+import {
+  runLspAggregatedDiagnostics,
+  LspDiagnosticWithFile,
+  LspAggregationResult,
+} from './lsp-aggregator.js';
 import { formatDiagnostics } from '../lsp/utils.js';
 
 export const LSP_DIAGNOSTICS_WAIT_MS = 300;
@@ -33,7 +37,7 @@ export interface DirectoryDiagnosticResult {
  */
 export async function runDirectoryDiagnostics(
   directory: string,
-  strategy: DiagnosticsStrategy = 'auto'
+  strategy: DiagnosticsStrategy = 'auto',
 ): Promise<DirectoryDiagnosticResult> {
   const tsconfigPath = join(directory, 'tsconfig.json');
   const hasTsconfig = existsSync(tsconfigPath);
@@ -94,18 +98,24 @@ function formatTscResult(result: TscResult): DirectoryDiagnosticResult {
     errorCount: result.errorCount,
     warningCount: result.warningCount,
     diagnostics,
-    summary
+    summary,
   };
 }
 
 /**
  * Format LSP aggregation results into standard format
  */
-export function formatLspResult(result: LspAggregationResult): DirectoryDiagnosticResult {
+export function formatLspResult(
+  result: LspAggregationResult,
+): DirectoryDiagnosticResult {
   let diagnostics = '';
   let summary = '';
 
-  if (result.diagnostics.length === 0 && result.installHints.length === 0 && result.skippedFiles.length === 0) {
+  if (
+    result.diagnostics.length === 0 &&
+    result.installHints.length === 0 &&
+    result.skippedFiles.length === 0
+  ) {
     diagnostics = `Checked ${result.filesChecked} files. No diagnostics found!`;
     summary = `LSP check passed: 0 errors, 0 warnings (${result.filesChecked} files)`;
   } else {
@@ -113,9 +123,9 @@ export function formatLspResult(result: LspAggregationResult): DirectoryDiagnost
     const parts: string[] = [];
 
     if (result.installHints.length > 0) {
-      const hintLines = result.installHints.map(h => `  - ${h}`).join('\n');
+      const hintLines = result.installHints.map((h) => `  - ${h}`).join('\n');
       parts.push(
-        `⚠ Missing language servers detected:\n${hintLines}\nInstall the language server(s) above and re-run, or these files cannot be checked.`
+        `⚠ Missing language servers detected:\n${hintLines}\nInstall the language server(s) above and re-run, or these files cannot be checked.`,
       );
     }
 
@@ -130,7 +140,7 @@ export function formatLspResult(result: LspAggregationResult): DirectoryDiagnost
 
       const fileOutputs: string[] = [];
       for (const [file, items] of byFile) {
-        const diags = items.map(i => i.diagnostic);
+        const diags = items.map((i) => i.diagnostic);
         fileOutputs.push(`${file}:\n${formatDiagnostics(diags, file)}`);
       }
 
@@ -138,7 +148,9 @@ export function formatLspResult(result: LspAggregationResult): DirectoryDiagnost
     }
 
     if (hasSkips) {
-      parts.push(`Skipped ${result.skippedFiles.length} file(s) due to missing or unregistered language servers.`);
+      parts.push(
+        `Skipped ${result.skippedFiles.length} file(s) due to missing or unregistered language servers.`,
+      );
     }
 
     diagnostics = parts.join('\n\n');
@@ -153,12 +165,15 @@ export function formatLspResult(result: LspAggregationResult): DirectoryDiagnost
     errorCount: result.errorCount,
     warningCount: result.warningCount,
     diagnostics,
-    summary
+    summary,
   };
 }
 
 // Re-export types for convenience
 export type { TscDiagnostic, TscResult } from './tsc-runner.js';
-export type { LspDiagnosticWithFile, LspAggregationResult } from './lsp-aggregator.js';
+export type {
+  LspDiagnosticWithFile,
+  LspAggregationResult,
+} from './lsp-aggregator.js';
 export { runTscDiagnostics } from './tsc-runner.js';
 export { runLspAggregatedDiagnostics } from './lsp-aggregator.js';

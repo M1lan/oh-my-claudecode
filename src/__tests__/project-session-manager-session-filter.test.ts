@@ -4,8 +4,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
-const SESSION_LIB = join(process.cwd(), 'skills', 'project-session-manager', 'lib', 'session.sh');
-const CONFIG_LIB = join(process.cwd(), 'skills', 'project-session-manager', 'lib', 'config.sh');
+const SESSION_LIB = join(
+  process.cwd(),
+  'skills',
+  'project-session-manager',
+  'lib',
+  'session.sh',
+);
+const CONFIG_LIB = join(
+  process.cwd(),
+  'skills',
+  'project-session-manager',
+  'lib',
+  'config.sh',
+);
 
 function runShell(script: string, home: string): string {
   return execFileSync('bash', ['-lc', script], {

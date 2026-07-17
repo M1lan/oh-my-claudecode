@@ -44,7 +44,7 @@ function pathToFileUrl(absPath: string): string {
 export function renderCwd(
   cwd: string | undefined,
   format: CwdFormat = 'relative',
-  useHyperlinks = false
+  useHyperlinks = false,
 ): string | null {
   if (!cwd) return null;
 

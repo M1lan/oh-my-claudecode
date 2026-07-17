@@ -81,7 +81,8 @@ export function getGitRepoName(cwd?: string): string | null {
     } else {
       // Extract repo name from URL
       // Handles: https://github.com/user/repo.git, git@github.com:user/repo.git
-      const match = url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+?)(?:\.git)?$/);
+      const match =
+        url.match(/\/([^/]+?)(?:\.git)?$/) || url.match(/:([^/]+?)(?:\.git)?$/);
       result = match ? match[1].replace(/\.git$/, '') : null;
     }
   } catch {
@@ -141,8 +142,16 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
     // Canonicalize via realpathSync to handle symlinked repo paths
     let resolvedGitDir = resolve(key, gitDir);
     let resolvedCommonDir = resolve(key, gitCommonDir);
-    try { resolvedGitDir = realpathSync(resolvedGitDir); } catch { /* use resolved */ }
-    try { resolvedCommonDir = realpathSync(resolvedCommonDir); } catch { /* use resolved */ }
+    try {
+      resolvedGitDir = realpathSync(resolvedGitDir);
+    } catch {
+      /* use resolved */
+    }
+    try {
+      resolvedCommonDir = realpathSync(resolvedCommonDir);
+    } catch {
+      /* use resolved */
+    }
 
     if (resolvedGitDir !== resolvedCommonDir) {
       // Extract worktree name from gitDir path (e.g. /repo/.git/worktrees/my-wt → my-wt)
@@ -152,7 +161,10 @@ export function getWorktreeInfo(cwd?: string): WorktreeDetection {
     // Not in a git repo or command failed
   }
 
-  worktreeCache.set(key, { value: result, expiresAt: Date.now() + CACHE_TTL_MS });
+  worktreeCache.set(key, {
+    value: result,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
   return result;
 }
 
@@ -205,9 +217,16 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
 
   let result: GitStatusCounts | null = null;
   try {
-    const output = git(['--no-optional-locks', 'status', '--porcelain', '-b'], cwd);
+    const output = git(
+      ['--no-optional-locks', 'status', '--porcelain', '-b'],
+      cwd,
+    );
 
-    let staged = 0, modified = 0, untracked = 0, ahead = 0, behind = 0;
+    let staged = 0,
+      modified = 0,
+      untracked = 0,
+      ahead = 0,
+      behind = 0;
 
     if (output) {
       const lines = output.split('\n');
@@ -252,13 +271,22 @@ export function getGitStatusCounts(cwd?: string): GitStatusCounts | null {
  */
 export function renderGitStatus(
   cwd?: string,
-  labels: Pick<HudLabels, 'staged' | 'modified' | 'untracked' | 'ahead' | 'behind'> = DEFAULT_HUD_LABELS,
+  labels: Pick<
+    HudLabels,
+    'staged' | 'modified' | 'untracked' | 'ahead' | 'behind'
+  > = DEFAULT_HUD_LABELS,
 ): string | null {
   const counts = getGitStatusCounts(cwd);
   if (!counts) return null;
 
   const { staged, modified, untracked, ahead, behind } = counts;
-  if (staged === 0 && modified === 0 && untracked === 0 && ahead === 0 && behind === 0) {
+  if (
+    staged === 0 &&
+    modified === 0 &&
+    untracked === 0 &&
+    ahead === 0 &&
+    behind === 0
+  ) {
     return null;
   }
 

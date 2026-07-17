@@ -77,7 +77,7 @@ Blocks Codex (OpenAI), Gemini (Google), and Grok (xAI, "Grok Build") CLI workers
 
 ### Auto-Update Disable (`disableAutoUpdate`)
 
-Overrides `silentAutoUpdate` in OMC config. When enabled, `isSilentAutoUpdateEnabled()` always returns `false` regardless of user config, preventing unverified npm package installs.
+Overrides `silentAutoUpdate` in OMC config. When enabled, `isSilentAutoUpdateEnabled()` always returns `false` regardless of user config, preventing unverified package installs.
 
 ### Hard Max Iterations (`hardMaxIterations`)
 

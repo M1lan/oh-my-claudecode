@@ -42,19 +42,27 @@ describe('BitbucketProvider', () => {
 
   describe('detectFromRemote', () => {
     it('returns true for bitbucket.org HTTPS URLs', () => {
-      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(true);
+      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(
+        true,
+      );
     });
 
     it('returns true for bitbucket.org SSH URLs', () => {
-      expect(provider.detectFromRemote('git@bitbucket.org:user/repo.git')).toBe(true);
+      expect(provider.detectFromRemote('git@bitbucket.org:user/repo.git')).toBe(
+        true,
+      );
     });
 
     it('returns false for non-Bitbucket URLs', () => {
-      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(
+        false,
+      );
     });
 
     it('returns false for GitLab URLs', () => {
-      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://gitlab.com/user/repo')).toBe(
+        false,
+      );
     });
   });
 
@@ -65,7 +73,9 @@ describe('BitbucketProvider', () => {
         title: 'Add feature',
         source: { branch: { name: 'feature/new' } },
         destination: { branch: { name: 'main' } },
-        links: { html: { href: 'https://bitbucket.org/user/repo/pull-requests/5' } },
+        links: {
+          html: { href: 'https://bitbucket.org/user/repo/pull-requests/5' },
+        },
         description: 'Adds a new feature',
         author: { display_name: 'Test User' },
       };
@@ -98,14 +108,15 @@ describe('BitbucketProvider', () => {
       process.env.BITBUCKET_APP_PASSWORD = 'mypass';
       mockFetch.mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({
-          title: 'PR',
-          source: { branch: { name: 'feat' } },
-          destination: { branch: { name: 'main' } },
-          links: { html: { href: '' } },
-          description: '',
-          author: { display_name: 'u' },
-        }),
+        json: () =>
+          Promise.resolve({
+            title: 'PR',
+            source: { branch: { name: 'feat' } },
+            destination: { branch: { name: 'main' } },
+            links: { html: { href: '' } },
+            description: '',
+            author: { display_name: 'u' },
+          }),
       });
 
       await provider.viewPR(1, 'owner', 'repo');

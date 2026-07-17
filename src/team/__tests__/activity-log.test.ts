@@ -120,7 +120,9 @@ describe('activity-log', () => {
         taskId: 't1',
       });
 
-      const log = getActivityLog(testDir, teamName, { since: '2026-01-01T10:00:00Z' });
+      const log = getActivityLog(testDir, teamName, {
+        since: '2026-01-01T10:00:00Z',
+      });
       expect(log).toHaveLength(1);
       expect(log[0].action).toContain('Completed');
     });
@@ -150,8 +152,12 @@ describe('activity-log', () => {
       ];
 
       const result = formatActivityTimeline(activities);
-      expect(result).toContain('[2026-01-01 10:00] worker1: Started bridge daemon');
-      expect(result).toContain('[2026-01-01 10:05] worker1: Completed task t1 [t1]');
+      expect(result).toContain(
+        '[2026-01-01 10:00] worker1: Started bridge daemon',
+      );
+      expect(result).toContain(
+        '[2026-01-01 10:05] worker1: Completed task t1 [t1]',
+      );
     });
   });
 });

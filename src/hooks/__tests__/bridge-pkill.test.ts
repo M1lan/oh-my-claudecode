@@ -199,7 +199,9 @@ describe('pkill safety detection in processPreToolUse', () => {
     it('should detect pkill -f in piped command', async () => {
       const result = await processHook('pre-tool-use', {
         toolName: 'Bash',
-        toolInput: { command: 'echo "starting" && pkill -f "node server" && echo "done"' },
+        toolInput: {
+          command: 'echo "starting" && pkill -f "node server" && echo "done"',
+        },
       });
 
       expect(result.continue).toBe(true);

@@ -14,14 +14,17 @@ const SKININTHEGAMEBROS_GUIDANCE_LINES = [
   '- Report outcomes faithfully: do not imply checks passed if you did not run them, and do not hide failing verification.',
 ];
 
-export function renderSkininthegamebrosGuidance(surface: GuidanceSurface): string {
+export function renderSkininthegamebrosGuidance(
+  surface: GuidanceSurface,
+): string {
   if (!isSkininthegamebrosUser()) {
     return '';
   }
 
-  return [SKININTHEGAMEBROS_GUIDANCE_HEADER[surface], ...SKININTHEGAMEBROS_GUIDANCE_LINES].join(
-    '\n',
-  );
+  return [
+    SKININTHEGAMEBROS_GUIDANCE_HEADER[surface],
+    ...SKININTHEGAMEBROS_GUIDANCE_LINES,
+  ].join('\n');
 }
 
 export function appendSkininthegamebrosGuidance(

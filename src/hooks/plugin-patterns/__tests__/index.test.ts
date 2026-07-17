@@ -36,7 +36,9 @@ describe('isValidFilePath', () => {
     });
 
     it('accepts a Windows nested relative path with backslashes', () => {
-      expect(isValidFilePath('src\\hooks\\plugin-patterns\\index.ts')).toBe(true);
+      expect(isValidFilePath('src\\hooks\\plugin-patterns\\index.ts')).toBe(
+        true,
+      );
     });
 
     it('accepts a Windows absolute path', () => {

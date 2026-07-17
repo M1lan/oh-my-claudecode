@@ -18,10 +18,7 @@ import {
   recordTaskCompletion,
   recordTaskSkip,
 } from '../orchestrator.js';
-import {
-  writeRalphthonPrd,
-  createRalphthonPrd,
-} from '../prd.js';
+import { writeRalphthonPrd, createRalphthonPrd } from '../prd.js';
 import type {
   RalphthonState,
   RalphthonStory,
@@ -210,7 +207,15 @@ describe('Ralphthon Orchestrator', () => {
       prd.stories[0].tasks[1].status = 'done';
       prd.stories[1].tasks[0].status = 'done';
       prd.hardening = [
-        { id: 'H-01-001', title: 'Done', description: 'done', category: 'test', status: 'done', wave: 1, retries: 0 },
+        {
+          id: 'H-01-001',
+          title: 'Done',
+          description: 'done',
+          category: 'test',
+          status: 'done',
+          wave: 1,
+          retries: 0,
+        },
       ];
       writeRalphthonPrd(testDir, prd);
 
@@ -273,7 +278,9 @@ describe('Ralphthon Orchestrator', () => {
       writeRalphthonPrd(testDir, prd);
 
       const events: OrchestratorEvent[] = [];
-      const result = startHardeningWave(testDir, sessionId, e => events.push(e));
+      const result = startHardeningWave(testDir, sessionId, (e) =>
+        events.push(e),
+      );
 
       expect(result).not.toBeNull();
       expect(result!.wave).toBe(1);
@@ -369,7 +376,7 @@ describe('Ralphthon Orchestrator', () => {
       writeRalphthonState(testDir, state, sessionId);
 
       const events: OrchestratorEvent[] = [];
-      recordTaskCompletion(testDir, 'T-001', sessionId, e => events.push(e));
+      recordTaskCompletion(testDir, 'T-001', sessionId, (e) => events.push(e));
 
       const updated = readRalphthonState(testDir, sessionId);
       expect(updated!.tasksCompleted).toBe(1);
@@ -387,7 +394,9 @@ describe('Ralphthon Orchestrator', () => {
       writeRalphthonState(testDir, state, sessionId);
 
       const events: OrchestratorEvent[] = [];
-      recordTaskSkip(testDir, 'T-001', 'max retries', sessionId, e => events.push(e));
+      recordTaskSkip(testDir, 'T-001', 'max retries', sessionId, (e) =>
+        events.push(e),
+      );
 
       const updated = readRalphthonState(testDir, sessionId);
       expect(updated!.tasksSkipped).toBe(1);
@@ -420,7 +429,7 @@ describe('Ralphthon Orchestrator', () => {
       ];
 
       for (const text of patterns) {
-        const matches = completionPatterns.some(p => p.test(text));
+        const matches = completionPatterns.some((p) => p.test(text));
         expect(matches).toBe(true);
       }
     });
@@ -456,8 +465,20 @@ function createTestPrdWithTasks() {
       acceptanceCriteria: ['works'],
       priority: 'high',
       tasks: [
-        { id: 'T-001', title: 'Build A', description: 'Build A', status: 'pending', retries: 0 },
-        { id: 'T-002', title: 'Test A', description: 'Test A', status: 'pending', retries: 0 },
+        {
+          id: 'T-001',
+          title: 'Build A',
+          description: 'Build A',
+          status: 'pending',
+          retries: 0,
+        },
+        {
+          id: 'T-002',
+          title: 'Test A',
+          description: 'Test A',
+          status: 'pending',
+          retries: 0,
+        },
       ],
     },
     {
@@ -467,7 +488,13 @@ function createTestPrdWithTasks() {
       acceptanceCriteria: ['works'],
       priority: 'medium',
       tasks: [
-        { id: 'T-003', title: 'Build B', description: 'Build B', status: 'pending', retries: 0 },
+        {
+          id: 'T-003',
+          title: 'Build B',
+          description: 'Build B',
+          status: 'pending',
+          retries: 0,
+        },
       ],
     },
   ];
@@ -497,7 +524,15 @@ function setupHardeningPhase(testDir: string, sessionId: string) {
   prd.stories[0].tasks[1].status = 'done';
   prd.stories[1].tasks[0].status = 'done';
   prd.hardening = [
-    { id: 'H-01-001', title: 'Edge test', description: 'Test edge case', category: 'edge_case', status: 'pending', wave: 1, retries: 0 },
+    {
+      id: 'H-01-001',
+      title: 'Edge test',
+      description: 'Test edge case',
+      category: 'edge_case',
+      status: 'pending',
+      wave: 1,
+      retries: 0,
+    },
   ];
   writeRalphthonPrd(testDir, prd);
 }

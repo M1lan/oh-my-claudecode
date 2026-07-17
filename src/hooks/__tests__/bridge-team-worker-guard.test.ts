@@ -55,7 +55,10 @@ describe('team-worker pre-tool guardrails', () => {
   it('allows worker-safe team api commands', async () => {
     const result = await processHook('pre-tool-use', {
       toolName: 'Bash',
-      toolInput: { command: 'omc team api claim-task --input \'{"team_name":"demo-team","task_id":"1","worker":"worker-1"}\' --json' },
+      toolInput: {
+        command:
+          'omc team api claim-task --input \'{"team_name":"demo-team","task_id":"1","worker":"worker-1"}\' --json',
+      },
     });
 
     expect(result.continue).toBe(true);

@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { findSkillFiles, getSkillsDir, ensureSkillsDir } from '../../hooks/learner/finder.js';
+import {
+  findSkillFiles,
+  getSkillsDir,
+  ensureSkillsDir,
+} from '../../hooks/learner/finder.js';
 import { PROJECT_SKILLS_SUBDIR } from '../../hooks/learner/constants.js';
 
 describe('Skill Finder', () => {
@@ -24,7 +28,7 @@ describe('Skill Finder', () => {
     writeFileSync(skillPath, '# Test Skill');
 
     const candidates = findSkillFiles(projectRoot);
-    const projectCandidates = candidates.filter(c => c.scope === 'project');
+    const projectCandidates = candidates.filter((c) => c.scope === 'project');
 
     // Should find at least the project skill (may also find user-level skills)
     expect(projectCandidates.length).toBe(1);
@@ -39,10 +43,12 @@ describe('Skill Finder', () => {
     writeFileSync(skillPath, '# Compat Skill');
 
     const candidates = findSkillFiles(projectRoot);
-    const projectCandidates = candidates.filter(c => c.scope === 'project');
+    const projectCandidates = candidates.filter((c) => c.scope === 'project');
 
-    expect(projectCandidates.some(c => c.path === skillPath)).toBe(true);
-    expect(projectCandidates.find(c => c.path === skillPath)?.sourceDir).toBe(compatDir);
+    expect(projectCandidates.some((c) => c.path === skillPath)).toBe(true);
+    expect(projectCandidates.find((c) => c.path === skillPath)?.sourceDir).toBe(
+      compatDir,
+    );
   });
 
   it('should prioritize project skills over user skills', () => {
@@ -53,7 +59,7 @@ describe('Skill Finder', () => {
     const candidates = findSkillFiles(projectRoot);
 
     // Project skill should come first
-    const projectSkill = candidates.find(c => c.scope === 'project');
+    const projectSkill = candidates.find((c) => c.scope === 'project');
     expect(projectSkill).toBeDefined();
   });
 
@@ -93,10 +99,12 @@ describe('Skill Finder', () => {
     writeFileSync(skillPath, '# Test Skill');
 
     const candidates = findSkillFiles(projectRoot);
-    const projectCandidate = candidates.find(c => c.scope === 'project');
+    const projectCandidate = candidates.find((c) => c.scope === 'project');
 
     expect(projectCandidate).toBeDefined();
-    expect(projectCandidate!.sourceDir).toBe(join(projectRoot, '.omc', 'skills'));
+    expect(projectCandidate!.sourceDir).toBe(
+      join(projectRoot, '.omc', 'skills'),
+    );
   });
 
   it('should filter by scope: project only', () => {
@@ -105,7 +113,7 @@ describe('Skill Finder', () => {
 
     const candidates = findSkillFiles(projectRoot, { scope: 'project' });
 
-    expect(candidates.every(c => c.scope === 'project')).toBe(true);
+    expect(candidates.every((c) => c.scope === 'project')).toBe(true);
     expect(candidates.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -116,8 +124,8 @@ describe('Skill Finder', () => {
     const candidates = findSkillFiles(projectRoot, { scope: 'user' });
 
     // Should NOT include the project skill
-    expect(candidates.every(c => c.scope === 'user')).toBe(true);
-    expect(candidates.find(c => c.path === skillPath)).toBeUndefined();
+    expect(candidates.every((c) => c.scope === 'user')).toBe(true);
+    expect(candidates.find((c) => c.path === skillPath)).toBeUndefined();
   });
 
   it('should respect depth limit for deep directories', () => {
@@ -132,7 +140,9 @@ describe('Skill Finder', () => {
     const candidates = findSkillFiles(projectRoot, { scope: 'project' });
 
     // Skill at depth 15 should NOT be found (limit is 10)
-    expect(candidates.find(c => c.path.includes('deep-skill.md'))).toBeUndefined();
+    expect(
+      candidates.find((c) => c.path.includes('deep-skill.md')),
+    ).toBeUndefined();
   });
 
   it('should accept sourceDir hint in getSkillsDir', () => {

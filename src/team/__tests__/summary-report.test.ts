@@ -165,10 +165,12 @@ describe('summary-report', () => {
       }
 
       const report = generateTeamReport(testDir, teamName);
-      const timelineMatch = report.match(/## Activity Timeline\n([\s\S]*?)\n\n/);
+      const timelineMatch = report.match(
+        /## Activity Timeline\n([\s\S]*?)\n\n/,
+      );
       expect(timelineMatch).toBeTruthy();
       const timeline = timelineMatch![1];
-      const lineCount = timeline.split('\n').filter(l => l.trim()).length;
+      const lineCount = timeline.split('\n').filter((l) => l.trim()).length;
       expect(lineCount).toBeLessThanOrEqual(50);
     });
 
@@ -202,7 +204,7 @@ describe('summary-report', () => {
     it('creates unique filenames with timestamps', async () => {
       const path1 = saveTeamReport(testDir, teamName);
       // Small delay to ensure different timestamp
-      await new Promise(resolve => setTimeout(resolve, 5));
+      await new Promise((resolve) => setTimeout(resolve, 5));
       const path2 = saveTeamReport(testDir, teamName);
       expect(path1).not.toBe(path2);
       expect(existsSync(path1)).toBe(true);

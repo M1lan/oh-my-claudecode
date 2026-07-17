@@ -17,7 +17,9 @@ function createFsMock(initialFiles: Record<string, string>) {
   const files = new Map(Object.entries(initialFiles));
   const directories = new Set<string>([CLAUDE_CONFIG_DIR, CACHE_DIR]);
 
-  const existsSync = vi.fn((path: string) => files.has(String(path)) || directories.has(String(path)));
+  const existsSync = vi.fn(
+    (path: string) => files.has(String(path)) || directories.has(String(path)),
+  );
   const readFileSync = vi.fn((path: string) => {
     const content = files.get(String(path));
     if (content == null) throw new Error(`ENOENT: ${path}`);
@@ -69,7 +71,11 @@ function createFsMock(initialFiles: Record<string, string>) {
   };
 }
 
-function setupMocks(fsModule: ReturnType<typeof createFsMock>['fsModule'], httpStatus: number, httpBody: string) {
+function setupMocks(
+  fsModule: ReturnType<typeof createFsMock>['fsModule'],
+  httpStatus: number,
+  httpBody: string,
+) {
   vi.doMock('../../utils/config-dir.js', () => ({
     getClaudeConfigDir: () => CLAUDE_CONFIG_DIR,
   }));
@@ -83,23 +89,30 @@ function setupMocks(fsModule: ReturnType<typeof createFsMock>['fsModule'], httpS
   vi.doMock('fs', () => fsModule);
   vi.doMock('https', () => ({
     default: {
-      request: vi.fn((_options: Record<string, unknown>, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-        const req = new EventEmitter() as EventEmitter & {
-          destroy: () => void;
-          end: () => void;
-        };
-        req.destroy = vi.fn();
-        req.end = () => {
-          setTimeout(() => {
-            const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-            res.statusCode = httpStatus;
-            callback(res);
-            res.emit('data', httpBody);
-            res.emit('end');
-          }, 1);
-        };
-        return req;
-      }),
+      request: vi.fn(
+        (
+          _options: Record<string, unknown>,
+          callback: (res: EventEmitter & { statusCode?: number }) => void,
+        ) => {
+          const req = new EventEmitter() as EventEmitter & {
+            destroy: () => void;
+            end: () => void;
+          };
+          req.destroy = vi.fn();
+          req.end = () => {
+            setTimeout(() => {
+              const res = new EventEmitter() as EventEmitter & {
+                statusCode?: number;
+              };
+              res.statusCode = httpStatus;
+              callback(res);
+              res.emit('data', httpBody);
+              res.emit('end');
+            }, 1);
+          };
+          return req;
+        },
+      ),
     },
   }));
 }
@@ -154,13 +167,21 @@ describe('usage API stale data handling', () => {
     });
 
     const { fsModule } = createFsMock({ [CACHE_PATH]: expiredCache });
-    setupMocks(fsModule, 200, JSON.stringify({
-      data: {
-        limits: [
-          { type: 'TOKENS_LIMIT', percentage: 25, nextResetTime: Date.now() + 3_600_000 },
-        ],
-      },
-    }));
+    setupMocks(
+      fsModule,
+      200,
+      JSON.stringify({
+        data: {
+          limits: [
+            {
+              type: 'TOKENS_LIMIT',
+              percentage: 25,
+              nextResetTime: Date.now() + 3_600_000,
+            },
+          ],
+        },
+      }),
+    );
 
     const { getUsage } = await import('../../hud/usage-api.js');
     const result = await getUsage();
@@ -198,13 +219,21 @@ describe('usage API stale data handling', () => {
     });
 
     const { files, fsModule } = createFsMock({ [CACHE_PATH]: expiredCache });
-    setupMocks(fsModule, 200, JSON.stringify({
-      data: {
-        limits: [
-          { type: 'TOKENS_LIMIT', percentage: 25, nextResetTime: Date.now() + 3_600_000 },
-        ],
-      },
-    }));
+    setupMocks(
+      fsModule,
+      200,
+      JSON.stringify({
+        data: {
+          limits: [
+            {
+              type: 'TOKENS_LIMIT',
+              percentage: 25,
+              nextResetTime: Date.now() + 3_600_000,
+            },
+          ],
+        },
+      }),
+    );
 
     const now = Date.now();
     const { getUsage } = await import('../../hud/usage-api.js');
@@ -234,7 +263,9 @@ describe('usage API stale data handling', () => {
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
     vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+      ...(await vi.importActual<typeof import('child_process')>(
+        'child_process',
+      )),
       execSync: vi.fn(),
     }));
     vi.doMock('fs', () => fsModule);
@@ -327,10 +358,14 @@ describe('usage API stale data handling', () => {
       errorReason: 'network',
     });
 
-    const { fsModule } = createFsMock({ [CACHE_PATH]: validTransientFailureCache });
+    const { fsModule } = createFsMock({
+      [CACHE_PATH]: validTransientFailureCache,
+    });
     setupMocks(fsModule, 500, '');
 
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const httpsModule = (await import('https')) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
     const { getUsage } = await import('../../hud/usage-api.js');
     const result = await getUsage();
 

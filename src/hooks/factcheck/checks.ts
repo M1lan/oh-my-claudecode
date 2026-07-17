@@ -7,11 +7,7 @@
 
 import { existsSync } from 'fs';
 import { resolve } from 'path';
-import type {
-  FactcheckPolicy,
-  Mismatch,
-  FactcheckMode,
-} from './types.js';
+import type { FactcheckPolicy, Mismatch, FactcheckMode } from './types.js';
 import { REQUIRED_FIELDS, REQUIRED_GATES } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -98,7 +94,11 @@ export function checkPaths(
     let prefixBlocked = false;
     for (const prefix of policy.forbidden_path_prefixes) {
       if (pathStr.startsWith(prefix)) {
-        out.push({ check: 'H', severity: 'FAIL', detail: `Forbidden path prefix: ${pathStr}` });
+        out.push({
+          check: 'H',
+          severity: 'FAIL',
+          detail: `Forbidden path prefix: ${pathStr}`,
+        });
         prefixBlocked = true;
         break;
       }
@@ -107,14 +107,22 @@ export function checkPaths(
     if (!prefixBlocked) {
       for (const fragment of policy.forbidden_path_substrings) {
         if (pathStr.includes(fragment)) {
-          out.push({ check: 'H', severity: 'FAIL', detail: `Forbidden path fragment: ${pathStr}` });
+          out.push({
+            check: 'H',
+            severity: 'FAIL',
+            detail: `Forbidden path fragment: ${pathStr}`,
+          });
           break;
         }
       }
     }
 
     if (!existsSync(pathStr)) {
-      out.push({ check: 'C', severity: 'FAIL', detail: `File not found: ${pathStr}` });
+      out.push({
+        check: 'C',
+        severity: 'FAIL',
+        detail: `File not found: ${pathStr}`,
+      });
     }
   }
 
@@ -136,17 +144,21 @@ export function checkCommands(
   const commands = ((claims.commands_executed as string[]) ?? []).map(String);
 
   for (const cmd of commands) {
-    const hitPrefix = policy.forbidden_path_prefixes.some(
-      forbidden => cmd.includes(forbidden),
+    const hitPrefix = policy.forbidden_path_prefixes.some((forbidden) =>
+      cmd.includes(forbidden),
     );
     if (!hitPrefix) continue;
 
     const stripped = cmd.trim().replace(/^\(/, '');
-    const isReadOnly = policy.readonly_command_prefixes.some(
-      prefix => stripped.startsWith(prefix),
+    const isReadOnly = policy.readonly_command_prefixes.some((prefix) =>
+      stripped.startsWith(prefix),
     );
     if (!isReadOnly) {
-      out.push({ check: 'H', severity: 'FAIL', detail: `Forbidden mutating command: ${cmd}` });
+      out.push({
+        check: 'H',
+        severity: 'FAIL',
+        detail: `Forbidden mutating command: ${cmd}`,
+      });
     }
   }
 
@@ -166,9 +178,9 @@ export function checkCwdParity(
   mode: FactcheckMode,
   policy: FactcheckPolicy,
 ): Mismatch | null {
-  const enforceCwd = policy.warn_on_cwd_mismatch && (
-    mode !== 'quick' || policy.enforce_cwd_parity_in_quick
-  );
+  const enforceCwd =
+    policy.warn_on_cwd_mismatch &&
+    (mode !== 'quick' || policy.enforce_cwd_parity_in_quick);
 
   if (!enforceCwd || !claimsCwd) return null;
 

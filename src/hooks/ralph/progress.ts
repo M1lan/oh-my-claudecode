@@ -10,7 +10,13 @@
  * - Learnings captured for future iterations
  */
 
-import { existsSync, readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  appendFileSync,
+  mkdirSync,
+} from 'fs';
 import { join } from 'path';
 import { getOmcRoot } from '../../lib/worktree-paths.js';
 
@@ -149,7 +155,7 @@ export function parseProgress(content: string): ProgressLog {
     // Parse patterns
     if (inPatterns && trimmed.startsWith('-')) {
       patterns.push({
-        pattern: trimmed.slice(1).trim()
+        pattern: trimmed.slice(1).trim(),
       });
       continue;
     }
@@ -165,7 +171,7 @@ export function parseProgress(content: string): ProgressLog {
         storyId: headerMatch[2],
         implementation: [],
         filesChanged: [],
-        learnings: []
+        learnings: [],
       };
       currentSection = '';
       continue;
@@ -177,7 +183,10 @@ export function parseProgress(content: string): ProgressLog {
         currentSection = 'learnings';
         continue;
       }
-      if (trimmed.toLowerCase().includes('files changed') || trimmed.toLowerCase().includes('files:')) {
+      if (
+        trimmed.toLowerCase().includes('files changed') ||
+        trimmed.toLowerCase().includes('files:')
+      ) {
         currentSection = 'files';
         continue;
       }
@@ -202,7 +211,7 @@ export function parseProgress(content: string): ProgressLog {
   return {
     patterns,
     entries,
-    startedAt
+    startedAt,
   };
 }
 
@@ -261,7 +270,7 @@ ${ENTRY_SEPARATOR}
  */
 export function appendProgress(
   directory: string,
-  entry: Omit<ProgressEntry, 'timestamp'>
+  entry: Omit<ProgressEntry, 'timestamp'>,
 ): boolean {
   let progressPath = findProgressPath(directory);
 
@@ -280,12 +289,12 @@ export function appendProgress(
   const lines: string[] = [
     '',
     `## [${dateStr} ${timeStr}] - ${entry.storyId}`,
-    ''
+    '',
   ];
 
   if (entry.implementation.length > 0) {
     lines.push('**What was implemented:**');
-    entry.implementation.forEach(item => {
+    entry.implementation.forEach((item) => {
       lines.push(`- ${item}`);
     });
     lines.push('');
@@ -293,7 +302,7 @@ export function appendProgress(
 
   if (entry.filesChanged.length > 0) {
     lines.push('**Files changed:**');
-    entry.filesChanged.forEach(file => {
+    entry.filesChanged.forEach((file) => {
       lines.push(`- ${file}`);
     });
     lines.push('');
@@ -301,7 +310,7 @@ export function appendProgress(
 
   if (entry.learnings.length > 0) {
     lines.push('**Learnings for future iterations:**');
-    entry.learnings.forEach(learning => {
+    entry.learnings.forEach((learning) => {
       lines.push(`- ${learning}`);
     });
     lines.push('');
@@ -322,7 +331,11 @@ export function appendProgress(
  * Add a codebase pattern to the patterns section
  * @param retryCount - Internal retry counter to prevent infinite recursion
  */
-export function addPattern(directory: string, pattern: string, retryCount: number = 0): boolean {
+export function addPattern(
+  directory: string,
+  pattern: string,
+  retryCount: number = 0,
+): boolean {
   // Guard against infinite recursion
   if (retryCount > 1) {
     return false;
@@ -377,13 +390,16 @@ export function getPatterns(directory: string): string[] {
     return [];
   }
 
-  return progress.patterns.map(p => p.pattern);
+  return progress.patterns.map((p) => p.pattern);
 }
 
 /**
  * Get recent learnings for context injection
  */
-export function getRecentLearnings(directory: string, limit: number = 5): string[] {
+export function getRecentLearnings(
+  directory: string,
+  limit: number = 5,
+): string[] {
   const progress = readProgress(directory);
   if (!progress) {
     return [];
@@ -417,10 +433,10 @@ export function formatPatternsForContext(directory: string): string {
     '<codebase-patterns>',
     '',
     '## Known Patterns from Previous Iterations',
-    ''
+    '',
   ];
 
-  patterns.forEach(pattern => {
+  patterns.forEach((pattern) => {
     lines.push(`- ${pattern}`);
   });
 
@@ -434,7 +450,10 @@ export function formatPatternsForContext(directory: string): string {
 /**
  * Format recent progress for context injection
  */
-export function formatProgressForContext(directory: string, limit: number = 3): string {
+export function formatProgressForContext(
+  directory: string,
+  limit: number = 3,
+): string {
   const progress = readProgress(directory);
   if (!progress || progress.entries.length === 0) {
     return '';
@@ -442,17 +461,12 @@ export function formatProgressForContext(directory: string, limit: number = 3): 
 
   const recent = progress.entries.slice(-limit);
 
-  const lines = [
-    '<recent-progress>',
-    '',
-    '## Recent Progress',
-    ''
-  ];
+  const lines = ['<recent-progress>', '', '## Recent Progress', ''];
 
   for (const entry of recent) {
     lines.push(`### ${entry.storyId} (${entry.timestamp})`);
     if (entry.implementation.length > 0) {
-      entry.implementation.forEach(item => {
+      entry.implementation.forEach((item) => {
         lines.push(`- ${item}`);
       });
     }
@@ -479,12 +493,12 @@ export function formatLearningsForContext(directory: string): string {
     '<learnings>',
     '',
     '## Learnings from Previous Iterations',
-    ''
+    '',
   ];
 
   // Deduplicate learnings
   const unique = [...new Set(learnings)];
-  unique.forEach(learning => {
+  unique.forEach((learning) => {
     lines.push(`- ${learning}`);
   });
 

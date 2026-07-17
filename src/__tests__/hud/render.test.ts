@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { limitOutputLines } from '../../hud/render.js';
 import { render } from '../../hud/render.js';
-import { DEFAULT_HUD_CONFIG, PRESET_CONFIGS, type HudRenderContext, type HudConfig } from '../../hud/types.js';
+import {
+  DEFAULT_HUD_CONFIG,
+  PRESET_CONFIGS,
+  type HudRenderContext,
+  type HudConfig,
+} from '../../hud/types.js';
 import { stringWidth } from '../../utils/string-width.js';
 
 // Force non-local so the OMC banner omits the "L" local-build suffix under test.
@@ -37,14 +42,32 @@ describe('limitOutputLines', () => {
     });
 
     it('truncates lines with indicator when count exceeds limit', () => {
-      const lines = ['header', 'detail1', 'detail2', 'detail3', 'detail4', 'detail5'];
+      const lines = [
+        'header',
+        'detail1',
+        'detail2',
+        'detail3',
+        'detail4',
+        'detail5',
+      ];
       const result = limitOutputLines(lines, 4);
-      expect(result).toEqual(['header', 'detail1', 'detail2', '... (+3 lines)']);
+      expect(result).toEqual([
+        'header',
+        'detail1',
+        'detail2',
+        '... (+3 lines)',
+      ]);
       expect(result).toHaveLength(4);
     });
 
     it('preserves the first (header) line when truncating', () => {
-      const lines = ['[OMC] Header Line', 'Agents: ...', 'Todos: ...', 'Analytics: ...', 'Extra: ...'];
+      const lines = [
+        '[OMC] Header Line',
+        'Agents: ...',
+        'Todos: ...',
+        'Analytics: ...',
+        'Extra: ...',
+      ];
       const result = limitOutputLines(lines, 3);
       expect(result[0]).toBe('[OMC] Header Line');
       expect(result).toHaveLength(3);
@@ -319,7 +342,8 @@ describe('gitInfoPosition configuration', () => {
       const context = createMockContext();
       const config = createMockConfig('above');
       // Simulate undefined by omitting from elements
-      const { gitInfoPosition: _, ...elementsWithoutPosition } = config.elements;
+      const { gitInfoPosition: _, ...elementsWithoutPosition } =
+        config.elements;
       const configWithoutPosition = {
         ...config,
         elements: elementsWithoutPosition as typeof config.elements,
@@ -330,7 +354,8 @@ describe('gitInfoPosition configuration', () => {
 
       // Should default to above behavior
       // Git info should be in the first line (if present)
-      const firstLineIsGitInfo = lines[0]?.includes('repo:') || lines[0]?.includes('branch:');
+      const firstLineIsGitInfo =
+        lines[0]?.includes('repo:') || lines[0]?.includes('branch:');
       const firstLineIsHeader = lines[0]?.includes('[OMC]');
 
       // Either git info is first, or if no git info, header is first
@@ -394,7 +419,7 @@ describe('maxWidth wrapMode behavior', () => {
   const createWrapConfig = (
     wrapMode: 'truncate' | 'wrap',
     maxWidth: number,
-    maxOutputLines = 6
+    maxOutputLines = 6,
   ): HudConfig => ({
     preset: 'focused',
     elements: {
@@ -445,7 +470,7 @@ describe('maxWidth wrapMode behavior', () => {
 
     expect(lines.length).toBeGreaterThan(1);
     expect(lines[0]).toContain('[OMC');
-    lines.forEach(line => {
+    lines.forEach((line) => {
       expect(stringWidth(line)).toBeLessThanOrEqual(24);
     });
   });
@@ -459,7 +484,7 @@ describe('maxWidth wrapMode behavior', () => {
     const lines = result.split('\n');
 
     expect(lines).toHaveLength(2);
-    lines.forEach(line => {
+    lines.forEach((line) => {
       expect(stringWidth(line)).toBeLessThanOrEqual(14);
     });
   });
@@ -495,7 +520,11 @@ describe('token usage rendering', () => {
     pendingPermission: null,
     thinkingState: null,
     sessionHealth: { durationMinutes: 10, messageCount: 5, health: 'healthy' },
-    lastRequestTokenUsage: { inputTokens: 1250, outputTokens: 340, reasoningTokens: 120 },
+    lastRequestTokenUsage: {
+      inputTokens: 1250,
+      outputTokens: 340,
+      reasoningTokens: 120,
+    },
     sessionTotalTokens: 6590,
     omcVersion: '4.5.4',
     updateAvailable: null,
@@ -549,7 +578,6 @@ describe('token usage rendering', () => {
   });
 });
 
-
 describe('layout element ordering', () => {
   const createMockContext = (): HudRenderContext => ({
     contextPercent: 50,
@@ -601,7 +629,10 @@ describe('layout element ordering', () => {
     },
     thresholds: DEFAULT_HUD_CONFIG.thresholds,
     staleTaskThresholdMinutes: 30,
-    contextLimitWarning: { ...DEFAULT_HUD_CONFIG.contextLimitWarning, threshold: 101 },
+    contextLimitWarning: {
+      ...DEFAULT_HUD_CONFIG.contextLimitWarning,
+      threshold: 101,
+    },
     usageApiPollIntervalMs: DEFAULT_HUD_CONFIG.usageApiPollIntervalMs,
     layout,
   });
@@ -634,7 +665,7 @@ describe('layout element ordering', () => {
     const lines = result.split('\n');
 
     // Find the main line (has [OMC])
-    const mainLine = lines.find(l => l.includes('[OMC'));
+    const mainLine = lines.find((l) => l.includes('[OMC'));
     expect(mainLine).toBeDefined();
 
     // contextBar should appear before [OMC]
@@ -721,7 +752,7 @@ describe('layout element ordering', () => {
     expect(lines[0]).toContain('branch:');
 
     // main should use custom order (ctx before OMC)
-    const mainLine = lines.find(l => l.includes('[OMC'));
+    const mainLine = lines.find((l) => l.includes('[OMC'));
     expect(mainLine).toBeDefined();
     const ctxIdx = mainLine!.indexOf('ctx:');
     const omcIdx = mainLine!.indexOf('[OMC');
@@ -734,23 +765,29 @@ describe('layout element ordering', () => {
 
     const result = await render(context, config);
     const lines = result.split('\n');
-    const mainLine = lines.find(l => l.includes('[OMC'));
+    const mainLine = lines.find((l) => l.includes('[OMC'));
 
     expect(mainLine).toBeDefined();
     expect(mainLine!).toContain('ctx:');
     expect(mainLine!).toContain('session:');
     expect(mainLine!).toMatch(/(?:🔧5|T:5)/);
     expect(mainLine!.indexOf('ctx:')).toBeLessThan(mainLine!.indexOf('[OMC'));
-    expect(mainLine!.indexOf('[OMC')).toBeLessThan(mainLine!.indexOf('session:'));
+    expect(mainLine!.indexOf('[OMC')).toBeLessThan(
+      mainLine!.indexOf('session:'),
+    );
   });
 
   it('ignores unknown names in elementOrder silently', async () => {
     const context = createMockContext();
-    const config = createElementOrderConfig(['unknownElement', 'contextBar', 'omcLabel']);
+    const config = createElementOrderConfig([
+      'unknownElement',
+      'contextBar',
+      'omcLabel',
+    ]);
 
     const result = await render(context, config);
     const lines = result.split('\n');
-    const mainLine = lines.find(l => l.includes('[OMC'));
+    const mainLine = lines.find((l) => l.includes('[OMC'));
 
     expect(mainLine).toBeDefined();
     expect(mainLine!.indexOf('ctx:')).toBeLessThan(mainLine!.indexOf('[OMC'));
@@ -767,7 +804,7 @@ describe('layout element ordering', () => {
 
     const result = await render(context, config);
     const lines = result.split('\n');
-    const mainLine = lines.find(l => l.includes('[OMC'));
+    const mainLine = lines.find((l) => l.includes('[OMC'));
 
     expect(mainLine).toBeDefined();
     expect(mainLine!.indexOf('[OMC')).toBeLessThan(mainLine!.indexOf('ctx:'));
@@ -792,7 +829,11 @@ describe('optional HUD line defaults', () => {
       customBuckets: null,
       pendingPermission: null,
       thinkingState: null,
-      sessionHealth: { durationMinutes: 10, messageCount: 5, health: 'healthy' },
+      sessionHealth: {
+        durationMinutes: 10,
+        messageCount: 5,
+        health: 'healthy',
+      },
       omcVersion: '4.5.4',
       updateAvailable: null,
       toolCallCount: 0,
@@ -836,7 +877,10 @@ describe('optional HUD line defaults', () => {
 });
 
 describe('HUD model display', () => {
-  const createModelContext = (modelName: string | null, modelId: string | null = null): HudRenderContext => ({
+  const createModelContext = (
+    modelName: string | null,
+    modelId: string | null = null,
+  ): HudRenderContext => ({
     contextPercent: 0,
     modelName,
     modelId,
@@ -898,7 +942,10 @@ describe('HUD model display', () => {
   };
 
   it('renders the Claude model when statusline stdin provides reliable metadata', async () => {
-    const output = await render(createModelContext('Claude Sonnet 4.5'), modelConfig);
+    const output = await render(
+      createModelContext('Claude Sonnet 4.5'),
+      modelConfig,
+    );
 
     expect(output.split('\n')).toHaveLength(1);
     expect(output).toContain('[OMC#4.14.0]');
@@ -906,16 +953,16 @@ describe('HUD model display', () => {
   });
 
   it('renders full format from raw model id when display name is also available', async () => {
-    const output = await render(createModelContext(
-      'Claude Sonnet 4.5',
-      'claude-sonnet-4-5-20250929',
-    ), {
-      ...modelConfig,
-      elements: {
-        ...modelConfig.elements,
-        modelFormat: 'full',
+    const output = await render(
+      createModelContext('Claude Sonnet 4.5', 'claude-sonnet-4-5-20250929'),
+      {
+        ...modelConfig,
+        elements: {
+          ...modelConfig.elements,
+          modelFormat: 'full',
+        },
       },
-    });
+    );
 
     expect(output).toContain('Model: claude-sonnet-4-5-20250929');
     expect(output).not.toContain('Claude Sonnet 4.5');

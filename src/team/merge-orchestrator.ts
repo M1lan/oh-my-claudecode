@@ -59,12 +59,25 @@ import { existsSync } from 'node:fs';
 import { mkdir, appendFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-import { atomicWriteJson, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import {
+  atomicWriteJson,
+  ensureDirWithMode,
+  validateResolvedPath,
+} from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import { isRuntimeV2Enabled } from './runtime-flags.js';
 import { sanitizeName } from './tmux-session.js';
-import { listTeamWorktrees, getWorktreePath, getBranchName } from './git-worktree.js';
-import { checkMergeConflicts, mergeWorkerBranch, validateBranchName, configureHarnessMergeAttributes } from './merge-coordinator.js';
+import {
+  listTeamWorktrees,
+  getWorktreePath,
+  getBranchName,
+} from './git-worktree.js';
+import {
+  checkMergeConflicts,
+  mergeWorkerBranch,
+  validateBranchName,
+  configureHarnessMergeAttributes,
+} from './merge-coordinator.js';
 import { appendToInbox } from './worker-bootstrap.js';
 import { appendToLeaderInbox, ensureLeaderInbox } from './leader-inbox.js';
 import {
@@ -103,7 +116,9 @@ export interface OrchestratorHandle {
    * Run a final merge sweep for every worker whose lastSha is newer than what
    * has been merged, then stop polling. Bounded by drainTimeoutMs.
    */
-  drainAndStop(): Promise<{ unmerged: Array<{ workerName: string; reason: string }> }>;
+  drainAndStop(): Promise<{
+    unmerged: Array<{ workerName: string; reason: string }>;
+  }>;
   /** Run one poll cycle immediately (testing / debugging). */
   pollOnce(): Promise<void>;
   /** Inspect in-memory state (testing / debugging). */
@@ -123,7 +138,10 @@ interface PersistedState {
   service?: { generation: number; attemptId: string };
 }
 
-const liveServiceOwners = new Map<string, { generation: number; attemptId: string }>();
+const liveServiceOwners = new Map<
+  string,
+  { generation: number; attemptId: string }
+>();
 
 interface WorkerEntry {
   workerName: string;
@@ -185,13 +203,17 @@ function orchestratorEventLogPath(repoRoot: string, teamName: string): string {
 function assertLeaderBranchAllowed(leaderBranch: string): void {
   const stripped = leaderBranch.replace(/^refs\/heads\//i, '').toLowerCase();
   if (stripped === 'main' || stripped === 'master') {
-    throw new Error('auto-merge refuses main/master leader branch — use a feature branch');
+    throw new Error(
+      'auto-merge refuses main/master leader branch — use a feature branch',
+    );
   }
 }
 
 function assertRuntimeV2Gate(): void {
   if (!isRuntimeV2Enabled()) {
-    throw new Error('auto-merge requires runtime v2 (OMC_RUNTIME_V2 is explicitly disabled).');
+    throw new Error(
+      'auto-merge requires runtime v2 (OMC_RUNTIME_V2 is explicitly disabled).',
+    );
   }
 }
 
@@ -264,12 +286,16 @@ function gitRevParseHead(repoRoot: string, branch: string): string {
 
 function gitPath(worktreePath: string, gitPathName: string): string {
   try {
-    const resolved = execFileSync('git', ['rev-parse', '--git-path', gitPathName], {
-      cwd: worktreePath,
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      windowsHide: true,
-    }).trim();
+    const resolved = execFileSync(
+      'git',
+      ['rev-parse', '--git-path', gitPathName],
+      {
+        cwd: worktreePath,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        windowsHide: true,
+      },
+    ).trim();
     if (resolved) return resolved;
   } catch {
     // Fall through to the legacy in-worktree .git directory path. This keeps
@@ -302,21 +328,32 @@ function isWorktreeRegistered(repoRoot: string, wtPath: string): boolean {
   return false;
 }
 
-function ensureMergerWorktree(repoRoot: string, mergerPath: string, leaderBranch: string): void {
+function ensureMergerWorktree(
+  repoRoot: string,
+  mergerPath: string,
+  leaderBranch: string,
+): void {
   ensureDirWithMode(dirname(mergerPath));
   if (existsSync(mergerPath) && isWorktreeRegistered(repoRoot, mergerPath)) {
     return; // reuse
   }
   // First-time create — allow the hidden merger worktree to check out the
   // leader branch even when the normal leader repo already has it checked out.
-  execFileSync('git', ['worktree', 'add', '--force', mergerPath, leaderBranch], {
-    cwd: repoRoot,
-    stdio: 'pipe',
-    windowsHide: true,
-  });
+  execFileSync(
+    'git',
+    ['worktree', 'add', '--force', mergerPath, leaderBranch],
+    {
+      cwd: repoRoot,
+      stdio: 'pipe',
+      windowsHide: true,
+    },
+  );
 }
 
-function preflightMergerWorktree(mergerPath: string, leaderBranch: string): void {
+function preflightMergerWorktree(
+  mergerPath: string,
+  leaderBranch: string,
+): void {
   // Best-effort fetch (ignore failures — offline OK).
   try {
     execFileSync('git', ['fetch', '--no-tags', 'origin', leaderBranch], {
@@ -385,20 +422,37 @@ export async function startMergeOrchestrator(
   if (existsSync(persistedPath)) {
     try {
       const { readFileSync } = await import('node:fs');
-      persisted = JSON.parse(readFileSync(persistedPath, 'utf-8')) as PersistedState;
+      persisted = JSON.parse(
+        readFileSync(persistedPath, 'utf-8'),
+      ) as PersistedState;
     } catch {
       persisted = { lastShas: {} };
     }
   }
-  const service = config.serviceGeneration === undefined || config.serviceAttemptId === undefined
-    ? undefined : { generation: config.serviceGeneration, attemptId: config.serviceAttemptId };
+  const service =
+    config.serviceGeneration === undefined ||
+    config.serviceAttemptId === undefined
+      ? undefined
+      : {
+          generation: config.serviceGeneration,
+          attemptId: config.serviceAttemptId,
+        };
   const live = liveServiceOwners.get(config.teamName);
-  if (service && live && (live.generation > service.generation || (live.generation === service.generation && live.attemptId !== service.attemptId))) {
+  if (
+    service &&
+    live &&
+    (live.generation > service.generation ||
+      (live.generation === service.generation &&
+        live.attemptId !== service.attemptId))
+  ) {
     throw new Error('auto_merge_service_owned_by_live_generation');
   }
   if (service) liveServiceOwners.set(config.teamName, service);
-  const ownsService = (): boolean => !service || liveServiceOwners.get(config.teamName)?.generation === service.generation
-    && liveServiceOwners.get(config.teamName)?.attemptId === service.attemptId;
+  const ownsService = (): boolean =>
+    !service ||
+    (liveServiceOwners.get(config.teamName)?.generation ===
+      service.generation &&
+      liveServiceOwners.get(config.teamName)?.attemptId === service.attemptId);
 
   const workers = new Map<string, WorkerEntry>();
   const pausedWorkers = new Set<string>(); // workers mid-rebase (cadence paused)
@@ -408,7 +462,10 @@ export async function startMergeOrchestrator(
   function persistState(): void {
     const payload: PersistedState = {
       lastShas: Object.fromEntries(
-        Array.from(workers.values()).map((w) => [w.workerName, w.lastObservedSha]),
+        Array.from(workers.values()).map((w) => [
+          w.workerName,
+          w.lastObservedSha,
+        ]),
       ),
       ...(service ? { service } : {}),
     };
@@ -441,11 +498,15 @@ export async function startMergeOrchestrator(
 
       // Best-effort fetch.
       try {
-        execFileSync('git', ['fetch', '--no-tags', 'origin', config.leaderBranch], {
-          cwd: wtPath,
-          stdio: 'pipe',
-          windowsHide: true,
-        });
+        execFileSync(
+          'git',
+          ['fetch', '--no-tags', 'origin', config.leaderBranch],
+          {
+            cwd: wtPath,
+            stdio: 'pipe',
+            windowsHide: true,
+          },
+        );
       } catch {
         // offline OK
       }
@@ -480,12 +541,16 @@ export async function startMergeOrchestrator(
 
         const baseSha = (() => {
           try {
-            return execFileSync('git', ['rev-parse', `refs/heads/${config.leaderBranch}`], {
-              cwd: config.repoRoot,
-              encoding: 'utf-8',
-              stdio: 'pipe',
-              windowsHide: true,
-            }).trim();
+            return execFileSync(
+              'git',
+              ['rev-parse', `refs/heads/${config.leaderBranch}`],
+              {
+                cwd: config.repoRoot,
+                encoding: 'utf-8',
+                stdio: 'pipe',
+                windowsHide: true,
+              },
+            ).trim();
           } catch {
             return 'unknown';
           }
@@ -501,7 +566,12 @@ export async function startMergeOrchestrator(
           observedAt: Date.now(),
         });
         try {
-          await appendToInbox(config.teamName, other.workerName, message, config.cwd);
+          await appendToInbox(
+            config.teamName,
+            other.workerName,
+            message,
+            config.cwd,
+          );
         } catch {
           // best-effort — don't crash poller on inbox write failure
         }
@@ -553,7 +623,12 @@ export async function startMergeOrchestrator(
           mergeBaseSha = execFileSync(
             'git',
             ['merge-base', config.leaderBranch, entry.workerBranch],
-            { cwd: mergerPath, encoding: 'utf-8', stdio: 'pipe', windowsHide: true },
+            {
+              cwd: mergerPath,
+              encoding: 'utf-8',
+              stdio: 'pipe',
+              windowsHide: true,
+            },
           ).trim();
         } catch {
           // best-effort
@@ -595,7 +670,10 @@ export async function startMergeOrchestrator(
           workerName: entry.workerName,
           workerBranch: entry.workerBranch,
           leaderBranch: config.leaderBranch,
-          conflictingFiles: result.conflicts.length > 0 ? result.conflicts : ['(merge failed after clean check)'],
+          conflictingFiles:
+            result.conflicts.length > 0
+              ? result.conflicts
+              : ['(merge failed after clean check)'],
           mergeBaseSha: 'unknown',
           observedAt: Date.now(),
         });
@@ -711,7 +789,12 @@ export async function startMergeOrchestrator(
           .filter((s) => s.length > 0);
         const audit = `## Auto-commit audit: the following files were modified during rebase pause and will be folded into the next auto-commit:\n${dirtyFiles.map((f) => `- \`${f}\``).join('\n')}`;
         try {
-          await appendToInbox(config.teamName, entry.workerName, audit, config.cwd);
+          await appendToInbox(
+            config.teamName,
+            entry.workerName,
+            audit,
+            config.cwd,
+          );
         } catch {
           // best-effort
         }
@@ -749,7 +832,11 @@ export async function startMergeOrchestrator(
       // produce safe names, but we re-validate here so any future change to
       // the naming scheme can't accidentally bypass this guard.
       validateBranchName(workerBranch);
-      const wtPath = getWorktreePath(config.repoRoot, config.teamName, workerName);
+      const wtPath = getWorktreePath(
+        config.repoRoot,
+        config.teamName,
+        workerName,
+      );
       let seedSha = persisted.lastShas[workerName] ?? '';
       if (!seedSha) {
         try {
@@ -788,7 +875,9 @@ export async function startMergeOrchestrator(
       await runPollOnce();
     },
 
-    async drainAndStop(): Promise<{ unmerged: Array<{ workerName: string; reason: string }> }> {
+    async drainAndStop(): Promise<{
+      unmerged: Array<{ workerName: string; reason: string }>;
+    }> {
       if (!ownsService()) return { unmerged: [] };
       stopped = true;
       clearInterval(interval);
@@ -802,7 +891,10 @@ export async function startMergeOrchestrator(
       for (const entry of candidates) {
         const remaining = drainTimeoutMs - (Date.now() - start);
         if (remaining <= 0) {
-          unmerged.push({ workerName: entry.workerName, reason: 'drain-timeout' });
+          unmerged.push({
+            workerName: entry.workerName,
+            reason: 'drain-timeout',
+          });
           continue;
         }
         const merged = await Promise.race([
@@ -865,7 +957,10 @@ export async function startMergeOrchestrator(
       return {
         workers: Array.from(workers.keys()),
         lastShas: Object.fromEntries(
-          Array.from(workers.values()).map((w) => [w.workerName, w.lastObservedSha]),
+          Array.from(workers.values()).map((w) => [
+            w.workerName,
+            w.lastObservedSha,
+          ]),
         ),
         mergerWorktreePath: mergerPath,
       };
@@ -886,7 +981,9 @@ export async function recoverFromRestart(
   if (existsSync(persistedPath)) {
     try {
       const { readFileSync } = await import('node:fs');
-      const persisted = JSON.parse(readFileSync(persistedPath, 'utf-8')) as PersistedState;
+      const persisted = JSON.parse(
+        readFileSync(persistedPath, 'utf-8'),
+      ) as PersistedState;
       persistedShasLoaded = Object.keys(persisted.lastShas ?? {}).length;
     } catch {
       persistedShasLoaded = 0;
@@ -918,7 +1015,12 @@ Runtime restarted while your branch was mid-rebase onto \`${config.leaderBranch}
 Cadence remains paused. Resolve and \`git rebase --continue\`, or \`git rebase --abort\` to bail.
 Cadence resumes once the git rebase state is gone.`;
     try {
-      await appendToInbox(config.teamName, entry.workerName, message, config.cwd);
+      await appendToInbox(
+        config.teamName,
+        entry.workerName,
+        message,
+        config.cwd,
+      );
     } catch {
       // best-effort
     }

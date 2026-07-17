@@ -1,6 +1,6 @@
 /**
  * Custom Integration Presets
- * 
+ *
  * Pre-configured templates for popular integrations like OpenClaw, n8n, etc.
  */
 
@@ -31,20 +31,25 @@ export const CUSTOM_INTEGRATION_PRESETS: Record<string, PresetConfig> = {
     defaultConfig: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      bodyTemplate: JSON.stringify({
-        event: '{{event}}',
-        instruction: 'Session {{sessionId}} {{event}} for project {{projectName}}',
-        timestamp: '{{timestamp}}',
-        context: {
-          projectPath: '{{projectPath}}',
-          projectName: '{{projectName}}',
-          sessionId: '{{sessionId}}'
-        }
-      }, null, 2),
-      timeout: 10000
+      bodyTemplate: JSON.stringify(
+        {
+          event: '{{event}}',
+          instruction:
+            'Session {{sessionId}} {{event}} for project {{projectName}}',
+          timestamp: '{{timestamp}}',
+          context: {
+            projectPath: '{{projectPath}}',
+            projectName: '{{projectName}}',
+            sessionId: '{{sessionId}}',
+          },
+        },
+        null,
+        2,
+      ),
+      timeout: 10000,
     },
     suggestedEvents: ['session-start', 'session-end', 'stop'],
-    documentationUrl: 'https://github.com/your-org/openclaw'
+    documentationUrl: 'https://github.com/your-org/openclaw',
   },
 
   n8n: {
@@ -54,18 +59,23 @@ export const CUSTOM_INTEGRATION_PRESETS: Record<string, PresetConfig> = {
     defaultConfig: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      bodyTemplate: JSON.stringify({
-        event: '{{event}}',
-        sessionId: '{{sessionId}}',
-        projectName: '{{projectName}}',
-        projectPath: '{{projectPath}}',
-        timestamp: '{{timestamp}}',
-        tmuxSession: '{{tmuxSession}}'
-      }, null, 2),
-      timeout: 10000
+      bodyTemplate: JSON.stringify(
+        {
+          event: '{{event}}',
+          sessionId: '{{sessionId}}',
+          projectName: '{{projectName}}',
+          projectPath: '{{projectPath}}',
+          timestamp: '{{timestamp}}',
+          tmuxSession: '{{tmuxSession}}',
+        },
+        null,
+        2,
+      ),
+      timeout: 10000,
     },
     suggestedEvents: ['session-end', 'ask-user-question'],
-    documentationUrl: 'https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/'
+    documentationUrl:
+      'https://docs.n8n.io/integrations/builtin/core-nodes/n8n-nodes-base.webhook/',
   },
 
   customAgentGateway: {
@@ -75,16 +85,20 @@ export const CUSTOM_INTEGRATION_PRESETS: Record<string, PresetConfig> = {
     defaultConfig: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      bodyTemplate: JSON.stringify({
-        type: '{{event}}',
-        session: '{{sessionId}}',
-        project: '{{projectName}}',
-        timestamp: '{{timestamp}}'
-      }, null, 2),
-      timeout: 5000
+      bodyTemplate: JSON.stringify(
+        {
+          type: '{{event}}',
+          session: '{{sessionId}}',
+          project: '{{projectName}}',
+          timestamp: '{{timestamp}}',
+        },
+        null,
+        2,
+      ),
+      timeout: 5000,
     },
     suggestedEvents: ['session-end', 'session-start'],
-    documentationUrl: 'https://code.claude.com/docs/en/hooks'
+    documentationUrl: 'https://code.claude.com/docs/en/hooks',
   },
 
   'generic-webhook': {
@@ -94,15 +108,19 @@ export const CUSTOM_INTEGRATION_PRESETS: Record<string, PresetConfig> = {
     defaultConfig: {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      bodyTemplate: JSON.stringify({
-        event: '{{event}}',
-        sessionId: '{{sessionId}}',
-        projectName: '{{projectName}}',
-        timestamp: '{{timestamp}}'
-      }, null, 2),
-      timeout: 10000
+      bodyTemplate: JSON.stringify(
+        {
+          event: '{{event}}',
+          sessionId: '{{sessionId}}',
+          projectName: '{{projectName}}',
+          timestamp: '{{timestamp}}',
+        },
+        null,
+        2,
+      ),
+      timeout: 10000,
     },
-    suggestedEvents: ['session-end']
+    suggestedEvents: ['session-end'],
   },
 
   'generic-cli': {
@@ -111,11 +129,17 @@ export const CUSTOM_INTEGRATION_PRESETS: Record<string, PresetConfig> = {
     type: 'cli',
     defaultConfig: {
       command: 'curl',
-      args: ['-X', 'POST', '-d', 'event={{event}}&session={{sessionId}}', 'https://example.com/webhook'],
-      timeout: 5000
+      args: [
+        '-X',
+        'POST',
+        '-d',
+        'event={{event}}&session={{sessionId}}',
+        'https://example.com/webhook',
+      ],
+      timeout: 5000,
     },
-    suggestedEvents: ['session-end']
-  }
+    suggestedEvents: ['session-end'],
+  },
 };
 
 export type PresetName = keyof typeof CUSTOM_INTEGRATION_PRESETS;
@@ -123,12 +147,17 @@ export type PresetName = keyof typeof CUSTOM_INTEGRATION_PRESETS;
 /**
  * Get list of available presets for display in UI.
  */
-export function getPresetList(): { id: string; name: string; description: string; type: string }[] {
+export function getPresetList(): {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+}[] {
   return Object.entries(CUSTOM_INTEGRATION_PRESETS).map(([id, preset]) => ({
     id,
     name: preset.name,
     description: preset.description,
-    type: preset.type
+    type: preset.type,
   }));
 }
 

@@ -21,7 +21,7 @@ export type {
   ValidationVerdictType,
   ValidationVerdict,
   QAStatus,
-  AutopilotSignal
+  AutopilotSignal,
 } from './types.js';
 
 export { DEFAULT_CONFIG } from './types.js';
@@ -59,7 +59,7 @@ export {
   getExecutionPrompt,
   getQAPrompt,
   getValidationPrompt,
-  getPhasePrompt
+  getPhasePrompt,
 } from './prompts.js';
 
 // Validation coordination & summary generation
@@ -76,7 +76,7 @@ export {
   formatCompactSummary,
   formatFailureSummary,
   formatFileList,
-  type ValidationCoordinatorResult
+  type ValidationCoordinatorResult,
 } from './validation.js';
 
 // Cancellation
@@ -87,7 +87,7 @@ export {
   resumeAutopilot,
   formatCancelMessage,
   STALE_STATE_MAX_AGE_MS,
-  type CancelResult
+  type CancelResult,
 } from './cancel.js';
 
 // Signal detection & enforcement
@@ -96,7 +96,7 @@ export {
   getExpectedSignalForPhase,
   detectAnySignal,
   checkAutopilot,
-  type AutopilotEnforcementResult
+  type AutopilotEnforcementResult,
 } from './enforcement.js';
 
 // Pipeline types

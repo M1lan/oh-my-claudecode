@@ -33,7 +33,6 @@ export interface AutopilotStateForHud {
   };
 }
 
-
 const PHASE_NAMES: Record<string, string> = {
   expansion: 'Expand',
   planning: 'Plan',
@@ -41,7 +40,7 @@ const PHASE_NAMES: Record<string, string> = {
   qa: 'QA',
   validation: 'Verify',
   complete: 'Done',
-  failed: 'Failed'
+  failed: 'Failed',
 };
 
 const PHASE_INDEX: Record<string, number> = {
@@ -51,7 +50,7 @@ const PHASE_INDEX: Record<string, number> = {
   qa: 4,
   validation: 5,
   complete: 5,
-  failed: 0
+  failed: 0,
 };
 
 /**
@@ -62,7 +61,7 @@ const PHASE_INDEX: Record<string, number> = {
  */
 export function renderAutopilot(
   state: AutopilotStateForHud | null,
-  _thresholds?: HudThresholds
+  _thresholds?: HudThresholds,
 ): string | null {
   if (!state?.active) {
     return null;
@@ -71,12 +70,24 @@ export function renderAutopilot(
   if (state.workflow?.invalid) {
     return `${CYAN}[AUTOPILOT]${RESET} ${RED}workflow:invalid${RESET}`;
   }
-  if (state.workflow?.name && state.workflow.currentStage && state.workflow.currentStageIndex && state.workflow.stagesTotal) {
+  if (
+    state.workflow?.name &&
+    state.workflow.currentStage &&
+    state.workflow.currentStageIndex &&
+    state.workflow.stagesTotal
+  ) {
     const workflowName = state.workflow.name.slice(0, 32);
     return `${CYAN}[AUTOPILOT]${RESET} workflow:${workflowName} v${state.workflow.version}#${state.workflow.shortHash} | ${state.workflow.currentStage} ${state.workflow.currentStageIndex}/${state.workflow.stagesTotal}`;
   }
 
-  const { phase, iteration, maxIterations, tasksCompleted, tasksTotal, filesCreated } = state;
+  const {
+    phase,
+    iteration,
+    maxIterations,
+    tasksCompleted,
+    tasksTotal,
+    filesCreated,
+  } = state;
   const phaseNum = PHASE_INDEX[phase] || 0;
   const phaseName = PHASE_NAMES[phase] || phase;
 
@@ -126,7 +137,7 @@ export function renderAutopilot(
  * Format: AP:3/5 or AP:Done
  */
 export function renderAutopilotCompact(
-  state: AutopilotStateForHud | null
+  state: AutopilotStateForHud | null,
 ): string | null {
   if (!state?.active) {
     return null;

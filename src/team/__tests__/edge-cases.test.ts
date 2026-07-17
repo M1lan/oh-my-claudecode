@@ -15,8 +15,13 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
-  mkdirSync, writeFileSync, rmSync, existsSync,
-  readFileSync, appendFileSync, realpathSync
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  appendFileSync,
+  realpathSync,
 } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -24,23 +29,38 @@ import { getClaudeConfigDir } from '../../utils/config-dir.js';
 
 // --- task-file-ops imports ---
 import {
-  readTask, updateTask, findNextTask, areBlockersResolved,
-  writeTaskFailure, readTaskFailure, listTaskIds
+  readTask,
+  updateTask,
+  findNextTask,
+  areBlockersResolved,
+  writeTaskFailure,
+  readTaskFailure,
+  listTaskIds,
 } from '../task-file-ops.js';
 import type { TaskFile } from '../types.js';
 
 // --- inbox-outbox imports ---
 import {
-  appendOutbox, rotateOutboxIfNeeded, readNewInboxMessages,
-  readAllInboxMessages, clearInbox, writeShutdownSignal,
-  checkShutdownSignal, deleteShutdownSignal, cleanupWorkerFiles
+  appendOutbox,
+  rotateOutboxIfNeeded,
+  readNewInboxMessages,
+  readAllInboxMessages,
+  clearInbox,
+  writeShutdownSignal,
+  checkShutdownSignal,
+  deleteShutdownSignal,
+  cleanupWorkerFiles,
 } from '../inbox-outbox.js';
 import type { OutboxMessage, InboxMessage } from '../types.js';
 
 // --- heartbeat imports ---
 import {
-  writeHeartbeat, readHeartbeat, listHeartbeats,
-  isWorkerAlive, deleteHeartbeat, cleanupTeamHeartbeats
+  writeHeartbeat,
+  readHeartbeat,
+  listHeartbeats,
+  isWorkerAlive,
+  deleteHeartbeat,
+  cleanupTeamHeartbeats,
 } from '../heartbeat.js';
 import type { HeartbeatData } from '../types.js';
 
@@ -49,10 +69,13 @@ import { sanitizeName, sessionName } from '../tmux-session.js';
 
 // --- team-registration imports ---
 import {
-  readProbeResult, writeProbeResult,
-  registerMcpWorker, unregisterMcpWorker, isMcpWorker, listMcpWorkers
+  readProbeResult,
+  writeProbeResult,
+  registerMcpWorker,
+  unregisterMcpWorker,
+  isMcpWorker,
+  listMcpWorkers,
 } from '../team-registration.js';
-
 
 // ============================================================
 // Shared test constants and helpers
@@ -74,7 +97,10 @@ const CONFIG_DIR = join(getClaudeConfigDir(), 'teams', REG_TEAM);
 
 function writeTaskHelper(task: TaskFile): void {
   mkdirSync(TASKS_DIR, { recursive: true });
-  writeFileSync(join(TASKS_DIR, `${task.id}.json`), JSON.stringify(task, null, 2));
+  writeFileSync(
+    join(TASKS_DIR, `${task.id}.json`),
+    JSON.stringify(task, null, 2),
+  );
 }
 
 function makeHeartbeat(overrides?: Partial<HeartbeatData>): HeartbeatData {
@@ -90,15 +116,24 @@ function makeHeartbeat(overrides?: Partial<HeartbeatData>): HeartbeatData {
   };
 }
 
-
 // ============================================================
 // 1. task-file-ops edge cases
 // ============================================================
 
 describe('task-file-ops edge cases', () => {
   beforeEach(() => {
-    TASK_TEST_CWD = join(realpathSync(tmpdir()), `omc-edge-tasks-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    TASKS_DIR = join(TASK_TEST_CWD, '.omc', 'state', 'team', EDGE_TEAM_TASKS, 'tasks');
+    TASK_TEST_CWD = join(
+      realpathSync(tmpdir()),
+      `omc-edge-tasks-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    TASKS_DIR = join(
+      TASK_TEST_CWD,
+      '.omc',
+      'state',
+      'team',
+      EDGE_TEAM_TASKS,
+      'tasks',
+    );
     mkdirSync(TASKS_DIR, { recursive: true });
   });
 
@@ -109,16 +144,27 @@ describe('task-file-ops edge cases', () => {
   describe('updateTask on non-existent file', () => {
     it('throws when task file does not exist', () => {
       // updateTask calls readFileSync directly without existsSync guard
-      expect(() => updateTask(EDGE_TEAM_TASKS, 'nonexistent', { status: 'completed' }, { cwd: TASK_TEST_CWD }))
-        .toThrow();
+      expect(() =>
+        updateTask(
+          EDGE_TEAM_TASKS,
+          'nonexistent',
+          { status: 'completed' },
+          { cwd: TASK_TEST_CWD },
+        ),
+      ).toThrow();
     });
   });
 
   describe('updateTask with empty updates object', () => {
     it('preserves task unchanged when updates is empty', () => {
       const task: TaskFile = {
-        id: '1', subject: 'Test', description: 'Desc', status: 'pending',
-        owner: 'w1', blocks: [], blockedBy: [],
+        id: '1',
+        subject: 'Test',
+        description: 'Desc',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
       };
       writeTaskHelper(task);
       updateTask(EDGE_TEAM_TASKS, '1', {}, { cwd: TASK_TEST_CWD });
@@ -130,12 +176,22 @@ describe('task-file-ops edge cases', () => {
   describe('updateTask skips undefined values', () => {
     it('does not overwrite fields with undefined', () => {
       const task: TaskFile = {
-        id: '1', subject: 'Test', description: 'Desc', status: 'pending',
-        owner: 'w1', blocks: [], blockedBy: [],
+        id: '1',
+        subject: 'Test',
+        description: 'Desc',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
       };
       writeTaskHelper(task);
       // Passing an update with owner set to undefined should not wipe the owner
-      updateTask(EDGE_TEAM_TASKS, '1', { owner: undefined, status: 'in_progress' }, { cwd: TASK_TEST_CWD });
+      updateTask(
+        EDGE_TEAM_TASKS,
+        '1',
+        { owner: undefined, status: 'in_progress' },
+        { cwd: TASK_TEST_CWD },
+      );
       const result = readTask(EDGE_TEAM_TASKS, '1', { cwd: TASK_TEST_CWD });
       expect(result?.owner).toBe('w1');
       expect(result?.status).toBe('in_progress');
@@ -144,10 +200,42 @@ describe('task-file-ops edge cases', () => {
 
   describe('listTaskIds with mixed numeric and alpha IDs', () => {
     it('sorts numeric IDs numerically and alpha IDs lexicographically', () => {
-      writeTaskHelper({ id: '10', subject: 'T', description: 'D', status: 'pending', owner: 'w', blocks: [], blockedBy: [] });
-      writeTaskHelper({ id: '2', subject: 'T', description: 'D', status: 'pending', owner: 'w', blocks: [], blockedBy: [] });
-      writeTaskHelper({ id: 'abc', subject: 'T', description: 'D', status: 'pending', owner: 'w', blocks: [], blockedBy: [] });
-      writeTaskHelper({ id: '1', subject: 'T', description: 'D', status: 'pending', owner: 'w', blocks: [], blockedBy: [] });
+      writeTaskHelper({
+        id: '10',
+        subject: 'T',
+        description: 'D',
+        status: 'pending',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
+      });
+      writeTaskHelper({
+        id: '2',
+        subject: 'T',
+        description: 'D',
+        status: 'pending',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
+      });
+      writeTaskHelper({
+        id: 'abc',
+        subject: 'T',
+        description: 'D',
+        status: 'pending',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
+      });
+      writeTaskHelper({
+        id: '1',
+        subject: 'T',
+        description: 'D',
+        status: 'pending',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
+      });
 
       const ids = listTaskIds(EDGE_TEAM_TASKS, { cwd: TASK_TEST_CWD });
       // Numeric ones should be sorted numerically; alpha falls to localeCompare
@@ -174,40 +262,66 @@ describe('task-file-ops edge cases', () => {
   describe('areBlockersResolved with nonexistent blocker', () => {
     it('returns false when blocker task file does not exist', () => {
       // Blocker ID references a task that was never created
-      expect(areBlockersResolved(EDGE_TEAM_TASKS, ['does-not-exist'], { cwd: TASK_TEST_CWD })).toBe(false);
+      expect(
+        areBlockersResolved(EDGE_TEAM_TASKS, ['does-not-exist'], {
+          cwd: TASK_TEST_CWD,
+        }),
+      ).toBe(false);
     });
   });
 
   describe('areBlockersResolved with in_progress blocker', () => {
     it('returns false when blocker is in_progress (not completed)', () => {
       writeTaskHelper({
-        id: 'blocker', subject: 'B', description: 'D',
-        status: 'in_progress', owner: 'w', blocks: [], blockedBy: [],
+        id: 'blocker',
+        subject: 'B',
+        description: 'D',
+        status: 'in_progress',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
       });
-      expect(areBlockersResolved(EDGE_TEAM_TASKS, ['blocker'], { cwd: TASK_TEST_CWD })).toBe(false);
+      expect(
+        areBlockersResolved(EDGE_TEAM_TASKS, ['blocker'], {
+          cwd: TASK_TEST_CWD,
+        }),
+      ).toBe(false);
     });
   });
 
   describe('findNextTask returns null for nonexistent team', () => {
     it('returns null gracefully when team directory missing', async () => {
-      expect(await findNextTask('completely_nonexistent_team_xyz', 'w1', { cwd: TASK_TEST_CWD })).toBeNull();
+      expect(
+        await findNextTask('completely_nonexistent_team_xyz', 'w1', {
+          cwd: TASK_TEST_CWD,
+        }),
+      ).toBeNull();
     });
   });
 
   describe('findNextTask with in_progress task', () => {
     it('skips tasks that are already in_progress', async () => {
       writeTaskHelper({
-        id: '1', subject: 'T', description: 'D',
-        status: 'in_progress', owner: 'w1', blocks: [], blockedBy: [],
+        id: '1',
+        subject: 'T',
+        description: 'D',
+        status: 'in_progress',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
       });
-      expect(await findNextTask(EDGE_TEAM_TASKS, 'w1', { cwd: TASK_TEST_CWD })).toBeNull();
+      expect(
+        await findNextTask(EDGE_TEAM_TASKS, 'w1', { cwd: TASK_TEST_CWD }),
+      ).toBeNull();
     });
   });
 
   describe('readTask with empty file', () => {
     it('returns null for empty JSON file', () => {
       writeFileSync(join(TASKS_DIR, 'empty.json'), '');
-      expect(readTask(EDGE_TEAM_TASKS, 'empty', { cwd: TASK_TEST_CWD })).toBeNull();
+      expect(
+        readTask(EDGE_TEAM_TASKS, 'empty', { cwd: TASK_TEST_CWD }),
+      ).toBeNull();
     });
   });
 
@@ -227,8 +341,12 @@ describe('task-file-ops edge cases', () => {
       writeFileSync(join(TASKS_DIR, 'corrupt.failure.json'), '{not valid json');
 
       // readTaskFailure returns null for corrupt -> retryCount starts at 1
-      writeTaskFailure(EDGE_TEAM_TASKS, 'corrupt', 'new error', { cwd: TASK_TEST_CWD });
-      const failure = readTaskFailure(EDGE_TEAM_TASKS, 'corrupt', { cwd: TASK_TEST_CWD });
+      writeTaskFailure(EDGE_TEAM_TASKS, 'corrupt', 'new error', {
+        cwd: TASK_TEST_CWD,
+      });
+      const failure = readTaskFailure(EDGE_TEAM_TASKS, 'corrupt', {
+        cwd: TASK_TEST_CWD,
+      });
       expect(failure?.retryCount).toBe(1);
       expect(failure?.lastError).toBe('new error');
     });
@@ -238,7 +356,9 @@ describe('task-file-ops edge cases', () => {
     it('returns null for corrupt failure sidecar', () => {
       mkdirSync(TASKS_DIR, { recursive: true });
       writeFileSync(join(TASKS_DIR, 'bad.failure.json'), 'not json at all');
-      expect(readTaskFailure(EDGE_TEAM_TASKS, 'bad', { cwd: TASK_TEST_CWD })).toBeNull();
+      expect(
+        readTaskFailure(EDGE_TEAM_TASKS, 'bad', { cwd: TASK_TEST_CWD }),
+      ).toBeNull();
     });
   });
 
@@ -246,18 +366,33 @@ describe('task-file-ops edge cases', () => {
     it('handles task ID with dots', () => {
       // ID 'v1.2.3' creates file 'v1.2.3.json'
       const task: TaskFile = {
-        id: 'v1.2.3', subject: 'Versioned', description: 'D',
-        status: 'pending', owner: 'w1', blocks: [], blockedBy: [],
+        id: 'v1.2.3',
+        subject: 'Versioned',
+        description: 'D',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
       };
       writeTaskHelper(task);
-      const result = readTask(EDGE_TEAM_TASKS, 'v1.2.3', { cwd: TASK_TEST_CWD });
+      const result = readTask(EDGE_TEAM_TASKS, 'v1.2.3', {
+        cwd: TASK_TEST_CWD,
+      });
       expect(result?.id).toBe('v1.2.3');
     });
   });
 
   describe('listTaskIds excludes .tmp files with various PIDs', () => {
     it('filters out temp files regardless of PID suffix', () => {
-      writeTaskHelper({ id: '1', subject: 'T', description: 'D', status: 'pending', owner: 'w', blocks: [], blockedBy: [] });
+      writeTaskHelper({
+        id: '1',
+        subject: 'T',
+        description: 'D',
+        status: 'pending',
+        owner: 'w',
+        blocks: [],
+        blockedBy: [],
+      });
       writeFileSync(join(TASKS_DIR, '1.json.tmp.99999'), '{}');
       writeFileSync(join(TASKS_DIR, '2.json.tmp.1'), '{}');
       const ids = listTaskIds(EDGE_TEAM_TASKS, { cwd: TASK_TEST_CWD });
@@ -271,10 +406,20 @@ describe('task-file-ops edge cases', () => {
       // In production, completed -> pending could be a logic bug, but
       // updateTask is a low-level primitive that does not validate.
       writeTaskHelper({
-        id: '1', subject: 'T', description: 'D',
-        status: 'completed', owner: 'w1', blocks: [], blockedBy: [],
+        id: '1',
+        subject: 'T',
+        description: 'D',
+        status: 'completed',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
       });
-      updateTask(EDGE_TEAM_TASKS, '1', { status: 'pending' }, { cwd: TASK_TEST_CWD });
+      updateTask(
+        EDGE_TEAM_TASKS,
+        '1',
+        { status: 'pending' },
+        { cwd: TASK_TEST_CWD },
+      );
       const result = readTask(EDGE_TEAM_TASKS, '1', { cwd: TASK_TEST_CWD });
       expect(result?.status).toBe('pending');
     });
@@ -282,15 +427,40 @@ describe('task-file-ops edge cases', () => {
 
   describe('findNextTask with multiple pending tasks returns first by sorted ID', () => {
     it('returns the lowest-sorted pending task', async () => {
-      writeTaskHelper({ id: '3', subject: 'T3', description: 'D', status: 'pending', owner: 'w1', blocks: [], blockedBy: [] });
-      writeTaskHelper({ id: '1', subject: 'T1', description: 'D', status: 'pending', owner: 'w1', blocks: [], blockedBy: [] });
-      writeTaskHelper({ id: '2', subject: 'T2', description: 'D', status: 'pending', owner: 'w1', blocks: [], blockedBy: [] });
-      const result = await findNextTask(EDGE_TEAM_TASKS, 'w1', { cwd: TASK_TEST_CWD });
+      writeTaskHelper({
+        id: '3',
+        subject: 'T3',
+        description: 'D',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
+      });
+      writeTaskHelper({
+        id: '1',
+        subject: 'T1',
+        description: 'D',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
+      });
+      writeTaskHelper({
+        id: '2',
+        subject: 'T2',
+        description: 'D',
+        status: 'pending',
+        owner: 'w1',
+        blocks: [],
+        blockedBy: [],
+      });
+      const result = await findNextTask(EDGE_TEAM_TASKS, 'w1', {
+        cwd: TASK_TEST_CWD,
+      });
       expect(result?.id).toBe('1');
     });
   });
 });
-
 
 // ============================================================
 // 2. inbox-outbox edge cases
@@ -314,15 +484,28 @@ describe('inbox-outbox edge cases', () => {
       const inbox = join(TEAMS_IO_DIR, 'inbox', `${workerName}.jsonl`);
       const cursorFile = join(TEAMS_IO_DIR, 'inbox', `${workerName}.offset`);
 
-      const validMsg1: InboxMessage = { type: 'message', content: 'first', timestamp: '2026-01-01T00:00:00Z' };
-      const validMsg2: InboxMessage = { type: 'message', content: 'second', timestamp: '2026-01-01T00:01:00Z' };
-      const afterMalformedMsg: InboxMessage = { type: 'message', content: 'after-malformed', timestamp: '2026-01-01T00:02:00Z' };
-      const content = [
-        JSON.stringify(validMsg1),
-        JSON.stringify(validMsg2),
-        'this is not json',
-        JSON.stringify(afterMalformedMsg),
-      ].join('\n') + '\n';
+      const validMsg1: InboxMessage = {
+        type: 'message',
+        content: 'first',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
+      const validMsg2: InboxMessage = {
+        type: 'message',
+        content: 'second',
+        timestamp: '2026-01-01T00:01:00Z',
+      };
+      const afterMalformedMsg: InboxMessage = {
+        type: 'message',
+        content: 'after-malformed',
+        timestamp: '2026-01-01T00:02:00Z',
+      };
+      const content =
+        [
+          JSON.stringify(validMsg1),
+          JSON.stringify(validMsg2),
+          'this is not json',
+          JSON.stringify(afterMalformedMsg),
+        ].join('\n') + '\n';
       writeFileSync(inbox, content);
 
       // Verify file was written correctly
@@ -349,7 +532,11 @@ describe('inbox-outbox edge cases', () => {
     it('resets cursor to 0 on malformed cursor JSON', () => {
       const inbox = join(TEAMS_IO_DIR, 'inbox', 'w1.jsonl');
       const cursorFile = join(TEAMS_IO_DIR, 'inbox', 'w1.offset');
-      const msg: InboxMessage = { type: 'message', content: 'hello', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: InboxMessage = {
+        type: 'message',
+        content: 'hello',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       writeFileSync(inbox, JSON.stringify(msg) + '\n');
       writeFileSync(cursorFile, 'NOT VALID JSON AT ALL');
 
@@ -362,7 +549,11 @@ describe('inbox-outbox edge cases', () => {
   describe('readNewInboxMessages returns empty when cursor equals file size', () => {
     it('returns empty array when no new data since last read', () => {
       const inbox = join(TEAMS_IO_DIR, 'inbox', 'w1.jsonl');
-      const msg: InboxMessage = { type: 'message', content: 'data', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: InboxMessage = {
+        type: 'message',
+        content: 'data',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       writeFileSync(inbox, JSON.stringify(msg) + '\n');
 
       // First read consumes everything
@@ -378,8 +569,15 @@ describe('inbox-outbox edge cases', () => {
   describe('readAllInboxMessages with malformed lines', () => {
     it('skips invalid JSON lines and returns valid ones', () => {
       const inbox = join(TEAMS_IO_DIR, 'inbox', 'w1.jsonl');
-      const valid: InboxMessage = { type: 'context', content: 'ctx', timestamp: '2026-01-01T00:00:00Z' };
-      writeFileSync(inbox, 'garbage\n' + JSON.stringify(valid) + '\n' + '{{{\n');
+      const valid: InboxMessage = {
+        type: 'context',
+        content: 'ctx',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
+      writeFileSync(
+        inbox,
+        'garbage\n' + JSON.stringify(valid) + '\n' + '{{{\n',
+      );
       const msgs = readAllInboxMessages(EDGE_TEAM_IO, 'w1');
       expect(msgs).toHaveLength(1);
       expect(msgs[0].content).toBe('ctx');
@@ -388,25 +586,41 @@ describe('inbox-outbox edge cases', () => {
 
   describe('rotateOutboxIfNeeded at exact boundary', () => {
     it('does not rotate when line count equals maxLines', () => {
-      const msg: OutboxMessage = { type: 'heartbeat', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: OutboxMessage = {
+        type: 'heartbeat',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       for (let i = 0; i < 10; i++) {
         appendOutbox(EDGE_TEAM_IO, 'w1', { ...msg, message: `msg-${i}` });
       }
       rotateOutboxIfNeeded(EDGE_TEAM_IO, 'w1', 10);
-      const lines = readFileSync(join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
-        .trim().split('\n').filter(l => l.trim());
+      const lines = readFileSync(
+        join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'),
+        'utf-8',
+      )
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim());
       // Should keep all 10 since 10 <= 10
       expect(lines).toHaveLength(10);
     });
 
     it('rotates when line count is maxLines + 1', () => {
-      const msg: OutboxMessage = { type: 'heartbeat', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: OutboxMessage = {
+        type: 'heartbeat',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       for (let i = 0; i < 11; i++) {
         appendOutbox(EDGE_TEAM_IO, 'w1', { ...msg, message: `msg-${i}` });
       }
       rotateOutboxIfNeeded(EDGE_TEAM_IO, 'w1', 10);
-      const lines = readFileSync(join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
-        .trim().split('\n').filter(l => l.trim());
+      const lines = readFileSync(
+        join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'),
+        'utf-8',
+      )
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim());
       // Should keep floor(10/2) = 5 most recent
       expect(lines).toHaveLength(5);
       // Most recent should be msg-10
@@ -416,7 +630,9 @@ describe('inbox-outbox edge cases', () => {
 
   describe('rotateOutboxIfNeeded on nonexistent file', () => {
     it('is a no-op and does not throw', () => {
-      expect(() => rotateOutboxIfNeeded(EDGE_TEAM_IO, 'ghost', 10)).not.toThrow();
+      expect(() =>
+        rotateOutboxIfNeeded(EDGE_TEAM_IO, 'ghost', 10),
+      ).not.toThrow();
     });
   });
 
@@ -426,11 +642,19 @@ describe('inbox-outbox edge cases', () => {
       // but lines.slice(-0) in JS returns the ENTIRE array (not empty).
       // This means maxLines=0 does NOT empty the file -- it keeps everything.
       // This is a known JavaScript edge case with Array.prototype.slice.
-      const msg: OutboxMessage = { type: 'idle', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: OutboxMessage = {
+        type: 'idle',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       appendOutbox(EDGE_TEAM_IO, 'w1', msg);
       rotateOutboxIfNeeded(EDGE_TEAM_IO, 'w1', 0);
-      const lines = readFileSync(join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'), 'utf-8')
-        .trim().split('\n').filter(l => l.trim());
+      const lines = readFileSync(
+        join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'),
+        'utf-8',
+      )
+        .trim()
+        .split('\n')
+        .filter((l) => l.trim());
       // keepCount === 0 clears the outbox
       expect(lines).toHaveLength(0);
     });
@@ -438,7 +662,9 @@ describe('inbox-outbox edge cases', () => {
 
   describe('clearInbox when files do not exist', () => {
     it('does not throw when inbox and cursor are missing', () => {
-      expect(() => clearInbox(EDGE_TEAM_IO, 'nonexistent-worker')).not.toThrow();
+      expect(() =>
+        clearInbox(EDGE_TEAM_IO, 'nonexistent-worker'),
+      ).not.toThrow();
     });
   });
 
@@ -459,7 +685,10 @@ describe('inbox-outbox edge cases', () => {
   describe('cleanupWorkerFiles when some files already missing', () => {
     it('cleans available files and ignores missing ones', () => {
       // Only create outbox, skip inbox/cursor/signal
-      appendOutbox(EDGE_TEAM_IO, 'w1', { type: 'idle', timestamp: '2026-01-01T00:00:00Z' });
+      appendOutbox(EDGE_TEAM_IO, 'w1', {
+        type: 'idle',
+        timestamp: '2026-01-01T00:00:00Z',
+      });
       expect(existsSync(join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'))).toBe(true);
 
       // Cleanup should not throw even though inbox/signal don't exist
@@ -471,7 +700,11 @@ describe('inbox-outbox edge cases', () => {
   describe('inbox messages with empty content', () => {
     it('reads messages with empty string content', () => {
       const inbox = join(TEAMS_IO_DIR, 'inbox', 'w1.jsonl');
-      const msg: InboxMessage = { type: 'message', content: '', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: InboxMessage = {
+        type: 'message',
+        content: '',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       writeFileSync(inbox, JSON.stringify(msg) + '\n');
       const msgs = readNewInboxMessages(EDGE_TEAM_IO, 'w1');
       expect(msgs).toHaveLength(1);
@@ -508,7 +741,11 @@ describe('inbox-outbox edge cases', () => {
       expect(batch1).toHaveLength(1);
 
       // Append second message
-      const msg2: InboxMessage = { type: 'message', content: 'after-emoji', timestamp: '2026-01-01T00:01:00Z' };
+      const msg2: InboxMessage = {
+        type: 'message',
+        content: 'after-emoji',
+        timestamp: '2026-01-01T00:01:00Z',
+      };
       appendFileSync(inbox, JSON.stringify(msg2) + '\n');
       const batch2 = readNewInboxMessages(EDGE_TEAM_IO, 'w1');
       expect(batch2).toHaveLength(1);
@@ -532,13 +769,15 @@ describe('inbox-outbox edge cases', () => {
       rmSync(join(TEAMS_IO_DIR, 'outbox'), { recursive: true, force: true });
       expect(existsSync(join(TEAMS_IO_DIR, 'outbox'))).toBe(false);
 
-      const msg: OutboxMessage = { type: 'idle', timestamp: '2026-01-01T00:00:00Z' };
+      const msg: OutboxMessage = {
+        type: 'idle',
+        timestamp: '2026-01-01T00:00:00Z',
+      };
       appendOutbox(EDGE_TEAM_IO, 'w1', msg);
       expect(existsSync(join(TEAMS_IO_DIR, 'outbox', 'w1.jsonl'))).toBe(true);
     });
   });
 });
-
 
 // ============================================================
 // 3. heartbeat edge cases
@@ -567,7 +806,9 @@ describe('heartbeat edge cases', () => {
       writeHeartbeat(HB_DIR, stale);
       // Year 2000 is ~26 years ago from 2026. Use 30 years in ms to be safe.
       const thirtyYearsMs = 30 * 365.25 * 24 * 60 * 60 * 1000;
-      expect(isWorkerAlive(HB_DIR, 'test-team', 'w1', thirtyYearsMs)).toBe(true);
+      expect(isWorkerAlive(HB_DIR, 'test-team', 'w1', thirtyYearsMs)).toBe(
+        true,
+      );
     });
   });
 
@@ -618,15 +859,21 @@ describe('heartbeat edge cases', () => {
 
       const heartbeats = listHeartbeats(HB_DIR, 'test-team');
       expect(heartbeats).toHaveLength(2);
-      const names = heartbeats.map(h => h.workerName).sort();
+      const names = heartbeats.map((h) => h.workerName).sort();
       expect(names).toEqual(['good1', 'good2']);
     });
   });
 
   describe('writeHeartbeat overwrites existing data', () => {
     it('replaces previous heartbeat content', () => {
-      writeHeartbeat(HB_DIR, makeHeartbeat({ status: 'polling', consecutiveErrors: 0 }));
-      writeHeartbeat(HB_DIR, makeHeartbeat({ status: 'executing', consecutiveErrors: 2 }));
+      writeHeartbeat(
+        HB_DIR,
+        makeHeartbeat({ status: 'polling', consecutiveErrors: 0 }),
+      );
+      writeHeartbeat(
+        HB_DIR,
+        makeHeartbeat({ status: 'executing', consecutiveErrors: 2 }),
+      );
       const hb = readHeartbeat(HB_DIR, 'test-team', 'w1');
       expect(hb?.status).toBe('executing');
       expect(hb?.consecutiveErrors).toBe(2);
@@ -657,7 +904,6 @@ describe('heartbeat edge cases', () => {
   });
 });
 
-
 // ============================================================
 // 4. tmux-session edge cases
 // ============================================================
@@ -671,7 +917,9 @@ describe('tmux-session edge cases', () => {
 
   describe('sanitizeName with unicode characters', () => {
     it('strips all unicode and keeps only ASCII alphanumeric/hyphen', () => {
-      expect(() => sanitizeName('\u4F60\u597D\u{1F600}')).toThrow('no valid characters');
+      expect(() => sanitizeName('\u4F60\u597D\u{1F600}')).toThrow(
+        'no valid characters',
+      );
     });
 
     it('keeps ASCII portion of mixed unicode/ASCII', () => {
@@ -720,7 +968,6 @@ describe('tmux-session edge cases', () => {
   });
 });
 
-
 // ============================================================
 // 5. team-registration edge cases
 // ============================================================
@@ -739,7 +986,12 @@ describe('team-registration edge cases', () => {
 
   describe('readProbeResult with corrupt JSON', () => {
     it('returns null for malformed probe result file', () => {
-      const probePath = join(REG_DIR, '.omc', 'state', 'config-probe-result.json');
+      const probePath = join(
+        REG_DIR,
+        '.omc',
+        'state',
+        'config-probe-result.json',
+      );
       writeFileSync(probePath, 'NOT JSON');
       expect(readProbeResult(REG_DIR)).toBeNull();
     });
@@ -747,7 +999,12 @@ describe('team-registration edge cases', () => {
 
   describe('listMcpWorkers with malformed shadow registry', () => {
     it('returns empty when shadow registry is corrupt JSON', () => {
-      const shadowPath = join(REG_DIR, '.omc', 'state', 'team-mcp-workers.json');
+      const shadowPath = join(
+        REG_DIR,
+        '.omc',
+        'state',
+        'team-mcp-workers.json',
+      );
       writeFileSync(shadowPath, '{bad');
       // Should not throw and return whatever was parsed from config (empty since config not set up for this team)
       const workers = listMcpWorkers(REG_TEAM, REG_DIR);
@@ -761,7 +1018,15 @@ describe('team-registration edge cases', () => {
       writeFileSync(configPath, '{bad json{{{');
 
       // Register in shadow only
-      registerMcpWorker(REG_TEAM, 'w1', 'codex', 'gpt-5', 'sess1', '/cwd', REG_DIR);
+      registerMcpWorker(
+        REG_TEAM,
+        'w1',
+        'codex',
+        'gpt-5',
+        'sess1',
+        '/cwd',
+        REG_DIR,
+      );
 
       const workers = listMcpWorkers(REG_TEAM, REG_DIR);
       expect(workers).toHaveLength(1);
@@ -771,7 +1036,15 @@ describe('team-registration edge cases', () => {
 
   describe('registerMcpWorker builds correct agentId', () => {
     it('agentId format is {workerName}@{teamName}', () => {
-      registerMcpWorker(REG_TEAM, 'myworker', 'gemini', 'gemini-pro', 'sess1', '/cwd', REG_DIR);
+      registerMcpWorker(
+        REG_TEAM,
+        'myworker',
+        'gemini',
+        'gemini-pro',
+        'sess1',
+        '/cwd',
+        REG_DIR,
+      );
       const workers = listMcpWorkers(REG_TEAM, REG_DIR);
       expect(workers[0].agentId).toBe(`myworker@${REG_TEAM}`);
     });
@@ -784,9 +1057,21 @@ describe('team-registration edge cases', () => {
       writeFileSync(configPath, JSON.stringify({ teamName: REG_TEAM }));
 
       // Set probe to pass so registerInConfig is called
-      writeProbeResult(REG_DIR, { probeResult: 'pass', probedAt: '', version: '' });
+      writeProbeResult(REG_DIR, {
+        probeResult: 'pass',
+        probedAt: '',
+        version: '',
+      });
 
-      registerMcpWorker(REG_TEAM, 'w1', 'codex', 'gpt-5', 'sess1', '/cwd', REG_DIR);
+      registerMcpWorker(
+        REG_TEAM,
+        'w1',
+        'codex',
+        'gpt-5',
+        'sess1',
+        '/cwd',
+        REG_DIR,
+      );
 
       const config = JSON.parse(readFileSync(configPath, 'utf-8'));
       expect(config.members).toHaveLength(1);
@@ -797,13 +1082,30 @@ describe('team-registration edge cases', () => {
   describe('registerInConfig deduplicates by worker name', () => {
     it('replaces existing entry with same name', () => {
       const configPath = join(CONFIG_DIR, 'config.json');
-      writeFileSync(configPath, JSON.stringify({
-        teamName: REG_TEAM,
-        members: [{ name: 'w1', backendType: 'tmux', agentType: 'mcp-codex' }],
-      }));
+      writeFileSync(
+        configPath,
+        JSON.stringify({
+          teamName: REG_TEAM,
+          members: [
+            { name: 'w1', backendType: 'tmux', agentType: 'mcp-codex' },
+          ],
+        }),
+      );
 
-      writeProbeResult(REG_DIR, { probeResult: 'pass', probedAt: '', version: '' });
-      registerMcpWorker(REG_TEAM, 'w1', 'gemini', 'gemini-pro', 'sess2', '/cwd2', REG_DIR);
+      writeProbeResult(REG_DIR, {
+        probeResult: 'pass',
+        probedAt: '',
+        version: '',
+      });
+      registerMcpWorker(
+        REG_TEAM,
+        'w1',
+        'gemini',
+        'gemini-pro',
+        'sess2',
+        '/cwd2',
+        REG_DIR,
+      );
 
       const config = JSON.parse(readFileSync(configPath, 'utf-8'));
       expect(config.members).toHaveLength(1);
@@ -821,7 +1123,12 @@ describe('team-registration edge cases', () => {
 
   describe('unregisterMcpWorker with corrupt shadow registry', () => {
     it('does not throw when shadow registry is malformed', () => {
-      const shadowPath = join(REG_DIR, '.omc', 'state', 'team-mcp-workers.json');
+      const shadowPath = join(
+        REG_DIR,
+        '.omc',
+        'state',
+        'team-mcp-workers.json',
+      );
       writeFileSync(shadowPath, 'NOT JSON');
       expect(() => unregisterMcpWorker(REG_TEAM, 'w1', REG_DIR)).not.toThrow();
     });
@@ -855,31 +1162,51 @@ describe('team-registration edge cases', () => {
   describe('shadow registry handles missing workers array gracefully', () => {
     it('registers successfully when shadow registry has no workers field', () => {
       // Shadow file exists but has no "workers" key — (registry.workers || []) guard handles it
-      const shadowPath = join(REG_DIR, '.omc', 'state', 'team-mcp-workers.json');
+      const shadowPath = join(
+        REG_DIR,
+        '.omc',
+        'state',
+        'team-mcp-workers.json',
+      );
       writeFileSync(shadowPath, JSON.stringify({ teamName: REG_TEAM }));
 
       // Should not throw
       expect(() =>
-        registerMcpWorker(REG_TEAM, 'w1', 'codex', 'gpt-5', 'sess1', '/cwd', REG_DIR)
+        registerMcpWorker(
+          REG_TEAM,
+          'w1',
+          'codex',
+          'gpt-5',
+          'sess1',
+          '/cwd',
+          REG_DIR,
+        ),
       ).not.toThrow();
 
       // Verify the worker was registered
       const workers = listMcpWorkers(REG_TEAM, REG_DIR);
       expect(workers.length).toBeGreaterThanOrEqual(1);
-      expect(workers.some(w => w.name === 'w1')).toBe(true);
+      expect(workers.some((w) => w.name === 'w1')).toBe(true);
     });
   });
 
   describe('config.json members with non-tmux workers', () => {
     it('listMcpWorkers filters out non-tmux members from config', () => {
       const configPath = join(CONFIG_DIR, 'config.json');
-      writeFileSync(configPath, JSON.stringify({
-        teamName: REG_TEAM,
-        members: [
-          { name: 'claude-agent', backendType: 'subprocess', agentType: 'claude' },
-          { name: 'mcp-w1', backendType: 'tmux', agentType: 'mcp-codex' },
-        ],
-      }));
+      writeFileSync(
+        configPath,
+        JSON.stringify({
+          teamName: REG_TEAM,
+          members: [
+            {
+              name: 'claude-agent',
+              backendType: 'subprocess',
+              agentType: 'claude',
+            },
+            { name: 'mcp-w1', backendType: 'tmux', agentType: 'mcp-codex' },
+          ],
+        }),
+      );
 
       const workers = listMcpWorkers(REG_TEAM, REG_DIR);
       expect(workers).toHaveLength(1);

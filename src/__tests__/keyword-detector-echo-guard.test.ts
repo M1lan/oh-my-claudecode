@@ -19,7 +19,11 @@ afterEach(() => {
   while (tempDirs.length > 0) {
     const dir = tempDirs.pop();
     if (dir) {
-      try { rmSync(dir, { recursive: true, force: true }); } catch { /* best effort */ }
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* best effort */
+      }
     }
   }
 });
@@ -52,7 +56,14 @@ function runKeywordDetector(prompt: string, cwd: string, sessionId: string) {
 }
 
 function stateFile(cwd: string, sessionId: string, name: string) {
-  return join(cwd, '.omc', 'state', 'sessions', sessionId, `${name}-state.json`);
+  return join(
+    cwd,
+    '.omc',
+    'state',
+    'sessions',
+    sessionId,
+    `${name}-state.json`,
+  );
 }
 
 describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
@@ -136,7 +147,11 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     const cwd = makeCwd('kd-echo-real-invocation-');
     const sid = 'sess-real-ralph';
 
-    const output = runKeywordDetector('/ralph 이 문제 계속 고쳐주세요', cwd, sid);
+    const output = runKeywordDetector(
+      '/ralph 이 문제 계속 고쳐주세요',
+      cwd,
+      sid,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(output.continue).toBe(true);
@@ -154,13 +169,19 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     const cwd = makeCwd('kd-task-standalone-');
     const sid = 'sess-task-standalone';
 
-    const output = runKeywordDetector('Task: run ralph on 이 문제 계속 고쳐주세요', cwd, sid);
+    const output = runKeywordDetector(
+      'Task: run ralph on 이 문제 계속 고쳐주세요',
+      cwd,
+      sid,
+    );
     const context = output.hookSpecificOutput?.additionalContext ?? '';
 
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
     expect(existsSync(stateFile(cwd, sid, 'ralph'))).toBe(true);
 
-    const state = JSON.parse(readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'));
+    const state = JSON.parse(
+      readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'),
+    );
     // The user's `Task:` line is NOT treated as echo continuation here, so
     // its content is preserved in state.prompt (up to the 500-char cap).
     expect(state.prompt).toContain('이 문제 계속 고쳐주세요');
@@ -186,7 +207,9 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
     expect(context).toContain('[MAGIC KEYWORD: RALPH]');
     expect(existsSync(stateFile(cwd, sid, 'ralph'))).toBe(true);
 
-    const state = JSON.parse(readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'));
+    const state = JSON.parse(
+      readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'),
+    );
     expect(state.prompt).toContain('새 작업 계속 진행');
     expect(state.prompt).not.toContain('[RALPH LOOP');
     expect(state.prompt).not.toContain('Task: previous task');
@@ -217,7 +240,9 @@ describe('keyword-detector.mjs — pasted system-echo re-entry guard', () => {
 
     // state.prompt should capture the REAL request, not the echo sentinel,
     // when stripping leaves meaningful non-echo content.
-    const state = JSON.parse(readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'));
+    const state = JSON.parse(
+      readFileSync(stateFile(cwd, sid, 'ralph'), 'utf-8'),
+    );
     expect(state.prompt).toContain('새 작업 계속해줘');
     expect(state.prompt).not.toContain('[RALPH LOOP');
     expect(state.prompt).not.toBe('(prompt omitted: pasted system echo)');
@@ -251,7 +276,9 @@ describe('keyword-detector.mjs — state.prompt sanitization', () => {
     const state = JSON.parse(readFileSync(path, 'utf-8'));
     expect(state.awaiting_confirmation).toBe(true);
     expect(typeof state.awaiting_confirmation_set_at).toBe('string');
-    expect(Number.isFinite(new Date(state.awaiting_confirmation_set_at).getTime())).toBe(true);
+    expect(
+      Number.isFinite(new Date(state.awaiting_confirmation_set_at).getTime()),
+    ).toBe(true);
   });
 
   it('records awaiting_confirmation_set_at on ultrawork state', () => {

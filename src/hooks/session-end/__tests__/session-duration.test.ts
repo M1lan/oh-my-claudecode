@@ -2,7 +2,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { getSessionStartTime, recordSessionMetrics, type SessionEndInput } from '../index.js';
+import {
+  getSessionStartTime,
+  recordSessionMetrics,
+  type SessionEndInput,
+} from '../index.js';
 
 /**
  * Tests for issue #573: session duration was overreported because
@@ -49,7 +53,10 @@ describe('getSessionStartTime', () => {
   });
 
   it('returns undefined when no state files have started_at', () => {
-    writeState('ultrawork-state.json', { active: true, session_id: 'current-session' });
+    writeState('ultrawork-state.json', {
+      active: true,
+      session_id: 'current-session',
+    });
     expect(getSessionStartTime(tmpDir, 'current-session')).toBeUndefined();
   });
 
@@ -59,7 +66,9 @@ describe('getSessionStartTime', () => {
       session_id: 'current-session',
       started_at: '2026-02-11T10:00:00.000Z',
     });
-    expect(getSessionStartTime(tmpDir, 'current-session')).toBe('2026-02-11T10:00:00.000Z');
+    expect(getSessionStartTime(tmpDir, 'current-session')).toBe(
+      '2026-02-11T10:00:00.000Z',
+    );
   });
 
   it('skips stale state files from other sessions (issue #573)', () => {
@@ -143,13 +152,19 @@ describe('getSessionStartTime', () => {
       started_at: '2026-02-11T10:00:00.000Z',
     });
 
-    expect(getSessionStartTime(tmpDir, 'current-session')).toBe('2026-02-11T10:00:00.000Z');
+    expect(getSessionStartTime(tmpDir, 'current-session')).toBe(
+      '2026-02-11T10:00:00.000Z',
+    );
   });
 
   it('skips files with invalid JSON gracefully', () => {
     const dir = stateDir();
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'broken-state.json'), '{invalid json', 'utf-8');
+    fs.writeFileSync(
+      path.join(dir, 'broken-state.json'),
+      '{invalid json',
+      'utf-8',
+    );
 
     writeState('ultrawork-state.json', {
       active: true,
@@ -157,7 +172,9 @@ describe('getSessionStartTime', () => {
       started_at: '2026-02-11T10:00:00.000Z',
     });
 
-    expect(getSessionStartTime(tmpDir, 'current-session')).toBe('2026-02-11T10:00:00.000Z');
+    expect(getSessionStartTime(tmpDir, 'current-session')).toBe(
+      '2026-02-11T10:00:00.000Z',
+    );
   });
 
   it('works without sessionId parameter (legacy call pattern)', () => {

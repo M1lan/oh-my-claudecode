@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { validateExtractionRequest, validateSkillMetadata } from '../../hooks/learner/validator.js';
+import {
+  validateExtractionRequest,
+  validateSkillMetadata,
+} from '../../hooks/learner/validator.js';
 
 describe('Skill Validator', () => {
   describe('validateExtractionRequest', () => {
     it('should pass valid extraction request', () => {
       const request = {
         problem: 'How to handle React state updates correctly',
-        solution: 'Use the functional form of setState when the new state depends on the previous state. This ensures you always have the latest state value.',
+        solution:
+          'Use the functional form of setState when the new state depends on the previous state. This ensures you always have the latest state value.',
         triggers: ['react', 'state', 'setState'],
         targetScope: 'user' as const,
       };
@@ -42,7 +46,9 @@ describe('Skill Validator', () => {
       const result = validateExtractionRequest(request);
 
       expect(result.warnings.length).toBeGreaterThan(0);
-      expect(result.warnings.some(w => w.includes('Generic triggers'))).toBe(true);
+      expect(result.warnings.some((w) => w.includes('Generic triggers'))).toBe(
+        true,
+      );
     });
 
     it('should fail with short solution', () => {
@@ -56,7 +62,9 @@ describe('Skill Validator', () => {
       const result = validateExtractionRequest(request);
 
       expect(result.valid).toBe(false);
-      expect(result.missingFields).toContain('solution (minimum 20 characters)');
+      expect(result.missingFields).toContain(
+        'solution (minimum 20 characters)',
+      );
     });
 
     it('should fail with empty triggers', () => {
@@ -70,7 +78,9 @@ describe('Skill Validator', () => {
       const result = validateExtractionRequest(request);
 
       expect(result.valid).toBe(false);
-      expect(result.missingFields).toContain('triggers (at least one required)');
+      expect(result.missingFields).toContain(
+        'triggers (at least one required)',
+      );
     });
   });
 

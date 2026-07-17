@@ -35,17 +35,29 @@ function makeRalphWorktree(sessionId: string): string {
 
 type ContentBlock = { type: string; [key: string]: unknown };
 
-function writeAssistantTurn(transcriptPath: string, content: ContentBlock[] | string): void {
+function writeAssistantTurn(
+  transcriptPath: string,
+  content: ContentBlock[] | string,
+): void {
   writeFileSync(
     transcriptPath,
     [
-      JSON.stringify({ type: 'user', message: { role: 'user', content: 'do the task' } }),
-      JSON.stringify({ type: 'assistant', message: { role: 'assistant', content } }),
+      JSON.stringify({
+        type: 'user',
+        message: { role: 'user', content: 'do the task' },
+      }),
+      JSON.stringify({
+        type: 'assistant',
+        message: { role: 'assistant', content },
+      }),
     ].join('\n') + '\n',
   );
 }
 
-type TranscriptRecord = { type: string; message: { role: string; content: unknown } };
+type TranscriptRecord = {
+  type: string;
+  message: { role: string; content: unknown };
+};
 
 const userRecord = (content: unknown): TranscriptRecord => ({
   type: 'user',
@@ -59,7 +71,10 @@ const assistantRecord = (content: unknown): TranscriptRecord => ({
 // Write an explicit list of transcript records (one JSON object per line) so a
 // test can model a multi-record assistant turn (e.g. tool_use, tool_result, then
 // trailing text) instead of the single-record turn writeAssistantTurn emits.
-function writeRecords(transcriptPath: string, records: TranscriptRecord[]): void {
+function writeRecords(
+  transcriptPath: string,
+  records: TranscriptRecord[],
+): void {
   writeFileSync(
     transcriptPath,
     records.map((record) => JSON.stringify(record)).join('\n') + '\n',
@@ -67,7 +82,10 @@ function writeRecords(transcriptPath: string, records: TranscriptRecord[]): void
 }
 
 const THINKING_ONLY: ContentBlock[] = [
-  { type: 'thinking', thinking: 'Let me reason about this some more before acting.' },
+  {
+    type: 'thinking',
+    thinking: 'Let me reason about this some more before acting.',
+  },
 ];
 const TOOL_USE: ContentBlock[] = [
   { type: 'thinking', thinking: 'Now I will run a command.' },
@@ -75,7 +93,10 @@ const TOOL_USE: ContentBlock[] = [
 ];
 
 function ctx(transcriptPath?: string): StopContext {
-  return { stop_reason: 'end_turn', ...(transcriptPath ? { transcript_path: transcriptPath } : {}) };
+  return {
+    stop_reason: 'end_turn',
+    ...(transcriptPath ? { transcript_path: transcriptPath } : {}),
+  };
 }
 
 describe('thinking-only streak guard (issue #3280)', () => {
@@ -86,15 +107,27 @@ describe('thinking-only streak guard (issue #3280)', () => {
     writeAssistantTurn(transcriptPath, THINKING_ONLY);
 
     try {
-      const first = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const first = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(first.shouldBlock).toBe(true);
       expect(first.mode).toBe('ralph');
 
-      const second = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const second = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(second.shouldBlock).toBe(true);
       expect(second.mode).toBe('ralph');
 
-      const third = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const third = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(third.shouldBlock).toBe(false);
       expect(third.mode).toBe('none');
       expect(third.message).toContain('NO TOOL PROGRESS');
@@ -107,12 +140,18 @@ describe('thinking-only streak guard (issue #3280)', () => {
     const sessionId = 'streak-redacted';
     const tempDir = makeRalphWorktree(sessionId);
     const transcriptPath = join(tempDir, 'transcript.jsonl');
-    writeAssistantTurn(transcriptPath, [{ type: 'redacted_thinking', data: 'opaque' }]);
+    writeAssistantTurn(transcriptPath, [
+      { type: 'redacted_thinking', data: 'opaque' },
+    ]);
 
     try {
       await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
       await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
-      const third = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const third = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(third.shouldBlock).toBe(false);
       expect(third.mode).toBe('none');
       expect(third.message).toContain('NO TOOL PROGRESS');
@@ -134,18 +173,30 @@ describe('thinking-only streak guard (issue #3280)', () => {
 
       // A tool_use turn resets the streak and keeps enforcing.
       writeAssistantTurn(transcriptPath, TOOL_USE);
-      const afterTool = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const afterTool = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(afterTool.shouldBlock).toBe(true);
       expect(afterTool.mode).toBe('ralph');
 
       // Two more thinking-only turns would have bailed without the reset, but
       // the streak restarts from zero, so both still block.
       writeAssistantTurn(transcriptPath, THINKING_ONLY);
-      const t1 = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const t1 = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(t1.shouldBlock).toBe(true);
       expect(t1.mode).toBe('ralph');
 
-      const t2 = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const t2 = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(t2.shouldBlock).toBe(true);
       expect(t2.mode).toBe('ralph');
     } finally {
@@ -171,23 +222,44 @@ describe('thinking-only streak guard (issue #3280)', () => {
         userRecord('do the task'),
         assistantRecord([
           { type: 'thinking', thinking: 'I will run a command.' },
-          { type: 'tool_use', id: 'tu-1', name: 'Bash', input: { command: 'ls' } },
+          {
+            type: 'tool_use',
+            id: 'tu-1',
+            name: 'Bash',
+            input: { command: 'ls' },
+          },
         ]),
-        userRecord([{ type: 'tool_result', tool_use_id: 'tu-1', content: 'a\nb' }]),
-        assistantRecord([{ type: 'text', text: 'Done — listed the directory.' }]),
+        userRecord([
+          { type: 'tool_result', tool_use_id: 'tu-1', content: 'a\nb' },
+        ]),
+        assistantRecord([
+          { type: 'text', text: 'Done — listed the directory.' },
+        ]),
       ]);
-      const afterTool = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const afterTool = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(afterTool.shouldBlock).toBe(true);
       expect(afterTool.mode).toBe('ralph');
 
       // Streak restarted from zero, so two more thinking-only turns still block
       // rather than bailing out on the second one.
       writeAssistantTurn(transcriptPath, THINKING_ONLY);
-      const t1 = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const t1 = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(t1.shouldBlock).toBe(true);
       expect(t1.mode).toBe('ralph');
 
-      const t2 = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const t2 = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(t2.shouldBlock).toBe(true);
       expect(t2.mode).toBe('ralph');
     } finally {
@@ -195,7 +267,7 @@ describe('thinking-only streak guard (issue #3280)', () => {
     }
   });
 
-  it('classifies only the most recent turn (a prior turn\'s tool_use never leaks across the user boundary)', async () => {
+  it("classifies only the most recent turn (a prior turn's tool_use never leaks across the user boundary)", async () => {
     const sessionId = 'streak-turn-boundary';
     const tempDir = makeRalphWorktree(sessionId);
     const transcriptPath = join(tempDir, 'transcript.jsonl');
@@ -208,21 +280,42 @@ describe('thinking-only streak guard (issue #3280)', () => {
         userRecord('do the task'),
         assistantRecord([
           { type: 'thinking', thinking: 'running a tool' },
-          { type: 'tool_use', id: 'tu-1', name: 'Bash', input: { command: 'ls' } },
+          {
+            type: 'tool_use',
+            id: 'tu-1',
+            name: 'Bash',
+            input: { command: 'ls' },
+          },
         ]),
-        userRecord([{ type: 'tool_result', tool_use_id: 'tu-1', content: 'ok' }]),
-        assistantRecord([{ type: 'text', text: 'finished the productive turn' }]),
+        userRecord([
+          { type: 'tool_result', tool_use_id: 'tu-1', content: 'ok' },
+        ]),
+        assistantRecord([
+          { type: 'text', text: 'finished the productive turn' },
+        ]),
         userRecord('continue'),
         assistantRecord(THINKING_ONLY),
       ]);
 
       // Same transcript each call: only the trailing thinking-only turn counts,
       // so the streak climbs and bails on the third stop.
-      const first = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const first = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(first.shouldBlock).toBe(true);
-      const second = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const second = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(second.shouldBlock).toBe(true);
-      const third = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const third = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(third.shouldBlock).toBe(false);
       expect(third.mode).toBe('none');
       expect(third.message).toContain('NO TOOL PROGRESS');
@@ -240,12 +333,20 @@ describe('thinking-only streak guard (issue #3280)', () => {
     try {
       await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
       await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
-      const bail = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const bail = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(bail.shouldBlock).toBe(false);
 
       // Streak was cleared on bail-out: the immediate next thinking-only stop
       // re-enters enforcement at streak 1 rather than bailing again.
-      const afterBail = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+      const afterBail = await checkPersistentModes(
+        sessionId,
+        tempDir,
+        ctx(transcriptPath),
+      );
       expect(afterBail.shouldBlock).toBe(true);
       expect(afterBail.mode).toBe('ralph');
     } finally {
@@ -275,7 +376,11 @@ describe('thinking-only streak guard (issue #3280)', () => {
 
     try {
       for (let i = 0; i < 5; i += 1) {
-        const result = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+        const result = await checkPersistentModes(
+          sessionId,
+          tempDir,
+          ctx(transcriptPath),
+        );
         expect(result.shouldBlock).toBe(true);
         expect(result.mode).toBe('ralph');
       }
@@ -292,7 +397,11 @@ describe('thinking-only streak guard (issue #3280)', () => {
 
     try {
       for (let i = 0; i < 5; i += 1) {
-        const result = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+        const result = await checkPersistentModes(
+          sessionId,
+          tempDir,
+          ctx(transcriptPath),
+        );
         expect(result.shouldBlock).toBe(true);
         expect(result.mode).toBe('ralph');
       }
@@ -305,11 +414,17 @@ describe('thinking-only streak guard (issue #3280)', () => {
     const sessionId = 'streak-text-only';
     const tempDir = makeRalphWorktree(sessionId);
     const transcriptPath = join(tempDir, 'transcript.jsonl');
-    writeAssistantTurn(transcriptPath, [{ type: 'text', text: 'Here is the answer.' }]);
+    writeAssistantTurn(transcriptPath, [
+      { type: 'text', text: 'Here is the answer.' },
+    ]);
 
     try {
       for (let i = 0; i < 5; i += 1) {
-        const result = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+        const result = await checkPersistentModes(
+          sessionId,
+          tempDir,
+          ctx(transcriptPath),
+        );
         expect(result.shouldBlock).toBe(true);
         expect(result.mode).toBe('ralph');
       }
@@ -326,7 +441,11 @@ describe('thinking-only streak guard (issue #3280)', () => {
 
     try {
       for (let i = 0; i < 5; i += 1) {
-        const result = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+        const result = await checkPersistentModes(
+          sessionId,
+          tempDir,
+          ctx(transcriptPath),
+        );
         expect(result.shouldBlock).toBe(true);
         expect(result.mode).toBe('ralph');
       }
@@ -344,7 +463,11 @@ describe('thinking-only streak guard (issue #3280)', () => {
 
     try {
       for (let i = 0; i < 5; i += 1) {
-        const result = await checkPersistentModes(sessionId, tempDir, ctx(transcriptPath));
+        const result = await checkPersistentModes(
+          sessionId,
+          tempDir,
+          ctx(transcriptPath),
+        );
         expect(result.shouldBlock).toBe(false);
         expect(result.mode).toBe('none');
         // Plain idle stop, not the streak bail-out message.

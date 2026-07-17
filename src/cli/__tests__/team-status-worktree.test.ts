@@ -35,12 +35,25 @@ describe('team CLI worktree status contract', () => {
       teamName: 'demo-team',
       phase: 'running',
       workers: [],
-      tasks: { total: 0, pending: 0, blocked: 0, in_progress: 0, completed: 0, failed: 0, items: [] },
+      tasks: {
+        total: 0,
+        pending: 0,
+        blocked: 0,
+        in_progress: 0,
+        completed: 0,
+        failed: 0,
+        items: [],
+      },
       allTasksTerminal: true,
       deadWorkers: [],
       nonReportingWorkers: [],
       recommendations: [],
-      performance: { list_tasks_ms: 0, worker_scan_ms: 0, total_ms: 0, updated_at: new Date().toISOString() },
+      performance: {
+        list_tasks_ms: 0,
+        worker_scan_ms: 0,
+        total_ms: 0,
+        updated_at: new Date().toISOString(),
+      },
     });
   });
 
@@ -87,13 +100,15 @@ describe('team CLI worktree status contract', () => {
       workspace_mode: 'worktree',
       worktree_mode: 'named',
       team_state_root: '/repo/.omc/state/team/demo-team',
-      workers: [expect.objectContaining({
-        worktree_repo_root: '/repo',
-        worktree_path: '/repo/.omc/team/demo-team/worktrees/worker-1',
-        worktree_branch: 'omc-team/demo-team/worker-1',
-        worktree_detached: false,
-        worktree_created: true,
-      })],
+      workers: [
+        expect.objectContaining({
+          worktree_repo_root: '/repo',
+          worktree_path: '/repo/.omc/team/demo-team/worktrees/worker-1',
+          worktree_branch: 'omc-team/demo-team/worker-1',
+          worktree_detached: false,
+          worktree_created: true,
+        }),
+      ],
     });
   });
 

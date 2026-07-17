@@ -13,7 +13,10 @@ describe('Ralph verification flow', () => {
   let originalClaudeConfigDir: string | undefined;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `ralph-verification-flow-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-verification-flow-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     claudeConfigDir = join(testDir, '.fake-claude');
     mkdirSync(testDir, { recursive: true });
     mkdirSync(claudeConfigDir, { recursive: true });
@@ -35,26 +38,35 @@ describe('Ralph verification flow', () => {
     }
   });
 
-  function writeRalphState(sessionId: string, extra: Record<string, unknown> = {}): void {
+  function writeRalphState(
+    sessionId: string,
+    extra: Record<string, unknown> = {},
+  ): void {
     const sessionDir = join(testDir, '.omc', 'state', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, 'ralph-state.json'), JSON.stringify({
-      active: true,
-      iteration: 4,
-      max_iterations: 10,
-      session_id: sessionId,
-      started_at: new Date().toISOString(),
-      prompt: 'Implement issue #1496',
-      ...extra,
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-state.json'),
+      JSON.stringify({
+        active: true,
+        iteration: 4,
+        max_iterations: 10,
+        session_id: sessionId,
+        started_at: new Date().toISOString(),
+        prompt: 'Implement issue #1496',
+        ...extra,
+      }),
+    );
   }
 
-  function writeMessagesTranscript(sessionId: string, entries: unknown[]): void {
+  function writeMessagesTranscript(
+    sessionId: string,
+    entries: unknown[],
+  ): void {
     const transcriptDir = join(claudeConfigDir, 'sessions', sessionId);
     mkdirSync(transcriptDir, { recursive: true });
     writeFileSync(
       join(transcriptDir, 'messages.json'),
-      `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`
+      `${entries.map((entry) => JSON.stringify(entry)).join('\n')}\n`,
     );
   }
 
@@ -64,15 +76,17 @@ describe('Ralph verification flow', () => {
       project: 'Test',
       branchName: 'ralph/test',
       description: 'Test PRD',
-      userStories: [{
-        id: 'US-001',
-        title: 'Done',
-        description: 'All work complete',
-        acceptanceCriteria: ['Feature is implemented'],
-        priority: 1,
-        passes: true,
-        architectVerified: true,
-      }],
+      userStories: [
+        {
+          id: 'US-001',
+          title: 'Done',
+          description: 'All work complete',
+          acceptanceCriteria: ['Feature is implemented'],
+          priority: 1,
+          passes: true,
+          architectVerified: true,
+        },
+      ],
     };
 
     writePrd(testDir, prd);
@@ -92,16 +106,19 @@ describe('Ralph verification flow', () => {
     mkdirSync(sessionDir, { recursive: true });
 
     writeRalphState(sessionId);
-    writeFileSync(join(sessionDir, 'ralph-verification-state.json'), JSON.stringify({
-      pending: true,
-      completion_claim: 'All stories are complete',
-      verification_attempts: 0,
-      max_verification_attempts: 3,
-      requested_at: new Date().toISOString(),
-      original_task: 'Implement issue #1496',
-      critic_mode: 'critic',
-      request_id: 'completion-request',
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-verification-state.json'),
+      JSON.stringify({
+        pending: true,
+        completion_claim: 'All stories are complete',
+        verification_attempts: 0,
+        max_verification_attempts: 3,
+        requested_at: new Date().toISOString(),
+        original_task: 'Implement issue #1496',
+        critic_mode: 'critic',
+        request_id: 'completion-request',
+      }),
+    );
 
     writeMessagesTranscript(sessionId, [
       {
@@ -187,7 +204,7 @@ describe('Ralph verification flow', () => {
 
     const sessionDir = join(testDir, '.omc', 'state', 'sessions', sessionId);
     const verificationState = JSON.parse(
-      readFileSync(join(sessionDir, 'ralph-verification-state.json'), 'utf-8')
+      readFileSync(join(sessionDir, 'ralph-verification-state.json'), 'utf-8'),
     );
     expect(verificationState.verification_scope).toBe('story');
     expect(verificationState.story_id).toBe('US-001');
@@ -226,18 +243,21 @@ describe('Ralph verification flow', () => {
 
     writePrd(testDir, prd);
     writeRalphState(sessionId, { current_story_id: 'US-001' });
-    writeFileSync(join(sessionDir, 'ralph-verification-state.json'), JSON.stringify({
-      pending: true,
-      completion_claim: 'US-001 is ready to progress',
-      verification_attempts: 0,
-      max_verification_attempts: 3,
-      requested_at: new Date().toISOString(),
-      original_task: 'Implement issue #2602',
-      critic_mode: 'architect',
-      verification_scope: 'story',
-      story_id: 'US-001',
-      request_id: 'story-request',
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-verification-state.json'),
+      JSON.stringify({
+        pending: true,
+        completion_claim: 'US-001 is ready to progress',
+        verification_attempts: 0,
+        max_verification_attempts: 3,
+        requested_at: new Date().toISOString(),
+        original_task: 'Implement issue #2602',
+        critic_mode: 'architect',
+        verification_scope: 'story',
+        story_id: 'US-001',
+        request_id: 'story-request',
+      }),
+    );
 
     writeMessagesTranscript(sessionId, [
       {
@@ -290,7 +310,6 @@ describe('Ralph verification flow', () => {
     expect(updatedState?.current_story_id).toBe('US-002');
   });
 
-
   it('marks a rejected story incomplete in the session-scoped PRD without mutating legacy PRD', async () => {
     const sessionId = 'ralph-story-rejected-session-prd';
     const sessionDir = join(testDir, '.omc', 'state', 'sessions', sessionId);
@@ -335,24 +354,27 @@ describe('Ralph verification flow', () => {
     writePrd(testDir, sessionPrd, sessionId);
     writePrd(testDir, legacyPrd);
     writeRalphState(sessionId, { current_story_id: 'US-001' });
-    writeFileSync(join(sessionDir, 'ralph-verification-state.json'), JSON.stringify({
-      pending: true,
-      completion_claim: 'US-001 is ready to progress',
-      verification_attempts: 0,
-      max_verification_attempts: 3,
-      requested_at: new Date().toISOString(),
-      original_task: 'Implement issue #2847',
-      critic_mode: 'architect',
-      verification_scope: 'story',
-      story_id: 'US-001',
-      request_id: 'rejected-story-request',
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-verification-state.json'),
+      JSON.stringify({
+        pending: true,
+        completion_claim: 'US-001 is ready to progress',
+        verification_attempts: 0,
+        max_verification_attempts: 3,
+        requested_at: new Date().toISOString(),
+        original_task: 'Implement issue #2847',
+        critic_mode: 'architect',
+        verification_scope: 'story',
+        story_id: 'US-001',
+        request_id: 'rejected-story-request',
+      }),
+    );
 
     const transcriptDir = join(claudeConfigDir, 'sessions', sessionId);
     mkdirSync(transcriptDir, { recursive: true });
     writeFileSync(
       join(transcriptDir, 'transcript.md'),
-      'Reviewer: Needs tests before progression. Issues found.\n'
+      'Reviewer: Needs tests before progression. Issues found.\n',
     );
 
     const result = await checkPersistentModes(sessionId, testDir);
@@ -364,7 +386,9 @@ describe('Ralph verification flow', () => {
     const updatedSessionPrd = readPrd(testDir, sessionId);
     expect(updatedSessionPrd?.userStories[0].passes).toBe(false);
     expect(updatedSessionPrd?.userStories[0].architectVerified).toBe(false);
-    expect(updatedSessionPrd?.userStories[0].notes).toBe('Needs tests before progression.');
+    expect(updatedSessionPrd?.userStories[0].notes).toBe(
+      'Needs tests before progression.',
+    );
 
     const legacyPrdPath = join(testDir, '.omc', 'prd.json');
     expect(JSON.parse(readFileSync(legacyPrdPath, 'utf-8'))).toEqual(legacyPrd);
@@ -403,18 +427,21 @@ describe('Ralph verification flow', () => {
 
     writePrd(testDir, prd);
     writeRalphState(sessionId, { current_story_id: 'US-001' });
-    writeFileSync(join(sessionDir, 'ralph-verification-state.json'), JSON.stringify({
-      pending: true,
-      completion_claim: 'US-001 is ready to progress',
-      verification_attempts: 0,
-      max_verification_attempts: 3,
-      requested_at: new Date().toISOString(),
-      original_task: 'Implement issue #2602',
-      critic_mode: 'architect',
-      verification_scope: 'story',
-      story_id: 'US-001',
-      request_id: 'current-request',
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-verification-state.json'),
+      JSON.stringify({
+        pending: true,
+        completion_claim: 'US-001 is ready to progress',
+        verification_attempts: 0,
+        max_verification_attempts: 3,
+        requested_at: new Date().toISOString(),
+        original_task: 'Implement issue #2602',
+        critic_mode: 'architect',
+        verification_scope: 'story',
+        story_id: 'US-001',
+        request_id: 'current-request',
+      }),
+    );
 
     writeMessagesTranscript(sessionId, [
       {
@@ -504,18 +531,21 @@ describe('Ralph verification flow', () => {
 
     writePrd(testDir, prd);
     writeRalphState(sessionId, { current_story_id: 'US-001' });
-    writeFileSync(join(sessionDir, 'ralph-verification-state.json'), JSON.stringify({
-      pending: true,
-      completion_claim: 'US-001 is ready to progress',
-      verification_attempts: 0,
-      max_verification_attempts: 3,
-      requested_at: new Date().toISOString(),
-      original_task: 'Implement issue #2604',
-      critic_mode: 'architect',
-      verification_scope: 'story',
-      story_id: 'US-001',
-      request_id: 'current-request',
-    }));
+    writeFileSync(
+      join(sessionDir, 'ralph-verification-state.json'),
+      JSON.stringify({
+        pending: true,
+        completion_claim: 'US-001 is ready to progress',
+        verification_attempts: 0,
+        max_verification_attempts: 3,
+        requested_at: new Date().toISOString(),
+        original_task: 'Implement issue #2604',
+        critic_mode: 'architect',
+        verification_scope: 'story',
+        story_id: 'US-001',
+        request_id: 'current-request',
+      }),
+    );
 
     writeMessagesTranscript(sessionId, [
       {

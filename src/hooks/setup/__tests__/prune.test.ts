@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, existsSync, utimesSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  mkdirSync,
+  writeFileSync,
+  existsSync,
+  utimesSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { pruneOldStateFiles } from '../index.js';
@@ -22,7 +29,9 @@ describe('pruneOldStateFiles', () => {
     const filePath = join(stateDir, name);
     writeFileSync(filePath, JSON.stringify(content, null, 2));
     if (ageDays > 0) {
-      const pastTime = new Date(Date.now() - ageDays * 24 * 60 * 60 * 1000 - 1000);
+      const pastTime = new Date(
+        Date.now() - ageDays * 24 * 60 * 60 * 1000 - 1000,
+      );
       utimesSync(filePath, pastTime, pastTime);
     }
     return filePath;
@@ -38,7 +47,11 @@ describe('pruneOldStateFiles', () => {
   });
 
   it('should NOT prune fresh state files', () => {
-    writeStateFile('autopilot-state.json', { active: false, phase: 'expansion' }, 0);
+    writeStateFile(
+      'autopilot-state.json',
+      { active: false, phase: 'expansion' },
+      0,
+    );
 
     const deleted = pruneOldStateFiles(testDir, 7);
 
@@ -47,7 +60,11 @@ describe('pruneOldStateFiles', () => {
   });
 
   it('should prune old inactive autopilot-state.json (issue #609)', () => {
-    writeStateFile('autopilot-state.json', { active: false, phase: 'planning' }, 10);
+    writeStateFile(
+      'autopilot-state.json',
+      { active: false, phase: 'planning' },
+      10,
+    );
 
     const deleted = pruneOldStateFiles(testDir, 7);
 
@@ -56,7 +73,11 @@ describe('pruneOldStateFiles', () => {
   });
 
   it('should NOT prune old active autopilot-state.json', () => {
-    writeStateFile('autopilot-state.json', { active: true, phase: 'execution' }, 10);
+    writeStateFile(
+      'autopilot-state.json',
+      { active: true, phase: 'execution' },
+      10,
+    );
 
     const deleted = pruneOldStateFiles(testDir, 7);
 
@@ -104,7 +125,11 @@ describe('pruneOldStateFiles', () => {
   });
 
   it('should handle mixed active and inactive old mode state files', () => {
-    writeStateFile('autopilot-state.json', { active: false, phase: 'planning' }, 10);
+    writeStateFile(
+      'autopilot-state.json',
+      { active: false, phase: 'planning' },
+      10,
+    );
     writeStateFile('ralph-state.json', { active: true }, 10);
     writeStateFile('ultrawork-state.json', { active: false }, 10);
 

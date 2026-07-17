@@ -1,5 +1,8 @@
-import { spawn } from "child_process";
-import type { NotificationEvent, NotificationPayload } from "../notifications/types.js";
+import { spawn } from 'child_process';
+import type {
+  NotificationEvent,
+  NotificationPayload,
+} from '../notifications/types.js';
 
 export type BackgroundNotificationData = Partial<NotificationPayload> & {
   sessionId: string;
@@ -20,7 +23,7 @@ export function dispatchNotificationInBackground(
   event: NotificationEvent,
   data: BackgroundNotificationData,
 ): void {
-  if (process.env.OMC_NOTIFY === "0") return;
+  if (process.env.OMC_NOTIFY === '0') return;
 
   let serializedEvent: string;
   let serializedData: string;
@@ -32,24 +35,29 @@ export function dispatchNotificationInBackground(
   }
 
   const notificationsModuleUrl = new URL(
-    "../notifications/index.js",
+    '../notifications/index.js',
     import.meta.url,
   ).href;
 
-  const childSource = `import(${JSON.stringify(notificationsModuleUrl)})\n` +
+  const childSource =
+    `import(${JSON.stringify(notificationsModuleUrl)})\n` +
     `  .then(({ notify }) => notify(${serializedEvent}, ${serializedData}))\n` +
     `  .catch(() => {});`;
 
   try {
-    const child = spawn(process.execPath, ["--input-type=module", "-e", childSource], {
-      detached: true,
-      stdio: "ignore",
-      windowsHide: true,
-      env: {
-        ...process.env,
-        OMC_HOOK_BACKGROUND_CHILD: "1",
+    const child = spawn(
+      process.execPath,
+      ['--input-type=module', '-e', childSource],
+      {
+        detached: true,
+        stdio: 'ignore',
+        windowsHide: true,
+        env: {
+          ...process.env,
+          OMC_HOOK_BACKGROUND_CHILD: '1',
+        },
       },
-    });
+    );
     child.unref();
   } catch {
     // Best-effort only: notification dispatch must never break hook handling.

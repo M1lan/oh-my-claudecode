@@ -26,14 +26,17 @@ import { mapDirectoryStructure } from './directory-mapper.js';
 /**
  * Main entry point: detect all project environment details
  */
-export async function detectProjectEnvironment(projectRoot: string): Promise<ProjectMemory> {
-  const [techStack, build, conventions, structure, directoryMap] = await Promise.all([
-    detectTechStack(projectRoot),
-    detectBuildInfo(projectRoot),
-    detectConventions(projectRoot),
-    detectStructure(projectRoot),
-    mapDirectoryStructure(projectRoot),
-  ]);
+export async function detectProjectEnvironment(
+  projectRoot: string,
+): Promise<ProjectMemory> {
+  const [techStack, build, conventions, structure, directoryMap] =
+    await Promise.all([
+      detectTechStack(projectRoot),
+      detectBuildInfo(projectRoot),
+      detectConventions(projectRoot),
+      detectStructure(projectRoot),
+      mapDirectoryStructure(projectRoot),
+    ]);
 
   return {
     version: SCHEMA_VERSION,
@@ -70,9 +73,14 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
     if (exists) {
       // Detect language
       if (pattern.indicates.language) {
-        const existingLang = languages.find(l => l.name === pattern.indicates.language);
+        const existingLang = languages.find(
+          (l) => l.name === pattern.indicates.language,
+        );
         if (!existingLang) {
-          const version = await extractVersion(filePath, pattern.indicates.language);
+          const version = await extractVersion(
+            filePath,
+            pattern.indicates.language,
+          );
           languages.push({
             name: pattern.indicates.language!,
             version,
@@ -92,14 +100,26 @@ async function detectTechStack(projectRoot: string): Promise<TechStack> {
   }
 
   // Prioritize lockfile-based package managers over generic ones
-  const lockfileManagers = ['pnpm', 'yarn', 'cargo', 'poetry', 'pipenv', 'bundler', 'composer', 'go'];
-  const lockfileMatch = packageManagerHints.find(pm => lockfileManagers.includes(pm));
+  const lockfileManagers = [
+    'pnpm',
+    'yarn',
+    'cargo',
+    'poetry',
+    'pipenv',
+    'bundler',
+    'composer',
+    'go',
+  ];
+  const lockfileMatch = packageManagerHints.find((pm) =>
+    lockfileManagers.includes(pm),
+  );
   packageManager = lockfileMatch || packageManagerHints[0] || null;
 
   // Detect frameworks from package.json
   const packageJsonPath = path.join(projectRoot, 'package.json');
   if (await fileExists(packageJsonPath)) {
-    const pkgFrameworks = await detectFrameworksFromPackageJson(packageJsonPath);
+    const pkgFrameworks =
+      await detectFrameworksFromPackageJson(packageJsonPath);
     frameworks.push(...pkgFrameworks);
 
     // Detect runtime from package.json engines
@@ -147,7 +167,7 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
       const pkgScripts = packageJson.scripts || {};
 
       // Determine package manager
-      let pm = 'npm';
+      let pm = 'pnpm';
       if (await fileExists(path.join(projectRoot, 'pnpm-lock.yaml'))) {
         pm = 'pnpm';
       } else if (await fileExists(path.join(projectRoot, 'yarn.lock'))) {
@@ -211,7 +231,9 @@ async function detectBuildInfo(projectRoot: string): Promise<BuildInfo> {
 /**
  * Detect code conventions from sample files
  */
-async function detectConventions(projectRoot: string): Promise<CodeConventions> {
+async function detectConventions(
+  projectRoot: string,
+): Promise<CodeConventions> {
   let namingStyle: string | null = null;
   let importStyle: string | null = null;
   let testPattern: string | null = null;
@@ -227,7 +249,11 @@ async function detectConventions(projectRoot: string): Promise<CodeConventions> 
       try {
         const files = await fs.readdir(dirPath);
         for (const file of files.slice(0, 5)) {
-          if (file.endsWith('.ts') || file.endsWith('.js') || file.endsWith('.py')) {
+          if (
+            file.endsWith('.ts') ||
+            file.endsWith('.js') ||
+            file.endsWith('.py')
+          ) {
             sampleFiles.push(path.join(dirPath, file));
           }
         }
@@ -240,13 +266,19 @@ async function detectConventions(projectRoot: string): Promise<CodeConventions> 
   // Analyze naming patterns
   if (sampleFiles.length > 0) {
     const contents = await Promise.all(
-      sampleFiles.map(f => fs.readFile(f, 'utf-8').catch(() => ''))
+      sampleFiles.map((f) => fs.readFile(f, 'utf-8').catch(() => '')),
     );
 
     // Detect naming style (simplified heuristic)
-    const camelCaseCount = contents.filter(c => /\bfunction\s+[a-z][a-zA-Z]+/.test(c)).length;
-    const snakeCaseCount = contents.filter(c => /\bdef\s+[a-z_]+/.test(c)).length;
-    const pascalCaseCount = contents.filter(c => /\bclass\s+[A-Z][a-zA-Z]+/.test(c)).length;
+    const camelCaseCount = contents.filter((c) =>
+      /\bfunction\s+[a-z][a-zA-Z]+/.test(c),
+    ).length;
+    const snakeCaseCount = contents.filter((c) =>
+      /\bdef\s+[a-z_]+/.test(c),
+    ).length;
+    const pascalCaseCount = contents.filter((c) =>
+      /\bclass\s+[A-Z][a-zA-Z]+/.test(c),
+    ).length;
 
     if (snakeCaseCount > camelCaseCount) {
       namingStyle = 'snake_case';
@@ -257,8 +289,12 @@ async function detectConventions(projectRoot: string): Promise<CodeConventions> 
     }
 
     // Detect import style
-    const esModuleCount = contents.filter(c => /^import\s+.*from/.test(c)).length;
-    const commonJSCount = contents.filter(c => /^const\s+.*=\s*require\(/.test(c)).length;
+    const esModuleCount = contents.filter((c) =>
+      /^import\s+.*from/.test(c),
+    ).length;
+    const commonJSCount = contents.filter((c) =>
+      /^const\s+.*=\s*require\(/.test(c),
+    ).length;
 
     if (esModuleCount > commonJSCount) {
       importStyle = 'ES modules';
@@ -274,7 +310,9 @@ async function detectConventions(projectRoot: string): Promise<CodeConventions> 
     if (await fileExists(dirPath)) {
       try {
         const files = await fs.readdir(dirPath);
-        const testFile = files.find(f => /\.(test|spec)\.(ts|js|py)$/.test(f));
+        const testFile = files.find((f) =>
+          /\.(test|spec)\.(ts|js|py)$/.test(f),
+        );
         if (testFile) {
           if (testFile.endsWith('.test.ts')) testPattern = '*.test.ts';
           else if (testFile.endsWith('.spec.ts')) testPattern = '*.spec.ts';
@@ -288,9 +326,15 @@ async function detectConventions(projectRoot: string): Promise<CodeConventions> 
   }
 
   // Detect file organization (feature-based vs type-based)
-  const hasFeaturesDir = await fileExists(path.join(projectRoot, 'src', 'features'));
-  const hasComponentsDir = await fileExists(path.join(projectRoot, 'src', 'components'));
-  const hasControllersDir = await fileExists(path.join(projectRoot, 'src', 'controllers'));
+  const hasFeaturesDir = await fileExists(
+    path.join(projectRoot, 'src', 'features'),
+  );
+  const hasComponentsDir = await fileExists(
+    path.join(projectRoot, 'src', 'components'),
+  );
+  const hasControllersDir = await fileExists(
+    path.join(projectRoot, 'src', 'controllers'),
+  );
 
   if (hasFeaturesDir) {
     fileOrganization = 'feature-based';
@@ -323,9 +367,11 @@ async function detectStructure(projectRoot: string): Promise<ProjectStructure> {
       const packageJson = JSON.parse(content);
       if (packageJson.workspaces) {
         isMonorepo = true;
-        workspaces.push(...(Array.isArray(packageJson.workspaces)
-          ? packageJson.workspaces
-          : packageJson.workspaces.packages || []));
+        workspaces.push(
+          ...(Array.isArray(packageJson.workspaces)
+            ? packageJson.workspaces
+            : packageJson.workspaces.packages || []),
+        );
       }
     } catch (_error) {
       // Invalid JSON
@@ -383,7 +429,11 @@ async function detectMakefileTargets(filePath: string): Promise<Set<string>> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     for (const line of content.split(/\r?\n/)) {
-      if (!line.trim() || line.startsWith('\t') || line.trimStart().startsWith('#')) {
+      if (
+        !line.trim() ||
+        line.startsWith('\t') ||
+        line.trimStart().startsWith('#')
+      ) {
         continue;
       }
 
@@ -406,7 +456,10 @@ async function detectMakefileTargets(filePath: string): Promise<Set<string>> {
 /**
  * Helper: Extract version from config file
  */
-async function extractVersion(filePath: string, _language: string): Promise<string | null> {
+async function extractVersion(
+  filePath: string,
+  _language: string,
+): Promise<string | null> {
   try {
     const content = await fs.readFile(filePath, 'utf-8');
 
@@ -436,19 +489,25 @@ async function extractVersion(filePath: string, _language: string): Promise<stri
 /**
  * Helper: Detect frameworks from package.json
  */
-async function detectFrameworksFromPackageJson(filePath: string): Promise<FrameworkDetection[]> {
+async function detectFrameworksFromPackageJson(
+  filePath: string,
+): Promise<FrameworkDetection[]> {
   const frameworks: FrameworkDetection[] = [];
 
   try {
     const content = await fs.readFile(filePath, 'utf-8');
     const packageJson = JSON.parse(content);
-    const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+    const deps = {
+      ...packageJson.dependencies,
+      ...packageJson.devDependencies,
+    };
 
     for (const [name, version] of Object.entries(deps)) {
       if (FRAMEWORK_PATTERNS[name]) {
         frameworks.push({
           name,
-          version: typeof version === 'string' ? version.replace(/[\^~]/, '') : null,
+          version:
+            typeof version === 'string' ? version.replace(/[\^~]/, '') : null,
           category: FRAMEWORK_PATTERNS[name].category,
         });
       }
@@ -463,7 +522,9 @@ async function detectFrameworksFromPackageJson(filePath: string): Promise<Framew
 /**
  * Helper: Detect frameworks from Cargo.toml
  */
-async function detectFrameworksFromCargoToml(filePath: string): Promise<FrameworkDetection[]> {
+async function detectFrameworksFromCargoToml(
+  filePath: string,
+): Promise<FrameworkDetection[]> {
   const frameworks: FrameworkDetection[] = [];
 
   try {
@@ -490,7 +551,9 @@ async function detectFrameworksFromCargoToml(filePath: string): Promise<Framewor
 /**
  * Helper: Detect frameworks from pyproject.toml
  */
-async function detectFrameworksFromPyproject(filePath: string): Promise<FrameworkDetection[]> {
+async function detectFrameworksFromPyproject(
+  filePath: string,
+): Promise<FrameworkDetection[]> {
   const frameworks: FrameworkDetection[] = [];
 
   try {
@@ -536,17 +599,23 @@ async function detectRuntime(filePath: string): Promise<string | null> {
 /**
  * Helper: Detect git branch pattern
  */
-async function detectGitBranch(projectRoot: string): Promise<GitBranchPattern | null> {
+async function detectGitBranch(
+  projectRoot: string,
+): Promise<GitBranchPattern | null> {
   try {
     const { execFile } = await import('child_process');
     const { promisify } = await import('util');
     const execFileAsync = promisify(execFile);
 
     // Get default branch
-    const { stdout } = await execFileAsync('git', ['symbolic-ref', 'refs/remotes/origin/HEAD'], {
-      cwd: projectRoot,
-      windowsHide: true,
-    });
+    const { stdout } = await execFileAsync(
+      'git',
+      ['symbolic-ref', 'refs/remotes/origin/HEAD'],
+      {
+        cwd: projectRoot,
+        windowsHide: true,
+      },
+    );
 
     const match = stdout.trim().match(/refs\/remotes\/origin\/(.+)/);
     if (match) {

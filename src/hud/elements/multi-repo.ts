@@ -43,7 +43,8 @@ const ACTIVITY_WINDOW_MS = 5 * 60 * 1000;
  * session — e.g. session-started.json is missing if the session-start
  * hook crashed or the user is on an older install).
  */
-const SESSION_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SESSION_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const CACHE_TTL_MS = 30_000;
 
@@ -126,14 +127,21 @@ function countActiveSessions(cwd: string): number {
           // some filesystems. Scan immediate children.
           for (const f of readdirSync(dirPath)) {
             try {
-              if (now - statSync(join(dirPath, f)).mtimeMs < ACTIVITY_WINDOW_MS) {
+              if (
+                now - statSync(join(dirPath, f)).mtimeMs <
+                ACTIVITY_WINDOW_MS
+              ) {
                 fresh = true;
                 break;
               }
-            } catch { /* skip */ }
+            } catch {
+              /* skip */
+            }
           }
         }
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
 
       if (fresh) active++;
     }
@@ -164,7 +172,10 @@ export function detectMultiRepo(cwd?: string): MultiRepoInfo | null {
   try {
     // If cwd is inside a git repo, skip — that's the single-repo path.
     if (isGitRepo(key)) {
-      multiRepoCache.set(key, { value: null, expiresAt: Date.now() + CACHE_TTL_MS });
+      multiRepoCache.set(key, {
+        value: null,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      });
       return null;
     }
 
@@ -182,7 +193,10 @@ export function detectMultiRepo(cwd?: string): MultiRepoInfo | null {
     }
 
     if (subrepoCount < 2) {
-      multiRepoCache.set(key, { value: null, expiresAt: Date.now() + CACHE_TTL_MS });
+      multiRepoCache.set(key, {
+        value: null,
+        expiresAt: Date.now() + CACHE_TTL_MS,
+      });
       return null;
     }
 
@@ -199,7 +213,10 @@ export function detectMultiRepo(cwd?: string): MultiRepoInfo | null {
     result = null;
   }
 
-  multiRepoCache.set(key, { value: result, expiresAt: Date.now() + CACHE_TTL_MS });
+  multiRepoCache.set(key, {
+    value: result,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
   return result;
 }
 

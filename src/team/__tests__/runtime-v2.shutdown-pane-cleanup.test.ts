@@ -3,7 +3,11 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-type ExecFileCallback = (err: Error | null, stdout: string, stderr: string) => void;
+type ExecFileCallback = (
+  err: Error | null,
+  stdout: string,
+  stderr: string,
+) => void;
 type ExecCallback = (err: Error | null, stdout: string, stderr: string) => void;
 
 const execFileMock = vi.hoisted(() => vi.fn());
@@ -19,7 +23,11 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-async function writeJson(cwd: string, relativePath: string, value: unknown): Promise<void> {
+async function writeJson(
+  cwd: string,
+  relativePath: string,
+  value: unknown,
+): Promise<void> {
   const fullPath = join(cwd, relativePath);
   await mkdir(dirname(fullPath), { recursive: true });
   await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
@@ -39,7 +47,10 @@ describe('shutdownTeamV2 split-pane pane cleanup', () => {
       let stdout = '';
       if (args[0] === 'list-panes') {
         stdout = '%1\n%2\n%3\n';
-      } else if (args[0] === 'display-message' && args.includes('#{pane_dead}')) {
+      } else if (
+        args[0] === 'display-message' &&
+        args.includes('#{pane_dead}')
+      ) {
         stdout = '1\n';
       }
       return { stdout, stderr: '' };
@@ -51,26 +62,31 @@ describe('shutdownTeamV2 split-pane pane cleanup', () => {
       const args = match[1].match(/'([^']*(?:\\.[^']*)*)'|"([^"]*)"/g);
       if (!args) return null;
       return args.map((token) => {
-        if (token.startsWith("'")) return token.slice(1, -1).replace(/'\\''/g, "'");
+        if (token.startsWith("'"))
+          return token.slice(1, -1).replace(/'\\''/g, "'");
         return token.slice(1, -1);
       });
     };
 
-    execFileMock.mockImplementation((_cmd: string, args: string[], cb?: ExecFileCallback) => {
-      const { stdout, stderr } = run(args);
-      if (cb) cb(null, stdout, stderr);
-      return {} as never;
-    });
-    (execFileMock as unknown as Record<symbol, unknown>)[Symbol.for('nodejs.util.promisify.custom')] =
-      async (_cmd: string, args: string[]) => run(args);
+    execFileMock.mockImplementation(
+      (_cmd: string, args: string[], cb?: ExecFileCallback) => {
+        const { stdout, stderr } = run(args);
+        if (cb) cb(null, stdout, stderr);
+        return {} as never;
+      },
+    );
+    (execFileMock as unknown as Record<symbol, unknown>)[
+      Symbol.for('nodejs.util.promisify.custom')
+    ] = async (_cmd: string, args: string[]) => run(args);
 
     execMock.mockImplementation((cmd: string, cb: ExecCallback) => {
       const { stdout, stderr } = run(parseTmuxShellCmd(cmd) ?? []);
       cb(null, stdout, stderr);
       return {} as never;
     });
-    (execMock as unknown as Record<symbol, unknown>)[Symbol.for('nodejs.util.promisify.custom')] =
-      async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
+    (execMock as unknown as Record<symbol, unknown>)[
+      Symbol.for('nodejs.util.promisify.custom')
+    ] = async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
   });
 
   afterEach(async () => {
@@ -95,7 +111,13 @@ describe('shutdownTeamV2 split-pane pane cleanup', () => {
       worker_count: 2,
       max_workers: 20,
       workers: [
-        { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [], pane_id: '%2' },
+        {
+          name: 'worker-1',
+          index: 1,
+          role: 'claude',
+          assigned_tasks: [],
+          pane_id: '%2',
+        },
         { name: 'worker-2', index: 2, role: 'claude', assigned_tasks: [] },
       ],
       created_at: new Date().toISOString(),
@@ -117,6 +139,8 @@ describe('shutdownTeamV2 split-pane pane cleanup', () => {
 
     expect(killPaneTargets).toEqual(['%2', '%3']);
     expect(killPaneTargets).not.toContain('%1');
-    await expect(readFile(join(cwd, teamRoot, 'config.json'), 'utf-8')).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      readFile(join(cwd, teamRoot, 'config.json'), 'utf-8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
   });
 });

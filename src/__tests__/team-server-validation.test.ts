@@ -27,7 +27,9 @@ vi.mock('fs', async () => {
     existsSync: vi.fn(() => false),
     mkdirSync: vi.fn(),
     writeFileSync: vi.fn(),
-    readFileSync: vi.fn(() => { throw new Error('ENOENT'); }),
+    readFileSync: vi.fn(() => {
+      throw new Error('ENOENT');
+    }),
   };
 });
 
@@ -52,7 +54,9 @@ const VALID_JOB_ID_RE = /^omc-[a-z0-9]{1,16}$/;
 
 function validateJobId(job_id: string): void {
   if (!VALID_JOB_ID_RE.test(job_id)) {
-    throw new Error(`Invalid job_id: "${job_id}". Must match /^omc-[a-z0-9]{1,16}$/`);
+    throw new Error(
+      `Invalid job_id: "${job_id}". Must match /^omc-[a-z0-9]{1,16}$/`,
+    );
   }
 }
 

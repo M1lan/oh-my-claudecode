@@ -12,10 +12,10 @@ import { relative, resolve } from 'node:path';
 
 export interface WorkerPermissions {
   workerName: string;
-  allowedPaths: string[];   // glob patterns relative to workingDirectory
-  deniedPaths: string[];    // glob patterns that override allowed
-  allowedCommands: string[]; // command prefixes (e.g., 'npm test', 'tsc')
-  maxFileSize: number;      // max bytes per file write
+  allowedPaths: string[]; // glob patterns relative to workingDirectory
+  deniedPaths: string[]; // glob patterns that override allowed
+  allowedCommands: string[]; // command prefixes (e.g., 'pnpm test', 'tsc')
+  maxFileSize: number; // max bytes per file write
 }
 
 /**
@@ -32,7 +32,11 @@ function matchGlob(pattern: string, path: string): boolean {
 
   while (si < path.length) {
     // Check for '**' (matches anything including '/')
-    if (pi < pattern.length - 1 && pattern[pi] === '*' && pattern[pi + 1] === '*') {
+    if (
+      pi < pattern.length - 1 &&
+      pattern[pi] === '*' &&
+      pattern[pi + 1] === '*'
+    ) {
       // Consume the '**'
       pi += 2;
       // Skip trailing '/' after '**' if present
@@ -75,8 +79,13 @@ function matchGlob(pattern: string, path: string): boolean {
       // If we got here from '**', slashes are OK; from '*', skip if slash
       // Re-check: was the star a '**'?
       const wasSingleStar =
-        starPi >= 2 && pattern[starPi - 2] === '*' && pattern[starPi - 1] === '*' ? false :
-        starPi >= 1 && pattern[starPi - 1] === '*' ? true : false;
+        starPi >= 2 &&
+        pattern[starPi - 2] === '*' &&
+        pattern[starPi - 1] === '*'
+          ? false
+          : starPi >= 1 && pattern[starPi - 1] === '*'
+            ? true
+            : false;
 
       if (wasSingleStar && si > 0 && path[si - 1] === '/') {
         return false;
@@ -109,7 +118,7 @@ function matchGlob(pattern: string, path: string): boolean {
 export function isPathAllowed(
   permissions: WorkerPermissions,
   filePath: string,
-  workingDirectory: string
+  workingDirectory: string,
 ): boolean {
   // Normalize to relative path
   const absPath = resolve(workingDirectory, filePath);
@@ -140,13 +149,13 @@ export function isPathAllowed(
  */
 export function isCommandAllowed(
   permissions: WorkerPermissions,
-  command: string
+  command: string,
 ): boolean {
   if (permissions.allowedCommands.length === 0) return true;
 
   const trimmed = command.trim();
-  return permissions.allowedCommands.some(prefix =>
-    trimmed.startsWith(prefix)
+  return permissions.allowedCommands.some((prefix) =>
+    trimmed.startsWith(prefix),
   );
 }
 
@@ -154,25 +163,33 @@ export function isCommandAllowed(
  * Generate permission instructions for inclusion in worker prompt.
  */
 export function formatPermissionInstructions(
-  permissions: WorkerPermissions
+  permissions: WorkerPermissions,
 ): string {
   const lines: string[] = [];
   lines.push('PERMISSION CONSTRAINTS:');
 
   if (permissions.allowedPaths.length > 0) {
-    lines.push(`- You may ONLY modify files matching: ${permissions.allowedPaths.join(', ')}`);
+    lines.push(
+      `- You may ONLY modify files matching: ${permissions.allowedPaths.join(', ')}`,
+    );
   }
 
   if (permissions.deniedPaths.length > 0) {
-    lines.push(`- You must NOT modify files matching: ${permissions.deniedPaths.join(', ')}`);
+    lines.push(
+      `- You must NOT modify files matching: ${permissions.deniedPaths.join(', ')}`,
+    );
   }
 
   if (permissions.allowedCommands.length > 0) {
-    lines.push(`- You may ONLY run commands starting with: ${permissions.allowedCommands.join(', ')}`);
+    lines.push(
+      `- You may ONLY run commands starting with: ${permissions.allowedCommands.join(', ')}`,
+    );
   }
 
   if (Number.isFinite(permissions.maxFileSize)) {
-    lines.push(`- Maximum file size: ${Math.round(permissions.maxFileSize / 1024)}KB per file`);
+    lines.push(
+      `- Maximum file size: ${Math.round(permissions.maxFileSize / 1024)}KB per file`,
+    );
   }
 
   if (lines.length === 1) {
@@ -188,9 +205,9 @@ export function formatPermissionInstructions(
 export function getDefaultPermissions(workerName: string): WorkerPermissions {
   return {
     workerName,
-    allowedPaths: [],     // empty = allow all
+    allowedPaths: [], // empty = allow all
     deniedPaths: [],
-    allowedCommands: [],  // empty = allow all
+    allowedCommands: [], // empty = allow all
     maxFileSize: Infinity,
   };
 }
@@ -212,7 +229,9 @@ const SECURE_DENY_DEFAULTS: string[] = [
  * Merge caller-provided permissions with secure deny-defaults.
  * The deny-defaults are always prepended to deniedPaths so they cannot be overridden.
  */
-export function getEffectivePermissions(base?: Partial<WorkerPermissions> & { workerName: string }): WorkerPermissions {
+export function getEffectivePermissions(
+  base?: Partial<WorkerPermissions> & { workerName: string },
+): WorkerPermissions {
   const perms = base
     ? { ...getDefaultPermissions(base.workerName), ...base }
     : getDefaultPermissions('default');
@@ -220,7 +239,7 @@ export function getEffectivePermissions(base?: Partial<WorkerPermissions> & { wo
   // Prepend secure defaults (deduplicating against existing deniedPaths)
   const existingSet = new Set(perms.deniedPaths);
   const merged = [
-    ...SECURE_DENY_DEFAULTS.filter(p => !existingSet.has(p)),
+    ...SECURE_DENY_DEFAULTS.filter((p) => !existingSet.has(p)),
     ...perms.deniedPaths,
   ];
   perms.deniedPaths = merged;
@@ -245,7 +264,7 @@ export interface PermissionViolation {
 export function findPermissionViolations(
   changedPaths: string[],
   permissions: WorkerPermissions,
-  cwd: string
+  cwd: string,
 ): PermissionViolation[] {
   const violations: PermissionViolation[] = [];
 
@@ -260,7 +279,9 @@ export function findPermissionViolations(
         reason = `Path escapes working directory: ${relPath}`;
       } else {
         // Find which deny pattern matched
-        const matchedDeny = permissions.deniedPaths.find(p => matchGlob(p, relPath));
+        const matchedDeny = permissions.deniedPaths.find((p) =>
+          matchGlob(p, relPath),
+        );
         if (matchedDeny) {
           reason = `Matches denied pattern: ${matchedDeny}`;
         } else {

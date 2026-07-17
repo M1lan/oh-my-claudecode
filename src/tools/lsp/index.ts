@@ -2,7 +2,12 @@
  * LSP Module Exports
  */
 
-export { LspClient, lspClientManager, disconnectAll, DEFAULT_LSP_REQUEST_TIMEOUT_MS } from './client.js';
+export {
+  LspClient,
+  lspClientManager,
+  disconnectAll,
+  DEFAULT_LSP_REQUEST_TIMEOUT_MS,
+} from './client.js';
 export type {
   Position,
   Range,
@@ -12,7 +17,7 @@ export type {
   DocumentSymbol,
   SymbolInformation,
   WorkspaceEdit,
-  CodeAction
+  CodeAction,
 } from './client.js';
 
 export {
@@ -20,7 +25,7 @@ export {
   getServerForFile,
   getServerForLanguage,
   getAllServers,
-  commandExists
+  commandExists,
 } from './servers.js';
 export type { LspServerConfig } from './servers.js';
 
@@ -29,7 +34,7 @@ export {
   hostPathToContainerPath,
   containerPathToHostPath,
   hostUriToContainerUri,
-  containerUriToHostUri
+  containerUriToHostUri,
 } from './devcontainer.js';
 export type { DevContainerContext } from './devcontainer.js';
 
@@ -45,5 +50,5 @@ export {
   formatDiagnostics,
   formatCodeActions,
   formatWorkspaceEdit,
-  countEdits
+  countEdits,
 } from './utils.js';

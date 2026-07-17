@@ -18,7 +18,7 @@ import {
   WORKING_MEMORY_HEADER,
   MANUAL_HEADER,
   getManualSection,
-  getNotepadPath
+  getNotepadPath,
 } from '../hooks/notepad/index.js';
 
 describe('Notepad Module', () => {
@@ -26,7 +26,10 @@ describe('Notepad Module', () => {
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    testDir = join(tmpdir(), `notepad-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `notepad-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -131,7 +134,7 @@ describe('Notepad Module', () => {
       // Manually add content with comment
       content = content.replace(
         `${PRIORITY_HEADER}\n<!-- ALWAYS loaded. Keep under 500 chars. Critical discoveries only. -->`,
-        `${PRIORITY_HEADER}\n<!-- ALWAYS loaded. Keep under 500 chars. Critical discoveries only. -->\nActual content`
+        `${PRIORITY_HEADER}\n<!-- ALWAYS loaded. Keep under 500 chars. Critical discoveries only. -->\nActual content`,
       );
       writeFileSync(notepadPath, content);
 
@@ -288,14 +291,17 @@ describe('Notepad Module', () => {
       const oldTimestamp = oldDate.toISOString().slice(0, 16).replace('T', ' ');
 
       const recentDate = new Date();
-      const recentTimestamp = recentDate.toISOString().slice(0, 16).replace('T', ' ');
+      const recentTimestamp = recentDate
+        .toISOString()
+        .slice(0, 16)
+        .replace('T', ' ');
 
       let content = readFileSync(notepadPath, 'utf-8');
       const workingMemoryContent = `### ${oldTimestamp}\nOld entry\n\n### ${recentTimestamp}\nRecent entry`;
 
       content = content.replace(
         `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->`,
-        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n${workingMemoryContent}`
+        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n${workingMemoryContent}`,
       );
       writeFileSync(notepadPath, content);
 
@@ -339,7 +345,7 @@ describe('Notepad Module', () => {
       let content = readFileSync(notepadPath, 'utf-8');
       content = content.replace(
         `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->`,
-        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n### ${oldTimestamp}\nOld working memory`
+        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n### ${oldTimestamp}\nOld working memory`,
       );
       writeFileSync(notepadPath, content);
 
@@ -417,7 +423,7 @@ describe('Notepad Module', () => {
 
       content = content.replace(
         `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->`,
-        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n${workingMemoryContent}`
+        `${WORKING_MEMORY_HEADER}\n<!-- Session notes. Auto-pruned after 7 days. -->\n${workingMemoryContent}`,
       );
       writeFileSync(notepadPath, content);
 

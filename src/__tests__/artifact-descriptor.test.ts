@@ -25,7 +25,9 @@ describe('artifact descriptor helpers', () => {
       expect(descriptor.path).toContain('artifact.md');
       expect(descriptor.contentHash).toMatch(/^[a-f0-9]{64}$/);
       expect(descriptor.sizeBytes).toBeGreaterThan(0);
-      expect(readFileSync(descriptor.path, 'utf-8')).toBe('hello artifact world');
+      expect(readFileSync(descriptor.path, 'utf-8')).toBe(
+        'hello artifact world',
+      );
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -50,15 +52,17 @@ describe('artifact descriptor helpers', () => {
   });
 
   it('switches large payloads to descriptor mode', () => {
-    const descriptorFactory = vi.fn<() => {
-      kind: string;
-      path: string;
-      createdAt: string;
-      producer: { system: 'omc'; component: string };
-      retention: 'until-completion';
-      sizeBytes: number;
-      contentHash: string;
-    }>(() => ({
+    const descriptorFactory = vi.fn<
+      () => {
+        kind: string;
+        path: string;
+        createdAt: string;
+        producer: { system: 'omc'; component: string };
+        retention: 'until-completion';
+        sizeBytes: number;
+        contentHash: string;
+      }
+    >(() => ({
       kind: 'task-result',
       path: '/tmp/result.md',
       createdAt: new Date().toISOString(),

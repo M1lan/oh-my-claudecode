@@ -92,9 +92,9 @@ export function getStableContextDisplayPercent(
   }
 
   if (
-    lastDisplayedPercent === null
-    || lastDisplayedSeverity === null
-    || now - lastDisplayUpdatedAt > CONTEXT_DISPLAY_STATE_TTL_MS
+    lastDisplayedPercent === null ||
+    lastDisplayedSeverity === null ||
+    now - lastDisplayUpdatedAt > CONTEXT_DISPLAY_STATE_TTL_MS
   ) {
     lastDisplayedPercent = safePercent;
     lastDisplayedSeverity = severity;
@@ -109,7 +109,9 @@ export function getStableContextDisplayPercent(
     return safePercent;
   }
 
-  if (Math.abs(safePercent - lastDisplayedPercent) <= CONTEXT_DISPLAY_HYSTERESIS) {
+  if (
+    Math.abs(safePercent - lastDisplayedPercent) <= CONTEXT_DISPLAY_HYSTERESIS
+  ) {
     lastDisplayUpdatedAt = now;
     return lastDisplayedPercent;
   }
@@ -131,7 +133,11 @@ export function renderContext(
   displayScope?: string | null,
   labels: Pick<HudLabels, 'context'> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
+  const safePercent = getStableContextDisplayPercent(
+    percent,
+    thresholds,
+    displayScope,
+  );
   const { color, suffix } = getContextDisplayStyle(safePercent, thresholds);
 
   return `${labels.context}:${color}${safePercent}%${suffix}${RESET}`;
@@ -149,7 +155,11 @@ export function renderContextWithBar(
   displayScope?: string | null,
   labels: Pick<HudLabels, 'context'> = DEFAULT_HUD_LABELS,
 ): string | null {
-  const safePercent = getStableContextDisplayPercent(percent, thresholds, displayScope);
+  const safePercent = getStableContextDisplayPercent(
+    percent,
+    thresholds,
+    displayScope,
+  );
   const filled = Math.round((safePercent / 100) * barWidth);
   const empty = barWidth - filled;
 

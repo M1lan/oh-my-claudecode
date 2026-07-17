@@ -138,6 +138,8 @@ export function readCanonicalTeamStateCandidate(
   return null;
 }
 
-export function canonicalTeamStateIsTerminal(candidate: CanonicalTeamStateCandidate | null): boolean {
+export function canonicalTeamStateIsTerminal(
+  candidate: CanonicalTeamStateCandidate | null,
+): boolean {
   return !candidate ? false : isTerminalCanonicalPhase(candidate.stage);
 }

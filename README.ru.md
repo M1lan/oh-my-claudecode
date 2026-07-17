@@ -68,7 +68,7 @@ Team работает как поэтапный pipeline:
 
 > Если teams отключены, OMC предупредит вас и переключится на выполнение без Team, если это возможно.
 
-> **Примечание: Название пакета** — Проект использует бренд **oh-my-claudecode** (репозиторий, плагин, команды), но npm-пакет публикуется как [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Если вы устанавливаете CLI-инструменты через npm/bun, используйте `npm install -g oh-my-claude-sisyphus`.
+> **Примечание: Название пакета** — Проект использует бренд **oh-my-claudecode** (репозиторий, плагин, команды), но npm-пакет публикуется как [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Если вы устанавливаете CLI-инструменты через pnpm/bun, используйте `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Обновление
 
@@ -313,8 +313,8 @@ OMC может опционально использовать внешних AI
 
 | Провайдер                                                 | Установка                           | Что даёт                                                 |
 | --------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------- |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Ревью дизайна, единообразие UI (контекст 1M токенов)     |
-| [Codex CLI](https://github.com/openai/codex)              | `npm install -g @openai/codex`      | Валидация архитектуры, перекрёстная проверка code review |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Ревью дизайна, единообразие UI (контекст 1M токенов)     |
+| [Codex CLI](https://github.com/openai/codex)              | `pnpm add -g @openai/codex`      | Валидация архитектуры, перекрёстная проверка code review |
 
 **Стоимость:** 3 плана Pro (Claude + Gemini + ChatGPT) покрывают всё за ~$60/месяц.
 

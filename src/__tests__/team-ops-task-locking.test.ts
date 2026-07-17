@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 
 // ---------------------------------------------------------------------------
 // BUG 3: team-ops teamCreateTask must use locking for task ID generation
@@ -16,21 +16,26 @@ describe('team-ops teamCreateTask locking', () => {
     // Set up minimal team config
     const root = join(tempDir, '.omc', 'state', 'team', teamName);
     mkdirSync(join(root, 'tasks'), { recursive: true });
-    writeFileSync(join(root, 'config.json'), JSON.stringify({
-      name: teamName,
-      task: 'test',
-      agent_type: 'executor',
-      worker_count: 1,
-      max_workers: 20,
-      tmux_session: 'test-session',
-      workers: [{ name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] }],
-      created_at: new Date().toISOString(),
-      next_task_id: 1,
-      leader_pane_id: null,
-      hud_pane_id: null,
-      resize_hook_name: null,
-      resize_hook_target: null,
-    }));
+    writeFileSync(
+      join(root, 'config.json'),
+      JSON.stringify({
+        name: teamName,
+        task: 'test',
+        agent_type: 'executor',
+        worker_count: 1,
+        max_workers: 20,
+        tmux_session: 'test-session',
+        workers: [
+          { name: 'worker-1', index: 1, role: 'executor', assigned_tasks: [] },
+        ],
+        created_at: new Date().toISOString(),
+        next_task_id: 1,
+        leader_pane_id: null,
+        hud_pane_id: null,
+        resize_hook_name: null,
+        resize_hook_target: null,
+      }),
+    );
   });
 
   afterEach(() => {
@@ -75,12 +80,24 @@ describe('team-ops teamCreateTask locking', () => {
     const { teamCreateTask } = await import('../team/team-ops.js');
 
     const results = await Promise.all([
-      teamCreateTask(teamName, { subject: 'Task 1', description: 'c1', status: 'pending' as const }, tempDir),
-      teamCreateTask(teamName, { subject: 'Task 2', description: 'c2', status: 'pending' as const }, tempDir),
-      teamCreateTask(teamName, { subject: 'Task 3', description: 'c3', status: 'pending' as const }, tempDir),
+      teamCreateTask(
+        teamName,
+        { subject: 'Task 1', description: 'c1', status: 'pending' as const },
+        tempDir,
+      ),
+      teamCreateTask(
+        teamName,
+        { subject: 'Task 2', description: 'c2', status: 'pending' as const },
+        tempDir,
+      ),
+      teamCreateTask(
+        teamName,
+        { subject: 'Task 3', description: 'c3', status: 'pending' as const },
+        tempDir,
+      ),
     ]);
 
-    const ids = results.map(t => t.id);
+    const ids = results.map((t) => t.id);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(3);
   });

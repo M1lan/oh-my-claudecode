@@ -6,17 +6,14 @@
  * Also generates human-readable summaries when autopilot completes.
  */
 
-import {
-  readAutopilotState,
-  writeAutopilotState,
-} from './state.js';
+import { readAutopilotState, writeAutopilotState } from './state.js';
 import type {
   AutopilotState,
   AutopilotPhase,
   AutopilotSummary,
   ValidationResult,
   ValidationVerdictType,
-  ValidationVerdict
+  ValidationVerdict,
 } from './types.js';
 
 /** Number of architects required for validation consensus */
@@ -38,7 +35,7 @@ export function recordValidationVerdict(
   type: ValidationVerdictType,
   verdict: ValidationVerdict,
   issues?: string[],
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   const state = readAutopilotState(directory, sessionId);
   if (!state || state.phase !== 'validation') {
@@ -48,12 +45,12 @@ export function recordValidationVerdict(
   const result: ValidationResult = {
     type,
     verdict,
-    issues
+    issues,
   };
 
   // Remove any existing verdict of this type for the current round
   const existingIndex = state.validation.verdicts.findIndex(
-    v => v.type === type
+    (v) => v.type === type,
   );
 
   if (existingIndex >= 0) {
@@ -66,7 +63,7 @@ export function recordValidationVerdict(
   // Check if all verdicts are in
   if (state.validation.verdicts.length >= REQUIRED_ARCHITECTS) {
     state.validation.all_approved = state.validation.verdicts.every(
-      v => v.verdict === 'APPROVED'
+      (v) => v.verdict === 'APPROVED',
     );
   }
 
@@ -76,7 +73,10 @@ export function recordValidationVerdict(
 /**
  * Get validation status
  */
-export function getValidationStatus(directory: string, sessionId?: string): ValidationCoordinatorResult | null {
+export function getValidationStatus(
+  directory: string,
+  sessionId?: string,
+): ValidationCoordinatorResult | null {
   const state = readAutopilotState(directory, sessionId);
   if (!state) {
     return null;
@@ -94,14 +94,17 @@ export function getValidationStatus(directory: string, sessionId?: string): Vali
     allApproved: state.validation.all_approved,
     verdicts: state.validation.verdicts,
     round: state.validation.validation_rounds,
-    issues: allIssues
+    issues: allIssues,
   };
 }
 
 /**
  * Start a new validation round
  */
-export function startValidationRound(directory: string, sessionId?: string): boolean {
+export function startValidationRound(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const state = readAutopilotState(directory, sessionId);
   if (!state || state.phase !== 'validation') {
     return false;
@@ -118,14 +121,18 @@ export function startValidationRound(directory: string, sessionId?: string): boo
 /**
  * Check if validation should retry
  */
-export function shouldRetryValidation(directory: string, maxRounds: number = 3, sessionId?: string): boolean {
+export function shouldRetryValidation(
+  directory: string,
+  maxRounds: number = 3,
+  sessionId?: string,
+): boolean {
   const state = readAutopilotState(directory, sessionId);
   if (!state) {
     return false;
   }
 
   const hasRejection = state.validation.verdicts.some(
-    v => v.verdict === 'REJECTED'
+    (v) => v.verdict === 'REJECTED',
   );
 
   const canRetry = state.validation.validation_rounds < maxRounds;
@@ -136,7 +143,10 @@ export function shouldRetryValidation(directory: string, maxRounds: number = 3, 
 /**
  * Get issues that need fixing before retry
  */
-export function getIssuesToFix(directory: string, sessionId?: string): string[] {
+export function getIssuesToFix(
+  directory: string,
+  sessionId?: string,
+): string[] {
   const state = readAutopilotState(directory, sessionId);
   if (!state) {
     return [];
@@ -146,7 +156,9 @@ export function getIssuesToFix(directory: string, sessionId?: string): string[] 
 
   for (const verdict of state.validation.verdicts) {
     if (verdict.verdict === 'REJECTED' && verdict.issues) {
-      issues.push(`[${verdict.type.toUpperCase()}] ${verdict.issues.join(', ')}`);
+      issues.push(
+        `[${verdict.type.toUpperCase()}] ${verdict.issues.join(', ')}`,
+      );
     }
   }
 
@@ -221,11 +233,14 @@ Wait for all three architects to complete, then aggregate verdicts.
 /**
  * Format validation results for display
  */
-export function formatValidationResults(state: AutopilotState, _sessionId?: string): string {
+export function formatValidationResults(
+  state: AutopilotState,
+  _sessionId?: string,
+): string {
   const lines: string[] = [
     '## Validation Results',
     `Round: ${state.validation.validation_rounds}`,
-    ''
+    '',
   ];
 
   for (const verdict of state.validation.verdicts) {
@@ -257,7 +272,10 @@ export function formatValidationResults(state: AutopilotState, _sessionId?: stri
 /**
  * Generate a summary of the autopilot run
  */
-export function generateSummary(directory: string, sessionId?: string): AutopilotSummary | null {
+export function generateSummary(
+  directory: string,
+  sessionId?: string,
+): AutopilotSummary | null {
   const state = readAutopilotState(directory, sessionId);
   if (!state) {
     return null;
@@ -287,13 +305,13 @@ export function generateSummary(directory: string, sessionId?: string): Autopilo
   }
 
   return {
-    originalIdea: state.originalIdea || state.prompt || "",
+    originalIdea: state.originalIdea || state.prompt || '',
     filesCreated: state.execution.files_created,
     filesModified: state.execution.files_modified,
     testsStatus,
     duration,
     agentsSpawned: state.total_agents_spawned,
-    phasesCompleted
+    phasesCompleted,
   };
 }
 
@@ -326,29 +344,42 @@ export function formatSummary(summary: AutopilotSummary): string {
     '',
     '╭──────────────────────────────────────────────────────╮',
     '│                  AUTOPILOT COMPLETE                   │',
-    '├──────────────────────────────────────────────────────┤'
+    '├──────────────────────────────────────────────────────┤',
   ];
 
   // Original idea (truncate if too long)
-  const ideaDisplay = summary.originalIdea.length > 50
-    ? summary.originalIdea.substring(0, 47) + '...'
-    : summary.originalIdea;
+  const ideaDisplay =
+    summary.originalIdea.length > 50
+      ? summary.originalIdea.substring(0, 47) + '...'
+      : summary.originalIdea;
   lines.push(`│  Original Idea: ${ideaDisplay.padEnd(36)} │`);
   lines.push('│                                                      │');
 
   // Delivered section
   lines.push('│  Delivered:                                          │');
-  lines.push(`│  • ${summary.filesCreated.length} files created${' '.repeat(36 - String(summary.filesCreated.length).length)}│`);
-  lines.push(`│  • ${summary.filesModified.length} files modified${' '.repeat(35 - String(summary.filesModified.length).length)}│`);
-  lines.push(`│  • Tests: ${summary.testsStatus}${' '.repeat(36 - summary.testsStatus.length)}│`);
+  lines.push(
+    `│  • ${summary.filesCreated.length} files created${' '.repeat(36 - String(summary.filesCreated.length).length)}│`,
+  );
+  lines.push(
+    `│  • ${summary.filesModified.length} files modified${' '.repeat(35 - String(summary.filesModified.length).length)}│`,
+  );
+  lines.push(
+    `│  • Tests: ${summary.testsStatus}${' '.repeat(36 - summary.testsStatus.length)}│`,
+  );
   lines.push('│                                                      │');
 
   // Metrics
   lines.push('│  Metrics:                                            │');
   const durationStr = formatDuration(summary.duration);
-  lines.push(`│  • Duration: ${durationStr}${' '.repeat(35 - durationStr.length)}│`);
-  lines.push(`│  • Agents spawned: ${summary.agentsSpawned}${' '.repeat(30 - String(summary.agentsSpawned).length)}│`);
-  lines.push(`│  • Phases completed: ${summary.phasesCompleted.length}/5${' '.repeat(27)}│`);
+  lines.push(
+    `│  • Duration: ${durationStr}${' '.repeat(35 - durationStr.length)}│`,
+  );
+  lines.push(
+    `│  • Agents spawned: ${summary.agentsSpawned}${' '.repeat(30 - String(summary.agentsSpawned).length)}│`,
+  );
+  lines.push(
+    `│  • Phases completed: ${summary.phasesCompleted.length}/5${' '.repeat(27)}│`,
+  );
 
   lines.push('╰──────────────────────────────────────────────────────╯');
   lines.push('');
@@ -361,7 +392,9 @@ export function formatSummary(summary: AutopilotSummary): string {
  */
 export function formatCompactSummary(state: AutopilotState): string {
   const phase = state.phase.toUpperCase();
-  const files = state.execution.files_created.length + state.execution.files_modified.length;
+  const files =
+    state.execution.files_created.length +
+    state.execution.files_modified.length;
   const agents = state.total_agents_spawned;
 
   if (state.phase === 'complete') {
@@ -372,20 +405,29 @@ export function formatCompactSummary(state: AutopilotState): string {
     return `[AUTOPILOT ✗] Failed at ${state.phase}`;
   }
 
-  const phaseIndex = ['expansion', 'planning', 'execution', 'qa', 'validation'].indexOf(state.phase);
+  const phaseIndex = [
+    'expansion',
+    'planning',
+    'execution',
+    'qa',
+    'validation',
+  ].indexOf(state.phase);
   return `[AUTOPILOT] Phase ${phaseIndex + 1}/5: ${phase} | ${files} files`;
 }
 
 /**
  * Generate failure summary
  */
-export function formatFailureSummary(state: AutopilotState, error?: string): string {
+export function formatFailureSummary(
+  state: AutopilotState,
+  error?: string,
+): string {
   const lines: string[] = [
     '',
     '╭──────────────────────────────────────────────────────╮',
     '│                  AUTOPILOT FAILED                     │',
     '├──────────────────────────────────────────────────────┤',
-    `│  Failed at phase: ${state.phase.toUpperCase().padEnd(33)} │`
+    `│  Failed at phase: ${state.phase.toUpperCase().padEnd(33)} │`,
   ];
 
   if (error) {
@@ -408,7 +450,11 @@ export function formatFailureSummary(state: AutopilotState, error?: string): str
 /**
  * List files for detailed summary
  */
-export function formatFileList(files: string[], title: string, maxFiles: number = 10): string {
+export function formatFileList(
+  files: string[],
+  title: string,
+  maxFiles: number = 10,
+): string {
   if (files.length === 0) {
     return '';
   }

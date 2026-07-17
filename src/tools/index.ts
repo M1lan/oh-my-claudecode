@@ -21,22 +21,26 @@ export interface GenericToolDefinition {
   name: string;
   description: string;
   schema: z.ZodRawShape;
-  handler: (args: unknown) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
+  handler: (
+    args: unknown,
+  ) => Promise<{ content: Array<{ type: 'text'; text: string }> }>;
 }
 
 /**
  * All custom tools available in the system
  */
 export const allCustomTools: GenericToolDefinition[] = [
-  ...lspTools as unknown as GenericToolDefinition[],
-  ...astTools as unknown as GenericToolDefinition[],
-  pythonReplTool as unknown as GenericToolDefinition
+  ...(lspTools as unknown as GenericToolDefinition[]),
+  ...(astTools as unknown as GenericToolDefinition[]),
+  pythonReplTool as unknown as GenericToolDefinition,
 ];
 
 /**
  * Get tools by category
  */
-export function getToolsByCategory(category: 'lsp' | 'ast' | 'all'): GenericToolDefinition[] {
+export function getToolsByCategory(
+  category: 'lsp' | 'ast' | 'all',
+): GenericToolDefinition[] {
   switch (category) {
     case 'lsp':
       return lspTools as unknown as GenericToolDefinition[];
@@ -50,7 +54,9 @@ export function getToolsByCategory(category: 'lsp' | 'ast' | 'all'): GenericTool
 /**
  * Create a Zod schema object from a tool's schema definition
  */
-export function createZodSchema<T extends z.ZodRawShape>(schema: T): z.ZodObject<T> {
+export function createZodSchema<T extends z.ZodRawShape>(
+  schema: T,
+): z.ZodObject<T> {
   return z.object(schema);
 }
 
@@ -77,7 +83,7 @@ export function toSdkToolFormat(tool: GenericToolDefinition): SdkToolFormat {
   return {
     name: tool.name,
     description: tool.description,
-    inputSchema: jsonSchema
+    inputSchema: jsonSchema,
   };
 }
 
@@ -106,7 +112,7 @@ function zodToJsonSchema(schema: z.ZodObject<z.ZodRawShape>): {
   return {
     type: 'object',
     properties,
-    required
+    required,
   };
 }
 
@@ -138,7 +144,9 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   if (zodType instanceof z.ZodString) {
     result.type = 'string';
   } else if (zodType instanceof z.ZodNumber) {
-    result.type = zodType._def.checks?.some((c: { kind: string }) => c.kind === 'int')
+    result.type = zodType._def.checks?.some(
+      (c: { kind: string }) => c.kind === 'int',
+    )
       ? 'integer'
       : 'number';
   } else if (zodType instanceof z.ZodBoolean) {

@@ -40,10 +40,16 @@ export class BitbucketProvider implements GitProvider {
     return url.includes('bitbucket.org');
   }
 
-  async viewPR(number: number, owner?: string, repo?: string): Promise<PRInfo | null> {
+  async viewPR(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): Promise<PRInfo | null> {
     if (!Number.isInteger(number) || number < 1) return null;
     if (!owner || !repo) return null;
-    const data = await fetchApi(`${API_BASE}/${owner}/${repo}/pullrequests/${number}`);
+    const data = await fetchApi(
+      `${API_BASE}/${owner}/${repo}/pullrequests/${number}`,
+    );
     if (!data) return null;
     const source = data.source as Record<string, unknown> | undefined;
     const dest = data.destination as Record<string, unknown> | undefined;
@@ -62,10 +68,16 @@ export class BitbucketProvider implements GitProvider {
     };
   }
 
-  async viewIssue(number: number, owner?: string, repo?: string): Promise<IssueInfo | null> {
+  async viewIssue(
+    number: number,
+    owner?: string,
+    repo?: string,
+  ): Promise<IssueInfo | null> {
     if (!Number.isInteger(number) || number < 1) return null;
     if (!owner || !repo) return null;
-    const data = await fetchApi(`${API_BASE}/${owner}/${repo}/issues/${number}`);
+    const data = await fetchApi(
+      `${API_BASE}/${owner}/${repo}/issues/${number}`,
+    );
     if (!data) return null;
     const content = data.content as Record<string, unknown> | undefined;
     const links = data.links as Record<string, unknown> | undefined;

@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  existsSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -43,8 +50,10 @@ function writeSubagentTrackingState(
       {
         agents,
         total_spawned: agents.length,
-        total_completed: agents.filter((agent) => agent.status === 'completed').length,
-        total_failed: agents.filter((agent) => agent.status === 'failed').length,
+        total_completed: agents.filter((agent) => agent.status === 'completed')
+          .length,
+        total_failed: agents.filter((agent) => agent.status === 'failed')
+          .length,
         last_updated: new Date().toISOString(),
       },
       null,
@@ -127,14 +136,20 @@ describe('skill-state', () => {
     });
 
     it('returns protection for OMC skills when rawSkillName has prefix', () => {
-      expect(getSkillProtection('plan', 'oh-my-claudecode:plan')).toBe('medium');
-      expect(getSkillProtection('deepinit', 'oh-my-claudecode:deepinit')).toBe('heavy');
+      expect(getSkillProtection('plan', 'oh-my-claudecode:plan')).toBe(
+        'medium',
+      );
+      expect(getSkillProtection('deepinit', 'oh-my-claudecode:deepinit')).toBe(
+        'heavy',
+      );
     });
 
     it('returns none for other plugin skills with rawSkillName', () => {
       // ouroboros:plan, claude-mem:make-plan etc. should not get OMC protection
       expect(getSkillProtection('plan', 'ouroboros:plan')).toBe('none');
-      expect(getSkillProtection('make-plan', 'claude-mem:make-plan')).toBe('none');
+      expect(getSkillProtection('make-plan', 'claude-mem:make-plan')).toBe(
+        'none',
+      );
     });
 
     it('falls back to map lookup when rawSkillName is not provided', () => {
@@ -197,7 +212,9 @@ describe('skill-state', () => {
 
       expect(state).toBeNull();
       expect(readSkillActiveState(tempDir, 'session-1')).toBeNull();
-      expect(existsSync(join(tempDir, '.omc', 'state', 'sessions', 'session-1'))).toBe(false);
+      expect(
+        existsSync(join(tempDir, '.omc', 'state', 'sessions', 'session-1')),
+      ).toBe(false);
     });
 
     it('creates state file on disk', () => {
@@ -208,7 +225,11 @@ describe('skill-state', () => {
     });
 
     it('strips namespace prefix from skill name', () => {
-      const state = writeSkillActiveState(tempDir, 'oh-my-claudecode:plan', 'session-1');
+      const state = writeSkillActiveState(
+        tempDir,
+        'oh-my-claudecode:plan',
+        'session-1',
+      );
       expect(state!.skill_name).toBe('plan');
     });
 
@@ -220,7 +241,12 @@ describe('skill-state', () => {
     });
 
     it('writes state for OMC skills when rawSkillName has prefix', () => {
-      const state = writeSkillActiveState(tempDir, 'plan', 'session-1', 'oh-my-claudecode:plan');
+      const state = writeSkillActiveState(
+        tempDir,
+        'plan',
+        'session-1',
+        'oh-my-claudecode:plan',
+      );
       expect(state).not.toBeNull();
       expect(state!.skill_name).toBe('plan');
       expect(state!.max_reinforcements).toBe(5);
@@ -228,7 +254,11 @@ describe('skill-state', () => {
 
     it('does not overwrite when a different skill is already active (nesting guard)', () => {
       writeSkillActiveState(tempDir, 'plan', 'session-1');
-      const state2 = writeSkillActiveState(tempDir, 'external-context', 'session-1');
+      const state2 = writeSkillActiveState(
+        tempDir,
+        'external-context',
+        'session-1',
+      );
       expect(state2).toBeNull();
 
       const readBack = readSkillActiveState(tempDir, 'session-1');
@@ -252,7 +282,9 @@ describe('skill-state', () => {
       writeSkillActiveState(tempDir, 'omc-setup', 'session-1');
       const child = writeSkillActiveState(tempDir, 'mcp-setup', 'session-1');
       expect(child).toBeNull();
-      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe('omc-setup');
+      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe(
+        'omc-setup',
+      );
     });
 
     it('blocks triple nesting: third child cannot overwrite grandparent', () => {
@@ -260,7 +292,9 @@ describe('skill-state', () => {
       writeSkillActiveState(tempDir, 'mcp-setup', 'session-1'); // blocked
       const grandchild = writeSkillActiveState(tempDir, 'plan', 'session-1');
       expect(grandchild).toBeNull();
-      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe('omc-setup');
+      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe(
+        'omc-setup',
+      );
     });
 
     it('re-invocation resets reinforcement count', () => {
@@ -479,7 +513,14 @@ describe('skill-state', () => {
       const past = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       state.started_at = past;
       state.last_checked_at = past;
-      const statePath = join(tempDir, '.omc', 'state', 'sessions', 'session-1', 'skill-active-state.json');
+      const statePath = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'session-1',
+        'skill-active-state.json',
+      );
       writeFileSync(statePath, JSON.stringify(state, null, 2));
 
       const result = checkSkillActiveState(tempDir, 'session-1');
@@ -520,17 +561,27 @@ describe('skill-state', () => {
 
       // 1. Parent skill (omc-setup) starts
       writeSkillActiveState(tempDir, 'omc-setup', 'session-1');
-      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe('omc-setup');
+      expect(readSkillActiveState(tempDir, 'session-1')!.skill_name).toBe(
+        'omc-setup',
+      );
 
       // 2. Child skill (mcp-setup) starts — nesting guard blocks write
-      const childWrite = writeSkillActiveState(tempDir, 'mcp-setup', 'session-1');
+      const childWrite = writeSkillActiveState(
+        tempDir,
+        'mcp-setup',
+        'session-1',
+      );
       expect(childWrite).toBeNull();
 
       // 3. Child skill completes — simulate PostToolUse nesting-aware clear
       //    bridge.ts logic: only clear if completing skill owns the state
       const stateAfterChildDone = readSkillActiveState(tempDir, 'session-1');
       const completingChild = 'mcp-setup';
-      if (!stateAfterChildDone || !stateAfterChildDone.active || stateAfterChildDone.skill_name === completingChild) {
+      if (
+        !stateAfterChildDone ||
+        !stateAfterChildDone.active ||
+        stateAfterChildDone.skill_name === completingChild
+      ) {
         clearSkillActiveState(tempDir, 'session-1');
       }
       // Parent state must survive — child does not own it
@@ -547,7 +598,11 @@ describe('skill-state', () => {
       // 5. Parent skill completes — simulate PostToolUse nesting-aware clear
       const stateAfterParentDone = readSkillActiveState(tempDir, 'session-1');
       const completingParent = 'omc-setup';
-      if (!stateAfterParentDone || !stateAfterParentDone.active || stateAfterParentDone.skill_name === completingParent) {
+      if (
+        !stateAfterParentDone ||
+        !stateAfterParentDone.active ||
+        stateAfterParentDone.skill_name === completingParent
+      ) {
         clearSkillActiveState(tempDir, 'session-1');
       }
       // State must be cleared now
@@ -563,19 +618,24 @@ describe('skill-state', () => {
   // writeSkillActiveStateCopies — dual-write invariant (spec a/b)
   // -----------------------------------------------------------------------
   describe('writeSkillActiveStateCopies — dual-write invariant (spec a/b)', () => {
-    const rootFilePath = (dir: string) => join(dir, '.omc', 'state', 'skill-active-state.json');
+    const rootFilePath = (dir: string) =>
+      join(dir, '.omc', 'state', 'skill-active-state.json');
     const sessionFilePath = (dir: string, sid: string) =>
       join(dir, '.omc', 'state', 'sessions', sid, 'skill-active-state.json');
 
     it('writes both root and session copies on seed', () => {
       const sessionId = 'dwc-seed-01';
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: sessionId,
-        mode_state_path: 'ralph-state.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: sessionFilePath(tempDir, sessionId),
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: sessionId,
+          mode_state_path: 'ralph-state.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: sessionFilePath(tempDir, sessionId),
+        },
+      );
 
       writeSkillActiveStateCopies(tempDir, state, sessionId);
 
@@ -585,18 +645,26 @@ describe('skill-state', () => {
 
     it('both copies contain identical slot content after seed', () => {
       const sessionId = 'dwc-parity-01';
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'autopilot', {
-        session_id: sessionId,
-        mode_state_path: 'autopilot-state.json',
-        initialized_mode: 'autopilot',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: sessionFilePath(tempDir, sessionId),
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'autopilot',
+        {
+          session_id: sessionId,
+          mode_state_path: 'autopilot-state.json',
+          initialized_mode: 'autopilot',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: sessionFilePath(tempDir, sessionId),
+        },
+      );
 
       writeSkillActiveStateCopies(tempDir, state, sessionId);
 
-      const root = JSON.parse(readFileSync(rootFilePath(tempDir), 'utf-8')) as SkillActiveStateV2;
-      const session = JSON.parse(readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8')) as SkillActiveStateV2;
+      const root = JSON.parse(
+        readFileSync(rootFilePath(tempDir), 'utf-8'),
+      ) as SkillActiveStateV2;
+      const session = JSON.parse(
+        readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8'),
+      ) as SkillActiveStateV2;
 
       expect(root.active_skills['autopilot']).toBeDefined();
       expect(session.active_skills['autopilot']).toBeDefined();
@@ -605,37 +673,55 @@ describe('skill-state', () => {
     });
 
     it('writes only root copy when sessionId is omitted', () => {
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: 'anon',
-        mode_state_path: 'ralph-state.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: '',
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: 'anon',
+          mode_state_path: 'ralph-state.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: '',
+        },
+      );
 
       writeSkillActiveStateCopies(tempDir, state);
 
       expect(existsSync(rootFilePath(tempDir))).toBe(true);
-      expect(existsSync(join(tempDir, '.omc', 'state', 'sessions'))).toBe(false);
+      expect(existsSync(join(tempDir, '.omc', 'state', 'sessions'))).toBe(
+        false,
+      );
     });
 
     it('both copies reflect tombstone after markWorkflowSkillCompleted (spec b)', () => {
       const sessionId = 'dwc-tomb-01';
-      const seeded = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: sessionId,
-        mode_state_path: 'ralph-state.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: sessionFilePath(tempDir, sessionId),
-      });
+      const seeded = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: sessionId,
+          mode_state_path: 'ralph-state.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: sessionFilePath(tempDir, sessionId),
+        },
+      );
       writeSkillActiveStateCopies(tempDir, seeded, sessionId);
 
       const tombstoneTime = '2026-04-17T10:00:00.000Z';
-      const tombstoned = markWorkflowSkillCompleted(seeded, 'ralph', tombstoneTime);
+      const tombstoned = markWorkflowSkillCompleted(
+        seeded,
+        'ralph',
+        tombstoneTime,
+      );
       writeSkillActiveStateCopies(tempDir, tombstoned, sessionId);
 
-      const root = JSON.parse(readFileSync(rootFilePath(tempDir), 'utf-8')) as SkillActiveStateV2;
-      const session = JSON.parse(readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8')) as SkillActiveStateV2;
+      const root = JSON.parse(
+        readFileSync(rootFilePath(tempDir), 'utf-8'),
+      ) as SkillActiveStateV2;
+      const session = JSON.parse(
+        readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8'),
+      ) as SkillActiveStateV2;
 
       expect(root.active_skills['ralph']?.completed_at).toBe(tombstoneTime);
       expect(session.active_skills['ralph']?.completed_at).toBe(tombstoneTime);
@@ -643,13 +729,17 @@ describe('skill-state', () => {
 
     it('removes both files when all slots cleared (spec b cancel)', () => {
       const sessionId = 'dwc-cancel-01';
-      const seeded = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: sessionId,
-        mode_state_path: 'ralph-state.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: sessionFilePath(tempDir, sessionId),
-      });
+      const seeded = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: sessionId,
+          mode_state_path: 'ralph-state.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: sessionFilePath(tempDir, sessionId),
+        },
+      );
       writeSkillActiveStateCopies(tempDir, seeded, sessionId);
 
       expect(existsSync(rootFilePath(tempDir))).toBe(true);
@@ -664,13 +754,17 @@ describe('skill-state', () => {
 
     it('returns true on successful dual-write', () => {
       const sessionId = 'dwc-ok-01';
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ultrawork', {
-        session_id: sessionId,
-        mode_state_path: 'ultrawork-state.json',
-        initialized_mode: 'ultrawork',
-        initialized_state_path: rootFilePath(tempDir),
-        initialized_session_state_path: sessionFilePath(tempDir, sessionId),
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ultrawork',
+        {
+          session_id: sessionId,
+          mode_state_path: 'ultrawork-state.json',
+          initialized_mode: 'ultrawork',
+          initialized_state_path: rootFilePath(tempDir),
+          initialized_session_state_path: sessionFilePath(tempDir, sessionId),
+        },
+      );
 
       const result = writeSkillActiveStateCopies(tempDir, state, sessionId);
       expect(result).toBe(true);
@@ -700,7 +794,10 @@ describe('skill-state', () => {
         max_reinforcements: 5,
         stale_ttl_ms: 15 * 60 * 1000,
       };
-      writeFileSync(join(stateDir, 'skill-active-state.json'), JSON.stringify(v1, null, 2));
+      writeFileSync(
+        join(stateDir, 'skill-active-state.json'),
+        JSON.stringify(v1, null, 2),
+      );
 
       const normalized = readSkillActiveStateNormalized(tempDir);
       expect(normalized.version).toBe(2);
@@ -718,7 +815,7 @@ describe('skill-state', () => {
       const rootState: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'autopilot': {
+          autopilot: {
             skill_name: 'autopilot',
             started_at: '2026-01-01T00:00:00Z',
             completed_at: null,
@@ -733,7 +830,7 @@ describe('skill-state', () => {
       const sessionState: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
+          ralph: {
             skill_name: 'ralph',
             started_at: '2026-01-01T00:00:00Z',
             completed_at: null,
@@ -745,8 +842,14 @@ describe('skill-state', () => {
           },
         },
       };
-      writeFileSync(join(rootDir, 'skill-active-state.json'), JSON.stringify(rootState));
-      writeFileSync(join(sessionDir, 'skill-active-state.json'), JSON.stringify(sessionState));
+      writeFileSync(
+        join(rootDir, 'skill-active-state.json'),
+        JSON.stringify(rootState),
+      );
+      writeFileSync(
+        join(sessionDir, 'skill-active-state.json'),
+        JSON.stringify(sessionState),
+      );
 
       const result = readSkillActiveStateNormalized(tempDir, sessionId);
       expect(result.active_skills['ralph']).toBeDefined();
@@ -759,7 +862,7 @@ describe('skill-state', () => {
       const rootState: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
+          ralph: {
             skill_name: 'ralph',
             started_at: '2026-01-01T00:00:00Z',
             completed_at: null,
@@ -771,9 +874,15 @@ describe('skill-state', () => {
           },
         },
       };
-      writeFileSync(join(rootDir, 'skill-active-state.json'), JSON.stringify(rootState));
+      writeFileSync(
+        join(rootDir, 'skill-active-state.json'),
+        JSON.stringify(rootState),
+      );
 
-      const result = readSkillActiveStateNormalized(tempDir, 'different-session');
+      const result = readSkillActiveStateNormalized(
+        tempDir,
+        'different-session',
+      );
       expect(Object.keys(result.active_skills)).toHaveLength(0);
     });
   });
@@ -782,7 +891,10 @@ describe('skill-state', () => {
   // pruneExpiredWorkflowSkillTombstones — TTL sweep (spec c)
   // -----------------------------------------------------------------------
   describe('pruneExpiredWorkflowSkillTombstones — TTL sweep (spec c)', () => {
-    const makeSlot = (skillName: string, completedAt?: string | null): ActiveSkillSlot => ({
+    const makeSlot = (
+      skillName: string,
+      completedAt?: string | null,
+    ): ActiveSkillSlot => ({
       skill_name: skillName,
       started_at: '2026-04-17T00:00:00.000Z',
       completed_at: completedAt ?? null,
@@ -797,9 +909,12 @@ describe('skill-state', () => {
       const past = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString(); // 25h ago
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'ralph': makeSlot('ralph', past) },
+        active_skills: { ralph: makeSlot('ralph', past) },
       };
-      const pruned = pruneExpiredWorkflowSkillTombstones(state, WORKFLOW_TOMBSTONE_TTL_MS);
+      const pruned = pruneExpiredWorkflowSkillTombstones(
+        state,
+        WORKFLOW_TOMBSTONE_TTL_MS,
+      );
       expect(pruned.active_skills['ralph']).toBeUndefined();
     });
 
@@ -807,16 +922,19 @@ describe('skill-state', () => {
       const recent = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(); // 1h ago
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'ralph': makeSlot('ralph', recent) },
+        active_skills: { ralph: makeSlot('ralph', recent) },
       };
-      const pruned = pruneExpiredWorkflowSkillTombstones(state, WORKFLOW_TOMBSTONE_TTL_MS);
+      const pruned = pruneExpiredWorkflowSkillTombstones(
+        state,
+        WORKFLOW_TOMBSTONE_TTL_MS,
+      );
       expect(pruned.active_skills['ralph']).toBeDefined();
     });
 
     it('never removes live (non-tombstoned) slots', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'autopilot': makeSlot('autopilot') },
+        active_skills: { autopilot: makeSlot('autopilot') },
       };
       const pruned = pruneExpiredWorkflowSkillTombstones(state);
       expect(pruned.active_skills['autopilot']).toBeDefined();
@@ -828,9 +946,9 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': makeSlot('ralph', old),
-          'autopilot': makeSlot('autopilot', fresh),
-          'ultrawork': makeSlot('ultrawork'),
+          ralph: makeSlot('ralph', old),
+          autopilot: makeSlot('autopilot', fresh),
+          ultrawork: makeSlot('ultrawork'),
         },
       };
       const pruned = pruneExpiredWorkflowSkillTombstones(state);
@@ -842,7 +960,7 @@ describe('skill-state', () => {
     it('returns same reference when nothing changed', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'autopilot': makeSlot('autopilot') },
+        active_skills: { autopilot: makeSlot('autopilot') },
       };
       const pruned = pruneExpiredWorkflowSkillTombstones(state);
       expect(pruned).toBe(state);
@@ -851,7 +969,9 @@ describe('skill-state', () => {
     it('keeps slot with malformed completed_at defensively', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'ralph': { ...makeSlot('ralph'), completed_at: 'not-a-date' } },
+        active_skills: {
+          ralph: { ...makeSlot('ralph'), completed_at: 'not-a-date' },
+        },
       };
       const pruned = pruneExpiredWorkflowSkillTombstones(state);
       expect(pruned.active_skills['ralph']).toBeDefined();
@@ -866,7 +986,10 @@ describe('skill-state', () => {
   // resolveAuthoritativeWorkflowSkill — nested lineage (spec f)
   // -----------------------------------------------------------------------
   describe('resolveAuthoritativeWorkflowSkill — nested lineage (spec f)', () => {
-    const makeSlot = (skillName: string, opts: Partial<ActiveSkillSlot> = {}): ActiveSkillSlot => ({
+    const makeSlot = (
+      skillName: string,
+      opts: Partial<ActiveSkillSlot> = {},
+    ): ActiveSkillSlot => ({
       skill_name: skillName,
       started_at: new Date().toISOString(),
       completed_at: null,
@@ -879,14 +1002,16 @@ describe('skill-state', () => {
     });
 
     it('returns null when no slots', () => {
-      expect(resolveAuthoritativeWorkflowSkill(emptySkillActiveStateV2())).toBeNull();
+      expect(
+        resolveAuthoritativeWorkflowSkill(emptySkillActiveStateV2()),
+      ).toBeNull();
     });
 
     it('returns null when all slots are tombstoned', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': makeSlot('ralph', { completed_at: '2026-04-17T00:00:00Z' }),
+          ralph: makeSlot('ralph', { completed_at: '2026-04-17T00:00:00Z' }),
         },
       };
       expect(resolveAuthoritativeWorkflowSkill(state)).toBeNull();
@@ -895,9 +1020,11 @@ describe('skill-state', () => {
     it('returns the single live slot', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'ralph': makeSlot('ralph') },
+        active_skills: { ralph: makeSlot('ralph') },
       };
-      expect(resolveAuthoritativeWorkflowSkill(state)?.skill_name).toBe('ralph');
+      expect(resolveAuthoritativeWorkflowSkill(state)?.skill_name).toBe(
+        'ralph',
+      );
     });
 
     it('returns autopilot (outer root) while ralph (child) is live beneath it', () => {
@@ -906,8 +1033,11 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'autopilot': makeSlot('autopilot', { started_at: autopilotStarted }),
-          'ralph': makeSlot('ralph', { parent_skill: 'autopilot', started_at: ralphStarted }),
+          autopilot: makeSlot('autopilot', { started_at: autopilotStarted }),
+          ralph: makeSlot('ralph', {
+            parent_skill: 'autopilot',
+            started_at: ralphStarted,
+          }),
         },
       };
       const result = resolveAuthoritativeWorkflowSkill(state);
@@ -919,8 +1049,11 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'autopilot': makeSlot('autopilot', { started_at: autopilotStarted }),
-          'ralph': makeSlot('ralph', { parent_skill: 'autopilot', completed_at: '2026-04-17T00:00:00Z' }),
+          autopilot: makeSlot('autopilot', { started_at: autopilotStarted }),
+          ralph: makeSlot('ralph', {
+            parent_skill: 'autopilot',
+            completed_at: '2026-04-17T00:00:00Z',
+          }),
         },
       };
       const result = resolveAuthoritativeWorkflowSkill(state);
@@ -932,12 +1065,14 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'autopilot': makeSlot('autopilot'),
-          'ralph': makeSlot('ralph', { parent_skill: 'autopilot' }),
+          autopilot: makeSlot('autopilot'),
+          ralph: makeSlot('ralph', { parent_skill: 'autopilot' }),
         },
       };
       expect(state.active_skills['autopilot']?.completed_at).toBeFalsy();
-      expect(resolveAuthoritativeWorkflowSkill(state)?.skill_name).toBe('autopilot');
+      expect(resolveAuthoritativeWorkflowSkill(state)?.skill_name).toBe(
+        'autopilot',
+      );
     });
   });
 
@@ -945,7 +1080,8 @@ describe('skill-state', () => {
   // Diverged-copy reconciliation (spec d)
   // -----------------------------------------------------------------------
   describe('diverged-copy reconciliation (spec d)', () => {
-    const rootFilePath = (dir: string) => join(dir, '.omc', 'state', 'skill-active-state.json');
+    const rootFilePath = (dir: string) =>
+      join(dir, '.omc', 'state', 'skill-active-state.json');
     const sessionFilePath = (dir: string, sid: string) =>
       join(dir, '.omc', 'state', 'sessions', sid, 'skill-active-state.json');
 
@@ -966,16 +1102,26 @@ describe('skill-state', () => {
         initialized_state_path: rootFilePath(tempDir),
         initialized_session_state_path: sessionFilePath(tempDir, sessionId),
       };
-      const staleRootState: SkillActiveStateV2 = { version: 2, active_skills: { 'ralph': baseSlot } };
+      const staleRootState: SkillActiveStateV2 = {
+        version: 2,
+        active_skills: { ralph: baseSlot },
+      };
       const freshSessionState: SkillActiveStateV2 = {
         version: 2,
-        active_skills: { 'ralph': { ...baseSlot, last_confirmed_at: '2026-04-17T01:00:00Z' } },
+        active_skills: {
+          ralph: { ...baseSlot, last_confirmed_at: '2026-04-17T01:00:00Z' },
+        },
       };
       writeFileSync(rootFilePath(tempDir), JSON.stringify(staleRootState));
-      writeFileSync(sessionFilePath(tempDir, sessionId), JSON.stringify(freshSessionState));
+      writeFileSync(
+        sessionFilePath(tempDir, sessionId),
+        JSON.stringify(freshSessionState),
+      );
 
       const result = readSkillActiveStateNormalized(tempDir, sessionId);
-      expect(result.active_skills['ralph']?.last_confirmed_at).toBe('2026-04-17T01:00:00Z');
+      expect(result.active_skills['ralph']?.last_confirmed_at).toBe(
+        '2026-04-17T01:00:00Z',
+      );
     });
 
     it('next writeSkillActiveStateCopies re-syncs diverged copies', () => {
@@ -995,19 +1141,31 @@ describe('skill-state', () => {
         initialized_state_path: rootFilePath(tempDir),
         initialized_session_state_path: sessionFilePath(tempDir, sessionId),
       };
-      writeFileSync(rootFilePath(tempDir), JSON.stringify({ version: 2, active_skills: { 'ralph': baseSlot } }));
-      writeFileSync(sessionFilePath(tempDir, sessionId), JSON.stringify({
-        version: 2,
-        active_skills: { 'ralph': { ...baseSlot, last_confirmed_at: '2026-04-17T01:00:00Z' } },
-      }));
+      writeFileSync(
+        rootFilePath(tempDir),
+        JSON.stringify({ version: 2, active_skills: { ralph: baseSlot } }),
+      );
+      writeFileSync(
+        sessionFilePath(tempDir, sessionId),
+        JSON.stringify({
+          version: 2,
+          active_skills: {
+            ralph: { ...baseSlot, last_confirmed_at: '2026-04-17T01:00:00Z' },
+          },
+        }),
+      );
 
       // Next mutation: tombstone via session-authoritative read → dual-write reconciles
       const current = readSkillActiveStateNormalized(tempDir, sessionId);
       const tombstoned = markWorkflowSkillCompleted(current, 'ralph');
       writeSkillActiveStateCopies(tempDir, tombstoned, sessionId);
 
-      const rootAfter = JSON.parse(readFileSync(rootFilePath(tempDir), 'utf-8')) as SkillActiveStateV2;
-      const sessionAfter = JSON.parse(readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8')) as SkillActiveStateV2;
+      const rootAfter = JSON.parse(
+        readFileSync(rootFilePath(tempDir), 'utf-8'),
+      ) as SkillActiveStateV2;
+      const sessionAfter = JSON.parse(
+        readFileSync(sessionFilePath(tempDir, sessionId), 'utf-8'),
+      ) as SkillActiveStateV2;
       expect(rootAfter.active_skills['ralph']?.completed_at).toBeTruthy();
       expect(sessionAfter.active_skills['ralph']?.completed_at).toBeTruthy();
     });
@@ -1018,41 +1176,57 @@ describe('skill-state', () => {
   // -----------------------------------------------------------------------
   describe('upsertWorkflowSkillSlot — pure helper', () => {
     it('creates a new slot with provided fields', () => {
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: 's1',
-        mode_state_path: 'r.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: '',
-        initialized_session_state_path: '',
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: 's1',
+          mode_state_path: 'r.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: '',
+          initialized_session_state_path: '',
+        },
+      );
       expect(state.active_skills['ralph']?.skill_name).toBe('ralph');
       expect(state.active_skills['ralph']?.session_id).toBe('s1');
     });
 
     it('preserves started_at on re-upsert (idempotent seed)', () => {
-      const seeded = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'ralph', {
-        session_id: 's1',
-        started_at: '2026-01-01T00:00:00Z',
-        mode_state_path: 'r.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: '',
-        initialized_session_state_path: '',
-      });
+      const seeded = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'ralph',
+        {
+          session_id: 's1',
+          started_at: '2026-01-01T00:00:00Z',
+          mode_state_path: 'r.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: '',
+          initialized_session_state_path: '',
+        },
+      );
       const confirmed = upsertWorkflowSkillSlot(seeded, 'ralph', {
         last_confirmed_at: '2026-04-17T00:00:00Z',
       });
-      expect(confirmed.active_skills['ralph']?.started_at).toBe('2026-01-01T00:00:00Z');
-      expect(confirmed.active_skills['ralph']?.last_confirmed_at).toBe('2026-04-17T00:00:00Z');
+      expect(confirmed.active_skills['ralph']?.started_at).toBe(
+        '2026-01-01T00:00:00Z',
+      );
+      expect(confirmed.active_skills['ralph']?.last_confirmed_at).toBe(
+        '2026-04-17T00:00:00Z',
+      );
     });
 
     it('strips oh-my-claudecode: prefix from skill name', () => {
-      const state = upsertWorkflowSkillSlot(emptySkillActiveStateV2(), 'oh-my-claudecode:ralph', {
-        session_id: 's1',
-        mode_state_path: 'r.json',
-        initialized_mode: 'ralph',
-        initialized_state_path: '',
-        initialized_session_state_path: '',
-      });
+      const state = upsertWorkflowSkillSlot(
+        emptySkillActiveStateV2(),
+        'oh-my-claudecode:ralph',
+        {
+          session_id: 's1',
+          mode_state_path: 'r.json',
+          initialized_mode: 'ralph',
+          initialized_state_path: '',
+          initialized_session_state_path: '',
+        },
+      );
       expect(state.active_skills['ralph']).toBeDefined();
       expect(state.active_skills['oh-my-claudecode:ralph']).toBeUndefined();
     });
@@ -1076,10 +1250,15 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
-            skill_name: 'ralph', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'ralph',
-            initialized_state_path: '', initialized_session_state_path: '',
+          ralph: {
+            skill_name: 'ralph',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'ralph',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
         },
       };
@@ -1097,15 +1276,25 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
-            skill_name: 'ralph', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'ralph',
-            initialized_state_path: '', initialized_session_state_path: '',
+          ralph: {
+            skill_name: 'ralph',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'ralph',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
-          'autopilot': {
-            skill_name: 'autopilot', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'autopilot',
-            initialized_state_path: '', initialized_session_state_path: '',
+          autopilot: {
+            skill_name: 'autopilot',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'autopilot',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
         },
       };
@@ -1119,10 +1308,15 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
-            skill_name: 'ralph', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'ralph',
-            initialized_state_path: '', initialized_session_state_path: '',
+          ralph: {
+            skill_name: 'ralph',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'ralph',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
         },
       };
@@ -1140,15 +1334,25 @@ describe('skill-state', () => {
       const state: SkillActiveStateV2 = {
         version: 2,
         active_skills: {
-          'ralph': {
-            skill_name: 'ralph', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'ralph',
-            initialized_state_path: '', initialized_session_state_path: '',
+          ralph: {
+            skill_name: 'ralph',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'ralph',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
-          'autopilot': {
-            skill_name: 'autopilot', started_at: '2026-04-17T00:00:00Z', completed_at: null,
-            session_id: 's1', mode_state_path: '', initialized_mode: 'autopilot',
-            initialized_state_path: '', initialized_session_state_path: '',
+          autopilot: {
+            skill_name: 'autopilot',
+            started_at: '2026-04-17T00:00:00Z',
+            completed_at: null,
+            session_id: 's1',
+            mode_state_path: '',
+            initialized_mode: 'autopilot',
+            initialized_state_path: '',
+            initialized_session_state_path: '',
           },
         },
       };

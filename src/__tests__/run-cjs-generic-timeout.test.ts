@@ -1,4 +1,10 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { spawn } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -6,12 +12,23 @@ import { describe, expect, it } from 'vitest';
 
 const runCjs = require('../../scripts/run.cjs');
 const RUN_CJS_PATH = join(process.cwd(), 'scripts', 'run.cjs');
-const HUNG_PARENT = join(process.cwd(), 'src', '__tests__', 'fixtures', 'hung-hooks', 'hung-parent.cjs');
+const HUNG_PARENT = join(
+  process.cwd(),
+  'src',
+  '__tests__',
+  'fixtures',
+  'hung-hooks',
+  'hung-parent.cjs',
+);
 
 function withWatchdog<T>(promise: Promise<T>, timeoutMs = 5000): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   const watchdog = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`runGenericChild exceeded ${timeoutMs}ms watchdog`)), timeoutMs);
+    timer = setTimeout(
+      () =>
+        reject(new Error(`runGenericChild exceeded ${timeoutMs}ms watchdog`)),
+      timeoutMs,
+    );
   });
   return Promise.race([promise, watchdog]).finally(() => clearTimeout(timer));
 }
@@ -20,7 +37,9 @@ function killIfAlive(pid: number | undefined): void {
   if (!pid) return;
   try {
     process.kill(pid, 'SIGKILL');
-  } catch { /* already dead */ }
+  } catch {
+    /* already dead */
+  }
 }
 
 async function waitForDeath(pid: number, timeoutMs = 2000): Promise<void> {
@@ -32,7 +51,7 @@ async function waitForDeath(pid: number, timeoutMs = 2000): Promise<void> {
       if ((error as NodeJS.ErrnoException).code === 'ESRCH') return;
       throw error;
     }
-    await new Promise(resolve => setTimeout(resolve, 25));
+    await new Promise((resolve) => setTimeout(resolve, 25));
   }
   throw new Error(`PID ${pid} survived process-tree reap`);
 }
@@ -42,8 +61,9 @@ describe('run.cjs generic hook timeout supervisor', () => {
     expect(runCjs.DEFAULT_GENERIC_TIMEOUT_MS).toBe(59500);
     expect(runCjs.resolveGenericTimeoutMs(null)).toBe(59500);
     const manifestHook = { timeoutMs: 3000, event: 'PostToolUse' };
-    expect(runCjs.resolveGenericTimeoutMs(manifestHook))
-      .toBe(runCjs.resolveInnerTimeoutMs(manifestHook));
+    expect(runCjs.resolveGenericTimeoutMs(manifestHook)).toBe(
+      runCjs.resolveInnerTimeoutMs(manifestHook),
+    );
     expect(runCjs.resolveGenericTimeoutMs(manifestHook)).toBe(2500);
   });
 
@@ -55,7 +75,9 @@ describe('run.cjs generic hook timeout supervisor', () => {
     process.env.OMC_TEST_PIDFILE = pidfile;
     try {
       const startedAt = Date.now();
-      const status = await withWatchdog(runCjs.runGenericChild(HUNG_PARENT, [], 250, null));
+      const status = await withWatchdog(
+        runCjs.runGenericChild(HUNG_PARENT, [], 250, null),
+      );
       const elapsed = Date.now() - startedAt;
       expect(status).toBe(0);
       expect(elapsed).toBeGreaterThanOrEqual(200);
@@ -79,14 +101,33 @@ describe('run.cjs generic hook timeout supervisor', () => {
       writeFileSync(numericExit, 'process.exit(3);');
       writeFileSync(signalExit, "process.kill(process.pid, 'SIGKILL');");
 
-      await expect(withWatchdog(runCjs.runGenericChild(numericExit, [], 2000, null))).resolves.toBe(3);
-      await expect(withWatchdog(runCjs.runGenericChild(signalExit, [], 2000, null))).resolves.toBe(0);
+      await expect(
+        withWatchdog(runCjs.runGenericChild(numericExit, [], 2000, null)),
+      ).resolves.toBe(3);
+      await expect(
+        withWatchdog(runCjs.runGenericChild(signalExit, [], 2000, null)),
+      ).resolves.toBe(0);
       const originalExecPath = process.execPath;
-      Object.defineProperty(process, 'execPath', { configurable: true, value: join(directory, 'missing-node') });
+      Object.defineProperty(process, 'execPath', {
+        configurable: true,
+        value: join(directory, 'missing-node'),
+      });
       try {
-        await expect(withWatchdog(runCjs.runGenericChild(join(directory, 'missing.cjs'), [], 2000, null))).resolves.toBe(0);
+        await expect(
+          withWatchdog(
+            runCjs.runGenericChild(
+              join(directory, 'missing.cjs'),
+              [],
+              2000,
+              null,
+            ),
+          ),
+        ).resolves.toBe(0);
       } finally {
-        Object.defineProperty(process, 'execPath', { configurable: true, value: originalExecPath });
+        Object.defineProperty(process, 'execPath', {
+          configurable: true,
+          value: originalExecPath,
+        });
       }
     } finally {
       rmSync(directory, { recursive: true, force: true });
@@ -101,8 +142,10 @@ describe('run.cjs generic hook timeout supervisor', () => {
     writeFileSync(fixture, 'setTimeout(() => process.exit(7), 150);');
     process.on('unhandledRejection', onUnhandled);
     try {
-      await expect(withWatchdog(runCjs.runGenericChild(fixture, [], 50, null))).resolves.toBe(0);
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await expect(
+        withWatchdog(runCjs.runGenericChild(fixture, [], 50, null)),
+      ).resolves.toBe(0);
+      await new Promise((resolve) => setTimeout(resolve, 200));
       expect(unhandled).toEqual([]);
     } finally {
       process.off('unhandledRejection', onUnhandled);
@@ -124,22 +167,33 @@ describe('run.cjs generic hook timeout supervisor', () => {
     try {
       const deadline = Date.now() + 4000;
       while (Date.now() < deadline && !existsSync(pidfile)) {
-        await new Promise(resolve => setTimeout(resolve, 25));
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
       expect(existsSync(pidfile)).toBe(true);
       grandchildPid = Number(readFileSync(pidfile, 'utf8'));
       expect(grandchildPid).toBeGreaterThan(0);
 
-      const runnerExit = new Promise<void>(resolve => runner.once('exit', () => resolve()));
+      const runnerExit = new Promise<void>((resolve) =>
+        runner.once('exit', () => resolve()),
+      );
       runner.kill('SIGTERM');
       await Promise.race([
         runnerExit,
-        new Promise<never>((_, reject) => setTimeout(() => reject(new Error('runner did not exit after SIGTERM')), 5000)),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error('runner did not exit after SIGTERM')),
+            5000,
+          ),
+        ),
       ]);
       await waitForDeath(grandchildPid);
     } finally {
       killIfAlive(grandchildPid);
-      try { runner.kill('SIGKILL'); } catch { /* already gone */ }
+      try {
+        runner.kill('SIGKILL');
+      } catch {
+        /* already gone */
+      }
       rmSync(directory, { recursive: true, force: true });
     }
   });

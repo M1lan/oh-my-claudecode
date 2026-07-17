@@ -39,7 +39,7 @@ export function filterBddComments(comment: CommentInfo): FilterResult {
     if (text.includes(keyword)) {
       // More lenient check for keywords anywhere in comment
       const words = text.split(/\s+/);
-      if (words.some(w => BDD_KEYWORDS.has(w.replace(/[^a-z&]/g, '')))) {
+      if (words.some((w) => BDD_KEYWORDS.has(w.replace(/[^a-z&]/g, '')))) {
         return { shouldSkip: true, reason: `BDD keyword detected` };
       }
     }

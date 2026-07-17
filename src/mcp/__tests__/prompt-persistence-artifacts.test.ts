@@ -11,7 +11,9 @@ import {
 
 describe('prompt persistence artifact descriptors', () => {
   it('returns a descriptor for persisted prompts and embeds descriptors in job status', () => {
-    const tempDir = mkdtempSync(join(tmpdir(), 'prompt-persistence-artifacts-'));
+    const tempDir = mkdtempSync(
+      join(tmpdir(), 'prompt-persistence-artifacts-'),
+    );
 
     try {
       const prompt = persistPrompt({
@@ -38,20 +40,28 @@ describe('prompt persistence artifact descriptors', () => {
         workingDirectory: tempDir,
       });
 
-      writeJobStatus({
-        provider: 'codex',
-        jobId: prompt!.id,
-        slug: prompt!.slug,
-        status: 'completed',
-        promptFile: prompt!.filePath,
-        responseFile: responsePath!,
-        model: 'gpt-5.4',
-        agentRole: 'executor',
-        spawnedAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
-      }, tempDir);
+      writeJobStatus(
+        {
+          provider: 'codex',
+          jobId: prompt!.id,
+          slug: prompt!.slug,
+          status: 'completed',
+          promptFile: prompt!.filePath,
+          responseFile: responsePath!,
+          model: 'gpt-5.4',
+          agentRole: 'executor',
+          spawnedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+        },
+        tempDir,
+      );
 
-      const statusPath = getStatusFilePath('codex', prompt!.slug, prompt!.id, tempDir);
+      const statusPath = getStatusFilePath(
+        'codex',
+        prompt!.slug,
+        prompt!.id,
+        tempDir,
+      );
       const status = JSON.parse(readFileSync(statusPath, 'utf-8')) as {
         promptArtifact?: { kind?: string; path?: string };
         responseArtifact?: { kind?: string; path?: string };

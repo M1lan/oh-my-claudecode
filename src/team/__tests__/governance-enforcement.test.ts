@@ -17,7 +17,10 @@ describe('team governance enforcement', () => {
     await rm(cwd, { recursive: true, force: true });
   });
 
-  async function writeJson(relativePath: string, value: unknown): Promise<void> {
+  async function writeJson(
+    relativePath: string,
+    value: unknown,
+  ): Promise<void> {
     const fullPath = join(cwd, relativePath);
     await mkdir(dirname(fullPath), { recursive: true });
     await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
@@ -40,7 +43,9 @@ describe('team governance enforcement', () => {
       },
       worker_count: 1,
       max_workers: 20,
-      workers: [{ name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] }],
+      workers: [
+        { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
+      ],
       created_at: new Date().toISOString(),
       tmux_session: 'approval-session',
       next_task_id: 2,
@@ -75,7 +80,9 @@ describe('team governance enforcement', () => {
       },
       tmux_session: 'approval-session',
       worker_count: 1,
-      workers: [{ name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] }],
+      workers: [
+        { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
+      ],
       next_task_id: 2,
       created_at: new Date().toISOString(),
       leader_pane_id: null,

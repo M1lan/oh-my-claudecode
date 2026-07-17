@@ -13,7 +13,9 @@ import {
   type SubagentTrackingState,
 } from '../index.js';
 
-function makeState(overrides: Partial<SubagentTrackingState> = {}): SubagentTrackingState {
+function makeState(
+  overrides: Partial<SubagentTrackingState> = {},
+): SubagentTrackingState {
   return {
     agents: [],
     total_spawned: 0,
@@ -28,7 +30,10 @@ describe('flush-race', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `flush-race-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `flush-race-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
   });
 

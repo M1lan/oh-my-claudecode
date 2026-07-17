@@ -87,7 +87,7 @@ export function sanitizeOutput(output: string): string {
 
   // Step 3: Preserve multi-line output, just trim each line
   // Do NOT collapse to single line - HUD needs proper line breaks for tree display
-  const lines = sanitized.split('\n').map(line => line.trimEnd());
+  const lines = sanitized.split('\n').map((line) => line.trimEnd());
   sanitized = lines.join('\n');
 
   // Step 4: Remove leading/trailing empty lines

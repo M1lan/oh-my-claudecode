@@ -45,7 +45,10 @@ function stripComments(content: string): string {
     if (content[i] === '/' && content[i + 1] === '*') {
       // Skip until end of comment
       i += 2;
-      while (i < content.length && !(content[i] === '*' && content[i + 1] === '/')) {
+      while (
+        i < content.length &&
+        !(content[i] === '*' && content[i + 1] === '/')
+      ) {
         i++;
       }
       i += 2;

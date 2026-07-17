@@ -103,8 +103,12 @@ describe('Consolidation contracts', () => {
     });
 
     it('normalizes consolidated agent aliases in delegation routing', () => {
-      const qualityReviewerRoute = resolveDelegation({ agentRole: 'quality-reviewer' });
-      const deepExecutorRoute = resolveDelegation({ agentRole: 'deep-executor' });
+      const qualityReviewerRoute = resolveDelegation({
+        agentRole: 'quality-reviewer',
+      });
+      const deepExecutorRoute = resolveDelegation({
+        agentRole: 'deep-executor',
+      });
       const buildFixerRoute = resolveDelegation({ agentRole: 'build-fixer' });
       const harshCriticRoute = resolveDelegation({ agentRole: 'harsh-critic' });
 

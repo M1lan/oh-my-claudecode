@@ -35,7 +35,8 @@ describe('scripts/cleanup-orphans.mjs — SIGKILL escalation timer must not bloc
   it('calls .unref() on the 5000ms SIGKILL escalation timer', () => {
     // Match the full setTimeout(...) call ending at `}, 5000)` followed by .unref()
     // (single-line; the `[\s\S]*?` allows the arrow body to span multiple lines).
-    const pattern = /setTimeout\(\s*\(\)\s*=>\s*\{[\s\S]*?\},\s*5000\)\.unref\(\)/;
+    const pattern =
+      /setTimeout\(\s*\(\)\s*=>\s*\{[\s\S]*?\},\s*5000\)\.unref\(\)/;
     expect(src).toMatch(pattern);
   });
 
@@ -55,7 +56,8 @@ describe('scripts/cleanup-orphans.mjs — SIGKILL escalation timer must not bloc
     // The last line of main() before the closing brace must be process.exit(0);
     // We check that the success-path JSON print is followed by process.exit(0)
     // before the next top-level `main();` invocation.
-    const mainEndPattern = /Cleaned up[^]*?process\.exit\(0\);\s*\}\s*main\(\);/;
+    const mainEndPattern =
+      /Cleaned up[^]*?process\.exit\(0\);\s*\}\s*main\(\);/;
     expect(src).toMatch(mainEndPattern);
   });
 });

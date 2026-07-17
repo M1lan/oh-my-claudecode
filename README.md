@@ -690,3 +690,15 @@ OmC includes a [`geobench`](https://github.com/NomaDamas/geobench) product spec 
 
 - Spec: [`geobench/oh-my-claudecode.yaml`](geobench/oh-my-claudecode.yaml)
 - Runbook: [`docs/geobench.md`](docs/geobench.md)
+
+
+# note about this fork
+
+hi. I am m1lan and this is my fork...  I have  disabled gh actions/workflows. to re-enable:
+
+```bash
+cd .github/workflows && for f in *.yml.disabled; do git mv "$f" "${f%.disabled}"; done
+gh api -X PUT repos/M1lan/oh-my-claudecode/actions/permissions -F enabled=true
+```
+
+

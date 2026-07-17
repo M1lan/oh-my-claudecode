@@ -12,7 +12,11 @@ import {
 describe('claude goal snapshot reconciliation', () => {
   it('normalizes Claude /goal JSON shape with objective synonym', () => {
     const snapshot = parseClaudeGoalSnapshot({
-      goal: { objective: 'Ship the feature', status: 'completed', token_budget: 1000 },
+      goal: {
+        objective: 'Ship the feature',
+        status: 'completed',
+        token_budget: 1000,
+      },
       remainingTokens: 25,
     });
 
@@ -33,19 +37,34 @@ describe('claude goal snapshot reconciliation', () => {
   });
 
   it('reports absent snapshots as warnings unless required', () => {
-    const optional = reconcileClaudeGoalSnapshot(null, { expectedObjective: 'Ship' });
+    const optional = reconcileClaudeGoalSnapshot(null, {
+      expectedObjective: 'Ship',
+    });
     expect(optional.ok).toBe(true);
-    expect(optional.warnings.join('\n')).toMatch(/share the current \/goal condition/);
+    expect(optional.warnings.join('\n')).toMatch(
+      /share the current \/goal condition/,
+    );
 
-    const required = reconcileClaudeGoalSnapshot(null, { expectedObjective: 'Ship', requireSnapshot: true });
+    const required = reconcileClaudeGoalSnapshot(null, {
+      expectedObjective: 'Ship',
+      requireSnapshot: true,
+    });
     expect(required.ok).toBe(false);
-    expect(required.errors.join('\n')).toMatch(/share the current \/goal condition/);
+    expect(required.errors.join('\n')).toMatch(
+      /share the current \/goal condition/,
+    );
   });
 
   it('detects objective mismatches and incomplete completion proof', () => {
     const mismatch = reconcileClaudeGoalSnapshot(
-      parseClaudeGoalSnapshot({ goal: { objective: 'Different', status: 'active' } }),
-      { expectedObjective: 'Expected', requireSnapshot: true, requireComplete: true },
+      parseClaudeGoalSnapshot({
+        goal: { objective: 'Different', status: 'active' },
+      }),
+      {
+        expectedObjective: 'Expected',
+        requireSnapshot: true,
+        requireComplete: true,
+      },
     );
 
     expect(mismatch.ok).toBe(false);
@@ -55,8 +74,14 @@ describe('claude goal snapshot reconciliation', () => {
 
   it('accepts compatible complete proof', () => {
     const result = reconcileClaudeGoalSnapshot(
-      parseClaudeGoalSnapshot({ goal: { objective: 'Expected objective', status: 'complete' } }),
-      { expectedObjective: 'Expected objective', requireSnapshot: true, requireComplete: true },
+      parseClaudeGoalSnapshot({
+        goal: { objective: 'Expected objective', status: 'complete' },
+      }),
+      {
+        expectedObjective: 'Expected objective',
+        requireSnapshot: true,
+        requireComplete: true,
+      },
     );
 
     expect(result.ok).toBe(true);
@@ -66,15 +91,25 @@ describe('claude goal snapshot reconciliation', () => {
   it('reads inline JSON and path input but rejects malformed sources', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'omc-claude-goal-snapshot-'));
     try {
-      const fromJson = await readClaudeGoalSnapshotInput('{"goal":{"objective":"A","status":"active"}}', cwd);
+      const fromJson = await readClaudeGoalSnapshotInput(
+        '{"goal":{"objective":"A","status":"active"}}',
+        cwd,
+      );
       expect(fromJson?.objective).toBe('A');
 
-      await writeFile(join(cwd, 'goal.json'), '{"goal":{"objective":"B","status":"complete"}}');
+      await writeFile(
+        join(cwd, 'goal.json'),
+        '{"goal":{"objective":"B","status":"complete"}}',
+      );
       const fromPath = await readClaudeGoalSnapshotInput('goal.json', cwd);
       expect(fromPath?.objective).toBe('B');
 
-      await expect(readClaudeGoalSnapshotInput('{not-json}', cwd)).rejects.toBeInstanceOf(ClaudeGoalSnapshotError);
-      await expect(readClaudeGoalSnapshotInput('missing.json', cwd)).rejects.toThrow(/neither valid JSON nor a readable path/);
+      await expect(
+        readClaudeGoalSnapshotInput('{not-json}', cwd),
+      ).rejects.toBeInstanceOf(ClaudeGoalSnapshotError);
+      await expect(
+        readClaudeGoalSnapshotInput('missing.json', cwd),
+      ).rejects.toThrow(/neither valid JSON nor a readable path/);
     } finally {
       await rm(cwd, { recursive: true, force: true });
     }

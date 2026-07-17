@@ -11,12 +11,13 @@ import type {
   RoutingConfig,
   ComplexityTier,
 } from './types.js';
-import {
-  DEFAULT_ROUTING_CONFIG,
-  TIER_TO_MODEL_TYPE,
-} from './types.js';
+import { DEFAULT_ROUTING_CONFIG, TIER_TO_MODEL_TYPE } from './types.js';
 import { extractAllSignals } from './signals.js';
-import { calculateComplexityScore, calculateConfidence, scoreToTier } from './scorer.js';
+import {
+  calculateComplexityScore,
+  calculateConfidence,
+  scoreToTier,
+} from './scorer.js';
 import { evaluateRules, DEFAULT_ROUTING_RULES } from './rules.js';
 
 /**
@@ -24,7 +25,7 @@ import { evaluateRules, DEFAULT_ROUTING_RULES } from './rules.js';
  */
 export function routeTask(
   context: RoutingContext,
-  config: Partial<RoutingConfig> = {}
+  config: Partial<RoutingConfig> = {},
 ): RoutingDecision {
   const mergedConfig = { ...DEFAULT_ROUTING_CONFIG, ...config };
 
@@ -42,19 +43,36 @@ export function routeTask(
 
   // If routing is disabled, use default tier
   if (!mergedConfig.enabled) {
-    return createDecision(mergedConfig.defaultTier, mergedConfig.tierModels, ['Routing disabled, using default tier'], false);
+    return createDecision(
+      mergedConfig.defaultTier,
+      mergedConfig.tierModels,
+      ['Routing disabled, using default tier'],
+      false,
+    );
   }
 
   // If explicit model is specified, respect it
   if (context.explicitModel) {
     const explicitTier = modelTypeToTier(context.explicitModel);
-    return createDecision(explicitTier, mergedConfig.tierModels, ['Explicit model specified by user'], false, explicitTier);
+    return createDecision(
+      explicitTier,
+      mergedConfig.tierModels,
+      ['Explicit model specified by user'],
+      false,
+      explicitTier,
+    );
   }
 
   // Check for agent-specific overrides
   if (context.agentType && mergedConfig.agentOverrides?.[context.agentType]) {
     const override = mergedConfig.agentOverrides[context.agentType];
-    return createDecision(override.tier, mergedConfig.tierModels, [override.reason], false, override.tier);
+    return createDecision(
+      override.tier,
+      mergedConfig.tierModels,
+      [override.reason],
+      false,
+      override.tier,
+    );
   }
 
   // Extract signals from the task
@@ -65,7 +83,12 @@ export function routeTask(
 
   if (ruleResult.tier === 'EXPLICIT') {
     // Explicit model was handled above, this shouldn't happen
-    return createDecision('MEDIUM', mergedConfig.tierModels, ['Unexpected EXPLICIT tier'], false);
+    return createDecision(
+      'MEDIUM',
+      mergedConfig.tierModels,
+      ['Unexpected EXPLICIT tier'],
+      false,
+    );
   }
 
   // Calculate score for confidence and logging
@@ -90,7 +113,11 @@ export function routeTask(
     ruleResult.reason,
     `Rule: ${ruleResult.ruleName}`,
     `Score: ${score} (${scoreTier} tier by score)`,
-    ...(divergence > 1 ? [`Scorer/rules divergence (${divergence} levels): confidence reduced, preferred higher tier`] : []),
+    ...(divergence > 1
+      ? [
+          `Scorer/rules divergence (${divergence} levels): confidence reduced, preferred higher tier`,
+        ]
+      : []),
   ];
 
   // Enforce minTier if configured
@@ -121,7 +148,7 @@ function createDecision(
   tierModels: Record<ComplexityTier, string>,
   reasons: string[],
   escalated: boolean,
-  originalTier?: ComplexityTier
+  originalTier?: ComplexityTier,
 ): RoutingDecision {
   return {
     model: tierModels[tier],
@@ -180,7 +207,7 @@ export function canEscalate(currentTier: ComplexityTier): boolean {
  */
 export function getRoutingRecommendation(
   context: RoutingContext,
-  config: Partial<RoutingConfig> = {}
+  config: Partial<RoutingConfig> = {},
 ): RoutingDecision {
   return routeTask(context, config);
 }
@@ -192,7 +219,7 @@ export function getRoutingRecommendation(
  */
 export function routeWithEscalation(
   context: RoutingContext,
-  config: Partial<RoutingConfig> = {}
+  config: Partial<RoutingConfig> = {},
 ): RoutingDecision {
   // Simply return the routing recommendation
   // Reactive escalation is deprecated - orchestrator decides upfront
@@ -204,7 +231,7 @@ export function routeWithEscalation(
  */
 export function explainRouting(
   context: RoutingContext,
-  config: Partial<RoutingConfig> = {}
+  config: Partial<RoutingConfig> = {},
 ): string {
   const decision = routeTask(context, config);
   const signals = extractAllSignals(context.taskPrompt, context);
@@ -235,7 +262,7 @@ export function explainRouting(
     `Escalated: ${decision.escalated}`,
     '',
     '--- Reasons ---',
-    ...decision.reasons.map(r => `  - ${r}`),
+    ...decision.reasons.map((r) => `  - ${r}`),
   ];
 
   return lines.join('\n');
@@ -252,19 +279,18 @@ export function quickTierForAgent(agentType: string): ComplexityTier | null {
     critic: 'HIGH',
     analyst: 'HIGH',
     explore: 'LOW',
-    'writer': 'LOW',
+    writer: 'LOW',
     'document-specialist': 'MEDIUM',
     researcher: 'MEDIUM',
     'test-engineer': 'MEDIUM',
     'tdd-guide': 'MEDIUM',
-    'executor': 'MEDIUM',
-    'designer': 'MEDIUM',
-    'vision': 'MEDIUM',
+    executor: 'MEDIUM',
+    designer: 'MEDIUM',
+    vision: 'MEDIUM',
   };
 
   return agentTiers[agentType] ?? null;
 }
-
 
 /**
  * Get recommended model for an agent based on task complexity
@@ -281,8 +307,12 @@ export function quickTierForAgent(agentType: string): ComplexityTier | null {
 export function getModelForTask(
   agentType: string,
   taskPrompt: string,
-  config: Partial<RoutingConfig> = {}
-): { model: 'haiku' | 'sonnet' | 'opus'; tier: ComplexityTier; reason: string } {
+  config: Partial<RoutingConfig> = {},
+): {
+  model: 'haiku' | 'sonnet' | 'opus';
+  tier: ComplexityTier;
+  reason: string;
+} {
   // All agents are adaptive based on task complexity
   // Use agent-specific rules for advisory agents, general rules for others
   const decision = routeTask({ taskPrompt, agentType }, config);
@@ -294,7 +324,6 @@ export function getModelForTask(
   };
 }
 
-
 /**
  * Generate a complexity analysis summary for the orchestrator
  *
@@ -302,7 +331,7 @@ export function getModelForTask(
  */
 export function analyzeTaskComplexity(
   taskPrompt: string,
-  agentType?: string
+  agentType?: string,
 ): {
   tier: ComplexityTier;
   model: string;
@@ -322,16 +351,30 @@ export function analyzeTaskComplexity(
     `**Tier: ${decision.tier}** → ${decision.model}`,
     '',
     '**Why:**',
-    ...decision.reasons.map(r => `- ${r}`),
+    ...decision.reasons.map((r) => `- ${r}`),
     '',
     '**Signals detected:**',
-    signals.lexical.hasArchitectureKeywords ? '- Architecture keywords (refactor, redesign, etc.)' : null,
-    signals.lexical.hasRiskKeywords ? '- Risk keywords (migration, production, critical)' : null,
-    signals.lexical.hasDebuggingKeywords ? '- Debugging keywords (root cause, investigate)' : null,
-    signals.structural.crossFileDependencies ? '- Cross-file dependencies' : null,
-    signals.structural.impactScope === 'system-wide' ? '- System-wide impact' : null,
-    signals.structural.reversibility === 'difficult' ? '- Difficult to reverse' : null,
-  ].filter(Boolean).join('\n');
+    signals.lexical.hasArchitectureKeywords
+      ? '- Architecture keywords (refactor, redesign, etc.)'
+      : null,
+    signals.lexical.hasRiskKeywords
+      ? '- Risk keywords (migration, production, critical)'
+      : null,
+    signals.lexical.hasDebuggingKeywords
+      ? '- Debugging keywords (root cause, investigate)'
+      : null,
+    signals.structural.crossFileDependencies
+      ? '- Cross-file dependencies'
+      : null,
+    signals.structural.impactScope === 'system-wide'
+      ? '- System-wide impact'
+      : null,
+    signals.structural.reversibility === 'difficult'
+      ? '- Difficult to reverse'
+      : null,
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   return {
     tier: decision.tier,

@@ -42,14 +42,16 @@ export interface AllocationResult {
  */
 export function allocateTasksToWorkers(
   tasks: TaskAllocationInput[],
-  workers: WorkerAllocationInput[]
+  workers: WorkerAllocationInput[],
 ): AllocationResult[] {
   if (tasks.length === 0 || workers.length === 0) return [];
 
   const uniformRolePool = isUniformRolePool(workers);
   const results: AllocationResult[] = [];
   // Track in-flight assignments to keep load estimates current
-  const loadMap = new Map<string, number>(workers.map(w => [w.name, w.currentLoad]));
+  const loadMap = new Map<string, number>(
+    workers.map((w) => [w.name, w.currentLoad]),
+  );
 
   if (uniformRolePool) {
     for (const task of tasks) {
@@ -86,7 +88,7 @@ export function allocateTasksToWorkers(
 function isUniformRolePool(workers: WorkerAllocationInput[]): boolean {
   if (workers.length === 0) return true;
   const firstRole = workers[0].role;
-  return workers.every(w => w.role === firstRole);
+  return workers.every((w) => w.role === firstRole);
 }
 
 /**
@@ -94,7 +96,7 @@ function isUniformRolePool(workers: WorkerAllocationInput[]): boolean {
  */
 function pickLeastLoaded(
   workers: WorkerAllocationInput[],
-  loadMap: Map<string, number>
+  loadMap: Map<string, number>,
 ): WorkerAllocationInput {
   let best = workers[0];
   let bestLoad = loadMap.get(best.name) ?? 0;
@@ -121,13 +123,11 @@ function pickLeastLoaded(
 function pickBestWorker(
   task: TaskAllocationInput,
   workers: WorkerAllocationInput[],
-  loadMap: Map<string, number>
+  loadMap: Map<string, number>,
 ): WorkerAllocationInput {
-  const scored = workers.map(w => {
+  const scored = workers.map((w) => {
     const load = loadMap.get(w.name) ?? 0;
-    const roleScore = task.role
-      ? w.role === task.role ? 1.0 : 0.0
-      : 0.5; // no role hint — neutral
+    const roleScore = task.role ? (w.role === task.role ? 1.0 : 0.0) : 0.5; // no role hint — neutral
     const score = roleScore - load * 0.2;
     return { worker: w, score };
   });

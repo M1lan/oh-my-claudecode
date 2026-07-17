@@ -12,7 +12,7 @@ export enum StateLocation {
   /** Local project state: .omc/state/{name}.json */
   LOCAL = 'local',
   /** Global user state: XDG-aware OMC state path with legacy ~/.omc/state fallback on reads */
-  GLOBAL = 'global'
+  GLOBAL = 'global',
 }
 
 /**
@@ -154,5 +154,5 @@ export function isStateLocation(value: unknown): value is StateLocation {
  */
 export const DEFAULT_STATE_CONFIG: Partial<StateConfig> = {
   createDirs: true,
-  checkLegacy: true
+  checkLegacy: true,
 };

@@ -8,7 +8,10 @@
  * Issue #804 - Startup codebase map injection hook
  */
 
-import { generateCodebaseMap, type CodebaseMapOptions } from './codebase-map.js';
+import {
+  generateCodebaseMap,
+  type CodebaseMapOptions,
+} from './codebase-map.js';
 import { loadConfig } from '../config/loader.js';
 
 export interface AgentsOverlayResult {

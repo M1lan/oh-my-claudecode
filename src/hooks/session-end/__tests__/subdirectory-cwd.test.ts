@@ -32,9 +32,9 @@ vi.mock('../../../tools/python-repl/bridge-manager.js', () => ({
 // Mock resolveToWorktreeRoot so we can simulate the subdirectory → root mapping
 // without needing an actual git repository in the temp dir.
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js'
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
   return {
     ...actual,
     resolveToWorktreeRoot: vi.fn((dir?: string) => dir ?? process.cwd()),
@@ -103,7 +103,9 @@ describe('processSessionEnd cwd normalization (issue #891)', () => {
     });
 
     // State at worktree root must have been cleaned up
-    expect(fs.existsSync(path.join(stateDir, 'ultrawork-state.json'))).toBe(false);
+    expect(fs.existsSync(path.join(stateDir, 'ultrawork-state.json'))).toBe(
+      false,
+    );
   });
 
   it('writes session summary to worktree root, not subdirectory', async () => {
@@ -117,7 +119,12 @@ describe('processSessionEnd cwd normalization (issue #891)', () => {
     });
 
     // Session summary should appear under worktreeRoot/.omc/sessions/
-    const summaryPath = path.join(worktreeRoot, '.omc', 'sessions', 'test-session-891-summary.json');
+    const summaryPath = path.join(
+      worktreeRoot,
+      '.omc',
+      'sessions',
+      'test-session-891-summary.json',
+    );
     expect(fs.existsSync(summaryPath)).toBe(true);
 
     // Nothing should have been written under the subdirectory
@@ -126,7 +133,9 @@ describe('processSessionEnd cwd normalization (issue #891)', () => {
 
   it('leaves state at worktree root untouched when cwd is already the root', async () => {
     // When cwd IS the root, resolveToWorktreeRoot returns it unchanged
-    mockResolveToWorktreeRoot.mockImplementation((dir?: string) => dir ?? worktreeRoot);
+    mockResolveToWorktreeRoot.mockImplementation(
+      (dir?: string) => dir ?? worktreeRoot,
+    );
 
     const stateDir = path.join(worktreeRoot, '.omc', 'state');
     fs.mkdirSync(stateDir, { recursive: true });

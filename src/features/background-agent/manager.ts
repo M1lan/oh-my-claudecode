@@ -8,7 +8,14 @@
  * Adapted from oh-my-opencode's background-agent feature.
  */
 
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+  unlinkSync,
+} from 'fs';
 import { join } from 'path';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
 import { ConcurrencyManager } from './concurrency.js';
@@ -26,7 +33,11 @@ import type {
 const DEFAULT_TASK_TTL_MS = 30 * 60 * 1000;
 
 /** Storage directory for task state */
-const BACKGROUND_TASKS_DIR = join(getClaudeConfigDir(), '.omc', 'background-tasks');
+const BACKGROUND_TASKS_DIR = join(
+  getClaudeConfigDir(),
+  '.omc',
+  'background-tasks',
+);
 
 /**
  * Manages background tasks for the OMC system.
@@ -166,7 +177,10 @@ export class BackgroundManager {
 
     for (const [taskId, task] of this.tasks.entries()) {
       const age = now - task.startedAt.getTime();
-      if (age > ttl && (task.status === 'running' || task.status === 'queued')) {
+      if (
+        age > ttl &&
+        (task.status === 'running' || task.status === 'queued')
+      ) {
         task.status = 'error';
         task.error = `Task timed out after ${Math.round(ttl / 60000)} minutes`;
         task.completedAt = new Date();
@@ -247,10 +261,10 @@ export class BackgroundManager {
 
     // Count running and queued tasks for capacity check
     const runningTasks = Array.from(this.tasks.values()).filter(
-      (t) => t.status === 'running'
+      (t) => t.status === 'running',
     );
     const queuedTasks = Array.from(this.tasks.values()).filter(
-      (t) => t.status === 'queued'
+      (t) => t.status === 'queued',
     );
     const runningCount = runningTasks.length;
     const queuedCount = queuedTasks.length;
@@ -262,8 +276,8 @@ export class BackgroundManager {
     if (tasksInFlight >= maxTotal) {
       throw new Error(
         `Maximum tasks in flight (${maxTotal}) reached. ` +
-        `Currently: ${runningCount} running, ${queuedCount} queued. ` +
-        `Wait for some tasks to complete.`
+          `Currently: ${runningCount} running, ${queuedCount} queued. ` +
+          `Wait for some tasks to complete.`,
       );
     }
 
@@ -272,8 +286,8 @@ export class BackgroundManager {
     if (maxQueueSize !== undefined && queuedCount >= maxQueueSize) {
       throw new Error(
         `Maximum queue size (${maxQueueSize}) reached. ` +
-        `Currently: ${runningCount} running, ${queuedCount} queued. ` +
-        `Wait for some tasks to start or complete.`
+          `Currently: ${runningCount} running, ${queuedCount} queued. ` +
+          `Wait for some tasks to start or complete.`,
       );
     }
 
@@ -402,7 +416,9 @@ export class BackgroundManager {
    * Get all running tasks
    */
   getRunningTasks(): BackgroundTask[] {
-    return Array.from(this.tasks.values()).filter((t) => t.status === 'running');
+    return Array.from(this.tasks.values()).filter(
+      (t) => t.status === 'running',
+    );
   }
 
   /**
@@ -412,7 +428,7 @@ export class BackgroundManager {
     taskId: string,
     status: BackgroundTaskStatus,
     result?: string,
-    error?: string
+    error?: string,
   ): void {
     const task = this.tasks.get(taskId);
     if (!task) return;
@@ -421,7 +437,11 @@ export class BackgroundManager {
     if (result) task.result = result;
     if (error) task.error = error;
 
-    if (status === 'completed' || status === 'error' || status === 'cancelled') {
+    if (
+      status === 'completed' ||
+      status === 'error' ||
+      status === 'cancelled'
+    ) {
       task.completedAt = new Date();
 
       if (task.concurrencyKey) {
@@ -522,7 +542,9 @@ export class BackgroundManager {
    */
   getStatusSummary(): string {
     const running = this.getRunningTasks();
-    const queued = Array.from(this.tasks.values()).filter((t) => t.status === 'queued');
+    const queued = Array.from(this.tasks.values()).filter(
+      (t) => t.status === 'queued',
+    );
     const all = this.getAllTasks();
 
     if (all.length === 0) {
@@ -567,7 +589,9 @@ let instance: BackgroundManager | undefined;
 /**
  * Get the singleton background manager instance
  */
-export function getBackgroundManager(config?: BackgroundTaskConfig): BackgroundManager {
+export function getBackgroundManager(
+  config?: BackgroundTaskConfig,
+): BackgroundManager {
   if (!instance) {
     instance = new BackgroundManager(config);
   }

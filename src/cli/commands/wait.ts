@@ -73,11 +73,17 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
   const tmuxAvailable = isTmuxAvailable();
 
   if (options.json) {
-    console.log(JSON.stringify({
-      rateLimit: rateLimitStatus,
-      daemon: { running: daemonRunning },
-      tmux: { available: tmuxAvailable, insideSession: isInsideTmux() },
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          rateLimit: rateLimitStatus,
+          daemon: { running: daemonRunning },
+          tmux: { available: tmuxAvailable, insideSession: isInsideTmux() },
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
 
@@ -85,8 +91,14 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
   console.log(chalk.bold('\n🕐 Rate Limit Status\n'));
 
   if (!rateLimitStatus) {
-    console.log(chalk.yellow('Unable to check rate limits (OAuth credentials required)\n'));
-    console.log(chalk.gray('Rate limit monitoring requires Claude Pro/Max subscription.'));
+    console.log(
+      chalk.yellow(
+        'Unable to check rate limits (OAuth credentials required)\n',
+      ),
+    );
+    console.log(
+      chalk.gray('Rate limit monitoring requires Claude Pro/Max subscription.'),
+    );
     return;
   }
 
@@ -96,7 +108,9 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
     console.log(chalk.yellow(`\n${formatRateLimitStatus(rateLimitStatus)}\n`));
 
     if (!tmuxAvailable) {
-      console.log(chalk.gray('💡 Install tmux to enable auto-resume when limit clears'));
+      console.log(
+        chalk.gray('💡 Install tmux to enable auto-resume when limit clears'),
+      );
       console.log(chalk.gray('   brew install tmux  (macOS)'));
       console.log(chalk.gray('   apt install tmux   (Linux)\n'));
     } else if (!daemonRunning) {
@@ -105,22 +119,34 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
       console.log(chalk.gray('   (or: omc wait daemon start)\n'));
     } else {
       console.log(chalk.green('✓ Auto-resume daemon is running'));
-      console.log(chalk.gray('  Your session will resume automatically when the limit clears.\n'));
+      console.log(
+        chalk.gray(
+          '  Your session will resume automatically when the limit clears.\n',
+        ),
+      );
     }
   } else if (isRateLimitStatusDegraded(rateLimitStatus)) {
     console.log(chalk.yellow.bold('⚠️  Usage API Rate Limited'));
     console.log(chalk.yellow(`\n${formatRateLimitStatus(rateLimitStatus)}\n`));
 
     if (daemonRunning) {
-      console.log(chalk.gray('Auto-resume daemon is running while usage data is stale.'));
-      console.log(chalk.gray('Blocked panes can still be tracked if detected.\n'));
+      console.log(
+        chalk.gray('Auto-resume daemon is running while usage data is stale.'),
+      );
+      console.log(
+        chalk.gray('Blocked panes can still be tracked if detected.\n'),
+      );
     }
   } else {
     // Not rate limited
     console.log(chalk.green('✓ Not rate limited\n'));
 
     if (daemonRunning) {
-      console.log(chalk.gray('Auto-resume daemon is running (not needed when not rate limited)'));
+      console.log(
+        chalk.gray(
+          'Auto-resume daemon is running (not needed when not rate limited)',
+        ),
+      );
       console.log(chalk.gray('Stop with: omc wait --stop\n'));
     }
   }
@@ -129,19 +155,27 @@ export async function waitCommand(options: WaitOptions): Promise<void> {
 /**
  * Show current rate limit and daemon status
  */
-export async function waitStatusCommand(options: WaitStatusOptions): Promise<void> {
+export async function waitStatusCommand(
+  options: WaitStatusOptions,
+): Promise<void> {
   const rateLimitStatus = await checkRateLimitStatus();
   const daemonStatus = getDaemonStatus();
 
   if (options.json) {
-    console.log(JSON.stringify({
-      rateLimit: rateLimitStatus,
-      daemon: daemonStatus,
-      tmux: {
-        available: isTmuxAvailable(),
-        insideSession: isInsideTmux(),
-      },
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          rateLimit: rateLimitStatus,
+          daemon: daemonStatus,
+          tmux: {
+            available: isTmuxAvailable(),
+            insideSession: isInsideTmux(),
+          },
+        },
+        null,
+        2,
+      ),
+    );
     return;
   }
 
@@ -152,22 +186,46 @@ export async function waitStatusCommand(options: WaitStatusOptions): Promise<voi
   console.log(chalk.bold('\nRate Limits:'));
   if (rateLimitStatus) {
     if (rateLimitStatus.isLimited) {
-      console.log(chalk.yellow(`  ⚠ ${formatRateLimitStatus(rateLimitStatus)}`));
+      console.log(
+        chalk.yellow(`  ⚠ ${formatRateLimitStatus(rateLimitStatus)}`),
+      );
 
       if (rateLimitStatus.fiveHourLimited && rateLimitStatus.fiveHourResetsAt) {
-        console.log(chalk.gray(`    5-hour resets: ${rateLimitStatus.fiveHourResetsAt.toLocaleString()}`));
+        console.log(
+          chalk.gray(
+            `    5-hour resets: ${rateLimitStatus.fiveHourResetsAt.toLocaleString()}`,
+          ),
+        );
       }
       if (rateLimitStatus.weeklyLimited && rateLimitStatus.weeklyResetsAt) {
-        console.log(chalk.gray(`    Weekly resets: ${rateLimitStatus.weeklyResetsAt.toLocaleString()}`));
+        console.log(
+          chalk.gray(
+            `    Weekly resets: ${rateLimitStatus.weeklyResetsAt.toLocaleString()}`,
+          ),
+        );
       }
     } else if (isRateLimitStatusDegraded(rateLimitStatus)) {
-      console.log(chalk.yellow(`  ⚠ ${formatRateLimitStatus(rateLimitStatus)}`));
+      console.log(
+        chalk.yellow(`  ⚠ ${formatRateLimitStatus(rateLimitStatus)}`),
+      );
     } else {
       console.log(chalk.green('  ✓ Not rate limited'));
-      console.log(chalk.gray(`    5-hour: ${rateLimitStatus.fiveHourLimited ? '100%' : 'OK'}`));
-      console.log(chalk.gray(`    Weekly: ${rateLimitStatus.weeklyLimited ? '100%' : 'OK'}`));
+      console.log(
+        chalk.gray(
+          `    5-hour: ${rateLimitStatus.fiveHourLimited ? '100%' : 'OK'}`,
+        ),
+      );
+      console.log(
+        chalk.gray(
+          `    Weekly: ${rateLimitStatus.weeklyLimited ? '100%' : 'OK'}`,
+        ),
+      );
     }
-    console.log(chalk.dim(`    Last checked: ${rateLimitStatus.lastCheckedAt.toLocaleTimeString()}`));
+    console.log(
+      chalk.dim(
+        `    Last checked: ${rateLimitStatus.lastCheckedAt.toLocaleTimeString()}`,
+      ),
+    );
   } else {
     console.log(chalk.yellow('  ? Unable to check (no OAuth credentials?)'));
   }
@@ -178,10 +236,20 @@ export async function waitStatusCommand(options: WaitStatusOptions): Promise<voi
     if (daemonStatus.state.isRunning) {
       console.log(chalk.green(`  ✓ Running (PID: ${daemonStatus.state.pid})`));
       if (daemonStatus.state.lastPollAt) {
-        console.log(chalk.dim(`    Last poll: ${daemonStatus.state.lastPollAt.toLocaleTimeString()}`));
+        console.log(
+          chalk.dim(
+            `    Last poll: ${daemonStatus.state.lastPollAt.toLocaleTimeString()}`,
+          ),
+        );
       }
-      console.log(chalk.dim(`    Resume attempts: ${daemonStatus.state.totalResumeAttempts}`));
-      console.log(chalk.dim(`    Successful: ${daemonStatus.state.successfulResumes}`));
+      console.log(
+        chalk.dim(
+          `    Resume attempts: ${daemonStatus.state.totalResumeAttempts}`,
+        ),
+      );
+      console.log(
+        chalk.dim(`    Successful: ${daemonStatus.state.successfulResumes}`),
+      );
     } else {
       console.log(chalk.gray('  ○ Not running'));
     }
@@ -209,7 +277,7 @@ export async function waitStatusCommand(options: WaitStatusOptions): Promise<voi
  */
 export async function waitDaemonCommand(
   action: 'start' | 'stop',
-  options: WaitDaemonOptions
+  options: WaitDaemonOptions,
 ): Promise<void> {
   const config: DaemonConfig = {
     verbose: options.verbose,
@@ -226,10 +294,18 @@ export async function waitDaemonCommand(
         console.log(chalk.green(`✓ ${result.message}`));
         console.log(chalk.gray('\nThe daemon will:'));
         console.log(chalk.gray('  • Poll rate limit status every minute'));
-        console.log(chalk.gray('  • Track blocked Claude Code sessions in tmux'));
-        console.log(chalk.gray('  • Auto-resume sessions when rate limit clears'));
-        console.log(chalk.gray('\nUse "omc wait status" to check daemon status'));
-        console.log(chalk.gray('Use "omc wait daemon stop" to stop the daemon'));
+        console.log(
+          chalk.gray('  • Track blocked Claude Code sessions in tmux'),
+        );
+        console.log(
+          chalk.gray('  • Auto-resume sessions when rate limit clears'),
+        );
+        console.log(
+          chalk.gray('\nUse "omc wait status" to check daemon status'),
+        );
+        console.log(
+          chalk.gray('Use "omc wait daemon stop" to stop the daemon'),
+        );
       } else {
         console.error(chalk.red(`✗ ${result.message}`));
         if (result.error) {
@@ -255,10 +331,14 @@ export async function waitDaemonCommand(
 /**
  * Detect blocked Claude Code sessions
  */
-export async function waitDetectCommand(options: WaitDetectOptions): Promise<void> {
+export async function waitDetectCommand(
+  options: WaitDetectOptions,
+): Promise<void> {
   if (!isTmuxAvailable()) {
     console.error(chalk.yellow('⚠ tmux is not installed'));
-    console.log(chalk.gray('Install tmux to use session detection and auto-resume'));
+    console.log(
+      chalk.gray('Install tmux to use session detection and auto-resume'),
+    );
     process.exit(1);
   }
 
@@ -278,7 +358,11 @@ export async function waitDetectCommand(options: WaitDetectOptions): Promise<voi
   console.log(result.message);
 
   if (result.state?.blockedPanes && result.state.blockedPanes.length > 0) {
-    console.log(chalk.gray('\nTip: Start the daemon to auto-resume when rate limit clears:'));
+    console.log(
+      chalk.gray(
+        '\nTip: Start the daemon to auto-resume when rate limit clears:',
+      ),
+    );
     console.log(chalk.gray('  omc wait daemon start'));
   }
 

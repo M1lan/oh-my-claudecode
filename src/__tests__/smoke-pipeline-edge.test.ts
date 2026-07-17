@@ -16,7 +16,8 @@ import { tmpdir } from 'os';
 
 const mockGetOmcRoot = vi.fn<(worktreeRoot?: string) => string>();
 vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/worktree-paths.js')>();
+  const actual =
+    await importOriginal<typeof import('../lib/worktree-paths.js')>();
   return {
     ...actual,
     getOmcRoot: (...args: [string?]) => mockGetOmcRoot(...args),
@@ -39,18 +40,27 @@ vi.mock('../hooks/mode-registry/index.js', () => ({
 // ============================================================================
 
 import {
-  writeEntry, readEntry, listEntries, deleteEntry,
-  cleanupExpired, listNamespaces,
+  writeEntry,
+  readEntry,
+  listEntries,
+  deleteEntry,
+  cleanupExpired,
+  listNamespaces,
 } from '../lib/shared-memory.js';
 
 import {
-  resolvePipelineConfig, getDeprecationWarning,
-  buildPipelineTracking, initPipeline, advanceStage,
+  resolvePipelineConfig,
+  getDeprecationWarning,
+  buildPipelineTracking,
+  initPipeline,
+  advanceStage,
   formatPipelineHUD,
 } from '../hooks/autopilot/pipeline.js';
 
 import {
-  DEFAULT_PIPELINE_CONFIG, STAGE_ORDER, DEPRECATED_MODE_ALIASES,
+  DEFAULT_PIPELINE_CONFIG,
+  STAGE_ORDER,
+  DEPRECATED_MODE_ALIASES,
 } from '../hooks/autopilot/pipeline-types.js';
 
 import { loadEnvConfig } from '../config/loader.js';
@@ -64,7 +74,10 @@ describe('EDGE: Pipeline Orchestrator (issue #1132)', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `edge-pipe-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `edge-pipe-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
     // Pipeline state uses getOmcRoot(worktreeRoot) — mock returns <dir>/.omc for any arg
     mockGetOmcRoot.mockImplementation((dir?: string) => {
@@ -136,14 +149,21 @@ describe('EDGE: Pipeline Orchestrator (issue #1132)', () => {
     const tracking = buildPipelineTracking(config);
 
     // All stages marked skipped except execution (solo mode does not skip execution)
-    const statuses = tracking.stages.map(s => ({ id: s.id, status: s.status }));
-    const skipped = statuses.filter(s => s.status === 'skipped').map(s => s.id);
+    const statuses = tracking.stages.map((s) => ({
+      id: s.id,
+      status: s.status,
+    }));
+    const skipped = statuses
+      .filter((s) => s.status === 'skipped')
+      .map((s) => s.id);
     expect(skipped).toContain('ralplan');
     expect(skipped).toContain('ralph');
     expect(skipped).toContain('qa');
 
     // The only active/pending stage should be execution
-    const pending = statuses.filter(s => s.status !== 'skipped').map(s => s.id);
+    const pending = statuses
+      .filter((s) => s.status !== 'skipped')
+      .map((s) => s.id);
     expect(pending).toContain('execution');
   });
 
@@ -169,7 +189,11 @@ describe('EDGE: Pipeline Orchestrator (issue #1132)', () => {
   });
 
   it('initPipeline + multiple advanceStage calls: full stage order', () => {
-    const state = initPipeline(testDir, 'full stage order test', 'edge-sess-order');
+    const state = initPipeline(
+      testDir,
+      'full stage order test',
+      'edge-sess-order',
+    );
     expect(state).not.toBeNull();
 
     const phases: string[] = [];
@@ -223,7 +247,9 @@ describe('EDGE: Pipeline Orchestrator (issue #1132)', () => {
     const hud = formatPipelineHUD(tracking);
     // Should show [OK] for each non-skipped stage
     const okCount = (hud.match(/\[OK\]/g) || []).length;
-    const activeStages = tracking.stages.filter(s => s.status !== 'skipped').length;
+    const activeStages = tracking.stages.filter(
+      (s) => s.status !== 'skipped',
+    ).length;
     expect(okCount).toBe(activeStages);
     // Should not show any pending markers
     expect(hud).not.toMatch(/\[\.\.\]/);
@@ -241,7 +267,9 @@ describe('EDGE: Pipeline Orchestrator (issue #1132)', () => {
     expect(DEFAULT_PIPELINE_CONFIG.verification).not.toBe(false);
     if (DEFAULT_PIPELINE_CONFIG.verification) {
       expect(DEFAULT_PIPELINE_CONFIG.verification.engine).toBe('ralph');
-      expect(DEFAULT_PIPELINE_CONFIG.verification.maxIterations).toBeGreaterThan(0);
+      expect(
+        DEFAULT_PIPELINE_CONFIG.verification.maxIterations,
+      ).toBeGreaterThan(0);
     }
   });
 });
@@ -254,7 +282,10 @@ describe('EDGE: Shared Memory (issue #1137)', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `edge-shmem-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `edge-shmem-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     const omcDir = join(testDir, '.omc');
     mkdirSync(omcDir, { recursive: true });
     mockGetOmcRoot.mockReturnValue(omcDir);
@@ -293,7 +324,9 @@ describe('EDGE: Shared Memory (issue #1137)', () => {
     // original createdAt is preserved on overwrite
     expect(second!.createdAt).toBe(createdAt);
     // updatedAt must be >= createdAt (may be identical if same ms, but never earlier)
-    expect(new Date(second!.updatedAt).getTime()).toBeGreaterThanOrEqual(new Date(createdAt).getTime());
+    expect(new Date(second!.updatedAt).getTime()).toBeGreaterThanOrEqual(
+      new Date(createdAt).getTime(),
+    );
   });
 
   it('readEntry on non-existent key returns null', () => {
@@ -309,7 +342,9 @@ describe('EDGE: Shared Memory (issue #1137)', () => {
   it('listEntries on empty namespace returns empty array', () => {
     // Create an empty namespace dir
     const omcDir = mockGetOmcRoot();
-    mkdirSync(join(omcDir, 'state', 'shared-memory', 'empty-ns'), { recursive: true });
+    mkdirSync(join(omcDir, 'state', 'shared-memory', 'empty-ns'), {
+      recursive: true,
+    });
 
     const items = listEntries('empty-ns');
     expect(items).toEqual([]);
@@ -330,7 +365,9 @@ describe('EDGE: Shared Memory (issue #1137)', () => {
 
   it('cleanupExpired on empty namespace returns {removed: 0}', () => {
     const omcDir = mockGetOmcRoot();
-    mkdirSync(join(omcDir, 'state', 'shared-memory', 'clean-ns'), { recursive: true });
+    mkdirSync(join(omcDir, 'state', 'shared-memory', 'clean-ns'), {
+      recursive: true,
+    });
 
     const result = cleanupExpired('clean-ns');
     expect(result.removed).toBe(0);
@@ -358,7 +395,13 @@ describe('EDGE: Shared Memory (issue #1137)', () => {
     expect(entry).not.toBeNull();
     expect((entry!.value as typeof value).unicode).toBe(value.unicode);
     expect((entry!.value as typeof value).nested.a.b.c).toEqual([1, 2, 3]);
-    expect((entry!.value as typeof value).array).toEqual(['foo', 'bar', null, true, 42]);
+    expect((entry!.value as typeof value).array).toEqual([
+      'foo',
+      'bar',
+      null,
+      true,
+      42,
+    ]);
   });
 });
 
@@ -502,9 +545,17 @@ describe('EDGE: Mode Deprecation (issue #1131)', () => {
   it('each deprecated mode has required fields: config.execution and message', () => {
     for (const [mode, alias] of Object.entries(DEPRECATED_MODE_ALIASES)) {
       expect(alias.config, `${mode} should have config`).toBeDefined();
-      expect(alias.config.execution, `${mode}.config.execution should be set`).toBeDefined();
-      expect(typeof alias.message, `${mode}.message should be a string`).toBe('string');
-      expect(alias.message.length, `${mode}.message should not be empty`).toBeGreaterThan(0);
+      expect(
+        alias.config.execution,
+        `${mode}.config.execution should be set`,
+      ).toBeDefined();
+      expect(typeof alias.message, `${mode}.message should be a string`).toBe(
+        'string',
+      );
+      expect(
+        alias.message.length,
+        `${mode}.message should not be empty`,
+      ).toBeGreaterThan(0);
     }
   });
 
@@ -512,7 +563,7 @@ describe('EDGE: Mode Deprecation (issue #1131)', () => {
     for (const [mode, alias] of Object.entries(DEPRECATED_MODE_ALIASES)) {
       expect(
         ['team', 'solo'],
-        `${mode}.config.execution should be a valid ExecutionBackend`
+        `${mode}.config.execution should be a valid ExecutionBackend`,
       ).toContain(alias.config.execution);
     }
   });

@@ -29,7 +29,11 @@ function readPaneTailState(stateDir: string): PaneTailState {
   try {
     if (existsSync(path)) {
       const parsed = JSON.parse(readFileSync(path, 'utf-8')) as unknown;
-      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+      if (
+        typeof parsed === 'object' &&
+        parsed !== null &&
+        !Array.isArray(parsed)
+      ) {
         return parsed as PaneTailState;
       }
     }
@@ -42,7 +46,9 @@ function readPaneTailState(stateDir: string): PaneTailState {
 function writePaneTailState(stateDir: string, state: PaneTailState): void {
   try {
     mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, STATE_FILE), JSON.stringify(state), { mode: 0o600 });
+    writeFileSync(join(stateDir, STATE_FILE), JSON.stringify(state), {
+      mode: 0o600,
+    });
   } catch {
     // best-effort — never block alert path on write failure
   }

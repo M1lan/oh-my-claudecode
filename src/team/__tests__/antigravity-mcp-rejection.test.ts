@@ -22,7 +22,9 @@ describe('antigravity is rejected by the MCP team backend', () => {
     // The runtime validator throws "Must be 'codex' or 'gemini'" for anything else,
     // so antigravity can never spawn an MCP bridge subprocess.
     expect(bridgeSource).toContain("Must be 'codex' or 'gemini'");
-    expect(bridgeSource).toContain('provider !== "codex" && provider !== "gemini"');
+    expect(bridgeSource).toContain(
+      "provider !== 'codex' && provider !== 'gemini'",
+    );
     // The provider literal type stays codex/gemini-only; antigravity is absent.
     expect(bridgeSource).not.toMatch(/['"]antigravity['"]/);
   });
@@ -36,7 +38,10 @@ describe('antigravity is rejected by the MCP team backend', () => {
   });
 
   it('the worker backend exposes tmux-antigravity but never mcp-antigravity', () => {
-    const typesSource = readFileSync(join(__dirname, '..', 'types.ts'), 'utf-8');
+    const typesSource = readFileSync(
+      join(__dirname, '..', 'types.ts'),
+      'utf-8',
+    );
     expect(typesSource).toContain("'tmux-antigravity'");
     expect(typesSource).not.toContain('mcp-antigravity');
   });

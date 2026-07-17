@@ -32,9 +32,8 @@ export interface HookOutput {
 
 const SAFE_PATTERNS = [
   /^git (status|diff|log|branch|show|fetch)/,
-  /^npm run (lint|build|check|typecheck)/,
+  // pnpm is the only supported package manager (npm/yarn intentionally excluded)
   /^pnpm (lint|build|check|typecheck|run (lint|build|check|typecheck))/,
-  /^yarn (lint|build|check|typecheck|run (lint|build|check|typecheck))/,
   /^tsc( |$)/,
   /^gh (issue|pr) (view|list|status)\b/,
   /^eslint /,
@@ -58,10 +57,7 @@ const HEREDOC_PATTERN = /<<[-~]?\s*['"]?\w+['"]?/;
  * Matched against the first line of the command (before the heredoc body).
  * Issue #608: Prevents full heredoc body from being stored in settings.local.json.
  */
-const SAFE_HEREDOC_PATTERNS = [
-  /^git commit\b/,
-  /^git tag\b/,
-];
+const SAFE_HEREDOC_PATTERNS = [/^git commit\b/, /^git tag\b/];
 
 const SAFE_RIPGREP_FLAGS = new Set([
   '-n',
@@ -86,7 +82,10 @@ const BACKGROUND_MUTATION_SUBAGENTS = new Set([
   'document-specialist',
 ]);
 
-function readPermissionStringEntries(filePath: string, key: 'allow' | 'ask'): string[] {
+function readPermissionStringEntries(
+  filePath: string,
+  key: 'allow' | 'ask',
+): string[] {
   try {
     if (!fs.existsSync(filePath)) {
       return [];
@@ -98,14 +97,20 @@ function readPermissionStringEntries(filePath: string, key: 'allow' | 'ask'): st
       ask?: unknown;
     };
     const entries = settings?.permissions?.[key] ?? settings?.[key];
-    return Array.isArray(entries) ? entries.filter((entry): entry is string => typeof entry === 'string') : [];
+    return Array.isArray(entries)
+      ? entries.filter((entry): entry is string => typeof entry === 'string')
+      : [];
   } catch {
     return [];
   }
 }
 
 export function getClaudePermissionAllowEntries(directory: string): string[] {
-  const projectSettingsPath = path.join(directory, '.claude', 'settings.local.json');
+  const projectSettingsPath = path.join(
+    directory,
+    '.claude',
+    'settings.local.json',
+  );
   const globalConfigDir = getClaudeConfigDir();
   const candidatePaths = [
     projectSettingsPath,
@@ -123,8 +128,13 @@ export function getClaudePermissionAllowEntries(directory: string): string[] {
   return [...allowEntries];
 }
 
-function hasGenericToolPermission(allowEntries: string[], toolName: string): boolean {
-  return allowEntries.some(entry => entry === toolName || entry.startsWith(`${toolName}(`));
+function hasGenericToolPermission(
+  allowEntries: string[],
+  toolName: string,
+): boolean {
+  return allowEntries.some(
+    (entry) => entry === toolName || entry.startsWith(`${toolName}(`),
+  );
 }
 
 export function hasClaudePermissionApproval(
@@ -150,9 +160,12 @@ export function hasClaudePermissionApproval(
   return allowEntries.includes(`Bash(${trimmedCommand})`);
 }
 
-
 export function getClaudePermissionAskEntries(directory: string): string[] {
-  const projectSettingsPath = path.join(directory, '.claude', 'settings.local.json');
+  const projectSettingsPath = path.join(
+    directory,
+    '.claude',
+    'settings.local.json',
+  );
   const globalConfigDir = getClaudeConfigDir();
   const candidatePaths = [
     projectSettingsPath,
@@ -170,7 +183,10 @@ export function getClaudePermissionAskEntries(directory: string): string[] {
   return [...askEntries];
 }
 
-function commandMatchesPermissionPattern(command: string, pattern: string): boolean {
+function commandMatchesPermissionPattern(
+  command: string,
+  pattern: string,
+): boolean {
   const trimmedPattern = pattern.trim();
   if (!trimmedPattern) {
     return false;
@@ -209,7 +225,7 @@ export function hasClaudePermissionAsk(
     return false;
   }
 
-  return askEntries.some(entry => {
+  return askEntries.some((entry) => {
     if (entry === 'Bash') {
       return true;
     }
@@ -232,12 +248,16 @@ export function getBackgroundTaskPermissionFallback(
   subagentType?: string,
 ): BackgroundPermissionFallbackResult {
   const normalizedSubagentType = subagentType?.trim().toLowerCase();
-  if (!normalizedSubagentType || !BACKGROUND_MUTATION_SUBAGENTS.has(normalizedSubagentType)) {
+  if (
+    !normalizedSubagentType ||
+    !BACKGROUND_MUTATION_SUBAGENTS.has(normalizedSubagentType)
+  ) {
     return { shouldFallback: false, missingTools: [] };
   }
 
   const missingTools = ['Edit', 'Write'].filter(
-    toolName => !hasClaudePermissionApproval(directory, toolName as 'Edit' | 'Write'),
+    (toolName) =>
+      !hasClaudePermissionApproval(directory, toolName as 'Edit' | 'Write'),
   );
 
   return {
@@ -397,8 +417,13 @@ function areSafeRepoPaths(
   args: string[],
   options: { allowDirectory?: boolean; requireExisting?: boolean } = {},
 ): boolean {
-  const pathArgs = args.filter(arg => arg !== '--');
-  return pathArgs.length > 0 && pathArgs.every(arg => !arg.startsWith('-') && isSafeRepoPath(cwd, arg, options));
+  const pathArgs = args.filter((arg) => arg !== '--');
+  return (
+    pathArgs.length > 0 &&
+    pathArgs.every(
+      (arg) => !arg.startsWith('-') && isSafeRepoPath(cwd, arg, options),
+    )
+  );
 }
 
 function isSafeCatCommand(tokens: string[], cwd: string): boolean {
@@ -433,7 +458,10 @@ function isSafeSedInspectionCommand(tokens: string[], cwd: string): boolean {
   return areSafeRepoPaths(cwd, tokens.slice(3));
 }
 
-function isSafeRipgrepInspectionCommand(tokens: string[], cwd: string): boolean {
+function isSafeRipgrepInspectionCommand(
+  tokens: string[],
+  cwd: string,
+): boolean {
   if (tokens[0] !== 'rg') {
     return false;
   }
@@ -467,10 +495,9 @@ function isSafeTargetedVitestCommand(tokens: string[], cwd: string): boolean {
   const supportedPrefixes: string[][] = [
     ['vitest', 'run'],
     ['pnpm', 'vitest', 'run'],
-    ['yarn', 'vitest', 'run'],
   ];
 
-  const matchedPrefix = supportedPrefixes.find(prefix =>
+  const matchedPrefix = supportedPrefixes.find((prefix) =>
     prefix.every((part, index) => tokens[index] === part),
   );
 
@@ -479,19 +506,22 @@ function isSafeTargetedVitestCommand(tokens: string[], cwd: string): boolean {
   }
 
   const remaining = tokens.slice(matchedPrefix.length);
-  return remaining.length === 1 && isSafeRepoPath(cwd, remaining[0], { allowDirectory: false });
+  return (
+    remaining.length === 1 &&
+    isSafeRepoPath(cwd, remaining[0], { allowDirectory: false })
+  );
 }
 
-function isSafeTargetedPackageManagerTestCommand(tokens: string[], cwd: string): boolean {
+function isSafeTargetedPackageManagerTestCommand(
+  tokens: string[],
+  cwd: string,
+): boolean {
   const supportedPrefixes: string[][] = [
-    ['npm', 'test', '--', '--run'],
-    ['npm', 'run', 'test', '--', '--run'],
     ['pnpm', 'test', '--', '--run'],
     ['pnpm', 'run', 'test', '--', '--run'],
-    ['yarn', 'test', '--run'],
   ];
 
-  const matchedPrefix = supportedPrefixes.find(prefix =>
+  const matchedPrefix = supportedPrefixes.find((prefix) =>
     prefix.every((part, index) => tokens[index] === part),
   );
 
@@ -500,17 +530,25 @@ function isSafeTargetedPackageManagerTestCommand(tokens: string[], cwd: string):
   }
 
   const remaining = tokens.slice(matchedPrefix.length);
-  return remaining.length === 1 && isSafeRepoPath(cwd, remaining[0], { allowDirectory: false });
+  return (
+    remaining.length === 1 &&
+    isSafeRepoPath(cwd, remaining[0], { allowDirectory: false })
+  );
 }
 
 function isSafeTargetedNodeTestCommand(tokens: string[], cwd: string): boolean {
-  return tokens[0] === 'node'
-    && tokens[1] === '--test'
-    && tokens.length === 3
-    && isSafeRepoPath(cwd, tokens[2], { allowDirectory: false });
+  return (
+    tokens[0] === 'node' &&
+    tokens[1] === '--test' &&
+    tokens.length === 3 &&
+    isSafeRepoPath(cwd, tokens[2], { allowDirectory: false })
+  );
 }
 
-export function isSafeRepoInspectionCommand(command: string, cwd: string): boolean {
+export function isSafeRepoInspectionCommand(
+  command: string,
+  cwd: string,
+): boolean {
   const trimmed = command.trim();
   if (!trimmed || DANGEROUS_SHELL_CHARS.test(trimmed)) {
     return false;
@@ -521,13 +559,18 @@ export function isSafeRepoInspectionCommand(command: string, cwd: string): boole
     return false;
   }
 
-  return isSafeCatCommand(tokens, cwd)
-    || isSafeHeadOrTailCommand(tokens, cwd)
-    || isSafeSedInspectionCommand(tokens, cwd)
-    || isSafeRipgrepInspectionCommand(tokens, cwd);
+  return (
+    isSafeCatCommand(tokens, cwd) ||
+    isSafeHeadOrTailCommand(tokens, cwd) ||
+    isSafeSedInspectionCommand(tokens, cwd) ||
+    isSafeRipgrepInspectionCommand(tokens, cwd)
+  );
 }
 
-export function isSafeTargetedLocalTestCommand(command: string, cwd: string): boolean {
+export function isSafeTargetedLocalTestCommand(
+  command: string,
+  cwd: string,
+): boolean {
   const trimmed = command.trim();
   if (!trimmed || DANGEROUS_SHELL_CHARS.test(trimmed)) {
     return false;
@@ -538,16 +581,23 @@ export function isSafeTargetedLocalTestCommand(command: string, cwd: string): bo
     return false;
   }
 
-  return isSafeTargetedVitestCommand(tokens, cwd)
-    || isSafeTargetedPackageManagerTestCommand(tokens, cwd)
-    || isSafeTargetedNodeTestCommand(tokens, cwd);
+  return (
+    isSafeTargetedVitestCommand(tokens, cwd) ||
+    isSafeTargetedPackageManagerTestCommand(tokens, cwd) ||
+    isSafeTargetedNodeTestCommand(tokens, cwd)
+  );
 }
 
-export function isSafeAutoApprovedCommand(command: string, cwd: string): boolean {
-  return isSafeCommand(command)
-    || isSafeRepoInspectionCommand(command, cwd)
-    || isSafeTargetedLocalTestCommand(command, cwd)
-    || isHeredocWithSafeBase(command);
+export function isSafeAutoApprovedCommand(
+  command: string,
+  cwd: string,
+): boolean {
+  return (
+    isSafeCommand(command) ||
+    isSafeRepoInspectionCommand(command, cwd) ||
+    isSafeTargetedLocalTestCommand(command, cwd) ||
+    isHeredocWithSafeBase(command)
+  );
 }
 
 /**
@@ -562,7 +612,7 @@ export function isSafeCommand(command: string): boolean {
     return false;
   }
 
-  return SAFE_PATTERNS.some(pattern => pattern.test(trimmed));
+  return SAFE_PATTERNS.some((pattern) => pattern.test(trimmed));
 }
 
 /**
@@ -593,7 +643,7 @@ export function isHeredocWithSafeBase(command: string): boolean {
   const firstLine = trimmed.split('\n')[0].trim();
 
   // Check if the first line starts with a safe pattern
-  return SAFE_HEREDOC_PATTERNS.some(pattern => pattern.test(firstLine));
+  return SAFE_HEREDOC_PATTERNS.some((pattern) => pattern.test(firstLine));
 }
 
 /**
@@ -623,7 +673,11 @@ export function isActiveModeRunning(directory: string): boolean {
         const state = JSON.parse(content);
 
         // Check if mode is active
-        if (state.active === true || state.status === 'running' || state.status === 'active') {
+        if (
+          state.active === true ||
+          state.status === 'running' ||
+          state.status === 'active'
+        ) {
           return true;
         }
       } catch (_error) {
@@ -639,7 +693,9 @@ export function isActiveModeRunning(directory: string): boolean {
 /**
  * Process permission request and decide whether to auto-allow
  */
-export function processPermissionRequest(input: PermissionRequestInput): HookOutput {
+export function processPermissionRequest(
+  input: PermissionRequestInput,
+): HookOutput {
   // Only process Bash tool for command auto-approval
   // Normalize tool name - handle both proxy_ prefixed and unprefixed versions
   const toolName = input.tool_name.replace(/^proxy_/, '');
@@ -652,10 +708,17 @@ export function processPermissionRequest(input: PermissionRequestInput): HookOut
     return { continue: true };
   }
 
-  const shouldAskBashPermission = hasClaudePermissionAsk(input.cwd, 'Bash', command);
+  const shouldAskBashPermission = hasClaudePermissionAsk(
+    input.cwd,
+    'Bash',
+    command,
+  );
 
   // Auto-allow safe commands
-  if (!shouldAskBashPermission && isSafeAutoApprovedCommand(command, input.cwd)) {
+  if (
+    !shouldAskBashPermission &&
+    isSafeAutoApprovedCommand(command, input.cwd)
+  ) {
     const reason = isHeredocWithSafeBase(command)
       ? 'Safe command with heredoc content'
       : 'Safe read-only or test command';
@@ -678,6 +741,8 @@ export function processPermissionRequest(input: PermissionRequestInput): HookOut
 /**
  * Main hook entry point
  */
-export async function handlePermissionRequest(input: PermissionRequestInput): Promise<HookOutput> {
+export async function handlePermissionRequest(
+  input: PermissionRequestInput,
+): Promise<HookOutput> {
   return processPermissionRequest(input);
 }

@@ -21,14 +21,17 @@ export {
   deepMerge,
   loadAgentPrompt,
   formatOpenQuestions,
-  OPEN_QUESTIONS_PATH
+  OPEN_QUESTIONS_PATH,
 } from './utils.js';
 
 // Individual agent exports
 export { architectAgent, ARCHITECT_PROMPT_METADATA } from './architect.js';
 export { exploreAgent, EXPLORE_PROMPT_METADATA } from './explore.js';
 export { executorAgent, EXECUTOR_PROMPT_METADATA } from './executor.js';
-export { designerAgent, FRONTEND_ENGINEER_PROMPT_METADATA } from './designer.js';
+export {
+  designerAgent,
+  FRONTEND_ENGINEER_PROMPT_METADATA,
+} from './designer.js';
 export { writerAgent, DOCUMENT_WRITER_PROMPT_METADATA } from './writer.js';
 export { criticAgent, CRITIC_PROMPT_METADATA } from './critic.js';
 export { analystAgent, ANALYST_PROMPT_METADATA } from './analyst.js';
@@ -36,28 +39,23 @@ export { plannerAgent, PLANNER_PROMPT_METADATA } from './planner.js';
 export { qaTesterAgent, QA_TESTER_PROMPT_METADATA } from './qa-tester.js';
 export { scientistAgent, SCIENTIST_PROMPT_METADATA } from './scientist.js';
 export { tracerAgent, TRACER_PROMPT_METADATA } from './tracer.js';
-export { documentSpecialistAgent, DOCUMENT_SPECIALIST_PROMPT_METADATA } from './document-specialist.js';
-// Reformed agents (Build/Analysis Lane)
 export {
-  debuggerAgent,
-  verifierAgent
-} from './definitions.js';
+  documentSpecialistAgent,
+  DOCUMENT_SPECIALIST_PROMPT_METADATA,
+} from './document-specialist.js';
+// Reformed agents (Build/Analysis Lane)
+export { debuggerAgent, verifierAgent } from './definitions.js';
 
 // Reformed agents (Domain Specialists)
-export {
-  testEngineerAgent
-} from './definitions.js';
+export { testEngineerAgent } from './definitions.js';
 
 // Specialized agents (Security, Code Review, Git, Code Simplifier)
 export {
   securityReviewerAgent,
   codeReviewerAgent,
   gitMasterAgent,
-  codeSimplifierAgent
+  codeSimplifierAgent,
 } from './definitions.js';
 
 // Core exports (getAgentDefinitions and omcSystemPrompt)
-export {
-  getAgentDefinitions,
-  omcSystemPrompt
-} from './definitions.js';
+export { getAgentDefinitions, omcSystemPrompt } from './definitions.js';

@@ -66,7 +66,11 @@ const VALID_OUTPUT = JSON.stringify({
   generatedAt: new Date().toISOString(),
   buckets: [
     { id: 'daily', label: 'Daily', usage: { type: 'percent', value: 42 } },
-    { id: 'monthly', label: 'Monthly', usage: { type: 'credit', used: 250, limit: 1000 } },
+    {
+      id: 'monthly',
+      label: 'Monthly',
+      usage: { type: 'credit', used: 250, limit: 1000 },
+    },
   ],
 });
 
@@ -170,8 +174,8 @@ describe('executeCustomProvider', () => {
       generatedAt: new Date().toISOString(),
       buckets: [
         { id: 'good', label: 'Good', usage: { type: 'percent', value: 50 } },
-        { id: 'bad', label: 'Bad', usage: { type: 'unknown-type' } },     // filtered
-        { label: 'Missing id', usage: { type: 'percent', value: 10 } },   // filtered (no id)
+        { id: 'bad', label: 'Bad', usage: { type: 'unknown-type' } }, // filtered
+        { label: 'Missing id', usage: { type: 'percent', value: 10 } }, // filtered (no id)
       ],
     });
     mockSpawn(output);
@@ -184,7 +188,11 @@ describe('executeCustomProvider', () => {
   describe('caching', () => {
     it('returns fresh cache when within TTL', async () => {
       const cachedBuckets = [
-        { id: 'cached', label: 'Cached', usage: { type: 'percent' as const, value: 77 } },
+        {
+          id: 'cached',
+          label: 'Cached',
+          usage: { type: 'percent' as const, value: 77 },
+        },
       ];
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(
@@ -202,7 +210,11 @@ describe('executeCustomProvider', () => {
 
     it('runs command when cache is expired', async () => {
       const oldBuckets = [
-        { id: 'old', label: 'Old', usage: { type: 'percent' as const, value: 10 } },
+        {
+          id: 'old',
+          label: 'Old',
+          usage: { type: 'percent' as const, value: 10 },
+        },
       ];
       // Cache expired (timestamp 60s ago)
       vi.mocked(existsSync).mockReturnValue(true);
@@ -219,12 +231,19 @@ describe('executeCustomProvider', () => {
 
     it('returns stale cache on command failure', async () => {
       const staleBuckets = [
-        { id: 'stale', label: 'Stale', usage: { type: 'percent' as const, value: 55 } },
+        {
+          id: 'stale',
+          label: 'Stale',
+          usage: { type: 'percent' as const, value: 55 },
+        },
       ];
       // Expired cache exists
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(
-        JSON.stringify({ timestamp: Date.now() - 60_000, buckets: staleBuckets }),
+        JSON.stringify({
+          timestamp: Date.now() - 60_000,
+          buckets: staleBuckets,
+        }),
       );
 
       mockSpawn('', 1); // command fails

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -11,33 +11,50 @@ import {
   interopSendOmxMessageTool,
   interopSendTaskTool,
 } from '../mcp-bridge.js';
-import { initInteropSession, readSharedMessages, readSharedTasks, updateSharedTask } from '../shared-state.js';
+import {
+  initInteropSession,
+  readSharedMessages,
+  readSharedTasks,
+  updateSharedTask,
+} from '../shared-state.js';
 
 describe('interop mcp bridge gating', () => {
   it('getInteropMode normalizes invalid values to off', () => {
-    expect(getInteropMode({ OMX_OMC_INTEROP_MODE: 'ACTIVE' } as NodeJS.ProcessEnv)).toBe('active');
-    expect(getInteropMode({ OMX_OMC_INTEROP_MODE: 'observe' } as NodeJS.ProcessEnv)).toBe('observe');
-    expect(getInteropMode({ OMX_OMC_INTEROP_MODE: 'nonsense' } as NodeJS.ProcessEnv)).toBe('off');
+    expect(
+      getInteropMode({ OMX_OMC_INTEROP_MODE: 'ACTIVE' } as NodeJS.ProcessEnv),
+    ).toBe('active');
+    expect(
+      getInteropMode({ OMX_OMC_INTEROP_MODE: 'observe' } as NodeJS.ProcessEnv),
+    ).toBe('observe');
+    expect(
+      getInteropMode({ OMX_OMC_INTEROP_MODE: 'nonsense' } as NodeJS.ProcessEnv),
+    ).toBe('off');
   });
 
   it('canUseOmxDirectWriteBridge requires all active flags', () => {
-    expect(canUseOmxDirectWriteBridge({
-      OMX_OMC_INTEROP_ENABLED: '1',
-      OMX_OMC_INTEROP_MODE: 'active',
-      OMC_INTEROP_TOOLS_ENABLED: '1',
-    } as NodeJS.ProcessEnv)).toBe(true);
+    expect(
+      canUseOmxDirectWriteBridge({
+        OMX_OMC_INTEROP_ENABLED: '1',
+        OMX_OMC_INTEROP_MODE: 'active',
+        OMC_INTEROP_TOOLS_ENABLED: '1',
+      } as NodeJS.ProcessEnv),
+    ).toBe(true);
 
-    expect(canUseOmxDirectWriteBridge({
-      OMX_OMC_INTEROP_ENABLED: '1',
-      OMX_OMC_INTEROP_MODE: 'observe',
-      OMC_INTEROP_TOOLS_ENABLED: '1',
-    } as NodeJS.ProcessEnv)).toBe(false);
+    expect(
+      canUseOmxDirectWriteBridge({
+        OMX_OMC_INTEROP_ENABLED: '1',
+        OMX_OMC_INTEROP_MODE: 'observe',
+        OMC_INTEROP_TOOLS_ENABLED: '1',
+      } as NodeJS.ProcessEnv),
+    ).toBe(false);
 
-    expect(canUseOmxDirectWriteBridge({
-      OMX_OMC_INTEROP_ENABLED: '0',
-      OMX_OMC_INTEROP_MODE: 'active',
-      OMC_INTEROP_TOOLS_ENABLED: '1',
-    } as NodeJS.ProcessEnv)).toBe(false);
+    expect(
+      canUseOmxDirectWriteBridge({
+        OMX_OMC_INTEROP_ENABLED: '0',
+        OMX_OMC_INTEROP_MODE: 'active',
+        OMC_INTEROP_TOOLS_ENABLED: '1',
+      } as NodeJS.ProcessEnv),
+    ).toBe(false);
   });
 
   it('interop_send_omx_message rejects when direct write path is disabled', async () => {
@@ -61,13 +78,15 @@ describe('interop mcp bridge gating', () => {
       const text = response.content[0]?.text ?? '';
       expect(text.toLowerCase()).toContain('disabled');
     } finally {
-      if (savedEnabled === undefined) delete process.env.OMX_OMC_INTEROP_ENABLED;
+      if (savedEnabled === undefined)
+        delete process.env.OMX_OMC_INTEROP_ENABLED;
       else process.env.OMX_OMC_INTEROP_ENABLED = savedEnabled;
 
       if (savedMode === undefined) delete process.env.OMX_OMC_INTEROP_MODE;
       else process.env.OMX_OMC_INTEROP_MODE = savedMode;
 
-      if (savedTools === undefined) delete process.env.OMC_INTEROP_TOOLS_ENABLED;
+      if (savedTools === undefined)
+        delete process.env.OMC_INTEROP_TOOLS_ENABLED;
       else process.env.OMC_INTEROP_TOOLS_ENABLED = savedTools;
     }
   });
@@ -78,10 +97,15 @@ describe('interop mcp bridge artifact surfacing', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'mcp-bridge-artifacts-'));
+    // resolveWorkingDirectory now pins via validateWorkingDirectory, which
+    // anchors to the trusted worktree root (process.cwd()). Point cwd at the
+    // temp dir so the supplied workingDirectory validates to itself.
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
     initInteropSession('session-1', tempDir);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -113,7 +137,9 @@ describe('interop mcp bridge artifact surfacing', () => {
     const readText = readResponse.content[0]?.text ?? '';
     expect(readText).toContain('Description artifact:');
     expect(readText).toContain('Result artifact:');
-    expect(readText).toContain('.omc/state/interop/artifacts/task-description/');
+    expect(readText).toContain(
+      '.omc/state/interop/artifacts/task-description/',
+    );
     expect(readText).toContain('.omc/state/interop/artifacts/task-result/');
   });
 

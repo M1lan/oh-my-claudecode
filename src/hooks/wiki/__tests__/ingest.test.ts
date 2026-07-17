@@ -126,7 +126,9 @@ describe('Wiki Ingest', () => {
       });
 
       const page = readPage(tempDir, 'tag-test.md');
-      expect(page!.frontmatter.tags).toEqual(expect.arrayContaining(['a', 'b', 'c']));
+      expect(page!.frontmatter.tags).toEqual(
+        expect.arrayContaining(['a', 'b', 'c']),
+      );
       expect(page!.frontmatter.tags.length).toBe(3);
     });
 
@@ -190,7 +192,9 @@ describe('Wiki Ingest', () => {
       });
 
       const page = readPage(tempDir, 'sources.md');
-      expect(page!.frontmatter.sources).toEqual(expect.arrayContaining(['session-1', 'session-2']));
+      expect(page!.frontmatter.sources).toEqual(
+        expect.arrayContaining(['session-1', 'session-2']),
+      );
     });
   });
 

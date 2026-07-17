@@ -35,14 +35,20 @@ const TIER_AGENTS: Record<VerificationTier, VerificationAgent> = {
   THOROUGH: {
     agent: 'architect',
     model: 'opus',
-    evidenceRequired: ['full architect review', 'all tests pass', 'no regressions'],
+    evidenceRequired: [
+      'full architect review',
+      'all tests pass',
+      'no regressions',
+    ],
   },
 };
 
 /**
  * Select appropriate verification tier based on change metadata.
  */
-export function selectVerificationTier(changes: ChangeMetadata): VerificationTier {
+export function selectVerificationTier(
+  changes: ChangeMetadata,
+): VerificationTier {
   // Security and architectural changes always require thorough review
   if (changes.hasSecurityImplications || changes.hasArchitecturalChanges) {
     return 'THOROUGH';
@@ -69,7 +75,9 @@ export function selectVerificationTier(changes: ChangeMetadata): VerificationTie
 /**
  * Get the verification agent configuration for a tier.
  */
-export function getVerificationAgent(tier: VerificationTier): VerificationAgent {
+export function getVerificationAgent(
+  tier: VerificationTier,
+): VerificationAgent {
   return TIER_AGENTS[tier];
 }
 
@@ -87,7 +95,7 @@ export function detectArchitecturalChanges(files: string[]): boolean {
   ];
 
   return files.some((file) =>
-    architecturalPatterns.some((pattern) => pattern.test(file))
+    architecturalPatterns.some((pattern) => pattern.test(file)),
   );
 }
 
@@ -96,20 +104,20 @@ export function detectArchitecturalChanges(files: string[]): boolean {
  */
 export function detectSecurityImplications(files: string[]): boolean {
   const securityPatterns = [
-    /\/auth\//i,                              // auth directory
-    /\/security\//i,                          // security directory
-    /(^|[\/-])permissions?\.(ts|js)$/i,       // permission.ts, permissions.ts
-    /(^|[\/-])credentials?\.(ts|js|json)$/i,  // credential.ts, credentials.json
+    /\/auth\//i, // auth directory
+    /\/security\//i, // security directory
+    /(^|[\/-])permissions?\.(ts|js)$/i, // permission.ts, permissions.ts
+    /(^|[\/-])credentials?\.(ts|js|json)$/i, // credential.ts, credentials.json
     /(^|[\/-])secrets?\.(ts|js|json|ya?ml)$/i, // secret.ts, secrets.yaml
-    /(^|[\/-])tokens?\.(ts|js|json)$/i,       // token.ts, auth-token.ts
-    /\.(env|pem|key)(\.|$)/i,                 // .env, .env.local, cert.pem, private.key
-    /(^|[\/-])passwords?\.(ts|js|json)$/i,    // password.ts
-    /(^|[\/-])oauth/i,                        // oauth.ts, oauth-config.ts, oauth2.ts
-    /(^|[\/-])jwt/i,                          // jwt.ts, jwt-utils.ts, jwt_utils.ts
+    /(^|[\/-])tokens?\.(ts|js|json)$/i, // token.ts, auth-token.ts
+    /\.(env|pem|key)(\.|$)/i, // .env, .env.local, cert.pem, private.key
+    /(^|[\/-])passwords?\.(ts|js|json)$/i, // password.ts
+    /(^|[\/-])oauth/i, // oauth.ts, oauth-config.ts, oauth2.ts
+    /(^|[\/-])jwt/i, // jwt.ts, jwt-utils.ts, jwt_utils.ts
   ];
 
   return files.some((file) =>
-    securityPatterns.some((pattern) => pattern.test(file))
+    securityPatterns.some((pattern) => pattern.test(file)),
   );
 }
 
@@ -119,7 +127,7 @@ export function detectSecurityImplications(files: string[]): boolean {
 export function buildChangeMetadata(
   files: string[],
   linesChanged: number,
-  testCoverage: 'none' | 'partial' | 'full' = 'partial'
+  testCoverage: 'none' | 'partial' | 'full' = 'partial',
 ): ChangeMetadata {
   return {
     filesChanged: files.length,

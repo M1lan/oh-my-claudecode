@@ -77,27 +77,39 @@ const SHORTCIRCUIT = Symbol('child_process mock short-circuit');
 let capturedEnv: NodeJS.ProcessEnv | null = null;
 
 vi.mock('child_process', async () => {
-  const actual = await vi.importActual<typeof import('child_process')>('child_process');
+  const actual =
+    await vi.importActual<typeof import('child_process')>('child_process');
   return {
     ...actual,
-    execFileSync: vi.fn((file: string, _args?: readonly string[], options?: { env?: NodeJS.ProcessEnv }) => {
-      if (file === 'claude') {
-        // execFileSync inherits parent env when options.env is undefined,
-        // so the source of truth is process.env at call time.
-        capturedEnv = { ...(options?.env ?? process.env) };
-        const err: NodeJS.ErrnoException & { __omc?: symbol } = new Error('mocked claude exit');
-        err.__omc = SHORTCIRCUIT;
-        // Throwing aborts runClaude/launchCommand cleanly via the try/finally.
-        throw err;
-      }
-      // Allow non-claude execFileSync calls (e.g. tmux probes) to be no-ops.
-      return Buffer.alloc(0);
-    }),
+    execFileSync: vi.fn(
+      (
+        file: string,
+        _args?: readonly string[],
+        options?: { env?: NodeJS.ProcessEnv },
+      ) => {
+        if (file === 'claude') {
+          // execFileSync inherits parent env when options.env is undefined,
+          // so the source of truth is process.env at call time.
+          capturedEnv = { ...(options?.env ?? process.env) };
+          const err: NodeJS.ErrnoException & { __omc?: symbol } = new Error(
+            'mocked claude exit',
+          );
+          err.__omc = SHORTCIRCUIT;
+          // Throwing aborts runClaude/launchCommand cleanly via the try/finally.
+          throw err;
+        }
+        // Allow non-claude execFileSync calls (e.g. tmux probes) to be no-ops.
+        return Buffer.alloc(0);
+      },
+    ),
   };
 });
 
 vi.mock('../tmux-utils.js', async () => {
-  const actual = await vi.importActual<typeof import('../tmux-utils.js')>('../tmux-utils.js');
+  const actual =
+    await vi.importActual<typeof import('../tmux-utils.js')>(
+      '../tmux-utils.js',
+    );
   return {
     ...actual,
     isClaudeAvailable: () => true,
@@ -133,8 +145,16 @@ describe('launchCommand → child env propagation (OMC_PLUGIN_ROOT)', () => {
         process.env[k] = v;
       }
     }
-    try { process.chdir(savedCwd); } catch { /* ignore */ }
-    try { rmSync(tmpConfigDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    try {
+      process.chdir(savedCwd);
+    } catch {
+      /* ignore */
+    }
+    try {
+      rmSync(tmpConfigDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
   });
 
   async function runLaunch(argv: string[]): Promise<void> {
@@ -183,10 +203,20 @@ describe('launchCommand → child env propagation (OMC_PLUGIN_ROOT)', () => {
     try {
       process.chdir(knownCwd);
       await runLaunch(['--plugin-dir', './foo']);
-      expect(capturedEnv![OMC_PLUGIN_ROOT_ENV]).toBe(resolve(knownCwd, './foo'));
+      expect(capturedEnv![OMC_PLUGIN_ROOT_ENV]).toBe(
+        resolve(knownCwd, './foo'),
+      );
     } finally {
-      try { process.chdir(savedCwd); } catch { /* ignore */ }
-      try { rmSync(knownCwd, { recursive: true, force: true }); } catch { /* ignore */ }
+      try {
+        process.chdir(savedCwd);
+      } catch {
+        /* ignore */
+      }
+      try {
+        rmSync(knownCwd, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
     }
   });
 });

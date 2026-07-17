@@ -16,48 +16,36 @@
  * Pipeline stage identifiers in execution order.
  * Each stage is optional and can be skipped via configuration.
  */
-export type PipelineStageId = "ralplan" | "execution" | "ralph" | "qa";
+export type PipelineStageId = 'ralplan' | 'execution' | 'ralph' | 'qa';
 
 /** Terminal pipeline states */
-export type PipelineTerminalState = "complete" | "failed" | "cancelled";
+export type PipelineTerminalState = 'complete' | 'failed' | 'cancelled';
 
 /** All possible pipeline phase values (stages + terminal) */
 export type PipelinePhase = PipelineStageId | PipelineTerminalState;
 
 /** Status of an individual stage */
 export type StageStatus =
-  | "pending"
-  | "active"
-  | "complete"
-  | "failed"
-  | "skipped";
+  | 'pending'
+  | 'active'
+  | 'complete'
+  | 'failed'
+  | 'skipped';
 
 /** The canonical stage execution order */
 export const STAGE_ORDER: readonly PipelineStageId[] = [
-  "ralplan",
-  "execution",
-  "ralph",
-  "qa",
+  'ralplan',
+  'execution',
+  'ralph',
+  'qa',
 ] as const;
 
 /** Closed version 1 profile sequence admitted by the workflow contract. */
-export type WorkflowProfileStages = readonly [
-  "ralplan",
-  "execution",
-] | readonly [
-  "ralplan",
-  "execution",
-  "ralph",
-] | readonly [
-  "ralplan",
-  "execution",
-  "qa",
-] | readonly [
-  "ralplan",
-  "execution",
-  "ralph",
-  "qa",
-];
+export type WorkflowProfileStages =
+  | readonly ['ralplan', 'execution']
+  | readonly ['ralplan', 'execution', 'ralph']
+  | readonly ['ralplan', 'execution', 'qa']
+  | readonly ['ralplan', 'execution', 'ralph', 'qa'];
 
 /** Immutable, normalized descriptor persisted for a named workflow run. */
 export interface WorkflowDescriptor {
@@ -106,16 +94,16 @@ export interface PipelineCompletionObservation {
 // ============================================================================
 
 /** Execution backend for the execution stage */
-export type ExecutionBackend = "team" | "solo";
+export type ExecutionBackend = 'team' | 'solo';
 
 /** CLI-backed worker types supported by the tmux team runtime. */
 export type AutopilotTeamAgentType =
-  | "claude"
-  | "codex"
-  | "gemini"
-  | "grok"
-  | "cursor"
-  | "antigravity";
+  | 'claude'
+  | 'codex'
+  | 'gemini'
+  | 'grok'
+  | 'cursor'
+  | 'antigravity';
 
 /** Team execution options for autopilot execution=team. */
 export interface AutopilotTeamConfig {
@@ -126,7 +114,7 @@ export interface AutopilotTeamConfig {
 /** Verification engine configuration */
 export interface VerificationConfig {
   /** Engine to use for verification (currently only 'ralph') */
-  engine: "ralph";
+  engine: 'ralph';
   /** Maximum verification iterations before giving up */
   maxIterations: number;
 }
@@ -149,7 +137,7 @@ export interface VerificationConfig {
  */
 export interface PipelineConfig {
   /** Planning stage: 'ralplan' for consensus planning, 'direct' for simple planning, false to skip */
-  planning: "ralplan" | "direct" | false;
+  planning: 'ralplan' | 'direct' | false;
   /** Execution backend: 'team' for multi-worker, 'solo' for single-session */
   execution: ExecutionBackend;
   /** Verification config, or false to skip */
@@ -162,10 +150,10 @@ export interface PipelineConfig {
 
 /** Default pipeline configuration (matches current autopilot behavior) */
 export const DEFAULT_PIPELINE_CONFIG: PipelineConfig = {
-  planning: "ralplan",
-  execution: "solo",
+  planning: 'ralplan',
+  execution: 'solo',
   verification: {
-    engine: "ralph",
+    engine: 'ralph',
     maxIterations: 100,
   },
   qa: true,
@@ -269,12 +257,12 @@ export const DEPRECATED_MODE_ALIASES: Record<
   { config: Partial<PipelineConfig>; message: string }
 > = {
   ultrawork: {
-    config: { execution: "team" },
+    config: { execution: 'team' },
     message:
       'ultrawork is deprecated. Use /autopilot with execution: "team" instead.',
   },
   ultrapilot: {
-    config: { execution: "team" },
+    config: { execution: 'team' },
     message:
       'ultrapilot is deprecated. Use /autopilot with execution: "team" instead.',
   },

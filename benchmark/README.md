@@ -152,7 +152,7 @@ benchmark/
 
 - Docker
 - Python 3.8+
-- Node.js and npm
+- Node.js and pnpm
 - ANTHROPIC_API_KEY environment variable
 
 ```bash

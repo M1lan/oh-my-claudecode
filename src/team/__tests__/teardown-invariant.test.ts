@@ -4,7 +4,7 @@
 // Uses real git via git-fixture helper.
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import {
@@ -18,7 +18,6 @@ import {
   startMergeOrchestrator,
   type OrchestratorConfig,
 } from '../merge-orchestrator.js';
-import { sanitizeName } from '../tmux-session.js';
 
 beforeAll(() => {
   process.env.OMC_RUNTIME_V2 = '1';
@@ -31,7 +30,10 @@ afterEach(() => {
 // ---------------------------------------------------------------------------
 // Helper: build config from fixture
 // ---------------------------------------------------------------------------
-function makeConfig(fixture: GitFixture, overrides: Partial<OrchestratorConfig> = {}): OrchestratorConfig {
+function makeConfig(
+  fixture: GitFixture,
+  overrides: Partial<OrchestratorConfig> = {},
+): OrchestratorConfig {
   return {
     teamName: fixture.teamName,
     repoRoot: fixture.repoRoot,
@@ -68,16 +70,32 @@ describe('drainAndStop — clean + conflicting work', () => {
     await handle.registerWorker('worker-2');
 
     // Worker-1 writes to a unique file (clean)
-    await fixture.commitFile('worker-1', 'worker-1/clean.ts', '// worker-1 clean work\n');
+    await fixture.commitFile(
+      'worker-1',
+      'worker-1/clean.ts',
+      '// worker-1 clean work\n',
+    );
 
     // Worker-2 writes to a file that CONFLICTS with a file on the leader branch.
     // First, put content on the leader branch by merging worker-1 cleanly.
-    const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
-    await waitForEventInLog({ eventLogPath: eventLog, eventType: 'merge_succeeded', worker: 'worker-1', timeoutMs: 8000 });
+    const eventLog = orchestratorEventLogPath(
+      fixture.repoRoot,
+      fixture.teamName,
+    );
+    await waitForEventInLog({
+      eventLogPath: eventLog,
+      eventType: 'merge_succeeded',
+      worker: 'worker-1',
+      timeoutMs: 8000,
+    });
 
     // Now worker-2 modifies the SAME file that's on leader with incompatible content
     // We need to create a conflict: leader has README.md, worker-2 modifies it
-    await fixture.commitFile('worker-2', 'README.md', '# conflict from worker-2\ncompletely different content\n');
+    await fixture.commitFile(
+      'worker-2',
+      'README.md',
+      '# conflict from worker-2\ncompletely different content\n',
+    );
 
     // Wait a moment for orchestrator to observe worker-2's commit and detect conflict
     await new Promise((r) => setTimeout(r, 500));
@@ -93,7 +111,10 @@ describe('drainAndStop — clean + conflicting work', () => {
     // Teardown audit file should exist if there were unmerged workers.
     const auditPath = join(
       fixture.repoRoot,
-      '.omc', 'state', 'team', fixture.teamName,
+      '.omc',
+      'state',
+      'team',
+      fixture.teamName,
       'teardown-audit.jsonl',
     );
 
@@ -111,8 +132,12 @@ describe('drainAndStop — clean + conflicting work', () => {
       // Leader inbox should contain the teardown audit message
       const leaderInboxPath = join(
         fixture.repoRoot,
-        '.omc', 'state', 'team', fixture.teamName,
-        'leader', 'inbox.md',
+        '.omc',
+        'state',
+        'team',
+        fixture.teamName,
+        'leader',
+        'inbox.md',
       );
       expect(existsSync(leaderInboxPath)).toBe(true);
       const leaderInbox = readFileSync(leaderInboxPath, 'utf-8');
@@ -121,7 +146,9 @@ describe('drainAndStop — clean + conflicting work', () => {
 
     // Worker-1's clean work should be in the leader branch
     const events = readEventLog(eventLog);
-    const worker1Merges = events.filter((e) => e.type === 'merge_succeeded' && e.worker === 'worker-1');
+    const worker1Merges = events.filter(
+      (e) => e.type === 'merge_succeeded' && e.worker === 'worker-1',
+    );
     expect(worker1Merges.length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -144,7 +171,10 @@ describe('drainAndStop — drain timeout', () => {
 
   it('audit row has reason drain-timeout when drainTimeoutMs is very short', async () => {
     // Use a very short drain timeout to force the drain to time out
-    const config = makeConfig(fixture, { drainTimeoutMs: 1, pollIntervalMs: 100 });
+    const config = makeConfig(fixture, {
+      drainTimeoutMs: 1,
+      pollIntervalMs: 100,
+    });
     const handle = await startMergeOrchestrator(config);
 
     await handle.registerWorker('worker-1');
@@ -162,11 +192,16 @@ describe('drainAndStop — drain timeout', () => {
     // as drain-timeout. If the orchestrator already merged it during polling,
     // unmerged may be empty — both are valid outcomes.
     if (result.unmerged.length > 0) {
-      expect(result.unmerged.some((u) => u.reason === 'drain-timeout')).toBe(true);
+      expect(result.unmerged.some((u) => u.reason === 'drain-timeout')).toBe(
+        true,
+      );
 
       const auditPath = join(
         fixture.repoRoot,
-        '.omc', 'state', 'team', fixture.teamName,
+        '.omc',
+        'state',
+        'team',
+        fixture.teamName,
         'teardown-audit.jsonl',
       );
       expect(existsSync(auditPath)).toBe(true);
@@ -176,8 +211,12 @@ describe('drainAndStop — drain timeout', () => {
       // Leader inbox should have the audit message
       const leaderInboxPath = join(
         fixture.repoRoot,
-        '.omc', 'state', 'team', fixture.teamName,
-        'leader', 'inbox.md',
+        '.omc',
+        'state',
+        'team',
+        fixture.teamName,
+        'leader',
+        'inbox.md',
       );
       expect(existsSync(leaderInboxPath)).toBe(true);
       const leaderInbox = readFileSync(leaderInboxPath, 'utf-8');
@@ -219,7 +258,10 @@ describe('drainAndStop — one audit row per unmerged worker', () => {
 
   it('all unmerged workers appear in teardown-audit.jsonl', async () => {
     // Drain timeout of 1ms means nothing can merge
-    const config = makeConfig(fixture, { drainTimeoutMs: 1, pollIntervalMs: 5000 });
+    const config = makeConfig(fixture, {
+      drainTimeoutMs: 1,
+      pollIntervalMs: 5000,
+    });
     const handle = await startMergeOrchestrator(config);
 
     await handle.registerWorker('worker-1');
@@ -236,7 +278,10 @@ describe('drainAndStop — one audit row per unmerged worker', () => {
     if (result.unmerged.length > 0) {
       const auditPath = join(
         fixture.repoRoot,
-        '.omc', 'state', 'team', fixture.teamName,
+        '.omc',
+        'state',
+        'team',
+        fixture.teamName,
         'teardown-audit.jsonl',
       );
       expect(existsSync(auditPath)).toBe(true);

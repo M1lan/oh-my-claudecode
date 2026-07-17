@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -15,7 +21,7 @@ function writeSkillState(
   tempDir: string,
   sessionId: string,
   skillName: string,
-  overrides: Record<string, unknown> = {}
+  overrides: Record<string, unknown> = {},
 ): void {
   const stateDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
   mkdirSync(stateDir, { recursive: true });
@@ -35,8 +41,8 @@ function writeSkillState(
         ...overrides,
       },
       null,
-      2
-    )
+      2,
+    ),
   );
 }
 
@@ -52,8 +58,10 @@ function writeSubagentTrackingState(
       {
         agents,
         total_spawned: agents.length,
-        total_completed: agents.filter((agent) => agent.status === 'completed').length,
-        total_failed: agents.filter((agent) => agent.status === 'failed').length,
+        total_completed: agents.filter((agent) => agent.status === 'completed')
+          .length,
+        total_failed: agents.filter((agent) => agent.status === 'failed')
+          .length,
         last_updated: new Date().toISOString(),
       },
       null,
@@ -172,15 +180,19 @@ describe('persistent-mode skill-state stop integration (issue #1033)', () => {
       const past = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       writeFileSync(
         join(stateDir, 'skill-active-state.json'),
-        JSON.stringify({
-          active: true,
-          skill_name: 'blocker-skill',
-          started_at: past,
-          last_checked_at: past,
-          reinforcement_count: 0,
-          max_reinforcements: 5,
-          stale_ttl_ms: 5 * 60 * 1000,
-        }, null, 2)
+        JSON.stringify(
+          {
+            active: true,
+            skill_name: 'blocker-skill',
+            started_at: past,
+            last_checked_at: past,
+            reinforcement_count: 0,
+            max_reinforcements: 5,
+            stale_ttl_ms: 5 * 60 * 1000,
+          },
+          null,
+          2,
+        ),
       );
 
       const result = await checkPersistentModes(undefined, tempDir);
@@ -217,17 +229,21 @@ describe('persistent-mode skill-state stop integration (issue #1033)', () => {
 
       writeFileSync(
         join(stateDir, 'ralph-state.json'),
-        JSON.stringify({
-          active: true,
-          iteration: 1,
-          max_iterations: 10,
-          started_at: new Date().toISOString(),
-          last_checked_at: new Date().toISOString(),
-          prompt: 'Test task',
-          session_id: sessionId,
-          project_path: tempDir,
-          linked_ultrawork: false,
-        }, null, 2)
+        JSON.stringify(
+          {
+            active: true,
+            iteration: 1,
+            max_iterations: 10,
+            started_at: new Date().toISOString(),
+            last_checked_at: new Date().toISOString(),
+            prompt: 'Test task',
+            session_id: sessionId,
+            project_path: tempDir,
+            linked_ultrawork: false,
+          },
+          null,
+          2,
+        ),
       );
 
       writeSkillState(tempDir, sessionId, 'code-review');

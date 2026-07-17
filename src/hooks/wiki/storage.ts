@@ -13,7 +13,13 @@
  *   └── ...
  */
 
-import { existsSync, readFileSync, readdirSync, unlinkSync, mkdirSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  mkdirSync,
+} from 'fs';
 import { join, resolve, sep } from 'path';
 import { getOmcRoot } from '../../lib/worktree-paths.js';
 import { atomicWriteFileSync } from '../../lib/atomic-write.js';
@@ -84,13 +90,21 @@ export interface WikiLockOptions {
  * Uses synchronous file lock (withFileLockSync) because wiki operations
  * are called from sync hook contexts (notepad pattern).
  */
-export function withWikiLock<T>(root: string, fn: () => T, options?: WikiLockOptions): T {
+export function withWikiLock<T>(
+  root: string,
+  fn: () => T,
+  options?: WikiLockOptions,
+): T {
   const wikiDir = ensureWikiDir(root);
   const lockPath = lockPathFor(join(wikiDir, '.wiki-lock'));
-  const remainingMs = options?.deadlineAt === undefined
-    ? undefined
-    : Math.max(0, options.deadlineAt - Date.now());
-  const timeoutMs = Math.min(options?.timeoutMs ?? 5_000, remainingMs ?? Infinity);
+  const remainingMs =
+    options?.deadlineAt === undefined
+      ? undefined
+      : Math.max(0, options.deadlineAt - Date.now());
+  const timeoutMs = Math.min(
+    options?.timeoutMs ?? 5_000,
+    remainingMs ?? Infinity,
+  );
   return withFileLockSync(lockPath, fn, { timeoutMs, retryDelayMs: 50 });
 }
 
@@ -102,7 +116,9 @@ export function withWikiLock<T>(root: string, fn: () => T, options?: WikiLockOpt
  * Parse YAML frontmatter from markdown content.
  * Expects content starting with `---\n...\n---\n`.
  */
-export function parseFrontmatter(raw: string): { frontmatter: WikiPageFrontmatter; content: string } | null {
+export function parseFrontmatter(
+  raw: string,
+): { frontmatter: WikiPageFrontmatter; content: string } | null {
   // Normalize CRLF to LF so files edited on Windows are still parseable
   const normalized = raw.replace(/\r\n/g, '\n');
   const match = normalized.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
@@ -121,7 +137,8 @@ export function parseFrontmatter(raw: string): { frontmatter: WikiPageFrontmatte
       sources: parseYamlArray(fm.sources),
       links: parseYamlArray(fm.links),
       category: (fm.category || 'reference') as WikiPageFrontmatter['category'],
-      confidence: (fm.confidence || 'medium') as WikiPageFrontmatter['confidence'],
+      confidence: (fm.confidence ||
+        'medium') as WikiPageFrontmatter['confidence'],
       schemaVersion: Number(fm.schemaVersion) || WIKI_SCHEMA_VERSION,
     };
     return { frontmatter, content };
@@ -139,9 +156,15 @@ function parseSimpleYaml(yaml: string): Record<string, string> {
     const key = line.slice(0, colonIdx).trim();
     let value = line.slice(colonIdx + 1).trim();
     // Strip surrounding quotes and unescape
-    if ((value.startsWith('"') && value.endsWith('"')) ||
-        (value.startsWith("'") && value.endsWith("'"))) {
-      value = value.slice(1, -1).replace(/\\(\\|"|n|r)/g, (_, ch) => { if (ch === 'n') return '\n'; if (ch === 'r') return '\r'; return ch; });
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1).replace(/\\(\\|"|n|r)/g, (_, ch) => {
+        if (ch === 'n') return '\n';
+        if (ch === 'r') return '\r';
+        return ch;
+      });
     }
     if (key) result[key] = value;
   }
@@ -156,7 +179,16 @@ function parseYamlArray(value: string | undefined): string[] {
     return trimmed
       .slice(1, -1)
       .split(',')
-      .map(s => s.trim().replace(/^["']|["']$/g, '').replace(/\\(\\|"|n|r)/g, (_, ch) => { if (ch === 'n') return '\n'; if (ch === 'r') return '\r'; return ch; }))
+      .map((s) =>
+        s
+          .trim()
+          .replace(/^["']|["']$/g, '')
+          .replace(/\\(\\|"|n|r)/g, (_, ch) => {
+            if (ch === 'n') return '\n';
+            if (ch === 'r') return '\r';
+            return ch;
+          }),
+      )
       .filter(Boolean);
   }
   return trimmed ? [trimmed] : [];
@@ -164,7 +196,11 @@ function parseYamlArray(value: string | undefined): string[] {
 
 /** Escape a string for use inside YAML double quotes. */
 function escapeYaml(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+  return s
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r');
 }
 
 /**
@@ -174,11 +210,11 @@ export function serializePage(page: WikiPage): string {
   const fm = page.frontmatter;
   const yaml = [
     `title: "${escapeYaml(fm.title)}"`,
-    `tags: [${fm.tags.map(t => `"${escapeYaml(t)}"`).join(', ')}]`,
+    `tags: [${fm.tags.map((t) => `"${escapeYaml(t)}"`).join(', ')}]`,
     `created: ${fm.created}`,
     `updated: ${fm.updated}`,
-    `sources: [${fm.sources.map(s => `"${escapeYaml(s)}"`).join(', ')}]`,
-    `links: [${fm.links.map(l => `"${escapeYaml(l)}"`).join(', ')}]`,
+    `sources: [${fm.sources.map((s) => `"${escapeYaml(s)}"`).join(', ')}]`,
+    `links: [${fm.links.map((l) => `"${escapeYaml(l)}"`).join(', ')}]`,
     `category: ${fm.category}`,
     `confidence: ${fm.confidence}`,
     `schemaVersion: ${fm.schemaVersion}`,
@@ -197,7 +233,11 @@ export function serializePage(page: WikiPage): string {
  * Returns the resolved path if safe, null otherwise.
  */
 function safeWikiPath(wikiDir: string, filename: string): string | null {
-  if (filename.includes('/') || filename.includes('\\') || filename.includes('..')) {
+  if (
+    filename.includes('/') ||
+    filename.includes('\\') ||
+    filename.includes('..')
+  ) {
     return null;
   }
   const filePath = join(wikiDir, filename);
@@ -241,14 +281,14 @@ export function listPages(root: string): string[] {
   if (!existsSync(wikiDir)) return [];
 
   return readdirSync(wikiDir)
-    .filter(f => f.endsWith('.md') && !RESERVED_FILES.has(f))
+    .filter((f) => f.endsWith('.md') && !RESERVED_FILES.has(f))
     .sort();
 }
 
 /** Read all wiki pages. */
 export function readAllPages(root: string): WikiPage[] {
   return listPages(root)
-    .map(f => readPage(root, f))
+    .map((f) => readPage(root, f))
     .filter((p): p is WikiPage => p !== null);
 }
 
@@ -277,7 +317,8 @@ export function writePageUnsafe(root: string, page: WikiPage): void {
   }
   const wikiDir = ensureWikiDir(root);
   const filePath = safeWikiPath(wikiDir, page.filename);
-  if (!filePath) throw new Error(`Invalid wiki page filename: ${page.filename}`);
+  if (!filePath)
+    throw new Error(`Invalid wiki page filename: ${page.filename}`);
   atomicWriteFileSync(filePath, serializePage(page));
 }
 
@@ -321,9 +362,16 @@ export function updateIndexUnsafe(root: string): void {
     lines.push(`## ${cat}`);
     lines.push('');
     for (const page of byCategory.get(cat)!) {
-      const summary = page.content.split('\n').find(l => l.trim().length > 0)?.trim() || '';
-      const truncated = summary.length > 80 ? summary.slice(0, 77) + '...' : summary;
-      lines.push(`- [${page.frontmatter.title}](${page.filename}) — ${truncated}`);
+      const summary =
+        page.content
+          .split('\n')
+          .find((l) => l.trim().length > 0)
+          ?.trim() || '';
+      const truncated =
+        summary.length > 80 ? summary.slice(0, 77) + '...' : summary;
+      lines.push(
+        `- [${page.frontmatter.title}](${page.filename}) — ${truncated}`,
+      );
     }
     lines.push('');
   }
@@ -337,7 +385,8 @@ export function appendLogUnsafe(root: string, entry: WikiLogEntry): void {
   const wikiDir = ensureWikiDir(root);
   const logPath = join(wikiDir, LOG_FILE);
 
-  const logLine = `## [${entry.timestamp}] ${entry.operation}\n` +
+  const logLine =
+    `## [${entry.timestamp}] ${entry.operation}\n` +
     `- **Pages:** ${entry.pagesAffected.join(', ') || 'none'}\n` +
     `- **Summary:** ${entry.summary}\n\n`;
 

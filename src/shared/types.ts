@@ -2,7 +2,7 @@
  * Shared types for Oh-My-ClaudeCode
  */
 
-export type ModelType = "sonnet" | "opus" | "haiku" | "inherit";
+export type ModelType = 'sonnet' | 'opus' | 'haiku' | 'inherit';
 
 export interface AgentConfig {
   name: string;
@@ -16,18 +16,18 @@ export interface AgentConfig {
   defaultModel?: string;
 }
 
-export type AutopilotExecutionBackend = "team" | "solo";
-export type AutopilotPlanningMode = "ralplan" | "direct" | false;
+export type AutopilotExecutionBackend = 'team' | 'solo';
+export type AutopilotPlanningMode = 'ralplan' | 'direct' | false;
 export type AutopilotTeamAgentType =
-  | "claude"
-  | "codex"
-  | "gemini"
-  | "grok"
-  | "cursor"
-  | "antigravity";
+  | 'claude'
+  | 'codex'
+  | 'gemini'
+  | 'grok'
+  | 'cursor'
+  | 'antigravity';
 
 /** Built-in stages admitted by version 1 named autopilot workflows. */
-export type AutopilotWorkflowStage = "ralplan" | "execution" | "ralph" | "qa";
+export type AutopilotWorkflowStage = 'ralplan' | 'execution' | 'ralph' | 'qa';
 
 /** Closed, versioned named autopilot workflow profile. */
 export interface AutopilotWorkflowProfileV1 {
@@ -55,7 +55,7 @@ export interface AutopilotConfigBlock {
   /** Execution backend: 'team' for multi-worker execution, 'solo' for current-session execution. */
   execution?: AutopilotExecutionBackend;
   /** Verification config, or false to skip verification. */
-  verification?: { engine: "ralph"; maxIterations: number } | false;
+  verification?: { engine: 'ralph'; maxIterations: number } | false;
   /** Whether to run QA build/lint/test cycling. */
   qa?: boolean;
   /** Named, fixed-stage workflow profiles. Project profiles replace user profiles of the same name. */
@@ -110,7 +110,7 @@ export interface PluginConfig {
   // Prompt-level company context MCP contract
   companyContext?: {
     tool?: string;
-    onError?: "warn" | "silent" | "fail";
+    onError?: 'warn' | 'silent' | 'fail';
   };
 
   // UserPromptSubmit keyword-detector opt-outs
@@ -140,7 +140,7 @@ export interface PluginConfig {
     /** Enable intelligent model routing */
     enabled?: boolean;
     /** Default tier when no rules match */
-    defaultTier?: "LOW" | "MEDIUM" | "HIGH";
+    defaultTier?: 'LOW' | 'MEDIUM' | 'HIGH';
     /**
      * Force all agents to inherit the parent model instead of using OMC model routing.
      * When true, the `model` parameter is stripped from all Task/Agent calls so agents use
@@ -162,7 +162,7 @@ export interface PluginConfig {
     agentOverrides?: Record<
       string,
       {
-        tier: "LOW" | "MEDIUM" | "HIGH";
+        tier: 'LOW' | 'MEDIUM' | 'HIGH';
         reason: string;
       }
     >;
@@ -180,7 +180,7 @@ export interface PluginConfig {
      *
      * Env: OMC_MODEL_ALIAS_HAIKU, OMC_MODEL_ALIAS_SONNET, OMC_MODEL_ALIAS_OPUS
      */
-    modelAliases?: Partial<Record<"haiku" | "sonnet" | "opus", ModelType>>;
+    modelAliases?: Partial<Record<'haiku' | 'sonnet' | 'opus', ModelType>>;
     /** Keywords that force escalation to higher tier */
     escalationKeywords?: string[];
     /** Keywords that suggest lower tier */
@@ -221,7 +221,7 @@ export interface PluginConfig {
   guards?: {
     factcheck?: {
       enabled?: boolean;
-      mode?: "strict" | "declared" | "manual" | "quick";
+      mode?: 'strict' | 'declared' | 'manual' | 'quick';
       strict_project_patterns?: string[];
       forbidden_path_prefixes?: string[];
       forbidden_path_substrings?: string[];
@@ -287,7 +287,7 @@ export interface SessionState {
 
 export interface AgentState {
   name: string;
-  status: "idle" | "running" | "completed" | "error";
+  status: 'idle' | 'running' | 'completed' | 'error';
   lastMessage?: string;
   startTime?: number;
 }
@@ -296,7 +296,7 @@ export interface BackgroundTask {
   id: string;
   agentName: string;
   prompt: string;
-  status: "pending" | "running" | "completed" | "error";
+  status: 'pending' | 'running' | 'completed' | 'error';
   result?: string;
   error?: string;
 }
@@ -309,12 +309,12 @@ export interface MagicKeyword {
 
 export interface HookDefinition {
   event:
-    | "PreToolUse"
-    | "PostToolUse"
-    | "Stop"
-    | "SessionStart"
-    | "SessionEnd"
-    | "UserPromptSubmit";
+    | 'PreToolUse'
+    | 'PostToolUse'
+    | 'Stop'
+    | 'SessionStart'
+    | 'SessionEnd'
+    | 'UserPromptSubmit';
   matcher?: string;
   command?: string;
   handler?: (context: HookContext) => Promise<HookResult>;
@@ -336,7 +336,7 @@ export interface HookResult {
 /**
  * External model provider type
  */
-export type ExternalModelProvider = "codex" | "gemini" | "antigravity";
+export type ExternalModelProvider = 'codex' | 'gemini' | 'antigravity';
 
 /**
  * External model configuration for a specific role or task
@@ -361,7 +361,7 @@ export interface ExternalModelsDefaults {
  * External models fallback policy
  */
 export interface ExternalModelsFallbackPolicy {
-  onModelFailure: "provider_chain" | "cross_provider" | "claude_only";
+  onModelFailure: 'provider_chain' | 'cross_provider' | 'claude_only';
   allowCrossProvider?: boolean;
   crossProviderOrder?: ExternalModelProvider[];
 }
@@ -399,14 +399,14 @@ export interface ResolveOptions {
  * Provider type for delegation routing
  */
 export type DelegationProvider =
-  | "claude"
+  | 'claude'
   /** Use /team to coordinate Codex CLI workers in tmux panes. */
-  | "codex"
+  | 'codex'
   /** Use /team to coordinate Gemini CLI workers in tmux panes. */
-  | "gemini";
+  | 'gemini';
 
 /** Tool type for delegation routing — only Claude Task is supported. */
-export type DelegationTool = "Task";
+export type DelegationTool = 'Task';
 
 /**
  * Individual route configuration for a role
@@ -473,13 +473,19 @@ export const CANONICAL_TEAM_ROLES = [
   'document-specialist',
 ] as const;
 
-export type CanonicalTeamRole = typeof CANONICAL_TEAM_ROLES[number];
+export type CanonicalTeamRole = (typeof CANONICAL_TEAM_ROLES)[number];
 
 /** Cursor team workers are currently supported only for executor-style tasks. */
-export const CURSOR_EXECUTOR_TEAM_ROLES = ["executor"] as const;
+export const CURSOR_EXECUTOR_TEAM_ROLES = ['executor'] as const;
 
 /** Provider for /team role routing. */
-export type TeamRoleProvider = 'claude' | 'codex' | 'gemini' | 'grok' | 'cursor' | 'antigravity';
+export type TeamRoleProvider =
+  | 'claude'
+  | 'codex'
+  | 'gemini'
+  | 'grok'
+  | 'cursor'
+  | 'antigravity';
 
 /** Tier name accepted in role-assignment `model` field. */
 export type TeamRoleTier = 'HIGH' | 'MEDIUM' | 'LOW';
@@ -508,7 +514,7 @@ export const KNOWN_AGENT_NAMES = [
   'documentSpecialist',
 ] as const;
 
-export type KnownAgentName = typeof KNOWN_AGENT_NAMES[number];
+export type KnownAgentName = (typeof KNOWN_AGENT_NAMES)[number];
 
 /** User-facing per-role spec in `team.roleRouting`. */
 export interface TeamRoleAssignmentSpec {

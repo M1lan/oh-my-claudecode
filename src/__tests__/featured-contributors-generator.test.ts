@@ -90,10 +90,12 @@ describe('featured contributors generator', () => {
   it('inserts the generated block before star history when markers are absent', () => {
     const updated = upsertFeaturedContributorsSection(
       '# README\n\nIntro\n\n## Star History\n\nChart\n',
-      `${FEATURED_CONTRIBUTORS_START_MARKER}\nGenerated\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`
+      `${FEATURED_CONTRIBUTORS_START_MARKER}\nGenerated\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`,
     );
 
-    expect(updated).toContain(`${FEATURED_CONTRIBUTORS_END_MARKER}\n\n## Star History`);
+    expect(updated).toContain(
+      `${FEATURED_CONTRIBUTORS_END_MARKER}\n\n## Star History`,
+    );
   });
 
   it('replaces an existing marker block without disturbing surrounding content', () => {
@@ -107,7 +109,7 @@ describe('featured contributors generator', () => {
         '',
         '## Star History',
       ].join('\n'),
-      `${FEATURED_CONTRIBUTORS_START_MARKER}\nNew block\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`
+      `${FEATURED_CONTRIBUTORS_START_MARKER}\nNew block\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`,
     );
 
     expect(updated).toContain('New block');
@@ -116,8 +118,7 @@ describe('featured contributors generator', () => {
   });
 
   it('replacing an existing marker block stays idempotent around trailing spacing', () => {
-    const featuredSection =
-      `${FEATURED_CONTRIBUTORS_START_MARKER}\nNew block\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`;
+    const featuredSection = `${FEATURED_CONTRIBUTORS_START_MARKER}\nNew block\n${FEATURED_CONTRIBUTORS_END_MARKER}\n`;
     const original = [
       '# README',
       '',
@@ -133,7 +134,9 @@ describe('featured contributors generator', () => {
     const twice = upsertFeaturedContributorsSection(once, featuredSection);
 
     expect(once).toBe(twice);
-    expect(once).toContain(`${FEATURED_CONTRIBUTORS_END_MARKER}\n\n## Star History`);
+    expect(once).toContain(
+      `${FEATURED_CONTRIBUTORS_END_MARKER}\n\n## Star History`,
+    );
   });
 
   it('formats star counts compactly for README output', () => {

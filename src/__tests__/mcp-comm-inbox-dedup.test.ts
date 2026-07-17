@@ -26,7 +26,9 @@ const mockedMarkNotified = vi.mocked(markDispatchRequestNotified);
 const mockedReadDispatch = vi.mocked(readDispatchRequest);
 const mockedTransition = vi.mocked(transitionDispatchRequest);
 
-function makeRequest(overrides: Partial<TeamDispatchRequest> = {}): TeamDispatchRequest {
+function makeRequest(
+  overrides: Partial<TeamDispatchRequest> = {},
+): TeamDispatchRequest {
   return {
     request_id: 'req-001',
     kind: 'inbox',
@@ -45,7 +47,15 @@ function makeRequest(overrides: Partial<TeamDispatchRequest> = {}): TeamDispatch
 }
 
 describe('queueInboxInstruction dedup ordering', () => {
-  const writeWorkerInbox = vi.fn<(teamName: string, workerName: string, inbox: string, cwd: string) => Promise<void>>();
+  const writeWorkerInbox =
+    vi.fn<
+      (
+        teamName: string,
+        workerName: string,
+        inbox: string,
+        cwd: string,
+      ) => Promise<void>
+    >();
   const notify = vi.fn();
 
   beforeEach(() => {
@@ -110,10 +120,15 @@ describe('queueInboxInstruction dedup ordering', () => {
 
     const request = makeRequest();
     mockedEnqueue.mockResolvedValue({ request, deduped: false });
-    mockedReadDispatch.mockResolvedValue({ ...request, status: 'pending' as const });
+    mockedReadDispatch.mockResolvedValue({
+      ...request,
+      status: 'pending' as const,
+    });
     mockedTransition.mockResolvedValue(undefined as never);
 
-    await expect(queueInboxInstruction(makeParams() as never)).rejects.toThrow('disk full');
+    await expect(queueInboxInstruction(makeParams() as never)).rejects.toThrow(
+      'disk full',
+    );
   });
 
   it('should mark dispatch as failed with inbox_write_failed reason on write error', async () => {
@@ -122,15 +137,24 @@ describe('queueInboxInstruction dedup ordering', () => {
 
     const request = makeRequest({ transport_preference: 'transport_direct' });
     mockedEnqueue.mockResolvedValue({ request, deduped: false });
-    mockedReadDispatch.mockResolvedValue({ ...request, status: 'pending' as const });
+    mockedReadDispatch.mockResolvedValue({
+      ...request,
+      status: 'pending' as const,
+    });
     mockedTransition.mockResolvedValue(undefined as never);
 
     await expect(
-      queueInboxInstruction(makeParams({ transportPreference: 'transport_direct' }) as never),
+      queueInboxInstruction(
+        makeParams({ transportPreference: 'transport_direct' }) as never,
+      ),
     ).rejects.toThrow('disk full');
 
     // markImmediateDispatchFailure reads the request and transitions it to failed
-    expect(mockedReadDispatch).toHaveBeenCalledWith('test-team', 'req-001', '/tmp/test');
+    expect(mockedReadDispatch).toHaveBeenCalledWith(
+      'test-team',
+      'req-001',
+      '/tmp/test',
+    );
     expect(mockedTransition).toHaveBeenCalledWith(
       'test-team',
       'req-001',

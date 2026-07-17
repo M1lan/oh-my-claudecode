@@ -19,14 +19,23 @@ export interface LspServerConfig {
   initializeTimeoutMs?: number;
 }
 
-const TYPESCRIPT_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.mts', '.cts', '.mjs', '.cjs'];
+const TYPESCRIPT_EXTENSIONS = [
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mts',
+  '.cts',
+  '.mjs',
+  '.cjs',
+];
 
 const TYPESCRIPT_CLASSIC_SERVER: LspServerConfig = {
   name: 'TypeScript Language Server',
   command: 'typescript-language-server',
   args: ['--stdio'],
   extensions: TYPESCRIPT_EXTENSIONS,
-  installHint: 'npm install -g typescript-language-server typescript'
+  installHint: 'pnpm add -g typescript-language-server typescript',
 };
 
 function getTypeScriptNativeBin(packageRoot: string): string {
@@ -40,7 +49,12 @@ function findTypeScriptPackageRoot(workspaceRoot: string): string | null {
   let dir = resolve(workspaceRoot);
 
   while (true) {
-    const packageJsonPath = join(dir, 'node_modules', 'typescript', 'package.json');
+    const packageJsonPath = join(
+      dir,
+      'node_modules',
+      'typescript',
+      'package.json',
+    );
     if (existsSync(packageJsonPath)) {
       return dirname(packageJsonPath);
     }
@@ -56,7 +70,9 @@ function findTypeScriptPackageRoot(workspaceRoot: string): string | null {
 
 function readTypeScriptMajorVersion(packageRoot: string): number | null {
   try {
-    const packageJson = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8')) as { version?: unknown };
+    const packageJson = JSON.parse(
+      readFileSync(join(packageRoot, 'package.json'), 'utf8'),
+    ) as { version?: unknown };
     if (typeof packageJson.version !== 'string') {
       return null;
     }
@@ -81,7 +97,9 @@ function shouldUseNativeTypeScriptServer(packageRoot: string): boolean {
   return !existsSync(join(packageRoot, 'lib', 'tsserver.js'));
 }
 
-export function getTypeScriptServerForWorkspace(workspaceRoot: string): LspServerConfig {
+export function getTypeScriptServerForWorkspace(
+  workspaceRoot: string,
+): LspServerConfig {
   const packageRoot = findTypeScriptPackageRoot(workspaceRoot);
   if (!packageRoot || !shouldUseNativeTypeScriptServer(packageRoot)) {
     return TYPESCRIPT_CLASSIC_SERVER;
@@ -97,7 +115,8 @@ export function getTypeScriptServerForWorkspace(workspaceRoot: string): LspServe
     command: localTsc,
     args: ['--lsp', '--stdio'],
     extensions: TYPESCRIPT_EXTENSIONS,
-    installHint: 'Install TypeScript 7 locally so node_modules/.bin/tsc is available'
+    installHint:
+      'Install TypeScript 7 locally so node_modules/.bin/tsc is available',
   };
 }
 
@@ -111,135 +130,138 @@ export const LSP_SERVERS: Record<string, LspServerConfig> = {
     command: 'ty',
     args: ['server'],
     extensions: ['.py', '.pyw'],
-    installHint: 'Install ty from https://github.com/astral-sh/ty'
+    installHint: 'Install ty from https://github.com/astral-sh/ty',
   },
   rust: {
     name: 'Rust Analyzer',
     command: 'rust-analyzer',
     args: [],
     extensions: ['.rs'],
-    installHint: 'rustup component add rust-analyzer'
+    installHint: 'rustup component add rust-analyzer',
   },
   go: {
     name: 'gopls',
     command: 'gopls',
     args: ['serve'],
     extensions: ['.go'],
-    installHint: 'go install golang.org/x/tools/gopls@latest'
+    installHint: 'go install golang.org/x/tools/gopls@latest',
   },
   c: {
     name: 'clangd',
     command: 'clangd',
     args: [],
     extensions: ['.c', '.h', '.cpp', '.cc', '.cxx', '.hpp', '.hxx'],
-    installHint: 'Install clangd from your package manager or LLVM'
+    installHint: 'Install clangd from your package manager or LLVM',
   },
   java: {
     name: 'Eclipse JDT Language Server',
     command: 'jdtls',
     args: [],
     extensions: ['.java'],
-    installHint: 'Install from https://github.com/eclipse/eclipse.jdt.ls'
+    installHint: 'Install from https://github.com/eclipse/eclipse.jdt.ls',
   },
   json: {
     name: 'JSON Language Server',
     command: 'vscode-json-language-server',
     args: ['--stdio'],
     extensions: ['.json', '.jsonc'],
-    installHint: 'npm install -g vscode-langservers-extracted'
+    installHint: 'pnpm add -g vscode-langservers-extracted',
   },
   html: {
     name: 'HTML Language Server',
     command: 'vscode-html-language-server',
     args: ['--stdio'],
     extensions: ['.html', '.htm'],
-    installHint: 'npm install -g vscode-langservers-extracted'
+    installHint: 'pnpm add -g vscode-langservers-extracted',
   },
   css: {
     name: 'CSS Language Server',
     command: 'vscode-css-language-server',
     args: ['--stdio'],
     extensions: ['.css', '.scss', '.less'],
-    installHint: 'npm install -g vscode-langservers-extracted'
+    installHint: 'pnpm add -g vscode-langservers-extracted',
   },
   vue: {
     name: 'Vue Language Server (Volar)',
     command: 'vue-language-server',
     args: ['--stdio'],
     extensions: ['.vue'],
-    installHint: 'npm install -g @vue/language-server'
+    installHint: 'pnpm add -g @vue/language-server',
   },
   yaml: {
     name: 'YAML Language Server',
     command: 'yaml-language-server',
     args: ['--stdio'],
     extensions: ['.yaml', '.yml'],
-    installHint: 'npm install -g yaml-language-server'
+    installHint: 'pnpm add -g yaml-language-server',
   },
   php: {
     name: 'PHP Language Server (Intelephense)',
     command: 'intelephense',
     args: ['--stdio'],
     extensions: ['.php', '.phtml'],
-    installHint: 'npm install -g intelephense'
+    installHint: 'pnpm add -g intelephense',
   },
   ruby: {
     name: 'Ruby Language Server (Solargraph)',
     command: 'solargraph',
     args: ['stdio'],
     extensions: ['.rb', '.rake', '.gemspec', '.erb'],
-    installHint: 'gem install solargraph'
+    installHint: 'gem install solargraph',
   },
   lua: {
     name: 'Lua Language Server',
     command: 'lua-language-server',
     args: [],
     extensions: ['.lua'],
-    installHint: 'Install from https://github.com/LuaLS/lua-language-server'
+    installHint: 'Install from https://github.com/LuaLS/lua-language-server',
   },
   kotlin: {
     name: 'Kotlin Language Server',
     command: 'kotlin-lsp',
     args: ['--stdio'],
     extensions: ['.kt', '.kts'],
-    installHint: 'Install from https://github.com/Kotlin/kotlin-lsp (brew install JetBrains/utils/kotlin-lsp)',
-    initializeTimeoutMs: 5 * 60 * 1000
+    installHint:
+      'Install from https://github.com/Kotlin/kotlin-lsp (brew install JetBrains/utils/kotlin-lsp)',
+    initializeTimeoutMs: 5 * 60 * 1000,
   },
   elixir: {
     name: 'ElixirLS',
     command: 'elixir-ls',
     args: [],
     extensions: ['.ex', '.exs', '.heex', '.eex'],
-    installHint: 'Install from https://github.com/elixir-lsp/elixir-ls'
+    installHint: 'Install from https://github.com/elixir-lsp/elixir-ls',
   },
   csharp: {
     name: 'OmniSharp',
     command: 'omnisharp',
     args: ['-lsp'],
     extensions: ['.cs'],
-    installHint: 'dotnet tool install -g omnisharp'
+    installHint: 'dotnet tool install -g omnisharp',
   },
   dart: {
     name: 'Dart Analysis Server',
     command: 'dart',
     args: ['language-server', '--protocol=lsp'],
     extensions: ['.dart'],
-    installHint: 'Install Dart SDK from https://dart.dev/get-dart or Flutter SDK from https://flutter.dev'
+    installHint:
+      'Install Dart SDK from https://dart.dev/get-dart or Flutter SDK from https://flutter.dev',
   },
   swift: {
     name: 'SourceKit-LSP',
     command: 'sourcekit-lsp',
     args: [],
     extensions: ['.swift'],
-    installHint: 'Install Swift from https://swift.org/download or via Xcode'
+    installHint: 'Install Swift from https://swift.org/download or via Xcode',
   },
   verilog: {
     name: 'Verible Verilog Language Server',
     command: 'verible-verilog-ls',
     args: ['--rules_config_search'],
     extensions: ['.v', '.vh', '.sv', '.svh'],
-    installHint: 'Download from https://github.com/chipsalliance/verible/releases'
-  }
+    installHint:
+      'Download from https://github.com/chipsalliance/verible/releases',
+  },
 };
 
 /**
@@ -257,7 +279,10 @@ export function commandExists(command: string): boolean {
  * When workspaceRoot is provided, TypeScript files prefer a project-local
  * native TypeScript 7 language server (`tsc --lsp --stdio`) when available.
  */
-export function getServerForFile(filePath: string, workspaceRoot?: string): LspServerConfig | null {
+export function getServerForFile(
+  filePath: string,
+  workspaceRoot?: string,
+): LspServerConfig | null {
   const ext = extname(filePath).toLowerCase();
 
   if (TYPESCRIPT_EXTENSIONS.includes(ext) && workspaceRoot) {
@@ -276,10 +301,12 @@ export function getServerForFile(filePath: string, workspaceRoot?: string): LspS
 /**
  * Get all available servers (installed and not installed)
  */
-export function getAllServers(): Array<LspServerConfig & { installed: boolean }> {
-  return Object.values(LSP_SERVERS).map(config => ({
+export function getAllServers(): Array<
+  LspServerConfig & { installed: boolean }
+> {
+  return Object.values(LSP_SERVERS).map((config) => ({
     ...config,
-    installed: commandExists(config.command)
+    installed: commandExists(config.command),
   }));
 }
 
@@ -289,51 +316,51 @@ export function getAllServers(): Array<LspServerConfig & { installed: boolean }>
 export function getServerForLanguage(language: string): LspServerConfig | null {
   // Map common language names to server keys
   const langMap: Record<string, string> = {
-    'javascript': 'typescript',
-    'typescript': 'typescript',
-    'tsx': 'typescript',
-    'jsx': 'typescript',
-    'python': 'python',
-    'rust': 'rust',
-    'go': 'go',
-    'golang': 'go',
-    'c': 'c',
-    'cpp': 'c',
+    javascript: 'typescript',
+    typescript: 'typescript',
+    tsx: 'typescript',
+    jsx: 'typescript',
+    python: 'python',
+    rust: 'rust',
+    go: 'go',
+    golang: 'go',
+    c: 'c',
+    cpp: 'c',
     'c++': 'c',
-    'java': 'java',
-    'json': 'json',
-    'html': 'html',
-    'css': 'css',
-    'scss': 'css',
-    'less': 'css',
-    'vue': 'vue',
-    'yaml': 'yaml',
-    'php': 'php',
-    'phtml': 'php',
-    'ruby': 'ruby',
-    'rb': 'ruby',
-    'rake': 'ruby',
-    'gemspec': 'ruby',
-    'erb': 'ruby',
-    'lua': 'lua',
-    'kotlin': 'kotlin',
-    'kt': 'kotlin',
-    'kts': 'kotlin',
-    'elixir': 'elixir',
-    'ex': 'elixir',
-    'exs': 'elixir',
-    'heex': 'elixir',
-    'eex': 'elixir',
-    'csharp': 'csharp',
+    java: 'java',
+    json: 'json',
+    html: 'html',
+    css: 'css',
+    scss: 'css',
+    less: 'css',
+    vue: 'vue',
+    yaml: 'yaml',
+    php: 'php',
+    phtml: 'php',
+    ruby: 'ruby',
+    rb: 'ruby',
+    rake: 'ruby',
+    gemspec: 'ruby',
+    erb: 'ruby',
+    lua: 'lua',
+    kotlin: 'kotlin',
+    kt: 'kotlin',
+    kts: 'kotlin',
+    elixir: 'elixir',
+    ex: 'elixir',
+    exs: 'elixir',
+    heex: 'elixir',
+    eex: 'elixir',
+    csharp: 'csharp',
     'c#': 'csharp',
-    'cs': 'csharp',
-    'dart': 'dart',
-    'flutter': 'dart',
-    'swift': 'swift',
-    'verilog': 'verilog',
-    'systemverilog': 'verilog',
-    'sv': 'verilog',
-    'v': 'verilog'
+    cs: 'csharp',
+    dart: 'dart',
+    flutter: 'dart',
+    swift: 'swift',
+    verilog: 'verilog',
+    systemverilog: 'verilog',
+    sv: 'verilog',
+    v: 'verilog',
   };
 
   const serverKey = langMap[language.toLowerCase()];

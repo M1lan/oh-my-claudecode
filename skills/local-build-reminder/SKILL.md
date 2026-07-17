@@ -9,7 +9,7 @@ level: 1
 **Always-on reminder for OMC fork development.** When OMC is running in local
 mode (HUD shows `[OMC#X.Y.ZL]` with an `L` suffix), Claude Code loads compiled
 JavaScript from `dist/` — NOT TypeScript source from `src/`. Edits to `.ts`
-files are invisible to the running plugin until `npm run build` regenerates
+files are invisible to the running plugin until `pnpm run build` regenerates
 `dist/`.
 
 ## When to invoke this skill
@@ -26,7 +26,7 @@ The AI should mention this reminder whenever **any of these** happens:
 Surface one clear sentence followed by the exact command. Don't repeat the
 reminder on every turn — once per "round" of TS editing is enough. Example:
 
-> Heads up: you edited `src/...`. Run `npm run build` before restarting
+> Heads up: you edited `src/...`. Run `pnpm run build` before restarting
 > Claude Code — `dist/` won't reflect the change otherwise.
 
 If multiple TS files were edited in a row, just remind once at the end.
@@ -37,7 +37,7 @@ If multiple TS files were edited in a row, just remind once at the end.
   from disk, no build needed.
 - The user is in a Claude Code session that isn't running OMC locally
   (no `L` in the HUD).
-- A `tsc --watch` / `npm run dev:full` is already running in the background
+- A `tsc --watch` / `pnpm run dev:full` is already running in the background
   — those rebuild automatically on save.
 - The user just asked an unrelated question; don't shoehorn the reminder
   into off-topic responses.
@@ -60,7 +60,7 @@ If multiple TS files were edited in a row, just remind once at the end.
 If the user is iterating heavily and tired of remembering the build, suggest:
 
 ```powershell
-npm run dev:full
+pnpm run dev:full
 ```
 
 This runs `tsc --watch` plus all bridge builders in parallel — every save

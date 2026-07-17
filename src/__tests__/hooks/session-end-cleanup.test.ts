@@ -1,11 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import {
-  existsSync,
-  mkdirSync,
-  mkdtempSync,
-  rmSync,
-  writeFileSync,
-} from 'fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -22,9 +16,15 @@ describe('cleanupTransientState — session-scoped hud-stdin-cache', () => {
     rmSync(tmpRoot, { recursive: true, force: true });
   });
 
-  it('removes the ending session\'s hud-stdin-cache.json and prunes its empty directory', () => {
+  it("removes the ending session's hud-stdin-cache.json and prunes its empty directory", () => {
     // Simulate the tree that `writeStdinCache` leaves behind after a session.
-    const sessionDir = join(tmpRoot, '.omc', 'state', 'sessions', 'session-aaa');
+    const sessionDir = join(
+      tmpRoot,
+      '.omc',
+      'state',
+      'sessions',
+      'session-aaa',
+    );
     mkdirSync(sessionDir, { recursive: true });
     const cacheFile = join(sessionDir, 'hud-stdin-cache.json');
     writeFileSync(cacheFile, '{}');
@@ -37,8 +37,14 @@ describe('cleanupTransientState — session-scoped hud-stdin-cache', () => {
     expect(removed).toBeGreaterThanOrEqual(2);
   });
 
-  it('preserves the ending session\'s dir when it still has non-transient state', () => {
-    const sessionDir = join(tmpRoot, '.omc', 'state', 'sessions', 'session-bbb');
+  it("preserves the ending session's dir when it still has non-transient state", () => {
+    const sessionDir = join(
+      tmpRoot,
+      '.omc',
+      'state',
+      'sessions',
+      'session-bbb',
+    );
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(join(sessionDir, 'hud-stdin-cache.json'), '{}');
     // A state file that should NOT be cleaned (only transient files are targeted).
@@ -70,7 +76,7 @@ describe('cleanupTransientState — session-scoped hud-stdin-cache', () => {
   // another concurrent session's HUD cache or prune its directory.
   // ---------------------------------------------------------------------------
 
-  it('does not delete another running session\'s hud-stdin-cache.json', () => {
+  it("does not delete another running session's hud-stdin-cache.json", () => {
     const ending = join(tmpRoot, '.omc', 'state', 'sessions', 'session-ending');
     const other = join(tmpRoot, '.omc', 'state', 'sessions', 'session-other');
     mkdirSync(ending, { recursive: true });
@@ -106,7 +112,7 @@ describe('cleanupTransientState — session-scoped hud-stdin-cache', () => {
     expect(existsSync(join(other, 'autopilot-stop-breaker.json'))).toBe(false);
   });
 
-  it('is a no-op on other sessions\' HUD cache when no endingSessionId is provided (legacy compat)', () => {
+  it("is a no-op on other sessions' HUD cache when no endingSessionId is provided (legacy compat)", () => {
     // Legacy callers that omit endingSessionId should not widen the blast
     // radius. HUD cache may only disappear when the caller identifies the
     // ending session explicitly.

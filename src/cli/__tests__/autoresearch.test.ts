@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { autoresearchCommand, normalizeAutoresearchClaudeArgs, parseAutoresearchArgs, AUTORESEARCH_HELP } from '../autoresearch.js';
+import {
+  autoresearchCommand,
+  normalizeAutoresearchClaudeArgs,
+  parseAutoresearchArgs,
+  AUTORESEARCH_HELP,
+} from '../autoresearch.js';
 
 describe('normalizeAutoresearchClaudeArgs', () => {
   it('returns the provided args unchanged for the deprecated shim', () => {
-    expect(normalizeAutoresearchClaudeArgs(['--model', 'opus'])).toEqual(['--model', 'opus']);
+    expect(normalizeAutoresearchClaudeArgs(['--model', 'opus'])).toEqual([
+      '--model',
+      'opus',
+    ]);
   });
 });
 
@@ -13,8 +21,15 @@ describe('parseAutoresearchArgs', () => {
   });
 
   it('preserves arbitrary legacy args without attempting runtime parsing', () => {
-    expect(parseAutoresearchArgs(['--mission', 'Improve onboarding', '--eval', 'npm run eval'])).toEqual({
-      args: ['--mission', 'Improve onboarding', '--eval', 'npm run eval'],
+    expect(
+      parseAutoresearchArgs([
+        '--mission',
+        'Improve onboarding',
+        '--eval',
+        'pnpm run eval',
+      ]),
+    ).toEqual({
+      args: ['--mission', 'Improve onboarding', '--eval', 'pnpm run eval'],
       deprecated: true,
     });
   });
@@ -44,7 +59,11 @@ describe('autoresearchCommand', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     await autoresearchCommand(['--resume', 'old-run']);
     expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(logSpy.mock.calls[0]?.[0]).toContain('Received legacy arguments: --resume old-run');
-    expect(logSpy.mock.calls[0]?.[0]).toContain('/oh-my-claudecode:autoresearch');
+    expect(logSpy.mock.calls[0]?.[0]).toContain(
+      'Received legacy arguments: --resume old-run',
+    );
+    expect(logSpy.mock.calls[0]?.[0]).toContain(
+      '/oh-my-claudecode:autoresearch',
+    );
   });
 });

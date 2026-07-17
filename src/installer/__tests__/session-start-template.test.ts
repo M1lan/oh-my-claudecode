@@ -1,10 +1,24 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const SCRIPT_PATH = join(__dirname, '..', '..', '..', 'templates', 'hooks', 'session-start.mjs');
+const SCRIPT_PATH = join(
+  __dirname,
+  '..',
+  '..',
+  '..',
+  'templates',
+  'hooks',
+  'session-start.mjs',
+);
 const NODE = process.execPath;
 
 describe('session-start template guard for same-root parallel sessions (#1744)', () => {
@@ -25,7 +39,10 @@ describe('session-start template guard for same-root parallel sessions (#1744)',
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  function runSessionStart(input: Record<string, unknown>, extraEnv: Record<string, string> = {}) {
+  function runSessionStart(
+    input: Record<string, unknown>,
+    extraEnv: Record<string, string> = {},
+  ) {
     const raw = execFileSync(NODE, [SCRIPT_PATH], {
       input: JSON.stringify(input),
       encoding: 'utf-8',
@@ -69,7 +86,9 @@ describe('session-start template guard for same-root parallel sessions (#1744)',
     expect(context).toContain('[PARALLEL SESSION WARNING]');
     expect(context).toContain('suppressed the restore');
     expect(context).not.toContain('[ULTRAWORK MODE RESTORED]');
-    expect(context).not.toContain('Old task that should not bleed into session-b');
+    expect(context).not.toContain(
+      'Old task that should not bleed into session-b',
+    );
   });
 
   it('keeps template session-start under budget when only a tiny omission remainder remains', () => {
@@ -127,8 +146,12 @@ ${'- preserve this startup guidance\n'.repeat(400)}
     const context = output.hookSpecificOutput?.additionalContext || '';
     expect(output.continue).toBe(true);
     expect(context).toContain('[ROOT AGENTS.md LOADED]');
-    expect(context).toContain('<operating_principles>keep this high value section</operating_principles>');
-    expect(context).toContain('<verification>verify before claiming completion</verification>');
+    expect(context).toContain(
+      '<operating_principles>keep this high value section</operating_principles>',
+    );
+    expect(context).toContain(
+      '<verification>verify before claiming completion</verification>',
+    );
     expect(context).not.toContain('<agent_catalog>');
     expect(context).not.toContain('<skills>');
     expect(context.length).toBeLessThanOrEqual(6000);
@@ -197,13 +220,16 @@ ${'- oversized startup guidance\n'.repeat(700)}
 </operating_principles>`,
     );
 
-    const output = runSessionStart({
-      hook_event_name: 'SessionStart',
-      session_id: 'session-bedrock-template',
-      cwd: fakeProject,
-    }, {
-      CLAUDE_CODE_USE_BEDROCK: '1',
-    });
+    const output = runSessionStart(
+      {
+        hook_event_name: 'SessionStart',
+        session_id: 'session-bedrock-template',
+        cwd: fakeProject,
+      },
+      {
+        CLAUDE_CODE_USE_BEDROCK: '1',
+      },
+    );
 
     const context = output.hookSpecificOutput?.additionalContext || '';
     expect(output.continue).toBe(true);
@@ -254,14 +280,21 @@ ${'- oversized startup guidance\n'.repeat(700)}
     expect(output.systemMessage).toContain('[OMC UPDATE AVAILABLE]');
     expect(output.systemMessage).toContain('v999.0.0');
     expect(output.systemMessage).toContain('/update');
-    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain('[OMC UPDATE AVAILABLE]');
-    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain('999.0.0');
+    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain(
+      '[OMC UPDATE AVAILABLE]',
+    );
+    expect(output.hookSpecificOutput?.additionalContext ?? '').not.toContain(
+      '999.0.0',
+    );
   });
 
   it('honors autoUpgradePrompt=false with passive systemMessage wording', () => {
     const omcDir = join(fakeHome, '.claude', '.omc');
     mkdirSync(omcDir, { recursive: true });
-    writeFileSync(join(fakeHome, '.claude', '.omc-config.json'), JSON.stringify({ autoUpgradePrompt: false }));
+    writeFileSync(
+      join(fakeHome, '.claude', '.omc-config.json'),
+      JSON.stringify({ autoUpgradePrompt: false }),
+    );
     writeFileSync(
       join(omcDir, 'update-check.json'),
       JSON.stringify({
@@ -291,7 +324,6 @@ ${'- oversized startup guidance\n'.repeat(700)}
     expect(output.systemMessage).toContain('To update later, run: omc update');
     expect(output.systemMessage).not.toContain('Run /update to upgrade now');
   });
-
 });
 
 // ==========================================================================
@@ -299,7 +331,15 @@ ${'- oversized startup guidance\n'.repeat(700)}
 // ==========================================================================
 
 describe('session-start PID-aware liveness (#E2)', () => {
-  const SCRIPT_PATH = join(__dirname, '..', '..', '..', 'templates', 'hooks', 'session-start.mjs');
+  const SCRIPT_PATH = join(
+    __dirname,
+    '..',
+    '..',
+    '..',
+    'templates',
+    'hooks',
+    'session-start.mjs',
+  );
   const NODE = process.execPath;
 
   let tempDir: string;
@@ -320,7 +360,10 @@ describe('session-start PID-aware liveness (#E2)', () => {
     rmSync(tempDir, { recursive: true, force: true });
   });
 
-  function runSessionStartPid(input: Record<string, unknown>, extraEnv: Record<string, string> = {}) {
+  function runSessionStartPid(
+    input: Record<string, unknown>,
+    extraEnv: Record<string, string> = {},
+  ) {
     const raw = execFileSync(NODE, [SCRIPT_PATH], {
       input: JSON.stringify(input),
       encoding: 'utf-8',
@@ -437,7 +480,10 @@ describe('session-start template cwd validation (Wave B1)', () => {
     rmSync(emptyCwd, { recursive: true, force: true });
   });
 
-  function runSessionStartRaw(input: Record<string, unknown>, extraEnv: Record<string, string> = {}) {
+  function runSessionStartRaw(
+    input: Record<string, unknown>,
+    extraEnv: Record<string, string> = {},
+  ) {
     const result = spawnSync(process.execPath, [SCRIPT_PATH], {
       input: JSON.stringify(input),
       encoding: 'utf-8',
@@ -469,7 +515,10 @@ describe('session-start template cwd validation (Wave B1)', () => {
     expect(stderr).toContain('no .omc-workspace or .git marker');
 
     // Output must be a valid JSON with continue:true and no hookSpecificOutput with state writes
-    const parsed = JSON.parse(stdout) as { continue: boolean; hookSpecificOutput?: unknown };
+    const parsed = JSON.parse(stdout) as {
+      continue: boolean;
+      hookSpecificOutput?: unknown;
+    };
     expect(parsed.continue).toBe(true);
     expect(parsed.hookSpecificOutput).toBeUndefined();
 

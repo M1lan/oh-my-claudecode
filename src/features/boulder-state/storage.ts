@@ -6,17 +6,17 @@
  * Ported from oh-my-opencode's boulder-state.
  */
 
-import { readFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from "fs";
-import { dirname, join, basename } from "path";
-import type { BoulderState, PlanProgress, PlanSummary } from "./types.js";
+import { readFileSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'fs';
+import { dirname, join, basename } from 'path';
+import type { BoulderState, PlanProgress, PlanSummary } from './types.js';
 import {
   BOULDER_DIR,
   BOULDER_FILE,
   PLANNER_PLANS_DIR,
   PLAN_EXTENSION,
-} from "./constants.js";
-import { atomicWriteSync } from "../../lib/atomic-write.js";
-import { withFileLockSync } from "../../lib/file-lock.js";
+} from './constants.js';
+import { atomicWriteSync } from '../../lib/atomic-write.js';
+import { withFileLockSync } from '../../lib/file-lock.js';
 
 /**
  * Get the full path to the boulder state file
@@ -32,10 +32,10 @@ export function readBoulderState(directory: string): BoulderState | null {
   const filePath = getBoulderFilePath(directory);
 
   try {
-    const content = readFileSync(filePath, "utf-8");
+    const content = readFileSync(filePath, 'utf-8');
     return JSON.parse(content) as BoulderState;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
     }
     throw error;
@@ -96,7 +96,7 @@ export function clearBoulderState(directory: string): boolean {
     unlinkSync(filePath);
     return true;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return true; // Already gone — success
     }
     return false;
@@ -122,7 +122,7 @@ export function findPlannerPlans(directory: string): string[] {
         return bStat.mtimeMs - aStat.mtimeMs;
       });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return [];
     }
     return [];
@@ -134,7 +134,7 @@ export function findPlannerPlans(directory: string): string[] {
  */
 export function getPlanProgress(planPath: string): PlanProgress {
   try {
-    const content = readFileSync(planPath, "utf-8");
+    const content = readFileSync(planPath, 'utf-8');
 
     // Match markdown checkboxes: - [ ] or - [x] or - [X]
     const uncheckedMatches = content.match(/^[-*]\s*\[\s*\]/gm) || [];
@@ -149,7 +149,7 @@ export function getPlanProgress(planPath: string): PlanProgress {
       isComplete: total === 0 || completed === total,
     };
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return { total: 0, completed: 0, isComplete: true };
     }
     return { total: 0, completed: 0, isComplete: true };

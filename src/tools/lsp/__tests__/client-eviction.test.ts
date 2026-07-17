@@ -52,7 +52,10 @@ vi.mock('../client.js', async (importOriginal) => {
     hover = vi.fn();
     definition = vi.fn();
     references = vi.fn();
-    constructor(public workspaceRoot: string, public serverConfig: unknown) {}
+    constructor(
+      public workspaceRoot: string,
+      public serverConfig: unknown,
+    ) {}
   }
 
   // Re-create the LspClientManager with the mock LspClient
@@ -100,7 +103,7 @@ describe('LspClientManager eviction and disconnectAll', () => {
       command: 'test-lsp',
       args: [],
       extensions: ['.ts'],
-      installHint: 'npm install test-lsp',
+      installHint: 'pnpm install test-lsp',
     });
 
     // Dynamically import to get fresh module state
@@ -239,7 +242,10 @@ describe('LspClientManager eviction and disconnectAll', () => {
       });
 
       // Start a lease (simulated)
-      manager._inFlightCount.set(key, (manager._inFlightCount.get(key) || 0) + 1);
+      manager._inFlightCount.set(
+        key,
+        (manager._inFlightCount.get(key) || 0) + 1,
+      );
       manager._lastUsed.set(key, Date.now());
 
       // Advance past timeout while "in flight"
@@ -328,7 +334,7 @@ describe('LspClientManager eviction and disconnectAll', () => {
       await manager.disconnectAll();
 
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('broken-key')
+        expect.stringContaining('broken-key'),
       );
       warnSpy.mockRestore();
     });
@@ -404,7 +410,7 @@ function createTestManager() {
 
       const entries = Array.from(this._clients.entries());
       const results = await Promise.allSettled(
-        entries.map(([, client]) => client.disconnect())
+        entries.map(([, client]) => client.disconnect()),
       );
 
       // Log any per-client failures
@@ -412,7 +418,9 @@ function createTestManager() {
         const result = results[i];
         if (result.status === 'rejected') {
           const key = entries[i][0];
-          console.warn(`LSP disconnectAll: failed to disconnect client "${key}": ${result.reason}`);
+          console.warn(
+            `LSP disconnectAll: failed to disconnect client "${key}": ${result.reason}`,
+          );
         }
       }
 

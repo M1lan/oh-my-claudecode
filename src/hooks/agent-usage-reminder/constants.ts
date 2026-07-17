@@ -30,11 +30,7 @@ export const TARGET_TOOLS = new Set([
 ]);
 
 /** Agent tools that indicate agent usage */
-export const AGENT_TOOLS = new Set([
-  'task',
-  'call_omo_agent',
-  'omc_task',
-]);
+export const AGENT_TOOLS = new Set(['task', 'call_omo_agent', 'omc_task']);
 
 /** Reminder message shown to users */
 export const REMINDER_MESSAGE = `

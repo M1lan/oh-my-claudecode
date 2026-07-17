@@ -73,7 +73,10 @@ describe('audit-log', () => {
 
       const events = readAuditLog(testDir, 'team1');
       expect(events).toHaveLength(1);
-      expect(events[0].details).toEqual({ command: 'codex', model: 'gpt-5.3-codex' });
+      expect(events[0].details).toEqual({
+        command: 'codex',
+        model: 'gpt-5.3-codex',
+      });
     });
 
     it('rejects path traversal attempts', () => {
@@ -85,7 +88,9 @@ describe('audit-log', () => {
         workerName: 'worker1',
       };
 
-      expect(() => logAuditEvent(testDir, event)).toThrow(/Path traversal detected/);
+      expect(() => logAuditEvent(testDir, event)).toThrow(
+        /Path traversal detected/,
+      );
     });
   });
 
@@ -145,7 +150,9 @@ describe('audit-log', () => {
       logAuditEvent(testDir, event2);
       logAuditEvent(testDir, event3);
 
-      const events = readAuditLog(testDir, 'team1', { eventType: 'task_claimed' });
+      const events = readAuditLog(testDir, 'team1', {
+        eventType: 'task_claimed',
+      });
       expect(events).toHaveLength(1);
       expect(events[0].eventType).toBe('task_claimed');
     });
@@ -201,7 +208,9 @@ describe('audit-log', () => {
       logAuditEvent(testDir, event2);
       logAuditEvent(testDir, event3);
 
-      const events = readAuditLog(testDir, 'team1', { since: '2026-01-01T01:00:00Z' });
+      const events = readAuditLog(testDir, 'team1', {
+        since: '2026-01-01T01:00:00Z',
+      });
       expect(events).toHaveLength(2);
       expect(events[0].timestamp).toBe('2026-01-01T01:00:00Z');
       expect(events[1].timestamp).toBe('2026-01-01T02:00:00Z');

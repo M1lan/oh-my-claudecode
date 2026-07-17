@@ -84,7 +84,12 @@ export async function readTeamEventsByType(
 export async function emitMonitorDerivedEvents(
   teamName: string,
   tasks: Array<{ id: string; status: string }>,
-  workers: Array<{ name: string; alive: boolean; liveness?: WorkerPaneLiveness; status: { state: string } }>,
+  workers: Array<{
+    name: string;
+    alive: boolean;
+    liveness?: WorkerPaneLiveness;
+    status: { state: string };
+  }>,
   previousSnapshot: {
     taskStatusById?: Record<string, string>;
     workerAliveByName?: Record<string, boolean>;
@@ -100,7 +105,9 @@ export async function emitMonitorDerivedEvents(
     'team.events.emitMonitorDerivedEvents appendTeamEvent failed',
   );
 
-  const completedEventTaskIds = { ...(previousSnapshot.completedEventTaskIds ?? {}) };
+  const completedEventTaskIds = {
+    ...(previousSnapshot.completedEventTaskIds ?? {}),
+  };
 
   // Detect task status transitions
   for (const task of tasks) {
@@ -108,20 +115,28 @@ export async function emitMonitorDerivedEvents(
     if (!prevStatus || prevStatus === task.status) continue;
 
     if (task.status === 'completed' && !completedEventTaskIds[task.id]) {
-      await appendTeamEvent(teamName, {
-        type: 'task_completed',
-        worker: 'leader-fixed',
-        task_id: task.id,
-        reason: `status_transition:${prevStatus}->${task.status}`,
-      }, cwd).catch(logDerivedEventFailure);
+      await appendTeamEvent(
+        teamName,
+        {
+          type: 'task_completed',
+          worker: 'leader-fixed',
+          task_id: task.id,
+          reason: `status_transition:${prevStatus}->${task.status}`,
+        },
+        cwd,
+      ).catch(logDerivedEventFailure);
       completedEventTaskIds[task.id] = true;
     } else if (task.status === 'failed') {
-      await appendTeamEvent(teamName, {
-        type: 'task_failed',
-        worker: 'leader-fixed',
-        task_id: task.id,
-        reason: `status_transition:${prevStatus}->${task.status}`,
-      }, cwd).catch(logDerivedEventFailure);
+      await appendTeamEvent(
+        teamName,
+        {
+          type: 'task_failed',
+          worker: 'leader-fixed',
+          task_id: task.id,
+          reason: `status_transition:${prevStatus}->${task.status}`,
+        },
+        cwd,
+      ).catch(logDerivedEventFailure);
     }
   }
 
@@ -129,22 +144,31 @@ export async function emitMonitorDerivedEvents(
   for (const worker of workers) {
     const prevAlive = previousSnapshot.workerAliveByName?.[worker.name];
     const prevState = previousSnapshot.workerStateByName?.[worker.name];
-    const currentLiveness = worker.liveness ?? (worker.alive ? 'alive' : 'dead');
+    const currentLiveness =
+      worker.liveness ?? (worker.alive ? 'alive' : 'dead');
 
     if (prevAlive === true && currentLiveness === 'dead') {
-      await appendTeamEvent(teamName, {
-        type: 'worker_stopped',
-        worker: worker.name,
-        reason: 'pane_exited',
-      }, cwd).catch(logDerivedEventFailure);
+      await appendTeamEvent(
+        teamName,
+        {
+          type: 'worker_stopped',
+          worker: worker.name,
+          reason: 'pane_exited',
+        },
+        cwd,
+      ).catch(logDerivedEventFailure);
     }
 
     if (prevState === 'working' && worker.status.state === 'idle') {
-      await appendTeamEvent(teamName, {
-        type: 'worker_idle',
-        worker: worker.name,
-        reason: `state_transition:${prevState}->${worker.status.state}`,
-      }, cwd).catch(logDerivedEventFailure);
+      await appendTeamEvent(
+        teamName,
+        {
+          type: 'worker_idle',
+          worker: worker.name,
+          reason: `state_transition:${prevState}->${worker.status.state}`,
+        },
+        cwd,
+      ).catch(logDerivedEventFailure);
     }
   }
 }

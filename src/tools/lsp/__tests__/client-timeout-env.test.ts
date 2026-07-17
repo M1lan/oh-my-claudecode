@@ -54,12 +54,22 @@ describe('DEFAULT_LSP_REQUEST_TIMEOUT_MS', () => {
 
   it('should use kotlin initialize timeout minimum when larger than default', async () => {
     const mod = await importClientModule();
-    expect(mod.getLspRequestTimeout({ initializeTimeoutMs: 5 * 60 * 1000 }, 'initialize')).toBe(5 * 60 * 1000);
+    expect(
+      mod.getLspRequestTimeout(
+        { initializeTimeoutMs: 5 * 60 * 1000 },
+        'initialize',
+      ),
+    ).toBe(5 * 60 * 1000);
   });
 
   it('should preserve larger env-based timeouts over kotlin minimum', async () => {
     process.env.OMC_LSP_TIMEOUT_MS = '600000';
     const mod = await importClientModule();
-    expect(mod.getLspRequestTimeout({ initializeTimeoutMs: 5 * 60 * 1000 }, 'initialize')).toBe(600000);
+    expect(
+      mod.getLspRequestTimeout(
+        { initializeTimeoutMs: 5 * 60 * 1000 },
+        'initialize',
+      ),
+    ).toBe(600000);
   });
 });

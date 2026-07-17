@@ -36,7 +36,7 @@ function createToolPart(type: string, id?: string): MessagePart {
 function createMessage(
   role: 'user' | 'assistant',
   parts: MessagePart[],
-  id?: string
+  id?: string,
 ): MessageWithParts {
   return {
     info: {
@@ -81,7 +81,10 @@ describe('empty-message-sanitizer', () => {
     });
 
     it('should return false for null-like text value', () => {
-      const part: MessagePart = { type: 'text', text: null as unknown as string };
+      const part: MessagePart = {
+        type: 'text',
+        text: null as unknown as string,
+      };
       expect(hasTextContent(part)).toBe(false);
     });
   });
@@ -136,10 +139,7 @@ describe('empty-message-sanitizer', () => {
     });
 
     it('should return true for parts with both text and tool', () => {
-      const parts = [
-        createTextPart('Hello'),
-        createToolPart('tool_use'),
-      ];
+      const parts = [createTextPart('Hello'), createToolPart('tool_use')];
       expect(hasValidContent(parts)).toBe(true);
     });
 
@@ -167,10 +167,7 @@ describe('empty-message-sanitizer', () => {
     });
 
     it('should return true when tool part exists among empty text parts', () => {
-      const parts = [
-        createTextPart(''),
-        createToolPart('tool_result'),
-      ];
+      const parts = [createTextPart(''), createToolPart('tool_result')];
       expect(hasValidContent(parts)).toBe(true);
     });
   });
@@ -406,7 +403,9 @@ describe('empty-message-sanitizer', () => {
     });
 
     it('should use custom placeholder from config', () => {
-      const hook = createEmptyMessageSanitizerHook({ placeholderText: '[hook custom]' });
+      const hook = createEmptyMessageSanitizerHook({
+        placeholderText: '[hook custom]',
+      });
       const input: EmptyMessageSanitizerInput = {
         messages: [createMessage('user', [])],
       };
@@ -469,14 +468,18 @@ describe('empty-message-sanitizer', () => {
     });
 
     it('should handle unicode text', () => {
-      const message = createMessage('user', [createTextPart('한글 テスト 中文')]);
+      const message = createMessage('user', [
+        createTextPart('한글 テスト 中文'),
+      ]);
       const result = sanitizeMessage(message, false);
       expect(result).toBe(false);
       expect(message.parts[0].text).toBe('한글 テスト 中文');
     });
 
     it('should handle emoji text', () => {
-      const message = createMessage('user', [createTextPart('Hello 👋 World 🌍')]);
+      const message = createMessage('user', [
+        createTextPart('Hello 👋 World 🌍'),
+      ]);
       const result = sanitizeMessage(message, false);
       expect(result).toBe(false);
     });

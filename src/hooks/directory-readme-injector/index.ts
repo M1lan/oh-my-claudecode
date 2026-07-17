@@ -41,7 +41,7 @@ interface TruncationResult {
  */
 function truncateContent(
   content: string,
-  maxTokens: number = DEFAULT_MAX_README_TOKENS
+  maxTokens: number = DEFAULT_MAX_README_TOKENS,
 ): TruncationResult {
   const estimatedTokens = Math.ceil(content.length / CHARS_PER_TOKEN);
 
@@ -126,7 +126,7 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
    */
   function processFilePathForContextFiles(
     filePath: string,
-    sessionID: string
+    sessionID: string,
   ): string {
     const resolved = resolveFilePath(filePath);
     if (!resolved) return '';
@@ -172,7 +172,7 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
     processToolExecution: (
       toolName: string,
       filePath: string,
-      sessionID: string
+      sessionID: string,
     ): string => {
       if (!TRACKED_TOOLS.includes(toolName.toLowerCase())) {
         return '';
@@ -225,7 +225,7 @@ export function createDirectoryReadmeInjectorHook(workingDirectory: string) {
  */
 export function getReadmesForPath(
   filePath: string,
-  workingDirectory?: string
+  workingDirectory?: string,
 ): string[] {
   const cwd = workingDirectory || process.cwd();
   const hook = createDirectoryReadmeInjectorHook(cwd);

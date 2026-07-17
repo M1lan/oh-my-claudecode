@@ -20,7 +20,8 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return {
     ...actual,
     tmuxExecAsync: mocks.tmuxExecAsync,
@@ -51,7 +52,11 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
     mocks.isWorkerPaneAlive.mockResolvedValue(false);
     mocks.getWorkerLiveness.mockResolvedValue('dead');
     mocks.execFile.mockImplementation(
-      (_cmd: string, _args: string[], cb: (err: Error | null, stdout: string, stderr: string) => void) => {
+      (
+        _cmd: string,
+        _args: string[],
+        cb: (err: Error | null, stdout: string, stderr: string) => void,
+      ) => {
         cb(null, '', '');
       },
     );
@@ -129,7 +134,11 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
           status: 'in_progress',
           owner: 'worker-1',
           role: 'critic',
-          claim: { owner: 'worker-1', token: 'tk-1', leased_until: new Date(Date.now() + 60000).toISOString() },
+          claim: {
+            owner: 'worker-1',
+            token: 'tk-1',
+            leased_until: new Date(Date.now() + 60000).toISOString(),
+          },
           created_at: new Date().toISOString(),
         },
         null,
@@ -146,9 +155,10 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
             task_id: '1',
             verdict: opts.verdict,
             summary: `${opts.verdict} summary`,
-            findings: opts.verdict === 'approve'
-              ? []
-              : [{ severity: 'major', message: 'fix X' }],
+            findings:
+              opts.verdict === 'approve'
+                ? []
+                : [{ severity: 'major', message: 'fix X' }],
           });
       await writeFile(outputFile, body, 'utf-8');
     }
@@ -215,7 +225,10 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
 
   it('skips workers whose pane is still alive', async () => {
     cwd = await mkdtemp(join(tmpdir(), 'omc-runtime-routing-alive-'));
-    const { taskPath } = await bootstrap({ verdict: 'approve', paneAlive: true });
+    const { taskPath } = await bootstrap({
+      verdict: 'approve',
+      paneAlive: true,
+    });
 
     const { processCliWorkerVerdicts } = await import('../runtime-v2.js');
     const results = await processCliWorkerVerdicts('role-routing-team', cwd);
@@ -264,15 +277,17 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
           worker_launch_mode: 'interactive',
           worker_count: 1,
           max_workers: 20,
-          workers: [{
-            name: 'worker-1',
-            index: 1,
-            role: 'executor',
-            worker_cli: 'claude',
-            assigned_tasks: [],
-            pane_id: '%2',
-            working_dir: cwd,
-          }],
+          workers: [
+            {
+              name: 'worker-1',
+              index: 1,
+              role: 'executor',
+              worker_cli: 'claude',
+              assigned_tasks: [],
+              pane_id: '%2',
+              working_dir: cwd,
+            },
+          ],
           created_at: new Date().toISOString(),
           tmux_session: 'co-session:0',
           leader_pane_id: '%1',

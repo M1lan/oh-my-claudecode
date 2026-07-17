@@ -51,7 +51,8 @@ export function parseSkillFile(rawContent: string): SkillParseResult {
 
     // Validate required fields (only truly required ones)
     if (!metadata.name) errors.push('Missing required field: name');
-    if (!metadata.description) errors.push('Missing required field: description');
+    if (!metadata.description)
+      errors.push('Missing required field: description');
     if (!metadata.triggers || metadata.triggers.length === 0) {
       errors.push('Missing required field: triggers');
     }
@@ -103,7 +104,10 @@ export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
         metadata.description = parseStringValue(rawValue);
         break;
       case 'source':
-        metadata.source = parseStringValue(rawValue) as 'extracted' | 'promoted' | 'manual';
+        metadata.source = parseStringValue(rawValue) as
+          | 'extracted'
+          | 'promoted'
+          | 'manual';
         break;
       case 'createdAt':
         metadata.createdAt = parseStringValue(rawValue);
@@ -147,8 +151,10 @@ export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
 
 export function parseStringValue(value: string): string {
   if (!value) return '';
-  if ((value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
     return value.slice(1, -1);
   }
   return value;
@@ -162,7 +168,7 @@ function normalizeStringArray(value: string | string[]): string[] {
 export function parseArrayValue(
   rawValue: string,
   lines: string[],
-  currentIndex: number
+  currentIndex: number,
 ): { value: string | string[]; consumed: number } {
   // Inline array: ["a", "b"]
   if (rawValue.startsWith('[')) {
@@ -171,7 +177,10 @@ export function parseArrayValue(
     const content = rawValue.slice(1, endIdx).trim();
     if (!content) return { value: [], consumed: 1 };
 
-    const items = content.split(',').map(s => parseStringValue(s.trim())).filter(Boolean);
+    const items = content
+      .split(',')
+      .map((s) => parseStringValue(s.trim()))
+      .filter(Boolean);
     return { value: items, consumed: 1 };
   }
 

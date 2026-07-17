@@ -2,7 +2,7 @@
  * Benchmark runner for harsh-critic vs critic agent evaluation.
  *
  * Usage:
- *   ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts [options]
+ *   ANTHROPIC_API_KEY=sk-... pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts [options]
  *
  * Options:
  *   --agent harsh-critic|critic|both   Which agent(s) to run (default: both)
@@ -322,7 +322,7 @@ async function main(): Promise<void> {
     console.error(
       'Error: ANTHROPIC_API_KEY environment variable is not set.\n' +
       'Set it before running:\n' +
-      '  ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts',
+      '  ANTHROPIC_API_KEY=sk-... pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts',
     );
     process.exit(1);
   }

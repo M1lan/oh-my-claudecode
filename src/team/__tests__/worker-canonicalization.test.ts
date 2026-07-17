@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalizeWorkers, canonicalizeTeamConfigWorkers } from '../worker-canonicalization.js';
+import {
+  canonicalizeWorkers,
+  canonicalizeTeamConfigWorkers,
+} from '../worker-canonicalization.js';
 
 describe('canonicalizeWorkers', () => {
   it('prefers pane identity, backfills metadata, and unions assigned tasks', () => {
@@ -41,7 +44,9 @@ describe('canonicalizeWorkers', () => {
     ]);
 
     expect(result.duplicateNames).toEqual(['worker-1']);
-    expect(result.workers).toEqual([expect.objectContaining({ name: 'worker-1', assigned_tasks: ['1'] })]);
+    expect(result.workers).toEqual([
+      expect.objectContaining({ name: 'worker-1', assigned_tasks: ['1'] }),
+    ]);
   });
 
   it('syncs worker_count with deduplicated workers array', () => {
@@ -73,5 +78,4 @@ describe('canonicalizeWorkers', () => {
     expect(result.workers).toEqual([]);
     expect(result.worker_count).toBe(3);
   });
-
 });

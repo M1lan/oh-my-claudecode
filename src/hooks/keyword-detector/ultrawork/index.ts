@@ -10,10 +10,7 @@ export {
   ULTRAWORK_DEFAULT_MESSAGE,
   getDefaultUltraworkMessage,
 } from './default.js';
-export {
-  ULTRAWORK_GPT_MESSAGE,
-  getGptUltraworkMessage,
-} from './gpt.js';
+export { ULTRAWORK_GPT_MESSAGE, getGptUltraworkMessage } from './gpt.js';
 export {
   ULTRAWORK_GEMINI_MESSAGE,
   getGeminiUltraworkMessage,

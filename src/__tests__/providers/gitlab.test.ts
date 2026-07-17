@@ -41,23 +41,33 @@ describe('GitLabProvider', () => {
 
   describe('detectFromRemote', () => {
     it('returns true for gitlab.com URLs', () => {
-      expect(provider.detectFromRemote('https://gitlab.com/group/project')).toBe(true);
+      expect(
+        provider.detectFromRemote('https://gitlab.com/group/project'),
+      ).toBe(true);
     });
 
     it('returns true for gitlab.com SSH URLs', () => {
-      expect(provider.detectFromRemote('git@gitlab.com:group/project.git')).toBe(true);
+      expect(
+        provider.detectFromRemote('git@gitlab.com:group/project.git'),
+      ).toBe(true);
     });
 
     it('returns true for self-hosted with gitlab in hostname', () => {
-      expect(provider.detectFromRemote('https://my-gitlab.company.com/group/repo')).toBe(true);
+      expect(
+        provider.detectFromRemote('https://my-gitlab.company.com/group/repo'),
+      ).toBe(true);
     });
 
     it('returns false for non-GitLab URLs', () => {
-      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://github.com/user/repo')).toBe(
+        false,
+      );
     });
 
     it('returns false for bitbucket URLs', () => {
-      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(false);
+      expect(provider.detectFromRemote('https://bitbucket.org/user/repo')).toBe(
+        false,
+      );
     });
   });
 
@@ -91,14 +101,16 @@ describe('GitLabProvider', () => {
     });
 
     it('includes --repo flag when owner and repo are provided', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'MR',
-        source_branch: 'feat',
-        target_branch: 'main',
-        description: '',
-        web_url: '',
-        author: { username: 'u' },
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'MR',
+          source_branch: 'feat',
+          target_branch: 'main',
+          description: '',
+          web_url: '',
+          author: { username: 'u' },
+        }),
+      );
 
       provider.viewPR(3, 'group', 'project');
 
@@ -151,12 +163,14 @@ describe('GitLabProvider', () => {
     });
 
     it('includes --repo flag when owner and repo are provided', () => {
-      mockExecFileSync.mockReturnValue(JSON.stringify({
-        title: 'Issue',
-        description: '',
-        web_url: '',
-        labels: [],
-      }));
+      mockExecFileSync.mockReturnValue(
+        JSON.stringify({
+          title: 'Issue',
+          description: '',
+          web_url: '',
+          labels: [],
+        }),
+      );
 
       provider.viewIssue(2, 'group', 'project');
 

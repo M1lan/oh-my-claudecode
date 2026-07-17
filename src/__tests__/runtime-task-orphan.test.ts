@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -52,7 +58,9 @@ vi.mock('../team/git-worktree.js', () => ({
 }));
 
 vi.mock('../team/task-file-ops.js', () => ({
-  withTaskLock: vi.fn(async (_team: string, _taskId: string, fn: () => unknown) => fn()),
+  withTaskLock: vi.fn(
+    async (_team: string, _taskId: string, fn: () => unknown) => fn(),
+  ),
   writeTaskFailure: vi.fn(() => ({ retryCount: 0 })),
   DEFAULT_MAX_TASK_RETRIES: 3,
 }));
@@ -79,15 +87,18 @@ describe('spawnWorkerForTask task orphan prevention', () => {
     // Create task directory and initial task file (status: pending)
     const tasksDir = join(tmpDir, '.omc', 'state', 'team', teamName, 'tasks');
     mkdirSync(tasksDir, { recursive: true });
-    writeFileSync(join(tasksDir, `${taskId}.json`), JSON.stringify({
-      id: taskId,
-      subject: 'Test task',
-      description: 'Test description',
-      status: 'pending',
-      owner: null,
-      result: null,
-      createdAt: new Date().toISOString(),
-    }));
+    writeFileSync(
+      join(tasksDir, `${taskId}.json`),
+      JSON.stringify({
+        id: taskId,
+        subject: 'Test task',
+        description: 'Test description',
+        status: 'pending',
+        owner: null,
+        result: null,
+        createdAt: new Date().toISOString(),
+      }),
+    );
 
     // Mock tmux split-window to return empty stdout (pane creation failure)
     mockTmuxExecAsync.mockResolvedValue({ stdout: '\n', stderr: '' });
@@ -116,7 +127,9 @@ describe('spawnWorkerForTask task orphan prevention', () => {
     expect(result).toBe('');
 
     // Task must be reverted back to pending (not orphaned as in_progress)
-    const taskFile = JSON.parse(readFileSync(join(tasksDir, `${taskId}.json`), 'utf-8'));
+    const taskFile = JSON.parse(
+      readFileSync(join(tasksDir, `${taskId}.json`), 'utf-8'),
+    );
     expect(taskFile.status).toBe('pending');
     expect(taskFile.owner).toBeNull();
   });

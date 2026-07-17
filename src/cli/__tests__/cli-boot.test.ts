@@ -38,7 +38,10 @@ describe('CLI command registration — no duplicates', () => {
       seen.add(name);
     }
 
-    expect(duplicates, `Duplicate command names found: ${duplicates.join(', ')}`).toEqual([]);
+    expect(
+      duplicates,
+      `Duplicate command names found: ${duplicates.join(', ')}`,
+    ).toEqual([]);
   });
 });
 
@@ -80,7 +83,11 @@ describe('CLI runtime boot', () => {
         stdio: ['pipe', 'pipe', 'pipe'],
       });
     } catch (err: unknown) {
-      const error = err as { stderr?: string; stdout?: string; message?: string };
+      const error = err as {
+        stderr?: string;
+        stdout?: string;
+        message?: string;
+      };
       const output = `${error.stderr ?? ''} ${error.stdout ?? ''} ${error.message ?? ''}`;
       // Must not contain the duplicate command registration error
       expect(output).not.toContain('cannot add command');

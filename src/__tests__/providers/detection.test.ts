@@ -11,7 +11,9 @@ describe('detectProvider', () => {
   });
 
   it('detects GitLab from HTTPS URL', () => {
-    expect(detectProvider('https://gitlab.com/group/project.git')).toBe('gitlab');
+    expect(detectProvider('https://gitlab.com/group/project.git')).toBe(
+      'gitlab',
+    );
   });
 
   it('detects GitLab from SSH URL', () => {
@@ -19,39 +21,57 @@ describe('detectProvider', () => {
   });
 
   it('detects Bitbucket from HTTPS URL', () => {
-    expect(detectProvider('https://bitbucket.org/workspace/repo.git')).toBe('bitbucket');
+    expect(detectProvider('https://bitbucket.org/workspace/repo.git')).toBe(
+      'bitbucket',
+    );
   });
 
   it('detects Bitbucket from SSH URL', () => {
-    expect(detectProvider('git@bitbucket.org:workspace/repo.git')).toBe('bitbucket');
+    expect(detectProvider('git@bitbucket.org:workspace/repo.git')).toBe(
+      'bitbucket',
+    );
   });
 
   it('detects Azure DevOps from HTTPS URL', () => {
-    expect(detectProvider('https://dev.azure.com/org/project/_git/repo')).toBe('azure-devops');
+    expect(detectProvider('https://dev.azure.com/org/project/_git/repo')).toBe(
+      'azure-devops',
+    );
   });
 
   it('detects Azure DevOps from SSH URL', () => {
-    expect(detectProvider('git@ssh.dev.azure.com:v3/org/project/repo')).toBe('azure-devops');
+    expect(detectProvider('git@ssh.dev.azure.com:v3/org/project/repo')).toBe(
+      'azure-devops',
+    );
   });
 
   it('should detect Azure DevOps from legacy visualstudio.com HTTPS', () => {
-    expect(detectProvider('https://myorg.visualstudio.com/MyProject/_git/MyRepo')).toBe('azure-devops');
+    expect(
+      detectProvider('https://myorg.visualstudio.com/MyProject/_git/MyRepo'),
+    ).toBe('azure-devops');
   });
 
   it('detects self-hosted GitLab by hostname heuristic', () => {
-    expect(detectProvider('https://my-gitlab.company.com/group/repo.git')).toBe('gitlab');
+    expect(detectProvider('https://my-gitlab.company.com/group/repo.git')).toBe(
+      'gitlab',
+    );
   });
 
   it('should detect Gitea from self-hosted hostname', () => {
-    expect(detectProvider('https://gitea.example.com/owner/repo')).toBe('gitea');
+    expect(detectProvider('https://gitea.example.com/owner/repo')).toBe(
+      'gitea',
+    );
   });
 
   it('should detect Forgejo from self-hosted hostname', () => {
-    expect(detectProvider('https://forgejo.example.org/owner/repo')).toBe('forgejo');
+    expect(detectProvider('https://forgejo.example.org/owner/repo')).toBe(
+      'forgejo',
+    );
   });
 
   it('should detect Gitea from subdomain', () => {
-    expect(detectProvider('git@my-gitea.company.com:owner/repo.git')).toBe('gitea');
+    expect(detectProvider('git@my-gitea.company.com:owner/repo.git')).toBe(
+      'gitea',
+    );
   });
 
   it('should not false-positive on unrelated hostnames', () => {
@@ -59,7 +79,9 @@ describe('detectProvider', () => {
   });
 
   it('returns unknown for unrecognized hosts', () => {
-    expect(detectProvider('https://random-host.com/user/repo.git')).toBe('unknown');
+    expect(detectProvider('https://random-host.com/user/repo.git')).toBe(
+      'unknown',
+    );
   });
 });
 
@@ -95,7 +117,9 @@ describe('parseRemoteUrl', () => {
   });
 
   it('parses Azure DevOps HTTPS URL', () => {
-    const result = parseRemoteUrl('https://dev.azure.com/org/project/_git/repo');
+    const result = parseRemoteUrl(
+      'https://dev.azure.com/org/project/_git/repo',
+    );
     expect(result).toEqual({
       provider: 'azure-devops',
       host: 'dev.azure.com',
@@ -115,7 +139,9 @@ describe('parseRemoteUrl', () => {
   });
 
   it('should parse Azure DevOps legacy visualstudio.com HTTPS URL', () => {
-    const result = parseRemoteUrl('https://myorg.visualstudio.com/MyProject/_git/MyRepo');
+    const result = parseRemoteUrl(
+      'https://myorg.visualstudio.com/MyProject/_git/MyRepo',
+    );
     expect(result).toEqual({
       provider: 'azure-devops',
       host: 'myorg.visualstudio.com',
@@ -125,7 +151,9 @@ describe('parseRemoteUrl', () => {
   });
 
   it('should parse SSH URL with port', () => {
-    const result = parseRemoteUrl('ssh://git@gitlab.company.com:2222/group/repo.git');
+    const result = parseRemoteUrl(
+      'ssh://git@gitlab.company.com:2222/group/repo.git',
+    );
     expect(result).toEqual({
       provider: 'gitlab',
       host: 'gitlab.company.com',
@@ -200,7 +228,9 @@ describe('parseRemoteUrl', () => {
   });
 
   it('parses GitLab nested group SSH URL-style', () => {
-    const result = parseRemoteUrl('ssh://git@gitlab.com/group/subgroup/repo.git');
+    const result = parseRemoteUrl(
+      'ssh://git@gitlab.com/group/subgroup/repo.git',
+    );
     expect(result).toEqual({
       provider: 'gitlab',
       host: 'gitlab.com',

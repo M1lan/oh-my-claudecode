@@ -14,9 +14,19 @@ export const TRACER_PROMPT_METADATA: AgentPromptMetadata = {
   cost: 'EXPENSIVE',
   promptAlias: 'tracer',
   triggers: [
-    { domain: 'Causal tracing', trigger: 'Why did this happen? Which explanation best fits the evidence?' },
-    { domain: 'Forensic analysis', trigger: 'Observed output, artifact, or behavior needs ranked explanations' },
-    { domain: 'Evidence-driven uncertainty reduction', trigger: 'Need competing hypotheses and the next best probe' },
+    {
+      domain: 'Causal tracing',
+      trigger: 'Why did this happen? Which explanation best fits the evidence?',
+    },
+    {
+      domain: 'Forensic analysis',
+      trigger:
+        'Observed output, artifact, or behavior needs ranked explanations',
+    },
+    {
+      domain: 'Evidence-driven uncertainty reduction',
+      trigger: 'Need competing hypotheses and the next best probe',
+    },
   ],
   useWhen: [
     'Tracing ambiguous runtime behavior, regressions, or orchestration outcomes',
@@ -35,7 +45,8 @@ export const TRACER_PROMPT_METADATA: AgentPromptMetadata = {
 
 export const tracerAgent: AgentConfig = {
   name: 'tracer',
-  description: 'Evidence-driven causal tracing specialist. Explains observed outcomes using competing hypotheses, evidence for and against, uncertainty tracking, and next-probe recommendations.',
+  description:
+    'Evidence-driven causal tracing specialist. Explains observed outcomes using competing hypotheses, evidence for and against, uncertainty tracking, and next-probe recommendations.',
   prompt: loadAgentPrompt('tracer'),
   model: 'sonnet',
   defaultModel: 'sonnet',

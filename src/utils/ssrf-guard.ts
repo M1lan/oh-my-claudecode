@@ -53,7 +53,10 @@ export function validateUrlForSSRF(urlString: string): SSRFValidationResult {
 
   // Only allow http/https
   if (!ALLOWED_SCHEMES.includes(parsed.protocol)) {
-    return { allowed: false, reason: `Protocol '${parsed.protocol}' is not allowed` };
+    return {
+      allowed: false,
+      reason: `Protocol '${parsed.protocol}' is not allowed`,
+    };
   }
 
   // Get hostname (remove port if present)
@@ -94,7 +97,10 @@ export function validateUrlForSSRF(urlString: string): SSRFValidationResult {
 
   // Block URLs with credentials (user:pass@host)
   if (parsed.username || parsed.password) {
-    return { allowed: false, reason: 'URLs with embedded credentials are not allowed' };
+    return {
+      allowed: false,
+      reason: 'URLs with embedded credentials are not allowed',
+    };
   }
 
   // Block specific dangerous paths that could access cloud metadata
@@ -121,7 +127,9 @@ export function validateUrlForSSRF(urlString: string): SSRFValidationResult {
  * Validate ANTHROPIC_BASE_URL for safe usage
  * This is a convenience function that also enforces HTTPS preference
  */
-export function validateAnthropicBaseUrl(urlString: string): SSRFValidationResult {
+export function validateAnthropicBaseUrl(
+  urlString: string,
+): SSRFValidationResult {
   const result = validateUrlForSSRF(urlString);
   if (!result.allowed) {
     return result;
@@ -137,7 +145,9 @@ export function validateAnthropicBaseUrl(urlString: string): SSRFValidationResul
 
   // Log warning for HTTP (non-HTTPS) in production contexts
   if (parsed.protocol === 'http:') {
-    console.warn('[SSRF Guard] Warning: Using HTTP instead of HTTPS for ANTHROPIC_BASE_URL');
+    console.warn(
+      '[SSRF Guard] Warning: Using HTTP instead of HTTPS for ANTHROPIC_BASE_URL',
+    );
   }
 
   return { allowed: true };

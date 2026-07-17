@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { exploreAgent, EXPLORE_PROMPT_METADATA } from "../agents/explore.js";
+import { describe, expect, it } from 'vitest';
+import { exploreAgent, EXPLORE_PROMPT_METADATA } from '../agents/explore.js';
 import {
   documentSpecialistAgent,
   DOCUMENT_SPECIALIST_PROMPT_METADATA,
-} from "../agents/document-specialist.js";
+} from '../agents/document-specialist.js';
 
-describe("agent guidance boundary for external research", () => {
-  it("steers external literature and reference lookups away from explore", () => {
+describe('agent guidance boundary for external research', () => {
+  it('steers external literature and reference lookups away from explore', () => {
     expect(exploreAgent.description).toMatch(/document-specialist/i);
     expect(exploreAgent.description).toMatch(
       /literature|papers?|reference databases?/i,
@@ -31,7 +31,7 @@ describe("agent guidance boundary for external research", () => {
     );
   });
 
-  it("steers external literature and reference research to document-specialist", () => {
+  it('steers external literature and reference research to document-specialist', () => {
     expect(documentSpecialistAgent.description).toMatch(
       /literature, academic papers, and reference\/database lookups/i,
     );
@@ -39,7 +39,7 @@ describe("agent guidance boundary for external research", () => {
     expect(DOCUMENT_SPECIALIST_PROMPT_METADATA.triggers).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          domain: "Literature and reference research",
+          domain: 'Literature and reference research',
         }),
       ]),
     );
@@ -61,14 +61,14 @@ describe("agent guidance boundary for external research", () => {
     );
   });
 
-  it("prefers repo docs first and can use curated docs backend with graceful fallback", () => {
+  it('prefers repo docs first and can use curated docs backend with graceful fallback', () => {
     expect(DOCUMENT_SPECIALIST_PROMPT_METADATA.triggers).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          domain: "Project documentation",
+          domain: 'Project documentation',
         }),
         expect.objectContaining({
-          domain: "API/framework correctness",
+          domain: 'API/framework correctness',
         }),
       ]),
     );

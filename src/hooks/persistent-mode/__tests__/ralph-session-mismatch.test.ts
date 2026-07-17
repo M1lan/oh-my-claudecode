@@ -22,7 +22,13 @@
  * Either scenario silently breaks Ralph for the entire session.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -69,7 +75,10 @@ function writeRalphStateFile(
     state.session_id = storedSessionId;
   }
 
-  writeFileSync(join(stateDir, 'ralph-state.json'), JSON.stringify(state, null, 2));
+  writeFileSync(
+    join(stateDir, 'ralph-state.json'),
+    JSON.stringify(state, null, 2),
+  );
 }
 
 describe('persistent-mode ralph session-id mismatch (stuck counter regression)', () => {
@@ -119,8 +128,17 @@ describe('persistent-mode ralph session-id mismatch (stuck counter regression)',
     expect(result.mode).not.toBe('ralph');
 
     // Session A's state should be unchanged
-    const stateFile = join(tempDir, '.omc', 'state', 'sessions', sessionA, 'ralph-state.json');
-    const unchanged = JSON.parse(readFileSync(stateFile, 'utf-8')) as { iteration: number };
+    const stateFile = join(
+      tempDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionA,
+      'ralph-state.json',
+    );
+    const unchanged = JSON.parse(readFileSync(stateFile, 'utf-8')) as {
+      iteration: number;
+    };
     expect(unchanged.iteration).toBe(5);
   });
 
@@ -134,8 +152,17 @@ describe('persistent-mode ralph session-id mismatch (stuck counter regression)',
     const result = await checkPersistentModes(sessionId, tempDir);
     expect(result.mode).toBe('ralph');
 
-    const stateFile = join(tempDir, '.omc', 'state', 'sessions', sessionId, 'ralph-state.json');
-    const updated = JSON.parse(readFileSync(stateFile, 'utf-8')) as { iteration: number };
+    const stateFile = join(
+      tempDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+      'ralph-state.json',
+    );
+    const updated = JSON.parse(readFileSync(stateFile, 'utf-8')) as {
+      iteration: number;
+    };
     expect(updated.iteration).toBe(4);
   });
 });

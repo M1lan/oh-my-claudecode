@@ -8,12 +8,16 @@
  * expected error (e.g. because someone weakens the brand), tsc will fail
  * the build.
  *
- * Run via `npx tsc --noEmit` (covered by `npm run build`). This file is
+ * Run via `pnpm exec tsc --noEmit` (covered by `pnpm run build`). This file is
  * skipped by vitest because it has no `describe`/`it` and no runtime
  * assertions.
  */
 
-import { resolveSessionStatePaths, type ReadPath, type WritePath } from '../worktree-paths.js';
+import {
+  resolveSessionStatePaths,
+  type ReadPath,
+  type WritePath,
+} from '../worktree-paths.js';
 
 declare function writeTo(p: WritePath, data: string): void;
 declare function readFrom(p: ReadPath): string;

@@ -20,7 +20,7 @@ export function addBackgroundTask(
   description: string,
   agentType?: string,
   directory?: string,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   try {
     let state = readHudState(directory, sessionId) || createEmptyHudState();
@@ -54,7 +54,7 @@ export function completeBackgroundTask(
   id: string,
   directory?: string,
   failed: boolean = false,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   try {
     const state = readHudState(directory, sessionId);
@@ -85,7 +85,7 @@ export function remapBackgroundTaskId(
   currentId: string,
   nextId: string,
   directory?: string,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   try {
     if (currentId === nextId) {
@@ -119,15 +119,19 @@ export function remapBackgroundTaskId(
 function findMostRecentMatchingRunningTask(
   state: OmcHudState,
   description: string,
-  agentType?: string
+  agentType?: string,
 ): BackgroundTask | undefined {
   return [...state.backgroundTasks]
-    .filter((task) =>
-      task.status === 'running'
-      && task.description === description
-      && (agentType === undefined || task.agentType === agentType)
+    .filter(
+      (task) =>
+        task.status === 'running' &&
+        task.description === description &&
+        (agentType === undefined || task.agentType === agentType),
     )
-    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())[0];
+    .sort(
+      (a, b) =>
+        new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+    )[0];
 }
 
 export function completeMostRecentMatchingBackgroundTask(
@@ -135,7 +139,7 @@ export function completeMostRecentMatchingBackgroundTask(
   directory?: string,
   failed: boolean = false,
   agentType?: string,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   try {
     const state = readHudState(directory, sessionId);
@@ -143,7 +147,11 @@ export function completeMostRecentMatchingBackgroundTask(
       return false;
     }
 
-    const task = findMostRecentMatchingRunningTask(state, description, agentType);
+    const task = findMostRecentMatchingRunningTask(
+      state,
+      description,
+      agentType,
+    );
     if (!task) {
       return false;
     }
@@ -163,7 +171,7 @@ export function remapMostRecentMatchingBackgroundTaskId(
   nextId: string,
   directory?: string,
   agentType?: string,
-  sessionId?: string
+  sessionId?: string,
 ): boolean {
   try {
     const state = readHudState(directory, sessionId);
@@ -171,7 +179,11 @@ export function remapMostRecentMatchingBackgroundTaskId(
       return false;
     }
 
-    const task = findMostRecentMatchingRunningTask(state, description, agentType);
+    const task = findMostRecentMatchingRunningTask(
+      state,
+      description,
+      agentType,
+    );
     if (!task) {
       return false;
     }
@@ -236,7 +248,10 @@ function cleanupTasks(state: OmcHudState): OmcHudState {
 /**
  * Get count of running background tasks.
  */
-export function getRunningTaskCount(directory?: string, sessionId?: string): number {
+export function getRunningTaskCount(
+  directory?: string,
+  sessionId?: string,
+): number {
   const state = readHudState(directory, sessionId);
   if (!state) return 0;
 
@@ -247,7 +262,10 @@ export function getRunningTaskCount(directory?: string, sessionId?: string): num
  * Clear all background tasks.
  * Useful for cleanup or reset.
  */
-export function clearBackgroundTasks(directory?: string, sessionId?: string): boolean {
+export function clearBackgroundTasks(
+  directory?: string,
+  sessionId?: string,
+): boolean {
   try {
     // Read existing state to preserve session fields (sessionStartTimestamp, sessionId)
     const existing = readHudState(directory, sessionId);

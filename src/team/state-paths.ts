@@ -23,30 +23,27 @@ import { isAbsolute, join } from 'path';
  *       {workerName}.json
  */
 export function normalizeTaskFileStem(taskId: string): string {
-  const trimmed = String(taskId).trim().replace(/\.json$/i, '');
+  const trimmed = String(taskId)
+    .trim()
+    .replace(/\.json$/i, '');
   if (/^task-\d+$/.test(trimmed)) return trimmed;
   if (/^\d+$/.test(trimmed)) return `task-${trimmed}`;
   return trimmed;
 }
 
 export const TeamPaths = {
-  root: (teamName: string) =>
-    `.omc/state/team/${teamName}`,
+  root: (teamName: string) => `.omc/state/team/${teamName}`,
 
-  config: (teamName: string) =>
-    `.omc/state/team/${teamName}/config.json`,
+  config: (teamName: string) => `.omc/state/team/${teamName}/config.json`,
 
-  shutdown: (teamName: string) =>
-    `.omc/state/team/${teamName}/shutdown.json`,
+  shutdown: (teamName: string) => `.omc/state/team/${teamName}/shutdown.json`,
 
-  tasks: (teamName: string) =>
-    `.omc/state/team/${teamName}/tasks`,
+  tasks: (teamName: string) => `.omc/state/team/${teamName}/tasks`,
 
   taskFile: (teamName: string, taskId: string) =>
     `.omc/state/team/${teamName}/tasks/${normalizeTaskFileStem(taskId)}.json`,
 
-  workers: (teamName: string) =>
-    `.omc/state/team/${teamName}/workers`,
+  workers: (teamName: string) => `.omc/state/team/${teamName}/workers`,
 
   workerDir: (teamName: string, workerName: string) =>
     `.omc/state/team/${teamName}/workers/${workerName}`,
@@ -92,14 +89,12 @@ export const TeamPaths = {
   workerPrevNotifyState: (teamName: string, workerName: string) =>
     `.omc/state/team/${teamName}/workers/${workerName}/prev-notify-state.json`,
 
-  events: (teamName: string) =>
-    `.omc/state/team/${teamName}/events.jsonl`,
+  events: (teamName: string) => `.omc/state/team/${teamName}/events.jsonl`,
 
   approval: (teamName: string, taskId: string) =>
     `.omc/state/team/${teamName}/approvals/${taskId}.json`,
 
-  manifest: (teamName: string) =>
-    `.omc/state/team/${teamName}/manifest.json`,
+  manifest: (teamName: string) => `.omc/state/team/${teamName}/manifest.json`,
 
   monitorSnapshot: (teamName: string) =>
     `.omc/state/team/${teamName}/monitor-snapshot.json`,
@@ -125,13 +120,31 @@ export const TeamPaths = {
     `.omc/state/team/${teamName}/workers/${workerName}/shutdown-request.json`,
   checkpoints: (teamName: string, taskId: string, claimTokenHash: string) =>
     `.omc/state/team/${teamName}/checkpoints/${normalizeTaskFileStem(taskId)}/${claimTokenHash}`,
-  checkpoint: (teamName: string, taskId: string, claimTokenHash: string, sequence: number) =>
+  checkpoint: (
+    teamName: string,
+    taskId: string,
+    claimTokenHash: string,
+    sequence: number,
+  ) =>
     `.omc/state/team/${teamName}/checkpoints/${normalizeTaskFileStem(taskId)}/${claimTokenHash}/${sequence}.json`,
-  checkpointLatest: (teamName: string, taskId: string, claimTokenHash: string) =>
+  checkpointLatest: (
+    teamName: string,
+    taskId: string,
+    claimTokenHash: string,
+  ) =>
     `.omc/state/team/${teamName}/checkpoints/${normalizeTaskFileStem(taskId)}/${claimTokenHash}/latest.json`,
-  taskRecoverySidecar: (teamName: string, recoveryId: string, taskId: string) => {
-    if (recoveryId.length === 0 || recoveryId.length > 128 || recoveryId === '.' || recoveryId === '..'
-      || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(recoveryId)) {
+  taskRecoverySidecar: (
+    teamName: string,
+    recoveryId: string,
+    taskId: string,
+  ) => {
+    if (
+      recoveryId.length === 0 ||
+      recoveryId.length > 128 ||
+      recoveryId === '.' ||
+      recoveryId === '..' ||
+      !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(recoveryId)
+    ) {
       throw new Error('invalid_recovery_request_id');
     }
     const taskStem = normalizeTaskFileStem(taskId);
@@ -144,9 +157,19 @@ export const TeamPaths = {
     `.omc/state/team/${teamName}/recovery/owner-epochs`,
   ownerEpoch: (teamName: string, epoch: number) =>
     `.omc/state/team/${teamName}/recovery/owner-epochs/${epoch}.json`,
-  recoveryOwnerBootstrapCandidate: (teamName: string, expectedEpoch: number, nonce: string) => {
-    if (nonce.length === 0 || nonce.length > 128 || nonce === '.' || nonce === '..'
-      || !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(nonce)) throw new Error('invalid_recovery_owner_bootstrap_nonce');
+  recoveryOwnerBootstrapCandidate: (
+    teamName: string,
+    expectedEpoch: number,
+    nonce: string,
+  ) => {
+    if (
+      nonce.length === 0 ||
+      nonce.length > 128 ||
+      nonce === '.' ||
+      nonce === '..' ||
+      !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(nonce)
+    )
+      throw new Error('invalid_recovery_owner_bootstrap_nonce');
     return `.omc/state/team/${teamName}/recovery/owner-bootstrap/${expectedEpoch}/${nonce}.json`;
   },
   recoveryIntents: (teamName: string) =>
@@ -157,11 +180,23 @@ export const TeamPaths = {
     `.omc/state/team/${teamName}/recovery/attempts`,
   recoveryAttempt: (teamName: string, recoveryId: string) =>
     `.omc/state/team/${teamName}/recovery/attempts/${recoveryId}.json`,
-  recoveryActivation: (teamName: string, recoveryId: string, paneAttemptId: string) =>
+  recoveryActivation: (
+    teamName: string,
+    recoveryId: string,
+    paneAttemptId: string,
+  ) =>
     `.omc/state/team/${teamName}/recovery/activation/${recoveryId}/${paneAttemptId}`,
-  recoveryReady: (teamName: string, recoveryId: string, paneAttemptId: string) =>
+  recoveryReady: (
+    teamName: string,
+    recoveryId: string,
+    paneAttemptId: string,
+  ) =>
     `.omc/state/team/${teamName}/recovery/activation/${recoveryId}/${paneAttemptId}/ready.json`,
-  recoveryActivate: (teamName: string, recoveryId: string, paneAttemptId: string) =>
+  recoveryActivate: (
+    teamName: string,
+    recoveryId: string,
+    paneAttemptId: string,
+  ) =>
     `.omc/state/team/${teamName}/recovery/activation/${recoveryId}/${paneAttemptId}/activate.json`,
   recoveryRun: (teamName: string, recoveryId: string, paneAttemptId: string) =>
     `.omc/state/team/${teamName}/recovery/activation/${recoveryId}/${paneAttemptId}/run.json`,
@@ -174,13 +209,26 @@ export const TeamPaths = {
     `.omc/state/team-recovery/by-request/${requestId}.pending.json`,
   recoveryRequestResult: (requestId: string) =>
     `.omc/state/team-recovery/by-request/${requestId}.result.json`,
-  recoveryResultByTeam: (workspaceHash: string, teamName: string, recoveryId: string) =>
+  recoveryResultByTeam: (
+    workspaceHash: string,
+    teamName: string,
+    recoveryId: string,
+  ) =>
     `.omc/state/team-recovery/by-team/${workspaceHash}/${teamName}/${recoveryId}.json`,
-  recoveryFinalIndexLock: (workspaceHash: string, teamName: string, recoveryId: string) =>
+  recoveryFinalIndexLock: (
+    workspaceHash: string,
+    teamName: string,
+    recoveryId: string,
+  ) =>
     `.omc/state/team-recovery/index-locks/${workspaceHash}/${teamName}/${recoveryId}.lock`,
   scalingRollbackFailure: (teamName: string, recordedAt: number) =>
     `.omc/state/team/${teamName}/scaling-rollback/${recordedAt}.json`,
-  recoveryPaneRollbackFailure: (teamName: string, recoveryId: string, paneAttemptId: string, recordedAt: number) =>
+  recoveryPaneRollbackFailure: (
+    teamName: string,
+    recoveryId: string,
+    paneAttemptId: string,
+    recordedAt: number,
+  ) =>
     `.omc/state/team/${teamName}/recovery/rollback-failures/${recoveryId}/${paneAttemptId}-${recordedAt}.json`,
   recoveryAuditIndex: () => '.omc/state/team-recovery/audit.jsonl',
 } as const;
@@ -211,7 +259,11 @@ export function teamStateRoot(cwd: string, teamName: string): string {
  * Use this as the single source of truth for task file locations.
  * New writes always use this canonical path.
  */
-export function getTaskStoragePath(cwd: string, teamName: string, taskId?: string): string {
+export function getTaskStoragePath(
+  cwd: string,
+  teamName: string,
+  taskId?: string,
+): string {
   if (taskId !== undefined) {
     return join(cwd, TeamPaths.taskFile(teamName, taskId));
   }
@@ -229,7 +281,11 @@ export function getTaskStoragePath(cwd: string, teamName: string, taskId?: strin
  *
  * @deprecated Use getTaskStoragePath instead.
  */
-export function getLegacyTaskStoragePath(claudeConfigDir: string, teamName: string, taskId?: string): string {
+export function getLegacyTaskStoragePath(
+  claudeConfigDir: string,
+  teamName: string,
+  taskId?: string,
+): string {
   if (taskId !== undefined) {
     return join(claudeConfigDir, 'tasks', teamName, `${taskId}.json`);
   }

@@ -142,7 +142,7 @@ try {
 }
 
 // 5. Ensure runtime dependencies are installed in the plugin cache directory.
-//    The npm-published tarball includes only the files listed in "files" (package.json),
+//    The published tarball includes only the files listed in "files" (package.json),
 //    which does NOT include node_modules.  When Claude Code extracts the plugin into its
 //    cache the dependencies are therefore missing, causing ERR_MODULE_NOT_FOUND at runtime.
 //    We detect this by probing for a known production dependency (commander) and running a
@@ -153,7 +153,7 @@ const commanderCheck = join(packageDir, 'node_modules', 'commander');
 if (!existsSync(commanderCheck)) {
   console.log('[OMC] Installing runtime dependencies...');
   try {
-    execSync('npm install --omit=dev --ignore-scripts', {
+    execSync('pnpm install --prod --ignore-scripts', {
       cwd: packageDir,
       stdio: 'pipe',
       timeout: 60000,

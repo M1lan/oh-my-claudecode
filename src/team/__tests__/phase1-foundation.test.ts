@@ -56,15 +56,22 @@ describe('state root resolution priority: config > manifest > cwd-walk', () => {
     const base = join(cwd, '.omc', 'state', 'team', teamName);
     await mkdir(join(base, 'tasks'), { recursive: true });
     await mkdir(join(base, 'mailbox'), { recursive: true });
-    await writeFile(join(base, 'tasks', 'task-1.json'), JSON.stringify({
-      id: '1',
-      subject: 'Priority test task',
-      description: 'Tests state root resolution priority',
-      status: 'pending',
-      owner: null,
-      created_at: '2026-03-15T00:00:00.000Z',
-      version: 1,
-    }, null, 2));
+    await writeFile(
+      join(base, 'tasks', 'task-1.json'),
+      JSON.stringify(
+        {
+          id: '1',
+          subject: 'Priority test task',
+          description: 'Tests state root resolution priority',
+          status: 'pending',
+          owner: null,
+          created_at: '2026-03-15T00:00:00.000Z',
+          version: 1,
+        },
+        null,
+        2,
+      ),
+    );
     return base;
   }
 
@@ -79,22 +86,35 @@ describe('state root resolution priority: config > manifest > cwd-walk', () => {
 
   it('uses config.team_state_root when only config is present', async () => {
     const base = await seedBase();
-    await writeFile(join(base, 'config.json'), JSON.stringify({
-      name: teamName,
-      task: 'test',
-      agent_type: 'claude',
-      worker_count: 1,
-      max_workers: 20,
-      workers: [{ name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] }],
-      created_at: '2026-03-15T00:00:00.000Z',
-      next_task_id: 2,
-      team_state_root: base,
-    }, null, 2));
+    await writeFile(
+      join(base, 'config.json'),
+      JSON.stringify(
+        {
+          name: teamName,
+          task: 'test',
+          agent_type: 'claude',
+          worker_count: 1,
+          max_workers: 20,
+          workers: [
+            { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
+          ],
+          created_at: '2026-03-15T00:00:00.000Z',
+          next_task_id: 2,
+          team_state_root: base,
+        },
+        null,
+        2,
+      ),
+    );
 
-    const result = await executeTeamApiOperation('read-task', {
-      team_name: teamName,
-      task_id: '1',
-    }, cwd);
+    const result = await executeTeamApiOperation(
+      'read-task',
+      {
+        team_name: teamName,
+        task_id: '1',
+      },
+      cwd,
+    );
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect((result.data as { task?: { id?: string } }).task?.id).toBe('1');
@@ -105,35 +125,62 @@ describe('state root resolution priority: config > manifest > cwd-walk', () => {
     const base = await seedBase();
 
     // Create a separate "wrong" directory that manifest points to
-    const wrongRoot = join(cwd, 'wrong-root', '.omc', 'state', 'team', teamName);
+    const wrongRoot = join(
+      cwd,
+      'wrong-root',
+      '.omc',
+      'state',
+      'team',
+      teamName,
+    );
     await mkdir(join(wrongRoot, 'tasks'), { recursive: true });
     await mkdir(join(wrongRoot, 'mailbox'), { recursive: true });
 
     // Manifest points to wrong root
-    await writeFile(join(base, 'manifest.v2.json'), JSON.stringify({
-      schema_version: 2,
-      name: teamName,
-      task: 'test',
-      team_state_root: wrongRoot,
-    }, null, 2));
+    await writeFile(
+      join(base, 'manifest.v2.json'),
+      JSON.stringify(
+        {
+          schema_version: 2,
+          name: teamName,
+          task: 'test',
+          team_state_root: wrongRoot,
+        },
+        null,
+        2,
+      ),
+    );
 
     // Config points to correct root (base)
-    await writeFile(join(base, 'config.json'), JSON.stringify({
-      name: teamName,
-      task: 'test',
-      agent_type: 'claude',
-      worker_count: 1,
-      max_workers: 20,
-      workers: [{ name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] }],
-      created_at: '2026-03-15T00:00:00.000Z',
-      next_task_id: 2,
-      team_state_root: base,
-    }, null, 2));
+    await writeFile(
+      join(base, 'config.json'),
+      JSON.stringify(
+        {
+          name: teamName,
+          task: 'test',
+          agent_type: 'claude',
+          worker_count: 1,
+          max_workers: 20,
+          workers: [
+            { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
+          ],
+          created_at: '2026-03-15T00:00:00.000Z',
+          next_task_id: 2,
+          team_state_root: base,
+        },
+        null,
+        2,
+      ),
+    );
 
-    const result = await executeTeamApiOperation('read-task', {
-      team_name: teamName,
-      task_id: '1',
-    }, cwd);
+    const result = await executeTeamApiOperation(
+      'read-task',
+      {
+        team_name: teamName,
+        task_id: '1',
+      },
+      cwd,
+    );
     // Should succeed using config's root (which has task-1.json), not manifest's wrong root
     expect(result.ok).toBe(true);
     if (result.ok) {
@@ -143,17 +190,26 @@ describe('state root resolution priority: config > manifest > cwd-walk', () => {
 
   it('env OMC_TEAM_STATE_ROOT takes precedence over config.team_state_root', async () => {
     const base = await seedBase();
-    await writeFile(join(base, 'config.json'), JSON.stringify({
-      name: teamName,
-      task: 'test',
-      agent_type: 'claude',
-      worker_count: 1,
-      max_workers: 20,
-      workers: [{ name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] }],
-      created_at: '2026-03-15T00:00:00.000Z',
-      next_task_id: 2,
-      team_state_root: base,
-    }, null, 2));
+    await writeFile(
+      join(base, 'config.json'),
+      JSON.stringify(
+        {
+          name: teamName,
+          task: 'test',
+          agent_type: 'claude',
+          worker_count: 1,
+          max_workers: 20,
+          workers: [
+            { name: 'worker-1', index: 1, role: 'claude', assigned_tasks: [] },
+          ],
+          created_at: '2026-03-15T00:00:00.000Z',
+          next_task_id: 2,
+          team_state_root: base,
+        },
+        null,
+        2,
+      ),
+    );
 
     // Set env to the correct team state root
     process.env.OMC_TEAM_STATE_ROOT = base;
@@ -161,10 +217,14 @@ describe('state root resolution priority: config > manifest > cwd-walk', () => {
     const nestedCwd = join(cwd, 'nested', 'deep', 'worker');
     await mkdir(nestedCwd, { recursive: true });
 
-    const result = await executeTeamApiOperation('read-task', {
-      team_name: teamName,
-      task_id: '1',
-    }, nestedCwd);
+    const result = await executeTeamApiOperation(
+      'read-task',
+      {
+        team_name: teamName,
+        task_id: '1',
+      },
+      nestedCwd,
+    );
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect((result.data as { task?: { id?: string } }).task?.id).toBe('1');

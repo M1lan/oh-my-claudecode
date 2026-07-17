@@ -12,7 +12,12 @@
  * - Scalars: incoming value wins (last-write-wins at leaf level)
  */
 
-import type { ProjectMemory, CustomNote, UserDirective, HotPath } from '../hooks/project-memory/types.js';
+import type {
+  ProjectMemory,
+  CustomNote,
+  UserDirective,
+  HotPath,
+} from '../hooks/project-memory/types.js';
 
 // ---------------------------------------------------------------------------
 // Generic deep-merge utilities
@@ -46,7 +51,8 @@ export function deepMerge<T extends Record<string, unknown>>(
   const result: Record<string, unknown> = { ...base };
 
   for (const key of Object.keys(incoming)) {
-    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype')
+      continue;
     const baseVal = (base as Record<string, unknown>)[key];
     const incomingVal = (incoming as Record<string, unknown>)[key];
 
@@ -89,7 +95,11 @@ export function deepMerge<T extends Record<string, unknown>>(
  * - `workspaces`, `mainDirectories`, `keyFiles`, `markers`: string union
  * - Default: union by JSON equality
  */
-function mergeArrays(fieldName: string, base: unknown[], incoming: unknown[]): unknown[] {
+function mergeArrays(
+  fieldName: string,
+  base: unknown[],
+  incoming: unknown[],
+): unknown[] {
   switch (fieldName) {
     case 'customNotes':
       return mergeByKey(

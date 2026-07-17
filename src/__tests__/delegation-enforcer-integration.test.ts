@@ -32,8 +32,8 @@ describe.skip('delegation-enforcer integration', () => {
         toolInput: {
           description: 'Test task',
           prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor'
-        }
+          subagent_type: 'oh-my-claudecode:executor',
+        },
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -60,8 +60,8 @@ describe.skip('delegation-enforcer integration', () => {
           description: 'Test task',
           prompt: 'Do something',
           subagent_type: 'oh-my-claudecode:executor',
-          model: 'haiku'
-        }
+          model: 'haiku',
+        },
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -82,8 +82,8 @@ describe.skip('delegation-enforcer integration', () => {
         toolInput: {
           description: 'Test task',
           prompt: 'Do something',
-          subagent_type: 'executor-low'
-        }
+          subagent_type: 'executor-low',
+        },
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -101,8 +101,8 @@ describe.skip('delegation-enforcer integration', () => {
       const input: HookInput = {
         toolName: 'Bash',
         toolInput: {
-          command: 'ls -la'
-        }
+          command: 'ls -la',
+        },
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -123,7 +123,7 @@ describe.skip('delegation-enforcer integration', () => {
         { agent: 'architect-low', expectedModel: 'haiku' },
         { agent: 'executor-high', expectedModel: 'opus' },
         { agent: 'executor-low', expectedModel: 'haiku' },
-        { agent: 'designer-high', expectedModel: 'opus' }
+        { agent: 'designer-high', expectedModel: 'opus' },
       ];
 
       for (const testCase of testCases) {
@@ -132,8 +132,8 @@ describe.skip('delegation-enforcer integration', () => {
           toolInput: {
             description: 'Test',
             prompt: 'Test',
-            subagent_type: testCase.agent
-          }
+            subagent_type: testCase.agent,
+          },
         };
 
         const result = await processHook('pre-tool-use', input);
@@ -156,8 +156,8 @@ describe.skip('delegation-enforcer integration', () => {
         toolInput: {
           description: 'Test',
           prompt: 'Test',
-          subagent_type: 'executor'
-        }
+          subagent_type: 'executor',
+        },
       };
 
       await processHook('pre-tool-use', input);
@@ -177,17 +177,17 @@ describe.skip('delegation-enforcer integration', () => {
         toolInput: {
           description: 'Test',
           prompt: 'Test',
-          subagent_type: 'executor'
-        }
+          subagent_type: 'executor',
+        },
       };
 
       await processHook('pre-tool-use', input);
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[OMC] Auto-injecting model')
+        expect.stringContaining('[OMC] Auto-injecting model'),
       );
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('sonnet')
+        expect.stringContaining('sonnet'),
       );
 
       consoleWarnSpy.mockRestore();

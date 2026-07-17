@@ -20,13 +20,10 @@ import {
   META_TYPES,
   PLACEHOLDER_TEXT,
 } from './constants.js';
-import type {
-  StoredMessageMeta,
-  StoredPart,
-  StoredTextPart,
-} from './types.js';
+import type { StoredMessageMeta, StoredPart, StoredTextPart } from './types.js';
 
-const SYNTHETIC_THINKING_CONTENT = '[Synthetic thinking block inserted to preserve message structure]';
+const SYNTHETIC_THINKING_CONTENT =
+  '[Synthetic thinking block inserted to preserve message structure]';
 
 /**
  * Generate a unique part ID
@@ -114,7 +111,7 @@ export function hasContent(part: StoredPart): boolean {
 
   if (part.type === 'text') {
     const textPart = part as StoredTextPart;
-    return !!(textPart.text?.trim());
+    return !!textPart.text?.trim();
   }
 
   if (part.type === 'tool' || part.type === 'tool_use') {
@@ -142,7 +139,7 @@ export function messageHasContent(messageID: string): boolean {
 export function injectTextPart(
   sessionID: string,
   messageID: string,
-  text: string
+  text: string,
 ): boolean {
   const partDir = join(PART_STORAGE, messageID);
 
@@ -161,7 +158,10 @@ export function injectTextPart(
   };
 
   try {
-    writeFileSync(join(partDir, `${partId}.json`), JSON.stringify(part, null, 2));
+    writeFileSync(
+      join(partDir, `${partId}.json`),
+      JSON.stringify(part, null, 2),
+    );
     return true;
   } catch {
     return false;
@@ -189,7 +189,7 @@ export function findEmptyMessages(sessionID: string): string[] {
  */
 export function findEmptyMessageByIndex(
   sessionID: string,
-  targetIndex: number
+  targetIndex: number,
 ): string | null {
   const messages = readMessages(sessionID);
 
@@ -297,7 +297,7 @@ export function findMessagesWithOrphanThinking(sessionID: string): string[] {
  */
 export function prependThinkingPart(
   sessionID: string,
-  messageID: string
+  messageID: string,
 ): boolean {
   const partDir = join(PART_STORAGE, messageID);
 
@@ -316,7 +316,10 @@ export function prependThinkingPart(
   };
 
   try {
-    writeFileSync(join(partDir, `${partId}.json`), JSON.stringify(part, null, 2));
+    writeFileSync(
+      join(partDir, `${partId}.json`),
+      JSON.stringify(part, null, 2),
+    );
     return true;
   } catch {
     return false;
@@ -354,7 +357,7 @@ export function stripThinkingParts(messageID: string): boolean {
  */
 export function replaceEmptyTextParts(
   messageID: string,
-  replacementText: string = PLACEHOLDER_TEXT
+  replacementText: string = PLACEHOLDER_TEXT,
 ): boolean {
   const partDir = join(PART_STORAGE, messageID);
   if (!existsSync(partDir)) return false;
@@ -412,7 +415,7 @@ export function findMessagesWithEmptyTextParts(sessionID: string): string[] {
  */
 export function findMessageByIndexNeedingThinking(
   sessionID: string,
-  targetIndex: number
+  targetIndex: number,
 ): string | null {
   const messages = readMessages(sessionID);
 

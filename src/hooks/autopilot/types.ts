@@ -11,22 +11,21 @@
  * 5. Validation: Multiple specialized architects verify the implementation
  */
 
-import type { PipelineTracking, WorkflowDescriptor } from "./pipeline-types.js";
-
+import type { PipelineTracking, WorkflowDescriptor } from './pipeline-types.js';
 
 /**
  * Represents the current phase of autopilot execution
  */
 export type AutopilotPhase =
-  | 'expansion'    // Requirements gathering and spec creation
-  | 'planning'     // Creating detailed execution plan
-  | 'execution'    // Implementing the plan
-  | 'ralplan'      // Named workflow planning stage
-  | 'ralph'        // Named workflow verification stage
-  | 'qa'          // Quality assurance testing
-  | 'validation'  // Final verification by architects
-  | 'complete'    // Successfully completed
-  | 'failed';     // Failed to complete
+  | 'expansion' // Requirements gathering and spec creation
+  | 'planning' // Creating detailed execution plan
+  | 'execution' // Implementing the plan
+  | 'ralplan' // Named workflow planning stage
+  | 'ralph' // Named workflow verification stage
+  | 'qa' // Quality assurance testing
+  | 'validation' // Final verification by architects
+  | 'complete' // Successfully completed
+  | 'failed'; // Failed to complete
 
 /**
  * QA test status for build, lint, and test phases
@@ -136,7 +135,6 @@ export interface AutopilotValidation {
 /**
  * Complete autopilot state
  */
-
 
 export interface AutopilotState {
   /** Whether autopilot is currently active */
@@ -270,13 +268,13 @@ export interface AutopilotSummary {
  * Signal types for phase transitions and completion
  */
 export type AutopilotSignal =
-  | 'EXPANSION_COMPLETE'      // Expansion phase finished
-  | 'PLANNING_COMPLETE'       // Planning phase finished
-  | 'EXECUTION_COMPLETE'      // Execution phase finished
-  | 'QA_COMPLETE'            // QA phase finished
-  | 'VALIDATION_COMPLETE'    // Validation phase finished
-  | 'AUTOPILOT_COMPLETE'     // All phases complete
-  | 'TRANSITION_TO_QA'       // Ready to start QA
+  | 'EXPANSION_COMPLETE' // Expansion phase finished
+  | 'PLANNING_COMPLETE' // Planning phase finished
+  | 'EXECUTION_COMPLETE' // Execution phase finished
+  | 'QA_COMPLETE' // QA phase finished
+  | 'VALIDATION_COMPLETE' // Validation phase finished
+  | 'AUTOPILOT_COMPLETE' // All phases complete
+  | 'TRANSITION_TO_QA' // Ready to start QA
   | 'TRANSITION_TO_VALIDATION'; // Ready to start validation
 
 /**
@@ -294,5 +292,5 @@ export const DEFAULT_CONFIG: AutopilotConfig = {
   skipQa: false,
   skipValidation: false,
   autoCommit: false,
-  validationArchitects: ['functional', 'security', 'quality']
+  validationArchitects: ['functional', 'security', 'quality'],
 };

@@ -11,9 +11,26 @@
 
 import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, writeFileSync, unlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  readdirSync,
+  writeFileSync,
+  unlinkSync,
+} from 'fs';
 import { homedir, tmpdir } from 'os';
-import { resolve, normalize, relative, sep, join, isAbsolute, basename, dirname } from 'path';
+import {
+  resolve,
+  normalize,
+  relative,
+  sep,
+  join,
+  isAbsolute,
+  basename,
+  dirname,
+} from 'path';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { encodeProjectPath } from '../utils/encode-project-path.js';
 
@@ -95,7 +112,11 @@ export function findWorkspaceRoot(startDir?: string): string | null {
   }
 
   const home = (() => {
-    try { return resolve(homedir()); } catch { return null; }
+    try {
+      return resolve(homedir());
+    } catch {
+      return null;
+    }
   })();
 
   let cursor = current;
@@ -125,9 +146,14 @@ export function findWorkspaceRoot(startDir?: string): string | null {
  * Read optional workspace marker config (id override). Returns {} when the
  * marker is empty or unparseable — callers should not throw on config errors.
  */
-export function readWorkspaceMarkerConfig(workspaceRoot: string): WorkspaceMarkerConfig {
+export function readWorkspaceMarkerConfig(
+  workspaceRoot: string,
+): WorkspaceMarkerConfig {
   try {
-    const raw = readFileSync(join(workspaceRoot, WORKSPACE_MARKER), 'utf-8').trim();
+    const raw = readFileSync(
+      join(workspaceRoot, WORKSPACE_MARKER),
+      'utf-8',
+    ).trim();
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
@@ -176,13 +202,17 @@ function resolveSuperprojectRoot(cwd: string): string | null {
   for (let depth = 0; depth < 32; depth++) {
     let superRoot: string;
     try {
-      superRoot = execFileSync('git', ['rev-parse', '--show-superproject-working-tree'], {
-        cwd: probeCwd,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-        windowsHide: true,
-        timeout: 5000,
-      }).trim();
+      superRoot = execFileSync(
+        'git',
+        ['rev-parse', '--show-superproject-working-tree'],
+        {
+          cwd: probeCwd,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+          windowsHide: true,
+          timeout: 5000,
+        },
+      ).trim();
     } catch (error) {
       completed = depth === 0 && isDefinitiveNonGitError(error);
       break;
@@ -221,7 +251,8 @@ function resolveSuperprojectRoot(cwd: string): string | null {
  * collapse separately-scoped state dirs into one and corrupt them.
  */
 function resolveStateAnchorRoot(worktreeRoot?: string): string {
-  if (worktreeRoot) return resolveSuperprojectRoot(worktreeRoot) || worktreeRoot;
+  if (worktreeRoot)
+    return resolveSuperprojectRoot(worktreeRoot) || worktreeRoot;
   return getWorktreeRoot() || process.cwd();
 }
 
@@ -295,7 +326,8 @@ export function getWorktreeRoot(cwd?: string): string | null {
 
   // Prefer the superproject working tree when cwd is inside a submodule (#3349);
   // otherwise the literal git toplevel.
-  const root = resolveSuperprojectRoot(effectiveCwd) || getGitTopLevel(effectiveCwd);
+  const root =
+    resolveSuperprojectRoot(effectiveCwd) || getGitTopLevel(effectiveCwd);
   if (!root) {
     // Not in a git repository - do NOT cache fallback
     // so that if directory becomes a git repo later, we re-detect
@@ -350,13 +382,20 @@ const siblingRetrofitWarned = new Set<string>();
  * Call this once per session (e.g. from session-start.mjs) rather than on every
  * getOmcRoot() invocation to keep the hot path free of readdirSync calls.
  */
-export function warnSiblingRetrofit(workspaceAnchor: string, sessionId?: string): void {
+export function warnSiblingRetrofit(
+  workspaceAnchor: string,
+  sessionId?: string,
+): void {
   if (siblingRetrofitWarned.has(workspaceAnchor)) return;
 
   // Persistent per-session disk dedupe
   const sharedOmc = join(workspaceAnchor, OmcPaths.ROOT);
   if (sessionId) {
-    const markerPath = join(sharedOmc, 'state', `sibling-retrofit-warned-${sessionId}.json`);
+    const markerPath = join(
+      sharedOmc,
+      'state',
+      `sibling-retrofit-warned-${sessionId}.json`,
+    );
     if (existsSync(markerPath)) {
       siblingRetrofitWarned.add(workspaceAnchor);
       return;
@@ -367,7 +406,10 @@ export function warnSiblingRetrofit(workspaceAnchor: string, sessionId?: string)
 
   let entries: import('fs').Dirent<string>[];
   try {
-    entries = readdirSync(workspaceAnchor, { withFileTypes: true, encoding: 'utf-8' }) as import('fs').Dirent<string>[];
+    entries = readdirSync(workspaceAnchor, {
+      withFileTypes: true,
+      encoding: 'utf-8',
+    }) as import('fs').Dirent<string>[];
   } catch {
     return;
   }
@@ -376,7 +418,12 @@ export function warnSiblingRetrofit(workspaceAnchor: string, sessionId?: string)
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const entryName = entry.name as string;
-    const siblingStateDir = join(workspaceAnchor, entryName, OmcPaths.ROOT, 'state');
+    const siblingStateDir = join(
+      workspaceAnchor,
+      entryName,
+      OmcPaths.ROOT,
+      'state',
+    );
     if (existsSync(siblingStateDir)) {
       legacyDirs.push(join(workspaceAnchor, entryName, OmcPaths.ROOT));
     }
@@ -384,13 +431,13 @@ export function warnSiblingRetrofit(workspaceAnchor: string, sessionId?: string)
 
   if (legacyDirs.length === 0) return;
 
-  const dirList = legacyDirs.map(d => `  - ${d}`).join('\n');
+  const dirList = legacyDirs.map((d) => `  - ${d}`).join('\n');
   process.stderr.write(
     `[omc] workspace-retrofit warning: .omc-workspace anchor found at ${workspaceAnchor}\n` +
-    `  but sibling repos have pre-existing local .omc/state/ content:\n${dirList}\n` +
-    `  Shared state will go to: ${sharedOmc}\n` +
-    `  To migrate legacy state: OMC_MIGRATE_LEGACY_STATE=1 omc setup\n` +
-    `  Or manually copy state files to ${sharedOmc}/state/\n`
+      `  but sibling repos have pre-existing local .omc/state/ content:\n${dirList}\n` +
+      `  Shared state will go to: ${sharedOmc}\n` +
+      `  To migrate legacy state: OMC_MIGRATE_LEGACY_STATE=1 omc setup\n` +
+      `  Or manually copy state files to ${sharedOmc}/state/\n`,
   );
 
   // Write disk marker so subsequent hook firings in the same session stay silent
@@ -398,8 +445,17 @@ export function warnSiblingRetrofit(workspaceAnchor: string, sessionId?: string)
     try {
       const stateDir = join(sharedOmc, 'state');
       if (!existsSync(stateDir)) mkdirSync(stateDir, { recursive: true });
-      const markerPath = join(stateDir, `sibling-retrofit-warned-${sessionId}.json`);
-      writeFileSync(markerPath, JSON.stringify({ warnedAt: new Date().toISOString(), anchor: workspaceAnchor }));
+      const markerPath = join(
+        stateDir,
+        `sibling-retrofit-warned-${sessionId}.json`,
+      );
+      writeFileSync(
+        markerPath,
+        JSON.stringify({
+          warnedAt: new Date().toISOString(),
+          anchor: workspaceAnchor,
+        }),
+      );
     } catch {
       // Non-fatal — dedupe falls back to in-memory Set for this process
     }
@@ -417,11 +473,21 @@ export function clearSiblingRetrofitWarnings(omcStateDir?: string): void {
     try {
       const stateDir = join(omcStateDir, 'state');
       if (!existsSync(stateDir)) return;
-      const entries = readdirSync(stateDir, { withFileTypes: true, encoding: 'utf-8' }) as import('fs').Dirent<string>[];
+      const entries = readdirSync(stateDir, {
+        withFileTypes: true,
+        encoding: 'utf-8',
+      }) as import('fs').Dirent<string>[];
       for (const entry of entries) {
         const name = entry.name as string;
-        if (name.startsWith('sibling-retrofit-warned-') && name.endsWith('.json')) {
-          try { unlinkSync(join(stateDir, name)); } catch { /* non-fatal */ }
+        if (
+          name.startsWith('sibling-retrofit-warned-') &&
+          name.endsWith('.json')
+        ) {
+          try {
+            unlinkSync(join(stateDir, name));
+          } catch {
+            /* non-fatal */
+          }
         }
       }
     } catch {
@@ -470,12 +536,18 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
     const cfg = readWorkspaceMarkerConfig(workspaceRoot);
     if (cfg.id && typeof cfg.id === 'string' && cfg.id.trim()) {
       const safeId = cfg.id.trim().replace(/[^a-zA-Z0-9_-]/g, '_');
-      const hash = createHash('sha256').update(safeId).digest('hex').slice(0, 16);
+      const hash = createHash('sha256')
+        .update(safeId)
+        .digest('hex')
+        .slice(0, 16);
       return `${safeId}-${hash}`;
     }
     // No explicit id — derive a stable identifier from the workspace path so
     // sibling subrepos inside the same workspace share one ID.
-    const hash = createHash('sha256').update(workspaceRoot).digest('hex').slice(0, 16);
+    const hash = createHash('sha256')
+      .update(workspaceRoot)
+      .digest('hex')
+      .slice(0, 16);
     const dirName = basename(workspaceRoot).replace(/[^a-zA-Z0-9_-]/g, '_');
     return `${dirName}-${hash}`;
   }
@@ -501,13 +573,17 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
   // directories despite sharing the same remote URL hash.
   let primaryRoot = root;
   try {
-    const commonDir = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
-      cwd: root,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-      timeout: 5000,
-    }).trim();
+    const commonDir = execFileSync(
+      'git',
+      ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+      {
+        cwd: root,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+        timeout: 5000,
+      },
+    ).trim();
     // Only resolve when --git-common-dir points to a .git directory.
     // - Linked worktrees: returns <primary>/.git → dirname gives primary root ✓
     // - Submodules: returns <super>/.git/modules/<name> → skip (wrong parent)
@@ -556,11 +632,15 @@ export function getOmcRoot(worktreeRoot?: string): string {
     // Log notice if both legacy .omc/ and new centralized dir exist
     const legacyPath = join(root, OmcPaths.ROOT);
     const warningKey = `${legacyPath}:${centralizedPath}`;
-    if (!dualDirWarnings.has(warningKey) && existsSync(legacyPath) && existsSync(centralizedPath)) {
+    if (
+      !dualDirWarnings.has(warningKey) &&
+      existsSync(legacyPath) &&
+      existsSync(centralizedPath)
+    ) {
       dualDirWarnings.add(warningKey);
       console.warn(
         `[omc] Both legacy state dir (${legacyPath}) and centralized state dir (${centralizedPath}) exist. ` +
-        `Using centralized dir. Consider migrating data from the legacy dir and removing it.`
+          `Using centralized dir. Consider migrating data from the legacy dir and removing it.`,
       );
     }
 
@@ -588,7 +668,10 @@ export function getOmcRoot(worktreeRoot?: string): string {
  * @returns Absolute path
  * @throws Error if path would escape omc boundary
  */
-export function resolveOmcPath(relativePath: string, worktreeRoot?: string): string {
+export function resolveOmcPath(
+  relativePath: string,
+  worktreeRoot?: string,
+): string {
   validatePath(relativePath);
 
   const omcDir = getOmcRoot(worktreeRoot);
@@ -614,9 +697,14 @@ export function resolveOmcPath(relativePath: string, worktreeRoot?: string): str
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to state file
  */
-export function resolveStatePath(stateName: string, worktreeRoot?: string): string {
+export function resolveStatePath(
+  stateName: string,
+  worktreeRoot?: string,
+): string {
   // Normalize: ensure -state suffix is present, then add .json
-  const normalizedName = stateName.endsWith('-state') ? stateName : `${stateName}-state`;
+  const normalizedName = stateName.endsWith('-state')
+    ? stateName
+    : `${stateName}-state`;
   return resolveOmcPath(`state/${normalizedName}.json`, worktreeRoot);
 }
 
@@ -628,7 +716,10 @@ export function resolveStatePath(stateName: string, worktreeRoot?: string): stri
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to the created directory
  */
-export function ensureOmcDir(relativePath: string, worktreeRoot?: string): string {
+export function ensureOmcDir(
+  relativePath: string,
+  worktreeRoot?: string,
+): string {
   const fullPath = resolveOmcPath(relativePath, worktreeRoot);
 
   if (!existsSync(fullPath)) {
@@ -637,7 +728,7 @@ export function ensureOmcDir(relativePath: string, worktreeRoot?: string): strin
     } catch (err) {
       // On Windows, concurrent hooks can race past the existsSync check and
       // throw EEXIST. Safe to ignore — see atomic-write.ts:ensureDirSync.
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
     }
   }
 
@@ -664,7 +755,10 @@ export function getWorktreeProjectMemoryPath(worktreeRoot?: string): string {
  * Resolve a plan file path.
  * @param planName - Plan name (without .md extension)
  */
-export function resolvePlanPath(planName: string, worktreeRoot?: string): string {
+export function resolvePlanPath(
+  planName: string,
+  worktreeRoot?: string,
+): string {
   validatePath(planName);
   return join(getOmcRoot(worktreeRoot), 'plans', `${planName}.md`);
 }
@@ -673,7 +767,10 @@ export function resolvePlanPath(planName: string, worktreeRoot?: string): string
  * Resolve a research directory path.
  * @param name - Research folder name
  */
-export function resolveResearchPath(name: string, worktreeRoot?: string): string {
+export function resolveResearchPath(
+  name: string,
+  worktreeRoot?: string,
+): string {
   validatePath(name);
   return join(getOmcRoot(worktreeRoot), 'research', name);
 }
@@ -689,7 +786,10 @@ export function resolveLogsPath(worktreeRoot?: string): string {
  * Resolve a wisdom/plan-scoped notepad directory path.
  * @param planName - Plan name for the scoped notepad
  */
-export function resolveWisdomPath(planName: string, worktreeRoot?: string): string {
+export function resolveWisdomPath(
+  planName: string,
+  worktreeRoot?: string,
+): string {
   validatePath(planName);
   return join(getOmcRoot(worktreeRoot), 'notepads', planName);
 }
@@ -698,11 +798,17 @@ export function resolveWisdomPath(planName: string, worktreeRoot?: string): stri
  * Check if an absolute path is under the .omc directory.
  * @param absolutePath - Absolute path to check
  */
-export function isPathUnderOmc(absolutePath: string, worktreeRoot?: string): boolean {
+export function isPathUnderOmc(
+  absolutePath: string,
+  worktreeRoot?: string,
+): boolean {
   const omcRoot = getOmcRoot(worktreeRoot);
   const normalizedPath = normalize(absolutePath);
   const normalizedOmc = normalize(omcRoot);
-  return normalizedPath.startsWith(normalizedOmc + sep) || normalizedPath === normalizedOmc;
+  return (
+    normalizedPath.startsWith(normalizedOmc + sep) ||
+    normalizedPath === normalizedOmc
+  );
 }
 
 /**
@@ -710,7 +816,15 @@ export function isPathUnderOmc(absolutePath: string, worktreeRoot?: string): boo
  */
 export function ensureAllOmcDirs(worktreeRoot?: string): void {
   const omcRoot = getOmcRoot(worktreeRoot);
-  const subdirs = ['', 'state', 'plans', 'research', 'logs', 'notepads', 'drafts'];
+  const subdirs = [
+    '',
+    'state',
+    'plans',
+    'research',
+    'logs',
+    'notepads',
+    'drafts',
+  ];
   for (const subdir of subdirs) {
     const fullPath = subdir ? join(omcRoot, subdir) : omcRoot;
     if (!existsSync(fullPath)) {
@@ -719,7 +833,7 @@ export function ensureAllOmcDirs(worktreeRoot?: string): void {
       } catch (err) {
         // On Windows, concurrent hooks can race past the existsSync check and
         // throw EEXIST. Safe to ignore — see atomic-write.ts:ensureDirSync.
-        if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+        if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
       }
     }
   }
@@ -794,11 +908,19 @@ export function validateSessionId(sessionId: string): void {
   if (!sessionId) {
     throw new Error('Session ID cannot be empty');
   }
-  if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) {
-    throw new Error(`Invalid session ID: path traversal not allowed (${sessionId})`);
+  if (
+    sessionId.includes('..') ||
+    sessionId.includes('/') ||
+    sessionId.includes('\\')
+  ) {
+    throw new Error(
+      `Invalid session ID: path traversal not allowed (${sessionId})`,
+    );
   }
   if (!SESSION_ID_REGEX.test(sessionId)) {
-    throw new Error(`Invalid session ID: must be alphanumeric with hyphens/underscores, max 256 chars (${sessionId})`);
+    throw new Error(
+      `Invalid session ID: must be alphanumeric with hyphens/underscores, max 256 chars (${sessionId})`,
+    );
   }
 }
 
@@ -849,7 +971,6 @@ export function isValidTranscriptPath(transcriptPath: string): boolean {
   });
 }
 
-
 /**
  * Resolve a session-scoped state file path.
  * Path: {omcRoot}/state/sessions/{sessionId}/{mode}-state.json
@@ -860,11 +981,20 @@ export function isValidTranscriptPath(transcriptPath: string): boolean {
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to session-scoped state file
  */
-export function resolveSessionStatePath(stateName: string, sessionId: string, worktreeRoot?: string): string {
+export function resolveSessionStatePath(
+  stateName: string,
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   validateSessionId(sessionId);
 
-  const normalizedName = stateName.endsWith('-state') ? stateName : `${stateName}-state`;
-  return resolveOmcPath(`state/sessions/${sessionId}/${normalizedName}.json`, worktreeRoot);
+  const normalizedName = stateName.endsWith('-state')
+    ? stateName
+    : `${stateName}-state`;
+  return resolveOmcPath(
+    `state/sessions/${sessionId}/${normalizedName}.json`,
+    worktreeRoot,
+  );
 }
 
 // ============================================================================
@@ -938,7 +1068,9 @@ export function resolveSessionStatePaths(
   worktreeRoot?: string,
   _opts?: ResolveSessionStatePathsOptions,
 ): SessionStatePaths {
-  const normalizedName = stateName.endsWith('-state') ? stateName : `${stateName}-state`;
+  const normalizedName = stateName.endsWith('-state')
+    ? stateName
+    : `${stateName}-state`;
   const legacy = resolveStatePath(stateName, worktreeRoot);
   if (!sessionId) {
     return {
@@ -949,10 +1081,15 @@ export function resolveSessionStatePaths(
     };
   }
   validateSessionId(sessionId);
-  const sessionScoped = resolveOmcPath(`state/sessions/${sessionId}/${normalizedName}.json`, worktreeRoot);
+  const sessionScoped = resolveOmcPath(
+    `state/sessions/${sessionId}/${normalizedName}.json`,
+    worktreeRoot,
+  );
   // effectiveRead probes session-scoped first; fall back to legacy when the
   // session-scoped file does not yet exist (first-read back-compat).
-  const effectiveRead = (existsSync(sessionScoped) ? sessionScoped : legacy) as ReadPath;
+  const effectiveRead = (
+    existsSync(sessionScoped) ? sessionScoped : legacy
+  ) as ReadPath;
   return {
     sessionScoped,
     legacy,
@@ -977,7 +1114,10 @@ export function isLegacyStateMigrationEnabled(): boolean {
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to session state directory
  */
-export function getSessionStateDir(sessionId: string, worktreeRoot?: string): string {
+export function getSessionStateDir(
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   validateSessionId(sessionId);
   return join(getOmcRoot(worktreeRoot), 'state', 'sessions', sessionId);
 }
@@ -998,8 +1138,10 @@ export function listSessionIds(worktreeRoot?: string): string[] {
   try {
     const entries = readdirSync(sessionsDir, { withFileTypes: true });
     return entries
-      .filter(entry => entry.isDirectory() && SESSION_ID_REGEX.test(entry.name))
-      .map(entry => entry.name);
+      .filter(
+        (entry) => entry.isDirectory() && SESSION_ID_REGEX.test(entry.name),
+      )
+      .map((entry) => entry.name);
   } catch {
     return [];
   }
@@ -1012,7 +1154,10 @@ export function listSessionIds(worktreeRoot?: string): string[] {
  * @param worktreeRoot - Optional worktree root
  * @returns Absolute path to the session state directory
  */
-export function ensureSessionStateDir(sessionId: string, worktreeRoot?: string): string {
+export function ensureSessionStateDir(
+  sessionId: string,
+  worktreeRoot?: string,
+): string {
   const sessionDir = getSessionStateDir(sessionId, worktreeRoot);
 
   if (!existsSync(sessionDir)) {
@@ -1021,7 +1166,7 @@ export function ensureSessionStateDir(sessionId: string, worktreeRoot?: string):
     } catch (err) {
       // On Windows, concurrent hooks can race past the existsSync check and
       // throw EEXIST. Safe to ignore — see atomic-write.ts:ensureDirSync.
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
     }
   }
 
@@ -1052,15 +1197,20 @@ export function resolveToWorktreeRoot(directory?: string): string {
   // merging into the parent superproject's. Non-submodule repos and linked
   // worktrees are unaffected: with no superproject the two resolvers are equal.
   // See PR #3350 Codex review (hook normalization / submodule identity).
-  const resolveRoot = process.env.OMC_STATE_DIR ? getGitTopLevel : getWorktreeRoot;
+  const resolveRoot = process.env.OMC_STATE_DIR
+    ? getGitTopLevel
+    : getWorktreeRoot;
   if (directory) {
     const resolved = resolve(directory);
     const root = resolveRoot(resolved);
     if (root) return root;
 
-    console.error('[worktree] non-git directory provided, falling back to process root', {
-      directory: resolved,
-    });
+    console.error(
+      '[worktree] non-git directory provided, falling back to process root',
+      {
+        directory: resolved,
+      },
+    );
   }
   // Fallback: derive from process CWD (the MCP server / CLI entry point)
   return resolveRoot(process.cwd()) || process.cwd();
@@ -1091,7 +1241,10 @@ export function resolveToWorktreeRoot(directory?: string): string {
  * @param cwd - Optional CWD for fallback detection
  * @returns The resolved transcript path (original if already correct or no resolution found)
  */
-export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: string): string | undefined {
+export function resolveTranscriptPath(
+  transcriptPath: string | undefined,
+  cwd?: string,
+): string | undefined {
   if (!transcriptPath) return undefined;
 
   // Fast path: if the file already exists, no resolution needed
@@ -1144,12 +1297,16 @@ export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: 
   // the main repo's encoded path. Use `git rev-parse --git-common-dir`
   // to find the main repo root and re-encode.
   try {
-    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
-      cwd: effectiveCwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    }).trim();
+    const gitCommonDir = execFileSync(
+      'git',
+      ['rev-parse', '--git-common-dir'],
+      {
+        cwd: effectiveCwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      },
+    ).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
     // For linked worktrees, git-common-dir is <repo>/.git/worktrees/<name>
@@ -1160,7 +1317,11 @@ export function resolveTranscriptPath(transcriptPath: string | undefined, cwd?: 
     }
     // Resolve symlinks for consistent comparison (e.g. /tmp -> /private/tmp on macOS,
     // ecryptfs $HOME on Linux, autofs /home, etc.)
-    try { mainRepoRoot = realpathSync(mainRepoRoot); } catch { /* keep as-is */ }
+    try {
+      mainRepoRoot = realpathSync(mainRepoRoot);
+    } catch {
+      /* keep as-is */
+    }
 
     const worktreeTop = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: effectiveCwd,
@@ -1228,15 +1389,20 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
     try {
       providedRootReal = realpathSync(providedRoot);
     } catch {
-      throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+      throw new Error(
+        `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+      );
     }
 
     if (providedRootReal !== trustedRootReal) {
-      console.error('[worktree] workingDirectory resolved to different git worktree root, using trusted root', {
-        workingDirectory: resolved,
-        providedRoot: providedRootReal,
-        trustedRoot: trustedRootReal,
-      });
+      console.error(
+        '[worktree] workingDirectory resolved to different git worktree root, using trusted root',
+        {
+          workingDirectory: resolved,
+          providedRoot: providedRootReal,
+          trustedRoot: trustedRootReal,
+        },
+      );
       return trustedRoot;
     }
 
@@ -1250,12 +1416,16 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
   try {
     resolvedReal = realpathSync(resolved);
   } catch {
-    throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+    );
   }
 
   const rel = relative(trustedRootReal, resolvedReal);
   if (rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error(`workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`,
+    );
   }
 
   // Directory is under trusted root but git failed — return trusted root,
@@ -1265,13 +1435,17 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
 
 function getGitCommonDir(cwd: string): string | null {
   try {
-    const commonDir = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], {
-      cwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-      timeout: 5000,
-    }).trim();
+    const commonDir = execFileSync(
+      'git',
+      ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+      {
+        cwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+        timeout: 5000,
+      },
+    ).trim();
     return realpathSync(commonDir);
   } catch {
     return null;
@@ -1289,7 +1463,9 @@ function getGitCommonDir(cwd: string): string | null {
  * to the trusted startup cwd, and non-repo paths outside the trusted root are
  * rejected.
  */
-export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: string): string {
+export function validateWorkingDirectoryOrLinkedWorktree(
+  workingDirectory?: string,
+): string {
   const trustedRoot = getGitTopLevel(process.cwd()) || process.cwd();
 
   if (!workingDirectory) {
@@ -1312,7 +1488,9 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
     try {
       providedRootReal = realpathSync(providedRoot);
     } catch {
-      throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+      throw new Error(
+        `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+      );
     }
 
     if (providedRootReal === trustedRootReal) {
@@ -1321,15 +1499,22 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
 
     const trustedCommonDir = getGitCommonDir(trustedRoot);
     const providedCommonDir = getGitCommonDir(providedRoot);
-    if (trustedCommonDir && providedCommonDir && providedCommonDir === trustedCommonDir) {
+    if (
+      trustedCommonDir &&
+      providedCommonDir &&
+      providedCommonDir === trustedCommonDir
+    ) {
       return providedRoot;
     }
 
-    console.error('[worktree] workingDirectory resolved to different git worktree root, using trusted root', {
-      workingDirectory: resolved,
-      providedRoot: providedRootReal,
-      trustedRoot: trustedRootReal,
-    });
+    console.error(
+      '[worktree] workingDirectory resolved to different git worktree root, using trusted root',
+      {
+        workingDirectory: resolved,
+        providedRoot: providedRootReal,
+        trustedRoot: trustedRootReal,
+      },
+    );
     return trustedRoot;
   }
 
@@ -1337,12 +1522,16 @@ export function validateWorkingDirectoryOrLinkedWorktree(workingDirectory?: stri
   try {
     resolvedReal = realpathSync(resolved);
   } catch {
-    throw new Error(`workingDirectory '${workingDirectory}' does not exist or is not accessible.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' does not exist or is not accessible.`,
+    );
   }
 
   const rel = relative(trustedRootReal, resolvedReal);
   if (rel.startsWith('..') || isAbsolute(rel)) {
-    throw new Error(`workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`);
+    throw new Error(
+      `workingDirectory '${workingDirectory}' is outside the trusted worktree root '${trustedRoot}'.`,
+    );
   }
 
   return trustedRoot;

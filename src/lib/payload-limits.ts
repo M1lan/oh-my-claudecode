@@ -31,11 +31,17 @@ export interface ValidationResult {
  * Measure the nesting depth of a value.
  * Returns 0 for primitives, 1 for flat objects/arrays, etc.
  */
-function measureDepth(value: unknown, current: number = 0, maxAllowed: number): number {
+function measureDepth(
+  value: unknown,
+  current: number = 0,
+  maxAllowed: number,
+): number {
   if (current > maxAllowed) return current; // short-circuit
 
   if (value !== null && typeof value === 'object') {
-    const entries = Array.isArray(value) ? value : Object.values(value as Record<string, unknown>);
+    const entries = Array.isArray(value)
+      ? value
+      : Object.values(value as Record<string, unknown>);
     let max = current + 1;
     for (const entry of entries) {
       const d = measureDepth(entry, current + 1, maxAllowed);
@@ -63,7 +69,11 @@ export function validatePayload(
   const resolved: PayloadLimits = { ...DEFAULT_PAYLOAD_LIMITS, ...limits };
 
   // 1. Top-level key count (only for objects)
-  if (payload !== null && typeof payload === 'object' && !Array.isArray(payload)) {
+  if (
+    payload !== null &&
+    typeof payload === 'object' &&
+    !Array.isArray(payload)
+  ) {
     const keyCount = Object.keys(payload as Record<string, unknown>).length;
     if (keyCount > resolved.maxTopLevelKeys) {
       return {

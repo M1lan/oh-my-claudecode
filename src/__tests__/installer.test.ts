@@ -14,7 +14,13 @@ import {
 import { getRuntimePackageVersion } from '../lib/version.js';
 import { join, dirname } from 'path';
 import { tmpdir } from 'os';
-import { readdirSync, readFileSync, existsSync, mkdtempSync, writeFileSync } from 'fs';
+import {
+  readdirSync,
+  readFileSync,
+  existsSync,
+  mkdtempSync,
+  writeFileSync,
+} from 'fs';
 import { fileURLToPath } from 'url';
 
 /**
@@ -88,7 +94,6 @@ describe('Installer Constants', () => {
       }
     });
 
-
     it('should have valid frontmatter for each agent', () => {
       for (const [filename, content] of Object.entries(AGENT_DEFINITIONS)) {
         // Skip non-agent files (AGENTS.md is documentation, not an agent)
@@ -99,7 +104,9 @@ describe('Installer Constants', () => {
         expect(content).toMatch(/\n---\n/);
 
         // Extract frontmatter
-        const frontmatterMatch = (content as string).match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = (content as string).match(
+          /^---\n([\s\S]*?)\n---/,
+        );
         expect(frontmatterMatch).toBeTruthy();
 
         const frontmatter = frontmatterMatch![1];
@@ -142,7 +149,9 @@ describe('Installer Constants', () => {
         'git-master.md': 'sonnet',
       };
 
-      for (const [filename, expectedModel] of Object.entries(modelExpectations)) {
+      for (const [filename, expectedModel] of Object.entries(
+        modelExpectations,
+      )) {
         const content = AGENT_DEFINITIONS[filename];
         expect(content).toBeTruthy();
         expect(content).toMatch(new RegExp(`^model:\\s+${expectedModel}`, 'm'));
@@ -154,9 +163,17 @@ describe('Installer Constants', () => {
         if (filename === 'AGENTS.md') continue;
 
         const modelMatch = content.match(/^model:\s+(\S+)/m);
-        expect(modelMatch, `${filename} should declare a model alias`).toBeTruthy();
-        expect(modelMatch![1], `${filename} should use a tier alias`).toMatch(/^(opus|sonnet|haiku)$/);
-        expect(content, `${filename} should not pin a literal Claude model ID`).not.toMatch(/^model:\s+claude-/m);
+        expect(
+          modelMatch,
+          `${filename} should declare a model alias`,
+        ).toBeTruthy();
+        expect(modelMatch![1], `${filename} should use a tier alias`).toMatch(
+          /^(opus|sonnet|haiku)$/,
+        );
+        expect(
+          content,
+          `${filename} should not pin a literal Claude model ID`,
+        ).not.toMatch(/^model:\s+claude-/m);
       }
     });
 
@@ -172,24 +189,38 @@ describe('Installer Constants', () => {
       const packageDir = getPackageDir();
       const commandsDir = join(packageDir, 'commands');
       const pluginJson = JSON.parse(
-        readFileSync(join(packageDir, '.claude-plugin', 'plugin.json'), 'utf-8')
+        readFileSync(
+          join(packageDir, '.claude-plugin', 'plugin.json'),
+          'utf-8',
+        ),
       ) as { commands?: unknown };
 
       expect(pluginJson.commands).toBe('./commands/');
       expect(existsSync(commandsDir)).toBe(true);
 
-      const files = readdirSync(commandsDir).filter(f => f.endsWith('.md'));
+      const files = readdirSync(commandsDir).filter((f) => f.endsWith('.md'));
       expect(files.length).toBeGreaterThan(0);
 
       for (const file of files) {
         const content = readFileSync(join(commandsDir, file), 'utf-8');
         if (file === 'compact.md') {
-          expect(content, 'compact.md should avoid unsupported Skill compact invocation').not.toContain('Skill("compact")');
-          expect(content, 'compact.md should provide a manual native /compact handoff').toContain('bare Claude Code command');
+          expect(
+            content,
+            'compact.md should avoid unsupported Skill compact invocation',
+          ).not.toContain('Skill("compact")');
+          expect(
+            content,
+            'compact.md should provide a manual native /compact handoff',
+          ).toContain('bare Claude Code command');
         } else {
-          expect(content, `${file} should dispatch to a bundled skill`).toContain('SKILL.md');
+          expect(
+            content,
+            `${file} should dispatch to a bundled skill`,
+          ).toContain('SKILL.md');
         }
-        expect(content, `${file} should pass through user arguments`).toContain('$ARGUMENTS');
+        expect(content, `${file} should pass through user arguments`).toContain(
+          '$ARGUMENTS',
+        );
       }
     });
   });
@@ -200,7 +231,7 @@ describe('Installer Constants', () => {
       const commandsDir = join(packageDir, 'commands');
 
       // commands/ now intentionally contains Claude Code plugin wrappers.
-      const files = readdirSync(commandsDir).filter(f => f.endsWith('.md'));
+      const files = readdirSync(commandsDir).filter((f) => f.endsWith('.md'));
       const selfReferentialStubs: string[] = [];
 
       for (const file of files) {
@@ -210,10 +241,13 @@ describe('Installer Constants', () => {
         // Detect pattern: command file that tells user to invoke the same-named skill
         const skillInvokePattern = new RegExp(
           `/oh-my-claudecode:${commandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`,
-          'i'
+          'i',
         );
 
-        if (skillInvokePattern.test(content) && content.toLowerCase().includes('deprecated')) {
+        if (
+          skillInvokePattern.test(content) &&
+          content.toLowerCase().includes('deprecated')
+        ) {
           selfReferentialStubs.push(file);
         }
       }
@@ -226,14 +260,14 @@ describe('Installer Constants', () => {
       if (!existsSync(skillsDir)) return;
 
       const skillDirs = readdirSync(skillsDir, { withFileTypes: true })
-        .filter(d => d.isDirectory())
-        .map(d => d.name);
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name);
 
       for (const skillName of skillDirs) {
         const skillMd = join(skillsDir, skillName, 'SKILL.md');
         expect(
           existsSync(skillMd),
-          `skills/${skillName}/SKILL.md should exist`
+          `skills/${skillName}/SKILL.md should exist`,
         ).toBe(true);
       }
     });
@@ -288,11 +322,7 @@ describe('Installer Constants', () => {
     it('should document magic keywords and compatibility commands', () => {
       // Keywords are now in skill trigger columns
       // Check for key keywords in the skill tables
-      const keywords = [
-        'ralph',
-        'ulw',
-        'plan',
-      ];
+      const keywords = ['ralph', 'ulw', 'plan'];
 
       for (const keyword of keywords) {
         expect(CLAUDE_MD_CONTENT).toContain(keyword);
@@ -310,14 +340,30 @@ describe('Installer Constants', () => {
     });
 
     it('should document separate writer and reviewer passes', () => {
-      expect(AGENT_DEFINITIONS['writer.md']).toContain('do not self-review, self-approve');
-      expect(AGENT_DEFINITIONS['writer.md']).toContain('separate reviewer/verifier pass');
-      expect(AGENT_DEFINITIONS['code-reviewer.md']).toContain('Review is a separate reviewer pass');
-      expect(AGENT_DEFINITIONS['code-reviewer.md']).toContain('Never approve your own authoring output');
-      expect(AGENT_DEFINITIONS['verifier.md']).toContain('Verification is a separate reviewer pass');
-      expect(AGENT_DEFINITIONS['verifier.md']).toContain('Never self-approve or bless work produced in the same active context');
-      expect(CLAUDE_MD_CONTENT).toContain('Keep authoring and review as separate passes');
-      expect(CLAUDE_MD_CONTENT).toContain('Never self-approve in the same active context');
+      expect(AGENT_DEFINITIONS['writer.md']).toContain(
+        'do not self-review, self-approve',
+      );
+      expect(AGENT_DEFINITIONS['writer.md']).toContain(
+        'separate reviewer/verifier pass',
+      );
+      expect(AGENT_DEFINITIONS['code-reviewer.md']).toContain(
+        'Review is a separate reviewer pass',
+      );
+      expect(AGENT_DEFINITIONS['code-reviewer.md']).toContain(
+        'Never approve your own authoring output',
+      );
+      expect(AGENT_DEFINITIONS['verifier.md']).toContain(
+        'Verification is a separate reviewer pass',
+      );
+      expect(AGENT_DEFINITIONS['verifier.md']).toContain(
+        'Never self-approve or bless work produced in the same active context',
+      );
+      expect(CLAUDE_MD_CONTENT).toContain(
+        'Keep authoring and review as separate passes',
+      );
+      expect(CLAUDE_MD_CONTENT).toContain(
+        'Never self-approve in the same active context',
+      );
     });
   });
 
@@ -333,7 +379,9 @@ describe('Installer Constants', () => {
       const { join, dirname } = await import('path');
       const { fileURLToPath } = await import('url');
       const __dirname = dirname(fileURLToPath(import.meta.url));
-      const pkg = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
+      const pkg = JSON.parse(
+        readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'),
+      );
       expect(VERSION).toBe(pkg.version);
     });
 
@@ -342,11 +390,12 @@ describe('Installer Constants', () => {
     });
 
     it('should keep docs/CLAUDE.md version marker in sync with package version', () => {
-      const versionMatch = CLAUDE_MD_CONTENT.match(/<!-- OMC:VERSION:([^\s]*?) -->/);
+      const versionMatch = CLAUDE_MD_CONTENT.match(
+        /<!-- OMC:VERSION:([^\s]*?) -->/,
+      );
       expect(versionMatch?.[1]).toBe(VERSION);
     });
   });
-
 
   describe('extractOmcVersionFromClaudeMd()', () => {
     it('prefers the OMC version marker', () => {
@@ -356,7 +405,8 @@ describe('Installer Constants', () => {
     });
 
     it('falls back to legacy heading versions', () => {
-      const content = '# oh-my-claudecode v4.6.0 - Intelligent Multi-Agent Orchestration';
+      const content =
+        '# oh-my-claudecode v4.6.0 - Intelligent Multi-Agent Orchestration';
       expect(extractOmcVersionFromClaudeMd(content)).toBe('v4.6.0');
     });
   });
@@ -365,7 +415,17 @@ describe('Installer Constants', () => {
     it('updates setupVersion for already-configured installs', () => {
       const tempDir = mkdtempSync(join(tmpdir(), 'omc-installer-test-'));
       const configPath = join(tempDir, '.omc-config.json');
-      writeFileSync(configPath, JSON.stringify({ setupCompleted: '2026-03-03T17:59:08+09:00', setupVersion: 'v4.6.0' }, null, 2));
+      writeFileSync(
+        configPath,
+        JSON.stringify(
+          {
+            setupCompleted: '2026-03-03T17:59:08+09:00',
+            setupVersion: 'v4.6.0',
+          },
+          null,
+          2,
+        ),
+      );
 
       const changed = syncPersistedSetupVersion({
         configPath,
@@ -429,13 +489,15 @@ describe('Installer Constants', () => {
     });
 
     it('should have agents referenced in CLAUDE.md exist in AGENT_DEFINITIONS', () => {
-      const agentMatches = CLAUDE_MD_CONTENT.matchAll(/\`([a-z-]+)\`\s*\|\s*(Opus|Sonnet|Haiku)/g);
+      const agentMatches = CLAUDE_MD_CONTENT.matchAll(
+        /\`([a-z-]+)\`\s*\|\s*(Opus|Sonnet|Haiku)/g,
+      );
 
       for (const match of agentMatches) {
         const agentName = match[1];
 
         // Find corresponding agent file
-        const agentFile = Object.keys(AGENT_DEFINITIONS).find(key => {
+        const agentFile = Object.keys(AGENT_DEFINITIONS).find((key) => {
           const content = AGENT_DEFINITIONS[key];
           const nameMatch = content.match(/^name:\s+(\S+)/m);
           return nameMatch && nameMatch[1] === agentName;
@@ -454,20 +516,31 @@ describe('Installer Constants', () => {
         if (filename === 'AGENTS.md') continue;
 
         // Skip tiered variants and agents with alternate formats
-        if (!filename.includes('-low') && !filename.includes('-medium') && !filename.includes('-high') && !alternateFormatAgents.includes(filename)) {
+        if (
+          !filename.includes('-low') &&
+          !filename.includes('-medium') &&
+          !filename.includes('-high') &&
+          !alternateFormatAgents.includes(filename)
+        ) {
           // Check for either <Role> tags or role description in various forms
-          const hasRoleSection = content.includes('<Role>') ||
-                                 content.includes('You are a') ||
-                                 content.includes('You are an') ||
-                                 content.includes('You interpret') ||
-                                 content.includes('Named after');
+          const hasRoleSection =
+            content.includes('<Role>') ||
+            content.includes('You are a') ||
+            content.includes('You are an') ||
+            content.includes('You interpret') ||
+            content.includes('Named after');
           expect(hasRoleSection).toBe(true);
         }
       }
     });
 
     it('should have read-only agents not include Edit/Write tools', () => {
-      const readOnlyAgents = ['architect.md', 'critic.md', 'analyst.md', 'verifier.md'];
+      const readOnlyAgents = [
+        'architect.md',
+        'critic.md',
+        'analyst.md',
+        'verifier.md',
+      ];
 
       for (const agent of readOnlyAgents) {
         const content = AGENT_DEFINITIONS[agent];
@@ -482,11 +555,7 @@ describe('Installer Constants', () => {
     });
 
     it('should have implementation agents include Edit/Write tools', () => {
-      const implementationAgents = [
-        'executor.md',
-        'designer.md',
-        'writer.md',
-      ];
+      const implementationAgents = ['executor.md', 'designer.md', 'writer.md'];
 
       for (const agent of implementationAgents) {
         const content = AGENT_DEFINITIONS[agent];
@@ -527,7 +596,8 @@ describe('Installer Constants', () => {
     });
 
     it('should return true when CLAUDE_PLUGIN_ROOT is set', () => {
-      process.env.CLAUDE_PLUGIN_ROOT = '/home/user/.claude/plugins/marketplaces/oh-my-claudecode';
+      process.env.CLAUDE_PLUGIN_ROOT =
+        '/home/user/.claude/plugins/marketplaces/oh-my-claudecode';
       expect(isRunningAsPlugin()).toBe(true);
     });
 
@@ -559,13 +629,21 @@ describe('Installer Constants', () => {
 
     it('should return false for global plugin installation', () => {
       // Global plugins are under ~/.claude/plugins/
-      process.env.CLAUDE_PLUGIN_ROOT = join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc', 'oh-my-claudecode', '3.9.0');
+      process.env.CLAUDE_PLUGIN_ROOT = join(
+        CLAUDE_CONFIG_DIR,
+        'plugins',
+        'cache',
+        'omc',
+        'oh-my-claudecode',
+        '3.9.0',
+      );
       expect(isProjectScopedPlugin()).toBe(false);
     });
 
     it('should return true for project-scoped plugin installation', () => {
       // Project-scoped plugins are in the project's .claude/plugins/ directory
-      process.env.CLAUDE_PLUGIN_ROOT = '/home/user/myproject/.claude/plugins/oh-my-claudecode';
+      process.env.CLAUDE_PLUGIN_ROOT =
+        '/home/user/myproject/.claude/plugins/oh-my-claudecode';
       expect(isProjectScopedPlugin()).toBe(true);
     });
 
@@ -577,12 +655,14 @@ describe('Installer Constants', () => {
 
     it('should handle Windows-style paths', () => {
       // Windows paths with backslashes should be normalized
-      process.env.CLAUDE_PLUGIN_ROOT = 'C:\\Users\\user\\project\\.claude\\plugins\\omc';
+      process.env.CLAUDE_PLUGIN_ROOT =
+        'C:\\Users\\user\\project\\.claude\\plugins\\omc';
       expect(isProjectScopedPlugin()).toBe(true);
     });
 
     it('should handle trailing slashes in paths', () => {
-      process.env.CLAUDE_PLUGIN_ROOT = join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc') + '/';
+      process.env.CLAUDE_PLUGIN_ROOT =
+        join(CLAUDE_CONFIG_DIR, 'plugins', 'cache', 'omc') + '/';
       expect(isProjectScopedPlugin()).toBe(false);
     });
   });
@@ -611,15 +691,15 @@ describe('Installer Constants', () => {
         // Check for standalone TODO that looks like a placeholder
         // (e.g., "TODO: implement this" but not "TODO LIST" or "TODO OBSESSION")
         const todoPlaceholderPattern = /TODO:\s+[a-z]/i;
-        const hasTodoPlaceholder = todoPlaceholderPattern.test(content as string);
+        const hasTodoPlaceholder = todoPlaceholderPattern.test(
+          content as string,
+        );
         expect(hasTodoPlaceholder).toBe(false);
       }
     });
 
     it('should not contain excessive blank lines', () => {
-      const allContent = [
-        ...Object.values(AGENT_DEFINITIONS),
-      ];
+      const allContent = [...Object.values(AGENT_DEFINITIONS)];
 
       for (const content of allContent) {
         // No more than 3 consecutive blank lines
@@ -632,13 +712,17 @@ describe('Installer Constants', () => {
         // Skip non-agent files
         if (filename === 'AGENTS.md') continue;
 
-        const frontmatterMatch = (content as string).match(/^---\n([\s\S]*?)\n---/);
+        const frontmatterMatch = (content as string).match(
+          /^---\n([\s\S]*?)\n---/,
+        );
         expect(frontmatterMatch).toBeTruthy();
 
         const frontmatter = frontmatterMatch![1];
 
         // Each line should be key: value format (allow camelCase keys like disallowedTools)
-        const lines = frontmatter.split('\n').filter((line: string) => line.trim());
+        const lines = frontmatter
+          .split('\n')
+          .filter((line: string) => line.trim());
         for (const line of lines) {
           expect(line).toMatch(/^[a-zA-Z]+:\s+.+/);
         }
@@ -648,13 +732,25 @@ describe('Installer Constants', () => {
 
   describe('Hook Scripts Installation (#2185 regression)', () => {
     it('should have all required lib files in templates/hooks/lib', () => {
-      const templatesLibDir = join(getPackageDir(), 'templates', 'hooks', 'lib');
+      const templatesLibDir = join(
+        getPackageDir(),
+        'templates',
+        'hooks',
+        'lib',
+      );
       expect(existsSync(templatesLibDir)).toBe(true);
 
       const libFiles = readdirSync(templatesLibDir);
 
       // Required lib files that must be present
-      const requiredFiles = ['stdin.mjs', 'atomic-write.mjs', 'config-dir.mjs', 'state-root.mjs', 'model-routing-override-message.mjs', 'bounded-git-timeout.mjs'];
+      const requiredFiles = [
+        'stdin.mjs',
+        'atomic-write.mjs',
+        'config-dir.mjs',
+        'state-root.mjs',
+        'model-routing-override-message.mjs',
+        'bounded-git-timeout.mjs',
+      ];
       for (const file of requiredFiles) {
         expect(libFiles).toContain(file);
       }

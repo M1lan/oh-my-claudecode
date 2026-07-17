@@ -6,7 +6,8 @@ import { homedir, tmpdir } from 'os';
 // Mock getOmcRoot to use our test directory
 const mockGetOmcRoot = vi.fn<(worktreeRoot?: string) => string>();
 vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/worktree-paths.js')>();
+  const actual =
+    await importOriginal<typeof import('../lib/worktree-paths.js')>();
   return {
     ...actual,
     getOmcRoot: (...args: [string?]) => mockGetOmcRoot(...args),
@@ -31,9 +32,15 @@ describe('Shared Memory', () => {
   let tildeConfigDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `shared-memory-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `shared-memory-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     omcDir = join(testDir, '.omc');
-    tildeConfigDir = join(homedir(), `.omc-test-shared-memory-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tildeConfigDir = join(
+      homedir(),
+      `.omc-test-shared-memory-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(omcDir, { recursive: true });
     mockGetOmcRoot.mockReturnValue(omcDir);
     delete process.env.CLAUDE_CONFIG_DIR;
@@ -108,7 +115,13 @@ describe('Shared Memory', () => {
 
     it('should store entry as JSON file', () => {
       writeEntry('ns', 'mykey', { x: 1 });
-      const filePath = join(omcDir, 'state', 'shared-memory', 'ns', 'mykey.json');
+      const filePath = join(
+        omcDir,
+        'state',
+        'shared-memory',
+        'ns',
+        'mykey.json',
+      );
       expect(existsSync(filePath)).toBe(true);
       const content = JSON.parse(readFileSync(filePath, 'utf-8'));
       expect(content.key).toBe('mykey');
@@ -152,7 +165,10 @@ describe('Shared Memory', () => {
         ttl: 60,
         expiresAt: '2020-01-01T00:01:00.000Z',
       };
-      writeFileSync(join(filePath, 'expired-key.json'), JSON.stringify(expiredEntry));
+      writeFileSync(
+        join(filePath, 'expired-key.json'),
+        JSON.stringify(expiredEntry),
+      );
 
       const read = readEntry('ns', 'expired-key');
       expect(read).toBeNull();
@@ -181,7 +197,7 @@ describe('Shared Memory', () => {
 
       const items = listEntries('ns');
       expect(items).toHaveLength(3);
-      expect(items.map(i => i.key)).toEqual(['alpha', 'beta', 'gamma']);
+      expect(items.map((i) => i.key)).toEqual(['alpha', 'beta', 'gamma']);
     });
 
     it('should return empty array for empty namespace', () => {
@@ -248,15 +264,18 @@ describe('Shared Memory', () => {
       // Manually write expired entries
       const nsDir = join(omcDir, 'state', 'shared-memory', 'ns');
       for (const key of ['exp1', 'exp2']) {
-        writeFileSync(join(nsDir, `${key}.json`), JSON.stringify({
-          key,
-          value: 'old',
-          namespace: 'ns',
-          createdAt: '2020-01-01T00:00:00.000Z',
-          updatedAt: '2020-01-01T00:00:00.000Z',
-          ttl: 1,
-          expiresAt: '2020-01-01T00:00:01.000Z',
-        }));
+        writeFileSync(
+          join(nsDir, `${key}.json`),
+          JSON.stringify({
+            key,
+            value: 'old',
+            namespace: 'ns',
+            createdAt: '2020-01-01T00:00:00.000Z',
+            updatedAt: '2020-01-01T00:00:00.000Z',
+            ttl: 1,
+            expiresAt: '2020-01-01T00:00:01.000Z',
+          }),
+        );
       }
 
       const result = cleanupExpired('ns');
@@ -275,15 +294,18 @@ describe('Shared Memory', () => {
       // Add expired entries to both
       for (const ns of ['ns1', 'ns2']) {
         const nsDir = join(omcDir, 'state', 'shared-memory', ns);
-        writeFileSync(join(nsDir, 'expired.json'), JSON.stringify({
-          key: 'expired',
-          value: 'old',
-          namespace: ns,
-          createdAt: '2020-01-01T00:00:00.000Z',
-          updatedAt: '2020-01-01T00:00:00.000Z',
-          ttl: 1,
-          expiresAt: '2020-01-01T00:00:01.000Z',
-        }));
+        writeFileSync(
+          join(nsDir, 'expired.json'),
+          JSON.stringify({
+            key: 'expired',
+            value: 'old',
+            namespace: ns,
+            createdAt: '2020-01-01T00:00:00.000Z',
+            updatedAt: '2020-01-01T00:00:00.000Z',
+            ttl: 1,
+            expiresAt: '2020-01-01T00:00:01.000Z',
+          }),
+        );
       }
 
       const result = cleanupExpired();
@@ -348,7 +370,9 @@ describe('Shared Memory', () => {
 
   describe('validation', () => {
     it('should reject namespace with path traversal', () => {
-      expect(() => writeEntry('../etc', 'key', 'v')).toThrow('Invalid namespace');
+      expect(() => writeEntry('../etc', 'key', 'v')).toThrow(
+        'Invalid namespace',
+      );
     });
 
     it('should reject key with path traversal', () => {
@@ -364,7 +388,9 @@ describe('Shared Memory', () => {
     });
 
     it('should reject namespace with special characters', () => {
-      expect(() => writeEntry('ns/foo', 'key', 'v')).toThrow('Invalid namespace');
+      expect(() => writeEntry('ns/foo', 'key', 'v')).toThrow(
+        'Invalid namespace',
+      );
     });
 
     it('should accept namespace with dots, hyphens, underscores', () => {
@@ -385,13 +411,16 @@ describe('Shared Memory', () => {
     it('should read config from the active CLAUDE_CONFIG_DIR', () => {
       const claudeConfigDir = join(testDir, 'claude-config');
       mkdirSync(claudeConfigDir, { recursive: true });
-      writeFileSync(join(claudeConfigDir, '.omc-config.json'), JSON.stringify({
-        agents: {
-          sharedMemory: {
-            enabled: false,
+      writeFileSync(
+        join(claudeConfigDir, '.omc-config.json'),
+        JSON.stringify({
+          agents: {
+            sharedMemory: {
+              enabled: false,
+            },
           },
-        },
-      }));
+        }),
+      );
 
       process.env.CLAUDE_CONFIG_DIR = claudeConfigDir;
 
@@ -400,13 +429,16 @@ describe('Shared Memory', () => {
 
     it('should expand ~-prefixed CLAUDE_CONFIG_DIR values', () => {
       mkdirSync(tildeConfigDir, { recursive: true });
-      writeFileSync(join(tildeConfigDir, '.omc-config.json'), JSON.stringify({
-        agents: {
-          sharedMemory: {
-            enabled: false,
+      writeFileSync(
+        join(tildeConfigDir, '.omc-config.json'),
+        JSON.stringify({
+          agents: {
+            sharedMemory: {
+              enabled: false,
+            },
           },
-        },
-      }));
+        }),
+      );
 
       process.env.CLAUDE_CONFIG_DIR = `~/${basename(tildeConfigDir)}`;
 
@@ -421,14 +453,26 @@ describe('Shared Memory', () => {
   describe('atomic writes', () => {
     it('should not leave temp file after successful write', () => {
       writeEntry('ns', 'clean-test', 'data');
-      const filePath = join(omcDir, 'state', 'shared-memory', 'ns', 'clean-test.json');
+      const filePath = join(
+        omcDir,
+        'state',
+        'shared-memory',
+        'ns',
+        'clean-test.json',
+      );
       expect(existsSync(filePath)).toBe(true);
       expect(existsSync(filePath + '.tmp')).toBe(false);
     });
 
     it('should preserve original file when a leftover .tmp exists from a prior crash', () => {
       writeEntry('ns', 'crash-test', 'original');
-      const filePath = join(omcDir, 'state', 'shared-memory', 'ns', 'crash-test.json');
+      const filePath = join(
+        omcDir,
+        'state',
+        'shared-memory',
+        'ns',
+        'crash-test.json',
+      );
 
       // Simulate a leftover .tmp from a crashed write
       writeFileSync(filePath + '.tmp', 'partial-garbage');

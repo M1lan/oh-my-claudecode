@@ -5,7 +5,11 @@ import { dirname } from 'path';
 export const DEFAULT_INLINE_ARTIFACT_THRESHOLD_BYTES = 2048;
 const DEFAULT_HANDOFF_SUMMARY_MAX_CHARS = 160;
 
-export type ArtifactRetention = 'ephemeral' | 'session' | 'until-completion' | 'persistent';
+export type ArtifactRetention =
+  | 'ephemeral'
+  | 'session'
+  | 'until-completion'
+  | 'persistent';
 
 export interface ArtifactProducer {
   system: 'omc' | 'omx';
@@ -62,7 +66,10 @@ export interface CreateArtifactHandoffOptions {
   descriptorFactory: () => ArtifactDescriptor;
 }
 
-export function summarizeArtifactBody(body: string, maxChars: number = DEFAULT_HANDOFF_SUMMARY_MAX_CHARS): string {
+export function summarizeArtifactBody(
+  body: string,
+  maxChars: number = DEFAULT_HANDOFF_SUMMARY_MAX_CHARS,
+): string {
   const normalized = body.replace(/\s+/g, ' ').trim();
   if (normalized.length <= maxChars) {
     return normalized;
@@ -90,15 +97,23 @@ export function createArtifactDescriptorFromPath(
   };
 }
 
-export function writeTextArtifact(options: WriteTextArtifactOptions): ArtifactDescriptor {
+export function writeTextArtifact(
+  options: WriteTextArtifactOptions,
+): ArtifactDescriptor {
   mkdirSync(dirname(options.path), { recursive: true });
-  writeFileSync(options.path, options.content, { encoding: 'utf-8', mode: 0o600 });
+  writeFileSync(options.path, options.content, {
+    encoding: 'utf-8',
+    mode: 0o600,
+  });
 
   return createArtifactDescriptorFromPath(options.path, options);
 }
 
-export function createArtifactHandoff(options: CreateArtifactHandoffOptions): ArtifactHandoff {
-  const thresholdBytes = options.thresholdBytes ?? DEFAULT_INLINE_ARTIFACT_THRESHOLD_BYTES;
+export function createArtifactHandoff(
+  options: CreateArtifactHandoffOptions,
+): ArtifactHandoff {
+  const thresholdBytes =
+    options.thresholdBytes ?? DEFAULT_INLINE_ARTIFACT_THRESHOLD_BYTES;
   const sizeBytes = Buffer.byteLength(options.body, 'utf-8');
   const summary = options.summary ?? summarizeArtifactBody(options.body);
 

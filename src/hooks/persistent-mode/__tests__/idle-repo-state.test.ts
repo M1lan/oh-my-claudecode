@@ -42,19 +42,38 @@ describe('getIdleNotificationRepoState', () => {
       stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
     };
-    expect(execFileSync).toHaveBeenNthCalledWith(1, 'git', ['remote', 'get-url', 'origin'], gitOptions);
-    expect(execFileSync).toHaveBeenNthCalledWith(2, 'git', ['rev-parse', 'HEAD'], gitOptions);
-    expect(execFileSync).toHaveBeenNthCalledWith(3, 'git', ['status', '--porcelain'], gitOptions);
+    expect(execFileSync).toHaveBeenNthCalledWith(
+      1,
+      'git',
+      ['remote', 'get-url', 'origin'],
+      gitOptions,
+    );
+    expect(execFileSync).toHaveBeenNthCalledWith(
+      2,
+      'git',
+      ['rev-parse', 'HEAD'],
+      gitOptions,
+    );
+    expect(execFileSync).toHaveBeenNthCalledWith(
+      3,
+      'git',
+      ['status', '--porcelain'],
+      gitOptions,
+    );
   });
 
   it('returns non-zero backlog when PRs, issues, or failing runs exist', () => {
     vi.mocked(execFileSync)
-      .mockReturnValueOnce('https://github.com/Yeachan-Heo/oh-my-claudecode.git\n')
+      .mockReturnValueOnce(
+        'https://github.com/Yeachan-Heo/oh-my-claudecode.git\n',
+      )
       .mockReturnValueOnce('def456\n')
       .mockReturnValueOnce(' M src/file.ts\n')
       .mockReturnValueOnce('[{"number":2472}]')
       .mockReturnValueOnce('[{"number":2473}]')
-      .mockReturnValueOnce('[{"databaseId":91,"conclusion":"failure"},{"databaseId":92,"conclusion":"success"}]');
+      .mockReturnValueOnce(
+        '[{"databaseId":91,"conclusion":"failure"},{"databaseId":92,"conclusion":"success"}]',
+      );
 
     const result = getIdleNotificationRepoState('/repo');
 
@@ -72,7 +91,9 @@ describe('getIdleNotificationRepoState', () => {
   });
 
   it('returns null when the repo is not hosted on GitHub', () => {
-    vi.mocked(execFileSync).mockReturnValueOnce('git@gitlab.com:group/project.git\n');
+    vi.mocked(execFileSync).mockReturnValueOnce(
+      'git@gitlab.com:group/project.git\n',
+    );
 
     expect(getIdleNotificationRepoState('/repo')).toBeNull();
   });

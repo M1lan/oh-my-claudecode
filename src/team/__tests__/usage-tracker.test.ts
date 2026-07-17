@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync, statSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+  statSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -20,7 +27,11 @@ describe('usage-tracker', () => {
     rmSync(testDir, { recursive: true, force: true });
   });
 
-  function makeRecord(workerName: string, taskId: string, wallClockMs: number = 5000): TaskUsageRecord {
+  function makeRecord(
+    workerName: string,
+    taskId: string,
+    wallClockMs: number = 5000,
+  ): TaskUsageRecord {
     return {
       taskId,
       workerName,
@@ -39,7 +50,12 @@ describe('usage-tracker', () => {
       const record = makeRecord('worker1', 'task1');
       recordTaskUsage(testDir, 'test-team', record);
 
-      const logPath = join(testDir, '.omc', 'logs', 'team-usage-test-team.jsonl');
+      const logPath = join(
+        testDir,
+        '.omc',
+        'logs',
+        'team-usage-test-team.jsonl',
+      );
       expect(existsSync(logPath)).toBe(true);
 
       const content = readFileSync(logPath, 'utf-8').trim();
@@ -52,7 +68,12 @@ describe('usage-tracker', () => {
       recordTaskUsage(testDir, 'test-team', makeRecord('worker1', 'task1'));
       recordTaskUsage(testDir, 'test-team', makeRecord('worker1', 'task2'));
 
-      const logPath = join(testDir, '.omc', 'logs', 'team-usage-test-team.jsonl');
+      const logPath = join(
+        testDir,
+        '.omc',
+        'logs',
+        'team-usage-test-team.jsonl',
+      );
       const lines = readFileSync(logPath, 'utf-8').trim().split('\n');
       expect(lines).toHaveLength(2);
     });
@@ -60,7 +81,12 @@ describe('usage-tracker', () => {
     it('creates log with correct permissions', () => {
       recordTaskUsage(testDir, 'test-team', makeRecord('worker1', 'task1'));
 
-      const logPath = join(testDir, '.omc', 'logs', 'team-usage-test-team.jsonl');
+      const logPath = join(
+        testDir,
+        '.omc',
+        'logs',
+        'team-usage-test-team.jsonl',
+      );
       const stat = statSync(logPath);
       expect(stat.mode & 0o777).toBe(0o600);
     });
@@ -79,7 +105,10 @@ describe('usage-tracker', () => {
     });
 
     it('returns 0 for missing files', () => {
-      const result = measureCharCounts('/nonexistent/prompt', '/nonexistent/output');
+      const result = measureCharCounts(
+        '/nonexistent/prompt',
+        '/nonexistent/output',
+      );
       expect(result.promptChars).toBe(0);
       expect(result.responseChars).toBe(0);
     });
@@ -103,16 +132,28 @@ describe('usage-tracker', () => {
     });
 
     it('aggregates across workers', () => {
-      recordTaskUsage(testDir, 'test-team', makeRecord('worker1', 'task1', 5000));
-      recordTaskUsage(testDir, 'test-team', makeRecord('worker1', 'task2', 3000));
-      recordTaskUsage(testDir, 'test-team', makeRecord('worker2', 'task3', 7000));
+      recordTaskUsage(
+        testDir,
+        'test-team',
+        makeRecord('worker1', 'task1', 5000),
+      );
+      recordTaskUsage(
+        testDir,
+        'test-team',
+        makeRecord('worker1', 'task2', 3000),
+      );
+      recordTaskUsage(
+        testDir,
+        'test-team',
+        makeRecord('worker2', 'task3', 7000),
+      );
 
       const report = generateUsageReport(testDir, 'test-team');
       expect(report.taskCount).toBe(3);
       expect(report.totalWallClockMs).toBe(15000);
       expect(report.workers).toHaveLength(2);
 
-      const w1 = report.workers.find(w => w.workerName === 'worker1');
+      const w1 = report.workers.find((w) => w.workerName === 'worker1');
       expect(w1!.taskCount).toBe(2);
       expect(w1!.totalWallClockMs).toBe(8000);
       expect(w1!.totalPromptChars).toBe(2000);

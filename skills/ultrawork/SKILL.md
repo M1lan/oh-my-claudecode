@@ -86,7 +86,7 @@ Why good: Independent tasks at appropriate tiers, all fired at once.
 <Good>
 Correct use of background execution:
 ```
-Task(subagent_type="oh-my-claudecode:executor", model="sonnet", prompt="npm install && npm run build", run_in_background=true)
+Task(subagent_type="oh-my-claudecode:executor", model="sonnet", prompt="pnpm install && pnpm run build", run_in_background=true)
 Task(subagent_type="oh-my-claudecode:executor", model="haiku", prompt="Update the README with new API endpoints")
 ```
 Why good: Long build runs in background while short task runs in foreground.

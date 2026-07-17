@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { isNonClaudeProvider, isBedrock, isVertexAI } from '../config/models.js';
+import {
+  isNonClaudeProvider,
+  isBedrock,
+  isVertexAI,
+} from '../config/models.js';
 import { loadConfig } from '../config/loader.js';
 
 describe('isNonClaudeProvider (issue #1201)', () => {
@@ -116,7 +120,8 @@ describe('isNonClaudeProvider (issue #1201)', () => {
   });
 
   it('returns true for Bedrock model ID with global.anthropic prefix', () => {
-    process.env.CLAUDE_MODEL = 'global.anthropic.claude-3-5-sonnet-20241022-v2:0';
+    process.env.CLAUDE_MODEL =
+      'global.anthropic.claude-3-5-sonnet-20241022-v2:0';
     expect(isNonClaudeProvider()).toBe(true);
   });
 
@@ -145,7 +150,11 @@ describe('isNonClaudeProvider (issue #1201)', () => {
 
 describe('isBedrock()', () => {
   const savedEnv: Record<string, string | undefined> = {};
-  const envKeys = ['CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL'];
+  const envKeys = [
+    'CLAUDE_CODE_USE_BEDROCK',
+    'CLAUDE_MODEL',
+    'ANTHROPIC_MODEL',
+  ];
 
   beforeEach(() => {
     for (const key of envKeys) {
@@ -184,7 +193,8 @@ describe('isBedrock()', () => {
   });
 
   it('detects global.anthropic.claude model ID pattern', () => {
-    process.env.ANTHROPIC_MODEL = 'global.anthropic.claude-3-5-sonnet-20241022-v2:0';
+    process.env.ANTHROPIC_MODEL =
+      'global.anthropic.claude-3-5-sonnet-20241022-v2:0';
     expect(isBedrock()).toBe(true);
   });
 

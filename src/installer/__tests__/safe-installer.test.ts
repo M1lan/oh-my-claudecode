@@ -14,7 +14,10 @@ import { isOmcHook, InstallOptions } from '../index.js';
  * Mirrors the install() logic to avoid test duplication.
  */
 function detectConflicts(
-  hooks: Record<string, Array<{ hooks: Array<{ type: string; command: string }> }>>
+  hooks: Record<
+    string,
+    Array<{ hooks: Array<{ type: string; command: string }> }>
+  >,
 ): Array<{ eventType: string; existingCommand: string }> {
   const conflicts: Array<{ eventType: string; existingCommand: string }> = [];
   for (const [eventType, eventHooks] of Object.entries(hooks)) {
@@ -40,8 +43,12 @@ describe('isOmcHook', () => {
   });
 
   it('returns true for commands containing "oh-my-claudecode"', () => {
-    expect(isOmcHook('node ~/.claude/hooks/oh-my-claudecode-hook.mjs')).toBe(true);
-    expect(isOmcHook('bash $HOME/.claude/hooks/oh-my-claudecode.sh')).toBe(true);
+    expect(isOmcHook('node ~/.claude/hooks/oh-my-claudecode-hook.mjs')).toBe(
+      true,
+    );
+    expect(isOmcHook('bash $HOME/.claude/hooks/oh-my-claudecode.sh')).toBe(
+      true,
+    );
   });
 
   it('returns false for commands not containing omc or oh-my-claudecode', () => {
@@ -52,41 +59,73 @@ describe('isOmcHook', () => {
 
   it('is case-insensitive', () => {
     expect(isOmcHook('node ~/.claude/hooks/OMC-hook.mjs')).toBe(true);
-    expect(isOmcHook('bash $HOME/.claude/hooks/OH-MY-CLAUDECODE.sh')).toBe(true);
+    expect(isOmcHook('bash $HOME/.claude/hooks/OH-MY-CLAUDECODE.sh')).toBe(
+      true,
+    );
   });
 });
 
 describe('isOmcHook detection', () => {
   it('detects real OMC hooks correctly', () => {
     expect(isOmcHook('node ~/.claude/hooks/omc-hook.mjs')).toBe(true);
-    expect(isOmcHook('node ~/.claude/hooks/oh-my-claudecode-hook.mjs')).toBe(true);
+    expect(isOmcHook('node ~/.claude/hooks/oh-my-claudecode-hook.mjs')).toBe(
+      true,
+    );
     expect(isOmcHook('node ~/.claude/hooks/omc-pre-tool-use.mjs')).toBe(true);
     expect(isOmcHook('/usr/local/bin/omc')).toBe(true);
   });
 
   it('detects actual OMC hook commands from settings.json (issue #606)', () => {
     // These are the real commands OMC installs into settings.json
-    expect(isOmcHook('node "$HOME/.claude/hooks/keyword-detector.mjs"')).toBe(true);
-    expect(isOmcHook('node "$HOME/.claude/hooks/session-start.mjs"')).toBe(true);
+    expect(isOmcHook('node "$HOME/.claude/hooks/keyword-detector.mjs"')).toBe(
+      true,
+    );
+    expect(isOmcHook('node "$HOME/.claude/hooks/session-start.mjs"')).toBe(
+      true,
+    );
     expect(isOmcHook('node "$HOME/.claude/hooks/pre-tool-use.mjs"')).toBe(true);
-    expect(isOmcHook('node "$HOME/.claude/hooks/post-tool-use.mjs"')).toBe(true);
-    expect(isOmcHook('node "$HOME/.claude/hooks/post-tool-use-failure.mjs"')).toBe(true);
-    expect(isOmcHook('node "$HOME/.claude/hooks/persistent-mode.mjs"')).toBe(true);
+    expect(isOmcHook('node "$HOME/.claude/hooks/post-tool-use.mjs"')).toBe(
+      true,
+    );
+    expect(
+      isOmcHook('node "$HOME/.claude/hooks/post-tool-use-failure.mjs"'),
+    ).toBe(true);
+    expect(isOmcHook('node "$HOME/.claude/hooks/persistent-mode.mjs"')).toBe(
+      true,
+    );
   });
 
   it('detects custom-profile OMC hook commands by hook filename', () => {
-    expect(isOmcHook('node "/tmp/custom-claude/hooks/keyword-detector.mjs"')).toBe(true);
+    expect(
+      isOmcHook('node "/tmp/custom-claude/hooks/keyword-detector.mjs"'),
+    ).toBe(true);
   });
 
   it('detects CLAUDE_CONFIG_DIR-aware hook commands', () => {
-    expect(isOmcHook('node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/keyword-detector.mjs"')).toBe(true);
-    expect(isOmcHook('node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/pre-tool-use.mjs"')).toBe(true);
-    expect(isOmcHook('node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/persistent-mode.mjs"')).toBe(true);
+    expect(
+      isOmcHook(
+        'node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/keyword-detector.mjs"',
+      ),
+    ).toBe(true);
+    expect(
+      isOmcHook(
+        'node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/pre-tool-use.mjs"',
+      ),
+    ).toBe(true);
+    expect(
+      isOmcHook(
+        'node "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/persistent-mode.mjs"',
+      ),
+    ).toBe(true);
   });
 
   it('detects Windows-style OMC hook commands (issue #606)', () => {
-    expect(isOmcHook('node "%USERPROFILE%\\.claude\\hooks\\keyword-detector.mjs"')).toBe(true);
-    expect(isOmcHook('node "%USERPROFILE%\\.claude\\hooks\\pre-tool-use.mjs"')).toBe(true);
+    expect(
+      isOmcHook('node "%USERPROFILE%\\.claude\\hooks\\keyword-detector.mjs"'),
+    ).toBe(true);
+    expect(
+      isOmcHook('node "%USERPROFILE%\\.claude\\hooks\\pre-tool-use.mjs"'),
+    ).toBe(true);
   });
 
   it('rejects non-OMC hooks correctly', () => {
@@ -131,18 +170,21 @@ describe('Safe Installer - Hook Conflict Detection', () => {
             hooks: [
               {
                 type: 'command',
-                command: 'node ~/.claude/hooks/beads-hook.mjs'
-              }
-            ]
-          }
-        ]
-      }
+                command: 'node ~/.claude/hooks/beads-hook.mjs',
+              },
+            ],
+          },
+        ],
+      },
     };
-    writeFileSync(TEST_SETTINGS_FILE, JSON.stringify(existingSettings, null, 2));
+    writeFileSync(
+      TEST_SETTINGS_FILE,
+      JSON.stringify(existingSettings, null, 2),
+    );
 
     const _options: InstallOptions = {
       verbose: true,
-      skipClaudeCheck: true
+      skipClaudeCheck: true,
     };
 
     // Simulate install logic (we'd need to mock or refactor install function for full test)
@@ -151,7 +193,9 @@ describe('Safe Installer - Hook Conflict Detection', () => {
 
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].eventType).toBe('PreToolUse');
-    expect(conflicts[0].existingCommand).toBe('node ~/.claude/hooks/beads-hook.mjs');
+    expect(conflicts[0].existingCommand).toBe(
+      'node ~/.claude/hooks/beads-hook.mjs',
+    );
   });
 
   it('does not detect conflict when hook is OMC-owned', () => {
@@ -162,12 +206,12 @@ describe('Safe Installer - Hook Conflict Detection', () => {
             hooks: [
               {
                 type: 'command',
-                command: 'node "$HOME/.claude/hooks/pre-tool-use.mjs"'
-              }
-            ]
-          }
-        ]
-      }
+                command: 'node "$HOME/.claude/hooks/pre-tool-use.mjs"',
+              },
+            ],
+          },
+        ],
+      },
     };
 
     const conflicts = detectConflicts(existingSettings.hooks);
@@ -183,39 +227,39 @@ describe('Safe Installer - Hook Conflict Detection', () => {
             hooks: [
               {
                 type: 'command',
-                command: 'node ~/.claude/hooks/beads-pre-tool-use.mjs'
-              }
-            ]
-          }
+                command: 'node ~/.claude/hooks/beads-pre-tool-use.mjs',
+              },
+            ],
+          },
         ],
         PostToolUse: [
           {
             hooks: [
               {
                 type: 'command',
-                command: 'python ~/.claude/hooks/custom-post-tool.py'
-              }
-            ]
-          }
+                command: 'python ~/.claude/hooks/custom-post-tool.py',
+              },
+            ],
+          },
         ],
         UserPromptSubmit: [
           {
             hooks: [
               {
                 type: 'command',
-                command: 'node "$HOME/.claude/hooks/keyword-detector.mjs"'
-              }
-            ]
-          }
-        ]
-      }
+                command: 'node "$HOME/.claude/hooks/keyword-detector.mjs"',
+              },
+            ],
+          },
+        ],
+      },
     };
 
     const conflicts = detectConflicts(existingSettings.hooks);
 
     expect(conflicts).toHaveLength(2);
-    expect(conflicts.map(c => c.eventType)).toContain('PreToolUse');
-    expect(conflicts.map(c => c.eventType)).toContain('PostToolUse');
-    expect(conflicts.map(c => c.eventType)).not.toContain('UserPromptSubmit');
+    expect(conflicts.map((c) => c.eventType)).toContain('PreToolUse');
+    expect(conflicts.map((c) => c.eventType)).toContain('PostToolUse');
+    expect(conflicts.map((c) => c.eventType)).not.toContain('UserPromptSubmit');
   });
 });

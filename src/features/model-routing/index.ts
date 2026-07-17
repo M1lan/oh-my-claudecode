@@ -101,7 +101,7 @@ import { adaptPromptForTier } from './prompts/index.js';
 export function routeAndAdaptTask(
   taskPrompt: string,
   agentType?: string,
-  previousFailures?: number
+  previousFailures?: number,
 ): { decision: import('./types.js').RoutingDecision; adaptedPrompt: string } {
   const decision = routeWithEscalation({
     taskPrompt,

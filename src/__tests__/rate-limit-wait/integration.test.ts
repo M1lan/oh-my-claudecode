@@ -17,7 +17,8 @@ vi.mock('../../hud/usage-api.js', () => ({
 }));
 
 vi.mock('child_process', async () => {
-  const actual = await vi.importActual<typeof import('child_process')>('child_process');
+  const actual =
+    await vi.importActual<typeof import('child_process')>('child_process');
   return {
     ...actual,
     execSync: vi.fn(),
@@ -373,7 +374,10 @@ Assistant: I can help with more tasks.
 
   describe('Scenario: Error handling and edge cases', () => {
     it('should handle OAuth credentials not available', async () => {
-      vi.mocked(getUsage).mockResolvedValue({ rateLimits: null, error: 'no_credentials' });
+      vi.mocked(getUsage).mockResolvedValue({
+        rateLimits: null,
+        error: 'no_credentials',
+      });
 
       const status = await checkRateLimitStatus();
 
@@ -413,7 +417,9 @@ Assistant: I can help with more tasks.
         output: [],
       });
 
-      vi.mocked(execSync).mockReturnValue('malformed output without proper format');
+      vi.mocked(execSync).mockReturnValue(
+        'malformed output without proper format',
+      );
 
       // Should not throw, just return empty
       const blocked = scanForBlockedPanes();

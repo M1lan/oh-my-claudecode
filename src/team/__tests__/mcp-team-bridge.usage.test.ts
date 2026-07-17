@@ -37,9 +37,19 @@ describe('mcp-team-bridge usage recording', () => {
       startedAtIso: new Date(Date.now() - 200).toISOString(),
     });
 
-    const logPath = join(workingDirectory, '.omc', 'logs', 'team-usage-usage-team.jsonl');
+    const logPath = join(
+      workingDirectory,
+      '.omc',
+      'logs',
+      'team-usage-usage-team.jsonl',
+    );
     const content = readFileSync(logPath, 'utf-8').trim();
-    const record = JSON.parse(content) as { taskId: string; workerName: string; promptChars: number; responseChars: number };
+    const record = JSON.parse(content) as {
+      taskId: string;
+      workerName: string;
+      promptChars: number;
+      responseChars: number;
+    };
     expect(record.taskId).toBe('1');
     expect(record.workerName).toBe('worker-1');
     expect(record.promptChars).toBeGreaterThan(0);
@@ -49,8 +59,13 @@ describe('mcp-team-bridge usage recording', () => {
   });
 
   it('uses writeTaskFailure return value for retry attempt checks', () => {
-    const source = readFileSync(join(__dirname, '..', 'mcp-team-bridge.ts'), 'utf-8');
-    expect(source).toContain('const failure = writeTaskFailure(teamName, task.id, errorMsg,');
+    const source = readFileSync(
+      join(__dirname, '..', 'mcp-team-bridge.ts'),
+      'utf-8',
+    );
+    expect(source).toContain(
+      'const failure = writeTaskFailure(teamName, task.id, errorMsg,',
+    );
     expect(source).toContain('const attempt = failure.retryCount;');
     expect(source).toContain('if (attempt >= (config.maxRetries ?? 5))');
   });

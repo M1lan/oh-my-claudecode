@@ -34,13 +34,17 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
 
       if (!valid) {
         if (DEBUG_ENABLED) {
-          console.warn(`Invalid skill file ${candidate.path}: ${errors.join(', ')}`);
+          console.warn(
+            `Invalid skill file ${candidate.path}: ${errors.join(', ')}`,
+          );
         }
         continue;
       }
 
       const skillId = metadata.id!;
-      const relativePath = normalize(relative(candidate.sourceDir, candidate.path));
+      const relativePath = normalize(
+        relative(candidate.sourceDir, candidate.path),
+      );
 
       const skill: LearnedSkill = {
         path: candidate.path,
@@ -71,9 +75,12 @@ export function loadAllSkills(projectRoot: string | null): LearnedSkill[] {
 /**
  * Load a specific skill by ID.
  */
-export function loadSkillById(skillId: string, projectRoot: string | null): LearnedSkill | null {
+export function loadSkillById(
+  skillId: string,
+  projectRoot: string | null,
+): LearnedSkill | null {
   const skills = loadAllSkills(projectRoot);
-  return skills.find(s => s.metadata.id === skillId) || null;
+  return skills.find((s) => s.metadata.id === skillId) || null;
 }
 
 /**
@@ -82,12 +89,12 @@ export function loadSkillById(skillId: string, projectRoot: string | null): Lear
 export function findMatchingSkills(
   message: string,
   projectRoot: string | null,
-  limit: number = 5
+  limit: number = 5,
 ): LearnedSkill[] {
   const skills = loadAllSkills(projectRoot);
   const messageLower = message.toLowerCase();
 
-  const scored = skills.map(skill => {
+  const scored = skills.map((skill) => {
     let score = 0;
     let hasMatch = false;
 
@@ -126,8 +133,8 @@ export function findMatchingSkills(
   });
 
   return scored
-    .filter(s => s.score > 0)
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map(s => s.skill);
+    .map((s) => s.skill);
 }

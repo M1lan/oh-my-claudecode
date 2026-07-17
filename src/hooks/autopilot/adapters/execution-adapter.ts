@@ -11,12 +11,18 @@ import type {
   PipelineStageAdapter,
   PipelineConfig,
   PipelineContext,
-} from "../pipeline-types.js";
-import { resolveAutopilotPlanPath } from "../../../config/plan-output.js";
+} from '../pipeline-types.js';
+import { resolveAutopilotPlanPath } from '../../../config/plan-output.js';
 
-export const EXECUTION_COMPLETION_SIGNAL = "PIPELINE_EXECUTION_COMPLETE";
+export const EXECUTION_COMPLETION_SIGNAL = 'PIPELINE_EXECUTION_COMPLETE';
 
-const CLI_TEAM_AGENT_TYPES = new Set(["codex", "gemini", "grok", "cursor", "antigravity"]);
+const CLI_TEAM_AGENT_TYPES = new Set([
+  'codex',
+  'gemini',
+  'grok',
+  'cursor',
+  'antigravity',
+]);
 
 function uniqueRequestedAgentTypes(
   agentTypes: readonly string[] | undefined,
@@ -32,7 +38,7 @@ function formatCliTeamAgentSpec(agentTypes: readonly string[]): string {
   const cliTypes = agentTypes.filter((agentType) =>
     CLI_TEAM_AGENT_TYPES.has(agentType),
   );
-  const preferred = cliTypes.length > 0 ? cliTypes[0] : "cursor";
+  const preferred = cliTypes.length > 0 ? cliTypes[0] : 'cursor';
   return `1:${preferred}`;
 }
 
@@ -40,15 +46,15 @@ function getCliTeamRuntimeGuidance(
   agentTypes: readonly string[],
   planPath: string,
 ): string {
-  const requested = agentTypes.join(", ");
+  const requested = agentTypes.join(', ');
   const agentSpec = formatCliTeamAgentSpec(agentTypes);
-  const cursorGuidance = agentTypes.includes("cursor")
+  const cursorGuidance = agentTypes.includes('cursor')
     ? `
 
 ### Cursor Availability
 
 Before launching Cursor workers, verify \`cursor-agent\` is installed and authenticated. If it is unavailable, stop and report: install/authenticate \`cursor-agent\` for Cursor worker support. Do not silently fall back to Claude-only execution in a way that hides the missing Cursor dependency.`
-    : "";
+    : '';
 
   return `### CLI Team Runtime Required
 
@@ -70,8 +76,8 @@ Requested worker types: ${requested}. Keep these CLI workers executor-style only
 }
 
 export const executionAdapter: PipelineStageAdapter = {
-  id: "execution",
-  name: "Execution",
+  id: 'execution',
+  name: 'Execution',
   completionSignal: EXECUTION_COMPLETION_SIGNAL,
 
   shouldSkip(_config: PipelineConfig): boolean {
@@ -81,7 +87,7 @@ export const executionAdapter: PipelineStageAdapter = {
 
   getPrompt(context: PipelineContext): string {
     const planPath = context.planPath || resolveAutopilotPlanPath();
-    const isTeam = context.config.execution === "team";
+    const isTeam = context.config.execution === 'team';
     const requestedAgentTypes = uniqueRequestedAgentTypes(
       context.config.team?.agentTypes,
     );
@@ -104,15 +110,19 @@ Read the implementation plan at: \`${planPath}\`
 
 ${teamRuntimeGuidance}
 
-${useCliTeamRuntime ? `1. **Launch CLI executor workers** with \`omc team\` or \`/omc-teams\` using the requested agent types.
+${
+  useCliTeamRuntime
+    ? `1. **Launch CLI executor workers** with \`omc team\` or \`/omc-teams\` using the requested agent types.
 2. **Decompose executor-style implementation tasks** from the implementation plan and pass them to CLI workers.
 3. **Monitor tmux/team output** and integrate completed implementation changes.
 4. **Keep review/critic/security/verdict work native**; do not assign those roles to Cursor/CLI workers.
-5. **Coordinate** dependencies between tasks.` : `1. **Use the implicit team** provided by Claude Code when \`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1\` is enabled; do not call removed \`TeamCreate\`/\`TeamDelete\` tools.
+5. **Coordinate** dependencies between tasks.`
+    : `1. **Use the implicit team** provided by Claude Code when \`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1\` is enabled; do not call removed \`TeamCreate\`/\`TeamDelete\` tools.
 2. **Track work in TodoWrite or the active task list** from the implementation plan.
 3. **Spawn executor teammates directly** with the Agent/Task tool using distinct \`name\` values (for example, \`name="worker-1"\`). Do not rely on \`team_name\`; Claude Code 2.1.178+ accepts it only as ignored legacy metadata.
 4. **Monitor progress** as teammates complete tasks.
-5. **Coordinate** dependencies between tasks.`}
+5. **Coordinate** dependencies between tasks.`
+}
 
 ### Output Contract
 
@@ -120,13 +130,17 @@ Every teammate response must stay concise: return ONLY a short execution summary
 
 ### Agent Selection
 
-${useCliTeamRuntime ? `Use the requested CLI worker spec for executor-style implementation tasks only. Keep task prompts framed as implementation/build/test-fix work; do not ask Cursor/CLI workers to act as reviewers, critics, security reviewers, or final verdict agents.` : `Match agent types to task complexity:
+${
+  useCliTeamRuntime
+    ? `Use the requested CLI worker spec for executor-style implementation tasks only. Keep task prompts framed as implementation/build/test-fix work; do not ask Cursor/CLI workers to act as reviewers, critics, security reviewers, or final verdict agents.`
+    : `Match agent types to task complexity:
 - Simple tasks (single file, config): \`executor\` with \`model="haiku"\`
 - Standard implementation: \`executor\` with \`model="sonnet"\`
 - Complex work (architecture, refactoring): \`executor\` with \`model="opus"\`
 - Build issues: \`debugger\` with \`model="sonnet"\`
 - Test creation: \`test-engineer\` with \`model="sonnet"\`
-- UI work: \`designer\` with \`model="sonnet"\``}
+- UI work: \`designer\` with \`model="sonnet"\``
+}
 
 ### Progress Tracking
 

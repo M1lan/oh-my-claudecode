@@ -20,9 +20,12 @@ interface ChangelogSection {
   entries: string[];
 }
 
-const CONVENTIONAL_RE = /^(?<type>[a-z]+)(?:\((?<scope>[^)]*)\))?:\s*(?<desc>.+)$/;
+const CONVENTIONAL_RE =
+  /^(?<type>[a-z]+)(?:\((?<scope>[^)]*)\))?:\s*(?<desc>.+)$/;
 
-function parseConventionalSubject(raw: string): { type: string; scope: string; description: string } | null {
+function parseConventionalSubject(
+  raw: string,
+): { type: string; scope: string; description: string } | null {
   const match = raw.match(CONVENTIONAL_RE);
   if (!match?.groups) return null;
 
@@ -33,16 +36,22 @@ function parseConventionalSubject(raw: string): { type: string; scope: string; d
   };
 }
 
-
-export function getLatestTag(options: { cwd?: string; excludeTag?: string; ref?: string } = {}): string {
+export function getLatestTag(
+  options: { cwd?: string; excludeTag?: string; ref?: string } = {},
+): string {
   const { cwd = process.cwd(), excludeTag, ref = 'HEAD' } = options;
 
   try {
-    const excludeArg = excludeTag ? ` --exclude ${JSON.stringify(excludeTag)}` : '';
-    return execSync(`git describe --tags --abbrev=0${excludeArg} ${JSON.stringify(ref)}`, {
-      cwd,
-      encoding: 'utf-8',
-    }).trim();
+    const excludeArg = excludeTag
+      ? ` --exclude ${JSON.stringify(excludeTag)}`
+      : '';
+    return execSync(
+      `git describe --tags --abbrev=0${excludeArg} ${JSON.stringify(ref)}`,
+      {
+        cwd,
+        encoding: 'utf-8',
+      },
+    ).trim();
   } catch {
     return '';
   }
@@ -60,7 +69,9 @@ export function extractPullRequestNumbers(subjects: string[]): string[] {
   return [...numbers];
 }
 
-export function isReleasePullRequest(pr: Pick<ReleasePullRequest, 'title' | 'headRefName'>): boolean {
+export function isReleasePullRequest(
+  pr: Pick<ReleasePullRequest, 'title' | 'headRefName'>,
+): boolean {
   const title = pr.title.trim();
   const headRefName = pr.headRefName?.trim() || '';
 
@@ -88,7 +99,9 @@ export function deriveContributorLogins(
   return [...contributors].sort((a, b) => a.localeCompare(b));
 }
 
-function toReleaseNoteEntryFromPullRequest(pr: ReleasePullRequest): ReleaseNoteEntry {
+function toReleaseNoteEntryFromPullRequest(
+  pr: ReleasePullRequest,
+): ReleaseNoteEntry {
   const parsed = parseConventionalSubject(pr.title);
   if (!parsed) {
     return {
@@ -107,11 +120,15 @@ function toReleaseNoteEntryFromPullRequest(pr: ReleasePullRequest): ReleaseNoteE
   };
 }
 
-export function buildReleaseNoteEntriesFromPullRequests(pullRequests: ReleasePullRequest[]): ReleaseNoteEntry[] {
+export function buildReleaseNoteEntriesFromPullRequests(
+  pullRequests: ReleasePullRequest[],
+): ReleaseNoteEntry[] {
   return pullRequests.map(toReleaseNoteEntryFromPullRequest);
 }
 
-export function categorizeReleaseNoteEntries(entries: ReleaseNoteEntry[]): Map<string, ReleaseNoteEntry[]> {
+export function categorizeReleaseNoteEntries(
+  entries: ReleaseNoteEntry[],
+): Map<string, ReleaseNoteEntry[]> {
   const categories = new Map<string, ReleaseNoteEntry[]>();
 
   for (const entry of entries) {
@@ -119,7 +136,10 @@ export function categorizeReleaseNoteEntries(entries: ReleaseNoteEntry[]): Map<s
 
     if (entry.type === 'feat' || entry.type === 'perf') {
       category = 'features';
-    } else if ((entry.type === 'fix' && /^(security|deps)$/.test(entry.scope)) || (entry.type === 'chore' && entry.scope === 'deps')) {
+    } else if (
+      (entry.type === 'fix' && /^(security|deps)$/.test(entry.scope)) ||
+      (entry.type === 'chore' && entry.scope === 'deps')
+    ) {
       category = 'security';
     } else if (entry.type === 'fix') {
       category = 'fixes';
@@ -127,7 +147,12 @@ export function categorizeReleaseNoteEntries(entries: ReleaseNoteEntry[]): Map<s
       category = 'refactoring';
     } else if (entry.type === 'docs') {
       category = 'docs';
-    } else if (entry.type === 'other' || entry.type === 'chore' || entry.type === 'ci' || entry.type === 'build') {
+    } else if (
+      entry.type === 'other' ||
+      entry.type === 'chore' ||
+      entry.type === 'ci' ||
+      entry.type === 'build'
+    ) {
       category = 'other';
     } else {
       continue;
@@ -140,7 +165,11 @@ export function categorizeReleaseNoteEntries(entries: ReleaseNoteEntry[]): Map<s
   return categories;
 }
 
-function pluralize(count: number, singular: string, plural = `${singular}s`): string {
+function pluralize(
+  count: number,
+  singular: string,
+  plural = `${singular}s`,
+): string {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
@@ -159,9 +188,10 @@ function generateTitle(categories: Map<string, ReleaseNoteEntry[]>): string {
   const parts: string[] = [];
 
   if (categories.has('features')) {
-    const keywords = categories.get('features')!
+    const keywords = categories
+      .get('features')!
       .slice(0, 3)
-      .map(entry => entry.description.split(/\s+/).slice(0, 3).join(' '));
+      .map((entry) => entry.description.split(/\s+/).slice(0, 3).join(' '));
     parts.push(...keywords);
   }
   if (categories.has('security')) parts.push('Security Hardening');
@@ -172,19 +202,27 @@ function generateTitle(categories: Map<string, ReleaseNoteEntry[]>): string {
   return parts.slice(0, 3).join(', ');
 }
 
-function generateSummary(categories: Map<string, ReleaseNoteEntry[]>, prCount: number): string {
+function generateSummary(
+  categories: Map<string, ReleaseNoteEntry[]>,
+  prCount: number,
+): string {
   const parts: string[] = [];
   const featureCount = categories.get('features')?.length ?? 0;
   const securityCount = categories.get('security')?.length ?? 0;
   const fixCount = categories.get('fixes')?.length ?? 0;
   const otherCount = categories.get('other')?.length ?? 0;
 
-  if (featureCount > 0) parts.push(`**${pluralize(featureCount, 'new feature')}**`);
-  if (securityCount > 0) parts.push(`**${pluralize(securityCount, 'security improvement')}**`);
-  if (fixCount > 0) parts.push(`**${pluralize(fixCount, 'bug fix', 'bug fixes')}**`);
-  if (otherCount > 0) parts.push(`**${pluralize(otherCount, 'other change')}**`);
+  if (featureCount > 0)
+    parts.push(`**${pluralize(featureCount, 'new feature')}**`);
+  if (securityCount > 0)
+    parts.push(`**${pluralize(securityCount, 'security improvement')}**`);
+  if (fixCount > 0)
+    parts.push(`**${pluralize(fixCount, 'bug fix', 'bug fixes')}**`);
+  if (otherCount > 0)
+    parts.push(`**${pluralize(otherCount, 'other change')}**`);
 
-  if (parts.length === 0) return 'Maintenance release with internal improvements.';
+  if (parts.length === 0)
+    return 'Maintenance release with internal improvements.';
   return `Release with ${parts.join(', ')} across **${pluralize(prCount, 'merged PR')}**.`;
 }
 
@@ -211,13 +249,38 @@ export function generateChangelog(
     highlights.push(formatEntry(entry));
   }
 
-  if (highlights.length) sections.push({ title: 'Highlights', entries: highlights });
-  if (categories.has('features')) sections.push({ title: 'New Features', entries: categories.get('features')!.map(formatEntry) });
-  if (categories.has('security')) sections.push({ title: 'Security & Hardening', entries: categories.get('security')!.map(formatEntry) });
-  if (categories.has('fixes')) sections.push({ title: 'Bug Fixes', entries: categories.get('fixes')!.map(formatEntry) });
-  if (categories.has('refactoring')) sections.push({ title: 'Refactoring', entries: categories.get('refactoring')!.map(formatEntry) });
-  if (categories.has('docs')) sections.push({ title: 'Documentation', entries: categories.get('docs')!.map(formatEntry) });
-  if (categories.has('other')) sections.push({ title: 'Other Changes', entries: categories.get('other')!.map(formatEntry) });
+  if (highlights.length)
+    sections.push({ title: 'Highlights', entries: highlights });
+  if (categories.has('features'))
+    sections.push({
+      title: 'New Features',
+      entries: categories.get('features')!.map(formatEntry),
+    });
+  if (categories.has('security'))
+    sections.push({
+      title: 'Security & Hardening',
+      entries: categories.get('security')!.map(formatEntry),
+    });
+  if (categories.has('fixes'))
+    sections.push({
+      title: 'Bug Fixes',
+      entries: categories.get('fixes')!.map(formatEntry),
+    });
+  if (categories.has('refactoring'))
+    sections.push({
+      title: 'Refactoring',
+      entries: categories.get('refactoring')!.map(formatEntry),
+    });
+  if (categories.has('docs'))
+    sections.push({
+      title: 'Documentation',
+      entries: categories.get('docs')!.map(formatEntry),
+    });
+  if (categories.has('other'))
+    sections.push({
+      title: 'Other Changes',
+      entries: categories.get('other')!.map(formatEntry),
+    });
 
   const featCount = categories.get('features')?.length ?? 0;
   const fixCount = categories.get('fixes')?.length ?? 0;
@@ -247,10 +310,11 @@ export function generateReleaseBody(
   let body = changelog;
 
   body += `\n### Install / Update\n\n`;
-  body += 'The npm CLI and the Claude Code marketplace/plugin are separate install tracks, not either/or replacements. Update whichever track you use; if you have both installed, update both. CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI from the npm package.\n\n';
+  body +=
+    'The npm CLI and the Claude Code marketplace/plugin are separate install tracks, not either/or replacements. Update whichever track you use; if you have both installed, update both. CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI from the npm package.\n\n';
   body += '**CLI / runtime:**\n\n';
   body += '```bash\n';
-  body += `npm install -g oh-my-claude-sisyphus@${version}\n`;
+  body += `pnpm add -g oh-my-claude-sisyphus@${version}\n`;
   body += '```\n\n';
   body += '**Claude Code plugin:**\n\n';
   body += '```text\n';
@@ -263,7 +327,7 @@ export function generateReleaseBody(
 
   if (contributors.length > 0) {
     body += `\n## Contributors\n\nThank you to all contributors who made this release possible!\n\n`;
-    body += contributors.map(login => `@${login}`).join(' ') + '\n';
+    body += contributors.map((login) => `@${login}`).join(' ') + '\n';
   }
 
   return body;

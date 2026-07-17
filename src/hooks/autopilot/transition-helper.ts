@@ -21,7 +21,9 @@ export interface TransitionResult {
  * Execute a sequence of transition steps transactionally.
  * If any step fails, all previously completed steps are rolled back in reverse order.
  */
-export async function executeTransition(steps: TransitionStep[]): Promise<TransitionResult> {
+export async function executeTransition(
+  steps: TransitionStep[],
+): Promise<TransitionResult> {
   const completed: TransitionStep[] = [];
   for (const step of steps) {
     try {
@@ -30,7 +32,11 @@ export async function executeTransition(steps: TransitionStep[]): Promise<Transi
     } catch (error) {
       // Rollback in reverse order
       for (const done of completed.reverse()) {
-        try { await done.rollback(); } catch { /* best-effort rollback */ }
+        try {
+          await done.rollback();
+        } catch {
+          /* best-effort rollback */
+        }
       }
       return { success: false, failedStep: step.name, error: String(error) };
     }

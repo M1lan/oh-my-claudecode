@@ -48,7 +48,7 @@ export {
   type RalphLoopHook,
   type PRD,
   type PRDStatus,
-  type UserStory
+  type UserStory,
 } from './loop.js';
 
 // ============================================================================
@@ -90,7 +90,7 @@ export {
   PRD_EXAMPLE_FILENAME,
 
   // Types (re-export with aliases to avoid conflicts)
-  type UserStoryInput
+  type UserStoryInput,
 } from './prd.js';
 
 // ============================================================================
@@ -127,7 +127,7 @@ export {
   // Types
   type ProgressEntry,
   type CodebasePattern,
-  type ProgressLog
+  type ProgressLog,
 } from './progress.js';
 
 // ============================================================================
@@ -151,5 +151,5 @@ export {
   detectArchitectRejection,
 
   // Types
-  type VerificationState
+  type VerificationState,
 } from './verifier.js';

@@ -3,7 +3,10 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { SlackSocketClient, type SlackSocketConfig } from '../notifications/slack-socket.js';
+import {
+  SlackSocketClient,
+  type SlackSocketConfig,
+} from '../notifications/slack-socket.js';
 
 // ---------------------------------------------------------------------------
 // Mock WebSocket
@@ -21,7 +24,7 @@ class MockWebSocket {
 
   removeEventListener(event: string, handler: (...args: any[]) => void) {
     if (!this.listeners[event]) return;
-    this.listeners[event] = this.listeners[event].filter(h => h !== handler);
+    this.listeners[event] = this.listeners[event].filter((h) => h !== handler);
   }
 
   send = vi.fn();
@@ -32,7 +35,7 @@ class MockWebSocket {
 
   // test helpers
   fire(event: string, data?: any) {
-    (this.listeners[event] ?? []).forEach(h => h(data));
+    (this.listeners[event] ?? []).forEach((h) => h(data));
   }
 
   listenerCount(event: string): number {
@@ -109,7 +112,7 @@ function helloEnvelope() {
 /** Send a hello envelope to authenticate the connection */
 async function authenticate(ws: MockWebSocket) {
   ws.fire('message', { data: helloEnvelope() });
-  await new Promise(r => setTimeout(r, 0));
+  await new Promise((r) => setTimeout(r, 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -138,7 +141,9 @@ describe('SlackSocketClient', () => {
 
     // simulate envelope
     lastWs!.fire('message', { data: envelope() });
-    expect(lastWs!.send).toHaveBeenCalledWith(JSON.stringify({ envelope_id: 'env_1' }));
+    expect(lastWs!.send).toHaveBeenCalledWith(
+      JSON.stringify({ envelope_id: 'env_1' }),
+    );
     client.stop();
   });
 
@@ -151,9 +156,13 @@ describe('SlackSocketClient', () => {
     lastWs!.fire('message', { data: envelope() });
 
     // onMessage is fire-and-forget, wait a tick
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'message', channel: 'C123', text: 'hello' }),
+      expect.objectContaining({
+        type: 'message',
+        channel: 'C123',
+        text: 'hello',
+      }),
     );
     client.stop();
   });
@@ -166,11 +175,19 @@ describe('SlackSocketClient', () => {
 
     lastWs!.fire('message', {
       data: envelope({
-        payload: { event: { type: 'message', channel: 'COTHER', user: 'U1', text: 'hi', ts: '1' } },
+        payload: {
+          event: {
+            type: 'message',
+            channel: 'COTHER',
+            user: 'U1',
+            text: 'hi',
+            ts: '1',
+          },
+        },
       }),
     });
 
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -183,11 +200,20 @@ describe('SlackSocketClient', () => {
 
     lastWs!.fire('message', {
       data: envelope({
-        payload: { event: { type: 'message', channel: 'C123', user: 'U1', text: 'hi', ts: '1', subtype: 'channel_join' } },
+        payload: {
+          event: {
+            type: 'message',
+            channel: 'C123',
+            user: 'U1',
+            text: 'hi',
+            ts: '1',
+            subtype: 'channel_join',
+          },
+        },
       }),
     });
 
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -198,7 +224,11 @@ describe('SlackSocketClient', () => {
     await client.start();
 
     lastWs!.fire('message', {
-      data: JSON.stringify({ envelope_id: 'env_disc', type: 'disconnect', reason: 'link_disabled' }),
+      data: JSON.stringify({
+        envelope_id: 'env_disc',
+        type: 'disconnect',
+        reason: 'link_disabled',
+      }),
     });
 
     expect(lastWs!.close).toHaveBeenCalled();
@@ -232,7 +262,9 @@ describe('SlackSocketClient', () => {
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
     await client.start();
 
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('connection error'));
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('connection error'),
+    );
     // The source now also schedules a reconnect on failure, which logs too
     client.stop();
   });
@@ -279,7 +311,9 @@ describe('SlackSocketClient', () => {
     expect(ws.listenerCount('error')).toBe(0);
 
     // Should have scheduled a reconnect
-    expect(log).toHaveBeenCalledWith(expect.stringContaining('reconnecting in'));
+    expect(log).toHaveBeenCalledWith(
+      expect.stringContaining('reconnecting in'),
+    );
     client.stop();
   });
 

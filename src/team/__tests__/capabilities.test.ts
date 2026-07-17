@@ -11,7 +11,7 @@ function makeMember(
   name: string,
   backend: 'claude-native' | 'mcp-codex' | 'mcp-gemini',
   capabilities: WorkerCapability[],
-  status: 'active' | 'idle' | 'dead' = 'active'
+  status: 'active' | 'idle' | 'dead' = 'active',
 ): UnifiedTeamMember {
   return {
     name,
@@ -58,8 +58,14 @@ describe('capabilities', () => {
 
   describe('scoreWorkerFitness', () => {
     it('returns 1.0 for exact match', () => {
-      const worker = makeMember('w1', 'mcp-codex', ['code-review', 'security-review']);
-      const score = scoreWorkerFitness(worker, ['code-review', 'security-review']);
+      const worker = makeMember('w1', 'mcp-codex', [
+        'code-review',
+        'security-review',
+      ]);
+      const score = scoreWorkerFitness(worker, [
+        'code-review',
+        'security-review',
+      ]);
       expect(score).toBe(1.0);
     });
 
@@ -90,11 +96,24 @@ describe('capabilities', () => {
 
   describe('rankWorkersForTask', () => {
     it('ranks workers by fitness score descending', () => {
-      const w1 = makeMember('codex', 'mcp-codex', ['code-review', 'security-review']);
-      const w2 = makeMember('gemini', 'mcp-gemini', ['ui-design', 'documentation']);
-      const w3 = makeMember('claude', 'claude-native', ['code-edit', 'testing', 'general']);
+      const w1 = makeMember('codex', 'mcp-codex', [
+        'code-review',
+        'security-review',
+      ]);
+      const w2 = makeMember('gemini', 'mcp-gemini', [
+        'ui-design',
+        'documentation',
+      ]);
+      const w3 = makeMember('claude', 'claude-native', [
+        'code-edit',
+        'testing',
+        'general',
+      ]);
 
-      const ranked = rankWorkersForTask([w1, w2, w3], ['code-review', 'security-review']);
+      const ranked = rankWorkersForTask(
+        [w1, w2, w3],
+        ['code-review', 'security-review'],
+      );
       expect(ranked[0].name).toBe('codex'); // perfect match
       expect(ranked.length).toBeGreaterThanOrEqual(1);
     });
@@ -114,10 +133,16 @@ describe('capabilities', () => {
     });
 
     it('respects custom capabilities over defaults', () => {
-      const w1 = makeMember('custom', 'claude-native', ['security-review', 'architecture']);
+      const w1 = makeMember('custom', 'claude-native', [
+        'security-review',
+        'architecture',
+      ]);
       const w2 = makeMember('default', 'mcp-codex', ['code-review']);
 
-      const ranked = rankWorkersForTask([w1, w2], ['security-review', 'architecture']);
+      const ranked = rankWorkersForTask(
+        [w1, w2],
+        ['security-review', 'architecture'],
+      );
       expect(ranked[0].name).toBe('custom');
     });
   });

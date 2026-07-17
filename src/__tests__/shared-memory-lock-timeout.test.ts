@@ -13,7 +13,8 @@ import { tmpdir } from 'os';
 // Mock getOmcRoot to use our test directory
 const mockGetOmcRoot = vi.fn<(worktreeRoot?: string) => string>();
 vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/worktree-paths.js')>();
+  const actual =
+    await importOriginal<typeof import('../lib/worktree-paths.js')>();
   return {
     ...actual,
     getOmcRoot: (...args: [string?]) => mockGetOmcRoot(...args),
@@ -87,7 +88,11 @@ describe('writeEntry lock timeout', () => {
     let callCount = 0;
     const original = fileLock.withFileLockSync;
     vi.spyOn(fileLock, 'withFileLockSync').mockImplementation(
-      <T>(lockPath: string, fn: () => T, opts?: fileLock.FileLockOptions): T => {
+      <T>(
+        lockPath: string,
+        fn: () => T,
+        opts?: fileLock.FileLockOptions,
+      ): T => {
         callCount++;
         expect(opts).toMatchObject({ timeoutMs: 500, retryDelayMs: 25 });
         return original(lockPath, fn, opts);
@@ -107,7 +112,13 @@ describe('writeEntry lock timeout', () => {
     writeEntry('myns', 'mykey', 'v');
 
     const [lockPath] = spy.mock.calls[0];
-    const entryPath = join(omcDir, 'state', 'shared-memory', 'myns', 'mykey.json');
+    const entryPath = join(
+      omcDir,
+      'state',
+      'shared-memory',
+      'myns',
+      'mykey.json',
+    );
     expect(lockPath).toBe(entryPath + '.lock');
   });
 });

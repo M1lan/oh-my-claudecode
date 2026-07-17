@@ -5,7 +5,10 @@ import { tmpdir } from 'node:os';
 
 import { render } from '../../hud/render.js';
 import { renderCallCounts } from '../../hud/elements/call-counts.js';
-import { renderContext, resetContextDisplayState } from '../../hud/elements/context.js';
+import {
+  renderContext,
+  resetContextDisplayState,
+} from '../../hud/elements/context.js';
 import { renderTokenUsage } from '../../hud/elements/token-usage.js';
 import { readHudConfig } from '../../hud/state.js';
 import {
@@ -43,7 +46,12 @@ function createContext(): HudRenderContext {
     activeAgents: [],
     todos: [],
     backgroundTasks: [
-      { id: 'bg-1', description: 'task', startedAt: new Date().toISOString(), status: 'running' },
+      {
+        id: 'bg-1',
+        description: 'task',
+        startedAt: new Date().toISOString(),
+        status: 'running',
+      },
     ],
     cwd: '/home/user/project',
     lastSkill: null,
@@ -96,10 +104,21 @@ function createConfig(labels = DEFAULT_HUD_LABELS): HudConfig {
       gitStatus: false,
       maxOutputLines: 3,
     },
-    contextLimitWarning: { ...DEFAULT_HUD_CONFIG.contextLimitWarning, threshold: 101 },
+    contextLimitWarning: {
+      ...DEFAULT_HUD_CONFIG.contextLimitWarning,
+      threshold: 101,
+    },
     layout: {
       line1: [],
-      main: ['thinking', 'model', 'tokens', 'ralph', 'contextBar', 'background', 'callCounts'],
+      main: [
+        'thinking',
+        'model',
+        'tokens',
+        'ralph',
+        'contextBar',
+        'background',
+        'callCounts',
+      ],
       detail: [],
     },
   };
@@ -123,8 +142,15 @@ describe('HUD labels', () => {
   });
 
   it('keeps default HUD labels unchanged for direct renderer calls', () => {
-    expect(stripAnsi(renderContext(67, DEFAULT_HUD_CONFIG.thresholds, 'labels-default') ?? '')).toBe('ctx:67%');
-    expect(renderTokenUsage({ inputTokens: 1530, outputTokens: 987 })).toBe('tok:i1.5k/o987');
+    expect(
+      stripAnsi(
+        renderContext(67, DEFAULT_HUD_CONFIG.thresholds, 'labels-default') ??
+          '',
+      ),
+    ).toBe('ctx:67%');
+    expect(renderTokenUsage({ inputTokens: 1530, outputTokens: 987 })).toBe(
+      'tok:i1.5k/o987',
+    );
     expect(renderCallCounts(5, 3, 2, 'ascii')).toBe('T:5 A:3 S:2');
   });
 
@@ -166,7 +192,9 @@ describe('HUD labels', () => {
 
   it('applies configured labels through the composed HUD renderer', async () => {
     const labels = resolveHudLabels('zh-CN');
-    const output = stripAnsi(await render(createContext(), createConfig(labels)));
+    const output = stripAnsi(
+      await render(createContext(), createConfig(labels)),
+    );
 
     expect(output).toContain('思考');
     expect(output).toContain('令牌:i1.5k/o987');

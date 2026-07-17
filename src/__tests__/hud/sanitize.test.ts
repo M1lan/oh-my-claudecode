@@ -8,7 +8,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { stripAnsi, replaceUnicodeBlocks, sanitizeOutput } from '../../hud/sanitize.js';
+import {
+  stripAnsi,
+  replaceUnicodeBlocks,
+  sanitizeOutput,
+} from '../../hud/sanitize.js';
 
 describe('stripAnsi', () => {
   it('should PRESERVE basic color codes (SGR sequences)', () => {
@@ -22,8 +26,11 @@ describe('stripAnsi', () => {
   });
 
   it('should PRESERVE multiple color codes', () => {
-    const input = '\x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m';
-    expect(stripAnsi(input)).toBe('\x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m');
+    const input =
+      '\x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m';
+    expect(stripAnsi(input)).toBe(
+      '\x1b[32mGreen\x1b[0m \x1b[33mYellow\x1b[0m \x1b[34mBlue\x1b[0m',
+    );
   });
 
   it('should PRESERVE complex SGR sequences (256 color, RGB)', () => {
@@ -117,8 +124,11 @@ describe('sanitizeOutput', () => {
   });
 
   it('should handle complex HUD output preserving colors', () => {
-    const input = '\x1b[1m[OMC]\x1b[0m | \x1b[32m████░░░░░░\x1b[0m 40% | agents:3';
-    expect(sanitizeOutput(input)).toBe('\x1b[1m[OMC]\x1b[0m | \x1b[32m####------\x1b[0m 40% | agents:3');
+    const input =
+      '\x1b[1m[OMC]\x1b[0m | \x1b[32m████░░░░░░\x1b[0m 40% | agents:3';
+    expect(sanitizeOutput(input)).toBe(
+      '\x1b[1m[OMC]\x1b[0m | \x1b[32m####------\x1b[0m 40% | agents:3',
+    );
   });
 
   it('should preserve lines and trim trailing whitespace', () => {

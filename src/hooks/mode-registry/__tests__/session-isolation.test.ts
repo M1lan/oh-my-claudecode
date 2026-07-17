@@ -1,7 +1,15 @@
 import { randomUUID } from 'crypto';
 import { spawn } from 'child_process';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync, unlinkSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readFileSync,
+  unlinkSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -39,22 +47,41 @@ describe('Session-Scoped State Isolation', () => {
 
   function liveLockOwner() {
     const stat = readFileSync(`/proc/${process.pid}/stat`, 'utf8');
-    const processStart = stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
-    return JSON.stringify({ version: 1, pid: process.pid, processStart, createdAt: new Date().toISOString(), nonce: randomUUID() });
+    const processStart = stat
+      .slice(stat.lastIndexOf(')') + 2)
+      .trim()
+      .split(/\s+/)[19];
+    return JSON.stringify({
+      version: 1,
+      pid: process.pid,
+      processStart,
+      createdAt: new Date().toISOString(),
+      nonce: randomUUID(),
+    });
   }
 
   // Helper to create state file at session-scoped path
-  function createSessionState(sessionId: string, mode: string, data: Record<string, unknown>) {
+  function createSessionState(
+    sessionId: string,
+    mode: string,
+    data: Record<string, unknown>,
+  ) {
     const sessionDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(join(sessionDir, `${mode}-state.json`), JSON.stringify(data, null, 2));
+    writeFileSync(
+      join(sessionDir, `${mode}-state.json`),
+      JSON.stringify(data, null, 2),
+    );
   }
 
   // Helper to create legacy state file
   function createLegacyState(mode: string, data: Record<string, unknown>) {
     const stateDir = join(tempDir, '.omc', 'state');
     mkdirSync(stateDir, { recursive: true });
-    writeFileSync(join(stateDir, `${mode}-state.json`), JSON.stringify(data, null, 2));
+    writeFileSync(
+      join(stateDir, `${mode}-state.json`),
+      JSON.stringify(data, null, 2),
+    );
   }
 
   describe('validateSessionId', () => {
@@ -70,8 +97,12 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('should reject path traversal', () => {
-      expect(() => validateSessionId('../etc/passwd')).toThrow('path traversal');
-      expect(() => validateSessionId('session/../../root')).toThrow('path traversal');
+      expect(() => validateSessionId('../etc/passwd')).toThrow(
+        'path traversal',
+      );
+      expect(() => validateSessionId('session/../../root')).toThrow(
+        'path traversal',
+      );
     });
 
     it('should reject invalid characters', () => {
@@ -83,7 +114,9 @@ describe('Session-Scoped State Isolation', () => {
   describe('resolveSessionStatePath', () => {
     it('should return session-scoped path', () => {
       const path = resolveSessionStatePath('ultrawork', 'session-123', tempDir);
-      expect(path).toContain('.omc/state/sessions/session-123/ultrawork-state.json');
+      expect(path).toContain(
+        '.omc/state/sessions/session-123/ultrawork-state.json',
+      );
     });
 
     it('should normalize state name', () => {
@@ -135,12 +168,32 @@ describe('Session-Scoped State Isolation', () => {
 
   describe('Two sessions writing independent state', () => {
     it('should isolate state between sessions', () => {
-      createSessionState('session-A', 'ultrawork', { active: true, prompt: 'Task A' });
-      createSessionState('session-B', 'ultrawork', { active: true, prompt: 'Task B' });
+      createSessionState('session-A', 'ultrawork', {
+        active: true,
+        prompt: 'Task A',
+      });
+      createSessionState('session-B', 'ultrawork', {
+        active: true,
+        prompt: 'Task B',
+      });
 
       // Each session's state should be independent
-      const pathA = join(tempDir, '.omc', 'state', 'sessions', 'session-A', 'ultrawork-state.json');
-      const pathB = join(tempDir, '.omc', 'state', 'sessions', 'session-B', 'ultrawork-state.json');
+      const pathA = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'session-A',
+        'ultrawork-state.json',
+      );
+      const pathB = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'session-B',
+        'ultrawork-state.json',
+      );
 
       const stateA = JSON.parse(readFileSync(pathA, 'utf-8'));
       const stateB = JSON.parse(readFileSync(pathB, 'utf-8'));
@@ -200,25 +253,50 @@ describe('Session-Scoped State Isolation', () => {
       clearModeState('ultrawork', tempDir, 'session-A');
 
       // Session A state should be gone
-      const pathA = join(tempDir, '.omc', 'state', 'sessions', 'session-A', 'ultrawork-state.json');
+      const pathA = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'session-A',
+        'ultrawork-state.json',
+      );
       expect(existsSync(pathA)).toBe(false);
 
       // Session B state should remain
-      const pathB = join(tempDir, '.omc', 'state', 'sessions', 'session-B', 'ultrawork-state.json');
+      const pathB = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'session-B',
+        'ultrawork-state.json',
+      );
       expect(existsSync(pathB)).toBe(true);
     });
 
     it('should clear session-scoped marker artifacts (ralph verification) for the target session only', () => {
       const sessionA = 'session-A';
       const sessionB = 'session-B';
-      createSessionState(sessionA, 'ralph', { active: true, session_id: sessionA });
-      createSessionState(sessionB, 'ralph', { active: true, session_id: sessionB });
+      createSessionState(sessionA, 'ralph', {
+        active: true,
+        session_id: sessionA,
+      });
+      createSessionState(sessionB, 'ralph', {
+        active: true,
+        session_id: sessionB,
+      });
 
       const sessionADir = join(tempDir, '.omc', 'state', 'sessions', sessionA);
       const sessionBDir = join(tempDir, '.omc', 'state', 'sessions', sessionB);
       const markerA = join(sessionADir, 'ralph-verification-state.json');
       const markerB = join(sessionBDir, 'ralph-verification-state.json');
-      const legacyMarker = join(tempDir, '.omc', 'state', 'ralph-verification.json');
+      const legacyMarker = join(
+        tempDir,
+        '.omc',
+        'state',
+        'ralph-verification.json',
+      );
       writeFileSync(markerA, JSON.stringify({ pending: true }, null, 2));
       writeFileSync(markerB, JSON.stringify({ pending: true }, null, 2));
       mkdirSync(join(tempDir, '.omc', 'state'), { recursive: true });
@@ -241,13 +319,19 @@ describe('Session-Scoped State Isolation', () => {
       const sessionA = 'session-A';
       const sessionB = 'session-B';
 
-      createSessionState(sessionA, 'ralph', { active: true, session_id: sessionA });
+      createSessionState(sessionA, 'ralph', {
+        active: true,
+        session_id: sessionA,
+      });
 
       // Legacy marker is owned by session B (a different session)
       const legacyMarkerDir = join(tempDir, '.omc', 'state');
       mkdirSync(legacyMarkerDir, { recursive: true });
       const legacyMarker = join(legacyMarkerDir, 'ralph-verification.json');
-      writeFileSync(legacyMarker, JSON.stringify({ pending: true, session_id: sessionB }));
+      writeFileSync(
+        legacyMarker,
+        JSON.stringify({ pending: true, session_id: sessionB }),
+      );
 
       // Clear session A's state — must NOT touch session B's marker
       clearModeState('ralph', tempDir, sessionA);
@@ -261,35 +345,72 @@ describe('Session-Scoped State Isolation', () => {
       const markerDir = join(tempDir, '.omc', 'state');
       mkdirSync(markerDir, { recursive: true });
       const markerPath = join(markerDir, 'ralph-verification.json');
-      writeFileSync(markerPath, JSON.stringify({ pending: true, session_id: sessionA }));
-      const replacement = { pending: true, session_id: sessionA, workflowRunId: 'new-run' };
+      writeFileSync(
+        markerPath,
+        JSON.stringify({ pending: true, session_id: sessionA }),
+      );
+      const replacement = {
+        pending: true,
+        session_id: sessionA,
+        workflowRunId: 'new-run',
+      };
       process.env.OMC_TEST_CONDITIONAL_CLEAR_REPLACEMENT_PATH = markerPath;
-      process.env.OMC_TEST_CONDITIONAL_CLEAR_REPLACEMENT_BASE64 = Buffer.from(JSON.stringify(replacement)).toString('base64');
+      process.env.OMC_TEST_CONDITIONAL_CLEAR_REPLACEMENT_BASE64 = Buffer.from(
+        JSON.stringify(replacement),
+      ).toString('base64');
 
       clearModeState('ralph', tempDir, sessionA);
       expect(JSON.parse(readFileSync(markerPath, 'utf8'))).toEqual(replacement);
     });
-
   });
 
   describe('Stale session cleanup', () => {
     it('serializes marker writers on the same lock used by cleanup', () => {
-      expect(createModeMarker('ralph', tempDir, { session_id: 'session-A', workflowRunId: 'old-run' })).toBe(true);
-      const markerPath = join(tempDir, '.omc', 'state', 'ralph-verification.json');
+      expect(
+        createModeMarker('ralph', tempDir, {
+          session_id: 'session-A',
+          workflowRunId: 'old-run',
+        }),
+      ).toBe(true);
+      const markerPath = join(
+        tempDir,
+        '.omc',
+        'state',
+        'ralph-verification.json',
+      );
       const lockPath = `${markerPath}.mutation.lock`;
       writeFileSync(lockPath, liveLockOwner());
 
-      expect(createModeMarker('ralph', tempDir, { session_id: 'session-A', workflowRunId: 'new-run' })).toBe(false);
-      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe('old-run');
+      expect(
+        createModeMarker('ralph', tempDir, {
+          session_id: 'session-A',
+          workflowRunId: 'new-run',
+        }),
+      ).toBe(false);
+      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
+        'old-run',
+      );
 
       unlinkSync(lockPath);
-      expect(createModeMarker('ralph', tempDir, { session_id: 'session-A', workflowRunId: 'new-run' })).toBe(true);
-      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe('new-run');
+      expect(
+        createModeMarker('ralph', tempDir, {
+          session_id: 'session-A',
+          workflowRunId: 'new-run',
+        }),
+      ).toBe(true);
+      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
+        'new-run',
+      );
     });
 
     it('waits for an in-flight marker publisher before treating it as absent', async () => {
       const sessionId = 'marker-in-flight';
-      const markerPath = join(tempDir, '.omc', 'state', 'ralph-verification.json');
+      const markerPath = join(
+        tempDir,
+        '.omc',
+        'state',
+        'ralph-verification.json',
+      );
       mkdirSync(join(tempDir, '.omc', 'state'), { recursive: true });
       const lockPath = `${markerPath}.mutation.lock`;
       writeFileSync(lockPath, liveLockOwner());
@@ -300,10 +421,18 @@ describe('Session-Scoped State Isolation', () => {
         fs.writeFileSync(markerPath, JSON.stringify({ pending: true, session_id: 'marker-in-flight' }));
         fs.unlinkSync(lockPath);
       `;
-      const child = spawn(process.execPath, ['-e', childScript, markerPath, lockPath], { stdio: 'ignore' });
+      const child = spawn(
+        process.execPath,
+        ['-e', childScript, markerPath, lockPath],
+        { stdio: 'ignore' },
+      );
       const completed = new Promise<void>((resolve, reject) => {
         child.once('error', reject);
-        child.once('close', code => code === 0 ? resolve() : reject(new Error(`marker publisher exited ${code}`)));
+        child.once('close', (code) =>
+          code === 0
+            ? resolve()
+            : reject(new Error(`marker publisher exited ${code}`)),
+        );
       });
 
       expect(clearModeState('ralph', tempDir, sessionId)).toBe(true);
@@ -312,7 +441,13 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('should remove empty session directories', () => {
-      const emptyDir = join(tempDir, '.omc', 'state', 'sessions', 'empty-session');
+      const emptyDir = join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        'empty-session',
+      );
       mkdirSync(emptyDir, { recursive: true });
 
       const removed = clearStaleSessionDirs(tempDir, 0);
@@ -329,7 +464,10 @@ describe('Session-Scoped State Isolation', () => {
 
     it('should prefer session-scoped state when sessionId provided', () => {
       createLegacyState('ultrawork', { active: true, prompt: 'legacy' });
-      createSessionState('session-A', 'ultrawork', { active: false, prompt: 'session' });
+      createSessionState('session-A', 'ultrawork', {
+        active: false,
+        prompt: 'session',
+      });
 
       // With sessionId, should see session state (active: false)
       expect(isModeActive('ultrawork', tempDir, 'session-A')).toBe(false);
@@ -356,7 +494,10 @@ describe('Session-Scoped State Isolation', () => {
 
     it('should reject state with mismatched session_id even in session-scoped file', () => {
       // Create session-scoped file with wrong session_id (shouldn't happen, but defensive)
-      createSessionState('session-A', 'ultrawork', { active: true, session_id: 'session-OTHER' });
+      createSessionState('session-A', 'ultrawork', {
+        active: true,
+        session_id: 'session-OTHER',
+      });
 
       expect(isModeActive('ultrawork', tempDir, 'session-A')).toBe(false);
     });
@@ -376,7 +517,10 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('cross-session: Session A active, Session B check returns false', () => {
-      createSessionState('session-A', 'ralph', { active: true, session_id: 'session-A' });
+      createSessionState('session-A', 'ralph', {
+        active: true,
+        session_id: 'session-A',
+      });
 
       // Session A sees its own state
       expect(isModeActive('ralph', tempDir, 'session-A')).toBe(true);
@@ -388,7 +532,10 @@ describe('Session-Scoped State Isolation', () => {
 
   describe('Team mode state isolation', () => {
     it('should detect team mode active in session-scoped path', () => {
-      createSessionState('session-team', 'team', { active: true, session_id: 'session-team' });
+      createSessionState('session-team', 'team', {
+        active: true,
+        session_id: 'session-team',
+      });
 
       expect(isModeActive('team', tempDir, 'session-team')).toBe(true);
     });
@@ -400,8 +547,16 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('should isolate team state between sessions', () => {
-      createSessionState('session-A', 'team', { active: true, session_id: 'session-A', stage: 'team-exec' });
-      createSessionState('session-B', 'team', { active: true, session_id: 'session-B', stage: 'team-plan' });
+      createSessionState('session-A', 'team', {
+        active: true,
+        session_id: 'session-A',
+        stage: 'team-exec',
+      });
+      createSessionState('session-B', 'team', {
+        active: true,
+        session_id: 'session-B',
+        stage: 'team-plan',
+      });
 
       // Each session sees its own state
       expect(isModeActive('team', tempDir, 'session-A')).toBe(true);
@@ -414,8 +569,14 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('should clear team mode state for specific session only', () => {
-      createSessionState('session-A', 'team', { active: true, session_id: 'session-A' });
-      createSessionState('session-B', 'team', { active: true, session_id: 'session-B' });
+      createSessionState('session-A', 'team', {
+        active: true,
+        session_id: 'session-A',
+      });
+      createSessionState('session-B', 'team', {
+        active: true,
+        session_id: 'session-B',
+      });
 
       clearModeState('team', tempDir, 'session-A');
 
@@ -427,15 +588,24 @@ describe('Session-Scoped State Isolation', () => {
     });
 
     it('should list team in active modes when active', () => {
-      createSessionState('session-team', 'team', { active: true, session_id: 'session-team' });
+      createSessionState('session-team', 'team', {
+        active: true,
+        session_id: 'session-team',
+      });
 
       const activeModes = getActiveModes(tempDir, 'session-team');
       expect(activeModes).toContain('team');
     });
 
     it('should return active sessions for team mode', () => {
-      createSessionState('session-A', 'team', { active: true, session_id: 'session-A' });
-      createSessionState('session-B', 'team', { active: true, session_id: 'session-B' });
+      createSessionState('session-A', 'team', {
+        active: true,
+        session_id: 'session-A',
+      });
+      createSessionState('session-B', 'team', {
+        active: true,
+        session_id: 'session-B',
+      });
 
       const activeSessions = getActiveSessionsForMode('team', tempDir);
       expect(activeSessions).toContain('session-A');

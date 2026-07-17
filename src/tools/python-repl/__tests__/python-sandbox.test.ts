@@ -3,7 +3,10 @@ import { execSync } from 'child_process';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { isPythonSandboxEnabled, clearSecurityConfigCache } from '../../../lib/security-config.js';
+import {
+  isPythonSandboxEnabled,
+  clearSecurityConfigCache,
+} from '../../../lib/security-config.js';
 
 describe('python-repl sandbox env propagation', () => {
   const originalSecurity = process.env.OMC_SECURITY;
@@ -30,12 +33,27 @@ describe('python-repl sandbox env propagation', () => {
   });
 });
 
-function executeBridgeCode(code: string, sandboxEnv = false): { success: boolean; stdout: string; error?: { type: string; message: string } } {
-  const bridgePath = new URL('../../../../bridge/gyoshu_bridge.py', import.meta.url).pathname;
-  const tmpScript = join(tmpdir(), `omc-bridge-exec-test-${process.pid}-${Date.now()}.py`);
+function executeBridgeCode(
+  code: string,
+  sandboxEnv = false,
+): {
+  success: boolean;
+  stdout: string;
+  error?: { type: string; message: string };
+} {
+  const bridgePath = new URL(
+    '../../../../bridge/gyoshu_bridge.py',
+    import.meta.url,
+  ).pathname;
+  const tmpScript = join(
+    tmpdir(),
+    `omc-bridge-exec-test-${process.pid}-${Date.now()}.py`,
+  );
   const script = [
     'import importlib.util, json, os',
-    sandboxEnv ? 'os.environ["OMC_PYTHON_SANDBOX"] = "1"' : 'os.environ.pop("OMC_PYTHON_SANDBOX", None)',
+    sandboxEnv
+      ? 'os.environ["OMC_PYTHON_SANDBOX"] = "1"'
+      : 'os.environ.pop("OMC_PYTHON_SANDBOX", None)',
     `spec = importlib.util.spec_from_file_location("gyoshu_bridge", ${JSON.stringify(bridgePath)})`,
     'mod = importlib.util.module_from_spec(spec)',
     'spec.loader.exec_module(mod)',
@@ -45,9 +63,15 @@ function executeBridgeCode(code: string, sandboxEnv = false): { success: boolean
   ].join('\n');
   writeFileSync(tmpScript, script, 'utf-8');
   try {
-    return JSON.parse(execSync(`python3 ${tmpScript}`, { timeout: 10000 }).toString().trim());
+    return JSON.parse(
+      execSync(`python3 ${tmpScript}`, { timeout: 10000 }).toString().trim(),
+    );
   } finally {
-    try { unlinkSync(tmpScript); } catch { /* ignore */ }
+    try {
+      unlinkSync(tmpScript);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
@@ -59,7 +83,9 @@ describe('gyoshu bridge execution builtins hardening', () => {
   });
 
   it('allows bridge memory helpers', () => {
-    const result = executeBridgeCode('memory = get_memory()\nprint(isinstance(memory, dict))');
+    const result = executeBridgeCode(
+      'memory = get_memory()\nprint(isinstance(memory, dict))',
+    );
     expect(result.success).toBe(true);
     expect(result.stdout.trim()).toBe('True');
   });
@@ -69,7 +95,9 @@ describe('gyoshu bridge execution builtins hardening', () => {
     expect(result.success).toBe(false);
     expect(result.stdout).toBe('');
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('Dunder attribute access is not available');
+    expect(result.error?.message).toContain(
+      'Dunder attribute access is not available',
+    );
   });
 
   it.each([
@@ -81,7 +109,9 @@ describe('gyoshu bridge execution builtins hardening', () => {
     const result = executeBridgeCode(code);
     expect(result.success).toBe(false);
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toMatch(/Import statements|Builtin '__import__'/);
+    expect(result.error?.message).toMatch(
+      /Import statements|Builtin '__import__'/,
+    );
   });
 
   it.each([
@@ -97,21 +127,31 @@ describe('gyoshu bridge execution builtins hardening', () => {
     const result = executeBridgeCode(code);
     expect(result.success).toBe(false);
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('not available in the Gyoshu bridge execution namespace');
+    expect(result.error?.message).toContain(
+      'not available in the Gyoshu bridge execution namespace',
+    );
   });
 
   it('blocks object-model dunder traversal used to recover ambient capabilities', () => {
-    const result = executeBridgeCode('().__class__.__mro__[1].__subclasses__()');
+    const result = executeBridgeCode(
+      '().__class__.__mro__[1].__subclasses__()',
+    );
     expect(result.success).toBe(false);
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('Dunder attribute access is not available');
+    expect(result.error?.message).toContain(
+      'Dunder attribute access is not available',
+    );
   });
 
   it('blocks string format field traversal used to recover dunder attributes', () => {
-    const result = executeBridgeCode('"{0.__class__.__mro__[1].__subclasses__}".format(())');
+    const result = executeBridgeCode(
+      '"{0.__class__.__mro__[1].__subclasses__}".format(())',
+    );
     expect(result.success).toBe(false);
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('String format field traversal is not available');
+    expect(result.error?.message).toContain(
+      'String format field traversal is not available',
+    );
   });
 
   it('uses the same locked-down execution namespace when OMC_PYTHON_SANDBOX=1', () => {
@@ -119,6 +159,8 @@ describe('gyoshu bridge execution builtins hardening', () => {
     expect(result.success).toBe(false);
     expect(result.stdout).toBe('');
     expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('Import statements are not available');
+    expect(result.error?.message).toContain(
+      'Import statements are not available',
+    );
   });
 });

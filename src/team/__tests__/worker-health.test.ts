@@ -38,11 +38,16 @@ describe('worker-health', () => {
       'gpt-5.3-codex',
       'tmux-session',
       testDir,
-      testDir
+      testDir,
     );
   }
 
-  function writeWorkerHeartbeat(name: string, status: HeartbeatData['status'], consecutiveErrors = 0, currentTaskId?: string) {
+  function writeWorkerHeartbeat(
+    name: string,
+    status: HeartbeatData['status'],
+    consecutiveErrors = 0,
+    currentTaskId?: string,
+  ) {
     writeHeartbeat(testDir, {
       workerName: name,
       teamName,
@@ -97,9 +102,27 @@ describe('worker-health', () => {
       writeWorkerHeartbeat('worker1', 'polling');
 
       // Log some audit events
-      logAuditEvent(testDir, { timestamp: new Date().toISOString(), eventType: 'task_completed', teamName, workerName: 'worker1', taskId: 't1' });
-      logAuditEvent(testDir, { timestamp: new Date().toISOString(), eventType: 'task_completed', teamName, workerName: 'worker1', taskId: 't2' });
-      logAuditEvent(testDir, { timestamp: new Date().toISOString(), eventType: 'task_permanently_failed', teamName, workerName: 'worker1', taskId: 't3' });
+      logAuditEvent(testDir, {
+        timestamp: new Date().toISOString(),
+        eventType: 'task_completed',
+        teamName,
+        workerName: 'worker1',
+        taskId: 't1',
+      });
+      logAuditEvent(testDir, {
+        timestamp: new Date().toISOString(),
+        eventType: 'task_completed',
+        teamName,
+        workerName: 'worker1',
+        taskId: 't2',
+      });
+      logAuditEvent(testDir, {
+        timestamp: new Date().toISOString(),
+        eventType: 'task_permanently_failed',
+        teamName,
+        workerName: 'worker1',
+        taskId: 't3',
+      });
 
       const reports = getWorkerHealthReports(teamName, testDir);
       expect(reports[0].totalTasksCompleted).toBe(2);

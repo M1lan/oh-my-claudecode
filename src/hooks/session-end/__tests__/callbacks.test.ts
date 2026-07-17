@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { formatSessionSummary, interpolatePath, triggerStopCallbacks } from '../callbacks.js';
+import {
+  formatSessionSummary,
+  interpolatePath,
+  triggerStopCallbacks,
+} from '../callbacks.js';
 import type { SessionMetrics } from '../index.js';
 
 // Mock auto-update module
@@ -28,7 +32,9 @@ const mockGetConfig = vi.mocked(getOMCConfig);
 const mockWriteFileSync = vi.mocked(writeFileSync);
 const mockMkdirSync = vi.mocked(mkdirSync);
 
-function createTestMetrics(overrides?: Partial<SessionMetrics>): SessionMetrics {
+function createTestMetrics(
+  overrides?: Partial<SessionMetrics>,
+): SessionMetrics {
   return {
     session_id: 'test-session-123',
     started_at: '2026-02-04T10:00:00.000Z',
@@ -176,7 +182,7 @@ describe('triggerStopCallbacks', () => {
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/tmp/test-test-session-123.md',
       expect.stringContaining('test-session-123'),
-      { encoding: 'utf-8', mode: 0o600 }
+      { encoding: 'utf-8', mode: 0o600 },
     );
   });
 
@@ -198,7 +204,7 @@ describe('triggerStopCallbacks', () => {
     expect(mockWriteFileSync).toHaveBeenCalledWith(
       '/tmp/test.json',
       expect.stringContaining('"session_id"'),
-      { encoding: 'utf-8', mode: 0o600 }
+      { encoding: 'utf-8', mode: 0o600 },
     );
   });
 
@@ -245,7 +251,7 @@ describe('triggerStopCallbacks', () => {
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('"chat_id":"12345"'),
-      })
+      }),
     );
   });
 
@@ -273,7 +279,9 @@ describe('triggerStopCallbacks', () => {
 
     const request = mockFetch.mock.calls[0]?.[1] as { body: string };
     const payload = JSON.parse(request.body) as { text: string };
-    expect(payload.text.startsWith('@alice @bob @charlie\n# Session Ended')).toBe(true);
+    expect(
+      payload.text.startsWith('@alice @bob @charlie\n# Session Ended'),
+    ).toBe(true);
   });
 
   it('skips Telegram when missing credentials', async () => {
@@ -321,7 +329,7 @@ describe('triggerStopCallbacks', () => {
       expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('test-session-123'),
-      })
+      }),
     );
   });
 
@@ -338,7 +346,15 @@ describe('triggerStopCallbacks', () => {
         discord: {
           enabled: true,
           webhookUrl: 'https://discord.com/api/webhooks/test',
-          tagList: ['@here', '@everyone', 'role:123', '456', 'dev-team', '  ', ''],
+          tagList: [
+            '@here',
+            '@everyone',
+            'role:123',
+            '456',
+            'dev-team',
+            '  ',
+            '',
+          ],
         },
       },
     });
@@ -348,7 +364,11 @@ describe('triggerStopCallbacks', () => {
 
     const request = mockFetch.mock.calls[0]?.[1] as { body: string };
     const payload = JSON.parse(request.body) as { content: string };
-    expect(payload.content.startsWith('@here @everyone <@&123> <@456> dev-team\n# Session Ended')).toBe(true);
+    expect(
+      payload.content.startsWith(
+        '@here @everyone <@&123> <@456> dev-team\n# Session Ended',
+      ),
+    ).toBe(true);
   });
 
   it('skips Discord when missing webhook URL', async () => {
@@ -388,7 +408,9 @@ describe('triggerStopCallbacks', () => {
 
     const metrics = createTestMetrics();
     // Should not throw
-    await expect(triggerStopCallbacks(metrics, testInput)).resolves.not.toThrow();
+    await expect(
+      triggerStopCallbacks(metrics, testInput),
+    ).resolves.not.toThrow();
   });
 
   it('handles Telegram API errors gracefully', async () => {
@@ -412,7 +434,9 @@ describe('triggerStopCallbacks', () => {
 
     const metrics = createTestMetrics();
     // Should not throw
-    await expect(triggerStopCallbacks(metrics, testInput)).resolves.not.toThrow();
+    await expect(
+      triggerStopCallbacks(metrics, testInput),
+    ).resolves.not.toThrow();
   });
 
   it('handles network errors gracefully', async () => {
@@ -431,7 +455,9 @@ describe('triggerStopCallbacks', () => {
 
     const metrics = createTestMetrics();
     // Should not throw
-    await expect(triggerStopCallbacks(metrics, testInput)).resolves.not.toThrow();
+    await expect(
+      triggerStopCallbacks(metrics, testInput),
+    ).resolves.not.toThrow();
   });
 
   it('executes multiple callbacks in parallel', async () => {

@@ -26,7 +26,9 @@ export interface PreCompactOutput {
  * Process PreCompact hook - inject project memory into system message
  * This ensures user directives and project context survive compaction
  */
-export async function processPreCompact(input: PreCompactInput): Promise<PreCompactOutput> {
+export async function processPreCompact(
+  input: PreCompactInput,
+): Promise<PreCompactOutput> {
   try {
     const projectRoot = findProjectRoot(input.cwd);
     if (!projectRoot) {

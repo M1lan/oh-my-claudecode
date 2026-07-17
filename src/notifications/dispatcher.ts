@@ -6,10 +6,10 @@
  * blocking hooks.
  */
 
-import { request as httpsRequest, type RequestOptions } from "https";
-import { connect as netConnect } from "net";
-import { connect as tlsConnect } from "tls";
-import type { Socket } from "net";
+import { request as httpsRequest, type RequestOptions } from 'https';
+import { connect as netConnect } from 'net';
+import { connect as tlsConnect } from 'tls';
+import type { Socket } from 'net';
 import type {
   DiscordNotificationConfig,
   DiscordBotNotificationConfig,
@@ -23,14 +23,14 @@ import type {
   DispatchResult,
   NotificationConfig,
   NotificationEvent,
-} from "./types.js";
+} from './types.js';
 
 import {
   parseMentionAllowedMentions,
   validateSlackMention,
   validateSlackChannel,
   validateSlackUsername,
-} from "./config.js";
+} from './config.js';
 
 /** Per-request timeout for individual platform sends */
 const SEND_TIMEOUT_MS = 10_000;
@@ -41,7 +41,7 @@ const DISPATCH_TIMEOUT_MS = 15_000;
 /** Discord maximum content length */
 const DISCORD_MAX_CONTENT_LENGTH = 2000;
 
-const TELEGRAM_API_HOST = "api.telegram.org";
+const TELEGRAM_API_HOST = 'api.telegram.org';
 const TELEGRAM_API_PORT = 443;
 
 function firstEnvValue(names: string[]): string | undefined {
@@ -53,7 +53,7 @@ function firstEnvValue(names: string[]): string | undefined {
 }
 
 function normalizeNoProxyEntry(entry: string): string {
-  if (!entry.startsWith("http://") && !entry.startsWith("https://")) {
+  if (!entry.startsWith('http://') && !entry.startsWith('https://')) {
     return entry;
   }
   try {
@@ -64,21 +64,21 @@ function normalizeNoProxyEntry(entry: string): string {
 }
 
 function shouldBypassProxy(hostname: string, port: number): boolean {
-  const noProxy = firstEnvValue(["NO_PROXY", "no_proxy"]);
+  const noProxy = firstEnvValue(['NO_PROXY', 'no_proxy']);
   if (!noProxy) return false;
 
   const host = hostname.toLowerCase();
   const hostWithPort = `${host}:${port}`;
 
-  return noProxy.split(",").some((rawEntry) => {
+  return noProxy.split(',').some((rawEntry) => {
     const entry = rawEntry.trim().toLowerCase();
     if (!entry) return false;
-    if (entry === "*") return true;
+    if (entry === '*') return true;
 
     const normalizedEntry = normalizeNoProxyEntry(entry);
-    const entryHost = normalizedEntry.startsWith(".")
+    const entryHost = normalizedEntry.startsWith('.')
       ? normalizedEntry.slice(1)
-      : normalizedEntry.split(":")[0];
+      : normalizedEntry.split(':')[0];
 
     return (
       host === normalizedEntry ||
@@ -93,10 +93,10 @@ function getTelegramProxyUrl(): URL | undefined {
   if (shouldBypassProxy(TELEGRAM_API_HOST, TELEGRAM_API_PORT)) return undefined;
 
   const proxy = firstEnvValue([
-    "HTTPS_PROXY",
-    "https_proxy",
-    "HTTP_PROXY",
-    "http_proxy",
+    'HTTPS_PROXY',
+    'https_proxy',
+    'HTTP_PROXY',
+    'http_proxy',
   ]);
   if (!proxy) return undefined;
 
@@ -109,23 +109,28 @@ function getTelegramProxyUrl(): URL | undefined {
 
 function createTelegramProxyConnection(
   proxyUrl: URL,
-): RequestOptions["createConnection"] {
+): RequestOptions['createConnection'] {
   return ((
     _options: unknown,
     callback: (err: Error | null, socket?: Socket) => void,
   ) => {
     const proxyHost = proxyUrl.hostname;
     const proxyPort = Number(
-      proxyUrl.port || (proxyUrl.protocol === "https:" ? 443 : 80),
+      proxyUrl.port || (proxyUrl.protocol === 'https:' ? 443 : 80),
     );
-    const connectSocket = proxyUrl.protocol === "https:"
-      ? tlsConnect({ host: proxyHost, port: proxyPort, servername: proxyHost })
-      : netConnect({ host: proxyHost, port: proxyPort });
+    const connectSocket =
+      proxyUrl.protocol === 'https:'
+        ? tlsConnect({
+            host: proxyHost,
+            port: proxyPort,
+            servername: proxyHost,
+          })
+        : netConnect({ host: proxyHost, port: proxyPort });
 
     let tlsSocket: Socket | undefined;
     let settled = false;
     const handshakeTimer = setTimeout(() => {
-      fail(new Error("Proxy CONNECT timeout"));
+      fail(new Error('Proxy CONNECT timeout'));
     }, SEND_TIMEOUT_MS);
     const fail = (error: Error) => {
       if (settled) return;
@@ -136,37 +141,41 @@ function createTelegramProxyConnection(
       callback(error);
     };
 
-    connectSocket.once("error", fail);
-    connectSocket.once(proxyUrl.protocol === "https:" ? "secureConnect" : "connect", () => {
-      const auth = proxyUrl.username || proxyUrl.password
-        ? `Proxy-Authorization: Basic ${Buffer.from(
-            `${decodeURIComponent(proxyUrl.username)}:${decodeURIComponent(proxyUrl.password)}`,
-          ).toString("base64")}\r\n`
-        : "";
-      connectSocket.write(
-        `CONNECT ${TELEGRAM_API_HOST}:${TELEGRAM_API_PORT} HTTP/1.1\r\n` +
-          `Host: ${TELEGRAM_API_HOST}:${TELEGRAM_API_PORT}\r\n` +
-          auth +
-          "Connection: close\r\n\r\n",
-      );
-    });
+    connectSocket.once('error', fail);
+    connectSocket.once(
+      proxyUrl.protocol === 'https:' ? 'secureConnect' : 'connect',
+      () => {
+        const auth =
+          proxyUrl.username || proxyUrl.password
+            ? `Proxy-Authorization: Basic ${Buffer.from(
+                `${decodeURIComponent(proxyUrl.username)}:${decodeURIComponent(proxyUrl.password)}`,
+              ).toString('base64')}\r\n`
+            : '';
+        connectSocket.write(
+          `CONNECT ${TELEGRAM_API_HOST}:${TELEGRAM_API_PORT} HTTP/1.1\r\n` +
+            `Host: ${TELEGRAM_API_HOST}:${TELEGRAM_API_PORT}\r\n` +
+            auth +
+            'Connection: close\r\n\r\n',
+        );
+      },
+    );
 
     let response = Buffer.alloc(0);
-    connectSocket.on("data", (chunk: Buffer) => {
+    connectSocket.on('data', (chunk: Buffer) => {
       response = Buffer.concat([response, chunk]);
-      const headerEnd = response.indexOf("\r\n\r\n");
+      const headerEnd = response.indexOf('\r\n\r\n');
       if (headerEnd === -1) return;
 
       const statusLine =
-        response.toString("ascii", 0, headerEnd).split("\r\n")[0] || "";
+        response.toString('ascii', 0, headerEnd).split('\r\n')[0] || '';
       const status = /^HTTP\/\d(?:\.\d)?\s+(\d{3})/.exec(statusLine)?.[1];
-      if (!status || !status.startsWith("2")) {
-        fail(new Error(`Proxy CONNECT failed: ${status || "unknown"}`));
+      if (!status || !status.startsWith('2')) {
+        fail(new Error(`Proxy CONNECT failed: ${status || 'unknown'}`));
         return;
       }
 
-      connectSocket.removeAllListeners("data");
-      connectSocket.removeListener("error", fail);
+      connectSocket.removeAllListeners('data');
+      connectSocket.removeListener('error', fail);
       tlsSocket = tlsConnect(
         { socket: connectSocket, servername: TELEGRAM_API_HOST },
         () => {
@@ -176,11 +185,11 @@ function createTelegramProxyConnection(
           callback(null, tlsSocket);
         },
       );
-      tlsSocket.once("error", fail);
+      tlsSocket.once('error', fail);
     });
 
     return undefined;
-  }) as RequestOptions["createConnection"];
+  }) as RequestOptions['createConnection'];
 }
 
 function telegramRequestOptions(
@@ -190,11 +199,11 @@ function telegramRequestOptions(
   const options: RequestOptions = {
     hostname: TELEGRAM_API_HOST,
     path: `/bot${botToken}/sendMessage`,
-    method: "POST",
+    method: 'POST',
     family: 4, // Force IPv4 - fetch/undici has IPv6 issues on some systems
     headers: {
-      "Content-Type": "application/json",
-      "Content-Length": bodyLength,
+      'Content-Type': 'application/json',
+      'Content-Length': bodyLength,
     },
     timeout: SEND_TIMEOUT_MS,
   };
@@ -232,13 +241,13 @@ function composeDiscordContent(
     const maxBody = DISCORD_MAX_CONTENT_LENGTH - prefix.length;
     const body =
       message.length > maxBody
-        ? message.slice(0, maxBody - 1) + "\u2026"
+        ? message.slice(0, maxBody - 1) + '\u2026'
         : message;
     content = `${prefix}${body}`;
   } else {
     content =
       message.length > DISCORD_MAX_CONTENT_LENGTH
-        ? message.slice(0, DISCORD_MAX_CONTENT_LENGTH - 1) + "\u2026"
+        ? message.slice(0, DISCORD_MAX_CONTENT_LENGTH - 1) + '\u2026'
         : message;
   }
 
@@ -252,7 +261,7 @@ function composeDiscordContent(
 function validateDiscordUrl(webhookUrl: string): boolean {
   try {
     const url = new URL(webhookUrl);
-    const allowedHosts = ["discord.com", "discordapp.com"];
+    const allowedHosts = ['discord.com', 'discordapp.com'];
     if (
       !allowedHosts.some(
         (host) => url.hostname === host || url.hostname.endsWith(`.${host}`),
@@ -260,7 +269,7 @@ function validateDiscordUrl(webhookUrl: string): boolean {
     ) {
       return false;
     }
-    return url.protocol === "https:";
+    return url.protocol === 'https:';
   } catch {
     return false;
   }
@@ -281,9 +290,9 @@ function validateSlackUrl(webhookUrl: string): boolean {
   try {
     const url = new URL(webhookUrl);
     return (
-      url.protocol === "https:" &&
-      (url.hostname === "hooks.slack.com" ||
-        url.hostname.endsWith(".hooks.slack.com"))
+      url.protocol === 'https:' &&
+      (url.hostname === 'hooks.slack.com' ||
+        url.hostname.endsWith('.hooks.slack.com'))
     );
   } catch {
     return false;
@@ -296,7 +305,7 @@ function validateSlackUrl(webhookUrl: string): boolean {
 function validateWebhookUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === "https:";
+    return parsed.protocol === 'https:';
   } catch {
     return false;
   }
@@ -310,14 +319,14 @@ export async function sendDiscord(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled || !config.webhookUrl) {
-    return { platform: "discord", success: false, error: "Not configured" };
+    return { platform: 'discord', success: false, error: 'Not configured' };
   }
 
   if (!validateDiscordUrl(config.webhookUrl)) {
     return {
-      platform: "discord",
+      platform: 'discord',
       success: false,
-      error: "Invalid webhook URL",
+      error: 'Invalid webhook URL',
     };
   }
 
@@ -332,26 +341,26 @@ export async function sendDiscord(
     }
 
     const response = await fetch(config.webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     });
 
     if (!response.ok) {
       return {
-        platform: "discord",
+        platform: 'discord',
         success: false,
         error: `HTTP ${response.status}`,
       };
     }
 
-    return { platform: "discord", success: true };
+    return { platform: 'discord', success: true };
   } catch (error) {
     return {
-      platform: "discord",
+      platform: 'discord',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -365,7 +374,7 @@ export async function sendDiscordBot(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled) {
-    return { platform: "discord-bot", success: false, error: "Not enabled" };
+    return { platform: 'discord-bot', success: false, error: 'Not enabled' };
   }
 
   const botToken = config.botToken;
@@ -373,9 +382,9 @@ export async function sendDiscordBot(
 
   if (!botToken || !channelId) {
     return {
-      platform: "discord-bot",
+      platform: 'discord-bot',
       success: false,
-      error: "Missing botToken or channelId",
+      error: 'Missing botToken or channelId',
     };
   }
 
@@ -386,9 +395,9 @@ export async function sendDiscordBot(
     );
     const url = `https://discord.com/api/v10/channels/${channelId}/messages`;
     const response = await fetch(url, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bot ${botToken}`,
       },
       body: JSON.stringify({ content, allowed_mentions }),
@@ -397,7 +406,7 @@ export async function sendDiscordBot(
 
     if (!response.ok) {
       return {
-        platform: "discord-bot",
+        platform: 'discord-bot',
         success: false,
         error: `HTTP ${response.status}`,
       };
@@ -412,12 +421,12 @@ export async function sendDiscordBot(
       // Non-fatal: message was sent, we just can't track it
     }
 
-    return { platform: "discord-bot", success: true, messageId };
+    return { platform: 'discord-bot', success: true, messageId };
   } catch (error) {
     return {
-      platform: "discord-bot",
+      platform: 'discord-bot',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -431,14 +440,14 @@ export async function sendTelegram(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled || !config.botToken || !config.chatId) {
-    return { platform: "telegram", success: false, error: "Not configured" };
+    return { platform: 'telegram', success: false, error: 'Not configured' };
   }
 
   if (!validateTelegramToken(config.botToken)) {
     return {
-      platform: "telegram",
+      platform: 'telegram',
       success: false,
-      error: "Invalid bot token format",
+      error: 'Invalid bot token format',
     };
   }
 
@@ -446,7 +455,7 @@ export async function sendTelegram(
     const body = JSON.stringify({
       chat_id: config.chatId,
       text: payload.message,
-      parse_mode: config.parseMode || "Markdown",
+      parse_mode: config.parseMode || 'Markdown',
     });
 
     const result = await new Promise<NotificationResult>((resolve) => {
@@ -455,23 +464,29 @@ export async function sendTelegram(
         (res) => {
           // Collect response chunks to parse message_id
           const chunks: Buffer[] = [];
-          res.on("data", (chunk: Buffer) => chunks.push(chunk));
-          res.on("end", () => {
-            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+          res.on('data', (chunk: Buffer) => chunks.push(chunk));
+          res.on('end', () => {
+            if (
+              res.statusCode &&
+              res.statusCode >= 200 &&
+              res.statusCode < 300
+            ) {
               // Parse response to extract message_id
               let messageId: string | undefined;
               try {
-                const body = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+                const body = JSON.parse(
+                  Buffer.concat(chunks).toString('utf-8'),
+                );
                 if (body?.result?.message_id !== undefined) {
                   messageId = String(body.result.message_id);
                 }
               } catch {
                 // Non-fatal: message was sent, we just can't track it
               }
-              resolve({ platform: "telegram", success: true, messageId });
+              resolve({ platform: 'telegram', success: true, messageId });
             } else {
               resolve({
-                platform: "telegram",
+                platform: 'telegram',
                 success: false,
                 error: `HTTP ${res.statusCode}`,
               });
@@ -480,15 +495,15 @@ export async function sendTelegram(
         },
       );
 
-      req.on("error", (e) => {
-        resolve({ platform: "telegram", success: false, error: e.message });
+      req.on('error', (e) => {
+        resolve({ platform: 'telegram', success: false, error: e.message });
       });
-      req.on("timeout", () => {
+      req.on('timeout', () => {
         req.destroy();
         resolve({
-          platform: "telegram",
+          platform: 'telegram',
           success: false,
-          error: "Request timeout",
+          error: 'Request timeout',
         });
       });
 
@@ -499,9 +514,9 @@ export async function sendTelegram(
     return result;
   } catch (error) {
     return {
-      platform: "telegram",
+      platform: 'telegram',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -533,11 +548,11 @@ export async function sendSlack(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled || !config.webhookUrl) {
-    return { platform: "slack", success: false, error: "Not configured" };
+    return { platform: 'slack', success: false, error: 'Not configured' };
   }
 
   if (!validateSlackUrl(config.webhookUrl)) {
-    return { platform: "slack", success: false, error: "Invalid webhook URL" };
+    return { platform: 'slack', success: false, error: 'Invalid webhook URL' };
   }
 
   try {
@@ -556,26 +571,26 @@ export async function sendSlack(
     }
 
     const response = await fetch(config.webhookUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
     });
 
     if (!response.ok) {
       return {
-        platform: "slack",
+        platform: 'slack',
         success: false,
         error: `HTTP ${response.status}`,
       };
     }
 
-    return { platform: "slack", success: true };
+    return { platform: 'slack', success: true };
   } catch (error) {
     return {
-      platform: "slack",
+      platform: 'slack',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -589,7 +604,7 @@ export async function sendSlackBot(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled) {
-    return { platform: "slack-bot", success: false, error: "Not enabled" };
+    return { platform: 'slack-bot', success: false, error: 'Not enabled' };
   }
 
   const botToken = config.botToken;
@@ -597,19 +612,19 @@ export async function sendSlackBot(
 
   if (!botToken || !channelId) {
     return {
-      platform: "slack-bot",
+      platform: 'slack-bot',
       success: false,
-      error: "Missing botToken or channelId",
+      error: 'Missing botToken or channelId',
     };
   }
 
   try {
     const text = composeSlackText(payload.message, config.mention);
-    const response = await fetch("https://slack.com/api/chat.postMessage", {
-      method: "POST",
+    const response = await fetch('https://slack.com/api/chat.postMessage', {
+      method: 'POST',
       headers: {
-        "Authorization": `Bearer ${botToken}`,
-        "Content-Type": "application/json",
+        Authorization: `Bearer ${botToken}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({ channel: channelId, text }),
       signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
@@ -617,27 +632,31 @@ export async function sendSlackBot(
 
     if (!response.ok) {
       return {
-        platform: "slack-bot",
+        platform: 'slack-bot',
         success: false,
         error: `HTTP ${response.status}`,
       };
     }
 
-    const data = await response.json() as { ok: boolean; ts?: string; error?: string };
+    const data = (await response.json()) as {
+      ok: boolean;
+      ts?: string;
+      error?: string;
+    };
     if (!data.ok) {
       return {
-        platform: "slack-bot",
+        platform: 'slack-bot',
         success: false,
-        error: data.error || "Slack API error",
+        error: data.error || 'Slack API error',
       };
     }
 
-    return { platform: "slack-bot", success: true, messageId: data.ts };
+    return { platform: 'slack-bot', success: true, messageId: data.ts };
   } catch (error) {
     return {
-      platform: "slack-bot",
+      platform: 'slack-bot',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -650,25 +669,25 @@ export async function sendWebhook(
   payload: NotificationPayload,
 ): Promise<NotificationResult> {
   if (!config.enabled || !config.url) {
-    return { platform: "webhook", success: false, error: "Not configured" };
+    return { platform: 'webhook', success: false, error: 'Not configured' };
   }
 
   if (!validateWebhookUrl(config.url)) {
     return {
-      platform: "webhook",
+      platform: 'webhook',
       success: false,
-      error: "Invalid URL (HTTPS required)",
+      error: 'Invalid URL (HTTPS required)',
     };
   }
 
   try {
     const headers: Record<string, string> = {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       ...config.headers,
     };
 
     const response = await fetch(config.url, {
-      method: config.method || "POST",
+      method: config.method || 'POST',
       headers,
       body: JSON.stringify({
         event: payload.event,
@@ -693,18 +712,18 @@ export async function sendWebhook(
 
     if (!response.ok) {
       return {
-        platform: "webhook",
+        platform: 'webhook',
         success: false,
         error: `HTTP ${response.status}`,
       };
     }
 
-    return { platform: "webhook", success: true };
+    return { platform: 'webhook', success: true };
   } catch (error) {
     return {
-      platform: "webhook",
+      platform: 'webhook',
       success: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }
@@ -718,7 +737,9 @@ function getEffectivePlatformConfig<T>(
   config: NotificationConfig,
   event: NotificationEvent,
 ): T | undefined {
-  const topLevel = config[platform as keyof NotificationConfig] as T | undefined;
+  const topLevel = config[platform as keyof NotificationConfig] as
+    | T
+    | undefined;
   const eventConfig = config.events?.[event];
   const eventPlatform = eventConfig?.[platform as keyof typeof eventConfig];
 
@@ -727,10 +748,10 @@ function getEffectivePlatformConfig<T>(
   // when the event-level config omits them.
   if (
     eventPlatform &&
-    typeof eventPlatform === "object" &&
-    "enabled" in eventPlatform
+    typeof eventPlatform === 'object' &&
+    'enabled' in eventPlatform
   ) {
-    if (topLevel && typeof topLevel === "object") {
+    if (topLevel && typeof topLevel === 'object') {
       return { ...topLevel, ...eventPlatform } as T;
     }
     return eventPlatform as T;
@@ -762,64 +783,63 @@ export async function dispatchNotifications(
 
   // Discord
   const discordConfig = getEffectivePlatformConfig<DiscordNotificationConfig>(
-    "discord",
+    'discord',
     config,
     event,
   );
   if (discordConfig?.enabled) {
-    promises.push(sendDiscord(discordConfig, payloadFor("discord")));
+    promises.push(sendDiscord(discordConfig, payloadFor('discord')));
   }
 
   // Telegram
   const telegramConfig = getEffectivePlatformConfig<TelegramNotificationConfig>(
-    "telegram",
+    'telegram',
     config,
     event,
   );
   if (telegramConfig?.enabled) {
-    promises.push(sendTelegram(telegramConfig, payloadFor("telegram")));
+    promises.push(sendTelegram(telegramConfig, payloadFor('telegram')));
   }
 
   // Slack
   const slackConfig = getEffectivePlatformConfig<SlackNotificationConfig>(
-    "slack",
+    'slack',
     config,
     event,
   );
   if (slackConfig?.enabled) {
-    promises.push(sendSlack(slackConfig, payloadFor("slack")));
+    promises.push(sendSlack(slackConfig, payloadFor('slack')));
   }
 
   // Webhook
   const webhookConfig = getEffectivePlatformConfig<WebhookNotificationConfig>(
-    "webhook",
+    'webhook',
     config,
     event,
   );
   if (webhookConfig?.enabled) {
-    promises.push(sendWebhook(webhookConfig, payloadFor("webhook")));
+    promises.push(sendWebhook(webhookConfig, payloadFor('webhook')));
   }
 
   // Discord Bot
   const discordBotConfig =
     getEffectivePlatformConfig<DiscordBotNotificationConfig>(
-      "discord-bot",
+      'discord-bot',
       config,
       event,
     );
   if (discordBotConfig?.enabled) {
-    promises.push(sendDiscordBot(discordBotConfig, payloadFor("discord-bot")));
+    promises.push(sendDiscordBot(discordBotConfig, payloadFor('discord-bot')));
   }
 
   // Slack Bot
-  const slackBotConfig =
-    getEffectivePlatformConfig<SlackBotNotificationConfig>(
-      "slack-bot",
-      config,
-      event,
-    );
+  const slackBotConfig = getEffectivePlatformConfig<SlackBotNotificationConfig>(
+    'slack-bot',
+    config,
+    event,
+  );
   if (slackBotConfig?.enabled) {
-    promises.push(sendSlackBot(slackBotConfig, payloadFor("slack-bot")));
+    promises.push(sendSlackBot(slackBotConfig, payloadFor('slack-bot')));
   }
 
   if (promises.length === 0) {
@@ -832,10 +852,10 @@ export async function dispatchNotifications(
     const results = await Promise.race([
       Promise.allSettled(promises).then((settled) =>
         settled.map((s) =>
-          s.status === "fulfilled"
+          s.status === 'fulfilled'
             ? s.value
             : {
-                platform: "unknown" as NotificationPlatform,
+                platform: 'unknown' as NotificationPlatform,
                 success: false,
                 error: String(s.reason),
               },
@@ -846,9 +866,9 @@ export async function dispatchNotifications(
           () =>
             resolve([
               {
-                platform: "unknown" as NotificationPlatform,
+                platform: 'unknown' as NotificationPlatform,
                 success: false,
-                error: "Dispatch timeout",
+                error: 'Dispatch timeout',
               },
             ]),
           DISPATCH_TIMEOUT_MS,
@@ -866,7 +886,7 @@ export async function dispatchNotifications(
       event,
       results: [
         {
-          platform: "unknown" as NotificationPlatform,
+          platform: 'unknown' as NotificationPlatform,
           success: false,
           error: String(error),
         },
@@ -882,15 +902,15 @@ export async function dispatchNotifications(
 // CUSTOM INTEGRATION DISPATCH (Added for Notification Refactor)
 // ============================================================================
 
-import { execFile } from "child_process";
-import { promisify } from "util";
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import type {
   CustomIntegration,
   WebhookIntegrationConfig,
   CliIntegrationConfig,
-} from "./types.js";
-import { interpolateTemplate } from "./template-engine.js";
-import { getCustomIntegrationsForEvent } from "./config.js";
+} from './types.js';
+import { interpolateTemplate } from './template-engine.js';
+import { getCustomIntegrationsForEvent } from './config.js';
 
 const execFileAsync = promisify(execFile);
 
@@ -899,25 +919,25 @@ const execFileAsync = promisify(execFile);
  */
 export async function sendCustomWebhook(
   integration: CustomIntegration,
-  payload: NotificationPayload
+  payload: NotificationPayload,
 ): Promise<NotificationResult> {
   const config = integration.config as WebhookIntegrationConfig;
-  
+
   try {
     // Interpolate template variables
     const url = interpolateTemplate(config.url, payload);
     const body = interpolateTemplate(config.bodyTemplate, payload);
-    
+
     // Prepare headers
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(config.headers)) {
       headers[key] = interpolateTemplate(value, payload);
     }
-    
+
     // Use native fetch (Node.js 18+)
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeout);
-    
+
     try {
       const response = await fetch(url, {
         method: config.method,
@@ -925,17 +945,17 @@ export async function sendCustomWebhook(
         body: config.method !== 'GET' ? body : undefined,
         signal: controller.signal,
       });
-      
+
       if (!response.ok) {
         return {
-          platform: "webhook",
+          platform: 'webhook',
           success: false,
           error: `HTTP ${response.status}: ${response.statusText}`,
         };
       }
-      
+
       return {
-        platform: "webhook",
+        platform: 'webhook',
         success: true,
       };
     } finally {
@@ -943,7 +963,7 @@ export async function sendCustomWebhook(
     }
   } catch (error) {
     return {
-      platform: "webhook",
+      platform: 'webhook',
       success: false,
       error: error instanceof Error ? error.message : String(error),
     };
@@ -956,27 +976,27 @@ export async function sendCustomWebhook(
  */
 export async function sendCustomCli(
   integration: CustomIntegration,
-  payload: NotificationPayload
+  payload: NotificationPayload,
 ): Promise<NotificationResult> {
   const config = integration.config as CliIntegrationConfig;
-  
+
   try {
     // Interpolate template variables into arguments
     const args = config.args.map((arg) => interpolateTemplate(arg, payload));
-    
+
     // Execute using execFile (array args, no shell injection possible)
     await execFileAsync(config.command, args, {
       timeout: config.timeout,
-      killSignal: "SIGTERM",
+      killSignal: 'SIGTERM',
     });
-    
+
     return {
-      platform: "webhook", // Group with webhooks in results
+      platform: 'webhook', // Group with webhooks in results
       success: true,
     };
   } catch (error) {
     return {
-      platform: "webhook",
+      platform: 'webhook',
       success: false,
       error: error instanceof Error ? error.message : String(error),
     };
@@ -988,30 +1008,30 @@ export async function sendCustomCli(
  */
 export async function dispatchCustomIntegrations(
   event: string,
-  payload: NotificationPayload
+  payload: NotificationPayload,
 ): Promise<NotificationResult[]> {
   const integrations = getCustomIntegrationsForEvent(event);
   if (integrations.length === 0) return [];
-  
+
   const results: NotificationResult[] = [];
-  
+
   for (const integration of integrations) {
     let result: NotificationResult;
-    
-    if (integration.type === "webhook") {
+
+    if (integration.type === 'webhook') {
       result = await sendCustomWebhook(integration, payload);
-    } else if (integration.type === "cli") {
+    } else if (integration.type === 'cli') {
       result = await sendCustomCli(integration, payload);
     } else {
       result = {
-        platform: "webhook",
+        platform: 'webhook',
         success: false,
         error: `Unknown integration type: ${integration.type}`,
       };
     }
-    
+
     results.push(result);
   }
-  
+
   return results;
 }

@@ -21,11 +21,14 @@ export interface ExtractedWisdom {
  * - <issue>content</issue>
  * - <problem>content</problem>
  */
-export function extractWisdomFromCompletion(response: string): ExtractedWisdom[] {
+export function extractWisdomFromCompletion(
+  response: string,
+): ExtractedWisdom[] {
   const extracted: ExtractedWisdom[] = [];
 
   // Pattern 1: <wisdom category="...">content</wisdom>
-  const wisdomTagRegex = /<wisdom\s+category=["'](\w+)["']>([\s\S]*?)<\/wisdom>/gi;
+  const wisdomTagRegex =
+    /<wisdom\s+category=["'](\w+)["']>([\s\S]*?)<\/wisdom>/gi;
   let match;
 
   while ((match = wisdomTagRegex.exec(response)) !== null) {
@@ -38,7 +41,12 @@ export function extractWisdomFromCompletion(response: string): ExtractedWisdom[]
   }
 
   // Pattern 2: <learning>, <decision>, <issue>, <problem> tags
-  const _categories: WisdomCategory[] = ['learnings', 'decisions', 'issues', 'problems'];
+  const _categories: WisdomCategory[] = [
+    'learnings',
+    'decisions',
+    'issues',
+    'problems',
+  ];
   const singularMap: Record<string, WisdomCategory> = {
     learning: 'learnings',
     decision: 'decisions',
@@ -72,12 +80,12 @@ function isValidCategory(category: string): category is WisdomCategory {
  */
 export function extractWisdomByCategory(
   response: string,
-  targetCategory: WisdomCategory
+  targetCategory: WisdomCategory,
 ): string[] {
   const allWisdom = extractWisdomFromCompletion(response);
   return allWisdom
-    .filter(w => w.category === targetCategory)
-    .map(w => w.content);
+    .filter((w) => w.category === targetCategory)
+    .map((w) => w.content);
 }
 
 /**

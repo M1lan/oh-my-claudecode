@@ -31,7 +31,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test prompt',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -45,7 +45,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test prompt',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('persistent-mode', input);
@@ -57,7 +57,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -73,7 +73,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -91,7 +91,7 @@ describe('processHook - Environment Kill-Switches', () => {
         sessionId: 'test-session',
         toolName: 'Write',
         toolInput: { file_path: '/test/file.ts', content: 'test' },
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -105,16 +105,19 @@ describe('processHook - Environment Kill-Switches', () => {
       const preToolInput: HookInput = {
         sessionId: 'test-session',
         toolName: 'Write',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const persistentModeInput: HookInput = {
         sessionId: 'test-session',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const preToolResult = await processHook('pre-tool-use', preToolInput);
-      const persistentResult = await processHook('persistent-mode', persistentModeInput);
+      const persistentResult = await processHook(
+        'persistent-mode',
+        persistentModeInput,
+      );
 
       expect(preToolResult).toEqual({ continue: true });
       expect(persistentResult).toEqual({ continue: true });
@@ -126,7 +129,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         toolName: 'Write',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('pre-tool-use', input);
@@ -140,7 +143,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -155,7 +158,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -172,7 +175,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const result = await processHook('keyword-detector', input);
@@ -187,7 +190,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'hello world',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const start = Date.now();
@@ -205,7 +208,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       const start = Date.now();
@@ -237,7 +240,7 @@ describe('processHook - Environment Kill-Switches', () => {
       'pre-compact',
       'setup-init',
       'setup-maintenance',
-      'permission-request'
+      'permission-request',
     ] satisfies HookType[];
 
     it('should disable all hook types when DISABLE_OMC=1', async () => {
@@ -246,7 +249,7 @@ describe('processHook - Environment Kill-Switches', () => {
       const input: HookInput = {
         sessionId: 'test-session',
         prompt: 'test',
-        directory: '/tmp/test'
+        directory: '/tmp/test',
       };
 
       for (const hookType of hookTypes) {
@@ -275,7 +278,8 @@ describe('processHook - Environment Kill-Switches', () => {
 
       const result = await processHook('pre-tool-use', input);
       expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
       expect(output.permissionDecision).toBe('deny');
       expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
       expect(output.permissionDecisionReason).toContain('Agent');
@@ -299,7 +303,8 @@ describe('processHook - Environment Kill-Switches', () => {
 
       const result = await processHook('pre-tool-use', input);
       expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
       expect(output.permissionDecision).toBe('deny');
       expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
       expect(output.permissionDecisionReason).toContain('Task');
@@ -321,7 +326,8 @@ describe('processHook - Environment Kill-Switches', () => {
       };
 
       const result = await processHook('pre-tool-use', input);
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown> | undefined;
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown> | undefined;
       expect(output?.permissionDecision).not.toBe('deny');
     });
 
@@ -343,33 +349,39 @@ describe('processHook - Environment Kill-Switches', () => {
 
       const result = await processHook('pre-tool-use', input);
       expect(result).toHaveProperty('hookSpecificOutput');
-      const output = (result as unknown as Record<string, unknown>).hookSpecificOutput as Record<string, unknown>;
+      const output = (result as unknown as Record<string, unknown>)
+        .hookSpecificOutput as Record<string, unknown>;
       expect(output.permissionDecision).toBe('deny');
       expect(output.permissionDecisionReason).toContain('MODEL ROUTING');
     });
   });
 
   describe('post-tool-use delegation completion handling', () => {
-    it.each(['Task', 'Agent'])('should surface verification reminder for %s completions', async (toolName) => {
-      const input: HookInput = {
-        sessionId: 'test-session',
-        prompt: 'test',
-        directory: '/tmp/test',
-        toolName,
-        toolInput: {
-          description: 'Test agent',
-          prompt: 'Do something',
-          subagent_type: 'oh-my-claudecode:executor',
-        },
-        toolOutput: 'done',
-      };
+    it.each(['Task', 'Agent'])(
+      'should surface verification reminder for %s completions',
+      async (toolName) => {
+        const input: HookInput = {
+          sessionId: 'test-session',
+          prompt: 'test',
+          directory: '/tmp/test',
+          toolName,
+          toolInput: {
+            description: 'Test agent',
+            prompt: 'Do something',
+            subagent_type: 'oh-my-claudecode:executor',
+          },
+          toolOutput: 'done',
+        };
 
-      const result = await processHook('post-tool-use', input);
+        const result = await processHook('post-tool-use', input);
 
-      expect(result.continue).toBe(true);
-      expect(result.message).toContain('MANDATORY VERIFICATION - SUBAGENTS LIE');
-      expect(result.message).toContain('done');
-    });
+        expect(result.continue).toBe(true);
+        expect(result.message).toContain(
+          'MANDATORY VERIFICATION - SUBAGENTS LIE',
+        );
+        expect(result.message).toContain('done');
+      },
+    );
   });
 
   describe('sanitizeHookOutputForSerialization', () => {

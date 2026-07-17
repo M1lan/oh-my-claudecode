@@ -26,29 +26,48 @@ vi.mock('../runtime.js', async (importOriginal) => {
 
 import { executeTeamApiOperation } from '../api-interop.js';
 
-async function writeJson(cwd: string, relativePath: string, value: unknown): Promise<void> {
+async function writeJson(
+  cwd: string,
+  relativePath: string,
+  value: unknown,
+): Promise<void> {
   const fullPath = join(cwd, relativePath);
   await mkdir(dirname(fullPath), { recursive: true });
   await writeFile(fullPath, JSON.stringify(value, null, 2), 'utf-8');
 }
 
-
-async function writeText(cwd: string, relativePath: string, value: string): Promise<void> {
+async function writeText(
+  cwd: string,
+  relativePath: string,
+  value: string,
+): Promise<void> {
   const fullPath = join(cwd, relativePath);
   await mkdir(dirname(fullPath), { recursive: true });
   await writeFile(fullPath, value, 'utf-8');
 }
 
-async function expectCleanupBlockedAndStatePreserved(cwd: string, teamName: string, evidencePath: string): Promise<void> {
+async function expectCleanupBlockedAndStatePreserved(
+  cwd: string,
+  teamName: string,
+  evidencePath: string,
+): Promise<void> {
   const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
 
-  const result = await executeTeamApiOperation('cleanup', { team_name: teamName }, cwd);
+  const result = await executeTeamApiOperation(
+    'cleanup',
+    { team_name: teamName },
+    cwd,
+  );
 
   expect(result.ok).toBe(false);
   if (result.ok) throw new Error('expected cleanup to be blocked');
   expect(result.error.code).toBe('operation_failed');
-  expect(result.error.message).toContain('cleanup_blocked:worktree_cleanup_evidence_present');
-  await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).resolves.toBe('stale');
+  expect(result.error.message).toContain(
+    'cleanup_blocked:worktree_cleanup_evidence_present',
+  );
+  await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).resolves.toBe(
+    'stale',
+  );
   await expect(readFile(evidencePath, 'utf-8')).resolves.toBeTruthy();
   expect(shutdownTeamV2Mock).not.toHaveBeenCalled();
   expect(shutdownTeamMock).not.toHaveBeenCalled();
@@ -93,9 +112,17 @@ describe('team api cleanup', () => {
       resize_hook_target: null,
     });
 
-    const result = await executeTeamApiOperation('cleanup', { team_name: teamName }, cwd);
+    const result = await executeTeamApiOperation(
+      'cleanup',
+      { team_name: teamName },
+      cwd,
+    );
 
-    expect(result).toEqual({ ok: true, operation: 'cleanup', data: { team_name: teamName } });
+    expect(result).toEqual({
+      ok: true,
+      operation: 'cleanup',
+      data: { team_name: teamName },
+    });
     expect(shutdownTeamV2Mock).toHaveBeenCalledWith(teamName, cwd);
     expect(shutdownTeamMock).not.toHaveBeenCalled();
   });
@@ -137,16 +164,24 @@ describe('team api cleanup', () => {
     });
 
     shutdownTeamV2Mock.mockImplementationOnce(async () => {
-      throw new Error('shutdown_gate_blocked:pending=1,blocked=0,in_progress=0,failed=0');
+      throw new Error(
+        'shutdown_gate_blocked:pending=1,blocked=0,in_progress=0,failed=0',
+      );
     });
 
-    const result = await executeTeamApiOperation('cleanup', { team_name: teamName }, cwd);
+    const result = await executeTeamApiOperation(
+      'cleanup',
+      { team_name: teamName },
+      cwd,
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected failure');
     expect(result.error.code).toBe('operation_failed');
     expect(result.error.message).toContain('shutdown_gate_blocked');
-    await expect(readFile(join(teamRoot, 'config.json'), 'utf-8')).resolves.toContain(teamName);
+    await expect(
+      readFile(join(teamRoot, 'config.json'), 'utf-8'),
+    ).resolves.toContain(teamName);
     expect(shutdownTeamV2Mock).toHaveBeenCalledWith(teamName, cwd);
   });
 
@@ -157,10 +192,20 @@ describe('team api cleanup', () => {
     await mkdir(join(teamRoot, 'tasks'), { recursive: true });
     await writeFile(join(teamRoot, 'orphan.txt'), 'stale', 'utf-8');
 
-    const result = await executeTeamApiOperation('cleanup', { team_name: teamName }, cwd);
+    const result = await executeTeamApiOperation(
+      'cleanup',
+      { team_name: teamName },
+      cwd,
+    );
 
-    expect(result).toEqual({ ok: true, operation: 'cleanup', data: { team_name: teamName } });
-    await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(result).toEqual({
+      ok: true,
+      operation: 'cleanup',
+      data: { team_name: teamName },
+    });
+    await expect(
+      readFile(join(teamRoot, 'orphan.txt'), 'utf-8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
     expect(shutdownTeamV2Mock).not.toHaveBeenCalled();
     expect(shutdownTeamMock).not.toHaveBeenCalled();
   });
@@ -171,21 +216,38 @@ describe('team api cleanup', () => {
     const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
     await mkdir(teamRoot, { recursive: true });
     await writeFile(join(teamRoot, 'orphan.txt'), 'stale', 'utf-8');
-    const backupPath = join(teamRoot, 'workers', 'worker-1', 'worktree-root-agents.json');
-    await writeJson(cwd, `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`, {
-      worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
-      hadOriginal: false,
-      installedContent: 'worker overlay',
-      installedAt: new Date().toISOString(),
-    });
+    const backupPath = join(
+      teamRoot,
+      'workers',
+      'worker-1',
+      'worktree-root-agents.json',
+    );
+    await writeJson(
+      cwd,
+      `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`,
+      {
+        worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
+        hadOriginal: false,
+        installedContent: 'worker overlay',
+        installedAt: new Date().toISOString(),
+      },
+    );
 
-    const result = await executeTeamApiOperation('orphan-cleanup', { team_name: teamName }, cwd);
+    const result = await executeTeamApiOperation(
+      'orphan-cleanup',
+      { team_name: teamName },
+      cwd,
+    );
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error('expected orphan-cleanup to be blocked');
     expect(result.error.code).toBe('invalid_input');
-    expect(result.error.message).toContain('orphan_cleanup_blocked:worktree_recovery_evidence_present');
-    await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).resolves.toBe('stale');
+    expect(result.error.message).toContain(
+      'orphan_cleanup_blocked:worktree_recovery_evidence_present',
+    );
+    await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).resolves.toBe(
+      'stale',
+    );
     await expect(readFile(backupPath, 'utf-8')).resolves.toBeTruthy();
     expect(shutdownTeamV2Mock).not.toHaveBeenCalled();
     expect(shutdownTeamMock).not.toHaveBeenCalled();
@@ -197,20 +259,34 @@ describe('team api cleanup', () => {
     const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
     await mkdir(teamRoot, { recursive: true });
     await writeFile(join(teamRoot, 'orphan.txt'), 'stale', 'utf-8');
-    await writeJson(cwd, `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`, {
-      worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
-      hadOriginal: false,
-      installedContent: 'worker overlay',
-      installedAt: new Date().toISOString(),
+    await writeJson(
+      cwd,
+      `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`,
+      {
+        worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
+        hadOriginal: false,
+        installedContent: 'worker overlay',
+        installedAt: new Date().toISOString(),
+      },
+    );
+
+    const result = await executeTeamApiOperation(
+      'orphan-cleanup',
+      {
+        team_name: teamName,
+        acknowledge_lost_worktree_recovery: true,
+      },
+      cwd,
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      operation: 'orphan-cleanup',
+      data: { team_name: teamName },
     });
-
-    const result = await executeTeamApiOperation('orphan-cleanup', {
-      team_name: teamName,
-      acknowledge_lost_worktree_recovery: true,
-    }, cwd);
-
-    expect(result).toEqual({ ok: true, operation: 'orphan-cleanup', data: { team_name: teamName } });
-    await expect(readFile(join(teamRoot, 'orphan.txt'), 'utf-8')).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(
+      readFile(join(teamRoot, 'orphan.txt'), 'utf-8'),
+    ).rejects.toMatchObject({ code: 'ENOENT' });
     expect(shutdownTeamV2Mock).not.toHaveBeenCalled();
     expect(shutdownTeamMock).not.toHaveBeenCalled();
   });
@@ -233,14 +309,23 @@ describe('team api cleanup', () => {
     const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
     await mkdir(teamRoot, { recursive: true });
     await writeFile(join(teamRoot, 'orphan.txt'), 'stale', 'utf-8');
-    const backupPath = join(teamRoot, 'workers', 'worker-1', 'worktree-root-agents.json');
-    await writeJson(cwd, `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`, {
-      worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
-      hadOriginal: true,
-      originalContent: 'root agents',
-      installedContent: 'worker overlay',
-      installedAt: new Date().toISOString(),
-    });
+    const backupPath = join(
+      teamRoot,
+      'workers',
+      'worker-1',
+      'worktree-root-agents.json',
+    );
+    await writeJson(
+      cwd,
+      `.omc/state/team/${teamName}/workers/worker-1/worktree-root-agents.json`,
+      {
+        worktreePath: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
+        hadOriginal: true,
+        originalContent: 'root agents',
+        installedContent: 'worker overlay',
+        installedAt: new Date().toISOString(),
+      },
+    );
 
     await expectCleanupBlockedAndStatePreserved(cwd, teamName, backupPath);
   });
@@ -251,14 +336,20 @@ describe('team api cleanup', () => {
     const teamRoot = join(cwd, '.omc', 'state', 'team', teamName);
     await mkdir(teamRoot, { recursive: true });
     await writeFile(join(teamRoot, 'orphan.txt'), 'stale', 'utf-8');
-    await writeText(cwd, `.omc/state/team/${teamName}/config.json`, '{bad-config');
+    await writeText(
+      cwd,
+      `.omc/state/team/${teamName}/config.json`,
+      '{bad-config',
+    );
     const metadataPath = join(teamRoot, 'worktrees.json');
-    await writeJson(cwd, `.omc/state/team/${teamName}/worktrees.json`, [{
-      workerName: 'worker-1',
-      path: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
-      branch: `omc/${teamName}/worker-1`,
-      createdAt: new Date().toISOString(),
-    }]);
+    await writeJson(cwd, `.omc/state/team/${teamName}/worktrees.json`, [
+      {
+        workerName: 'worker-1',
+        path: join(cwd, '.omc-worktrees', `${teamName}-worker-1`),
+        branch: `omc/${teamName}/worker-1`,
+        createdAt: new Date().toISOString(),
+      },
+    ]);
 
     await expectCleanupBlockedAndStatePreserved(cwd, teamName, metadataPath);
   });

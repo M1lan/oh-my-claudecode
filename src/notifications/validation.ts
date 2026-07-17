@@ -1,10 +1,14 @@
 /**
  * Custom Integration Validation
- * 
+ *
  * Validates custom integration configurations for security and correctness.
  */
 
-import type { CustomIntegration, WebhookIntegrationConfig, CliIntegrationConfig } from './types.js';
+import type {
+  CustomIntegration,
+  WebhookIntegrationConfig,
+  CliIntegrationConfig,
+} from './types.js';
 
 export interface ValidationResult {
   valid: boolean;
@@ -19,14 +23,18 @@ const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 /**
  * Validate a custom integration configuration.
  */
-export function validateCustomIntegration(integration: CustomIntegration): ValidationResult {
+export function validateCustomIntegration(
+  integration: CustomIntegration,
+): ValidationResult {
   const errors: string[] = [];
 
   // Validate ID format
   if (!integration.id) {
     errors.push('Integration ID is required');
   } else if (!VALID_ID_PATTERN.test(integration.id)) {
-    errors.push('Integration ID must be alphanumeric with hyphens/underscores only');
+    errors.push(
+      'Integration ID must be alphanumeric with hyphens/underscores only',
+    );
   }
 
   // Validate type
@@ -41,10 +49,14 @@ export function validateCustomIntegration(integration: CustomIntegration): Valid
 
   // Type-specific validation
   if (integration.type === 'webhook') {
-    const webhookErrors = validateWebhookIntegrationConfig(integration.config as WebhookIntegrationConfig);
+    const webhookErrors = validateWebhookIntegrationConfig(
+      integration.config as WebhookIntegrationConfig,
+    );
     errors.push(...webhookErrors);
   } else if (integration.type === 'cli') {
-    const cliErrors = validateCliIntegrationConfig(integration.config as CliIntegrationConfig);
+    const cliErrors = validateCliIntegrationConfig(
+      integration.config as CliIntegrationConfig,
+    );
     errors.push(...cliErrors);
   }
 
@@ -54,7 +66,9 @@ export function validateCustomIntegration(integration: CustomIntegration): Valid
 /**
  * Validate webhook configuration.
  */
-function validateWebhookIntegrationConfig(config: WebhookIntegrationConfig): string[] {
+function validateWebhookIntegrationConfig(
+  config: WebhookIntegrationConfig,
+): string[] {
   const errors: string[] = [];
 
   // URL validation
@@ -63,16 +77,24 @@ function validateWebhookIntegrationConfig(config: WebhookIntegrationConfig): str
   } else {
     try {
       const url = new URL(config.url);
-      
+
       // Require HTTPS for non-localhost URLs
-      if (url.protocol !== 'https:' && 
-          url.hostname !== 'localhost' && 
-          url.hostname !== '127.0.0.1') {
-        errors.push('Webhook URL must use HTTPS (except localhost for development)');
+      if (
+        url.protocol !== 'https:' &&
+        url.hostname !== 'localhost' &&
+        url.hostname !== '127.0.0.1'
+      ) {
+        errors.push(
+          'Webhook URL must use HTTPS (except localhost for development)',
+        );
       }
-      
+
       // Block file:// and other unsafe protocols
-      if (url.protocol === 'file:' || url.protocol === 'ftp:' || url.protocol === 'sftp:') {
+      if (
+        url.protocol === 'file:' ||
+        url.protocol === 'ftp:' ||
+        url.protocol === 'sftp:'
+      ) {
         errors.push(`Protocol "${url.protocol}" is not allowed`);
       }
     } catch {
@@ -83,14 +105,22 @@ function validateWebhookIntegrationConfig(config: WebhookIntegrationConfig): str
   // Method validation
   if (!config.method) {
     errors.push('HTTP method is required');
-  } else if (!VALID_HTTP_METHODS.includes(config.method as typeof VALID_HTTP_METHODS[number])) {
-    errors.push(`Invalid HTTP method. Must be one of: ${VALID_HTTP_METHODS.join(', ')}`);
+  } else if (
+    !VALID_HTTP_METHODS.includes(
+      config.method as (typeof VALID_HTTP_METHODS)[number],
+    )
+  ) {
+    errors.push(
+      `Invalid HTTP method. Must be one of: ${VALID_HTTP_METHODS.join(', ')}`,
+    );
   }
 
   // Timeout validation
   if (config.timeout !== undefined) {
     if (config.timeout < MIN_TIMEOUT || config.timeout > MAX_TIMEOUT) {
-      errors.push(`Timeout must be between ${MIN_TIMEOUT}ms and ${MAX_TIMEOUT}ms`);
+      errors.push(
+        `Timeout must be between ${MIN_TIMEOUT}ms and ${MAX_TIMEOUT}ms`,
+      );
     }
   }
 
@@ -102,9 +132,11 @@ function validateWebhookIntegrationConfig(config: WebhookIntegrationConfig): str
         errors.push(`Header name contains invalid characters: "${key}"`);
       }
       if (/[\r\n]/.test(String(value))) {
-        errors.push(`Header value contains invalid characters for key: "${key}"`);
+        errors.push(
+          `Header value contains invalid characters for key: "${key}"`,
+        );
       }
-      
+
       // Check for null bytes
       if (/\0/.test(key) || /\0/.test(String(value))) {
         errors.push(`Header contains null bytes: "${key}"`);
@@ -127,9 +159,11 @@ function validateCliIntegrationConfig(config: CliIntegrationConfig): string[] {
   } else {
     // Command must be a single executable, no spaces or shell metacharacters
     if (config.command.includes(' ')) {
-      errors.push('Command must be a single executable path (no spaces or arguments)');
+      errors.push(
+        'Command must be a single executable path (no spaces or arguments)',
+      );
     }
-    
+
     // Check for shell metacharacters
     const shellMetacharacters = /[;&|`$(){}[\]<>!#*?~]/;
     if (shellMetacharacters.test(config.command)) {
@@ -143,11 +177,11 @@ function validateCliIntegrationConfig(config: CliIntegrationConfig): string[] {
       // Check for shell metacharacters outside of template syntax
       const withoutTemplates = arg.replace(/\{\{[^}]+\}\}/g, '');
       const shellMetacharacters = /[;&|`$(){}[\]<>!#*?~]/;
-      
+
       if (shellMetacharacters.test(withoutTemplates)) {
         errors.push(`Argument contains shell metacharacters: "${arg}"`);
       }
-      
+
       // Check for null bytes
       if (/\0/.test(arg)) {
         errors.push(`Argument contains null bytes: "${arg}"`);
@@ -158,7 +192,9 @@ function validateCliIntegrationConfig(config: CliIntegrationConfig): string[] {
   // Timeout validation
   if (config.timeout !== undefined) {
     if (config.timeout < MIN_TIMEOUT || config.timeout > MAX_TIMEOUT) {
-      errors.push(`Timeout must be between ${MIN_TIMEOUT}ms and ${MAX_TIMEOUT}ms`);
+      errors.push(
+        `Timeout must be between ${MIN_TIMEOUT}ms and ${MAX_TIMEOUT}ms`,
+      );
     }
   }
 
@@ -189,9 +225,9 @@ export function checkDuplicateIds(integrations: CustomIntegration[]): string[] {
 export function sanitizeArgument(arg: string): string {
   // Remove null bytes
   let sanitized = arg.replace(/\0/g, '');
-  
+
   // Remove control characters except common whitespace
   sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-  
+
   return sanitized;
 }

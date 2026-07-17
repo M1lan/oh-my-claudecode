@@ -59,7 +59,9 @@ describe('task-size-detector', () => {
     });
 
     it('detects just: prefix', () => {
-      expect(detectEscapeHatch('just: update the version number')).toBe('just:');
+      expect(detectEscapeHatch('just: update the version number')).toBe(
+        'just:',
+      );
     });
 
     it('detects only: prefix', () => {
@@ -106,7 +108,9 @@ describe('task-size-detector', () => {
     });
 
     it('detects "this function" signal', () => {
-      expect(hasSmallTaskSignals('fix this function to return null')).toBe(true);
+      expect(hasSmallTaskSignals('fix this function to return null')).toBe(
+        true,
+      );
     });
 
     it('detects minor fix signal', () => {
@@ -134,7 +138,9 @@ describe('task-size-detector', () => {
     });
 
     it('returns false for regular task', () => {
-      expect(hasSmallTaskSignals('implement user authentication flow')).toBe(false);
+      expect(hasSmallTaskSignals('implement user authentication flow')).toBe(
+        false,
+      );
     });
 
     it('returns false for empty string', () => {
@@ -144,7 +150,9 @@ describe('task-size-detector', () => {
 
   describe('hasLargeTaskSignals', () => {
     it('detects architecture signal', () => {
-      expect(hasLargeTaskSignals('redesign the architecture of the auth system')).toBe(true);
+      expect(
+        hasLargeTaskSignals('redesign the architecture of the auth system'),
+      ).toBe(true);
     });
 
     it('detects refactor signal', () => {
@@ -156,7 +164,9 @@ describe('task-size-detector', () => {
     });
 
     it('detects "entire codebase" signal', () => {
-      expect(hasLargeTaskSignals('update imports across the entire codebase')).toBe(true);
+      expect(
+        hasLargeTaskSignals('update imports across the entire codebase'),
+      ).toBe(true);
     });
 
     it('detects "all files" signal', () => {
@@ -164,7 +174,9 @@ describe('task-size-detector', () => {
     });
 
     it('detects "multiple files" signal', () => {
-      expect(hasLargeTaskSignals('change imports across multiple files')).toBe(true);
+      expect(hasLargeTaskSignals('change imports across multiple files')).toBe(
+        true,
+      );
     });
 
     it('detects migration signal', () => {
@@ -192,7 +204,9 @@ describe('task-size-detector', () => {
     });
 
     it('returns false for medium task', () => {
-      expect(hasLargeTaskSignals('add error handling to the login handler')).toBe(false);
+      expect(
+        hasLargeTaskSignals('add error handling to the login handler'),
+      ).toBe(false);
     });
 
     it('returns false for empty string', () => {
@@ -203,14 +217,18 @@ describe('task-size-detector', () => {
   describe('classifyTaskSize', () => {
     describe('escape hatch detection', () => {
       it('classifies as small when quick: prefix present', () => {
-        const result = classifyTaskSize('quick: refactor the entire auth system');
+        const result = classifyTaskSize(
+          'quick: refactor the entire auth system',
+        );
         expect(result.size).toBe('small');
         expect(result.hasEscapeHatch).toBe(true);
         expect(result.escapePrefixUsed).toBe('quick:');
       });
 
       it('classifies as small for simple: prefix even with large signals', () => {
-        const result = classifyTaskSize('simple: redesign the entire architecture');
+        const result = classifyTaskSize(
+          'simple: redesign the entire architecture',
+        );
         expect(result.size).toBe('small');
         expect(result.hasEscapeHatch).toBe(true);
       });
@@ -228,17 +246,23 @@ describe('task-size-detector', () => {
       });
 
       it('classifies prompt with small signals as small', () => {
-        const result = classifyTaskSize('Rename the getUserById function to fetchUserById in this file');
+        const result = classifyTaskSize(
+          'Rename the getUserById function to fetchUserById in this file',
+        );
         expect(result.size).toBe('small');
       });
 
       it('classifies typo fix as small', () => {
-        const result = classifyTaskSize('fix a typo in the login error message');
+        const result = classifyTaskSize(
+          'fix a typo in the login error message',
+        );
         expect(result.size).toBe('small');
       });
 
       it('classifies minor change as small', () => {
-        const result = classifyTaskSize('minor fix: update the comment in the validator');
+        const result = classifyTaskSize(
+          'minor fix: update the comment in the validator',
+        );
         expect(result.size).toBe('small');
       });
 
@@ -256,7 +280,7 @@ describe('task-size-detector', () => {
     describe('large task classification', () => {
       it('classifies prompt with large signals as large', () => {
         const result = classifyTaskSize(
-          'Refactor the authentication module to support OAuth2 and clean up the token management'
+          'Refactor the authentication module to support OAuth2 and clean up the token management',
         );
         expect(result.size).toBe('large');
       });
@@ -269,13 +293,16 @@ describe('task-size-detector', () => {
       });
 
       it('classifies "entire codebase" task as large', () => {
-        const result = classifyTaskSize('Update all imports across the entire codebase to use path aliases');
+        const result = classifyTaskSize(
+          'Update all imports across the entire codebase to use path aliases',
+        );
         expect(result.size).toBe('large');
       });
 
       it('classifies migration as large even if short', () => {
         // "migrate the schema" has large signal and is > smallWordLimit threshold
-        const text = 'migrate the database schema to the new format using the updated ORM models and fix related tests';
+        const text =
+          'migrate the database schema to the new format using the updated ORM models and fix related tests';
         const result = classifyTaskSize(text);
         expect(result.size).toBe('large');
       });
@@ -285,7 +312,9 @@ describe('task-size-detector', () => {
       it('classifies medium-length prompt with no special signals as medium', () => {
         // Build a prompt between 50-200 words with no large/small signals
         const words = Array(80).fill('word').join(' ');
-        const result = classifyTaskSize(`Add error handling to the login handler. ${words}`);
+        const result = classifyTaskSize(
+          `Add error handling to the login handler. ${words}`,
+        );
         expect(result.size).toBe('medium');
       });
 
@@ -322,7 +351,7 @@ describe('task-size-detector', () => {
 
       it('includes reason for large signals', () => {
         const result = classifyTaskSize(
-          'Refactor the entire architecture of the application including all modules and cross-cutting concerns to support microservices'
+          'Refactor the entire architecture of the application including all modules and cross-cutting concerns to support microservices',
         );
         expect(result.reason.toLowerCase()).toContain('large');
       });
@@ -415,14 +444,31 @@ describe('task-size-detector', () => {
 
   describe('HEAVY_MODE_KEYWORDS set', () => {
     it('contains expected heavy modes', () => {
-      const expected = ['ralph', 'autopilot', 'team', 'ultrawork', 'ralplan', 'ccg'];
+      const expected = [
+        'ralph',
+        'autopilot',
+        'team',
+        'ultrawork',
+        'ralplan',
+        'ccg',
+      ];
       for (const mode of expected) {
         expect(HEAVY_MODE_KEYWORDS.has(mode)).toBe(true);
       }
     });
 
     it('does not contain lightweight modes', () => {
-      const lightweight = ['cancel', 'plan', 'tdd', 'ultrathink', 'deepsearch', 'analyze', 'codex', 'gemini', 'cursor'];
+      const lightweight = [
+        'cancel',
+        'plan',
+        'tdd',
+        'ultrathink',
+        'deepsearch',
+        'analyze',
+        'codex',
+        'gemini',
+        'cursor',
+      ];
       for (const mode of lightweight) {
         expect(HEAVY_MODE_KEYWORDS.has(mode)).toBe(false);
       }

@@ -109,7 +109,7 @@ describe('delegation-enforcement-levels', () => {
         const msg = getWarningForFile(filename);
         expect(msg).toBeDefined();
         expect(msg).toContain(`Suggested agent: ${expectedAgent}`);
-      }
+      },
     );
 
     it('falls back to executor for unknown extension', () => {
@@ -155,8 +155,10 @@ describe('delegation-enforcement-levels', () => {
       // Local config exists with 'off', global has 'strict'
       mockExistsSync.mockImplementation((p: unknown) => {
         const s = String(p);
-        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s)) return true;
-        if (/[\\/]mock[\\/]home[\\/]\.claude[\\/]\.omc-config\.json$/.test(s)) return true;
+        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s))
+          return true;
+        if (/[\\/]mock[\\/]home[\\/]\.claude[\\/]\.omc-config\.json$/.test(s))
+          return true;
         return false;
       });
       mockReadFileSync.mockImplementation((p: unknown) => {
@@ -179,7 +181,8 @@ describe('delegation-enforcement-levels', () => {
     it('falls back to global config when no local config', () => {
       mockExistsSync.mockImplementation((p: unknown) => {
         const s = String(p);
-        if (/[\\/]mock[\\/]home[\\/]\.claude[\\/]\.omc-config\.json$/.test(s)) return true;
+        if (/[\\/]mock[\\/]home[\\/]\.claude[\\/]\.omc-config\.json$/.test(s))
+          return true;
         return false;
       });
       mockReadFileSync.mockImplementation((p: unknown) => {
@@ -199,7 +202,8 @@ describe('delegation-enforcement-levels', () => {
     it('falls back to warn on invalid enforcement level in config', () => {
       mockExistsSync.mockImplementation((p: unknown) => {
         const s = String(p);
-        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s)) return true;
+        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s))
+          return true;
         return false;
       });
       mockReadFileSync.mockImplementation(() => {
@@ -215,7 +219,8 @@ describe('delegation-enforcement-levels', () => {
     it('falls back to warn on malformed JSON config', () => {
       mockExistsSync.mockImplementation((p: unknown) => {
         const s = String(p);
-        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s)) return true;
+        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s))
+          return true;
         return false;
       });
       mockReadFileSync.mockImplementation(() => {
@@ -231,7 +236,8 @@ describe('delegation-enforcement-levels', () => {
     it('supports enforcementLevel key as alternative', () => {
       mockExistsSync.mockImplementation((p: unknown) => {
         const s = String(p);
-        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s)) return true;
+        if (/[\\/]tmp[\\/]test-project[\\/]\.omc[\\/]config\.json$/.test(s))
+          return true;
         return false;
       });
       mockReadFileSync.mockImplementation(() => {
@@ -323,7 +329,7 @@ describe('delegation-enforcement-levels', () => {
           });
           expect(result.continue).toBe(true);
           expect(result.reason).toBeUndefined();
-        }
+        },
       );
     });
 
@@ -339,7 +345,7 @@ describe('delegation-enforcement-levels', () => {
           });
           expect(result.continue).toBe(true);
           expect(result.message).toBeUndefined();
-        }
+        },
       );
     });
 
@@ -350,7 +356,9 @@ describe('delegation-enforcement-levels', () => {
         toolInput: { filePath: 'src/component.tsx' },
         directory: '/tmp/test-project',
       });
-      expect(result.message).toContain('Suggested agent: designer-low (simple) or designer (complex UI)');
+      expect(result.message).toContain(
+        'Suggested agent: designer-low (simple) or designer (complex UI)',
+      );
     });
 
     it('handles filePath in different input keys', () => {
@@ -583,7 +591,7 @@ describe('delegation-enforcement-levels', () => {
         'Test task',
         'executor',
         process.cwd(),
-        undefined
+        undefined,
       );
     });
   });
@@ -604,7 +612,9 @@ describe('delegation-enforcement-levels', () => {
       process.env.CLAUDE_CONFIG_DIR = '/custom/claude-config';
       try {
         expect(isAllowedPath('/custom/claude-config/settings.json')).toBe(true);
-        expect(isAllowedPath('/custom/claude-config/agents/test.md')).toBe(true);
+        expect(isAllowedPath('/custom/claude-config/agents/test.md')).toBe(
+          true,
+        );
       } finally {
         if (originalConfigDir === undefined) {
           delete process.env.CLAUDE_CONFIG_DIR;
@@ -618,8 +628,12 @@ describe('delegation-enforcement-levels', () => {
       const originalConfigDir = process.env.CLAUDE_CONFIG_DIR;
       process.env.CLAUDE_CONFIG_DIR = '~/.claude-alt';
       try {
-        expect(isAllowedPath(join('/mock/home', '.claude-alt', 'settings.json'))).toBe(true);
-        expect(isAllowedPath(join('/mock/home', '.claude-alt', 'agents', 'test.md'))).toBe(true);
+        expect(
+          isAllowedPath(join('/mock/home', '.claude-alt', 'settings.json')),
+        ).toBe(true);
+        expect(
+          isAllowedPath(join('/mock/home', '.claude-alt', 'agents', 'test.md')),
+        ).toBe(true);
       } finally {
         if (originalConfigDir === undefined) {
           delete process.env.CLAUDE_CONFIG_DIR;

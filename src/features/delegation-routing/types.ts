@@ -89,7 +89,7 @@ export function normalizeDelegationRole(role: string): string {
  * Check if delegation routing is enabled
  */
 export function isDelegationEnabled(
-  config: DelegationRoutingConfig | undefined
+  config: DelegationRoutingConfig | undefined,
 ): boolean {
   return config?.enabled === true;
 }

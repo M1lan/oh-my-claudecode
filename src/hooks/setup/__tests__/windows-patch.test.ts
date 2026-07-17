@@ -8,7 +8,14 @@
  * is avoided.
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync, readFileSync, copyFileSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  copyFileSync,
+} from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
@@ -23,7 +30,7 @@ function makeHooksJson(commands: string[]): object {
   return {
     description: 'test',
     hooks: {
-      UserPromptSubmit: commands.map(command => ({
+      UserPromptSubmit: commands.map((command) => ({
         matcher: '*',
         hooks: [{ type: 'command', command, timeout: 5 }],
       })),
@@ -57,7 +64,9 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs');
+    expect(cmd).toBe(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
+    );
   });
 
   it('replaces current portable sh+find-node+run.cjs commands with the run.cjs wrapper', () => {
@@ -70,7 +79,9 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs');
+    expect(cmd).toBe(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
+    );
   });
 
   it('replaces current quoted /bin/sh+find-node+run.cjs commands with the run.cjs wrapper', () => {
@@ -83,7 +94,9 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs');
+    expect(cmd).toBe(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
+    );
   });
 
   it('preserves trailing arguments for current quoted /bin/sh+find-node+run.cjs commands', () => {
@@ -96,7 +109,9 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start');
+    expect(cmd).toBe(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start',
+    );
   });
 
   it('preserves trailing arguments (e.g. subagent-tracker start)', () => {
@@ -109,7 +124,9 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     const cmd = patched.hooks.UserPromptSubmit[0].hooks[0].command;
-    expect(cmd).toBe('node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start');
+    expect(cmd).toBe(
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/subagent-tracker.mjs start',
+    );
   });
 
   it('is idempotent — already-patched commands are not double-modified', () => {
@@ -160,10 +177,10 @@ describe('patchHooksJsonForWindows', () => {
 
     const patched = JSON.parse(readFileSync(hooksJsonPath, 'utf-8'));
     expect(patched.hooks.UserPromptSubmit[0].hooks[0].command).toBe(
-      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs'
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/keyword-detector.mjs',
     );
     expect(patched.hooks.SessionStart[0].hooks[0].command).toBe(
-      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/session-start.mjs'
+      'node "$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs "$CLAUDE_PLUGIN_ROOT"/scripts/session-start.mjs',
     );
   });
 
@@ -176,24 +193,28 @@ describe('patchHooksJsonForWindows', () => {
       hooks: Record<string, Array<{ hooks: Array<{ command?: string }> }>>;
     };
     const commands = Object.entries(patched.hooks).flatMap(([event, groups]) =>
-      groups.flatMap(group =>
+      groups.flatMap((group) =>
         group.hooks
-          .map(hook => hook.command)
+          .map((hook) => hook.command)
           .filter((command): command is string => typeof command === 'string')
-          .map(command => ({ event, command })),
+          .map((command) => ({ event, command })),
       ),
     );
 
     expect(commands.length).toBeGreaterThan(0);
     for (const { event, command } of commands) {
-      expect(command, event).toMatch(/^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs /);
+      expect(command, event).toMatch(
+        /^node "\$CLAUDE_PLUGIN_ROOT"\/scripts\/run\.cjs /,
+      );
       expect(command, event).not.toContain('find-node.sh');
       expect(command, event).not.toContain('/bin/sh');
       expect(command, event).not.toMatch(/^sh /);
     }
 
     expect(commands.some(({ event }) => event === 'Stop')).toBe(true);
-    expect(commands.some(({ event }) => event === 'UserPromptSubmit')).toBe(true);
+    expect(commands.some(({ event }) => event === 'UserPromptSubmit')).toBe(
+      true,
+    );
   });
 
   it('is a no-op when hooks.json does not exist', () => {
@@ -203,7 +224,7 @@ describe('patchHooksJsonForWindows', () => {
 
   it('is a no-op when pluginRoot does not exist', () => {
     expect(() =>
-      patchHooksJsonForWindows(join(tmpdir(), 'nonexistent-plugin-root-xyz'))
+      patchHooksJsonForWindows(join(tmpdir(), 'nonexistent-plugin-root-xyz')),
     ).not.toThrow();
   });
 });

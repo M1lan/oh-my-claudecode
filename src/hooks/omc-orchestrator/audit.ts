@@ -54,8 +54,8 @@ export function readAuditLog(directory?: string): AuditEntry[] {
     const content = fs.readFileSync(logPath, 'utf-8');
     return content
       .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line) as AuditEntry);
+      .filter((line) => line.trim())
+      .map((line) => JSON.parse(line) as AuditEntry);
   } catch {
     return [];
   }
@@ -82,8 +82,8 @@ export function getAuditSummary(directory?: string): {
 
   return {
     total: entries.length,
-    allowed: entries.filter(e => e.decision === 'allowed').length,
-    warned: entries.filter(e => e.decision === 'warned').length,
+    allowed: entries.filter((e) => e.decision === 'allowed').length,
+    warned: entries.filter((e) => e.decision === 'warned').length,
     byExtension,
   };
 }

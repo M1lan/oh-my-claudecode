@@ -82,7 +82,9 @@ describe('Ralph stop-hook continuation — prompt truncation (issue #2542)', () 
     const match = result.message.match(/Original task: (.+)/);
     expect(match).not.toBeNull();
     const echoed = match![1];
-    expect([...echoed].length).toBeLessThanOrEqual(DEFAULT_PROMPT_ECHO_MAX_CHARS + 1);
+    expect([...echoed].length).toBeLessThanOrEqual(
+      DEFAULT_PROMPT_ECHO_MAX_CHARS + 1,
+    );
   });
 
   it('echoed task still starts with the beginning of the original prompt', async () => {

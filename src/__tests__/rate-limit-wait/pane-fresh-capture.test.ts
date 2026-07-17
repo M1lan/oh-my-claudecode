@@ -10,13 +10,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('fs');
 vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return { ...actual, tmuxExec: vi.fn() };
 });
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { tmuxExec } from '../../cli/tmux-utils.js';
-import { getNewPaneTail, getPaneHistorySize } from '../../features/rate-limit-wait/pane-fresh-capture.js';
+import {
+  getNewPaneTail,
+  getPaneHistorySize,
+} from '../../features/rate-limit-wait/pane-fresh-capture.js';
 
 const STATE_DIR = '/project/.omc/state';
 const PANE_ID = '%5';
@@ -29,14 +33,14 @@ function noStateFile(): void {
 /** Set up fs mock so state file contains the given pane positions. */
 function withStateFile(positions: Record<string, number>): void {
   vi.mocked(existsSync).mockReturnValue(true);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   vi.mocked(readFileSync as any).mockReturnValue(JSON.stringify(positions));
 }
 
 /** Queue tmuxExec to return history_size then (optionally) captured lines. */
 function mockHistorySize(size: number, captureOutput = ''): void {
   vi.mocked(tmuxExec)
-    .mockReturnValueOnce(`${size}\n`)   // display-message #{history_size}
+    .mockReturnValueOnce(`${size}\n`) // display-message #{history_size}
     .mockReturnValueOnce(captureOutput); // capture-pane
 }
 

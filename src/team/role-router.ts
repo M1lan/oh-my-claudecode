@@ -132,15 +132,56 @@ const SECURITY_DOMAIN_RE =
 
 /** Role-to-keyword mapping for keyword-count scoring fallback */
 export const ROLE_KEYWORDS: Record<string, RegExp[]> = {
-  'build-fixer': [/\bbuild\b/i, /\bci\b/i, /\bcompile\b/i, /\btsc\b/i, /\blint\b/i],
-  debugger: [/\bdebug\b/i, /\btroubleshoot\b/i, /\binvestigate\b/i, /\bdiagnos/i],
+  'build-fixer': [
+    /\bbuild\b/i,
+    /\bci\b/i,
+    /\bcompile\b/i,
+    /\btsc\b/i,
+    /\blint\b/i,
+  ],
+  debugger: [
+    /\bdebug\b/i,
+    /\btroubleshoot\b/i,
+    /\binvestigate\b/i,
+    /\bdiagnos/i,
+  ],
   writer: [/\bdoc(?:ument)?/i, /\breadme\b/i, /\bchangelog\b/i, /\bcomment/i],
-  designer: [/\bdesign\b/i, /\barchitect/i, /\bui\b/i, /\bux\b/i, /\bwireframe\b/i],
-  'code-simplifier': [/\brefactor/i, /\bclean/i, /\bsimplif/i, /\bdebt\b/i, /\bunused\b/i],
-  'security-reviewer': [/\bsecurity\b/i, /\bvulnerabilit/i, /\bcve\b/i, /\bowasp\b/i, /\bxss\b/i],
+  designer: [
+    /\bdesign\b/i,
+    /\barchitect/i,
+    /\bui\b/i,
+    /\bux\b/i,
+    /\bwireframe\b/i,
+  ],
+  'code-simplifier': [
+    /\brefactor/i,
+    /\bclean/i,
+    /\bsimplif/i,
+    /\bdebt\b/i,
+    /\bunused\b/i,
+  ],
+  'security-reviewer': [
+    /\bsecurity\b/i,
+    /\bvulnerabilit/i,
+    /\bcve\b/i,
+    /\bowasp\b/i,
+    /\bxss\b/i,
+  ],
   'quality-reviewer': [/\breview\b/i, /\baudit\b/i, /\bcheck\b/i],
-  'test-engineer': [/\btest/i, /\bverif/i, /\bvalidat/i, /\bspec\b/i, /\bcoverage\b/i],
-  executor: [/\bimplement/i, /\bbuild\b/i, /\bcreate\b/i, /\badd\b/i, /\bwrite\b/i],
+  'test-engineer': [
+    /\btest/i,
+    /\bverif/i,
+    /\bvalidat/i,
+    /\bspec\b/i,
+    /\bcoverage\b/i,
+  ],
+  executor: [
+    /\bimplement/i,
+    /\bbuild\b/i,
+    /\bcreate\b/i,
+    /\badd\b/i,
+    /\bwrite\b/i,
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -183,7 +224,7 @@ export function inferLaneIntent(text: string): LaneIntent {
 export function routeTaskToRole(
   taskSubject: string,
   taskDescription: string,
-  fallbackRole: string
+  fallbackRole: string,
 ): RoleRouterResult {
   const combined = `${taskSubject} ${taskDescription}`.trim();
   const intent = inferLaneIntent(combined);
@@ -191,28 +232,60 @@ export function routeTaskToRole(
 
   switch (intent) {
     case 'build-fix':
-      return { role: 'build-fixer', confidence: 'high', reason: 'build-fix intent detected' };
+      return {
+        role: 'build-fixer',
+        confidence: 'high',
+        reason: 'build-fix intent detected',
+      };
 
     case 'debug':
-      return { role: 'debugger', confidence: 'high', reason: 'debug intent detected' };
+      return {
+        role: 'debugger',
+        confidence: 'high',
+        reason: 'debug intent detected',
+      };
 
     case 'docs':
-      return { role: 'writer', confidence: 'high', reason: 'docs intent detected' };
+      return {
+        role: 'writer',
+        confidence: 'high',
+        reason: 'docs intent detected',
+      };
 
     case 'design':
-      return { role: 'designer', confidence: 'high', reason: 'design intent detected' };
+      return {
+        role: 'designer',
+        confidence: 'high',
+        reason: 'design intent detected',
+      };
 
     case 'cleanup':
-      return { role: 'code-simplifier', confidence: 'high', reason: 'cleanup intent detected' };
+      return {
+        role: 'code-simplifier',
+        confidence: 'high',
+        reason: 'cleanup intent detected',
+      };
 
     case 'review':
       if (isSecurityDomain) {
-        return { role: 'security-reviewer', confidence: 'high', reason: 'review intent with security domain detected' };
+        return {
+          role: 'security-reviewer',
+          confidence: 'high',
+          reason: 'review intent with security domain detected',
+        };
       }
-      return { role: 'quality-reviewer', confidence: 'high', reason: 'review intent detected' };
+      return {
+        role: 'quality-reviewer',
+        confidence: 'high',
+        reason: 'review intent detected',
+      };
 
     case 'verification':
-      return { role: 'test-engineer', confidence: 'high', reason: 'verification intent detected' };
+      return {
+        role: 'test-engineer',
+        confidence: 'high',
+        reason: 'verification intent detected',
+      };
 
     case 'implementation':
       // Security implementation stays on fallback role — not routed to security-reviewer
@@ -253,12 +326,14 @@ function scoreByKeywords(text: string): { role: string; count: number } | null {
   let bestCount = 0;
 
   for (const [role, patterns] of Object.entries(ROLE_KEYWORDS)) {
-    const count = patterns.filter(p => p.test(text)).length;
+    const count = patterns.filter((p) => p.test(text)).length;
     if (count > bestCount) {
       bestCount = count;
       bestRole = role;
     }
   }
 
-  return bestRole && bestCount > 0 ? { role: bestRole, count: bestCount } : null;
+  return bestRole && bestCount > 0
+    ? { role: bestRole, count: bestCount }
+    : null;
 }

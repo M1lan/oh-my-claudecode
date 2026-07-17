@@ -17,7 +17,8 @@ import type { LearnedSkill } from '../hooks/learner/types.js';
 const ALLOWED_BOUNDARIES = [process.cwd(), homedir()];
 
 /** Role boundary tags that could be used for prompt injection */
-const ROLE_BOUNDARY_PATTERN = /^<\s*\/?\s*(system|human|assistant|user|tool_use|tool_result)\b[^>]*>/i;
+const ROLE_BOUNDARY_PATTERN =
+  /^<\s*\/?\s*(system|human|assistant|user|tool_use|tool_result)\b[^>]*>/i;
 
 /**
  * Validate projectRoot is within allowed directories.
@@ -30,13 +31,17 @@ function validateProjectRoot(input: string): string {
     throw new Error('Invalid project root: path traversal not allowed');
   }
   // Positive boundary validation: resolved path must be under cwd or HOME
-  const isWithinAllowed = ALLOWED_BOUNDARIES.some(boundary => {
+  const isWithinAllowed = ALLOWED_BOUNDARIES.some((boundary) => {
     const normalizedBoundary = normalize(boundary);
-    return normalized === normalizedBoundary ||
-           normalized.startsWith(normalizedBoundary + sep);
+    return (
+      normalized === normalizedBoundary ||
+      normalized.startsWith(normalizedBoundary + sep)
+    );
   });
   if (!isWithinAllowed) {
-    throw new Error('Invalid project root: path is outside allowed directories');
+    throw new Error(
+      'Invalid project root: path is outside allowed directories',
+    );
   }
   return normalized;
 }
@@ -46,19 +51,21 @@ function validateProjectRoot(input: string): string {
  */
 function _sanitizeSkillContent(content: string): string {
   // Truncate to max length
-  const truncated = content.length > MAX_SKILL_CONTENT_LENGTH
-    ? content.slice(0, MAX_SKILL_CONTENT_LENGTH) + '\n[truncated]'
-    : content;
+  const truncated =
+    content.length > MAX_SKILL_CONTENT_LENGTH
+      ? content.slice(0, MAX_SKILL_CONTENT_LENGTH) + '\n[truncated]'
+      : content;
   // Strip role boundary tags
   return truncated
     .split('\n')
-    .filter(line => !ROLE_BOUNDARY_PATTERN.test(line.trim()))
+    .filter((line) => !ROLE_BOUNDARY_PATTERN.test(line.trim()))
     .join('\n');
 }
 
 // Schema definitions
 const loadLocalSchema = {
-  projectRoot: z.string()
+  projectRoot: z
+    .string()
     .max(500)
     .optional()
     .describe('Project root directory (defaults to cwd)'),
@@ -68,7 +75,8 @@ const loadLocalSchema = {
 const loadGlobalSchema = {};
 
 const listSkillsSchema = {
-  projectRoot: z.string()
+  projectRoot: z
+    .string()
     .max(500)
     .optional()
     .describe('Project root directory (defaults to cwd)'),
@@ -103,18 +111,23 @@ function formatSkillOutput(skills: LearnedSkill[]): string {
 // Tool 1: load_omc_skills_local
 export const loadLocalTool = {
   name: 'load_omc_skills_local',
-  description: 'Load and list skills from the project-local .omc/skills/ directory. Returns skill metadata (id, name, description, triggers, tags) for all discovered project-scoped skills.',
+  description:
+    'Load and list skills from the project-local .omc/skills/ directory. Returns skill metadata (id, name, description, triggers, tags) for all discovered project-scoped skills.',
   schema: loadLocalSchema,
   handler: async (args: { projectRoot?: string }) => {
-    const projectRoot = args.projectRoot ? validateProjectRoot(args.projectRoot) : process.cwd();
+    const projectRoot = args.projectRoot
+      ? validateProjectRoot(args.projectRoot)
+      : process.cwd();
     const allSkills = loadAllSkills(projectRoot);
-    const projectSkills = allSkills.filter(s => s.scope === 'project');
+    const projectSkills = allSkills.filter((s) => s.scope === 'project');
 
     return {
-      content: [{
-        type: 'text' as const,
-        text: `## Project Skills (${projectSkills.length})\n\n${formatSkillOutput(projectSkills)}`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `## Project Skills (${projectSkills.length})\n\n${formatSkillOutput(projectSkills)}`,
+        },
+      ],
     };
   },
 };
@@ -122,17 +135,20 @@ export const loadLocalTool = {
 // Tool 2: load_omc_skills_global
 export const loadGlobalTool = {
   name: 'load_omc_skills_global',
-  description: 'Load and list skills from global user directories (~/.omc/skills/ and [$CLAUDE_CONFIG_DIR|~/.claude]/skills/omc-learned/). Returns skill metadata for all discovered user-scoped skills.',
+  description:
+    'Load and list skills from global user directories (~/.omc/skills/ and [$CLAUDE_CONFIG_DIR|~/.claude]/skills/omc-learned/). Returns skill metadata for all discovered user-scoped skills.',
   schema: loadGlobalSchema,
   handler: async (_args: Record<string, never>) => {
     const allSkills = loadAllSkills(null);
-    const userSkills = allSkills.filter(s => s.scope === 'user');
+    const userSkills = allSkills.filter((s) => s.scope === 'user');
 
     return {
-      content: [{
-        type: 'text' as const,
-        text: `## Global User Skills (${userSkills.length})\n\n${formatSkillOutput(userSkills)}`,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: `## Global User Skills (${userSkills.length})\n\n${formatSkillOutput(userSkills)}`,
+        },
+      ],
     };
   },
 };
@@ -140,13 +156,16 @@ export const loadGlobalTool = {
 // Tool 3: list_omc_skills
 export const listSkillsTool = {
   name: 'list_omc_skills',
-  description: 'List all available skills (both project-local and global user skills). Project skills take priority over user skills with the same ID.',
+  description:
+    'List all available skills (both project-local and global user skills). Project skills take priority over user skills with the same ID.',
   schema: listSkillsSchema,
   handler: async (args: { projectRoot?: string }) => {
-    const projectRoot = args.projectRoot ? validateProjectRoot(args.projectRoot) : process.cwd();
+    const projectRoot = args.projectRoot
+      ? validateProjectRoot(args.projectRoot)
+      : process.cwd();
     const skills = loadAllSkills(projectRoot);
-    const projectSkills = skills.filter(s => s.scope === 'project');
-    const userSkills = skills.filter(s => s.scope === 'user');
+    const projectSkills = skills.filter((s) => s.scope === 'project');
+    const userSkills = skills.filter((s) => s.scope === 'user');
 
     let output = `## All Available Skills (${skills.length} total)\n\n`;
 
@@ -163,10 +182,12 @@ export const listSkillsTool = {
     }
 
     return {
-      content: [{
-        type: 'text' as const,
-        text: output,
-      }],
+      content: [
+        {
+          type: 'text' as const,
+          text: output,
+        },
+      ],
     };
   },
 };

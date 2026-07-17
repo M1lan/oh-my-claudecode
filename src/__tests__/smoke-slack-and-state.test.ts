@@ -21,7 +21,8 @@ import { tmpdir } from 'os';
 
 const mockGetOmcRoot = vi.fn<(worktreeRoot?: string) => string>();
 vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../lib/worktree-paths.js')>();
+  const actual =
+    await importOriginal<typeof import('../lib/worktree-paths.js')>();
   return {
     ...actual,
     getOmcRoot: (...args: [string?]) => mockGetOmcRoot(...args),
@@ -32,7 +33,8 @@ vi.mock('../lib/worktree-paths.js', async (importOriginal) => {
 // Mock mode-registry — clearModeState/isModeActive use getOmcRoot internally,
 // and we need them to honour the same mockGetOmcRoot as worktree-paths.
 vi.mock('../hooks/mode-registry/index.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../hooks/mode-registry/index.js')>();
+  const actual =
+    await importOriginal<typeof import('../hooks/mode-registry/index.js')>();
   return {
     ...actual,
     // Passthrough but ensure the mock getOmcRoot from worktree-paths is used
@@ -70,7 +72,7 @@ class MockWebSocket {
 
   removeEventListener(event: string, handler: (...args: any[]) => void) {
     if (!this.listeners[event]) return;
-    this.listeners[event] = this.listeners[event].filter(h => h !== handler);
+    this.listeners[event] = this.listeners[event].filter((h) => h !== handler);
   }
 
   send = vi.fn();
@@ -80,7 +82,7 @@ class MockWebSocket {
   });
 
   fire(event: string, data?: any) {
-    (this.listeners[event] ?? []).forEach(h => h(data));
+    (this.listeners[event] ?? []).forEach((h) => h(data));
   }
 }
 
@@ -124,7 +126,7 @@ function helloEnvelope(): string {
 /** Send a hello envelope to authenticate the connection */
 async function authenticate(ws: MockWebSocket) {
   ws.fire('message', { data: helloEnvelope() });
-  await new Promise(r => setTimeout(r, 0));
+  await new Promise((r) => setTimeout(r, 0));
 }
 
 // ---------------------------------------------------------------------------
@@ -145,7 +147,8 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     (globalThis as any).WebSocket.OPEN = MockWebSocket.OPEN;
 
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
+      json: () =>
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
   });
 
@@ -159,13 +162,17 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
-    await new Promise(r => queueMicrotask(r as any)); // flush open
+    await new Promise((r) => queueMicrotask(r as any)); // flush open
 
-    lastWs!.fire('message', { data: JSON.stringify({ envelope_id: 'env_hello_1', type: 'hello' }) });
-    await new Promise(r => setTimeout(r, 10));
+    lastWs!.fire('message', {
+      data: JSON.stringify({ envelope_id: 'env_hello_1', type: 'hello' }),
+    });
+    await new Promise((r) => setTimeout(r, 10));
 
     // hello is acknowledged (has envelope_id) but does not dispatch to onMessage
-    expect(lastWs!.send).toHaveBeenCalledWith(JSON.stringify({ envelope_id: 'env_hello_1' }));
+    expect(lastWs!.send).toHaveBeenCalledWith(
+      JSON.stringify({ envelope_id: 'env_hello_1' }),
+    );
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -174,11 +181,15 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const log = vi.fn();
     const client = new SlackSocketClient(CONFIG, vi.fn(), log);
     await client.start();
-    await new Promise(r => queueMicrotask(r as any));
+    await new Promise((r) => queueMicrotask(r as any));
 
     const ws = lastWs!;
     lastWs!.fire('message', {
-      data: JSON.stringify({ envelope_id: 'env_disconnect_1', type: 'disconnect', reason: 'refresh_requested' }),
+      data: JSON.stringify({
+        envelope_id: 'env_disconnect_1',
+        type: 'disconnect',
+        reason: 'refresh_requested',
+      }),
     });
 
     expect(ws.close).toHaveBeenCalled();
@@ -189,17 +200,21 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
-    await new Promise(r => queueMicrotask(r as any));
+    await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
     lastWs!.fire('message', { data: makeEnvelope() });
-    await new Promise(r => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 20));
 
     expect(lastWs!.send).toHaveBeenCalledWith(
       JSON.stringify({ envelope_id: 'env_smoke_1' }),
     );
     expect(onMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'message', channel: 'C999', text: 'hello smoke' }),
+      expect.objectContaining({
+        type: 'message',
+        channel: 'C999',
+        text: 'hello smoke',
+      }),
     );
     client.stop();
   });
@@ -208,17 +223,23 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
-    await new Promise(r => queueMicrotask(r as any));
+    await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
     lastWs!.fire('message', {
       data: makeEnvelope({
         payload: {
-          event: { type: 'message', channel: 'CWRONG', user: 'U1', text: 'hi', ts: '1' },
+          event: {
+            type: 'message',
+            channel: 'CWRONG',
+            user: 'U1',
+            text: 'hi',
+            ts: '1',
+          },
         },
       }),
     });
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -227,7 +248,7 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
-    await new Promise(r => queueMicrotask(r as any));
+    await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
     lastWs!.fire('message', {
@@ -244,7 +265,7 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
         },
       }),
     });
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -253,7 +274,7 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
     const onMessage = vi.fn();
     const client = new SlackSocketClient(CONFIG, onMessage, vi.fn());
     await client.start();
-    await new Promise(r => queueMicrotask(r as any));
+    await new Promise((r) => queueMicrotask(r as any));
     await authenticate(lastWs!);
 
     lastWs!.fire('message', {
@@ -263,7 +284,7 @@ describe('SMOKE: SlackSocketClient — envelope parsing & filtering (issue #1139
         },
       }),
     });
-    await new Promise(r => setTimeout(r, 10));
+    await new Promise((r) => setTimeout(r, 10));
     expect(onMessage).not.toHaveBeenCalled();
     client.stop();
   });
@@ -285,7 +306,8 @@ describe('SMOKE: SlackSocketClient — reconnect backoff (issue #1139)', () => {
     (globalThis as any).WebSocket.OPEN = MockWebSocket.OPEN;
 
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
+      json: () =>
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
   });
 
@@ -309,11 +331,13 @@ describe('SMOKE: SlackSocketClient — reconnect backoff (issue #1139)', () => {
     mockFetch.mockRejectedValue(new Error('simulated network failure'));
 
     const getDelay = (callIndex: number): number => {
-      const calls = log.mock.calls.filter(c =>
-        typeof c[0] === 'string' && c[0].includes('reconnecting in'),
+      const calls = log.mock.calls.filter(
+        (c) => typeof c[0] === 'string' && c[0].includes('reconnecting in'),
       );
       if (!calls[callIndex]) return -1;
-      const m = (calls[callIndex][0] as string).match(/reconnecting in (\d+)ms/);
+      const m = (calls[callIndex][0] as string).match(
+        /reconnecting in (\d+)ms/,
+      );
       return m ? parseInt(m[1], 10) : -1;
     };
 
@@ -370,8 +394,9 @@ describe('SMOKE: SlackSocketClient — reconnect backoff (issue #1139)', () => {
       await vi.advanceTimersByTimeAsync(0);
     }
 
-    const maxReachedCalls = log.mock.calls.filter(c =>
-      typeof c[0] === 'string' && c[0].includes('max reconnect attempts'),
+    const maxReachedCalls = log.mock.calls.filter(
+      (c) =>
+        typeof c[0] === 'string' && c[0].includes('max reconnect attempts'),
     );
     expect(maxReachedCalls.length).toBeGreaterThanOrEqual(1);
     client.stop();
@@ -389,7 +414,8 @@ describe('SMOKE: SlackSocketClient — stop() and WS-unavailable (issue #1139)',
     vi.useFakeTimers();
     lastWs = null;
     mockFetch.mockResolvedValue({
-      json: () => Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
+      json: () =>
+        Promise.resolve({ ok: true, url: 'wss://fake-smoke.slack.test' }),
     });
     (globalThis as any).WebSocket = class extends MockWebSocket {
       constructor(_url: string) {
@@ -415,8 +441,8 @@ describe('SMOKE: SlackSocketClient — stop() and WS-unavailable (issue #1139)',
     await vi.advanceTimersByTimeAsync(5000);
     await vi.advanceTimersByTimeAsync(0);
 
-    const reconnectCalls = log.mock.calls.filter(c =>
-      typeof c[0] === 'string' && c[0].includes('reconnecting in'),
+    const reconnectCalls = log.mock.calls.filter(
+      (c) => typeof c[0] === 'string' && c[0].includes('reconnecting in'),
     );
     expect(reconnectCalls.length).toBe(0);
     vi.useRealTimers();
@@ -448,7 +474,11 @@ describe('SMOKE: Slack API helper function signatures (issue #1139)', () => {
     mockFetch.mockResolvedValueOnce({
       json: () => Promise.resolve({ ok: true, ts: '1700000001.000001' }),
     });
-    const result = await postSlackBotMessage('xoxb-test', 'C999', 'hello from smoke');
+    const result = await postSlackBotMessage(
+      'xoxb-test',
+      'C999',
+      'hello from smoke',
+    );
     expect(result.ok).toBe(true);
     expect(result.ts).toBe('1700000001.000001');
     expect(mockFetch).toHaveBeenCalledWith(
@@ -467,8 +497,15 @@ describe('SMOKE: Slack API helper function signatures (issue #1139)', () => {
   });
 
   it('addSlackReaction: calls reactions.add endpoint', async () => {
-    mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) });
-    await addSlackReaction('xoxb-test', 'C999', '1700000001.000001', 'white_check_mark');
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
+    await addSlackReaction(
+      'xoxb-test',
+      'C999',
+      '1700000001.000001',
+      'white_check_mark',
+    );
     expect(mockFetch).toHaveBeenCalledWith(
       'https://slack.com/api/reactions.add',
       expect.objectContaining({ method: 'POST' }),
@@ -476,7 +513,9 @@ describe('SMOKE: Slack API helper function signatures (issue #1139)', () => {
   });
 
   it('addSlackReaction: uses default emoji when omitted', async () => {
-    mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) });
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
     await addSlackReaction('xoxb-test', 'C999', '1700000001.000001');
     const lastCall = mockFetch.mock.calls.at(-1)!;
     const callBody = JSON.parse(lastCall[1].body as string);
@@ -484,8 +523,15 @@ describe('SMOKE: Slack API helper function signatures (issue #1139)', () => {
   });
 
   it('replySlackThread: calls chat.postMessage with thread_ts', async () => {
-    mockFetch.mockResolvedValueOnce({ json: () => Promise.resolve({ ok: true }) });
-    await replySlackThread('xoxb-test', 'C999', '1700000001.000001', 'threaded reply');
+    mockFetch.mockResolvedValueOnce({
+      json: () => Promise.resolve({ ok: true }),
+    });
+    await replySlackThread(
+      'xoxb-test',
+      'C999',
+      '1700000001.000001',
+      'threaded reply',
+    );
     expect(mockFetch).toHaveBeenCalledWith(
       'https://slack.com/api/chat.postMessage',
       expect.objectContaining({ method: 'POST' }),
@@ -508,9 +554,7 @@ import {
   stateListActiveTool,
   stateGetStatusTool,
 } from '../tools/state-tools.js';
-import {
-  resolveSessionStatePath,
-} from '../lib/worktree-paths.js';
+import { resolveSessionStatePath } from '../lib/worktree-paths.js';
 
 describe('SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)', () => {
   let testDir: string;
@@ -599,7 +643,13 @@ describe('SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)', () 
     // Compute path directly — avoids mock boundary issues with resolveSessionStatePath internals.
     // State tools write to: {omcRoot}/state/sessions/{sessionId}/cancel-signal-state.json
     // omcRoot = getOmcRoot(root) = mockGetOmcRoot(testDir) = omcDir
-    const cancelSignalPath = join(omcDir, 'state', 'sessions', sessionId, 'cancel-signal-state.json');
+    const cancelSignalPath = join(
+      omcDir,
+      'state',
+      'sessions',
+      sessionId,
+      'cancel-signal-state.json',
+    );
     expect(existsSync(cancelSignalPath)).toBe(true);
 
     const signal = JSON.parse(readFileSync(cancelSignalPath, 'utf-8'));
@@ -664,7 +714,11 @@ describe('SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)', () 
       legacyPath,
       JSON.stringify({
         active: true,
-        _meta: { mode: 'ultrawork', sessionId: otherSessionId, updatedBy: 'state_write_tool' },
+        _meta: {
+          mode: 'ultrawork',
+          sessionId: otherSessionId,
+          updatedBy: 'state_write_tool',
+        },
       }),
     );
 
@@ -702,8 +756,16 @@ describe('SMOKE: State Cancel Cleanup — session-scoped I/O (issue #1143)', () 
     expect(clearResult).toContain('WARNING');
 
     // Both session paths should be gone
-    const sessAPath = resolveSessionStatePath('team', 'broadcast-sess-a', omcDir);
-    const sessBPath = resolveSessionStatePath('team', 'broadcast-sess-b', omcDir);
+    const sessAPath = resolveSessionStatePath(
+      'team',
+      'broadcast-sess-a',
+      omcDir,
+    );
+    const sessBPath = resolveSessionStatePath(
+      'team',
+      'broadcast-sess-b',
+      omcDir,
+    );
     expect(existsSync(sessAPath)).toBe(false);
     expect(existsSync(sessBPath)).toBe(false);
     expect(existsSync(legacyPath)).toBe(false);

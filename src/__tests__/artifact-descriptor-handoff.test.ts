@@ -1,11 +1,22 @@
-import { existsSync, readFileSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { describe, expect, it } from 'vitest';
 
 type ArtifactModule = Record<string, unknown>;
 
-const ARTIFACT_DESCRIPTOR_SOURCE_PATH = join(process.cwd(), 'src', 'shared', 'artifact-descriptor.ts');
+const ARTIFACT_DESCRIPTOR_SOURCE_PATH = join(
+  process.cwd(),
+  'src',
+  'shared',
+  'artifact-descriptor.ts',
+);
 const ARTIFACT_DESCRIPTOR_IMPORT_PATH = '../shared/artifact-descriptor.js';
 
 function getExistingArtifactSource(): string {
@@ -17,10 +28,14 @@ async function loadArtifactModule(): Promise<ArtifactModule> {
   return (await import(ARTIFACT_DESCRIPTOR_IMPORT_PATH)) as ArtifactModule;
 }
 
-function getCreateArtifactHandoff(mod: ArtifactModule): (input: Record<string, unknown>) => Record<string, unknown> {
+function getCreateArtifactHandoff(
+  mod: ArtifactModule,
+): (input: Record<string, unknown>) => Record<string, unknown> {
   const createHandoff = mod.createArtifactHandoff;
   expect(typeof createHandoff).toBe('function');
-  return createHandoff as (input: Record<string, unknown>) => Record<string, unknown>;
+  return createHandoff as (
+    input: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 function getCreateArtifactDescriptorFromPath(
@@ -28,13 +43,20 @@ function getCreateArtifactDescriptorFromPath(
 ): (path: string, input: Record<string, unknown>) => Record<string, unknown> {
   const createDescriptor = mod.createArtifactDescriptorFromPath;
   expect(typeof createDescriptor).toBe('function');
-  return createDescriptor as (path: string, input: Record<string, unknown>) => Record<string, unknown>;
+  return createDescriptor as (
+    path: string,
+    input: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
-function getWriteTextArtifact(mod: ArtifactModule): (input: Record<string, unknown>) => Record<string, unknown> {
+function getWriteTextArtifact(
+  mod: ArtifactModule,
+): (input: Record<string, unknown>) => Record<string, unknown> {
   const writeArtifact = mod.writeTextArtifact;
   expect(typeof writeArtifact).toBe('function');
-  return writeArtifact as (input: Record<string, unknown>) => Record<string, unknown>;
+  return writeArtifact as (
+    input: Record<string, unknown>,
+  ) => Record<string, unknown>;
 }
 
 function readMode(result: Record<string, unknown>): string | undefined {
@@ -42,13 +64,17 @@ function readMode(result: Record<string, unknown>): string | undefined {
   return typeof mode === 'string' ? mode : undefined;
 }
 
-function readInlineContent(result: Record<string, unknown>): string | undefined {
+function readInlineContent(
+  result: Record<string, unknown>,
+): string | undefined {
   return typeof result.body === 'string' ? result.body : undefined;
 }
 
-function readDescriptor(result: Record<string, unknown>): Record<string, unknown> | undefined {
+function readDescriptor(
+  result: Record<string, unknown>,
+): Record<string, unknown> | undefined {
   return result.descriptor && typeof result.descriptor === 'object'
-    ? result.descriptor as Record<string, unknown>
+    ? (result.descriptor as Record<string, unknown>)
     : undefined;
 }
 
@@ -59,7 +85,13 @@ describe('artifact descriptor contract', () => {
     expect(ARTIFACT_DESCRIPTOR_SOURCE_PATH).toMatch(/src\/shared\//);
     expect(source).toMatch(/ArtifactDescriptor/);
 
-    for (const field of ['kind', 'path', 'createdAt', 'producer', 'retention']) {
+    for (const field of [
+      'kind',
+      'path',
+      'createdAt',
+      'producer',
+      'retention',
+    ]) {
       expect(source).toContain(field);
     }
 
@@ -74,7 +106,8 @@ describe('artifact descriptor contract', () => {
 
   it('creates stable descriptors for the same durable artifact input', async () => {
     const mod = await loadArtifactModule();
-    const createArtifactDescriptorFromPath = getCreateArtifactDescriptorFromPath(mod);
+    const createArtifactDescriptorFromPath =
+      getCreateArtifactDescriptorFromPath(mod);
     const dir = mkdtempSync(join(tmpdir(), 'artifact-descriptor-contract-'));
 
     try {

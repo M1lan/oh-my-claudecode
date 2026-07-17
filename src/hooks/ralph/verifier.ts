@@ -15,8 +15,15 @@
 import { randomUUID } from 'crypto';
 import { existsSync, readFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { resolveSessionStatePath, ensureSessionStateDir, getOmcRoot } from '../../lib/worktree-paths.js';
-import { clearStateFileLocked, writeStateFileLocked } from '../../lib/mode-state-io.js';
+import {
+  resolveSessionStatePath,
+  ensureSessionStateDir,
+  getOmcRoot,
+} from '../../lib/worktree-paths.js';
+import {
+  clearStateFileLocked,
+  writeStateFileLocked,
+} from '../../lib/mode-state-io.js';
 import { formatOmcCliInvocation } from '../../utils/omc-cli-rendering.js';
 import type { UserStory } from './prd.js';
 import type { RalphCriticMode } from './loop.js';
@@ -95,7 +102,10 @@ function getVerificationAgentStep(mode?: RalphCriticMode): string {
  * Get verification state file path
  * When sessionId is provided, uses session-scoped path.
  */
-function getVerificationStatePath(directory: string, sessionId?: string): string {
+function getVerificationStatePath(
+  directory: string,
+  sessionId?: string,
+): string {
   if (sessionId) {
     return resolveSessionStatePath('ralph-verification', sessionId, directory);
   }
@@ -106,13 +116,18 @@ function getVerificationStatePath(directory: string, sessionId?: string): string
  * Read verification state
  * @param sessionId - When provided, reads from session-scoped path only (no legacy fallback)
  */
-export function readVerificationState(directory: string, sessionId?: string): VerificationState | null {
+export function readVerificationState(
+  directory: string,
+  sessionId?: string,
+): VerificationState | null {
   const statePath = getVerificationStatePath(directory, sessionId);
   if (!existsSync(statePath)) {
     return null;
   }
   try {
-    const state = JSON.parse(readFileSync(statePath, 'utf-8')) as VerificationState;
+    const state = JSON.parse(
+      readFileSync(statePath, 'utf-8'),
+    ) as VerificationState;
     if (!state.request_id) {
       state.request_id = createVerificationRequestId();
       writeVerificationState(directory, state, sessionId);
@@ -126,7 +141,11 @@ export function readVerificationState(directory: string, sessionId?: string): Ve
 /**
  * Write verification state
  */
-export function writeVerificationState(directory: string, state: VerificationState, sessionId?: string): boolean {
+export function writeVerificationState(
+  directory: string,
+  state: VerificationState,
+  sessionId?: string,
+): boolean {
   const statePath = getVerificationStatePath(directory, sessionId);
 
   if (sessionId) {
@@ -142,14 +161,20 @@ export function writeVerificationState(directory: string, state: VerificationSta
     }
   }
 
-  return writeStateFileLocked(statePath, state as unknown as Record<string, unknown>);
+  return writeStateFileLocked(
+    statePath,
+    state as unknown as Record<string, unknown>,
+  );
 }
 
 /**
  * Clear verification state
  * @param sessionId - When provided, clears session-scoped state only
  */
-export function clearVerificationState(directory: string, sessionId?: string): boolean {
+export function clearVerificationState(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const statePath = getVerificationStatePath(directory, sessionId);
   return clearStateFileLocked(statePath);
 }
@@ -163,7 +188,7 @@ export function startVerification(
   originalTask: string,
   criticMode?: RalphCriticMode,
   sessionId?: string,
-  currentStory?: UserStory
+  currentStory?: UserStory,
 ): VerificationState {
   const state: VerificationState = {
     pending: true,
@@ -175,7 +200,7 @@ export function startVerification(
     verification_scope: currentStory ? 'story' : 'completion',
     story_id: currentStory?.id,
     critic_mode: getCriticMode(criticMode),
-    request_id: createVerificationRequestId()
+    request_id: createVerificationRequestId(),
   };
 
   writeVerificationState(directory, state, sessionId);
@@ -189,7 +214,7 @@ export function recordArchitectFeedback(
   directory: string,
   approved: boolean,
   feedback: string,
-  sessionId?: string
+  sessionId?: string,
 ): VerificationState | null {
   const state = readVerificationState(directory, sessionId);
   if (!state) {
@@ -221,10 +246,14 @@ export function recordArchitectFeedback(
  * Generate architect verification prompt
  * When a currentStory is provided, includes its specific acceptance criteria for targeted verification.
  */
-export function getArchitectVerificationPrompt(state: VerificationState, currentStory?: UserStory): string {
+export function getArchitectVerificationPrompt(
+  state: VerificationState,
+  currentStory?: UserStory,
+): string {
   const criticLabel = getCriticLabel(state.critic_mode);
   const approvalTag = `<ralph-approved critic="${getCriticMode(state.critic_mode)}" request-id="${state.request_id}"${state.story_id ? ` story-id="${state.story_id}"` : ''}>VERIFIED_COMPLETE</ralph-approved>`;
-  const storySection = currentStory ? `
+  const storySection = currentStory
+    ? `
 **Current Story: ${currentStory.id} - ${currentStory.title}**
 ${currentStory.description}
 
@@ -232,7 +261,8 @@ ${currentStory.description}
 ${currentStory.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
 IMPORTANT: This review gates Ralph's progression to the next story/complete state. Verify EACH acceptance criterion above is met. Do not verify based on general impressions — check each criterion individually with concrete evidence.
-` : '';
+`
+    : '';
 
   return `<ralph-verification>
 
@@ -252,11 +282,15 @@ ${storySection}
 
 ${getVerificationAgentStep(state.critic_mode)}
 
-2. **${criticLabel} must check:**${currentStory ? `
+2. **${criticLabel} must check:**${
+    currentStory
+      ? `
    - Verify EACH acceptance criterion listed above is met with fresh evidence
-   - Run the relevant tests/builds to confirm criteria pass` : `
+   - Run the relevant tests/builds to confirm criteria pass`
+      : `
    - Are ALL requirements from the original task met?
-   - Is the implementation complete, not partial?`}
+   - Is the implementation complete, not partial?`
+  }
    - Are there any obvious bugs or issues?
    - Does the code compile/run without errors?
    - Are tests passing (if applicable)?
@@ -276,7 +310,9 @@ ${getVerificationAgentStep(state.critic_mode)}
 /**
  * Generate continuation prompt after architect rejection
  */
-export function getArchitectRejectionContinuationPrompt(state: VerificationState): string {
+export function getArchitectRejectionContinuationPrompt(
+  state: VerificationState,
+): string {
   const criticLabel = getCriticLabel(state.critic_mode);
   return `<ralph-continuation-after-rejection>
 
@@ -309,23 +345,33 @@ Continue working now.
 /**
  * Check if text contains architect approval
  */
-function extractApprovalAttribute(attributes: string, attributeName: string): string | undefined {
-  const match = new RegExp(`\\b${attributeName}=(["'])(.*?)\\1`, 'i').exec(attributes);
+function extractApprovalAttribute(
+  attributes: string,
+  attributeName: string,
+): string | undefined {
+  const match = new RegExp(`\\b${attributeName}=(["'])(.*?)\\1`, 'i').exec(
+    attributes,
+  );
   return match?.[2];
 }
 
 function stripInjectedApprovalExamples(text: string): string {
   return text
     .replace(/<ralph-verification>[\s\S]*?<\/ralph-verification>/gi, ' ')
-    .replace(/`<(?:architect-approved|ralph-approved)\b[\s\S]*?<\/(?:architect-approved|ralph-approved)>`/gi, ' ');
+    .replace(
+      /`<(?:architect-approved|ralph-approved)\b[\s\S]*?<\/(?:architect-approved|ralph-approved)>`/gi,
+      ' ',
+    );
 }
 
 export function detectArchitectApproval(
   text: string,
-  expected?: Pick<VerificationState, 'request_id' | 'story_id'>
+  expected?: Pick<VerificationState, 'request_id' | 'story_id'>,
 ): boolean {
   const sanitizedText = stripInjectedApprovalExamples(text);
-  const matches = sanitizedText.matchAll(/<(?:architect-approved|ralph-approved)\b([^>]*)>.*?VERIFIED_COMPLETE.*?<\/(?:architect-approved|ralph-approved)>/gis);
+  const matches = sanitizedText.matchAll(
+    /<(?:architect-approved|ralph-approved)\b([^>]*)>.*?VERIFIED_COMPLETE.*?<\/(?:architect-approved|ralph-approved)>/gis,
+  );
 
   for (const match of matches) {
     const attributes = match[1] ?? '';
@@ -359,7 +405,10 @@ export function detectArchitectApproval(
 /**
  * Check if text contains architect rejection indicators
  */
-export function detectArchitectRejection(text: string): { rejected: boolean; feedback: string } {
+export function detectArchitectRejection(text: string): {
+  rejected: boolean;
+  feedback: string;
+} {
   // Look for explicit rejection patterns
   const rejectionPatterns = [
     /(architect|critic|codex|reviewer).*?(rejected|found issues|not complete|incomplete)/i,
@@ -367,16 +416,20 @@ export function detectArchitectRejection(text: string): { rejected: boolean; fee
     /not yet complete/i,
     /missing.*?(implementation|feature|test)/i,
     /bug.*?(found|detected|identified)/i,
-    /error.*?(found|detected|identified)/i
+    /error.*?(found|detected|identified)/i,
   ];
 
   for (const pattern of rejectionPatterns) {
     if (pattern.test(text)) {
       // Extract feedback (rough heuristic)
-      const feedbackMatch = text.match(/(?:architect|critic|codex|reviewer|feedback|issue|problem|error|bug)[:\s]+([^.]+\.)/i);
+      const feedbackMatch = text.match(
+        /(?:architect|critic|codex|reviewer|feedback|issue|problem|error|bug)[:\s]+([^.]+\.)/i,
+      );
       return {
         rejected: true,
-        feedback: feedbackMatch ? feedbackMatch[1] : 'Architect found issues with the implementation.'
+        feedback: feedbackMatch
+          ? feedbackMatch[1]
+          : 'Architect found issues with the implementation.',
       };
     }
   }

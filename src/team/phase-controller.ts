@@ -35,16 +35,16 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
   if (tasks.length === 0) return 'initializing';
 
   // Categorize tasks
-  const inProgress = tasks.filter(t => t.status === 'in_progress');
-  const pending = tasks.filter(t => t.status === 'pending');
+  const inProgress = tasks.filter((t) => t.status === 'in_progress');
+  const pending = tasks.filter((t) => t.status === 'pending');
   // CRITICAL: permanentlyFailed tasks have status='completed' but are actually failed
   const permanentlyFailed = tasks.filter(
-    t => t.status === 'completed' && t.metadata?.permanentlyFailed === true
+    (t) => t.status === 'completed' && t.metadata?.permanentlyFailed === true,
   );
   const genuinelyCompleted = tasks.filter(
-    t => t.status === 'completed' && !t.metadata?.permanentlyFailed
+    (t) => t.status === 'completed' && !t.metadata?.permanentlyFailed,
   );
-  const explicitlyFailed = tasks.filter(t => t.status === 'failed');
+  const explicitlyFailed = tasks.filter((t) => t.status === 'failed');
   const allFailed = [...permanentlyFailed, ...explicitlyFailed];
 
   // Rule 2: Any in_progress → executing
@@ -60,14 +60,19 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
   }
 
   // Rule 4: Mixed completed + pending (no in_progress, no failures) → executing
-  if (pending.length > 0 && genuinelyCompleted.length > 0 && inProgress.length === 0 && allFailed.length === 0) {
+  if (
+    pending.length > 0 &&
+    genuinelyCompleted.length > 0 &&
+    inProgress.length === 0 &&
+    allFailed.length === 0
+  ) {
     return 'executing';
   }
 
   // Rules 6 & 7: Handle failures
   if (allFailed.length > 0) {
     // Check if any failed task has retries remaining
-    const hasRetriesRemaining = allFailed.some(t => {
+    const hasRetriesRemaining = allFailed.some((t) => {
       const retryCount = t.metadata?.retryCount ?? 0;
       const maxRetries = t.metadata?.maxRetries ?? 3;
       return retryCount < maxRetries;
@@ -76,7 +81,10 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
     // Rule 7: All tasks are failed and no retries remain
     if (
       (allFailed.length === tasks.length && !hasRetriesRemaining) ||
-      (pending.length === 0 && inProgress.length === 0 && genuinelyCompleted.length === 0 && !hasRetriesRemaining)
+      (pending.length === 0 &&
+        inProgress.length === 0 &&
+        genuinelyCompleted.length === 0 &&
+        !hasRetriesRemaining)
     ) {
       return 'failed';
     }
@@ -86,10 +94,7 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
   }
 
   // Rule 8: All genuinely completed, no failures
-  if (
-    genuinelyCompleted.length === tasks.length &&
-    allFailed.length === 0
-  ) {
+  if (genuinelyCompleted.length === tasks.length && allFailed.length === 0) {
     return 'completed';
   }
 
@@ -100,7 +105,10 @@ export function inferPhase(tasks: PhaseableTask[]): TeamPhase {
 /**
  * Get a human-readable log message for a phase transition.
  */
-export function getPhaseTransitionLog(prev: TeamPhase, next: TeamPhase): string {
+export function getPhaseTransitionLog(
+  prev: TeamPhase,
+  next: TeamPhase,
+): string {
   if (prev === next) return `Phase unchanged: ${next}`;
   return `Phase transition: ${prev} → ${next}`;
 }

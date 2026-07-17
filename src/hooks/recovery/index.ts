@@ -125,7 +125,12 @@ export async function handleRecovery(input: {
 
   // Priority 2: Session Recovery
   if (error) {
-    const sessionResult = await handleSessionRecovery(sessionId, error, message, config);
+    const sessionResult = await handleSessionRecovery(
+      sessionId,
+      error,
+      message,
+      config,
+    );
     if (sessionResult.attempted && sessionResult.success) {
       return sessionResult;
     }

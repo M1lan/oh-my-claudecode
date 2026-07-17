@@ -17,7 +17,9 @@ import {
 describe('cross-platform path utilities', () => {
   describe('toForwardSlash', () => {
     it('should convert backslashes to forward slashes', () => {
-      expect(toForwardSlash('C:\\Users\\test\\.claude')).toBe('C:/Users/test/.claude');
+      expect(toForwardSlash('C:\\Users\\test\\.claude')).toBe(
+        'C:/Users/test/.claude',
+      );
     });
 
     it('should leave forward slashes unchanged', () => {
@@ -25,7 +27,9 @@ describe('cross-platform path utilities', () => {
     });
 
     it('should handle mixed slashes', () => {
-      expect(toForwardSlash('C:\\Users/test\\.claude')).toBe('C:/Users/test/.claude');
+      expect(toForwardSlash('C:\\Users/test\\.claude')).toBe(
+        'C:/Users/test/.claude',
+      );
     });
 
     it('should handle empty string', () => {
@@ -33,7 +37,9 @@ describe('cross-platform path utilities', () => {
     });
 
     it('should handle UNC paths', () => {
-      expect(toForwardSlash('\\\\server\\share\\path')).toBe('//server/share/path');
+      expect(toForwardSlash('\\\\server\\share\\path')).toBe(
+        '//server/share/path',
+      );
     });
   });
 
@@ -43,11 +49,15 @@ describe('cross-platform path utilities', () => {
     });
 
     it('should quote paths with spaces', () => {
-      expect(toShellPath('/path/with spaces/file')).toBe('"/path/with spaces/file"');
+      expect(toShellPath('/path/with spaces/file')).toBe(
+        '"/path/with spaces/file"',
+      );
     });
 
     it('should quote Windows paths with spaces', () => {
-      expect(toShellPath('C:\\Program Files\\app')).toBe('"C:/Program Files/app"');
+      expect(toShellPath('C:\\Program Files\\app')).toBe(
+        '"C:/Program Files/app"',
+      );
     });
 
     it('should not quote paths without spaces', () => {
@@ -163,7 +173,9 @@ describe('cross-platform path utilities', () => {
       delete process.env.OMC_HOME;
 
       expect(getGlobalOmcConfigRoot()).toBe('/custom/config/omc');
-      expect(getGlobalOmcConfigPath('config.json')).toBe('/custom/config/omc/config.json');
+      expect(getGlobalOmcConfigPath('config.json')).toBe(
+        '/custom/config/omc/config.json',
+      );
     });
 
     it('should use XDG state root for global OMC state on Linux', () => {
@@ -172,7 +184,9 @@ describe('cross-platform path utilities', () => {
       delete process.env.OMC_HOME;
 
       expect(getGlobalOmcStateRoot()).toBe('/custom/state/omc');
-      expect(getGlobalOmcStatePath('daemon.json')).toBe('/custom/state/omc/daemon.json');
+      expect(getGlobalOmcStatePath('daemon.json')).toBe(
+        '/custom/state/omc/daemon.json',
+      );
     });
 
     it('should keep OMC_HOME authoritative for config and state roots', () => {
@@ -215,7 +229,9 @@ describe('cross-platform path utilities', () => {
         '/custom/config/omc/config.json',
         `${getLegacyOmcDir()}/config.json`,
       ]);
-      expect(getGlobalOmcStateCandidates('reply-session-registry.jsonl')).toEqual([
+      expect(
+        getGlobalOmcStateCandidates('reply-session-registry.jsonl'),
+      ).toEqual([
         '/custom/state/omc/reply-session-registry.jsonl',
         `${getLegacyOmcDir()}/state/reply-session-registry.jsonl`,
       ]);

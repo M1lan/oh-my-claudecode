@@ -1,7 +1,11 @@
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { type AutoresearchKeepPolicy, parseSandboxContract, slugifyMissionName } from '../autoresearch/contracts.js';
+import {
+  type AutoresearchKeepPolicy,
+  parseSandboxContract,
+  slugifyMissionName,
+} from '../autoresearch/contracts.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 
 export interface AutoresearchSeedInputs {
@@ -60,7 +64,8 @@ const BLOCKED_EVALUATOR_PATTERNS = [
 
 const DEEP_INTERVIEW_DRAFT_PREFIX = 'deep-interview-autoresearch-';
 const AUTORESEARCH_ARTIFACT_DIR_PREFIX = 'autoresearch-';
-export const AUTORESEARCH_DEEP_INTERVIEW_RESULT_KIND = 'omc.autoresearch.deep-interview/v1';
+export const AUTORESEARCH_DEEP_INTERVIEW_RESULT_KIND =
+  'omc.autoresearch.deep-interview/v1';
 
 function defaultDraftEvaluator(topic: string): string {
   const detail = topic.trim() || 'the mission';
@@ -78,38 +83,56 @@ function extractMarkdownSection(markdown: string, heading: string): string {
   const start = match.index + match[0].length;
   const remainder = markdown.slice(start);
   const nextHeading = remainder.search(/^##\s+/m);
-  return (nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder).trim();
+  return (
+    nextHeading >= 0 ? remainder.slice(0, nextHeading) : remainder
+  ).trim();
 }
 
-function parseLaunchReadinessSection(section: string): { launchReady: boolean; blockedReasons: string[] } {
+function parseLaunchReadinessSection(section: string): {
+  launchReady: boolean;
+  blockedReasons: string[];
+} {
   const normalized = section.trim();
   if (!normalized) {
-    return { launchReady: false, blockedReasons: ['Launch readiness section is missing.'] };
+    return {
+      launchReady: false,
+      blockedReasons: ['Launch readiness section is missing.'],
+    };
   }
 
   const launchReady = /Launch-ready:\s*yes/i.test(normalized);
   const blockedReasons = launchReady
     ? []
     : normalized
-      .split(/\r?\n/)
-      .map((line) => line.trim())
-      .filter((line) => /^-\s+/.test(line))
-      .map((line) => line.replace(/^-\s+/, '').trim())
-      .filter(Boolean);
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => /^-\s+/.test(line))
+        .map((line) => line.replace(/^-\s+/, '').trim())
+        .filter(Boolean);
 
   return { launchReady, blockedReasons };
 }
 
 function normalizeKeepPolicy(raw: string): AutoresearchKeepPolicy {
-  return raw.trim().toLowerCase() === 'pass_only' ? 'pass_only' : 'score_improvement';
+  return raw.trim().toLowerCase() === 'pass_only'
+    ? 'pass_only'
+    : 'score_improvement';
 }
 
 function buildArtifactDir(repoRoot: string, slug: string): string {
-  return join(getOmcRoot(repoRoot), 'specs', `${AUTORESEARCH_ARTIFACT_DIR_PREFIX}${slug}`);
+  return join(
+    getOmcRoot(repoRoot),
+    'specs',
+    `${AUTORESEARCH_ARTIFACT_DIR_PREFIX}${slug}`,
+  );
 }
 
 function buildDraftArtifactPath(repoRoot: string, slug: string): string {
-  return join(getOmcRoot(repoRoot), 'specs', `${DEEP_INTERVIEW_DRAFT_PREFIX}${slug}.md`);
+  return join(
+    getOmcRoot(repoRoot),
+    'specs',
+    `${DEEP_INTERVIEW_DRAFT_PREFIX}${slug}.md`,
+  );
 }
 
 function buildResultPath(repoRoot: string, slug: string): string {
@@ -120,7 +143,10 @@ export function buildMissionContent(topic: string): string {
   return `# Mission\n\n${topic}\n`;
 }
 
-export function buildSandboxContent(evaluatorCommand: string, keepPolicy?: AutoresearchKeepPolicy): string {
+export function buildSandboxContent(
+  evaluatorCommand: string,
+  keepPolicy?: AutoresearchKeepPolicy,
+): string {
   const safeCommand = evaluatorCommand.replace(/[\r\n]/g, ' ').trim();
   const keepPolicyLine = keepPolicy ? `\n  keep_policy: ${keepPolicy}` : '';
   return `---\nevaluator:\n  command: ${safeCommand}\n  format: json${keepPolicyLine}\n---\n`;
@@ -131,10 +157,15 @@ export function isLaunchReadyEvaluatorCommand(command: string): boolean {
   if (!normalized) {
     return false;
   }
-  return !BLOCKED_EVALUATOR_PATTERNS.some((pattern) => pattern.test(normalized));
+  return !BLOCKED_EVALUATOR_PATTERNS.some((pattern) =>
+    pattern.test(normalized),
+  );
 }
 
-function buildLaunchReadinessSection(launchReady: boolean, blockedReasons: readonly string[]): string {
+function buildLaunchReadinessSection(
+  launchReady: boolean,
+  blockedReasons: readonly string[],
+): string {
   if (launchReady) {
     return 'Launch-ready: yes\n- Evaluator command is concrete and can be compiled into sandbox.md';
   }
@@ -201,7 +232,11 @@ export async function writeAutoresearchDraftArtifact(input: {
   }
 
   const slug = slugifyMissionName(input.slug?.trim() || topic);
-  const evaluatorCommand = (input.evaluatorCommand?.trim() || defaultDraftEvaluator(topic)).replace(/[\r\n]+/g, ' ').trim();
+  const evaluatorCommand = (
+    input.evaluatorCommand?.trim() || defaultDraftEvaluator(topic)
+  )
+    .replace(/[\r\n]+/g, ' ')
+    .trim();
   const compileTarget: AutoresearchDraftCompileTarget = {
     topic,
     evaluatorCommand,
@@ -212,18 +247,27 @@ export async function writeAutoresearchDraftArtifact(input: {
 
   const blockedReasons: string[] = [];
   if (!isLaunchReadyEvaluatorCommand(evaluatorCommand)) {
-    blockedReasons.push('Evaluator command is still a placeholder/template and must be replaced before launch.');
+    blockedReasons.push(
+      'Evaluator command is still a placeholder/template and must be replaced before launch.',
+    );
   }
 
   if (blockedReasons.length === 0) {
-    parseSandboxContract(buildSandboxContent(evaluatorCommand, input.keepPolicy));
+    parseSandboxContract(
+      buildSandboxContent(evaluatorCommand, input.keepPolicy),
+    );
   }
 
   const launchReady = blockedReasons.length === 0;
   const specsDir = join(getOmcRoot(input.repoRoot), 'specs');
   await mkdir(specsDir, { recursive: true });
   const path = buildDraftArtifactPath(input.repoRoot, slug);
-  const content = buildAutoresearchDraftArtifactContent(compileTarget, input.seedInputs || {}, launchReady, blockedReasons);
+  const content = buildAutoresearchDraftArtifactContent(
+    compileTarget,
+    input.seedInputs || {},
+    launchReady,
+    blockedReasons,
+  );
   await writeFile(path, content, 'utf-8');
 
   return { compileTarget, path, content, launchReady, blockedReasons };
@@ -238,14 +282,20 @@ export async function writeAutoresearchDeepInterviewArtifacts(input: {
   seedInputs?: AutoresearchSeedInputs;
 }): Promise<AutoresearchDeepInterviewResult> {
   const draft = await writeAutoresearchDraftArtifact(input);
-  const artifactDir = buildArtifactDir(input.repoRoot, draft.compileTarget.slug);
+  const artifactDir = buildArtifactDir(
+    input.repoRoot,
+    draft.compileTarget.slug,
+  );
   await mkdir(artifactDir, { recursive: true });
 
   const missionArtifactPath = join(artifactDir, 'mission.md');
   const sandboxArtifactPath = join(artifactDir, 'sandbox.md');
   const resultPath = buildResultPath(input.repoRoot, draft.compileTarget.slug);
   const missionContent = buildMissionContent(draft.compileTarget.topic);
-  const sandboxContent = buildSandboxContent(draft.compileTarget.evaluatorCommand, draft.compileTarget.keepPolicy);
+  const sandboxContent = buildSandboxContent(
+    draft.compileTarget.evaluatorCommand,
+    draft.compileTarget.keepPolicy,
+  );
 
   parseSandboxContract(sandboxContent);
   await writeFile(missionArtifactPath, missionContent, 'utf-8');
@@ -260,7 +310,11 @@ export async function writeAutoresearchDeepInterviewArtifacts(input: {
     launchReady: draft.launchReady,
     blockedReasons: draft.blockedReasons,
   };
-  await writeFile(resultPath, `${JSON.stringify(persisted, null, 2)}\n`, 'utf-8');
+  await writeFile(
+    resultPath,
+    `${JSON.stringify(persisted, null, 2)}\n`,
+    'utf-8',
+  );
 
   return {
     compileTarget: draft.compileTarget,
@@ -275,12 +329,20 @@ export async function writeAutoresearchDeepInterviewArtifacts(input: {
   };
 }
 
-function parseDraftArtifactContent(content: string, repoRoot: string, draftArtifactPath: string): AutoresearchDeepInterviewResult {
+function parseDraftArtifactContent(
+  content: string,
+  repoRoot: string,
+  draftArtifactPath: string,
+): AutoresearchDeepInterviewResult {
   const missionDraft = extractMarkdownSection(content, 'Mission Draft').trim();
-  const evaluatorDraft = extractMarkdownSection(content, 'Evaluator Draft').trim().replace(/[\r\n]+/g, ' ');
+  const evaluatorDraft = extractMarkdownSection(content, 'Evaluator Draft')
+    .trim()
+    .replace(/[\r\n]+/g, ' ');
   const keepPolicyRaw = extractMarkdownSection(content, 'Keep Policy').trim();
   const slugRaw = extractMarkdownSection(content, 'Session Slug').trim();
-  const launchReadiness = parseLaunchReadinessSection(extractMarkdownSection(content, 'Launch Readiness'));
+  const launchReadiness = parseLaunchReadinessSection(
+    extractMarkdownSection(content, 'Launch Readiness'),
+  );
 
   if (!missionDraft) {
     throw new Error(`Missing Mission Draft section in ${draftArtifactPath}`);
@@ -298,7 +360,10 @@ function parseDraftArtifactContent(content: string, repoRoot: string, draftArtif
     repoRoot,
   };
   const missionContent = buildMissionContent(compileTarget.topic);
-  const sandboxContent = buildSandboxContent(compileTarget.evaluatorCommand, compileTarget.keepPolicy);
+  const sandboxContent = buildSandboxContent(
+    compileTarget.evaluatorCommand,
+    compileTarget.keepPolicy,
+  );
   parseSandboxContract(sandboxContent);
 
   return {
@@ -314,25 +379,50 @@ function parseDraftArtifactContent(content: string, repoRoot: string, draftArtif
   };
 }
 
-async function readPersistedResult(resultPath: string): Promise<AutoresearchDeepInterviewResult> {
+async function readPersistedResult(
+  resultPath: string,
+): Promise<AutoresearchDeepInterviewResult> {
   const raw = await readFile(resultPath, 'utf-8');
-  const parsed = JSON.parse(raw) as Partial<PersistedAutoresearchDeepInterviewResultV1>;
+  const parsed = JSON.parse(
+    raw,
+  ) as Partial<PersistedAutoresearchDeepInterviewResultV1>;
   if (parsed.kind !== AUTORESEARCH_DEEP_INTERVIEW_RESULT_KIND) {
-    throw new Error(`Unsupported autoresearch deep-interview result payload: ${resultPath}`);
+    throw new Error(
+      `Unsupported autoresearch deep-interview result payload: ${resultPath}`,
+    );
   }
   if (!parsed.compileTarget) {
     throw new Error(`Missing compileTarget in ${resultPath}`);
   }
 
   const compileTarget = parsed.compileTarget as AutoresearchDraftCompileTarget;
-  const draftArtifactPath = typeof parsed.draftArtifactPath === 'string' ? parsed.draftArtifactPath : buildDraftArtifactPath(compileTarget.repoRoot, compileTarget.slug);
-  const missionArtifactPath = typeof parsed.missionArtifactPath === 'string' ? parsed.missionArtifactPath : join(buildArtifactDir(compileTarget.repoRoot, compileTarget.slug), 'mission.md');
-  const sandboxArtifactPath = typeof parsed.sandboxArtifactPath === 'string' ? parsed.sandboxArtifactPath : join(buildArtifactDir(compileTarget.repoRoot, compileTarget.slug), 'sandbox.md');
+  const draftArtifactPath =
+    typeof parsed.draftArtifactPath === 'string'
+      ? parsed.draftArtifactPath
+      : buildDraftArtifactPath(compileTarget.repoRoot, compileTarget.slug);
+  const missionArtifactPath =
+    typeof parsed.missionArtifactPath === 'string'
+      ? parsed.missionArtifactPath
+      : join(
+          buildArtifactDir(compileTarget.repoRoot, compileTarget.slug),
+          'mission.md',
+        );
+  const sandboxArtifactPath =
+    typeof parsed.sandboxArtifactPath === 'string'
+      ? parsed.sandboxArtifactPath
+      : join(
+          buildArtifactDir(compileTarget.repoRoot, compileTarget.slug),
+          'sandbox.md',
+        );
   if (!existsSync(missionArtifactPath)) {
-    throw new Error(`Missing mission artifact: ${missionArtifactPath} — the interview may have been interrupted before all files were written.`);
+    throw new Error(
+      `Missing mission artifact: ${missionArtifactPath} — the interview may have been interrupted before all files were written.`,
+    );
   }
   if (!existsSync(sandboxArtifactPath)) {
-    throw new Error(`Missing sandbox artifact: ${sandboxArtifactPath} — the interview may have been interrupted before all files were written.`);
+    throw new Error(
+      `Missing sandbox artifact: ${sandboxArtifactPath} — the interview may have been interrupted before all files were written.`,
+    );
   }
   const missionContent = await readFile(missionArtifactPath, 'utf-8');
   const sandboxContent = await readFile(sandboxArtifactPath, 'utf-8');
@@ -348,7 +438,10 @@ async function readPersistedResult(resultPath: string): Promise<AutoresearchDeep
     sandboxContent,
     launchReady: parsed.launchReady === true,
     blockedReasons: Array.isArray(parsed.blockedReasons)
-      ? parsed.blockedReasons.filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      ? parsed.blockedReasons.filter(
+          (value): value is string =>
+            typeof value === 'string' && value.trim().length > 0,
+        )
       : [],
   };
 }
@@ -358,24 +451,39 @@ async function listMarkdownDraftPaths(repoRoot: string): Promise<string[]> {
   if (!existsSync(specsDir)) return [];
   const entries = await readdir(specsDir, { withFileTypes: true });
   return entries
-    .filter((entry) => entry.isFile() && entry.name.startsWith(DEEP_INTERVIEW_DRAFT_PREFIX) && entry.name.endsWith('.md'))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        entry.name.startsWith(DEEP_INTERVIEW_DRAFT_PREFIX) &&
+        entry.name.endsWith('.md'),
+    )
     .map((entry) => join(specsDir, entry.name));
 }
 
-export async function listAutoresearchDeepInterviewResultPaths(repoRoot: string): Promise<string[]> {
+export async function listAutoresearchDeepInterviewResultPaths(
+  repoRoot: string,
+): Promise<string[]> {
   const specsDir = join(getOmcRoot(repoRoot), 'specs');
   if (!existsSync(specsDir)) return [];
 
   const entries = await readdir(specsDir, { withFileTypes: true });
   const resultPaths = entries
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith(AUTORESEARCH_ARTIFACT_DIR_PREFIX))
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        entry.name.startsWith(AUTORESEARCH_ARTIFACT_DIR_PREFIX),
+    )
     .map((entry) => join(specsDir, entry.name, 'result.json'))
     .filter((path) => existsSync(path));
 
   return resultPaths.sort((left, right) => left.localeCompare(right));
 }
 
-async function filterRecentPaths(paths: readonly string[], newerThanMs?: number, excludePaths?: ReadonlySet<string>): Promise<string[]> {
+async function filterRecentPaths(
+  paths: readonly string[],
+  newerThanMs?: number,
+  excludePaths?: ReadonlySet<string>,
+): Promise<string[]> {
   const filtered: string[] = [];
   for (const path of paths) {
     if (excludePaths?.has(path)) {
@@ -406,7 +514,11 @@ export async function resolveAutoresearchDeepInterviewResult(
     const resultPath = buildResultPath(repoRoot, slug);
     if (existsSync(resultPath)) {
       const metadata = await stat(resultPath).catch(() => null);
-      if (!metadata || options.newerThanMs == null || metadata.mtimeMs >= options.newerThanMs) {
+      if (
+        !metadata ||
+        options.newerThanMs == null ||
+        metadata.mtimeMs >= options.newerThanMs
+      ) {
         return readPersistedResult(resultPath);
       }
     }
@@ -414,9 +526,17 @@ export async function resolveAutoresearchDeepInterviewResult(
     const draftArtifactPath = buildDraftArtifactPath(repoRoot, slug);
     if (existsSync(draftArtifactPath)) {
       const metadata = await stat(draftArtifactPath).catch(() => null);
-      if (!metadata || options.newerThanMs == null || metadata.mtimeMs >= options.newerThanMs) {
+      if (
+        !metadata ||
+        options.newerThanMs == null ||
+        metadata.mtimeMs >= options.newerThanMs
+      ) {
         const draftContent = await readFile(draftArtifactPath, 'utf-8');
-        return parseDraftArtifactContent(draftContent, repoRoot, draftArtifactPath);
+        return parseDraftArtifactContent(
+          draftContent,
+          repoRoot,
+          draftArtifactPath,
+        );
       }
     }
     return null;
@@ -427,15 +547,26 @@ export async function resolveAutoresearchDeepInterviewResult(
     options.newerThanMs,
     options.excludeResultPaths,
   );
-  const resultEntries = await Promise.all(resultPaths.map(async (path) => ({ path, metadata: await stat(path) })));
-  const newestResultPath = resultEntries.sort((left, right) => right.metadata.mtimeMs - left.metadata.mtimeMs)[0]?.path;
+  const resultEntries = await Promise.all(
+    resultPaths.map(async (path) => ({ path, metadata: await stat(path) })),
+  );
+  const newestResultPath = resultEntries.sort(
+    (left, right) => right.metadata.mtimeMs - left.metadata.mtimeMs,
+  )[0]?.path;
   if (newestResultPath) {
     return readPersistedResult(newestResultPath);
   }
 
-  const draftPaths = await filterRecentPaths(await listMarkdownDraftPaths(repoRoot), options.newerThanMs);
-  const draftEntries = await Promise.all(draftPaths.map(async (path) => ({ path, metadata: await stat(path) })));
-  const newestDraftPath = draftEntries.sort((left, right) => right.metadata.mtimeMs - left.metadata.mtimeMs)[0]?.path;
+  const draftPaths = await filterRecentPaths(
+    await listMarkdownDraftPaths(repoRoot),
+    options.newerThanMs,
+  );
+  const draftEntries = await Promise.all(
+    draftPaths.map(async (path) => ({ path, metadata: await stat(path) })),
+  );
+  const newestDraftPath = draftEntries.sort(
+    (left, right) => right.metadata.mtimeMs - left.metadata.mtimeMs,
+  )[0]?.path;
   if (!newestDraftPath) {
     return null;
   }

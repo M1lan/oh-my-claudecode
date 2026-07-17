@@ -75,7 +75,9 @@ function collectMissionExampleSignals(repoRoot: string): string[] {
     .slice(0, 5)
     .map((entry) => entry.name);
 
-  const signals: string[] = missionDirs.map((dir) => `existing mission example: missions/${dir}`);
+  const signals: string[] = missionDirs.map(
+    (dir) => `existing mission example: missions/${dir}`,
+  );
   for (const dir of missionDirs) {
     const sandbox = safeReadFile(join(missionsRoot, dir, 'sandbox.md'));
     const commandMatch = sandbox?.match(/command:\s*(.+)/);
@@ -86,7 +88,9 @@ function collectMissionExampleSignals(repoRoot: string): string[] {
   return signals;
 }
 
-export function collectAutoresearchRepoSignals(repoRoot: string): AutoresearchRepoSignalSummary {
+export function collectAutoresearchRepoSignals(
+  repoRoot: string,
+): AutoresearchRepoSignalSummary {
   const lines = [
     ...collectPackageJsonSignals(repoRoot),
     ...collectFilePresenceSignals(repoRoot),
@@ -98,10 +102,14 @@ export function collectAutoresearchRepoSignals(repoRoot: string): AutoresearchRe
   };
 }
 
-export function buildAutoresearchSetupPrompt(input: AutoresearchSetupSessionInput): string {
-  const repoSignals = input.repoSignals ?? collectAutoresearchRepoSignals(input.repoRoot);
-  const clarificationLines = (input.clarificationAnswers ?? [])
-    .map((answer, index) => `Clarification ${index + 1}: ${answer}`);
+export function buildAutoresearchSetupPrompt(
+  input: AutoresearchSetupSessionInput,
+): string {
+  const repoSignals =
+    input.repoSignals ?? collectAutoresearchRepoSignals(input.repoRoot);
+  const clarificationLines = (input.clarificationAnswers ?? []).map(
+    (answer, index) => `Clarification ${index + 1}: ${answer}`,
+  );
 
   return [
     'You are a short-lived Claude Code setup assistant for OMC autoresearch.',
@@ -129,7 +137,9 @@ export function buildAutoresearchSetupPrompt(input: AutoresearchSetupSessionInpu
     'Repository signals:',
     ...repoSignals.lines.map((line) => `- ${line}`),
     '',
-    clarificationLines.length > 0 ? 'Clarifications so far:' : 'Clarifications so far: none',
+    clarificationLines.length > 0
+      ? 'Clarifications so far:'
+      : 'Clarifications so far: none',
     ...clarificationLines.map((line) => `- ${line}`),
     '',
     'Rules:',
@@ -140,7 +150,9 @@ export function buildAutoresearchSetupPrompt(input: AutoresearchSetupSessionInpu
   ].join('\n');
 }
 
-export function runAutoresearchSetupSession(input: AutoresearchSetupSessionInput): AutoresearchSetupHandoff {
+export function runAutoresearchSetupSession(
+  input: AutoresearchSetupSessionInput,
+): AutoresearchSetupHandoff {
   const prompt = buildAutoresearchSetupPrompt(input);
   const result = spawnSync('claude', ['-p', prompt], {
     cwd: input.repoRoot,
@@ -156,7 +168,9 @@ export function runAutoresearchSetupSession(input: AutoresearchSetupSessionInput
     throw result.error;
   }
   if (result.status !== 0) {
-    throw new Error(`claude_autoresearch_setup_failed:${result.status ?? 'unknown'}`);
+    throw new Error(
+      `claude_autoresearch_setup_failed:${result.status ?? 'unknown'}`,
+    );
   }
 
   return parseAutoresearchSetupHandoffJson(result.stdout || '');

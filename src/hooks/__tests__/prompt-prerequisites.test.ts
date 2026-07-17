@@ -59,15 +59,16 @@ describe('prompt prerequisite parser', () => {
   });
 
   it('extracts supported tool names and ignores non-path text', () => {
-    expect(extractRequiredToolCalls('Use mcp__supermemory__search, project_memory_read, then notepad_read.')).toEqual([
-      'notepad_read',
-      'project_memory_read',
-      'supermemory.search',
-    ]);
-    expect(extractFilePaths('Read README and https://example.com but also src/index.ts and ../notes/todo.md')).toEqual([
-      'src/index.ts',
-      '../notes/todo.md',
-    ]);
+    expect(
+      extractRequiredToolCalls(
+        'Use mcp__supermemory__search, project_memory_read, then notepad_read.',
+      ),
+    ).toEqual(['notepad_read', 'project_memory_read', 'supermemory.search']);
+    expect(
+      extractFilePaths(
+        'Read README and https://example.com but also src/index.ts and ../notes/todo.md',
+      ),
+    ).toEqual(['src/index.ts', '../notes/todo.md']);
   });
 
   it('builds reminder and deny text', () => {
@@ -83,10 +84,18 @@ describe('prompt prerequisite parser', () => {
       updated_at: new Date().toISOString(),
     };
 
-    expect(buildPromptPrerequisiteReminder(state)).toContain('[BLOCKING PREREQUISITE GATE]');
-    expect(buildPromptPrerequisiteDenyReason(state, 'Edit')).toContain('Blocking Edit');
-    expect(isPromptPrerequisiteBlockingTool('Edit', getPromptPrerequisiteConfig())).toBe(true);
-    expect(isPromptPrerequisiteBlockingTool('Read', getPromptPrerequisiteConfig())).toBe(false);
+    expect(buildPromptPrerequisiteReminder(state)).toContain(
+      '[BLOCKING PREREQUISITE GATE]',
+    );
+    expect(buildPromptPrerequisiteDenyReason(state, 'Edit')).toContain(
+      'Blocking Edit',
+    );
+    expect(
+      isPromptPrerequisiteBlockingTool('Edit', getPromptPrerequisiteConfig()),
+    ).toBe(true);
+    expect(
+      isPromptPrerequisiteBlockingTool('Read', getPromptPrerequisiteConfig()),
+    ).toBe(false);
   });
 });
 
@@ -94,27 +103,47 @@ describe('prompt prerequisite progress tracking', () => {
   it('tracks prerequisite tool calls and file reads until complete', () => {
     const tempDir = mkdtempSync(join(tmpdir(), 'prompt-prereq-'));
     try {
-      writeModeState('prompt-prerequisites', {
-        active: true,
-        session_id: 'sess',
-        execution_keywords: ['ralph'],
-        required_tool_calls: ['notepad_read', 'project_memory_read'],
-        required_file_paths: ['src/hooks/bridge.ts'],
-        completed_tool_calls: [],
-        completed_file_paths: [],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }, tempDir, 'sess');
+      writeModeState(
+        'prompt-prerequisites',
+        {
+          active: true,
+          session_id: 'sess',
+          execution_keywords: ['ralph'],
+          required_tool_calls: ['notepad_read', 'project_memory_read'],
+          required_file_paths: ['src/hooks/bridge.ts'],
+          completed_tool_calls: [],
+          completed_file_paths: [],
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        tempDir,
+        'sess',
+      );
 
-      const afterNotepad = recordPromptPrerequisiteProgress(tempDir, 'sess', 'mcp__omx_notepad__notepad_read', {});
+      const afterNotepad = recordPromptPrerequisiteProgress(
+        tempDir,
+        'sess',
+        'mcp__omx_notepad__notepad_read',
+        {},
+      );
       expect(afterNotepad?.toolSatisfied).toBe('notepad_read');
       expect(afterNotepad?.isComplete).toBe(false);
 
-      const afterRead = recordPromptPrerequisiteProgress(tempDir, 'sess', 'Read', { file_path: 'src/hooks/bridge.ts' });
+      const afterRead = recordPromptPrerequisiteProgress(
+        tempDir,
+        'sess',
+        'Read',
+        { file_path: 'src/hooks/bridge.ts' },
+      );
       expect(afterRead?.fileSatisfied).toBe('src/hooks/bridge.ts');
       expect(afterRead?.isComplete).toBe(false);
 
-      const afterMemory = recordPromptPrerequisiteProgress(tempDir, 'sess', 'project_memory_read', {});
+      const afterMemory = recordPromptPrerequisiteProgress(
+        tempDir,
+        'sess',
+        'project_memory_read',
+        {},
+      );
       expect(afterMemory?.toolSatisfied).toBe('project_memory_read');
       expect(afterMemory?.isComplete).toBe(true);
     } finally {

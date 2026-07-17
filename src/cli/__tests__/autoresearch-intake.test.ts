@@ -13,8 +13,14 @@ import {
 async function initRepo(): Promise<string> {
   const cwd = await mkdtemp(join(tmpdir(), 'omc-autoresearch-intake-test-'));
   execFileSync('git', ['init'], { cwd, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'test@example.com'], { cwd, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'Test User'], { cwd, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+    cwd,
+    stdio: 'ignore',
+  });
+  execFileSync('git', ['config', 'user.name', 'Test User'], {
+    cwd,
+    stdio: 'ignore',
+  });
   await writeFile(join(cwd, 'README.md'), 'hello\n', 'utf-8');
   execFileSync('git', ['add', 'README.md'], { cwd, stdio: 'ignore' });
   execFileSync('git', ['commit', '-m', 'init'], { cwd, stdio: 'ignore' });
@@ -32,7 +38,9 @@ describe('autoresearch intake draft artifacts', () => {
         seedInputs: { topic: 'Improve onboarding for first-time contributors' },
       });
 
-      expect(artifact.path).toMatch(/\.omc\/specs\/deep-interview-autoresearch-improve-onboarding-for-first-time-contributors\.md$/);
+      expect(artifact.path).toMatch(
+        /\.omc\/specs\/deep-interview-autoresearch-improve-onboarding-for-first-time-contributors\.md$/,
+      );
       expect(artifact.launchReady).toBe(false);
       expect(artifact.content).toMatch(/## Mission Draft/);
       expect(artifact.content).toMatch(/## Evaluator Draft/);
@@ -63,18 +71,34 @@ describe('autoresearch intake draft artifacts', () => {
         seedInputs: { topic: 'Measure onboarding friction' },
       });
 
-      expect(artifacts.draftArtifactPath).toMatch(/deep-interview-autoresearch-onboarding-friction\.md$/);
-      expect(artifacts.missionArtifactPath).toMatch(/autoresearch-onboarding-friction\/mission\.md$/);
-      expect(artifacts.sandboxArtifactPath).toMatch(/autoresearch-onboarding-friction\/sandbox\.md$/);
-      expect(artifacts.resultPath).toMatch(/autoresearch-onboarding-friction\/result\.json$/);
+      expect(artifacts.draftArtifactPath).toMatch(
+        /deep-interview-autoresearch-onboarding-friction\.md$/,
+      );
+      expect(artifacts.missionArtifactPath).toMatch(
+        /autoresearch-onboarding-friction\/mission\.md$/,
+      );
+      expect(artifacts.sandboxArtifactPath).toMatch(
+        /autoresearch-onboarding-friction\/sandbox\.md$/,
+      );
+      expect(artifacts.resultPath).toMatch(
+        /autoresearch-onboarding-friction\/result\.json$/,
+      );
 
-      const resultJson = JSON.parse(await readFile(artifacts.resultPath, 'utf-8')) as {
+      const resultJson = JSON.parse(
+        await readFile(artifacts.resultPath, 'utf-8'),
+      ) as {
         kind: string;
         compileTarget: { slug: string; keepPolicy: string };
         launchReady: boolean;
       };
-      const missionContent = await readFile(artifacts.missionArtifactPath, 'utf-8');
-      const sandboxContent = await readFile(artifacts.sandboxArtifactPath, 'utf-8');
+      const missionContent = await readFile(
+        artifacts.missionArtifactPath,
+        'utf-8',
+      );
+      const sandboxContent = await readFile(
+        artifacts.sandboxArtifactPath,
+        'utf-8',
+      );
 
       expect(resultJson.kind).toBe('omc.autoresearch.deep-interview/v1');
       expect(resultJson.compileTarget.slug).toBe('onboarding-friction');
@@ -124,7 +148,9 @@ describe('autoresearch intake draft artifacts', () => {
       await unlink(artifacts.sandboxArtifactPath);
 
       await expect(
-        resolveAutoresearchDeepInterviewResult(repo, { slug: 'partial-sandbox' }),
+        resolveAutoresearchDeepInterviewResult(repo, {
+          slug: 'partial-sandbox',
+        }),
       ).rejects.toThrow(/Missing sandbox artifact/);
     } finally {
       await rm(repo, { recursive: true, force: true });

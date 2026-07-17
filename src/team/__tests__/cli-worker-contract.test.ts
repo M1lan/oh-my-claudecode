@@ -42,7 +42,12 @@ describe('cli-worker-contract', () => {
   describe('CONTRACT_ROLES', () => {
     it('contains exactly the four reviewer-style roles', () => {
       expect(new Set(CONTRACT_ROLES)).toEqual(
-        new Set(['critic', 'code-reviewer', 'security-reviewer', 'test-engineer']),
+        new Set([
+          'critic',
+          'code-reviewer',
+          'security-reviewer',
+          'test-engineer',
+        ]),
       );
     });
   });
@@ -60,20 +65,31 @@ describe('cli-worker-contract', () => {
     });
 
     it('documents the severity enum', () => {
-      const fragment = renderCliWorkerOutputContract('critic', '/x/verdict.json');
+      const fragment = renderCliWorkerOutputContract(
+        'critic',
+        '/x/verdict.json',
+      );
       expect(fragment).toContain('"critical" | "major" | "minor" | "nit"');
     });
   });
 
   describe('cliWorkerOutputFilePath', () => {
     it('joins team state root + worker into the conventional path', () => {
-      const p = cliWorkerOutputFilePath('/repo/.omc/state/team/foo', 'worker-2');
+      const p = cliWorkerOutputFilePath(
+        '/repo/.omc/state/team/foo',
+        'worker-2',
+      );
       expect(p).toBe('/repo/.omc/state/team/foo/workers/worker-2/verdict.json');
     });
 
     it('normalizes windows backslashes to forward slashes', () => {
-      const p = cliWorkerOutputFilePath('C:\\proj\\.omc\\state\\team\\foo', 'worker-1');
-      expect(p).toBe('C:/proj/.omc/state/team/foo/workers/worker-1/verdict.json');
+      const p = cliWorkerOutputFilePath(
+        'C:\\proj\\.omc\\state\\team\\foo',
+        'worker-1',
+      );
+      expect(p).toBe(
+        'C:/proj/.omc/state/team/foo/workers/worker-1/verdict.json',
+      );
     });
   });
 
@@ -114,24 +130,36 @@ describe('cli-worker-contract', () => {
         file: 'src/x.ts',
         line: 42,
       });
-      expect(parsed.findings[1]).toEqual({ severity: 'nit', message: 'Typo Y' });
+      expect(parsed.findings[1]).toEqual({
+        severity: 'nit',
+        message: 'Typo Y',
+      });
     });
 
     it('rejects invalid JSON', () => {
-      expect(() => parseCliWorkerVerdict('not json')).toThrow(/verdict_json_parse_failed/);
+      expect(() => parseCliWorkerVerdict('not json')).toThrow(
+        /verdict_json_parse_failed/,
+      );
     });
 
     it('rejects missing fields', () => {
       expect(() => parseCliWorkerVerdict('{}')).toThrow(/verdict_missing_role/);
-      expect(() => parseCliWorkerVerdict(JSON.stringify({ role: 'critic' })))
-        .toThrow(/verdict_missing_task_id/);
+      expect(() =>
+        parseCliWorkerVerdict(JSON.stringify({ role: 'critic' })),
+      ).toThrow(/verdict_missing_task_id/);
     });
 
     it('rejects unknown verdict value', () => {
       const raw = JSON.stringify({
-        role: 'critic', task_id: '1', verdict: 'maybe', summary: 's', findings: [],
+        role: 'critic',
+        task_id: '1',
+        verdict: 'maybe',
+        summary: 's',
+        findings: [],
       });
-      expect(() => parseCliWorkerVerdict(raw)).toThrow(/verdict_invalid_verdict/);
+      expect(() => parseCliWorkerVerdict(raw)).toThrow(
+        /verdict_invalid_verdict/,
+      );
     });
 
     it('rejects unknown severity value', () => {
@@ -142,14 +170,22 @@ describe('cli-worker-contract', () => {
         summary: 's',
         findings: [{ severity: 'blocker', message: 'x' }],
       });
-      expect(() => parseCliWorkerVerdict(raw)).toThrow(/verdict_finding_0_invalid_severity/);
+      expect(() => parseCliWorkerVerdict(raw)).toThrow(
+        /verdict_finding_0_invalid_severity/,
+      );
     });
 
     it('rejects findings-not-array', () => {
       const raw = JSON.stringify({
-        role: 'critic', task_id: '1', verdict: 'approve', summary: 's', findings: {},
+        role: 'critic',
+        task_id: '1',
+        verdict: 'approve',
+        summary: 's',
+        findings: {},
       });
-      expect(() => parseCliWorkerVerdict(raw)).toThrow(/verdict_findings_not_array/);
+      expect(() => parseCliWorkerVerdict(raw)).toThrow(
+        /verdict_findings_not_array/,
+      );
     });
   });
 });

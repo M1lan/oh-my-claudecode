@@ -5,8 +5,20 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const NODE = process.execPath;
-const SESSION_START_SCRIPT = join(__dirname, '..', '..', 'scripts', 'wiki-session-start.mjs');
-const PRE_COMPACT_SCRIPT = join(__dirname, '..', '..', 'scripts', 'wiki-pre-compact.mjs');
+const SESSION_START_SCRIPT = join(
+  __dirname,
+  '..',
+  '..',
+  'scripts',
+  'wiki-session-start.mjs',
+);
+const PRE_COMPACT_SCRIPT = join(
+  __dirname,
+  '..',
+  '..',
+  'scripts',
+  'wiki-pre-compact.mjs',
+);
 
 describe('wiki hook wrapper output', () => {
   let tempDir: string;
@@ -34,7 +46,10 @@ describe('wiki hook wrapper output', () => {
       ].join('\n'),
     );
 
-    writeFileSync(join(tempDir, '.omc', 'wiki', 'index.md'), '# Wiki Index\n- test-page.md\n');
+    writeFileSync(
+      join(tempDir, '.omc', 'wiki', 'index.md'),
+      '# Wiki Index\n- test-page.md\n',
+    );
   });
 
   afterEach(() => {
@@ -68,7 +83,9 @@ describe('wiki hook wrapper output', () => {
     expect(output.additionalContext).toBeUndefined();
     expect(output.hookSpecificOutput).toEqual({
       hookEventName: 'SessionStart',
-      additionalContext: expect.stringContaining('[LLM Wiki: 1 pages at .omc/wiki/]'),
+      additionalContext: expect.stringContaining(
+        '[LLM Wiki: 1 pages at .omc/wiki/]',
+      ),
     });
   });
 

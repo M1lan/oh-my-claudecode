@@ -45,8 +45,12 @@ describe('M6: restart recovery', () => {
     // Simulate an orphaned rebase state for worker-1 using the real gitdir
     // path. In a real git worktree `.git` remains a file.
     const rebaseDir = fixture.createRebaseState('worker-1');
-    expect(readFileSync(join(fixture.workers[0].worktreePath, '.git'), 'utf-8')).toMatch(/^gitdir:/);
-    expect(existsSync(join(fixture.workers[0].worktreePath, '.git', 'rebase-merge'))).toBe(false);
+    expect(
+      readFileSync(join(fixture.workers[0].worktreePath, '.git'), 'utf-8'),
+    ).toMatch(/^gitdir:/);
+    expect(
+      existsSync(join(fixture.workers[0].worktreePath, '.git', 'rebase-merge')),
+    ).toBe(false);
     expect(existsSync(rebaseDir)).toBe(true);
 
     const config: OrchestratorConfig = {
@@ -55,7 +59,7 @@ describe('M6: restart recovery', () => {
       leaderBranch: fixture.leaderBranch,
       cwd: fixture.repoRoot,
       pollIntervalMs: 50,
-      };
+    };
 
     const result = await recoverFromRestart(config);
 
@@ -65,8 +69,13 @@ describe('M6: restart recovery', () => {
     // Worker-1 should have received a recovery message
     const workerInboxPath = join(
       fixture.repoRoot,
-      '.omc', 'state', 'team', fixture.teamName,
-      'workers', 'worker-1', 'inbox.md',
+      '.omc',
+      'state',
+      'team',
+      fixture.teamName,
+      'workers',
+      'worker-1',
+      'inbox.md',
     );
     expect(existsSync(workerInboxPath)).toBe(true);
     const inboxContent = readFileSync(workerInboxPath, 'utf-8');
@@ -76,7 +85,13 @@ describe('M6: restart recovery', () => {
 
   it('recoverFromRestart loads persisted SHA state (no false fan-out on first poll after restart)', async () => {
     // Seed persisted state with SHAs for both workers
-    const stateDir = join(fixture.repoRoot, '.omc', 'state', 'team', fixture.teamName);
+    const stateDir = join(
+      fixture.repoRoot,
+      '.omc',
+      'state',
+      'team',
+      fixture.teamName,
+    );
     mkdirSync(stateDir, { recursive: true });
     const persistedPath = join(stateDir, 'auto-merge-state.json');
 
@@ -96,7 +111,7 @@ describe('M6: restart recovery', () => {
       leaderBranch: fixture.leaderBranch,
       cwd: fixture.repoRoot,
       pollIntervalMs: 50,
-      };
+    };
 
     const result = await recoverFromRestart(config);
 
@@ -104,7 +119,10 @@ describe('M6: restart recovery', () => {
     expect(result.persistedShasLoaded).toBe(2);
 
     // A restart_recovery event should be in the event log
-    const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
+    const eventLog = orchestratorEventLogPath(
+      fixture.repoRoot,
+      fixture.teamName,
+    );
     // Give async writes a moment
     await new Promise((r) => setTimeout(r, 100));
     if (existsSync(eventLog)) {
@@ -120,7 +138,7 @@ describe('M6: restart recovery', () => {
       leaderBranch: fixture.leaderBranch,
       cwd: fixture.repoRoot,
       pollIntervalMs: 50,
-      };
+    };
 
     // No auto-merge-state.json exists — should not throw
     const result = await recoverFromRestart(config);
@@ -130,10 +148,20 @@ describe('M6: restart recovery', () => {
 
   it('orchestrator seeds from persisted SHAs so it does not re-merge already-seen commits', async () => {
     // Commit something on worker-1 first
-    const sha = await fixture.commitFile('worker-1', 'worker-1/seed.ts', '// seeded\n');
+    const sha = await fixture.commitFile(
+      'worker-1',
+      'worker-1/seed.ts',
+      '// seeded\n',
+    );
 
     // Write persisted state that already has this SHA
-    const stateDir = join(fixture.repoRoot, '.omc', 'state', 'team', fixture.teamName);
+    const stateDir = join(
+      fixture.repoRoot,
+      '.omc',
+      'state',
+      'team',
+      fixture.teamName,
+    );
     mkdirSync(stateDir, { recursive: true });
     const persistedPath = join(stateDir, 'auto-merge-state.json');
     atomicWriteJson(persistedPath, { lastShas: { 'worker-1': sha } });
@@ -144,7 +172,7 @@ describe('M6: restart recovery', () => {
       leaderBranch: fixture.leaderBranch,
       cwd: fixture.repoRoot,
       pollIntervalMs: 50,
-        drainTimeoutMs: 1000,
+      drainTimeoutMs: 1000,
     };
 
     const handle = await startMergeOrchestrator(config);
@@ -158,10 +186,15 @@ describe('M6: restart recovery', () => {
     // Wait a couple of poll cycles
     await new Promise((r) => setTimeout(r, 200));
 
-    const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
+    const eventLog = orchestratorEventLogPath(
+      fixture.repoRoot,
+      fixture.teamName,
+    );
     const events = readEventLog(eventLog);
     // Should have no merge_attempted events (no new commits since the persisted SHA)
-    const mergeAttempts = events.filter((e) => e.type === 'merge_attempted' && e.worker === 'worker-1');
+    const mergeAttempts = events.filter(
+      (e) => e.type === 'merge_attempted' && e.worker === 'worker-1',
+    );
     expect(mergeAttempts).toHaveLength(0);
 
     await handle.drainAndStop();

@@ -7,7 +7,7 @@ How to install oh-my-claudecode from a local development directory as a Claude C
 Use this document for **local development checkouts and git worktrees** where you want Claude Code to load the plugin from your current repo state.
 
 - **Marketplace/plugin users**: prefer the README quick-start flow
-- **npm users**: prefer `npm i -g oh-my-claude-sisyphus@latest`; npm installs expose both `oh-my-claudecode` and `omc` command aliases
+- **pnpm users**: prefer `pnpm add -g oh-my-claude-sisyphus@latest`; the install exposes both `oh-my-claudecode` and `omc` command aliases
 - **Local-dev/worktree users**: use this guide so the installed plugin matches the branch/worktree you are editing
 
 ## Quick Install
@@ -75,7 +75,7 @@ After making changes to the plugin (including from a linked git worktree):
 
 ```bash
 # 1. Build (if TypeScript changes)
-npm run build
+pnpm run build
 
 # 2. Update the marketplace cache
 claude plugin marketplace update oh-my-claudecode
@@ -89,12 +89,12 @@ claude plugin update oh-my-claudecode@oh-my-claudecode
 # 5. Restart Claude Code session
 ```
 
-## Vs. npm Global Install
+## Vs. pnpm Global Install
 
 | Method | Command | Files Location |
 |--------|---------|----------------|
 | Plugin | `claude plugin install` | `~/.claude/plugins/cache/` |
-| npm global | `npm install -g` | `~/.claude/agents/`, `~/.claude/commands/` |
+| pnpm global | `pnpm add -g` | `~/.claude/agents/`, `~/.claude/commands/` |
 
 **Plugin mode is preferred** - it keeps files isolated and uses the native Claude Code plugin system with `${CLAUDE_PLUGIN_ROOT}` variable for path resolution.
 
@@ -108,7 +108,7 @@ claude --plugin-dir /path/to/oh-my-claudecode
 omc setup --plugin-dir-mode
 ```
 
-Or use the npm CLI shim (`omc`, or `oh-my-claudecode` if you prefer the long alias) which handles `--plugin-dir` automatically:
+Or use the CLI shim (`omc`, or `oh-my-claudecode` if you prefer the long alias) which handles `--plugin-dir` automatically:
 
 ```bash
 omc --plugin-dir /path/to/oh-my-claudecode setup --plugin-dir-mode

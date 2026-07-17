@@ -72,6 +72,8 @@ describe('WorkerInfo.worker_cli round-trip', () => {
     };
     const out = roundtrip(w);
     expect(out.worker_cli).toBe('codex');
-    expect(out.output_file).toBe('.omc/state/team/x/workers/worker-4/verdict.json');
+    expect(out.output_file).toBe(
+      '.omc/state/team/x/workers/worker-4/verdict.json',
+    );
   });
 });

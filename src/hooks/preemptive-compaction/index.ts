@@ -53,7 +53,7 @@ function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [preemptive-compaction] ${args
       .map((a) =>
-        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
       )
       .join(' ')}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
@@ -109,7 +109,7 @@ export function estimateTokens(text: string): number {
  */
 export function analyzeContextUsage(
   content: string,
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ): ContextUsageResult {
   const warningThreshold = config?.warningThreshold ?? DEFAULT_THRESHOLD;
   const criticalThreshold = config?.criticalThreshold ?? CRITICAL_THRESHOLD;
@@ -158,7 +158,7 @@ function getSessionState(sessionId: string) {
  */
 function shouldShowWarning(
   sessionId: string,
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ): boolean {
   const state = getSessionState(sessionId);
   const cooldownMs = config?.cooldownMs ?? COMPACTION_COOLDOWN_MS;
@@ -205,7 +205,7 @@ function recordWarning(sessionId: string): void {
  * when approaching the context limit.
  */
 export function createPreemptiveCompactionHook(
-  config?: PreemptiveCompactionConfig
+  config?: PreemptiveCompactionConfig,
 ) {
   debugLog('createPreemptiveCompactionHook called', { config });
 
@@ -239,7 +239,14 @@ export function createPreemptiveCompactionHook(
 
       // Only check after tools that produce large outputs
       const toolLower = input.tool_name.toLowerCase();
-      const largeOutputTools = ['read', 'grep', 'glob', 'bash', 'webfetch', 'task'];
+      const largeOutputTools = [
+        'read',
+        'grep',
+        'glob',
+        'bash',
+        'webfetch',
+        'task',
+      ];
       if (!largeOutputTools.includes(toolLower)) {
         return null;
       }
@@ -279,7 +286,7 @@ export function createPreemptiveCompactionHook(
       // Check if approaching limit
       const usage = analyzeContextUsage(
         'x'.repeat(state.estimatedTokens * CHARS_PER_TOKEN),
-        config
+        config,
       );
 
       if (!usage.isWarning) {

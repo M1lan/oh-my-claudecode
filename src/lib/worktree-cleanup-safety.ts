@@ -58,7 +58,12 @@ function isInside(parent: string, child: string): boolean {
 export function validateWorktreeRemovalTarget(
   options: WorktreeRemovalSafetyOptions,
 ): WorktreeRemovalSafetyResult {
-  const { candidatePath, expectedRoots, mainRepoRoots = [], requireExisting = true } = options;
+  const {
+    candidatePath,
+    expectedRoots,
+    mainRepoRoots = [],
+    requireExisting = true,
+  } = options;
   if (expectedRoots.length === 0) {
     throw new Error('expected_worktree_roots_empty');
   }
@@ -92,8 +97,8 @@ export function validateWorktreeRemovalTarget(
   const resolvedPath = assertSafeBoundary(candidatePath, 'worktree_path');
 
   const matchedRoot = expectedRoots
-    .map(root => assertSafeBoundary(root, 'worktree_root'))
-    .find(root => isInside(root, resolvedPath));
+    .map((root) => assertSafeBoundary(root, 'worktree_root'))
+    .find((root) => isInside(root, resolvedPath));
 
   if (!matchedRoot) {
     throw new Error(`worktree_path_outside_expected_roots:${resolvedPath}`);

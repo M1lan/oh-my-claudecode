@@ -29,11 +29,18 @@ const INFORMATIONAL_INTENT_PATTERNS: RegExp[] = [
 ];
 const INFORMATIONAL_CONTEXT_WINDOW = 80;
 
-function isInformationalKeywordContext(text: string, position: number, keywordLength: number): boolean {
+function isInformationalKeywordContext(
+  text: string,
+  position: number,
+  keywordLength: number,
+): boolean {
   const start = Math.max(0, position - INFORMATIONAL_CONTEXT_WINDOW);
-  const end = Math.min(text.length, position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW);
+  const end = Math.min(
+    text.length,
+    position + keywordLength + INFORMATIONAL_CONTEXT_WINDOW,
+  );
   const context = text.slice(start, end);
-  return INFORMATIONAL_INTENT_PATTERNS.some(pattern => pattern.test(context));
+  return INFORMATIONAL_INTENT_PATTERNS.some((pattern) => pattern.test(context));
 }
 
 /**
@@ -67,12 +74,13 @@ function hasActionableTrigger(text: string, trigger: string): boolean {
  */
 const ultraworkEnhancement: MagicKeyword = {
   triggers: ['ultrawork', 'ulw', 'uw'],
-  description: 'Activates maximum performance mode with parallel agent orchestration',
+  description:
+    'Activates maximum performance mode with parallel agent orchestration',
   action: (prompt: string, agentName?: string, modelId?: string) => {
     // Remove the trigger word and add enhancement instructions
     const cleanPrompt = removeTriggerWords(prompt, ['ultrawork', 'ulw', 'uw']);
     return getUltraworkMessage(agentName, modelId) + cleanPrompt;
-  }
+  },
 };
 
 /**
@@ -80,7 +88,24 @@ const ultraworkEnhancement: MagicKeyword = {
  * Maximizes search effort and thoroughness
  */
 const searchEnhancement: MagicKeyword = {
-  triggers: ['search', 'find', 'locate', 'lookup', 'explore', 'discover', 'scan', 'grep', 'query', 'browse', 'detect', 'trace', 'seek', 'track', 'pinpoint', 'hunt'],
+  triggers: [
+    'search',
+    'find',
+    'locate',
+    'lookup',
+    'explore',
+    'discover',
+    'scan',
+    'grep',
+    'query',
+    'browse',
+    'detect',
+    'trace',
+    'seek',
+    'track',
+    'pinpoint',
+    'hunt',
+  ],
   description: 'Maximizes search effort and thoroughness',
   action: (prompt: string) => {
     return `${prompt}
@@ -91,7 +116,7 @@ MAXIMIZE SEARCH EFFORT. Launch multiple background agents IN PARALLEL:
 - document-specialist agents (remote repos, official docs, GitHub examples)
 Plus direct tools: Grep, ripgrep (rg), ast-grep (sg)
 NEVER stop at first result - be exhaustive.`;
-  }
+  },
 };
 
 /**
@@ -99,7 +124,27 @@ NEVER stop at first result - be exhaustive.`;
  * Activates deep analysis and investigation mode
  */
 const analyzeEnhancement: MagicKeyword = {
-  triggers: ['analyze', 'analyse', 'investigate', 'examine', 'study', 'deep-dive', 'inspect', 'audit', 'evaluate', 'assess', 'review', 'diagnose', 'scrutinize', 'dissect', 'debug', 'comprehend', 'interpret', 'breakdown', 'understand'],
+  triggers: [
+    'analyze',
+    'analyse',
+    'investigate',
+    'examine',
+    'study',
+    'deep-dive',
+    'inspect',
+    'audit',
+    'evaluate',
+    'assess',
+    'review',
+    'diagnose',
+    'scrutinize',
+    'dissect',
+    'debug',
+    'comprehend',
+    'interpret',
+    'breakdown',
+    'understand',
+  ],
   description: 'Activates deep analysis and investigation mode',
   action: (prompt: string) => {
     return `${prompt}
@@ -116,7 +161,7 @@ IF COMPLEX (architecture, multi-system, debugging after 2+ failures):
 - Consult architect for strategic guidance
 
 SYNTHESIZE findings before proceeding.`;
-  }
+  },
 };
 
 /**
@@ -127,7 +172,10 @@ const ultrathinkEnhancement: MagicKeyword = {
   triggers: ['ultrathink', 'think', 'reason', 'ponder'],
   description: 'Activates extended thinking mode for deep reasoning',
   action: (prompt: string) => {
-    const cleanPrompt = removeTriggerWords(prompt, ultrathinkEnhancement.triggers);
+    const cleanPrompt = removeTriggerWords(
+      prompt,
+      ultrathinkEnhancement.triggers,
+    );
     return `[ULTRATHINK MODE - EXTENDED REASONING ACTIVATED]
 
 ${cleanPrompt}
@@ -144,7 +192,7 @@ ${cleanPrompt}
 
 IMPORTANT: Do not rush. Quality of reasoning matters more than speed.
 Use maximum cognitive effort before responding.`;
-  }
+  },
 };
 
 /**
@@ -166,37 +214,44 @@ export const builtInMagicKeywords: MagicKeyword[] = [
   ultraworkEnhancement,
   searchEnhancement,
   analyzeEnhancement,
-  ultrathinkEnhancement
+  ultrathinkEnhancement,
 ];
 
 /**
  * Create a magic keyword processor with custom triggers
  */
-export function createMagicKeywordProcessor(config?: PluginConfig['magicKeywords']): (prompt: string, agentName?: string, modelId?: string) => string {
-  const keywords = builtInMagicKeywords.map(k => ({ ...k, triggers: [...k.triggers] }));
+export function createMagicKeywordProcessor(
+  config?: PluginConfig['magicKeywords'],
+): (prompt: string, agentName?: string, modelId?: string) => string {
+  const keywords = builtInMagicKeywords.map((k) => ({
+    ...k,
+    triggers: [...k.triggers],
+  }));
 
   // Override triggers from config
   if (config) {
     if (config.ultrawork) {
-      const ultrawork = keywords.find(k => k.triggers.includes('ultrawork'));
+      const ultrawork = keywords.find((k) => k.triggers.includes('ultrawork'));
       if (ultrawork) {
         ultrawork.triggers = config.ultrawork;
       }
     }
     if (config.search) {
-      const search = keywords.find(k => k.triggers.includes('search'));
+      const search = keywords.find((k) => k.triggers.includes('search'));
       if (search) {
         search.triggers = config.search;
       }
     }
     if (config.analyze) {
-      const analyze = keywords.find(k => k.triggers.includes('analyze'));
+      const analyze = keywords.find((k) => k.triggers.includes('analyze'));
       if (analyze) {
         analyze.triggers = config.analyze;
       }
     }
     if (config.ultrathink) {
-      const ultrathink = keywords.find(k => k.triggers.includes('ultrathink'));
+      const ultrathink = keywords.find((k) =>
+        k.triggers.includes('ultrathink'),
+      );
       if (ultrathink) {
         ultrathink.triggers = config.ultrathink;
       }
@@ -207,7 +262,7 @@ export function createMagicKeywordProcessor(config?: PluginConfig['magicKeywords
     let result = prompt;
 
     for (const keyword of keywords) {
-      const hasKeyword = keyword.triggers.some(trigger => {
+      const hasKeyword = keyword.triggers.some((trigger) => {
         return hasActionableTrigger(removeCodeBlocks(result), trigger);
       });
 
@@ -223,27 +278,35 @@ export function createMagicKeywordProcessor(config?: PluginConfig['magicKeywords
 /**
  * Check if a prompt contains any magic keywords
  */
-export function detectMagicKeywords(prompt: string, config?: PluginConfig['magicKeywords']): string[] {
+export function detectMagicKeywords(
+  prompt: string,
+  config?: PluginConfig['magicKeywords'],
+): string[] {
   const detected: string[] = [];
-  const keywords = builtInMagicKeywords.map(k => ({ ...k, triggers: [...k.triggers] }));
+  const keywords = builtInMagicKeywords.map((k) => ({
+    ...k,
+    triggers: [...k.triggers],
+  }));
   const cleanedPrompt = removeCodeBlocks(prompt);
 
   // Apply config overrides
   if (config) {
     if (config.ultrawork) {
-      const ultrawork = keywords.find(k => k.triggers.includes('ultrawork'));
+      const ultrawork = keywords.find((k) => k.triggers.includes('ultrawork'));
       if (ultrawork) ultrawork.triggers = config.ultrawork;
     }
     if (config.search) {
-      const search = keywords.find(k => k.triggers.includes('search'));
+      const search = keywords.find((k) => k.triggers.includes('search'));
       if (search) search.triggers = config.search;
     }
     if (config.analyze) {
-      const analyze = keywords.find(k => k.triggers.includes('analyze'));
+      const analyze = keywords.find((k) => k.triggers.includes('analyze'));
       if (analyze) analyze.triggers = config.analyze;
     }
     if (config.ultrathink) {
-      const ultrathink = keywords.find(k => k.triggers.includes('ultrathink'));
+      const ultrathink = keywords.find((k) =>
+        k.triggers.includes('ultrathink'),
+      );
       if (ultrathink) ultrathink.triggers = config.ultrathink;
     }
   }
@@ -263,9 +326,11 @@ export function detectMagicKeywords(prompt: string, config?: PluginConfig['magic
 /**
  * Extract prompt text from message parts (for hook usage)
  */
-export function extractPromptText(parts: Array<{ type: string; text?: string; [key: string]: unknown }>): string {
+export function extractPromptText(
+  parts: Array<{ type: string; text?: string; [key: string]: unknown }>,
+): string {
   return parts
-    .filter(p => p.type === 'text')
-    .map(p => p.text ?? '')
+    .filter((p) => p.type === 'text')
+    .map((p) => p.text ?? '')
     .join('\n');
 }

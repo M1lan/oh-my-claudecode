@@ -10,7 +10,6 @@
  * accessible across MCP server modules.
  */
 
-
 /**
  * Output path policy types
  */
@@ -51,7 +50,10 @@ function parseOutputPathPolicy(value: string | undefined): OutputPathPolicy {
 /**
  * Parse boolean-like environment variable (0|1, true|false)
  */
-function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
+function parseBooleanEnv(
+  value: string | undefined,
+  defaultValue: boolean,
+): boolean {
   if (value === undefined || value === '') {
     return defaultValue;
   }
@@ -62,9 +64,16 @@ function parseBooleanEnv(value: string | undefined, defaultValue: boolean): bool
  * Load MCP configuration from environment variables
  */
 export function loadMcpConfig(): McpConfig {
-  const outputPathPolicy = parseOutputPathPolicy(process.env.OMC_MCP_OUTPUT_PATH_POLICY);
-  const outputRedirectDir = process.env.OMC_MCP_OUTPUT_REDIRECT_DIR || DEFAULT_MCP_CONFIG.outputRedirectDir;
-  const allowExternalPrompt = parseBooleanEnv(process.env.OMC_MCP_ALLOW_EXTERNAL_PROMPT, DEFAULT_MCP_CONFIG.allowExternalPrompt);
+  const outputPathPolicy = parseOutputPathPolicy(
+    process.env.OMC_MCP_OUTPUT_PATH_POLICY,
+  );
+  const outputRedirectDir =
+    process.env.OMC_MCP_OUTPUT_REDIRECT_DIR ||
+    DEFAULT_MCP_CONFIG.outputRedirectDir;
+  const allowExternalPrompt = parseBooleanEnv(
+    process.env.OMC_MCP_ALLOW_EXTERNAL_PROMPT,
+    DEFAULT_MCP_CONFIG.allowExternalPrompt,
+  );
 
   const config: McpConfig = {
     outputPathPolicy,
@@ -74,7 +83,9 @@ export function loadMcpConfig(): McpConfig {
 
   // Log warning if external prompt access is enabled (security consideration)
   if (config.allowExternalPrompt) {
-    console.warn('[MCP Config] WARNING: OMC_MCP_ALLOW_EXTERNAL_PROMPT is enabled. External prompt files outside the working directory are allowed. This may pose a security risk.');
+    console.warn(
+      '[MCP Config] WARNING: OMC_MCP_ALLOW_EXTERNAL_PROMPT is enabled. External prompt files outside the working directory are allowed. This may pose a security risk.',
+    );
   }
 
   return config;

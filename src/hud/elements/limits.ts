@@ -5,7 +5,12 @@
  * and custom rate limit buckets from the rateLimitsProvider command.
  */
 
-import type { RateLimits, CustomProviderResult, CustomBucketUsage, UsageResult } from '../types.js';
+import type {
+  RateLimits,
+  CustomProviderResult,
+  CustomBucketUsage,
+  UsageResult,
+} from '../types.js';
 import { RESET } from '../colors.js';
 
 const GREEN = '\x1b[32m';
@@ -61,13 +66,19 @@ function formatResetTime(date: Date | null | undefined): string | null {
  *
  * Format: 5h:45%(3h42m) wk:12%(2d5h) mo:8%(15d3h) sn:20%(1d2h) op:5%(1d2h)
  */
-export function renderRateLimits(limits: RateLimits | null, stale?: boolean): string | null {
+export function renderRateLimits(
+  limits: RateLimits | null,
+  stale?: boolean,
+): string | null {
   if (!limits) return null;
 
   const staleMarker = stale ? `${DIM}*${RESET}` : '';
   const resetPrefix = stale ? '~' : '';
 
-  const fiveHour = Math.min(100, Math.max(0, Math.round(limits.fiveHourPercent)));
+  const fiveHour = Math.min(
+    100,
+    Math.max(0, Math.round(limits.fiveHourPercent)),
+  );
   const fiveHourColor = getColor(fiveHour);
   const fiveHourReset = formatResetTime(limits.fiveHourResetsAt);
 
@@ -90,7 +101,10 @@ export function renderRateLimits(limits: RateLimits | null, stale?: boolean): st
   }
 
   if (limits.monthlyPercent != null) {
-    const monthly = Math.min(100, Math.max(0, Math.round(limits.monthlyPercent)));
+    const monthly = Math.min(
+      100,
+      Math.max(0, Math.round(limits.monthlyPercent)),
+    );
     const monthlyColor = getColor(monthly);
     const monthlyReset = formatResetTime(limits.monthlyResetsAt);
 
@@ -102,7 +116,10 @@ export function renderRateLimits(limits: RateLimits | null, stale?: boolean): st
   }
 
   if (limits.sonnetWeeklyPercent != null) {
-    const sonnet = Math.min(100, Math.max(0, Math.round(limits.sonnetWeeklyPercent)));
+    const sonnet = Math.min(
+      100,
+      Math.max(0, Math.round(limits.sonnetWeeklyPercent)),
+    );
     const sonnetColor = getColor(sonnet);
     const sonnetReset = formatResetTime(limits.sonnetWeeklyResetsAt);
 
@@ -114,7 +131,10 @@ export function renderRateLimits(limits: RateLimits | null, stale?: boolean): st
   }
 
   if (limits.opusWeeklyPercent != null) {
-    const opus = Math.min(100, Math.max(0, Math.round(limits.opusWeeklyPercent)));
+    const opus = Math.min(
+      100,
+      Math.max(0, Math.round(limits.opusWeeklyPercent)),
+    );
     const opusColor = getColor(opus);
     const opusReset = formatResetTime(limits.opusWeeklyResetsAt);
 
@@ -126,7 +146,10 @@ export function renderRateLimits(limits: RateLimits | null, stale?: boolean): st
   }
 
   if (limits.extraUsagePercent != null && limits.extraUsageLimitUsd != null) {
-    const extra = Math.min(100, Math.max(0, Math.round(limits.extraUsagePercent)));
+    const extra = Math.min(
+      100,
+      Math.max(0, Math.round(limits.extraUsagePercent)),
+    );
     const extraColor = getColor(extra);
     const extraReset = formatResetTime(limits.extraUsageResetsAt);
     const dollarPart = `${DIM}($${(limits.extraUsageSpentUsd ?? 0).toFixed(2)}/$${limits.extraUsageLimitUsd.toFixed(2)})${RESET}`;
@@ -146,10 +169,16 @@ export function renderRateLimits(limits: RateLimits | null, stale?: boolean): st
  *
  * Format: 45%/12% or 45%/12%/8%/20%/5% (5h/wk/mo/sn/op)
  */
-export function renderRateLimitsCompact(limits: RateLimits | null, stale?: boolean): string | null {
+export function renderRateLimitsCompact(
+  limits: RateLimits | null,
+  stale?: boolean,
+): string | null {
   if (!limits) return null;
 
-  const fiveHour = Math.min(100, Math.max(0, Math.round(limits.fiveHourPercent)));
+  const fiveHour = Math.min(
+    100,
+    Math.max(0, Math.round(limits.fiveHourPercent)),
+  );
   const fiveHourColor = getColor(fiveHour);
 
   const parts = [`${fiveHourColor}${fiveHour}%${RESET}`];
@@ -161,25 +190,37 @@ export function renderRateLimitsCompact(limits: RateLimits | null, stale?: boole
   }
 
   if (limits.monthlyPercent != null) {
-    const monthly = Math.min(100, Math.max(0, Math.round(limits.monthlyPercent)));
+    const monthly = Math.min(
+      100,
+      Math.max(0, Math.round(limits.monthlyPercent)),
+    );
     const monthlyColor = getColor(monthly);
     parts.push(`${monthlyColor}${monthly}%${RESET}`);
   }
 
   if (limits.sonnetWeeklyPercent != null) {
-    const sonnet = Math.min(100, Math.max(0, Math.round(limits.sonnetWeeklyPercent)));
+    const sonnet = Math.min(
+      100,
+      Math.max(0, Math.round(limits.sonnetWeeklyPercent)),
+    );
     const sonnetColor = getColor(sonnet);
     parts.push(`${sonnetColor}${sonnet}%${RESET}`);
   }
 
   if (limits.opusWeeklyPercent != null) {
-    const opus = Math.min(100, Math.max(0, Math.round(limits.opusWeeklyPercent)));
+    const opus = Math.min(
+      100,
+      Math.max(0, Math.round(limits.opusWeeklyPercent)),
+    );
     const opusColor = getColor(opus);
     parts.push(`${opusColor}${opus}%${RESET}`);
   }
 
   if (limits.extraUsagePercent != null && limits.extraUsageLimitUsd != null) {
-    const extra = Math.min(100, Math.max(0, Math.round(limits.extraUsagePercent)));
+    const extra = Math.min(
+      100,
+      Math.max(0, Math.round(limits.extraUsagePercent)),
+    );
     const extraColor = getColor(extra);
     parts.push(`${extraColor}${extra}%${RESET}`);
   }
@@ -203,7 +244,10 @@ export function renderRateLimitsWithBar(
   const staleMarker = stale ? `${DIM}*${RESET}` : '';
   const resetPrefix = stale ? '~' : '';
 
-  const fiveHour = Math.min(100, Math.max(0, Math.round(limits.fiveHourPercent)));
+  const fiveHour = Math.min(
+    100,
+    Math.max(0, Math.round(limits.fiveHourPercent)),
+  );
   const fiveHourColor = getColor(fiveHour);
   const fiveHourFilled = Math.round((fiveHour / 100) * barWidth);
   const fiveHourEmpty = barWidth - fiveHourFilled;
@@ -232,7 +276,10 @@ export function renderRateLimitsWithBar(
   }
 
   if (limits.monthlyPercent != null) {
-    const monthly = Math.min(100, Math.max(0, Math.round(limits.monthlyPercent)));
+    const monthly = Math.min(
+      100,
+      Math.max(0, Math.round(limits.monthlyPercent)),
+    );
     const monthlyColor = getColor(monthly);
     const monthlyFilled = Math.round((monthly / 100) * barWidth);
     const monthlyEmpty = barWidth - monthlyFilled;
@@ -247,7 +294,10 @@ export function renderRateLimitsWithBar(
   }
 
   if (limits.sonnetWeeklyPercent != null) {
-    const sonnet = Math.min(100, Math.max(0, Math.round(limits.sonnetWeeklyPercent)));
+    const sonnet = Math.min(
+      100,
+      Math.max(0, Math.round(limits.sonnetWeeklyPercent)),
+    );
     const sonnetColor = getColor(sonnet);
     const sonnetFilled = Math.round((sonnet / 100) * barWidth);
     const sonnetEmpty = barWidth - sonnetFilled;
@@ -262,7 +312,10 @@ export function renderRateLimitsWithBar(
   }
 
   if (limits.opusWeeklyPercent != null) {
-    const opus = Math.min(100, Math.max(0, Math.round(limits.opusWeeklyPercent)));
+    const opus = Math.min(
+      100,
+      Math.max(0, Math.round(limits.opusWeeklyPercent)),
+    );
     const opusColor = getColor(opus);
     const opusFilled = Math.round((opus / 100) * barWidth);
     const opusEmpty = barWidth - opusFilled;
@@ -277,7 +330,10 @@ export function renderRateLimitsWithBar(
   }
 
   if (limits.extraUsagePercent != null && limits.extraUsageLimitUsd != null) {
-    const extra = Math.min(100, Math.max(0, Math.round(limits.extraUsagePercent)));
+    const extra = Math.min(
+      100,
+      Math.max(0, Math.round(limits.extraUsagePercent)),
+    );
     const extraColor = getColor(extra);
     const extraFilled = Math.round((extra / 100) * barWidth);
     const extraEmpty = barWidth - extraFilled;
@@ -302,7 +358,9 @@ export function renderRateLimitsWithBar(
  * - 'auth': credentials expired, refresh failed → [API auth]
  * - 'no_credentials': no OAuth credentials (expected for API key users) → null (no display)
  */
-export function renderRateLimitsError(result: UsageResult | null): string | null {
+export function renderRateLimitsError(
+  result: UsageResult | null,
+): string | null {
   if (!result?.error) return null;
   if (result.error === 'no_credentials') return null;
   if (result.error === 'rate_limited') {
@@ -349,7 +407,8 @@ export function renderApiKeyUsageHint(
  */
 function bucketUsagePercent(usage: CustomBucketUsage): number | null {
   if (usage.type === 'percent') return usage.value;
-  if (usage.type === 'credit' && usage.limit > 0) return (usage.used / usage.limit) * 100;
+  if (usage.type === 'credit' && usage.limit > 0)
+    return (usage.used / usage.limit) * 100;
   return null;
 }
 
@@ -408,4 +467,3 @@ export function renderCustomBuckets(
 
   return parts.join(' ');
 }
-

@@ -21,7 +21,9 @@ import { render } from '../../hud/render.js';
 import type { HudRenderContext, HudConfig } from '../../hud/types.js';
 import { DEFAULT_HUD_CONFIG } from '../../hud/types.js';
 
-function makeContext(overrides: Partial<HudRenderContext> = {}): HudRenderContext {
+function makeContext(
+  overrides: Partial<HudRenderContext> = {},
+): HudRenderContext {
   return {
     contextPercent: 50,
     modelName: 'opus',
@@ -407,7 +409,9 @@ describe('render: rate limits display priority', () => {
 
     const output = await render(
       context,
-      makeConfig({ rateLimitsProvider: { type: 'custom', command: 'echo {}' } }),
+      makeConfig({
+        rateLimitsProvider: { type: 'custom', command: 'echo {}' },
+      }),
     );
     expect(output).not.toContain('omcHud.rateLimitsProvider');
   });

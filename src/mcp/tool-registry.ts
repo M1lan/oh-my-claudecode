@@ -43,22 +43,32 @@ export interface ToolDef {
     openWorldHint?: boolean;
   };
   schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>;
-  handler: (
-    args: unknown,
-  ) => Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: boolean }>;
+  handler: (args: unknown) => Promise<{
+    content: Array<{ type: 'text'; text: string }>;
+    isError?: boolean;
+  }>;
 }
 
 /** All tools exposed by the standalone server, in registration order. */
 export const allTools: ToolDef[] = [
   ...tagCategory(lspTools as unknown as ToolDef[], TOOL_CATEGORIES.LSP),
   ...tagCategory(astTools as unknown as ToolDef[], TOOL_CATEGORIES.AST),
-  { ...(pythonReplTool as unknown as ToolDef), category: TOOL_CATEGORIES.PYTHON },
+  {
+    ...(pythonReplTool as unknown as ToolDef),
+    category: TOOL_CATEGORIES.PYTHON,
+  },
   ...tagCategory(stateTools as unknown as ToolDef[], TOOL_CATEGORIES.STATE),
   ...tagCategory(notepadTools as unknown as ToolDef[], TOOL_CATEGORIES.NOTEPAD),
   ...tagCategory(memoryTools as unknown as ToolDef[], TOOL_CATEGORIES.MEMORY),
   ...tagCategory(traceTools as unknown as ToolDef[], TOOL_CATEGORIES.TRACE),
-  ...tagCategory(sharedMemoryTools as unknown as ToolDef[], TOOL_CATEGORIES.SHARED_MEMORY),
-  { ...(deepinitManifestTool as unknown as ToolDef), category: TOOL_CATEGORIES.DEEPINIT },
+  ...tagCategory(
+    sharedMemoryTools as unknown as ToolDef[],
+    TOOL_CATEGORIES.SHARED_MEMORY,
+  ),
+  {
+    ...(deepinitManifestTool as unknown as ToolDef),
+    category: TOOL_CATEGORIES.DEEPINIT,
+  },
   ...tagCategory(wikiTools as unknown as ToolDef[], TOOL_CATEGORIES.WIKI),
   ...tagCategory(skillsTools as unknown as ToolDef[], TOOL_CATEGORIES.SKILLS),
 ];
@@ -97,14 +107,18 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   if (zodType instanceof z.ZodString) {
     result.type = 'string';
   } else if (zodType instanceof z.ZodNumber) {
-    result.type = zodType._def?.checks?.some((c: { kind: string }) => c.kind === 'int')
+    result.type = zodType._def?.checks?.some(
+      (c: { kind: string }) => c.kind === 'int',
+    )
       ? 'integer'
       : 'number';
   } else if (zodType instanceof z.ZodBoolean) {
     result.type = 'boolean';
   } else if (zodType instanceof z.ZodArray) {
     result.type = 'array';
-    result.items = zodType._def?.type ? zodTypeToJsonSchema(zodType._def.type) : { type: 'string' };
+    result.items = zodType._def?.type
+      ? zodTypeToJsonSchema(zodType._def.type)
+      : { type: 'string' };
   } else if (zodType instanceof z.ZodEnum) {
     result.type = 'string';
     result.enum = zodType._def?.values;
@@ -122,7 +136,9 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   return result;
 }
 
-export function zodToJsonSchema(schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>): {
+export function zodToJsonSchema(
+  schema: z.ZodRawShape | z.ZodObject<z.ZodRawShape>,
+): {
   type: 'object';
   properties: Record<string, unknown>;
   required: string[];
@@ -137,7 +153,9 @@ export function zodToJsonSchema(schema: z.ZodRawShape | z.ZodObject<z.ZodRawShap
     properties[key] = zodTypeToJsonSchema(zodType);
 
     const isOptional =
-      zodType && typeof zodType.isOptional === 'function' && zodType.isOptional();
+      zodType &&
+      typeof zodType.isOptional === 'function' &&
+      zodType.isOptional();
     if (!isOptional) {
       required.push(key);
     }
@@ -150,7 +168,11 @@ export function zodToJsonSchema(schema: z.ZodRawShape | z.ZodObject<z.ZodRawShap
 export interface ListToolsEntry {
   name: string;
   description: string;
-  inputSchema: { type: 'object'; properties: Record<string, unknown>; required: string[] };
+  inputSchema: {
+    type: 'object';
+    properties: Record<string, unknown>;
+    required: string[];
+  };
   annotations?: ToolDef['annotations'];
 }
 
@@ -158,7 +180,9 @@ export interface ListToolsEntry {
  * Build the ListTools response payload exactly as standalone-server.ts sends it.
  * Tests call this directly to exercise the same code path as the live server.
  */
-export function buildListToolsResponse(envValue?: string): { tools: ListToolsEntry[] } {
+export function buildListToolsResponse(envValue?: string): {
+  tools: ListToolsEntry[];
+} {
   return {
     tools: getEnabledTools(envValue).map((tool) => ({
       name: tool.name,

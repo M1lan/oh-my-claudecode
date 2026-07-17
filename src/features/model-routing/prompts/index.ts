@@ -8,9 +8,21 @@
 import type { ComplexityTier, PromptAdaptationStrategy } from '../types.js';
 import { TIER_PROMPT_STRATEGIES } from '../types.js';
 
-import { adaptPromptForOpus, OPUS_PROMPT_PREFIX, OPUS_PROMPT_SUFFIX } from './opus.js';
-import { adaptPromptForSonnet, SONNET_PROMPT_PREFIX, SONNET_PROMPT_SUFFIX } from './sonnet.js';
-import { adaptPromptForHaiku, HAIKU_PROMPT_PREFIX, HAIKU_PROMPT_SUFFIX } from './haiku.js';
+import {
+  adaptPromptForOpus,
+  OPUS_PROMPT_PREFIX,
+  OPUS_PROMPT_SUFFIX,
+} from './opus.js';
+import {
+  adaptPromptForSonnet,
+  SONNET_PROMPT_PREFIX,
+  SONNET_PROMPT_SUFFIX,
+} from './sonnet.js';
+import {
+  adaptPromptForHaiku,
+  HAIKU_PROMPT_PREFIX,
+  HAIKU_PROMPT_SUFFIX,
+} from './haiku.js';
 
 // Re-export tier-specific modules
 export * from './opus.js';
@@ -20,7 +32,10 @@ export * from './haiku.js';
 /**
  * Adapt a prompt for a specific complexity tier
  */
-export function adaptPromptForTier(prompt: string, tier: ComplexityTier): string {
+export function adaptPromptForTier(
+  prompt: string,
+  tier: ComplexityTier,
+): string {
   switch (tier) {
     case 'HIGH':
       return adaptPromptForOpus(prompt);
@@ -34,7 +49,9 @@ export function adaptPromptForTier(prompt: string, tier: ComplexityTier): string
 /**
  * Get the prompt strategy for a tier
  */
-export function getPromptStrategy(tier: ComplexityTier): PromptAdaptationStrategy {
+export function getPromptStrategy(
+  tier: ComplexityTier,
+): PromptAdaptationStrategy {
   return TIER_PROMPT_STRATEGIES[tier];
 }
 
@@ -80,7 +97,7 @@ export function createDelegationPrompt(
     mustNotDo?: string[];
     requiredSkills?: string[];
     requiredTools?: string[];
-  }
+  },
 ): string {
   const prefix = getPromptPrefix(tier);
   const suffix = getPromptSuffix(tier);
@@ -100,19 +117,19 @@ export function createDelegationPrompt(
   }
 
   if (context.mustDo?.length) {
-    body += `\n### MUST DO\n${context.mustDo.map(m => `- ${m}`).join('\n')}\n`;
+    body += `\n### MUST DO\n${context.mustDo.map((m) => `- ${m}`).join('\n')}\n`;
   }
 
   if (context.mustNotDo?.length) {
-    body += `\n### MUST NOT DO\n${context.mustNotDo.map(m => `- ${m}`).join('\n')}\n`;
+    body += `\n### MUST NOT DO\n${context.mustNotDo.map((m) => `- ${m}`).join('\n')}\n`;
   }
 
   if (context.requiredSkills?.length) {
-    body += `\n### REQUIRED SKILLS\n${context.requiredSkills.map(s => `- ${s}`).join('\n')}\n`;
+    body += `\n### REQUIRED SKILLS\n${context.requiredSkills.map((s) => `- ${s}`).join('\n')}\n`;
   }
 
   if (context.requiredTools?.length) {
-    body += `\n### REQUIRED TOOLS\n${context.requiredTools.map(t => `- ${t}`).join('\n')}\n`;
+    body += `\n### REQUIRED TOOLS\n${context.requiredTools.map((t) => `- ${t}`).join('\n')}\n`;
   }
 
   return prefix + body + suffix;
@@ -121,7 +138,10 @@ export function createDelegationPrompt(
 /**
  * Tier-specific instructions for common task types
  */
-export const TIER_TASK_INSTRUCTIONS: Record<ComplexityTier, Record<string, string>> = {
+export const TIER_TASK_INSTRUCTIONS: Record<
+  ComplexityTier,
+  Record<string, string>
+> = {
   HIGH: {
     search: 'Perform thorough multi-angle search with analysis of findings.',
     implement: 'Design solution with tradeoff analysis before implementing.',
@@ -148,6 +168,12 @@ export const TIER_TASK_INSTRUCTIONS: Record<ComplexityTier, Record<string, strin
 /**
  * Get task-specific instructions for a tier
  */
-export function getTaskInstructions(tier: ComplexityTier, taskType: string): string {
-  return TIER_TASK_INSTRUCTIONS[tier][taskType] ?? TIER_TASK_INSTRUCTIONS[tier].implement;
+export function getTaskInstructions(
+  tier: ComplexityTier,
+  taskType: string,
+): string {
+  return (
+    TIER_TASK_INSTRUCTIONS[tier][taskType] ??
+    TIER_TASK_INSTRUCTIONS[tier].implement
+  );
 }

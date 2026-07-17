@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-type ExecFileCallback = (error: Error | null, stdout: string, stderr: string) => void;
-type ExecCallback = (error: Error | null, stdout: string, stderr: string) => void;
+type ExecFileCallback = (
+  error: Error | null,
+  stdout: string,
+  stderr: string,
+) => void;
+type ExecCallback = (
+  error: Error | null,
+  stdout: string,
+  stderr: string,
+) => void;
 
 const mocked = vi.hoisted(() => ({
   execCalls: [] as string[][],
@@ -29,18 +37,22 @@ vi.mock('child_process', async (importOriginal) => {
     const args = match[1].match(/'([^']*(?:\\.[^']*)*)'|"([^"]*)"/g);
     if (!args) return null;
     return args.map((token) => {
-      if (token.startsWith("'")) return token.slice(1, -1).replace(/'\\''/g, "'");
+      if (token.startsWith("'"))
+        return token.slice(1, -1).replace(/'\\''/g, "'");
       return token.slice(1, -1);
     });
   };
 
-  const execFileMock = vi.fn((_cmd: string, args: string[], cb: ExecFileCallback) => {
-    const out = run(args);
-    cb(null, out.stdout, out.stderr);
-    return {} as never;
-  });
-  (execFileMock as unknown as Record<symbol, unknown>)[Symbol.for('nodejs.util.promisify.custom')] =
-    async (_cmd: string, args: string[]) => run(args);
+  const execFileMock = vi.fn(
+    (_cmd: string, args: string[], cb: ExecFileCallback) => {
+      const out = run(args);
+      cb(null, out.stdout, out.stderr);
+      return {} as never;
+    },
+  );
+  (execFileMock as unknown as Record<symbol, unknown>)[
+    Symbol.for('nodejs.util.promisify.custom')
+  ] = async (_cmd: string, args: string[]) => run(args);
 
   const execMock = vi.fn((cmd: string, cb: ExecCallback) => {
     const args = parseTmuxShellCmd(cmd) ?? [];
@@ -48,8 +60,9 @@ vi.mock('child_process', async (importOriginal) => {
     cb(null, out.stdout, out.stderr);
     return {} as never;
   });
-  (execMock as unknown as Record<symbol, unknown>)[Symbol.for('nodejs.util.promisify.custom')] =
-    async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
+  (execMock as unknown as Record<symbol, unknown>)[
+    Symbol.for('nodejs.util.promisify.custom')
+  ] = async (cmd: string) => run(parseTmuxShellCmd(cmd) ?? []);
 
   return {
     ...actual,
@@ -58,7 +71,10 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-import { killTeamSession, resolveSplitPaneWorkerPaneIds } from '../tmux-session.js';
+import {
+  killTeamSession,
+  resolveSplitPaneWorkerPaneIds,
+} from '../tmux-session.js';
 
 describe('killTeamSession safeguards', () => {
   afterEach(() => {
@@ -74,7 +90,9 @@ describe('killTeamSession safeguards', () => {
 
     await killTeamSession('leader-session');
 
-    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(false);
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(
+      false,
+    );
   });
 
   it('kills a different detached session', async () => {
@@ -83,9 +101,13 @@ describe('killTeamSession safeguards', () => {
 
     await killTeamSession('worker-detached-session');
 
-    expect(mocked.execCalls.some((args) =>
-      args[0] === 'kill-session' && args.includes('worker-detached-session'),
-    )).toBe(true);
+    expect(
+      mocked.execCalls.some(
+        (args) =>
+          args[0] === 'kill-session' &&
+          args.includes('worker-detached-session'),
+      ),
+    ).toBe(true);
   });
 
   it('kills only worker panes in split-pane mode', async () => {
@@ -96,27 +118,44 @@ describe('killTeamSession safeguards', () => {
       .map((args) => args[2]);
 
     expect(killPaneTargets).toEqual(['%11']);
-    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(false);
-    expect(mocked.execCalls.some((args) => args[0] === 'kill-window')).toBe(false);
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-session')).toBe(
+      false,
+    );
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-window')).toBe(
+      false,
+    );
   });
 
   it('kills an owned team window when session owns that window', async () => {
-    await killTeamSession('leader-session:3', ['%10', '%11'], '%10', { sessionMode: 'dedicated-window' });
+    await killTeamSession('leader-session:3', ['%10', '%11'], '%10', {
+      sessionMode: 'dedicated-window',
+    });
 
-    expect(mocked.execCalls.some((args) =>
-      args[0] === 'kill-window' && args.includes('leader-session:3'),
-    )).toBe(true);
-    expect(mocked.execCalls.some((args) => args[0] === 'kill-pane')).toBe(false);
+    expect(
+      mocked.execCalls.some(
+        (args) =>
+          args[0] === 'kill-window' && args.includes('leader-session:3'),
+      ),
+    ).toBe(true);
+    expect(mocked.execCalls.some((args) => args[0] === 'kill-pane')).toBe(
+      false,
+    );
   });
 
   it('discovers additional split-pane worker panes from the recorded team target', async () => {
     mocked.listedPanes = '%10\n%11\n%12\n';
 
-    const paneIds = await resolveSplitPaneWorkerPaneIds('leader-session:0', ['%11'], '%10');
+    const paneIds = await resolveSplitPaneWorkerPaneIds(
+      'leader-session:0',
+      ['%11'],
+      '%10',
+    );
 
     expect(paneIds).toEqual(['%11', '%12']);
-    expect(mocked.execCalls.some((args) =>
-      args[0] === 'list-panes' && args.includes('leader-session:0'),
-    )).toBe(true);
+    expect(
+      mocked.execCalls.some(
+        (args) => args[0] === 'list-panes' && args.includes('leader-session:0'),
+      ),
+    ).toBe(true);
   });
 });

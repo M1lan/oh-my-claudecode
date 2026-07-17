@@ -1,4 +1,12 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  beforeEach,
+  afterEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -32,11 +40,13 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let tempConfigDir: string;
 
-  async function importHudModule(overrides: {
-    readStdinCache?: () => unknown;
-    configDir?: string;
-    hudVersion?: string;
-  } = {}) {
+  async function importHudModule(
+    overrides: {
+      readStdinCache?: () => unknown;
+      configDir?: string;
+      hudVersion?: string;
+    } = {},
+  ) {
     vi.resetModules();
 
     vi.doMock('../../hud/stdin.js', () => ({
@@ -77,16 +87,42 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
       readAutopilotStateForHud: vi.fn(() => null),
     }));
 
-    vi.doMock('../../hud/usage-api.js', () => ({ getUsage: vi.fn(async () => null) }));
-    vi.doMock('../../hud/custom-rate-provider.js', () => ({ executeCustomProvider: vi.fn(async () => null) }));
-    vi.doMock('../../hud/render.js', () => ({ render: vi.fn(async () => '[HUD] ok') }));
-    vi.doMock('../../hud/elements/api-key-source.js', () => ({ detectApiKeySource: vi.fn(() => null) }));
-    vi.doMock('../../hud/mission-board.js', () => ({ refreshMissionBoardState: vi.fn(async () => null) }));
-    vi.doMock('../../hud/sanitize.js', () => ({ sanitizeOutput: vi.fn((value: string) => value) }));
+    vi.doMock('../../hud/usage-api.js', () => ({
+      getUsage: vi.fn(async () => null),
+    }));
+    vi.doMock('../../hud/custom-rate-provider.js', () => ({
+      executeCustomProvider: vi.fn(async () => null),
+    }));
+    vi.doMock('../../hud/render.js', () => ({
+      render: vi.fn(async () => '[HUD] ok'),
+    }));
+    vi.doMock('../../hud/elements/api-key-source.js', () => ({
+      detectApiKeySource: vi.fn(() => null),
+    }));
+    vi.doMock('../../hud/mission-board.js', () => ({
+      // Static mock keeps index.js fully isolated. Mirrors the real
+      // DEFAULT_MISSION_BOARD_CONFIG (mission-board.ts:155-170) that
+      // types.ts:790 consumes at module-eval time. Avoid importActual:
+      // it pulls the real module through the partial worktree-paths mock
+      // and was a source of nondeterministic test failures.
+      DEFAULT_MISSION_BOARD_CONFIG: {
+        enabled: false,
+        maxMissions: 2,
+        maxAgentsPerMission: 3,
+        maxTimelineEvents: 3,
+        persistCompletedForMinutes: 20,
+      },
+      refreshMissionBoardState: vi.fn(async () => null),
+    }));
+    vi.doMock('../../hud/sanitize.js', () => ({
+      sanitizeOutput: vi.fn((value: string) => value),
+    }));
     vi.doMock('../../lib/version.js', () => ({
       getRuntimePackageVersion: vi.fn(() => overrides.hudVersion ?? '4.10.1'),
     }));
-    vi.doMock('../../features/auto-update.js', () => ({ compareVersions: vi.fn(() => 0) }));
+    vi.doMock('../../features/auto-update.js', () => ({
+      compareVersions: vi.fn(() => 0),
+    }));
     vi.doMock('../../lib/worktree-paths.js', () => ({
       resolveToWorktreeRoot: vi.fn((cwd?: string) => cwd ?? '/tmp'),
       resolveTranscriptPath: vi.fn((tp?: string) => tp),
@@ -108,13 +144,36 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     // Create a temp config dir for each test
-    tempConfigDir = join(tmpdir(), `omc-hud-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempConfigDir = join(
+      tmpdir(),
+      `omc-hud-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(join(tempConfigDir, 'hud'), { recursive: true });
   });
 
   afterEach(() => {
-    vi.resetModules();
-    vi.clearAllMocks();
+    // Only restore spies, process.stdin, and the temp config dir here. Module
+    // mocks are intentionally NOT unmocked/reset in afterEach: importHudModule()
+    // calls vi.resetModules() and re-registers every vi.doMock fresh at the
+    // start of each test, which is the authoritative setup. Queueing doUnmock
+    // here (which only takes effect on the *next* resetModules) raced with that
+    // re-registration and produced nondeterministic "real module ran" failures.
+    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    if (originalIsTTY) {
+      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
+    }
+    try {
+      rmSync(tempConfigDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  });
+
+  // Tear down the shared worker's mock registry at the file boundary so these
+  // doMock registrations (identical resolved paths to the other HUD test files)
+  // do not bleed across files when vitest reuses the worker.
+  afterAll(() => {
     vi.doUnmock('../../hud/stdin.js');
     vi.doUnmock('../../hud/transcript.js');
     vi.doUnmock('../../hud/state.js');
@@ -128,20 +187,19 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     vi.doUnmock('../../lib/version.js');
     vi.doUnmock('../../features/auto-update.js');
     vi.doUnmock('../../lib/worktree-paths.js');
-    vi.doUnmock('../../utils/paths.js');
-    consoleLogSpy.mockRestore();
-    consoleErrorSpy.mockRestore();
-    if (originalIsTTY) {
-      Object.defineProperty(process.stdin, 'isTTY', originalIsTTY);
-    }
-    try { rmSync(tempConfigDir, { recursive: true, force: true }); } catch { /* ignore */ }
+    // This file mocks config-dir.js (not paths.js); unmock what was mocked.
+    vi.doUnmock('../../utils/config-dir.js');
+    vi.resetModules();
+    vi.clearAllMocks();
   });
 
   it('shows diagnostic with version and preset when no stdin and no cache', async () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('[OMC] HUD v4.10.1');
     expect(output).toContain('preset: focused');
     expect(output).not.toContain('run /omc-setup to install properly');
@@ -151,7 +209,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('HUD script:');
     expect(output).toContain('MISSING');
   });
@@ -161,7 +221,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('installed');
   });
 
@@ -169,15 +231,24 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     writeFileSync(join(tempConfigDir, 'hud', 'omc-hud.mjs'), '// stub');
     writeFileSync(
       join(tempConfigDir, 'settings.json'),
-      JSON.stringify({ statusLine: { type: 'command', command: 'node $HOME/.claude/hud/omc-hud.mjs' } }),
+      JSON.stringify({
+        statusLine: {
+          type: 'command',
+          command: 'node $HOME/.claude/hud/omc-hud.mjs',
+        },
+      }),
     );
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('statusLine:');
     expect(output).toContain('configured');
-    expect(output).toContain('HUD renders automatically inside Claude Code sessions.');
+    expect(output).toContain(
+      'HUD renders automatically inside Claude Code sessions.',
+    );
   });
 
   it('shows statusLine as NOT configured when settings.json has no statusLine', async () => {
@@ -185,7 +256,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('NOT configured');
     expect(output).toContain('Run /oh-my-claudecode:hud setup to fix.');
   });
@@ -199,7 +272,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('configured');
   });
 
@@ -207,7 +282,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule({ hudVersion: '5.0.0' });
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('[OMC] HUD v5.0.0');
   });
 
@@ -215,7 +292,9 @@ describe('HUD CLI diagnostic (no stdin, no watch mode)', () => {
     const hud = await importHudModule();
     await hud.main(false, false);
 
-    const output = consoleLogSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
+    const output = consoleLogSpy.mock.calls
+      .map((c: unknown[]) => c[0])
+      .join('\n');
     expect(output).toContain('Run /oh-my-claudecode:hud setup to fix.');
   });
 });

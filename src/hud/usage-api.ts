@@ -12,7 +12,14 @@
  * Response: { five_hour: { utilization }, seven_day: { utilization } }
  */
 
-import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync, mkdirSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  renameSync,
+  unlinkSync,
+  mkdirSync,
+} from 'fs';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { join, dirname } from 'path';
 import { execFileSync } from 'child_process';
@@ -27,7 +34,11 @@ import {
   type UsageErrorReason,
 } from './types.js';
 import { readHudConfig } from './state.js';
-import { lockPathFor, withFileLock, type FileLockOptions } from '../lib/file-lock.js';
+import {
+  lockPathFor,
+  withFileLock,
+  type FileLockOptions,
+} from '../lib/file-lock.js';
 
 // Cache configuration
 const CACHE_TTL_FAILURE_MS = 15 * 1000; // 15 seconds for non-transient failures
@@ -36,7 +47,9 @@ const MAX_RATE_LIMITED_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes max for sustaine
 const API_TIMEOUT_MS = 10000;
 const MAX_STALE_DATA_MS = 15 * 60 * 1000; // 15 minutes — discard stale data after this
 const TOKEN_REFRESH_URL_HOSTNAME = 'platform.claude.com';
-const USAGE_CACHE_LOCK_OPTS: FileLockOptions = { staleLockMs: API_TIMEOUT_MS + 5000 };
+const USAGE_CACHE_LOCK_OPTS: FileLockOptions = {
+  staleLockMs: API_TIMEOUT_MS + 5000,
+};
 const TOKEN_REFRESH_URL_PATH = '/v1/oauth/token';
 
 /**
@@ -107,21 +120,26 @@ interface ParseUsageResponseOptions {
   rateLimitTier?: string | null;
 }
 
-function isEnterpriseUsageContext(options?: ParseUsageResponseOptions): boolean {
+function isEnterpriseUsageContext(
+  options?: ParseUsageResponseOptions,
+): boolean {
   if (!options) return true;
 
   const subscriptionType = options.subscriptionType?.toLowerCase() ?? null;
   const rateLimitTier = options.rateLimitTier ?? null;
   if (subscriptionType == null && rateLimitTier == null) return true;
 
-  return subscriptionType === 'enterprise' || /claude_zero/i.test(rateLimitTier ?? '');
+  return (
+    subscriptionType === 'enterprise' ||
+    /claude_zero/i.test(rateLimitTier ?? '')
+  );
 }
 
 interface ZaiQuotaResponse {
   data?: {
     limits?: Array<{
-      type: string;           // 'TOKENS_LIMIT' | 'TIME_LIMIT'
-      percentage: number;     // 0-100
+      type: string; // 'TOKENS_LIMIT' | 'TIME_LIMIT'
+      percentage: number; // 0-100
       remain_count?: number;
       quota_count?: number;
       currentValue?: number;
@@ -162,9 +180,12 @@ export function isMinimaxHost(urlString: string): boolean {
     const url = new URL(urlString);
     const hostname = url.hostname.toLowerCase();
     return (
-      hostname === 'minimax.io' || hostname.endsWith('.minimax.io') ||
-      hostname === 'minimaxi.com' || hostname.endsWith('.minimaxi.com') ||
-      hostname === 'minimax.com' || hostname.endsWith('.minimax.com')
+      hostname === 'minimax.io' ||
+      hostname.endsWith('.minimax.io') ||
+      hostname === 'minimaxi.com' ||
+      hostname.endsWith('.minimaxi.com') ||
+      hostname === 'minimax.com' ||
+      hostname.endsWith('.minimax.com')
     );
   } catch {
     return false;
@@ -199,14 +220,21 @@ interface MinimaxCodingPlanResponse {
  * Get the legacy (pre-split) cache file path
  */
 function getLegacyCachePath(): string {
-  return join(getClaudeConfigDir(), 'plugins', 'oh-my-claudecode', '.usage-cache.json');
+  return join(
+    getClaudeConfigDir(),
+    'plugins',
+    'oh-my-claudecode',
+    '.usage-cache.json',
+  );
 }
 
 /**
  * Get the provider-specific cache file path
  */
 function getCachePath(source: 'anthropic' | 'zai' | 'minimax'): string {
-  return join(getClaudeConfigDir(), 'plugins', 'oh-my-claudecode', `.usage-cache-${source}.json`);
+  // prettier-ignore
+  const relative = join('plugins', 'oh-my-claudecode', `.usage-cache-${source}.json`);
+  return join(getClaudeConfigDir(), relative);
 }
 
 /**
@@ -254,22 +282,34 @@ function readCache(source: 'anthropic' | 'zai' | 'minimax'): UsageCache | null {
     // Re-hydrate Date objects from JSON strings
     if (cache.data) {
       if (cache.data.fiveHourResetsAt) {
-        cache.data.fiveHourResetsAt = new Date(cache.data.fiveHourResetsAt as unknown as string);
+        cache.data.fiveHourResetsAt = new Date(
+          cache.data.fiveHourResetsAt as unknown as string,
+        );
       }
       if (cache.data.weeklyResetsAt) {
-        cache.data.weeklyResetsAt = new Date(cache.data.weeklyResetsAt as unknown as string);
+        cache.data.weeklyResetsAt = new Date(
+          cache.data.weeklyResetsAt as unknown as string,
+        );
       }
       if (cache.data.sonnetWeeklyResetsAt) {
-        cache.data.sonnetWeeklyResetsAt = new Date(cache.data.sonnetWeeklyResetsAt as unknown as string);
+        cache.data.sonnetWeeklyResetsAt = new Date(
+          cache.data.sonnetWeeklyResetsAt as unknown as string,
+        );
       }
       if (cache.data.opusWeeklyResetsAt) {
-        cache.data.opusWeeklyResetsAt = new Date(cache.data.opusWeeklyResetsAt as unknown as string);
+        cache.data.opusWeeklyResetsAt = new Date(
+          cache.data.opusWeeklyResetsAt as unknown as string,
+        );
       }
       if (cache.data.monthlyResetsAt) {
-        cache.data.monthlyResetsAt = new Date(cache.data.monthlyResetsAt as unknown as string);
+        cache.data.monthlyResetsAt = new Date(
+          cache.data.monthlyResetsAt as unknown as string,
+        );
       }
       if (cache.data.extraUsageResetsAt) {
-        cache.data.extraUsageResetsAt = new Date(cache.data.extraUsageResetsAt as unknown as string);
+        cache.data.extraUsageResetsAt = new Date(
+          cache.data.extraUsageResetsAt as unknown as string,
+        );
       }
     }
 
@@ -312,7 +352,10 @@ function writeCache(opts: WriteCacheOptions): void {
       errorReason: opts.errorReason,
       source: opts.source,
       rateLimited: opts.rateLimited || undefined,
-      rateLimitedCount: opts.rateLimitedCount && opts.rateLimitedCount > 0 ? opts.rateLimitedCount : undefined,
+      rateLimitedCount:
+        opts.rateLimitedCount && opts.rateLimitedCount > 0
+          ? opts.rateLimitedCount
+          : undefined,
       rateLimitedUntil: opts.rateLimitedUntil,
       lastSuccessAt: opts.lastSuccessAt,
     };
@@ -342,7 +385,10 @@ function getUsagePollIntervalMs(): number {
   }
 }
 
-function getRateLimitedBackoffMs(pollIntervalMs: number, count: number): number {
+function getRateLimitedBackoffMs(
+  pollIntervalMs: number,
+  count: number,
+): number {
   const normalizedPollIntervalMs = sanitizePollIntervalMs(pollIntervalMs);
   return Math.min(
     normalizedPollIntervalMs * Math.pow(2, Math.max(0, count - 1)),
@@ -351,7 +397,10 @@ function getRateLimitedBackoffMs(pollIntervalMs: number, count: number): number 
 }
 
 function getTransientNetworkBackoffMs(pollIntervalMs: number): number {
-  return Math.max(CACHE_TTL_TRANSIENT_NETWORK_MS, sanitizePollIntervalMs(pollIntervalMs));
+  return Math.max(
+    CACHE_TTL_TRANSIENT_NETWORK_MS,
+    sanitizePollIntervalMs(pollIntervalMs),
+  );
 }
 
 function isCacheValid(cache: UsageCache, pollIntervalMs: number): boolean {
@@ -361,7 +410,10 @@ function isCacheValid(cache: UsageCache, pollIntervalMs: number): boolean {
     }
 
     const count = cache.rateLimitedCount || 1;
-    return Date.now() - cache.timestamp < getRateLimitedBackoffMs(pollIntervalMs, count);
+    return (
+      Date.now() - cache.timestamp <
+      getRateLimitedBackoffMs(pollIntervalMs, count)
+    );
   }
   const ttl = cache.error
     ? cache.errorReason === 'network'
@@ -371,12 +423,17 @@ function isCacheValid(cache: UsageCache, pollIntervalMs: number): boolean {
   return Date.now() - cache.timestamp < ttl;
 }
 
-function hasUsableStaleData(cache: UsageCache | null | undefined): cache is UsageCache & { data: RateLimits } {
+function hasUsableStaleData(
+  cache: UsageCache | null | undefined,
+): cache is UsageCache & { data: RateLimits } {
   if (!cache?.data) {
     return false;
   }
 
-  if (cache.lastSuccessAt && Date.now() - cache.lastSuccessAt > MAX_STALE_DATA_MS) {
+  if (
+    cache.lastSuccessAt &&
+    Date.now() - cache.lastSuccessAt > MAX_STALE_DATA_MS
+  ) {
     return false;
   }
 
@@ -388,7 +445,11 @@ function getCachedUsageResult(cache: UsageCache): UsageResult {
     if (!hasUsableStaleData(cache) && cache.data) {
       return { rateLimits: null, error: 'rate_limited' };
     }
-    return { rateLimits: cache.data, error: 'rate_limited', stale: cache.data ? true : undefined };
+    return {
+      rateLimits: cache.data,
+      error: 'rate_limited',
+      stale: cache.data ? true : undefined,
+    };
   }
 
   if (cache.error) {
@@ -420,7 +481,8 @@ function createRateLimitedCacheEntry(
     source,
     rateLimited: true,
     rateLimitedCount,
-    rateLimitedUntil: timestamp + getRateLimitedBackoffMs(pollIntervalMs, rateLimitedCount),
+    rateLimitedUntil:
+      timestamp + getRateLimitedBackoffMs(pollIntervalMs, rateLimitedCount),
     lastSuccessAt,
   };
 }
@@ -436,7 +498,10 @@ function createRateLimitedCacheEntry(
 function getKeychainServiceName(): string {
   const configDir = process.env.CLAUDE_CONFIG_DIR;
   if (configDir) {
-    const hash = createHash('sha256').update(configDir).digest('hex').slice(0, 8);
+    const hash = createHash('sha256')
+      .update(configDir)
+      .digest('hex')
+      .slice(0, 8);
     return `Claude Code-credentials-${hash}`;
   }
   return 'Claude Code-credentials';
@@ -446,7 +511,10 @@ function isCredentialExpired(creds: OAuthCredentials): boolean {
   return creds.expiresAt != null && creds.expiresAt <= Date.now();
 }
 
-function readKeychainCredential(serviceName: string, account?: string): OAuthCredentials | null {
+function readKeychainCredential(
+  serviceName: string,
+  account?: string,
+): OAuthCredentials | null {
   try {
     const args = account
       ? ['find-generic-password', '-s', serviceName, '-a', account, '-w']
@@ -563,7 +631,10 @@ function getCredentials(): OAuthCredentials | null {
  * Get subscription info from OAuth credentials.
  * Returns subscriptionType and rateLimitTier (null when unavailable; never throws).
  */
-export function getSubscriptionInfo(): { subscriptionType: string | null; rateLimitTier: string | null } {
+export function getSubscriptionInfo(): {
+  subscriptionType: string | null;
+  rateLimitTier: string | null;
+} {
   try {
     const creds = getCredentials();
     return {
@@ -588,9 +659,12 @@ function validateCredentials(creds: OAuthCredentials): boolean {
  * Attempt to refresh an expired OAuth access token using the refresh token.
  * Returns updated credentials on success, null on failure.
  */
-function refreshAccessToken(refreshToken: string): Promise<OAuthCredentials | null> {
+function refreshAccessToken(
+  refreshToken: string,
+): Promise<OAuthCredentials | null> {
   return new Promise((resolve) => {
-    const clientId = process.env.CLAUDE_CODE_OAUTH_CLIENT_ID || DEFAULT_OAUTH_CLIENT_ID;
+    const clientId =
+      process.env.CLAUDE_CODE_OAUTH_CLIENT_ID || DEFAULT_OAUTH_CLIENT_ID;
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -610,7 +684,9 @@ function refreshAccessToken(refreshToken: string): Promise<OAuthCredentials | nu
       },
       (res) => {
         let data = '';
-        res.on('data', (chunk) => { data += chunk; });
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
         res.on('end', () => {
           if (res.statusCode === 200) {
             try {
@@ -630,15 +706,20 @@ function refreshAccessToken(refreshToken: string): Promise<OAuthCredentials | nu
             }
           }
           if (process.env.OMC_DEBUG) {
-            console.error(`[usage-api] Token refresh failed: HTTP ${res.statusCode}`);
+            console.error(
+              `[usage-api] Token refresh failed: HTTP ${res.statusCode}`,
+            );
           }
           resolve(null);
         });
-      }
+      },
     );
 
     req.on('error', () => resolve(null));
-    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.on('timeout', () => {
+      req.destroy();
+      resolve(null);
+    });
     req.end(body);
   });
 }
@@ -651,7 +732,9 @@ interface FetchResult<T> {
 /**
  * Fetch usage from Anthropic API
  */
-function fetchUsageFromApi(accessToken: string): Promise<FetchResult<UsageApiResponse>> {
+function fetchUsageFromApi(
+  accessToken: string,
+): Promise<FetchResult<UsageApiResponse>> {
   return new Promise((resolve) => {
     const req = https.request(
       {
@@ -659,7 +742,7 @@ function fetchUsageFromApi(accessToken: string): Promise<FetchResult<UsageApiRes
         path: '/api/oauth/usage',
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          Authorization: `Bearer ${accessToken}`,
           'anthropic-beta': 'oauth-2025-04-20',
           'Content-Type': 'application/json',
         },
@@ -681,14 +764,16 @@ function fetchUsageFromApi(accessToken: string): Promise<FetchResult<UsageApiRes
             }
           } else if (res.statusCode === 429) {
             if (process.env.OMC_DEBUG) {
-              console.error(`[usage-api] Anthropic API returned 429 (rate limited)`);
+              console.error(
+                `[usage-api] Anthropic API returned 429 (rate limited)`,
+              );
             }
             resolve({ data: null, rateLimited: true });
           } else {
             resolve({ data: null });
           }
         });
-      }
+      },
     );
 
     req.on('error', () => resolve({ data: null }));
@@ -717,7 +802,9 @@ function fetchUsageFromZai(): Promise<FetchResult<ZaiQuotaResponse>> {
     // Validate baseUrl for SSRF protection
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Blocking usage API call: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Blocking usage API call: ${validation.reason}`,
+      );
       resolve({ data: null });
       return;
     }
@@ -734,7 +821,7 @@ function fetchUsageFromZai(): Promise<FetchResult<ZaiQuotaResponse>> {
           path: urlObj.pathname,
           method: 'GET',
           headers: {
-            'Authorization': authToken,
+            Authorization: authToken,
             'Content-Type': 'application/json',
             'Accept-Language': 'en-US,en',
           },
@@ -742,7 +829,9 @@ function fetchUsageFromZai(): Promise<FetchResult<ZaiQuotaResponse>> {
         },
         (res) => {
           let data = '';
-          res.on('data', (chunk) => { data += chunk; });
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
           res.on('end', () => {
             if (res.statusCode === 200) {
               try {
@@ -752,18 +841,23 @@ function fetchUsageFromZai(): Promise<FetchResult<ZaiQuotaResponse>> {
               }
             } else if (res.statusCode === 429) {
               if (process.env.OMC_DEBUG) {
-                console.error(`[usage-api] z.ai API returned 429 (rate limited)`);
+                console.error(
+                  `[usage-api] z.ai API returned 429 (rate limited)`,
+                );
               }
               resolve({ data: null, rateLimited: true });
             } else {
               resolve({ data: null });
             }
           });
-        }
+        },
       );
 
       req.on('error', () => resolve({ data: null }));
-      req.on('timeout', () => { req.destroy(); resolve({ data: null }); });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ data: null });
+      });
       req.end();
     } catch {
       resolve({ data: null });
@@ -807,13 +901,24 @@ function writeKeychainCredentials(creds: OAuthCredentials): void {
     } else {
       // Flat structure or empty
       (existing as Record<string, unknown>).accessToken = creds.accessToken;
-      if (creds.expiresAt != null) (existing as Record<string, unknown>).expiresAt = creds.expiresAt;
-      if (creds.refreshToken) (existing as Record<string, unknown>).refreshToken = creds.refreshToken;
+      if (creds.expiresAt != null)
+        (existing as Record<string, unknown>).expiresAt = creds.expiresAt;
+      if (creds.refreshToken)
+        (existing as Record<string, unknown>).refreshToken = creds.refreshToken;
     }
 
     const newJson = JSON.stringify(existing);
     const writeArgs = account
-      ? ['add-generic-password', '-s', serviceName, '-a', account, '-w', newJson, '-U']
+      ? [
+          'add-generic-password',
+          '-s',
+          serviceName,
+          '-a',
+          account,
+          '-w',
+          newJson,
+          '-U',
+        ]
       : ['add-generic-password', '-s', serviceName, '-w', newJson, '-U'];
 
     execFileSync('/usr/bin/security', writeArgs, {
@@ -824,7 +929,9 @@ function writeKeychainCredentials(creds: OAuthCredentials): void {
   } catch {
     // Silent failure - Keychain write-back is best-effort
     if (process.env.OMC_DEBUG) {
-      console.error('[usage-api] Failed to write back refreshed credentials to Keychain');
+      console.error(
+        '[usage-api] Failed to write back refreshed credentials to Keychain',
+      );
     }
   }
 }
@@ -912,11 +1019,19 @@ function clamp(v: number | undefined): number {
  * The exponent (not just the divisor) is carried through to the renderer so it
  * can format with the right number of decimals — ¥50,000 not ¥50,000.00.
  */
-function minorUnitDecimals(currency: string, decimalPlaces?: number): number | null {
+function minorUnitDecimals(
+  currency: string,
+  decimalPlaces?: number,
+): number | null {
   // ISO 4217 minor-unit exponents are 0–4. Reject anything outside that range
   // (malformed/changed payload) so a bogus value can't reach toFixed(), which
   // throws a RangeError outside 0–100 — skip the field instead of crashing.
-  if (decimalPlaces != null && Number.isInteger(decimalPlaces) && decimalPlaces >= 0 && decimalPlaces <= 4) {
+  if (
+    decimalPlaces != null &&
+    Number.isInteger(decimalPlaces) &&
+    decimalPlaces >= 0 &&
+    decimalPlaces <= 4
+  ) {
     return decimalPlaces;
   }
   if (currency === 'USD') return 2;
@@ -926,7 +1041,10 @@ function minorUnitDecimals(currency: string, decimalPlaces?: number): number | n
 /**
  * Parse API response into RateLimits
  */
-export function parseUsageResponse(response: UsageApiResponse, options?: ParseUsageResponseOptions): RateLimits | null {
+export function parseUsageResponse(
+  response: UsageApiResponse,
+  options?: ParseUsageResponseOptions,
+): RateLimits | null {
   const fiveHour = response.five_hour?.utilization;
   const sevenDay = response.seven_day?.utilization;
   const sonnetSevenDay = response.seven_day_sonnet?.utilization;
@@ -940,12 +1058,20 @@ export function parseUsageResponse(response: UsageApiResponse, options?: ParseUs
   // Enterprise credits are usable once we know the minor-unit scale: USD, or any
   // currency the API annotated with decimal_places (minorDivisor != null). The
   // enterprise renderer is currency-aware (enterpriseCurrency).
-  const hasUsableEnterprise = isEnterpriseContext && usedCredits != null && minorDivisor != null;
-  const hasUsableUsdExtraUsage = extra?.limit_usd != null && extra.limit_usd > 0;
+  const hasUsableEnterprise =
+    isEnterpriseContext && usedCredits != null && minorDivisor != null;
+  const hasUsableUsdExtraUsage =
+    extra?.limit_usd != null && extra.limit_usd > 0;
   // The Max/Pro overage renderer (limits.ts) hard-codes "$", so credit-shaped
   // overage stays USD-only until that renderer learns about currency.
-  const hasUsableCreditExtraUsage = !isEnterpriseContext && usedCredits != null && extraCurrency === 'USD' && extra?.monthly_limit != null && extra.monthly_limit > 0;
-  const hasUsableExtraUsage = hasUsableUsdExtraUsage || hasUsableCreditExtraUsage;
+  const hasUsableCreditExtraUsage =
+    !isEnterpriseContext &&
+    usedCredits != null &&
+    extraCurrency === 'USD' &&
+    extra?.monthly_limit != null &&
+    extra.monthly_limit > 0;
+  const hasUsableExtraUsage =
+    hasUsableUsdExtraUsage || hasUsableCreditExtraUsage;
 
   // Need at least one valid value. Model-specific weekly buckets are valid usage data
   // even when generic subscription/window metadata is absent or nullish.
@@ -956,7 +1082,8 @@ export function parseUsageResponse(response: UsageApiResponse, options?: ParseUs
     opusSevenDay == null &&
     !hasUsableEnterprise &&
     !hasUsableExtraUsage
-  ) return null;
+  )
+    return null;
 
   // Parse ISO 8601 date strings to Date objects
   const parseDate = (dateStr: string | undefined): Date | null => {
@@ -1004,26 +1131,40 @@ export function parseUsageResponse(response: UsageApiResponse, options?: ParseUs
     // scale is unknown (non-USD with no decimal_places) minorDivisor is null and we skip
     // the enterprise fields — the renderer then returns null rather than show a wrong figure.
     const currency = extraCurrency;
-    if (extra.used_credits != null && minorDivisor != null && isEnterpriseContext) {
+    if (
+      extra.used_credits != null &&
+      minorDivisor != null &&
+      isEnterpriseContext
+    ) {
       result.enterpriseSpentUsd = extra.used_credits / minorDivisor;
-      result.enterpriseLimitUsd = extra.monthly_limit == null ? null : extra.monthly_limit / minorDivisor;
+      result.enterpriseLimitUsd =
+        extra.monthly_limit == null ? null : extra.monthly_limit / minorDivisor;
       result.enterpriseCurrency = currency;
       if (minorDecimals != null) result.enterpriseDecimalPlaces = minorDecimals;
       // Only compute utilization when there is a positive cap
       if (extra.monthly_limit != null && extra.monthly_limit > 0) {
-        result.enterpriseUtilization = clamp((extra.used_credits / extra.monthly_limit) * 100);
+        result.enterpriseUtilization = clamp(
+          (extra.used_credits / extra.monthly_limit) * 100,
+        );
       }
       // resets_at not provided in enterprise response — leave enterpriseResetsAt unset
-    } else if (extra.used_credits != null && currency === 'USD' && !isEnterpriseContext && extra.monthly_limit != null && extra.monthly_limit > 0) {
+    } else if (
+      extra.used_credits != null &&
+      currency === 'USD' &&
+      !isEnterpriseContext &&
+      extra.monthly_limit != null &&
+      extra.monthly_limit > 0
+    ) {
       // Max/Pro organization overage path: the API can use the enterprise-shaped
       // used_credits/monthly_limit fields even though the account should still render
       // normal token-window limits. Treat those minor-unit values as extra usage.
       const spentUsd = extra.used_credits / 100;
       result.extraUsageSpentUsd = spentUsd;
       result.extraUsageLimitUsd = extra.monthly_limit / 100;
-      result.extraUsagePercent = extra.utilization != null
-        ? clamp(extra.utilization)
-        : clamp((extra.used_credits / extra.monthly_limit) * 100);
+      result.extraUsagePercent =
+        extra.utilization != null
+          ? clamp(extra.utilization)
+          : clamp((extra.used_credits / extra.monthly_limit) * 100);
       result.extraUsageResetsAt = parseDate(extra.resets_at);
     } else if (extra.limit_usd != null && extra.limit_usd > 0) {
       // Pro metered path
@@ -1031,9 +1172,10 @@ export function parseUsageResponse(response: UsageApiResponse, options?: ParseUs
       result.extraUsageSpentUsd = spentUsd;
       result.extraUsageLimitUsd = extra.limit_usd;
       // Use API-provided utilization when available; fall back to spent/limit ratio
-      result.extraUsagePercent = extra.utilization != null
-        ? clamp(extra.utilization)
-        : clamp((spentUsd / extra.limit_usd) * 100);
+      result.extraUsagePercent =
+        extra.utilization != null
+          ? clamp(extra.utilization)
+          : clamp((spentUsd / extra.limit_usd) * 100);
       result.extraUsageResetsAt = parseDate(extra.resets_at);
     }
   }
@@ -1050,13 +1192,17 @@ export function parseUsageResponse(response: UsageApiResponse, options?: ParseUs
  * swap near a weekly reset boundary; fall back to nextResetTime ordering
  * when `unit` is absent.
  */
-export function parseZaiResponse(response: ZaiQuotaResponse): RateLimits | null {
+export function parseZaiResponse(
+  response: ZaiQuotaResponse,
+): RateLimits | null {
   const limits = response.data?.limits;
   if (!limits || limits.length === 0) return null;
 
-  type TokensLimit = NonNullable<NonNullable<ZaiQuotaResponse['data']>['limits']>[number];
-  const allTokensLimits = limits.filter(l => l.type === 'TOKENS_LIMIT');
-  const timeLimit = limits.find(l => l.type === 'TIME_LIMIT');
+  type TokensLimit = NonNullable<
+    NonNullable<ZaiQuotaResponse['data']>['limits']
+  >[number];
+  const allTokensLimits = limits.filter((l) => l.type === 'TOKENS_LIMIT');
+  const timeLimit = limits.find((l) => l.type === 'TIME_LIMIT');
 
   if (allTokensLimits.length === 0 && !timeLimit) return null;
 
@@ -1073,20 +1219,22 @@ export function parseZaiResponse(response: ZaiQuotaResponse): RateLimits | null 
 
   // Earlier reset wins 5h slot; equal reset, smaller percentage wins
   const sortByResetTime = (a: TokensLimit, b: TokensLimit): number => {
-    const aTime = a.nextResetTime && a.nextResetTime > 0 ? a.nextResetTime : Infinity;
-    const bTime = b.nextResetTime && b.nextResetTime > 0 ? b.nextResetTime : Infinity;
+    const aTime =
+      a.nextResetTime && a.nextResetTime > 0 ? a.nextResetTime : Infinity;
+    const bTime =
+      b.nextResetTime && b.nextResetTime > 0 ? b.nextResetTime : Infinity;
     if (aTime !== bTime) return aTime - bTime;
     return (a.percentage ?? 0) - (b.percentage ?? 0);
   };
 
-  const weeklyByUnit = allTokensLimits.find(l => l.unit === ZAI_UNIT_WEEK);
+  const weeklyByUnit = allTokensLimits.find((l) => l.unit === ZAI_UNIT_WEEK);
   let fiveHourBucket: TokensLimit | undefined;
   let weeklyBucket: TokensLimit | undefined;
 
   if (weeklyByUnit) {
     weeklyBucket = weeklyByUnit;
     fiveHourBucket = allTokensLimits
-      .filter(l => l.unit !== ZAI_UNIT_WEEK)
+      .filter((l) => l.unit !== ZAI_UNIT_WEEK)
       .slice()
       .sort(sortByResetTime)[0];
   } else {
@@ -1106,7 +1254,9 @@ export function parseZaiResponse(response: ZaiQuotaResponse): RateLimits | null 
     fiveHourPercent: clamp(fiveHourBucket?.percentage),
     fiveHourResetsAt: parseResetTime(fiveHourBucket?.nextResetTime),
     monthlyPercent: timeLimit ? clamp(timeLimit.percentage) : undefined,
-    monthlyResetsAt: timeLimit ? (parseResetTime(timeLimit.nextResetTime) ?? null) : undefined,
+    monthlyResetsAt: timeLimit
+      ? (parseResetTime(timeLimit.nextResetTime) ?? null)
+      : undefined,
   };
 
   if (weeklyBucket) {
@@ -1120,7 +1270,9 @@ export function parseZaiResponse(response: ZaiQuotaResponse): RateLimits | null 
 /**
  * Fetch usage from MiniMax coding plan API
  */
-function fetchUsageFromMinimax(apiKey: string): Promise<FetchResult<MinimaxCodingPlanResponse>> {
+function fetchUsageFromMinimax(
+  apiKey: string,
+): Promise<FetchResult<MinimaxCodingPlanResponse>> {
   return new Promise((resolve) => {
     const baseUrl = process.env.ANTHROPIC_BASE_URL;
 
@@ -1132,7 +1284,9 @@ function fetchUsageFromMinimax(apiKey: string): Promise<FetchResult<MinimaxCodin
     // Validate baseUrl for SSRF protection
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Blocking usage API call: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Blocking usage API call: ${validation.reason}`,
+      );
       resolve({ data: null });
       return;
     }
@@ -1149,14 +1303,16 @@ function fetchUsageFromMinimax(apiKey: string): Promise<FetchResult<MinimaxCodin
           path: urlObj.pathname,
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            Authorization: `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           timeout: API_TIMEOUT_MS,
         },
         (res) => {
           let data = '';
-          res.on('data', (chunk) => { data += chunk; });
+          res.on('data', (chunk) => {
+            data += chunk;
+          });
           res.on('end', () => {
             if (res.statusCode === 200) {
               try {
@@ -1166,18 +1322,23 @@ function fetchUsageFromMinimax(apiKey: string): Promise<FetchResult<MinimaxCodin
               }
             } else if (res.statusCode === 429) {
               if (process.env.OMC_DEBUG) {
-                console.error(`[usage-api] MiniMax API returned 429 (rate limited)`);
+                console.error(
+                  `[usage-api] MiniMax API returned 429 (rate limited)`,
+                );
               }
               resolve({ data: null, rateLimited: true });
             } else {
               resolve({ data: null });
             }
           });
-        }
+        },
       );
 
       req.on('error', () => resolve({ data: null }));
-      req.on('timeout', () => { req.destroy(); resolve({ data: null }); });
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({ data: null });
+      });
       req.end();
     } catch {
       resolve({ data: null });
@@ -1188,9 +1349,14 @@ function fetchUsageFromMinimax(apiKey: string): Promise<FetchResult<MinimaxCodin
 /**
  * Parse MiniMax coding plan API response into RateLimits
  */
-export function parseMinimaxResponse(response: MinimaxCodingPlanResponse): RateLimits | null {
+export function parseMinimaxResponse(
+  response: MinimaxCodingPlanResponse,
+): RateLimits | null {
   // Check for API error status
-  if (response.base_resp?.status_code != null && response.base_resp.status_code !== 0) {
+  if (
+    response.base_resp?.status_code != null &&
+    response.base_resp.status_code !== 0
+  ) {
     return null;
   }
 
@@ -1198,10 +1364,14 @@ export function parseMinimaxResponse(response: MinimaxCodingPlanResponse): RateL
   if (!models || models.length === 0) return null;
 
   // Find the primary coding model (first match, case-insensitive)
-  const codingModel = models.find(m => m.model_name.toLowerCase().startsWith('minimax-m'));
+  const codingModel = models.find((m) =>
+    m.model_name.toLowerCase().startsWith('minimax-m'),
+  );
   if (!codingModel) {
     if (process.env.OMC_DEBUG) {
-      console.error('[usage-api] No MiniMax-M* model found in coding plan response');
+      console.error(
+        '[usage-api] No MiniMax-M* model found in coding plan response',
+      );
     }
     return null;
   }
@@ -1210,7 +1380,8 @@ export function parseMinimaxResponse(response: MinimaxCodingPlanResponse): RateL
   // Convert remaining-count fields to used percentages for the HUD.
   const intervalTotal = codingModel.current_interval_total_count;
   const intervalUsed = intervalTotal - codingModel.current_interval_usage_count;
-  const intervalPercent = intervalTotal > 0 ? (intervalUsed / intervalTotal) * 100 : 0;
+  const intervalPercent =
+    intervalTotal > 0 ? (intervalUsed / intervalTotal) * 100 : 0;
 
   // Calculate weekly usage percentage from remaining weekly quota
   const weeklyTotal = codingModel.current_weekly_total_count;
@@ -1253,7 +1424,13 @@ async function fetchAndCacheUsage<T>(opts: {
 
   if (result.rateLimited) {
     const prevLastSuccess = cache?.lastSuccessAt;
-    const rateLimitedCache = createRateLimitedCacheEntry(source, cache?.data || null, pollIntervalMs, cache?.rateLimitedCount || 0, prevLastSuccess);
+    const rateLimitedCache = createRateLimitedCacheEntry(
+      source,
+      cache?.data || null,
+      pollIntervalMs,
+      cache?.rateLimitedCount || 0,
+      prevLastSuccess,
+    );
     writeCache({
       data: rateLimitedCache.data,
       error: rateLimitedCache.error,
@@ -1268,7 +1445,11 @@ async function fetchAndCacheUsage<T>(opts: {
       if (prevLastSuccess && Date.now() - prevLastSuccess > MAX_STALE_DATA_MS) {
         return { rateLimits: null, error: 'rate_limited' };
       }
-      return { rateLimits: rateLimitedCache.data, error: 'rate_limited', stale: true };
+      return {
+        rateLimits: rateLimitedCache.data,
+        error: 'rate_limited',
+        stale: true,
+      };
     }
     return { rateLimits: null, error: 'rate_limited' };
   }
@@ -1310,92 +1491,131 @@ export async function getUsage(): Promise<UsageResult> {
   const isMinimax = baseUrl != null && isMinimaxHost(baseUrl);
   const isZai = baseUrl != null && isZaiHost(baseUrl);
   const minimaxApiKey = process.env.MINIMAX_API_KEY || authToken;
-  const currentSource: 'anthropic' | 'zai' | 'minimax' =
-    isMinimax ? 'minimax' : isZai && authToken ? 'zai' : 'anthropic';
+  const currentSource: 'anthropic' | 'zai' | 'minimax' = isMinimax
+    ? 'minimax'
+    : isZai && authToken
+      ? 'zai'
+      : 'anthropic';
   const pollIntervalMs = getUsagePollIntervalMs();
 
   // Migrate legacy single-file cache to provider-specific file (one-shot, best-effort)
   migrateLegacyCache(currentSource);
 
   const initialCache = readCache(currentSource);
-  if (initialCache && isCacheValid(initialCache, pollIntervalMs) && initialCache.source === currentSource) {
+  if (
+    initialCache &&
+    isCacheValid(initialCache, pollIntervalMs) &&
+    initialCache.source === currentSource
+  ) {
     return getCachedUsageResult(initialCache);
   }
 
   try {
-    return await withFileLock(lockPathFor(getCachePath(currentSource)), async () => {
-      const cache = readCache(currentSource);
-      if (cache && isCacheValid(cache, pollIntervalMs) && cache.source === currentSource) {
-        return getCachedUsageResult(cache);
-      }
-
-      // MiniMax path (must precede z.ai and OAuth checks)
-      if (isMinimax) {
-        if (!minimaxApiKey) {
-          writeCache({ data: null, error: true, source: 'minimax', errorReason: 'no_credentials' });
-          return { rateLimits: null, error: 'no_credentials' };
+    return await withFileLock(
+      lockPathFor(getCachePath(currentSource)),
+      async () => {
+        const cache = readCache(currentSource);
+        if (
+          cache &&
+          isCacheValid(cache, pollIntervalMs) &&
+          cache.source === currentSource
+        ) {
+          return getCachedUsageResult(cache);
         }
-        return fetchAndCacheUsage({
-          source: 'minimax',
-          fetchFn: () => fetchUsageFromMinimax(minimaxApiKey),
-          parseFn: parseMinimaxResponse,
-          cache,
-          pollIntervalMs,
-        });
-      }
 
-      // z.ai path (must precede OAuth check to avoid stale Anthropic credentials)
-      if (isZai && authToken) {
-        return fetchAndCacheUsage({
-          source: 'zai',
-          fetchFn: () => fetchUsageFromZai(),
-          parseFn: parseZaiResponse,
-          cache,
-          pollIntervalMs,
-        });
-      }
+        // MiniMax path (must precede z.ai and OAuth checks)
+        if (isMinimax) {
+          if (!minimaxApiKey) {
+            writeCache({
+              data: null,
+              error: true,
+              source: 'minimax',
+              errorReason: 'no_credentials',
+            });
+            return { rateLimits: null, error: 'no_credentials' };
+          }
+          return fetchAndCacheUsage({
+            source: 'minimax',
+            fetchFn: () => fetchUsageFromMinimax(minimaxApiKey),
+            parseFn: parseMinimaxResponse,
+            cache,
+            pollIntervalMs,
+          });
+        }
 
-      // Anthropic OAuth path (official Claude Code support)
-      let creds = getCredentials();
-      if (creds) {
-        if (!validateCredentials(creds)) {
-          if (creds.refreshToken) {
-            const refreshed = await refreshAccessToken(creds.refreshToken);
-            if (refreshed) {
-              creds = { ...creds, ...refreshed };
-              writeBackCredentials(creds);
+        // z.ai path (must precede OAuth check to avoid stale Anthropic credentials)
+        if (isZai && authToken) {
+          return fetchAndCacheUsage({
+            source: 'zai',
+            fetchFn: () => fetchUsageFromZai(),
+            parseFn: parseZaiResponse,
+            cache,
+            pollIntervalMs,
+          });
+        }
+
+        // Anthropic OAuth path (official Claude Code support)
+        let creds = getCredentials();
+        if (creds) {
+          if (!validateCredentials(creds)) {
+            if (creds.refreshToken) {
+              const refreshed = await refreshAccessToken(creds.refreshToken);
+              if (refreshed) {
+                creds = { ...creds, ...refreshed };
+                writeBackCredentials(creds);
+              } else {
+                writeCache({
+                  data: null,
+                  error: true,
+                  source: 'anthropic',
+                  errorReason: 'auth',
+                });
+                return { rateLimits: null, error: 'auth' };
+              }
             } else {
-              writeCache({ data: null, error: true, source: 'anthropic', errorReason: 'auth' });
+              writeCache({
+                data: null,
+                error: true,
+                source: 'anthropic',
+                errorReason: 'auth',
+              });
               return { rateLimits: null, error: 'auth' };
             }
-          } else {
-            writeCache({ data: null, error: true, source: 'anthropic', errorReason: 'auth' });
-            return { rateLimits: null, error: 'auth' };
           }
+
+          const accessToken = creds.accessToken;
+          const subscriptionType = creds.subscriptionType;
+          const rateLimitTier = creds.rateLimitTier;
+          return fetchAndCacheUsage({
+            source: 'anthropic',
+            fetchFn: () => fetchUsageFromApi(accessToken),
+            parseFn: (data) =>
+              parseUsageResponse(data, {
+                subscriptionType,
+                rateLimitTier,
+              }),
+            cache,
+            pollIntervalMs,
+          });
         }
 
-        const accessToken = creds.accessToken;
-        const subscriptionType = creds.subscriptionType;
-        const rateLimitTier = creds.rateLimitTier;
-        return fetchAndCacheUsage({
+        writeCache({
+          data: null,
+          error: true,
           source: 'anthropic',
-          fetchFn: () => fetchUsageFromApi(accessToken),
-          parseFn: (data) => parseUsageResponse(data, {
-            subscriptionType,
-            rateLimitTier,
-          }),
-          cache,
-          pollIntervalMs,
+          errorReason: 'no_credentials',
         });
-      }
-
-      writeCache({ data: null, error: true, source: 'anthropic', errorReason: 'no_credentials' });
-      return { rateLimits: null, error: 'no_credentials' };
-    }, USAGE_CACHE_LOCK_OPTS);
+        return { rateLimits: null, error: 'no_credentials' };
+      },
+      USAGE_CACHE_LOCK_OPTS,
+    );
   } catch (err) {
     // Lock acquisition failed — return stale cache without touching the cache file
     // to avoid racing with the lock holder writing fresh data
-    if (err instanceof Error && err.message.startsWith('Failed to acquire file lock')) {
+    if (
+      err instanceof Error &&
+      err.message.startsWith('Failed to acquire file lock')
+    ) {
       if (initialCache?.data) {
         return { rateLimits: initialCache.data, stale: true };
       }

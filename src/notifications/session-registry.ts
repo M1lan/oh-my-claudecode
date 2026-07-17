@@ -24,7 +24,10 @@ import {
 import { join, dirname } from 'path';
 import { randomUUID } from 'crypto';
 import { isProcessAlive } from '../platform/index.js';
-import { getGlobalOmcStateCandidates, getGlobalOmcStateRoot } from '../utils/paths.js';
+import {
+  getGlobalOmcStateCandidates,
+  getGlobalOmcStateRoot,
+} from '../utils/paths.js';
 
 // ============================================================================
 // Constants
@@ -88,7 +91,7 @@ interface LockFileSnapshot {
 // ============================================================================
 
 export interface SessionMapping {
-  platform: "discord-bot" | "telegram" | "slack-bot";
+  platform: 'discord-bot' | 'telegram' | 'slack-bot';
   messageId: string;
   sessionId: string;
   tmuxPaneId: string;
@@ -124,7 +127,9 @@ function sleepMs(ms: number): void {
   } catch {
     // Main thread: Atomics.wait throws on Node <22
     const waitUntil = Date.now() + ms;
-    while (Date.now() < waitUntil) { /* spin */ }
+    while (Date.now() < waitUntil) {
+      /* spin */
+    }
   }
 }
 
@@ -146,8 +151,14 @@ function readLockSnapshot(): LockFileSnapshot | null {
 
     try {
       const parsed = JSON.parse(trimmed) as { pid?: unknown; token?: unknown };
-      const pid = typeof parsed.pid === 'number' && Number.isFinite(parsed.pid) ? parsed.pid : null;
-      const token = typeof parsed.token === 'string' && parsed.token.length > 0 ? parsed.token : null;
+      const pid =
+        typeof parsed.pid === 'number' && Number.isFinite(parsed.pid)
+          ? parsed.pid
+          : null;
+      const token =
+        typeof parsed.token === 'string' && parsed.token.length > 0
+          ? parsed.token
+          : null;
       return { raw, pid, token };
     } catch {
       const [pidStr] = trimmed.split(':');
@@ -249,7 +260,9 @@ function acquireRegistryLock(): RegistryLockHandle | null {
  * Acquire registry lock with retries up to a cumulative deadline.
  * Returns null if the deadline is exceeded (e.g. lock holder is a hung process).
  */
-function acquireRegistryLockOrWait(maxWaitMs: number = LOCK_MAX_WAIT_MS): RegistryLockHandle | null {
+function acquireRegistryLockOrWait(
+  maxWaitMs: number = LOCK_MAX_WAIT_MS,
+): RegistryLockHandle | null {
   const deadline = Date.now() + maxWaitMs;
   while (Date.now() < deadline) {
     const lock = acquireRegistryLock();
@@ -316,7 +329,6 @@ export function lockRegistryIfEmpty(): (() => void) | 'active' | null {
   };
 }
 
-
 /**
  * Register a message mapping (atomic JSONL append).
  *
@@ -324,38 +336,42 @@ export function lockRegistryIfEmpty(): (() => void) | 'active' | null {
  * Each mapping serializes to well under 4096 bytes, making this operation atomic.
  */
 export function registerMessage(mapping: SessionMapping): boolean {
-  return withRegistryLock(() => {
-    ensureRegistryDir();
-    const existing = readAllMappingsUnsafe().find((candidate) =>
-      candidate.platform === mapping.platform &&
-      candidate.messageId === mapping.messageId &&
-      candidate.sessionId === mapping.sessionId &&
-      candidate.tmuxPaneId === mapping.tmuxPaneId,
-    );
-    if (existing) return true;
+  return (
+    withRegistryLock(() => {
+      ensureRegistryDir();
+      const existing = readAllMappingsUnsafe().find(
+        (candidate) =>
+          candidate.platform === mapping.platform &&
+          candidate.messageId === mapping.messageId &&
+          candidate.sessionId === mapping.sessionId &&
+          candidate.tmuxPaneId === mapping.tmuxPaneId,
+      );
+      if (existing) return true;
 
-    const line = JSON.stringify(mapping) + '\n';
-    const fd = openSync(
-      getRegistryPath(),
-      constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT,
-      SECURE_FILE_MODE,
-    );
+      const line = JSON.stringify(mapping) + '\n';
+      const fd = openSync(
+        getRegistryPath(),
+        constants.O_WRONLY | constants.O_APPEND | constants.O_CREAT,
+        SECURE_FILE_MODE,
+      );
 
-    try {
-      writeSync(fd, Buffer.from(line, 'utf-8'));
-      return true;
-    } finally {
-      closeSync(fd);
-    }
-  }) ?? false;
+      try {
+        writeSync(fd, Buffer.from(line, 'utf-8'));
+        return true;
+      } finally {
+        closeSync(fd);
+      }
+    }) ?? false
+  );
 }
-
 
 /**
  * Load all mappings from the JSONL file
  */
 export function loadAllMappings(): SessionMapping[] {
-  return withRegistryLock(() => readAllMappingsUnsafe()) ?? readAllMappingsUnsafe();
+  return (
+    withRegistryLock(() => readAllMappingsUnsafe()) ?? readAllMappingsUnsafe()
+  );
 }
 
 /**
@@ -372,8 +388,8 @@ function readAllMappingsUnsafe(): SessionMapping[] {
       const content = readFileSync(registryPath, 'utf-8');
       return content
         .split('\n')
-        .filter(line => line.trim())
-        .map(line => {
+        .filter((line) => line.trim())
+        .map((line) => {
           try {
             return JSON.parse(line) as SessionMapping;
           } catch {
@@ -393,11 +409,18 @@ function readAllMappingsUnsafe(): SessionMapping[] {
  * Look up a mapping by platform and message ID.
  * Returns the most recent entry when duplicates exist (last match in append-ordered JSONL).
  */
-export function lookupByMessageId(platform: string, messageId: string): SessionMapping | null {
+export function lookupByMessageId(
+  platform: string,
+  messageId: string,
+): SessionMapping | null {
   const mappings = loadAllMappings();
 
   // Use findLast so that the most recently appended entry wins when duplicates exist.
-  return mappings.findLast(m => m.platform === platform && m.messageId === messageId) ?? null;
+  return (
+    mappings.findLast(
+      (m) => m.platform === platform && m.messageId === messageId,
+    ) ?? null
+  );
 }
 
 /**
@@ -405,47 +428,51 @@ export function lookupByMessageId(platform: string, messageId: string): SessionM
  * This is a rewrite operation (infrequent - only on session-end).
  */
 export function removeSession(sessionId: string): boolean {
-  return withRegistryLock(() => {
-    const mappings = readAllMappingsUnsafe();
-    const filtered = mappings.filter(m => m.sessionId !== sessionId);
-    if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
-    return true;
-  }) ?? false;
+  return (
+    withRegistryLock(() => {
+      const mappings = readAllMappingsUnsafe();
+      const filtered = mappings.filter((m) => m.sessionId !== sessionId);
+      if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
+      return true;
+    }) ?? false
+  );
 }
-
 
 /**
  * Remove all entries for a given pane ID.
  * Called by reply listener when pane verification fails (stale pane cleanup).
  */
 export function removeMessagesByPane(paneId: string): boolean {
-  return withRegistryLock(() => {
-    const mappings = readAllMappingsUnsafe();
-    const filtered = mappings.filter(m => m.tmuxPaneId !== paneId);
-    if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
-    return true;
-  }) ?? false;
+  return (
+    withRegistryLock(() => {
+      const mappings = readAllMappingsUnsafe();
+      const filtered = mappings.filter((m) => m.tmuxPaneId !== paneId);
+      if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
+      return true;
+    }) ?? false
+  );
 }
-
 
 /**
  * Remove entries older than MAX_AGE_MS (24 hours).
  * This is a rewrite operation (infrequent - called periodically by daemon).
  */
 export function pruneStale(): boolean {
-  return withRegistryLock(() => {
-    const now = Date.now();
-    const mappings = readAllMappingsUnsafe();
-    const filtered = mappings.filter(m => {
-      try {
-        return now - new Date(m.createdAt).getTime() < MAX_AGE_MS;
-      } catch {
-        return false;
-      }
-    });
-    if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
-    return true;
-  }) ?? false;
+  return (
+    withRegistryLock(() => {
+      const now = Date.now();
+      const mappings = readAllMappingsUnsafe();
+      const filtered = mappings.filter((m) => {
+        try {
+          return now - new Date(m.createdAt).getTime() < MAX_AGE_MS;
+        } catch {
+          return false;
+        }
+      });
+      if (filtered.length !== mappings.length) rewriteRegistryUnsafe(filtered);
+      return true;
+    }) ?? false
+  );
 }
 
 /**
@@ -461,6 +488,6 @@ function rewriteRegistryUnsafe(mappings: SessionMapping[]): void {
     return;
   }
 
-  const content = mappings.map(m => JSON.stringify(m)).join('\n') + '\n';
+  const content = mappings.map((m) => JSON.stringify(m)).join('\n') + '\n';
   writeFileSync(getRegistryPath(), content, { mode: SECURE_FILE_MODE });
 }

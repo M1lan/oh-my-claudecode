@@ -41,17 +41,17 @@ describe('standalone-server tool composition', () => {
   });
 
   it('should include trace_timeline tool', () => {
-    const names = traceTools.map(t => t.name);
+    const names = traceTools.map((t) => t.name);
     expect(names).toContain('trace_timeline');
   });
 
   it('should include trace_summary tool', () => {
-    const names = traceTools.map(t => t.name);
+    const names = traceTools.map((t) => t.name);
     expect(names).toContain('trace_summary');
   });
 
   it('should include session_search tool', () => {
-    const names = traceTools.map(t => t.name);
+    const names = traceTools.map((t) => t.name);
     expect(names).toContain('session_search');
   });
 
@@ -60,12 +60,12 @@ describe('standalone-server tool composition', () => {
   });
 
   it('should include wiki_ingest tool', () => {
-    const names = wikiTools.map(t => t.name);
+    const names = wikiTools.map((t) => t.name);
     expect(names).toContain('wiki_ingest');
   });
 
   it('should include wiki_query tool', () => {
-    const names = wikiTools.map(t => t.name);
+    const names = wikiTools.map((t) => t.name);
     expect(names).toContain('wiki_query');
   });
 
@@ -74,12 +74,12 @@ describe('standalone-server tool composition', () => {
   });
 
   it('should include shared_memory_write tool', () => {
-    const names = sharedMemoryTools.map(t => t.name);
+    const names = sharedMemoryTools.map((t) => t.name);
     expect(names).toContain('shared_memory_write');
   });
 
   it('should include shared_memory_read tool', () => {
-    const names = sharedMemoryTools.map(t => t.name);
+    const names = sharedMemoryTools.map((t) => t.name);
     expect(names).toContain('shared_memory_read');
   });
 
@@ -88,12 +88,12 @@ describe('standalone-server tool composition', () => {
   });
 
   it('should include load_omc_skills_local tool', () => {
-    const names = skillsTools.map(t => t.name);
+    const names = skillsTools.map((t) => t.name);
     expect(names).toContain('load_omc_skills_local');
   });
 
   it('should include list_omc_skills tool', () => {
-    const names = skillsTools.map(t => t.name);
+    const names = skillsTools.map((t) => t.name);
     expect(names).toContain('list_omc_skills');
   });
 
@@ -102,7 +102,7 @@ describe('standalone-server tool composition', () => {
   });
 
   it('should have no duplicate tool names', () => {
-    const names = expectedTools.map(t => t.name);
+    const names = expectedTools.map((t) => t.name);
     const uniqueNames = new Set(names);
     expect(uniqueNames.size).toBe(names.length);
   });

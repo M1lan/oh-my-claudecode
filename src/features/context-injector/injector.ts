@@ -7,7 +7,11 @@
  */
 
 import type { ContextCollector } from './collector.js';
-import type { InjectionResult, InjectionStrategy, OutputPart } from './types.js';
+import type {
+  InjectionResult,
+  InjectionStrategy,
+  OutputPart,
+} from './types.js';
 
 /** Default separator between injected context and original content */
 const DEFAULT_SEPARATOR = '\n\n---\n\n';
@@ -20,14 +24,14 @@ export function injectPendingContext(
   collector: ContextCollector,
   sessionId: string,
   parts: OutputPart[],
-  strategy: InjectionStrategy = 'prepend'
+  strategy: InjectionStrategy = 'prepend',
 ): InjectionResult {
   if (!collector.hasPending(sessionId)) {
     return { injected: false, contextLength: 0, entryCount: 0 };
   }
 
   const textPartIndex = parts.findIndex(
-    (p) => p.type === 'text' && p.text !== undefined
+    (p) => p.type === 'text' && p.text !== undefined,
   );
 
   if (textPartIndex === -1) {
@@ -39,13 +43,16 @@ export function injectPendingContext(
 
   switch (strategy) {
     case 'prepend':
-      parts[textPartIndex].text = `${pending.merged}${DEFAULT_SEPARATOR}${originalText}`;
+      parts[textPartIndex].text =
+        `${pending.merged}${DEFAULT_SEPARATOR}${originalText}`;
       break;
     case 'append':
-      parts[textPartIndex].text = `${originalText}${DEFAULT_SEPARATOR}${pending.merged}`;
+      parts[textPartIndex].text =
+        `${originalText}${DEFAULT_SEPARATOR}${pending.merged}`;
       break;
     case 'wrap':
-      parts[textPartIndex].text = `<injected-context>\n${pending.merged}\n</injected-context>${DEFAULT_SEPARATOR}${originalText}`;
+      parts[textPartIndex].text =
+        `<injected-context>\n${pending.merged}\n</injected-context>${DEFAULT_SEPARATOR}${originalText}`;
       break;
   }
 
@@ -63,7 +70,7 @@ export function injectContextIntoText(
   collector: ContextCollector,
   sessionId: string,
   text: string,
-  strategy: InjectionStrategy = 'prepend'
+  strategy: InjectionStrategy = 'prepend',
 ): { result: string; injectionResult: InjectionResult } {
   if (!collector.hasPending(sessionId)) {
     return {
@@ -108,13 +115,18 @@ export function createContextInjectorHook(collector: ContextCollector) {
      */
     processUserMessage: (
       sessionId: string,
-      message: string
+      message: string,
     ): { message: string; injected: boolean } => {
       if (!collector.hasPending(sessionId)) {
         return { message, injected: false };
       }
 
-      const { result } = injectContextIntoText(collector, sessionId, message, 'prepend');
+      const { result } = injectContextIntoText(
+        collector,
+        sessionId,
+        message,
+        'prepend',
+      );
       return { message: result, injected: true };
     },
 

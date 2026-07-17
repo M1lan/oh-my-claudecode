@@ -12,7 +12,14 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { getOmcRoot, clearWorktreeCache } from '../lib/worktree-paths.js';
@@ -24,7 +31,9 @@ const HOOK_RUNNER = join(REPO_ROOT, 'scripts', 'run.cjs');
 const STOP_HOOK = join(REPO_ROOT, 'scripts', 'persistent-mode.cjs');
 const PRE_TOOL_ENFORCER = join(REPO_ROOT, 'scripts', 'pre-tool-enforcer.mjs');
 
-function buildHookEnv(extraEnv: Record<string, string> = {}): Record<string, string> {
+function buildHookEnv(
+  extraEnv: Record<string, string> = {},
+): Record<string, string> {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (v !== undefined) env[k] = v;
@@ -93,21 +102,32 @@ function writeWorkflowTombstone(
   mkdirSync(sessionDir, { recursive: true });
   writeFileSync(
     join(sessionDir, 'skill-active-state.json'),
-    JSON.stringify({
-      version: 2,
-      active_skills: {
-        [mode]: {
-          skill_name: mode,
-          started_at: '2026-04-26T00:00:00.000Z',
-          completed_at: new Date().toISOString(),
-          session_id: sessionId,
-          mode_state_path: `${mode}-state.json`,
-          initialized_mode: mode,
-          initialized_state_path: join(omcRoot, 'state', `${mode}-state.json`),
-          initialized_session_state_path: join(sessionDir, `${mode}-state.json`),
+    JSON.stringify(
+      {
+        version: 2,
+        active_skills: {
+          [mode]: {
+            skill_name: mode,
+            started_at: '2026-04-26T00:00:00.000Z',
+            completed_at: new Date().toISOString(),
+            session_id: sessionId,
+            mode_state_path: `${mode}-state.json`,
+            initialized_mode: mode,
+            initialized_state_path: join(
+              omcRoot,
+              'state',
+              `${mode}-state.json`,
+            ),
+            initialized_session_state_path: join(
+              sessionDir,
+              `${mode}-state.json`,
+            ),
+          },
         },
       },
-    }, null, 2),
+      null,
+      2,
+    ),
   );
 }
 
@@ -159,8 +179,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       cwd: fakeProject,
     });
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).toContain('[RALPH LOOP RESTORED]');
   });
 
@@ -187,8 +208,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       cwd: fakeProject,
     });
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).not.toContain('[RALPH LOOP RESTORED]');
     expect(context).not.toContain('Tombstoned task must not restore');
   });
@@ -215,8 +237,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       cwd: fakeProject,
     });
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).not.toContain('[ULTRAWORK MODE RESTORED]');
     expect(context).not.toContain('Tombstoned ultrawork must not restore');
   });
@@ -225,7 +248,13 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
     const priorSessionId = 'prior-runner-session';
     const currentSessionId = 'current-runner-session';
 
-    const priorStateDir = join(fakeProject, '.omc', 'state', 'sessions', priorSessionId);
+    const priorStateDir = join(
+      fakeProject,
+      '.omc',
+      'state',
+      'sessions',
+      priorSessionId,
+    );
     mkdirSync(priorStateDir, { recursive: true });
     writeFileSync(
       join(priorStateDir, 'ralph-state.json'),
@@ -249,14 +278,22 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
 
     const markerPath = join(priorStateDir, 'session-started.json');
     expect(existsSync(markerPath)).toBe(true);
-    const marker = JSON.parse(readFileSync(markerPath, 'utf-8')) as Record<string, unknown>;
+    const marker = JSON.parse(readFileSync(markerPath, 'utf-8')) as Record<
+      string,
+      unknown
+    >;
     expect(marker.session_id).toBe(priorSessionId);
     expect(marker.ppid).toBeUndefined();
 
     runHookViaRunner(SESSION_START, {
       hook_event_name: 'SessionStart',
       session_id: currentSessionId,
-      transcript_path: join(fakeProject, '.claude', 'projects', 'current.jsonl'),
+      transcript_path: join(
+        fakeProject,
+        '.claude',
+        'projects',
+        'current.jsonl',
+      ),
       source: 'startup',
       model: 'claude-sonnet-4-6',
       cwd: fakeProject,
@@ -264,7 +301,18 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
 
     expect(existsSync(join(priorStateDir, 'ralph-state.json'))).toBe(true);
     expect(existsSync(markerPath)).toBe(true);
-    expect(existsSync(join(fakeProject, '.omc', 'state', 'sessions', currentSessionId, 'session-started.json'))).toBe(true);
+    expect(
+      existsSync(
+        join(
+          fakeProject,
+          '.omc',
+          'state',
+          'sessions',
+          currentSessionId,
+          'session-started.json',
+        ),
+      ),
+    ).toBe(true);
   });
 
   // ────────────────────────────────────────────────────────────────────────────
@@ -289,12 +337,17 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
 
     const output = runHook(
       SESSION_START,
-      { hook_event_name: 'SessionStart', session_id: sessionId, cwd: fakeProject },
+      {
+        hook_event_name: 'SessionStart',
+        session_id: sessionId,
+        cwd: fakeProject,
+      },
       { OMC_STATE_DIR: fakeStateDir },
     );
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).toContain('[RALPH LOOP RESTORED]');
     expect(context).toContain('Centralized-state task');
   });
@@ -316,12 +369,17 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
 
     const output = runHook(
       SESSION_START,
-      { hook_event_name: 'SessionStart', session_id: sessionId, cwd: fakeProject },
+      {
+        hook_event_name: 'SessionStart',
+        session_id: sessionId,
+        cwd: fakeProject,
+      },
       { OMC_STATE_DIR: fakeStateDir },
     );
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).toContain('[ULTRAWORK MODE RESTORED]');
     expect(context).toContain('Centralized ultrawork task');
   });
@@ -329,7 +387,13 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
   it('session-start does NOT restore state when OMC_STATE_DIR is set but state is only in default .omc', () => {
     const sessionId = 'test-session-only-default';
     // Place state ONLY in the default .omc location
-    const defaultStateDir = join(fakeProject, '.omc', 'state', 'sessions', sessionId);
+    const defaultStateDir = join(
+      fakeProject,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     mkdirSync(defaultStateDir, { recursive: true });
     writeFileSync(
       join(defaultStateDir, 'ralph-state.json'),
@@ -345,12 +409,17 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
     // Run with OMC_STATE_DIR pointing elsewhere — centralized location is empty
     const output = runHook(
       SESSION_START,
-      { hook_event_name: 'SessionStart', session_id: sessionId, cwd: fakeProject },
+      {
+        hook_event_name: 'SessionStart',
+        session_id: sessionId,
+        cwd: fakeProject,
+      },
       { OMC_STATE_DIR: fakeStateDir },
     );
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).not.toContain('[RALPH LOOP RESTORED]');
   });
 
@@ -417,7 +486,13 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
   it('stop hook does NOT block when OMC_STATE_DIR is set but state is only in default .omc', () => {
     const sessionId = 'test-stop-mismatch';
     // Place active state in default location only
-    const defaultStateDir = join(fakeProject, '.omc', 'state', 'sessions', sessionId);
+    const defaultStateDir = join(
+      fakeProject,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     mkdirSync(defaultStateDir, { recursive: true });
     writeFileSync(
       join(defaultStateDir, 'ralph-state.json'),
@@ -468,8 +543,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       cwd: fakeProject,
     });
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).toContain('[TEAM ROUTING REQUIRED]');
     expect(context).toContain('alpha');
   });
@@ -502,8 +578,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       { OMC_STATE_DIR: fakeStateDir },
     );
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).toContain('[TEAM ROUTING REQUIRED]');
     expect(context).toContain('beta');
   });
@@ -536,8 +613,9 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
       { OMC_STATE_DIR: fakeStateDir },
     );
 
-    const context = (output as { hookSpecificOutput?: { additionalContext?: string } })
-      .hookSpecificOutput?.additionalContext ?? '';
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
     expect(context).not.toContain('[TEAM ROUTING REQUIRED]');
   });
 

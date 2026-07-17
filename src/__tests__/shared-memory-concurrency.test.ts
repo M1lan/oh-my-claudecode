@@ -112,7 +112,12 @@ describe('Shared Memory Concurrency (issue #1160)', () => {
         build: { buildCommand: null, testCommand: null, lintCommand: null },
         conventions: { indentation: null, quoting: null, semicolons: null },
         structure: { entryPoints: [], configFiles: [] },
-        customNotes: [] as Array<{ timestamp: number; source: string; category: string; content: string }>,
+        customNotes: [] as Array<{
+          timestamp: number;
+          source: string;
+          category: string;
+          content: string;
+        }>,
         userDirectives: [],
         hotPaths: { files: [], directories: [] },
       };

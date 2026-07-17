@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 
 describe('BUG 8: detectPipelineSignal escapes regex', () => {
   it('source escapes regex metacharacters before creating RegExp', async () => {
@@ -37,7 +37,9 @@ describe('BUG 8: detectPipelineSignal escapes regex', () => {
     const escaped = signal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const pattern = new RegExp(escaped, 'i');
 
-    expect(pattern.test('The [DONE] pipeline.finished() was emitted')).toBe(true);
+    expect(pattern.test('The [DONE] pipeline.finished() was emitted')).toBe(
+      true,
+    );
     expect(pattern.test('DONE_ pipelinexfinished__')).toBe(false);
   });
 });

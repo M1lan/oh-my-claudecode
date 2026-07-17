@@ -12,16 +12,16 @@
  * - State cleanup utilities
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { atomicWriteJsonSync } from "../../lib/atomic-write.js";
+import * as fs from 'fs';
+import * as path from 'path';
+import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
 import {
   OmcPaths,
   getWorktreeRoot,
   getOmcRoot,
   validateWorkingDirectory,
-} from "../../lib/worktree-paths.js";
-import { getGlobalOmcStateRoot, getLegacyOmcPath } from "../../utils/paths.js";
+} from '../../lib/worktree-paths.js';
+import { getGlobalOmcStateRoot, getLegacyOmcPath } from '../../utils/paths.js';
 import {
   StateLocation,
   StateConfig,
@@ -35,7 +35,7 @@ import {
   CleanupResult,
   StateData,
   DEFAULT_STATE_CONFIG,
-} from "./types.js";
+} from './types.js';
 
 // Standard state directories
 /** Get the absolute path to the local state directory, resolved from the git worktree root. */
@@ -71,18 +71,18 @@ export function clearStateCache(): void {
 
 // Legacy state locations (for backward compatibility)
 const LEGACY_LOCATIONS: Record<string, string[]> = {
-  boulder: [".omc/state/boulder.json"],
-  autopilot: [".omc/state/autopilot-state.json"],
-  "autopilot-state": [".omc/state/autopilot-state.json"],
-  ralph: [".omc/state/ralph-state.json"],
-  "ralph-state": [".omc/state/ralph-state.json"],
-  "ralph-verification": [".omc/state/ralph-verification.json"],
-  ultrawork: [".omc/state/ultrawork-state.json"],
-  "ultrawork-state": [".omc/state/ultrawork-state.json"],
-  ultraqa: [".omc/state/ultraqa-state.json"],
-  "ultraqa-state": [".omc/state/ultraqa-state.json"],
-  "hud-state": [".omc/state/hud-state.json"],
-  prd: [".omc/state/prd.json"],
+  boulder: ['.omc/state/boulder.json'],
+  autopilot: ['.omc/state/autopilot-state.json'],
+  'autopilot-state': ['.omc/state/autopilot-state.json'],
+  ralph: ['.omc/state/ralph-state.json'],
+  'ralph-state': ['.omc/state/ralph-state.json'],
+  'ralph-verification': ['.omc/state/ralph-verification.json'],
+  ultrawork: ['.omc/state/ultrawork-state.json'],
+  'ultrawork-state': ['.omc/state/ultrawork-state.json'],
+  ultraqa: ['.omc/state/ultraqa-state.json'],
+  'ultraqa-state': ['.omc/state/ultraqa-state.json'],
+  'hud-state': ['.omc/state/hud-state.json'],
+  prd: ['.omc/state/prd.json'],
 };
 
 /**
@@ -97,11 +97,14 @@ export function getStatePath(name: string, location: StateLocation): string {
 /**
  * Get legacy paths for a state file (for migration)
  */
-export function getLegacyPaths(name: string, location: StateLocation = StateLocation.LOCAL): string[] {
+export function getLegacyPaths(
+  name: string,
+  location: StateLocation = StateLocation.LOCAL,
+): string[] {
   const legacyPaths = [...(LEGACY_LOCATIONS[name] || [])];
 
   if (location === StateLocation.GLOBAL) {
-    legacyPaths.push(getLegacyOmcPath("state", `${name}.json`));
+    legacyPaths.push(getLegacyOmcPath('state', `${name}.json`));
   }
 
   return legacyPaths;
@@ -124,7 +127,11 @@ function resolveLegacyStatePath(legacyPath: string): string {
     : path.join(getWorktreeRoot() || process.cwd(), legacyPath);
 }
 
-function warnStateReadFailure(kind: "state" | "legacy state", filePath: string, error: unknown): void {
+function warnStateReadFailure(
+  kind: 'state' | 'legacy state',
+  filePath: string,
+  error: unknown,
+): void {
   console.warn(`Failed to read ${kind} from ${filePath}:`, error);
 }
 
@@ -168,7 +175,7 @@ export function readState<T = StateData>(
       }
 
       // Cache miss or stale — read from disk
-      const content = fs.readFileSync(standardPath, "utf-8");
+      const content = fs.readFileSync(standardPath, 'utf-8');
       const data = JSON.parse(content) as T;
 
       // Verify mtime unchanged during read to prevent caching inconsistent data.
@@ -199,7 +206,7 @@ export function readState<T = StateData>(
       };
     } catch (error) {
       // Invalid JSON or read error - treat as not found
-      warnStateReadFailure("state", standardPath, error);
+      warnStateReadFailure('state', standardPath, error);
     }
   }
 
@@ -210,7 +217,7 @@ export function readState<T = StateData>(
 
       if (fs.existsSync(resolvedPath)) {
         try {
-          const content = fs.readFileSync(resolvedPath, "utf-8");
+          const content = fs.readFileSync(resolvedPath, 'utf-8');
           const data = JSON.parse(content) as T;
           return {
             exists: true,
@@ -219,7 +226,7 @@ export function readState<T = StateData>(
             legacyLocations: legacyPaths,
           };
         } catch (error) {
-          warnStateReadFailure("legacy state", resolvedPath, error);
+          warnStateReadFailure('legacy state', resolvedPath, error);
         }
       }
     }
@@ -363,7 +370,7 @@ export function migrateState(
   if (!readResult.exists || !readResult.foundAt || !readResult.data) {
     return {
       migrated: false,
-      error: "No legacy state found",
+      error: 'No legacy state found',
     };
   }
 
@@ -416,7 +423,7 @@ export function listStates(options?: ListStatesOptions): StateFileInfo[] {
   const matchesPattern = (name: string): boolean => {
     if (!pattern) return true;
     // Simple glob: * matches anything
-    const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
     return regex.test(name);
   };
 
@@ -431,7 +438,7 @@ export function listStates(options?: ListStatesOptions): StateFileInfo[] {
     try {
       const files = fs.readdirSync(dir);
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
+        if (!file.endsWith('.json')) continue;
 
         const name = file.slice(0, -5); // Remove .json
         if (!matchesPattern(name)) continue;
@@ -498,7 +505,7 @@ export function cleanupOrphanedStates(options?: CleanupOptions): CleanupResult {
     // Skip excluded patterns
     if (
       exclude.some((pattern) => {
-        const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$");
+        const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
         return regex.test(state.name);
       })
     ) {
@@ -587,7 +594,7 @@ export function cleanupStaleStates(
   maxAgeMs: number = MAX_STATE_AGE_MS,
 ): number {
   const stateDir = directory
-    ? path.join(getOmcRoot(directory), "state")
+    ? path.join(getOmcRoot(directory), 'state')
     : getLocalStateDir();
 
   if (!fs.existsSync(stateDir)) return 0;
@@ -600,11 +607,11 @@ export function cleanupStaleStates(
     try {
       const files = fs.readdirSync(dir);
       for (const file of files) {
-        if (!file.endsWith(".json")) continue;
+        if (!file.endsWith('.json')) continue;
 
         const filePath = path.join(dir, file);
         try {
-          const content = fs.readFileSync(filePath, "utf-8");
+          const content = fs.readFileSync(filePath, 'utf-8');
           const data = JSON.parse(content) as Record<string, unknown>;
 
           if (data.active !== true) continue;
@@ -620,7 +627,7 @@ export function cleanupStaleStates(
             )
           ) {
             console.warn(
-              `[state-manager] cleanupStaleStates: marking "${file}" inactive (last updated ${meta.updatedAt ?? "unknown"})`,
+              `[state-manager] cleanupStaleStates: marking "${file}" inactive (last updated ${meta.updatedAt ?? 'unknown'})`,
             );
             data.active = false;
             // Invalidate cache for this path
@@ -645,7 +652,7 @@ export function cleanupStaleStates(
   scanDir(stateDir);
 
   // Scan session directories (.omc/state/sessions/*/*.json)
-  const sessionsDir = path.join(stateDir, "sessions");
+  const sessionsDir = path.join(stateDir, 'sessions');
   if (fs.existsSync(sessionsDir)) {
     try {
       const sessionEntries = fs.readdirSync(sessionsDir, {
@@ -689,12 +696,12 @@ function withFileLock<R>(filePath: string, fn: () => R): R {
   // Acquire lock via exclusive file creation
   while (true) {
     try {
-      const fd = fs.openSync(lockPath, "wx", 0o600);
+      const fd = fs.openSync(lockPath, 'wx', 0o600);
       fs.writeSync(fd, `${process.pid}\n${Date.now()}`);
       fs.closeSync(fd);
       break;
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "EEXIST") throw err;
+      if ((err as NodeJS.ErrnoException).code !== 'EEXIST') throw err;
 
       // Lock exists — check for staleness
       try {
@@ -818,4 +825,4 @@ export {
   StateLocation,
   DEFAULT_STATE_CONFIG,
   isStateLocation,
-} from "./types.js";
+} from './types.js';

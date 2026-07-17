@@ -21,9 +21,9 @@ vi.mock('../../../tools/python-repl/bridge-manager.js', () => ({
 }));
 
 vi.mock('../../../lib/worktree-paths.js', async () => {
-  const actual = await vi.importActual<typeof import('../../../lib/worktree-paths.js')>(
-    '../../../lib/worktree-paths.js',
-  );
+  const actual = await vi.importActual<
+    typeof import('../../../lib/worktree-paths.js')
+  >('../../../lib/worktree-paths.js');
   return {
     ...actual,
     resolveToWorktreeRoot: vi.fn((dir?: string) => dir ?? process.cwd()),
@@ -37,7 +37,9 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
   let transcriptPath: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'omc-session-end-mode-state-'));
+    tmpDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'omc-session-end-mode-state-'),
+    );
     transcriptPath = path.join(tmpDir, 'transcript.jsonl');
     fs.writeFileSync(
       transcriptPath,
@@ -56,7 +58,13 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
 
   it('removes active session-scoped mode state for the ending session', async () => {
     const sessionId = 'pid-1427-current';
-    const sessionDir = path.join(tmpDir, '.omc', 'state', 'sessions', sessionId);
+    const sessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     fs.mkdirSync(sessionDir, { recursive: true });
 
     const sessionStatePath = path.join(sessionDir, 'ultrawork-state.json');
@@ -80,7 +88,13 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
 
   it('removes the SessionStart marker for a normally ending session', async () => {
     const sessionId = 'pid-2816-ended';
-    const sessionDir = path.join(tmpDir, '.omc', 'state', 'sessions', sessionId);
+    const sessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
     fs.mkdirSync(sessionDir, { recursive: true });
 
     const markerPath = path.join(sessionDir, 'session-started.json');
@@ -106,13 +120,22 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
     expect(fs.existsSync(markerPath)).toBe(false);
   });
 
-  it('does not remove another session\'s session-scoped state', async () => {
+  it("does not remove another session's session-scoped state", async () => {
     const endingSessionId = 'pid-1427-ending';
     const otherSessionId = 'pid-1427-other';
-    const otherSessionDir = path.join(tmpDir, '.omc', 'state', 'sessions', otherSessionId);
+    const otherSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      otherSessionId,
+    );
     fs.mkdirSync(otherSessionDir, { recursive: true });
 
-    const otherSessionStatePath = path.join(otherSessionDir, 'ultrawork-state.json');
+    const otherSessionStatePath = path.join(
+      otherSessionDir,
+      'ultrawork-state.json',
+    );
     fs.writeFileSync(
       otherSessionStatePath,
       JSON.stringify({ active: true, started_at: new Date().toISOString() }),
@@ -131,7 +154,6 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
     expect(fs.existsSync(otherSessionStatePath)).toBe(true);
   });
 
-
   it('removes active team state for the ending session and preserves other sessions', async () => {
     const endingSessionId = 'pid-1427-team-ending';
     const otherSessionId = 'pid-1427-team-other';
@@ -141,23 +163,38 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
     fs.mkdirSync(endingSessionDir, { recursive: true });
     fs.mkdirSync(otherSessionDir, { recursive: true });
 
-    const endingSessionStatePath = path.join(endingSessionDir, 'team-state.json');
+    const endingSessionStatePath = path.join(
+      endingSessionDir,
+      'team-state.json',
+    );
     const otherSessionStatePath = path.join(otherSessionDir, 'team-state.json');
     const legacyStatePath = path.join(stateDir, 'team-state.json');
 
     fs.writeFileSync(
       endingSessionStatePath,
-      JSON.stringify({ active: true, current_phase: 'team-exec', started_at: new Date().toISOString() }),
+      JSON.stringify({
+        active: true,
+        current_phase: 'team-exec',
+        started_at: new Date().toISOString(),
+      }),
       'utf-8',
     );
     fs.writeFileSync(
       otherSessionStatePath,
-      JSON.stringify({ active: true, current_phase: 'team-verify', started_at: new Date().toISOString() }),
+      JSON.stringify({
+        active: true,
+        current_phase: 'team-verify',
+        started_at: new Date().toISOString(),
+      }),
       'utf-8',
     );
     fs.writeFileSync(
       legacyStatePath,
-      JSON.stringify({ active: true, session_id: endingSessionId, current_phase: 'team-exec' }),
+      JSON.stringify({
+        active: true,
+        session_id: endingSessionId,
+        current_phase: 'team-exec',
+      }),
       'utf-8',
     );
 
@@ -190,7 +227,11 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
     );
     fs.writeFileSync(
       legacyStatePath,
-      JSON.stringify({ active: true, session_id: sessionId, started_at: new Date().toISOString() }),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        started_at: new Date().toISOString(),
+      }),
       'utf-8',
     );
 
@@ -219,8 +260,16 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
       JSON.stringify({
         updatedAt: new Date().toISOString(),
         missions: [
-          { id: `ultrawork-${endingSessionId}`, source: 'session', label: 'ending session mission' },
-          { id: `ultrawork-${otherSessionId}`, source: 'session', label: 'other session mission' },
+          {
+            id: `ultrawork-${endingSessionId}`,
+            source: 'session',
+            label: 'ending session mission',
+          },
+          {
+            id: `ultrawork-${otherSessionId}`,
+            source: 'session',
+            label: 'other session mission',
+          },
           { id: 'team-pipeline-abc', source: 'team', label: 'team mission' },
         ],
       }),
@@ -238,8 +287,20 @@ describe('processSessionEnd mode state cleanup (issue #1427)', () => {
 
     const updated = JSON.parse(fs.readFileSync(missionStatePath, 'utf-8'));
     expect(updated.missions).toHaveLength(2);
-    expect(updated.missions.some((m: Record<string, unknown>) => m.id === `ultrawork-${otherSessionId}`)).toBe(true);
-    expect(updated.missions.some((m: Record<string, unknown>) => m.source === 'team')).toBe(true);
-    expect(updated.missions.some((m: Record<string, unknown>) => (m.id as string).includes(endingSessionId))).toBe(false);
+    expect(
+      updated.missions.some(
+        (m: Record<string, unknown>) => m.id === `ultrawork-${otherSessionId}`,
+      ),
+    ).toBe(true);
+    expect(
+      updated.missions.some(
+        (m: Record<string, unknown>) => m.source === 'team',
+      ),
+    ).toBe(true);
+    expect(
+      updated.missions.some((m: Record<string, unknown>) =>
+        (m.id as string).includes(endingSessionId),
+      ),
+    ).toBe(false);
   });
 });

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { execFileSync } from 'child_process';
@@ -17,14 +24,28 @@ describe('issue #2652 runtime wiring and output contract', () => {
       .flatMap((entry) => entry.hooks ?? [])
       .map((hook) => hook.command ?? '');
 
-    expect(stopCommands.some((command) => command.includes('/scripts/persistent-mode.mjs'))).toBe(true);
-    const persistentModePath = join(process.cwd(), 'scripts', 'persistent-mode.mjs');
+    expect(
+      stopCommands.some((command) =>
+        command.includes('/scripts/persistent-mode.mjs'),
+      ),
+    ).toBe(true);
+    const persistentModePath = join(
+      process.cwd(),
+      'scripts',
+      'persistent-mode.mjs',
+    );
     const persistentModeSource = readFileSync(persistentModePath, 'utf-8');
 
     expect(persistentModeSource).toContain('session-idle');
-    expect(persistentModeSource).toContain('dispatchIdleNotificationInBackground');
+    expect(persistentModeSource).toContain(
+      'dispatchIdleNotificationInBackground',
+    );
     expect(persistentModeSource).toContain('recordIdleNotificationSent');
-    expect(stopCommands.some((command) => command.includes('/scripts/persistent-mode.cjs'))).toBe(false);
+    expect(
+      stopCommands.some((command) =>
+        command.includes('/scripts/persistent-mode.cjs'),
+      ),
+    ).toBe(false);
   });
 
   it('dispatches session-idle from persistent-mode.mjs Stop hook path', async () => {
@@ -42,17 +63,24 @@ describe('issue #2652 runtime wiring and output contract', () => {
           `}\n`,
       );
 
-      execFileSync(process.execPath, [join(process.cwd(), 'scripts', 'persistent-mode.mjs')], {
-        input: JSON.stringify({ cwd: projectRoot, session_id: 'session-idle-test' }),
-        encoding: 'utf-8',
-        env: {
-          ...process.env,
-          CLAUDE_PLUGIN_ROOT: pluginRoot,
-          HOME: join(tempRoot, 'home'),
-          OMC_STATE_DIR: join(tempRoot, 'state'),
-          IDLE_MARKER_PATH: markerPath,
+      execFileSync(
+        process.execPath,
+        [join(process.cwd(), 'scripts', 'persistent-mode.mjs')],
+        {
+          input: JSON.stringify({
+            cwd: projectRoot,
+            session_id: 'session-idle-test',
+          }),
+          encoding: 'utf-8',
+          env: {
+            ...process.env,
+            CLAUDE_PLUGIN_ROOT: pluginRoot,
+            HOME: join(tempRoot, 'home'),
+            OMC_STATE_DIR: join(tempRoot, 'state'),
+            IDLE_MARKER_PATH: markerPath,
+          },
         },
-      });
+      );
 
       const deadline = Date.now() + 2000;
       while (!existsSync(markerPath) && Date.now() < deadline) {

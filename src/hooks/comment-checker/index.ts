@@ -26,7 +26,9 @@ const DEBUG_FILE = path.join(tmpdir(), 'comment-checker-debug.log');
 function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [comment-checker] ${args
-      .map((a) => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)))
+      .map((a) =>
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
+      )
       .join(' ')}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
   }
@@ -102,7 +104,7 @@ function detectComments(content: string, filePath: string): CommentInfo[] {
  */
 function extractCommentsFromContent(
   content: string,
-  filePath: string
+  filePath: string,
 ): CommentInfo[] {
   return detectComments(content, filePath);
 }
@@ -113,7 +115,7 @@ function extractCommentsFromContent(
 function extractCommentsFromEdit(
   newString: string,
   filePath: string,
-  oldString?: string
+  oldString?: string,
 ): CommentInfo[] {
   // Only check comments that are newly added
   const newComments = detectComments(newString, filePath);
@@ -165,7 +167,7 @@ export function checkForComments(
   content?: string,
   oldString?: string,
   newString?: string,
-  edits?: Array<{ old_string: string; new_string: string }>
+  edits?: Array<{ old_string: string; new_string: string }>,
 ): CommentCheckResult {
   let allComments: CommentInfo[] = [];
 
@@ -181,7 +183,7 @@ export function checkForComments(
       const editComments = extractCommentsFromEdit(
         edit.new_string,
         filePath,
-        edit.old_string
+        edit.old_string,
       );
       allComments.push(...editComments);
     }
@@ -191,7 +193,7 @@ export function checkForComments(
   const flaggedComments = applyFilters(allComments);
 
   debugLog(
-    `found ${allComments.length} comments, ${flaggedComments.length} flagged after filtering`
+    `found ${allComments.length} comments, ${flaggedComments.length} flagged after filtering`,
   );
 
   if (flaggedComments.length === 0) {
@@ -374,7 +376,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
         pendingCall.content,
         pendingCall.oldString,
         pendingCall.newString,
-        pendingCall.edits
+        pendingCall.edits,
       );
 
       if (result.hasComments && result.message) {

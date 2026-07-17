@@ -102,7 +102,7 @@ Team 按阶段化流水线运行：
 
 工作者按需生成，任务完成后自动退出 — 无空闲资源浪费。需要安装 `codex` / `gemini` CLI 并有活跃的 tmux 会话。
 
-> **注意：包命名** — 项目品牌名为 **oh-my-claudecode**（仓库、插件、命令），但 npm 包以 [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) 发布。通过 npm/bun 安装 CLI 工具时，请使用 `npm install -g oh-my-claude-sisyphus`。
+> **注意：包命名** — 项目品牌名为 **oh-my-claudecode**（仓库、插件、命令），但 npm 包以 [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) 发布。通过 pnpm/bun 安装 CLI 工具时，请使用 `pnpm add -g oh-my-claude-sisyphus`。
 
 ### 更新
 
@@ -357,8 +357,8 @@ OMC 可以选择性地调用外部 AI 提供商进行交叉验证和设计一致
 
 | 提供商 | 安装 | 功能 |
 |--------|------|------|
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | 设计审查、UI 一致性（1M token 上下文）|
-| [Codex CLI](https://github.com/openai/codex) | `npm install -g @openai/codex` | 架构验证、代码审查交叉检查 |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | 设计审查、UI 一致性（1M token 上下文）|
+| [Codex CLI](https://github.com/openai/codex) | `pnpm add -g @openai/codex` | 架构验证、代码审查交叉检查 |
 
 **费用：** 3 个 Pro 计划（Claude + Gemini + ChatGPT）每月约 $60 即可覆盖所有功能。
 

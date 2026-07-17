@@ -10,7 +10,11 @@ vi.mock('fs', async () => {
 });
 
 import { existsSync, readFileSync } from 'fs';
-import { isHudEnabledInConfig, isOmcStatusLine, CLAUDE_CONFIG_DIR } from '../installer/index.js';
+import {
+  isHudEnabledInConfig,
+  isOmcStatusLine,
+  CLAUDE_CONFIG_DIR,
+} from '../installer/index.js';
 import type { InstallOptions } from '../installer/index.js';
 import { join } from 'path';
 
@@ -33,21 +37,27 @@ describe('isHudEnabledInConfig', () => {
 
   it('should return true when hudEnabled is not set in config', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({ silentAutoUpdate: false }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({ silentAutoUpdate: false }),
+    );
 
     expect(isHudEnabledInConfig()).toBe(true);
   });
 
   it('should return true when hudEnabled is explicitly true', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({ silentAutoUpdate: false, hudEnabled: true }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({ silentAutoUpdate: false, hudEnabled: true }),
+    );
 
     expect(isHudEnabledInConfig()).toBe(true);
   });
 
   it('should return false when hudEnabled is explicitly false', () => {
     mockedExistsSync.mockReturnValue(true);
-    mockedReadFileSync.mockReturnValue(JSON.stringify({ silentAutoUpdate: false, hudEnabled: false }));
+    mockedReadFileSync.mockReturnValue(
+      JSON.stringify({ silentAutoUpdate: false, hudEnabled: false }),
+    );
 
     expect(isHudEnabledInConfig()).toBe(false);
   });
@@ -88,24 +98,30 @@ describe('InstallOptions skipHud', () => {
 
 describe('isOmcStatusLine', () => {
   it('should return true for OMC HUD statusLine', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'node /home/user/.claude/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command: 'node /home/user/.claude/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
   it('should return true for any command containing omc-hud', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: '/usr/local/bin/node /some/path/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command: '/usr/local/bin/node /some/path/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
   it('should return false for custom statusLine', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'my-custom-statusline --fancy'
-    })).toBe(false);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command: 'my-custom-statusline --fancy',
+      }),
+    ).toBe(false);
   });
 
   it('should return false for null', () => {
@@ -142,38 +158,50 @@ describe('isOmcStatusLine', () => {
   });
 
   it('should recognize portable $HOME statusLine as OMC', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'node $HOME/.claude/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command: 'node $HOME/.claude/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
   it('should recognize find-node.sh statusLine as OMC', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'sh $HOME/.claude/hud/find-node.sh $HOME/.claude/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command:
+          'sh $HOME/.claude/hud/find-node.sh $HOME/.claude/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
   it('should recognize CLAUDE_CONFIG_DIR-aware statusLine as OMC', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'node ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command: 'node ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
   it('should recognize CLAUDE_CONFIG_DIR-aware find-node.sh statusLine as OMC', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/find-node.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command:
+          'sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/find-node.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 
-
   it('should recognize cached HUD statusLine as OMC', () => {
-    expect(isOmcStatusLine({
-      type: 'command',
-      command: 'sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs'
-    })).toBe(true);
+    expect(
+      isOmcStatusLine({
+        type: 'command',
+        command:
+          'sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud-cache.sh ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hud/omc-hud.mjs',
+      }),
+    ).toBe(true);
   });
 });

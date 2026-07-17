@@ -11,7 +11,9 @@ export class GitLabProvider implements GitProvider {
     const lower = url.toLowerCase();
     if (lower.includes('gitlab.com')) return true;
     // Self-hosted: match hostname label containing 'gitlab', not path/query
-    const hostMatch = lower.match(/^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/);
+    const hostMatch = lower.match(
+      /^(?:https?:\/\/|ssh:\/\/[^@]*@|[^@]+@)([^/:]+)/,
+    );
     const host = hostMatch ? hostMatch[1] : '';
     return /(^|[.-])gitlab([.-]|$)/.test(host);
   }

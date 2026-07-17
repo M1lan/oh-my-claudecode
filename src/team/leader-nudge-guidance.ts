@@ -30,7 +30,9 @@ function activeTaskCount(input: TeamLeaderGuidanceInput): number {
   return input.tasks.pending + input.tasks.blocked + input.tasks.inProgress;
 }
 
-export function deriveTeamLeaderGuidance(input: TeamLeaderGuidanceInput): TeamLeaderGuidance {
+export function deriveTeamLeaderGuidance(
+  input: TeamLeaderGuidanceInput,
+): TeamLeaderGuidance {
   const activeTasks = activeTaskCount(input);
   const totalWorkers = Math.max(0, input.workers.total);
   const aliveWorkers = Math.max(0, input.workers.alive);

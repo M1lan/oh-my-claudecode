@@ -11,26 +11,28 @@ describe('resolveDaemonModulePath', () => {
   });
 
   it('resolves bundled bridge/cli.cjs to dist daemon module path', () => {
-    const result = resolveDaemonModulePath(
-      '/repo/bridge/cli.cjs',
-      ['features', 'rate-limit-wait', 'daemon.js'],
-    );
+    const result = resolveDaemonModulePath('/repo/bridge/cli.cjs', [
+      'features',
+      'rate-limit-wait',
+      'daemon.js',
+    ]);
     expect(result).toBe('/repo/dist/features/rate-limit-wait/daemon.js');
   });
 
   it('resolves bundled bridge/cli.cjs to dist reply-listener module path', () => {
-    const result = resolveDaemonModulePath(
-      '/repo/bridge/cli.cjs',
-      ['notifications', 'reply-listener.js'],
-    );
+    const result = resolveDaemonModulePath('/repo/bridge/cli.cjs', [
+      'notifications',
+      'reply-listener.js',
+    ]);
     expect(result).toBe('/repo/dist/notifications/reply-listener.js');
   });
 
   it('supports windows-style bundled bridge paths', () => {
-    const result = resolveDaemonModulePath(
-      'C:\\repo\\bridge\\cli.cjs',
-      ['features', 'rate-limit-wait', 'daemon.js'],
-    );
+    const result = resolveDaemonModulePath('C:\\repo\\bridge\\cli.cjs', [
+      'features',
+      'rate-limit-wait',
+      'daemon.js',
+    ]);
     expect(result).toBe('C:\\repo\\dist\\features\\rate-limit-wait\\daemon.js');
   });
 
@@ -43,10 +45,11 @@ describe('resolveDaemonModulePath', () => {
   });
 
   it('does not rewrite cli.cjs outside bridge directory', () => {
-    const result = resolveDaemonModulePath(
-      '/repo/bin/cli.cjs',
-      ['features', 'rate-limit-wait', 'daemon.js'],
-    );
+    const result = resolveDaemonModulePath('/repo/bin/cli.cjs', [
+      'features',
+      'rate-limit-wait',
+      'daemon.js',
+    ]);
     expect(result).toBe('/repo/bin/cli.cjs');
   });
 });

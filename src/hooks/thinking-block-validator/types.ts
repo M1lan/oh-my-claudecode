@@ -55,9 +55,9 @@ export interface MessagesTransformOutput {
  * Hook for transforming messages before API call
  */
 export interface MessagesTransformHook {
-  "experimental.chat.messages.transform"?: (
+  'experimental.chat.messages.transform'?: (
     input: Record<string, never>,
-    output: MessagesTransformOutput
+    output: MessagesTransformOutput,
   ) => Promise<void>;
 }
 

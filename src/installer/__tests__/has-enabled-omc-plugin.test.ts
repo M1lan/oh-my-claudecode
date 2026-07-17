@@ -29,7 +29,10 @@ async function freshInstaller() {
 
 function writeSettings(content: object): void {
   mkdirSync(testDir, { recursive: true });
-  writeFileSync(join(testDir, 'settings.json'), JSON.stringify(content, null, 2));
+  writeFileSync(
+    join(testDir, 'settings.json'),
+    JSON.stringify(content, null, 2),
+  );
 }
 
 beforeEach(() => {
@@ -46,7 +49,9 @@ afterEach(() => {
   Object.assign(process.env, ORIG_ENV);
   try {
     rmSync(testDir, { recursive: true, force: true });
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 });
 
 describe('hasEnabledOmcPlugin', () => {

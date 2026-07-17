@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
@@ -99,11 +99,11 @@ describe('Bug 2 – rules-injector injects on first access, deduplicates on seco
     const file2 = addFile(dir, 'src/bar.ts');
 
     const hook = createRulesInjectorHook(dir);
-    const first  = hook.processToolExecution('read', file1, sessionId);
+    const first = hook.processToolExecution('read', file1, sessionId);
     const second = hook.processToolExecution('read', file2, sessionId);
 
-    expect(first).toBeTruthy();  // injected first time
-    expect(second).toBe('');      // same content-hash → skip
+    expect(first).toBeTruthy(); // injected first time
+    expect(second).toBe(''); // same content-hash → skip
   });
 
   it('does NOT re-inject when a new hook instance loads the same session (file-backed dedup)', () => {
@@ -118,7 +118,7 @@ describe('Bug 2 – rules-injector injects on first access, deduplicates on seco
     const hook2 = createRulesInjectorHook(dir);
     const result = hook2.processToolExecution('read', file, sessionId);
 
-    expect(result).toBe('');  // already injected → skip
+    expect(result).toBe(''); // already injected → skip
   });
 
   it('returns empty string for non-tracked tools', () => {
@@ -126,12 +126,17 @@ describe('Bug 2 – rules-injector injects on first access, deduplicates on seco
     const file = addFile(dir, 'src/foo.ts');
 
     const hook = createRulesInjectorHook(dir);
-    expect(hook.processToolExecution('bash',      file, sessionId)).toBe('');
+    expect(hook.processToolExecution('bash', file, sessionId)).toBe('');
     expect(hook.processToolExecution('listfiles', file, sessionId)).toBe('');
   });
 
   it('injects rules from .github/instructions', () => {
-    addRule(dir, 'coding.instructions.md', ruleContent('# Coding Instructions\nAlways add tests.'), '.github/instructions');
+    addRule(
+      dir,
+      'coding.instructions.md',
+      ruleContent('# Coding Instructions\nAlways add tests.'),
+      '.github/instructions',
+    );
     const file = addFile(dir, 'src/feature.ts');
 
     const hook = createRulesInjectorHook(dir);
@@ -221,11 +226,19 @@ describe('Bug 3 – nested worktree isolation: only worktree rules are injected'
   it('deduplicates across roots within the same session', () => {
     // Access worktree file → feature rule injected
     const hook = createRulesInjectorHook(mainRepo);
-    const r1 = hook.processToolExecution('read', join(worktree, 'src', 'feature.ts'), sessionId);
+    const r1 = hook.processToolExecution(
+      'read',
+      join(worktree, 'src', 'feature.ts'),
+      sessionId,
+    );
     expect(r1).toContain('Feature Branch Rule');
 
     // Access same worktree file again → already injected
-    const r2 = hook.processToolExecution('read', join(worktree, 'src', 'feature.ts'), sessionId);
+    const r2 = hook.processToolExecution(
+      'read',
+      join(worktree, 'src', 'feature.ts'),
+      sessionId,
+    );
     expect(r2).toBe('');
   });
 });

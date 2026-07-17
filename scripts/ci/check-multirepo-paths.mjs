@@ -92,7 +92,7 @@ let sg;
 try {
   sg = req('@ast-grep/napi');
 } catch (e) {
-  console.error('ERROR: @ast-grep/napi not found. Run npm ci first.');
+  console.error('ERROR: @ast-grep/napi not found. Run pnpm install --frozen-lockfile first.');
   process.exit(2);
 }
 

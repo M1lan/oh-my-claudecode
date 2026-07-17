@@ -13,11 +13,12 @@
  */
 
 import { readFile, readdir, appendFile, mkdir } from 'fs/promises';
-import { join, dirname } from 'path';
+import { join, dirname, resolve, relative, isAbsolute } from 'path';
 import { existsSync } from 'fs';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { atomicWriteJson } from '../lib/atomic-write.js';
+import { withFileLock } from '../lib/file-lock.js';
 
 // ============================================================================
 // Types (matching omx team state format)
@@ -90,7 +91,11 @@ export interface OmxTeamEvent {
   task_id?: string;
   message_id?: string | null;
   reason?: string;
-  next_action?: 'shutdown' | 'reuse-current-team' | 'launch-new-team' | 'keep-checking-status';
+  next_action?:
+    | 'shutdown'
+    | 'reuse-current-team'
+    | 'launch-new-team'
+    | 'keep-checking-status';
   message?: string;
   created_at: string;
 }
@@ -120,16 +125,18 @@ const OmxWorkerInfoSchema = z.object({
   pane_id: z.string().optional(),
 });
 
-const OmxTeamManifestV2Schema = z.object({
-  schema_version: z.literal(2),
-  name: z.string(),
-  task: z.string(),
-  tmux_session: z.string(),
-  worker_count: z.number(),
-  workers: z.array(OmxWorkerInfoSchema),
-  next_task_id: z.number(),
-  created_at: z.string(),
-}).passthrough();
+const OmxTeamManifestV2Schema = z
+  .object({
+    schema_version: z.literal(2),
+    name: z.string(),
+    task: z.string(),
+    tmux_session: z.string(),
+    worker_count: z.number(),
+    workers: z.array(OmxWorkerInfoSchema),
+    next_task_id: z.number(),
+    created_at: z.string(),
+  })
+  .passthrough();
 
 const OmxTeamConfigSchema = z.object({
   name: z.string(),
@@ -147,6 +154,22 @@ const OmxTeamConfigSchema = z.object({
 // Path helpers
 // ============================================================================
 
+/**
+ * Guard against path traversal: assert that `childPath` stays inside
+ * `parentDir`. OMX team/worker names originate from another tool's state tree
+ * (not OMC-controlled), so we defend the directory boundary rather than
+ * restrict the charset — a crafted `../` segment in a team/worker name would
+ * otherwise let a read/write escape `.omx/state/team/`.
+ */
+function assertWithin(parentDir: string, childPath: string): void {
+  const parent = resolve(parentDir);
+  const child = resolve(childPath);
+  const rel = relative(parent, child);
+  if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error(`Refusing path outside OMX team boundary: ${childPath}`);
+  }
+}
+
 /** Root of omx state: {cwd}/.omx/state/ */
 function omxStateDir(cwd: string): string {
   return join(cwd, '.omx', 'state');
@@ -154,15 +177,28 @@ function omxStateDir(cwd: string): string {
 
 /** Team directory: .omx/state/team/{name}/ */
 function teamDir(teamName: string, cwd: string): string {
-  return join(omxStateDir(cwd), 'team', teamName);
+  const root = join(omxStateDir(cwd), 'team');
+  const dir = join(root, teamName);
+  assertWithin(root, dir);
+  return dir;
 }
 
-function mailboxPath(teamName: string, workerName: string, cwd: string): string {
-  return join(teamDir(teamName, cwd), 'mailbox', `${workerName}.json`);
+function mailboxPath(
+  teamName: string,
+  workerName: string,
+  cwd: string,
+): string {
+  const dir = join(teamDir(teamName, cwd), 'mailbox');
+  const p = join(dir, `${workerName}.json`);
+  assertWithin(dir, p);
+  return p;
 }
 
 function taskFilePath(teamName: string, taskId: string, cwd: string): string {
-  return join(teamDir(teamName, cwd), 'tasks', `task-${taskId}.json`);
+  const dir = join(teamDir(teamName, cwd), 'tasks');
+  const p = join(dir, `task-${taskId}.json`);
+  assertWithin(dir, p);
+  return p;
 }
 
 function eventLogPath(teamName: string, cwd: string): string {
@@ -198,7 +234,10 @@ export async function listOmxTeams(cwd: string): Promise<string[]> {
 /**
  * Read team config (tries manifest.v2.json first, falls back to config.json)
  */
-export async function readOmxTeamConfig(teamName: string, cwd: string): Promise<OmxTeamConfig | null> {
+export async function readOmxTeamConfig(
+  teamName: string,
+  cwd: string,
+): Promise<OmxTeamConfig | null> {
   const root = teamDir(teamName, cwd);
   if (!existsSync(root)) return null;
 
@@ -260,7 +299,10 @@ export async function readOmxMailbox(
     if (parsed.worker !== workerName || !Array.isArray(parsed.messages)) {
       return { worker: workerName, messages: [] };
     }
-    return { worker: workerName, messages: parsed.messages as OmxTeamMailboxMessage[] };
+    return {
+      worker: workerName,
+      messages: parsed.messages as OmxTeamMailboxMessage[],
+    };
   } catch {
     return { worker: workerName, messages: [] };
   }
@@ -299,12 +341,20 @@ export async function sendOmxDirectMessage(
     created_at: new Date().toISOString(),
   };
 
-  const mailbox = await readOmxMailbox(teamName, toWorker, cwd);
-  mailbox.messages.push(msg);
+  // Lock the mailbox file across the read-modify-write so concurrent senders
+  // (OMC bridge + an OMX worker) cannot clobber each other's appended message.
   const p = mailboxPath(teamName, toWorker, cwd);
-  await atomicWriteJson(p, mailbox);
+  await withFileLock(
+    p + '.lock',
+    async () => {
+      const mailbox = await readOmxMailbox(teamName, toWorker, cwd);
+      mailbox.messages.push(msg);
+      await atomicWriteJson(p, mailbox);
+    },
+    { timeoutMs: 5000 },
+  );
 
-  // Append event
+  // Append event (separate append-only file; outside the mailbox lock)
   await appendOmxTeamEvent(
     teamName,
     {
@@ -337,7 +387,9 @@ export async function broadcastOmxMessage(
   const delivered: OmxTeamMailboxMessage[] = [];
   for (const w of config.workers) {
     if (w.name === fromWorker) continue;
-    delivered.push(await sendOmxDirectMessage(teamName, fromWorker, w.name, body, cwd));
+    delivered.push(
+      await sendOmxDirectMessage(teamName, fromWorker, w.name, body, cwd),
+    );
   }
   return delivered;
 }
@@ -353,15 +405,21 @@ export async function markOmxMessageDelivered(
   messageId: string,
   cwd: string,
 ): Promise<boolean> {
-  const mailbox = await readOmxMailbox(teamName, workerName, cwd);
-  const msg = mailbox.messages.find((m) => m.message_id === messageId);
-  if (!msg) return false;
-  if (!msg.delivered_at) {
-    msg.delivered_at = new Date().toISOString();
-    const p = mailboxPath(teamName, workerName, cwd);
-    await atomicWriteJson(p, mailbox);
-  }
-  return true;
+  const p = mailboxPath(teamName, workerName, cwd);
+  return await withFileLock(
+    p + '.lock',
+    async () => {
+      const mailbox = await readOmxMailbox(teamName, workerName, cwd);
+      const msg = mailbox.messages.find((m) => m.message_id === messageId);
+      if (!msg) return false;
+      if (!msg.delivered_at) {
+        msg.delivered_at = new Date().toISOString();
+        await atomicWriteJson(p, mailbox);
+      }
+      return true;
+    },
+    { timeoutMs: 5000 },
+  );
 }
 
 // ============================================================================
@@ -383,7 +441,12 @@ export async function readOmxTask(
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object') return null;
     const t = parsed as Record<string, unknown>;
-    if (typeof t.id !== 'string' || typeof t.subject !== 'string' || typeof t.status !== 'string') return null;
+    if (
+      typeof t.id !== 'string' ||
+      typeof t.subject !== 'string' ||
+      typeof t.status !== 'string'
+    )
+      return null;
     return parsed as OmxTeamTask;
   } catch {
     return null;

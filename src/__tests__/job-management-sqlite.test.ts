@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, rmSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { initJobDb, closeJobDb, upsertJob, getJob } from '../lib/job-state-db.js';
-import { handleCheckJobStatus, handleListJobs, handleKillJob } from '../mcp/job-management.js';
+import {
+  initJobDb,
+  closeJobDb,
+  upsertJob,
+  getJob,
+} from '../lib/job-state-db.js';
+import {
+  handleCheckJobStatus,
+  handleListJobs,
+  handleKillJob,
+} from '../mcp/job-management.js';
 import type { JobStatus } from '../mcp/prompt-persistence.js';
 
 // Mock prompt-persistence to prevent JSON file operations
@@ -25,16 +34,17 @@ vi.mock('fs', async () => {
     ...actual,
     // Override only readdirSync and existsSync for the prompts dir
     existsSync: vi.fn((path: string) => {
-      if (typeof path === 'string' && path.includes('nonexistent-prompts')) return false;
+      if (typeof path === 'string' && path.includes('nonexistent-prompts'))
+        return false;
       return (actual as any).existsSync(path);
     }),
     readdirSync: vi.fn((path: string, ...args: any[]) => {
-      if (typeof path === 'string' && path.includes('nonexistent-prompts')) return [];
+      if (typeof path === 'string' && path.includes('nonexistent-prompts'))
+        return [];
       return (actual as any).readdirSync(path, ...args);
     }),
   };
 });
-
 
 const TEST_DIR = join(process.cwd(), '.test-job-mgmt-sqlite-' + process.pid);
 
@@ -119,24 +129,30 @@ describe('job-management SQLite integration', () => {
 
     it('lists completed jobs from SQLite', async () => {
       const now = Date.now();
-      upsertJob(createTestJob({
-        jobId: 'cccc3333',
-        status: 'completed',
-        completedAt: new Date(now - 1000).toISOString(),
-        spawnedAt: new Date(now - 3000).toISOString(),
-      }));
-      upsertJob(createTestJob({
-        jobId: 'dddd4444',
-        status: 'completed',
-        completedAt: new Date(now - 500).toISOString(),
-        spawnedAt: new Date(now - 2000).toISOString(),
-      }));
-      upsertJob(createTestJob({
-        jobId: 'eeee5555',
-        status: 'completed',
-        completedAt: new Date(now).toISOString(),
-        spawnedAt: new Date(now - 1000).toISOString(),
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'cccc3333',
+          status: 'completed',
+          completedAt: new Date(now - 1000).toISOString(),
+          spawnedAt: new Date(now - 3000).toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'dddd4444',
+          status: 'completed',
+          completedAt: new Date(now - 500).toISOString(),
+          spawnedAt: new Date(now - 2000).toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'eeee5555',
+          status: 'completed',
+          completedAt: new Date(now).toISOString(),
+          spawnedAt: new Date(now - 1000).toISOString(),
+        }),
+      );
 
       const result = await handleListJobs('codex', 'completed');
       expect(result.isError).toBeFalsy();
@@ -147,18 +163,22 @@ describe('job-management SQLite integration', () => {
     });
 
     it('lists failed and timeout jobs under failed filter', async () => {
-      upsertJob(createTestJob({
-        jobId: 'ffff6666',
-        status: 'failed',
-        error: 'Process crashed',
-        completedAt: new Date().toISOString(),
-      }));
-      upsertJob(createTestJob({
-        jobId: 'aaaa7777',
-        status: 'timeout',
-        error: 'Timed out',
-        completedAt: new Date().toISOString(),
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'ffff6666',
+          status: 'failed',
+          error: 'Process crashed',
+          completedAt: new Date().toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'aaaa7777',
+          status: 'timeout',
+          error: 'Timed out',
+          completedAt: new Date().toISOString(),
+        }),
+      );
 
       const result = await handleListJobs('codex', 'failed');
       expect(result.isError).toBeFalsy();
@@ -168,17 +188,21 @@ describe('job-management SQLite integration', () => {
 
     it('lists all jobs with deduplication', async () => {
       upsertJob(createTestJob({ jobId: 'aaaa1111', status: 'running' }));
-      upsertJob(createTestJob({
-        jobId: 'bbbb2222',
-        status: 'completed',
-        completedAt: new Date().toISOString(),
-      }));
-      upsertJob(createTestJob({
-        jobId: 'cccc3333',
-        status: 'failed',
-        error: 'Error',
-        completedAt: new Date().toISOString(),
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'bbbb2222',
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'cccc3333',
+          status: 'failed',
+          error: 'Error',
+          completedAt: new Date().toISOString(),
+        }),
+      );
 
       const result = await handleListJobs('codex', 'all');
       expect(result.isError).toBeFalsy();
@@ -190,9 +214,27 @@ describe('job-management SQLite integration', () => {
     });
 
     it('respects limit parameter', async () => {
-      upsertJob(createTestJob({ jobId: 'aaaa1111', status: 'running', spawnedAt: new Date(Date.now() - 3000).toISOString() }));
-      upsertJob(createTestJob({ jobId: 'bbbb2222', status: 'running', spawnedAt: new Date(Date.now() - 2000).toISOString() }));
-      upsertJob(createTestJob({ jobId: 'cccc3333', status: 'running', spawnedAt: new Date(Date.now() - 1000).toISOString() }));
+      upsertJob(
+        createTestJob({
+          jobId: 'aaaa1111',
+          status: 'running',
+          spawnedAt: new Date(Date.now() - 3000).toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'bbbb2222',
+          status: 'running',
+          spawnedAt: new Date(Date.now() - 2000).toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'cccc3333',
+          status: 'running',
+          spawnedAt: new Date(Date.now() - 1000).toISOString(),
+        }),
+      );
 
       const result = await handleListJobs('codex', 'active', 2);
       expect(result.isError).toBeFalsy();
@@ -200,8 +242,20 @@ describe('job-management SQLite integration', () => {
     });
 
     it('filters by provider', async () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'aaaa1111', status: 'running' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'bbbb2222', status: 'running' }));
+      upsertJob(
+        createTestJob({
+          provider: 'codex',
+          jobId: 'aaaa1111',
+          status: 'running',
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          provider: 'gemini',
+          jobId: 'bbbb2222',
+          status: 'running',
+        }),
+      );
 
       const result = await handleListJobs('codex', 'active');
       expect(result.isError).toBeFalsy();
@@ -212,7 +266,11 @@ describe('job-management SQLite integration', () => {
 
   describe('handleKillJob - SQLite fallback path', () => {
     it('kills a running job found only in SQLite', async () => {
-      const job = createTestJob({ jobId: 'aabb1122', status: 'running', pid: 99999 });
+      const job = createTestJob({
+        jobId: 'aabb1122',
+        status: 'running',
+        pid: 99999,
+      });
       upsertJob(job);
 
       // Mock process.kill to succeed
@@ -232,12 +290,18 @@ describe('job-management SQLite integration', () => {
     });
 
     it('handles ESRCH (process already exited) via SQLite path', async () => {
-      const job = createTestJob({ jobId: 'aabb1133', status: 'running', pid: 99999 });
+      const job = createTestJob({
+        jobId: 'aabb1133',
+        status: 'running',
+        pid: 99999,
+      });
       upsertJob(job);
 
       const esrchError = new Error('ESRCH') as NodeJS.ErrnoException;
       esrchError.code = 'ESRCH';
-      vi.spyOn(process, 'kill').mockImplementation(() => { throw esrchError; });
+      vi.spyOn(process, 'kill').mockImplementation(() => {
+        throw esrchError;
+      });
 
       const result = await handleKillJob('codex', 'aabb1133', 'SIGTERM');
       expect(result.isError).toBeFalsy();
@@ -252,12 +316,18 @@ describe('job-management SQLite integration', () => {
     });
 
     it('does NOT update DB status on non-ESRCH kill errors', async () => {
-      const job = createTestJob({ jobId: 'aabb1144', status: 'running', pid: 99999 });
+      const job = createTestJob({
+        jobId: 'aabb1144',
+        status: 'running',
+        pid: 99999,
+      });
       upsertJob(job);
 
       const epermError = new Error('EPERM') as NodeJS.ErrnoException;
       epermError.code = 'EPERM';
-      vi.spyOn(process, 'kill').mockImplementation(() => { throw epermError; });
+      vi.spyOn(process, 'kill').mockImplementation(() => {
+        throw epermError;
+      });
 
       const result = await handleKillJob('codex', 'aabb1144', 'SIGTERM');
       expect(result.isError).toBe(true);
@@ -286,7 +356,11 @@ describe('job-management SQLite integration', () => {
     });
 
     it('rejects killing a job with no valid PID in SQLite', async () => {
-      const job = createTestJob({ jobId: 'aabb1166', status: 'running', pid: 0 });
+      const job = createTestJob({
+        jobId: 'aabb1166',
+        status: 'running',
+        pid: 0,
+      });
       upsertJob(job);
 
       const result = await handleKillJob('codex', 'aabb1166', 'SIGTERM');

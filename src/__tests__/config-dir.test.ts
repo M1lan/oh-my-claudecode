@@ -3,7 +3,7 @@ import { execFileSync } from 'child_process';
 import { mkdirSync, writeFileSync, rmSync, mkdtempSync } from 'fs';
 import { homedir, tmpdir } from 'os';
 import { basename, join, normalize } from 'path';
-import { getClaudeConfigDir } from '../utils/config-dir.js'
+import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { isValidTranscriptPath } from '../lib/worktree-paths.js';
 import { findRuleFiles } from '../hooks/rules-injector/finder.js';
 
@@ -29,8 +29,17 @@ describe('getClaudeConfigDir', () => {
   });
 
   it('returns an absolute custom path unchanged aside from normalization', () => {
-    process.env.CLAUDE_CONFIG_DIR = join(tmpdir(), 'custom-claude-config', '..', 'custom-claude-config');
-    expect(getClaudeConfigDir()).toBe(normalize(join(tmpdir(), 'custom-claude-config', '..', 'custom-claude-config')));
+    process.env.CLAUDE_CONFIG_DIR = join(
+      tmpdir(),
+      'custom-claude-config',
+      '..',
+      'custom-claude-config',
+    );
+    expect(getClaudeConfigDir()).toBe(
+      normalize(
+        join(tmpdir(), 'custom-claude-config', '..', 'custom-claude-config'),
+      ),
+    );
   });
 
   it('expands a bare tilde to the home directory', () => {
@@ -40,12 +49,17 @@ describe('getClaudeConfigDir', () => {
 
   it('expands a ~-prefixed config path', () => {
     process.env.CLAUDE_CONFIG_DIR = '~/.claude-alt';
-    expect(getClaudeConfigDir()).toBe(normalize(join(homedir(), '.claude-alt')));
+    expect(getClaudeConfigDir()).toBe(
+      normalize(join(homedir(), '.claude-alt')),
+    );
   });
 
   it('strips a trailing separator from custom paths', () => {
-    process.env.CLAUDE_CONFIG_DIR = join(tmpdir(), 'custom-claude-config') + '/';
-    expect(getClaudeConfigDir()).toBe(normalize(join(tmpdir(), 'custom-claude-config')));
+    process.env.CLAUDE_CONFIG_DIR =
+      join(tmpdir(), 'custom-claude-config') + '/';
+    expect(getClaudeConfigDir()).toBe(
+      normalize(join(tmpdir(), 'custom-claude-config')),
+    );
     expect(getClaudeConfigDir().endsWith('/')).toBe(false);
   });
 
@@ -59,7 +73,8 @@ describe('getClaudeConfigDir', () => {
     vi.doMock('node:path', async () => import('node:path/win32'));
 
     try {
-      const { getClaudeConfigDir: getWindowsConfigDir } = await import('../utils/config-dir.js');
+      const { getClaudeConfigDir: getWindowsConfigDir } =
+        await import('../utils/config-dir.js');
       expect(getWindowsConfigDir()).toBe('C:\\');
     } finally {
       vi.doUnmock('node:os');
@@ -90,11 +105,18 @@ describe('getClaudeConfigDir', () => {
     const homeDir = mkdtempSync(join(tmpdir(), 'omc-find-node-home-'));
     const configDir = join(homeDir, '.claude-alt');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, '.omc-config.json'), JSON.stringify({ nodeBinary: process.execPath }));
+    writeFileSync(
+      join(configDir, '.omc-config.json'),
+      JSON.stringify({ nodeBinary: process.execPath }),
+    );
 
     const output = execFileSync(
       '/bin/sh',
-      [join(process.cwd(), 'scripts', 'find-node.sh'), '-e', "process.stdout.write('ok')"],
+      [
+        join(process.cwd(), 'scripts', 'find-node.sh'),
+        '-e',
+        "process.stdout.write('ok')",
+      ],
       {
         cwd: process.cwd(),
         env: {
@@ -112,15 +134,22 @@ describe('getClaudeConfigDir', () => {
 
   it('shared shell helper expands a ~-prefixed CLAUDE_CONFIG_DIR', () => {
     const homeDir = mkdtempSync(join(tmpdir(), 'omc-uninstall-home-'));
-    const output = execFileSync('bash', ['-lc', `. "${join(process.cwd(), 'scripts', 'lib', 'config-dir.sh')}"; resolve_claude_config_dir`], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        HOME: homeDir,
-        CLAUDE_CONFIG_DIR: '~/.claude-alt',
+    const output = execFileSync(
+      'bash',
+      [
+        '-lc',
+        `. "${join(process.cwd(), 'scripts', 'lib', 'config-dir.sh')}"; resolve_claude_config_dir`,
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          HOME: homeDir,
+          CLAUDE_CONFIG_DIR: '~/.claude-alt',
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
 
     expect(output.trim()).toBe(join(homeDir, '.claude-alt'));
   });
@@ -130,7 +159,10 @@ describe('getClaudeConfigDir', () => {
     const cjsPath = join(process.cwd(), 'scripts', 'lib', 'config-dir.cjs');
     const output = execFileSync(
       process.execPath,
-      ['-e', `const { getClaudeConfigDir } = require(${JSON.stringify(cjsPath)}); process.stdout.write(getClaudeConfigDir());`],
+      [
+        '-e',
+        `const { getClaudeConfigDir } = require(${JSON.stringify(cjsPath)}); process.stdout.write(getClaudeConfigDir());`,
+      ],
       {
         cwd: process.cwd(),
         env: process.env,
@@ -148,8 +180,14 @@ describe('CLAUDE_CONFIG_DIR downstream integration', () => {
 
   beforeEach(() => {
     origConfigDir = process.env.CLAUDE_CONFIG_DIR;
-    tempDir = join(tmpdir(), `omc-test-configdir-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-    tildeConfigDir = join(homedir(), `.omc-test-configdir-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDir = join(
+      tmpdir(),
+      `omc-test-configdir-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    tildeConfigDir = join(
+      homedir(),
+      `.omc-test-configdir-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(tempDir, { recursive: true });
   });
 
@@ -173,28 +211,38 @@ describe('CLAUDE_CONFIG_DIR downstream integration', () => {
 
   it('accepts transcript paths under custom CLAUDE_CONFIG_DIR', () => {
     process.env.CLAUDE_CONFIG_DIR = '/opt/custom-claude-config';
-    const transcriptPath = '/opt/custom-claude-config/projects/-foo/bar/session.jsonl';
+    const transcriptPath =
+      '/opt/custom-claude-config/projects/-foo/bar/session.jsonl';
     expect(isValidTranscriptPath(transcriptPath)).toBe(true);
   });
 
   it('accepts transcript paths when CLAUDE_CONFIG_DIR uses a ~-prefixed path', () => {
     process.env.CLAUDE_CONFIG_DIR = `~/${basename(tildeConfigDir)}`;
-    const transcriptPath = join(tildeConfigDir, 'projects', '-foo', 'bar', 'session.jsonl');
+    const transcriptPath = join(
+      tildeConfigDir,
+      'projects',
+      '-foo',
+      'bar',
+      'session.jsonl',
+    );
     expect(isValidTranscriptPath(transcriptPath)).toBe(true);
   });
 
   it('discovers user rules from custom CLAUDE_CONFIG_DIR/rules', () => {
     const customRulesDir = join(tempDir, 'rules');
     mkdirSync(customRulesDir, { recursive: true });
-    writeFileSync(join(customRulesDir, 'my-rule.md'), '# My Rule\nRule content');
+    writeFileSync(
+      join(customRulesDir, 'my-rule.md'),
+      '# My Rule\nRule content',
+    );
 
     process.env.CLAUDE_CONFIG_DIR = tempDir;
 
     const candidates = findRuleFiles(null, '/some/file.ts');
-    const globalRules = candidates.filter(c => c.isGlobal);
+    const globalRules = candidates.filter((c) => c.isGlobal);
 
     expect(globalRules.length).toBeGreaterThanOrEqual(1);
-    expect(globalRules.some(c => c.path.includes('my-rule.md'))).toBe(true);
+    expect(globalRules.some((c) => c.path.includes('my-rule.md'))).toBe(true);
   });
 
   it('uses the active config dir rather than default ~/.claude/rules for user rules', () => {
@@ -205,9 +253,11 @@ describe('CLAUDE_CONFIG_DIR downstream integration', () => {
     process.env.CLAUDE_CONFIG_DIR = tempDir;
 
     const candidates = findRuleFiles(null, '/some/file.ts');
-    const globalRules = candidates.filter(c => c.isGlobal);
+    const globalRules = candidates.filter((c) => c.isGlobal);
 
-    expect(globalRules.some(c => c.path.includes('custom-rule.md'))).toBe(true);
+    expect(globalRules.some((c) => c.path.includes('custom-rule.md'))).toBe(
+      true,
+    );
   });
 
   it('discovers user rules when CLAUDE_CONFIG_DIR uses a ~-prefixed path', () => {
@@ -218,8 +268,10 @@ describe('CLAUDE_CONFIG_DIR downstream integration', () => {
     process.env.CLAUDE_CONFIG_DIR = `~/${basename(tildeConfigDir)}`;
 
     const candidates = findRuleFiles(null, '/some/file.ts');
-    const globalRules = candidates.filter(c => c.isGlobal);
+    const globalRules = candidates.filter((c) => c.isGlobal);
 
-    expect(globalRules.some(c => c.path.includes('tilde-rule.md'))).toBe(true);
+    expect(globalRules.some((c) => c.path.includes('tilde-rule.md'))).toBe(
+      true,
+    );
   });
 });

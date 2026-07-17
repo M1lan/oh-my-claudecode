@@ -6,7 +6,10 @@ const NODE = process.execPath;
 const REPO_ROOT = resolve(join(__dirname, '..', '..'));
 const SCRIPT_PATH = join(REPO_ROOT, 'scripts', 'post-tool-rules-injector.mjs');
 
-function runHook(input: Record<string, unknown>, extraEnv?: Record<string, string>) {
+function runHook(
+  input: Record<string, unknown>,
+  extraEnv?: Record<string, string>,
+) {
   const raw = execFileSync(NODE, [SCRIPT_PATH], {
     input: JSON.stringify(input),
     encoding: 'utf-8',
@@ -54,23 +57,32 @@ describe('post-tool-rules-injector.mjs skip guards (DISABLE_OMC / OMC_SKIP_HOOKS
   });
 
   it('honors whitespace and commas in OMC_SKIP_HOOKS', () => {
-    expectSkipped({ DISABLE_OMC: '', OMC_SKIP_HOOKS: ' keyword-detector , post-tool-use ' });
+    expectSkipped({
+      DISABLE_OMC: '',
+      OMC_SKIP_HOOKS: ' keyword-detector , post-tool-use ',
+    });
   });
 
   it('does not short-circuit when skip vars are empty', () => {
     // Not skipped: the hook runs its processing path, which always adds
     // suppressOutput (or injected context) rather than a bare continue.
-    expect(runHook(INPUT, { DISABLE_OMC: '', OMC_SKIP_HOOKS: '' })).not.toEqual({ continue: true });
+    expect(runHook(INPUT, { DISABLE_OMC: '', OMC_SKIP_HOOKS: '' })).not.toEqual(
+      { continue: true },
+    );
   });
 
   it('does not short-circuit for an unrelated OMC_SKIP_HOOKS token', () => {
-    expect(runHook(INPUT, { DISABLE_OMC: '', OMC_SKIP_HOOKS: 'keyword-detector' })).not.toEqual({
+    expect(
+      runHook(INPUT, { DISABLE_OMC: '', OMC_SKIP_HOOKS: 'keyword-detector' }),
+    ).not.toEqual({
       continue: true,
     });
   });
 
   it('processes normally when DISABLE_OMC=false', () => {
-    expect(runHook(INPUT, { DISABLE_OMC: 'false', OMC_SKIP_HOOKS: '' })).not.toEqual({
+    expect(
+      runHook(INPUT, { DISABLE_OMC: 'false', OMC_SKIP_HOOKS: '' }),
+    ).not.toEqual({
       continue: true,
     });
   });

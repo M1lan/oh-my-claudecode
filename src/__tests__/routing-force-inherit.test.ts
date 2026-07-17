@@ -55,12 +55,21 @@ describe('routing.forceInherit (issue #1135)', () => {
     it('returns inherit model type when forceInherit is true', () => {
       const result = routeTask(
         { taskPrompt: 'Find all files', agentType: 'explore' },
-        { enabled: true, defaultTier: 'MEDIUM', forceInherit: true, escalationEnabled: false, maxEscalations: 0, tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' } }
+        {
+          enabled: true,
+          defaultTier: 'MEDIUM',
+          forceInherit: true,
+          escalationEnabled: false,
+          maxEscalations: 0,
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
+        },
       );
 
       expect(result.model).toBe('inherit');
       expect(result.modelType).toBe('inherit');
-      expect(result.reasons).toContain('forceInherit enabled: agents inherit parent model');
+      expect(result.reasons).toContain(
+        'forceInherit enabled: agents inherit parent model',
+      );
       expect(result.confidence).toBe(1.0);
     });
 
@@ -75,9 +84,12 @@ describe('routing.forceInherit (issue #1135)', () => {
           maxEscalations: 0,
           tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
           agentOverrides: {
-            architect: { tier: 'HIGH', reason: 'Advisory agent requires deep reasoning' },
+            architect: {
+              tier: 'HIGH',
+              reason: 'Advisory agent requires deep reasoning',
+            },
           },
-        }
+        },
       );
 
       expect(result.model).toBe('inherit');
@@ -87,10 +99,18 @@ describe('routing.forceInherit (issue #1135)', () => {
     it('bypasses complexity-based routing when forceInherit is true', () => {
       const result = routeTask(
         {
-          taskPrompt: 'Refactor the entire authentication architecture with security review and data migration',
+          taskPrompt:
+            'Refactor the entire authentication architecture with security review and data migration',
           agentType: 'executor',
         },
-        { enabled: true, defaultTier: 'MEDIUM', forceInherit: true, escalationEnabled: false, maxEscalations: 0, tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' } }
+        {
+          enabled: true,
+          defaultTier: 'MEDIUM',
+          forceInherit: true,
+          escalationEnabled: false,
+          maxEscalations: 0,
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
+        },
       );
 
       expect(result.model).toBe('inherit');
@@ -100,7 +120,14 @@ describe('routing.forceInherit (issue #1135)', () => {
     it('routes normally when forceInherit is false', () => {
       const result = routeTask(
         { taskPrompt: 'Find all files', agentType: 'explore' },
-        { enabled: true, defaultTier: 'MEDIUM', forceInherit: false, escalationEnabled: false, maxEscalations: 0, tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' } }
+        {
+          enabled: true,
+          defaultTier: 'MEDIUM',
+          forceInherit: false,
+          escalationEnabled: false,
+          maxEscalations: 0,
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
+        },
       );
 
       expect(result.model).not.toBe('inherit');
@@ -109,7 +136,13 @@ describe('routing.forceInherit (issue #1135)', () => {
     it('routes normally when forceInherit is undefined', () => {
       const result = routeTask(
         { taskPrompt: 'Find all files', agentType: 'explore' },
-        { enabled: true, defaultTier: 'MEDIUM', escalationEnabled: false, maxEscalations: 0, tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' } }
+        {
+          enabled: true,
+          defaultTier: 'MEDIUM',
+          escalationEnabled: false,
+          maxEscalations: 0,
+          tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
+        },
       );
 
       expect(result.model).not.toBe('inherit');
@@ -118,9 +151,23 @@ describe('routing.forceInherit (issue #1135)', () => {
 
   describe('getModelForTask with forceInherit', () => {
     it('returns inherit for all agent types when forceInherit is true', () => {
-      const config = { enabled: true, defaultTier: 'MEDIUM' as const, forceInherit: true, escalationEnabled: false, maxEscalations: 0, tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' } };
+      const config = {
+        enabled: true,
+        defaultTier: 'MEDIUM' as const,
+        forceInherit: true,
+        escalationEnabled: false,
+        maxEscalations: 0,
+        tierModels: { LOW: 'haiku', MEDIUM: 'sonnet', HIGH: 'opus' },
+      };
 
-      const agents = ['architect', 'executor', 'explore', 'writer', 'debugger', 'verifier'];
+      const agents = [
+        'architect',
+        'executor',
+        'explore',
+        'writer',
+        'debugger',
+        'verifier',
+      ];
       for (const agent of agents) {
         const result = getModelForTask(agent, 'test task', config);
         expect(result.model).toBe('inherit');

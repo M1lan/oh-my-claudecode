@@ -3,7 +3,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { renderRateLimitsError, renderApiKeyUsageHint } from '../../hud/elements/limits.js';
+import {
+  renderRateLimitsError,
+  renderApiKeyUsageHint,
+} from '../../hud/elements/limits.js';
 import type { UsageResult } from '../../hud/types.js';
 
 describe('renderRateLimitsError', () => {
@@ -116,12 +119,22 @@ describe('renderApiKeyUsageHint (Issue #3277)', () => {
   });
 
   it('returns null when the error is not no_credentials', () => {
-    expect(renderApiKeyUsageHint({ rateLimits: null, error: 'network' }, true, false)).toBeNull();
-    expect(renderApiKeyUsageHint({ rateLimits: null, error: 'auth' }, true, false)).toBeNull();
+    expect(
+      renderApiKeyUsageHint(
+        { rateLimits: null, error: 'network' },
+        true,
+        false,
+      ),
+    ).toBeNull();
+    expect(
+      renderApiKeyUsageHint({ rateLimits: null, error: 'auth' }, true, false),
+    ).toBeNull();
   });
 
   it('returns null when usage data is present (no error)', () => {
-    const ok: UsageResult = { rateLimits: { fiveHourPercent: 10, weeklyPercent: 5 } };
+    const ok: UsageResult = {
+      rateLimits: { fiveHourPercent: 10, weeklyPercent: 5 },
+    };
     expect(renderApiKeyUsageHint(ok, true, false)).toBeNull();
   });
 

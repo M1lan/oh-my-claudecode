@@ -24,10 +24,13 @@ import {
   broadcastOmxMessage,
   listOmxTasks,
 } from './omx-team-state.js';
+import { validateWorkingDirectory } from '../lib/worktree-paths.js';
 
 export type InteropMode = 'off' | 'observe' | 'active';
 
-export function getInteropMode(env: NodeJS.ProcessEnv = process.env): InteropMode {
+export function getInteropMode(
+  env: NodeJS.ProcessEnv = process.env,
+): InteropMode {
   const raw = (env.OMX_OMC_INTEROP_MODE || 'off').toLowerCase();
   if (raw === 'observe' || raw === 'active') {
     return raw;
@@ -35,7 +38,9 @@ export function getInteropMode(env: NodeJS.ProcessEnv = process.env): InteropMod
   return 'off';
 }
 
-export function canUseOmxDirectWriteBridge(env: NodeJS.ProcessEnv = process.env): boolean {
+export function canUseOmxDirectWriteBridge(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
   const interopEnabled = env.OMX_OMC_INTEROP_ENABLED === '1';
   const toolsEnabled = env.OMC_INTEROP_TOOLS_ENABLED === '1';
   const mode = getInteropMode(env);
@@ -43,7 +48,11 @@ export function canUseOmxDirectWriteBridge(env: NodeJS.ProcessEnv = process.env)
 }
 
 function resolveWorkingDirectory(workingDirectory?: string): string {
-  return workingDirectory || process.cwd();
+  // Pin an agent-supplied workingDirectory to the trusted worktree root so a
+  // crafted absolute/traversal path cannot make interop state read or write
+  // outside the current repo. Matches the rest of the MCP tool surface
+  // (state-tools, notepad-tools, trace-tools).
+  return validateWorkingDirectory(workingDirectory);
 }
 
 function getInteropSource(target: 'omc' | 'omx'): 'omc' | 'omx' {
@@ -52,10 +61,12 @@ function getInteropSource(target: 'omc' | 'omx'): 'omc' | 'omx' {
 
 function formatToolError(action: string, error: unknown) {
   return {
-    content: [{
-      type: 'text' as const,
-      text: `Error ${action}: ${error instanceof Error ? error.message : String(error)}`,
-    }],
+    content: [
+      {
+        type: 'text' as const,
+        text: `Error ${action}: ${error instanceof Error ? error.message : String(error)}`,
+      },
+    ],
     isError: true,
   };
 }
@@ -64,7 +75,10 @@ function truncatePreview(text: string, maxChars: number): string {
   return text.length > maxChars ? `${text.slice(0, maxChars)}...` : text;
 }
 
-function formatArtifactDescriptorLines(label: string, descriptor?: ArtifactDescriptor): string[] {
+function formatArtifactDescriptorLines(
+  label: string,
+  descriptor?: ArtifactDescriptor,
+): string[] {
   if (!descriptor) return [];
 
   const lines = [`- **${label} artifact:** \`${descriptor.path}\``];
@@ -72,7 +86,9 @@ function formatArtifactDescriptorLines(label: string, descriptor?: ArtifactDescr
     lines.push(`- **${label} size:** ${descriptor.sizeBytes} bytes`);
   }
   if (descriptor.contentHash) {
-    lines.push(`- **${label} hash:** \`${descriptor.contentHash.slice(0, 16)}…\``);
+    lines.push(
+      `- **${label} hash:** \`${descriptor.contentHash.slice(0, 16)}…\``,
+    );
   }
 
   return lines;
@@ -91,17 +107,30 @@ export const interopSendTaskTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_send_task',
-  description: 'Send a task to the other tool (OMC -> OMX or OMX -> OMC) for execution. The task will be queued in shared state for the target tool to pick up.',
+  description:
+    'Send a task to the other tool (OMC -> OMX or OMX -> OMC) for execution. The task will be queued in shared state for the target tool to pick up.',
   schema: {
     target: z.enum(['omc', 'omx']).describe('Target tool to send the task to'),
-    type: z.enum(['analyze', 'implement', 'review', 'test', 'custom']).describe('Type of task'),
+    type: z
+      .enum(['analyze', 'implement', 'review', 'test', 'custom'])
+      .describe('Type of task'),
     description: z.string().describe('Task description'),
-    context: z.record(z.string(), z.unknown()).optional().describe('Additional context data'),
-    files: z.array(z.string()).optional().describe('List of relevant file paths'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    context: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe('Additional context data'),
+    files: z
+      .array(z.string())
+      .optional()
+      .describe('List of relevant file paths'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
-    const { target, type, description, context, files, workingDirectory } = args;
+    const { target, type, description, context, files, workingDirectory } =
+      args;
 
     try {
       const cwd = resolveWorkingDirectory(workingDirectory);
@@ -117,23 +146,28 @@ export const interopSendTaskTool: ToolDefinition<{
       });
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Task Sent to ${target.toUpperCase()}\n\n` +
-            `**Task ID:** ${task.id}\n` +
-            `**Type:** ${task.type}\n` +
-            `**Description:** ${task.description}\n` +
-            (task.descriptionArtifact ? `**Description artifact:** ${task.descriptionArtifact.path}\n` : '') +
-            `**Status:** ${task.status}\n` +
-            `**Created:** ${task.createdAt}\n\n` +
-            (task.files ? `**Files:** ${task.files.join(', ')}\n\n` : '') +
-            `The task has been queued for ${target.toUpperCase()} to pick up.`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text:
+              `## Task Sent to ${target.toUpperCase()}\n\n` +
+              `**Task ID:** ${task.id}\n` +
+              `**Type:** ${task.type}\n` +
+              `**Description:** ${task.description}\n` +
+              (task.descriptionArtifact
+                ? `**Description artifact:** ${task.descriptionArtifact.path}\n`
+                : '') +
+              `**Status:** ${task.status}\n` +
+              `**Created:** ${task.createdAt}\n\n` +
+              (task.files ? `**Files:** ${task.files.join(', ')}\n\n` : '') +
+              `The task has been queued for ${target.toUpperCase()} to pick up.`,
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('sending task', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -142,17 +176,29 @@ export const interopSendTaskTool: ToolDefinition<{
 
 export const interopReadResultsTool: ToolDefinition<{
   source: z.ZodOptional<z.ZodEnum<['omc', 'omx']>>;
-  status: z.ZodOptional<z.ZodEnum<['pending', 'in_progress', 'completed', 'failed']>>;
+  status: z.ZodOptional<
+    z.ZodEnum<['pending', 'in_progress', 'completed', 'failed']>
+  >;
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_read_results',
-  description: 'Read task results from the shared interop state. Can filter by source tool and status.',
+  description:
+    'Read task results from the shared interop state. Can filter by source tool and status.',
   schema: {
     source: z.enum(['omc', 'omx']).optional().describe('Filter by source tool'),
-    status: z.enum(['pending', 'in_progress', 'completed', 'failed']).optional().describe('Filter by task status'),
-    limit: z.number().optional().describe('Maximum number of tasks to return (default: 10)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    status: z
+      .enum(['pending', 'in_progress', 'completed', 'failed'])
+      .optional()
+      .describe('Filter by task status'),
+    limit: z
+      .number()
+      .optional()
+      .describe('Maximum number of tasks to return (default: 10)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     const { source, status, limit = 10, workingDirectory } = args;
@@ -169,29 +215,43 @@ export const interopReadResultsTool: ToolDefinition<{
 
       if (limitedTasks.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: '## No Tasks Found\n\nNo tasks match the specified filters.'
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: '## No Tasks Found\n\nNo tasks match the specified filters.',
+            },
+          ],
         };
       }
 
       const lines: string[] = [
-        `## Tasks (${limitedTasks.length}${tasks.length > limit ? ` of ${tasks.length}` : ''})\n`
+        `## Tasks (${limitedTasks.length}${tasks.length > limit ? ` of ${tasks.length}` : ''})\n`,
       ];
 
       for (const task of limitedTasks) {
-        const statusIcon = task.status === 'completed' ? '✓' :
-                          task.status === 'failed' ? '✗' :
-                          task.status === 'in_progress' ? '⋯' : '○';
+        const statusIcon =
+          task.status === 'completed'
+            ? '✓'
+            : task.status === 'failed'
+              ? '✗'
+              : task.status === 'in_progress'
+                ? '⋯'
+                : '○';
 
         lines.push(`### ${statusIcon} ${task.id}`);
         lines.push(`- **Type:** ${task.type}`);
-        lines.push(`- **Source:** ${task.source.toUpperCase()} → **Target:** ${task.target.toUpperCase()}`);
+        lines.push(
+          `- **Source:** ${task.source.toUpperCase()} → **Target:** ${task.target.toUpperCase()}`,
+        );
         lines.push(`- **Status:** ${task.status}`);
         lines.push(`- **Description:** ${task.description}`);
         lines.push(`- **Created:** ${task.createdAt}`);
-        lines.push(...formatArtifactDescriptorLines('Description', task.descriptionArtifact));
+        lines.push(
+          ...formatArtifactDescriptorLines(
+            'Description',
+            task.descriptionArtifact,
+          ),
+        );
 
         if (task.files && task.files.length > 0) {
           lines.push(`- **Files:** ${task.files.join(', ')}`);
@@ -200,7 +260,9 @@ export const interopReadResultsTool: ToolDefinition<{
         if (task.result) {
           lines.push(`- **Result:** ${truncatePreview(task.result, 200)}`);
         }
-        lines.push(...formatArtifactDescriptorLines('Result', task.resultArtifact));
+        lines.push(
+          ...formatArtifactDescriptorLines('Result', task.resultArtifact),
+        );
 
         if (task.error) {
           lines.push(`- **Error:** ${task.error}`);
@@ -214,15 +276,17 @@ export const interopReadResultsTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('reading tasks', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -236,12 +300,21 @@ export const interopSendMessageTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_send_message',
-  description: 'Send a message to the other tool for informational purposes or coordination.',
+  description:
+    'Send a message to the other tool for informational purposes or coordination.',
   schema: {
-    target: z.enum(['omc', 'omx']).describe('Target tool to send the message to'),
+    target: z
+      .enum(['omc', 'omx'])
+      .describe('Target tool to send the message to'),
     content: z.string().describe('Message content'),
-    metadata: z.record(z.string(), z.unknown()).optional().describe('Additional metadata'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    metadata: z
+      .record(z.string(), z.unknown())
+      .optional()
+      .describe('Additional metadata'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     const { target, content, metadata, workingDirectory } = args;
@@ -258,20 +331,25 @@ export const interopSendMessageTool: ToolDefinition<{
       });
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Message Sent to ${target.toUpperCase()}\n\n` +
-            `**Message ID:** ${message.id}\n` +
-            `**Content:** ${message.content}\n` +
-            (message.contentArtifact ? `**Content artifact:** ${message.contentArtifact.path}\n` : '') +
-            `**Timestamp:** ${message.timestamp}\n\n` +
-            `The message has been queued for ${target.toUpperCase()}.`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text:
+              `## Message Sent to ${target.toUpperCase()}\n\n` +
+              `**Message ID:** ${message.id}\n` +
+              `**Content:** ${message.content}\n` +
+              (message.contentArtifact
+                ? `**Content artifact:** ${message.contentArtifact.path}\n`
+                : '') +
+              `**Timestamp:** ${message.timestamp}\n\n` +
+              `The message has been queued for ${target.toUpperCase()}.`,
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('sending message', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -286,16 +364,35 @@ export const interopReadMessagesTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_read_messages',
-  description: 'Read messages from the shared interop state. Can filter by source tool and read status.',
+  description:
+    'Read messages from the shared interop state. Can filter by source tool and read status.',
   schema: {
     source: z.enum(['omc', 'omx']).optional().describe('Filter by source tool'),
-    unreadOnly: z.boolean().optional().describe('Show only unread messages (default: false)'),
-    limit: z.number().optional().describe('Maximum number of messages to return (default: 10)'),
-    markAsRead: z.boolean().optional().describe('Mark retrieved messages as read (default: false)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    unreadOnly: z
+      .boolean()
+      .optional()
+      .describe('Show only unread messages (default: false)'),
+    limit: z
+      .number()
+      .optional()
+      .describe('Maximum number of messages to return (default: 10)'),
+    markAsRead: z
+      .boolean()
+      .optional()
+      .describe('Mark retrieved messages as read (default: false)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
-    const { source, unreadOnly = false, limit = 10, markAsRead = false, workingDirectory } = args;
+    const {
+      source,
+      unreadOnly = false,
+      limit = 10,
+      markAsRead = false,
+      workingDirectory,
+    } = args;
 
     try {
       const cwd = resolveWorkingDirectory(workingDirectory);
@@ -309,10 +406,12 @@ export const interopReadMessagesTool: ToolDefinition<{
 
       if (limitedMessages.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: '## No Messages Found\n\nNo messages match the specified filters.'
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: '## No Messages Found\n\nNo messages match the specified filters.',
+            },
+          ],
         };
       }
 
@@ -324,18 +423,22 @@ export const interopReadMessagesTool: ToolDefinition<{
       }
 
       const lines: string[] = [
-        `## Messages (${limitedMessages.length}${messages.length > limit ? ` of ${messages.length}` : ''})\n`
+        `## Messages (${limitedMessages.length}${messages.length > limit ? ` of ${messages.length}` : ''})\n`,
       ];
 
       for (const message of limitedMessages) {
         const readIcon = message.read ? '✓' : '○';
 
         lines.push(`### ${readIcon} ${message.id}`);
-        lines.push(`- **From:** ${message.source.toUpperCase()} → **To:** ${message.target.toUpperCase()}`);
+        lines.push(
+          `- **From:** ${message.source.toUpperCase()} → **To:** ${message.target.toUpperCase()}`,
+        );
         lines.push(`- **Content:** ${message.content}`);
         lines.push(`- **Timestamp:** ${message.timestamp}`);
         lines.push(`- **Read:** ${message.read ? 'Yes' : 'No'}`);
-        lines.push(...formatArtifactDescriptorLines('Content', message.contentArtifact));
+        lines.push(
+          ...formatArtifactDescriptorLines('Content', message.contentArtifact),
+        );
 
         if (message.metadata) {
           lines.push(`- **Metadata:** ${JSON.stringify(message.metadata)}`);
@@ -349,15 +452,17 @@ export const interopReadMessagesTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('reading messages', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -368,9 +473,13 @@ export const interopListOmxTeamsTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_list_omx_teams',
-  description: 'List active OMX (oh-my-codex) teams from .omx/state/team/. Shows team names and basic configuration.',
+  description:
+    'List active OMX (oh-my-codex) teams from .omx/state/team/. Shows team names and basic configuration.',
   schema: {
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -379,10 +488,12 @@ export const interopListOmxTeamsTool: ToolDefinition<{
 
       if (teamNames.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: '## No OMX Teams Found\n\nNo active OMX teams detected in .omx/state/team/.'
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: '## No OMX Teams Found\n\nNo active OMX teams detected in .omx/state/team/.',
+            },
+          ],
         };
       }
 
@@ -393,9 +504,13 @@ export const interopListOmxTeamsTool: ToolDefinition<{
         if (config) {
           lines.push(`### ${name}`);
           lines.push(`- **Task:** ${config.task}`);
-          lines.push(`- **Workers:** ${config.worker_count} (${config.agent_type})`);
+          lines.push(
+            `- **Workers:** ${config.worker_count} (${config.agent_type})`,
+          );
           lines.push(`- **Created:** ${config.created_at}`);
-          lines.push(`- **Workers:** ${config.workers.map((w) => w.name).join(', ')}`);
+          lines.push(
+            `- **Workers:** ${config.workers.map((w) => w.name).join(', ')}`,
+          );
           lines.push('');
         } else {
           lines.push(`### ${name} (config not readable)\n`);
@@ -403,15 +518,17 @@ export const interopListOmxTeamsTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('listing OMX teams', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -427,60 +544,88 @@ export const interopSendOmxMessageTool: ToolDefinition<{
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'interop_send_omx_message',
-  description: 'Send a message to an OMX team worker mailbox using the native omx format. Supports direct messages and broadcasts.',
+  description:
+    'Send a message to an OMX team worker mailbox using the native omx format. Supports direct messages and broadcasts.',
   schema: {
     teamName: z.string().describe('OMX team name'),
     fromWorker: z.string().describe('Sender worker name (e.g., "omc-bridge")'),
-    toWorker: z.string().describe('Target worker name (ignored if broadcast=true)'),
+    toWorker: z
+      .string()
+      .describe('Target worker name (ignored if broadcast=true)'),
     body: z.string().describe('Message body'),
-    broadcast: z.boolean().optional().describe('Broadcast to all workers (default: false)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    broadcast: z
+      .boolean()
+      .optional()
+      .describe('Broadcast to all workers (default: false)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
       if (!canUseOmxDirectWriteBridge()) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: 'Direct OMX mailbox writes are disabled. Use broker-mediated team_* MCP path or enable active interop flags explicitly.'
-          }],
-          isError: true
+          content: [
+            {
+              type: 'text' as const,
+              text: 'Direct OMX mailbox writes are disabled. Use broker-mediated team_* MCP path or enable active interop flags explicitly.',
+            },
+          ],
+          isError: true,
         };
       }
 
       const cwd = resolveWorkingDirectory(args.workingDirectory);
 
       if (args.broadcast) {
-        const messages = await broadcastOmxMessage(args.teamName, args.fromWorker, args.body, cwd);
+        const messages = await broadcastOmxMessage(
+          args.teamName,
+          args.fromWorker,
+          args.body,
+          cwd,
+        );
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## Broadcast Sent to OMX Team: ${args.teamName}\n\n` +
-              `**From:** ${args.fromWorker}\n` +
-              `**Recipients:** ${messages.length}\n` +
-              `**Message IDs:** ${messages.map((m) => m.message_id).join(', ')}\n\n` +
-              `Message delivered to ${messages.length} worker mailbox(es).`
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text:
+                `## Broadcast Sent to OMX Team: ${args.teamName}\n\n` +
+                `**From:** ${args.fromWorker}\n` +
+                `**Recipients:** ${messages.length}\n` +
+                `**Message IDs:** ${messages.map((m) => m.message_id).join(', ')}\n\n` +
+                `Message delivered to ${messages.length} worker mailbox(es).`,
+            },
+          ],
         };
       }
 
-      const msg = await sendOmxDirectMessage(args.teamName, args.fromWorker, args.toWorker, args.body, cwd);
+      const msg = await sendOmxDirectMessage(
+        args.teamName,
+        args.fromWorker,
+        args.toWorker,
+        args.body,
+        cwd,
+      );
       return {
-        content: [{
-          type: 'text' as const,
-          text: `## Message Sent to OMX Worker\n\n` +
-            `**Team:** ${args.teamName}\n` +
-            `**From:** ${msg.from_worker}\n` +
-            `**To:** ${msg.to_worker}\n` +
-            `**Message ID:** ${msg.message_id}\n` +
-            `**Created:** ${msg.created_at}\n\n` +
-            `Message delivered to ${msg.to_worker}'s mailbox.`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text:
+              `## Message Sent to OMX Worker\n\n` +
+              `**Team:** ${args.teamName}\n` +
+              `**From:** ${msg.from_worker}\n` +
+              `**To:** ${msg.to_worker}\n` +
+              `**Message ID:** ${msg.message_id}\n` +
+              `**Created:** ${msg.created_at}\n\n` +
+              `Message delivered to ${msg.to_worker}'s mailbox.`,
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('sending OMX message', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -498,27 +643,39 @@ export const interopReadOmxMessagesTool: ToolDefinition<{
   schema: {
     teamName: z.string().describe('OMX team name'),
     workerName: z.string().describe('Worker name whose mailbox to read'),
-    limit: z.number().optional().describe('Maximum number of messages to return (default: 20)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    limit: z
+      .number()
+      .optional()
+      .describe('Maximum number of messages to return (default: 20)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
       const cwd = resolveWorkingDirectory(args.workingDirectory);
       const limit = args.limit ?? 20;
-      const messages = await listOmxMailboxMessages(args.teamName, args.workerName, cwd);
+      const messages = await listOmxMailboxMessages(
+        args.teamName,
+        args.workerName,
+        cwd,
+      );
 
       if (messages.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## No Messages\n\nNo messages in ${args.workerName}'s mailbox for team ${args.teamName}.`
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: `## No Messages\n\nNo messages in ${args.workerName}'s mailbox for team ${args.teamName}.`,
+            },
+          ],
         };
       }
 
       const limited = messages.slice(-limit); // most recent N messages
       const lines: string[] = [
-        `## OMX Mailbox: ${args.workerName} @ ${args.teamName} (${limited.length}${messages.length > limit ? ` of ${messages.length}` : ''})\n`
+        `## OMX Mailbox: ${args.workerName} @ ${args.teamName} (${limited.length}${messages.length > limit ? ` of ${messages.length}` : ''})\n`,
       ];
 
       for (const msg of limited) {
@@ -528,20 +685,23 @@ export const interopReadOmxMessagesTool: ToolDefinition<{
         lines.push(`- **To:** ${msg.to_worker}`);
         lines.push(`- **Body:** ${truncatePreview(msg.body, 300)}`);
         lines.push(`- **Created:** ${msg.created_at}`);
-        if (msg.delivered_at) lines.push(`- **Delivered:** ${msg.delivered_at}`);
+        if (msg.delivered_at)
+          lines.push(`- **Delivered:** ${msg.delivered_at}`);
         lines.push('');
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('reading OMX messages', error);
     }
-  }
+  },
 };
 
 // ============================================================================
@@ -550,7 +710,9 @@ export const interopReadOmxMessagesTool: ToolDefinition<{
 
 export const interopReadOmxTasksTool: ToolDefinition<{
   teamName: z.ZodString;
-  status: z.ZodOptional<z.ZodEnum<['pending', 'blocked', 'in_progress', 'completed', 'failed']>>;
+  status: z.ZodOptional<
+    z.ZodEnum<['pending', 'blocked', 'in_progress', 'completed', 'failed']>
+  >;
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
@@ -558,9 +720,18 @@ export const interopReadOmxTasksTool: ToolDefinition<{
   description: 'Read tasks from an OMX team. Can filter by status.',
   schema: {
     teamName: z.string().describe('OMX team name'),
-    status: z.enum(['pending', 'blocked', 'in_progress', 'completed', 'failed']).optional().describe('Filter by task status'),
-    limit: z.number().optional().describe('Maximum number of tasks to return (default: 20)'),
-    workingDirectory: z.string().optional().describe('Working directory (defaults to cwd)'),
+    status: z
+      .enum(['pending', 'blocked', 'in_progress', 'completed', 'failed'])
+      .optional()
+      .describe('Filter by task status'),
+    limit: z
+      .number()
+      .optional()
+      .describe('Maximum number of tasks to return (default: 20)'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe('Working directory (defaults to cwd)'),
   },
   handler: async (args) => {
     try {
@@ -574,45 +745,59 @@ export const interopReadOmxTasksTool: ToolDefinition<{
 
       if (tasks.length === 0) {
         return {
-          content: [{
-            type: 'text' as const,
-            text: `## No Tasks\n\nNo tasks found for OMX team ${args.teamName}${args.status ? ` with status "${args.status}"` : ''}.`
-          }]
+          content: [
+            {
+              type: 'text' as const,
+              text: `## No Tasks\n\nNo tasks found for OMX team ${args.teamName}${args.status ? ` with status "${args.status}"` : ''}.`,
+            },
+          ],
         };
       }
 
       const limited = tasks.slice(0, limit);
       const lines: string[] = [
-        `## OMX Tasks: ${args.teamName} (${limited.length}${tasks.length > limit ? ` of ${tasks.length}` : ''})\n`
+        `## OMX Tasks: ${args.teamName} (${limited.length}${tasks.length > limit ? ` of ${tasks.length}` : ''})\n`,
       ];
 
       for (const task of limited) {
-        const statusIcon = task.status === 'completed' ? '✓' :
-                          task.status === 'failed' ? '✗' :
-                          task.status === 'in_progress' ? '⋯' :
-                          task.status === 'blocked' ? '⊘' : '○';
+        const statusIcon =
+          task.status === 'completed'
+            ? '✓'
+            : task.status === 'failed'
+              ? '✗'
+              : task.status === 'in_progress'
+                ? '⋯'
+                : task.status === 'blocked'
+                  ? '⊘'
+                  : '○';
 
         lines.push(`### ${statusIcon} Task ${task.id}: ${task.subject}`);
         lines.push(`- **Status:** ${task.status}`);
         if (task.owner) lines.push(`- **Owner:** ${task.owner}`);
-        lines.push(`- **Description:** ${truncatePreview(task.description, 200)}`);
+        lines.push(
+          `- **Description:** ${truncatePreview(task.description, 200)}`,
+        );
         lines.push(`- **Created:** ${task.created_at}`);
-        if (task.result) lines.push(`- **Result:** ${truncatePreview(task.result, 200)}`);
+        if (task.result)
+          lines.push(`- **Result:** ${truncatePreview(task.result, 200)}`);
         if (task.error) lines.push(`- **Error:** ${task.error}`);
-        if (task.completed_at) lines.push(`- **Completed:** ${task.completed_at}`);
+        if (task.completed_at)
+          lines.push(`- **Completed:** ${task.completed_at}`);
         lines.push('');
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: lines.join('\n')
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
       };
     } catch (error) {
       return formatToolError('reading OMX tasks', error);
     }
-  }
+  },
 };
 
 /**

@@ -7,13 +7,11 @@
 // Latency is measured from commitFile() call to merge_succeeded event observed.
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+// node:fs and node:path imports removed — only used by git-fixture helpers
 
 import {
   createGitFixture,
   orchestratorEventLogPath,
-  readEventLog,
   waitForEventInLog,
   type GitFixture,
 } from './helpers/git-fixture.js';
@@ -74,21 +72,29 @@ describe.skipIf(process.env.CI === '1')(
 
     it('50 sequential merges complete with p95 latency < 2000ms', async () => {
       const MERGE_COUNT = 50;
-      const FILES_PER_MERGE = 10;
+      const _FILES_PER_MERGE = 10; // documents intended scale; current loop creates 1 file per merge
       const LINES_PER_FILE = 100;
-      const eventLog = orchestratorEventLogPath(fixture.repoRoot, fixture.teamName);
+      const eventLog = orchestratorEventLogPath(
+        fixture.repoRoot,
+        fixture.teamName,
+      );
       const latencies: number[] = [];
 
       for (let m = 1; m <= MERGE_COUNT; m++) {
         // Build a commit with FILES_PER_MERGE files × LINES_PER_FILE LoC
         // Use a single commit (commitFile writes one file; add more via direct git)
-        const content = Array.from(
-          { length: LINES_PER_FILE },
-          (_, i) => `export const m${m}f0l${i} = ${i + m};`,
-        ).join('\n') + '\n';
+        const content =
+          Array.from(
+            { length: LINES_PER_FILE },
+            (_, i) => `export const m${m}f0l${i} = ${i + m};`,
+          ).join('\n') + '\n';
 
         const startMs = Date.now();
-        await fixture.commitFile('worker-1', `perf/merge-${m}/file-0.ts`, content);
+        await fixture.commitFile(
+          'worker-1',
+          `perf/merge-${m}/file-0.ts`,
+          content,
+        );
 
         // Wait for this specific merge to complete (count=m means we now have m total)
         await waitForEventInLog({
@@ -110,9 +116,7 @@ describe.skipIf(process.env.CI === '1')(
       const max = latencies[latencies.length - 1];
 
       // Log timing summary for CI artifacts / debugging
-      console.log(
-        `[perf] 50 merges: p50=${p50}ms p95=${p95}ms max=${max}ms`,
-      );
+      console.log(`[perf] 50 merges: p50=${p50}ms p95=${p95}ms max=${max}ms`);
 
       expect(p95).toBeLessThan(2000);
     }, 300000); // allow up to 5 minutes total for 50 merges

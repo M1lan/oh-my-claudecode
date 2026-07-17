@@ -17,8 +17,8 @@ import type {
  * Score thresholds for tier classification
  */
 const TIER_THRESHOLDS = {
-  HIGH: 8,    // Score >= 8 -> HIGH (Opus)
-  MEDIUM: 4,  // Score >= 4 -> MEDIUM (Sonnet)
+  HIGH: 8, // Score >= 8 -> HIGH (Opus)
+  MEDIUM: 4, // Score >= 4 -> MEDIUM (Sonnet)
   // Score < 4 -> LOW (Haiku)
 };
 
@@ -28,36 +28,36 @@ const TIER_THRESHOLDS = {
  */
 const WEIGHTS = {
   lexical: {
-    wordCountHigh: 2,         // Long prompts (+2)
-    wordCountVeryHigh: 1,     // Very long prompts (+1 additional)
-    filePathsMultiple: 1,     // Multiple file paths (+1)
-    codeBlocksPresent: 1,     // Code blocks (+1)
-    architectureKeywords: 3,  // Architecture keywords (+3)
-    debuggingKeywords: 2,     // Debugging keywords (+2)
-    simpleKeywords: -2,       // Simple keywords (-2)
-    riskKeywords: 2,          // Risk keywords (+2)
-    questionDepthWhy: 2,      // 'Why' questions (+2)
-    questionDepthHow: 1,      // 'How' questions (+1)
-    implicitRequirements: 1,  // Vague requirements (+1)
+    wordCountHigh: 2, // Long prompts (+2)
+    wordCountVeryHigh: 1, // Very long prompts (+1 additional)
+    filePathsMultiple: 1, // Multiple file paths (+1)
+    codeBlocksPresent: 1, // Code blocks (+1)
+    architectureKeywords: 3, // Architecture keywords (+3)
+    debuggingKeywords: 2, // Debugging keywords (+2)
+    simpleKeywords: -2, // Simple keywords (-2)
+    riskKeywords: 2, // Risk keywords (+2)
+    questionDepthWhy: 2, // 'Why' questions (+2)
+    questionDepthHow: 1, // 'How' questions (+1)
+    implicitRequirements: 1, // Vague requirements (+1)
   },
   structural: {
-    subtasksMany: 3,          // Many subtasks (+3)
-    subtasksSome: 1,          // Some subtasks (+1)
-    crossFile: 2,             // Cross-file changes (+2)
-    testRequired: 1,          // Tests required (+1)
-    securityDomain: 2,        // Security domain (+2)
-    infrastructureDomain: 1,  // Infrastructure domain (+1)
-    externalKnowledge: 1,     // External knowledge needed (+1)
+    subtasksMany: 3, // Many subtasks (+3)
+    subtasksSome: 1, // Some subtasks (+1)
+    crossFile: 2, // Cross-file changes (+2)
+    testRequired: 1, // Tests required (+1)
+    securityDomain: 2, // Security domain (+2)
+    infrastructureDomain: 1, // Infrastructure domain (+1)
+    externalKnowledge: 1, // External knowledge needed (+1)
     reversibilityDifficult: 2, // Difficult to reverse (+2)
-    reversibilityModerate: 1,  // Moderate reversibility (+1)
-    impactSystemWide: 3,      // System-wide impact (+3)
-    impactModule: 1,          // Module-level impact (+1)
+    reversibilityModerate: 1, // Moderate reversibility (+1)
+    impactSystemWide: 3, // System-wide impact (+3)
+    impactModule: 1, // Module-level impact (+1)
   },
   context: {
-    previousFailure: 2,       // Per previous failure (+2 each)
-    previousFailureMax: 4,    // Max from failures
-    deepChain: 2,             // Deep agent chain (+2)
-    complexPlan: 1,           // Complex plan (+1)
+    previousFailure: 2, // Per previous failure (+2 each)
+    previousFailureMax: 4, // Max from failures
+    deepChain: 2, // Deep agent chain (+2)
+    complexPlan: 1, // Complex plan (+1)
   },
 };
 
@@ -189,7 +189,7 @@ function scoreContextSignals(signals: ContextSignals): number {
   // Previous failures (capped)
   const failureScore = Math.min(
     signals.previousFailures * WEIGHTS.context.previousFailure,
-    WEIGHTS.context.previousFailureMax
+    WEIGHTS.context.previousFailureMax,
   );
   score += failureScore;
 
@@ -229,7 +229,9 @@ export function scoreToTier(score: number): ComplexityTier {
 /**
  * Calculate complexity tier from signals
  */
-export function calculateComplexityTier(signals: ComplexitySignals): ComplexityTier {
+export function calculateComplexityTier(
+  signals: ComplexitySignals,
+): ComplexityTier {
   const score = calculateComplexityScore(signals);
   return scoreToTier(score);
 }
@@ -262,7 +264,10 @@ export function getScoreBreakdown(signals: ComplexitySignals): {
  * Calculate confidence in the tier assignment
  * Higher confidence when score is far from thresholds
  */
-export function calculateConfidence(score: number, tier: ComplexityTier): number {
+export function calculateConfidence(
+  score: number,
+  tier: ComplexityTier,
+): number {
   const distanceFromLow = Math.abs(score - TIER_THRESHOLDS.MEDIUM);
   const distanceFromHigh = Math.abs(score - TIER_THRESHOLDS.HIGH);
 

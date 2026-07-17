@@ -30,7 +30,7 @@
 export function isStateForSession(
   stateSessionId: string | undefined | null,
   sessionId: string | undefined | null,
-  options?: { lenient?: boolean }
+  options?: { lenient?: boolean },
 ): boolean {
   // No session context — cannot filter, allow everything.
   if (!sessionId) return true;

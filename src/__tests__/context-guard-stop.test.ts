@@ -1,12 +1,20 @@
 import { execFileSync } from 'child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { delimiter, join } from 'path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 const SCRIPT_PATH = join(process.cwd(), 'scripts', 'context-guard-stop.mjs');
 
-function runContextGuardStop(input: Record<string, unknown>): Record<string, unknown> {
+function runContextGuardStop(
+  input: Record<string, unknown>,
+): Record<string, unknown> {
   const stdout = execFileSync(process.execPath, [SCRIPT_PATH], {
     input: JSON.stringify(input),
     encoding: 'utf-8',
@@ -29,7 +37,11 @@ function runContextGuardStopWithEnv(
   return JSON.parse(stdout.trim()) as Record<string, unknown>;
 }
 
-function writeTranscriptWithContext(filePath: string, contextWindow: number, inputTokens: number): void {
+function writeTranscriptWithContext(
+  filePath: string,
+  contextWindow: number,
+  inputTokens: number,
+): void {
   const line = JSON.stringify({
     usage: { context_window: contextWindow, input_tokens: inputTokens },
     context_window: contextWindow,
@@ -113,8 +125,8 @@ describe('context-guard-stop safe recovery messaging (issue #1373)', () => {
     writeFileSync(
       join(fakeBinDir, 'git'),
       '#!/usr/bin/env node\n' +
-      'require("fs").appendFileSync(process.env.OMC_FAKE_GIT_LOG, process.argv.slice(2).join(" ") + "\\n");\n' +
-      'process.exit(1);\n',
+        'require("fs").appendFileSync(process.env.OMC_FAKE_GIT_LOG, process.argv.slice(2).join(" ") + "\\n");\n' +
+        'process.exit(1);\n',
       { mode: 0o755 },
     );
     writeFileSync(

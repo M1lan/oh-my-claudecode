@@ -149,12 +149,11 @@ Auto-generated scaffold has:
   acceptanceCriteria: ["Implementation is complete", "Code compiles without errors"]
 
 After refinement:
-acceptanceCriteria: [
-"Legacy --no-prd text is stripped from the Ralph working prompt",
-"Ralph startup still creates or validates prd.json when legacy --no-prd text is present",
-"TypeScript compiles with no errors (npm run build)"
-]
-
+  acceptanceCriteria: [
+    "Legacy --no-prd text is stripped from the Ralph working prompt",
+    "Ralph startup still creates or validates prd.json when legacy --no-prd text is present",
+    "TypeScript compiles with no errors (pnpm run build)"
+  ]
 ```
 Why good: Generic criteria replaced with specific, testable criteria.
 </Good>
@@ -246,7 +245,7 @@ Why bad: Did not refine scaffold criteria into task-specific ones. This is PRD t
 ## Background Execution Rules
 
 **Run in background** (`run_in_background: true`):
-- Package installation (npm install, pip install, cargo build)
+- Package installation (pnpm install, pip install, cargo build)
 - Build processes (make, project build commands)
 - Test suites
 - Docker operations (docker build, docker pull)

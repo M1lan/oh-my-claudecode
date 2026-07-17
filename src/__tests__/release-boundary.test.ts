@@ -1,7 +1,17 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from 'node:http';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { gzipSync } from 'node:zlib';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -50,8 +60,18 @@ function makeTempRoot(prefix: string): string {
   return root;
 }
 
-function writeOctal(buffer: Buffer, offset: number, length: number, value: number): void {
-  buffer.write(`${value.toString(8).padStart(length - 1, '0')}\0`, offset, length, 'ascii');
+function writeOctal(
+  buffer: Buffer,
+  offset: number,
+  length: number,
+  value: number,
+): void {
+  buffer.write(
+    `${value.toString(8).padStart(length - 1, '0')}\0`,
+    offset,
+    length,
+    'ascii',
+  );
 }
 
 function tarHeader(entry: TarEntry, content: Buffer): Buffer {
@@ -104,9 +124,16 @@ function packageManifest(gitHead?: string): Record<string, unknown> {
   };
 }
 
-function releaseTarball(gitHead = SHA, extraEntries: TarEntry[] = [], readme = '# fixture\n'): Buffer {
+function releaseTarball(
+  gitHead = SHA,
+  extraEntries: TarEntry[] = [],
+  readme = '# fixture\n',
+): Buffer {
   return makeTarball([
-    { path: 'package/package.json', content: `${JSON.stringify(packageManifest(gitHead), null, 2)}\n` },
+    {
+      path: 'package/package.json',
+      content: `${JSON.stringify(packageManifest(gitHead), null, 2)}\n`,
+    },
     {
       path: 'package/.claude-plugin/plugin.json',
       content: JSON.stringify({ name: 'oh-my-claudecode', version: VERSION }),
@@ -122,14 +149,27 @@ function releaseTarball(gitHead = SHA, extraEntries: TarEntry[] = [], readme = '
       path: 'package/.mcp.json',
       content: JSON.stringify({
         mcpServers: {
-          omc: { command: 'node', args: ['${CLAUDE_PLUGIN_ROOT}/bridge/mcp-server.cjs'] },
+          omc: {
+            command: 'node',
+            args: ['${CLAUDE_PLUGIN_ROOT}/bridge/mcp-server.cjs'],
+          },
         },
       }),
     },
-    { path: 'package/bin/oh-my-claudecode.js', content: '#!/usr/bin/env node\n', mode: 0o755 },
+    {
+      path: 'package/bin/oh-my-claudecode.js',
+      content: '#!/usr/bin/env node\n',
+      mode: 0o755,
+    },
     { path: 'package/bridge/cli.cjs', content: 'module.exports = {};\n' },
-    { path: 'package/bridge/mcp-server.cjs', content: 'module.exports = {};\n' },
-    { path: 'package/bridge/runtime-cli.cjs', content: 'module.exports = {};\n' },
+    {
+      path: 'package/bridge/mcp-server.cjs',
+      content: 'module.exports = {};\n',
+    },
+    {
+      path: 'package/bridge/runtime-cli.cjs',
+      content: 'module.exports = {};\n',
+    },
     { path: 'package/bridge/team.js', content: 'export {};\n' },
     { path: 'package/README.md', content: readme },
     ...extraEntries,
@@ -154,20 +194,33 @@ async function startServer(
     });
   });
   const address = server.address();
-  if (!address || typeof address === 'string') throw new Error('test server has no TCP address');
+  if (!address || typeof address === 'string')
+    throw new Error('test server has no TCP address');
   return {
     base: `http://127.0.0.1:${address.port}`,
-    close: () => new Promise((resolveClose, rejectClose) => server.close(error => error ? rejectClose(error) : resolveClose())),
+    close: () =>
+      new Promise((resolveClose, rejectClose) =>
+        server.close((error) => (error ? rejectClose(error) : resolveClose())),
+      ),
   };
 }
 
-function sendJson(response: ServerResponse, statusCode: number, value: unknown): void {
+function sendJson(
+  response: ServerResponse,
+  statusCode: number,
+  value: unknown,
+): void {
   response.writeHead(statusCode, { 'content-type': 'application/json' });
   response.end(JSON.stringify(value));
 }
 
-async function withEnvironment<T>(values: Record<string, string | undefined>, action: () => Promise<T>): Promise<T> {
-  const previous = new Map(Object.keys(values).map(key => [key, process.env[key]]));
+async function withEnvironment<T>(
+  values: Record<string, string | undefined>,
+  action: () => Promise<T>,
+): Promise<T> {
+  const previous = new Map(
+    Object.keys(values).map((key) => [key, process.env[key]]),
+  );
   for (const [key, value] of Object.entries(values)) {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
@@ -182,13 +235,19 @@ async function withEnvironment<T>(values: Record<string, string | undefined>, ac
   }
 }
 
-function dssePayload(sha512: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function dssePayload(
+  sha512: string,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   return {
     _type: 'https://in-toto.io/Statement/v1',
-    subject: [{ name: `pkg:npm/${PACKAGE_NAME}@${VERSION}`, digest: { sha512 } }],
+    subject: [
+      { name: `pkg:npm/${PACKAGE_NAME}@${VERSION}`, digest: { sha512 } },
+    ],
     predicate: {
       buildDefinition: {
-        buildType: 'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',
+        buildType:
+          'https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1',
         externalParameters: {
           workflow: {
             repository: 'https://github.com/Yeachan-Heo/oh-my-claudecode',
@@ -196,21 +255,29 @@ function dssePayload(sha512: string, overrides: Record<string, unknown> = {}): R
             ref: `refs/tags/${TAG}`,
           },
         },
-        resolvedDependencies: [{
-          uri: `git+https://github.com/Yeachan-Heo/oh-my-claudecode@refs/tags/${TAG}`,
-          digest: { gitCommit: SHA },
-        }],
+        resolvedDependencies: [
+          {
+            uri: `git+https://github.com/Yeachan-Heo/oh-my-claudecode@refs/tags/${TAG}`,
+            digest: { gitCommit: SHA },
+          },
+        ],
       },
       runDetails: {
         builder: { id: 'https://github.com/actions/runner/github-hosted' },
-        metadata: { invocationId: 'https://github.com/Yeachan-Heo/oh-my-claudecode/actions/runs/123' },
+        metadata: {
+          invocationId:
+            'https://github.com/Yeachan-Heo/oh-my-claudecode/actions/runs/123',
+        },
       },
     },
     ...overrides,
   };
 }
 
-function slsaAttestation(payload: Record<string, unknown>, signature = 'fixture-signature'): Record<string, unknown> {
+function slsaAttestation(
+  payload: Record<string, unknown>,
+  signature = 'fixture-signature',
+): Record<string, unknown> {
   return {
     predicateType: 'https://slsa.dev/provenance/v1',
     bundle: {
@@ -225,19 +292,25 @@ function slsaAttestation(payload: Record<string, unknown>, signature = 'fixture-
 function auditReport(
   attestation: Record<string, unknown>,
   registry: string,
-  overrides: { invalid?: unknown[]; missing?: unknown[]; verified?: unknown[] } = {},
+  overrides: {
+    invalid?: unknown[];
+    missing?: unknown[];
+    verified?: unknown[];
+  } = {},
 ): Record<string, unknown> {
   return {
     invalid: overrides.invalid ?? [],
     missing: overrides.missing ?? [],
-    verified: overrides.verified ?? [{
-      name: PACKAGE_NAME,
-      version: VERSION,
-      location: `node_modules/${PACKAGE_NAME}`,
-      registry: `${registry}/`,
-      attestations: [{ predicateType: 'https://slsa.dev/provenance/v1' }],
-      attestationBundles: [attestation],
-    }],
+    verified: overrides.verified ?? [
+      {
+        name: PACKAGE_NAME,
+        version: VERSION,
+        location: `node_modules/${PACKAGE_NAME}`,
+        registry: `${registry}/`,
+        attestations: [{ predicateType: 'https://slsa.dev/provenance/v1' }],
+        attestationBundles: [attestation],
+      },
+    ],
   };
 }
 
@@ -246,22 +319,52 @@ function createTriggerRepository(): { root: string; sha: string } {
   mkdirSync(join(root, '.claude-plugin'), { recursive: true });
   mkdirSync(join(root, '.github'), { recursive: true });
   mkdirSync(join(root, 'docs'), { recursive: true });
-  writeFileSync(join(root, 'package.json'), JSON.stringify(packageManifest(), null, 2));
-  writeFileSync(join(root, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'oh-my-claudecode', version: VERSION }));
-  writeFileSync(join(root, '.claude-plugin', 'marketplace.json'), JSON.stringify({
-    version: VERSION,
-    plugins: [{ name: 'oh-my-claudecode', version: VERSION }],
-  }));
-  writeFileSync(join(root, 'docs', 'CLAUDE.md'), `<!-- OMC:VERSION:${VERSION} -->\n`);
-  writeFileSync(join(root, 'CHANGELOG.md'), `# oh-my-claudecode v${VERSION}: fixture\n`);
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify(packageManifest(), null, 2),
+  );
+  writeFileSync(
+    join(root, '.claude-plugin', 'plugin.json'),
+    JSON.stringify({ name: 'oh-my-claudecode', version: VERSION }),
+  );
+  writeFileSync(
+    join(root, '.claude-plugin', 'marketplace.json'),
+    JSON.stringify({
+      version: VERSION,
+      plugins: [{ name: 'oh-my-claudecode', version: VERSION }],
+    }),
+  );
+  writeFileSync(
+    join(root, 'docs', 'CLAUDE.md'),
+    `<!-- OMC:VERSION:${VERSION} -->\n`,
+  );
+  writeFileSync(
+    join(root, 'CHANGELOG.md'),
+    `# oh-my-claudecode v${VERSION}: fixture\n`,
+  );
   writeFileSync(join(root, '.github', 'release-body.md'), '# Release notes\n');
   execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.name', 'Release Test'], { cwd: root, stdio: 'ignore' });
-  execFileSync('git', ['config', 'user.email', 'release@example.test'], { cwd: root, stdio: 'ignore' });
+  execFileSync('git', ['config', 'user.name', 'Release Test'], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+  execFileSync('git', ['config', 'user.email', 'release@example.test'], {
+    cwd: root,
+    stdio: 'ignore',
+  });
   execFileSync('git', ['add', '.'], { cwd: root, stdio: 'ignore' });
-  execFileSync('git', ['commit', '-m', 'release fixture'], { cwd: root, stdio: 'ignore' });
-  const sha = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
-  execFileSync('git', ['tag', '-a', TAG, '-m', TAG], { cwd: root, stdio: 'ignore' });
+  execFileSync('git', ['commit', '-m', 'release fixture'], {
+    cwd: root,
+    stdio: 'ignore',
+  });
+  const sha = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  execFileSync('git', ['tag', '-a', TAG, '-m', TAG], {
+    cwd: root,
+    stdio: 'ignore',
+  });
   return { root, sha };
 }
 
@@ -298,18 +401,34 @@ describe('release-boundary.mjs', () => {
       }
     });
     try {
-      await withEnvironment({ RELEASE_BOUNDARY_REGISTRY_URL: server.base }, async () => {
-        await expect(assertNpmAbsent(PACKAGE_NAME, VERSION)).resolves.toMatchObject({ absent: true });
-        await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.5')).rejects.toThrow('already exists');
-        await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.6')).rejects.toThrow('unexpected HTTP 503');
-        await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.7')).rejects.toThrow('network request failed');
-      });
-      await withEnvironment({
-        RELEASE_BOUNDARY_REGISTRY_URL: server.base,
-        RELEASE_BOUNDARY_FETCH_TIMEOUT_MS: '10',
-      }, async () => {
-        await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.8')).rejects.toThrow('network request failed');
-      });
+      await withEnvironment(
+        { RELEASE_BOUNDARY_REGISTRY_URL: server.base },
+        async () => {
+          await expect(
+            assertNpmAbsent(PACKAGE_NAME, VERSION),
+          ).resolves.toMatchObject({ absent: true });
+          await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.5')).rejects.toThrow(
+            'already exists',
+          );
+          await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.6')).rejects.toThrow(
+            'unexpected HTTP 503',
+          );
+          await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.7')).rejects.toThrow(
+            'network request failed',
+          );
+        },
+      );
+      await withEnvironment(
+        {
+          RELEASE_BOUNDARY_REGISTRY_URL: server.base,
+          RELEASE_BOUNDARY_FETCH_TIMEOUT_MS: '10',
+        },
+        async () => {
+          await expect(assertNpmAbsent(PACKAGE_NAME, '4.15.8')).rejects.toThrow(
+            'network request failed',
+          );
+        },
+      );
     } finally {
       await server.close();
     }
@@ -317,24 +436,56 @@ describe('release-boundary.mjs', () => {
 
   it('requires an annotated tag, exact checkout SHA, version parity, and committed release notes', () => {
     const { root, sha } = createTriggerRepository();
-    expect(assertTrigger({ tag: TAG, sha, cwd: root })).toEqual({ version: VERSION, sha });
-    expect(() => assertTrigger({ tag: VERSION, sha, cwd: root })).toThrow('canonical');
-    expect(() => assertTrigger({ tag: TAG, sha: 'b'.repeat(40), cwd: root })).toThrow('same commit');
-    writeFileSync(join(root, 'package.json'), JSON.stringify({ ...packageManifest(), version: '4.15.3' }));
-    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow('package.json version');
-    writeFileSync(join(root, 'package.json'), JSON.stringify(packageManifest(), null, 2));
+    expect(assertTrigger({ tag: TAG, sha, cwd: root })).toEqual({
+      version: VERSION,
+      sha,
+    });
+    expect(() => assertTrigger({ tag: VERSION, sha, cwd: root })).toThrow(
+      'canonical',
+    );
+    expect(() =>
+      assertTrigger({ tag: TAG, sha: 'b'.repeat(40), cwd: root }),
+    ).toThrow('same commit');
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify({ ...packageManifest(), version: '4.15.3' }),
+    );
+    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow(
+      'package.json version',
+    );
+    writeFileSync(
+      join(root, 'package.json'),
+      JSON.stringify(packageManifest(), null, 2),
+    );
 
-    writeFileSync(join(root, 'docs', 'CLAUDE.md'), '<!-- OMC:VERSION:4.15.3 -->\n');
-    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow('does not advertise');
+    writeFileSync(
+      join(root, 'docs', 'CLAUDE.md'),
+      '<!-- OMC:VERSION:4.15.3 -->\n',
+    );
+    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow(
+      'does not advertise',
+    );
 
-    writeFileSync(join(root, 'docs', 'CLAUDE.md'), `<!-- OMC:VERSION:${VERSION} -->\n`);
+    writeFileSync(
+      join(root, 'docs', 'CLAUDE.md'),
+      `<!-- OMC:VERSION:${VERSION} -->\n`,
+    );
     writeFileSync(join(root, '.github', 'release-body.md'), ' \n');
-    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow('must be non-empty');
-    writeFileSync(join(root, '.github', 'release-body.md'), '# Changed release notes\n');
-    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow('match the contents committed at HEAD');
+    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow(
+      'must be non-empty',
+    );
+    writeFileSync(
+      join(root, '.github', 'release-body.md'),
+      '# Changed release notes\n',
+    );
+    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow(
+      'match the contents committed at HEAD',
+    );
     execFileSync('git', ['tag', '-d', TAG], { cwd: root, stdio: 'ignore' });
     execFileSync('git', ['tag', TAG], { cwd: root, stdio: 'ignore' });
-    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow('must be annotated');
+    expect(() => assertTrigger({ tag: TAG, sha, cwd: root })).toThrow(
+      'must be annotated',
+    );
   });
 
   it('stages a safe npm archive with only a staged gitHead injection and rejects traversal', () => {
@@ -342,34 +493,54 @@ describe('release-boundary.mjs', () => {
     const trackedManifestPath = join(root, 'package.json');
     const trackedManifest = `${JSON.stringify(packageManifest(), null, 2)}\n`;
     writeFileSync(trackedManifestPath, trackedManifest);
-    const seedPath = writeTarball(root, 'seed.tgz', makeTarball([
-      { path: 'package/package.json', content: trackedManifest },
-      { path: 'package/bin/oh-my-claudecode.js', content: '#!/usr/bin/env node\n', mode: 0o755 },
-    ]));
+    const seedPath = writeTarball(
+      root,
+      'seed.tgz',
+      makeTarball([
+        { path: 'package/package.json', content: trackedManifest },
+        {
+          path: 'package/bin/oh-my-claudecode.js',
+          content: '#!/usr/bin/env node\n',
+          mode: 0o755,
+        },
+      ]),
+    );
     const stage = join(root, 'stage');
 
     prepareStage(seedPath, stage, SHA);
     expect(readFileSync(trackedManifestPath, 'utf8')).toBe(trackedManifest);
-    expect(JSON.parse(readFileSync(join(stage, 'package', 'package.json'), 'utf8'))).toMatchObject({
+    expect(
+      JSON.parse(readFileSync(join(stage, 'package', 'package.json'), 'utf8')),
+    ).toMatchObject({
       name: PACKAGE_NAME,
       version: VERSION,
       gitHead: SHA,
     });
 
-    const traversalPath = writeTarball(root, 'traversal.tgz', makeTarball([
-      { path: '../outside.txt', content: 'escape' },
-    ]));
+    const traversalPath = writeTarball(
+      root,
+      'traversal.tgz',
+      makeTarball([{ path: '../outside.txt', content: 'escape' }]),
+    );
     const rejectedStage = join(root, 'rejected-stage');
-    expect(() => prepareStage(traversalPath, rejectedStage, SHA)).toThrow('unsafe');
+    expect(() => prepareStage(traversalPath, rejectedStage, SHA)).toThrow(
+      'unsafe',
+    );
     expect(() => readFileSync(join(root, 'outside.txt'), 'utf8')).toThrow();
   });
 
   it('asserts the final archive surfaces and records tamper-evident byte and content manifests', async () => {
     const root = makeTempRoot('release-boundary-evidence-');
-    const tarballPath = writeTarball(root, `${PACKAGE_NAME}-${VERSION}.tgz`, releaseTarball());
+    const tarballPath = writeTarball(
+      root,
+      `${PACKAGE_NAME}-${VERSION}.tgz`,
+      releaseTarball(),
+    );
     const evidencePath = join(root, 'release-evidence.json');
 
-    expect(() => assertArchive(tarballPath, { version: VERSION, gitHead: SHA })).not.toThrow();
+    expect(() =>
+      assertArchive(tarballPath, { version: VERSION, gitHead: SHA }),
+    ).not.toThrow();
     const evidence = writeEvidence(tarballPath, evidencePath);
     expect(evidence).toMatchObject({
       package: { name: PACKAGE_NAME, version: VERSION, gitHead: SHA },
@@ -377,7 +548,9 @@ describe('release-boundary.mjs', () => {
       tag: TAG,
       npmIntegrity: expect.stringMatching(/^sha512-/),
     });
-    expect(evidence.archiveManifest.files.map((file: { path: string }) => file.path)).toEqual([
+    expect(
+      evidence.archiveManifest.files.map((file: { path: string }) => file.path),
+    ).toEqual([
       'package/.claude-plugin/marketplace.json',
       'package/.claude-plugin/plugin.json',
       'package/.mcp.json',
@@ -390,99 +563,142 @@ describe('release-boundary.mjs', () => {
       'package/package.json',
     ]);
 
-    const forbiddenPath = writeTarball(root, 'forbidden.tgz', releaseTarball(SHA, [
-      { path: 'package/.omc/evidence.json', content: '{}' },
-    ]));
-    expect(() => assertArchive(forbiddenPath, { version: VERSION, gitHead: SHA })).toThrow('forbidden operational artifact');
+    const forbiddenPath = writeTarball(
+      root,
+      'forbidden.tgz',
+      releaseTarball(SHA, [
+        { path: 'package/.omc/evidence.json', content: '{}' },
+      ]),
+    );
+    expect(() =>
+      assertArchive(forbiddenPath, { version: VERSION, gitHead: SHA }),
+    ).toThrow('forbidden operational artifact');
     expect(assertEvidence(tarballPath, evidencePath)).toEqual(evidence);
-    await expect(cliMain([
-      'assert-evidence',
-      '--tarball',
-      tarballPath,
-      '--evidence',
-      evidencePath,
-    ])).resolves.toBeUndefined();
+    await expect(
+      cliMain([
+        'assert-evidence',
+        '--tarball',
+        tarballPath,
+        '--evidence',
+        evidencePath,
+      ]),
+    ).resolves.toBeUndefined();
     writeFileSync(tarballPath, releaseTarball(SHA, [], '# tampered bytes\n'));
     expect(() => assertEvidence(tarballPath, evidencePath)).toThrow();
   });
 
   it('decodes exactly one DSSE SLSA statement and requires distinct workflow-v1 build type and GitHub-hosted builder', () => {
-
     const archiveEvidence = buildEvidenceFromBytes(releaseTarball());
     const payload = dssePayload(archiveEvidence.sha512.hex);
     const attestation = slsaAttestation(payload);
-    expect(selectSlsaAttestation({ attestations: [attestation] })).toBe(attestation);
+    expect(selectSlsaAttestation({ attestations: [attestation] })).toBe(
+      attestation,
+    );
     expect(decodeDssePayload(attestation)).toEqual(payload);
-    expect(assertSlsaProvenance(payload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toBe(true);
+    expect(
+      assertSlsaProvenance(payload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toBe(true);
     const wrongBuildTypePayload = dssePayload(archiveEvidence.sha512.hex);
-    (wrongBuildTypePayload.predicate as { buildDefinition: { buildType: string } }).buildDefinition.buildType = 'https://github.com/actions/runner/github-hosted';
-    expect(() => assertSlsaProvenance(wrongBuildTypePayload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toThrow('workflow v1 build type');
+    (
+      wrongBuildTypePayload.predicate as {
+        buildDefinition: { buildType: string };
+      }
+    ).buildDefinition.buildType =
+      'https://github.com/actions/runner/github-hosted';
+    expect(() =>
+      assertSlsaProvenance(wrongBuildTypePayload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toThrow('workflow v1 build type');
     const wrongBuilderPayload = dssePayload(archiveEvidence.sha512.hex);
-    (wrongBuilderPayload.predicate as { runDetails: { builder: { id: string } } }).runDetails.builder.id = 'https://github.com/actions/runner/self-hosted';
-    expect(() => assertSlsaProvenance(wrongBuilderPayload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toThrow('builder id');
+    (
+      wrongBuilderPayload.predicate as {
+        runDetails: { builder: { id: string } };
+      }
+    ).runDetails.builder.id = 'https://github.com/actions/runner/self-hosted';
+    expect(() =>
+      assertSlsaProvenance(wrongBuilderPayload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toThrow('builder id');
 
-    expect(() => selectSlsaAttestation({ attestations: [attestation, attestation] })).toThrow('exactly one');
-    expect(() => decodeDssePayload({ predicateType: 'https://slsa.dev/provenance/v1', bundle: { dsseEnvelope: { payload: 'bad!' } } })).toThrow('canonical base64');
+    expect(() =>
+      selectSlsaAttestation({ attestations: [attestation, attestation] }),
+    ).toThrow('exactly one');
+    expect(() =>
+      decodeDssePayload({
+        predicateType: 'https://slsa.dev/provenance/v1',
+        bundle: { dsseEnvelope: { payload: 'bad!' } },
+      }),
+    ).toThrow('canonical base64');
     const wrongRefPayload = dssePayload(archiveEvidence.sha512.hex);
     const wrongRefPredicate = wrongRefPayload.predicate as {
       buildDefinition: {
         externalParameters: { workflow: Record<string, unknown> };
       };
     };
-    wrongRefPredicate.buildDefinition.externalParameters.workflow.ref = 'refs/tags/v4.15.3';
+    wrongRefPredicate.buildDefinition.externalParameters.workflow.ref =
+      'refs/tags/v4.15.3';
     const wrongSubjectPayload = dssePayload('b'.repeat(128));
-    expect(() => assertSlsaProvenance(wrongSubjectPayload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toThrow('subject');
+    expect(() =>
+      assertSlsaProvenance(wrongSubjectPayload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toThrow('subject');
     const wrongCommitPayload = dssePayload(archiveEvidence.sha512.hex);
     const wrongCommitPredicate = wrongCommitPayload.predicate as {
       buildDefinition: {
         resolvedDependencies: Array<{ digest: Record<string, unknown> }>;
       };
     };
-    wrongCommitPredicate.buildDefinition.resolvedDependencies[0].digest.gitCommit = 'b'.repeat(40);
-    expect(() => assertSlsaProvenance(wrongCommitPayload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toThrow('resolved dependency');
-    expect(() => assertSlsaProvenance(wrongRefPayload, {
-      packageName: PACKAGE_NAME,
-      version: VERSION,
-      tag: TAG,
-      sha: SHA,
-      sha512: archiveEvidence.sha512.hex,
-    })).toThrow('workflow repository, path, or ref');
+    wrongCommitPredicate.buildDefinition.resolvedDependencies[0].digest.gitCommit =
+      'b'.repeat(40);
+    expect(() =>
+      assertSlsaProvenance(wrongCommitPayload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toThrow('resolved dependency');
+    expect(() =>
+      assertSlsaProvenance(wrongRefPayload, {
+        packageName: PACKAGE_NAME,
+        version: VERSION,
+        tag: TAG,
+        sha: SHA,
+        sha512: archiveEvidence.sha512.hex,
+      }),
+    ).toThrow('workflow repository, path, or ref');
   });
 
   it('verifies registry bytes against evidence and records only the narrow fallback classifier', async () => {
     const root = makeTempRoot('release-boundary-registry-');
     const tarball = releaseTarball();
-    const localTarballPath = writeTarball(root, `${PACKAGE_NAME}-${VERSION}.tgz`, tarball);
+    const localTarballPath = writeTarball(
+      root,
+      `${PACKAGE_NAME}-${VERSION}.tgz`,
+      tarball,
+    );
     const evidencePath = join(root, 'release-evidence.json');
     const evidence = writeEvidence(localTarballPath, evidencePath);
     let base = '';
@@ -529,8 +745,13 @@ describe('release-boundary.mjs', () => {
     });
     base = server.base;
     const auditPath = join(root, 'npm-audit-signatures.json');
-    const npmVerifiedAttestation = slsaAttestation(dssePayload(evidence.sha512.hex));
-    writeFileSync(auditPath, JSON.stringify(auditReport(npmVerifiedAttestation, base)));
+    const npmVerifiedAttestation = slsaAttestation(
+      dssePayload(evidence.sha512.hex),
+    );
+    writeFileSync(
+      auditPath,
+      JSON.stringify(auditReport(npmVerifiedAttestation, base)),
+    );
     const requiredRegistryOptions = {
       packageName: PACKAGE_NAME,
       version: VERSION,
@@ -542,118 +763,178 @@ describe('release-boundary.mjs', () => {
       auditPath,
     };
     try {
-      await withEnvironment({ RELEASE_BOUNDARY_REGISTRY_URL: base }, async () => {
-        await expect(cliMain([
-          'verify-registry',
-          '--package',
-          PACKAGE_NAME,
-          '--version',
-          VERSION,
-          '--tag',
-          TAG,
-          '--sha',
-          SHA,
-          '--evidence',
-          evidencePath,
-          '--tarball',
-          localTarballPath,
-          '--provenance',
-          'required',
-        ])).rejects.toThrow('--audit is required');
+      await withEnvironment(
+        { RELEASE_BOUNDARY_REGISTRY_URL: base },
+        async () => {
+          await expect(
+            cliMain([
+              'verify-registry',
+              '--package',
+              PACKAGE_NAME,
+              '--version',
+              VERSION,
+              '--tag',
+              TAG,
+              '--sha',
+              SHA,
+              '--evidence',
+              evidencePath,
+              '--tarball',
+              localTarballPath,
+              '--provenance',
+              'required',
+            ]),
+          ).rejects.toThrow('--audit is required');
 
-        await expect(cliMain([
-          'verify-registry',
-          '--package',
-          PACKAGE_NAME,
-          '--version',
-          VERSION,
-          '--tag',
-          TAG,
-          '--sha',
-          SHA,
-          '--evidence',
-          evidencePath,
-          '--tarball',
-          localTarballPath,
-          '--provenance',
-          'required',
-          '--audit',
-          auditPath,
+          await expect(
+            cliMain([
+              'verify-registry',
+              '--package',
+              PACKAGE_NAME,
+              '--version',
+              VERSION,
+              '--tag',
+              TAG,
+              '--sha',
+              SHA,
+              '--evidence',
+              evidencePath,
+              '--tarball',
+              localTarballPath,
+              '--provenance',
+              'required',
+              '--audit',
+              auditPath,
+            ]),
+          ).resolves.toBeUndefined();
 
-        ])).resolves.toBeUndefined();
-
-        servedTarball = releaseTarball(SHA, [], '# tampered bytes\n');
-        await expect(verifyRegistry({
-          packageName: PACKAGE_NAME,
-          version: VERSION,
-          tag: TAG,
-          sha: SHA,
-          evidencePath,
-          tarballPath: localTarballPath,
-          provenance: 'required',
-          auditPath,
-        })).rejects.toThrow();
-        servedTarball = tarball;
-        writeFileSync(auditPath, JSON.stringify(auditReport(npmVerifiedAttestation, base, { invalid: [{ code: 'EATTESTATIONVERIFY' }] })));
-        await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow('invalid or missing signatures');
-        writeFileSync(auditPath, JSON.stringify(auditReport(npmVerifiedAttestation, base, { missing: [{ name: PACKAGE_NAME }] })));
-        await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow('invalid or missing signatures');
-        writeFileSync(auditPath, JSON.stringify(auditReport(npmVerifiedAttestation, base, {
-          verified: [{
-            name: 'wrong-package',
-            version: VERSION,
-            registry: `${base}/`,
-            attestationBundles: [npmVerifiedAttestation],
-          }],
-        })));
-        await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(`exactly one verified ${PACKAGE_NAME}@${VERSION} entry`);
-        writeFileSync(auditPath, JSON.stringify(auditReport(npmVerifiedAttestation, base)));
-        registryAttestation = slsaAttestation(dssePayload(evidence.sha512.hex), 'different-signature');
-        await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow('DSSE signatures mismatch');
-        registryAttestation = slsaAttestation(dssePayload('b'.repeat(128)));
-        await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow('DSSE payload mismatch');
-        registryAttestation = slsaAttestation(dssePayload(evidence.sha512.hex));
-      });
+          servedTarball = releaseTarball(SHA, [], '# tampered bytes\n');
+          await expect(
+            verifyRegistry({
+              packageName: PACKAGE_NAME,
+              version: VERSION,
+              tag: TAG,
+              sha: SHA,
+              evidencePath,
+              tarballPath: localTarballPath,
+              provenance: 'required',
+              auditPath,
+            }),
+          ).rejects.toThrow();
+          servedTarball = tarball;
+          writeFileSync(
+            auditPath,
+            JSON.stringify(
+              auditReport(npmVerifiedAttestation, base, {
+                invalid: [{ code: 'EATTESTATIONVERIFY' }],
+              }),
+            ),
+          );
+          await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(
+            'invalid or missing signatures',
+          );
+          writeFileSync(
+            auditPath,
+            JSON.stringify(
+              auditReport(npmVerifiedAttestation, base, {
+                missing: [{ name: PACKAGE_NAME }],
+              }),
+            ),
+          );
+          await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(
+            'invalid or missing signatures',
+          );
+          writeFileSync(
+            auditPath,
+            JSON.stringify(
+              auditReport(npmVerifiedAttestation, base, {
+                verified: [
+                  {
+                    name: 'wrong-package',
+                    version: VERSION,
+                    registry: `${base}/`,
+                    attestationBundles: [npmVerifiedAttestation],
+                  },
+                ],
+              }),
+            ),
+          );
+          await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(
+            `exactly one verified ${PACKAGE_NAME}@${VERSION} entry`,
+          );
+          writeFileSync(
+            auditPath,
+            JSON.stringify(auditReport(npmVerifiedAttestation, base)),
+          );
+          registryAttestation = slsaAttestation(
+            dssePayload(evidence.sha512.hex),
+            'different-signature',
+          );
+          await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(
+            'DSSE signatures mismatch',
+          );
+          registryAttestation = slsaAttestation(dssePayload('b'.repeat(128)));
+          await expect(verifyRegistry(requiredRegistryOptions)).rejects.toThrow(
+            'DSSE payload mismatch',
+          );
+          registryAttestation = slsaAttestation(
+            dssePayload(evidence.sha512.hex),
+          );
+        },
+      );
 
       const publishLogPath = join(root, 'npm-publish.log');
-      writeFileSync(publishLogPath, 'npm error code TLOG_CREATE_ENTRY_ERROR\nnpm error rekor unavailable\n');
-      await expect(cliMain([
-        'verify-registry',
-        '--package',
-        PACKAGE_NAME,
-        '--version',
-        VERSION,
-        '--tag',
-        TAG,
-        '--sha',
-        SHA,
-        '--evidence',
-        evidencePath,
-        '--tarball',
-        localTarballPath,
-        '--provenance',
-        'sigstore-fallback',
-        '--publish-log',
+      writeFileSync(
         publishLogPath,
-        '--audit',
-        auditPath,
-      ])).rejects.toThrow('--audit is only valid');
-      attestationMode = 'absent';
-      await withEnvironment({
-        RELEASE_BOUNDARY_REGISTRY_URL: base,
-        GITHUB_RUN_ID: '12345',
-      }, async () => {
-        await expect(verifyRegistry({
-          packageName: PACKAGE_NAME,
-          version: VERSION,
-          tag: TAG,
-          sha: SHA,
+        'npm error code TLOG_CREATE_ENTRY_ERROR\nnpm error rekor unavailable\n',
+      );
+      await expect(
+        cliMain([
+          'verify-registry',
+          '--package',
+          PACKAGE_NAME,
+          '--version',
+          VERSION,
+          '--tag',
+          TAG,
+          '--sha',
+          SHA,
+          '--evidence',
           evidencePath,
-          tarballPath: localTarballPath,
-          provenance: 'sigstore-fallback',
-          publishLog: publishLogPath,
-        })).resolves.toMatchObject({ provenance: 'sigstore-fallback', classifier: 'TLOG_CREATE_ENTRY_ERROR' });
-      });
+          '--tarball',
+          localTarballPath,
+          '--provenance',
+          'sigstore-fallback',
+          '--publish-log',
+          publishLogPath,
+          '--audit',
+          auditPath,
+        ]),
+      ).rejects.toThrow('--audit is only valid');
+      attestationMode = 'absent';
+      await withEnvironment(
+        {
+          RELEASE_BOUNDARY_REGISTRY_URL: base,
+          GITHUB_RUN_ID: '12345',
+        },
+        async () => {
+          await expect(
+            verifyRegistry({
+              packageName: PACKAGE_NAME,
+              version: VERSION,
+              tag: TAG,
+              sha: SHA,
+              evidencePath,
+              tarballPath: localTarballPath,
+              provenance: 'sigstore-fallback',
+              publishLog: publishLogPath,
+            }),
+          ).resolves.toMatchObject({
+            provenance: 'sigstore-fallback',
+            classifier: 'TLOG_CREATE_ENTRY_ERROR',
+          });
+        },
+      );
       expect(JSON.parse(readFileSync(evidencePath, 'utf8'))).toMatchObject({
         provenanceMode: 'sigstore-fallback',
         provenance: {
@@ -663,49 +944,88 @@ describe('release-boundary.mjs', () => {
         },
       });
       attestationMode = 'required';
-      await withEnvironment({
-        RELEASE_BOUNDARY_REGISTRY_URL: base,
-        GITHUB_RUN_ID: '12345',
-      }, async () => {
-        await expect(verifyRegistry({
-          packageName: PACKAGE_NAME,
-          version: VERSION,
-          tag: TAG,
-          sha: SHA,
-          evidencePath,
-          tarballPath: localTarballPath,
-          provenance: 'sigstore-fallback',
-          publishLog: publishLogPath,
-        })).rejects.toThrow('cannot ignore a present SLSA provenance');
-      });
+      await withEnvironment(
+        {
+          RELEASE_BOUNDARY_REGISTRY_URL: base,
+          GITHUB_RUN_ID: '12345',
+        },
+        async () => {
+          await expect(
+            verifyRegistry({
+              packageName: PACKAGE_NAME,
+              version: VERSION,
+              tag: TAG,
+              sha: SHA,
+              evidencePath,
+              tarballPath: localTarballPath,
+              provenance: 'sigstore-fallback',
+              publishLog: publishLogPath,
+            }),
+          ).rejects.toThrow('cannot ignore a present SLSA provenance');
+        },
+      );
     } finally {
       await server.close();
     }
   });
 
   it('accepts only reviewed Sigstore/Rekor transparency-log failure messages', async () => {
-    expect(classifySigstoreRekorFailure('npm ERR! code TLOG_CREATE_ENTRY_ERROR: Rekor entry creation failed')).toBe('TLOG_CREATE_ENTRY_ERROR');
-    expect(classifySigstoreRekorFailure('Sigstore could not create a transparency log entry: Rekor unavailable')).toBe('SIGSTORE_REKOR_TRANSPARENCY_LOG');
-    expect(classifySigstoreRekorFailure('rekor client installed successfully')).toBeNull();
-    expect(classifySigstoreRekorFailure('provenance disabled because of an unrelated network timeout')).toBeNull();
-    expect(classifySigstoreRekorFailure('npm ERR! code TLOG_CREATE_ENTRY_ERROR\nSigstore could not create a transparency log entry: Rekor unavailable')).toBeNull();
-    expect(classifySigstoreRekorFailure('npm ERR! code TLOG_CREATE_ENTRY_ERROR\nnpm ERR! an unrelated failure')).toBeNull();
+    expect(
+      classifySigstoreRekorFailure(
+        'npm ERR! code TLOG_CREATE_ENTRY_ERROR: Rekor entry creation failed',
+      ),
+    ).toBe('TLOG_CREATE_ENTRY_ERROR');
+    expect(
+      classifySigstoreRekorFailure(
+        'Sigstore could not create a transparency log entry: Rekor unavailable',
+      ),
+    ).toBe('SIGSTORE_REKOR_TRANSPARENCY_LOG');
+    expect(
+      classifySigstoreRekorFailure('rekor client installed successfully'),
+    ).toBeNull();
+    expect(
+      classifySigstoreRekorFailure(
+        'provenance disabled because of an unrelated network timeout',
+      ),
+    ).toBeNull();
+    expect(
+      classifySigstoreRekorFailure(
+        'npm ERR! code TLOG_CREATE_ENTRY_ERROR\nSigstore could not create a transparency log entry: Rekor unavailable',
+      ),
+    ).toBeNull();
+    expect(
+      classifySigstoreRekorFailure(
+        'npm ERR! code TLOG_CREATE_ENTRY_ERROR\nnpm ERR! an unrelated failure',
+      ),
+    ).toBeNull();
     const root = makeTempRoot('release-boundary-sigstore-');
     const publishLogPath = join(root, 'npm-publish.log');
-    writeFileSync(publishLogPath, 'npm ERR! code TLOG_CREATE_ENTRY_ERROR\nnpm ERR! Rekor entry creation failed\n');
-    expect(assertSigstoreFallback(publishLogPath)).toEqual({ classifier: 'TLOG_CREATE_ENTRY_ERROR' });
-    await expect(cliMain([
-      'assert-sigstore-fallback',
-      '--publish-log',
+    writeFileSync(
       publishLogPath,
-    ])).resolves.toBeUndefined();
+      'npm ERR! code TLOG_CREATE_ENTRY_ERROR\nnpm ERR! Rekor entry creation failed\n',
+    );
+    expect(assertSigstoreFallback(publishLogPath)).toEqual({
+      classifier: 'TLOG_CREATE_ENTRY_ERROR',
+    });
+    await expect(
+      cliMain(['assert-sigstore-fallback', '--publish-log', publishLogPath]),
+    ).resolves.toBeUndefined();
     writeFileSync(publishLogPath, 'npm ERR! an unrelated network timeout\n');
-    expect(() => assertSigstoreFallback(publishLogPath)).toThrow('recognized Sigstore/Rekor');
-    for (const competingCode of ['E401', 'E403', 'EPUBLISHCONFLICT', 'ENETWORK']) {
+    expect(() => assertSigstoreFallback(publishLogPath)).toThrow(
+      'recognized Sigstore/Rekor',
+    );
+    for (const competingCode of [
+      'E401',
+      'E403',
+      'EPUBLISHCONFLICT',
+      'ENETWORK',
+    ]) {
       const competingLog = `npm ERR! code TLOG_CREATE_ENTRY_ERROR\nnpm ERR! code ${competingCode}\n`;
       expect(classifySigstoreRekorFailure(competingLog)).toBeNull();
       writeFileSync(publishLogPath, competingLog);
-      expect(() => assertSigstoreFallback(publishLogPath)).toThrow('exactly one recognized');
+      expect(() => assertSigstoreFallback(publishLogPath)).toThrow(
+        'exactly one recognized',
+      );
     }
   });
 });

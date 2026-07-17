@@ -235,12 +235,12 @@ async function main() {
   if (pluginCacheDir && existsSync(pluginCacheDir)) {
     const distDir = join(pluginCacheDir, "dist");
     if (!existsSync(distDir)) {
-      console.log(`[OMC HUD] Plugin installed but not built. Run: cd "${pluginCacheDir}" && npm install && npm run build`);
+      console.log(`[OMC HUD] Plugin installed but not built. Run: cd "${pluginCacheDir}" && pnpm install && pnpm run build`);
     } else {
       const detail = lastHudLoadError && typeof lastHudLoadError.message === "string"
         ? ` (${lastHudLoadError.message})`
         : "";
-      console.log(`[OMC HUD] Plugin HUD load failed${detail}. Run: cd "${pluginCacheDir}" && npm install && npm run build`);
+      console.log(`[OMC HUD] Plugin HUD load failed${detail}. Run: cd "${pluginCacheDir}" && pnpm install && pnpm run build`);
     }
   } else if (existsSync(pluginCacheBase)) {
     console.log(`[OMC HUD] Plugin cache found but no versions installed. Run: /oh-my-claudecode:omc-setup`);

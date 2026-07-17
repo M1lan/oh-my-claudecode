@@ -42,7 +42,10 @@ import {
   resolveSessionStatePath,
 } from '../../lib/worktree-paths.js';
 import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
-import { readTrackingState, getStaleAgents } from '../subagent-tracker/index.js';
+import {
+  readTrackingState,
+  getStaleAgents,
+} from '../subagent-tracker/index.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -67,9 +70,11 @@ export const CANONICAL_WORKFLOW_SKILLS = [
   'ralplan',
   'self-improve',
 ] as const;
-export type CanonicalWorkflowSkill = typeof CANONICAL_WORKFLOW_SKILLS[number];
+export type CanonicalWorkflowSkill = (typeof CANONICAL_WORKFLOW_SKILLS)[number];
 
-export function isCanonicalWorkflowSkill(skillName: string): skillName is CanonicalWorkflowSkill {
+export function isCanonicalWorkflowSkill(
+  skillName: string,
+): skillName is CanonicalWorkflowSkill {
   const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   return (CANONICAL_WORKFLOW_SKILLS as readonly string[]).includes(normalized);
 }
@@ -89,9 +94,9 @@ export interface SkillStateConfig {
 
 const PROTECTION_CONFIGS: Record<SkillProtectionLevel, SkillStateConfig> = {
   none: { maxReinforcements: 0, staleTtlMs: 0 },
-  light: { maxReinforcements: 3, staleTtlMs: 5 * 60 * 1000 },      // 5 min
-  medium: { maxReinforcements: 5, staleTtlMs: 15 * 60 * 1000 },    // 15 min
-  heavy: { maxReinforcements: 10, staleTtlMs: 30 * 60 * 1000 },    // 30 min
+  light: { maxReinforcements: 3, staleTtlMs: 5 * 60 * 1000 }, // 5 min
+  medium: { maxReinforcements: 5, staleTtlMs: 15 * 60 * 1000 }, // 15 min
+  heavy: { maxReinforcements: 10, staleTtlMs: 30 * 60 * 1000 }, // 30 min
 };
 
 /**
@@ -152,15 +157,24 @@ const SKILL_PROTECTION: Record<string, SkillProtectionLevel> = {
   deepinit: 'heavy',
 };
 
-export function getSkillProtection(skillName: string, rawSkillName?: string): SkillProtectionLevel {
-  if (rawSkillName != null && !rawSkillName.toLowerCase().startsWith('oh-my-claudecode:')) {
+export function getSkillProtection(
+  skillName: string,
+  rawSkillName?: string,
+): SkillProtectionLevel {
+  if (
+    rawSkillName != null &&
+    !rawSkillName.toLowerCase().startsWith('oh-my-claudecode:')
+  ) {
     return 'none';
   }
   const normalized = skillName.toLowerCase().replace(/^oh-my-claudecode:/, '');
   return SKILL_PROTECTION[normalized] ?? 'none';
 }
 
-export function getSkillConfig(skillName: string, rawSkillName?: string): SkillStateConfig {
+export function getSkillConfig(
+  skillName: string,
+  rawSkillName?: string,
+): SkillStateConfig {
   return PROTECTION_CONFIGS[getSkillProtection(skillName, rawSkillName)];
 }
 
@@ -261,8 +275,14 @@ function normalizeToV2(raw: unknown): SkillActiveStateV2 {
   if (looksV2) {
     const active_skills: Record<string, ActiveSkillSlot> = {};
     const raw_slots = state.active_skills;
-    if (raw_slots && typeof raw_slots === 'object' && !Array.isArray(raw_slots)) {
-      for (const [name, slot] of Object.entries(raw_slots as Record<string, unknown>)) {
+    if (
+      raw_slots &&
+      typeof raw_slots === 'object' &&
+      !Array.isArray(raw_slots)
+    ) {
+      for (const [name, slot] of Object.entries(
+        raw_slots as Record<string, unknown>,
+      )) {
         if (slot && typeof slot === 'object') {
           active_skills[name] = slot as ActiveSkillSlot;
         }
@@ -276,7 +296,10 @@ function normalizeToV2(raw: unknown): SkillActiveStateV2 {
   }
 
   // Legacy scalar shape → fold into support_skill.
-  if (typeof state.active === 'boolean' && typeof state.skill_name === 'string') {
+  if (
+    typeof state.active === 'boolean' &&
+    typeof state.skill_name === 'string'
+  ) {
     return {
       version: 2,
       active_skills: {},
@@ -310,7 +333,8 @@ export function upsertWorkflowSkillSlot(
     mode_state_path: existing?.mode_state_path ?? '',
     initialized_mode: existing?.initialized_mode ?? normalized,
     initialized_state_path: existing?.initialized_state_path ?? '',
-    initialized_session_state_path: existing?.initialized_session_state_path ?? '',
+    initialized_session_state_path:
+      existing?.initialized_session_state_path ?? '',
   };
   if (existing?.last_confirmed_at !== undefined) {
     base.last_confirmed_at = existing.last_confirmed_at;
@@ -407,7 +431,9 @@ export function pruneExpiredWorkflowSkillTombstones(
 export function resolveAuthoritativeWorkflowSkill(
   state: SkillActiveStateV2,
 ): ActiveSkillSlot | null {
-  const live = Object.values(state.active_skills).filter((s) => !s.completed_at);
+  const live = Object.values(state.active_skills).filter(
+    (s) => !s.completed_at,
+  );
   if (live.length === 0) return null;
 
   const isLiveAncestor = (name: string | null | undefined): boolean => {
@@ -491,7 +517,9 @@ export function readSkillActiveStateNormalized(
   const sessionExists = !!(sessionPath && existsSync(sessionPath));
   const rootExists = existsSync(rootPath);
 
-  const sessionV2 = sessionExists ? normalizeToV2(readRawFromPath(sessionPath!)) : null;
+  const sessionV2 = sessionExists
+    ? normalizeToV2(readRawFromPath(sessionPath!))
+    : null;
   const rootV2 = rootExists ? normalizeToV2(readRawFromPath(rootPath)) : null;
 
   // Divergence detection — best-effort; logged but non-fatal.
@@ -504,7 +532,7 @@ export function readSkillActiveStateNormalized(
         // Non-fatal — next writeSkillActiveStateCopies() call will re-sync.
         console.warn(
           `[skill-active] copy drift detected for slot "${name}" in session ${sessionId}; ` +
-          'next mutation will reconcile via writeSkillActiveStateCopies().',
+            'next mutation will reconcile via writeSkillActiveStateCopies().',
         );
         break;
       }
@@ -548,7 +576,10 @@ export function writeSkillActiveStateCopies(
   const rootState: SkillActiveStateV2 | null =
     options?.rootState === undefined ? nextState : options.rootState;
 
-  const writeOrRemove = (filePath: string, payload: SkillActiveStateV2 | null): boolean => {
+  const writeOrRemove = (
+    filePath: string,
+    payload: SkillActiveStateV2 | null,
+  ): boolean => {
     const shouldRemove = payload === null || isEmptyV2(payload);
     if (shouldRemove) {
       if (!existsSync(filePath)) return true;
@@ -657,7 +688,10 @@ export function writeSkillActiveState(
 /**
  * Clear support-skill state while preserving workflow slots.
  */
-export function clearSkillActiveState(directory: string, sessionId?: string): boolean {
+export function clearSkillActiveState(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const existingV2 = readSkillActiveStateNormalized(directory, sessionId);
   const nextV2: SkillActiveStateV2 = { ...existingV2, support_skill: null };
   return writeSkillActiveStateCopies(directory, nextV2, sessionId);
@@ -669,9 +703,7 @@ export function isSkillStateStale(state: SkillActiveState): boolean {
   const lastChecked = state.last_checked_at
     ? new Date(state.last_checked_at).getTime()
     : 0;
-  const startedAt = state.started_at
-    ? new Date(state.started_at).getTime()
-    : 0;
+  const startedAt = state.started_at ? new Date(state.started_at).getTime() : 0;
   const mostRecent = Math.max(lastChecked, startedAt);
 
   if (mostRecent === 0) return true;
@@ -715,7 +747,9 @@ export function checkSkillActiveState(
 
   // Orchestrators are allowed to go idle while delegated work is still active.
   const trackingState = readTrackingState(directory);
-  const staleIds = new Set(getStaleAgents(trackingState).map((a) => a.agent_id));
+  const staleIds = new Set(
+    getStaleAgents(trackingState).map((a) => a.agent_id),
+  );
   const nonStaleRunning = trackingState.agents.filter(
     (a) => a.status === 'running' && !staleIds.has(a.agent_id),
   );

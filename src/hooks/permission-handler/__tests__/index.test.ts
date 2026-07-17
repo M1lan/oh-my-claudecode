@@ -30,8 +30,8 @@ describe('permission-handler', () => {
         'git branch',
         'git show',
         'git fetch',
-        'npm run lint',
-        'npm run build',
+        'pnpm run lint',
+        'pnpm run build',
         'tsc',
         'tsc --noEmit',
         'eslint .',
@@ -41,7 +41,7 @@ describe('permission-handler', () => {
         'ls -la',
         // Quoted paths are allowed (needed for paths with spaces)
         'ls "my folder"',
-        'ls \'my folder\'',
+        "ls 'my folder'",
         'git diff "src/file with spaces.ts"',
         'gh issue list',
         'gh issue view 2508',
@@ -117,11 +117,17 @@ describe('permission-handler', () => {
         { cmd: 'git status [abc]', desc: 'bracket character class' },
         // Carriage return and null byte
         { cmd: 'git status\rmalicious', desc: 'carriage return injection' },
-        { cmd: 'npm test\r\nrm -rf /', desc: 'CRLF injection' },
+        { cmd: 'pnpm test\r\nrm -rf /', desc: 'CRLF injection' },
         { cmd: 'git status\0malicious', desc: 'null byte injection' },
         // Command substitution (caught by $ not quotes)
-        { cmd: 'git status "$(whoami)"', desc: 'command substitution in double quotes' },
-        { cmd: "git status '$(whoami)'", desc: 'command substitution in single quotes' },
+        {
+          cmd: 'git status "$(whoami)"',
+          desc: 'command substitution in double quotes',
+        },
+        {
+          cmd: "git status '$(whoami)'",
+          desc: 'command substitution in single quotes',
+        },
         // Wildcard characters
         { cmd: 'ls *.txt', desc: 'asterisk wildcard' },
         { cmd: 'ls file?.txt', desc: 'question mark wildcard' },
@@ -134,9 +140,15 @@ describe('permission-handler', () => {
         { cmd: 'git status !previous', desc: 'history expansion in command' },
         // Comment injection
         { cmd: 'git status #ignore rest', desc: 'comment injection' },
-        { cmd: 'npm test # malicious', desc: 'comment to hide code' },
-        { cmd: 'npm test -- --run src/example.test.ts', desc: 'broad npm test invocation' },
-        { cmd: 'pytest tests/example_test.py', desc: 'broad pytest invocation' },
+        { cmd: 'pnpm test # malicious', desc: 'comment to hide code' },
+        {
+          cmd: 'pnpm test -- --run src/example.test.ts',
+          desc: 'broad pnpm test invocation',
+        },
+        {
+          cmd: 'pytest tests/example_test.py',
+          desc: 'broad pytest invocation',
+        },
       ];
 
       additionalDangerousCases.forEach(({ cmd, desc }) => {
@@ -191,7 +203,10 @@ describe('permission-handler', () => {
     beforeEach(() => {
       fs.rmSync(testDir, { recursive: true, force: true });
       fs.mkdirSync(path.join(testDir, 'src'), { recursive: true });
-      fs.writeFileSync(path.join(testDir, 'src', 'sample.ts'), 'export const value = 1;\n');
+      fs.writeFileSync(
+        path.join(testDir, 'src', 'sample.ts'),
+        'export const value = 1;\n',
+      );
       initializeGitRepo(testDir);
       fs.writeFileSync(path.join(testDir, '.env.local'), 'SECRET=1\n');
     });
@@ -201,31 +216,60 @@ describe('permission-handler', () => {
     });
 
     it('allows narrow repo inspection commands', () => {
-      expect(isSafeRepoInspectionCommand('cat src/sample.ts', testDir)).toBe(true);
-      expect(isSafeRepoInspectionCommand('sed -n 1,20p src/sample.ts', testDir)).toBe(true);
-      expect(isSafeRepoInspectionCommand('rg -n value src/sample.ts', testDir)).toBe(true);
-      expect(isSafeRepoInspectionCommand('head -n 5 src/sample.ts', testDir)).toBe(true);
+      expect(isSafeRepoInspectionCommand('cat src/sample.ts', testDir)).toBe(
+        true,
+      );
+      expect(
+        isSafeRepoInspectionCommand('sed -n 1,20p src/sample.ts', testDir),
+      ).toBe(true);
+      expect(
+        isSafeRepoInspectionCommand('rg -n value src/sample.ts', testDir),
+      ).toBe(true);
+      expect(
+        isSafeRepoInspectionCommand('head -n 5 src/sample.ts', testDir),
+      ).toBe(true);
     });
 
     it('rejects sensitive or escaping repo inspection paths', () => {
-      expect(isSafeRepoInspectionCommand('cat .env.local', testDir)).toBe(false);
-      expect(isSafeRepoInspectionCommand('cat ../outside.txt', testDir)).toBe(false);
-      expect(isSafeRepoInspectionCommand('rg -n value .git', testDir)).toBe(false);
-      expect(isSafeRepoInspectionCommand('rg -n value src', testDir)).toBe(false);
+      expect(isSafeRepoInspectionCommand('cat .env.local', testDir)).toBe(
+        false,
+      );
+      expect(isSafeRepoInspectionCommand('cat ../outside.txt', testDir)).toBe(
+        false,
+      );
+      expect(isSafeRepoInspectionCommand('rg -n value .git', testDir)).toBe(
+        false,
+      );
+      expect(isSafeRepoInspectionCommand('rg -n value src', testDir)).toBe(
+        false,
+      );
       expect(isSafeRepoInspectionCommand('rg -n value .', testDir)).toBe(false);
-      expect(isSafeRepoInspectionCommand('rg --hidden SECRET .', testDir)).toBe(false);
-      expect(isSafeRepoInspectionCommand('sed -n 1,20p missing.ts', testDir)).toBe(false);
+      expect(isSafeRepoInspectionCommand('rg --hidden SECRET .', testDir)).toBe(
+        false,
+      );
+      expect(
+        isSafeRepoInspectionCommand('sed -n 1,20p missing.ts', testDir),
+      ).toBe(false);
     });
 
     it('rejects repo inspection commands when cwd is not inside a git worktree', () => {
-      const nonGitDir = fs.mkdtempSync('/tmp/omc-permission-safe-inspection-non-git-');
+      const nonGitDir = fs.mkdtempSync(
+        '/tmp/omc-permission-safe-inspection-non-git-',
+      );
 
       try {
         fs.mkdirSync(path.join(nonGitDir, 'src'), { recursive: true });
-        fs.writeFileSync(path.join(nonGitDir, 'src', 'sample.ts'), 'export const value = 1;\n');
+        fs.writeFileSync(
+          path.join(nonGitDir, 'src', 'sample.ts'),
+          'export const value = 1;\n',
+        );
 
-        expect(isSafeRepoInspectionCommand('cat src/sample.ts', nonGitDir)).toBe(false);
-        expect(isSafeRepoInspectionCommand('rg -n value src', nonGitDir)).toBe(false);
+        expect(
+          isSafeRepoInspectionCommand('cat src/sample.ts', nonGitDir),
+        ).toBe(false);
+        expect(isSafeRepoInspectionCommand('rg -n value src', nonGitDir)).toBe(
+          false,
+        );
       } finally {
         fs.rmSync(nonGitDir, { recursive: true, force: true });
       }
@@ -238,7 +282,10 @@ describe('permission-handler', () => {
     beforeEach(() => {
       fs.rmSync(testDir, { recursive: true, force: true });
       fs.mkdirSync(path.join(testDir, 'src', '__tests__'), { recursive: true });
-      fs.writeFileSync(path.join(testDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+      fs.writeFileSync(
+        path.join(testDir, 'src', '__tests__', 'sample.test.ts'),
+        'test("x", () => {});\n',
+      );
       initializeGitRepo(testDir);
     });
 
@@ -247,28 +294,72 @@ describe('permission-handler', () => {
     });
 
     it('allows narrow single-test commands', () => {
-      expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts', testDir)).toBe(true);
-      expect(isSafeTargetedLocalTestCommand('npm test -- --run src/__tests__/sample.test.ts', testDir)).toBe(true);
-      expect(isSafeTargetedLocalTestCommand('pnpm vitest run src/__tests__/sample.test.ts', testDir)).toBe(true);
-      expect(isSafeTargetedLocalTestCommand('node --test src/__tests__/sample.test.ts', testDir)).toBe(true);
+      expect(
+        isSafeTargetedLocalTestCommand(
+          'vitest run src/__tests__/sample.test.ts',
+          testDir,
+        ),
+      ).toBe(true);
+      expect(
+        isSafeTargetedLocalTestCommand(
+          'pnpm test -- --run src/__tests__/sample.test.ts',
+          testDir,
+        ),
+      ).toBe(true);
+      expect(
+        isSafeTargetedLocalTestCommand(
+          'pnpm vitest run src/__tests__/sample.test.ts',
+          testDir,
+        ),
+      ).toBe(true);
+      expect(
+        isSafeTargetedLocalTestCommand(
+          'node --test src/__tests__/sample.test.ts',
+          testDir,
+        ),
+      ).toBe(true);
     });
 
     it('rejects broad or malformed test commands', () => {
-      expect(isSafeTargetedLocalTestCommand('npm test', testDir)).toBe(false);
+      expect(isSafeTargetedLocalTestCommand('pnpm test', testDir)).toBe(false);
       expect(isSafeTargetedLocalTestCommand('vitest run', testDir)).toBe(false);
-      expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts --watch', testDir)).toBe(false);
-      expect(isSafeTargetedLocalTestCommand('vitest run ../other.test.ts', testDir)).toBe(false);
+      expect(
+        isSafeTargetedLocalTestCommand(
+          'vitest run src/__tests__/sample.test.ts --watch',
+          testDir,
+        ),
+      ).toBe(false);
+      expect(
+        isSafeTargetedLocalTestCommand('vitest run ../other.test.ts', testDir),
+      ).toBe(false);
     });
 
     it('rejects targeted test commands when cwd is not inside a git worktree', () => {
-      const nonGitDir = fs.mkdtempSync('/tmp/omc-permission-safe-tests-non-git-');
+      const nonGitDir = fs.mkdtempSync(
+        '/tmp/omc-permission-safe-tests-non-git-',
+      );
 
       try {
-        fs.mkdirSync(path.join(nonGitDir, 'src', '__tests__'), { recursive: true });
-        fs.writeFileSync(path.join(nonGitDir, 'src', '__tests__', 'sample.test.ts'), 'test("x", () => {});\n');
+        fs.mkdirSync(path.join(nonGitDir, 'src', '__tests__'), {
+          recursive: true,
+        });
+        fs.writeFileSync(
+          path.join(nonGitDir, 'src', '__tests__', 'sample.test.ts'),
+          'test("x", () => {});\n',
+        );
 
-        expect(isSafeTargetedLocalTestCommand('vitest run src/__tests__/sample.test.ts', nonGitDir)).toBe(false);
-        expect(isSafeTargetedLocalTestCommand('node --test src/__tests__/sample.test.ts', nonGitDir)).toBe(false);
+        expect(
+          isSafeTargetedLocalTestCommand(
+            'vitest run src/__tests__/sample.test.ts',
+            nonGitDir,
+          ),
+        ).toBe(false);
+        expect(
+          isSafeTargetedLocalTestCommand(
+            'node --test src/__tests__/sample.test.ts',
+            nonGitDir,
+          ),
+        ).toBe(false);
       } finally {
         fs.rmSync(nonGitDir, { recursive: true, force: true });
       }
@@ -323,7 +414,7 @@ describe('permission-handler', () => {
         },
         {
           desc: 'single-line with << but no newlines',
-          cmd: "git commit -m \"$(cat <<'EOF' EOF)\"",
+          cmd: 'git commit -m "$(cat <<\'EOF\' EOF)"',
         },
         {
           desc: 'curl with heredoc (unsafe base)',
@@ -397,7 +488,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'autopilot-state.json'),
-        JSON.stringify({ active: true })
+        JSON.stringify({ active: true }),
       );
       expect(isActiveModeRunning(testDir)).toBe(true);
     });
@@ -406,7 +497,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'ralph-state.json'),
-        JSON.stringify({ status: 'running' })
+        JSON.stringify({ status: 'running' }),
       );
       expect(isActiveModeRunning(testDir)).toBe(true);
     });
@@ -415,7 +506,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'autopilot-state.json'),
-        JSON.stringify({ active: false })
+        JSON.stringify({ active: false }),
       );
       expect(isActiveModeRunning(testDir)).toBe(false);
     });
@@ -424,7 +515,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'autopilot-state.json'),
-        'invalid json {'
+        'invalid json {',
       );
       expect(isActiveModeRunning(testDir)).toBe(false);
     });
@@ -439,7 +530,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'team-state.json'),
-        JSON.stringify({ active: true })
+        JSON.stringify({ active: true }),
       );
       expect(isActiveModeRunning(testDir)).toBe(true);
     });
@@ -448,7 +539,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'team-state.json'),
-        JSON.stringify({ status: 'running' })
+        JSON.stringify({ status: 'running' }),
       );
       expect(isActiveModeRunning(testDir)).toBe(true);
     });
@@ -457,7 +548,7 @@ describe('permission-handler', () => {
       fs.mkdirSync(stateDir, { recursive: true });
       fs.writeFileSync(
         path.join(stateDir, 'team-state.json'),
-        JSON.stringify({ active: false, status: 'idle' })
+        JSON.stringify({ active: false, status: 'idle' }),
       );
       expect(isActiveModeRunning(testDir)).toBe(false);
     });
@@ -502,7 +593,10 @@ describe('permission-handler', () => {
 
       it('should auto-approve safe repo inspection commands', () => {
         fs.mkdirSync(path.join(testDir, 'src'), { recursive: true });
-        fs.writeFileSync(path.join(testDir, 'src', 'safe.ts'), 'export const value = 1;\n');
+        fs.writeFileSync(
+          path.join(testDir, 'src', 'safe.ts'),
+          'export const value = 1;\n',
+        );
         initializeGitRepo(testDir);
 
         const result = processPermissionRequest(createInput('cat src/safe.ts'));
@@ -512,51 +606,87 @@ describe('permission-handler', () => {
 
       it('should not auto-approve ripgrep directory or hidden sweeps', () => {
         fs.mkdirSync(path.join(testDir, 'src'), { recursive: true });
-        fs.writeFileSync(path.join(testDir, 'src', 'safe.ts'), 'export const SECRET = 1;\n');
+        fs.writeFileSync(
+          path.join(testDir, 'src', 'safe.ts'),
+          'export const SECRET = 1;\n',
+        );
         fs.writeFileSync(path.join(testDir, '.env.local'), 'SECRET=1\n');
         initializeGitRepo(testDir);
 
-        const directorySweep = processPermissionRequest(createInput('rg -n SECRET .'));
+        const directorySweep = processPermissionRequest(
+          createInput('rg -n SECRET .'),
+        );
         expect(directorySweep.continue).toBe(true);
-        expect(directorySweep.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(directorySweep.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
 
-        const hiddenSweep = processPermissionRequest(createInput('rg --hidden SECRET .'));
+        const hiddenSweep = processPermissionRequest(
+          createInput('rg --hidden SECRET .'),
+        );
         expect(hiddenSweep.continue).toBe(true);
-        expect(hiddenSweep.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(hiddenSweep.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
       });
 
       it('should auto-approve narrowly targeted local test commands', () => {
-        fs.mkdirSync(path.join(testDir, 'src', '__tests__'), { recursive: true });
-        fs.writeFileSync(path.join(testDir, 'src', '__tests__', 'safe.test.ts'), 'test("x", () => {});\n');
+        fs.mkdirSync(path.join(testDir, 'src', '__tests__'), {
+          recursive: true,
+        });
+        fs.writeFileSync(
+          path.join(testDir, 'src', '__tests__', 'safe.test.ts'),
+          'test("x", () => {});\n',
+        );
         initializeGitRepo(testDir);
 
-        const result = processPermissionRequest(createInput('vitest run src/__tests__/safe.test.ts'));
+        const result = processPermissionRequest(
+          createInput('vitest run src/__tests__/safe.test.ts'),
+        );
         expect(result.continue).toBe(true);
         expect(result.hookSpecificOutput?.decision?.behavior).toBe('allow');
       });
 
       it('should not auto-approve repo-scoped commands outside a git worktree', () => {
-        fs.mkdirSync(path.join(testDir, 'src', '__tests__'), { recursive: true });
-        fs.writeFileSync(path.join(testDir, 'src', 'safe.ts'), 'export const value = 1;\n');
-        fs.writeFileSync(path.join(testDir, 'src', '__tests__', 'safe.test.ts'), 'test("x", () => {});\n');
+        fs.mkdirSync(path.join(testDir, 'src', '__tests__'), {
+          recursive: true,
+        });
+        fs.writeFileSync(
+          path.join(testDir, 'src', 'safe.ts'),
+          'export const value = 1;\n',
+        );
+        fs.writeFileSync(
+          path.join(testDir, 'src', '__tests__', 'safe.test.ts'),
+          'test("x", () => {});\n',
+        );
 
-        const inspectionResult = processPermissionRequest(createInput('cat src/safe.ts'));
+        const inspectionResult = processPermissionRequest(
+          createInput('cat src/safe.ts'),
+        );
         expect(inspectionResult.continue).toBe(true);
-        expect(inspectionResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(
+          inspectionResult.hookSpecificOutput?.decision?.behavior,
+        ).not.toBe('allow');
 
-        const testResult = processPermissionRequest(createInput('vitest run src/__tests__/safe.test.ts'));
+        const testResult = processPermissionRequest(
+          createInput('vitest run src/__tests__/safe.test.ts'),
+        );
         expect(testResult.continue).toBe(true);
-        expect(testResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(testResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
       });
 
       it('should reject unsafe commands even when pattern matches prefix', () => {
-        const result = processPermissionRequest(createInput('git status; rm -rf /'));
+        const result = processPermissionRequest(
+          createInput('git status; rm -rf /'),
+        );
         expect(result.continue).toBe(true);
         expect(result.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
       });
 
       it('should not auto-approve broad local test commands', () => {
-        const result = processPermissionRequest(createInput('npm test'));
+        const result = processPermissionRequest(createInput('pnpm test'));
         expect(result.continue).toBe(true);
         expect(result.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
       });
@@ -567,7 +697,7 @@ describe('permission-handler', () => {
         fs.mkdirSync(stateDir, { recursive: true });
         fs.writeFileSync(
           path.join(stateDir, 'autopilot-state.json'),
-          JSON.stringify({ active: true })
+          JSON.stringify({ active: true }),
         );
       });
 
@@ -576,29 +706,43 @@ describe('permission-handler', () => {
         const safeResult = processPermissionRequest(createInput('git status'));
         expect(safeResult.continue).toBe(true);
         expect(safeResult.hookSpecificOutput?.decision?.behavior).toBe('allow');
-        expect(safeResult.hookSpecificOutput?.decision?.reason).toContain('Safe');
+        expect(safeResult.hookSpecificOutput?.decision?.reason).toContain(
+          'Safe',
+        );
       });
 
       it('should NOT auto-approve dangerous commands during active mode', () => {
         // Dangerous command should NOT be auto-approved
-        const dangerousResult = processPermissionRequest(createInput('rm -rf /'));
+        const dangerousResult = processPermissionRequest(
+          createInput('rm -rf /'),
+        );
         expect(dangerousResult.continue).toBe(true);
         // Should NOT have auto-approval decision
-        expect(dangerousResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(dangerousResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
       });
 
       it('should NOT auto-approve shell injection during active mode', () => {
         // Shell injection should NOT be auto-approved
-        const injectionResult = processPermissionRequest(createInput('git status; rm -rf /'));
+        const injectionResult = processPermissionRequest(
+          createInput('git status; rm -rf /'),
+        );
         expect(injectionResult.continue).toBe(true);
-        expect(injectionResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(injectionResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
       });
 
       it('should NOT auto-approve removed unsafe commands during active mode', () => {
         // Removed unsafe commands should NOT be auto-approved
-        const catResult = processPermissionRequest(createInput('cat /etc/passwd'));
+        const catResult = processPermissionRequest(
+          createInput('cat /etc/passwd'),
+        );
         expect(catResult.continue).toBe(true);
-        expect(catResult.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
+        expect(catResult.hookSpecificOutput?.decision?.behavior).not.toBe(
+          'allow',
+        );
       });
     });
 
@@ -633,7 +777,11 @@ describe('permission-handler', () => {
         fs.mkdirSync(path.join(testDir, '.claude'), { recursive: true });
         fs.writeFileSync(
           path.join(testDir, '.claude', 'settings.local.json'),
-          JSON.stringify({ permissions: { ask: ['Bash(git commit:*)'] } }, null, 2),
+          JSON.stringify(
+            { permissions: { ask: ['Bash(git commit:*)'] } },
+            null,
+            2,
+          ),
         );
 
         const cmd = `git commit -m "$(cat <<'EOF'\nfeat: add new feature\n\nDetailed description here.\nEOF\n)"`;
@@ -648,7 +796,9 @@ describe('permission-handler', () => {
         const result = processPermissionRequest(createInput(cmd));
         expect(result.continue).toBe(true);
         expect(result.hookSpecificOutput?.decision?.behavior).toBe('allow');
-        expect(result.hookSpecificOutput?.decision?.reason).toContain('heredoc');
+        expect(result.hookSpecificOutput?.decision?.reason).toContain(
+          'heredoc',
+        );
       });
 
       it('should auto-allow git tag with heredoc annotation', () => {
@@ -680,7 +830,9 @@ describe('permission-handler', () => {
       });
 
       it('should still reject shell injection (no regression)', () => {
-        const result = processPermissionRequest(createInput('git status; rm -rf /'));
+        const result = processPermissionRequest(
+          createInput('git status; rm -rf /'),
+        );
         expect(result.continue).toBe(true);
         expect(result.hookSpecificOutput?.decision?.behavior).not.toBe('allow');
       });

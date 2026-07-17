@@ -41,7 +41,9 @@ beforeEach(() => {
 
   mkdirSync(join(TEAMS_DIR, 'outbox'), { recursive: true });
   mkdirSync(TASKS_DIR, { recursive: true });
-  mkdirSync(join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM), { recursive: true });
+  mkdirSync(join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM), {
+    recursive: true,
+  });
   mkdirSync(join(WORK_DIR, '.omc', 'state'), { recursive: true });
 });
 
@@ -82,7 +84,7 @@ function makeTask(
   id: string,
   owner: string,
   status: 'pending' | 'in_progress' | 'completed',
-  permanentlyFailed?: boolean
+  permanentlyFailed?: boolean,
 ): TaskFile {
   return {
     id,
@@ -103,7 +105,11 @@ function makeTask(
 // ============================================================
 function shouldAutoCleanup(teamName: string, workDir: string): boolean {
   const status = getTeamStatus(teamName, workDir);
-  return status.taskSummary.total > 0 && status.taskSummary.pending === 0 && status.taskSummary.inProgress === 0;
+  return (
+    status.taskSummary.total > 0 &&
+    status.taskSummary.pending === 0 &&
+    status.taskSummary.inProgress === 0
+  );
 }
 
 // ============================================================

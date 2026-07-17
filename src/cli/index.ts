@@ -17,10 +17,7 @@ import { join } from 'path';
 import { writeFileSync, existsSync } from 'fs';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
-import {
-  loadConfig,
-  getConfigPaths,
-} from '../config/loader.js';
+import { loadConfig, getConfigPaths } from '../config/loader.js';
 import { createOmcSession } from '../index.js';
 import {
   checkForUpdates,
@@ -35,17 +32,20 @@ import {
 import {
   install as installOmc,
   isInstalled,
-  getInstallInfo
+  getInstallInfo,
 } from '../installer/index.js';
 import {
   waitCommand,
   waitStatusCommand,
   waitDaemonCommand,
-  waitDetectCommand
+  waitDetectCommand,
 } from './commands/wait.js';
 import { doctorConflictsCommand } from './commands/doctor-conflicts.js';
 import { doctorTeamRoutingCommand } from './commands/doctor-team-routing.js';
-import { capabilitiesCheckCommand, capabilitiesLockCommand } from './commands/capabilities.js';
+import {
+  capabilitiesCheckCommand,
+  capabilitiesLockCommand,
+} from './commands/capabilities.js';
 import { sessionSearchCommand } from './commands/session-search.js';
 import { sessionFrictionReportCommand } from './commands/session-friction-report.js';
 import { teamCommand } from './commands/team.js';
@@ -54,7 +54,7 @@ import { ultragoalCommand, ULTRAGOAL_HELP } from './commands/ultragoal.js';
 import {
   teleportCommand,
   teleportListCommand,
-  teleportRemoveCommand
+  teleportRemoveCommand,
 } from './commands/teleport.js';
 
 import { getRuntimePackageVersion } from '../lib/version.js';
@@ -81,15 +81,17 @@ export function applyPluginDirOption(rawPath: string | undefined): void {
   try {
     resolved = resolvePluginDirArg(rawPath);
   } catch (err) {
-    console.error(chalk.red(`Error: ${err instanceof Error ? err.message : String(err)}`));
+    console.error(
+      chalk.red(`Error: ${err instanceof Error ? err.message : String(err)}`),
+    );
     process.exit(1);
   }
   const existing = process.env[OMC_PLUGIN_ROOT_ENV];
   if (existing && existing !== resolved) {
     console.warn(
       chalk.yellow(
-        `Warning: --plugin-dir "${resolved}" overrides ${OMC_PLUGIN_ROOT_ENV}="${existing}"`
-      )
+        `Warning: --plugin-dir "${resolved}" overrides ${OMC_PLUGIN_ROOT_ENV}="${existing}"`,
+      ),
     );
   }
   process.env[OMC_PLUGIN_ROOT_ENV] = resolved;
@@ -116,7 +118,6 @@ async function defaultAction() {
   await launchCommand(args);
 }
 
-
 program
   .name('omc')
   .description('Multi-agent orchestration system for Claude Agent SDK')
@@ -131,7 +132,9 @@ program
   .command('launch [args...]')
   .description('Launch Claude Code with native tmux shell integration')
   .allowUnknownOption()
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc                                Launch Claude Code
   $ omc --madmax                       Launch with permissions bypass
@@ -147,7 +150,8 @@ Options:
 
 Environment:
   OMC_NOTIFY=0              Suppress all notifications (set by --notify false)
-`)
+`,
+  )
   .action(async (args: string[]) => {
     await launchCommand(args);
   });
@@ -157,14 +161,23 @@ Environment:
  */
 program
   .command('interop')
-  .description('Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)')
-  .addHelpText('after', `
+  .description(
+    'Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)',
+  )
+  .option(
+    '--yolo',
+    'Start both OMC and OMX in yolo mode (Claude --dangerously-skip-permissions, Codex --dangerously-bypass-approvals-and-sandbox)',
+  )
+  .addHelpText(
+    'after',
+    `
 Requirements:
   - Must be running inside a tmux session
   - Claude CLI must be installed
-  - Codex CLI recommended (graceful fallback if missing)`)
-  .action(() => {
-    interopCommand();
+  - Codex CLI recommended (graceful fallback if missing)`,
+  )
+  .action((options: { yolo?: boolean }) => {
+    interopCommand({ yolo: options.yolo });
   });
 
 /**
@@ -179,7 +192,6 @@ program
     await askCommand(args || []);
   });
 
-
 /**
  * Config command - Show or validate configuration
  */
@@ -188,13 +200,16 @@ program
   .description('Show current configuration')
   .option('-v, --validate', 'Validate configuration')
   .option('-p, --paths', 'Show configuration file paths')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc config                   Show current configuration
   $ omc config --validate        Validate configuration files
   $ omc config --paths           Show config file locations
 
-  }`)
+  }`,
+  )
   .action(async (options) => {
     if (options.paths) {
       const paths = getConfigPaths();
@@ -203,8 +218,12 @@ Examples:
       console.log(`  Project: ${paths.project}`);
 
       console.log(chalk.blue('\nFile status:'));
-      console.log(`  User:    ${existsSync(paths.user) ? chalk.green('exists') : chalk.gray('not found')}`);
-      console.log(`  Project: ${existsSync(paths.project) ? chalk.green('exists') : chalk.gray('not found')}`);
+      console.log(
+        `  User:    ${existsSync(paths.user) ? chalk.green('exists') : chalk.gray('not found')}`,
+      );
+      console.log(
+        `  Project: ${existsSync(paths.project) ? chalk.green('exists') : chalk.gray('not found')}`,
+      );
       return;
     }
 
@@ -221,18 +240,22 @@ Examples:
         warnings.push('ANTHROPIC_API_KEY environment variable not set');
       }
 
-      if (config.mcpServers?.exa?.enabled && !process.env.EXA_API_KEY && !config.mcpServers.exa.apiKey) {
+      if (
+        config.mcpServers?.exa?.enabled &&
+        !process.env.EXA_API_KEY &&
+        !config.mcpServers.exa.apiKey
+      ) {
         warnings.push('Exa is enabled but EXA_API_KEY is not set');
       }
 
       if (errors.length > 0) {
         console.log(chalk.red('Errors:'));
-        errors.forEach(e => console.log(chalk.red(`  - ${e}`)));
+        errors.forEach((e) => console.log(chalk.red(`  - ${e}`)));
       }
 
       if (warnings.length > 0) {
         console.log(chalk.yellow('Warnings:'));
-        warnings.forEach(w => console.log(chalk.yellow(`  - ${w}`)));
+        warnings.forEach((w) => console.log(chalk.yellow(`  - ${w}`)));
       }
 
       if (errors.length === 0 && warnings.length === 0) {
@@ -260,13 +283,18 @@ const _configStopCallback = program
   .option('--chat <id>', 'Telegram chat ID')
   .option('--webhook <url>', 'Discord webhook URL')
   .option('--channel-id <id>', 'Discord bot channel ID (used with --profile)')
-  .option('--tag-list <csv>', 'Replace tag list (comma-separated, telegram/discord only)')
+  .option(
+    '--tag-list <csv>',
+    'Replace tag list (comma-separated, telegram/discord only)',
+  )
   .option('--add-tag <tag>', 'Append one tag (telegram/discord only)')
   .option('--remove-tag <tag>', 'Remove one tag (telegram/discord only)')
   .option('--clear-tags', 'Clear all tags (telegram/discord only)')
   .option('--profile <name>', 'Named notification profile to configure')
   .option('--show', 'Show current configuration')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Types:
   file       File system callback (saves session summary to disk)
   telegram   Telegram bot notification
@@ -291,31 +319,51 @@ Examples:
   $ omc config-stop-callback discord-bot --profile ops --enable --token <tk> --channel-id <id>
 
   # Select profile at launch:
-  $ OMC_NOTIFY_PROFILE=work claude`)
+  $ OMC_NOTIFY_PROFILE=work claude`,
+  )
   .action(async (type: string, options) => {
     // When --profile is used, route to profile-based config
     if (options.profile) {
-      const profileValidTypes = ['file', 'telegram', 'discord', 'discord-bot', 'slack', 'webhook'];
+      const profileValidTypes = [
+        'file',
+        'telegram',
+        'discord',
+        'discord-bot',
+        'slack',
+        'webhook',
+      ];
       if (!profileValidTypes.includes(type)) {
         console.error(chalk.red(`Invalid type for profile: ${type}`));
-        console.error(chalk.gray(`Valid types: ${profileValidTypes.join(', ')}`));
+        console.error(
+          chalk.gray(`Valid types: ${profileValidTypes.join(', ')}`),
+        );
         process.exit(1);
       }
 
-      const config = getOMCConfig() as OMCConfig & { notificationProfiles?: Record<string, any> };
+      const config = getOMCConfig() as OMCConfig & {
+        notificationProfiles?: Record<string, any>;
+      };
       config.notificationProfiles = config.notificationProfiles || {};
       const profileName = options.profile as string;
-      const profile = config.notificationProfiles[profileName] || { enabled: true };
+      const profile = config.notificationProfiles[profileName] || {
+        enabled: true,
+      };
 
       // Show current profile config
       if (options.show) {
         if (config.notificationProfiles[profileName]) {
-          console.log(chalk.blue(`Profile "${profileName}" — ${type} configuration:`));
+          console.log(
+            chalk.blue(`Profile "${profileName}" — ${type} configuration:`),
+          );
           const platformConfig = profile[type];
           if (platformConfig) {
             console.log(JSON.stringify(platformConfig, null, 2));
           } else {
-            console.log(chalk.yellow(`No ${type} platform configured in profile "${profileName}".`));
+            console.log(
+              chalk.yellow(
+                `No ${type} platform configured in profile "${profileName}".`,
+              ),
+            );
           }
         } else {
           console.log(chalk.yellow(`Profile "${profileName}" not found.`));
@@ -330,8 +378,10 @@ Examples:
       switch (type) {
         case 'discord': {
           const current = profile.discord;
-          if (enabled === true && (!options.webhook && !current?.webhookUrl)) {
-            console.error(chalk.red('Discord requires --webhook <webhook_url>'));
+          if (enabled === true && !options.webhook && !current?.webhookUrl) {
+            console.error(
+              chalk.red('Discord requires --webhook <webhook_url>'),
+            );
             process.exit(1);
           }
           profile.discord = {
@@ -343,12 +393,16 @@ Examples:
         }
         case 'discord-bot': {
           const current = profile['discord-bot'];
-          if (enabled === true && (!options.token && !current?.botToken)) {
-            console.error(chalk.red('Discord bot requires --token <bot_token>'));
+          if (enabled === true && !options.token && !current?.botToken) {
+            console.error(
+              chalk.red('Discord bot requires --token <bot_token>'),
+            );
             process.exit(1);
           }
-          if (enabled === true && (!options.channelId && !current?.channelId)) {
-            console.error(chalk.red('Discord bot requires --channel-id <channel_id>'));
+          if (enabled === true && !options.channelId && !current?.channelId) {
+            console.error(
+              chalk.red('Discord bot requires --channel-id <channel_id>'),
+            );
             process.exit(1);
           }
           profile['discord-bot'] = {
@@ -361,11 +415,11 @@ Examples:
         }
         case 'telegram': {
           const current = profile.telegram;
-          if (enabled === true && (!options.token && !current?.botToken)) {
+          if (enabled === true && !options.token && !current?.botToken) {
             console.error(chalk.red('Telegram requires --token <bot_token>'));
             process.exit(1);
           }
-          if (enabled === true && (!options.chat && !current?.chatId)) {
+          if (enabled === true && !options.chat && !current?.chatId) {
             console.error(chalk.red('Telegram requires --chat <chat_id>'));
             process.exit(1);
           }
@@ -379,7 +433,7 @@ Examples:
         }
         case 'slack': {
           const current = profile.slack;
-          if (enabled === true && (!options.webhook && !current?.webhookUrl)) {
+          if (enabled === true && !options.webhook && !current?.webhookUrl) {
             console.error(chalk.red('Slack requires --webhook <webhook_url>'));
             process.exit(1);
           }
@@ -392,7 +446,7 @@ Examples:
         }
         case 'webhook': {
           const current = profile.webhook;
-          if (enabled === true && (!options.webhook && !current?.url)) {
+          if (enabled === true && !options.webhook && !current?.url) {
             console.error(chalk.red('Webhook requires --webhook <url>'));
             process.exit(1);
           }
@@ -404,8 +458,14 @@ Examples:
           break;
         }
         case 'file': {
-          console.error(chalk.yellow('File callbacks are not supported in notification profiles.'));
-          console.error(chalk.gray('Use without --profile for file callbacks.'));
+          console.error(
+            chalk.yellow(
+              'File callbacks are not supported in notification profiles.',
+            ),
+          );
+          console.error(
+            chalk.gray('Use without --profile for file callbacks.'),
+          );
           process.exit(1);
           break;
         }
@@ -415,7 +475,9 @@ Examples:
 
       try {
         writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
-        console.log(chalk.green(`\u2713 Profile "${profileName}" — ${type} configured`));
+        console.log(
+          chalk.green(`\u2713 Profile "${profileName}" — ${type} configured`),
+        );
         console.log(JSON.stringify(profile[type], null, 2));
       } catch (error) {
         console.error(chalk.red('Failed to write configuration:'), error);
@@ -437,7 +499,8 @@ Examples:
 
     // Show current config
     if (options.show) {
-      const current = config.stopHookCallbacks[type as keyof typeof config.stopHookCallbacks];
+      const current =
+        config.stopHookCallbacks[type as keyof typeof config.stopHookCallbacks];
       if (current) {
         console.log(chalk.blue(`Current ${type} callback configuration:`));
         console.log(JSON.stringify(current, null, 2));
@@ -455,20 +518,23 @@ Examples:
       enabled = false;
     }
 
-    const hasTagListChanges = options.tagList !== undefined
-      || options.addTag !== undefined
-      || options.removeTag !== undefined
-      || options.clearTags;
+    const hasTagListChanges =
+      options.tagList !== undefined ||
+      options.addTag !== undefined ||
+      options.removeTag !== undefined ||
+      options.clearTags;
 
-    const parseTagList = (value: string): string[] => value
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
+    const parseTagList = (value: string): string[] =>
+      value
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean);
 
     const resolveTagList = (currentTagList?: string[]): string[] => {
-      let next = options.tagList !== undefined
-        ? parseTagList(options.tagList)
-        : [...(currentTagList ?? [])];
+      let next =
+        options.tagList !== undefined
+          ? parseTagList(options.tagList)
+          : [...(currentTagList ?? [])];
 
       if (options.clearTags) {
         next = [];
@@ -497,19 +563,25 @@ Examples:
         const current = config.stopHookCallbacks.file;
         config.stopHookCallbacks.file = {
           enabled: enabled ?? current?.enabled ?? false,
-          path: options.path ?? current?.path ?? join(getClaudeConfigDir(), 'session-logs/{session_id}.md'),
-          format: (options.format as 'markdown' | 'json') ?? current?.format ?? 'markdown',
+          path:
+            options.path ??
+            current?.path ??
+            join(getClaudeConfigDir(), 'session-logs/{session_id}.md'),
+          format:
+            (options.format as 'markdown' | 'json') ??
+            current?.format ??
+            'markdown',
         };
         break;
       }
 
       case 'telegram': {
         const current = config.stopHookCallbacks.telegram;
-        if (enabled === true && (!options.token && !current?.botToken)) {
+        if (enabled === true && !options.token && !current?.botToken) {
           console.error(chalk.red('Telegram requires --token <bot_token>'));
           process.exit(1);
         }
-        if (enabled === true && (!options.chat && !current?.chatId)) {
+        if (enabled === true && !options.chat && !current?.chatId) {
           console.error(chalk.red('Telegram requires --chat <chat_id>'));
           process.exit(1);
         }
@@ -518,14 +590,16 @@ Examples:
           enabled: enabled ?? current?.enabled ?? false,
           botToken: options.token ?? current?.botToken,
           chatId: options.chat ?? current?.chatId,
-          tagList: hasTagListChanges ? resolveTagList(current?.tagList) : current?.tagList,
+          tagList: hasTagListChanges
+            ? resolveTagList(current?.tagList)
+            : current?.tagList,
         };
         break;
       }
 
       case 'discord': {
         const current = config.stopHookCallbacks.discord;
-        if (enabled === true && (!options.webhook && !current?.webhookUrl)) {
+        if (enabled === true && !options.webhook && !current?.webhookUrl) {
           console.error(chalk.red('Discord requires --webhook <webhook_url>'));
           process.exit(1);
         }
@@ -533,14 +607,16 @@ Examples:
           ...current,
           enabled: enabled ?? current?.enabled ?? false,
           webhookUrl: options.webhook ?? current?.webhookUrl,
-          tagList: hasTagListChanges ? resolveTagList(current?.tagList) : current?.tagList,
+          tagList: hasTagListChanges
+            ? resolveTagList(current?.tagList)
+            : current?.tagList,
         };
         break;
       }
 
       case 'slack': {
         const current = config.stopHookCallbacks.slack;
-        if (enabled === true && (!options.webhook && !current?.webhookUrl)) {
+        if (enabled === true && !options.webhook && !current?.webhookUrl) {
           console.error(chalk.red('Slack requires --webhook <webhook_url>'));
           process.exit(1);
         }
@@ -548,7 +624,9 @@ Examples:
           ...current,
           enabled: enabled ?? current?.enabled ?? false,
           webhookUrl: options.webhook ?? current?.webhookUrl,
-          tagList: hasTagListChanges ? resolveTagList(current?.tagList) : current?.tagList,
+          tagList: hasTagListChanges
+            ? resolveTagList(current?.tagList)
+            : current?.tagList,
         };
         break;
       }
@@ -558,7 +636,15 @@ Examples:
     try {
       writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2), 'utf-8');
       console.log(chalk.green(`\u2713 Stop callback '${type}' configured`));
-      console.log(JSON.stringify(config.stopHookCallbacks[type as keyof typeof config.stopHookCallbacks], null, 2));
+      console.log(
+        JSON.stringify(
+          config.stopHookCallbacks[
+            type as keyof typeof config.stopHookCallbacks
+          ],
+          null,
+          2,
+        ),
+      );
     } catch (error) {
       console.error(chalk.red('Failed to write configuration:'), error);
       process.exit(1);
@@ -574,7 +660,9 @@ program
   .option('--list', 'List all profiles')
   .option('--show', 'Show profile configuration')
   .option('--delete', 'Delete a profile')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc config-notify-profile --list
   $ omc config-notify-profile work --show
@@ -584,30 +672,50 @@ Examples:
   $ omc config-stop-callback discord --profile work --enable --webhook <url>
 
   # Select profile at launch:
-  $ OMC_NOTIFY_PROFILE=work claude`)
+  $ OMC_NOTIFY_PROFILE=work claude`,
+  )
   .action(async (name: string | undefined, options) => {
-    const config = getOMCConfig() as OMCConfig & { notificationProfiles?: Record<string, any> };
+    const config = getOMCConfig() as OMCConfig & {
+      notificationProfiles?: Record<string, any>;
+    };
     const profiles = config.notificationProfiles || {};
 
     if (options.list || !name) {
       const names = Object.keys(profiles);
       if (names.length === 0) {
         console.log(chalk.yellow('No notification profiles configured.'));
-        console.log(chalk.gray('Create one with: omc config-stop-callback <type> --profile <name> --enable ...'));
+        console.log(
+          chalk.gray(
+            'Create one with: omc config-stop-callback <type> --profile <name> --enable ...',
+          ),
+        );
       } else {
         console.log(chalk.blue('Notification profiles:'));
         for (const pName of names) {
           const p = profiles[pName];
-          const platforms = ['discord', 'discord-bot', 'telegram', 'slack', 'webhook']
+          const platforms = [
+            'discord',
+            'discord-bot',
+            'telegram',
+            'slack',
+            'webhook',
+          ]
             .filter((plat) => p[plat]?.enabled)
             .join(', ');
-          const status = p.enabled !== false ? chalk.green('enabled') : chalk.red('disabled');
-          console.log(`  ${chalk.bold(pName)} [${status}] — ${platforms || 'no platforms'}`);
+          const status =
+            p.enabled !== false
+              ? chalk.green('enabled')
+              : chalk.red('disabled');
+          console.log(
+            `  ${chalk.bold(pName)} [${status}] — ${platforms || 'no platforms'}`,
+          );
         }
       }
       const activeProfile = process.env.OMC_NOTIFY_PROFILE;
       if (activeProfile) {
-        console.log(chalk.gray(`\nActive profile (OMC_NOTIFY_PROFILE): ${activeProfile}`));
+        console.log(
+          chalk.gray(`\nActive profile (OMC_NOTIFY_PROFILE): ${activeProfile}`),
+        );
       }
       return;
     }
@@ -648,10 +756,15 @@ Examples:
       console.log(JSON.stringify(profiles[name], null, 2));
     } else {
       console.log(chalk.yellow(`Profile "${name}" not found.`));
-      console.log(chalk.gray('Create it with: omc config-stop-callback <type> --profile ' + name + ' --enable ...'));
+      console.log(
+        chalk.gray(
+          'Create it with: omc config-stop-callback <type> --profile ' +
+            name +
+            ' --enable ...',
+        ),
+      );
     }
   });
-
 
 /**
  * Info command - Show system information
@@ -659,9 +772,12 @@ Examples:
 program
   .command('info')
   .description('Show system and agent information')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  $ omc info                     Show agents, features, and MCP servers`)
+  $ omc info                     Show agents, features, and MCP servers`,
+  )
   .action(async () => {
     const session = createOmcSession();
 
@@ -678,11 +794,21 @@ Examples:
     console.log(chalk.blue('\nEnabled Features:'));
     const features = session.config.features;
     if (features) {
-      console.log(`  Parallel Execution:      ${features.parallelExecution ? chalk.green('enabled') : chalk.gray('disabled')}`);
-      console.log(`  LSP Tools:               ${features.lspTools ? chalk.green('enabled') : chalk.gray('disabled')}`);
-      console.log(`  AST Tools:               ${features.astTools ? chalk.green('enabled') : chalk.gray('disabled')}`);
-      console.log(`  Continuation Enforcement:${features.continuationEnforcement ? chalk.green('enabled') : chalk.gray('disabled')}`);
-      console.log(`  Auto Context Injection:  ${features.autoContextInjection ? chalk.green('enabled') : chalk.gray('disabled')}`);
+      console.log(
+        `  Parallel Execution:      ${features.parallelExecution ? chalk.green('enabled') : chalk.gray('disabled')}`,
+      );
+      console.log(
+        `  LSP Tools:               ${features.lspTools ? chalk.green('enabled') : chalk.gray('disabled')}`,
+      );
+      console.log(
+        `  AST Tools:               ${features.astTools ? chalk.green('enabled') : chalk.gray('disabled')}`,
+      );
+      console.log(
+        `  Continuation Enforcement:${features.continuationEnforcement ? chalk.green('enabled') : chalk.gray('disabled')}`,
+      );
+      console.log(
+        `  Auto Context Injection:  ${features.autoContextInjection ? chalk.green('enabled') : chalk.gray('disabled')}`,
+      );
     }
 
     console.log(chalk.blue('\nMCP Servers:'));
@@ -692,9 +818,15 @@ Examples:
     }
 
     console.log(chalk.blue('\nMagic Keywords:'));
-    console.log(`  Ultrawork: ${chalk.cyan(session.config.magicKeywords?.ultrawork?.join(', ') ?? 'ultrawork, ulw, uw')}`);
-    console.log(`  Search:    ${chalk.cyan(session.config.magicKeywords?.search?.join(', ') ?? 'search, find, locate')}`);
-    console.log(`  Analyze:   ${chalk.cyan(session.config.magicKeywords?.analyze?.join(', ') ?? 'analyze, investigate, examine')}`);
+    console.log(
+      `  Ultrawork: ${chalk.cyan(session.config.magicKeywords?.ultrawork?.join(', ') ?? 'ultrawork, ulw, uw')}`,
+    );
+    console.log(
+      `  Search:    ${chalk.cyan(session.config.magicKeywords?.search?.join(', ') ?? 'search, find, locate')}`,
+    );
+    console.log(
+      `  Analyze:   ${chalk.cyan(session.config.magicKeywords?.analyze?.join(', ') ?? 'analyze, investigate, examine')}`,
+    );
 
     console.log(chalk.gray('\n━'.repeat(50)));
     console.log(chalk.gray(`Version: ${version}`));
@@ -706,10 +838,13 @@ Examples:
 program
   .command('test-prompt <prompt>')
   .description('Test how a prompt would be enhanced')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc test-prompt "ultrawork fix bugs"    See how magic keywords are detected
-  $ omc test-prompt "analyze this code"     Test prompt enhancement`)
+  $ omc test-prompt "analyze this code"     Test prompt enhancement`,
+  )
   .action(async (prompt: string) => {
     const session = createOmcSession();
 
@@ -735,14 +870,20 @@ program
   .option('-c, --check', 'Only check for updates, do not install')
   .option('-f, --force', 'Force reinstall even if up to date')
   .option('-q, --quiet', 'Suppress output except for errors')
-  .option('--standalone', 'Force npm update even in plugin context')
-  .option('--clean', 'Purge old plugin cache versions immediately (bypass 24h grace period)')
-  .addHelpText('after', `
+  .option('--standalone', 'Force pnpm update even in plugin context')
+  .option(
+    '--clean',
+    'Purge old plugin cache versions immediately (bypass 24h grace period)',
+  )
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc update                   Check and install updates
   $ omc update --check           Only check, don't install
   $ omc update --force           Force reinstall
-  $ omc update --standalone      Force npm update in plugin context`)
+  $ omc update --standalone      Force pnpm update in plugin context`,
+  )
   .action(async (options) => {
     if (!options.quiet) {
       console.log(chalk.blue('Oh-My-ClaudeCode Update\n'));
@@ -752,8 +893,14 @@ Examples:
       // Show current version
       const installed = getInstalledVersion();
       if (!options.quiet) {
-        console.log(chalk.gray(`Current version: ${installed?.version ?? 'unknown'}`));
-        console.log(chalk.gray(`Install method: ${installed?.installMethod ?? 'unknown'}`));
+        console.log(
+          chalk.gray(`Current version: ${installed?.version ?? 'unknown'}`),
+        );
+        console.log(
+          chalk.gray(
+            `Install method: ${installed?.installMethod ?? 'unknown'}`,
+          ),
+        );
         console.log('');
       }
 
@@ -766,7 +913,11 @@ Examples:
 
       if (!checkResult.updateAvailable && !options.force) {
         if (!options.quiet) {
-          console.log(chalk.green(`\n✓ You are running the latest version (${checkResult.currentVersion})`));
+          console.log(
+            chalk.green(
+              `\n✓ You are running the latest version (${checkResult.currentVersion})`,
+            ),
+          );
         }
         return;
       }
@@ -778,7 +929,9 @@ Examples:
       // If check-only mode, stop here
       if (options.check) {
         if (checkResult.updateAvailable) {
-          console.log(chalk.yellow('\nRun without --check to install the update.'));
+          console.log(
+            chalk.yellow('\nRun without --check to install the update.'),
+          );
         }
         return;
       }
@@ -788,44 +941,65 @@ Examples:
         console.log(chalk.blue('\nStarting update...\n'));
       }
 
-      const result = await performUpdate({ verbose: !options.quiet, standalone: options.standalone, clean: options.clean });
+      const result = await performUpdate({
+        verbose: !options.quiet,
+        standalone: options.standalone,
+        clean: options.clean,
+      });
 
       if (result.success) {
         if (!options.quiet) {
           console.log(chalk.green(`\n✓ ${result.message}`));
-          console.log(chalk.gray('\nPlease restart your Claude Code session to use the new version.'));
+          console.log(
+            chalk.gray(
+              '\nPlease restart your Claude Code session to use the new version.',
+            ),
+          );
         }
       } else {
         console.error(chalk.red(`\n✗ ${result.message}`));
         if (result.errors) {
-          result.errors.forEach(err => console.error(chalk.red(`  - ${err}`)));
+          result.errors.forEach((err) =>
+            console.error(chalk.red(`  - ${err}`)),
+          );
         }
         process.exit(1);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error(chalk.red(`Update failed: ${message}`));
-      console.error(chalk.gray('Try again with "omc update --force", or reinstall with "omc install --force".'));
+      console.error(
+        chalk.gray(
+          'Try again with "omc update --force", or reinstall with "omc install --force".',
+        ),
+      );
       process.exit(1);
     }
   });
 
 /**
  * Update reconcile command - Internal command for post-update reconciliation
- * Called automatically after npm install to ensure hooks/settings are updated with NEW code
+ * Called automatically after install to ensure hooks/settings are updated with NEW code
  */
 program
   .command('update-reconcile')
-  .description('Internal: Reconcile runtime state after update (called by update command)')
+  .description(
+    'Internal: Reconcile runtime state after update (called by update command)',
+  )
   .option('-v, --verbose', 'Show detailed output')
   .option('--skip-grace-period', 'Bypass 24h grace period for cache purge')
   .action(async (options) => {
     try {
-      const reconcileResult = reconcileUpdateRuntime({ verbose: options.verbose, skipGracePeriod: options.skipGracePeriod });
+      const reconcileResult = reconcileUpdateRuntime({
+        verbose: options.verbose,
+        skipGracePeriod: options.skipGracePeriod,
+      });
       if (!reconcileResult.success) {
         console.error(chalk.red('Reconciliation failed:'));
         if (reconcileResult.errors) {
-          reconcileResult.errors.forEach(err => console.error(chalk.red(`  - ${err}`)));
+          reconcileResult.errors.forEach((err) =>
+            console.error(chalk.red(`  - ${err}`)),
+          );
         }
         process.exit(1);
       }
@@ -845,9 +1019,12 @@ program
 program
   .command('version')
   .description('Show detailed version information')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
-  $ omc version                  Show version, install method, and commit hash`)
+  $ omc version                  Show version, install method, and commit hash`,
+  )
   .action(async () => {
     const installed = getInstalledVersion();
 
@@ -858,21 +1035,31 @@ Examples:
 
     if (installed) {
       console.log(`  Installed version: ${chalk.green(installed.version)}`);
-      console.log(`  Install method:    ${chalk.cyan(installed.installMethod)}`);
+      console.log(
+        `  Install method:    ${chalk.cyan(installed.installMethod)}`,
+      );
       console.log(`  Installed at:      ${chalk.gray(installed.installedAt)}`);
       if (installed.lastCheckAt) {
-        console.log(`  Last update check: ${chalk.gray(installed.lastCheckAt)}`);
+        console.log(
+          `  Last update check: ${chalk.gray(installed.lastCheckAt)}`,
+        );
       }
       if (installed.commitHash) {
         console.log(`  Commit hash:       ${chalk.gray(installed.commitHash)}`);
       }
     } else {
       console.log(chalk.yellow('  No installation metadata found'));
-      console.log(chalk.gray('  (Run the install script to create version metadata)'));
+      console.log(
+        chalk.gray('  (Run the install script to create version metadata)'),
+      );
     }
 
     console.log(chalk.gray('\n━'.repeat(50)));
-    console.log(chalk.gray('\nTo check for updates, run: oh-my-claudecode update --check'));
+    console.log(
+      chalk.gray(
+        '\nTo check for updates, run: oh-my-claudecode update --check',
+      ),
+    );
   });
 
 /**
@@ -880,22 +1067,43 @@ Examples:
  */
 program
   .command('install')
-  .description('Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)')
+  .description(
+    'Install OMC agents and commands to Claude Code config directory (default: ~/.claude/)',
+  )
   .option('-f, --force', 'Overwrite existing files')
   .option('-q, --quiet', 'Suppress output except for errors')
   .option('--skip-claude-check', 'Skip checking if Claude Code is installed')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc install                  Install to config directory (default: ~/.claude/)
   $ omc install --force          Reinstall, overwriting existing files
   $ omc install --quiet          Silent install for scripts
-  $ CLAUDE_CONFIG_DIR=$HOME/.claude-isolated-workspace omc install  Isolated config directory`)
+  $ CLAUDE_CONFIG_DIR=$HOME/.claude-isolated-workspace omc install  Isolated config directory`,
+  )
   .action(async (options) => {
     if (!options.quiet) {
-      console.log(chalk.blue('╔═══════════════════════════════════════════════════════════╗'));
-      console.log(chalk.blue('║         Oh-My-ClaudeCode Installer                        ║'));
-      console.log(chalk.blue('║   Multi-Agent Orchestration for Claude Code               ║'));
-      console.log(chalk.blue('╚═══════════════════════════════════════════════════════════╝'));
+      console.log(
+        chalk.blue(
+          '╔═══════════════════════════════════════════════════════════╗',
+        ),
+      );
+      console.log(
+        chalk.blue(
+          '║         Oh-My-ClaudeCode Installer                        ║',
+        ),
+      );
+      console.log(
+        chalk.blue(
+          '║   Multi-Agent Orchestration for Claude Code               ║',
+        ),
+      );
+      console.log(
+        chalk.blue(
+          '╚═══════════════════════════════════════════════════════════╝',
+        ),
+      );
       console.log('');
     }
 
@@ -917,35 +1125,65 @@ Examples:
     const result = installOmc({
       force: options.force,
       verbose: !options.quiet,
-      skipClaudeCheck: options.skipClaudeCheck
+      skipClaudeCheck: options.skipClaudeCheck,
     });
 
     if (result.success) {
       if (!options.quiet) {
         console.log('');
-        console.log(chalk.green('╔═══════════════════════════════════════════════════════════╗'));
-        console.log(chalk.green('║         Installation Complete!                            ║'));
-        console.log(chalk.green('╚═══════════════════════════════════════════════════════════╝'));
+        console.log(
+          chalk.green(
+            '╔═══════════════════════════════════════════════════════════╗',
+          ),
+        );
+        console.log(
+          chalk.green(
+            '║         Installation Complete!                            ║',
+          ),
+        );
+        console.log(
+          chalk.green(
+            '╚═══════════════════════════════════════════════════════════╝',
+          ),
+        );
         console.log('');
         console.log(chalk.gray(`Installed to: ${getClaudeConfigDir()}`));
         console.log('');
         console.log(chalk.yellow('Usage:'));
-        console.log('  claude                        # Start Claude Code normally');
+        console.log(
+          '  claude                        # Start Claude Code normally',
+        );
         console.log('');
         console.log(chalk.yellow('Slash Commands:'));
-        console.log('  /omc <task>              # Activate OMC orchestration mode');
-        console.log('  /omc-default             # Configure for current project');
+        console.log(
+          '  /omc <task>              # Activate OMC orchestration mode',
+        );
+        console.log(
+          '  /omc-default             # Configure for current project',
+        );
         console.log('  /omc-default-global      # Configure globally');
-        console.log('  /ultrawork <task>             # Maximum performance mode');
-        console.log('  /deepsearch <query>           # Thorough codebase search');
+        console.log(
+          '  /ultrawork <task>             # Maximum performance mode',
+        );
+        console.log(
+          '  /deepsearch <query>           # Thorough codebase search',
+        );
         console.log('  /analyze <target>             # Deep analysis mode');
-        console.log('  /plan <description>           # Start planning with Planner');
-        console.log('  /review [plan-path]           # Review plan with Critic');
+        console.log(
+          '  /plan <description>           # Start planning with Planner',
+        );
+        console.log(
+          '  /review [plan-path]           # Review plan with Critic',
+        );
         console.log('');
         console.log(chalk.yellow('Available Agents (via Task tool):'));
         console.log(chalk.gray('  Base Agents:'));
-        console.log('    architect              - Architecture & debugging (Opus)');
-        console.log('    document-specialist   - External docs & reference lookup (Sonnet)');
+        console.log(
+          '    architect              - Architecture & debugging (Opus)',
+        );
+        console.log(
+          '    document-specialist   - External docs & reference lookup (Sonnet)',
+        );
         console.log('    explore             - Fast pattern matching (Haiku)');
         console.log('    designer            - UI/UX specialist (Sonnet)');
         console.log('    writer              - Technical writing (Haiku)');
@@ -955,7 +1193,9 @@ Examples:
         console.log('    debugger            - Root-cause diagnosis (Sonnet)');
         console.log('    executor            - Focused execution (Sonnet)');
         console.log('    planner          - Strategic planning (Opus)');
-        console.log('    qa-tester           - Interactive CLI testing (Sonnet)');
+        console.log(
+          '    qa-tester           - Interactive CLI testing (Sonnet)',
+        );
         console.log(chalk.gray('  Tiered Variants (for smart routing):'));
         console.log('    architect-medium       - Simpler analysis (Sonnet)');
         console.log('    architect-low          - Quick questions (Haiku)');
@@ -965,22 +1205,32 @@ Examples:
         console.log('    designer-low        - Simple styling (Haiku)');
         console.log('');
         console.log(chalk.yellow('After Updates:'));
-        console.log('  Run \'/omc-default\' (project) or \'/omc-default-global\' (global)');
+        console.log(
+          "  Run '/omc-default' (project) or '/omc-default-global' (global)",
+        );
         console.log('  to download the latest CLAUDE.md configuration.');
-        console.log('  This ensures you get the newest features and agent behaviors.');
+        console.log(
+          '  This ensures you get the newest features and agent behaviors.',
+        );
         console.log('');
         console.log(chalk.blue('Quick Start:'));
-        console.log('  1. Run \'claude\' to start Claude Code');
-        console.log('  2. Type \'/omc-default\' for project or \'/omc-default-global\' for global');
-        console.log('  3. Or use \'/omc <task>\' for one-time activation');
+        console.log("  1. Run 'claude' to start Claude Code");
+        console.log(
+          "  2. Type '/omc-default' for project or '/omc-default-global' for global",
+        );
+        console.log("  3. Or use '/omc <task>' for one-time activation");
       }
     } else {
       console.error(chalk.red(`Installation failed: ${result.message}`));
       if (result.errors.length > 0) {
-        result.errors.forEach(err => console.error(chalk.red(`  - ${err}`)));
+        result.errors.forEach((err) => console.error(chalk.red(`  - ${err}`)));
       }
-      console.error(chalk.gray('\nTry "omc install --force" to overwrite existing files.'));
-      console.error(chalk.gray('For more diagnostics, run "omc doctor conflicts".'));
+      console.error(
+        chalk.gray('\nTry "omc install --force" to overwrite existing files.'),
+      );
+      console.error(
+        chalk.gray('For more diagnostics, run "omc doctor conflicts".'),
+      );
       process.exit(1);
     }
   });
@@ -996,17 +1246,22 @@ Examples:
  */
 const waitCmd = program
   .command('wait')
-  .description('Rate limit wait and auto-resume (just run "omc wait" to get started)')
+  .description(
+    'Rate limit wait and auto-resume (just run "omc wait" to get started)',
+  )
   .option('--json', 'Output as JSON')
   .option('--start', 'Start the auto-resume daemon')
   .option('--stop', 'Stop the auto-resume daemon')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc wait                     Show status and suggestions
   $ omc wait --start             Start auto-resume daemon
   $ omc wait --stop              Stop auto-resume daemon
   $ omc wait status              Show detailed rate limit status
-  $ omc wait detect              Scan for blocked tmux sessions`)
+  $ omc wait detect              Scan for blocked tmux sessions`,
+  )
   .action(async (options) => {
     await waitCommand(options);
   });
@@ -1025,14 +1280,19 @@ waitCmd
   .option('-v, --verbose', 'Enable verbose logging')
   .option('-f, --foreground', 'Run in foreground (blocking)')
   .option('-i, --interval <seconds>', 'Poll interval in seconds', '60')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc wait daemon start            Start background daemon
   $ omc wait daemon stop             Stop the daemon
-  $ omc wait daemon start -f         Run in foreground`)
+  $ omc wait daemon start -f         Run in foreground`,
+  )
   .action(async (action: string, options) => {
     if (action !== 'start' && action !== 'stop') {
-      console.error(chalk.red(`Invalid action "${action}". Valid options: start, stop`));
+      console.error(
+        chalk.red(`Invalid action "${action}". Valid options: start, stop`),
+      );
       console.error(chalk.gray('Example: omc wait daemon start'));
       process.exit(1);
     }
@@ -1055,7 +1315,6 @@ waitCmd
     });
   });
 
-
 /**
  * Teleport command - Quick worktree creation
  *
@@ -1067,12 +1326,22 @@ waitCmd
  */
 const teleportCmd = program
   .command('teleport [ref]')
-  .description("Create git worktree for isolated development (e.g., omc teleport '#123')")
-  .option('--worktree', 'Create worktree (default behavior, flag kept for compatibility)')
-  .option('-p, --path <path>', 'Custom worktree path (default: ~/Workspace/omc-worktrees/)')
+  .description(
+    "Create git worktree for isolated development (e.g., omc teleport '#123')",
+  )
+  .option(
+    '--worktree',
+    'Create worktree (default behavior, flag kept for compatibility)',
+  )
+  .option(
+    '-p, --path <path>',
+    'Custom worktree path (default: ~/Workspace/omc-worktrees/)',
+  )
   .option('-b, --base <branch>', 'Base branch to create from (default: main)')
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc teleport '#42'           Create worktree for issue/PR #42
   $ omc teleport add-auth        Create worktree for a feature branch
@@ -1080,27 +1349,40 @@ Examples:
   $ omc teleport remove ./path   Remove a worktree
 
 Note:
-  In many shells, # starts a comment. Quote refs: omc teleport '#42'`)
+  In many shells, # starts a comment. Quote refs: omc teleport '#42'`,
+  )
   .action(async (ref: string | undefined, options) => {
     if (!ref) {
       // No ref provided, show help
       console.log(chalk.blue('Teleport - Quick worktree creation\n'));
       console.log('Usage:');
-      console.log('  omc teleport <ref>           Create worktree for issue/PR/feature');
+      console.log(
+        '  omc teleport <ref>           Create worktree for issue/PR/feature',
+      );
       console.log('  omc teleport list            List existing worktrees');
       console.log('  omc teleport remove <path>   Remove a worktree');
       console.log('');
       console.log('Reference formats:');
-      console.log("  '#123'                       Issue/PR in current repo (quoted for shell safety)");
+      console.log(
+        "  '#123'                       Issue/PR in current repo (quoted for shell safety)",
+      );
       console.log('  owner/repo#123               Issue/PR in specific repo');
       console.log('  my-feature                   Feature branch name');
       console.log('  https://github.com/...       GitHub URL');
       console.log('');
-      console.log(chalk.yellow("Note: In many shells, # starts a comment. Quote refs: omc teleport '#42'"));
+      console.log(
+        chalk.yellow(
+          "Note: In many shells, # starts a comment. Quote refs: omc teleport '#42'",
+        ),
+      );
       console.log('');
       console.log('Examples:');
-      console.log("  omc teleport '#42'           Create worktree for issue #42");
-      console.log('  omc teleport add-auth        Create worktree for feature "add-auth"');
+      console.log(
+        "  omc teleport '#42'           Create worktree for issue #42",
+      );
+      console.log(
+        '  omc teleport add-auth        Create worktree for feature "add-auth"',
+      );
       console.log('');
       return;
     }
@@ -1132,7 +1414,6 @@ teleportCmd
     if (exitCode !== 0) process.exit(exitCode);
   });
 
-
 /**
  * Session command - Search prior local session history
  */
@@ -1140,24 +1421,39 @@ const sessionCmd = program
   .command('session')
   .alias('sessions')
   .description('Inspect prior local session history')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc session search "team leader stale"
   $ omc session search notify-hook --since 7d
   $ omc session search provider-routing --project all --json
   $ omc session friction report --since 24h
-  $ omc session friction report --json`);
+  $ omc session friction report --json`,
+  );
 
 sessionCmd
   .command('search <query>')
-  .description('Search prior local session transcripts and OMC session artifacts')
+  .description(
+    'Search prior local session transcripts and OMC session artifacts',
+  )
   .option('-l, --limit <number>', 'Maximum number of matches to return', '10')
   .option('-s, --session <id>', 'Restrict search to a specific session id')
-  .option('--since <duration|date>', 'Only include matches since a duration (e.g. 7d, 24h) or absolute date')
-  .option('--project <scope>', 'Project scope. Defaults to current project. Use "all" to search all local projects')
+  .option(
+    '--since <duration|date>',
+    'Only include matches since a duration (e.g. 7d, 24h) or absolute date',
+  )
+  .option(
+    '--project <scope>',
+    'Project scope. Defaults to current project. Use "all" to search all local projects',
+  )
   .option('--json', 'Output results as JSON')
   .option('--case-sensitive', 'Match query case-sensitively')
-  .option('--context <chars>', 'Approximate snippet context on each side of a match', '120')
+  .option(
+    '--context <chars>',
+    'Approximate snippet context on each side of a match',
+    '120',
+  )
   .action(async (query: string, options) => {
     await sessionSearchCommand(query, {
       limit: parseInt(options.limit, 10),
@@ -1173,13 +1469,23 @@ sessionCmd
 
 sessionCmd
   .command('friction')
-  .description('Report local session context-bloat and operator-friction signals')
+  .description(
+    'Report local session context-bloat and operator-friction signals',
+  )
   .command('report')
-  .description('Summarize local session/context bloat and friction without raw prompt content')
+  .description(
+    'Summarize local session/context bloat and friction without raw prompt content',
+  )
   .option('-l, --limit <number>', 'Maximum number of sessions to return', '10')
   .option('-s, --session <id>', 'Restrict report to a specific session id')
-  .option('--since <duration|date>', 'Only include artifacts since a duration (e.g. 7d, 24h) or absolute date')
-  .option('--project <scope>', 'Project scope. Defaults to current project. Use "all" to inspect all local projects')
+  .option(
+    '--since <duration|date>',
+    'Only include artifacts since a duration (e.g. 7d, 24h) or absolute date',
+  )
+  .option(
+    '--project <scope>',
+    'Project scope. Defaults to current project. Use "all" to inspect all local projects',
+  )
   .option('--json', 'Output report as JSON')
   .action(async (options) => {
     await sessionFrictionReportCommand({
@@ -1198,17 +1504,23 @@ sessionCmd
 const capabilitiesCmd = program
   .command('capabilities')
   .description('Create or verify deterministic tool/skill/capability lockfiles')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc capabilities lock
   $ omc capabilities lock --json --lockfile .omc/capabilities.lock.json
-  $ omc capabilities check --json`);
+  $ omc capabilities check --json`,
+  );
 
 capabilitiesCmd
   .command('lock')
   .description('Write the current deterministic tool/skill/capability lockfile')
   .option('--json', 'Output as JSON')
-  .option('--lockfile <path>', 'Lockfile path (default: omc-capabilities.lock.json)')
+  .option(
+    '--lockfile <path>',
+    'Lockfile path (default: omc-capabilities.lock.json)',
+  )
   .action(async (options) => {
     const exitCode = await capabilitiesLockCommand(options);
     process.exit(exitCode);
@@ -1216,9 +1528,14 @@ capabilitiesCmd
 
 capabilitiesCmd
   .command('check')
-  .description('Check current deterministic tool/skill/capability surface against a lockfile')
+  .description(
+    'Check current deterministic tool/skill/capability surface against a lockfile',
+  )
   .option('--json', 'Output as JSON')
-  .option('--lockfile <path>', 'Lockfile path (default: omc-capabilities.lock.json)')
+  .option(
+    '--lockfile <path>',
+    'Lockfile path (default: omc-capabilities.lock.json)',
+  )
   .action(async (options) => {
     const exitCode = await capabilitiesCheckCommand(options);
     process.exit(exitCode);
@@ -1230,21 +1547,32 @@ capabilitiesCmd
 const doctorCmd = program
   .command('doctor')
   .description('Diagnostic tools for troubleshooting OMC installation')
-  .option('--plugin-dir <path>', 'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)')
-  .option('--team-routing', 'Probe CLI presence for every provider referenced by team.roleRouting')
+  .option(
+    '--plugin-dir <path>',
+    'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)',
+  )
+  .option(
+    '--team-routing',
+    'Probe CLI presence for every provider referenced by team.roleRouting',
+  )
   .option('--json', 'Output as JSON (used with --team-routing)')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc doctor conflicts                        Check for plugin conflicts
   $ omc doctor team-routing                     Probe /team role-routing provider CLIs
   $ omc doctor --team-routing                   Same as above (flag form)
-  $ omc doctor --plugin-dir /path/to/plugin     Run diagnostics against a specific plugin dir`)
+  $ omc doctor --plugin-dir /path/to/plugin     Run diagnostics against a specific plugin dir`,
+  )
   .hook('preAction', (thisCommand) => {
     applyPluginDirOption(thisCommand.opts().pluginDir as string | undefined);
   })
   .action(async (options) => {
     if (options.teamRouting) {
-      const exitCode = await doctorTeamRoutingCommand({ json: options.json ?? false });
+      const exitCode = await doctorTeamRoutingCommand({
+        json: options.json ?? false,
+      });
       process.exit(exitCode);
     }
     // Without --team-routing, show help text for the parent command.
@@ -1253,27 +1581,42 @@ Examples:
 
 doctorCmd
   .command('team-routing')
-  .description('Probe CLI presence for every provider referenced by team.roleRouting')
+  .description(
+    'Probe CLI presence for every provider referenced by team.roleRouting',
+  )
   .option('--json', 'Output as JSON')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc doctor team-routing                     Probe configured providers
-  $ omc doctor team-routing --json              Output results as JSON`)
+  $ omc doctor team-routing --json              Output results as JSON`,
+  )
   .action(async (options) => {
-    const exitCode = await doctorTeamRoutingCommand({ json: options.json ?? false });
+    const exitCode = await doctorTeamRoutingCommand({
+      json: options.json ?? false,
+    });
     process.exit(exitCode);
   });
 
 doctorCmd
   .command('conflicts')
-  .description('Check for plugin coexistence issues and configuration conflicts')
+  .description(
+    'Check for plugin coexistence issues and configuration conflicts',
+  )
   .option('--json', 'Output as JSON')
-  .option('--plugin-dir <path>', 'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)')
-  .addHelpText('after', `
+  .option(
+    '--plugin-dir <path>',
+    'Override OMC plugin root directory (sets OMC_PLUGIN_ROOT)',
+  )
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc doctor conflicts                        Check for configuration issues
   $ omc doctor conflicts --json                 Output results as JSON
-  $ omc doctor conflicts --plugin-dir /tmp/foo  Check against a specific plugin dir`)
+  $ omc doctor conflicts --plugin-dir /tmp/foo  Check against a specific plugin dir`,
+  )
   .action(async (options) => {
     applyPluginDirOption(options.pluginDir);
     const exitCode = await doctorConflictsCommand(options);
@@ -1293,11 +1636,16 @@ program
   .description('Run OMC setup to sync all components (hooks, agents, skills)')
   .option('-f, --force', 'Force reinstall even if already up to date')
   .option('-q, --quiet', 'Suppress output except for errors')
-  .option('--no-plugin', 'Install bundled skills from the current package instead of relying on plugin-provided skills')
-  .option('--plugin-dir-mode', 'Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)')
+  .option('--no-plugin', 'Force local bundled skill installation')
+  .option(
+    '--plugin-dir-mode',
+    'Treat OMC as launched via --plugin-dir at runtime (skip agent/skill copy; HUD + hooks + CLAUDE.md still installed)',
+  )
   .option('--skip-hooks', 'Skip hook installation')
   .option('--force-hooks', 'Force reinstall hooks even if unchanged')
-  .addHelpText('after', `
+  .addHelpText(
+    'after',
+    `
 Examples:
   $ omc setup                     Sync all OMC components
   $ omc setup --force             Force reinstall everything
@@ -1305,7 +1653,8 @@ Examples:
   $ omc setup --plugin-dir-mode   Skip agent/skill copy (used with claude --plugin-dir)
   $ omc setup --quiet             Silent setup for scripts
   $ omc setup --skip-hooks        Install without hooks
-  $ omc setup --force-hooks       Force reinstall hooks`)
+  $ omc setup --force-hooks       Force reinstall hooks`,
+  )
   .action(async (options) => {
     if (!options.quiet) {
       console.log(chalk.blue('Oh-My-ClaudeCode Setup\n'));
@@ -1327,17 +1676,29 @@ Examples:
     if (!pluginDirMode && process.env[OMC_PLUGIN_ROOT_ENV]) {
       pluginDirMode = true;
       if (!options.quiet) {
-        console.log(chalk.gray(`Detected ${OMC_PLUGIN_ROOT_ENV} — entering dev plugin-dir mode`));
+        console.log(
+          chalk.gray(
+            `Detected ${OMC_PLUGIN_ROOT_ENV} — entering dev plugin-dir mode`,
+          ),
+        );
       }
     }
     if (pluginDirMode && useLocalBundledSkills) {
       if (!options.quiet) {
-        console.log(chalk.yellow('Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence'));
+        console.log(
+          chalk.yellow(
+            'Warning: --plugin-dir-mode and --no-plugin conflict; --no-plugin takes precedence',
+          ),
+        );
       }
       pluginDirMode = false;
     }
     if (pluginDirMode && !options.quiet) {
-      console.log(chalk.gray('Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)'));
+      console.log(
+        chalk.gray(
+          'Dev plugin-dir mode: skipping agent/skill sync (plugin provides them via --plugin-dir)',
+        ),
+      );
     }
 
     const result = installOmc({
@@ -1352,7 +1713,7 @@ Examples:
     if (!result.success) {
       console.error(chalk.red(`Setup failed: ${result.message}`));
       if (result.errors.length > 0) {
-        result.errors.forEach(err => console.error(chalk.red(`  - ${err}`)));
+        result.errors.forEach((err) => console.error(chalk.red(`  - ${err}`)));
       }
       process.exit(1);
     }
@@ -1364,13 +1725,19 @@ Examples:
       console.log('');
 
       if (result.installedAgents.length > 0) {
-        console.log(chalk.gray(`  Agents:   ${result.installedAgents.length} synced`));
+        console.log(
+          chalk.gray(`  Agents:   ${result.installedAgents.length} synced`),
+        );
       }
       if (result.installedCommands.length > 0) {
-        console.log(chalk.gray(`  Commands: ${result.installedCommands.length} synced`));
+        console.log(
+          chalk.gray(`  Commands: ${result.installedCommands.length} synced`),
+        );
       }
       if (result.installedSkills.length > 0) {
-        console.log(chalk.gray(`  Skills:   ${result.installedSkills.length} synced`));
+        console.log(
+          chalk.gray(`  Skills:   ${result.installedSkills.length} synced`),
+        );
       }
       if (result.hooksConfigured) {
         console.log(chalk.gray('  Hooks:    configured'));
@@ -1378,8 +1745,10 @@ Examples:
       if (result.hookConflicts.length > 0) {
         console.log('');
         console.log(chalk.yellow('  Hook conflicts detected:'));
-        result.hookConflicts.forEach(c => {
-          console.log(chalk.yellow(`    - ${c.eventType}: ${c.existingCommand}`));
+        result.hookConflicts.forEach((c) => {
+          console.log(
+            chalk.yellow(`    - ${c.eventType}: ${c.existingCommand}`),
+          );
         });
       }
 
@@ -1391,32 +1760,51 @@ Examples:
       if (reportedVersion !== version) {
         console.log(chalk.gray(`CLI package version: ${version}`));
       }
-      console.log(chalk.gray('Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup.'));
+      console.log(
+        chalk.gray(
+          'Start Claude Code and use /oh-my-claudecode:omc-setup for interactive setup.',
+        ),
+      );
     }
   });
 
 /**
- * Postinstall command - Silent install for npm postinstall hook
+ * Postinstall command - Silent install for the package-manager postinstall hook
  */
 program
   .command('postinstall', { hidden: true })
-  .description('Run post-install setup (called automatically by npm)')
+  .description(
+    'Run post-install setup (called automatically by the package manager)',
+  )
   .action(async () => {
     // Silent install - only show errors
     const result = installOmc({
       force: false,
       verbose: false,
-      skipClaudeCheck: true
+      skipClaudeCheck: true,
     });
 
     if (result.success) {
       console.log(chalk.green('✓ Oh-My-ClaudeCode installed successfully!'));
-      console.log(chalk.gray('  Run "oh-my-claudecode info" to see available agents.'));
-      console.log(chalk.yellow('  Run "/omc-default" (project) or "/omc-default-global" (global) in Claude Code.'));
+      console.log(
+        chalk.gray('  Run "oh-my-claudecode info" to see available agents.'),
+      );
+      console.log(
+        chalk.yellow(
+          '  Run "/omc-default" (project) or "/omc-default-global" (global) in Claude Code.',
+        ),
+      );
     } else {
-      // Don't fail the npm install, just warn
-      console.warn(chalk.yellow('⚠ Could not complete OMC setup:'), result.message);
-      console.warn(chalk.gray('  Run "oh-my-claudecode install" manually to complete setup.'));
+      // Don't fail the install, just warn
+      console.warn(
+        chalk.yellow('⚠ Could not complete OMC setup:'),
+        result.message,
+      );
+      console.warn(
+        chalk.gray(
+          '  Run "oh-my-claudecode install" manually to complete setup.',
+        ),
+      );
     }
   });
 
@@ -1441,10 +1829,13 @@ program
 
 program
   .command('mission-board')
-  .description('Render the opt-in mission board snapshot for the current workspace')
+  .description(
+    'Render the opt-in mission board snapshot for the current workspace',
+  )
   .option('--json', 'Print raw mission-board JSON')
   .action(async (options) => {
-    const { refreshMissionBoardState, renderMissionBoard } = await import('../hud/mission-board.js');
+    const { refreshMissionBoardState, renderMissionBoard } =
+      await import('../hud/mission-board.js');
     const state = refreshMissionBoardState(process.cwd());
     if (options.json) {
       console.log(JSON.stringify(state, null, 2));
@@ -1485,7 +1876,9 @@ program
  */
 program
   .command('autoresearch')
-  .description('Hard-deprecated shim that redirects users to deep-interview + autoresearch skill')
+  .description(
+    'Hard-deprecated shim that redirects users to deep-interview + autoresearch skill',
+  )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -1502,7 +1895,9 @@ program
  */
 program
   .command('ralphthon')
-  .description('Autonomous hackathon lifecycle: interview -> execute -> harden -> done')
+  .description(
+    'Autonomous hackathon lifecycle: interview -> execute -> harden -> done',
+  )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)
@@ -1522,7 +1917,9 @@ program
  */
 program
   .command('ultragoal')
-  .description('Durable repo-native multi-goal workflow with Claude Code /goal handoff (see omc ultragoal help)')
+  .description(
+    'Durable repo-native multi-goal workflow with Claude Code /goal handoff (see omc ultragoal help)',
+  )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)

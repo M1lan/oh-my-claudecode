@@ -20,7 +20,10 @@ import type {
   TeamRoleProvider,
   TeamRoleTier,
 } from '../shared/types.js';
-import { CANONICAL_TEAM_ROLES, CURSOR_EXECUTOR_TEAM_ROLES } from '../shared/types.js';
+import {
+  CANONICAL_TEAM_ROLES,
+  CURSOR_EXECUTOR_TEAM_ROLES,
+} from '../shared/types.js';
 import { normalizeDelegationRole } from '../features/delegation-routing/types.js';
 import {
   BUILTIN_EXTERNAL_MODEL_DEFAULTS,
@@ -65,8 +68,14 @@ const ROLE_DEFAULT_TIER: Record<CanonicalTeamRole, TeamRoleTier> = {
   'document-specialist': 'MEDIUM',
 };
 
-const TIER_SET: ReadonlySet<string> = new Set<TeamRoleTier>(['HIGH', 'MEDIUM', 'LOW']);
-const CURSOR_EXECUTOR_TEAM_ROLE_SET: ReadonlySet<string> = new Set(CURSOR_EXECUTOR_TEAM_ROLES);
+const TIER_SET: ReadonlySet<string> = new Set<TeamRoleTier>([
+  'HIGH',
+  'MEDIUM',
+  'LOW',
+]);
+const CURSOR_EXECUTOR_TEAM_ROLE_SET: ReadonlySet<string> = new Set(
+  CURSOR_EXECUTOR_TEAM_ROLES,
+);
 
 function isTier(value: string): value is TeamRoleTier {
   return TIER_SET.has(value);
@@ -151,7 +160,10 @@ function resolveExternalModel(
     return '';
   }
   if (provider === 'antigravity') {
-    return defaults?.antigravityModel ?? BUILTIN_EXTERNAL_MODEL_DEFAULTS.antigravityModel;
+    return (
+      defaults?.antigravityModel ??
+      BUILTIN_EXTERNAL_MODEL_DEFAULTS.antigravityModel
+    );
   }
   return defaults?.geminiModel ?? BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
 }
@@ -173,7 +185,9 @@ export function resolveRoleAssignment(
   cfg: PluginConfig,
 ): RoleAssignment {
   const normalized = normalizeDelegationRole(role) as CanonicalTeamRole;
-  const canonical: CanonicalTeamRole = isCanonicalRole(normalized) ? normalized : role;
+  const canonical: CanonicalTeamRole = isCanonicalRole(normalized)
+    ? normalized
+    : role;
 
   const roleRouting = cfg.team?.roleRouting as
     | Record<string, TeamRoleAssignmentSpec | undefined>
@@ -190,9 +204,10 @@ export function resolveRoleAssignment(
     );
   }
 
-  const model = provider === 'claude'
-    ? resolveClaudeModel(canonical, spec?.model, cfg)
-    : resolveExternalModel(provider, spec?.model, cfg);
+  const model =
+    provider === 'claude'
+      ? resolveClaudeModel(canonical, spec?.model, cfg)
+      : resolveExternalModel(provider, spec?.model, cfg);
   const agent: KnownAgentName = spec?.agent ?? ROLE_TO_AGENT[canonical];
 
   return { provider, model, agent };
@@ -212,8 +227,14 @@ function isCanonicalRole(value: string): value is CanonicalTeamRole {
  */
 export function buildResolvedRoutingSnapshot(
   cfg: PluginConfig,
-): Record<CanonicalTeamRole, { primary: RoleAssignment; fallback: RoleAssignment }> {
-  const out = {} as Record<CanonicalTeamRole, { primary: RoleAssignment; fallback: RoleAssignment }>;
+): Record<
+  CanonicalTeamRole,
+  { primary: RoleAssignment; fallback: RoleAssignment }
+> {
+  const out = {} as Record<
+    CanonicalTeamRole,
+    { primary: RoleAssignment; fallback: RoleAssignment }
+  >;
   const roleRouting = cfg.team?.roleRouting as
     | Record<string, TeamRoleAssignmentSpec | undefined>
     | undefined;
@@ -228,9 +249,10 @@ export function buildResolvedRoutingSnapshot(
     // receive an external model id; tier names always survive.
     const spec = getRoleRoutingSpec(roleRouting, role);
     const isExternalPrimary = primary.provider !== 'claude';
-    const fallbackModelInput = isExternalPrimary && spec?.model && !isTier(spec.model)
-      ? undefined
-      : spec?.model;
+    const fallbackModelInput =
+      isExternalPrimary && spec?.model && !isTier(spec.model)
+        ? undefined
+        : spec?.model;
     const fallback: RoleAssignment = {
       provider: 'claude',
       model: resolveClaudeModel(role, fallbackModelInput, cfg),

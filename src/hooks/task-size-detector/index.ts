@@ -122,14 +122,14 @@ export function detectEscapeHatch(text: string): string | null {
  * Check for small task signal patterns (single file, typo, minor, etc.)
  */
 export function hasSmallTaskSignals(text: string): boolean {
-  return SMALL_TASK_SIGNALS.some(pattern => pattern.test(text));
+  return SMALL_TASK_SIGNALS.some((pattern) => pattern.test(text));
 }
 
 /**
  * Check for large task signal patterns (architecture, refactor, entire codebase, etc.)
  */
 export function hasLargeTaskSignals(text: string): boolean {
-  return LARGE_TASK_SIGNALS.some(pattern => pattern.test(text));
+  return LARGE_TASK_SIGNALS.some((pattern) => pattern.test(text));
 }
 
 /**
@@ -168,7 +168,8 @@ export function classifyTaskSize(
   if (hasLarge) {
     return {
       size: 'large',
-      reason: 'Large task signals detected (architecture/refactor/cross-cutting scope)',
+      reason:
+        'Large task signals detected (architecture/refactor/cross-cutting scope)',
       wordCount,
       hasEscapeHatch: false,
     };

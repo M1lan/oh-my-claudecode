@@ -15,20 +15,20 @@
  */
 
 export type MergeReadinessDimension =
-  | "why"
-  | "change"
-  | "tradeoff"
-  | "risk"
-  | "team";
+  | 'why'
+  | 'change'
+  | 'tradeoff'
+  | 'risk'
+  | 'team';
 
-export type MergeReadinessProfile = "quick" | "standard" | "deep";
+export type MergeReadinessProfile = 'quick' | 'standard' | 'deep';
 
 export const MERGE_READINESS_DIMENSIONS: readonly MergeReadinessDimension[] = [
-  "why",
-  "change",
-  "tradeoff",
-  "risk",
-  "team",
+  'why',
+  'change',
+  'tradeoff',
+  'risk',
+  'team',
 ] as const;
 
 /**
@@ -76,11 +76,15 @@ export interface MergeReadinessMCQAnswer {
 }
 
 export function profileThreshold(profile: MergeReadinessProfile): number {
-  return MERGE_READINESS_THRESHOLDS[profile] ?? MERGE_READINESS_THRESHOLDS.standard;
+  return (
+    MERGE_READINESS_THRESHOLDS[profile] ?? MERGE_READINESS_THRESHOLDS.standard
+  );
 }
 
 export function profileMaxRounds(profile: MergeReadinessProfile): number {
-  return MERGE_READINESS_MAX_ROUNDS[profile] ?? MERGE_READINESS_MAX_ROUNDS.standard;
+  return (
+    MERGE_READINESS_MAX_ROUNDS[profile] ?? MERGE_READINESS_MAX_ROUNDS.standard
+  );
 }
 
 /**
@@ -90,7 +94,7 @@ export function profileMaxRounds(profile: MergeReadinessProfile): number {
 export function requiredDimensionsForProfile(
   profile: MergeReadinessProfile,
 ): MergeReadinessDimension[] {
-  if (profile === "quick") return ["why", "change", "risk"];
+  if (profile === 'quick') return ['why', 'change', 'risk'];
   return [...MERGE_READINESS_DIMENSIONS];
 }
 
@@ -127,8 +131,13 @@ export function hasRequiredDimensionCoverage(
 ): boolean {
   const answeredDimensions = new Set(
     answers
-      .map((answer) => questions.find((q) => q.id === answer.questionId)?.dimension)
+      .map(
+        (answer) =>
+          questions.find((q) => q.id === answer.questionId)?.dimension,
+      )
       .filter((d): d is MergeReadinessDimension => Boolean(d)),
   );
-  return requiredDimensions.every((dimension) => answeredDimensions.has(dimension));
+  return requiredDimensions.every((dimension) =>
+    answeredDimensions.has(dimension),
+  );
 }

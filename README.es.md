@@ -102,7 +102,7 @@ Para trabajo mixto de Codex + Gemini en un solo comando, usa la habilidad **`/cc
 
 Los trabajadores se inician bajo demanda y terminan cuando su tarea se completa — sin uso de recursos en espera. Requiere las CLIs `codex` / `gemini` instaladas y una sesión tmux activa.
 
-> **Nota: Nombre del paquete** — El proyecto usa la marca **oh-my-claudecode** (repositorio, plugin, comandos), pero el paquete npm se publica como [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si instalas las herramientas CLI via npm/bun, usa `npm install -g oh-my-claude-sisyphus`.
+> **Nota: Nombre del paquete** — El proyecto usa la marca **oh-my-claudecode** (repositorio, plugin, comandos), pero el paquete npm se publica como [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si instalas las herramientas CLI via pnpm/bun, usa `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Actualizar
 
@@ -348,8 +348,8 @@ OMC puede opcionalmente orquestar proveedores de IA externos para validación cr
 
 | Proveedor | Instalación | Qué habilita |
 |-----------|-------------|--------------|
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Revisión de diseño, consistencia UI (contexto de 1M tokens) |
-| [Codex CLI](https://github.com/openai/codex) | `npm install -g @openai/codex` | Validación de arquitectura, verificación cruzada de código |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Revisión de diseño, consistencia UI (contexto de 1M tokens) |
+| [Codex CLI](https://github.com/openai/codex) | `pnpm add -g @openai/codex` | Validación de arquitectura, verificación cruzada de código |
 
 **Costo:** 3 planes Pro (Claude + Gemini + ChatGPT) cubren todo por ~$60/mes.
 

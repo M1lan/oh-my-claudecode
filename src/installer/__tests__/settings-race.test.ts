@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -14,23 +20,34 @@ vi.mock('fs', async () => {
 
   return {
     ...actual,
-    writeFileSync: vi.fn((pathLike: Parameters<typeof actual.writeFileSync>[0], data: Parameters<typeof actual.writeFileSync>[1], options?: Parameters<typeof actual.writeFileSync>[2]) => {
-      actual.writeFileSync(pathLike, data, options as never);
+    writeFileSync: vi.fn(
+      (
+        pathLike: Parameters<typeof actual.writeFileSync>[0],
+        data: Parameters<typeof actual.writeFileSync>[1],
+        options?: Parameters<typeof actual.writeFileSync>[2],
+      ) => {
+        actual.writeFileSync(pathLike, data, options as never);
 
-      const writtenPath = String(pathLike);
-      if (
-        raceState.settingsPath
-        && raceState.triggerPath
-        && !raceState.injected
-        && writtenPath === raceState.triggerPath
-      ) {
-        const concurrentSettings = JSON.parse(actual.readFileSync(raceState.settingsPath, 'utf-8')) as Record<string, unknown>;
-        concurrentSettings.contextCompression = true;
-        concurrentSettings.concurrentPluginSetting = 'preserve-me';
-        actual.writeFileSync(raceState.settingsPath, JSON.stringify(concurrentSettings, null, 2));
-        raceState.injected = true;
-      }
-    }),
+        const writtenPath = String(pathLike);
+        if (
+          raceState.settingsPath &&
+          raceState.triggerPath &&
+          !raceState.injected &&
+          writtenPath === raceState.triggerPath
+        ) {
+          const concurrentSettings = JSON.parse(
+            actual.readFileSync(raceState.settingsPath, 'utf-8'),
+          ) as Record<string, unknown>;
+          concurrentSettings.contextCompression = true;
+          concurrentSettings.concurrentPluginSetting = 'preserve-me';
+          actual.writeFileSync(
+            raceState.settingsPath,
+            JSON.stringify(concurrentSettings, null, 2),
+          );
+          raceState.injected = true;
+        }
+      },
+    ),
   };
 });
 
@@ -82,15 +99,22 @@ describe('install() settings.json lost-update protection (issue #2584)', () => {
   });
 
   it('preserves concurrent disjoint settings updates while still applying installer-managed changes', async () => {
-    writeFileSync(raceState.settingsPath!, JSON.stringify({
-      theme: 'dark',
-      mcpServers: {
-        gitnexus: {
-          command: 'gitnexus',
-          args: ['mcp'],
+    writeFileSync(
+      raceState.settingsPath!,
+      JSON.stringify(
+        {
+          theme: 'dark',
+          mcpServers: {
+            gitnexus: {
+              command: 'gitnexus',
+              args: ['mcp'],
+            },
+          },
         },
-      },
-    }, null, 2));
+        null,
+        2,
+      ),
+    );
 
     const installer = await loadInstaller();
     const result = installer.install({
@@ -98,7 +122,9 @@ describe('install() settings.json lost-update protection (issue #2584)', () => {
       skipHud: true,
     });
 
-    const writtenSettings = JSON.parse(readFileSync(raceState.settingsPath!, 'utf-8')) as Record<string, unknown>;
+    const writtenSettings = JSON.parse(
+      readFileSync(raceState.settingsPath!, 'utf-8'),
+    ) as Record<string, unknown>;
 
     expect(result.success).toBe(true);
     expect(raceState.injected).toBe(true);

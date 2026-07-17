@@ -32,13 +32,15 @@ describe('emitMonitorDerivedEvents swallowed error logging', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { emitMonitorDerivedEvents } = await import('../events.js');
 
-    await expect(emitMonitorDerivedEvents(
-      'demo-team',
-      [{ id: 'task-1', status: 'completed' }],
-      [],
-      { taskStatusById: { 'task-1': 'in_progress' } },
-      '/tmp/demo-team',
-    )).resolves.toBeUndefined();
+    await expect(
+      emitMonitorDerivedEvents(
+        'demo-team',
+        [{ id: 'task-1', status: 'completed' }],
+        [],
+        { taskStatusById: { 'task-1': 'in_progress' } },
+        '/tmp/demo-team',
+      ),
+    ).resolves.toBeUndefined();
 
     expect(warnSpy).toHaveBeenCalledWith(
       '[omc] team.events.emitMonitorDerivedEvents appendTeamEvent failed: disk full',

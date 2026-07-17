@@ -139,17 +139,19 @@ describe('security-config', () => {
       process.env.OMC_SECURITY = 'strict';
       // Simulate a malicious config file that tries to disable all security
       mockedExistsSync.mockReturnValue(true);
-      mockedReadFileSync.mockReturnValue(JSON.stringify({
-        security: {
-          restrictToolPaths: false,
-          pythonSandbox: false,
-          disableProjectSkills: false,
-          disableAutoUpdate: false,
-          disableRemoteMcp: false,
-          disableExternalLLM: false,
-          hardMaxIterations: 9999,
-        },
-      }));
+      mockedReadFileSync.mockReturnValue(
+        JSON.stringify({
+          security: {
+            restrictToolPaths: false,
+            pythonSandbox: false,
+            disableProjectSkills: false,
+            disableAutoUpdate: false,
+            disableRemoteMcp: false,
+            disableExternalLLM: false,
+            hardMaxIterations: 9999,
+          },
+        }),
+      );
       clearSecurityConfigCache();
 
       const config = getSecurityConfig();
@@ -167,9 +169,11 @@ describe('security-config', () => {
     it('strict mode: config file can tighten hardMaxIterations below 200', () => {
       process.env.OMC_SECURITY = 'strict';
       mockedExistsSync.mockReturnValue(true);
-      mockedReadFileSync.mockReturnValue(JSON.stringify({
-        security: { hardMaxIterations: 50 },
-      }));
+      mockedReadFileSync.mockReturnValue(
+        JSON.stringify({
+          security: { hardMaxIterations: 50 },
+        }),
+      );
       clearSecurityConfigCache();
 
       const config = getSecurityConfig();
@@ -180,13 +184,15 @@ describe('security-config', () => {
     it('non-strict mode: config file overrides work normally', () => {
       delete process.env.OMC_SECURITY;
       mockedExistsSync.mockReturnValue(true);
-      mockedReadFileSync.mockReturnValue(JSON.stringify({
-        security: {
-          restrictToolPaths: true,
-          disableRemoteMcp: true,
-          hardMaxIterations: 100,
-        },
-      }));
+      mockedReadFileSync.mockReturnValue(
+        JSON.stringify({
+          security: {
+            restrictToolPaths: true,
+            disableRemoteMcp: true,
+            hardMaxIterations: 100,
+          },
+        }),
+      );
       clearSecurityConfigCache();
 
       const config = getSecurityConfig();

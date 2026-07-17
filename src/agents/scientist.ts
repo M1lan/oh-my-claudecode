@@ -19,12 +19,27 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
   cost: 'CHEAP',
   promptAlias: 'scientist',
   triggers: [
-    { domain: 'Data analysis', trigger: 'Analyzing datasets and computing statistics' },
-    { domain: 'Research execution', trigger: 'Running data experiments and generating findings' },
-    { domain: 'Python data work', trigger: 'Using pandas, numpy, scipy for data tasks' },
+    {
+      domain: 'Data analysis',
+      trigger: 'Analyzing datasets and computing statistics',
+    },
+    {
+      domain: 'Research execution',
+      trigger: 'Running data experiments and generating findings',
+    },
+    {
+      domain: 'Python data work',
+      trigger: 'Using pandas, numpy, scipy for data tasks',
+    },
     { domain: 'EDA', trigger: 'Exploratory data analysis on files' },
-    { domain: 'Hypothesis testing', trigger: 'Statistical tests with confidence intervals and effect sizes' },
-    { domain: 'Research stages', trigger: 'Multi-stage analysis with structured markers' },
+    {
+      domain: 'Hypothesis testing',
+      trigger: 'Statistical tests with confidence intervals and effect sizes',
+    },
+    {
+      domain: 'Research stages',
+      trigger: 'Multi-stage analysis with structured markers',
+    },
   ],
   useWhen: [
     'Analyzing CSV, JSON, Parquet, or other data files',
@@ -48,9 +63,10 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
 
 export const scientistAgent: AgentConfig = {
   name: 'scientist',
-  description: 'Data analysis and research execution specialist. Executes Python code for EDA, statistical analysis, and generating data-driven findings. Works with CSV, JSON, Parquet files using pandas, numpy, scipy.',
+  description:
+    'Data analysis and research execution specialist. Executes Python code for EDA, statistical analysis, and generating data-driven findings. Works with CSV, JSON, Parquet files using pandas, numpy, scipy.',
   prompt: loadAgentPrompt('scientist'),
   model: 'sonnet',
   defaultModel: 'sonnet',
-  metadata: SCIENTIST_PROMPT_METADATA
+  metadata: SCIENTIST_PROMPT_METADATA,
 };

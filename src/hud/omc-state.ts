@@ -5,7 +5,6 @@
  * These are read-only functions that don't modify the state files.
  */
 
-
 import { existsSync, readFileSync, statSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { getOmcRoot } from '../lib/worktree-paths.js';
@@ -46,7 +45,11 @@ function isStateFileStale(filePath: string): boolean {
  * Returns the most recently modified matching path, or null if none found.
  * This ensures the HUD displays state from any active session (Issue #456).
  */
-function resolveStatePath(directory: string, filename: string, sessionId?: string): string | null {
+function resolveStatePath(
+  directory: string,
+  filename: string,
+  sessionId?: string,
+): string | null {
   const omcRoot = getOmcRoot(directory);
 
   if (sessionId) {
@@ -128,7 +131,10 @@ interface RalphLoopState {
  * Read Ralph Loop state for HUD display.
  * Returns null if no state file exists or on error.
  */
-export function readRalphStateForHud(directory: string, sessionId?: string): RalphStateForHud | null {
+export function readRalphStateForHud(
+  directory: string,
+  sessionId?: string,
+): RalphStateForHud | null {
   const stateFile = resolveStatePath(directory, 'ralph-state.json', sessionId);
 
   if (!stateFile) {
@@ -175,10 +181,14 @@ interface UltraworkState {
  */
 export function readUltraworkStateForHud(
   directory: string,
-  sessionId?: string
+  sessionId?: string,
 ): UltraworkStateForHud | null {
   // Check local state only (with new path fallback)
-  const localFile = resolveStatePath(directory, 'ultrawork-state.json', sessionId);
+  const localFile = resolveStatePath(
+    directory,
+    'ultrawork-state.json',
+    sessionId,
+  );
 
   if (!localFile || isStateFileStale(localFile)) {
     return null;
@@ -282,7 +292,10 @@ interface AutopilotStateFile {
     stages?: Array<{ id?: string; status?: string }>;
     currentStageIndex?: number;
     trackingRevision?: number;
-    activationBoundary?: { transcriptPath?: string; byteOffset?: number } | null;
+    activationBoundary?: {
+      transcriptPath?: string;
+      byteOffset?: number;
+    } | null;
     completionObservations?: unknown[];
   };
   execution?: {
@@ -292,23 +305,29 @@ interface AutopilotStateFile {
   };
 }
 
-
 function hasNamedWorkflowMarker(state: AutopilotStateFile): boolean {
   const record = state as unknown as Record<string, unknown>;
-  return ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) => (
-    Object.prototype.hasOwnProperty.call(record, marker)
-  ));
+  return ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) =>
+    Object.prototype.hasOwnProperty.call(record, marker),
+  );
 }
 
-function getWorkflowHudState(state: AutopilotStateFile): AutopilotStateForHud['workflow'] | undefined {
+function getWorkflowHudState(
+  state: AutopilotStateFile,
+): AutopilotStateForHud['workflow'] | undefined {
   if (!hasNamedWorkflowMarker(state)) {
     return undefined;
   }
   const record = state as unknown as Record<string, unknown>;
-  const sessionId = typeof record.session_id === 'string'
-    ? record.session_id
-    : undefined;
-  if (!sessionId || !validateNamedWorkflowStateStructure(state as unknown as AutopilotState, sessionId)) {
+  const sessionId =
+    typeof record.session_id === 'string' ? record.session_id : undefined;
+  if (
+    !sessionId ||
+    !validateNamedWorkflowStateStructure(
+      state as unknown as AutopilotState,
+      sessionId,
+    )
+  ) {
     return { invalid: true };
   }
 
@@ -326,13 +345,19 @@ function getWorkflowHudState(state: AutopilotStateFile): AutopilotStateForHud['w
   };
 }
 
-
 /**
  * Read Autopilot state for HUD display.
  * Returns shape matching AutopilotStateForHud from elements/autopilot.ts.
  */
-export function readAutopilotStateForHud(directory: string, sessionId?: string): AutopilotStateForHud | null {
-  const stateFile = resolveStatePath(directory, 'autopilot-state.json', sessionId);
+export function readAutopilotStateForHud(
+  directory: string,
+  sessionId?: string,
+): AutopilotStateForHud | null {
+  const stateFile = resolveStatePath(
+    directory,
+    'autopilot-state.json',
+    sessionId,
+  );
 
   if (!stateFile) {
     return null;
@@ -378,18 +403,28 @@ export function readAutopilotStateForHud(directory: string, sessionId?: string):
 /**
  * Check if any OMC mode is currently active
  */
-export function isAnyModeActive(directory: string, sessionId?: string): boolean {
+export function isAnyModeActive(
+  directory: string,
+  sessionId?: string,
+): boolean {
   const ralph = readRalphStateForHud(directory, sessionId);
   const ultrawork = readUltraworkStateForHud(directory, sessionId);
   const autopilot = readAutopilotStateForHud(directory, sessionId);
 
-  return (ralph?.active ?? false) || (ultrawork?.active ?? false) || (autopilot?.active ?? false);
+  return (
+    (ralph?.active ?? false) ||
+    (ultrawork?.active ?? false) ||
+    (autopilot?.active ?? false)
+  );
 }
 
 /**
  * Get active skill names for display
  */
-export function getActiveSkills(directory: string, sessionId?: string): string[] {
+export function getActiveSkills(
+  directory: string,
+  sessionId?: string,
+): string[] {
   const skills: string[] = [];
 
   const autopilot = readAutopilotStateForHud(directory, sessionId);

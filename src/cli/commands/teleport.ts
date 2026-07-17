@@ -7,7 +7,14 @@
 
 import chalk from 'chalk';
 import { execFileSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, symlinkSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  symlinkSync,
+} from 'fs';
 import { homedir } from 'os';
 import { join, basename, isAbsolute, relative } from 'path';
 import { loadConfig } from '../../config/loader.js';
@@ -35,8 +42,6 @@ const DEFAULT_WORKTREE_ROOT = join(homedir(), 'Workspace', 'omc-worktrees');
 const PACKAGE_JSON_NAME = 'package.json';
 const PACKAGE_MANAGER_LOCKFILES = {
   pnpm: 'pnpm-lock.yaml',
-  yarn: 'yarn.lock',
-  npm: 'package-lock.json',
 } as const;
 
 type SupportedPackageManager = keyof typeof PACKAGE_MANAGER_LOCKFILES;
@@ -49,9 +54,17 @@ function readPackageJsonText(directory: string): string | null {
   }
 }
 
-function detectPackageManager(parentRepoRoot: string, worktreePath: string): SupportedPackageManager {
-  for (const [manager, lockfile] of Object.entries(PACKAGE_MANAGER_LOCKFILES) as [SupportedPackageManager, string][]) {
-    if (existsSync(join(worktreePath, lockfile)) || existsSync(join(parentRepoRoot, lockfile))) {
+function detectPackageManager(
+  parentRepoRoot: string,
+  worktreePath: string,
+): SupportedPackageManager {
+  for (const [manager, lockfile] of Object.entries(
+    PACKAGE_MANAGER_LOCKFILES,
+  ) as [SupportedPackageManager, string][]) {
+    if (
+      existsSync(join(worktreePath, lockfile)) ||
+      existsSync(join(parentRepoRoot, lockfile))
+    ) {
       return manager;
     }
   }
@@ -62,18 +75,21 @@ function detectPackageManager(parentRepoRoot: string, worktreePath: string): Sup
     try {
       const parsed = JSON.parse(packageJsonText) as { packageManager?: string };
       const packageManager = parsed.packageManager?.split('@')[0];
-      if (packageManager === 'pnpm' || packageManager === 'yarn' || packageManager === 'npm') {
+      if (packageManager === 'pnpm') {
         return packageManager;
       }
     } catch {
-      // Ignore and fall back to npm.
+      // Ignore and fall back to pnpm.
     }
   }
 
-  return 'npm';
+  return 'pnpm';
 }
 
-function symlinkNodeModules(parentRepoRoot: string, worktreePath: string): boolean {
+function symlinkNodeModules(
+  parentRepoRoot: string,
+  worktreePath: string,
+): boolean {
   const sourceNodeModules = join(parentRepoRoot, 'node_modules');
   const targetNodeModules = join(worktreePath, 'node_modules');
 
@@ -81,15 +97,20 @@ function symlinkNodeModules(parentRepoRoot: string, worktreePath: string): boole
     return false;
   }
 
-  symlinkSync(sourceNodeModules, targetNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
+  symlinkSync(
+    sourceNodeModules,
+    targetNodeModules,
+    process.platform === 'win32' ? 'junction' : 'dir',
+  );
   return true;
 }
 
-function installDependencies(worktreePath: string, packageManager: SupportedPackageManager): void {
+function installDependencies(
+  worktreePath: string,
+  packageManager: SupportedPackageManager,
+): void {
   const argsByManager: Record<SupportedPackageManager, string[]> = {
-    npm: ['install'],
     pnpm: ['install'],
-    yarn: ['install'],
   };
 
   execFileSync(packageManager, argsByManager[packageManager], {
@@ -98,7 +119,10 @@ function installDependencies(worktreePath: string, packageManager: SupportedPack
   });
 }
 
-function warnTeleportDependencyFallback(message: string, json: boolean | undefined): void {
+function warnTeleportDependencyFallback(
+  message: string,
+  json: boolean | undefined,
+): void {
   if (json) return;
   console.warn(chalk.yellow(message));
 }
@@ -106,7 +130,7 @@ function warnTeleportDependencyFallback(message: string, json: boolean | undefin
 function bootstrapTeleportDependencies(
   parentRepoRoot: string,
   worktreePath: string,
-  options: { json?: boolean; symlinkNodeModules: boolean }
+  options: { json?: boolean; symlinkNodeModules: boolean },
 ): { mode: 'symlink' | 'install'; packageManager: SupportedPackageManager } {
   const packageManager = detectPackageManager(parentRepoRoot, worktreePath);
 
@@ -161,7 +185,9 @@ function parseRef(ref: string): {
   provider?: ProviderName;
 } {
   // GitHub PR URL: github.com/owner/repo/pull/N
-  const ghPrUrlMatch = ref.match(/^https?:\/\/[^/]*github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[?#].*)?$/);
+  const ghPrUrlMatch = ref.match(
+    /^https?:\/\/[^/]*github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[?#].*)?$/,
+  );
   if (ghPrUrlMatch) {
     return {
       type: 'pr',
@@ -173,7 +199,9 @@ function parseRef(ref: string): {
   }
 
   // GitHub Issue URL: github.com/owner/repo/issues/N
-  const ghIssueUrlMatch = ref.match(/^https?:\/\/[^/]*github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)(?:[?#].*)?$/);
+  const ghIssueUrlMatch = ref.match(
+    /^https?:\/\/[^/]*github\.com\/([^/]+)\/([^/]+)\/issues\/(\d+)(?:[?#].*)?$/,
+  );
   if (ghIssueUrlMatch) {
     return {
       type: 'issue',
@@ -185,7 +213,9 @@ function parseRef(ref: string): {
   }
 
   // GitLab MR URL: gitlab.*/namespace/-/merge_requests/N (supports nested groups and self-hosted)
-  const glMrUrlMatch = ref.match(/^https?:\/\/[^/]*gitlab[^/]*\/(.+)\/-\/merge_requests\/(\d+)(?:[?#].*)?$/);
+  const glMrUrlMatch = ref.match(
+    /^https?:\/\/[^/]*gitlab[^/]*\/(.+)\/-\/merge_requests\/(\d+)(?:[?#].*)?$/,
+  );
   if (glMrUrlMatch) {
     const namespaceParts = glMrUrlMatch[1].split('/');
     const repo = namespaceParts.pop()!;
@@ -200,7 +230,9 @@ function parseRef(ref: string): {
   }
 
   // GitLab Issue URL: gitlab.*/namespace/-/issues/N (supports nested groups and self-hosted)
-  const glIssueUrlMatch = ref.match(/^https?:\/\/[^/]*gitlab[^/]*\/(.+)\/-\/issues\/(\d+)(?:[?#].*)?$/);
+  const glIssueUrlMatch = ref.match(
+    /^https?:\/\/[^/]*gitlab[^/]*\/(.+)\/-\/issues\/(\d+)(?:[?#].*)?$/,
+  );
   if (glIssueUrlMatch) {
     const namespaceParts = glIssueUrlMatch[1].split('/');
     const repo = namespaceParts.pop()!;
@@ -215,7 +247,9 @@ function parseRef(ref: string): {
   }
 
   // Bitbucket PR URL: bitbucket.org/workspace/repo/pull-requests/N
-  const bbPrUrlMatch = ref.match(/^https?:\/\/[^/]*bitbucket\.org\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:[?#].*)?$/);
+  const bbPrUrlMatch = ref.match(
+    /^https?:\/\/[^/]*bitbucket\.org\/([^/]+)\/([^/]+)\/pull-requests\/(\d+)(?:[?#].*)?$/,
+  );
   if (bbPrUrlMatch) {
     return {
       type: 'pr',
@@ -227,7 +261,9 @@ function parseRef(ref: string): {
   }
 
   // Bitbucket Issue URL: bitbucket.org/workspace/repo/issues/N
-  const bbIssueUrlMatch = ref.match(/^https?:\/\/[^/]*bitbucket\.org\/([^/]+)\/([^/]+)\/issues\/(\d+)(?:[?#].*)?$/);
+  const bbIssueUrlMatch = ref.match(
+    /^https?:\/\/[^/]*bitbucket\.org\/([^/]+)\/([^/]+)\/issues\/(\d+)(?:[?#].*)?$/,
+  );
   if (bbIssueUrlMatch) {
     return {
       type: 'issue',
@@ -239,7 +275,9 @@ function parseRef(ref: string): {
   }
 
   // Azure DevOps PR URL: dev.azure.com/org/project/_git/repo/pullrequest/N
-  const azPrUrlMatch = ref.match(/^https?:\/\/[^/]*dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/]+)\/pullrequest\/(\d+)(?:[?#].*)?$/);
+  const azPrUrlMatch = ref.match(
+    /^https?:\/\/[^/]*dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/]+)\/pullrequest\/(\d+)(?:[?#].*)?$/,
+  );
   if (azPrUrlMatch) {
     return {
       type: 'pr',
@@ -252,7 +290,7 @@ function parseRef(ref: string): {
 
   // Azure DevOps legacy: https://{org}.visualstudio.com/{project}/_git/{repo}/pullrequest/{id}
   const azureLegacyPrMatch = ref.match(
-    /^https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/]+)\/pullrequest\/(\d+)/i
+    /^https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/]+)\/pullrequest\/(\d+)/i,
   );
   if (azureLegacyPrMatch) {
     return {
@@ -327,7 +365,12 @@ function sanitize(str: string, maxLen: number = 30): string {
 /**
  * Get current git repo info
  */
-function getCurrentRepo(): { owner: string; repo: string; root: string; provider: ProviderName } | null {
+function getCurrentRepo(): {
+  owner: string;
+  repo: string;
+  root: string;
+  provider: ProviderName;
+} | null {
   try {
     const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       encoding: 'utf-8',
@@ -341,7 +384,12 @@ function getCurrentRepo(): { owner: string; repo: string; root: string; provider
     }).trim();
     const parsed = parseRemoteUrl(remoteUrl);
     if (parsed) {
-      return { owner: parsed.owner, repo: parsed.repo, root, provider: parsed.provider };
+      return {
+        owner: parsed.owner,
+        repo: parsed.repo,
+        root,
+        provider: parsed.provider,
+      };
     }
   } catch {
     // Not in a git repo or no origin
@@ -357,7 +405,7 @@ async function fetchProviderInfo(
   number: number,
   provider: GitProvider,
   owner?: string,
-  repo?: string
+  repo?: string,
 ): Promise<{ title: string; branch?: string } | null> {
   if (type === 'pr') {
     const pr = await provider.viewPR(number, owner, repo);
@@ -374,7 +422,7 @@ function createWorktree(
   repoRoot: string,
   worktreePath: string,
   branchName: string,
-  baseBranch: string
+  baseBranch: string,
 ): { success: boolean; error?: string } {
   try {
     // Ensure worktree parent directory exists
@@ -385,7 +433,10 @@ function createWorktree(
 
     // Check if worktree already exists
     if (existsSync(worktreePath)) {
-      return { success: false, error: `Worktree already exists at ${worktreePath}` };
+      return {
+        success: false,
+        error: `Worktree already exists at ${worktreePath}`,
+      };
     }
 
     // Fetch latest from origin
@@ -425,7 +476,7 @@ function createWorktree(
  */
 export async function teleportCommand(
   ref: string,
-  options: TeleportOptions
+  options: TeleportOptions,
 ): Promise<TeleportResult> {
   const parsed = parseRef(ref);
   const baseBranch = options.base || 'main';
@@ -434,7 +485,8 @@ export async function teleportCommand(
   // Get current repo info
   const currentRepo = getCurrentRepo();
   if (!currentRepo) {
-    const error = 'Not in a git repository. Run this command from within a git repo.';
+    const error =
+      'Not in a git repository. Run this command from within a git repo.';
     if (!options.json) {
       console.error(chalk.red(error));
     }
@@ -485,9 +537,21 @@ export async function teleportCommand(
     }
 
     // Try to detect if it's a PR or issue
-    const prInfo = await fetchProviderInfo('pr', parsed.number, provider, resolvedOwner, resolvedRepo);
+    const prInfo = await fetchProviderInfo(
+      'pr',
+      parsed.number,
+      provider,
+      resolvedOwner,
+      resolvedRepo,
+    );
     const issueInfo = !prInfo
-      ? await fetchProviderInfo('issue', parsed.number, provider, resolvedOwner, resolvedRepo)
+      ? await fetchProviderInfo(
+          'issue',
+          parsed.number,
+          provider,
+          resolvedOwner,
+          resolvedRepo,
+        )
       : null;
 
     const info = prInfo || issueInfo;
@@ -511,7 +575,11 @@ export async function teleportCommand(
       worktreeDirName = `pr/${repoName}-${parsed.number}`;
 
       if (!options.json) {
-        console.log(chalk.blue(`Creating PR review worktree: #${parsed.number} - ${title}`));
+        console.log(
+          chalk.blue(
+            `Creating PR review worktree: #${parsed.number} - ${title}`,
+          ),
+        );
       }
 
       // Fetch the PR branch using provider-specific refspec or head branch
@@ -520,10 +588,12 @@ export async function teleportCommand(
           const refspec = provider.prRefspec
             .replace('{number}', String(parsed.number))
             .replace('{branch}', branchName);
-          execFileSync(
-            'git', ['fetch', 'origin', refspec],
-            { cwd: repoRoot, stdio: ['pipe', 'pipe', 'pipe'], timeout: 30000, windowsHide: true },
-          );
+          execFileSync('git', ['fetch', 'origin', refspec], {
+            cwd: repoRoot,
+            stdio: ['pipe', 'pipe', 'pipe'],
+            timeout: 30000,
+            windowsHide: true,
+          });
         } catch {
           // Branch might already exist
         }
@@ -532,8 +602,14 @@ export async function teleportCommand(
         // fetch the PR's head branch from origin
         try {
           execFileSync(
-            'git', ['fetch', 'origin', `${info.branch}:${branchName}`],
-            { cwd: repoRoot, stdio: ['pipe', 'pipe', 'pipe'], timeout: 30000, windowsHide: true },
+            'git',
+            ['fetch', 'origin', `${info.branch}:${branchName}`],
+            {
+              cwd: repoRoot,
+              stdio: ['pipe', 'pipe', 'pipe'],
+              timeout: 30000,
+              windowsHide: true,
+            },
           );
         } catch {
           // Branch might already exist locally
@@ -545,7 +621,11 @@ export async function teleportCommand(
       worktreeDirName = `issue/${repoName}-${parsed.number}`;
 
       if (!options.json) {
-        console.log(chalk.blue(`Creating issue fix worktree: #${parsed.number} - ${title}`));
+        console.log(
+          chalk.blue(
+            `Creating issue fix worktree: #${parsed.number} - ${title}`,
+          ),
+        );
       }
     }
   }
@@ -576,7 +656,9 @@ export async function teleportCommand(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     if (!options.json) {
-      console.error(chalk.red(`Failed to bootstrap worktree dependencies: ${message}`));
+      console.error(
+        chalk.red(`Failed to bootstrap worktree dependencies: ${message}`),
+      );
     }
     return { success: false, error: message };
   }
@@ -594,12 +676,18 @@ export async function teleportCommand(
   }
 
   if (options.json) {
-    console.log(JSON.stringify({
-      success: true,
-      worktreePath,
-      branch: branchName,
-      title,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          success: true,
+          worktreePath,
+          branch: branchName,
+          title,
+        },
+        null,
+        2,
+      ),
+    );
   }
 
   return {
@@ -612,7 +700,11 @@ export async function teleportCommand(
 /**
  * Find worktree directories by scanning for .git files (not directories)
  */
-function findWorktreeDirs(dir: string, maxDepth: number = 3, currentDepth: number = 0): string[] {
+function findWorktreeDirs(
+  dir: string,
+  maxDepth: number = 3,
+  currentDepth: number = 0,
+): string[] {
   if (currentDepth >= maxDepth) return [];
   const results: string[] = [];
   try {
@@ -641,7 +733,9 @@ function findWorktreeDirs(dir: string, maxDepth: number = 3, currentDepth: numbe
 /**
  * List existing worktrees in the default location
  */
-export async function teleportListCommand(options: { json?: boolean }): Promise<void> {
+export async function teleportListCommand(options: {
+  json?: boolean;
+}): Promise<void> {
   const worktreeRoot = DEFAULT_WORKTREE_ROOT;
 
   if (!existsSync(worktreeRoot)) {
@@ -655,7 +749,7 @@ export async function teleportListCommand(options: { json?: boolean }): Promise<
 
   const worktreeDirs = findWorktreeDirs(worktreeRoot);
 
-  const worktrees = worktreeDirs.map(worktreePath => {
+  const worktrees = worktreeDirs.map((worktreePath) => {
     const relativePath = relative(worktreeRoot, worktreePath);
 
     let branch = 'unknown';
@@ -698,7 +792,7 @@ export async function teleportListCommand(options: { json?: boolean }): Promise<
  */
 export async function teleportRemoveCommand(
   pathOrName: string,
-  options: { force?: boolean; json?: boolean }
+  options: { force?: boolean; json?: boolean },
 ): Promise<number> {
   const worktreeRoot = DEFAULT_WORKTREE_ROOT;
 
@@ -736,7 +830,8 @@ export async function teleportRemoveCommand(
       });
 
       if (status.trim()) {
-        const error = 'Worktree has uncommitted changes. Use --force to remove anyway.';
+        const error =
+          'Worktree has uncommitted changes. Use --force to remove anyway.';
         if (options.json) {
           console.log(JSON.stringify({ success: false, error }));
         } else {
@@ -756,7 +851,9 @@ export async function teleportRemoveCommand(
     // A removable worktree reports a git-dir inside the main repo's .git/worktrees directory.
     // Main repos report .git or <repo>/.git; any other shape is unexpected and must fail closed
     // instead of deleting the target directory directly.
-    const mainRepoMatch = gitDir.match(/(.+)[/\\]\.git[/\\]worktrees[/\\][^/\\]+$/);
+    const mainRepoMatch = gitDir.match(
+      /(.+)[/\\]\.git[/\\]worktrees[/\\][^/\\]+$/,
+    );
     const mainRepo = mainRepoMatch ? mainRepoMatch[1] : null;
 
     if (!mainRepo) {

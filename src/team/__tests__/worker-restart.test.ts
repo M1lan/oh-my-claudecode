@@ -37,7 +37,12 @@ describe('worker-restart', () => {
     });
 
     it('caps backoff at backoffMaxMs', () => {
-      const policy = { maxRestarts: 10, backoffBaseMs: 5000, backoffMaxMs: 15000, backoffMultiplier: 2 };
+      const policy = {
+        maxRestarts: 10,
+        backoffBaseMs: 5000,
+        backoffMaxMs: 15000,
+        backoffMultiplier: 2,
+      };
       recordRestart(testDir, teamName, workerName, policy);
       recordRestart(testDir, teamName, workerName, policy);
       recordRestart(testDir, teamName, workerName, policy); // count=3, would be 5000*2^3=40000
@@ -46,7 +51,12 @@ describe('worker-restart', () => {
     });
 
     it('returns null after max restarts', () => {
-      const policy = { maxRestarts: 2, backoffBaseMs: 1000, backoffMaxMs: 60000, backoffMultiplier: 2 };
+      const policy = {
+        maxRestarts: 2,
+        backoffBaseMs: 1000,
+        backoffMaxMs: 60000,
+        backoffMultiplier: 2,
+      };
       recordRestart(testDir, teamName, workerName, policy);
       recordRestart(testDir, teamName, workerName, policy);
       const delay = shouldRestart(testDir, teamName, workerName, policy);
@@ -54,7 +64,12 @@ describe('worker-restart', () => {
     });
 
     it('uses custom policy', () => {
-      const policy = { maxRestarts: 5, backoffBaseMs: 1000, backoffMaxMs: 30000, backoffMultiplier: 3 };
+      const policy = {
+        maxRestarts: 5,
+        backoffBaseMs: 1000,
+        backoffMaxMs: 30000,
+        backoffMultiplier: 3,
+      };
       const delay = shouldRestart(testDir, teamName, workerName, policy);
       expect(delay).toBe(1000); // base
     });
@@ -97,7 +112,9 @@ describe('worker-restart', () => {
     });
 
     it('does not throw for non-existent state', () => {
-      expect(() => clearRestartState(testDir, teamName, 'nonexistent')).not.toThrow();
+      expect(() =>
+        clearRestartState(testDir, teamName, 'nonexistent'),
+      ).not.toThrow();
     });
   });
 

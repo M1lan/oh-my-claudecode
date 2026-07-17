@@ -32,10 +32,17 @@ import {
  * @param input - Knowledge to ingest
  * @returns Result with created/updated page lists
  */
-export function ingestKnowledge(root: string, input: WikiIngestInput): WikiIngestResult {
+export function ingestKnowledge(
+  root: string,
+  input: WikiIngestInput,
+): WikiIngestResult {
   const slug = titleToSlug(input.title);
   const now = new Date().toISOString();
-  const result: WikiIngestResult = { created: [], updated: [], totalAffected: 0 };
+  const result: WikiIngestResult = {
+    created: [],
+    updated: [],
+    totalAffected: 0,
+  };
 
   withWikiLock(root, () => {
     const existing = readPage(root, slug);
@@ -69,7 +76,11 @@ export function ingestKnowledge(root: string, input: WikiIngestInput): WikiInges
 }
 
 /** Create a new wiki page from ingest input. */
-function createPage(slug: string, input: WikiIngestInput, now: string): WikiPage {
+function createPage(
+  slug: string,
+  input: WikiIngestInput,
+  now: string,
+): WikiPage {
   const frontmatter: WikiPageFrontmatter = {
     title: input.title,
     tags: [...new Set(input.tags)],
@@ -96,22 +107,34 @@ function createPage(slug: string, input: WikiIngestInput, now: string): WikiPage
  * - Confidence: keep higher level
  * - Content: append as new timestamped section
  */
-function mergePage(existing: WikiPage, input: WikiIngestInput, now: string): WikiPage {
-  const mergedTags = [...new Set([...existing.frontmatter.tags, ...input.tags])];
-  const mergedSources = [...new Set([...existing.frontmatter.sources, ...(input.sources || [])])];
-  const mergedLinks = [...new Set([
-    ...existing.frontmatter.links,
-    ...extractWikiLinks(input.content),
-  ])];
+function mergePage(
+  existing: WikiPage,
+  input: WikiIngestInput,
+  now: string,
+): WikiPage {
+  const mergedTags = [
+    ...new Set([...existing.frontmatter.tags, ...input.tags]),
+  ];
+  const mergedSources = [
+    ...new Set([...existing.frontmatter.sources, ...(input.sources || [])]),
+  ];
+  const mergedLinks = [
+    ...new Set([
+      ...existing.frontmatter.links,
+      ...extractWikiLinks(input.content),
+    ]),
+  ];
 
   const confidenceRank = { high: 3, medium: 2, low: 1 };
   const existingRank = confidenceRank[existing.frontmatter.confidence] || 2;
   const newRank = confidenceRank[input.confidence || 'medium'] || 2;
-  const mergedConfidence = newRank >= existingRank
-    ? (input.confidence || 'medium')
-    : existing.frontmatter.confidence;
+  const mergedConfidence =
+    newRank >= existingRank
+      ? input.confidence || 'medium'
+      : existing.frontmatter.confidence;
 
-  const appendedContent = existing.content.trimEnd() +
+  const appendedContent =
+    existing.content.trimEnd() +
     `\n\n---\n\n## Update (${now})\n\n${input.content}\n`;
 
   return {
@@ -132,8 +155,12 @@ function mergePage(existing: WikiPage, input: WikiIngestInput, now: string): Wik
 function extractWikiLinks(content: string): string[] {
   const matches = content.match(/\[\[([^\]]+)\]\]/g);
   if (!matches) return [];
-  return [...new Set(matches.map(m => {
-    const name = m.slice(2, -2).trim();
-    return titleToSlug(name);
-  }))];
+  return [
+    ...new Set(
+      matches.map((m) => {
+        const name = m.slice(2, -2).trim();
+        return titleToSlug(name);
+      }),
+    ),
+  ];
 }

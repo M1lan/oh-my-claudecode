@@ -42,13 +42,7 @@ describe('parseRuleFrontmatter line endings', () => {
   });
 
   it('parses a multi-line paths alias array with CRLF line endings', () => {
-    const content = [
-      '---',
-      'paths:',
-      '  - "*.md"',
-      '---',
-      'body',
-    ].join('\r\n');
+    const content = ['---', 'paths:', '  - "*.md"', '---', 'body'].join('\r\n');
 
     const { metadata } = parseRuleFrontmatter(content);
 

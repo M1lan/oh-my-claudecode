@@ -8,7 +8,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { analyzeLog, isUpstreamReady, getPassRate, getTimeoutRate } from '../sentinel.js';
+import {
+  analyzeLog,
+  isUpstreamReady,
+  getPassRate,
+  getTimeoutRate,
+} from '../sentinel.js';
 import type { SentinelReadinessPolicy } from '../types.js';
 
 // ---------------------------------------------------------------------------
@@ -17,15 +22,15 @@ import type { SentinelReadinessPolicy } from '../types.js';
 
 function defaultReadinessPolicy(): SentinelReadinessPolicy {
   return {
-    min_pass_rate: 0.60,
-    max_timeout_rate: 0.10,
-    max_warn_plus_fail_rate: 0.40,
+    min_pass_rate: 0.6,
+    max_timeout_rate: 0.1,
+    max_warn_plus_fail_rate: 0.4,
     min_reason_coverage_rate: 0.95,
   };
 }
 
 function writeJsonl(path: string, rows: Record<string, unknown>[]): void {
-  const content = rows.map(r => JSON.stringify(r)).join('\n') + '\n';
+  const content = rows.map((r) => JSON.stringify(r)).join('\n') + '\n';
   writeFileSync(path, content, 'utf-8');
 }
 
@@ -76,10 +81,22 @@ describe('Sentinel Health Analyzer (issue #1155)', () => {
     const logPath = join(tempDir, 'sentinel_stop.jsonl');
     const rows: Record<string, unknown>[] = [];
     for (let i = 0; i < 8; i++) {
-      rows.push({ verdict: 'PASS', reason: `ok-${i}`, runtime: { timed_out: false } });
+      rows.push({
+        verdict: 'PASS',
+        reason: `ok-${i}`,
+        runtime: { timed_out: false },
+      });
     }
-    rows.push({ verdict: 'WARN', reason: 'low-confidence', runtime: { timed_out: false } });
-    rows.push({ verdict: 'FAIL', reason: 'policy-block', runtime: { timed_out: false } });
+    rows.push({
+      verdict: 'WARN',
+      reason: 'low-confidence',
+      runtime: { timed_out: false },
+    });
+    rows.push({
+      verdict: 'FAIL',
+      reason: 'policy-block',
+      runtime: { timed_out: false },
+    });
     writeJsonl(logPath, rows);
 
     const policy = defaultReadinessPolicy();
@@ -106,7 +123,10 @@ describe('Sentinel Health Analyzer (issue #1155)', () => {
 
   it('skips malformed JSON lines', () => {
     const logPath = join(tempDir, 'bad.jsonl');
-    writeFileSync(logPath, '{"verdict":"PASS","reason":"ok"}\nnot-json\n{"verdict":"FAIL","reason":"err"}\n');
+    writeFileSync(
+      logPath,
+      '{"verdict":"PASS","reason":"ok"}\nnot-json\n{"verdict":"FAIL","reason":"err"}\n',
+    );
 
     const stats = analyzeLog(logPath);
     expect(stats.total_runs).toBe(2);

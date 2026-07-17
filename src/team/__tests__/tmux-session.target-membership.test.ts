@@ -8,7 +8,9 @@ import {
 } from '../tmux-session.js';
 import type { MailboxNotificationTarget } from '../mailbox-notification-guard.js';
 
-function workerTarget(overrides: Partial<MailboxNotificationTarget> = {}): MailboxNotificationTarget {
+function workerTarget(
+  overrides: Partial<MailboxNotificationTarget> = {},
+): MailboxNotificationTarget {
   return {
     provider: 'tmux',
     providerTarget: 'dispatch-session:workers',
@@ -30,7 +32,10 @@ function ownershipDependencies(
   const outputs = [...cmuxOutputs];
   return {
     tmuxExec: vi.fn(async () => ({ stdout: tmuxOutput, stderr: '' })),
-    cmuxExec: vi.fn(async () => ({ stdout: outputs.shift() ?? '', stderr: '' })),
+    cmuxExec: vi.fn(async () => ({
+      stdout: outputs.shift() ?? '',
+      stderr: '',
+    })),
   };
 }
 
@@ -38,7 +43,10 @@ describe('direct mailbox target ownership', () => {
   it('proves exact tmux target membership with the unchanged session window target', async () => {
     const dependencies = ownershipDependencies('%2\n%9\n%9\n');
 
-    const result = await verifyTeamTargetOwnership(workerTarget(), dependencies);
+    const result = await verifyTeamTargetOwnership(
+      workerTarget(),
+      dependencies,
+    );
 
     expect(result).toEqual({
       kind: 'owned',
@@ -48,7 +56,11 @@ describe('direct mailbox target ownership', () => {
     });
     expect(dependencies.tmuxExec).toHaveBeenCalledOnce();
     expect(dependencies.tmuxExec).toHaveBeenCalledWith([
-      'list-panes', '-t', 'dispatch-session:workers', '-F', '#{pane_id}',
+      'list-panes',
+      '-t',
+      'dispatch-session:workers',
+      '-F',
+      '#{pane_id}',
     ]);
     expect(dependencies.cmuxExec).not.toHaveBeenCalled();
   });
@@ -60,7 +72,10 @@ describe('direct mailbox target ownership', () => {
   ])('fails closed for tmux output %j', async (stdout, expectedKind) => {
     const dependencies = ownershipDependencies(stdout);
 
-    const result = await verifyTeamTargetOwnership(workerTarget(), dependencies);
+    const result = await verifyTeamTargetOwnership(
+      workerTarget(),
+      dependencies,
+    );
 
     expect(result.kind).toBe(expectedKind);
   });
@@ -99,8 +114,26 @@ describe('direct mailbox target ownership', () => {
     });
     expect(dependencies.cmuxExec.mock.calls).toEqual([
       [['--json', 'list-panes', '--workspace', 'workspace-1']],
-      [['--json', 'list-pane-surfaces', '--workspace', 'workspace-1', '--pane', 'pane-a']],
-      [['--json', 'list-pane-surfaces', '--workspace', 'workspace-1', '--pane', 'pane-b']],
+      [
+        [
+          '--json',
+          'list-pane-surfaces',
+          '--workspace',
+          'workspace-1',
+          '--pane',
+          'pane-a',
+        ],
+      ],
+      [
+        [
+          '--json',
+          'list-pane-surfaces',
+          '--workspace',
+          'workspace-1',
+          '--pane',
+          'pane-b',
+        ],
+      ],
     ]);
     expect(dependencies.tmuxExec).not.toHaveBeenCalled();
   });
@@ -111,11 +144,14 @@ describe('direct mailbox target ownership', () => {
       JSON.stringify({ surfaces: [{ id: '%9' }] }),
     ]);
 
-    const result = await verifyTeamTargetOwnership(workerTarget({
-      provider: 'cmux',
-      providerTarget: 'cmux:workspace-1',
-      paneId: '%9',
-    }), dependencies);
+    const result = await verifyTeamTargetOwnership(
+      workerTarget({
+        provider: 'cmux',
+        providerTarget: 'cmux:workspace-1',
+        paneId: '%9',
+      }),
+      dependencies,
+    );
 
     expect(result).toEqual({ kind: 'unavailable' });
     expect(dependencies.tmuxExec).not.toHaveBeenCalled();
@@ -159,7 +195,11 @@ describe('direct mailbox effect adapter', () => {
   it('classifies a confirmed worker effect without changing the public boolean transport', async () => {
     const dependencies = effectDependencies(true);
 
-    const result = await invokeDirectMailboxEffect(workerTarget(), 'mailbox trigger', dependencies);
+    const result = await invokeDirectMailboxEffect(
+      workerTarget(),
+      'mailbox trigger',
+      dependencies,
+    );
 
     expect(result).toEqual({
       kind: 'confirmed',
@@ -173,27 +213,45 @@ describe('direct mailbox effect adapter', () => {
   it.each([
     [false, 'returned_false'],
     [new Error('transport failed'), 'threw'],
-  ])('classifies an invoked but unconfirmed worker effect', async (workerResult, cause) => {
-    const dependencies = effectDependencies(workerResult);
+  ])(
+    'classifies an invoked but unconfirmed worker effect',
+    async (workerResult, cause) => {
+      const dependencies = effectDependencies(workerResult);
 
-    const result = await invokeDirectMailboxEffect(workerTarget(), 'mailbox trigger', dependencies);
+      const result = await invokeDirectMailboxEffect(
+        workerTarget(),
+        'mailbox trigger',
+        dependencies,
+      );
 
-    expect(result).toEqual({
-      kind: 'attempted_unconfirmed',
-      transport: 'tmux_send_keys',
-      reason: 'notification_delivery_uncertain',
-      cause,
-    });
-    expect(dependencies.sendWorker).toHaveBeenCalledOnce();
-  });
+      expect(result).toEqual({
+        kind: 'attempted_unconfirmed',
+        transport: 'tmux_send_keys',
+        reason: 'notification_delivery_uncertain',
+        cause,
+      });
+      expect(dependencies.sendWorker).toHaveBeenCalledOnce();
+    },
+  );
 
   it('uses the leader adapter for a canonical leader target', async () => {
     const dependencies = effectDependencies(true, true);
-    const target = workerTarget({ recipient: 'leader-fixed', recipientRole: 'leader', workerIndex: undefined });
+    const target = workerTarget({
+      recipient: 'leader-fixed',
+      recipientRole: 'leader',
+      workerIndex: undefined,
+    });
 
-    const result = await invokeDirectMailboxEffect(target, 'mailbox trigger', dependencies);
+    const result = await invokeDirectMailboxEffect(
+      target,
+      'mailbox trigger',
+      dependencies,
+    );
 
-    expect(result).toMatchObject({ kind: 'confirmed', reason: 'leader_pane_notified' });
+    expect(result).toMatchObject({
+      kind: 'confirmed',
+      reason: 'leader_pane_notified',
+    });
     expect(dependencies.sendLeader).toHaveBeenCalledOnce();
     expect(dependencies.sendWorker).not.toHaveBeenCalled();
   });
@@ -209,9 +267,16 @@ describe('direct mailbox effect adapter', () => {
     });
 
     try {
-      const result = await invokeDirectMailboxEffect(target, 'mailbox trigger', dependencies);
+      const result = await invokeDirectMailboxEffect(
+        target,
+        'mailbox trigger',
+        dependencies,
+      );
 
-      expect(result).toEqual({ kind: 'not_attempted', reason: 'mailbox_membership_unresolvable' });
+      expect(result).toEqual({
+        kind: 'not_attempted',
+        reason: 'mailbox_membership_unresolvable',
+      });
       expect(dependencies.sendWorker).not.toHaveBeenCalled();
       expect(dependencies.sendLeader).not.toHaveBeenCalled();
     } finally {
@@ -223,9 +288,16 @@ describe('direct mailbox effect adapter', () => {
   it('returns not attempted for missing input without invoking either public transport', async () => {
     const dependencies = effectDependencies(true);
 
-    const result = await invokeDirectMailboxEffect(workerTarget(), '', dependencies);
+    const result = await invokeDirectMailboxEffect(
+      workerTarget(),
+      '',
+      dependencies,
+    );
 
-    expect(result).toEqual({ kind: 'not_attempted', reason: 'mailbox_target_missing' });
+    expect(result).toEqual({
+      kind: 'not_attempted',
+      reason: 'mailbox_target_missing',
+    });
     expect(dependencies.sendWorker).not.toHaveBeenCalled();
     expect(dependencies.sendLeader).not.toHaveBeenCalled();
   });

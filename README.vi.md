@@ -102,7 +102,7 @@ Bật Claude Code native teams trong `~/.claude/settings.json`:
 
 Công nhân được tạo theo yêu cầu và tắt khi hoàn thành tác vụ — không lãng phí tài nguyên. Cần cài `codex` / `gemini` CLI và có phiên tmux đang hoạt động.
 
-> **Lưu ý: Tên package** — Dự án được xây dựng thương hiệu là **oh-my-claudecode** (repo, plugin, commands), nhưng package npm được phát hành dưới tên [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Nếu bạn cài công cụ CLI qua npm/bun, hãy dùng `npm install -g oh-my-claude-sisyphus`.
+> **Lưu ý: Tên package** — Dự án được xây dựng thương hiệu là **oh-my-claudecode** (repo, plugin, commands), nhưng package npm được phát hành dưới tên [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Nếu bạn cài công cụ CLI qua pnpm/bun, hãy dùng `pnpm add -g oh-my-claude-sisyphus`.
 
 ### Cập nhật
 
@@ -355,8 +355,8 @@ OMC có thể tùy chọn điều phối các nhà cung cấp AI bên ngoài đ�
 
 | Provider | Cài đặt | Nó mở ra điều gì |
 |----------|---------|-----------------|
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `npm install -g @google/gemini-cli` | Design review, UI consistency (1M token context) |
-| [Codex CLI](https://github.com/openai/codex) | `npm install -g @openai/codex` | Architecture validation, code review cross-check |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `pnpm add -g @google/gemini-cli` | Design review, UI consistency (1M token context) |
+| [Codex CLI](https://github.com/openai/codex) | `pnpm add -g @openai/codex` | Architecture validation, code review cross-check |
 
 **Chi phí:** 3 gói Pro (Claude + Gemini + ChatGPT) bao phủ mọi thứ với khoảng $60/tháng.
 

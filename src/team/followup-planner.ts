@@ -9,7 +9,11 @@
  * team / ralph execution directly.
  */
 
-import { readPlanningArtifacts, isPlanningComplete, readApprovedExecutionLaunchHint } from '../planning/artifacts.js';
+import {
+  readPlanningArtifacts,
+  isPlanningComplete,
+  readApprovedExecutionLaunchHint,
+} from '../planning/artifacts.js';
 import type { ApprovedExecutionLaunchHint } from '../planning/artifacts.js';
 
 export type FollowupMode = 'team' | 'ralph';
@@ -59,14 +63,14 @@ const SHORT_RALPH_PATTERNS: RegExp[] = [
  * Returns true if the text is a short team follow-up request.
  */
 export function isShortTeamFollowupRequest(text: string): boolean {
-  return SHORT_TEAM_PATTERNS.some(re => re.test(text));
+  return SHORT_TEAM_PATTERNS.some((re) => re.test(text));
 }
 
 /**
  * Returns true if the text is a short ralph follow-up request.
  */
 export function isShortRalphFollowupRequest(text: string): boolean {
-  return SHORT_RALPH_PATTERNS.some(re => re.test(text));
+  return SHORT_RALPH_PATTERNS.some((re) => re.test(text));
 }
 
 /**
@@ -80,7 +84,7 @@ export function isShortRalphFollowupRequest(text: string): boolean {
 export function isApprovedExecutionFollowupShortcut(
   mode: FollowupMode,
   text: string,
-  context: ApprovedExecutionFollowupContext
+  context: ApprovedExecutionFollowupContext,
 ): boolean {
   if (!context.planningComplete) return false;
   if (context.priorSkill !== 'ralplan') return false;
@@ -100,7 +104,7 @@ export function isApprovedExecutionFollowupShortcut(
  */
 export function resolveApprovedTeamFollowupContext(
   cwd: string,
-  _task: string
+  _task: string,
 ): TeamFollowupContext | null {
   const artifacts = readPlanningArtifacts(cwd);
   if (!isPlanningComplete(artifacts)) return null;

@@ -34,13 +34,19 @@ function probeProvider(provider: TeamRoleProvider): ProviderProbe {
   const probe: ProviderProbe = { provider, binary, found: false };
 
   try {
-    const resolved = execSync(`command -v ${binary}`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] })
-      .trim();
+    const resolved = execSync(`command -v ${binary}`, {
+      encoding: 'utf-8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim();
     if (resolved) {
       probe.found = true;
       probe.path = resolved;
       try {
-        const version = execSync(`${binary} --version`, { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 3000 })
+        const version = execSync(`${binary} --version`, {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+          timeout: 3000,
+        })
           .trim()
           .split('\n')[0];
         if (version) probe.version = version;
@@ -64,19 +70,30 @@ function collectConfiguredProviders(): Set<TeamRoleProvider> {
   const roleRouting = cfg.team?.roleRouting ?? {};
   for (const spec of Object.values(roleRouting)) {
     const provider = spec?.provider as TeamRoleProvider | undefined;
-    if (provider === 'claude' || provider === 'codex' || provider === 'gemini' || provider === 'grok' || provider === 'cursor' || provider === 'antigravity') {
+    if (
+      provider === 'claude' ||
+      provider === 'codex' ||
+      provider === 'gemini' ||
+      provider === 'grok' ||
+      provider === 'cursor' ||
+      provider === 'antigravity'
+    ) {
       providers.add(provider);
     }
   }
   return providers;
 }
 
-export async function doctorTeamRoutingCommand(options: { json?: boolean }): Promise<number> {
+export async function doctorTeamRoutingCommand(options: {
+  json?: boolean;
+}): Promise<number> {
   let providers: Set<TeamRoleProvider>;
   try {
     providers = collectConfiguredProviders();
   } catch (err) {
-    console.error(`[OMC] Failed to load config: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `[OMC] Failed to load config: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return 1;
   }
 
@@ -99,9 +116,13 @@ export async function doctorTeamRoutingCommand(options: { json?: boolean }): Pro
     for (const p of probes) {
       if (p.found) {
         const version = p.version ? ` (${p.version})` : '';
-        console.log(`  ${colors.green('✓')} ${p.provider}: ${p.path}${version}`);
+        console.log(
+          `  ${colors.green('✓')} ${p.provider}: ${p.path}${version}`,
+        );
       } else {
-        console.log(`  ${colors.yellow('⚠')} ${p.provider}: not found on PATH — /team tasks routed to ${p.provider} will fall back to claude`);
+        console.log(
+          `  ${colors.yellow('⚠')} ${p.provider}: not found on PATH — /team tasks routed to ${p.provider} will fall back to claude`,
+        );
       }
     }
     if (missing.length === 0) {

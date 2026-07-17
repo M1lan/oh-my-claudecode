@@ -7,13 +7,25 @@
 
 import { existsSync, readdirSync, realpathSync, mkdirSync } from 'fs';
 import { join, normalize, sep } from 'path';
-import { USER_SKILLS_DIR, PROJECT_SKILLS_SUBDIR, PROJECT_AGENT_SKILLS_SUBDIR, SKILL_EXTENSION, DEBUG_ENABLED, GLOBAL_SKILLS_DIR, MAX_RECURSION_DEPTH } from './constants.js';
+import {
+  USER_SKILLS_DIR,
+  PROJECT_SKILLS_SUBDIR,
+  PROJECT_AGENT_SKILLS_SUBDIR,
+  SKILL_EXTENSION,
+  DEBUG_ENABLED,
+  GLOBAL_SKILLS_DIR,
+  MAX_RECURSION_DEPTH,
+} from './constants.js';
 import type { SkillFileCandidate } from './types.js';
 
 /**
  * Recursively find all skill files in a directory.
  */
-function findSkillFilesRecursive(dir: string, results: string[], depth: number = 0): void {
+function findSkillFilesRecursive(
+  dir: string,
+  results: string[],
+  depth: number = 0,
+): void {
   if (!existsSync(dir)) return;
   if (depth > MAX_RECURSION_DEPTH) return;
 
@@ -53,8 +65,10 @@ function safeRealpathSync(filePath: string): string {
 function isWithinBoundary(realPath: string, boundary: string): boolean {
   const normalizedReal = normalize(realPath);
   const normalizedBoundary = normalize(safeRealpathSync(boundary));
-  return normalizedReal === normalizedBoundary ||
-         normalizedReal.startsWith(normalizedBoundary + sep);
+  return (
+    normalizedReal === normalizedBoundary ||
+    normalizedReal.startsWith(normalizedBoundary + sep)
+  );
 }
 
 /**
@@ -63,7 +77,7 @@ function isWithinBoundary(realPath: string, boundary: string): boolean {
  */
 export function findSkillFiles(
   projectRoot: string | null,
-  options?: { scope?: 'project' | 'user' | 'all' }
+  options?: { scope?: 'project' | 'user' | 'all' },
 ): SkillFileCandidate[] {
   const candidates: SkillFileCandidate[] = [];
   const seenRealPaths = new Set<string>();
@@ -138,7 +152,11 @@ export function findSkillFiles(
 /**
  * Get skills directory path for a scope.
  */
-export function getSkillsDir(scope: 'user' | 'project', projectRoot?: string, sourceDir?: string): string {
+export function getSkillsDir(
+  scope: 'user' | 'project',
+  projectRoot?: string,
+  sourceDir?: string,
+): string {
   if (sourceDir) return sourceDir;
   if (scope === 'user') {
     return USER_SKILLS_DIR;
@@ -152,7 +170,10 @@ export function getSkillsDir(scope: 'user' | 'project', projectRoot?: string, so
 /**
  * Ensure skills directory exists.
  */
-export function ensureSkillsDir(scope: 'user' | 'project', projectRoot?: string): boolean {
+export function ensureSkillsDir(
+  scope: 'user' | 'project',
+  projectRoot?: string,
+): boolean {
   const dir = getSkillsDir(scope, projectRoot);
 
   if (existsSync(dir)) {

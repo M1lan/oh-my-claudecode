@@ -11,13 +11,16 @@ import { writePage, ensureWikiDir } from '../storage.js';
 import { WIKI_SCHEMA_VERSION } from '../types.js';
 import type { WikiPage } from '../types.js';
 
-function makePage(filename: string, opts: {
-  title?: string;
-  tags?: string[];
-  category?: string;
-  content?: string;
-  confidence?: string;
-} = {}): WikiPage {
+function makePage(
+  filename: string,
+  opts: {
+    title?: string;
+    tags?: string[];
+    category?: string;
+    content?: string;
+    confidence?: string;
+  } = {},
+): WikiPage {
   return {
     filename,
     frontmatter: {
@@ -27,11 +30,14 @@ function makePage(filename: string, opts: {
       updated: '2025-01-01T00:00:00.000Z',
       sources: [],
       links: [],
-      category: (opts.category || 'reference') as WikiPage['frontmatter']['category'],
-      confidence: (opts.confidence || 'medium') as WikiPage['frontmatter']['confidence'],
+      category: (opts.category ||
+        'reference') as WikiPage['frontmatter']['category'],
+      confidence: (opts.confidence ||
+        'medium') as WikiPage['frontmatter']['confidence'],
       schemaVersion: WIKI_SCHEMA_VERSION,
     },
-    content: opts.content || `\n# ${opts.title || filename}\n\nDefault content.\n`,
+    content:
+      opts.content || `\n# ${opts.title || filename}\n\nDefault content.\n`,
   };
 }
 
@@ -53,8 +59,14 @@ describe('Wiki Query', () => {
   });
 
   it('should match by title', () => {
-    writePage(tempDir, makePage('auth.md', { title: 'Authentication Flow', tags: ['auth'] }));
-    writePage(tempDir, makePage('db.md', { title: 'Database Schema', tags: ['db'] }));
+    writePage(
+      tempDir,
+      makePage('auth.md', { title: 'Authentication Flow', tags: ['auth'] }),
+    );
+    writePage(
+      tempDir,
+      makePage('db.md', { title: 'Database Schema', tags: ['db'] }),
+    );
 
     const results = queryWiki(tempDir, 'authentication');
     expect(results.length).toBeGreaterThanOrEqual(1);
@@ -62,10 +74,13 @@ describe('Wiki Query', () => {
   });
 
   it('should match by content', () => {
-    writePage(tempDir, makePage('page.md', {
-      title: 'Unrelated Title',
-      content: '\n# Something\n\nThis page describes JWT token validation.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('page.md', {
+        title: 'Unrelated Title',
+        content: '\n# Something\n\nThis page describes JWT token validation.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, 'JWT');
     expect(results.length).toBe(1);
@@ -73,7 +88,13 @@ describe('Wiki Query', () => {
   });
 
   it('should match by tags', () => {
-    writePage(tempDir, makePage('tagged.md', { title: 'Tagged Page', tags: ['security', 'auth'] }));
+    writePage(
+      tempDir,
+      makePage('tagged.md', {
+        title: 'Tagged Page',
+        tags: ['security', 'auth'],
+      }),
+    );
     writePage(tempDir, makePage('untagged.md', { title: 'Untagged' }));
 
     const results = queryWiki(tempDir, 'anything', { tags: ['security'] });
@@ -82,8 +103,14 @@ describe('Wiki Query', () => {
   });
 
   it('should filter by category', () => {
-    writePage(tempDir, makePage('arch.md', { title: 'Architecture', category: 'architecture' }));
-    writePage(tempDir, makePage('debug.md', { title: 'Debug Info', category: 'debugging' }));
+    writePage(
+      tempDir,
+      makePage('arch.md', { title: 'Architecture', category: 'architecture' }),
+    );
+    writePage(
+      tempDir,
+      makePage('debug.md', { title: 'Debug Info', category: 'debugging' }),
+    );
 
     const results = queryWiki(tempDir, 'info', { category: 'debugging' });
     // Should only return debugging category
@@ -94,11 +121,14 @@ describe('Wiki Query', () => {
 
   it('should respect limit', () => {
     for (let i = 0; i < 5; i++) {
-      writePage(tempDir, makePage(`page-${i}.md`, {
-        title: `Test Page ${i}`,
-        tags: ['common'],
-        content: `\n# Page ${i}\n\nCommon keyword here.\n`,
-      }));
+      writePage(
+        tempDir,
+        makePage(`page-${i}.md`, {
+          title: `Test Page ${i}`,
+          tags: ['common'],
+          content: `\n# Page ${i}\n\nCommon keyword here.\n`,
+        }),
+      );
     }
 
     const results = queryWiki(tempDir, 'common', { limit: 2 });
@@ -106,15 +136,21 @@ describe('Wiki Query', () => {
   });
 
   it('should sort by score descending', () => {
-    writePage(tempDir, makePage('low.md', {
-      title: 'Unrelated',
-      content: '\n# Low\n\nContains auth once.\n',
-    }));
-    writePage(tempDir, makePage('high.md', {
-      title: 'Auth Architecture',
-      tags: ['auth'],
-      content: '\n# Auth\n\nFull auth documentation.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('low.md', {
+        title: 'Unrelated',
+        content: '\n# Low\n\nContains auth once.\n',
+      }),
+    );
+    writePage(
+      tempDir,
+      makePage('high.md', {
+        title: 'Auth Architecture',
+        tags: ['auth'],
+        content: '\n# Auth\n\nFull auth documentation.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, 'auth');
     expect(results.length).toBe(2);
@@ -123,10 +159,14 @@ describe('Wiki Query', () => {
   });
 
   it('should provide snippets', () => {
-    writePage(tempDir, makePage('snippet.md', {
-      title: 'Snippet Test',
-      content: '\n# Snippet\n\nSome text before the keyword. Important keyword here with context after.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('snippet.md', {
+        title: 'Snippet Test',
+        content:
+          '\n# Snippet\n\nSome text before the keyword. Important keyword here with context after.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, 'keyword');
     expect(results.length).toBe(1);
@@ -134,11 +174,14 @@ describe('Wiki Query', () => {
   });
 
   it('should match query terms against page tags', () => {
-    writePage(tempDir, makePage('tagged.md', {
-      title: 'No Match Title',
-      tags: ['authentication', 'security'],
-      content: '\n# Nothing\n\nNo query terms in content.\n',
-    }));
+    writePage(
+      tempDir,
+      makePage('tagged.md', {
+        title: 'No Match Title',
+        tags: ['authentication', 'security'],
+        content: '\n# Nothing\n\nNo query terms in content.\n',
+      }),
+    );
 
     const results = queryWiki(tempDir, 'authentication');
     expect(results.length).toBe(1);

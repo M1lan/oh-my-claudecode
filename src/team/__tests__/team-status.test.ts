@@ -7,7 +7,12 @@ import { atomicWriteJson } from '../fs-utils.js';
 import { appendOutbox } from '../inbox-outbox.js';
 import { recordTaskUsage } from '../usage-tracker.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
-import type { HeartbeatData, TaskFile, OutboxMessage, McpWorkerMember } from '../types.js';
+import type {
+  HeartbeatData,
+  TaskFile,
+  OutboxMessage,
+  McpWorkerMember,
+} from '../types.js';
 
 const TEST_TEAM = 'test-team-status';
 let WORK_DIR: string;
@@ -18,14 +23,19 @@ beforeEach(() => {
   WORK_DIR = join(realpathSync(tmpdir()), `omc-team-status-test-${Date.now()}`);
   TASKS_DIR = join(WORK_DIR, '.omc', 'state', 'team', TEST_TEAM, 'tasks');
   mkdirSync(TASKS_DIR, { recursive: true });
-  mkdirSync(join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM), { recursive: true });
+  mkdirSync(join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM), {
+    recursive: true,
+  });
   mkdirSync(join(WORK_DIR, '.omc', 'state'), { recursive: true });
 });
 
 afterEach(() => {
   rmSync(WORK_DIR, { recursive: true, force: true });
   // Clean up outbox files written to ~/.claude/teams/ by appendOutbox
-  rmSync(join(getClaudeConfigDir(), 'teams', TEST_TEAM), { recursive: true, force: true });
+  rmSync(join(getClaudeConfigDir(), 'teams', TEST_TEAM), {
+    recursive: true,
+    force: true,
+  });
 });
 
 function writeWorkerRegistry(workers: McpWorkerMember[]): void {
@@ -38,11 +48,21 @@ function writeTask(task: TaskFile): void {
 }
 
 function writeHeartbeatFile(data: HeartbeatData): void {
-  const hbPath = join(WORK_DIR, '.omc', 'state', 'team-bridge', TEST_TEAM, `${data.workerName}.heartbeat.json`);
+  const hbPath = join(
+    WORK_DIR,
+    '.omc',
+    'state',
+    'team-bridge',
+    TEST_TEAM,
+    `${data.workerName}.heartbeat.json`,
+  );
   atomicWriteJson(hbPath, data);
 }
 
-function makeWorker(name: string, provider: 'codex' | 'gemini' = 'codex'): McpWorkerMember {
+function makeWorker(
+  name: string,
+  provider: 'codex' | 'gemini' = 'codex',
+): McpWorkerMember {
   return {
     agentId: `${name}@${TEST_TEAM}`,
     name,
@@ -56,7 +76,11 @@ function makeWorker(name: string, provider: 'codex' | 'gemini' = 'codex'): McpWo
   };
 }
 
-function makeHeartbeat(workerName: string, provider: 'codex' | 'gemini' = 'codex', ageMs: number = 0): HeartbeatData {
+function makeHeartbeat(
+  workerName: string,
+  provider: 'codex' | 'gemini' = 'codex',
+  ageMs: number = 0,
+): HeartbeatData {
   return {
     workerName,
     teamName: TEST_TEAM,
@@ -68,7 +92,11 @@ function makeHeartbeat(workerName: string, provider: 'codex' | 'gemini' = 'codex
   };
 }
 
-function makeTask(id: string, owner: string, status: 'pending' | 'in_progress' | 'completed' = 'pending'): TaskFile {
+function makeTask(
+  id: string,
+  owner: string,
+  status: 'pending' | 'in_progress' | 'completed' = 'pending',
+): TaskFile {
   return {
     id,
     subject: `Task ${id}`,
@@ -111,7 +139,7 @@ describe('getTeamStatus', () => {
 
     expect(status.workers).toHaveLength(2);
 
-    const sw1 = status.workers.find(w => w.workerName === 'w1')!;
+    const sw1 = status.workers.find((w) => w.workerName === 'w1')!;
     expect(sw1.provider).toBe('codex');
     expect(sw1.isAlive).toBe(true);
     expect(sw1.heartbeat).not.toBeNull();
@@ -119,7 +147,7 @@ describe('getTeamStatus', () => {
     expect(sw1.taskStats.inProgress).toBe(1);
     expect(sw1.currentTask?.id).toBe('2');
 
-    const sw2 = status.workers.find(w => w.workerName === 'w2')!;
+    const sw2 = status.workers.find((w) => w.workerName === 'w2')!;
     expect(sw2.provider).toBe('gemini');
     expect(sw2.taskStats.pending).toBe(1);
 
@@ -128,7 +156,9 @@ describe('getTeamStatus', () => {
     expect(status.taskSummary.inProgress).toBe(1);
     expect(status.taskSummary.pending).toBe(1);
     expect(status.usage.taskCount).toBe(0);
-    expect(status.performance.totalMs).toBeGreaterThanOrEqual(status.performance.taskScanMs);
+    expect(status.performance.totalMs).toBeGreaterThanOrEqual(
+      status.performance.taskScanMs,
+    );
   });
 
   it('detects dead workers via heartbeat age', () => {
@@ -139,7 +169,7 @@ describe('getTeamStatus', () => {
     writeHeartbeatFile(makeHeartbeat('w1', 'codex', 60000));
 
     const status = getTeamStatus(TEST_TEAM, WORK_DIR);
-    const sw1 = status.workers.find(w => w.workerName === 'w1')!;
+    const sw1 = status.workers.find((w) => w.workerName === 'w1')!;
     expect(sw1.isAlive).toBe(false);
     expect(sw1.heartbeat).not.toBeNull();
   });
@@ -148,11 +178,16 @@ describe('getTeamStatus', () => {
     const w1 = makeWorker('w1');
     writeWorkerRegistry([w1]);
 
-    const msg: OutboxMessage = { type: 'task_complete', taskId: 't1', summary: 'done', timestamp: new Date().toISOString() };
+    const msg: OutboxMessage = {
+      type: 'task_complete',
+      taskId: 't1',
+      summary: 'done',
+      timestamp: new Date().toISOString(),
+    };
     appendOutbox(TEST_TEAM, 'w1', msg);
 
     const status = getTeamStatus(TEST_TEAM, WORK_DIR);
-    const sw1 = status.workers.find(w => w.workerName === 'w1')!;
+    const sw1 = status.workers.find((w) => w.workerName === 'w1')!;
     expect(sw1.recentMessages).toHaveLength(1);
     expect(sw1.recentMessages[0].type).toBe('task_complete');
   });
@@ -212,7 +247,9 @@ describe('getTeamStatus', () => {
       responseChars: 22,
     });
 
-    const status = getTeamStatus(TEST_TEAM, WORK_DIR, 30000, { includeUsage: false });
+    const status = getTeamStatus(TEST_TEAM, WORK_DIR, 30000, {
+      includeUsage: false,
+    });
     expect(status.usage.taskCount).toBe(0);
     expect(status.usage.workers).toEqual([]);
     expect(status.performance.usageReadMs).toBe(0);

@@ -7,9 +7,15 @@ function makePage(title: string): WikiPage {
   return {
     filename: 'test.md',
     frontmatter: {
-      title, tags: [], created: '2025-01-01T00:00:00.000Z',
-      updated: '2025-01-01T00:00:00.000Z', sources: [], links: [],
-      category: 'reference', confidence: 'medium', schemaVersion: WIKI_SCHEMA_VERSION,
+      title,
+      tags: [],
+      created: '2025-01-01T00:00:00.000Z',
+      updated: '2025-01-01T00:00:00.000Z',
+      sources: [],
+      links: [],
+      category: 'reference',
+      confidence: 'medium',
+      schemaVersion: WIKI_SCHEMA_VERSION,
     },
     content: '\n# Test\n',
   };

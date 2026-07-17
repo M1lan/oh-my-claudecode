@@ -32,27 +32,73 @@ export interface CodebaseMapResult {
 
 // Directories always skipped during scan
 const SKIP_DIRS = new Set([
-  'node_modules', '.git', 'dist', 'build', 'out', 'coverage',
-  '.next', '.nuxt', '.svelte-kit', '.cache', '.turbo', '.parcel-cache',
-  '__pycache__', '.mypy_cache', '.pytest_cache', '.ruff_cache',
-  'target', '.gradle', 'vendor',
-  '.venv', 'venv', 'env',
-  '.omc', '.claude',
-  'tmp', 'temp',
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  'out',
+  'coverage',
+  '.next',
+  '.nuxt',
+  '.svelte-kit',
+  '.cache',
+  '.turbo',
+  '.parcel-cache',
+  '__pycache__',
+  '.mypy_cache',
+  '.pytest_cache',
+  '.ruff_cache',
+  'target',
+  '.gradle',
+  'vendor',
+  '.venv',
+  'venv',
+  'env',
+  '.omc',
+  '.claude',
+  'tmp',
+  'temp',
 ]);
 
 // File extensions considered source/config files
 const SOURCE_EXTENSIONS = new Set([
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs',
-  '.py', '.rb', '.go', '.rs', '.java', '.kt', '.swift',
-  '.c', '.cpp', '.h', '.hpp',
-  '.cs', '.fs',
-  '.vue', '.svelte',
-  '.sh', '.bash', '.zsh',
-  '.json', '.jsonc', '.yaml', '.yml', '.toml',
-  '.md', '.mdx',
-  '.css', '.scss', '.sass', '.less',
-  '.html', '.htm',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.py',
+  '.rb',
+  '.go',
+  '.rs',
+  '.java',
+  '.kt',
+  '.swift',
+  '.c',
+  '.cpp',
+  '.h',
+  '.hpp',
+  '.cs',
+  '.fs',
+  '.vue',
+  '.svelte',
+  '.sh',
+  '.bash',
+  '.zsh',
+  '.json',
+  '.jsonc',
+  '.yaml',
+  '.yml',
+  '.toml',
+  '.md',
+  '.mdx',
+  '.css',
+  '.scss',
+  '.sass',
+  '.less',
+  '.html',
+  '.htm',
 ]);
 
 // Lock files and generated manifests — not useful for navigation
@@ -60,11 +106,24 @@ const SKIP_FILE_SUFFIXES = ['-lock.json', '.lock', '-lock.yaml', '-lock.toml'];
 
 // Important top-level files always included regardless of extension
 const IMPORTANT_FILES = new Set([
-  'package.json', 'tsconfig.json', 'tsconfig.base.json',
-  'pyproject.toml', 'Cargo.toml', 'go.mod', 'go.sum',
-  'CLAUDE.md', 'AGENTS.md', 'README.md', 'CONTRIBUTING.md',
-  '.eslintrc.json', 'vitest.config.ts', 'jest.config.ts', 'jest.config.js',
-  'Makefile', 'Dockerfile', '.gitignore',
+  'package.json',
+  'tsconfig.json',
+  'tsconfig.base.json',
+  'pyproject.toml',
+  'Cargo.toml',
+  'go.mod',
+  'go.sum',
+  'CLAUDE.md',
+  'AGENTS.md',
+  'README.md',
+  'CONTRIBUTING.md',
+  '.eslintrc.json',
+  'vitest.config.ts',
+  'jest.config.ts',
+  'jest.config.js',
+  'Makefile',
+  'Dockerfile',
+  '.gitignore',
 ]);
 
 interface TreeNode {
@@ -177,7 +236,11 @@ export function buildTree(
 /**
  * Render a tree of nodes to ASCII art lines.
  */
-export function renderTree(nodes: TreeNode[], prefix: string, lines: string[]): void {
+export function renderTree(
+  nodes: TreeNode[],
+  prefix: string,
+  lines: string[],
+): void {
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const isLast = i === nodes.length - 1;
@@ -243,7 +306,14 @@ export function generateCodebaseMap(
   }
 
   const fileCount = { value: 0 };
-  const tree = buildTree(directory, 0, maxDepth, fileCount, maxFiles, ignorePatterns);
+  const tree = buildTree(
+    directory,
+    0,
+    maxDepth,
+    fileCount,
+    maxFiles,
+    ignorePatterns,
+  );
 
   const treeLines: string[] = [];
   renderTree(tree, '', treeLines);
@@ -260,7 +330,9 @@ export function generateCodebaseMap(
 
   const truncated = fileCount.value >= maxFiles;
   if (truncated) {
-    parts.push(`[Map truncated at ${maxFiles} files — use Glob/Grep for full search]`);
+    parts.push(
+      `[Map truncated at ${maxFiles} files — use Glob/Grep for full search]`,
+    );
   }
 
   return {

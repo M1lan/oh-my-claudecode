@@ -65,6 +65,8 @@ describe('registerStandaloneShutdownHandlers', () => {
     await vi.advanceTimersByTimeAsync(120);
 
     expect(onShutdown).toHaveBeenCalledTimes(1);
-    expect(onShutdown).toHaveBeenCalledWith(expect.stringContaining('parent pid changed'));
+    expect(onShutdown).toHaveBeenCalledWith(
+      expect.stringContaining('parent pid changed'),
+    );
   });
 });

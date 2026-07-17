@@ -32,7 +32,9 @@ describe('shared-state updateSharedTask locking', () => {
     const source = readFileSync(sourcePath, 'utf-8');
 
     // Must import withFileLockSync
-    expect(source).toContain("import { withFileLockSync } from '../lib/file-lock.js'");
+    expect(source).toContain(
+      "import { withFileLockSync } from '../lib/file-lock.js'",
+    );
 
     // The updateSharedTask function must use withFileLockSync
     const fnMatch = source.match(/export function updateSharedTask[\s\S]*?^}/m);
@@ -43,9 +45,8 @@ describe('shared-state updateSharedTask locking', () => {
   });
 
   it('updateSharedTask functionally updates a task with locking', async () => {
-    const { addSharedTask, updateSharedTask, initInteropSession } = await import(
-      '../interop/shared-state.js'
-    );
+    const { addSharedTask, updateSharedTask, initInteropSession } =
+      await import('../interop/shared-state.js');
 
     initInteropSession('test-session', tempDir);
 
@@ -68,7 +69,12 @@ describe('shared-state updateSharedTask locking', () => {
 
     // Verify lock file does not persist after operation
     const lockPath = join(
-      tempDir, '.omc', 'state', 'interop', 'tasks', `${task.id}.json.lock`,
+      tempDir,
+      '.omc',
+      'state',
+      'interop',
+      'tasks',
+      `${task.id}.json.lock`,
     );
     expect(existsSync(lockPath)).toBe(false);
   });
@@ -77,4 +83,3 @@ describe('shared-state updateSharedTask locking', () => {
 // ---------------------------------------------------------------------------
 // BUG 2: git-worktree removeWorkerWorktree must use file locking
 // ---------------------------------------------------------------------------
-

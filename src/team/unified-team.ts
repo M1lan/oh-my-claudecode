@@ -31,19 +31,28 @@ export interface UnifiedTeamMember {
  */
 export function getTeamMembers(
   teamName: string,
-  workingDirectory: string
+  workingDirectory: string,
 ): UnifiedTeamMember[] {
   const members: UnifiedTeamMember[] = [];
 
   // 1. Read Claude native members from config.json
   try {
-    const configPath = join(getClaudeConfigDir(), 'teams', teamName, 'config.json');
+    const configPath = join(
+      getClaudeConfigDir(),
+      'teams',
+      teamName,
+      'config.json',
+    );
     if (existsSync(configPath)) {
       const config = JSON.parse(readFileSync(configPath, 'utf-8'));
       if (Array.isArray(config.members)) {
         for (const member of config.members) {
           // Skip MCP workers registered via tmux backend (they'll be handled below)
-          if (member.backendType === 'tmux' || String(member.agentType).startsWith('tmux-')) continue;
+          if (
+            member.backendType === 'tmux' ||
+            String(member.agentType).startsWith('tmux-')
+          )
+            continue;
 
           members.push({
             name: member.name || 'unknown',
@@ -58,21 +67,29 @@ export function getTeamMembers(
         }
       }
     }
-  } catch { /* graceful degradation - config may not exist */ }
+  } catch {
+    /* graceful degradation - config may not exist */
+  }
 
   // 2. Read MCP workers from shadow registry + heartbeat
   try {
     const mcpWorkers = listMcpWorkers(teamName, workingDirectory);
     for (const worker of mcpWorkers) {
       const heartbeat = readHeartbeat(workingDirectory, teamName, worker.name);
-      const alive = isWorkerAlive(workingDirectory, teamName, worker.name, 60000);
+      const alive = isWorkerAlive(
+        workingDirectory,
+        teamName,
+        worker.name,
+        60000,
+      );
 
       // Determine status from heartbeat
       let status: UnifiedTeamMember['status'] = 'unknown';
       if (heartbeat) {
         if (heartbeat.status === 'quarantined') status = 'quarantined';
         else if (heartbeat.status === 'executing') status = 'active';
-        else if (heartbeat.status === 'ready' || heartbeat.status === 'polling') status = 'idle';
+        else if (heartbeat.status === 'ready' || heartbeat.status === 'polling')
+          status = 'idle';
         else status = heartbeat.status as UnifiedTeamMember['status'];
       }
       if (!alive) status = 'dead';
@@ -83,7 +100,8 @@ export function getTeamMembers(
       else if (worker.agentType === 'tmux-claude') backend = 'tmux-claude';
       else if (worker.agentType === 'tmux-codex') backend = 'tmux-codex';
       else if (worker.agentType === 'tmux-gemini') backend = 'tmux-gemini';
-      else if (worker.agentType === 'tmux-antigravity') backend = 'tmux-antigravity';
+      else if (worker.agentType === 'tmux-antigravity')
+        backend = 'tmux-antigravity';
       else backend = 'mcp-codex';
       const capabilities = getDefaultCapabilities(backend);
 
@@ -98,7 +116,9 @@ export function getTeamMembers(
         currentTaskId: heartbeat?.currentTaskId ?? null,
       });
     }
-  } catch { /* graceful degradation */ }
+  } catch {
+    /* graceful degradation */
+  }
 
   return members;
 }

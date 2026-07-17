@@ -2,9 +2,14 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { buildResolvedRoutingSnapshot } from '../stage-router.js';
 import { CANONICAL_TEAM_ROLES } from '../../shared/types.js';
 import type { PluginConfig } from '../../shared/types.js';
-import { CLAUDE_FAMILY_DEFAULTS, BUILTIN_EXTERNAL_MODEL_DEFAULTS } from '../../config/models.js';
+import {
+  CLAUDE_FAMILY_DEFAULTS,
+  BUILTIN_EXTERNAL_MODEL_DEFAULTS,
+} from '../../config/models.js';
 
-type TeamRoleRoutingConfig = NonNullable<NonNullable<PluginConfig['team']>['roleRouting']>;
+type TeamRoleRoutingConfig = NonNullable<
+  NonNullable<PluginConfig['team']>['roleRouting']
+>;
 
 const ENV_KEYS = [
   'OMC_MODEL_HIGH',
@@ -18,7 +23,7 @@ const ENV_KEYS = [
   'ANTHROPIC_DEFAULT_HAIKU_MODEL',
 ];
 
-let savedEnv: Record<string, string | undefined> = {};
+const savedEnv: Record<string, string | undefined> = {};
 
 beforeAll(() => {
   for (const key of ENV_KEYS) {
@@ -69,7 +74,9 @@ describe('buildResolvedRoutingSnapshot', () => {
 
   it('fallback shares the agent with primary', () => {
     const cfg: PluginConfig = {
-      team: { roleRouting: { critic: { provider: 'codex', agent: 'analyst' } } },
+      team: {
+        roleRouting: { critic: { provider: 'codex', agent: 'analyst' } },
+      },
     };
     const snap = buildResolvedRoutingSnapshot(cfg);
     expect(snap.critic.primary.agent).toBe('analyst');
@@ -78,7 +85,9 @@ describe('buildResolvedRoutingSnapshot', () => {
 
   it('fallback resolves Claude tier model rather than echoing external model id', () => {
     const cfg: PluginConfig = {
-      team: { roleRouting: { critic: { provider: 'codex', model: 'gpt-5.3-codex' } } },
+      team: {
+        roleRouting: { critic: { provider: 'codex', model: 'gpt-5.3-codex' } },
+      },
     };
     const snap = buildResolvedRoutingSnapshot(cfg);
     // primary is the explicit codex model
@@ -93,7 +102,9 @@ describe('buildResolvedRoutingSnapshot', () => {
     };
     const snap = buildResolvedRoutingSnapshot(cfg);
     // primary on codex: tier maps to codex builtin (tiers are claude-centric)
-    expect(snap.executor.primary.model).toBe(BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel);
+    expect(snap.executor.primary.model).toBe(
+      BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel,
+    );
     // fallback on claude with same tier "HIGH" → claude opus
     expect(snap.executor.fallback.model).toBe(CLAUDE_FAMILY_DEFAULTS.OPUS);
   });
@@ -133,7 +144,11 @@ describe('buildResolvedRoutingSnapshot', () => {
 
   it('applies accepted alias keys when building the persisted snapshot', () => {
     const cfg: PluginConfig = {
-      team: { roleRouting: { reviewer: { provider: 'gemini' } } as TeamRoleRoutingConfig },
+      team: {
+        roleRouting: {
+          reviewer: { provider: 'gemini' },
+        } as TeamRoleRoutingConfig,
+      },
     };
     const snap = buildResolvedRoutingSnapshot(cfg);
     expect(snap['code-reviewer'].primary.provider).toBe('gemini');

@@ -11,7 +11,9 @@ vi.mock('../../lib/version.js', async (importOriginal) => ({
   isRuntimePackageLocal: () => false,
 }));
 
-function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRenderContext {
+function createMinimalContext(
+  overrides: Partial<HudRenderContext> = {},
+): HudRenderContext {
   return {
     contextPercent: 30,
     modelName: 'claude-sonnet-4.6',
@@ -42,7 +44,9 @@ function createMinimalContext(overrides: Partial<HudRenderContext> = {}): HudRen
   };
 }
 
-function createMinimalConfig(overrides: Partial<HudConfig['elements']> = {}): HudConfig {
+function createMinimalConfig(
+  overrides: Partial<HudConfig['elements']> = {},
+): HudConfig {
   return {
     ...DEFAULT_HUD_CONFIG,
     elements: {
@@ -86,7 +90,10 @@ describe('HUD version display and update notification', () => {
     });
 
     it('renders version without update notice when updateAvailable is null', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: null });
+      const ctx = createMinimalContext({
+        omcVersion: '4.1.10',
+        updateAvailable: null,
+      });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
       expect(output).toContain('[OMC#4.1.10]');
@@ -97,7 +104,10 @@ describe('HUD version display and update notification', () => {
 
   describe('update notification', () => {
     it('renders update notification by default when updateAvailable is set', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+      const ctx = createMinimalContext({
+        omcVersion: '4.1.10',
+        updateAvailable: '4.2.0',
+      });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
       expect(output).toContain('[OMC#4.1.10]');
@@ -106,7 +116,10 @@ describe('HUD version display and update notification', () => {
     });
 
     it('keeps OMC version label but hides update notification when updateNotification is false', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+      const ctx = createMinimalContext({
+        omcVersion: '4.1.10',
+        updateAvailable: '4.2.0',
+      });
       const config = createMinimalConfig({ updateNotification: false });
       const output = await render(ctx, config);
       expect(output).toContain('[OMC#4.1.10]');
@@ -115,7 +128,10 @@ describe('HUD version display and update notification', () => {
     });
 
     it('renders update notification without version when omcVersion is null', async () => {
-      const ctx = createMinimalContext({ omcVersion: null, updateAvailable: '4.2.0' });
+      const ctx = createMinimalContext({
+        omcVersion: null,
+        updateAvailable: '4.2.0',
+      });
       const config = createMinimalConfig();
       const output = await render(ctx, config);
       expect(output).toContain('[OMC]');
@@ -125,7 +141,10 @@ describe('HUD version display and update notification', () => {
 
   describe('omcLabel disabled', () => {
     it('does not render OMC label when omcLabel is false', async () => {
-      const ctx = createMinimalContext({ omcVersion: '4.1.10', updateAvailable: '4.2.0' });
+      const ctx = createMinimalContext({
+        omcVersion: '4.1.10',
+        updateAvailable: '4.2.0',
+      });
       const config = createMinimalConfig({ omcLabel: false });
       const output = await render(ctx, config);
       expect(output).not.toContain('[OMC');

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect } from 'vitest';
 
 // ============================================================================
 // BUG 3: Dispatcher webhook timeout leak

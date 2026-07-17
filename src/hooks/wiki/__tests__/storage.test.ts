@@ -221,8 +221,14 @@ schemaVersion: 1
       ensureWikiDir(tempDir);
       const wikiDir = getWikiDir(tempDir);
 
-      fs.writeFileSync(path.join(wikiDir, 'page-a.md'), '---\ntitle: A\n---\ncontent');
-      fs.writeFileSync(path.join(wikiDir, 'page-b.md'), '---\ntitle: B\n---\ncontent');
+      fs.writeFileSync(
+        path.join(wikiDir, 'page-a.md'),
+        '---\ntitle: A\n---\ncontent',
+      );
+      fs.writeFileSync(
+        path.join(wikiDir, 'page-b.md'),
+        '---\ntitle: B\n---\ncontent',
+      );
       fs.writeFileSync(path.join(wikiDir, 'index.md'), '# Index');
       fs.writeFileSync(path.join(wikiDir, 'log.md'), '# Log');
 
@@ -238,14 +244,17 @@ schemaVersion: 1
   describe('readAllPages', () => {
     it('should read all valid pages', () => {
       writePage(tempDir, makePage({ filename: 'page-1.md' }));
-      writePage(tempDir, makePage({
-        filename: 'page-2.md',
-        frontmatter: {
-          ...makePage().frontmatter,
-          title: 'Page 2',
-          category: 'architecture',
-        },
-      }));
+      writePage(
+        tempDir,
+        makePage({
+          filename: 'page-2.md',
+          frontmatter: {
+            ...makePage().frontmatter,
+            title: 'Page 2',
+            category: 'architecture',
+          },
+        }),
+      );
 
       const pages = readAllPages(tempDir);
       expect(pages.length).toBe(2);
@@ -305,16 +314,32 @@ schemaVersion: 1
 
   describe('updateIndexUnsafe', () => {
     it('should generate index grouped by category', () => {
-      writePage(tempDir, makePage({
-        filename: 'arch.md',
-        frontmatter: { ...makePage().frontmatter, title: 'Arch', category: 'architecture' },
-      }));
-      writePage(tempDir, makePage({
-        filename: 'ref.md',
-        frontmatter: { ...makePage().frontmatter, title: 'Ref', category: 'reference' },
-      }));
+      writePage(
+        tempDir,
+        makePage({
+          filename: 'arch.md',
+          frontmatter: {
+            ...makePage().frontmatter,
+            title: 'Arch',
+            category: 'architecture',
+          },
+        }),
+      );
+      writePage(
+        tempDir,
+        makePage({
+          filename: 'ref.md',
+          frontmatter: {
+            ...makePage().frontmatter,
+            title: 'Ref',
+            category: 'reference',
+          },
+        }),
+      );
 
-      withWikiLock(tempDir, () => { updateIndexUnsafe(tempDir); });
+      withWikiLock(tempDir, () => {
+        updateIndexUnsafe(tempDir);
+      });
 
       const index = readIndex(tempDir);
       expect(index).not.toBeNull();
@@ -333,7 +358,9 @@ schemaVersion: 1
 
     it('should propagate errors from callback', () => {
       expect(() => {
-        withWikiLock(tempDir, () => { throw new Error('test error'); });
+        withWikiLock(tempDir, () => {
+          throw new Error('test error');
+        });
       }).toThrow('test error');
     });
   });

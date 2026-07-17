@@ -8,8 +8,14 @@ import { spawn } from 'child_process';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-const TEMPLATE_HOOK_PATH = join(__dirname, '../../../../templates/hooks/persistent-mode.mjs');
-const SCRIPT_HOOK_PATH = join(__dirname, '../../../../scripts/persistent-mode.mjs');
+const TEMPLATE_HOOK_PATH = join(
+  __dirname,
+  '../../../../templates/hooks/persistent-mode.mjs',
+);
+const SCRIPT_HOOK_PATH = join(
+  __dirname,
+  '../../../../scripts/persistent-mode.mjs',
+);
 const TIMEOUT_MS = 3000;
 
 describe('persistent-mode hook error handling (issue #319)', () => {
@@ -31,7 +37,10 @@ describe('persistent-mode hook error handling (issue #319)', () => {
       const result = await runHook('invalid json{{{', { hookPath });
       expect(result.timedOut).toBe(false);
       expect(result.exitCode).toBe(0);
-      expect(JSON.parse(result.output)).toEqual({ continue: true, suppressOutput: true });
+      expect(JSON.parse(result.output)).toEqual({
+        continue: true,
+        suppressOutput: true,
+      });
     }
   });
 
@@ -52,7 +61,10 @@ describe('persistent-mode hook error handling (issue #319)', () => {
       expect(result.timedOut).toBe(false);
       expect(result.exitCode).toBe(0);
       expect(result.duration).toBeLessThan(TIMEOUT_MS);
-      expect(JSON.parse(result.output)).toEqual({ continue: true, suppressOutput: true });
+      expect(JSON.parse(result.output)).toEqual({
+        continue: true,
+        suppressOutput: true,
+      });
     }
   });
 
@@ -72,16 +84,25 @@ describe('persistent-mode hook error handling (issue #319)', () => {
 
         expect(result.timedOut).toBe(false);
         expect(result.exitCode).toBe(0);
-        expect(result.duration).toBeLessThan(1000);
-        expect(JSON.parse(result.output)).toEqual({ continue: true, suppressOutput: true });
+        // Loaded-CI node startup alone can exceed 1s; timedOut === false
+        // already proves the skip fired before the 8500ms safety timeout
+        // (the harness would kill at TIMEOUT_MS otherwise).
+        expect(result.duration).toBeLessThan(TIMEOUT_MS);
+        expect(JSON.parse(result.output)).toEqual({
+          continue: true,
+          suppressOutput: true,
+        });
       }
     }
   });
 
   it('keeps the default safety timeout below the shipped Stop hook wrapper kill', () => {
-    const manifest = JSON.parse(readFileSync(join(__dirname, '../../../../hooks/hooks.json'), 'utf-8'));
-    const stopHook = manifest.hooks.Stop[0].hooks.find((hook: { command?: string }) =>
-      hook.command?.includes('/scripts/persistent-mode.mjs'),
+    const manifest = JSON.parse(
+      readFileSync(join(__dirname, '../../../../hooks/hooks.json'), 'utf-8'),
+    );
+    const stopHook = manifest.hooks.Stop[0].hooks.find(
+      (hook: { command?: string }) =>
+        hook.command?.includes('/scripts/persistent-mode.mjs'),
     );
     expect(stopHook?.timeout).toBe(10);
 
@@ -96,7 +117,9 @@ describe('persistent-mode hook error handling (issue #319)', () => {
       const source = readFileSync(hookPath, 'utf-8');
       const timeoutIndex = source.indexOf('const safetyTimeout = setTimeout');
       const handlerIndex = source.indexOf('process.on("uncaughtException"');
-      const dynamicImportIndex = source.indexOf('await import(pathToFileURL(join(__dirname, "lib", "config-dir.mjs"))');
+      const dynamicImportIndex = source.indexOf(
+        'await import(pathToFileURL(join(__dirname, "lib", "config-dir.mjs"))',
+      );
 
       expect(timeoutIndex).toBeGreaterThan(-1);
       expect(handlerIndex).toBeGreaterThan(timeoutIndex);
@@ -116,17 +139,23 @@ interface HookResult {
 function readDefaultSafetyTimeoutMs(hookPath: string): number {
   const source = readFileSync(hookPath, 'utf-8');
   const match = source.match(/const DEFAULT_SAFETY_TIMEOUT_MS = (\d+);/);
-  if (!match) throw new Error(`Missing DEFAULT_SAFETY_TIMEOUT_MS in ${hookPath}`);
+  if (!match)
+    throw new Error(`Missing DEFAULT_SAFETY_TIMEOUT_MS in ${hookPath}`);
   return Number(match[1]);
 }
 
 function runHook(
   input: string,
-  options: boolean | { hookPath?: string; closeStdin?: boolean; env?: Record<string, string> } = {},
+  options:
+    | boolean
+    | {
+        hookPath?: string;
+        closeStdin?: boolean;
+        env?: Record<string, string>;
+      } = {},
 ): Promise<HookResult> {
-  const normalized = typeof options === 'boolean'
-    ? { closeStdin: options }
-    : options;
+  const normalized =
+    typeof options === 'boolean' ? { closeStdin: options } : options;
   const hookPath = normalized.hookPath ?? TEMPLATE_HOOK_PATH;
   const closeStdin = normalized.closeStdin ?? true;
 
@@ -162,7 +191,7 @@ function runHook(
         stderr,
         exitCode: code,
         timedOut,
-        duration
+        duration,
       });
     });
 

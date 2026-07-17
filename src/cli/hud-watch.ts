@@ -14,8 +14,11 @@ export interface HudWatchLoopOptions {
  * Run the HUD in watch mode until an explicit shutdown signal or parent-exit
  * condition is observed.
  */
-export async function runHudWatchLoop(options: HudWatchLoopOptions): Promise<void> {
-  const registerShutdownHandlers = options.registerShutdownHandlers ?? registerStandaloneShutdownHandlers;
+export async function runHudWatchLoop(
+  options: HudWatchLoopOptions,
+): Promise<void> {
+  const registerShutdownHandlers =
+    options.registerShutdownHandlers ?? registerStandaloneShutdownHandlers;
   let skipInit = false;
   let shouldStop = false;
   let wakeSleep: (() => void) | null = null;

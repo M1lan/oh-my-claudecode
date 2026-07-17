@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { atomicWriteJsonSync } from '../../lib/atomic-write.js';
-import { ensureSessionStateDir, resolveSessionStatePath } from '../../lib/worktree-paths.js';
+import {
+  ensureSessionStateDir,
+  resolveSessionStatePath,
+} from '../../lib/worktree-paths.js';
 import { readCanonicalTeamStateCandidate } from '../team-canonical-state.js';
 import type {
   TeamPipelineState,
@@ -22,14 +25,19 @@ function getTeamStatePath(directory: string, sessionId?: string): string {
 }
 
 function isTerminalTeamPipelineState(state: TeamPipelineState): boolean {
-  return state.phase === 'complete' || state.phase === 'failed' || state.phase === 'cancelled';
+  return (
+    state.phase === 'complete' ||
+    state.phase === 'failed' ||
+    state.phase === 'cancelled'
+  );
 }
 
 function synthesizeCanonicalTeamPipelineState(
   directory: string,
   candidate: NonNullable<ReturnType<typeof readCanonicalTeamStateCandidate>>,
 ): TeamPipelineState {
-  const now = candidate.updatedAt || candidate.startedAt || new Date().toISOString();
+  const now =
+    candidate.updatedAt || candidate.startedAt || new Date().toISOString();
   return {
     schema_version: TEAM_PIPELINE_SCHEMA_VERSION,
     mode: 'team',
@@ -37,10 +45,12 @@ function synthesizeCanonicalTeamPipelineState(
     session_id: candidate.sessionId,
     project_path: candidate.leaderCwd ?? directory,
     phase: candidate.stage,
-    phase_history: [{
-      phase: candidate.stage,
-      entered_at: candidate.startedAt || now,
-    }],
+    phase_history: [
+      {
+        phase: candidate.stage,
+        entered_at: candidate.startedAt || now,
+      },
+    ],
     iteration: 1,
     max_iterations: 25,
     artifacts: {
@@ -67,14 +77,14 @@ function synthesizeCanonicalTeamPipelineState(
     },
     started_at: candidate.startedAt || now,
     updated_at: candidate.updatedAt || now,
-    completed_at: candidate.active ? null : (candidate.updatedAt || now),
+    completed_at: candidate.active ? null : candidate.updatedAt || now,
   };
 }
 
 export function initTeamPipelineState(
   directory: string,
   sessionId: string,
-  options?: Partial<Pick<TeamPipelineState, 'project_path' | 'max_iterations'>>
+  options?: Partial<Pick<TeamPipelineState, 'project_path' | 'max_iterations'>>,
 ): TeamPipelineState {
   const ts = nowIso();
   return {
@@ -115,7 +125,10 @@ export function initTeamPipelineState(
   };
 }
 
-export function readTeamPipelineState(directory: string, sessionId?: string): TeamPipelineState | null {
+export function readTeamPipelineState(
+  directory: string,
+  sessionId?: string,
+): TeamPipelineState | null {
   if (!sessionId) {
     return null;
   }
@@ -126,7 +139,11 @@ export function readTeamPipelineState(directory: string, sessionId?: string): Te
     try {
       const content = readFileSync(statePath, 'utf-8');
       const state = JSON.parse(content) as TeamPipelineState;
-      if (state && typeof state === 'object' && (!state.session_id || state.session_id === sessionId)) {
+      if (
+        state &&
+        typeof state === 'object' &&
+        (!state.session_id || state.session_id === sessionId)
+      ) {
         coarseState = state;
         if (state.active === true && !isTerminalTeamPipelineState(state)) {
           return state;
@@ -145,7 +162,11 @@ export function readTeamPipelineState(directory: string, sessionId?: string): Te
   return coarseState;
 }
 
-export function writeTeamPipelineState(directory: string, state: TeamPipelineState, sessionId?: string): boolean {
+export function writeTeamPipelineState(
+  directory: string,
+  state: TeamPipelineState,
+  sessionId?: string,
+): boolean {
   if (!sessionId) {
     return false;
   }
@@ -167,7 +188,10 @@ export function writeTeamPipelineState(directory: string, state: TeamPipelineSta
   }
 }
 
-export function clearTeamPipelineState(directory: string, sessionId?: string): boolean {
+export function clearTeamPipelineState(
+  directory: string,
+  sessionId?: string,
+): boolean {
   if (!sessionId) {
     return false;
   }
@@ -205,7 +229,11 @@ export function markTeamPhase(
 
   updated.phase_history = [...updated.phase_history, historyEntry];
 
-  if (nextPhase === 'complete' || nextPhase === 'failed' || nextPhase === 'cancelled') {
+  if (
+    nextPhase === 'complete' ||
+    nextPhase === 'failed' ||
+    nextPhase === 'cancelled'
+  ) {
     updated.active = false;
     updated.completed_at = nowIso();
   }
@@ -228,7 +256,9 @@ export function markTeamPhase(
       updated_at: nowIso(),
       fix_loop: {
         ...updated.fix_loop,
-        last_failure_reason: updated.fix_loop.last_failure_reason ?? 'fix-loop-max-attempts-exceeded',
+        last_failure_reason:
+          updated.fix_loop.last_failure_reason ??
+          'fix-loop-max-attempts-exceeded',
       },
       phase_history: [
         ...updated.phase_history,

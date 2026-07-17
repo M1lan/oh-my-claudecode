@@ -9,15 +9,19 @@
 
 import { existsSync, readFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { atomicWriteJson, ensureDirWithMode, validateResolvedPath } from './fs-utils.js';
+import {
+  atomicWriteJson,
+  ensureDirWithMode,
+  validateResolvedPath,
+} from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import type { BridgeConfig, McpWorkerMember } from './types.js';
 
 export interface RestartPolicy {
-  maxRestarts: number;        // default: 3
-  backoffBaseMs: number;      // default: 5000
-  backoffMaxMs: number;       // default: 60000
-  backoffMultiplier: number;  // default: 2
+  maxRestarts: number; // default: 3
+  backoffBaseMs: number; // default: 5000
+  backoffMaxMs: number; // default: 60000
+  backoffMultiplier: number; // default: 2
 }
 
 export interface RestartState {
@@ -34,8 +38,18 @@ const DEFAULT_POLICY: RestartPolicy = {
   backoffMultiplier: 2,
 };
 
-function getRestartStatePath(workingDirectory: string, teamName: string, workerName: string): string {
-  return join(getOmcRoot(workingDirectory), 'state', 'team-bridge', teamName, `${workerName}.restart.json`);
+function getRestartStatePath(
+  workingDirectory: string,
+  teamName: string,
+  workerName: string,
+): string {
+  return join(
+    getOmcRoot(workingDirectory),
+    'state',
+    'team-bridge',
+    teamName,
+    `${workerName}.restart.json`,
+  );
 }
 
 /**
@@ -45,7 +59,7 @@ function getRestartStatePath(workingDirectory: string, teamName: string, workerN
 export function readRestartState(
   workingDirectory: string,
   teamName: string,
-  workerName: string
+  workerName: string,
 ): RestartState | null {
   const statePath = getRestartStatePath(workingDirectory, teamName, workerName);
   if (!existsSync(statePath)) return null;
@@ -65,7 +79,7 @@ export function shouldRestart(
   workingDirectory: string,
   teamName: string,
   workerName: string,
-  policy: RestartPolicy = DEFAULT_POLICY
+  policy: RestartPolicy = DEFAULT_POLICY,
 ): number | null {
   const state = readRestartState(workingDirectory, teamName, workerName);
 
@@ -80,8 +94,9 @@ export function shouldRestart(
 
   // Calculate exponential backoff
   const backoff = Math.min(
-    policy.backoffBaseMs * Math.pow(policy.backoffMultiplier, state.restartCount),
-    policy.backoffMaxMs
+    policy.backoffBaseMs *
+      Math.pow(policy.backoffMultiplier, state.restartCount),
+    policy.backoffMaxMs,
   );
 
   return backoff;
@@ -94,15 +109,23 @@ export function recordRestart(
   workingDirectory: string,
   teamName: string,
   workerName: string,
-  policy: RestartPolicy = DEFAULT_POLICY
+  policy: RestartPolicy = DEFAULT_POLICY,
 ): void {
   const statePath = getRestartStatePath(workingDirectory, teamName, workerName);
   // statePath lives under getOmcRoot(...)/state/team-bridge, which in a
   // .omc-workspace layout is ABOVE workingDirectory. Validate against the shared
   // team-bridge dir (still catches teamName/workerName traversal) not the sub-repo.
-  validateResolvedPath(statePath, join(getOmcRoot(workingDirectory), 'state', 'team-bridge'));
+  validateResolvedPath(
+    statePath,
+    join(getOmcRoot(workingDirectory), 'state', 'team-bridge'),
+  );
 
-  const dir = join(getOmcRoot(workingDirectory), 'state', 'team-bridge', teamName);
+  const dir = join(
+    getOmcRoot(workingDirectory),
+    'state',
+    'team-bridge',
+    teamName,
+  );
   ensureDirWithMode(dir);
 
   const existing = readRestartState(workingDirectory, teamName, workerName);
@@ -112,8 +135,9 @@ export function recordRestart(
     restartCount: (existing?.restartCount ?? 0) + 1,
     lastRestartAt: new Date().toISOString(),
     nextBackoffMs: Math.min(
-      policy.backoffBaseMs * Math.pow(policy.backoffMultiplier, (existing?.restartCount ?? 0) + 1),
-      policy.backoffMaxMs
+      policy.backoffBaseMs *
+        Math.pow(policy.backoffMultiplier, (existing?.restartCount ?? 0) + 1),
+      policy.backoffMaxMs,
     ),
   };
 
@@ -126,14 +150,16 @@ export function recordRestart(
 export function clearRestartState(
   workingDirectory: string,
   teamName: string,
-  workerName: string
+  workerName: string,
 ): void {
   const statePath = getRestartStatePath(workingDirectory, teamName, workerName);
   try {
     if (existsSync(statePath)) {
       unlinkSync(statePath);
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -142,7 +168,7 @@ export function clearRestartState(
  */
 export function synthesizeBridgeConfig(
   worker: McpWorkerMember,
-  teamName: string
+  teamName: string,
 ): BridgeConfig {
   return {
     workerName: worker.name,

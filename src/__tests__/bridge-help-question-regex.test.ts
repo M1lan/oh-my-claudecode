@@ -14,9 +14,13 @@ describe('bridge/cli.cjs help-question regex regression (#2482)', () => {
     const start = source.indexOf(marker);
     const snippet = start === -1 ? '' : source.slice(start, start + 260);
 
-    expect(snippet).toContain("\\\\bhow\\\\s+do\\\\s+i\\\\s+use\\\\b[^\\\\n]{0,40}\\\\b${escaped}\\\\b");
-    expect(snippet).toContain("\\\\bwhat(?:'s|\\\\s+is)\\\\b[^\\\\n]{0,40}\\\\b${escaped}\\\\b[^\\\\n]{0,40}\\\\bhow\\\\s+to\\\\s+use\\\\b");
-    expect(snippet).not.toContain("\\bhows+dos+is+use\\b");
+    expect(snippet).toContain(
+      '\\\\bhow\\\\s+do\\\\s+i\\\\s+use\\\\b[^\\\\n]{0,40}\\\\b${escaped}\\\\b',
+    );
+    expect(snippet).toContain(
+      "\\\\bwhat(?:'s|\\\\s+is)\\\\b[^\\\\n]{0,40}\\\\b${escaped}\\\\b[^\\\\n]{0,40}\\\\bhow\\\\s+to\\\\s+use\\\\b",
+    );
+    expect(snippet).not.toContain('\\bhows+dos+is+use\\b');
     expect(snippet).not.toContain("\\bwhat(?:'s|s+is)\\b");
   });
 });

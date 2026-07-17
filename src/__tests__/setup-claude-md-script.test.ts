@@ -18,7 +18,14 @@ import { join } from 'node:path';
 const REPO_ROOT = join(__dirname, '..', '..');
 const SETUP_SCRIPT = join(REPO_ROOT, 'scripts', 'setup-claude-md.sh');
 const CONFIG_DIR_HELPER = join(REPO_ROOT, 'scripts', 'lib', 'config-dir.sh');
-const LEGACY_GUIDES_FIXTURE = join(REPO_ROOT, 'src', 'installer', '__tests__', 'fixtures', 'legacy-guides.json');
+const LEGACY_GUIDES_FIXTURE = join(
+  REPO_ROOT,
+  'src',
+  'installer',
+  '__tests__',
+  'fixtures',
+  'legacy-guides.json',
+);
 
 interface LegacyGuideFixture {
   id: string;
@@ -27,9 +34,14 @@ interface LegacyGuideFixture {
 }
 
 function staticLegacyGuide(lineCount: number): string {
-  const fixture = JSON.parse(readFileSync(LEGACY_GUIDES_FIXTURE, 'utf-8')) as { variants: LegacyGuideFixture[] };
-  const variant = fixture.variants.find(candidate => candidate.lineCount === lineCount);
-  if (!variant) throw new Error(`Missing static ${lineCount}-line legacy guide fixture`);
+  const fixture = JSON.parse(readFileSync(LEGACY_GUIDES_FIXTURE, 'utf-8')) as {
+    variants: LegacyGuideFixture[];
+  };
+  const variant = fixture.variants.find(
+    (candidate) => candidate.lineCount === lineCount,
+  );
+  if (!variant)
+    throw new Error(`Missing static ${lineCount}-line legacy guide fixture`);
   return Buffer.from(variant.dataBase64, 'base64').toString('utf-8');
 }
 
@@ -38,7 +50,11 @@ const LEGACY_292_LINE_GUIDE = staticLegacyGuide(292);
 
 const tempRoots: string[] = [];
 
-function buildCoordinatorFixture(pluginRoot: string, claudeMdContent: string, version = '9.9.9') {
+function buildCoordinatorFixture(
+  pluginRoot: string,
+  claudeMdContent: string,
+  version = '9.9.9',
+) {
   mkdirSync(join(pluginRoot, 'bridge'), { recursive: true });
   buildSync({
     entryPoints: [join(REPO_ROOT, 'src', 'cli', 'claude-md-coordinator.ts')],
@@ -50,18 +66,23 @@ function buildCoordinatorFixture(pluginRoot: string, claudeMdContent: string, ve
     external: ['node:crypto', 'node:fs', 'node:path'],
     define: {
       __OMC_COORDINATOR_ENGINE_VERSION__: JSON.stringify(version),
-      __OMC_COORDINATOR_SOURCE_SHA256__: JSON.stringify(createHash('sha256').update(claudeMdContent).digest('hex')),
+      __OMC_COORDINATOR_SOURCE_SHA256__: JSON.stringify(
+        createHash('sha256').update(claudeMdContent).digest('hex'),
+      ),
     },
   });
   mkdirSync(join(pluginRoot, 'skills', 'omc-reference'), { recursive: true });
-  writeFileSync(join(pluginRoot, 'skills', 'omc-reference', 'SKILL.md'), `---
+  writeFileSync(
+    join(pluginRoot, 'skills', 'omc-reference', 'SKILL.md'),
+    `---
 name: omc-reference
 description: Test fixture reference skill
 user-invocable: false
 ---
 
 # Test OMC Reference
-`);
+`,
+  );
 }
 
 function createPluginFixture(claudeMdContent: string) {
@@ -78,7 +99,10 @@ function createPluginFixture(claudeMdContent: string) {
   mkdirSync(homeRoot, { recursive: true });
 
   copyFileSync(SETUP_SCRIPT, join(pluginRoot, 'scripts', 'setup-claude-md.sh'));
-  copyFileSync(CONFIG_DIR_HELPER, join(pluginRoot, 'scripts', 'lib', 'config-dir.sh'));
+  copyFileSync(
+    CONFIG_DIR_HELPER,
+    join(pluginRoot, 'scripts', 'lib', 'config-dir.sh'),
+  );
   writeFileSync(join(pluginRoot, 'docs', 'CLAUDE.md'), claudeMdContent);
   buildCoordinatorFixture(pluginRoot, claudeMdContent);
 
@@ -129,9 +153,17 @@ Use the real docs file.
     expect(installed).toContain('<!-- OMC:VERSION:9.9.9 -->');
     expect(installed).toContain('# Canonical CLAUDE');
 
-    const installedSkillPath = join(fixture.projectRoot, '.claude', 'skills', 'omc-reference', 'SKILL.md');
+    const installedSkillPath = join(
+      fixture.projectRoot,
+      '.claude',
+      'skills',
+      'omc-reference',
+      'SKILL.md',
+    );
     expect(existsSync(installedSkillPath)).toBe(true);
-    expect(readFileSync(installedSkillPath, 'utf-8')).toContain('# Test OMC Reference');
+    expect(readFileSync(installedSkillPath, 'utf-8')).toContain(
+      '# Test OMC Reference',
+    );
   });
 
   it('fails closed when a coordinator reports ok:false with exit status 0', () => {
@@ -157,8 +189,12 @@ else process.stdout.write(JSON.stringify({ ok: false, exitCode: 0, error: "rejec
     });
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('ok/exit disagreement');
-    expect(existsSync(join(fixture.projectRoot, '.claude', 'CLAUDE.md'))).toBe(false);
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'ok/exit disagreement',
+    );
+    expect(existsSync(join(fixture.projectRoot, '.claude', 'CLAUDE.md'))).toBe(
+      false,
+    );
   });
 
   it('fails closed when the coordinator handshake is malformed', () => {
@@ -179,7 +215,9 @@ else process.stdout.write(JSON.stringify({ ok: false, exitCode: 0, error: "rejec
     });
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('Coordinator handshake validation failed');
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'Coordinator handshake validation failed',
+    );
     expect(existsSync(join(fixture.projectRoot, '.claude'))).toBe(false);
   });
 
@@ -201,7 +239,9 @@ else process.stdout.write(JSON.stringify({ ok: false, exitCode: 0, error: "rejec
     });
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('Coordinator handshake validation failed');
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'Coordinator handshake validation failed',
+    );
     expect(existsSync(join(fixture.projectRoot, '.claude'))).toBe(false);
   });
 
@@ -221,8 +261,12 @@ This is a summarized CLAUDE.md without markers.
     });
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('missing required OMC markers');
-    expect(existsSync(join(fixture.projectRoot, '.claude', 'CLAUDE.md'))).toBe(false);
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'missing required OMC markers',
+    );
+    expect(existsSync(join(fixture.projectRoot, '.claude', 'CLAUDE.md'))).toBe(
+      false,
+    );
   });
 
   it('adds a local git exclude block for .omc artifacts while preserving .omc/skills', () => {
@@ -277,7 +321,10 @@ Use the real docs file.
 <!-- OMC:END -->
 `);
 
-    const repoGitignore = readFileSync(join(process.cwd(), '.gitignore'), 'utf-8');
+    const repoGitignore = readFileSync(
+      join(process.cwd(), '.gitignore'),
+      'utf-8',
+    );
     expect(repoGitignore).toContain('!.omc/');
     expect(repoGitignore).toContain('.omc/*');
     expect(repoGitignore).toContain('!.omc/skills/');
@@ -355,36 +402,48 @@ Use the real docs file.
     writeFileSync(join(stateDir, 'example.json'), '{}');
     writeFileSync(join(omxStateDir, 'runtime.json'), '{}');
 
-    const skillIgnore = spawnSync('git', ['check-ignore', '-v', '.omc/skills/example.md'], {
-      cwd: fixture.projectRoot,
-      env: {
-        ...process.env,
-        HOME: fixture.homeRoot,
+    const skillIgnore = spawnSync(
+      'git',
+      ['check-ignore', '-v', '.omc/skills/example.md'],
+      {
+        cwd: fixture.projectRoot,
+        env: {
+          ...process.env,
+          HOME: fixture.homeRoot,
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
     expect(skillIgnore.status).toBe(0);
     expect(skillIgnore.stdout).toContain('!.omc/skills/**');
 
-    const stateIgnore = spawnSync('git', ['check-ignore', '-v', '.omc/state/example.json'], {
-      cwd: fixture.projectRoot,
-      env: {
-        ...process.env,
-        HOME: fixture.homeRoot,
+    const stateIgnore = spawnSync(
+      'git',
+      ['check-ignore', '-v', '.omc/state/example.json'],
+      {
+        cwd: fixture.projectRoot,
+        env: {
+          ...process.env,
+          HOME: fixture.homeRoot,
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
     expect(stateIgnore.status).toBe(0);
     expect(stateIgnore.stdout).toContain('.omc/*');
 
-    const omxStateIgnore = spawnSync('git', ['check-ignore', '-v', '.omx/state/runtime.json'], {
-      cwd: fixture.projectRoot,
-      env: {
-        ...process.env,
-        HOME: fixture.homeRoot,
+    const omxStateIgnore = spawnSync(
+      'git',
+      ['check-ignore', '-v', '.omx/state/runtime.json'],
+      {
+        cwd: fixture.projectRoot,
+        env: {
+          ...process.env,
+          HOME: fixture.homeRoot,
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
     expect(omxStateIgnore.status).toBe(0);
     expect(omxStateIgnore.stdout).toContain('.omx/');
 
@@ -422,13 +481,16 @@ Use the real docs file.
     expect(gitInit.status).toBe(0);
 
     const excludePath = join(fixture.projectRoot, '.git', 'info', 'exclude');
-    writeFileSync(excludePath, `# BEGIN OMC local artifacts
+    writeFileSync(
+      excludePath,
+      `# BEGIN OMC local artifacts
 !.omc/
 .omc/*
 !.omc/skills/
 !.omc/skills/**
 # END OMC local artifacts
-`);
+`,
+    );
 
     const result = spawnSync('bash', [fixture.scriptPath, 'local'], {
       cwd: fixture.projectRoot,
@@ -441,7 +503,9 @@ Use the real docs file.
     expect(result.status).toBe(0);
 
     const excludeContents = readFileSync(excludePath, 'utf-8');
-    expect(excludeContents.match(/# BEGIN OMC local artifacts/g)).toHaveLength(1);
+    expect(excludeContents.match(/# BEGIN OMC local artifacts/g)).toHaveLength(
+      1,
+    );
     expect(excludeContents.match(/^\.omx\/$/gm)).toHaveLength(1);
     expect(`${result.stdout}
 ${result.stderr}`).toContain('Updated OMC git exclude for local OMX artifacts');
@@ -486,8 +550,13 @@ Use the real docs file.
     });
     expect(secondRun.status).toBe(0);
 
-    const excludeContents = readFileSync(join(fixture.projectRoot, '.git', 'info', 'exclude'), 'utf-8');
-    expect(excludeContents.match(/# BEGIN OMC local artifacts/g)).toHaveLength(1);
+    const excludeContents = readFileSync(
+      join(fixture.projectRoot, '.git', 'info', 'exclude'),
+      'utf-8',
+    );
+    expect(excludeContents.match(/# BEGIN OMC local artifacts/g)).toHaveLength(
+      1,
+    );
   });
 
   it('removes only exact static 583/292-line legacy guides, preserves surrounding bytes, reports a byte-identical backup, and is idempotent', () => {
@@ -505,20 +574,32 @@ Use the real docs file.
     writeFileSync(targetPath, original, 'utf-8');
 
     const env = { ...process.env, HOME: fixture.homeRoot };
-    const first = spawnSync('bash', [fixture.scriptPath, 'local'], { cwd: fixture.projectRoot, env, encoding: 'utf-8' });
+    const first = spawnSync('bash', [fixture.scriptPath, 'local'], {
+      cwd: fixture.projectRoot,
+      env,
+      encoding: 'utf-8',
+    });
     expect(first.status).toBe(0);
-    const backup = `${first.stdout}\n${first.stderr}`.match(/Coordinator backup: (.+)/)?.[1];
+    const backup = `${first.stdout}\n${first.stderr}`.match(
+      /Coordinator backup: (.+)/,
+    )?.[1];
     expect(backup).toBeTruthy();
     expect(readFileSync(backup!, 'utf-8')).toBe(original);
 
     const installed = readFileSync(targetPath, 'utf-8');
     const preservedUserBytes = `${before}${between}${after}`;
     expect(installed).toContain('<!-- OMC:START -->');
-    expect(installed).toContain('<!-- User customizations -->\n' + preservedUserBytes);
+    expect(installed).toContain(
+      '<!-- User customizations -->\n' + preservedUserBytes,
+    );
     expect(installed).not.toContain(LEGACY_583_LINE_GUIDE);
     expect(installed).not.toContain(LEGACY_292_LINE_GUIDE);
 
-    const second = spawnSync('bash', [fixture.scriptPath, 'local'], { cwd: fixture.projectRoot, env, encoding: 'utf-8' });
+    const second = spawnSync('bash', [fixture.scriptPath, 'local'], {
+      cwd: fixture.projectRoot,
+      env,
+      encoding: 'utf-8',
+    });
     expect(second.status).toBe(0);
     expect(readFileSync(targetPath, 'utf-8')).toBe(installed);
   });
@@ -535,7 +616,10 @@ Use the real docs file.
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(join(configDir, 'hooks'), { recursive: true });
     writeFileSync(join(configDir, 'hooks', 'keyword-detector.sh'), 'legacy');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     const result = spawnSync('bash', [fixture.scriptPath, 'global'], {
       cwd: fixture.projectRoot,
@@ -549,10 +633,16 @@ Use the real docs file.
 
     expect(result.status).toBe(0);
     expect(existsSync(join(configDir, 'CLAUDE.md'))).toBe(true);
-    expect(existsSync(join(configDir, 'skills', 'omc-reference', 'SKILL.md'))).toBe(true);
-    expect(existsSync(join(configDir, 'hooks', 'keyword-detector.sh'))).toBe(true);
+    expect(
+      existsSync(join(configDir, 'skills', 'omc-reference', 'SKILL.md')),
+    ).toBe(true);
+    expect(existsSync(join(configDir, 'hooks', 'keyword-detector.sh'))).toBe(
+      true,
+    );
     expect(`${result.stdout}\n${result.stderr}`).toContain('Plugin verified');
-    expect(`${result.stdout}\n${result.stderr}`).toContain('Preserved unverified legacy hook');
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'Preserved unverified legacy hook',
+    );
   });
 
   it('does not warn for third-party-only settings hooks', () => {
@@ -574,7 +664,12 @@ Use the real docs file.
           Stop: [
             {
               matcher: '',
-              hooks: [{ type: 'command', command: 'node /opt/vendor/hooks/third-party-stop.js' }],
+              hooks: [
+                {
+                  type: 'command',
+                  command: 'node /opt/vendor/hooks/third-party-stop.js',
+                },
+              ],
             },
           ],
         },
@@ -592,7 +687,9 @@ Use the real docs file.
     });
 
     expect(result.status).toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).not.toContain('legacy OMC hook entries');
+    expect(`${result.stdout}\n${result.stderr}`).not.toContain(
+      'legacy OMC hook entries',
+    );
   });
 
   it('warns when settings hooks reference a legacy OMC hook command', () => {
@@ -614,7 +711,12 @@ Use the real docs file.
           UserPromptSubmit: [
             {
               matcher: '',
-              hooks: [{ type: 'command', command: '$HOME/.claude/hooks/keyword-detector.sh' }],
+              hooks: [
+                {
+                  type: 'command',
+                  command: '$HOME/.claude/hooks/keyword-detector.sh',
+                },
+              ],
             },
           ],
         },
@@ -632,7 +734,9 @@ Use the real docs file.
     });
 
     expect(result.status).toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('legacy OMC hook entries');
+    expect(`${result.stdout}\n${result.stderr}`).toContain(
+      'legacy OMC hook entries',
+    );
   });
 
   it('does not advise deleting the whole hooks section when hooks are mixed', () => {
@@ -655,8 +759,14 @@ Use the real docs file.
             {
               matcher: '',
               hooks: [
-                { type: 'command', command: 'node /opt/vendor/hooks/third-party-stop.js' },
-                { type: 'command', command: '$HOME/.claude/hooks/session-start.sh' },
+                {
+                  type: 'command',
+                  command: 'node /opt/vendor/hooks/third-party-stop.js',
+                },
+                {
+                  type: 'command',
+                  command: '$HOME/.claude/hooks/session-start.sh',
+                },
               ],
             },
           ],
@@ -692,8 +802,14 @@ Use the real docs file.
 
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'CLAUDE.md'), '# User CLAUDE\nKeep my base config.\n');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'CLAUDE.md'),
+      '# User CLAUDE\nKeep my base config.\n',
+    );
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     const result = spawnSync('bash', [fixture.scriptPath, 'global'], {
       cwd: fixture.projectRoot,
@@ -726,23 +842,36 @@ Use the real docs file.
 
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'CLAUDE.md'), '# User CLAUDE\nKeep my base config.\n');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'CLAUDE.md'),
+      '# User CLAUDE\nKeep my base config.\n',
+    );
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
-    const result = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
-      cwd: fixture.projectRoot,
-      env: {
-        ...process.env,
-        HOME: fixture.homeRoot,
-        CLAUDE_CONFIG_DIR: configDir,
+    const result = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'preserve'],
+      {
+        cwd: fixture.projectRoot,
+        env: {
+          ...process.env,
+          HOME: fixture.homeRoot,
+          CLAUDE_CONFIG_DIR: configDir,
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
 
     expect(result.status).toBe(0);
 
     const baseClaude = readFileSync(join(configDir, 'CLAUDE.md'), 'utf-8');
-    const companionClaude = readFileSync(join(configDir, 'CLAUDE-omc.md'), 'utf-8');
+    const companionClaude = readFileSync(
+      join(configDir, 'CLAUDE-omc.md'),
+      'utf-8',
+    );
 
     expect(baseClaude).toContain('# User CLAUDE');
     expect(baseClaude).toContain('Keep my base config.');
@@ -768,8 +897,14 @@ Use the real docs file.
 
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'CLAUDE.md'), '# User CLAUDE\nKeep my base config.\n');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'CLAUDE.md'),
+      '# User CLAUDE\nKeep my base config.\n',
+    );
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     const env = {
       ...process.env,
@@ -777,24 +912,34 @@ Use the real docs file.
       CLAUDE_CONFIG_DIR: configDir,
     };
 
-    const first = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
-      cwd: fixture.projectRoot,
-      env,
-      encoding: 'utf-8',
-    });
+    const first = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'preserve'],
+      {
+        cwd: fixture.projectRoot,
+        env,
+        encoding: 'utf-8',
+      },
+    );
     expect(first.status).toBe(0);
 
-    const second = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
-      cwd: fixture.projectRoot,
-      env,
-      encoding: 'utf-8',
-    });
+    const second = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'preserve'],
+      {
+        cwd: fixture.projectRoot,
+        env,
+        encoding: 'utf-8',
+      },
+    );
     expect(second.status).toBe(0);
 
     const baseClaude = readFileSync(join(configDir, 'CLAUDE.md'), 'utf-8');
     expect(baseClaude.match(/<!-- OMC:IMPORT:START -->/g)).toHaveLength(1);
     expect(baseClaude.match(/@CLAUDE-omc\.md/g)).toHaveLength(1);
-    expect(readFileSync(join(configDir, 'CLAUDE-omc.md'), 'utf-8')).toContain('<!-- OMC:VERSION:9.9.9 -->');
+    expect(readFileSync(join(configDir, 'CLAUDE-omc.md'), 'utf-8')).toContain(
+      '<!-- OMC:VERSION:9.9.9 -->',
+    );
   });
 
   it('cleans up orphaned companion file when switching from preserve to overwrite mode', () => {
@@ -808,8 +953,14 @@ Use the real docs file.
 
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'CLAUDE.md'), '# User CLAUDE\nKeep my base config.\n');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'CLAUDE.md'),
+      '# User CLAUDE\nKeep my base config.\n',
+    );
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     const env = {
       ...process.env,
@@ -818,21 +969,31 @@ Use the real docs file.
     };
 
     // Run 1: preserve mode — creates companion + import block
-    const first = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
-      cwd: fixture.projectRoot,
-      env,
-      encoding: 'utf-8',
-    });
+    const first = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'preserve'],
+      {
+        cwd: fixture.projectRoot,
+        env,
+        encoding: 'utf-8',
+      },
+    );
     expect(first.status).toBe(0);
     expect(existsSync(join(configDir, 'CLAUDE-omc.md'))).toBe(true);
-    expect(readFileSync(join(configDir, 'CLAUDE.md'), 'utf-8')).toContain('<!-- OMC:IMPORT:START -->');
+    expect(readFileSync(join(configDir, 'CLAUDE.md'), 'utf-8')).toContain(
+      '<!-- OMC:IMPORT:START -->',
+    );
 
     // Run 2: overwrite mode (default) — must clean up companion and import block
-    const second = spawnSync('bash', [fixture.scriptPath, 'global', 'overwrite'], {
-      cwd: fixture.projectRoot,
-      env,
-      encoding: 'utf-8',
-    });
+    const second = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'overwrite'],
+      {
+        cwd: fixture.projectRoot,
+        env,
+        encoding: 'utf-8',
+      },
+    );
     expect(second.status).toBe(0);
 
     // Companion file must be removed
@@ -860,22 +1021,32 @@ Use the real docs file.
 
     const configDir = join(fixture.homeRoot, 'custom-profile');
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, 'CLAUDE.md'), '# User CLAUDE\nKeep my base config.\n');
-    writeFileSync(join(configDir, 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(configDir, 'CLAUDE.md'),
+      '# User CLAUDE\nKeep my base config.\n',
+    );
+    writeFileSync(
+      join(configDir, 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     const realTarget = join(fixture.homeRoot, 'outside-target.md');
     writeFileSync(realTarget, 'outside target');
     symlinkSync(realTarget, join(configDir, 'CLAUDE-omc.md'));
 
-    const result = spawnSync('bash', [fixture.scriptPath, 'global', 'preserve'], {
-      cwd: fixture.projectRoot,
-      env: {
-        ...process.env,
-        HOME: fixture.homeRoot,
-        CLAUDE_CONFIG_DIR: configDir,
+    const result = spawnSync(
+      'bash',
+      [fixture.scriptPath, 'global', 'preserve'],
+      {
+        cwd: fixture.projectRoot,
+        env: {
+          ...process.env,
+          HOME: fixture.homeRoot,
+          CLAUDE_CONFIG_DIR: configDir,
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
 
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}\n${result.stderr}`).toContain('Refusing symlink');
@@ -888,7 +1059,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-invalid-newer-cache-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newerInvalid = join(cacheBase, '4.9.0');
     const projectRoot = join(root, 'project');
@@ -896,14 +1074,24 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     // Newer directory exists but is missing docs/CLAUDE.md
     mkdirSync(newerInvalid, { recursive: true });
@@ -923,21 +1111,31 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     mkdirSync(projectRoot, { recursive: true });
     mkdirSync(join(homeRoot, '.claude'), { recursive: true });
-    writeFileSync(join(homeRoot, '.claude', 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(homeRoot, '.claude', 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
-    const result = spawnSync('bash', [join(oldVersion, 'scripts', 'setup-claude-md.sh'), 'local'], {
-      cwd: projectRoot,
-      env: {
-        ...process.env,
-        HOME: homeRoot,
-        CLAUDE_CONFIG_DIR: join(homeRoot, '.claude'),
+    const result = spawnSync(
+      'bash',
+      [join(oldVersion, 'scripts', 'setup-claude-md.sh'), 'local'],
+      {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          HOME: homeRoot,
+          CLAUDE_CONFIG_DIR: join(homeRoot, '.claude'),
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(installed).toContain('<!-- OMC:VERSION:4.8.2 -->');
     expect(installed).toContain('# Old Version');
   });
@@ -946,7 +1144,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-ignore-non-semver-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newVersion = join(cacheBase, '4.9.0');
     const suffixedInvalid = join(cacheBase, '4.10.0.tmp');
@@ -955,15 +1160,35 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
-    writeFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n# Old\n<!-- OMC:END -->\n`);
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
+    writeFileSync(
+      join(oldVersion, 'docs', 'CLAUDE.md'),
+      `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n# Old\n<!-- OMC:END -->\n`,
+    );
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     mkdirSync(join(newVersion, 'docs'), { recursive: true });
-    writeFileSync(join(newVersion, 'docs', 'CLAUDE.md'), `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n# New\n<!-- OMC:END -->\n`);
-    buildCoordinatorFixture(newVersion, readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.9.0');
+    writeFileSync(
+      join(newVersion, 'docs', 'CLAUDE.md'),
+      `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n# New\n<!-- OMC:END -->\n`,
+    );
+    buildCoordinatorFixture(
+      newVersion,
+      readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.9.0',
+    );
 
     // Should be ignored by strict semver selection.
     mkdirSync(suffixedInvalid, { recursive: true });
@@ -971,22 +1196,32 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     mkdirSync(join(homeRoot, '.claude'), { recursive: true });
     mkdirSync(projectRoot, { recursive: true });
-    writeFileSync(join(homeRoot, '.claude', 'settings.json'), JSON.stringify({ plugins: ['oh-my-claudecode'] }));
+    writeFileSync(
+      join(homeRoot, '.claude', 'settings.json'),
+      JSON.stringify({ plugins: ['oh-my-claudecode'] }),
+    );
 
     // No installed_plugins.json => fallback scan path
-    const result = spawnSync('bash', [join(oldVersion, 'scripts', 'setup-claude-md.sh'), 'local'], {
-      cwd: projectRoot,
-      env: {
-        ...process.env,
-        HOME: homeRoot,
-        CLAUDE_CONFIG_DIR: join(homeRoot, '.claude'),
+    const result = spawnSync(
+      'bash',
+      [join(oldVersion, 'scripts', 'setup-claude-md.sh'), 'local'],
+      {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          HOME: homeRoot,
+          CLAUDE_CONFIG_DIR: join(homeRoot, '.claude'),
+        },
+        encoding: 'utf-8',
       },
-      encoding: 'utf-8',
-    });
+    );
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).not.toContain('4.10.0.tmp');
   });
@@ -995,7 +1230,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-json-old-version-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newVersion = join(cacheBase, '4.9.0');
     const projectRoot = join(root, 'project');
@@ -1004,14 +1246,24 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     // Script runs from old version path
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     // Newer cache version exists
     mkdirSync(join(newVersion, 'docs'), { recursive: true });
@@ -1019,7 +1271,11 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(newVersion, readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.9.0');
+    buildCoordinatorFixture(
+      newVersion,
+      readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.9.0',
+    );
 
     // installed_plugins.json still points at the old but existing path
     mkdirSync(join(homeRoot, '.claude', 'plugins'), { recursive: true });
@@ -1058,7 +1314,10 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).toContain('# New Version');
     expect(installed).not.toContain('<!-- OMC:VERSION:4.8.2 -->');
@@ -1069,7 +1328,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-root-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newVersion = join(cacheBase, '4.9.0');
     const projectRoot = join(root, 'project');
@@ -1078,14 +1344,24 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     // Create old version (where the script will be copied)
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     // Create new version (the active one)
     mkdirSync(join(newVersion, 'docs'), { recursive: true });
@@ -1093,7 +1369,11 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(newVersion, readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.9.0');
+    buildCoordinatorFixture(
+      newVersion,
+      readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.9.0',
+    );
 
     // Create installed_plugins.json pointing to the new version
     mkdirSync(join(homeRoot, '.claude', 'plugins'), { recursive: true });
@@ -1134,7 +1414,10 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     // Should contain the NEW version, not the old one
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).toContain('# New Version');
@@ -1145,7 +1428,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-wrapped-root-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newVersion = join(cacheBase, '4.9.0');
     const projectRoot = join(root, 'project');
@@ -1153,21 +1443,35 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     mkdirSync(join(newVersion, 'docs'), { recursive: true });
     writeFileSync(
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(newVersion, readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.9.0');
+    buildCoordinatorFixture(
+      newVersion,
+      readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.9.0',
+    );
 
     mkdirSync(join(homeRoot, '.claude', 'plugins'), { recursive: true });
     writeFileSync(
@@ -1207,7 +1511,10 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).toContain('# New Version');
     expect(installed).not.toContain('<!-- OMC:VERSION:4.8.2 -->');
@@ -1217,7 +1524,14 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     const root = mkdtempSync(join(tmpdir(), 'omc-stale-fallback-'));
     tempRoots.push(root);
 
-    const cacheBase = join(root, '.claude', 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
     const oldVersion = join(cacheBase, '4.8.2');
     const newVersion = join(cacheBase, '4.9.0');
     const projectRoot = join(root, 'project');
@@ -1226,14 +1540,24 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     // Create old version (where the script lives)
     mkdirSync(join(oldVersion, 'scripts'), { recursive: true });
     mkdirSync(join(oldVersion, 'docs'), { recursive: true });
-    copyFileSync(SETUP_SCRIPT, join(oldVersion, 'scripts', 'setup-claude-md.sh'));
+    copyFileSync(
+      SETUP_SCRIPT,
+      join(oldVersion, 'scripts', 'setup-claude-md.sh'),
+    );
     mkdirSync(join(oldVersion, 'scripts', 'lib'), { recursive: true });
-    copyFileSync(CONFIG_DIR_HELPER, join(oldVersion, 'scripts', 'lib', 'config-dir.sh'));
+    copyFileSync(
+      CONFIG_DIR_HELPER,
+      join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(oldVersion, readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.8.2');
+    buildCoordinatorFixture(
+      oldVersion,
+      readFileSync(join(oldVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.8.2',
+    );
 
     // Create new version (no installed_plugins.json, relies on cache scan)
     mkdirSync(join(newVersion, 'docs'), { recursive: true });
@@ -1241,7 +1565,11 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New\n<!-- OMC:END -->\n`,
     );
-    buildCoordinatorFixture(newVersion, readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'), '4.9.0');
+    buildCoordinatorFixture(
+      newVersion,
+      readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
+      '4.9.0',
+    );
 
     // No installed_plugins.json — fallback to cache scan
     mkdirSync(join(homeRoot, '.claude'), { recursive: true });
@@ -1267,7 +1595,10 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
 
     expect(result.status).toBe(0);
 
-    const installed = readFileSync(join(projectRoot, '.claude', 'CLAUDE.md'), 'utf-8');
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).not.toContain('<!-- OMC:VERSION:4.8.2 -->');
   });

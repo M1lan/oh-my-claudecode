@@ -87,8 +87,8 @@ describe('post-tool-verifier preemptive compaction warnings', () => {
       };
     };
 
-    const commands = hooksJson.hooks.PostToolUse.flatMap(entry =>
-      entry.hooks.map(hook => hook.command),
+    const commands = hooksJson.hooks.PostToolUse.flatMap((entry) =>
+      entry.hooks.map((hook) => hook.command),
     );
 
     expect(commands).not.toContain(
@@ -96,14 +96,18 @@ describe('post-tool-verifier preemptive compaction warnings', () => {
     );
     expect(
       commands.some(
-        command =>
+        (command) =>
           command.includes('"$CLAUDE_PLUGIN_ROOT"/scripts/run.cjs') &&
-          command.includes('"$CLAUDE_PLUGIN_ROOT"/scripts/post-tool-verifier.mjs'),
+          command.includes(
+            '"$CLAUDE_PLUGIN_ROOT"/scripts/post-tool-verifier.mjs',
+          ),
       ),
     ).toBe(true);
     expect(
-      commands.some(command =>
-        command.includes('"$CLAUDE_PLUGIN_ROOT"/scripts/preemptive-compaction.mjs'),
+      commands.some((command) =>
+        command.includes(
+          '"$CLAUDE_PLUGIN_ROOT"/scripts/preemptive-compaction.mjs',
+        ),
       ),
     ).toBe(false);
   });
@@ -381,7 +385,8 @@ describe('post-tool-verifier Write/Edit response envelopes', () => {
       continue: true,
       hookSpecificOutput: {
         hookEventName: 'PostToolUse',
-        additionalContext: 'Write operation failed. Check file permissions and directory existence.',
+        additionalContext:
+          'Write operation failed. Check file permissions and directory existence.',
       },
     });
   });
@@ -401,7 +406,8 @@ describe('post-tool-verifier Write/Edit response envelopes', () => {
       continue: true,
       hookSpecificOutput: {
         hookEventName: 'PostToolUse',
-        additionalContext: 'Edit operation failed. Verify file exists and content matches exactly.',
+        additionalContext:
+          'Edit operation failed. Verify file exists and content matches exactly.',
       },
     });
   });

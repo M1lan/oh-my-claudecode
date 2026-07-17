@@ -16,7 +16,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Mock tmux-utils so tmux calls don't require a real tmux install
 vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return {
     ...actual,
     tmuxExecAsync: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
@@ -34,8 +35,17 @@ vi.mock('../tmux-session.js', async (importOriginal) => {
   };
 });
 
-import { NudgeTracker, DEFAULT_NUDGE_CONFIG, capturePane, isPaneIdle } from '../idle-nudge.js';
-import { sendToWorker, paneLooksReady, paneHasActiveTask } from '../tmux-session.js';
+import {
+  NudgeTracker,
+  DEFAULT_NUDGE_CONFIG,
+  capturePane,
+  isPaneIdle,
+} from '../idle-nudge.js';
+import {
+  sendToWorker,
+  paneLooksReady,
+  paneHasActiveTask,
+} from '../tmux-session.js';
 import { tmuxExecAsync } from '../../cli/tmux-utils.js';
 
 // ---------------------------------------------------------------------------
@@ -47,11 +57,7 @@ function mockCaptureOutput(output: string): void {
 }
 
 /** Pane content that looks idle (shows prompt, no active task) */
-const IDLE_PANE_CONTENT = [
-  'some previous output',
-  '',
-  '> ',
-].join('\n');
+const IDLE_PANE_CONTENT = ['some previous output', '', '> '].join('\n');
 
 /** Pane content with an active task running */
 const ACTIVE_PANE_CONTENT = [
@@ -97,7 +103,9 @@ describe('idle detection helpers', () => {
   });
 
   it('paneLooksReady treats bootstrapping panes as not ready even with model hints', () => {
-    expect(paneLooksReady('model: loading\ngpt-5.3-codex high · 80% left')).toBe(false);
+    expect(
+      paneLooksReady('model: loading\ngpt-5.3-codex high · 80% left'),
+    ).toBe(false);
     expect(paneLooksReady('connecting to model...\n❯ ')).toBe(false);
   });
 
@@ -197,7 +205,11 @@ describe('NudgeTracker', () => {
     // Second call: delay has elapsed, should nudge
     const nudged = await tracker.checkAndNudge(['%2'], '%1', 'test-session');
     expect(nudged).toEqual(['%2']);
-    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith('test-session', '%2', DEFAULT_NUDGE_CONFIG.message);
+    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith(
+      'test-session',
+      '%2',
+      DEFAULT_NUDGE_CONFIG.message,
+    );
     expect(tracker.totalNudges).toBe(1);
   });
 
@@ -210,7 +222,11 @@ describe('NudgeTracker', () => {
     vi.advanceTimersByTime(6_000);
     await tracker.checkAndNudge(['%2'], '%1', 'test-session');
 
-    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith('test-session', '%2', customMessage);
+    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith(
+      'test-session',
+      '%2',
+      customMessage,
+    );
   });
 
   it('never nudges the leader pane', async () => {
@@ -220,11 +236,19 @@ describe('NudgeTracker', () => {
     // Advance past scan interval
     vi.advanceTimersByTime(6_000);
 
-    const nudged = await tracker.checkAndNudge(['%1', '%2'], '%1', 'test-session');
+    const nudged = await tracker.checkAndNudge(
+      ['%1', '%2'],
+      '%1',
+      'test-session',
+    );
     // %1 is the leader — should not be nudged
     expect(nudged).toEqual(['%2']);
     expect(vi.mocked(sendToWorker)).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith('test-session', '%2', expect.any(String));
+    expect(vi.mocked(sendToWorker)).toHaveBeenCalledWith(
+      'test-session',
+      '%2',
+      expect.any(String),
+    );
   });
 
   it('respects maxCount limit', async () => {
@@ -293,8 +317,14 @@ describe('NudgeTracker', () => {
     await tracker.checkAndNudge(['%2', '%3'], '%1', 'test-session');
 
     const summary = tracker.getSummary();
-    expect(summary['%2']).toEqual({ nudgeCount: 1, lastNudgeAt: expect.any(Number) });
-    expect(summary['%3']).toEqual({ nudgeCount: 1, lastNudgeAt: expect.any(Number) });
+    expect(summary['%2']).toEqual({
+      nudgeCount: 1,
+      lastNudgeAt: expect.any(Number),
+    });
+    expect(summary['%3']).toEqual({
+      nudgeCount: 1,
+      lastNudgeAt: expect.any(Number),
+    });
   });
 
   it('handles sendToWorker failure gracefully', async () => {
@@ -323,7 +353,11 @@ describe('NudgeTracker', () => {
     });
 
     vi.advanceTimersByTime(6_000);
-    const nudged = await tracker.checkAndNudge(['%2', '%3'], '%1', 'test-session');
+    const nudged = await tracker.checkAndNudge(
+      ['%2', '%3'],
+      '%1',
+      'test-session',
+    );
     expect(nudged).toEqual(['%2']); // only %2 was idle
     expect(tracker.totalNudges).toBe(1);
   });

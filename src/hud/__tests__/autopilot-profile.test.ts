@@ -14,20 +14,29 @@ function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   if (value && typeof value === 'object') {
     const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map(key => `${JSON.stringify(key)}:${canonicalJson(record[key])}`).join(',')}}`;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(record[key])}`)
+      .join(',')}}`;
   }
   return JSON.stringify(value);
 }
 const workflowName = 'release-train';
 const stages = ['ralplan', 'execution', 'ralph', 'qa'];
-const profileHash = createHash('sha256').update(canonicalJson({
-  descriptorVersion: 1,
-  workflowName,
-  profileVersion: 1,
-  stages,
-})).digest('hex');
+const profileHash = createHash('sha256')
+  .update(
+    canonicalJson({
+      descriptorVersion: 1,
+      workflowName,
+      profileVersion: 1,
+      stages,
+    }),
+  )
+  .digest('hex');
 
-function workflowState(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+function workflowState(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
   const sessionId = '11111111-1111-4111-8111-111111111111';
   const transcriptRoot = '/tmp/omc-autopilot-profile-transcripts';
   const initialIdentity = {
@@ -38,7 +47,11 @@ function workflowState(overrides: Record<string, unknown> = {}): Record<string, 
     ctimeNs: '0',
     contentSha256: '0'.repeat(64),
   };
-  const stableIdentity = { ...initialIdentity, size: 1, contentSha256: '1'.repeat(64) };
+  const stableIdentity = {
+    ...initialIdentity,
+    size: 1,
+    contentSha256: '1'.repeat(64),
+  };
   const activationBoundary = {
     transcriptPath: `${transcriptRoot}/${sessionId}.jsonl`,
     transcriptRoot,
@@ -67,20 +80,37 @@ function workflowState(overrides: Record<string, unknown> = {}): Record<string, 
       currentStageIndex: 1,
       trackingRevision: 1,
       activationBoundary,
-      completionObservations: [{
-        stageId: 'ralplan',
-        sessionId,
-        signalId: 'PIPELINE_RALPLAN_COMPLETE',
-        lineNumber: 0,
-        byteOffset: 0,
-        recordContentSha256: '0'.repeat(64),
-        stableFile: stableIdentity,
-        activationBoundary: { ...activationBoundary, byteOffset: 0, fileIdentity: initialIdentity },
-        observedAt,
-      }],
+      completionObservations: [
+        {
+          stageId: 'ralplan',
+          sessionId,
+          signalId: 'PIPELINE_RALPLAN_COMPLETE',
+          lineNumber: 0,
+          byteOffset: 0,
+          recordContentSha256: '0'.repeat(64),
+          stableFile: stableIdentity,
+          activationBoundary: {
+            ...activationBoundary,
+            byteOffset: 0,
+            fileIdentity: initialIdentity,
+          },
+          observedAt,
+        },
+      ],
       stages: [
-        { id: 'ralplan', status: 'complete', iterations: 0, startedAt: observedAt, completedAt: observedAt },
-        { id: 'execution', status: 'active', iterations: 0, startedAt: observedAt },
+        {
+          id: 'ralplan',
+          status: 'complete',
+          iterations: 0,
+          startedAt: observedAt,
+          completedAt: observedAt,
+        },
+        {
+          id: 'execution',
+          status: 'active',
+          iterations: 0,
+          startedAt: observedAt,
+        },
         { id: 'ralph', status: 'pending', iterations: 0 },
         { id: 'qa', status: 'pending', iterations: 0 },
       ],
@@ -105,26 +135,36 @@ describe('autopilot workflow profile observability', () => {
   });
 
   it('renders a verified profile with bounded name, selected stage, and progress', () => {
-    const longNameHash = createHash('sha256').update(canonicalJson({
-      descriptorVersion: 1,
-      workflowName: 'x'.repeat(40),
-      profileVersion: 1,
-      stages,
-    })).digest('hex');
+    const longNameHash = createHash('sha256')
+      .update(
+        canonicalJson({
+          descriptorVersion: 1,
+          workflowName: 'x'.repeat(40),
+          profileVersion: 1,
+          stages,
+        }),
+      )
+      .digest('hex');
 
     const directory = mkdtempSync(join(tmpdir(), 'omc-autopilot-profile-'));
     directories.push(directory);
     const statePath = join(directory, '.omc', 'state', 'autopilot-state.json');
     mkdirSync(join(statePath, '..'), { recursive: true });
-    writeFileSync(statePath, JSON.stringify(workflowState({
-      workflow: {
-        descriptorVersion: 1,
-        workflowName: 'x'.repeat(40),
-        profileVersion: 1,
-        stages,
-        profileHash: longNameHash,
-      },
-    })), 'utf-8');
+    writeFileSync(
+      statePath,
+      JSON.stringify(
+        workflowState({
+          workflow: {
+            descriptorVersion: 1,
+            workflowName: 'x'.repeat(40),
+            profileVersion: 1,
+            stages,
+            profileHash: longNameHash,
+          },
+        }),
+      ),
+      'utf-8',
+    );
     const output = renderAutopilot(readAutopilotStateForHud(directory));
 
     expect(output).toContain(`workflow:${'x'.repeat(32)}`);
@@ -138,9 +178,21 @@ describe('autopilot workflow profile observability', () => {
     directories.push(directory);
     const statePath = join(directory, '.omc', 'state', 'autopilot-state.json');
     mkdirSync(join(statePath, '..'), { recursive: true });
-    writeFileSync(statePath, JSON.stringify(workflowState({
-      workflow: { descriptorVersion: 1, workflowName, profileVersion: 1, stages, profileHash: 'bad' },
-    })), 'utf-8');
+    writeFileSync(
+      statePath,
+      JSON.stringify(
+        workflowState({
+          workflow: {
+            descriptorVersion: 1,
+            workflowName,
+            profileVersion: 1,
+            stages,
+            profileHash: 'bad',
+          },
+        }),
+      ),
+      'utf-8',
+    );
 
     const hudState = readAutopilotStateForHud(directory);
     expect(hudState?.workflow).toEqual({ invalid: true });
@@ -152,13 +204,17 @@ describe('autopilot workflow profile observability', () => {
     directories.push(directory);
     const statePath = join(directory, '.omc', 'state', 'autopilot-state.json');
     mkdirSync(join(statePath, '..'), { recursive: true });
-    writeFileSync(statePath, JSON.stringify({
-      active: true,
-      phase: 'execution',
-      iteration: 1,
-      max_iterations: 10,
-      workflow: false,
-    }), 'utf-8');
+    writeFileSync(
+      statePath,
+      JSON.stringify({
+        active: true,
+        phase: 'execution',
+        iteration: 1,
+        max_iterations: 10,
+        workflow: false,
+      }),
+      'utf-8',
+    );
 
     const hudState = readAutopilotStateForHud(directory);
     expect(hudState?.workflow).toEqual({ invalid: true });
@@ -178,33 +234,44 @@ describe('autopilot workflow profile observability', () => {
       status: 'active',
       progress: '2/4',
     });
-    expect(JSON.stringify(publicState)).not.toMatch(/private|originalIdea|spec_path|plan_path|transcript|futureModel/);
+    expect(JSON.stringify(publicState)).not.toMatch(
+      /private|originalIdea|spec_path|plan_path|transcript|futureModel/,
+    );
   });
 
   it('keeps legacy autopilot rendering unchanged', () => {
-    expect(renderAutopilot({
-      active: true,
-      phase: 'execution',
-      iteration: 2,
-      maxIterations: 5,
-      tasksCompleted: 3,
-      tasksTotal: 7,
-      filesCreated: 1,
-    })).toContain('Phase');
+    expect(
+      renderAutopilot({
+        active: true,
+        phase: 'execution',
+        iteration: 2,
+        maxIterations: 5,
+        tasksCompleted: 3,
+        tasksTotal: 7,
+        filesCreated: 1,
+      }),
+    ).toContain('Phase');
   });
 
   it('bounds and redacts Stop-facing runtime insight fields', () => {
-    const directory = mkdtempSync(join(process.cwd(), '.tmp-omc-runtime-insight-profile-'));
+    const directory = mkdtempSync(
+      join(process.cwd(), '.tmp-omc-runtime-insight-profile-'),
+    );
     directories.push(directory);
-    writeHudState({
-      timestamp: new Date().toISOString(),
-      backgroundTasks: [{
-        id: 'background-1',
-        description: `${'x'.repeat(200)} /private/transcript.jsonl`,
-        status: 'running',
-        startedAt: new Date().toISOString(),
-      }],
-    }, directory);
+    writeHudState(
+      {
+        timestamp: new Date().toISOString(),
+        backgroundTasks: [
+          {
+            id: 'background-1',
+            description: `${'x'.repeat(200)} /private/transcript.jsonl`,
+            status: 'running',
+            startedAt: new Date().toISOString(),
+          },
+        ],
+      },
+      directory,
+    );
 
     const insight = formatAutopilotRuntimeInsight(directory);
     expect(insight).not.toContain('/private/transcript.jsonl');

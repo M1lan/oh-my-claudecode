@@ -154,7 +154,7 @@ export function hasTierModelEnvOverrides(): boolean {
   return Object.values(TIER_ENV_KEYS).some((keys) =>
     keys.some((key) => {
       return Boolean(readEnvValue(key));
-    })
+    }),
   );
 }
 
@@ -163,7 +163,9 @@ export function getDefaultModelHigh(): string {
 }
 
 export function getDefaultModelMedium(): string {
-  return resolveTierModelFromEnv('MEDIUM') || BUILTIN_TIER_MODEL_DEFAULTS.MEDIUM;
+  return (
+    resolveTierModelFromEnv('MEDIUM') || BUILTIN_TIER_MODEL_DEFAULTS.MEDIUM
+  );
 }
 
 export function getDefaultModelLow(): string {
@@ -208,12 +210,14 @@ export function getClaudeHighVariantFromModel(modelId: string): string | null {
 }
 
 /** Get built-in default model for an external provider */
-export function getBuiltinExternalDefaultModel(provider: 'codex' | 'gemini' | 'antigravity'): string {
+export function getBuiltinExternalDefaultModel(
+  provider: 'codex' | 'gemini' | 'antigravity',
+): string {
   if (provider === 'codex') return BUILTIN_EXTERNAL_MODEL_DEFAULTS.codexModel;
-  if (provider === 'antigravity') return BUILTIN_EXTERNAL_MODEL_DEFAULTS.antigravityModel;
+  if (provider === 'antigravity')
+    return BUILTIN_EXTERNAL_MODEL_DEFAULTS.antigravityModel;
   return BUILTIN_EXTERNAL_MODEL_DEFAULTS.geminiModel;
 }
-
 
 function hasBedrockModelId(modelIds: readonly string[]): boolean {
   for (const modelId of modelIds) {
@@ -221,9 +225,9 @@ function hasBedrockModelId(modelIds: readonly string[]): boolean {
       return true;
     }
     if (
-      /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId)
-      && /:(inference-profile|application-inference-profile)\//i.test(modelId)
-      && modelId.toLowerCase().includes('claude')
+      /^arn:aws(-[^:]+)?:bedrock:/i.test(modelId) &&
+      /:(inference-profile|application-inference-profile)\//i.test(modelId) &&
+      modelId.toLowerCase().includes('claude')
     ) {
       return true;
     }
@@ -309,7 +313,9 @@ export function hasExtendedContextSuffix(modelId: string): boolean {
  * like `[1m]` that the sub-agent runtime cannot handle.
  */
 export function isSubagentSafeModelId(modelId: string): boolean {
-  return isProviderSpecificModelId(modelId) && !hasExtendedContextSuffix(modelId);
+  return (
+    isProviderSpecificModelId(modelId) && !hasExtendedContextSuffix(modelId)
+  );
 }
 
 /**
@@ -331,7 +337,9 @@ export function isVertexAI(): boolean {
 }
 
 function hasVertexModelId(modelIds: readonly string[]): boolean {
-  return modelIds.some((modelId) => modelId.toLowerCase().startsWith('vertex_ai/'));
+  return modelIds.some((modelId) =>
+    modelId.toLowerCase().startsWith('vertex_ai/'),
+  );
 }
 
 function hasNonClaudeModelId(modelIds: readonly string[]): boolean {
@@ -387,7 +395,9 @@ export function isNonClaudeProvider(): boolean {
     // Validate URL for SSRF protection
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`,
+      );
       // Treat invalid URLs as non-Claude to prevent potential SSRF
       return true;
     }
@@ -420,9 +430,9 @@ export function shouldAutoForceInherit(): boolean {
 
   const directModelValues = getDirectProviderDetectionModelEnvValues();
   if (
-    hasBedrockModelId(directModelValues)
-    || hasVertexModelId(directModelValues)
-    || hasNonClaudeModelId(directModelValues)
+    hasBedrockModelId(directModelValues) ||
+    hasVertexModelId(directModelValues) ||
+    hasNonClaudeModelId(directModelValues)
   ) {
     return true;
   }
@@ -431,7 +441,9 @@ export function shouldAutoForceInherit(): boolean {
   if (baseUrl) {
     const validation = validateAnthropicBaseUrl(baseUrl);
     if (!validation.allowed) {
-      console.error(`[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`);
+      console.error(
+        `[SSRF Guard] Rejecting ANTHROPIC_BASE_URL: ${validation.reason}`,
+      );
       return true;
     }
     if (!baseUrl.includes('anthropic.com')) {

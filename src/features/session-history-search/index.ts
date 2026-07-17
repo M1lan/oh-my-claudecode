@@ -69,12 +69,16 @@ function parseSinceSpec(since?: string): number | undefined {
 
 function getMainRepoRoot(projectRoot: string): string | null {
   try {
-    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
-      cwd: projectRoot,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    }).trim();
+    const gitCommonDir = execFileSync(
+      'git',
+      ['rev-parse', '--git-common-dir'],
+      {
+        cwd: projectRoot,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      },
+    ).trim();
     const absoluteCommonDir = resolve(projectRoot, gitCommonDir);
     const mainRepoRoot = dirname(absoluteCommonDir);
     return mainRepoRoot === projectRoot ? null : mainRepoRoot;
@@ -114,7 +118,10 @@ function listJsonlFiles(rootDir: string): string[] {
         stack.push(fullPath);
         continue;
       }
-      if (entry.isFile() && (entry.name.endsWith('.jsonl') || entry.name.endsWith('.json'))) {
+      if (
+        entry.isFile() &&
+        (entry.name.endsWith('.jsonl') || entry.name.endsWith('.json'))
+      ) {
         files.push(fullPath);
       }
     }
@@ -139,7 +146,10 @@ function uniqueSortedTargets(targets: SearchTarget[]): SearchTarget[] {
     });
 }
 
-function buildCurrentProjectTargets(projectRoot: string, transcriptProjectRoots: string[] = [projectRoot]): SearchTarget[] {
+function buildCurrentProjectTargets(
+  projectRoot: string,
+  transcriptProjectRoots: string[] = [projectRoot],
+): SearchTarget[] {
   const claudeDir = getClaudeConfigDir();
   const projectRoots = new Set<string>(transcriptProjectRoots);
   for (const root of transcriptProjectRoots) {
@@ -196,19 +206,31 @@ function buildAllProjectTargets(): SearchTarget[] {
   return uniqueSortedTargets(targets);
 }
 
-function isWithinProject(projectPath: string | undefined, projectRoots: string[]): boolean {
+function isWithinProject(
+  projectPath: string | undefined,
+  projectRoots: string[],
+): boolean {
   if (!projectPath) {
     return false;
   }
 
-  const normalizedProjectPath = normalize(resolve(projectPath)).replace(/\\/g, '/');
+  const normalizedProjectPath = normalize(resolve(projectPath)).replace(
+    /\\/g,
+    '/',
+  );
   return projectRoots.some((root) => {
     const normalizedRoot = normalize(resolve(root)).replace(/\\/g, '/');
-    return normalizedProjectPath === normalizedRoot || normalizedProjectPath.startsWith(`${normalizedRoot}/`);
+    return (
+      normalizedProjectPath === normalizedRoot ||
+      normalizedProjectPath.startsWith(`${normalizedRoot}/`)
+    );
   });
 }
 
-function matchesProjectFilter(projectPath: string | undefined, projectFilter: string | undefined): boolean {
+function matchesProjectFilter(
+  projectPath: string | undefined,
+  projectFilter: string | undefined,
+): boolean {
   if (!projectFilter || projectFilter === 'all') {
     return true;
   }
@@ -256,9 +278,15 @@ function extractTranscriptTexts(entry: Record<string, unknown>): string[] {
     for (const block of content) {
       if (!block || typeof block !== 'object') continue;
       const record = block as Record<string, unknown>;
-      const blockType = typeof record.type === 'string' ? record.type : undefined;
+      const blockType =
+        typeof record.type === 'string' ? record.type : undefined;
 
-      if ((blockType === 'text' || blockType === 'thinking' || blockType === 'reasoning') && typeof record.text === 'string') {
+      if (
+        (blockType === 'text' ||
+          blockType === 'thinking' ||
+          blockType === 'reasoning') &&
+        typeof record.text === 'string'
+      ) {
         texts.push(record.text);
         continue;
       }
@@ -281,20 +309,23 @@ function extractTranscriptTexts(entry: Record<string, unknown>): string[] {
   return texts;
 }
 
-function buildTranscriptEntry(entry: Record<string, unknown>): SearchableEntry | null {
+function buildTranscriptEntry(
+  entry: Record<string, unknown>,
+): SearchableEntry | null {
   const texts = extractTranscriptTexts(entry);
   if (texts.length === 0) {
     return null;
   }
 
   const message = entry.message as Record<string, unknown> | undefined;
-  const sessionId = typeof entry.sessionId === 'string'
-    ? entry.sessionId
-    : typeof entry.session_id === 'string'
-      ? entry.session_id
-      : typeof message?.sessionId === 'string'
-        ? message.sessionId
-        : undefined;
+  const sessionId =
+    typeof entry.sessionId === 'string'
+      ? entry.sessionId
+      : typeof entry.session_id === 'string'
+        ? entry.session_id
+        : typeof message?.sessionId === 'string'
+          ? message.sessionId
+          : undefined;
 
   if (!sessionId) {
     return null;
@@ -303,7 +334,8 @@ function buildTranscriptEntry(entry: Record<string, unknown>): SearchableEntry |
   return {
     sessionId,
     agentId: typeof entry.agentId === 'string' ? entry.agentId : undefined,
-    timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : undefined,
+    timestamp:
+      typeof entry.timestamp === 'string' ? entry.timestamp : undefined,
     projectPath: typeof entry.cwd === 'string' ? entry.cwd : undefined,
     role: typeof message?.role === 'string' ? message.role : undefined,
     entryType: typeof entry.type === 'string' ? entry.type : undefined,
@@ -311,12 +343,16 @@ function buildTranscriptEntry(entry: Record<string, unknown>): SearchableEntry |
   };
 }
 
-function buildJsonArtifactEntry(entry: Record<string, unknown>, sourceType: SearchTarget['sourceType']): SearchableEntry | null {
-  const sessionId = typeof entry.session_id === 'string'
-    ? entry.session_id
-    : typeof entry.sessionId === 'string'
-      ? entry.sessionId
-      : undefined;
+function buildJsonArtifactEntry(
+  entry: Record<string, unknown>,
+  sourceType: SearchTarget['sourceType'],
+): SearchableEntry | null {
+  const sessionId =
+    typeof entry.session_id === 'string'
+      ? entry.session_id
+      : typeof entry.sessionId === 'string'
+        ? entry.sessionId
+        : undefined;
 
   if (!sessionId) {
     return null;
@@ -327,15 +363,17 @@ function buildJsonArtifactEntry(entry: Record<string, unknown>, sourceType: Sear
     return null;
   }
 
-  const timestamp = typeof entry.ended_at === 'string'
-    ? entry.ended_at
-    : typeof entry.started_at === 'string'
-      ? entry.started_at
-      : typeof entry.timestamp === 'string'
-        ? entry.timestamp
-        : undefined;
+  const timestamp =
+    typeof entry.ended_at === 'string'
+      ? entry.ended_at
+      : typeof entry.started_at === 'string'
+        ? entry.started_at
+        : typeof entry.timestamp === 'string'
+          ? entry.timestamp
+          : undefined;
 
-  const entryType = sourceType === 'omc-session-summary' ? 'session-summary' : 'session-replay';
+  const entryType =
+    sourceType === 'omc-session-summary' ? 'session-summary' : 'session-replay';
 
   return {
     sessionId,
@@ -346,9 +384,21 @@ function buildJsonArtifactEntry(entry: Record<string, unknown>, sourceType: Sear
   };
 }
 
-function buildSearchableEntry(entry: Record<string, unknown>, sourceType: SearchTarget['sourceType']): SearchableEntry | null {
-  if (sourceType === 'project-transcript' || sourceType === 'legacy-transcript' || sourceType === 'omc-session-replay') {
-    return buildTranscriptEntry(entry) ?? (sourceType === 'omc-session-replay' ? buildJsonArtifactEntry(entry, sourceType) : null);
+function buildSearchableEntry(
+  entry: Record<string, unknown>,
+  sourceType: SearchTarget['sourceType'],
+): SearchableEntry | null {
+  if (
+    sourceType === 'project-transcript' ||
+    sourceType === 'legacy-transcript' ||
+    sourceType === 'omc-session-replay'
+  ) {
+    return (
+      buildTranscriptEntry(entry) ??
+      (sourceType === 'omc-session-replay'
+        ? buildJsonArtifactEntry(entry, sourceType)
+        : null)
+    );
   }
 
   if (sourceType === 'omc-session-summary') {
@@ -358,7 +408,11 @@ function buildSearchableEntry(entry: Record<string, unknown>, sourceType: Search
   return null;
 }
 
-function findMatchIndex(text: string, query: string, caseSensitive: boolean): number {
+function findMatchIndex(
+  text: string,
+  query: string,
+  caseSensitive: boolean,
+): number {
   const haystack = normalizeForSearch(text, caseSensitive);
   const needle = normalizeForSearch(query, caseSensitive);
   const directIndex = haystack.indexOf(needle);
@@ -375,7 +429,11 @@ function findMatchIndex(text: string, query: string, caseSensitive: boolean): nu
   return -1;
 }
 
-function createExcerpt(text: string, matchIndex: number, contextChars: number): string {
+function createExcerpt(
+  text: string,
+  matchIndex: number,
+  contextChars: number,
+): string {
   const compacted = compactWhitespace(text);
   if (compacted.length <= contextChars * 2) {
     return compacted;
@@ -389,7 +447,9 @@ function createExcerpt(text: string, matchIndex: number, contextChars: number): 
   return `${prefix}${compacted.slice(start, end).trim()}${suffix}`;
 }
 
-function buildScopeMode(project: string | undefined): 'current' | 'project' | 'all' {
+function buildScopeMode(
+  project: string | undefined,
+): 'current' | 'project' | 'all' {
   if (!project || project === 'current') return 'current';
   if (project === 'all') return 'all';
   return 'project';
@@ -408,21 +468,50 @@ async function collectMatchesFromFile(
   },
 ): Promise<SessionHistoryMatch[]> {
   const matches: SessionHistoryMatch[] = [];
-  const fileMtime = existsSync(target.filePath) ? statSync(target.filePath).mtimeMs : 0;
+  const fileMtime = existsSync(target.filePath)
+    ? statSync(target.filePath).mtimeMs
+    : 0;
 
-  if (target.sourceType === 'omc-session-summary' && target.filePath.endsWith('.json')) {
+  if (
+    target.sourceType === 'omc-session-summary' &&
+    target.filePath.endsWith('.json')
+  ) {
     try {
-      const payload = JSON.parse(await import('fs/promises').then((fs) => fs.readFile(target.filePath, 'utf-8')));
-      const entry = buildSearchableEntry(payload as Record<string, unknown>, target.sourceType);
+      const payload = JSON.parse(
+        await import('fs/promises').then((fs) =>
+          fs.readFile(target.filePath, 'utf-8'),
+        ),
+      );
+      const entry = buildSearchableEntry(
+        payload as Record<string, unknown>,
+        target.sourceType,
+      );
       if (!entry) return [];
       if (options.sessionId && entry.sessionId !== options.sessionId) return [];
-      if (options.projectRoots && options.projectRoots.length > 0 && !isWithinProject(entry.projectPath, options.projectRoots)) return [];
-      if (!matchesProjectFilter(entry.projectPath, options.projectFilter)) return [];
-      const entryEpoch = entry.timestamp ? Date.parse(entry.timestamp) : fileMtime;
-      if (options.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < options.sinceEpoch) return [];
+      if (
+        options.projectRoots &&
+        options.projectRoots.length > 0 &&
+        !isWithinProject(entry.projectPath, options.projectRoots)
+      )
+        return [];
+      if (!matchesProjectFilter(entry.projectPath, options.projectFilter))
+        return [];
+      const entryEpoch = entry.timestamp
+        ? Date.parse(entry.timestamp)
+        : fileMtime;
+      if (
+        options.sinceEpoch &&
+        Number.isFinite(entryEpoch) &&
+        entryEpoch < options.sinceEpoch
+      )
+        return [];
 
       for (const text of entry.texts) {
-        const matchIndex = findMatchIndex(text, options.query, options.caseSensitive);
+        const matchIndex = findMatchIndex(
+          text,
+          options.query,
+          options.caseSensitive,
+        );
         if (matchIndex < 0) continue;
         matches.push({
           sessionId: entry.sessionId,
@@ -462,14 +551,31 @@ async function collectMatchesFromFile(
       const entry = buildSearchableEntry(parsed, target.sourceType);
       if (!entry) continue;
       if (options.sessionId && entry.sessionId !== options.sessionId) continue;
-      if (options.projectRoots && options.projectRoots.length > 0 && !isWithinProject(entry.projectPath, options.projectRoots)) continue;
-      if (!matchesProjectFilter(entry.projectPath, options.projectFilter)) continue;
+      if (
+        options.projectRoots &&
+        options.projectRoots.length > 0 &&
+        !isWithinProject(entry.projectPath, options.projectRoots)
+      )
+        continue;
+      if (!matchesProjectFilter(entry.projectPath, options.projectFilter))
+        continue;
 
-      const entryEpoch = entry.timestamp ? Date.parse(entry.timestamp) : fileMtime;
-      if (options.sinceEpoch && Number.isFinite(entryEpoch) && entryEpoch < options.sinceEpoch) continue;
+      const entryEpoch = entry.timestamp
+        ? Date.parse(entry.timestamp)
+        : fileMtime;
+      if (
+        options.sinceEpoch &&
+        Number.isFinite(entryEpoch) &&
+        entryEpoch < options.sinceEpoch
+      )
+        continue;
 
       for (const text of entry.texts) {
-        const matchIndex = findMatchIndex(text, options.query, options.caseSensitive);
+        const matchIndex = findMatchIndex(
+          text,
+          options.query,
+          options.caseSensitive,
+        );
         if (matchIndex < 0) continue;
         matches.push({
           sessionId: entry.sessionId,
@@ -507,25 +613,39 @@ export async function searchSessionHistory(
   }
 
   const limit = Math.max(1, rawOptions.limit ?? DEFAULT_LIMIT);
-  const contextChars = Math.max(20, rawOptions.contextChars ?? DEFAULT_CONTEXT_CHARS);
+  const contextChars = Math.max(
+    20,
+    rawOptions.contextChars ?? DEFAULT_CONTEXT_CHARS,
+  );
   const caseSensitive = rawOptions.caseSensitive ?? false;
   const sinceEpoch = parseSinceSpec(rawOptions.since);
-  const workingDirectory = validateWorkingDirectory(rawOptions.workingDirectory);
+  const workingDirectory = validateWorkingDirectory(
+    rawOptions.workingDirectory,
+  );
   const currentProjectRoot = resolveToWorktreeRoot(workingDirectory);
   const scopeMode = buildScopeMode(rawOptions.project);
-  const projectFilter = scopeMode === 'project' ? rawOptions.project : undefined;
-  const literalWorkingDirectory = rawOptions.workingDirectory ? resolve(rawOptions.workingDirectory) : workingDirectory;
+  const projectFilter =
+    scopeMode === 'project' ? rawOptions.project : undefined;
+  const literalWorkingDirectory = rawOptions.workingDirectory
+    ? resolve(rawOptions.workingDirectory)
+    : workingDirectory;
 
   const currentProjectRoots = [currentProjectRoot, literalWorkingDirectory]
     .concat(getMainRepoRoot(currentProjectRoot) ?? [])
     .concat(getClaudeWorktreeParent(currentProjectRoot) ?? [])
-    .filter((value, index, arr): value is string => Boolean(value) && arr.indexOf(value) === index);
+    .filter(
+      (value, index, arr): value is string =>
+        Boolean(value) && arr.indexOf(value) === index,
+    );
 
-  const transcriptProjectRoots = currentProjectRoots.filter((root) => isWithinProject(root, [currentProjectRoot]));
+  const transcriptProjectRoots = currentProjectRoots.filter((root) =>
+    isWithinProject(root, [currentProjectRoot]),
+  );
 
-  const targets = scopeMode === 'all'
-    ? buildAllProjectTargets()
-    : buildCurrentProjectTargets(currentProjectRoot, transcriptProjectRoots);
+  const targets =
+    scopeMode === 'all'
+      ? buildAllProjectTargets()
+      : buildCurrentProjectTargets(currentProjectRoot, transcriptProjectRoots);
 
   const allMatches: SessionHistoryMatch[] = [];
   for (const target of targets) {
@@ -563,7 +683,11 @@ export async function searchSessionHistory(
   };
 }
 
-export { encodeProjectPath, isWithinProject as __testingIsWithinProject, parseSinceSpec };
+export {
+  encodeProjectPath,
+  isWithinProject as __testingIsWithinProject,
+  parseSinceSpec,
+};
 export type {
   SessionHistoryMatch,
   SessionHistorySearchOptions,

@@ -94,7 +94,9 @@ describe('setup-progress.sh', () => {
     });
 
     expect(result.status).not.toBe(0);
-    expect(`${result.stderr ?? ''}${result.stdout ?? ''}`).toContain('jq is required');
+    expect(`${result.stderr ?? ''}${result.stdout ?? ''}`).toContain(
+      'jq is required',
+    );
     expect(readFileSync(configPath, 'utf-8')).toBe(originalConfig);
   });
 });

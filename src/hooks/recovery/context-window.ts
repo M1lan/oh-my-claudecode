@@ -29,7 +29,7 @@ function debugLog(...args: unknown[]): void {
   if (DEBUG) {
     const msg = `[${new Date().toISOString()}] [context-window-recovery] ${args
       .map((a) =>
-        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)
+        typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a),
       )
       .join(' ')}\n`;
     fs.appendFileSync(DEBUG_FILE, msg);
@@ -103,7 +103,7 @@ function isTokenLimitError(text: string): boolean {
  * Extract token counts from error message
  */
 function extractTokensFromMessage(
-  message: string
+  message: string,
 ): { current: number; max: number } | null {
   for (const pattern of TOKEN_LIMIT_PATTERNS) {
     const match = message.match(pattern);
@@ -133,7 +133,7 @@ function extractMessageIndex(text: string): number | undefined {
  * Parse an error to detect if it's a token limit error
  */
 export function parseTokenLimitError(
-  err: unknown
+  err: unknown,
 ): ParsedTokenLimitError | null {
   // Handle string errors
   if (typeof err === 'string') {
@@ -333,7 +333,7 @@ function getSessionState(sessionId: string): SessionState {
 function generateRecoveryMessage(
   parsed: ParsedTokenLimitError | null,
   state: SessionState,
-  config?: RecoveryConfig
+  config?: RecoveryConfig,
 ): { message?: string; errorType?: string } {
   // Use custom message if provided
   if (config?.customMessages?.context_window_limit) {
@@ -393,7 +393,7 @@ function generateRecoveryMessage(
 export function handleContextWindowRecovery(
   sessionId: string,
   error: unknown,
-  config?: RecoveryConfig
+  config?: RecoveryConfig,
 ): RecoveryResult {
   const parsed = parseTokenLimitError(error);
 

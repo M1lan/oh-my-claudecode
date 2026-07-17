@@ -23,8 +23,17 @@ import type {
 } from './types.js';
 import { validatePathSegment } from './paths.js';
 import { SessionLock, LockTimeoutError } from './session-lock.js';
-import { sendSocketRequest, SocketConnectionError, SocketTimeoutError, JsonRpcError } from './socket-client.js';
-import { ensureBridge, killBridgeWithEscalation, spawnBridgeServer } from './bridge-manager.js';
+import {
+  sendSocketRequest,
+  SocketConnectionError,
+  SocketTimeoutError,
+  JsonRpcError,
+} from './socket-client.js';
+import {
+  ensureBridge,
+  killBridgeWithEscalation,
+  spawnBridgeServer,
+} from './bridge-manager.js';
 
 // =============================================================================
 // CONSTANTS
@@ -54,7 +63,7 @@ export const pythonReplSchema = z.object({
         'execute (run Python code), ' +
         'interrupt (stop running code), ' +
         'reset (clear namespace), ' +
-        'get_state (memory and variables)'
+        'get_state (memory and variables)',
     ),
 
   researchSessionID: z
@@ -72,25 +81,31 @@ export const pythonReplSchema = z.object({
     .optional()
     .describe(
       'Human-readable label for this code execution. ' +
-        'Examples: "Load dataset", "Train model", "Generate plot"'
+        'Examples: "Load dataset", "Train model", "Generate plot"',
     ),
 
   executionTimeout: z
     .number()
     .positive()
     .default(DEFAULT_EXECUTION_TIMEOUT_MS)
-    .describe('Timeout for code execution in milliseconds (default: 300000 = 5 min)'),
+    .describe(
+      'Timeout for code execution in milliseconds (default: 300000 = 5 min)',
+    ),
 
   queueTimeout: z
     .number()
     .positive()
     .default(DEFAULT_QUEUE_TIMEOUT_MS)
-    .describe('Timeout for acquiring session lock in milliseconds (default: 30000 = 30 sec)'),
+    .describe(
+      'Timeout for acquiring session lock in milliseconds (default: 30000 = 30 sec)',
+    ),
 
   projectDir: z
     .string()
     .optional()
-    .describe('Project directory containing .venv/. Defaults to current working directory.'),
+    .describe(
+      'Project directory containing .venv/. Defaults to current working directory.',
+    ),
 });
 
 export type PythonReplSchemaInput = z.infer<typeof pythonReplSchema>;
@@ -123,7 +138,7 @@ function formatExecuteResult(
   result: ExecuteResult,
   sessionId: string,
   executionLabel?: string,
-  executionCount?: number
+  executionCount?: number,
 ): string {
   const lines: string[] = [];
 
@@ -191,7 +206,9 @@ function formatExecuteResult(
     lines.push('');
   }
 
-  lines.push(result.success ? '=== Execution Complete ===' : '=== Execution Failed ===');
+  lines.push(
+    result.success ? '=== Execution Complete ===' : '=== Execution Failed ===',
+  );
 
   return lines.join('\n');
 }
@@ -259,7 +276,7 @@ function formatResetResult(result: ResetResult, sessionId: string): string {
  */
 function formatInterruptResult(
   result: InterruptResult & { terminationTimeMs?: number },
-  sessionId: string
+  sessionId: string,
 ): string {
   const lines: string[] = [];
 
@@ -283,7 +300,10 @@ function formatInterruptResult(
 /**
  * Format a lock timeout error into a readable string.
  */
-function formatLockTimeoutError(error: LockTimeoutError, sessionId: string): string {
+function formatLockTimeoutError(
+  error: LockTimeoutError,
+  sessionId: string,
+): string {
   const lines: string[] = [];
 
   lines.push('=== Session Busy ===');
@@ -312,7 +332,10 @@ function formatLockTimeoutError(error: LockTimeoutError, sessionId: string): str
 /**
  * Format a socket connection error into a readable string.
  */
-function formatSocketError(error: SocketConnectionError, sessionId: string): string {
+function formatSocketError(
+  error: SocketConnectionError,
+  sessionId: string,
+): string {
   const lines: string[] = [];
 
   lines.push('=== Connection Error ===');
@@ -323,7 +346,9 @@ function formatSocketError(error: SocketConnectionError, sessionId: string): str
   lines.push('');
 
   lines.push('Troubleshooting:');
-  lines.push('  1. The bridge process may have crashed - retry will auto-restart');
+  lines.push(
+    '  1. The bridge process may have crashed - retry will auto-restart',
+  );
   lines.push('  2. Use "reset" action to force restart the bridge');
   lines.push('  3. Ensure .venv exists with Python installed');
 
@@ -333,7 +358,11 @@ function formatSocketError(error: SocketConnectionError, sessionId: string): str
 /**
  * Format a general error into a readable string.
  */
-function formatGeneralError(error: Error, sessionId: string, action: string): string {
+function formatGeneralError(
+  error: Error,
+  sessionId: string,
+  action: string,
+): string {
   const lines: string[] = [];
 
   lines.push('=== Error ===');
@@ -359,7 +388,7 @@ async function handleExecute(
   socketPath: string,
   code: string,
   executionTimeout: number,
-  executionLabel?: string
+  executionLabel?: string,
 ): Promise<string> {
   const executionCount = getNextExecutionCount(sessionId);
 
@@ -369,10 +398,15 @@ async function handleExecute(
       socketPath,
       'execute',
       { code, timeout: executionTimeout / 1000 },
-      executionTimeout + 10000 // Allow extra time for response
+      executionTimeout + 10000, // Allow extra time for response
     );
 
-    return formatExecuteResult(result, sessionId, executionLabel, executionCount);
+    return formatExecuteResult(
+      result,
+      sessionId,
+      executionLabel,
+      executionCount,
+    );
   } catch (error) {
     // Handle specific socket errors that might be recoverable
     if (error instanceof SocketConnectionError) {
@@ -413,9 +447,17 @@ async function handleExecute(
 /**
  * Handle the 'reset' action - clear the namespace.
  */
-async function handleReset(sessionId: string, socketPath: string): Promise<string> {
+async function handleReset(
+  sessionId: string,
+  socketPath: string,
+): Promise<string> {
   try {
-    const result = await sendSocketRequest<ResetResult>(socketPath, 'reset', {}, 10000);
+    const result = await sendSocketRequest<ResetResult>(
+      socketPath,
+      'reset',
+      {},
+      10000,
+    );
     return formatResetResult(result, sessionId);
   } catch (_error) {
     // If reset fails, try to kill and restart the bridge
@@ -436,9 +478,17 @@ async function handleReset(sessionId: string, socketPath: string): Promise<strin
 /**
  * Handle the 'get_state' action - retrieve memory and variables.
  */
-async function handleGetState(sessionId: string, socketPath: string): Promise<string> {
+async function handleGetState(
+  sessionId: string,
+  socketPath: string,
+): Promise<string> {
   try {
-    const result = await sendSocketRequest<StateResult>(socketPath, 'get_state', {}, 5000);
+    const result = await sendSocketRequest<StateResult>(
+      socketPath,
+      'get_state',
+      {},
+      5000,
+    );
     return formatStateResult(result, sessionId);
   } catch (error) {
     if (error instanceof SocketConnectionError) {
@@ -465,7 +515,7 @@ async function handleGetState(sessionId: string, socketPath: string): Promise<st
 async function handleInterrupt(
   sessionId: string,
   socketPath: string,
-  gracePeriodMs: number = 5000
+  gracePeriodMs: number = 5000,
 ): Promise<string> {
   // First try graceful interrupt via socket
   try {
@@ -473,7 +523,7 @@ async function handleInterrupt(
       socketPath,
       'interrupt',
       {},
-      Math.min(gracePeriodMs, 5000)
+      Math.min(gracePeriodMs, 5000),
     );
 
     return formatInterruptResult(
@@ -482,11 +532,13 @@ async function handleInterrupt(
         status: result.status || 'interrupted',
         terminatedBy: 'graceful',
       },
-      sessionId
+      sessionId,
     );
   } catch {
     // Graceful interrupt failed - escalate with signals
-    const escalationResult = await killBridgeWithEscalation(sessionId, { gracePeriodMs });
+    const escalationResult = await killBridgeWithEscalation(sessionId, {
+      gracePeriodMs,
+    });
 
     return formatInterruptResult(
       {
@@ -494,7 +546,7 @@ async function handleInterrupt(
         terminatedBy: escalationResult.terminatedBy,
         terminationTimeMs: escalationResult.terminationTimeMs,
       },
-      sessionId
+      sessionId,
     );
   }
 }
@@ -518,11 +570,15 @@ async function handleInterrupt(
  * });
  * ```
  */
-export async function pythonReplHandler(input: PythonReplInput): Promise<string> {
+export async function pythonReplHandler(
+  input: PythonReplInput,
+): Promise<string> {
   // Step 1: Validate input with Zod
   const parseResult = pythonReplSchema.safeParse(input);
   if (!parseResult.success) {
-    const errors = parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
+    const errors = parseResult.error.errors.map(
+      (e) => `${e.path.join('.')}: ${e.message}`,
+    );
     return [
       '=== Validation Error ===',
       '',
@@ -609,7 +665,7 @@ export async function pythonReplHandler(input: PythonReplInput): Promise<string>
             meta.socketPath,
             code!,
             executionTimeout,
-            executionLabel
+            executionLabel,
           );
         } catch (error) {
           // On connection error, try respawning the bridge once
@@ -621,14 +677,17 @@ export async function pythonReplHandler(input: PythonReplInput): Promise<string>
                 meta.socketPath,
                 code!,
                 executionTimeout,
-                executionLabel
+                executionLabel,
               );
             } catch (retryError) {
               return formatSocketError(
                 retryError instanceof SocketConnectionError
                   ? retryError
-                  : new SocketConnectionError((retryError as Error).message, meta.socketPath),
-                sessionId
+                  : new SocketConnectionError(
+                      (retryError as Error).message,
+                      meta.socketPath,
+                    ),
+                sessionId,
               );
             }
           }

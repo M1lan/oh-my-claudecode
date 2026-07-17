@@ -108,7 +108,7 @@ export function saveConfig(config: Partial<LearnerConfig>): boolean {
  */
 function mergeConfig(
   defaults: LearnerConfig,
-  partial: Partial<LearnerConfig>
+  partial: Partial<LearnerConfig>,
 ): LearnerConfig {
   return {
     enabled: partial.enabled ?? defaults.enabled,
@@ -131,7 +131,7 @@ function mergeConfig(
  * Get a specific config value.
  */
 export function getConfigValue<K extends keyof LearnerConfig>(
-  key: K
+  key: K,
 ): LearnerConfig[K] {
   const config = loadConfig();
   return config[key];
@@ -142,7 +142,7 @@ export function getConfigValue<K extends keyof LearnerConfig>(
  */
 export function setConfigValue<K extends keyof LearnerConfig>(
   key: K,
-  value: LearnerConfig[K]
+  value: LearnerConfig[K],
 ): boolean {
   const config = loadConfig();
   config[key] = value;

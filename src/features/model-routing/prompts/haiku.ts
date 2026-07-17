@@ -144,11 +144,14 @@ OUTPUT:
 /**
  * Create minimal documentation prompt
  */
-export function createDocPrompt(target: string, requirements: string[]): string {
+export function createDocPrompt(
+  target: string,
+  requirements: string[],
+): string {
   return `DOCUMENT: ${target}
 
 INCLUDE:
-${requirements.map(r => `- ${r}`).join('\n')}
+${requirements.map((r) => `- ${r}`).join('\n')}
 
 FORMAT: Markdown
 VERIFY: Code examples work`;

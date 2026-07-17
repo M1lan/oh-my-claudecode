@@ -10,7 +10,11 @@
  * - Fixes issues found and re-verifies
  */
 
-import type { PipelineStageAdapter, PipelineConfig, PipelineContext } from '../pipeline-types.js';
+import type {
+  PipelineStageAdapter,
+  PipelineConfig,
+  PipelineContext,
+} from '../pipeline-types.js';
 
 export const RALPH_COMPLETION_SIGNAL = 'PIPELINE_RALPH_COMPLETE';
 
@@ -25,9 +29,10 @@ export const ralphAdapter: PipelineStageAdapter = {
 
   getPrompt(context: PipelineContext): string {
     const specPath = context.specPath || '.omc/autopilot/spec.md';
-    const maxIterations = context.config.verification !== false
-      ? context.config.verification.maxIterations
-      : 100;
+    const maxIterations =
+      context.config.verification !== false
+        ? context.config.verification.maxIterations
+        : 100;
 
     return `## PIPELINE STAGE: RALPH (Verification)
 

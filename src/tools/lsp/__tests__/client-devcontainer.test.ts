@@ -8,11 +8,11 @@ import type { DevContainerContext } from '../devcontainer.js';
 
 vi.mock('../servers.js', () => ({
   getServerForFile: vi.fn(),
-  commandExists: vi.fn(() => true)
+  commandExists: vi.fn(() => true),
 }));
 
 vi.mock('child_process', () => ({
-  spawn: vi.fn()
+  spawn: vi.fn(),
 }));
 
 const mockSpawn = vi.mocked(spawn);
@@ -48,12 +48,14 @@ describe('LspClient devcontainer support', () => {
               setTimeout(() => {
                 stdoutHandler?.(
                   Buffer.from(
-                    buildLspMessage(JSON.stringify({
-                      jsonrpc: '2.0',
-                      id: parsed.id,
-                      result: { capabilities: {} }
-                    }))
-                  )
+                    buildLspMessage(
+                      JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: parsed.id,
+                        result: { capabilities: {} },
+                      }),
+                    ),
+                  ),
                 );
               }, 0);
             }
@@ -66,18 +68,20 @@ describe('LspClient devcontainer support', () => {
               setTimeout(() => {
                 stdoutHandler?.(
                   Buffer.from(
-                    buildLspMessage(JSON.stringify({
-                      jsonrpc: '2.0',
-                      id: parsed.id,
-                      result: {
-                        uri: 'file:///workspaces/app/src/index.ts',
-                        range: {
-                          start: { line: 0, character: 0 },
-                          end: { line: 0, character: 5 }
-                        }
-                      }
-                    }))
-                  )
+                    buildLspMessage(
+                      JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: parsed.id,
+                        result: {
+                          uri: 'file:///workspaces/app/src/index.ts',
+                          range: {
+                            start: { line: 0, character: 0 },
+                            end: { line: 0, character: 5 },
+                          },
+                        },
+                      }),
+                    ),
+                  ),
                 );
               }, 0);
             }
@@ -86,28 +90,30 @@ describe('LspClient devcontainer support', () => {
               setTimeout(() => {
                 stdoutHandler?.(
                   Buffer.from(
-                    buildLspMessage(JSON.stringify({
-                      jsonrpc: '2.0',
-                      id: parsed.id,
-                      result: nextRenameResult ?? null
-                    }))
-                  )
+                    buildLspMessage(
+                      JSON.stringify({
+                        jsonrpc: '2.0',
+                        id: parsed.id,
+                        result: nextRenameResult ?? null,
+                      }),
+                    ),
+                  ),
                 );
               }, 0);
             }
-          })
+          }),
         },
         stdout: {
           on: vi.fn((event: string, cb: (data: Buffer) => void) => {
             if (event === 'data') {
               stdoutHandler = cb;
             }
-          })
+          }),
         },
         stderr: { on: vi.fn() },
         on: vi.fn(),
         kill: vi.fn(),
-        pid: 12345
+        pid: 12345,
       };
 
       return proc as unknown as ReturnType<typeof spawn>;
@@ -124,28 +130,40 @@ describe('LspClient devcontainer support', () => {
     const context: DevContainerContext = {
       containerId: 'container-123',
       hostWorkspaceRoot: workspaceRoot,
-      containerWorkspaceRoot: '/workspaces/app'
+      containerWorkspaceRoot: '/workspaces/app',
     };
 
-    const client = new LspClient(workspaceRoot, {
-      name: 'test-server',
-      command: 'typescript-language-server',
-      args: ['--stdio'],
-      extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
-    }, context);
+    const client = new LspClient(
+      workspaceRoot,
+      {
+        name: 'test-server',
+        command: 'typescript-language-server',
+        args: ['--stdio'],
+        extensions: ['.ts'],
+        installHint: 'pnpm add -g typescript-language-server',
+      },
+      context,
+    );
 
     await client.connect();
     await client.openDocument(filePath);
 
     expect(mockSpawn).toHaveBeenCalledWith(
       'docker',
-      ['exec', '-i', '-w', '/workspaces/app', 'container-123', 'typescript-language-server', '--stdio'],
+      [
+        'exec',
+        '-i',
+        '-w',
+        '/workspaces/app',
+        'container-123',
+        'typescript-language-server',
+        '--stdio',
+      ],
       expect.objectContaining({
         cwd: workspaceRoot,
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: false
-      })
+        shell: false,
+      }),
     );
     expect(lastDidOpenUri).toBe('file:///workspaces/app/src/index.ts');
   });
@@ -155,16 +173,20 @@ describe('LspClient devcontainer support', () => {
     const context: DevContainerContext = {
       containerId: 'container-123',
       hostWorkspaceRoot: workspaceRoot,
-      containerWorkspaceRoot: '/workspaces/app'
+      containerWorkspaceRoot: '/workspaces/app',
     };
 
-    const client = new LspClient(workspaceRoot, {
-      name: 'test-server',
-      command: 'typescript-language-server',
-      args: ['--stdio'],
-      extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
-    }, context);
+    const client = new LspClient(
+      workspaceRoot,
+      {
+        name: 'test-server',
+        command: 'typescript-language-server',
+        args: ['--stdio'],
+        extensions: ['.ts'],
+        installHint: 'pnpm add -g typescript-language-server',
+      },
+      context,
+    );
 
     await client.connect();
     (client as any).handleNotification({
@@ -172,8 +194,16 @@ describe('LspClient devcontainer support', () => {
       method: 'textDocument/publishDiagnostics',
       params: {
         uri: 'file:///workspaces/app/src/index.ts',
-        diagnostics: [{ message: 'boom', range: { start: { line: 0, character: 0 }, end: { line: 0, character: 1 } } }]
-      }
+        diagnostics: [
+          {
+            message: 'boom',
+            range: {
+              start: { line: 0, character: 0 },
+              end: { line: 0, character: 1 },
+            },
+          },
+        ],
+      },
     });
 
     const diagnostics = client.getDiagnostics(filePath);
@@ -185,8 +215,8 @@ describe('LspClient devcontainer support', () => {
       uri: pathToFileURL(filePath).href,
       range: {
         start: { line: 0, character: 0 },
-        end: { line: 0, character: 5 }
-      }
+        end: { line: 0, character: 5 },
+      },
     });
   });
 
@@ -195,33 +225,42 @@ describe('LspClient devcontainer support', () => {
     const context: DevContainerContext = {
       containerId: 'container-123',
       hostWorkspaceRoot: workspaceRoot,
-      containerWorkspaceRoot: '/workspaces/app'
+      containerWorkspaceRoot: '/workspaces/app',
     };
 
-    const client = new LspClient(workspaceRoot, {
-      name: 'test-server',
-      command: 'typescript-language-server',
-      args: ['--stdio'],
-      extensions: ['.ts'],
-      installHint: 'npm i -g typescript-language-server'
-    }, context);
+    const client = new LspClient(
+      workspaceRoot,
+      {
+        name: 'test-server',
+        command: 'typescript-language-server',
+        args: ['--stdio'],
+        extensions: ['.ts'],
+        installHint: 'pnpm add -g typescript-language-server',
+      },
+      context,
+    );
 
     await client.connect();
     nextRenameResult = {
-      documentChanges: [{
-        kind: 'rename',
-        oldUri: 'file:///workspaces/app/src/index.ts',
-        newUri: 'file:///workspaces/app/src/index-renamed.ts'
-      }]
+      documentChanges: [
+        {
+          kind: 'rename',
+          oldUri: 'file:///workspaces/app/src/index.ts',
+          newUri: 'file:///workspaces/app/src/index-renamed.ts',
+        },
+      ],
     };
 
     const edit = await client.rename(filePath, 0, 0, 'renamedValue');
     expect(edit).toEqual({
-      documentChanges: [{
-        kind: 'rename',
-        oldUri: pathToFileURL(filePath).href,
-        newUri: pathToFileURL(join(workspaceRoot, 'src', 'index-renamed.ts')).href
-      }]
+      documentChanges: [
+        {
+          kind: 'rename',
+          oldUri: pathToFileURL(filePath).href,
+          newUri: pathToFileURL(join(workspaceRoot, 'src', 'index-renamed.ts'))
+            .href,
+        },
+      ],
     });
   });
 });

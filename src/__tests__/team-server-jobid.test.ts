@@ -9,7 +9,9 @@ describe('team-server job ID entropy', () => {
   );
 
   it('imports randomUUID from node:crypto', () => {
-    expect(serverSource).toMatch(/import\s*\{[^}]*randomUUID[^}]*\}\s*from\s*['"]node:crypto['"]/);
+    expect(serverSource).toMatch(
+      /import\s*\{[^}]*randomUUID[^}]*\}\s*from\s*['"]node:crypto['"]/,
+    );
   });
 
   it('uses randomUUID in job ID generation', () => {

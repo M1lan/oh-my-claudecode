@@ -19,12 +19,13 @@ import type { CanonicalTeamRole } from '../shared/types.js';
 import type { CliAgentType } from './model-contract.js';
 
 /** Roles that emit a structured verdict and therefore use the output-file contract. */
-export const CONTRACT_ROLES: ReadonlySet<CanonicalTeamRole> = new Set<CanonicalTeamRole>([
-  'critic',
-  'code-reviewer',
-  'security-reviewer',
-  'test-engineer',
-]);
+export const CONTRACT_ROLES: ReadonlySet<CanonicalTeamRole> =
+  new Set<CanonicalTeamRole>([
+    'critic',
+    'code-reviewer',
+    'security-reviewer',
+    'test-engineer',
+  ]);
 
 export type CliWorkerVerdict = 'approve' | 'revise' | 'reject';
 
@@ -45,8 +46,17 @@ export interface CliWorkerOutputPayload {
   findings: CliWorkerFinding[];
 }
 
-const VALID_VERDICTS: ReadonlySet<string> = new Set(['approve', 'revise', 'reject']);
-const VALID_SEVERITIES: ReadonlySet<string> = new Set(['critical', 'major', 'minor', 'nit']);
+const VALID_VERDICTS: ReadonlySet<string> = new Set([
+  'approve',
+  'revise',
+  'reject',
+]);
+const VALID_SEVERITIES: ReadonlySet<string> = new Set([
+  'critical',
+  'major',
+  'minor',
+  'nit',
+]);
 
 /**
  * Returns true when a role + provider pair requires the verdict-output contract.
@@ -162,7 +172,9 @@ export function parseCliWorkerVerdict(raw: string): CliWorkerOutputPayload {
     const f = entry as Record<string, unknown>;
     const severity = f.severity;
     if (typeof severity !== 'string' || !VALID_SEVERITIES.has(severity)) {
-      throw new Error(`verdict_finding_${idx}_invalid_severity:${String(severity)}`);
+      throw new Error(
+        `verdict_finding_${idx}_invalid_severity:${String(severity)}`,
+      );
     }
     const message = f.message;
     if (typeof message !== 'string' || !message) {
@@ -173,7 +185,8 @@ export function parseCliWorkerVerdict(raw: string): CliWorkerOutputPayload {
       message,
     };
     if (typeof f.file === 'string' && f.file) finding.file = f.file;
-    if (typeof f.line === 'number' && Number.isFinite(f.line)) finding.line = f.line;
+    if (typeof f.line === 'number' && Number.isFinite(f.line))
+      finding.line = f.line;
     return finding;
   });
 

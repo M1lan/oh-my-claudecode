@@ -1,6 +1,9 @@
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { getOmcRoot, resolveSessionStatePath } from '../../lib/worktree-paths.js';
+import {
+  getOmcRoot,
+  resolveSessionStatePath,
+} from '../../lib/worktree-paths.js';
 import { readHudState } from '../../hud/state.js';
 import type { BackgroundTask } from '../../hud/types.js';
 import type { TeamTask, WorkerStatus } from '../../team/types.js';
@@ -36,7 +39,6 @@ function redactRuntimeInsightText(value: string): string {
     .slice(0, RUNTIME_INSIGHT_MAX_FIELD_LENGTH);
 }
 
-
 function readJsonSafe<T>(path: string): T | null {
   try {
     if (!existsSync(path)) {
@@ -52,7 +54,10 @@ function getTaskDependencyIds(task: TeamTask): string[] {
   return task.depends_on ?? task.blocked_by ?? [];
 }
 
-function getTeamNamesForRuntimeInsight(directory: string, sessionId?: string): string[] {
+function getTeamNamesForRuntimeInsight(
+  directory: string,
+  sessionId?: string,
+): string[] {
   const teamRoot = join(getOmcRoot(directory), 'state', 'team');
   if (!existsSync(teamRoot)) {
     return [];
@@ -87,19 +92,26 @@ function getTeamNamesForRuntimeInsight(directory: string, sessionId?: string): s
   return teamNames.filter((teamName) => scopedTeamNames.has(teamName));
 }
 
-function getWorkflowProgress(directory: string, sessionId?: string): string | null {
+function getWorkflowProgress(
+  directory: string,
+  sessionId?: string,
+): string | null {
   const statePath = sessionId
     ? resolveSessionStatePath('autopilot', sessionId, directory)
     : join(getOmcRoot(directory), 'state', 'autopilot-state.json');
   const state = readJsonSafe<Record<string, unknown>>(statePath);
   const workflow = state?.workflow as Record<string, unknown> | undefined;
-  const tracking = state?.pipelineTracking as Record<string, unknown> | undefined;
+  const tracking = state?.pipelineTracking as
+    | Record<string, unknown>
+    | undefined;
   const stages = Array.isArray(workflow?.stages) ? workflow.stages : null;
   const index = tracking?.currentStageIndex;
   const allowedStages = new Set(['ralplan', 'execution', 'ralph', 'qa']);
   if (
     !stages ||
-    !stages.every((stage) => typeof stage === 'string' && allowedStages.has(stage)) ||
+    !stages.every(
+      (stage) => typeof stage === 'string' && allowedStages.has(stage),
+    ) ||
     typeof index !== 'number' ||
     !Number.isInteger(index) ||
     index < 0 ||
@@ -110,7 +122,10 @@ function getWorkflowProgress(directory: string, sessionId?: string): string | nu
   return `${stages[index] ?? 'complete'} ${Math.min(index + 1, stages.length)}/${stages.length}`;
 }
 
-function collectRuntimeInsight(directory: string, sessionId?: string): RuntimeInsightSnapshot {
+function collectRuntimeInsight(
+  directory: string,
+  sessionId?: string,
+): RuntimeInsightSnapshot {
   const missingDependencyIssues: MissingDependencyIssue[] = [];
   const workerIssues: WorkerIssue[] = [];
 
@@ -129,8 +144,9 @@ function collectRuntimeInsight(directory: string, sessionId?: string): RuntimeIn
 
     const taskById = new Map(tasks.map((task) => [task.id, task] as const));
     for (const task of tasks) {
-      const missingDependencyIds = getTaskDependencyIds(task)
-        .filter((dependencyId) => !taskById.has(dependencyId));
+      const missingDependencyIds = getTaskDependencyIds(task).filter(
+        (dependencyId) => !taskById.has(dependencyId),
+      );
       if (missingDependencyIds.length > 0) {
         missingDependencyIssues.push({
           teamName,
@@ -142,8 +158,14 @@ function collectRuntimeInsight(directory: string, sessionId?: string): RuntimeIn
 
     if (existsSync(workersDir)) {
       for (const workerName of readdirSync(workersDir)) {
-        const status = readJsonSafe<WorkerStatus>(join(workersDir, workerName, 'status.json'));
-        if (!status || typeof status.reason !== 'string' || status.reason.trim().length === 0) {
+        const status = readJsonSafe<WorkerStatus>(
+          join(workersDir, workerName, 'status.json'),
+        );
+        if (
+          !status ||
+          typeof status.reason !== 'string' ||
+          status.reason.trim().length === 0
+        ) {
           continue;
         }
         if (status.state !== 'blocked' && status.state !== 'failed') {
@@ -168,7 +190,9 @@ function collectRuntimeInsight(directory: string, sessionId?: string): RuntimeIn
       const rightAt = new Date(right.completedAt ?? right.startedAt).getTime();
       return rightAt - leftAt;
     });
-  const runningBackgroundTasks = backgroundTasks.filter((task) => task.status === 'running');
+  const runningBackgroundTasks = backgroundTasks.filter(
+    (task) => task.status === 'running',
+  );
   const workflowProgress = getWorkflowProgress(directory, sessionId);
 
   return {
@@ -203,7 +227,6 @@ export function formatAutopilotRuntimeInsight(
     for (const issue of snapshot.workerIssues.slice(0, 3)) {
       lines.push(
         `- [${redactRuntimeInsightText(issue.teamName)}] ${redactRuntimeInsightText(issue.workerName)} is ${issue.state}: ${redactRuntimeInsightText(issue.reason)}`,
-
       );
     }
   }
@@ -212,8 +235,9 @@ export function formatAutopilotRuntimeInsight(
     lines.push(lines.length === 0 ? 'Recent errors:' : 'Recent errors:');
     for (const task of snapshot.failedBackgroundTasks.slice(0, 3)) {
       const agentLabel = task.agentType ? ` (${task.agentType})` : '';
-      lines.push(`- background task failed${agentLabel}: ${redactRuntimeInsightText(task.description)}`);
-
+      lines.push(
+        `- background task failed${agentLabel}: ${redactRuntimeInsightText(task.description)}`,
+      );
     }
   }
 
@@ -221,8 +245,9 @@ export function formatAutopilotRuntimeInsight(
     lines.push('Live progress:');
     for (const task of snapshot.runningBackgroundTasks.slice(0, 3)) {
       const agentLabel = task.agentType ? ` (${task.agentType})` : '';
-      lines.push(`- running${agentLabel}: ${redactRuntimeInsightText(task.description)}`);
-
+      lines.push(
+        `- running${agentLabel}: ${redactRuntimeInsightText(task.description)}`,
+      );
     }
   }
 
@@ -230,5 +255,7 @@ export function formatAutopilotRuntimeInsight(
     lines.push(`Workflow progress: ${snapshot.workflowProgress}`);
   }
 
-  return lines.length > 0 ? lines.join('\n').slice(0, RUNTIME_INSIGHT_MAX_LENGTH) : '';
+  return lines.length > 0
+    ? lines.join('\n').slice(0, RUNTIME_INSIGHT_MAX_LENGTH)
+    : '';
 }

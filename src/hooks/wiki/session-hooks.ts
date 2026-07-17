@@ -37,7 +37,6 @@ export interface WikiSessionEndCaptureIntent {
   capturedAt: string;
   /** Durable intent identity; safe to persist because it is a one-way digest. */
   captureKey?: string;
-
 }
 
 export interface WikiSessionEndCommitOptions {
@@ -47,24 +46,37 @@ export interface WikiSessionEndCommitOptions {
   lockTimeoutMs?: number;
 }
 
-function captureKeyFor(intent: Pick<WikiSessionEndCaptureIntent, 'sessionId' | 'filename' | 'capturedAt' | 'captureKey'>): string {
-  if (typeof intent.captureKey === 'string' && /^[a-f0-9]{64}$/.test(intent.captureKey)) {
+function captureKeyFor(
+  intent: Pick<
+    WikiSessionEndCaptureIntent,
+    'sessionId' | 'filename' | 'capturedAt' | 'captureKey'
+  >,
+): string {
+  if (
+    typeof intent.captureKey === 'string' &&
+    /^[a-f0-9]{64}$/.test(intent.captureKey)
+  ) {
     return intent.captureKey;
   }
   return createHash('sha256')
-    .update(`${intent.sessionId}\u0000${intent.filename}\u0000${intent.capturedAt}`)
+    .update(
+      `${intent.sessionId}\u0000${intent.filename}\u0000${intent.capturedAt}`,
+    )
     .digest('hex');
 }
 
-
-function pageHasCaptureKey(page: ReturnType<typeof readPage>, captureKey: string): boolean {
-  return page?.content.includes(`<!-- omc-wiki-capture:${captureKey} -->`) ?? false;
+function pageHasCaptureKey(
+  page: ReturnType<typeof readPage>,
+  captureKey: string,
+): boolean {
+  return (
+    page?.content.includes(`<!-- omc-wiki-capture:${captureKey} -->`) ?? false
+  );
 }
 
 function logHasCaptureKey(root: string, captureKey: string): boolean {
   return readLog(root)?.includes(`omc-wiki-capture:${captureKey}`) ?? false;
 }
-
 
 function isBeforeDeadline(deadlineAt: number | undefined): boolean {
   return deadlineAt === undefined || Date.now() <= deadlineAt;
@@ -107,12 +119,14 @@ function loadWikiConfig(root: string): WikiConfig {
  * Build a JSON-safe SessionEnd capture intent without taking the wiki lock or
  * mutating the filesystem. The manifest worker durably owns and commits it.
  */
-export function buildWikiSessionEndCaptureIntent(
-  data: { cwd?: string; session_id?: string },
-): WikiSessionEndCaptureIntent | null {
+export function buildWikiSessionEndCaptureIntent(data: {
+  cwd?: string;
+  session_id?: string;
+}): WikiSessionEndCaptureIntent | null {
   try {
     const root = data.cwd || process.cwd();
-    if (!loadWikiConfig(root).autoCapture || !existsSync(getWikiDir(root))) return null;
+    if (!loadWikiConfig(root).autoCapture || !existsSync(getWikiDir(root)))
+      return null;
 
     const sessionId = data.session_id || `session-${Date.now()}`;
     const capturedAt = new Date().toISOString();
@@ -144,46 +158,53 @@ export function commitWikiSessionEndCaptureIntent(
   try {
     const captureKey = captureKeyFor(intent);
     let committed = false;
-    withWikiLock(intent.root, () => {
-      if (!isBeforeDeadline(options.deadlineAt)) return;
+    withWikiLock(
+      intent.root,
+      () => {
+        if (!isBeforeDeadline(options.deadlineAt)) return;
 
-      const existingPage = readPage(intent.root, intent.filename);
-      if (!pageHasCaptureKey(existingPage, captureKey)) {
-        const dateSlug = intent.capturedAt.split('T')[0] ?? 'unknown-date';
-        writePageUnsafe(intent.root, {
-          filename: intent.filename,
-          frontmatter: {
-            title: `Session Log ${dateSlug}`,
-            tags: ['session-log', 'auto-captured'],
-            created: intent.capturedAt,
-            updated: intent.capturedAt,
-            sources: [intent.sessionId],
-            links: [],
-            category: 'session-log',
-            confidence: 'medium',
-            schemaVersion: WIKI_SCHEMA_VERSION,
-          },
-          content: `\n# Session Log ${dateSlug}\n\nAuto-captured session metadata.\nSession ID: ${intent.sessionId}\n<!-- omc-wiki-capture:${captureKey} -->\n\nReview and promote significant findings to curated wiki pages via \`wiki_ingest\`.\n`,
-        });
-      }
+        const existingPage = readPage(intent.root, intent.filename);
+        if (!pageHasCaptureKey(existingPage, captureKey)) {
+          const dateSlug = intent.capturedAt.split('T')[0] ?? 'unknown-date';
+          writePageUnsafe(intent.root, {
+            filename: intent.filename,
+            frontmatter: {
+              title: `Session Log ${dateSlug}`,
+              tags: ['session-log', 'auto-captured'],
+              created: intent.capturedAt,
+              updated: intent.capturedAt,
+              sources: [intent.sessionId],
+              links: [],
+              category: 'session-log',
+              confidence: 'medium',
+              schemaVersion: WIKI_SCHEMA_VERSION,
+            },
+            content: `\n# Session Log ${dateSlug}\n\nAuto-captured session metadata.\nSession ID: ${intent.sessionId}\n<!-- omc-wiki-capture:${captureKey} -->\n\nReview and promote significant findings to curated wiki pages via \`wiki_ingest\`.\n`,
+          });
+        }
 
-      if (!isBeforeDeadline(options.deadlineAt)) return;
-      if (!logHasCaptureKey(intent.root, captureKey)) {
-        appendLogUnsafe(intent.root, {
-          timestamp: intent.capturedAt,
-          operation: 'ingest',
-          pagesAffected: [intent.filename],
-          summary: `Auto-captured session log for ${intent.sessionId} (omc-wiki-capture:${captureKey})`,
-        });
-      }
+        if (!isBeforeDeadline(options.deadlineAt)) return;
+        if (!logHasCaptureKey(intent.root, captureKey)) {
+          appendLogUnsafe(intent.root, {
+            timestamp: intent.capturedAt,
+            operation: 'ingest',
+            pagesAffected: [intent.filename],
+            summary: `Auto-captured session log for ${intent.sessionId} (omc-wiki-capture:${captureKey})`,
+          });
+        }
 
-      if (!isBeforeDeadline(options.deadlineAt)) return;
-      committed = pageHasCaptureKey(readPage(intent.root, intent.filename), captureKey)
-        && logHasCaptureKey(intent.root, captureKey);
-    }, {
-      deadlineAt: options.deadlineAt,
-      timeoutMs: options.lockTimeoutMs,
-    });
+        if (!isBeforeDeadline(options.deadlineAt)) return;
+        committed =
+          pageHasCaptureKey(
+            readPage(intent.root, intent.filename),
+            captureKey,
+          ) && logHasCaptureKey(intent.root, captureKey);
+      },
+      {
+        deadlineAt: options.deadlineAt,
+        timeoutMs: options.lockTimeoutMs,
+      },
+    );
     return committed;
   } catch {
     return false;
@@ -197,7 +218,9 @@ export function commitWikiSessionEndCaptureIntent(
  * 2. Feed project-memory into environment.md if newer
  * 3. Return context summary for injection
  */
-export function onSessionStart(data: { cwd?: string }): { additionalContext?: string } {
+export function onSessionStart(data: { cwd?: string }): {
+  additionalContext?: string;
+} {
   try {
     const root = data.cwd || process.cwd();
     const wikiDir = getWikiDir(root);
@@ -212,7 +235,9 @@ export function onSessionStart(data: { cwd?: string }): { additionalContext?: st
       const indexContent = readIndex(root);
       if (!indexContent) {
         // Index missing — rebuild
-        withWikiLock(root, () => { updateIndexUnsafe(root); });
+        withWikiLock(root, () => {
+          updateIndexUnsafe(root);
+        });
       }
     }
 
@@ -242,14 +267,18 @@ export function onSessionStart(data: { cwd?: string }): { additionalContext?: st
  * writes and never acquires the wiki lock; the session wrapper enqueues the
  * intent for the manifest worker to commit.
  */
-export function onSessionEnd(_data: { cwd?: string; session_id?: string }): { continue: boolean } {
+export function onSessionEnd(_data: { cwd?: string; session_id?: string }): {
+  continue: boolean;
+} {
   return { continue: true };
 }
 
 /**
  * PreCompact hook: inject wiki summary for compaction survival.
  */
-export function onPreCompact(data: { cwd?: string }): { additionalContext?: string } {
+export function onPreCompact(data: { cwd?: string }): {
+  additionalContext?: string;
+} {
   try {
     const root = data.cwd || process.cwd();
     const pages = listPages(root);
@@ -257,11 +286,14 @@ export function onPreCompact(data: { cwd?: string }): { additionalContext?: stri
     if (pages.length === 0) return {};
 
     const allPages = readAllPages(root);
-    const categories = [...new Set(allPages.map(p => p.frontmatter.category))];
-    const latestUpdate = allPages
-      .map(p => p.frontmatter.updated)
-      .sort()
-      .reverse()[0] || 'unknown';
+    const categories = [
+      ...new Set(allPages.map((p) => p.frontmatter.category)),
+    ];
+    const latestUpdate =
+      allPages
+        .map((p) => p.frontmatter.updated)
+        .sort()
+        .reverse()[0] || 'unknown';
 
     return {
       additionalContext: `[Wiki: ${pages.length} pages | categories: ${categories.join(', ')} | last updated: ${latestUpdate}]`,
@@ -312,7 +344,8 @@ function feedProjectMemory(root: string): void {
           .join(', ');
         if (names) lines.push(`**Frameworks:** ${names}`);
       }
-      if (ts.packageManager) lines.push(`**Package Manager:** ${ts.packageManager}`);
+      if (ts.packageManager)
+        lines.push(`**Package Manager:** ${ts.packageManager}`);
       if (ts.runtime) lines.push(`**Runtime:** ${ts.runtime}`);
       lines.push('');
     }

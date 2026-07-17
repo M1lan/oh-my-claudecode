@@ -44,7 +44,10 @@ function getCachedRemoteUrl(cwd: string): string | null | undefined {
 }
 
 function setCachedRemoteUrl(cwd: string, url: string | null): void {
-  remoteUrlCache.set(cwd, { url, expiresAt: Date.now() + REMOTE_URL_CACHE_TTL_MS });
+  remoteUrlCache.set(cwd, {
+    url,
+    expiresAt: Date.now() + REMOTE_URL_CACHE_TTL_MS,
+  });
 }
 
 function getRemoteUrl(cwd?: string): string | null {
@@ -82,7 +85,11 @@ export function detectProvider(remoteUrl: string): ProviderName {
   const host = rawHost.replace(/:\d+$/, ''); // strip port for matching
 
   // Azure DevOps (check before generic patterns)
-  if (host.includes('dev.azure.com') || host.includes('ssh.dev.azure.com') || host.endsWith('.visualstudio.com')) {
+  if (
+    host.includes('dev.azure.com') ||
+    host.includes('ssh.dev.azure.com') ||
+    host.endsWith('.visualstudio.com')
+  ) {
     return 'azure-devops';
   }
 
@@ -124,7 +131,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps HTTPS: https://dev.azure.com/{org}/{project}/_git/{repo}
   const azureHttpsMatch = trimmed.match(
-    /https?:\/\/dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/dev\.azure\.com\/([^/]+)\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureHttpsMatch) {
     return {
@@ -137,7 +144,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps SSH: git@ssh.dev.azure.com:v3/{org}/{project}/{repo}
   const azureSshMatch = trimmed.match(
-    /git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/\s]+?)(?:\.git)?$/
+    /git@ssh\.dev\.azure\.com:v3\/([^/]+)\/([^/]+)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureSshMatch) {
     return {
@@ -150,7 +157,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Azure DevOps legacy HTTPS: https://{org}.visualstudio.com/{project}/_git/{repo}
   const azureLegacyMatch = trimmed.match(
-    /https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/([^.]+)\.visualstudio\.com\/([^/]+)\/_git\/([^/\s]+?)(?:\.git)?$/,
   );
   if (azureLegacyMatch) {
     return {
@@ -163,7 +170,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // Standard HTTPS: https://host/owner/repo.git (supports nested groups like group/subgroup/repo)
   const httpsMatch = trimmed.match(
-    /https?:\/\/([^/]+)\/(.+?)\/([^/\s]+?)(?:\.git)?$/
+    /https?:\/\/([^/]+)\/(.+?)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (httpsMatch) {
     const host = httpsMatch[1];
@@ -177,7 +184,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
 
   // SSH URL-style: ssh://git@host[:port]/owner/repo.git (must check before SCP-style)
   const sshUrlMatch = trimmed.match(
-    /ssh:\/\/git@([^/:]+)(?::\d+)?\/(.+?)\/([^/\s]+?)(?:\.git)?$/
+    /ssh:\/\/git@([^/:]+)(?::\d+)?\/(.+?)\/([^/\s]+?)(?:\.git)?$/,
   );
   if (sshUrlMatch) {
     const host = sshUrlMatch[1];
@@ -190,9 +197,7 @@ export function parseRemoteUrl(url: string): RemoteUrlInfo | null {
   }
 
   // SSH SCP-style: git@host:owner/repo.git (supports nested groups like group/subgroup/repo)
-  const sshMatch = trimmed.match(
-    /git@([^:]+):(.+?)\/([^/\s]+?)(?:\.git)?$/
-  );
+  const sshMatch = trimmed.match(/git@([^:]+):(.+?)\/([^/\s]+?)(?:\.git)?$/);
   if (sshMatch) {
     const host = sshMatch[1];
     return {
@@ -263,4 +268,10 @@ export function getProviderFromCwd(cwd?: string): GitProvider | null {
 }
 
 // Re-export types for convenience
-export type { ProviderName, RemoteUrlInfo, GitProvider, PRInfo, IssueInfo } from './types.js';
+export type {
+  ProviderName,
+  RemoteUrlInfo,
+  GitProvider,
+  PRInfo,
+  IssueInfo,
+} from './types.js';

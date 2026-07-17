@@ -123,7 +123,7 @@ const prompt = createDelegationPrompt('MEDIUM', 'Add rate limiting middleware', 
     'Read to examine existing middleware',
     'Edit to modify route configuration',
     'Write to create new middleware file',
-    'Bash to run tests (npm test)'
+    'Bash to run tests (pnpm test)'
   ]
 });
 ```

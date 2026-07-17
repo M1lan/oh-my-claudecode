@@ -44,7 +44,9 @@ describe('Task System Support', () => {
     it('should return correct path for session ID', () => {
       const sessionId = 'abc123';
       const result = getTaskDirectory(sessionId);
-      expect(result).toBe(path.join(mockHomedir, '.claude', 'tasks', sessionId));
+      expect(result).toBe(
+        path.join(mockHomedir, '.claude', 'tasks', sessionId),
+      );
     });
 
     it('should handle session ID with special characters', () => {
@@ -66,7 +68,7 @@ describe('Task System Support', () => {
       const validTask = {
         id: '1',
         subject: 'Test task',
-        status: 'pending'
+        status: 'pending',
       };
       expect(isValidTask(validTask)).toBe(true);
     });
@@ -79,7 +81,7 @@ describe('Task System Support', () => {
         activeForm: 'Testing task',
         status: 'pending',
         blocks: ['2', '3'],
-        blockedBy: ['0']
+        blockedBy: ['0'],
       };
       expect(isValidTask(fullTask)).toBe(true);
     });
@@ -97,7 +99,9 @@ describe('Task System Support', () => {
     });
 
     it('should return false for empty id', () => {
-      expect(isValidTask({ id: '', subject: 'Test', status: 'pending' })).toBe(false);
+      expect(isValidTask({ id: '', subject: 'Test', status: 'pending' })).toBe(
+        false,
+      );
     });
 
     it('should return false for missing subject', () => {
@@ -105,7 +109,9 @@ describe('Task System Support', () => {
     });
 
     it('should return false for empty subject', () => {
-      expect(isValidTask({ id: '1', subject: '', status: 'pending' })).toBe(false);
+      expect(isValidTask({ id: '1', subject: '', status: 'pending' })).toBe(
+        false,
+      );
     });
 
     it('should return false for missing status', () => {
@@ -113,13 +119,21 @@ describe('Task System Support', () => {
     });
 
     it('should return false for invalid status', () => {
-      expect(isValidTask({ id: '1', subject: 'Test', status: 'invalid' })).toBe(false);
+      expect(isValidTask({ id: '1', subject: 'Test', status: 'invalid' })).toBe(
+        false,
+      );
     });
 
     it('should accept all valid status values', () => {
-      expect(isValidTask({ id: '1', subject: 'Test', status: 'pending' })).toBe(true);
-      expect(isValidTask({ id: '1', subject: 'Test', status: 'in_progress' })).toBe(true);
-      expect(isValidTask({ id: '1', subject: 'Test', status: 'completed' })).toBe(true);
+      expect(isValidTask({ id: '1', subject: 'Test', status: 'pending' })).toBe(
+        true,
+      );
+      expect(
+        isValidTask({ id: '1', subject: 'Test', status: 'in_progress' }),
+      ).toBe(true);
+      expect(
+        isValidTask({ id: '1', subject: 'Test', status: 'completed' }),
+      ).toBe(true);
     });
 
     it('should return false for non-object types', () => {
@@ -130,11 +144,15 @@ describe('Task System Support', () => {
     });
 
     it('should return false for id with wrong type', () => {
-      expect(isValidTask({ id: 123, subject: 'Test', status: 'pending' })).toBe(false);
+      expect(isValidTask({ id: 123, subject: 'Test', status: 'pending' })).toBe(
+        false,
+      );
     });
 
     it('should return false for subject with wrong type', () => {
-      expect(isValidTask({ id: '1', subject: 123, status: 'pending' })).toBe(false);
+      expect(isValidTask({ id: '1', subject: 123, status: 'pending' })).toBe(
+        false,
+      );
     });
   });
 
@@ -167,9 +185,17 @@ describe('Task System Support', () => {
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.json'] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('1.json')) {
-          return JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task 1',
+            status: 'pending',
+          });
         }
-        return JSON.stringify({ id: '2', subject: 'Task 2', status: 'completed' });
+        return JSON.stringify({
+          id: '2',
+          subject: 'Task 2',
+          status: 'completed',
+        });
       });
 
       const result = readTaskFiles('session123');
@@ -181,7 +207,9 @@ describe('Task System Support', () => {
     it('should skip .lock files', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '.lock'] as any);
-      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ id: '1', subject: 'Task', status: 'pending' }));
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ id: '1', subject: 'Task', status: 'pending' }),
+      );
 
       const result = readTaskFiles('session123');
       expect(result).toHaveLength(1);
@@ -189,10 +217,18 @@ describe('Task System Support', () => {
 
     it('should skip non-json files', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.txt', 'README.md'] as any);
+      vi.mocked(fs.readdirSync).mockReturnValue([
+        '1.json',
+        '2.txt',
+        'README.md',
+      ] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('1.json')) {
-          return JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task 1',
+            status: 'pending',
+          });
         }
         return 'not json';
       });
@@ -208,7 +244,11 @@ describe('Task System Support', () => {
         if (filePath.includes('1.json')) {
           return 'not valid json';
         }
-        return JSON.stringify({ id: '2', subject: 'Task 2', status: 'pending' });
+        return JSON.stringify({
+          id: '2',
+          subject: 'Task 2',
+          status: 'pending',
+        });
       });
 
       const result = readTaskFiles('session123');
@@ -218,12 +258,24 @@ describe('Task System Support', () => {
 
     it('should skip files with invalid task structure', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.json', '3.json'] as any);
+      vi.mocked(fs.readdirSync).mockReturnValue([
+        '1.json',
+        '2.json',
+        '3.json',
+      ] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('1.json')) {
-          return JSON.stringify({ id: '1', subject: 'Valid', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Valid',
+            status: 'pending',
+          });
         } else if (filePath.includes('2.json')) {
-          return JSON.stringify({ id: '', subject: 'Invalid', status: 'pending' });
+          return JSON.stringify({
+            id: '',
+            subject: 'Invalid',
+            status: 'pending',
+          });
         }
         return JSON.stringify({ subject: 'Missing ID', status: 'pending' });
       });
@@ -250,7 +302,11 @@ describe('Task System Support', () => {
         if (filePath.includes('1.json')) {
           throw new Error('File read error');
         }
-        return JSON.stringify({ id: '2', subject: 'Task 2', status: 'pending' });
+        return JSON.stringify({
+          id: '2',
+          subject: 'Task 2',
+          status: 'pending',
+        });
       });
 
       const result = readTaskFiles('session123');
@@ -262,15 +318,31 @@ describe('Task System Support', () => {
   describe('checkIncompleteTasks', () => {
     it('should count only incomplete tasks', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.json', '3.json'] as any);
+      vi.mocked(fs.readdirSync).mockReturnValue([
+        '1.json',
+        '2.json',
+        '3.json',
+      ] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('1.json')) {
-          return JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task 1',
+            status: 'pending',
+          });
         }
         if (filePath.includes('2.json')) {
-          return JSON.stringify({ id: '2', subject: 'Task 2', status: 'completed' });
+          return JSON.stringify({
+            id: '2',
+            subject: 'Task 2',
+            status: 'completed',
+          });
         }
-        return JSON.stringify({ id: '3', subject: 'Task 3', status: 'in_progress' });
+        return JSON.stringify({
+          id: '3',
+          subject: 'Task 3',
+          status: 'in_progress',
+        });
       });
 
       const result = checkIncompleteTasks('session123');
@@ -283,7 +355,7 @@ describe('Task System Support', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: '1', subject: 'Task', status: 'completed' })
+        JSON.stringify({ id: '1', subject: 'Task', status: 'completed' }),
       );
 
       const result = checkIncompleteTasks('session123');
@@ -296,9 +368,17 @@ describe('Task System Support', () => {
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json', '2.json'] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('1.json')) {
-          return JSON.stringify({ id: '1', subject: 'Pending', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Pending',
+            status: 'pending',
+          });
         }
-        return JSON.stringify({ id: '2', subject: 'Complete', status: 'completed' });
+        return JSON.stringify({
+          id: '2',
+          subject: 'Complete',
+          status: 'completed',
+        });
       });
 
       const result = checkIncompleteTasks('session123');
@@ -331,7 +411,7 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: '1', subject: 'Task', status: 'pending' })
+        JSON.stringify({ id: '1', subject: 'Task', status: 'pending' }),
       );
 
       const result = await checkIncompleteTodos('session123');
@@ -345,7 +425,7 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readdirSync).mockReturnValue(['session123.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify([{ content: 'Todo', status: 'pending' }])
+        JSON.stringify([{ content: 'Todo', status: 'pending' }]),
       );
 
       const result = await checkIncompleteTodos('session123');
@@ -363,7 +443,11 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (/[\\/]tasks[\\/]/.test(filePath)) {
-          return JSON.stringify({ id: '1', subject: 'Task', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task',
+            status: 'pending',
+          });
         }
         return JSON.stringify([{ content: 'Todo', status: 'pending' }]);
       });
@@ -383,7 +467,11 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (/[\\/]tasks[\\/]/.test(filePath)) {
-          return JSON.stringify({ id: '1', subject: 'Task Subject', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task Subject',
+            status: 'pending',
+          });
         }
         return JSON.stringify([{ content: 'Legacy Todo', status: 'pending' }]);
       });
@@ -481,7 +569,7 @@ describe('Task System Support', () => {
         count: 0,
         todos: [],
         total: 5,
-        source: 'task'
+        source: 'task',
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (5 total)');
     });
@@ -491,7 +579,7 @@ describe('Task System Support', () => {
         count: 3,
         todos: [],
         total: 10,
-        source: 'task'
+        source: 'task',
       };
       expect(formatTodoStatus(result)).toBe('7/10 completed, 3 remaining');
     });
@@ -501,7 +589,7 @@ describe('Task System Support', () => {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: 'none',
       };
       expect(formatTodoStatus(result)).toBe('All tasks complete (0 total)');
     });
@@ -511,7 +599,7 @@ describe('Task System Support', () => {
         count: 5,
         todos: [],
         total: 5,
-        source: 'task'
+        source: 'task',
       };
       expect(formatTodoStatus(result)).toBe('0/5 completed, 5 remaining');
     });
@@ -521,7 +609,7 @@ describe('Task System Support', () => {
         count: 1,
         todos: [],
         total: 10,
-        source: 'task'
+        source: 'task',
       };
       expect(formatTodoStatus(result)).toBe('9/10 completed, 1 remaining');
     });
@@ -532,13 +620,13 @@ describe('Task System Support', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'in_progress' },
-        { content: 'Task 3', status: 'pending' }
+        { content: 'Task 3', status: 'pending' },
       ];
       const result: IncompleteTodosResult = {
         count: 3,
         todos,
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -550,13 +638,13 @@ describe('Task System Support', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'pending' },
-        { content: 'Task 3', status: 'completed' }
+        { content: 'Task 3', status: 'completed' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
-        todos: todos.filter(t => t.status !== 'completed'),
+        todos: todos.filter((t) => t.status !== 'completed'),
         total: 3,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -569,7 +657,7 @@ describe('Task System Support', () => {
         count: 0,
         todos: [],
         total: 0,
-        source: 'none'
+        source: 'none',
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -580,7 +668,7 @@ describe('Task System Support', () => {
         count: 0,
         todos: [],
         total: 3,
-        source: 'task'
+        source: 'task',
       };
       const next = getNextPendingTodo(result);
       expect(next).toBeNull();
@@ -589,13 +677,13 @@ describe('Task System Support', () => {
     it('should handle todos with priority field', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending', priority: 'low' },
-        { content: 'Task 2', status: 'in_progress', priority: 'high' }
+        { content: 'Task 2', status: 'in_progress', priority: 'high' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -605,13 +693,13 @@ describe('Task System Support', () => {
     it('should handle todos with id field', () => {
       const todos: Todo[] = [
         { content: 'Task 1', status: 'pending', id: 'todo-1' },
-        { content: 'Task 2', status: 'pending', id: 'todo-2' }
+        { content: 'Task 2', status: 'pending', id: 'todo-2' },
       ];
       const result: IncompleteTodosResult = {
         count: 2,
         todos,
         total: 2,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -623,13 +711,13 @@ describe('Task System Support', () => {
         { content: 'Task 1', status: 'pending' },
         { content: 'Task 2', status: 'pending' },
         { content: 'Task 3', status: 'pending' },
-        { content: 'Task 4', status: 'in_progress' }
+        { content: 'Task 4', status: 'in_progress' },
       ];
       const result: IncompleteTodosResult = {
         count: 4,
         todos,
         total: 4,
-        source: 'todo'
+        source: 'todo',
       };
       const next = getNextPendingTodo(result);
       expect(next).not.toBeNull();
@@ -645,7 +733,7 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readdirSync).mockReturnValue(['session123.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify([{ content: 'Todo', status: 'pending' }])
+        JSON.stringify([{ content: 'Todo', status: 'pending' }]),
       );
 
       const result = checkLegacyTodos('session123');
@@ -657,7 +745,7 @@ describe('Task System Support', () => {
         return /[\\/]\.omc[\\/]todos\.json$/.test(p);
       });
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify([{ content: 'Todo', status: 'pending' }])
+        JSON.stringify([{ content: 'Todo', status: 'pending' }]),
       );
 
       const result = checkLegacyTodos(undefined, '/project/dir');
@@ -668,7 +756,7 @@ describe('Task System Support', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['session123.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify([{ content: 'Same Todo', status: 'pending' }])
+        JSON.stringify([{ content: 'Same Todo', status: 'pending' }]),
       );
 
       const result = checkLegacyTodos('session123', '/project/dir');
@@ -680,7 +768,7 @@ describe('Task System Support', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['session123.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ todos: [{ content: 'Todo', status: 'pending' }] })
+        JSON.stringify({ todos: [{ content: 'Todo', status: 'pending' }] }),
       );
 
       const result = checkLegacyTodos('session123');
@@ -694,8 +782,8 @@ describe('Task System Support', () => {
         JSON.stringify([
           { content: 'Pending', status: 'pending' },
           { content: 'Cancelled', status: 'cancelled' },
-          { content: 'Completed', status: 'completed' }
-        ])
+          { content: 'Completed', status: 'completed' },
+        ]),
       );
 
       const result = checkLegacyTodos('session123');
@@ -715,7 +803,11 @@ describe('Task System Support', () => {
       });
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (/[\\/]tasks[\\/]/.test(filePath)) {
-          return JSON.stringify({ id: '1', subject: 'Task', status: 'pending' });
+          return JSON.stringify({
+            id: '1',
+            subject: 'Task',
+            status: 'pending',
+          });
         }
         return JSON.stringify([{ content: 'Todo', status: 'completed' }]);
       });
@@ -727,16 +819,26 @@ describe('Task System Support', () => {
 
     it('should handle user abort during check', async () => {
       const stopContext: StopContext = { user_requested: true };
-      const result = await checkIncompleteTodos('session123', undefined, stopContext);
+      const result = await checkIncompleteTodos(
+        'session123',
+        undefined,
+        stopContext,
+      );
       expect(result.count).toBe(0);
       expect(result.source).toBe('none');
     });
 
     it('should convert tasks to todo format in result', async () => {
-      vi.mocked(fs.existsSync).mockImplementation((p: any) => /[\\/]tasks[\\/]/.test(p));
+      vi.mocked(fs.existsSync).mockImplementation((p: any) =>
+        /[\\/]tasks[\\/]/.test(p),
+      );
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: 'task-1', subject: 'Task Subject', status: 'pending' })
+        JSON.stringify({
+          id: 'task-1',
+          subject: 'Task Subject',
+          status: 'pending',
+        }),
       );
 
       const result = await checkIncompleteTodos('session123');
@@ -749,7 +851,10 @@ describe('Task System Support', () => {
   describe('Edge Cases', () => {
     it('should handle malformed JSON gracefully', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readdirSync).mockReturnValue(['bad.json', 'good.json'] as any);
+      vi.mocked(fs.readdirSync).mockReturnValue([
+        'bad.json',
+        'good.json',
+      ] as any);
       vi.mocked(fs.readFileSync).mockImplementation((filePath: any) => {
         if (filePath.includes('bad.json')) {
           return '{invalid json}';
@@ -780,7 +885,11 @@ describe('Task System Support', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: '1', subject: 'Task with émojis 🚀', status: 'pending' })
+        JSON.stringify({
+          id: '1',
+          subject: 'Task with émojis 🚀',
+          status: 'pending',
+        }),
       );
 
       const result = readTaskFiles('session123');
@@ -796,8 +905,8 @@ describe('Task System Support', () => {
           subject: 'Task',
           status: 'pending',
           blocks: ['2', '3'],
-          blockedBy: ['0']
-        })
+          blockedBy: ['0'],
+        }),
       );
 
       const result = readTaskFiles('session123');

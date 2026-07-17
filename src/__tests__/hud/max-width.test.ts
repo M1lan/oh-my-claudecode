@@ -15,7 +15,10 @@ describe('truncateLineToMaxWidth', () => {
     });
 
     it('truncates with ellipsis when exceeding maxWidth', () => {
-      const result = truncateLineToMaxWidth('this is a long line that exceeds the limit', 20);
+      const result = truncateLineToMaxWidth(
+        'this is a long line that exceeds the limit',
+        20,
+      );
       expect(result).toMatch(/\.\.\.$/);
       expect(stringWidth(result)).toBeLessThanOrEqual(20);
     });
@@ -38,14 +41,15 @@ describe('truncateLineToMaxWidth', () => {
 
   describe('ANSI escape code handling', () => {
     it('preserves ANSI codes within truncated output', () => {
-      const line = '\x1b[1m[OMC#4.5.0]\x1b[0m | rate: 45% | ctx: 30% | agents: 3 running';
+      const line =
+        '\x1b[1m[OMC#4.5.0]\x1b[0m | rate: 45% | ctx: 30% | agents: 3 running';
       const result = truncateLineToMaxWidth(line, 30);
       expect(result).toContain('\x1b[1m');
       expect(result).toMatch(/\.\.\.$/);
     });
 
     it('does not count ANSI codes as visible width', () => {
-      const withAnsi = '\x1b[32mhello\x1b[0m';  // "hello" in green
+      const withAnsi = '\x1b[32mhello\x1b[0m'; // "hello" in green
       const withoutAnsi = 'hello';
 
       expect(truncateLineToMaxWidth(withAnsi, 5)).toBe(withAnsi);
@@ -53,14 +57,16 @@ describe('truncateLineToMaxWidth', () => {
     });
 
     it('handles multiple ANSI sequences', () => {
-      const line = '\x1b[1m[OMC]\x1b[0m \x1b[2m|\x1b[0m \x1b[33mrate: 45%\x1b[0m';
+      const line =
+        '\x1b[1m[OMC]\x1b[0m \x1b[2m|\x1b[0m \x1b[33mrate: 45%\x1b[0m';
       const result = truncateLineToMaxWidth(line, 10);
       expect(result).toMatch(/\.\.\.$/);
     });
 
     it('appends ANSI reset before ellipsis to prevent style bleed', () => {
       // Open bold, content exceeds width, should get reset before "..."
-      const line = '\x1b[33mthis is yellow text that is very long and will be truncated\x1b[0m';
+      const line =
+        '\x1b[33mthis is yellow text that is very long and will be truncated\x1b[0m';
       const result = truncateLineToMaxWidth(line, 20);
       // Should contain reset (\x1b[0m) before the ellipsis
       expect(result).toMatch(/\x1b\[0m\.\.\.$/);
@@ -135,7 +141,8 @@ describe('truncateLineToMaxWidth', () => {
 
     it('handles emoji-only content', () => {
       // Each emoji is width 1 in our getCharWidth (not CJK). 10 emoji = 10 columns.
-      const line = '\uD83D\uDE00\uD83D\uDE01\uD83D\uDE02\uD83D\uDE03\uD83D\uDE04\uD83D\uDE05\uD83D\uDE06\uD83D\uDE07\uD83D\uDE08\uD83D\uDE09';
+      const line =
+        '\uD83D\uDE00\uD83D\uDE01\uD83D\uDE02\uD83D\uDE03\uD83D\uDE04\uD83D\uDE05\uD83D\uDE06\uD83D\uDE07\uD83D\uDE08\uD83D\uDE09';
       const result = truncateLineToMaxWidth(line, 6);
       expect(result).toMatch(/\.\.\.$/);
       expect(stringWidth(result)).toBeLessThanOrEqual(6);
@@ -144,7 +151,8 @@ describe('truncateLineToMaxWidth', () => {
 
   describe('realistic HUD scenarios', () => {
     it('truncates a typical HUD header line', () => {
-      const hudLine = '[OMC#4.5.0] | 5h:45% | ctx:30% | ralph:1/10 | agents:OeSe | bg:2';
+      const hudLine =
+        '[OMC#4.5.0] | 5h:45% | ctx:30% | ralph:1/10 | agents:OeSe | bg:2';
       const result = truncateLineToMaxWidth(hudLine, 50);
       expect(result).toMatch(/\.\.\.$/);
       expect(stringWidth(result)).toBeLessThanOrEqual(50);
@@ -164,7 +172,8 @@ describe('truncateLineToMaxWidth', () => {
     });
 
     it('handles HUD line with ANSI and CJK mixed', () => {
-      const line = '\x1b[1m[OMC]\x1b[0m \u4f60\u597d hello world long text here';
+      const line =
+        '\x1b[1m[OMC]\x1b[0m \u4f60\u597d hello world long text here';
       const result = truncateLineToMaxWidth(line, 15);
       expect(result).toMatch(/\.\.\.$/);
       expect(stringWidth(result)).toBeLessThanOrEqual(15);

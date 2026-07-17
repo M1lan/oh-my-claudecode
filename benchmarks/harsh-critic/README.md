@@ -48,14 +48,14 @@ Scoring uses **keyword-based fuzzy matching** against ground truth entries. Each
 
 ```bash
 # Full benchmark (both agents, all fixtures)
-ANTHROPIC_API_KEY=sk-... npx tsx benchmarks/harsh-critic/run-benchmark.ts --agent both
+ANTHROPIC_API_KEY=sk-... pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts --agent both
 
 # Single agent
-npx tsx benchmarks/harsh-critic/run-benchmark.ts --agent harsh-critic
-npx tsx benchmarks/harsh-critic/run-benchmark.ts --agent critic
+pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts --agent harsh-critic
+pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts --agent critic
 
 # Single fixture
-npx tsx benchmarks/harsh-critic/run-benchmark.ts --agent both --fixture plan-auth-migration
+pnpm exec tsx benchmarks/harsh-critic/run-benchmark.ts --agent both --fixture plan-auth-migration
 
 # Output goes to benchmarks/harsh-critic/results/ (gitignored)
 ```
@@ -86,7 +86,7 @@ LLM output varies between runs. Recommendations:
 - Scoring logic has its own vitest tests that run without an API key:
 
 ```bash
-npx vitest run src/__tests__/benchmark-scoring
+pnpm exec vitest run src/__tests__/benchmark-scoring
 ```
 
 ## Cost

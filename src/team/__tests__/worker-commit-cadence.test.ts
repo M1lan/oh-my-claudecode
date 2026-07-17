@@ -1,7 +1,17 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, readFileSync, mkdirSync, writeFileSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  mkdirSync,
+  writeFileSync,
+} from 'fs';
 import { join } from 'path';
-import { readFile as readFileAsync, writeFile as writeFileAsync } from 'node:fs/promises';
+import {
+  readFile as readFileAsync,
+  writeFile as writeFileAsync,
+} from 'node:fs/promises';
 import { tmpdir } from 'os';
 import {
   installPostToolUseHook,
@@ -85,7 +95,9 @@ describe('installPostToolUseHook – settings.json shape', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     expect(command).toContain('my-worker');
@@ -97,7 +109,9 @@ describe('installPostToolUseHook – settings.json shape', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     // Must resolve rebase-merge and MERGE_HEAD through git so real worktrees
@@ -116,7 +130,9 @@ describe('installPostToolUseHook – settings.json shape', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     expect(command).toContain('git diff --cached --quiet');
@@ -129,7 +145,9 @@ describe('installPostToolUseHook – settings.json shape', () => {
     await installPostToolUseHook(worktreePath, 'writer');
 
     // settings.json should not have been created
-    expect(existsSync(join(worktreePath, '.claude', 'settings.json'))).toBe(false);
+    expect(existsSync(join(worktreePath, '.claude', 'settings.json'))).toBe(
+      false,
+    );
   });
 
   it('merges into existing settings.json without clobbering other keys', async () => {
@@ -159,7 +177,9 @@ describe('installPostToolUseHook – settings.json shape', () => {
     const postToolUse = (settings.hooks as Record<string, unknown>)[
       'PostToolUse'
     ] as Array<Record<string, unknown>>;
-    const matching = postToolUse.filter((h) => h['matcher'] === 'Write|Edit|MultiEdit');
+    const matching = postToolUse.filter(
+      (h) => h['matcher'] === 'Write|Edit|MultiEdit',
+    );
     expect(matching).toHaveLength(1);
   });
 });
@@ -237,7 +257,9 @@ describe('startFallbackPoller – debounce', () => {
   });
 
   it('returns a stop handle', () => {
-    const handle = startFallbackPoller(worktreePath, 'writer', { intervalMs: 3000 });
+    const handle = startFallbackPoller(worktreePath, 'writer', {
+      intervalMs: 3000,
+    });
     expect(handle).toHaveProperty('stop');
     expect(typeof handle.stop).toBe('function');
     handle.stop();
@@ -248,7 +270,9 @@ describe('startFallbackPoller – debounce', () => {
     const execMock = vi.mocked(exec);
     execMock.mockClear();
 
-    const handle = startFallbackPoller(worktreePath, 'writer', { intervalMs: 3000 });
+    const handle = startFallbackPoller(worktreePath, 'writer', {
+      intervalMs: 3000,
+    });
 
     // Write a file to trigger the watcher — but debounce has not fired yet
     writeFileSync(join(worktreePath, 'test.txt'), 'hello');
@@ -266,7 +290,9 @@ describe('startFallbackPoller – debounce', () => {
   });
 
   it('stop() cancels pending debounce timer', () => {
-    const handle = startFallbackPoller(worktreePath, 'writer', { intervalMs: 3000 });
+    const handle = startFallbackPoller(worktreePath, 'writer', {
+      intervalMs: 3000,
+    });
 
     // Simulate a debounce being scheduled by writing a file
     writeFileSync(join(worktreePath, 'a.txt'), 'data');
@@ -287,7 +313,9 @@ describe('startFallbackPoller – debounce', () => {
     const execMock = vi.mocked(exec);
     execMock.mockClear();
 
-    const handle = startFallbackPoller(worktreePath, 'writer', { intervalMs: 500 });
+    const handle = startFallbackPoller(worktreePath, 'writer', {
+      intervalMs: 500,
+    });
 
     // Trigger debounce cycle
     vi.advanceTimersByTime(2000);
@@ -326,7 +354,9 @@ describe('empty-diff branch — hook command', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     // The pattern "git diff --cached --quiet || git commit" means: if diff is
@@ -356,7 +386,9 @@ describe('hook command sentinel filename', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     // Bug guard: previously the preamble interpolated `.${SENTINEL_FILENAME}`
@@ -371,7 +403,9 @@ describe('hook command sentinel filename', () => {
     const settings = readSettings(worktreePath);
     const hooks = settings.hooks as Record<string, unknown>;
     const postToolUse = hooks['PostToolUse'] as Array<Record<string, unknown>>;
-    const innerHooks = postToolUse[0]['hooks'] as Array<Record<string, unknown>>;
+    const innerHooks = postToolUse[0]['hooks'] as Array<
+      Record<string, unknown>
+    >;
     const command = innerHooks[0]['command'] as string;
 
     const matches = command.match(/\.hook-paused/g) ?? [];
@@ -413,9 +447,9 @@ describe('worker name validation (shell injection guard)', () => {
   });
 
   it('installPostToolUseHook throws on an empty name', async () => {
-    await expect(
-      installPostToolUseHook(worktreePath, ''),
-    ).rejects.toThrow(/Invalid worker name/);
+    await expect(installPostToolUseHook(worktreePath, '')).rejects.toThrow(
+      /Invalid worker name/,
+    );
   });
 
   it('startFallbackPoller throws on injectable name (synchronous)', () => {
@@ -443,8 +477,13 @@ describe('uninstallCommitCadence durability', () => {
     serviceGeneration: number;
     attemptId: string;
   } => ({
-    teamName: 'cadence-durability', workerName: 'writer', worktreePath, agentType: 'claude', enabled: true,
-    serviceGeneration: 7, attemptId: '7:owner',
+    teamName: 'cadence-durability',
+    workerName: 'writer',
+    worktreePath,
+    agentType: 'claude',
+    enabled: true,
+    serviceGeneration: 7,
+    attemptId: '7:owner',
   });
 
   beforeEach(() => {
@@ -462,10 +501,19 @@ describe('uninstallCommitCadence durability', () => {
     writeFileSync(settingsPath, '{ malformed settings', 'utf-8');
 
     await expect(uninstallCommitCadence(current)).rejects.toThrow();
-    await expect(installCommitCadence({ ...current, serviceGeneration: 6, attemptId: '6:owner' }))
-      .resolves.toEqual({ method: 'none' });
+    await expect(
+      installCommitCadence({
+        ...current,
+        serviceGeneration: 6,
+        attemptId: '6:owner',
+      }),
+    ).resolves.toEqual({ method: 'none' });
 
-    writeFileSync(settingsPath, JSON.stringify({ hooks: { PostToolUse: [] } }), 'utf-8');
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ hooks: { PostToolUse: [] } }),
+      'utf-8',
+    );
     await expect(uninstallCommitCadence(current)).resolves.toBeUndefined();
   });
 
@@ -479,21 +527,31 @@ describe('uninstallCommitCadence durability', () => {
     await expect(uninstallCommitCadence(current)).rejects.toThrow();
 
     rmSync(settingsPath, { recursive: true });
-    writeFileSync(settingsPath, JSON.stringify({ hooks: { PostToolUse: [] } }), 'utf-8');
+    writeFileSync(
+      settingsPath,
+      JSON.stringify({ hooks: { PostToolUse: [] } }),
+      'utf-8',
+    );
     await expect(uninstallCommitCadence(current)).resolves.toBeUndefined();
   });
 
   it('propagates write failures and permits a later durable uninstall retry', async () => {
     const current = context();
     await installCommitCadence(current);
-    await expect(uninstallCommitCadence(current, {
-      readFile: readFileAsync,
-      writeFile: vi.fn(async () => { throw new Error('settings write denied'); }) as typeof writeFileAsync,
-    })).rejects.toThrow('settings write denied');
+    await expect(
+      uninstallCommitCadence(current, {
+        readFile: readFileAsync,
+        writeFile: vi.fn(async () => {
+          throw new Error('settings write denied');
+        }) as typeof writeFileAsync,
+      }),
+    ).rejects.toThrow('settings write denied');
     await expect(uninstallCommitCadence(current)).resolves.toBeUndefined();
 
     const settings = readSettings(worktreePath);
-    const postToolUse = (settings.hooks as Record<string, unknown>)['PostToolUse'] as Array<Record<string, unknown>>;
+    const postToolUse = (settings.hooks as Record<string, unknown>)[
+      'PostToolUse'
+    ] as Array<Record<string, unknown>>;
     expect(postToolUse).toEqual([]);
   });
 });

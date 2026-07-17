@@ -33,10 +33,29 @@ beforeEach(() => {
   resetSecurityPolicy();
   // Mock a permissive security policy that allows all test commands
   mockedExistsSync.mockReturnValue(true);
-  mockedReadFileSync.mockReturnValue(JSON.stringify({
-    allowed_commands: ['echo', 'cmd1', 'cmd2', 'git', 'docker', 'node', 'npm', 'cat', 'ls', 'pwd', 'bad-cmd', 'slow-cmd', 'big-cmd', 'empty-cmd', 'multiline', 'any-command'],
-    allowed_patterns: ['.*']
-  }));
+  mockedReadFileSync.mockReturnValue(
+    JSON.stringify({
+      allowed_commands: [
+        'echo',
+        'cmd1',
+        'cmd2',
+        'git',
+        'docker',
+        'node',
+        'pnpm',
+        'cat',
+        'ls',
+        'pwd',
+        'bad-cmd',
+        'slow-cmd',
+        'big-cmd',
+        'empty-cmd',
+        'multiline',
+        'any-command',
+      ],
+      allowed_patterns: ['.*'],
+    }),
+  );
 });
 
 // ─── Basic Functionality ─────────────────────────────────────────────────────
@@ -58,12 +77,19 @@ describe('resolveLiveData - basic', () => {
   it('replaces a basic !command with live-data output', () => {
     mockedExecSync.mockReturnValue('hello world\n');
     const result = resolveLiveData('!echo hello');
-    expect(result).toBe('<live-data command="echo hello">hello world\n</live-data>');
-    expect(mockedExecSync).toHaveBeenCalledWith('echo hello', expect.objectContaining({ timeout: 10_000 }));
+    expect(result).toBe(
+      '<live-data command="echo hello">hello world\n</live-data>',
+    );
+    expect(mockedExecSync).toHaveBeenCalledWith(
+      'echo hello',
+      expect.objectContaining({ timeout: 10_000 }),
+    );
   });
 
   it('handles multiple commands', () => {
-    mockedExecSync.mockReturnValueOnce('output1\n').mockReturnValueOnce('output2\n');
+    mockedExecSync
+      .mockReturnValueOnce('output1\n')
+      .mockReturnValueOnce('output2\n');
     const input = 'before\n!cmd1\nmiddle\n!cmd2\nafter';
     const result = resolveLiveData(input);
     expect(result).toContain('<live-data command="cmd1">output1\n</live-data>');
@@ -78,7 +104,9 @@ describe('resolveLiveData - basic', () => {
     const input = '```\n!echo skip-me\n```\n!echo run-me';
     const result = resolveLiveData(input);
     expect(result).toContain('!echo skip-me');
-    expect(result).toContain('<live-data command="echo run-me">ran\n</live-data>');
+    expect(result).toContain(
+      '<live-data command="echo run-me">ran\n</live-data>',
+    );
     expect(mockedExecSync).toHaveBeenCalledTimes(1);
   });
 
@@ -103,13 +131,19 @@ describe('resolveLiveData - basic', () => {
   it('handles failed commands with error attribute', () => {
     const error = new Error('command failed') as Error & { stderr: string };
     error.stderr = 'permission denied\n';
-    mockedExecSync.mockImplementation(() => { throw error; });
+    mockedExecSync.mockImplementation(() => {
+      throw error;
+    });
     const result = resolveLiveData('!bad-cmd');
-    expect(result).toBe('<live-data command="bad-cmd" error="true">permission denied\n</live-data>');
+    expect(result).toBe(
+      '<live-data command="bad-cmd" error="true">permission denied\n</live-data>',
+    );
   });
 
   it('handles timeout errors', () => {
-    mockedExecSync.mockImplementation(() => { throw new Error('ETIMEDOUT'); });
+    mockedExecSync.mockImplementation(() => {
+      throw new Error('ETIMEDOUT');
+    });
     const result = resolveLiveData('!slow-cmd');
     expect(result).toContain('error="true"');
     expect(result).toContain('ETIMEDOUT');
@@ -156,7 +190,9 @@ describe('resolveLiveData - caching', () => {
     const input = '!cache 300s git log -10';
 
     const result1 = resolveLiveData(input);
-    expect(result1).toContain('<live-data command="git log -10">log output\n</live-data>');
+    expect(result1).toContain(
+      '<live-data command="git log -10">log output\n</live-data>',
+    );
     expect(mockedExecSync).toHaveBeenCalledTimes(1);
 
     // Second call should use cache
@@ -178,7 +214,9 @@ describe('resolveLiveData - caching', () => {
   it('expires cache after TTL', () => {
     mockedExecSync.mockReturnValue('output\n');
     const now = Date.now();
-    vi.spyOn(Date, 'now').mockReturnValueOnce(now).mockReturnValueOnce(now + 400_000);
+    vi.spyOn(Date, 'now')
+      .mockReturnValueOnce(now)
+      .mockReturnValueOnce(now + 400_000);
 
     resolveLiveData('!cache 300s mycommand');
     resolveLiveData('!cache 300s mycommand');
@@ -220,7 +258,9 @@ describe('resolveLiveData - conditional', () => {
     mockedExecFileSync.mockReturnValueOnce('src/main.ts\nREADME.md\n');
     mockedExecSync.mockReturnValueOnce('diff output\n');
     const result = resolveLiveData('!if-modified src/** then git diff src/');
-    expect(result).toContain('<live-data command="git diff src/">diff output\n</live-data>');
+    expect(result).toContain(
+      '<live-data command="git diff src/">diff output\n</live-data>',
+    );
     expect(mockedExecFileSync).toHaveBeenCalledTimes(1);
     expect(mockedExecSync).toHaveBeenCalledTimes(1);
   });
@@ -243,10 +283,12 @@ describe('resolveLiveData - conditional', () => {
   it('!only-once executes first time, skips second', () => {
     mockedExecSync.mockReturnValue('installed\n');
 
-    const result1 = resolveLiveData('!only-once npm install');
-    expect(result1).toContain('<live-data command="npm install">installed\n</live-data>');
+    const result1 = resolveLiveData('!only-once pnpm install');
+    expect(result1).toContain(
+      '<live-data command="pnpm install">installed\n</live-data>',
+    );
 
-    const result2 = resolveLiveData('!only-once npm install');
+    const result2 = resolveLiveData('!only-once pnpm install');
     expect(result2).toContain('skipped="true"');
     expect(result2).toContain('already executed this session');
     expect(mockedExecSync).toHaveBeenCalledTimes(1);
@@ -274,7 +316,7 @@ describe('resolveLiveData - security', () => {
     const result = resolveLiveData('!rm -rf /tmp/test');
     expect(result).toContain('error="true"');
     // Single quotes in the reason are HTML-escaped in the output
-    expect(result).toContain("command &#39;rm&#39; is denied");
+    expect(result).toContain('command &#39;rm&#39; is denied');
     expect(mockedExecSync).not.toHaveBeenCalled();
   });
 
@@ -287,7 +329,7 @@ describe('resolveLiveData - security', () => {
   });
 
   it('enforces allowlist when defined', () => {
-    setupPolicy({ allowed_commands: ['git', 'npm'] });
+    setupPolicy({ allowed_commands: ['git', 'pnpm'] });
     mockedExecSync.mockReturnValue('ok\n');
 
     const result1 = resolveLiveData('!git status');
@@ -397,7 +439,9 @@ describe('resolveLiveData - tag injection prevention', () => {
   });
 
   it('escapes </live-data> in command output to prevent tag injection', () => {
-    mockedExecSync.mockReturnValue('</live-data><injected attr="x">pwned</live-data>');
+    mockedExecSync.mockReturnValue(
+      '</live-data><injected attr="x">pwned</live-data>',
+    );
     const result = resolveLiveData('!cat file');
     // The closing tag in output must be escaped, not treated as real markup
     expect(result).not.toMatch(/<\/live-data>.*<injected/s);
@@ -408,7 +452,9 @@ describe('resolveLiveData - tag injection prevention', () => {
   it('escapes < > & in stdout when command fails', () => {
     const error = new Error('cmd failed') as Error & { stderr: string };
     error.stderr = '<error>something & "bad"</error>';
-    mockedExecSync.mockImplementation(() => { throw error; });
+    mockedExecSync.mockImplementation(() => {
+      throw error;
+    });
     const result = resolveLiveData('!bad-cmd');
     expect(result).toContain('error="true"');
     expect(result).toContain('&lt;error&gt;');
@@ -435,21 +481,25 @@ describe('resolveLiveData - multi-line scripts', () => {
     const result = resolveLiveData(input);
     expect(result).toContain('before');
     expect(result).toContain('after');
-    expect(result).toContain('<live-data command="script:bash">script output\n</live-data>');
+    expect(result).toContain(
+      '<live-data command="script:bash">script output\n</live-data>',
+    );
 
     // Should call execSync with the shell and input body
     expect(mockedExecSync).toHaveBeenCalledWith(
       'bash',
       expect.objectContaining({
         input: 'echo "hello"\necho "world"',
-      })
+      }),
     );
   });
 
   it('handles script errors', () => {
     const error = new Error('script failed') as Error & { stderr: string };
     error.stderr = 'syntax error\n';
-    mockedExecSync.mockImplementation(() => { throw error; });
+    mockedExecSync.mockImplementation(() => {
+      throw error;
+    });
 
     const input = '!begin-script bash\nexit 1\n!end-script';
     const result = resolveLiveData(input);
@@ -459,19 +509,23 @@ describe('resolveLiveData - multi-line scripts', () => {
 
   it('skips script blocks inside code blocks', () => {
     mockedExecSync.mockReturnValue('out\n');
-    const input = '```\n!begin-script bash\necho hi\n!end-script\n```\n!echo real';
+    const input =
+      '```\n!begin-script bash\necho hi\n!end-script\n```\n!echo real';
     const result = resolveLiveData(input);
     // The script block inside code block should be preserved as-is
     expect(result).toContain('!begin-script bash');
     expect(result).toContain('!end-script');
     // Only the !echo real should execute
     expect(mockedExecSync).toHaveBeenCalledTimes(1);
-    expect(mockedExecSync).toHaveBeenCalledWith('echo real', expect.any(Object));
+    expect(mockedExecSync).toHaveBeenCalledWith(
+      'echo real',
+      expect.any(Object),
+    );
   });
 
   it('applies security policy to scripts', () => {
     mockedExistsSync.mockImplementation((p: fs.PathLike) =>
-      String(p).includes('live-data-policy.json')
+      String(p).includes('live-data-policy.json'),
     );
     mockedReadFileSync.mockImplementation((p: fs.PathOrFileDescriptor) => {
       if (String(p).includes('live-data-policy.json')) {

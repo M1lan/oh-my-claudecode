@@ -16,17 +16,27 @@ export type {
   MergeReadinessMCQOption,
   MergeReadinessMCQQuestion,
   MergeReadinessMCQAnswer,
-} from "./mcq.js";
+} from './mcq.js';
 
 import type {
   MergeReadinessDimension,
   MergeReadinessProfile,
   MergeReadinessMCQQuestion,
   MergeReadinessMCQAnswer,
-} from "./mcq.js";
+} from './mcq.js';
 
-export type MergeReadinessPhase = "evidence" | "content" | "questioning" | "complete";
-export type MergeReadinessResult = "pending" | "pass" | "paused" | "blocked" | "overridden" | "cancelled";
+export type MergeReadinessPhase =
+  | 'evidence'
+  | 'content'
+  | 'questioning'
+  | 'complete';
+export type MergeReadinessResult =
+  | 'pending'
+  | 'pass'
+  | 'paused'
+  | 'blocked'
+  | 'overridden'
+  | 'cancelled';
 
 export interface MergeReadinessEvidence {
   changedFiles: string[];
@@ -60,7 +70,7 @@ export interface MergeReadinessRound {
 export interface MergeReadinessState {
   active: boolean;
   session_id?: string;
-  current_phase: "merge-readiness";
+  current_phase: 'merge-readiness';
   phase: MergeReadinessPhase;
   profile: MergeReadinessProfile;
   threshold: number;
@@ -99,7 +109,7 @@ export interface MergeReadinessState {
   change_summary: string;
   slug: string;
   /** Evidence source mode: --from-diff requires a diff; --from-artifacts accepts .omc artifacts. */
-  source_mode?: "diff" | "artifacts";
+  source_mode?: 'diff' | 'artifacts';
   /** Summaries of prior terminal attempts on this session, preserved across re-starts. */
   prior_attempts?: MergeReadinessAttempt[];
 }
@@ -130,7 +140,7 @@ export interface MergeReadinessAttempt {
   answers: MergeReadinessMCQAnswer[];
   evidence_summary: {
     changedFiles: string[];
-    source_mode?: "diff" | "artifacts";
+    source_mode?: 'diff' | 'artifacts';
     missingEvidence: string[];
     sourceArtifactCount: number;
     testEvidenceCount: number;

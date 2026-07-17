@@ -10,7 +10,12 @@ export interface DetectionResult {
   /** Confidence score (0-100) */
   confidence: number;
   /** Type of pattern detected */
-  patternType: 'problem-solution' | 'technique' | 'workaround' | 'optimization' | 'best-practice';
+  patternType:
+    | 'problem-solution'
+    | 'technique'
+    | 'workaround'
+    | 'optimization'
+    | 'best-practice';
   /** Suggested trigger keywords */
   suggestedTriggers: string[];
   /** Reason for detection */
@@ -170,28 +175,114 @@ const DETECTION_PATTERNS = [
  */
 const TRIGGER_KEYWORDS = [
   // Technical domains (universal)
-  'react', 'typescript', 'javascript', 'python', 'rust', 'go', 'node',
-  'api', 'database', 'sql', 'graphql', 'rest', 'authentication', 'authorization',
-  'testing', 'debugging', 'deployment', 'docker', 'kubernetes', 'ci/cd',
-  'git', 'webpack', 'vite', 'eslint', 'prettier',
+  'react',
+  'typescript',
+  'javascript',
+  'python',
+  'rust',
+  'go',
+  'node',
+  'api',
+  'database',
+  'sql',
+  'graphql',
+  'rest',
+  'authentication',
+  'authorization',
+  'testing',
+  'debugging',
+  'deployment',
+  'docker',
+  'kubernetes',
+  'ci/cd',
+  'git',
+  'webpack',
+  'vite',
+  'eslint',
+  'prettier',
   // Actions (English)
-  'error handling', 'state management', 'performance', 'optimization',
-  'refactoring', 'migration', 'integration', 'configuration',
+  'error handling',
+  'state management',
+  'performance',
+  'optimization',
+  'refactoring',
+  'migration',
+  'integration',
+  'configuration',
   // Patterns (English)
-  'pattern', 'architecture', 'design', 'structure', 'convention',
+  'pattern',
+  'architecture',
+  'design',
+  'structure',
+  'convention',
   // Chinese keywords
-  '错误处理', '状态管理', '性能', '优化', '重构', '迁移', '集成', '配置',
-  '模式', '架构', '设计', '结构', '规范', '解决方案', '技巧', '最佳实践',
+  '错误处理',
+  '状态管理',
+  '性能',
+  '优化',
+  '重构',
+  '迁移',
+  '集成',
+  '配置',
+  '模式',
+  '架构',
+  '设计',
+  '结构',
+  '规范',
+  '解决方案',
+  '技巧',
+  '最佳实践',
   // Korean keywords
-  '오류 처리', '상태 관리', '성능', '최적화', '리팩토링', '마이그레이션', '통합', '설정',
-  '패턴', '아키텍처', '설계', '구조', '규칙', '해결책', '기술', '모범 사례',
+  '오류 처리',
+  '상태 관리',
+  '성능',
+  '최적화',
+  '리팩토링',
+  '마이그레이션',
+  '통합',
+  '설정',
+  '패턴',
+  '아키텍처',
+  '설계',
+  '구조',
+  '규칙',
+  '해결책',
+  '기술',
+  '모범 사례',
   // Japanese keywords
-  'エラー処理', '状態管理', 'パフォーマンス', '最適化', 'リファクタリング', '移行', '統合', '設定',
-  'パターン', 'アーキテクチャ', '設計', '構造', '規約', '解決策', 'テクニック', 'ベストプラクティス',
+  'エラー処理',
+  '状態管理',
+  'パフォーマンス',
+  '最適化',
+  'リファクタリング',
+  '移行',
+  '統合',
+  '設定',
+  'パターン',
+  'アーキテクチャ',
+  '設計',
+  '構造',
+  '規約',
+  '解決策',
+  'テクニック',
+  'ベストプラクティス',
   // Spanish keywords
-  'manejo de errores', 'gestión de estado', 'rendimiento', 'optimización',
-  'refactorización', 'migración', 'integración', 'configuración',
-  'patrón', 'arquitectura', 'diseño', 'estructura', 'convención', 'solución', 'técnica', 'mejores prácticas',
+  'manejo de errores',
+  'gestión de estado',
+  'rendimiento',
+  'optimización',
+  'refactorización',
+  'migración',
+  'integración',
+  'configuración',
+  'patrón',
+  'arquitectura',
+  'diseño',
+  'estructura',
+  'convención',
+  'solución',
+  'técnica',
+  'mejores prácticas',
 ];
 
 /**
@@ -199,11 +290,15 @@ const TRIGGER_KEYWORDS = [
  */
 export function detectExtractableMoment(
   assistantMessage: string,
-  userMessage?: string
+  userMessage?: string,
 ): DetectionResult {
   const combined = `${userMessage || ''} ${assistantMessage}`.toLowerCase();
 
-  let bestMatch: { type: DetectionResult['patternType']; confidence: number; reason: string } | null = null;
+  let bestMatch: {
+    type: DetectionResult['patternType'];
+    confidence: number;
+    reason: string;
+  } | null = null;
 
   // Check against detection patterns
   for (const patternGroup of DETECTION_PATTERNS) {
@@ -256,7 +351,7 @@ export function detectExtractableMoment(
  */
 export function shouldPromptExtraction(
   detection: DetectionResult,
-  threshold: number = 60
+  threshold: number = 60,
 ): boolean {
   return detection.detected && detection.confidence >= threshold;
 }
@@ -267,9 +362,9 @@ export function shouldPromptExtraction(
 export function generateExtractionPrompt(detection: DetectionResult): string {
   const typeDescriptions: Record<DetectionResult['patternType'], string> = {
     'problem-solution': 'a problem and its solution',
-    'technique': 'a useful technique',
-    'workaround': 'a workaround for a limitation',
-    'optimization': 'an optimization approach',
+    technique: 'a useful technique',
+    workaround: 'a workaround for a limitation',
+    optimization: 'an optimization approach',
     'best-practice': 'a best practice',
   };
 

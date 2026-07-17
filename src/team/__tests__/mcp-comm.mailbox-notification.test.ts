@@ -22,10 +22,16 @@ let sequence = 0;
 const temporaryDirectories: string[] = [];
 
 afterEach(async () => {
-  await Promise.all(temporaryDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
+  await Promise.all(
+    temporaryDirectories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
+  );
 });
 
-function params(overrides: Partial<MailboxNotificationAttemptParams> = {}): MailboxNotificationAttemptParams {
+function params(
+  overrides: Partial<MailboxNotificationAttemptParams> = {},
+): MailboxNotificationAttemptParams {
   const id = ++sequence;
   return {
     teamName: 'dispatch-team',
@@ -38,7 +44,10 @@ function params(overrides: Partial<MailboxNotificationAttemptParams> = {}): Mail
   };
 }
 
-function request(input: MailboxNotificationAttemptParams, overrides: Partial<TeamDispatchRequest> = {}): TeamDispatchRequest {
+function request(
+  input: MailboxNotificationAttemptParams,
+  overrides: Partial<TeamDispatchRequest> = {},
+): TeamDispatchRequest {
   return {
     request_id: input.requestId,
     kind: 'mailbox',
@@ -68,7 +77,9 @@ function message(input: MailboxNotificationAttemptParams): TeamMailboxMessage {
   };
 }
 
-function target(input: MailboxNotificationAttemptParams): MailboxNotificationTarget {
+function target(
+  input: MailboxNotificationAttemptParams,
+): MailboxNotificationTarget {
   return {
     provider: 'tmux',
     providerTarget: 'dispatch-session:0',
@@ -79,7 +90,10 @@ function target(input: MailboxNotificationAttemptParams): MailboxNotificationTar
   };
 }
 
-function tuple(input: MailboxNotificationAttemptParams, paneId = '%9'): MailboxNotificationSecurityTuple {
+function tuple(
+  input: MailboxNotificationAttemptParams,
+  paneId = '%9',
+): MailboxNotificationSecurityTuple {
   return {
     configName: input.teamName,
     configProviderTarget: 'dispatch-session:0',
@@ -107,7 +121,11 @@ function tuple(input: MailboxNotificationAttemptParams, paneId = '%9'): MailboxN
   };
 }
 
-function allow(input: MailboxNotificationAttemptParams, current: TeamDispatchRequest, paneId = '%9'): MailboxNotificationGuardResult {
+function allow(
+  input: MailboxNotificationAttemptParams,
+  current: TeamDispatchRequest,
+  paneId = '%9',
+): MailboxNotificationGuardResult {
   return {
     kind: 'allow',
     target: { ...target(input), paneId },
@@ -117,8 +135,15 @@ function allow(input: MailboxNotificationAttemptParams, current: TeamDispatchReq
   };
 }
 
-function suppress(current: TeamDispatchRequest, reason = 'mailbox_target_metadata_mismatch'): MailboxNotificationGuardResult {
-  return { kind: 'suppress', reason: reason as 'mailbox_target_metadata_mismatch', safePendingRequest: current };
+function suppress(
+  current: TeamDispatchRequest,
+  reason = 'mailbox_target_metadata_mismatch',
+): MailboxNotificationGuardResult {
+  return {
+    kind: 'suppress',
+    reason: reason as 'mailbox_target_metadata_mismatch',
+    safePendingRequest: current,
+  };
 }
 
 function serialLock(): MailboxNotificationAttemptDependencies['withRequestLock'] {
@@ -126,7 +151,9 @@ function serialLock(): MailboxNotificationAttemptDependencies['withRequestLock']
   return async <T>(path: string, fn: () => Promise<T>): Promise<T> => {
     const previous = locks.get(path) ?? Promise.resolve();
     let release!: () => void;
-    const held = new Promise<void>((resolve) => { release = resolve; });
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
     locks.set(path, held);
     await previous;
     try {
@@ -138,7 +165,10 @@ function serialLock(): MailboxNotificationAttemptDependencies['withRequestLock']
   };
 }
 
-function harness(input = params(), overrides: Partial<MailboxNotificationAttemptDependencies> = {}) {
+function harness(
+  input = params(),
+  overrides: Partial<MailboxNotificationAttemptDependencies> = {},
+) {
   let current = request(input);
   let mailboxMarked = false;
   const effect = vi.fn(async () => ({
@@ -148,23 +178,42 @@ function harness(input = params(), overrides: Partial<MailboxNotificationAttempt
   }));
   const readGuard = vi.fn(async () => {
     if (current.status !== 'pending' || mailboxMarked) {
-      return { kind: 'suppress', reason: 'mailbox_replay_suppressed' } as MailboxNotificationGuardResult;
+      return {
+        kind: 'suppress',
+        reason: 'mailbox_replay_suppressed',
+      } as MailboxNotificationGuardResult;
     }
     return allow(input, current);
   });
   const dependencies: MailboxNotificationAttemptDependencies = {
     readGuard,
-    readStrictDispatch: vi.fn(async () => ({ kind: 'valid' as const, request: { ...current } })),
-    readStrictMailbox: vi.fn(async () => mailboxMarked
-      ? { kind: 'replay_suppressed' as const, message: { ...message(input), notified_at: '2026-07-13T00:01:00.000Z' }, marker: 'notified_at' as const }
-      : { kind: 'valid' as const, message: message(input) }),
+    readStrictDispatch: vi.fn(async () => ({
+      kind: 'valid' as const,
+      request: { ...current },
+    })),
+    readStrictMailbox: vi.fn(async () =>
+      mailboxMarked
+        ? {
+            kind: 'replay_suppressed' as const,
+            message: {
+              ...message(input),
+              notified_at: '2026-07-13T00:01:00.000Z',
+            },
+            marker: 'notified_at' as const,
+          }
+        : { kind: 'valid' as const, message: message(input) },
+    ),
     invokeEffect: effect,
     markMailbox: vi.fn(async () => {
       mailboxMarked = true;
       return true;
     }),
     markDispatch: vi.fn(async () => {
-      current = { ...current, status: 'notified', notified_at: '2026-07-13T00:01:00.000Z' };
+      current = {
+        ...current,
+        status: 'notified',
+        notified_at: '2026-07-13T00:01:00.000Z',
+      };
       return current;
     }),
     patchPendingReason: vi.fn(async (_teamName, _requestId, reason) => {
@@ -179,16 +228,27 @@ function harness(input = params(), overrides: Partial<MailboxNotificationAttempt
     dependencies,
     effect,
     readGuard,
-    get request() { return current; },
-    get mailboxMarked() { return mailboxMarked; },
-    markMailbox: (marked: boolean) => { mailboxMarked = marked; },
+    get request() {
+      return current;
+    },
+    get mailboxMarked() {
+      return mailboxMarked;
+    },
+    markMailbox: (marked: boolean) => {
+      mailboxMarked = marked;
+    },
   };
 }
 
 describe('direct mailbox notification orchestration', () => {
   it('hashes the per-request lock name so opaque request text cannot traverse dispatch state', () => {
-    const lock = TeamPaths.mailboxNotificationLock('dispatch-team', '../foreign/request');
-    expect(lock).toMatch(/^\.omc\/state\/team\/dispatch-team\/dispatch\/\.mailbox-notification-[a-f0-9]{64}\.lock$/);
+    const lock = TeamPaths.mailboxNotificationLock(
+      'dispatch-team',
+      '../foreign/request',
+    );
+    expect(lock).toMatch(
+      /^\.omc\/state\/team\/dispatch-team\/dispatch\/\.mailbox-notification-[a-f0-9]{64}\.lock$/,
+    );
     expect(lock).not.toContain('foreign');
   });
   it('serializes two waiters after mutation then false without a second transport effect', async () => {
@@ -221,7 +281,10 @@ describe('direct mailbox notification orchestration', () => {
     temporaryDirectories.push(root);
     const actualCwd = join(root, 'actual');
     const aliasCwd = join(root, 'alias');
-    await mkdir(join(actualCwd, '.omc', 'state', 'team', 'dispatch-team', 'dispatch'), { recursive: true });
+    await mkdir(
+      join(actualCwd, '.omc', 'state', 'team', 'dispatch-team', 'dispatch'),
+      { recursive: true },
+    );
     await symlink(actualCwd, aliasCwd, 'dir');
     const state = harness(params({ cwd: actualCwd }));
     state.dependencies.invokeEffect = vi.fn(async () => ({
@@ -231,8 +294,14 @@ describe('direct mailbox notification orchestration', () => {
       cause: 'returned_false' as const,
     }));
 
-    const first = await runMailboxNotificationAttempt(state.input, state.dependencies);
-    const second = await runMailboxNotificationAttempt({ ...state.input, cwd: aliasCwd }, state.dependencies);
+    const first = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
+    const second = await runMailboxNotificationAttempt(
+      { ...state.input, cwd: aliasCwd },
+      state.dependencies,
+    );
 
     expect(first.reason).toBe('notification_delivery_uncertain');
     expect(second.reason).toBe('notification_delivery_uncertain');
@@ -245,8 +314,14 @@ describe('direct mailbox notification orchestration', () => {
       throw new Error('simulated pane mutation followed by throw');
     });
 
-    const first = await runMailboxNotificationAttempt(state.input, state.dependencies);
-    const second = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const first = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
+    const second = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(first.reason).toBe('notification_delivery_uncertain');
     expect(second.reason).toBe('notification_delivery_uncertain');
@@ -256,12 +331,26 @@ describe('direct mailbox notification orchestration', () => {
 
   it('removes a tombstone for provable pre-effect suppression so a corrected retry may invoke once', async () => {
     const state = harness();
-    state.dependencies.invokeEffect = vi.fn()
-      .mockResolvedValueOnce({ kind: 'not_attempted', reason: 'mailbox_target_missing' })
-      .mockResolvedValueOnce({ kind: 'confirmed', transport: 'tmux_send_keys', reason: 'worker_pane_notified' });
+    state.dependencies.invokeEffect = vi
+      .fn()
+      .mockResolvedValueOnce({
+        kind: 'not_attempted',
+        reason: 'mailbox_target_missing',
+      })
+      .mockResolvedValueOnce({
+        kind: 'confirmed',
+        transport: 'tmux_send_keys',
+        reason: 'worker_pane_notified',
+      });
 
-    const first = await runMailboxNotificationAttempt(state.input, state.dependencies);
-    const second = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const first = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
+    const second = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(first.reason).toBe('mailbox_target_missing');
     expect(second.reason).toBe('worker_pane_notified');
@@ -287,8 +376,14 @@ describe('direct mailbox notification orchestration', () => {
   it('surfaces partial marker failures without retrying the pane effect and retains dual failures as commit uncertainty', async () => {
     const partial = harness();
     partial.dependencies.markMailbox = vi.fn(async () => false);
-    const partialOutcome = await runMailboxNotificationAttempt(partial.input, partial.dependencies);
-    const partialReplay = await runMailboxNotificationAttempt(partial.input, partial.dependencies);
+    const partialOutcome = await runMailboxNotificationAttempt(
+      partial.input,
+      partial.dependencies,
+    );
+    const partialReplay = await runMailboxNotificationAttempt(
+      partial.input,
+      partial.dependencies,
+    );
 
     expect(partialOutcome.reason).toBe('notification_commit_mailbox_failed');
     expect(partialReplay.reason).toBe('notification_commit_mailbox_failed');
@@ -297,8 +392,14 @@ describe('direct mailbox notification orchestration', () => {
     const dual = harness();
     dual.dependencies.markMailbox = vi.fn(async () => false);
     dual.dependencies.markDispatch = vi.fn(async () => null);
-    const dualOutcome = await runMailboxNotificationAttempt(dual.input, dual.dependencies);
-    const dualReplay = await runMailboxNotificationAttempt(dual.input, dual.dependencies);
+    const dualOutcome = await runMailboxNotificationAttempt(
+      dual.input,
+      dual.dependencies,
+    );
+    const dualReplay = await runMailboxNotificationAttempt(
+      dual.input,
+      dual.dependencies,
+    );
 
     expect(dualOutcome.reason).toBe('notification_commit_uncertain');
     expect(dualReplay.reason).toBe('notification_commit_uncertain');
@@ -307,15 +408,22 @@ describe('direct mailbox notification orchestration', () => {
 
   it('reconciles a worker commit missing its mailbox marker without reinvoking transport', async () => {
     const state = harness();
-    state.dependencies.markMailbox = vi.fn()
+    state.dependencies.markMailbox = vi
+      .fn()
       .mockResolvedValueOnce(false)
       .mockImplementation(async () => {
         state.markMailbox(true);
         return true;
       });
 
-    const partial = await runMailboxNotificationAttempt(state.input, state.dependencies);
-    const reconciled = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const partial = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
+    const reconciled = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(partial.reason).toBe('notification_commit_mailbox_failed');
     expect(reconciled.reason).toBe('worker_pane_notified');
@@ -336,20 +444,28 @@ describe('direct mailbox notification orchestration', () => {
     state.dependencies.invokeEffect = effect;
     const markDispatch = state.dependencies.markDispatch;
     let firstDispatch = true;
-    state.dependencies.markDispatch = vi.fn(async (
-      resolvedTeamName: string,
-      requestId: string,
-      resolvedCwd: string,
-    ) => {
-      if (firstDispatch) {
-        firstDispatch = false;
-        return null;
-      }
-      return markDispatch(resolvedTeamName, requestId, resolvedCwd);
-    });
+    state.dependencies.markDispatch = vi.fn(
+      async (
+        resolvedTeamName: string,
+        requestId: string,
+        resolvedCwd: string,
+      ) => {
+        if (firstDispatch) {
+          firstDispatch = false;
+          return null;
+        }
+        return markDispatch(resolvedTeamName, requestId, resolvedCwd);
+      },
+    );
 
-    const partial = await runMailboxNotificationAttempt(state.input, state.dependencies);
-    const reconciled = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const partial = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
+    const reconciled = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(partial.reason).toBe('notification_commit_dispatch_failed');
     expect(reconciled.reason).toBe('leader_pane_notified');
@@ -371,7 +487,10 @@ describe('direct mailbox notification orchestration', () => {
 
     await runMailboxNotificationAttempt(state.input, state.dependencies);
     state.markMailbox(true);
-    const reconciled = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const reconciled = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(reconciled.reason).toBe('notification_commit_dispatch_failed');
     expect(state.dependencies.invokeEffect).toHaveBeenCalledTimes(1);
@@ -380,30 +499,47 @@ describe('direct mailbox notification orchestration', () => {
 
   it('suppresses final current-state or security-tuple changes before installing an effect tombstone', async () => {
     const stateChange = harness();
-    stateChange.dependencies.readGuard = vi.fn()
+    stateChange.dependencies.readGuard = vi
+      .fn()
       .mockResolvedValueOnce(allow(stateChange.input, stateChange.request))
       .mockResolvedValueOnce(suppress(stateChange.request));
 
-    const changedState = await runMailboxNotificationAttempt(stateChange.input, stateChange.dependencies);
+    const changedState = await runMailboxNotificationAttempt(
+      stateChange.input,
+      stateChange.dependencies,
+    );
     expect(changedState.reason).toBe('mailbox_target_metadata_mismatch');
     expect(stateChange.effect).not.toHaveBeenCalled();
 
     const tupleChange = harness();
-    tupleChange.dependencies.readGuard = vi.fn()
+    tupleChange.dependencies.readGuard = vi
+      .fn()
       .mockResolvedValueOnce(allow(tupleChange.input, tupleChange.request))
-      .mockResolvedValueOnce(allow(tupleChange.input, tupleChange.request, '%10'));
+      .mockResolvedValueOnce(
+        allow(tupleChange.input, tupleChange.request, '%10'),
+      );
 
-    const changedTuple = await runMailboxNotificationAttempt(tupleChange.input, tupleChange.dependencies);
+    const changedTuple = await runMailboxNotificationAttempt(
+      tupleChange.input,
+      tupleChange.dependencies,
+    );
     expect(changedTuple.reason).toBe('mailbox_security_tuple_changed');
     expect(tupleChange.effect).not.toHaveBeenCalled();
   });
 
   it('surfaces pending-reason persistence failures without calling transport', async () => {
     const state = harness();
-    state.dependencies.readGuard = vi.fn(async () => suppress(state.request, 'mailbox_target_metadata_mismatch'));
-    state.dependencies.patchPendingReason = vi.fn(async () => ({ kind: 'write_failed' }));
+    state.dependencies.readGuard = vi.fn(async () =>
+      suppress(state.request, 'mailbox_target_metadata_mismatch'),
+    );
+    state.dependencies.patchPendingReason = vi.fn(async () => ({
+      kind: 'write_failed',
+    }));
 
-    const outcome = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const outcome = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(outcome.reason).toBe('pending_reason_persist_failed');
     expect(state.effect).not.toHaveBeenCalled();
@@ -413,8 +549,13 @@ describe('direct mailbox notification orchestration', () => {
     const state = harness();
     let lockDepth = 0;
     let maximumLockDepth = 0;
-    state.dependencies.readGuard = vi.fn(async () => suppress(state.request, 'mailbox_target_metadata_mismatch'));
-    state.dependencies.withRequestLock = async <T>(_path: string, fn: () => Promise<T>): Promise<T> => {
+    state.dependencies.readGuard = vi.fn(async () =>
+      suppress(state.request, 'mailbox_target_metadata_mismatch'),
+    );
+    state.dependencies.withRequestLock = async <T>(
+      _path: string,
+      fn: () => Promise<T>,
+    ): Promise<T> => {
       lockDepth += 1;
       maximumLockDepth = Math.max(maximumLockDepth, lockDepth);
       try {
@@ -428,7 +569,10 @@ describe('direct mailbox notification orchestration', () => {
       return { kind: 'patched' };
     });
 
-    const outcome = await runMailboxNotificationAttempt(state.input, state.dependencies);
+    const outcome = await runMailboxNotificationAttempt(
+      state.input,
+      state.dependencies,
+    );
 
     expect(outcome.reason).toBe('mailbox_target_metadata_mismatch');
     expect(maximumLockDepth).toBe(1);
@@ -437,7 +581,9 @@ describe('direct mailbox notification orchestration', () => {
   it('uses the broadcast recipient snapshot 1:1 and surfaces a persisted recipient divergence', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'omc-mcp-broadcast-'));
     temporaryDirectories.push(cwd);
-    await mkdir(join(cwd, '.omc', 'state', 'team', 'dispatch-team'), { recursive: true });
+    await mkdir(join(cwd, '.omc', 'state', 'team', 'dispatch-team'), {
+      recursive: true,
+    });
 
     let nextMessage = 0;
     const effects: string[] = [];
@@ -453,7 +599,11 @@ describe('direct mailbox notification orchestration', () => {
       triggerFor: (workerName) => `Read mailbox for ${workerName}.`,
       notify: vi.fn(async () => {
         effects.push('notify');
-        return { ok: true, transport: 'hook' as const, reason: 'queued_for_hook_dispatch' };
+        return {
+          ok: true,
+          transport: 'hook' as const,
+          reason: 'queued_for_hook_dispatch',
+        };
       }),
       deps: {
         sendDirectMessage: vi.fn(async (_teamName, _fromWorker, toWorker) => {
@@ -469,37 +619,52 @@ describe('direct mailbox notification orchestration', () => {
     });
 
     expect(outcomes).toHaveLength(2);
-    expect(outcomes[0]).toMatchObject({ to_worker: 'worker-1', reason: 'queued_for_hook_dispatch' });
-    expect(outcomes[1]).toMatchObject({ to_worker: 'worker-2', reason: 'broadcast_recipient_diverged' });
+    expect(outcomes[0]).toMatchObject({
+      to_worker: 'worker-1',
+      reason: 'queued_for_hook_dispatch',
+    });
+    expect(outcomes[1]).toMatchObject({
+      to_worker: 'worker-2',
+      reason: 'broadcast_recipient_diverged',
+    });
     expect(effects).toEqual(['persist:worker-1', 'persist:worker-2', 'notify']);
   });
 
   it('does not notify a broadcast when persisting the second recipient fails', async () => {
     const cwd = await mkdtemp(join(tmpdir(), 'omc-mcp-broadcast-'));
     temporaryDirectories.push(cwd);
-    await mkdir(join(cwd, '.omc', 'state', 'team', 'dispatch-team'), { recursive: true });
-    const notify = vi.fn(async () => ({ ok: true, transport: 'hook' as const, reason: 'queued_for_hook_dispatch' }));
+    await mkdir(join(cwd, '.omc', 'state', 'team', 'dispatch-team'), {
+      recursive: true,
+    });
+    const notify = vi.fn(async () => ({
+      ok: true,
+      transport: 'hook' as const,
+      reason: 'queued_for_hook_dispatch',
+    }));
 
-    await expect(queueBroadcastMailboxMessage({
-      teamName: 'dispatch-team',
-      fromWorker: 'leader-fixed',
-      recipients: [
-        { workerName: 'worker-1', workerIndex: 1, paneId: '%9' },
-        { workerName: 'worker-2', workerIndex: 2, paneId: '%10' },
-      ],
-      body: 'broadcast body',
-      cwd,
-      triggerFor: (workerName) => `Read mailbox for ${workerName}.`,
-      notify,
-      deps: {
-        sendDirectMessage: vi.fn(async (_teamName, _fromWorker, toWorker) => {
-          if (toWorker === 'worker-2') throw new Error('persist recipient 2 failed');
-          return { message_id: 'broadcast-1', to_worker: toWorker };
-        }),
-        broadcastMessage: vi.fn(async () => []),
-        markMessageNotified: vi.fn(async () => true),
-      },
-    })).rejects.toThrow('persist recipient 2 failed');
+    await expect(
+      queueBroadcastMailboxMessage({
+        teamName: 'dispatch-team',
+        fromWorker: 'leader-fixed',
+        recipients: [
+          { workerName: 'worker-1', workerIndex: 1, paneId: '%9' },
+          { workerName: 'worker-2', workerIndex: 2, paneId: '%10' },
+        ],
+        body: 'broadcast body',
+        cwd,
+        triggerFor: (workerName) => `Read mailbox for ${workerName}.`,
+        notify,
+        deps: {
+          sendDirectMessage: vi.fn(async (_teamName, _fromWorker, toWorker) => {
+            if (toWorker === 'worker-2')
+              throw new Error('persist recipient 2 failed');
+            return { message_id: 'broadcast-1', to_worker: toWorker };
+          }),
+          broadcastMessage: vi.fn(async () => []),
+          markMessageNotified: vi.fn(async () => true),
+        },
+      }),
+    ).rejects.toThrow('persist recipient 2 failed');
 
     expect(notify).not.toHaveBeenCalled();
   });

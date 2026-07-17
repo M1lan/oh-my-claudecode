@@ -131,7 +131,10 @@ describe('job-state-db', () => {
       const job = createTestJob();
       upsertJob(job);
 
-      const updated = createTestJob({ status: 'completed', completedAt: new Date().toISOString() });
+      const updated = createTestJob({
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+      });
       expect(upsertJob(updated)).toBe(true);
 
       const fetched = getJob('codex', 'abcd1234');
@@ -213,7 +216,11 @@ describe('job-state-db', () => {
     });
 
     it('should correctly map boolean fields', () => {
-      const job = createTestJob({ usedFallback: true, fallbackModel: 'gpt-4', killedByUser: true });
+      const job = createTestJob({
+        usedFallback: true,
+        fallbackModel: 'gpt-4',
+        killedByUser: true,
+      });
       upsertJob(job);
 
       const result = getJob('codex', 'abcd1234');
@@ -234,18 +241,28 @@ describe('job-state-db', () => {
     });
 
     it('should filter by status for all providers', () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', status: 'completed' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }));
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c2', status: 'failed' }));
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c1', status: 'completed' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c2', status: 'failed' }),
+      );
 
       const completed = getJobsByStatus(undefined, 'completed');
       expect(completed).toHaveLength(2);
-      expect(completed.map(j => j.jobId).sort()).toEqual(['c1', 'g1']);
+      expect(completed.map((j) => j.jobId).sort()).toEqual(['c1', 'g1']);
     });
 
     it('should filter by provider and status', () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', status: 'completed' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }));
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c1', status: 'completed' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }),
+      );
 
       const codexCompleted = getJobsByStatus('codex', 'completed');
       expect(codexCompleted).toHaveLength(1);
@@ -276,12 +293,16 @@ describe('job-state-db', () => {
 
       const active = getActiveJobs();
       expect(active).toHaveLength(2);
-      expect(active.map(j => j.jobId).sort()).toEqual(['j1', 'j2']);
+      expect(active.map((j) => j.jobId).sort()).toEqual(['j1', 'j2']);
     });
 
     it('should filter by provider', () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', status: 'running' }));
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'gemini', jobId: 'g1', status: 'running' }),
+      );
 
       const codexJobs = getActiveJobs('codex');
       expect(codexJobs).toHaveLength(1);
@@ -327,8 +348,20 @@ describe('job-state-db', () => {
 
     it('should filter by provider', () => {
       const recentTime = new Date().toISOString();
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', spawnedAt: recentTime }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', spawnedAt: recentTime }));
+      upsertJob(
+        createTestJob({
+          provider: 'codex',
+          jobId: 'c1',
+          spawnedAt: recentTime,
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          provider: 'gemini',
+          jobId: 'g1',
+          spawnedAt: recentTime,
+        }),
+      );
 
       const codexRecent = getRecentJobs('codex', 60 * 60 * 1000);
       expect(codexRecent).toHaveLength(1);
@@ -429,7 +462,9 @@ describe('job-state-db', () => {
 
     it('should return false when db is not initialized', () => {
       closeJobDb();
-      expect(updateJobStatus('codex', 'abcd1234', { status: 'completed' })).toBe(false);
+      expect(
+        updateJobStatus('codex', 'abcd1234', { status: 'completed' }),
+      ).toBe(false);
     });
   });
 
@@ -558,10 +593,30 @@ describe('job-state-db', () => {
 
     it('should remove old terminal jobs', () => {
       const oldTime = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(); // 48 hours ago
-      upsertJob(createTestJob({ jobId: 'old1', status: 'completed', spawnedAt: oldTime }));
-      upsertJob(createTestJob({ jobId: 'old2', status: 'failed', spawnedAt: oldTime }));
-      upsertJob(createTestJob({ jobId: 'new1', status: 'completed', spawnedAt: new Date().toISOString() }));
-      upsertJob(createTestJob({ jobId: 'active1', status: 'running', spawnedAt: oldTime }));
+      upsertJob(
+        createTestJob({
+          jobId: 'old1',
+          status: 'completed',
+          spawnedAt: oldTime,
+        }),
+      );
+      upsertJob(
+        createTestJob({ jobId: 'old2', status: 'failed', spawnedAt: oldTime }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'new1',
+          status: 'completed',
+          spawnedAt: new Date().toISOString(),
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'active1',
+          status: 'running',
+          spawnedAt: oldTime,
+        }),
+      );
 
       const cleaned = cleanupOldJobs(24 * 60 * 60 * 1000);
       expect(cleaned).toBe(2);
@@ -575,8 +630,20 @@ describe('job-state-db', () => {
 
     it('should not remove active jobs regardless of age', () => {
       const oldTime = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-      upsertJob(createTestJob({ jobId: 'active1', status: 'spawned', spawnedAt: oldTime }));
-      upsertJob(createTestJob({ jobId: 'active2', status: 'running', spawnedAt: oldTime }));
+      upsertJob(
+        createTestJob({
+          jobId: 'active1',
+          status: 'spawned',
+          spawnedAt: oldTime,
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'active2',
+          status: 'running',
+          spawnedAt: oldTime,
+        }),
+      );
 
       cleanupOldJobs(1000); // 1 second
       expect(getJob('codex', 'active1')).not.toBeNull();
@@ -585,7 +652,13 @@ describe('job-state-db', () => {
 
     it('should remove timeout status jobs', () => {
       const oldTime = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-      upsertJob(createTestJob({ jobId: 'timeout1', status: 'timeout', spawnedAt: oldTime }));
+      upsertJob(
+        createTestJob({
+          jobId: 'timeout1',
+          status: 'timeout',
+          spawnedAt: oldTime,
+        }),
+      );
 
       const cleaned = cleanupOldJobs(24 * 60 * 60 * 1000);
       expect(cleaned).toBe(1);
@@ -594,10 +667,24 @@ describe('job-state-db', () => {
 
     it('should use default max age of 24 hours', () => {
       const oldTime = new Date(Date.now() - 30 * 60 * 60 * 1000).toISOString(); // 30 hours ago
-      const recentTime = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(); // 12 hours ago
+      const recentTime = new Date(
+        Date.now() - 12 * 60 * 60 * 1000,
+      ).toISOString(); // 12 hours ago
 
-      upsertJob(createTestJob({ jobId: 'old1', status: 'completed', spawnedAt: oldTime }));
-      upsertJob(createTestJob({ jobId: 'recent1', status: 'completed', spawnedAt: recentTime }));
+      upsertJob(
+        createTestJob({
+          jobId: 'old1',
+          status: 'completed',
+          spawnedAt: oldTime,
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'recent1',
+          status: 'completed',
+          spawnedAt: recentTime,
+        }),
+      );
 
       const cleaned = cleanupOldJobs();
       expect(cleaned).toBe(1);
@@ -646,8 +733,12 @@ describe('job-state-db', () => {
     });
 
     it('should count both providers together', () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }));
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'gemini', jobId: 'g1', status: 'completed' }),
+      );
 
       const stats = getJobStats();
       expect(stats!.total).toBe(2);
@@ -671,7 +762,13 @@ describe('job-state-db', () => {
     });
 
     it('should include active jobs', () => {
-      upsertJob(createTestJob({ jobId: 'j1', status: 'running', agentRole: 'architect' }));
+      upsertJob(
+        createTestJob({
+          jobId: 'j1',
+          status: 'running',
+          agentRole: 'architect',
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('Active Background Jobs');
@@ -680,7 +777,13 @@ describe('job-state-db', () => {
     });
 
     it('should include recent completed jobs', () => {
-      upsertJob(createTestJob({ jobId: 'j1', status: 'completed', agentRole: 'planner' }));
+      upsertJob(
+        createTestJob({
+          jobId: 'j1',
+          status: 'completed',
+          agentRole: 'planner',
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('Recent Completed Jobs');
@@ -701,30 +804,36 @@ describe('job-state-db', () => {
 
     it('should show elapsed time for active jobs', () => {
       const oldTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 minutes ago
-      upsertJob(createTestJob({ jobId: 'j1', status: 'running', spawnedAt: oldTime }));
+      upsertJob(
+        createTestJob({ jobId: 'j1', status: 'running', spawnedAt: oldTime }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toMatch(/running for \d+m/);
     });
 
     it('should show fallback information', () => {
-      upsertJob(createTestJob({
-        jobId: 'j1',
-        status: 'completed',
-        usedFallback: true,
-        fallbackModel: 'gpt-4',
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'j1',
+          status: 'completed',
+          usedFallback: true,
+          fallbackModel: 'gpt-4',
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('fallback: gpt-4');
     });
 
     it('should show error messages', () => {
-      upsertJob(createTestJob({
-        jobId: 'j1',
-        status: 'failed',
-        error: 'test error message',
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'j1',
+          status: 'failed',
+          error: 'test error message',
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('error: test error message');
@@ -732,11 +841,13 @@ describe('job-state-db', () => {
 
     it('should truncate long error messages', () => {
       const longError = 'a'.repeat(200);
-      upsertJob(createTestJob({
-        jobId: 'j1',
-        status: 'failed',
-        error: longError,
-      }));
+      upsertJob(
+        createTestJob({
+          jobId: 'j1',
+          status: 'failed',
+          error: longError,
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('error:');
@@ -757,8 +868,20 @@ describe('job-state-db', () => {
       const recentTime = new Date().toISOString();
       const oldTime = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(); // 2 hours ago
 
-      upsertJob(createTestJob({ jobId: 'recent1', status: 'completed', spawnedAt: recentTime }));
-      upsertJob(createTestJob({ jobId: 'old1', status: 'completed', spawnedAt: oldTime }));
+      upsertJob(
+        createTestJob({
+          jobId: 'recent1',
+          status: 'completed',
+          spawnedAt: recentTime,
+        }),
+      );
+      upsertJob(
+        createTestJob({
+          jobId: 'old1',
+          status: 'completed',
+          spawnedAt: oldTime,
+        }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('recent1');
@@ -766,8 +889,12 @@ describe('job-state-db', () => {
     });
 
     it('should show both codex and gemini jobs', () => {
-      upsertJob(createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }));
-      upsertJob(createTestJob({ provider: 'gemini', jobId: 'g1', status: 'running' }));
+      upsertJob(
+        createTestJob({ provider: 'codex', jobId: 'c1', status: 'running' }),
+      );
+      upsertJob(
+        createTestJob({ provider: 'gemini', jobId: 'g1', status: 'running' }),
+      );
 
       const summary = getJobSummaryForPreCompact();
       expect(summary).toContain('codex');

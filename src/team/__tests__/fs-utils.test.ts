@@ -3,7 +3,10 @@ import { statSync, mkdirSync, rmSync, existsSync, realpathSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import {
-  atomicWriteJson, writeFileWithMode, ensureDirWithMode, validateResolvedPath
+  atomicWriteJson,
+  writeFileWithMode,
+  ensureDirWithMode,
+  validateResolvedPath,
 } from '../fs-utils.js';
 
 const TEST_DIR = join(tmpdir(), '__test_fs_utils__');
@@ -77,13 +80,17 @@ describe('validateResolvedPath', () => {
   it('rejects paths that escape base via ../', () => {
     mkdirSync(VALIDATE_DIR, { recursive: true });
     const base = realpathSync(VALIDATE_DIR);
-    expect(() => validateResolvedPath(join(base, '..', 'escape'), base)).toThrow('Path traversal');
+    expect(() =>
+      validateResolvedPath(join(base, '..', 'escape'), base),
+    ).toThrow('Path traversal');
   });
 
   it('accepts paths within base directory', () => {
     mkdirSync(VALIDATE_DIR, { recursive: true });
     const base = realpathSync(VALIDATE_DIR);
-    expect(() => validateResolvedPath(join(base, 'project', 'file.ts'), base)).not.toThrow();
+    expect(() =>
+      validateResolvedPath(join(base, 'project', 'file.ts'), base),
+    ).not.toThrow();
   });
 
   it('accepts exact base path', () => {

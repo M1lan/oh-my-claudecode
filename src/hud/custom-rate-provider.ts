@@ -81,13 +81,18 @@ function isCacheValid(cache: CustomProviderCache): boolean {
  * Sends SIGTERM when the timeout fires, then SIGKILL after 200 ms if still
  * alive. The returned promise rejects on non-zero exit or timeout.
  */
-function spawnWithTimeout(cmd: string | string[], timeoutMs: number): Promise<string> {
+function spawnWithTimeout(
+  cmd: string | string[],
+  timeoutMs: number,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const [executable, ...args] = Array.isArray(cmd)
       ? cmd
       : (['sh', '-c', cmd] as string[]);
 
-    const child = spawn(executable, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(executable, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
 
     let stdout = '';
     child.stdout.on('data', (chunk: Buffer) => {
@@ -105,7 +110,9 @@ function spawnWithTimeout(cmd: string | string[], timeoutMs: number): Promise<st
           // already exited
         }
       }, 200);
-      reject(new Error(`Custom rate limit command timed out after ${timeoutMs}ms`));
+      reject(
+        new Error(`Custom rate limit command timed out after ${timeoutMs}ms`),
+      );
     }, timeoutMs);
 
     child.on('close', (code) => {
@@ -151,14 +158,16 @@ function parseOutput(raw: string, periods?: string[]): CustomBucket[] | null {
     if (typeof b.id !== 'string' || typeof b.label !== 'string') return false;
     if (!b.usage || typeof b.usage.type !== 'string') return false;
     const u = b.usage;
-    if (u.type === 'percent') return typeof (u as { value: unknown }).value === 'number';
+    if (u.type === 'percent')
+      return typeof (u as { value: unknown }).value === 'number';
     if (u.type === 'credit') {
       return (
         typeof (u as { used: unknown }).used === 'number' &&
         typeof (u as { limit: unknown }).limit === 'number'
       );
     }
-    if (u.type === 'string') return typeof (u as { value: unknown }).value === 'string';
+    if (u.type === 'string')
+      return typeof (u as { value: unknown }).value === 'string';
     return false;
   });
 
@@ -197,7 +206,9 @@ export async function executeCustomProvider(
 
     if (buckets === null) {
       if (process.env.OMC_DEBUG) {
-        console.error('[custom-rate-provider] Invalid output format from command');
+        console.error(
+          '[custom-rate-provider] Invalid output format from command',
+        );
       }
       if (cache) return { buckets: cache.buckets, stale: true };
       return { buckets: [], stale: false, error: 'invalid output' };

@@ -246,13 +246,13 @@ The enforcer runs in the `pre-tool-use` hook:
 Run tests:
 
 ```bash
-npm test -- delegation-enforcer
+pnpm test -- delegation-enforcer
 ```
 
 Run demo:
 
 ```bash
-npx tsx examples/delegation-enforcer-demo.ts
+pnpm exec tsx examples/delegation-enforcer-demo.ts
 ```
 
 ## Benefits

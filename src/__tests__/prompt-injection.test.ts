@@ -1,5 +1,12 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import { resolveSystemPrompt, buildPromptWithSystemContext, VALID_AGENT_ROLES, getValidAgentRoles, isValidAgentRoleName, SUBAGENT_HEADER } from '../mcp/prompt-injection.js';
+import {
+  resolveSystemPrompt,
+  buildPromptWithSystemContext,
+  VALID_AGENT_ROLES,
+  getValidAgentRoles,
+  isValidAgentRoleName,
+  SUBAGENT_HEADER,
+} from '../mcp/prompt-injection.js';
 
 describe('prompt-injection', () => {
   describe('VALID_AGENT_ROLES', () => {
@@ -114,7 +121,7 @@ describe('prompt-injection', () => {
       const result = resolveSystemPrompt(undefined, 'nonexistent-agent-xyz');
       expect(result).toBeUndefined();
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('nonexistent-agent-xyz')
+        expect.stringContaining('nonexistent-agent-xyz'),
       );
     });
 
@@ -150,20 +157,34 @@ describe('prompt-injection', () => {
 
   describe('buildPromptWithSystemContext', () => {
     test('returns subagent header + user prompt when no extras', () => {
-      const result = buildPromptWithSystemContext('Hello', undefined, undefined);
+      const result = buildPromptWithSystemContext(
+        'Hello',
+        undefined,
+        undefined,
+      );
       expect(result).toBe(`${SUBAGENT_HEADER}\n\nHello`);
     });
 
     test('prepends system prompt with delimiters', () => {
-      const result = buildPromptWithSystemContext('Hello', undefined, 'You are a reviewer');
+      const result = buildPromptWithSystemContext(
+        'Hello',
+        undefined,
+        'You are a reviewer',
+      );
       expect(result).toContain('<system-instructions>');
       expect(result).toContain('You are a reviewer');
       expect(result).toContain('</system-instructions>');
-      expect(result.indexOf('system-instructions')).toBeLessThan(result.indexOf('Hello'));
+      expect(result.indexOf('system-instructions')).toBeLessThan(
+        result.indexOf('Hello'),
+      );
     });
 
     test('orders: system > files > user', () => {
-      const result = buildPromptWithSystemContext('User prompt', 'File contents', 'System prompt');
+      const result = buildPromptWithSystemContext(
+        'User prompt',
+        'File contents',
+        'System prompt',
+      );
       const sysIdx = result.indexOf('System prompt');
       const fileIdx = result.indexOf('File contents');
       const userIdx = result.indexOf('User prompt');
@@ -172,16 +193,26 @@ describe('prompt-injection', () => {
     });
 
     test('handles file context without system prompt', () => {
-      const result = buildPromptWithSystemContext('Hello', 'File contents', undefined);
+      const result = buildPromptWithSystemContext(
+        'Hello',
+        'File contents',
+        undefined,
+      );
       expect(result).not.toContain('system-instructions');
       expect(result).toContain('File contents');
       expect(result).toContain('Hello');
       // File context should come before user prompt
-      expect(result.indexOf('File contents')).toBeLessThan(result.indexOf('Hello'));
+      expect(result.indexOf('File contents')).toBeLessThan(
+        result.indexOf('Hello'),
+      );
     });
 
     test('handles system prompt without file context', () => {
-      const result = buildPromptWithSystemContext('Hello', undefined, 'System prompt');
+      const result = buildPromptWithSystemContext(
+        'Hello',
+        undefined,
+        'System prompt',
+      );
       expect(result).toContain('<system-instructions>');
       expect(result).toContain('System prompt');
       expect(result).toContain('Hello');
@@ -200,7 +231,11 @@ describe('prompt-injection', () => {
       const fileContext = 'File line 1\nFile line 2';
       const userPrompt = 'User line 1\nUser line 2';
 
-      const result = buildPromptWithSystemContext(userPrompt, fileContext, systemPrompt);
+      const result = buildPromptWithSystemContext(
+        userPrompt,
+        fileContext,
+        systemPrompt,
+      );
 
       expect(result).toContain('Line 1\nLine 2\nLine 3');
       expect(result).toContain('File line 1\nFile line 2');
@@ -220,7 +255,11 @@ describe('prompt-injection', () => {
       const fileContext = '--- File: test.ts ---\nconst x = 1;';
       const userPrompt = 'Review this code';
 
-      const result = buildPromptWithSystemContext(userPrompt, fileContext, systemPrompt);
+      const result = buildPromptWithSystemContext(
+        userPrompt,
+        fileContext,
+        systemPrompt,
+      );
 
       expect(result).toContain('<system-instructions>');
       expect(result).toContain('</system-instructions>');
@@ -237,8 +276,15 @@ describe('prompt-injection', () => {
     });
 
     test('full flow with explicit system_prompt', () => {
-      const systemPrompt = resolveSystemPrompt('You are a code reviewer', 'architect');
-      const result = buildPromptWithSystemContext('Review this', undefined, systemPrompt);
+      const systemPrompt = resolveSystemPrompt(
+        'You are a code reviewer',
+        'architect',
+      );
+      const result = buildPromptWithSystemContext(
+        'Review this',
+        undefined,
+        systemPrompt,
+      );
 
       // Should use explicit system_prompt, not architect's
       expect(result).toContain('You are a code reviewer');
@@ -247,7 +293,11 @@ describe('prompt-injection', () => {
 
     test('full flow with no system prompt', () => {
       const systemPrompt = resolveSystemPrompt(undefined, undefined);
-      const result = buildPromptWithSystemContext('Hello', '--- File ---', systemPrompt);
+      const result = buildPromptWithSystemContext(
+        'Hello',
+        '--- File ---',
+        systemPrompt,
+      );
 
       expect(result).not.toContain('system-instructions');
       expect(result).toContain('--- File ---');

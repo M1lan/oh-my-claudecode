@@ -29,40 +29,40 @@ const AGENT_TYPE_CODES: Record<string, string> = {
   explore: 'e',
 
   // Analyst - 'T' for aTalyst (A taken by Architect)
-  analyst: 'T',             // opus
+  analyst: 'T', // opus
 
   // Planner - 'P' for Planner
-  planner: 'P',             // opus
+  planner: 'P', // opus
 
   // Architect - 'A' for Architect
-  architect: 'A',           // opus
+  architect: 'A', // opus
 
   // Debugger - 'g' for debuGger (d taken by designer)
-  debugger: 'g',            // sonnet
+  debugger: 'g', // sonnet
 
   // Executor - 'x' for eXecutor (sonnet default, opus for complex tasks)
-  executor: 'x',            // sonnet/opus
+  executor: 'x', // sonnet/opus
 
   // Verifier - 'V' for Verifier (but vision uses 'v'... use uppercase 'V' for governance role)
-  verifier: 'V',            // sonnet
+  verifier: 'V', // sonnet
 
   // ============================================================
   // REVIEW LANE
   // ============================================================
   // Style Reviewer - 'Y' for stYle
-  'style-reviewer': 'y',    // haiku
+  'style-reviewer': 'y', // haiku
 
   // API Reviewer - 'I' for Interface/API
-  'api-reviewer': 'i',      // sonnet
+  'api-reviewer': 'i', // sonnet
 
   // Security Reviewer - 'K' for Security (S taken by Scientist)
-  'security-reviewer': 'K',      // sonnet
+  'security-reviewer': 'K', // sonnet
 
   // Performance Reviewer - 'O' for perfOrmance
-  'performance-reviewer': 'o',   // sonnet
+  'performance-reviewer': 'o', // sonnet
 
   // Code Reviewer - 'R' for Review (uppercase, opus tier)
-  'code-reviewer': 'R',     // opus
+  'code-reviewer': 'R', // opus
 
   // ============================================================
   // DOMAIN SPECIALISTS
@@ -71,49 +71,49 @@ const AGENT_TYPE_CODES: Record<string, string> = {
   'dependency-expert': 'l', // sonnet
 
   // Test Engineer - 'T' (but analyst uses 'T'... use uppercase 'T')
-  'test-engineer': 't',     // sonnet
+  'test-engineer': 't', // sonnet
 
   // Quality Strategist - 'Qs' for Quality Strategist (disambiguated from quality-reviewer)
-  'quality-strategist': 'Qs',     // sonnet
+  'quality-strategist': 'Qs', // sonnet
 
   // Designer - 'd' for Designer
-  designer: 'd',            // sonnet
+  designer: 'd', // sonnet
 
   // Writer - 'W' for Writer
-  writer: 'w',              // haiku
+  writer: 'w', // haiku
 
   // QA Tester - 'Q' for QA
-  'qa-tester': 'q',         // sonnet
+  'qa-tester': 'q', // sonnet
 
   // Scientist - 'S' for Scientist
-  scientist: 's',           // sonnet
+  scientist: 's', // sonnet
 
   // Git Master - 'M' for Master
-  'git-master': 'm',        // sonnet
+  'git-master': 'm', // sonnet
 
   // ============================================================
   // PRODUCT LANE
   // ============================================================
   // Product Manager - 'Pm' for Product Manager (disambiguated from planner)
-  'product-manager': 'Pm',   // sonnet
+  'product-manager': 'Pm', // sonnet
 
   // UX Researcher - 'u' for Ux
-  'ux-researcher': 'u',     // sonnet
+  'ux-researcher': 'u', // sonnet
 
   // Information Architect - 'Ia' for Information Architect (disambiguated from api-reviewer)
   'information-architect': 'Ia', // sonnet
 
   // Product Analyst - 'a' for analyst
-  'product-analyst': 'a',   // sonnet
+  'product-analyst': 'a', // sonnet
 
   // ============================================================
   // COORDINATION
   // ============================================================
   // Critic - 'C' for Critic
-  critic: 'C',              // opus
+  critic: 'C', // opus
 
   // Vision - 'V' for Vision (lowercase since sonnet)
-  vision: 'v',              // sonnet
+  vision: 'v', // sonnet
 
   // Document Specialist - 'D' for Document
   'document-specialist': 'D', // sonnet
@@ -122,7 +122,7 @@ const AGENT_TYPE_CODES: Record<string, string> = {
   // BACKWARD COMPATIBILITY (Deprecated)
   // ============================================================
   // Researcher - 'r' for Researcher (deprecated, points to document-specialist)
-  researcher: 'r',          // sonnet
+  researcher: 'r', // sonnet
 };
 
 /**
@@ -149,7 +149,9 @@ function getAgentCode(agentType: string, model?: string): string {
     if (code.length === 1) {
       code = tier.includes('opus') ? code.toUpperCase() : code.toLowerCase();
     } else {
-      const first = tier.includes('opus') ? code[0].toUpperCase() : code[0].toLowerCase();
+      const first = tier.includes('opus')
+        ? code[0].toUpperCase()
+        : code[0].toLowerCase();
       code = first + code.slice(1);
     }
   }
@@ -200,7 +202,9 @@ export function renderAgents(agents: ActiveAgent[]): string | null {
  * Sort agents by start time (freshest first, oldest last)
  */
 function sortByFreshest(agents: ActiveAgent[]): ActiveAgent[] {
-  return [...agents].sort((a, b) => b.startTime.getTime() - a.startTime.getTime());
+  return [...agents].sort(
+    (a, b) => b.startTime.getTime() - a.startTime.getTime(),
+  );
 }
 
 /**
@@ -233,7 +237,9 @@ export function renderAgentsCoded(agents: ActiveAgent[]): string | null {
  *
  * Format: agents:O(2m)es
  */
-export function renderAgentsCodedWithDuration(agents: ActiveAgent[]): string | null {
+export function renderAgentsCodedWithDuration(
+  agents: ActiveAgent[],
+): string | null {
   const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
@@ -326,7 +332,10 @@ export function renderAgentsDetailed(agents: ActiveAgent[]): string | null {
  * Truncate description to fit in statusline.
  * CJK-aware: accounts for double-width characters.
  */
-function truncateDescription(desc: string | undefined, maxWidth: number = 20): string {
+function truncateDescription(
+  desc: string | undefined,
+  maxWidth: number = 20,
+): string {
   if (!desc) return '...';
   // Use CJK-aware truncation (maxWidth is visual columns, not character count)
   return truncateToWidth(desc, maxWidth);
@@ -342,10 +351,10 @@ function getShortAgentName(agentType: string): string {
   // Abbreviate common names
   const abbrevs: Record<string, string> = {
     // Build/Analysis Lane
-    'executor': 'exec',
+    executor: 'exec',
     'deep-executor': 'exec', // deprecated alias
-    'debugger': 'debug',
-    'verifier': 'verify',
+    debugger: 'debug',
+    verifier: 'verify',
     // Review Lane
     'style-reviewer': 'style',
     'quality-reviewer': 'review', // deprecated alias
@@ -359,9 +368,9 @@ function getShortAgentName(agentType: string): string {
     'test-engineer': 'test-eng',
     'quality-strategist': 'qs',
     'build-fixer': 'debug', // deprecated alias
-    'designer': 'design',
+    designer: 'design',
     'qa-tester': 'qa',
-    'scientist': 'sci',
+    scientist: 'sci',
     'git-master': 'git',
     // Product Lane
     'product-manager': 'pm',
@@ -369,7 +378,7 @@ function getShortAgentName(agentType: string): string {
     'information-architect': 'ia',
     'product-analyst': 'pa',
     // Backward compat
-    'researcher': 'dep-exp',
+    researcher: 'dep-exp',
   };
 
   return abbrevs[name] || name;
@@ -404,7 +413,9 @@ function getAgentDisplayColor(agent: ActiveAgent): string {
  *
  * Format: O:analyzing code | e:searching files
  */
-export function renderAgentsWithDescriptions(agents: ActiveAgent[]): string | null {
+export function renderAgentsWithDescriptions(
+  agents: ActiveAgent[],
+): string | null {
   const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
   if (running.length === 0) {
@@ -421,7 +432,7 @@ export function renderAgentsWithDescriptions(agents: ActiveAgent[]): string | nu
     const displayName = getAgentDisplayName(a);
     const desc = truncateDescription(a.description, teammateName ? 30 : 25);
     const label = teammateName
-      ? `${displayName}${desc ? ` ${desc}` : ""}`
+      ? `${displayName}${desc ? ` ${desc}` : ''}`
       : desc;
     const durationMs = now - a.startTime.getTime();
     const duration = formatDuration(durationMs);
@@ -460,7 +471,9 @@ export function renderAgentsDescOnly(agents: ActiveAgent[]): string | null {
   const descriptions = running.map((a) => {
     const color = getAgentDisplayColor(a);
     const shortName = getAgentDisplayName(a);
-    const desc = a.description ? truncateDescription(a.description, 20) : shortName;
+    const desc = a.description
+      ? truncateDescription(a.description, 20)
+      : shortName;
     const durationMs = now - a.startTime.getTime();
     const duration = formatDuration(durationMs);
 
@@ -513,7 +526,7 @@ export interface MultiLineRenderResult {
  */
 export function renderAgentsMultiLine(
   agents: ActiveAgent[],
-  maxLines: number = 5
+  maxLines: number = 5,
 ): MultiLineRenderResult {
   const running = sortByFreshest(agents.filter((a) => a.status === 'running'));
 
@@ -546,7 +559,7 @@ export function renderAgentsMultiLine(
     const truncatedDesc = truncateToWidth(desc, 45);
 
     detailLines.push(
-      `${dim(prefix)} ${color}${code}${RESET} ${dim(shortName)}${durationColor}${duration}${RESET}  ${truncatedDesc}`
+      `${dim(prefix)} ${color}${code}${RESET} ${dim(shortName)}${durationColor}${duration}${RESET}  ${truncatedDesc}`,
     );
   });
 
@@ -564,7 +577,7 @@ export function renderAgentsMultiLine(
  */
 export function renderAgentsByFormat(
   agents: ActiveAgent[],
-  format: AgentsFormat
+  format: AgentsFormat,
 ): string | null {
   switch (format) {
     case 'count':

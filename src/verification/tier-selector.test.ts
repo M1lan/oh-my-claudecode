@@ -130,7 +130,9 @@ describe('detectArchitecturalChanges', () => {
 
   it('ignores regular source files', () => {
     expect(detectArchitecturalChanges(['src/utils/helper.ts'])).toBe(false);
-    expect(detectArchitecturalChanges(['src/components/Button.tsx'])).toBe(false);
+    expect(detectArchitecturalChanges(['src/components/Button.tsx'])).toBe(
+      false,
+    );
   });
 });
 
@@ -157,7 +159,9 @@ describe('detectSecurityImplications', () => {
 
   it('ignores regular source files', () => {
     expect(detectSecurityImplications(['src/utils/helper.ts'])).toBe(false);
-    expect(detectSecurityImplications(['src/components/Button.tsx'])).toBe(false);
+    expect(detectSecurityImplications(['src/components/Button.tsx'])).toBe(
+      false,
+    );
   });
 });
 
@@ -266,19 +270,27 @@ describe('edge cases', () => {
 describe('false-positive prevention', () => {
   describe('detectSecurityImplications', () => {
     it('does NOT flag tokenizer.ts as security file', () => {
-      expect(detectSecurityImplications(['src/utils/tokenizer.ts'])).toBe(false);
+      expect(detectSecurityImplications(['src/utils/tokenizer.ts'])).toBe(
+        false,
+      );
     });
 
     it('does NOT flag StringTokenizer.ts as security file', () => {
-      expect(detectSecurityImplications(['src/lexer/StringTokenizer.ts'])).toBe(false);
+      expect(detectSecurityImplications(['src/lexer/StringTokenizer.ts'])).toBe(
+        false,
+      );
     });
 
     it('does NOT flag secretariat.ts as security file', () => {
-      expect(detectSecurityImplications(['src/admin/secretariat.ts'])).toBe(false);
+      expect(detectSecurityImplications(['src/admin/secretariat.ts'])).toBe(
+        false,
+      );
     });
 
     it('does NOT flag permissionless.ts as security file', () => {
-      expect(detectSecurityImplications(['src/blockchain/permissionless.ts'])).toBe(false);
+      expect(
+        detectSecurityImplications(['src/blockchain/permissionless.ts']),
+      ).toBe(false);
     });
 
     it('DOES flag auth/token.ts as security file', () => {
@@ -312,11 +324,15 @@ describe('false-positive prevention', () => {
 
   describe('detectArchitecturalChanges', () => {
     it('does NOT flag barrel index.ts as architectural', () => {
-      expect(detectArchitecturalChanges(['src/components/index.ts'])).toBe(false);
+      expect(detectArchitecturalChanges(['src/components/index.ts'])).toBe(
+        false,
+      );
     });
 
     it('does NOT flag nested barrel index.ts as architectural', () => {
-      expect(detectArchitecturalChanges(['src/utils/helpers/index.ts'])).toBe(false);
+      expect(detectArchitecturalChanges(['src/utils/helpers/index.ts'])).toBe(
+        false,
+      );
     });
 
     it('DOES still flag config.ts as architectural', () => {

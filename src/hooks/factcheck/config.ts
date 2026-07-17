@@ -21,7 +21,15 @@ const DEFAULT_FACTCHECK_POLICY: FactcheckPolicy = {
   forbidden_path_prefixes: ['${CLAUDE_CONFIG_DIR}/plugins/cache/omc/'],
   forbidden_path_substrings: ['/.omc/', '.omc-config.json'],
   readonly_command_prefixes: [
-    'ls ', 'cat ', 'find ', 'grep ', 'head ', 'tail ', 'stat ', 'echo ', 'wc ',
+    'ls ',
+    'cat ',
+    'find ',
+    'grep ',
+    'head ',
+    'tail ',
+    'stat ',
+    'echo ',
+    'wc ',
   ],
   warn_on_cwd_mismatch: true,
   enforce_cwd_parity_in_quick: false,
@@ -32,9 +40,9 @@ const DEFAULT_FACTCHECK_POLICY: FactcheckPolicy = {
 const DEFAULT_SENTINEL_POLICY: SentinelPolicy = {
   enabled: false,
   readiness: {
-    min_pass_rate: 0.60,
-    max_timeout_rate: 0.10,
-    max_warn_plus_fail_rate: 0.40,
+    min_pass_rate: 0.6,
+    max_timeout_rate: 0.1,
+    max_warn_plus_fail_rate: 0.4,
     min_reason_coverage_rate: 0.95,
   },
 };
@@ -68,7 +76,7 @@ function expandTokensDeep<T>(obj: T, workspace?: string): T {
     return expandTokens(obj, workspace) as unknown as T;
   }
   if (Array.isArray(obj)) {
-    return obj.map(item => expandTokensDeep(item, workspace)) as unknown as T;
+    return obj.map((item) => expandTokensDeep(item, workspace)) as unknown as T;
   }
   if (typeof obj === 'object' && obj !== null) {
     const result: Record<string, unknown> = {};

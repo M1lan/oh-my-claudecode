@@ -24,8 +24,18 @@ const TIER_MODEL_ENV_KEYS = [
   'ANTHROPIC_DEFAULT_SONNET_MODEL',
   'ANTHROPIC_DEFAULT_HAIKU_MODEL',
 ] as const;
-const BEDROCK_KEYS = ['CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL', ...TIER_MODEL_ENV_KEYS] as const;
-const VERTEX_KEYS = ['CLAUDE_CODE_USE_VERTEX', 'CLAUDE_MODEL', 'ANTHROPIC_MODEL', ...TIER_MODEL_ENV_KEYS] as const;
+const BEDROCK_KEYS = [
+  'CLAUDE_CODE_USE_BEDROCK',
+  'CLAUDE_MODEL',
+  'ANTHROPIC_MODEL',
+  ...TIER_MODEL_ENV_KEYS,
+] as const;
+const VERTEX_KEYS = [
+  'CLAUDE_CODE_USE_VERTEX',
+  'CLAUDE_MODEL',
+  'ANTHROPIC_MODEL',
+  ...TIER_MODEL_ENV_KEYS,
+] as const;
 const ALL_KEYS = [
   'CLAUDE_CODE_USE_BEDROCK',
   'CLAUDE_CODE_USE_VERTEX',
@@ -42,8 +52,12 @@ const ALL_KEYS = [
 describe('isBedrock()', () => {
   let saved: Record<string, string | undefined>;
 
-  beforeEach(() => { saved = saveAndClear(BEDROCK_KEYS); });
-  afterEach(() => { restore(saved); });
+  beforeEach(() => {
+    saved = saveAndClear(BEDROCK_KEYS);
+  });
+  afterEach(() => {
+    restore(saved);
+  });
 
   it('returns true when CLAUDE_CODE_USE_BEDROCK=1', () => {
     process.env.CLAUDE_CODE_USE_BEDROCK = '1';
@@ -88,12 +102,14 @@ describe('isBedrock()', () => {
   });
 
   it('detects Bedrock inference-profile ARNs', () => {
-    process.env.ANTHROPIC_MODEL = 'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
+    process.env.ANTHROPIC_MODEL =
+      'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
     expect(isBedrock()).toBe(true);
   });
 
   it('detects Bedrock application-inference-profile ARNs', () => {
-    process.env.CLAUDE_MODEL = 'arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123/global.anthropic.claude-sonnet-4-6-v1:0';
+    process.env.CLAUDE_MODEL =
+      'arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123/global.anthropic.claude-sonnet-4-6-v1:0';
     expect(isBedrock()).toBe(true);
   });
 
@@ -103,7 +119,8 @@ describe('isBedrock()', () => {
   });
 
   it('detects Bedrock model IDs from tier model env vars', () => {
-    process.env.ANTHROPIC_DEFAULT_SONNET_MODEL = 'global.anthropic.claude-sonnet-4-6-v1:0';
+    process.env.ANTHROPIC_DEFAULT_SONNET_MODEL =
+      'global.anthropic.claude-sonnet-4-6-v1:0';
     expect(isBedrock()).toBe(true);
   });
 
@@ -123,8 +140,12 @@ describe('isBedrock()', () => {
 describe('isVertexAI()', () => {
   let saved: Record<string, string | undefined>;
 
-  beforeEach(() => { saved = saveAndClear(VERTEX_KEYS); });
-  afterEach(() => { restore(saved); });
+  beforeEach(() => {
+    saved = saveAndClear(VERTEX_KEYS);
+  });
+  afterEach(() => {
+    restore(saved);
+  });
 
   it('returns true when CLAUDE_CODE_USE_VERTEX=1', () => {
     process.env.CLAUDE_CODE_USE_VERTEX = '1';
@@ -162,8 +183,12 @@ describe('isVertexAI()', () => {
 describe('isNonClaudeProvider()', () => {
   let saved: Record<string, string | undefined>;
 
-  beforeEach(() => { saved = saveAndClear(ALL_KEYS); });
-  afterEach(() => { restore(saved); });
+  beforeEach(() => {
+    saved = saveAndClear(ALL_KEYS);
+  });
+  afterEach(() => {
+    restore(saved);
+  });
 
   it('returns true for global. Bedrock inference profile (the [1m] case)', () => {
     process.env.ANTHROPIC_MODEL = 'global.anthropic.claude-sonnet-4-6[1m]';
@@ -171,7 +196,8 @@ describe('isNonClaudeProvider()', () => {
   });
 
   it('returns true for Bedrock inference-profile ARNs', () => {
-    process.env.ANTHROPIC_MODEL = 'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
+    process.env.ANTHROPIC_MODEL =
+      'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0';
     expect(isNonClaudeProvider()).toBe(true);
   });
 
@@ -250,15 +276,18 @@ describe('isNonClaudeProvider()', () => {
   });
 });
 
-
 // ---------------------------------------------------------------------------
 // resolveInheritedModelFromEnv()
 // ---------------------------------------------------------------------------
 describe('resolveInheritedModelFromEnv()', () => {
   let saved: Record<string, string | undefined>;
 
-  beforeEach(() => { saved = saveAndClear(ALL_KEYS); });
-  afterEach(() => { restore(saved); });
+  beforeEach(() => {
+    saved = saveAndClear(ALL_KEYS);
+  });
+  afterEach(() => {
+    restore(saved);
+  });
 
   it('prefers explicit session model env vars over tier defaults', () => {
     process.env.CLAUDE_MODEL = 'claude-session-parent';
@@ -290,23 +319,43 @@ describe('resolveInheritedModelFromEnv()', () => {
 // ---------------------------------------------------------------------------
 describe('isProviderSpecificModelId()', () => {
   it('detects Bedrock region-prefixed model IDs', () => {
-    expect(isProviderSpecificModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0')).toBe(true);
-    expect(isProviderSpecificModelId('global.anthropic.claude-opus-4-6-v1:0')).toBe(true);
-    expect(isProviderSpecificModelId('eu.anthropic.claude-haiku-4-5-v1:0')).toBe(true);
-    expect(isProviderSpecificModelId('ap.anthropic.claude-sonnet-4-6-v1:0')).toBe(true);
+    expect(
+      isProviderSpecificModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+    ).toBe(true);
+    expect(
+      isProviderSpecificModelId('global.anthropic.claude-opus-4-6-v1:0'),
+    ).toBe(true);
+    expect(
+      isProviderSpecificModelId('eu.anthropic.claude-haiku-4-5-v1:0'),
+    ).toBe(true);
+    expect(
+      isProviderSpecificModelId('ap.anthropic.claude-sonnet-4-6-v1:0'),
+    ).toBe(true);
   });
 
   it('detects Bedrock bare anthropic.claude prefix (legacy)', () => {
-    expect(isProviderSpecificModelId('anthropic.claude-3-haiku-20240307-v1:0')).toBe(true);
+    expect(
+      isProviderSpecificModelId('anthropic.claude-3-haiku-20240307-v1:0'),
+    ).toBe(true);
   });
 
   it('detects Bedrock ARN formats', () => {
-    expect(isProviderSpecificModelId('arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0')).toBe(true);
-    expect(isProviderSpecificModelId('arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123/global.anthropic.claude-sonnet-4-6-v1:0')).toBe(true);
+    expect(
+      isProviderSpecificModelId(
+        'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0',
+      ),
+    ).toBe(true);
+    expect(
+      isProviderSpecificModelId(
+        'arn:aws:bedrock:us-west-2:123456789012:application-inference-profile/abc123/global.anthropic.claude-sonnet-4-6-v1:0',
+      ),
+    ).toBe(true);
   });
 
   it('detects Vertex AI model IDs', () => {
-    expect(isProviderSpecificModelId('vertex_ai/claude-sonnet-4-6@20250514')).toBe(true);
+    expect(
+      isProviderSpecificModelId('vertex_ai/claude-sonnet-4-6@20250514'),
+    ).toBe(true);
   });
 
   it('returns false for bare Anthropic API model IDs', () => {
@@ -332,7 +381,9 @@ describe('isProviderSpecificModelId()', () => {
 // ---------------------------------------------------------------------------
 describe('resolveClaudeFamily() — Bedrock inference profile IDs', () => {
   it('resolves global. sonnet [1m] profile to SONNET', () => {
-    expect(resolveClaudeFamily('global.anthropic.claude-sonnet-4-6[1m]')).toBe('SONNET');
+    expect(resolveClaudeFamily('global.anthropic.claude-sonnet-4-6[1m]')).toBe(
+      'SONNET',
+    );
   });
 
   it('resolves us. opus profile to OPUS', () => {
@@ -340,7 +391,9 @@ describe('resolveClaudeFamily() — Bedrock inference profile IDs', () => {
   });
 
   it('resolves eu. haiku profile to HAIKU', () => {
-    expect(resolveClaudeFamily('eu.anthropic.claude-haiku-4-5-v1:0')).toBe('HAIKU');
+    expect(resolveClaudeFamily('eu.anthropic.claude-haiku-4-5-v1:0')).toBe(
+      'HAIKU',
+    );
   });
 
   it('resolves bare Anthropic model IDs', () => {
@@ -351,8 +404,12 @@ describe('resolveClaudeFamily() — Bedrock inference profile IDs', () => {
   });
 
   it('resolves fable provider profile IDs to FABLE (issue #3246)', () => {
-    expect(resolveClaudeFamily('us.anthropic.claude-fable-5-v1:0')).toBe('FABLE');
-    expect(resolveClaudeFamily('global.anthropic.claude-fable-5[1m]')).toBe('FABLE');
+    expect(resolveClaudeFamily('us.anthropic.claude-fable-5-v1:0')).toBe(
+      'FABLE',
+    );
+    expect(resolveClaudeFamily('global.anthropic.claude-fable-5[1m]')).toBe(
+      'FABLE',
+    );
   });
 
   it('maps the FABLE family default to claude-fable-5 (issue #3246)', () => {
@@ -370,23 +427,33 @@ describe('resolveClaudeFamily() — Bedrock inference profile IDs', () => {
 // ---------------------------------------------------------------------------
 describe('hasExtendedContextSuffix()', () => {
   it('detects [1m] suffix (1M context window annotation)', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[1m]')).toBe(true);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(true);
   });
 
   it('detects [200k] suffix (200k context window annotation)', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[200k]')).toBe(true);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6[200k]'),
+    ).toBe(true);
   });
 
   it('detects [100k] suffix', () => {
-    expect(hasExtendedContextSuffix('us.anthropic.claude-opus-4-6[100k]')).toBe(true);
+    expect(hasExtendedContextSuffix('us.anthropic.claude-opus-4-6[100k]')).toBe(
+      true,
+    );
   });
 
   it('returns false for standard Bedrock cross-region profile ID', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6-v1:0')).toBe(false);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-sonnet-4-6-v1:0'),
+    ).toBe(false);
   });
 
   it('returns false for versioned Bedrock ID without suffix', () => {
-    expect(hasExtendedContextSuffix('global.anthropic.claude-opus-4-6-v1')).toBe(false);
+    expect(
+      hasExtendedContextSuffix('global.anthropic.claude-opus-4-6-v1'),
+    ).toBe(false);
   });
 
   it('returns false for bare Anthropic model ID', () => {
@@ -405,31 +472,47 @@ describe('hasExtendedContextSuffix()', () => {
 // ---------------------------------------------------------------------------
 describe('isSubagentSafeModelId()', () => {
   it('accepts global. cross-region Bedrock profile without suffix', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6-v1:0')).toBe(true);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6-v1:0'),
+    ).toBe(true);
   });
 
   it('accepts us. regional Bedrock profile', () => {
-    expect(isSubagentSafeModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0')).toBe(true);
+    expect(
+      isSubagentSafeModelId('us.anthropic.claude-sonnet-4-5-20250929-v1:0'),
+    ).toBe(true);
   });
 
   it('accepts eu. regional Bedrock profile', () => {
-    expect(isSubagentSafeModelId('eu.anthropic.claude-haiku-4-5-v1:0')).toBe(true);
+    expect(isSubagentSafeModelId('eu.anthropic.claude-haiku-4-5-v1:0')).toBe(
+      true,
+    );
   });
 
   it('accepts Bedrock ARN format', () => {
-    expect(isSubagentSafeModelId('arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0')).toBe(true);
+    expect(
+      isSubagentSafeModelId(
+        'arn:aws:bedrock:us-east-2:123456789012:inference-profile/global.anthropic.claude-opus-4-6-v1:0',
+      ),
+    ).toBe(true);
   });
 
   it('accepts Vertex AI model ID', () => {
-    expect(isSubagentSafeModelId('vertex_ai/claude-sonnet-4-6@20250514')).toBe(true);
+    expect(isSubagentSafeModelId('vertex_ai/claude-sonnet-4-6@20250514')).toBe(
+      true,
+    );
   });
 
   it('rejects [1m]-suffixed model ID — the core bug case', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]')).toBe(false);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[1m]'),
+    ).toBe(false);
   });
 
   it('rejects [200k]-suffixed model ID', () => {
-    expect(isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[200k]')).toBe(false);
+    expect(
+      isSubagentSafeModelId('global.anthropic.claude-sonnet-4-6[200k]'),
+    ).toBe(false);
   });
 
   it('rejects bare Anthropic model ID (not provider-specific)', () => {

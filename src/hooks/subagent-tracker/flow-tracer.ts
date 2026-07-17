@@ -14,7 +14,7 @@ export function recordHookFire(
   directory: string,
   sessionId: string,
   hookName: string,
-  hookEvent: string
+  hookEvent: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',
@@ -34,7 +34,7 @@ export function recordHookResult(
   hookEvent: string,
   durationMs: number,
   contextInjected: boolean,
-  contextLength?: number
+  contextLength?: number,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',
@@ -53,7 +53,7 @@ export function recordHookResult(
 export function recordKeywordDetected(
   directory: string,
   sessionId: string,
-  keyword: string
+  keyword: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',
@@ -69,7 +69,7 @@ export function recordSkillActivated(
   directory: string,
   sessionId: string,
   skillName: string,
-  source: string
+  source: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',
@@ -85,7 +85,7 @@ export function recordSkillActivated(
 export function recordSkillInvoked(
   directory: string,
   sessionId: string,
-  skillName: string
+  skillName: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',
@@ -101,7 +101,7 @@ export function recordModeChange(
   directory: string,
   sessionId: string,
   fromMode: string,
-  toMode: string
+  toMode: string,
 ): void {
   appendReplayEvent(directory, sessionId, {
     agent: 'system',

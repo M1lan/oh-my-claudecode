@@ -69,7 +69,7 @@ describe('risk-assess false-positive controls', () => {
   it('ignores large noise diffs when classifying a small code change', () => withRepo((repo) => {
     write(repo, 'src/index.ts', 'export const value = 0;\n');
     write(repo, '.omc/harness-state/session.json', '{}\n');
-    git(repo, ['add', 'src/index.ts', '.omc/harness-state/session.json']);
+    git(repo, ['add', '-f', 'src/index.ts', '.omc/harness-state/session.json']);
     git(repo, ['commit', '-m', 'fixture files']);
 
     write(repo, 'src/index.ts', 'export const value = 1;\n');

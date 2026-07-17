@@ -9,7 +9,11 @@ import type { ProjectMemory } from './types.js';
 import { CACHE_EXPIRY_MS } from './constants.js';
 import { atomicWriteJson } from '../../lib/atomic-write.js';
 import { getWorktreeProjectMemoryPath } from '../../lib/worktree-paths.js';
-import { lockPathFor, withFileLock, type FileLockOptions } from '../../lib/file-lock.js';
+import {
+  lockPathFor,
+  withFileLock,
+  type FileLockOptions,
+} from '../../lib/file-lock.js';
 
 /**
  * Get the path to the project memory file
@@ -27,7 +31,9 @@ export function normalizeProjectMemory(memory: ProjectMemory): ProjectMemory {
   return {
     ...memory,
     customNotes: Array.isArray(memory.customNotes) ? memory.customNotes : [],
-    userDirectives: Array.isArray(memory.userDirectives) ? memory.userDirectives : [],
+    userDirectives: Array.isArray(memory.userDirectives)
+      ? memory.userDirectives
+      : [],
     hotPaths: Array.isArray(memory.hotPaths) ? memory.hotPaths : [],
   };
 }
@@ -36,7 +42,9 @@ export function normalizeProjectMemory(memory: ProjectMemory): ProjectMemory {
  * Load project memory from disk
  * Returns null if file doesn't exist or is invalid
  */
-export async function loadProjectMemory(projectRoot: string): Promise<ProjectMemory | null> {
+export async function loadProjectMemory(
+  projectRoot: string,
+): Promise<ProjectMemory | null> {
   const memoryPath = getMemoryPath(projectRoot);
 
   try {
@@ -59,7 +67,10 @@ export async function loadProjectMemory(projectRoot: string): Promise<ProjectMem
  * Save project memory to disk
  * Creates .omc directory if it doesn't exist
  */
-export async function saveProjectMemory(projectRoot: string, memory: ProjectMemory): Promise<void> {
+export async function saveProjectMemory(
+  projectRoot: string,
+  memory: ProjectMemory,
+): Promise<void> {
   const memoryPath = getMemoryPath(projectRoot);
   const omcDir = path.dirname(memoryPath);
 

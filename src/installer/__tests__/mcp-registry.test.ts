@@ -1,5 +1,12 @@
 import { beforeEach, afterEach, describe, expect, it } from 'vitest';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -59,7 +66,8 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings, result } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(result.bootstrappedFromClaude).toBe(true);
     expect(result.registryExists).toBe(true);
@@ -67,10 +75,14 @@ describe('unified MCP registry sync', () => {
     expect(syncedSettings).toEqual({ theme: 'dark' });
 
     const registryPath = getUnifiedMcpRegistryPath();
-    expect(JSON.parse(readFileSync(registryPath, 'utf-8'))).toEqual(settings.mcpServers);
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: settings.mcpServers,
-    });
+    expect(JSON.parse(readFileSync(registryPath, 'utf-8'))).toEqual(
+      settings.mcpServers,
+    );
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: settings.mcpServers,
+      },
+    );
 
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
     expect(codexConfig).toContain('# BEGIN OMC MANAGED MCP REGISTRY');
@@ -96,11 +108,14 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(syncedSettings).toEqual({ theme: 'dark' });
 
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual({
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual({
       gitnexus: {
         command: 'gitnexus',
         args: ['mcp'],
@@ -108,15 +123,17 @@ describe('unified MCP registry sync', () => {
       },
     });
 
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: {
-        gitnexus: {
-          command: 'gitnexus',
-          args: ['mcp'],
-          timeout: 15,
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: {
+          gitnexus: {
+            command: 'gitnexus',
+            args: ['mcp'],
+            timeout: 15,
+          },
         },
       },
-    });
+    );
 
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
     expect(codexConfig).toContain('[mcp_servers.gitnexus]');
@@ -138,7 +155,9 @@ describe('unified MCP registry sync', () => {
 
     expect(first.result.codexChanged).toBe(true);
     expect(first.settings).toEqual({});
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual({
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual({
       filesystem: {
         command: 'npx',
         args: ['-y', '@modelcontextprotocol/server-filesystem', '/tmp'],
@@ -162,17 +181,22 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings, result } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(result.bootstrappedFromClaude).toBe(true);
     expect(result.serverNames).toEqual(['remoteOmc']);
     expect(syncedSettings).toEqual({});
 
     const registryPath = getUnifiedMcpRegistryPath();
-    expect(JSON.parse(readFileSync(registryPath, 'utf-8'))).toEqual(settings.mcpServers);
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: settings.mcpServers,
-    });
+    expect(JSON.parse(readFileSync(registryPath, 'utf-8'))).toEqual(
+      settings.mcpServers,
+    );
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: settings.mcpServers,
+      },
+    );
 
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
     expect(codexConfig).toContain('[mcp_servers.remoteOmc]');
@@ -192,19 +216,32 @@ describe('unified MCP registry sync', () => {
         timeout: 30,
       },
     };
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers,
-    }, null, 2));
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers,
+        },
+        null,
+        2,
+      ),
+    );
 
-    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
+    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets({
+      theme: 'dark',
+    });
 
     expect(result.bootstrappedFromClaude).toBe(true);
     expect(result.serverNames).toEqual(['remoteOmc']);
     expect(syncedSettings).toEqual({ theme: 'dark' });
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual(mcpServers);
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers,
-    });
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual(mcpServers);
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers,
+      },
+    );
 
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
     expect(codexConfig).toContain('[mcp_servers.remoteOmc]');
@@ -237,7 +274,9 @@ describe('unified MCP registry sync', () => {
 
     syncUnifiedMcpRegistryTargets(settings);
 
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual({
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual({
       emptyHeaders: {
         url: 'https://empty.example.com/mcp',
       },
@@ -246,7 +285,6 @@ describe('unified MCP registry sync', () => {
       },
     });
   });
-
 
   it('reproduces issue #2679: sync strips remote entry type during round-trip', () => {
     const settings = {
@@ -258,26 +296,31 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings, result } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(result.bootstrappedFromClaude).toBe(true);
     expect(result.serverNames).toEqual(['mySseServer']);
     expect(syncedSettings).toEqual({});
 
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual({
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual({
       mySseServer: {
         url: 'http://localhost:11235/mcp/sse',
         type: 'sse',
       },
     });
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: {
-        mySseServer: {
-          url: 'http://localhost:11235/mcp/sse',
-          type: 'sse',
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: {
+          mySseServer: {
+            url: 'http://localhost:11235/mcp/sse',
+            type: 'sse',
+          },
         },
       },
-    });
+    );
 
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
     expect(codexConfig).toContain('[mcp_servers.mySseServer]');
@@ -300,10 +343,13 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(syncedSettings).toEqual({});
-    expect(JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8'))).toEqual({
+    expect(
+      JSON.parse(readFileSync(getUnifiedMcpRegistryPath(), 'utf-8')),
+    ).toEqual({
       custom: {
         command: 'custom-mcp',
         args: ['serve'],
@@ -337,7 +383,8 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings, changed } = applyRegistryToClaudeSettings(existingSettings);
+    const { settings, changed } =
+      applyRegistryToClaudeSettings(existingSettings);
     expect(changed).toBe(true);
     expect(settings).toEqual({
       theme: 'dark',
@@ -417,18 +464,32 @@ describe('unified MCP registry sync', () => {
   });
 
   it('preserves an existing user-owned codex table when setup sync runs repeatedly', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      atlassian: { command: 'uvx', args: ['mcp-atlassian'] },
-      storybook_local: { command: 'npx', args: ['-y', '@storybook/mcp'], timeout: 15 },
-    }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      'model = "gpt-5"',
-      '',
-      '[mcp_servers.atlassian]',
-      'command = "uvx"',
-      'args = ["mcp-atlassian"]',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          atlassian: { command: 'uvx', args: ['mcp-atlassian'] },
+          storybook_local: {
+            command: 'npx',
+            args: ['-y', '@storybook/mcp'],
+            timeout: 15,
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        'model = "gpt-5"',
+        '',
+        '[mcp_servers.atlassian]',
+        'command = "uvx"',
+        'args = ["mcp-atlassian"]',
+        '',
+      ].join('\n'),
+    );
 
     const first = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
     const second = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
@@ -462,16 +523,23 @@ describe('unified MCP registry sync', () => {
 
   it('does not let malformed registry names inject extra Codex MCP tables during setup sync', () => {
     const maliciousName = 'evil]\nmodel = "pwned"\n[mcp_servers.injected';
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      [maliciousName]: {
-        command: 'uvx',
-        args: ['demo-server'],
-      },
-      safe_name: {
-        command: 'custom-mcp',
-        args: ['serve'],
-      },
-    }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          [maliciousName]: {
+            command: 'uvx',
+            args: ['demo-server'],
+          },
+          safe_name: {
+            command: 'custom-mcp',
+            args: ['serve'],
+          },
+        },
+        null,
+        2,
+      ),
+    );
 
     const { result } = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
     const codexConfig = readFileSync(getCodexConfigPath(), 'utf-8');
@@ -484,26 +552,39 @@ describe('unified MCP registry sync', () => {
   });
 
   it('removes previously managed Claude and Codex MCP entries when the registry becomes empty', () => {
-    writeFileSync(join(omcDir, 'mcp-registry-state.json'), JSON.stringify({ managedServers: ['gitnexus'] }, null, 2));
+    writeFileSync(
+      join(omcDir, 'mcp-registry-state.json'),
+      JSON.stringify({ managedServers: ['gitnexus'] }, null, 2),
+    );
     writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({}, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        gitnexus: { command: 'gitnexus', args: ['mcp'] },
-        customLocal: { command: 'custom-local', args: ['serve'] },
-      },
-    }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      'model = "gpt-5"',
-      '',
-      '# BEGIN OMC MANAGED MCP REGISTRY',
-      '',
-      '[mcp_servers.gitnexus]',
-      'command = "gitnexus"',
-      'args = ["mcp"]',
-      '',
-      '# END OMC MANAGED MCP REGISTRY',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            gitnexus: { command: 'gitnexus', args: ['mcp'] },
+            customLocal: { command: 'custom-local', args: ['serve'] },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        'model = "gpt-5"',
+        '',
+        '# BEGIN OMC MANAGED MCP REGISTRY',
+        '',
+        '[mcp_servers.gitnexus]',
+        'command = "gitnexus"',
+        'args = ["mcp"]',
+        '',
+        '# END OMC MANAGED MCP REGISTRY',
+        '',
+      ].join('\n'),
+    );
 
     const settings = {
       theme: 'dark',
@@ -512,41 +593,63 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    const { settings: syncedSettings, result } = syncUnifiedMcpRegistryTargets(settings);
+    const { settings: syncedSettings, result } =
+      syncUnifiedMcpRegistryTargets(settings);
 
     expect(result.registryExists).toBe(true);
     expect(result.serverNames).toEqual([]);
     expect(result.claudeChanged).toBe(true);
     expect(result.codexChanged).toBe(true);
     expect(syncedSettings).toEqual({ theme: 'dark' });
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: {
-        customLocal: { command: 'custom-local', args: ['serve'] },
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: {
+          customLocal: { command: 'custom-local', args: ['serve'] },
+        },
       },
-    });
-    expect(readFileSync(getCodexConfigPath(), 'utf-8')).toBe('model = "gpt-5"\n');
+    );
+    expect(readFileSync(getCodexConfigPath(), 'utf-8')).toBe(
+      'model = "gpt-5"\n',
+    );
   });
 
   it('detects mismatched server definitions during doctor inspection, not just missing names', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      gitnexus: { command: 'gitnexus', args: ['mcp'], timeout: 15 },
-    }, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        gitnexus: { command: 'gitnexus', args: ['wrong'] },
-      },
-    }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          gitnexus: { command: 'gitnexus', args: ['mcp'], timeout: 15 },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            gitnexus: { command: 'gitnexus', args: ['wrong'] },
+          },
+        },
+        null,
+        2,
+      ),
+    );
     mkdirSync(codexDir, { recursive: true });
-    writeFileSync(getCodexConfigPath(), [
-      '# BEGIN OMC MANAGED MCP REGISTRY',
-      '',
-      '[mcp_servers.gitnexus]',
-      'command = "gitnexus"',
-      'args = ["wrong"]',
-      '',
-      '# END OMC MANAGED MCP REGISTRY',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '# BEGIN OMC MANAGED MCP REGISTRY',
+        '',
+        '[mcp_servers.gitnexus]',
+        'command = "gitnexus"',
+        'args = ["wrong"]',
+        '',
+        '# END OMC MANAGED MCP REGISTRY',
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -557,26 +660,45 @@ describe('unified MCP registry sync', () => {
   });
 
   it('is idempotent when registry, Claude MCP root config, and Codex TOML already match', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
-    }, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
-      },
-    }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '# BEGIN OMC MANAGED MCP REGISTRY',
-      '',
-      '[mcp_servers.remoteOmc]',
-      'url = "https://lab.example.com/mcp"',
-      'startup_timeout_sec = 30',
-      '',
-      '# END OMC MANAGED MCP REGISTRY',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
+          },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '# BEGIN OMC MANAGED MCP REGISTRY',
+        '',
+        '[mcp_servers.remoteOmc]',
+        'url = "https://lab.example.com/mcp"',
+        'startup_timeout_sec = 30',
+        '',
+        '# END OMC MANAGED MCP REGISTRY',
+        '',
+      ].join('\n'),
+    );
 
-    const { settings, result } = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
+    const { settings, result } = syncUnifiedMcpRegistryTargets({
+      theme: 'dark',
+    });
 
     expect(settings).toEqual({ theme: 'dark' });
     expect(result.bootstrappedFromClaude).toBe(false);
@@ -585,15 +707,29 @@ describe('unified MCP registry sync', () => {
   });
 
   it('preserves existing .claude.json server definitions when legacy settings still contain stale copies', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      gitnexus: { command: 'gitnexus', args: ['mcp'] },
-    }, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        gitnexus: { command: 'gitnexus', args: ['mcp'] },
-        customLocal: { command: 'custom-local', args: ['serve'] },
-      },
-    }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          gitnexus: { command: 'gitnexus', args: ['mcp'] },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            gitnexus: { command: 'gitnexus', args: ['mcp'] },
+            customLocal: { command: 'custom-local', args: ['serve'] },
+          },
+        },
+        null,
+        2,
+      ),
+    );
 
     const { settings, result } = syncUnifiedMcpRegistryTargets({
       theme: 'dark',
@@ -604,24 +740,39 @@ describe('unified MCP registry sync', () => {
 
     expect(settings).toEqual({ theme: 'dark' });
     expect(result.bootstrappedFromClaude).toBe(false);
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: {
-        customLocal: { command: 'custom-local', args: ['serve'] },
-        gitnexus: { command: 'gitnexus', args: ['mcp'] },
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: {
+          customLocal: { command: 'custom-local', args: ['serve'] },
+          gitnexus: { command: 'gitnexus', args: ['mcp'] },
+        },
       },
-    });
+    );
   });
 
-
   it('respects explicit removal from ~/.claude.json when legacy settings still contain a stale copy', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      gitnexus: { command: 'gitnexus', args: ['mcp'] },
-    }, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        customLocal: { command: 'custom-local', args: ['serve'] },
-      },
-    }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          gitnexus: { command: 'gitnexus', args: ['mcp'] },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            customLocal: { command: 'custom-local', args: ['serve'] },
+          },
+        },
+        null,
+        2,
+      ),
+    );
 
     const { settings, result } = syncUnifiedMcpRegistryTargets({
       theme: 'dark',
@@ -632,34 +783,53 @@ describe('unified MCP registry sync', () => {
 
     expect(settings).toEqual({ theme: 'dark' });
     expect(result.bootstrappedFromClaude).toBe(false);
-    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual({
-      mcpServers: {
-        customLocal: { command: 'custom-local', args: ['serve'] },
-        gitnexus: { command: 'gitnexus', args: ['mcp'] },
+    expect(JSON.parse(readFileSync(getClaudeMcpConfigPath(), 'utf-8'))).toEqual(
+      {
+        mcpServers: {
+          customLocal: { command: 'custom-local', args: ['serve'] },
+          gitnexus: { command: 'gitnexus', args: ['mcp'] },
+        },
       },
-    });
+    );
   });
 
   it('detects mismatched URL-based remote MCP definitions during doctor inspection', () => {
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify({
-      remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
-    }, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({
-      mcpServers: {
-        remoteOmc: { url: 'https://staging.example.com/mcp', timeout: 30 },
-      },
-    }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(
+        {
+          remoteOmc: { url: 'https://lab.example.com/mcp', timeout: 30 },
+        },
+        null,
+        2,
+      ),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify(
+        {
+          mcpServers: {
+            remoteOmc: { url: 'https://staging.example.com/mcp', timeout: 30 },
+          },
+        },
+        null,
+        2,
+      ),
+    );
     mkdirSync(codexDir, { recursive: true });
-    writeFileSync(getCodexConfigPath(), [
-      '# BEGIN OMC MANAGED MCP REGISTRY',
-      '',
-      '[mcp_servers.remoteOmc]',
-      'url = "https://staging.example.com/mcp"',
-      'startup_timeout_sec = 30',
-      '',
-      '# END OMC MANAGED MCP REGISTRY',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '# BEGIN OMC MANAGED MCP REGISTRY',
+        '',
+        '[mcp_servers.remoteOmc]',
+        'url = "https://staging.example.com/mcp"',
+        'startup_timeout_sec = 30',
+        '',
+        '# END OMC MANAGED MCP REGISTRY',
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -685,9 +855,15 @@ describe('unified MCP registry sync', () => {
       },
     });
 
-    expect(result.registryPath).toBe(join(testRoot, '.config', 'omc', 'mcp-registry.json'));
-    expect(existsSync(join(testRoot, '.config', 'omc', 'mcp-registry.json'))).toBe(true);
-    expect(existsSync(join(testRoot, '.state', 'omc', 'mcp-registry-state.json'))).toBe(true);
+    expect(result.registryPath).toBe(
+      join(testRoot, '.config', 'omc', 'mcp-registry.json'),
+    );
+    expect(
+      existsSync(join(testRoot, '.config', 'omc', 'mcp-registry.json')),
+    ).toBe(true);
+    expect(
+      existsSync(join(testRoot, '.state', 'omc', 'mcp-registry-state.json')),
+    ).toBe(true);
   });
 
   it('falls back to legacy ~/.omc registry when the XDG registry does not exist', () => {
@@ -699,9 +875,16 @@ describe('unified MCP registry sync', () => {
 
     const legacyRegistryDir = join(testRoot, '.omc');
     mkdirSync(legacyRegistryDir, { recursive: true });
-    writeFileSync(join(legacyRegistryDir, 'mcp-registry.json'), JSON.stringify({
-      gitnexus: { command: 'gitnexus', args: ['mcp'] },
-    }, null, 2));
+    writeFileSync(
+      join(legacyRegistryDir, 'mcp-registry.json'),
+      JSON.stringify(
+        {
+          gitnexus: { command: 'gitnexus', args: ['mcp'] },
+        },
+        null,
+        2,
+      ),
+    );
 
     const { result } = syncUnifiedMcpRegistryTargets({ theme: 'dark' });
 

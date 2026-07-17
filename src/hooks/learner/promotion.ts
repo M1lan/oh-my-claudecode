@@ -25,13 +25,28 @@ export interface PromotionCandidate {
  */
 function extractTriggers(text: string): string[] {
   const technicalKeywords = [
-    'react', 'typescript', 'javascript', 'python', 'api', 'database',
-    'testing', 'debugging', 'performance', 'async', 'state', 'component',
-    'error', 'validation', 'authentication', 'cache', 'query', 'mutation',
+    'react',
+    'typescript',
+    'javascript',
+    'python',
+    'api',
+    'database',
+    'testing',
+    'debugging',
+    'performance',
+    'async',
+    'state',
+    'component',
+    'error',
+    'validation',
+    'authentication',
+    'cache',
+    'query',
+    'mutation',
   ];
 
   const textLower = text.toLowerCase();
-  return technicalKeywords.filter(kw => textLower.includes(kw));
+  return technicalKeywords.filter((kw) => textLower.includes(kw));
 }
 
 /**
@@ -39,7 +54,7 @@ function extractTriggers(text: string): string[] {
  */
 export function getPromotionCandidates(
   directory: string,
-  limit: number = 10
+  limit: number = 10,
 ): PromotionCandidate[] {
   const progress = readProgress(directory);
   if (!progress) {
@@ -66,7 +81,9 @@ export function getPromotionCandidates(
   }
 
   // Sort by number of triggers (more specific = better candidate)
-  return candidates.sort((a, b) => b.suggestedTriggers.length - a.suggestedTriggers.length);
+  return candidates.sort(
+    (a, b) => b.suggestedTriggers.length - a.suggestedTriggers.length,
+  );
 }
 
 /**
@@ -77,12 +94,14 @@ export function promoteLearning(
   skillName: string,
   additionalTriggers: string[],
   targetScope: 'user' | 'project',
-  projectRoot: string | null
+  projectRoot: string | null,
 ): WriteSkillResult {
   const request: SkillExtractionRequest = {
     problem: `Learning from ${candidate.storyId}: ${candidate.learning.slice(0, 100)}...`,
     solution: candidate.learning,
-    triggers: [...new Set([...candidate.suggestedTriggers, ...additionalTriggers])],
+    triggers: [
+      ...new Set([...candidate.suggestedTriggers, ...additionalTriggers]),
+    ],
     targetScope,
   };
 
@@ -107,12 +126,16 @@ export function listPromotableLearnings(directory: string): string {
   ];
 
   candidates.forEach((candidate, index) => {
-    lines.push(`## ${index + 1}. From ${candidate.storyId} (${candidate.timestamp})`);
+    lines.push(
+      `## ${index + 1}. From ${candidate.storyId} (${candidate.timestamp})`,
+    );
     lines.push('');
     lines.push(candidate.learning);
     lines.push('');
     if (candidate.suggestedTriggers.length > 0) {
-      lines.push(`**Suggested triggers:** ${candidate.suggestedTriggers.join(', ')}`);
+      lines.push(
+        `**Suggested triggers:** ${candidate.suggestedTriggers.join(', ')}`,
+      );
     }
     lines.push('');
     lines.push('---');

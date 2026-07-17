@@ -7,7 +7,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { renderRateLimits, renderRateLimitsCompact, renderRateLimitsWithBar } from '../../hud/elements/limits.js';
+import {
+  renderRateLimits,
+  renderRateLimitsCompact,
+  renderRateLimitsWithBar,
+} from '../../hud/elements/limits.js';
 
 const DIM = '\x1b[2m';
 
@@ -31,28 +35,20 @@ describe('stale indicator: renderRateLimits', () => {
   });
 
   it('does not show asterisk when stale is undefined', () => {
-    const result = renderRateLimits(
-      { fiveHourPercent: 11, weeklyPercent: 45 },
-    );
+    const result = renderRateLimits({ fiveHourPercent: 11, weeklyPercent: 45 });
     expect(result).not.toBeNull();
     expect(result).not.toContain('*');
   });
 
   it('preserves color coding when stale (green for low usage)', () => {
-    const result = renderRateLimits(
-      { fiveHourPercent: 11 },
-      true,
-    );
+    const result = renderRateLimits({ fiveHourPercent: 11 }, true);
     expect(result).not.toBeNull();
     // Green ANSI code should be present
     expect(result).toContain('\x1b[32m');
   });
 
   it('applies DIM to stale percentages', () => {
-    const result = renderRateLimits(
-      { fiveHourPercent: 11 },
-      true,
-    );
+    const result = renderRateLimits({ fiveHourPercent: 11 }, true);
     expect(result).not.toBeNull();
     // DIM should be applied
     expect(result).toContain(DIM);
@@ -94,9 +90,10 @@ describe('stale indicator: renderRateLimitsCompact', () => {
   });
 
   it('does not show asterisk when fresh', () => {
-    const result = renderRateLimitsCompact(
-      { fiveHourPercent: 45, weeklyPercent: 12 },
-    );
+    const result = renderRateLimitsCompact({
+      fiveHourPercent: 45,
+      weeklyPercent: 12,
+    });
     expect(result).not.toBeNull();
     const stripped = result!.replace(/\x1b\[[0-9;]*m/g, '');
     expect(stripped).not.toContain('*');

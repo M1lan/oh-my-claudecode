@@ -34,7 +34,9 @@ describe('shared-state artifact handoff', () => {
     expect(task.descriptionArtifact?.kind).toBe('task-description');
     expect(task.description.length).toBeLessThan(largeDescription.length);
     expect(task.descriptionArtifact?.path).toBeTruthy();
-    expect(readFileSync(task.descriptionArtifact!.path, 'utf-8')).toBe(largeDescription);
+    expect(readFileSync(task.descriptionArtifact!.path, 'utf-8')).toBe(
+      largeDescription,
+    );
 
     const updated = updateSharedTask(tempDir, task.id, {
       status: 'completed',
@@ -43,7 +45,9 @@ describe('shared-state artifact handoff', () => {
 
     expect(updated?.resultArtifact?.kind).toBe('task-result');
     expect(updated?.completedAt).toBeTruthy();
-    expect(readFileSync(updated!.resultArtifact!.path, 'utf-8')).toBe('result ' + 'y'.repeat(5000));
+    expect(readFileSync(updated!.resultArtifact!.path, 'utf-8')).toBe(
+      'result ' + 'y'.repeat(5000),
+    );
   });
 
   it('keeps small messages inline and cleans up large artifacts', () => {

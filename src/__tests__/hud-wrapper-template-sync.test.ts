@@ -29,9 +29,7 @@ describe('HUD wrapper template — TS/MJS sync', () => {
 
   it('TS and MJS readers return byte-identical content', async () => {
     const fromTs = buildHudWrapperTs(root);
-    const mjsModule = await import(
-      /* @vite-ignore */ `file://${MJS_PATH}`
-    );
+    const mjsModule = await import(/* @vite-ignore */ `file://${MJS_PATH}`);
     const fromMjs = mjsModule.buildHudWrapper();
     expect(fromMjs).toBe(fromTs);
   });

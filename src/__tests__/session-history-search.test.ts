@@ -9,9 +9,16 @@ import {
   searchSessionHistory,
 } from '../features/session-history-search/index.js';
 
-function writeTranscript(filePath: string, entries: Array<Record<string, unknown>>): void {
+function writeTranscript(
+  filePath: string,
+  entries: Array<Record<string, unknown>>,
+): void {
   mkdirSync(join(filePath, '..'), { recursive: true });
-  writeFileSync(filePath, entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n', 'utf-8');
+  writeFileSync(
+    filePath,
+    entries.map((entry) => JSON.stringify(entry)).join('\n') + '\n',
+    'utf-8',
+  );
 }
 
 function normalizePathForAssert(path: string): string {
@@ -30,12 +37,23 @@ describe('session history search', () => {
     tempRoot = mkdtempSync(join(tmpdir(), 'omc-session-search-'));
     claudeDir = join(tempRoot, 'claude');
     otherProject = join(tempRoot, 'other-project');
-    tildeClaudeDir = join(homedir(), `.omc-session-search-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tildeClaudeDir = join(
+      homedir(),
+      `.omc-session-search-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     process.env.CLAUDE_CONFIG_DIR = claudeDir;
     process.env.OMC_STATE_DIR = join(tempRoot, 'omc-state');
 
-    const currentProjectDir = join(claudeDir, 'projects', encodeProjectPath(repoRoot));
-    const otherProjectDir = join(claudeDir, 'projects', encodeProjectPath(otherProject));
+    const currentProjectDir = join(
+      claudeDir,
+      'projects',
+      encodeProjectPath(repoRoot),
+    );
+    const otherProjectDir = join(
+      claudeDir,
+      'projects',
+      encodeProjectPath(otherProject),
+    );
 
     writeTranscript(join(currentProjectDir, 'session-current.jsonl'), [
       {
@@ -43,14 +61,26 @@ describe('session history search', () => {
         cwd: repoRoot,
         type: 'user',
         timestamp: '2026-03-09T10:00:00.000Z',
-        message: { role: 'user', content: 'Search prior sessions for notify-hook failures and stale team leader notes.' },
+        message: {
+          role: 'user',
+          content:
+            'Search prior sessions for notify-hook failures and stale team leader notes.',
+        },
       },
       {
         sessionId: 'session-current',
         cwd: repoRoot,
         type: 'assistant',
         timestamp: '2026-03-09T10:05:00.000Z',
-        message: { role: 'assistant', content: [{ type: 'text', text: 'We traced the notify-hook regression to stale team leader state in a prior run.' }] },
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'We traced the notify-hook regression to stale team leader state in a prior run.',
+            },
+          ],
+        },
       },
     ]);
 
@@ -60,7 +90,15 @@ describe('session history search', () => {
         cwd: repoRoot,
         type: 'assistant',
         timestamp: '2026-02-20T08:00:00.000Z',
-        message: { role: 'assistant', content: [{ type: 'text', text: 'Old provider routing discussion for archival context.' }] },
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'Old provider routing discussion for archival context.',
+            },
+          ],
+        },
       },
     ]);
 
@@ -70,7 +108,15 @@ describe('session history search', () => {
         cwd: otherProject,
         type: 'assistant',
         timestamp: '2026-03-08T12:00:00.000Z',
-        message: { role: 'assistant', content: [{ type: 'text', text: 'notify-hook appears here too, but only in another project.' }] },
+        message: {
+          role: 'assistant',
+          content: [
+            {
+              type: 'text',
+              text: 'notify-hook appears here too, but only in another project.',
+            },
+          ],
+        },
       },
     ]);
   });
@@ -82,8 +128,18 @@ describe('session history search', () => {
       process.env.CLAUDE_CONFIG_DIR = originalConfigDir;
     }
     delete process.env.OMC_STATE_DIR;
-    rmSync(tempRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
-    rmSync(tildeClaudeDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    rmSync(tempRoot, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
+    rmSync(tildeClaudeDir, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
   });
 
   it('searches the current project by default and returns structured snippets', async () => {
@@ -95,15 +151,23 @@ describe('session history search', () => {
     expect(report.scope.mode).toBe('current');
     expect(report.totalMatches).toBe(2);
     expect(report.results).toHaveLength(2);
-    expect(report.results.every((result) => result.projectPath === repoRoot)).toBe(true);
-    expect(report.results.some((result) => result.sessionId === 'session-current')).toBe(true);
+    expect(
+      report.results.every((result) => result.projectPath === repoRoot),
+    ).toBe(true);
+    expect(
+      report.results.some((result) => result.sessionId === 'session-current'),
+    ).toBe(true);
     expect(report.results[0].excerpt.toLowerCase()).toContain('notify-hook');
     expect(report.results[0].sourcePath).toContain('session-current.jsonl');
   });
 
   it('searches transcripts stored under the literal subdirectory cwd project dir', async () => {
     const subdirCwd = join(repoRoot, 'src');
-    const subdirProjectDir = join(claudeDir, 'projects', encodeProjectPath(subdirCwd));
+    const subdirProjectDir = join(
+      claudeDir,
+      'projects',
+      encodeProjectPath(subdirCwd),
+    );
 
     writeTranscript(join(subdirProjectDir, 'session-subdir.jsonl'), [
       {
@@ -111,7 +175,12 @@ describe('session history search', () => {
         cwd: subdirCwd,
         type: 'assistant',
         timestamp: '2026-03-11T10:00:00.000Z',
-        message: { role: 'assistant', content: [{ type: 'text', text: 'subdirectory cwd transcript sentinel' }] },
+        message: {
+          role: 'assistant',
+          content: [
+            { type: 'text', text: 'subdirectory cwd transcript sentinel' },
+          ],
+        },
       },
     ]);
 
@@ -123,14 +192,18 @@ describe('session history search', () => {
     expect(report.scope.mode).toBe('current');
     expect(report.scope.workingDirectory).toBeDefined();
     const workingDirectory = report.scope.workingDirectory!;
-    expect(normalizePathForAssert(workingDirectory)).toBe(normalizePathForAssert(repoRoot));
+    expect(normalizePathForAssert(workingDirectory)).toBe(
+      normalizePathForAssert(repoRoot),
+    );
     expect(report.totalMatches).toBe(1);
     expect(report.results[0]).toBeDefined();
     const result = report.results[0]!;
     expect(result.sessionId).toBe('session-subdir');
     expect(result.projectPath).toBeDefined();
     const resultProjectPath = result.projectPath!;
-    expect(normalizePathForAssert(resultProjectPath)).toBe(normalizePathForAssert(subdirCwd));
+    expect(normalizePathForAssert(resultProjectPath)).toBe(
+      normalizePathForAssert(subdirCwd),
+    );
   });
 
   it('supports since and session filters', async () => {
@@ -169,14 +242,21 @@ describe('session history search', () => {
   it('uses a ~-prefixed CLAUDE_CONFIG_DIR for transcript discovery', async () => {
     process.env.CLAUDE_CONFIG_DIR = `~/${basename(tildeClaudeDir)}`;
 
-    const tildeProjectDir = join(tildeClaudeDir, 'projects', encodeProjectPath(repoRoot));
+    const tildeProjectDir = join(
+      tildeClaudeDir,
+      'projects',
+      encodeProjectPath(repoRoot),
+    );
     writeTranscript(join(tildeProjectDir, 'session-tilde.jsonl'), [
       {
         sessionId: 'session-tilde',
         cwd: repoRoot,
         type: 'assistant',
         timestamp: '2026-03-10T10:00:00.000Z',
-        message: { role: 'assistant', content: [{ type: 'text', text: 'tilde config dir search hit' }] },
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'tilde config dir search hit' }],
+        },
       },
     ]);
 
@@ -201,8 +281,16 @@ describe('session history search', () => {
   });
 
   it('keeps Windows-style subdirectory paths within their project root', () => {
-    expect(__testingIsWithinProject('C:\\Users\\me\\repo\\packages\\api', ['C:\\Users\\me\\repo'])).toBe(true);
-    expect(__testingIsWithinProject('C:\\Users\\me\\repo-other', ['C:\\Users\\me\\repo'])).toBe(false);
+    expect(
+      __testingIsWithinProject('C:\\Users\\me\\repo\\packages\\api', [
+        'C:\\Users\\me\\repo',
+      ]),
+    ).toBe(true);
+    expect(
+      __testingIsWithinProject('C:\\Users\\me\\repo-other', [
+        'C:\\Users\\me\\repo',
+      ]),
+    ).toBe(false);
   });
 
   it('parses relative and absolute since values', () => {

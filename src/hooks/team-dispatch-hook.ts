@@ -13,7 +13,16 @@
  * - Leader pane missing -> deferred
  */
 
-import { readFile, writeFile, mkdir, readdir, appendFile, rename, rm, stat } from 'fs/promises';
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  readdir,
+  appendFile,
+  rename,
+  rm,
+  stat,
+} from 'fs/promises';
 import { existsSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
@@ -63,7 +72,8 @@ function resolveIssueDispatchCooldownMs(env = process.env): number {
   const raw = safeString(env[ISSUE_DISPATCH_COOLDOWN_ENV]).trim();
   if (raw === '') return DEFAULT_ISSUE_DISPATCH_COOLDOWN_MS;
   const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_ISSUE_DISPATCH_COOLDOWN_MS;
+  if (!Number.isFinite(parsed) || parsed < 0)
+    return DEFAULT_ISSUE_DISPATCH_COOLDOWN_MS;
   return parsed;
 }
 
@@ -71,7 +81,8 @@ function resolveDispatchTriggerCooldownMs(env = process.env): number {
   const raw = safeString(env[DISPATCH_TRIGGER_COOLDOWN_ENV]).trim();
   if (raw === '') return DEFAULT_DISPATCH_TRIGGER_COOLDOWN_MS;
   const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_DISPATCH_TRIGGER_COOLDOWN_MS;
+  if (!Number.isFinite(parsed) || parsed < 0)
+    return DEFAULT_DISPATCH_TRIGGER_COOLDOWN_MS;
   return parsed;
 }
 
@@ -86,7 +97,10 @@ function normalizeTriggerKey(value: string): string {
 
 // ── Lock ───────────────────────────────────────────────────────────────────
 
-async function withDispatchLock<T>(teamDirPath: string, fn: () => Promise<T>): Promise<T> {
+async function withDispatchLock<T>(
+  teamDirPath: string,
+  fn: () => Promise<T>,
+): Promise<T> {
   const lockDir = join(teamDirPath, 'dispatch', '.lock');
   const ownerPath = join(lockDir, 'owner');
   const ownerToken = `${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}`;
@@ -112,8 +126,11 @@ async function withDispatchLock<T>(teamDirPath: string, fn: () => Promise<T>): P
           await rm(lockDir, { recursive: true, force: true });
           continue;
         }
-      } catch { /* best effort */ }
-      if (Date.now() > deadline) throw new Error(`Timed out acquiring dispatch lock for ${teamDirPath}`);
+      } catch {
+        /* best effort */
+      }
+      if (Date.now() > deadline)
+        throw new Error(`Timed out acquiring dispatch lock for ${teamDirPath}`);
       await new Promise((r) => setTimeout(r, 25));
     }
   }
@@ -126,11 +143,17 @@ async function withDispatchLock<T>(teamDirPath: string, fn: () => Promise<T>): P
       if (currentOwner.trim() === ownerToken) {
         await rm(lockDir, { recursive: true, force: true });
       }
-    } catch { /* best effort */ }
+    } catch {
+      /* best effort */
+    }
   }
 }
 
-async function withMailboxLock<T>(teamDirPath: string, workerName: string, fn: () => Promise<T>): Promise<T> {
+async function withMailboxLock<T>(
+  teamDirPath: string,
+  workerName: string,
+  fn: () => Promise<T>,
+): Promise<T> {
   const lockDir = join(teamDirPath, 'mailbox', `.lock-${workerName}`);
   const ownerPath = join(lockDir, 'owner');
   const ownerToken = `${process.pid}.${Date.now()}.${Math.random().toString(16).slice(2)}`;
@@ -156,8 +179,13 @@ async function withMailboxLock<T>(teamDirPath: string, workerName: string, fn: (
           await rm(lockDir, { recursive: true, force: true });
           continue;
         }
-      } catch { /* best effort */ }
-      if (Date.now() > deadline) throw new Error(`Timed out acquiring mailbox lock for ${teamDirPath}/${workerName}`);
+      } catch {
+        /* best effort */
+      }
+      if (Date.now() > deadline)
+        throw new Error(
+          `Timed out acquiring mailbox lock for ${teamDirPath}/${workerName}`,
+        );
       await new Promise((r) => setTimeout(r, 25));
     }
   }
@@ -170,7 +198,9 @@ async function withMailboxLock<T>(teamDirPath: string, workerName: string, fn: (
       if (currentOwner.trim() === ownerToken) {
         await rm(lockDir, { recursive: true, force: true });
       }
-    } catch { /* best effort */ }
+    } catch {
+      /* best effort */
+    }
   }
 }
 
@@ -192,25 +222,45 @@ interface TriggerCooldownState {
   by_trigger: Record<string, { at: number; last_request_id: string } | number>;
 }
 
-async function readIssueCooldownState(teamDirPath: string): Promise<IssueCooldownState> {
+async function readIssueCooldownState(
+  teamDirPath: string,
+): Promise<IssueCooldownState> {
   const fallback: IssueCooldownState = { by_issue: {} };
   const parsed = await readJson(issueCooldownStatePath(teamDirPath), fallback);
-  if (!parsed || typeof parsed !== 'object' || typeof parsed.by_issue !== 'object' || parsed.by_issue === null) {
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    typeof parsed.by_issue !== 'object' ||
+    parsed.by_issue === null
+  ) {
     return fallback;
   }
   return parsed;
 }
 
-async function readTriggerCooldownState(teamDirPath: string): Promise<TriggerCooldownState> {
+async function readTriggerCooldownState(
+  teamDirPath: string,
+): Promise<TriggerCooldownState> {
   const fallback: TriggerCooldownState = { by_trigger: {} };
-  const parsed = await readJson(triggerCooldownStatePath(teamDirPath), fallback);
-  if (!parsed || typeof parsed !== 'object' || typeof parsed.by_trigger !== 'object' || parsed.by_trigger === null) {
+  const parsed = await readJson(
+    triggerCooldownStatePath(teamDirPath),
+    fallback,
+  );
+  if (
+    !parsed ||
+    typeof parsed !== 'object' ||
+    typeof parsed.by_trigger !== 'object' ||
+    parsed.by_trigger === null
+  ) {
     return fallback;
   }
   return parsed;
 }
 
-function parseTriggerCooldownEntry(entry: unknown): { at: number; lastRequestId: string } {
+function parseTriggerCooldownEntry(entry: unknown): {
+  at: number;
+  lastRequestId: string;
+} {
   if (typeof entry === 'number') {
     return { at: entry, lastRequestId: '' };
   }
@@ -219,7 +269,9 @@ function parseTriggerCooldownEntry(entry: unknown): { at: number; lastRequestId:
   }
   return {
     at: Number((entry as Record<string, unknown>).at),
-    lastRequestId: safeString((entry as Record<string, unknown>).last_request_id).trim(),
+    lastRequestId: safeString(
+      (entry as Record<string, unknown>).last_request_id,
+    ).trim(),
   };
 }
 
@@ -247,7 +299,12 @@ interface DispatchRequest {
 }
 
 interface TeamConfig {
-  workers?: Array<{ name: string; index?: number; pane_id?: string; worker_cli?: string }>;
+  workers?: Array<{
+    name: string;
+    index?: number;
+    pane_id?: string;
+    worker_cli?: string;
+  }>;
   tmux_session?: string;
   leader_pane_id?: string;
 }
@@ -260,25 +317,39 @@ export interface InjectionResult {
   pane?: string;
 }
 
-export type Injector = (request: DispatchRequest, config: TeamConfig, cwd: string) => Promise<InjectionResult>;
+export type Injector = (
+  request: DispatchRequest,
+  config: TeamConfig,
+  cwd: string,
+) => Promise<InjectionResult>;
 
 function defaultInjectTarget(
   request: DispatchRequest,
   config: TeamConfig,
 ): { type: string; value: string } | null {
   if (request.to_worker === 'leader-fixed') {
-    if (config.leader_pane_id) return { type: 'pane', value: config.leader_pane_id };
+    if (config.leader_pane_id)
+      return { type: 'pane', value: config.leader_pane_id };
     return null;
   }
   if (request.pane_id) return { type: 'pane', value: request.pane_id };
-  if (typeof request.worker_index === 'number' && Array.isArray(config.workers)) {
-    const worker = config.workers.find((c) => Number(c.index) === request.worker_index);
+  if (
+    typeof request.worker_index === 'number' &&
+    Array.isArray(config.workers)
+  ) {
+    const worker = config.workers.find(
+      (c) => Number(c.index) === request.worker_index,
+    );
     if (worker?.pane_id) return { type: 'pane', value: worker.pane_id };
   }
   if (typeof request.worker_index === 'number' && config.tmux_session) {
-    return { type: 'pane', value: `${config.tmux_session}.${request.worker_index}` };
+    return {
+      type: 'pane',
+      value: `${config.tmux_session}.${request.worker_index}`,
+    };
   }
-  if (config.tmux_session) return { type: 'session', value: config.tmux_session };
+  if (config.tmux_session)
+    return { type: 'session', value: config.tmux_session };
   return null;
 }
 
@@ -286,12 +357,19 @@ function normalizeCaptureText(value: string): string {
   return safeString(value).replace(/\r/g, '').replace(/\s+/g, ' ').trim();
 }
 
-function capturedPaneContainsTrigger(captured: string, trigger: string): boolean {
+function capturedPaneContainsTrigger(
+  captured: string,
+  trigger: string,
+): boolean {
   if (!captured || !trigger) return false;
   return normalizeCaptureText(captured).includes(normalizeCaptureText(trigger));
 }
 
-function capturedPaneContainsTriggerNearTail(captured: string, trigger: string, nonEmptyTailLines = 24): boolean {
+function capturedPaneContainsTriggerNearTail(
+  captured: string,
+  trigger: string,
+  nonEmptyTailLines = 24,
+): boolean {
   if (!captured || !trigger) return false;
   const normalizedTrigger = normalizeCaptureText(trigger);
   if (!normalizedTrigger) return false;
@@ -310,10 +388,19 @@ function paneHasActiveTask(captured: string): boolean {
     .map((line) => line.replace(/\r/g, '').trim())
     .filter((line) => line.length > 0);
   const tail = lines.slice(-40);
-  if (tail.some((line) => /\b\d+\s+background terminal running\b/i.test(line))) return true;
+  if (tail.some((line) => /\b\d+\s+background terminal running\b/i.test(line)))
+    return true;
   if (tail.some((line) => /esc to interrupt/i.test(line))) return true;
-  if (tail.some((line) => /\bbackground terminal running\b/i.test(line))) return true;
-  if (tail.some((line) => /^[·✻]\s+[A-Za-z][A-Za-z0-9''-]*(?:\s+[A-Za-z][A-Za-z0-9''-]*){0,3}(?:…|\.{3})$/u.test(line))) return true;
+  if (tail.some((line) => /\bbackground terminal running\b/i.test(line)))
+    return true;
+  if (
+    tail.some((line) =>
+      /^[·✻]\s+[A-Za-z][A-Za-z0-9''-]*(?:\s+[A-Za-z][A-Za-z0-9''-]*){0,3}(?:…|\.{3})$/u.test(
+        line,
+      ),
+    )
+  )
+    return true;
   return false;
 }
 
@@ -322,10 +409,11 @@ function paneIsBootstrapping(captured: string): boolean {
     .split('\n')
     .map((line) => line.replace(/\r/g, '').trim())
     .filter((line) => line.length > 0);
-  return lines.some((line) =>
-    /\b(loading|initializing|starting up)\b/i.test(line)
-    || /\bmodel:\s*loading\b/i.test(line)
-    || /\bconnecting\s+to\b/i.test(line),
+  return lines.some(
+    (line) =>
+      /\b(loading|initializing|starting up)\b/i.test(line) ||
+      /\bmodel:\s*loading\b/i.test(line) ||
+      /\bconnecting\s+to\b/i.test(line),
   );
 }
 
@@ -350,7 +438,11 @@ function paneLooksReady(captured: string): boolean {
   return lines.some(paneLineLooksLikeIdlePrompt);
 }
 
-async function runProcess(cmd: string, args: string[], timeoutMs: number): Promise<{ stdout: string; stderr: string }> {
+async function runProcess(
+  cmd: string,
+  args: string[],
+  timeoutMs: number,
+): Promise<{ stdout: string; stderr: string }> {
   const { execFile } = await import('child_process');
   const { promisify } = await import('util');
   const execFileAsync = promisify(execFile);
@@ -358,17 +450,26 @@ async function runProcess(cmd: string, args: string[], timeoutMs: number): Promi
   return { stdout: result.stdout ?? '', stderr: result.stderr ?? '' };
 }
 
-async function defaultInjector(request: DispatchRequest, config: TeamConfig, _cwd: string): Promise<InjectionResult> {
+async function defaultInjector(
+  request: DispatchRequest,
+  config: TeamConfig,
+  _cwd: string,
+): Promise<InjectionResult> {
   const target = defaultInjectTarget(request, config);
   if (!target) return { ok: false, reason: 'missing_tmux_target' };
 
   const paneTarget = target.value;
   try {
-    const inMode = await tmuxExecAsync(['display-message', '-t', paneTarget, '-p', '#{pane_in_mode}'], { timeout: 1000 });
+    const inMode = await tmuxExecAsync(
+      ['display-message', '-t', paneTarget, '-p', '#{pane_in_mode}'],
+      { timeout: 1000 },
+    );
     if (safeString(inMode.stdout).trim() === '1') {
       return { ok: false, reason: 'scroll_active' };
     }
-  } catch { /* best effort */ }
+  } catch {
+    /* best effort */
+  }
 
   // Claude Code v2.1.x sometimes swallows a single Enter during TUI state
   // transitions (input-handler bind race) — same root cause documented at
@@ -376,13 +477,21 @@ async function defaultInjector(request: DispatchRequest, config: TeamConfig, _cw
   // the dispatch path does not stall with the trigger text typed but never
   // submitted.
   const submitKeyPresses = 2;
-  const attemptCountAtStart = Number.isFinite(request.attempt_count) ? Math.max(0, Math.floor(request.attempt_count)) : 0;
+  const attemptCountAtStart = Number.isFinite(request.attempt_count)
+    ? Math.max(0, Math.floor(request.attempt_count))
+    : 0;
 
   let preCaptureHasTrigger = false;
   if (attemptCountAtStart >= 1) {
     try {
-      const preCapture = await tmuxExecAsync(['capture-pane', '-t', paneTarget, '-p', '-S', '-8'], { timeout: 2000 });
-      preCaptureHasTrigger = capturedPaneContainsTrigger(preCapture.stdout, request.trigger_message);
+      const preCapture = await tmuxExecAsync(
+        ['capture-pane', '-t', paneTarget, '-p', '-S', '-8'],
+        { timeout: 2000 },
+      );
+      preCaptureHasTrigger = capturedPaneContainsTrigger(
+        preCapture.stdout,
+        request.trigger_message,
+      );
     } catch {
       preCaptureHasTrigger = false;
     }
@@ -391,18 +500,28 @@ async function defaultInjector(request: DispatchRequest, config: TeamConfig, _cw
   const shouldTypePrompt = attemptCountAtStart === 0 || !preCaptureHasTrigger;
   if (shouldTypePrompt) {
     if (attemptCountAtStart >= 1) {
-      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-u'], { timeout: 1000 }).catch(() => {});
+      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-u'], {
+        timeout: 1000,
+      }).catch(() => {});
       await new Promise((r) => setTimeout(r, 50));
     }
     // Strip control characters (including newlines) from trigger_message to prevent
     // keystroke injection — tmux send-keys -l sends literal keystrokes, so a \n
     // in the message would execute as Enter in the target pane's shell.
-    const sanitizedMessage = request.trigger_message.replace(/[\x00-\x1f\x7f]/g, '');
-    await tmuxExecAsync(['send-keys', '-t', paneTarget, '-l', sanitizedMessage], { timeout: 3000 });
+    const sanitizedMessage = request.trigger_message.replace(
+      /[\x00-\x1f\x7f]/g,
+      '',
+    );
+    await tmuxExecAsync(
+      ['send-keys', '-t', paneTarget, '-l', sanitizedMessage],
+      { timeout: 3000 },
+    );
   }
 
   for (let i = 0; i < submitKeyPresses; i++) {
-    await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], { timeout: 3000 });
+    await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
+      timeout: 3000,
+    });
     if (i < submitKeyPresses - 1) {
       await new Promise((r) => setTimeout(r, 100));
     }
@@ -412,24 +531,51 @@ async function defaultInjector(request: DispatchRequest, config: TeamConfig, _cw
   for (let round = 0; round < INJECT_VERIFY_ROUNDS; round++) {
     await new Promise((r) => setTimeout(r, INJECT_VERIFY_DELAY_MS));
     try {
-      const narrowCap = await tmuxExecAsync(['capture-pane', '-t', paneTarget, '-p', '-S', '-8'], { timeout: 2000 });
-      const wideCap = await tmuxExecAsync(['capture-pane', '-t', paneTarget, '-p'], { timeout: 2000 });
+      const narrowCap = await tmuxExecAsync(
+        ['capture-pane', '-t', paneTarget, '-p', '-S', '-8'],
+        { timeout: 2000 },
+      );
+      const wideCap = await tmuxExecAsync(
+        ['capture-pane', '-t', paneTarget, '-p'],
+        { timeout: 2000 },
+      );
 
       if (paneHasActiveTask(wideCap.stdout)) {
-        return { ok: true, reason: 'tmux_send_keys_confirmed_active_task', pane: paneTarget };
+        return {
+          ok: true,
+          reason: 'tmux_send_keys_confirmed_active_task',
+          pane: paneTarget,
+        };
       }
-      if (request.to_worker !== 'leader-fixed' && !paneLooksReady(wideCap.stdout)) {
+      if (
+        request.to_worker !== 'leader-fixed' &&
+        !paneLooksReady(wideCap.stdout)
+      ) {
         continue;
       }
-      const triggerInNarrow = capturedPaneContainsTrigger(narrowCap.stdout, request.trigger_message);
-      const triggerNearTail = capturedPaneContainsTriggerNearTail(wideCap.stdout, request.trigger_message);
+      const triggerInNarrow = capturedPaneContainsTrigger(
+        narrowCap.stdout,
+        request.trigger_message,
+      );
+      const triggerNearTail = capturedPaneContainsTriggerNearTail(
+        wideCap.stdout,
+        request.trigger_message,
+      );
       if (!triggerInNarrow && !triggerNearTail) {
-        return { ok: true, reason: 'tmux_send_keys_confirmed', pane: paneTarget };
+        return {
+          ok: true,
+          reason: 'tmux_send_keys_confirmed',
+          pane: paneTarget,
+        };
       }
-    } catch { /* capture failed; retry */ }
+    } catch {
+      /* capture failed; retry */
+    }
 
     for (let i = 0; i < submitKeyPresses; i++) {
-      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], { timeout: 3000 }).catch(() => {});
+      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
+        timeout: 3000,
+      }).catch(() => {});
     }
   }
 
@@ -438,12 +584,20 @@ async function defaultInjector(request: DispatchRequest, config: TeamConfig, _cw
 
 // ── Mailbox update ─────────────────────────────────────────────────────────
 
-async function updateMailboxNotified(stateDir: string, teamName: string, workerName: string, messageId: string): Promise<boolean> {
+async function updateMailboxNotified(
+  stateDir: string,
+  teamName: string,
+  workerName: string,
+  messageId: string,
+): Promise<boolean> {
   const teamDirPath = join(stateDir, 'team', teamName);
   const mailboxPath = join(teamDirPath, 'mailbox', `${workerName}.json`);
   const legacyMailboxPath = join(teamDirPath, 'mailbox', `${workerName}.jsonl`);
   return await withMailboxLock(teamDirPath, workerName, async () => {
-    const canonical = await readJson<{ worker: string; messages: Array<Record<string, unknown>> }>(mailboxPath, { worker: workerName, messages: [] });
+    const canonical = await readJson<{
+      worker: string;
+      messages: Array<Record<string, unknown>>;
+    }>(mailboxPath, { worker: workerName, messages: [] });
     if (canonical && Array.isArray(canonical.messages)) {
       const msg = canonical.messages.find((c) => c?.message_id === messageId);
       if (msg) {
@@ -457,7 +611,10 @@ async function updateMailboxNotified(stateDir: string, teamName: string, workerN
     if (!existsSync(legacyMailboxPath)) return false;
     try {
       const raw = await readFile(legacyMailboxPath, 'utf8');
-      const lines = raw.split('\n').map((line) => line.trim()).filter(Boolean);
+      const lines = raw
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean);
       const messagesById = new Map<string, Record<string, unknown>>();
       for (const line of lines) {
         let parsed: unknown;
@@ -477,16 +634,33 @@ async function updateMailboxNotified(stateDir: string, teamName: string, workerN
       if (!message.notified_at) {
         message.notified_at = new Date().toISOString();
       }
-      const normalizedMessages = [...messagesById.values()].map((candidate) => ({
-        message_id: safeString(candidate.message_id || candidate.id),
-        from_worker: safeString(candidate.from_worker || candidate.from),
-        to_worker: safeString(candidate.to_worker || candidate.to),
-        body: safeString(candidate.body),
-        created_at: safeString(candidate.created_at || candidate.createdAt),
-        ...(safeString(candidate.notified_at || candidate.notifiedAt) ? { notified_at: safeString(candidate.notified_at || candidate.notifiedAt) } : {}),
-        ...(safeString(candidate.delivered_at || candidate.deliveredAt) ? { delivered_at: safeString(candidate.delivered_at || candidate.deliveredAt) } : {}),
-      }));
-      await writeJsonAtomic(mailboxPath, { worker: workerName, messages: normalizedMessages });
+      const normalizedMessages = [...messagesById.values()].map(
+        (candidate) => ({
+          message_id: safeString(candidate.message_id || candidate.id),
+          from_worker: safeString(candidate.from_worker || candidate.from),
+          to_worker: safeString(candidate.to_worker || candidate.to),
+          body: safeString(candidate.body),
+          created_at: safeString(candidate.created_at || candidate.createdAt),
+          ...(safeString(candidate.notified_at || candidate.notifiedAt)
+            ? {
+                notified_at: safeString(
+                  candidate.notified_at || candidate.notifiedAt,
+                ),
+              }
+            : {}),
+          ...(safeString(candidate.delivered_at || candidate.deliveredAt)
+            ? {
+                delivered_at: safeString(
+                  candidate.delivered_at || candidate.deliveredAt,
+                ),
+              }
+            : {}),
+        }),
+      );
+      await writeJsonAtomic(mailboxPath, {
+        worker: workerName,
+        messages: normalizedMessages,
+      });
       return true;
     } catch {
       return false;
@@ -496,10 +670,19 @@ async function updateMailboxNotified(stateDir: string, teamName: string, workerN
 
 // ── Event logging ──────────────────────────────────────────────────────────
 
-async function appendDispatchLog(logsDir: string, event: Record<string, unknown>): Promise<void> {
-  const path = join(logsDir, `team-dispatch-${new Date().toISOString().slice(0, 10)}.jsonl`);
+async function appendDispatchLog(
+  logsDir: string,
+  event: Record<string, unknown>,
+): Promise<void> {
+  const path = join(
+    logsDir,
+    `team-dispatch-${new Date().toISOString().slice(0, 10)}.jsonl`,
+  );
   await mkdir(logsDir, { recursive: true }).catch(() => {});
-  await appendFile(path, `${JSON.stringify({ timestamp: new Date().toISOString(), ...event })}\n`).catch(() => {});
+  await appendFile(
+    path,
+    `${JSON.stringify({ timestamp: new Date().toISOString(), ...event })}\n`,
+  ).catch(() => {});
 }
 
 async function appendLeaderNotificationDeferredEvent(params: {
@@ -520,7 +703,9 @@ async function appendLeaderNotificationDeferredEvent(params: {
     reason: params.reason,
     created_at: params.nowIso,
     request_id: params.request.request_id,
-    ...(params.request.message_id ? { message_id: params.request.message_id } : {}),
+    ...(params.request.message_id
+      ? { message_id: params.request.message_id }
+      : {}),
   };
   await mkdir(eventsDir, { recursive: true }).catch(() => {});
   await appendFile(eventsPath, JSON.stringify(event) + '\n').catch(() => {});
@@ -540,13 +725,15 @@ export interface DrainResult {
   reason?: string;
 }
 
-export async function drainPendingTeamDispatch(options: {
-  cwd: string;
-  stateDir?: string;
-  logsDir?: string;
-  maxPerTick?: number;
-  injector?: Injector;
-} = { cwd: '' }): Promise<DrainResult> {
+export async function drainPendingTeamDispatch(
+  options: {
+    cwd: string;
+    stateDir?: string;
+    logsDir?: string;
+    maxPerTick?: number;
+    injector?: Injector;
+  } = { cwd: '' },
+): Promise<DrainResult> {
   const { cwd } = options;
   const omcRoot = getOmcRoot(cwd);
   const stateDir = options.stateDir ?? join(omcRoot, 'state');
@@ -584,7 +771,10 @@ export async function drainPendingTeamDispatch(options: {
     const requestsPath = join(teamDirPath, 'dispatch', 'requests.json');
     if (!existsSync(requestsPath)) continue;
 
-    const config = await readJson<TeamConfig>(existsSync(manifestPath) ? manifestPath : configPath, {});
+    const config = await readJson<TeamConfig>(
+      existsSync(manifestPath) ? manifestPath : configPath,
+      {},
+    );
     await withDispatchLock(teamDirPath, async () => {
       const requests = await readJson<DispatchRequest[]>(requestsPath, []);
       if (!Array.isArray(requests)) return;
@@ -604,7 +794,10 @@ export async function drainPendingTeamDispatch(options: {
         }
 
         // Leader pane missing -> defer
-        if (request.to_worker === 'leader-fixed' && !safeString(config.leader_pane_id).trim()) {
+        if (
+          request.to_worker === 'leader-fixed' &&
+          !safeString(config.leader_pane_id).trim()
+        ) {
           const nowIso = new Date().toISOString();
           request.updated_at = nowIso;
           request.last_reason = LEADER_PANE_MISSING_DEFERRED_REASON;
@@ -636,7 +829,11 @@ export async function drainPendingTeamDispatch(options: {
         const issueKey = extractIssueKey(request.trigger_message);
         if (issueCooldownMs > 0 && issueKey) {
           const lastInjectedMs = Number(issueCooldownByIssue[issueKey]);
-          if (Number.isFinite(lastInjectedMs) && lastInjectedMs > 0 && nowMs - lastInjectedMs < issueCooldownMs) {
+          if (
+            Number.isFinite(lastInjectedMs) &&
+            lastInjectedMs > 0 &&
+            nowMs - lastInjectedMs < issueCooldownMs
+          ) {
             skipped += 1;
             continue;
           }
@@ -645,9 +842,16 @@ export async function drainPendingTeamDispatch(options: {
         // Trigger cooldown
         const triggerKey = normalizeTriggerKey(request.trigger_message);
         if (triggerCooldownMs > 0 && triggerKey) {
-          const parsed = parseTriggerCooldownEntry(triggerCooldownByKey[triggerKey]);
-          const withinCooldown = Number.isFinite(parsed.at) && parsed.at > 0 && nowMs - parsed.at < triggerCooldownMs;
-          const sameRequestRetry = parsed.lastRequestId !== '' && parsed.lastRequestId === safeString(request.request_id).trim();
+          const parsed = parseTriggerCooldownEntry(
+            triggerCooldownByKey[triggerKey],
+          );
+          const withinCooldown =
+            Number.isFinite(parsed.at) &&
+            parsed.at > 0 &&
+            nowMs - parsed.at < triggerCooldownMs;
+          const sameRequestRetry =
+            parsed.lastRequestId !== '' &&
+            parsed.lastRequestId === safeString(request.request_id).trim();
           if (withinCooldown && !sameRequestRetry) {
             skipped += 1;
             continue;
@@ -656,12 +860,17 @@ export async function drainPendingTeamDispatch(options: {
 
         const result = await injector(request, config, resolve(cwd));
         const nowIso = new Date().toISOString();
-        request.attempt_count = Number.isFinite(request.attempt_count) ? Math.max(0, request.attempt_count + 1) : 1;
+        request.attempt_count = Number.isFinite(request.attempt_count)
+          ? Math.max(0, request.attempt_count + 1)
+          : 1;
         request.updated_at = nowIso;
 
         if (result.ok) {
           // Unconfirmed: retry up to MAX_UNCONFIRMED_ATTEMPTS
-          if (result.reason === 'tmux_send_keys_unconfirmed' && request.attempt_count < MAX_UNCONFIRMED_ATTEMPTS) {
+          if (
+            result.reason === 'tmux_send_keys_unconfirmed' &&
+            request.attempt_count < MAX_UNCONFIRMED_ATTEMPTS
+          ) {
             request.last_reason = result.reason;
             mutated = true;
             skipped += 1;
@@ -709,7 +918,12 @@ export async function drainPendingTeamDispatch(options: {
             };
           }
           if (request.kind === 'mailbox' && request.message_id) {
-            await updateMailboxNotified(stateDir, teamName, request.to_worker, request.message_id).catch(logMailboxSyncFailure);
+            await updateMailboxNotified(
+              stateDir,
+              teamName,
+              request.to_worker,
+              request.message_id,
+            ).catch(logMailboxSyncFailure);
           }
           processed += 1;
           mutated = true;
@@ -741,9 +955,15 @@ export async function drainPendingTeamDispatch(options: {
 
       if (mutated) {
         issueCooldownState.by_issue = issueCooldownByIssue;
-        await writeJsonAtomic(issueCooldownStatePath(teamDirPath), issueCooldownState);
+        await writeJsonAtomic(
+          issueCooldownStatePath(teamDirPath),
+          issueCooldownState,
+        );
         triggerCooldownState.by_trigger = triggerCooldownByKey;
-        await writeJsonAtomic(triggerCooldownStatePath(teamDirPath), triggerCooldownState);
+        await writeJsonAtomic(
+          triggerCooldownStatePath(teamDirPath),
+          triggerCooldownState,
+        );
         await writeJsonAtomic(requestsPath, requests);
       }
     });

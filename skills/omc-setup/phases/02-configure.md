@@ -66,8 +66,8 @@ if(v==='')for(const c of['.claude/CLAUDE.md',p.join(d,'CLAUDE.md')]){try{const m
 console.log('Installed:',v||'(not found)');
 "
 
-# Check npm for latest version
-LATEST_VERSION=$(npm view oh-my-claude-sisyphus version 2>/dev/null)
+# Check pnpm for latest version
+LATEST_VERSION=$(pnpm view oh-my-claude-sisyphus version 2>/dev/null)
 
 if [ -n "$INSTALLED_VERSION" ] && [ -n "$LATEST_VERSION" ]; then
   if [ "$INSTALLED_VERSION" != "$LATEST_VERSION" ]; then
@@ -150,17 +150,17 @@ If `OMC_CLI_INSTALLED` is `"false"`, use AskUserQuestion:
 **Question:** "Would you like to install the OMC CLI globally for standalone helper commands? (`omc`, `omc hud`, `omc teleport`)"
 
 **Options:**
-1. **Yes (Recommended)** - Install `oh-my-claude-sisyphus` via `npm install -g`
-2. **No - Skip** - Skip installation (can install manually later with `npm install -g oh-my-claude-sisyphus`)
+1. **Yes (Recommended)** - Install `oh-my-claude-sisyphus` via `pnpm add -g`
+2. **No - Skip** - Skip installation (can install manually later with `pnpm add -g oh-my-claude-sisyphus`)
 
 If user chooses **Yes**:
 
 ```bash
-if ! command -v npm &>/dev/null; then
-  echo "WARNING: npm not found. Cannot install OMC CLI automatically."
-  echo "Install Node.js/npm first, then run: npm install -g oh-my-claude-sisyphus"
+if ! command -v pnpm &>/dev/null; then
+  echo "WARNING: pnpm not found. Cannot install OMC CLI automatically."
+  echo "Install Node.js/pnpm first, then run: pnpm add -g oh-my-claude-sisyphus"
 else
-  if npm install -g oh-my-claude-sisyphus 2>&1; then
+  if pnpm add -g oh-my-claude-sisyphus 2>&1; then
     echo "OMC CLI installed successfully."
     if command -v omc &>/dev/null; then
       OMC_CLI_VERSION=$(omc --version 2>/dev/null | head -1 || echo "installed")
@@ -170,8 +170,8 @@ else
     fi
   else
     echo "WARNING: Failed to install OMC CLI (permission issue or network error)."
-    echo "You can install manually later: npm install -g oh-my-claude-sisyphus"
-    echo "Or with sudo: sudo npm install -g oh-my-claude-sisyphus"
+    echo "You can install manually later: pnpm add -g oh-my-claude-sisyphus"
+    echo "Or with sudo: sudo pnpm add -g oh-my-claude-sisyphus"
   fi
 fi
 ```

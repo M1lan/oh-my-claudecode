@@ -31,10 +31,7 @@ import type {
   RoutingContext,
   ComplexitySignals,
 } from '../features/model-routing/types.js';
-import {
-  getDefaultModelHigh,
-  getDefaultModelLow,
-} from '../config/models.js';
+import { getDefaultModelHigh, getDefaultModelLow } from '../config/models.js';
 
 // ============ Signal Extraction Tests ============
 
@@ -57,7 +54,8 @@ describe('Signal Extraction', () => {
     });
 
     it('should count code blocks', () => {
-      const prompt = 'Here is code:\n```js\nfunction test() {}\n```\nAnd more:\n```ts\nconst x = 1;\n```';
+      const prompt =
+        'Here is code:\n```js\nfunction test() {}\n```\nAnd more:\n```ts\nconst x = 1;\n```';
       const signals = extractLexicalSignals(prompt);
       expect(signals.codeBlockCount).toBe(2);
     });
@@ -75,22 +73,30 @@ describe('Signal Extraction', () => {
     });
 
     it('should detect architecture keywords', () => {
-      const signals = extractLexicalSignals('We need to refactor the architecture');
+      const signals = extractLexicalSignals(
+        'We need to refactor the architecture',
+      );
       expect(signals.hasArchitectureKeywords).toBe(true);
     });
 
     it('should detect debugging keywords', () => {
-      const signals = extractLexicalSignals('Debug this issue and find the root cause');
+      const signals = extractLexicalSignals(
+        'Debug this issue and find the root cause',
+      );
       expect(signals.hasDebuggingKeywords).toBe(true);
     });
 
     it('should detect simple keywords', () => {
-      const signals = extractLexicalSignals('Find the file and show me the contents');
+      const signals = extractLexicalSignals(
+        'Find the file and show me the contents',
+      );
       expect(signals.hasSimpleKeywords).toBe(true);
     });
 
     it('should detect risk keywords', () => {
-      const signals = extractLexicalSignals('This is a critical production migration');
+      const signals = extractLexicalSignals(
+        'This is a critical production migration',
+      );
       expect(signals.hasRiskKeywords).toBe(true);
     });
 
@@ -120,12 +126,16 @@ describe('Signal Extraction', () => {
     });
 
     it('should detect implicit requirements', () => {
-      const signals = extractLexicalSignals('Make it better and clean up the code');
+      const signals = extractLexicalSignals(
+        'Make it better and clean up the code',
+      );
       expect(signals.hasImplicitRequirements).toBe(true);
     });
 
     it('should not detect implicit requirements in specific tasks', () => {
-      const signals = extractLexicalSignals('Fix the bug in utils.ts by adding null check');
+      const signals = extractLexicalSignals(
+        'Fix the bug in utils.ts by adding null check',
+      );
       expect(signals.hasImplicitRequirements).toBe(false);
     });
   });
@@ -150,32 +160,44 @@ describe('Signal Extraction', () => {
     });
 
     it('should detect test requirements', () => {
-      const signals = extractStructuralSignals('Add feature and make sure tests pass');
+      const signals = extractStructuralSignals(
+        'Add feature and make sure tests pass',
+      );
       expect(signals.hasTestRequirements).toBe(true);
     });
 
     it('should detect frontend domain', () => {
-      const signals = extractStructuralSignals('Create a React component with styled CSS');
+      const signals = extractStructuralSignals(
+        'Create a React component with styled CSS',
+      );
       expect(signals.domainSpecificity).toBe('frontend');
     });
 
     it('should detect backend domain', () => {
-      const signals = extractStructuralSignals('Create an API endpoint with database query');
+      const signals = extractStructuralSignals(
+        'Create an API endpoint with database query',
+      );
       expect(signals.domainSpecificity).toBe('backend');
     });
 
     it('should detect infrastructure domain', () => {
-      const signals = extractStructuralSignals('Set up Docker container with Kubernetes');
+      const signals = extractStructuralSignals(
+        'Set up Docker container with Kubernetes',
+      );
       expect(signals.domainSpecificity).toBe('infrastructure');
     });
 
     it('should detect security domain', () => {
-      const signals = extractStructuralSignals('Fix the authentication vulnerability');
+      const signals = extractStructuralSignals(
+        'Fix the authentication vulnerability',
+      );
       expect(signals.domainSpecificity).toBe('security');
     });
 
     it('should detect external knowledge requirement', () => {
-      const signals = extractStructuralSignals('Check the documentation for best practices');
+      const signals = extractStructuralSignals(
+        'Check the documentation for best practices',
+      );
       expect(signals.requiresExternalKnowledge).toBe(true);
     });
 
@@ -185,7 +207,9 @@ describe('Signal Extraction', () => {
     });
 
     it('should assess reversibility as moderate', () => {
-      const signals = extractStructuralSignals('Refactor the entire module structure');
+      const signals = extractStructuralSignals(
+        'Refactor the entire module structure',
+      );
       expect(signals.reversibility).toBe('moderate');
     });
 
@@ -195,12 +219,16 @@ describe('Signal Extraction', () => {
     });
 
     it('should detect system-wide impact', () => {
-      const signals = extractStructuralSignals('Change global configuration throughout the codebase');
+      const signals = extractStructuralSignals(
+        'Change global configuration throughout the codebase',
+      );
       expect(signals.impactScope).toBe('system-wide');
     });
 
     it('should detect module-level impact', () => {
-      const signals = extractStructuralSignals('Update the auth module and service layer');
+      const signals = extractStructuralSignals(
+        'Update the auth module and service layer',
+      );
       expect(signals.impactScope).toBe('module');
     });
 
@@ -460,7 +488,9 @@ describe('Scoring System', () => {
       expect(typeof breakdown.lexical).toBe('number');
       expect(typeof breakdown.structural).toBe('number');
       expect(typeof breakdown.context).toBe('number');
-      expect(breakdown.total).toBe(breakdown.lexical + breakdown.structural + breakdown.context);
+      expect(breakdown.total).toBe(
+        breakdown.lexical + breakdown.structural + breakdown.context,
+      );
     });
   });
 
@@ -506,7 +536,6 @@ describe('Routing Rules', () => {
       expect(result.tier).toBe('EXPLICIT');
       expect(result.ruleName).toBe('explicit-model-specified');
     });
-
 
     it('should evaluate architect complex debugging rule', () => {
       const context: RoutingContext = {
@@ -583,7 +612,8 @@ describe('Routing Rules', () => {
   describe('getMatchingRules', () => {
     it('should return all matching rules', () => {
       const context: RoutingContext = {
-        taskPrompt: 'Fix the authentication security vulnerability in production',
+        taskPrompt:
+          'Fix the authentication security vulnerability in production',
         agentType: 'architect',
       };
       const signals = extractAllSignals(context.taskPrompt, context);
@@ -591,7 +621,7 @@ describe('Routing Rules', () => {
 
       expect(matches.length).toBeGreaterThan(0);
       // Should match multiple rules
-      expect(matches.some(r => r.name === 'default-medium')).toBe(true);
+      expect(matches.some((r) => r.name === 'default-medium')).toBe(true);
     });
   });
 
@@ -602,7 +632,7 @@ describe('Routing Rules', () => {
         (ctx) => ctx.taskPrompt.includes('test'),
         'HIGH',
         'Test reason',
-        50
+        50,
       );
 
       expect(rule.name).toBe('test-rule');
@@ -623,13 +653,13 @@ describe('Routing Rules', () => {
         () => true,
         'HIGH',
         'Custom',
-        200
+        200,
       );
       const merged = mergeRules([customRule]);
 
       expect(merged.length).toBeGreaterThan(DEFAULT_ROUTING_RULES.length);
-      expect(merged.some(r => r.name === 'custom-rule')).toBe(true);
-      expect(merged.some(r => r.name === 'default-medium')).toBe(true);
+      expect(merged.some((r) => r.name === 'custom-rule')).toBe(true);
+      expect(merged.some((r) => r.name === 'default-medium')).toBe(true);
     });
 
     it('should override default rules with same name', () => {
@@ -638,11 +668,13 @@ describe('Routing Rules', () => {
         () => true,
         'HIGH',
         'Override',
-        200
+        200,
       );
       const merged = mergeRules([overrideRule]);
 
-      const defaultMediumRules = merged.filter(r => r.name === 'default-medium');
+      const defaultMediumRules = merged.filter(
+        (r) => r.name === 'default-medium',
+      );
       expect(defaultMediumRules.length).toBe(1);
       expect(defaultMediumRules[0].action.tier).toBe('HIGH');
     });
@@ -652,7 +684,6 @@ describe('Routing Rules', () => {
 // ============ Router Tests ============
 
 describe('Router', () => {
-
   describe('routeTask', () => {
     it('should route simple task to LOW tier', () => {
       const context: RoutingContext = {
@@ -667,7 +698,8 @@ describe('Router', () => {
 
     it('should route complex task to HIGH tier', () => {
       const context: RoutingContext = {
-        taskPrompt: 'Refactor the entire architecture across multiple modules with security considerations',
+        taskPrompt:
+          'Refactor the entire architecture across multiple modules with security considerations',
       };
       const decision = routeTask(context);
 
@@ -740,7 +772,6 @@ describe('Router', () => {
       expect(decision.modelType).toBe('sonnet');
       expect(decision.reasons.join(' ')).toContain('Min tier enforced');
     });
-
   });
 
   describe('escalateModel', () => {
@@ -793,7 +824,6 @@ describe('Router', () => {
     });
   });
 
-
   describe('getModelForTask', () => {
     it('should return adaptive model for architect with simple task', () => {
       const result = getModelForTask('architect', 'find the file');
@@ -802,7 +832,10 @@ describe('Router', () => {
     });
 
     it('should return adaptive model for architect with complex task', () => {
-      const result = getModelForTask('architect', 'debug the root cause of this architecture issue');
+      const result = getModelForTask(
+        'architect',
+        'debug the root cause of this architecture issue',
+      );
       expect(result.model).toBe('opus');
       expect(result.tier).toBe('HIGH');
     });
@@ -822,7 +855,9 @@ describe('Router', () => {
 
   describe('analyzeTaskComplexity', () => {
     it('should provide comprehensive analysis', () => {
-      const analysis = analyzeTaskComplexity('Refactor the architecture with security considerations');
+      const analysis = analyzeTaskComplexity(
+        'Refactor the architecture with security considerations',
+      );
 
       expect(analysis.tier).toBeDefined();
       expect(analysis.model).toBeDefined();
@@ -833,7 +868,9 @@ describe('Router', () => {
     });
 
     it('should detect signals in analysis', () => {
-      const analysis = analyzeTaskComplexity('Critical production security issue');
+      const analysis = analyzeTaskComplexity(
+        'Critical production security issue',
+      );
 
       expect(analysis.signals.hasRiskKeywords).toBe(true);
     });
@@ -896,7 +933,8 @@ describe('Edge Cases', () => {
 
   it('should handle multiple conflicting signals', () => {
     const context: RoutingContext = {
-      taskPrompt: 'Simple find task but with critical production security architecture refactoring',
+      taskPrompt:
+        'Simple find task but with critical production security architecture refactoring',
     };
     const signals = extractAllSignals(context.taskPrompt, context);
 
@@ -940,7 +978,8 @@ describe('Integration Scenarios', () => {
 
   it('should handle real-world debugging task', () => {
     const context: RoutingContext = {
-      taskPrompt: 'Investigate why the authentication system is failing in production. Need root cause analysis.',
+      taskPrompt:
+        'Investigate why the authentication system is failing in production. Need root cause analysis.',
       agentType: 'architect',
     };
     const decision = routeTask(context);
@@ -951,7 +990,8 @@ describe('Integration Scenarios', () => {
 
   it('should handle real-world refactoring task', () => {
     const context: RoutingContext = {
-      taskPrompt: 'Refactor the API layer to separate concerns and improve maintainability across auth, user, and admin modules',
+      taskPrompt:
+        'Refactor the API layer to separate concerns and improve maintainability across auth, user, and admin modules',
       agentType: 'executor',
     };
     const decision = routeTask(context);
@@ -972,7 +1012,8 @@ describe('Integration Scenarios', () => {
 
   it('should handle strategic planning task', () => {
     const context: RoutingContext = {
-      taskPrompt: 'Create a comprehensive strategic plan for refactoring the entire system architecture to migrate our monolith to microservices across all domains with minimal production downtime',
+      taskPrompt:
+        'Create a comprehensive strategic plan for refactoring the entire system architecture to migrate our monolith to microservices across all domains with minimal production downtime',
       agentType: 'planner',
     };
     const decision = routeTask(context);

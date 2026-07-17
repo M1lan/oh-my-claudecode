@@ -11,7 +11,10 @@ import {
   type UltraworkState,
 } from '../index.js';
 
-function makeState(originalPrompt: string, overrides: Partial<UltraworkState> = {}): UltraworkState {
+function makeState(
+  originalPrompt: string,
+  overrides: Partial<UltraworkState> = {},
+): UltraworkState {
   return {
     active: true,
     started_at: new Date().toISOString(),
@@ -43,7 +46,9 @@ describe('getUltraworkPersistenceMessage — safe objective echo (issue #2971)',
       current_objective: 'Fix issue #2971 Stop-hook reinforcement',
     });
     const msg = getUltraworkPersistenceMessage(state);
-    expect(msg).toContain('Current objective: Fix issue #2971 Stop-hook reinforcement');
+    expect(msg).toContain(
+      'Current objective: Fix issue #2971 Stop-hook reinforcement',
+    );
     expect(msg).not.toContain('Original activation prompt');
   });
 

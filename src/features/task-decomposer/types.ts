@@ -197,7 +197,7 @@ export interface DecompositionStrategy {
   /** Function to decompose task */
   decompose: (
     analysis: TaskAnalysis,
-    context: ProjectContext
+    context: ProjectContext,
   ) => {
     components: Component[];
     sharedFiles: SharedFile[];

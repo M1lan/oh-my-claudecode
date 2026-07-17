@@ -30,12 +30,14 @@ describe('getEffectivePermissions', () => {
       workerName: 'w1',
       deniedPaths: ['.git/**', 'custom/deny/**'],
       allowedPaths: ['src/**'],
-      allowedCommands: ['npm test'],
+      allowedCommands: ['pnpm test'],
       maxFileSize: 1024,
     });
 
     // .git/** should only appear once (from caller, not duplicated from defaults)
-    const gitCount = perms.deniedPaths.filter((p: string) => p === '.git/**').length;
+    const gitCount = perms.deniedPaths.filter(
+      (p: string) => p === '.git/**',
+    ).length;
     expect(gitCount).toBe(1);
 
     // custom/deny/** should also be present
@@ -47,7 +49,7 @@ describe('getEffectivePermissions', () => {
 
     // Caller's allowedPaths preserved
     expect(perms.allowedPaths).toEqual(['src/**']);
-    expect(perms.allowedCommands).toEqual(['npm test']);
+    expect(perms.allowedCommands).toEqual(['pnpm test']);
     expect(perms.maxFileSize).toBe(1024);
   });
 
@@ -75,7 +77,7 @@ describe('findPermissionViolations', () => {
     const violations = findPermissionViolations(
       ['src/index.ts', 'src/utils/helper.ts'],
       perms,
-      cwd
+      cwd,
     );
     expect(violations).toEqual([]);
   });
@@ -92,7 +94,7 @@ describe('findPermissionViolations', () => {
     const violations = findPermissionViolations(
       ['.git/config', '.env.local', 'config/secrets/api-key.json'],
       perms,
-      cwd
+      cwd,
     );
 
     expect(violations.length).toBe(3);
@@ -115,7 +117,7 @@ describe('findPermissionViolations', () => {
     const violations = findPermissionViolations(
       ['src/index.ts', 'package.json', 'docs/readme.md'],
       perms,
-      cwd
+      cwd,
     );
 
     expect(violations.length).toBe(2);
@@ -132,7 +134,7 @@ describe('findPermissionViolations', () => {
     const violations = findPermissionViolations(
       ['../../etc/passwd'],
       perms,
-      cwd
+      cwd,
     );
 
     expect(violations.length).toBe(1);

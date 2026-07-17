@@ -66,10 +66,10 @@ describe('applyPluginDirOption', () => {
     const { applyPluginDirOption } = await import('../index.js');
     applyPluginDirOption('/tmp/override');
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/tmp/override')
+      expect.stringContaining('/tmp/override'),
     );
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('/tmp/existing')
+      expect.stringContaining('/tmp/existing'),
     );
   });
 
@@ -107,9 +107,9 @@ describe('Commander integration: doctor --plugin-dir wiring', () => {
   it('doctor command has --plugin-dir option registered', async () => {
     const { buildProgram } = await import('../index.js');
     const prog = buildProgram();
-    const doctorCmd = prog.commands.find(c => c.name() === 'doctor');
+    const doctorCmd = prog.commands.find((c) => c.name() === 'doctor');
     expect(doctorCmd).toBeDefined();
-    const opt = doctorCmd!.options.find(o => o.long === '--plugin-dir');
+    const opt = doctorCmd!.options.find((o) => o.long === '--plugin-dir');
     expect(opt).toBeDefined();
     expect(opt!.required).toBe(true); // <path> is a required option argument
   });
@@ -117,11 +117,13 @@ describe('Commander integration: doctor --plugin-dir wiring', () => {
   it('doctor conflicts subcommand has --plugin-dir option registered', async () => {
     const { buildProgram } = await import('../index.js');
     const prog = buildProgram();
-    const doctorCmd = prog.commands.find(c => c.name() === 'doctor');
+    const doctorCmd = prog.commands.find((c) => c.name() === 'doctor');
     expect(doctorCmd).toBeDefined();
-    const conflictsCmd = doctorCmd!.commands.find(c => c.name() === 'conflicts');
+    const conflictsCmd = doctorCmd!.commands.find(
+      (c) => c.name() === 'conflicts',
+    );
     expect(conflictsCmd).toBeDefined();
-    const opt = conflictsCmd!.options.find(o => o.long === '--plugin-dir');
+    const opt = conflictsCmd!.options.find((o) => o.long === '--plugin-dir');
     expect(opt).toBeDefined();
   });
 
@@ -134,12 +136,21 @@ describe('Commander integration: doctor --plugin-dir wiring', () => {
 
     const savedEnv = process.env[OMC_PLUGIN_ROOT_ENV];
     delete process.env[OMC_PLUGIN_ROOT_ENV];
-    const exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as () => never);
+    const exitSpy = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => {}) as () => never);
 
     try {
       const { buildProgram } = await import('../index.js');
       const prog = buildProgram();
-      await prog.parseAsync(['node', 'omc', 'doctor', 'conflicts', '--plugin-dir', '/tmp/foo']);
+      await prog.parseAsync([
+        'node',
+        'omc',
+        'doctor',
+        'conflicts',
+        '--plugin-dir',
+        '/tmp/foo',
+      ]);
       expect(process.env[OMC_PLUGIN_ROOT_ENV]).toBe(resolve('/tmp/foo'));
     } finally {
       exitSpy.mockRestore();

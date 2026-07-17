@@ -15,24 +15,24 @@ import {
   mkdirSync,
   readdirSync,
   realpathSync,
-} from "fs";
-import { join, dirname, basename } from "path";
-import { homedir } from "os";
-import { OmcPaths, getOmcRoot } from "../../lib/worktree-paths.js";
-import { parseYamlMetadata } from "./parser.js";
-import { expandTriggers } from "./transliteration-map.js";
+} from 'fs';
+import { join, dirname, basename } from 'path';
+import { homedir } from 'os';
+import { OmcPaths, getOmcRoot } from '../../lib/worktree-paths.js';
+import { parseYamlMetadata } from './parser.js';
+import { expandTriggers } from './transliteration-map.js';
 
 // Re-export constants
 export const USER_SKILLS_DIR = join(
   homedir(),
-  ".claude",
-  "skills",
-  "omc-learned",
+  '.claude',
+  'skills',
+  'omc-learned',
 );
-export const GLOBAL_SKILLS_DIR = join(homedir(), ".omc", "skills");
+export const GLOBAL_SKILLS_DIR = join(homedir(), '.omc', 'skills');
 export const PROJECT_SKILLS_SUBDIR = OmcPaths.SKILLS;
-export const PROJECT_AGENT_SKILLS_SUBDIR = join(".agents", "skills");
-export const SKILL_EXTENSION = ".md";
+export const PROJECT_AGENT_SKILLS_SUBDIR = join('.agents', 'skills');
+export const SKILL_EXTENSION = '.md';
 
 /** Session TTL: 1 hour */
 const SESSION_TTL_MS = 60 * 60 * 1000;
@@ -85,11 +85,11 @@ interface CachedSkillData {
   name: string;
   triggers: string[];
   triggersLower: string[];
-  matching: "exact" | "fuzzy" | undefined;
+  matching: 'exact' | 'fuzzy' | undefined;
   content: string;
   description?: string;
   summary?: string;
-  scope: "user" | "project";
+  scope: 'user' | 'project';
 }
 
 interface CachedSkillEntry {
@@ -123,7 +123,7 @@ function getSkillMetadataCache(projectRoot: string): CachedSkillData[] {
 
   for (const candidate of candidates) {
     try {
-      const content = readFileSync(candidate.path, "utf-8");
+      const content = readFileSync(candidate.path, 'utf-8');
       const parsed = parseSkillFile(content);
       if (!parsed) continue;
 
@@ -177,9 +177,9 @@ export function clearLevenshteinCache(): void {
 function summarizeSkillContent(content: string): string {
   const firstUsefulLine = content
     .split(/\r?\n/)
-    .map((line) => line.replace(/^#+\s*/, "").trim())
-    .find((line) => line && !line.startsWith("---"));
-  return (firstUsefulLine || content.replace(/\s+/g, " ").trim()).slice(0, 240);
+    .map((line) => line.replace(/^#+\s*/, '').trim())
+    .find((line) => line && !line.startsWith('---'));
+  return (firstUsefulLine || content.replace(/\s+/g, ' ').trim()).slice(0, 240);
 }
 
 // =============================================================================
@@ -189,7 +189,7 @@ function summarizeSkillContent(content: string): string {
 export interface SkillFileCandidate {
   path: string;
   realPath: string;
-  scope: "user" | "project";
+  scope: 'user' | 'project';
   /** The root directory this skill was found in */
   sourceDir: string;
 }
@@ -201,7 +201,7 @@ export interface ParseResult {
     description?: string;
     triggers?: string[];
     tags?: string[];
-    matching?: "exact" | "fuzzy";
+    matching?: 'exact' | 'fuzzy';
     model?: string;
     agent?: string;
   };
@@ -217,9 +217,9 @@ export interface MatchedSkill {
   description?: string;
   summary?: string;
   score: number;
-  scope: "user" | "project";
+  scope: 'user' | 'project';
   triggers: string[];
-  matching?: "exact" | "fuzzy";
+  matching?: 'exact' | 'fuzzy';
 }
 
 interface SessionState {
@@ -239,7 +239,7 @@ interface SessionState {
  * Get state file path for a project.
  */
 function getStateFilePath(projectRoot: string): string {
-  return join(getOmcRoot(projectRoot), "state", "skill-sessions.json");
+  return join(getOmcRoot(projectRoot), 'state', 'skill-sessions.json');
 }
 
 /**
@@ -249,7 +249,7 @@ function readSessionState(projectRoot: string): SessionState {
   const stateFile = getStateFilePath(projectRoot);
   try {
     if (existsSync(stateFile)) {
-      const content = readFileSync(stateFile, "utf-8");
+      const content = readFileSync(stateFile, 'utf-8');
       return JSON.parse(content);
     }
   } catch {
@@ -265,7 +265,7 @@ function writeSessionState(projectRoot: string, state: SessionState): void {
   const stateFile = getStateFilePath(projectRoot);
   try {
     mkdirSync(dirname(stateFile), { recursive: true });
-    writeFileSync(stateFile, JSON.stringify(state, null, 2), "utf-8");
+    writeFileSync(stateFile, JSON.stringify(state, null, 2), 'utf-8');
   } catch {
     // Ignore write errors (non-critical)
   }
@@ -368,14 +368,14 @@ function safeRealpathSync(filePath: string): string {
  */
 function isWithinBoundary(realPath: string, boundary: string): boolean {
   const normalizedReal = safeRealpathSync(realPath)
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/");
+    .replace(/\\/g, '/')
+    .replace(/\/+/g, '/');
   const normalizedBoundary = safeRealpathSync(boundary)
-    .replace(/\\/g, "/")
-    .replace(/\/+/g, "/");
+    .replace(/\\/g, '/')
+    .replace(/\/+/g, '/');
   return (
     normalizedReal === normalizedBoundary ||
-    normalizedReal.startsWith(normalizedBoundary + "/")
+    normalizedReal.startsWith(normalizedBoundary + '/')
   );
 }
 
@@ -386,14 +386,14 @@ function isWithinBoundary(realPath: string, boundary: string): boolean {
  */
 export function findSkillFiles(
   projectRoot: string,
-  options?: { scope?: "project" | "user" | "all" },
+  options?: { scope?: 'project' | 'user' | 'all' },
 ): SkillFileCandidate[] {
   const candidates: SkillFileCandidate[] = [];
   const seenRealPaths = new Set<string>();
-  const scope = options?.scope ?? "all";
+  const scope = options?.scope ?? 'all';
 
   // 1. Search project-level skills (higher priority)
-  if (scope === "project" || scope === "all") {
+  if (scope === 'project' || scope === 'all') {
     const projectSkillDirs = [
       join(projectRoot, PROJECT_SKILLS_SUBDIR),
       join(projectRoot, PROJECT_AGENT_SKILLS_SUBDIR),
@@ -412,7 +412,7 @@ export function findSkillFiles(
         candidates.push({
           path: filePath,
           realPath,
-          scope: "project",
+          scope: 'project',
           sourceDir: projectSkillsDir,
         });
       }
@@ -420,7 +420,7 @@ export function findSkillFiles(
   }
 
   // 2. Search user-level skills from both directories (lower priority)
-  if (scope === "user" || scope === "all") {
+  if (scope === 'user' || scope === 'all') {
     const userDirs = [GLOBAL_SKILLS_DIR, USER_SKILLS_DIR];
     for (const userDir of userDirs) {
       const userFiles: string[] = [];
@@ -435,7 +435,7 @@ export function findSkillFiles(
         candidates.push({
           path: filePath,
           realPath,
-          scope: "user",
+          scope: 'user',
           sourceDir: userDir,
         });
       }
@@ -471,7 +471,7 @@ export function parseSkillFile(content: string): ParseResult | null {
   const errors: string[] = [];
 
   try {
-    const metadata = parseYamlMetadata(yamlContent) as ParseResult["metadata"];
+    const metadata = parseYamlMetadata(yamlContent) as ParseResult['metadata'];
     return {
       metadata,
       content: body,
@@ -578,7 +578,7 @@ export function matchSkillsForInjection(
   for (const skill of cachedSkills) {
     if (alreadyInjected.has(skill.path)) continue;
 
-    const useFuzzy = skill.matching === "fuzzy";
+    const useFuzzy = skill.matching === 'fuzzy';
     let totalScore = 0;
 
     for (const triggerLower of skill.triggersLower) {

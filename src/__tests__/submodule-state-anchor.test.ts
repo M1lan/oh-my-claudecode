@@ -10,10 +10,22 @@
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, realpathSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  realpathSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { getWorktreeRoot, getGitTopLevel, getOmcRoot, resolveToWorktreeRoot, clearWorktreeCache } from '../lib/worktree-paths.js';
+import {
+  getWorktreeRoot,
+  getGitTopLevel,
+  getOmcRoot,
+  resolveToWorktreeRoot,
+  clearWorktreeCache,
+} from '../lib/worktree-paths.js';
 
 function git(cwd: string, ...args: string[]): string {
   return execFileSync('git', ['-c', 'protocol.file.allow=always', ...args], {

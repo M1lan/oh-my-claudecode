@@ -11,8 +11,8 @@
  * @see https://github.com/Yeachan-Heo/oh-my-claudecode/issues/1130
  */
 
-import { createHash } from "crypto";
-import type { AutopilotWorkflowProfileV1 } from "../../shared/types.js";
+import { createHash } from 'crypto';
+import type { AutopilotWorkflowProfileV1 } from '../../shared/types.js';
 
 import type {
   PipelineConfig,
@@ -25,25 +25,24 @@ import type {
   WorkflowProfileStages,
   WorkflowDescriptor,
   StageStatus,
-} from "./pipeline-types.js";
+} from './pipeline-types.js';
 import {
   DEFAULT_PIPELINE_CONFIG,
   STAGE_ORDER,
   DEPRECATED_MODE_ALIASES,
-} from "./pipeline-types.js";
-import { ALL_ADAPTERS, getAdapterById } from "./adapters/index.js";
+} from './pipeline-types.js';
+import { ALL_ADAPTERS, getAdapterById } from './adapters/index.js';
 import {
   readAutopilotState,
   writeAutopilotState,
   initAutopilot,
-} from "./state.js";
-import type { AutopilotState, AutopilotConfig } from "./types.js";
+} from './state.js';
+import type { AutopilotState, AutopilotConfig } from './types.js';
 import {
   resolveAutopilotPlanPath,
   resolveOpenQuestionsPlanPath,
-} from "../../config/plan-output.js";
-import { validateNamedWorkflowStateStructure } from "./named-workflow-resume-validator.js";
-
+} from '../../config/plan-output.js';
+import { validateNamedWorkflowStateStructure } from './named-workflow-resume-validator.js';
 
 // ============================================================================
 // CONFIGURATION
@@ -85,10 +84,10 @@ export function resolvePipelineConfig(
 }
 
 const WORKFLOW_STAGE_SEQUENCES = [
-  ["ralplan", "execution"],
-  ["ralplan", "execution", "ralph"],
-  ["ralplan", "execution", "qa"],
-  ["ralplan", "execution", "ralph", "qa"],
+  ['ralplan', 'execution'],
+  ['ralplan', 'execution', 'ralph'],
+  ['ralplan', 'execution', 'qa'],
+  ['ralplan', 'execution', 'ralph', 'qa'],
 ] as const;
 
 function isWorkflowStageSequence(stages: string[]): boolean {
@@ -99,73 +98,73 @@ function isWorkflowStageSequence(stages: string[]): boolean {
   );
 }
 const RESERVED_WORKFLOW_NAMES = new Set([
-  "autopilot",
-  "ralplan",
-  "execution",
-  "ralph",
-  "qa",
-  "autoresearch",
-  "ultraqa",
-  "merge-readiness",
-  "self-improve",
-  "ultrawork",
-  "ultragoal",
-  "ultrapilot",
-  "swarm",
-  "pipeline",
-  "plan",
-  "team",
-  "cancel",
-  "deep-interview",
-  "deepsearch",
-  "ultrathink",
-  "tdd",
-  "code-review",
-  "security-review",
-  "analyze",
-  "search",
-  "default",
+  'autopilot',
+  'ralplan',
+  'execution',
+  'ralph',
+  'qa',
+  'autoresearch',
+  'ultraqa',
+  'merge-readiness',
+  'self-improve',
+  'ultrawork',
+  'ultragoal',
+  'ultrapilot',
+  'swarm',
+  'pipeline',
+  'plan',
+  'team',
+  'cancel',
+  'deep-interview',
+  'deepsearch',
+  'ultrathink',
+  'tdd',
+  'code-review',
+  'security-review',
+  'analyze',
+  'search',
+  'default',
 ]);
 
 /** Serialize JSON values with object keys sorted recursively in lexical order. */
 export function canonicalizeJson(value: unknown): string {
   if (
     value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
+    typeof value === 'boolean' ||
+    typeof value === 'string'
   ) {
     return JSON.stringify(value);
   }
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     if (!Number.isFinite(value))
-      throw new TypeError("Canonical JSON requires finite numbers");
+      throw new TypeError('Canonical JSON requires finite numbers');
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
-    return `[${value.map(canonicalizeJson).join(",")}]`;
+    return `[${value.map(canonicalizeJson).join(',')}]`;
   }
-  if (typeof value === "object") {
+  if (typeof value === 'object') {
     const record = value as Record<string, unknown>;
     return `{${Object.keys(record)
       .sort()
       .map((key) => `${JSON.stringify(key)}:${canonicalizeJson(record[key])}`)
-      .join(",")}}`;
+      .join(',')}}`;
   }
-  throw new TypeError("Canonical JSON requires JSON-compatible values");
+  throw new TypeError('Canonical JSON requires JSON-compatible values');
 }
 
 /** Return the canonical, closed v1 shape or null for malformed profile input. */
 export function normalizeWorkflowProfile(
   profile: unknown,
 ): { version: 1; stages: WorkflowProfileStages } | null {
-  if (!profile || typeof profile !== "object" || Array.isArray(profile))
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile))
     return null;
   const record = profile as Record<string, unknown>;
   if (record.version !== 1 || !Array.isArray(record.stages)) return null;
-  if (Object.keys(record).some((key) => key !== "version" && key !== "stages"))
+  if (Object.keys(record).some((key) => key !== 'version' && key !== 'stages'))
     return null;
   const stages = record.stages;
-  if (!stages.every((stage) => typeof stage === "string")) return null;
+  if (!stages.every((stage) => typeof stage === 'string')) return null;
   if (!isWorkflowStageSequence(stages as string[])) return null;
   return {
     version: 1,
@@ -196,7 +195,7 @@ export function createWorkflowDescriptor(
     workflowName,
     profileVersion: 1,
     stages: normalized.stages,
-    profileHash: createHash("sha256").update(canonical).digest("hex"),
+    profileHash: createHash('sha256').update(canonical).digest('hex'),
   };
 }
 
@@ -206,24 +205,24 @@ export function verifyWorkflowDescriptor(
 ): descriptor is WorkflowDescriptor {
   if (
     !descriptor ||
-    typeof descriptor !== "object" ||
+    typeof descriptor !== 'object' ||
     Array.isArray(descriptor)
   )
     return false;
   const record = descriptor as Record<string, unknown>;
   const expectedKeys = [
-    "descriptorVersion",
-    "profileHash",
-    "profileVersion",
-    "stages",
-    "workflowName",
+    'descriptorVersion',
+    'profileHash',
+    'profileVersion',
+    'stages',
+    'workflowName',
   ];
   if (
     Object.keys(record).length !== expectedKeys.length ||
     expectedKeys.some((key) => !(key in record)) ||
     record.descriptorVersion !== 1 ||
-    typeof record.workflowName !== "string" ||
-    typeof record.profileHash !== "string"
+    typeof record.workflowName !== 'string' ||
+    typeof record.profileHash !== 'string'
   ) {
     return false;
   }
@@ -262,14 +261,14 @@ export function buildPipelineTracking(
     return {
       id: stageId,
       status: isActive
-        ? ("pending" as StageStatus)
-        : ("skipped" as StageStatus),
+        ? ('pending' as StageStatus)
+        : ('skipped' as StageStatus),
       iterations: 0,
     };
   });
 
   // Find the first non-skipped stage
-  const firstActiveIndex = stages.findIndex((s) => s.status !== "skipped");
+  const firstActiveIndex = stages.findIndex((s) => s.status !== 'skipped');
 
   return {
     pipelineConfig: config,
@@ -291,7 +290,7 @@ export function getActiveAdapters(
 }
 
 function hasNamedWorkflowMarkers(state: AutopilotState): boolean {
-  return ["workflow", "workflowRunId", "pipelineTracking"].some((marker) =>
+  return ['workflow', 'workflowRunId', 'pipelineTracking'].some((marker) =>
     Object.prototype.hasOwnProperty.call(state, marker),
   );
 }
@@ -363,7 +362,7 @@ export function initPipeline(
     tracking.currentStageIndex >= 0 &&
     tracking.currentStageIndex < tracking.stages.length
   ) {
-    tracking.stages[tracking.currentStageIndex].status = "active";
+    tracking.stages[tracking.currentStageIndex].status = 'active';
     tracking.stages[tracking.currentStageIndex].startedAt =
       new Date().toISOString();
   }
@@ -393,7 +392,7 @@ export function getCurrentStageAdapter(
   }
 
   const currentStage = stages[currentStageIndex];
-  if (currentStage.status === "skipped" || currentStage.status === "complete") {
+  if (currentStage.status === 'skipped' || currentStage.status === 'complete') {
     // Find next active stage
     return getNextStageAdapter(tracking);
   }
@@ -411,7 +410,7 @@ export function getNextStageAdapter(
   const { stages, currentStageIndex } = tracking;
 
   for (let i = currentStageIndex + 1; i < stages.length; i++) {
-    if (stages[i].status !== "skipped") {
+    if (stages[i].status !== 'skipped') {
       return getAdapterById(stages[i].id) ?? null;
     }
   }
@@ -436,29 +435,29 @@ export function advanceStage(
   sessionId?: string,
 ): { adapter: PipelineStageAdapter | null; phase: PipelinePhase } {
   const state = readAutopilotState(directory, sessionId);
-  if (!state) return { adapter: null, phase: "failed" };
+  if (!state) return { adapter: null, phase: 'failed' };
 
   if (hasNamedWorkflowMarkers(state)) {
-    return { adapter: null, phase: "failed" };
+    return { adapter: null, phase: 'failed' };
   }
 
   const tracking = readPipelineTracking(state);
-  if (!tracking) return { adapter: null, phase: "failed" };
+  if (!tracking) return { adapter: null, phase: 'failed' };
 
   const { stages, currentStageIndex } = tracking;
 
   // A completed transition must not be repeated by a later Stop observation.
   if (currentStageIndex < 0 || currentStageIndex >= stages.length) {
-    return { adapter: null, phase: "complete" };
+    return { adapter: null, phase: 'complete' };
   }
   const currentStage = stages[currentStageIndex];
-  if (currentStage.status !== "active") {
+  if (currentStage.status !== 'active') {
     return {
       adapter: getCurrentStageAdapter(tracking),
       phase: currentStage.id,
     };
   }
-  currentStage.status = "complete";
+  currentStage.status = 'complete';
   currentStage.completedAt = new Date().toISOString();
 
   // Call onExit if the adapter supports it
@@ -471,7 +470,7 @@ export function advanceStage(
   // Find next non-skipped stage
   let nextIndex = -1;
   for (let i = currentStageIndex + 1; i < stages.length; i++) {
-    if (stages[i].status !== "skipped") {
+    if (stages[i].status !== 'skipped') {
       nextIndex = i;
       break;
     }
@@ -482,12 +481,12 @@ export function advanceStage(
     tracking.currentStageIndex = stages.length;
     advanceTrackingRevision(state, tracking);
     writePipelineTracking(directory, tracking, sessionId);
-    return { adapter: null, phase: "complete" };
+    return { adapter: null, phase: 'complete' };
   }
 
   // Activate next stage
   tracking.currentStageIndex = nextIndex;
-  stages[nextIndex].status = "active";
+  stages[nextIndex].status = 'active';
   stages[nextIndex].startedAt = new Date().toISOString();
   advanceTrackingRevision(state, tracking);
 
@@ -519,7 +518,7 @@ export function failCurrentStage(
 
   const { stages, currentStageIndex } = tracking;
   if (currentStageIndex >= 0 && currentStageIndex < stages.length) {
-    stages[currentStageIndex].status = "failed";
+    stages[currentStageIndex].status = 'failed';
     stages[currentStageIndex].error = error;
     advanceTrackingRevision(state, tracking);
   }
@@ -593,7 +592,7 @@ export function generatePipelinePrompt(
   if (!state) return null;
   const namedWorkflow = hasNamedWorkflowMarkers(state);
   const tracking = namedWorkflow
-    ? validateNamedWorkflowStateStructure(state, sessionId)?.tracking ?? null
+    ? (validateNamedWorkflowStateStructure(state, sessionId)?.tracking ?? null)
     : readPipelineTracking(state);
   if (!tracking) return null;
 
@@ -609,9 +608,9 @@ export function generatePipelinePrompt(
  */
 export function generateTransitionPrompt(
   fromStage: PipelineStageId,
-  toStage: PipelineStageId | "complete",
+  toStage: PipelineStageId | 'complete',
 ): string {
-  if (toStage === "complete") {
+  if (toStage === 'complete') {
     return `## PIPELINE COMPLETE
 
 All pipeline stages have completed successfully!
@@ -652,22 +651,22 @@ export function getPipelineStatus(tracking: PipelineTracking): {
 
   for (const stage of tracking.stages) {
     switch (stage.status) {
-      case "complete":
+      case 'complete':
         completed.push(stage.id);
         break;
-      case "active":
+      case 'active':
         current = stage.id;
         break;
-      case "pending":
+      case 'pending':
         pending.push(stage.id);
         break;
-      case "skipped":
+      case 'skipped':
         skipped.push(stage.id);
         break;
     }
   }
 
-  const activeStages = tracking.stages.filter((s) => s.status !== "skipped");
+  const activeStages = tracking.stages.filter((s) => s.status !== 'skipped');
   const completedCount = completed.length;
   const totalActive = activeStages.length;
   const isComplete = current === null && pending.length === 0;
@@ -694,25 +693,25 @@ export function formatPipelineHUD(tracking: PipelineTracking): string {
     const adapter = getAdapterById(stage.id);
     const name = adapter?.name ?? stage.id;
     switch (stage.status) {
-      case "complete":
+      case 'complete':
         parts.push(`[OK] ${name}`);
         break;
-      case "active":
+      case 'active':
         parts.push(`[>>] ${name} (iter ${stage.iterations})`);
         break;
-      case "pending":
+      case 'pending':
         parts.push(`[..] ${name}`);
         break;
-      case "skipped":
+      case 'skipped':
         parts.push(`[--] ${name}`);
         break;
-      case "failed":
+      case 'failed':
         parts.push(`[!!] ${name}`);
         break;
     }
   }
 
-  return `Pipeline ${status.progress}: ${parts.join(" | ")}`;
+  return `Pipeline ${status.progress}: ${parts.join(' | ')}`;
 }
 
 // ============================================================================
@@ -736,14 +735,14 @@ function buildContext(
   const namedWorkflow = hasNamedWorkflowMarkers(state);
   return {
     idea: namedWorkflow
-      ? state.prompt || ""
-      : state.originalIdea || state.prompt || "",
+      ? state.prompt || ''
+      : state.originalIdea || state.prompt || '',
     directory: state.project_path || process.cwd(),
     sessionId: state.session_id,
     ...(namedWorkflow
       ? {}
       : {
-          specPath: state.expansion?.spec_path || ".omc/autopilot/spec.md",
+          specPath: state.expansion?.spec_path || '.omc/autopilot/spec.md',
           planPath: state.planning?.plan_path || resolveAutopilotPlanPath(),
           openQuestionsPath: resolveOpenQuestionsPlanPath(),
         }),

@@ -8,7 +8,8 @@ import {
 describe('Skill Detector', () => {
   describe('detectExtractableMoment', () => {
     it('should detect problem-solution pattern', () => {
-      const message = 'The issue was caused by a race condition. I fixed it by adding proper locking.';
+      const message =
+        'The issue was caused by a race condition. I fixed it by adding proper locking.';
 
       const result = detectExtractableMoment(message);
 
@@ -18,7 +19,8 @@ describe('Skill Detector', () => {
     });
 
     it('should detect technique pattern', () => {
-      const message = 'A better way to handle this is to use the observer pattern instead of polling.';
+      const message =
+        'A better way to handle this is to use the observer pattern instead of polling.';
 
       const result = detectExtractableMoment(message);
 
@@ -27,7 +29,8 @@ describe('Skill Detector', () => {
     });
 
     it('should detect best practice pattern', () => {
-      const message = 'Best practices include keeping state as local as possible for React components.';
+      const message =
+        'Best practices include keeping state as local as possible for React components.';
 
       const result = detectExtractableMoment(message);
 
@@ -36,7 +39,8 @@ describe('Skill Detector', () => {
     });
 
     it('should not detect in regular conversation', () => {
-      const message = 'Sure, I can help you with that. What would you like to know?';
+      const message =
+        'Sure, I can help you with that. What would you like to know?';
 
       const result = detectExtractableMoment(message);
 
@@ -45,9 +49,13 @@ describe('Skill Detector', () => {
 
     it('should extract trigger keywords when pattern detected', () => {
       // Message that matches problem-solution pattern AND contains trigger keywords
-      const message = 'The issue was caused by React state management. I fixed it by using TypeScript strict mode.';
+      const message =
+        'The issue was caused by React state management. I fixed it by using TypeScript strict mode.';
 
-      const result = detectExtractableMoment(message, 'How do I manage state in React?');
+      const result = detectExtractableMoment(
+        message,
+        'How do I manage state in React?',
+      );
 
       expect(result.detected).toBe(true);
       expect(result.suggestedTriggers).toContain('react');
@@ -55,7 +63,8 @@ describe('Skill Detector', () => {
     });
 
     it('should detect workaround pattern', () => {
-      const message = 'As a workaround, you can temporarily disable the cache while debugging.';
+      const message =
+        'As a workaround, you can temporarily disable the cache while debugging.';
 
       const result = detectExtractableMoment(message);
 
@@ -64,7 +73,8 @@ describe('Skill Detector', () => {
     });
 
     it('should detect optimization pattern', () => {
-      const message = 'To get better performance, optimize by using memoization on expensive calculations.';
+      const message =
+        'To get better performance, optimize by using memoization on expensive calculations.';
 
       const result = detectExtractableMoment(message);
 

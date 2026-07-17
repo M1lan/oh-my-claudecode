@@ -3,12 +3,28 @@
  */
 
 import { createHash } from 'crypto';
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import {
+  describe,
+  it,
+  expect,
+  vi,
+  beforeEach,
+  afterEach,
+  beforeAll,
+  afterAll,
+} from 'vitest';
 import * as fs from 'fs';
 import * as childProcess from 'child_process';
 import * as os from 'os';
 import { EventEmitter } from 'events';
-import { isZaiHost, parseZaiResponse, isMinimaxHost, parseMinimaxResponse, getUsage, parseUsageResponse } from '../../hud/usage-api.js';
+import {
+  isZaiHost,
+  parseZaiResponse,
+  isMinimaxHost,
+  parseMinimaxResponse,
+  getUsage,
+  parseUsageResponse,
+} from '../../hud/usage-api.js';
 
 // Mock file-lock so withFileLock always executes the callback (tests focus on routing, not locking)
 vi.mock('../../lib/file-lock.js', () => ({
@@ -38,8 +54,12 @@ vi.mock('fs', async (importOriginal) => {
 });
 
 vi.mock('child_process', () => ({
-  execSync: vi.fn().mockImplementation(() => { throw new Error('mock: no keychain'); }),
-  execFileSync: vi.fn().mockImplementation(() => { throw new Error('mock: no keychain'); }),
+  execSync: vi.fn().mockImplementation(() => {
+    throw new Error('mock: no keychain');
+  }),
+  execFileSync: vi.fn().mockImplementation(() => {
+    throw new Error('mock: no keychain');
+  }),
 }));
 
 vi.mock('https', () => ({
@@ -106,7 +126,11 @@ describe('parseZaiResponse', () => {
     const response = {
       data: {
         limits: [
-          { type: 'TOKENS_LIMIT', percentage: 42, nextResetTime: Date.now() + 3600_000 },
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 42,
+            nextResetTime: Date.now() + 3600_000,
+          },
         ],
       },
     };
@@ -122,7 +146,11 @@ describe('parseZaiResponse', () => {
       data: {
         limits: [
           { type: 'TOKENS_LIMIT', percentage: 10 },
-          { type: 'TIME_LIMIT', percentage: 75, nextResetTime: Date.now() + 86400_000 },
+          {
+            type: 'TIME_LIMIT',
+            percentage: 75,
+            nextResetTime: Date.now() + 86400_000,
+          },
         ],
       },
     };
@@ -136,9 +164,7 @@ describe('parseZaiResponse', () => {
   it('omits weeklyPercent when API returns a single TOKENS_LIMIT (free/basic tier)', () => {
     const response = {
       data: {
-        limits: [
-          { type: 'TOKENS_LIMIT', percentage: 50 },
-        ],
+        limits: [{ type: 'TOKENS_LIMIT', percentage: 50 }],
       },
     };
 
@@ -204,9 +230,27 @@ describe('parseZaiResponse', () => {
     const response = {
       data: {
         limits: [
-          { type: 'TOKENS_LIMIT', unit: 3, number: 5, percentage: 1, nextResetTime: 1776180480445 },
-          { type: 'TOKENS_LIMIT', unit: 6, number: 1, percentage: 65, nextResetTime: 1776303517998 },
-          { type: 'TIME_LIMIT', unit: 5, number: 1, percentage: 1, nextResetTime: 1778290717998 },
+          {
+            type: 'TOKENS_LIMIT',
+            unit: 3,
+            number: 5,
+            percentage: 1,
+            nextResetTime: 1776180480445,
+          },
+          {
+            type: 'TOKENS_LIMIT',
+            unit: 6,
+            number: 1,
+            percentage: 65,
+            nextResetTime: 1776303517998,
+          },
+          {
+            type: 'TIME_LIMIT',
+            unit: 5,
+            number: 1,
+            percentage: 1,
+            nextResetTime: 1778290717998,
+          },
         ],
         level: 'pro',
       },
@@ -276,9 +320,19 @@ describe('parseZaiResponse', () => {
       data: {
         limits: [
           // 5-hour window: resets in ~5 hours
-          { type: 'TOKENS_LIMIT', unit: 3, percentage: 40, nextResetTime: now + 5 * 3600_000 },
+          {
+            type: 'TOKENS_LIMIT',
+            unit: 3,
+            percentage: 40,
+            nextResetTime: now + 5 * 3600_000,
+          },
           // Weekly window: resets in ~30 minutes (near end of week)
-          { type: 'TOKENS_LIMIT', unit: 6, percentage: 92, nextResetTime: now + 30 * 60_000 },
+          {
+            type: 'TOKENS_LIMIT',
+            unit: 6,
+            percentage: 92,
+            nextResetTime: now + 30 * 60_000,
+          },
         ],
       },
     };
@@ -297,7 +351,11 @@ describe('parseZaiResponse', () => {
       data: {
         limits: [
           // Deliberately reversed from the canonical order
-          { type: 'TOKENS_LIMIT', percentage: 65, nextResetTime: 1776303517998 },
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 65,
+            nextResetTime: 1776303517998,
+          },
           { type: 'TOKENS_LIMIT', percentage: 1, nextResetTime: 1776180480445 },
         ],
       },
@@ -313,7 +371,11 @@ describe('parseZaiResponse', () => {
     const response = {
       data: {
         limits: [
-          { type: 'TOKENS_LIMIT', percentage: 20, nextResetTime: 1776180480445 },
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 20,
+            nextResetTime: 1776180480445,
+          },
           { type: 'TOKENS_LIMIT', percentage: 80 }, // no nextResetTime
         ],
       },
@@ -332,7 +394,11 @@ describe('parseZaiResponse', () => {
       data: {
         limits: [
           { type: 'TOKENS_LIMIT', percentage: 30, nextResetTime: 0 },
-          { type: 'TOKENS_LIMIT', percentage: 70, nextResetTime: 1776180480445 },
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 70,
+            nextResetTime: 1776180480445,
+          },
         ],
       },
     };
@@ -349,9 +415,21 @@ describe('parseZaiResponse', () => {
     const response = {
       data: {
         limits: [
-          { type: 'TOKENS_LIMIT', percentage: 10, nextResetTime: 1776180480445 }, // earliest -> 5h
-          { type: 'TOKENS_LIMIT', percentage: 65, nextResetTime: 1776303517998 }, // middle -> weekly
-          { type: 'TOKENS_LIMIT', percentage: 90, nextResetTime: 1778290717998 }, // latest -> ignored
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 10,
+            nextResetTime: 1776180480445,
+          }, // earliest -> 5h
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 65,
+            nextResetTime: 1776303517998,
+          }, // middle -> weekly
+          {
+            type: 'TOKENS_LIMIT',
+            percentage: 90,
+            nextResetTime: 1778290717998,
+          }, // latest -> ignored
         ],
       },
     };
@@ -388,24 +466,34 @@ describe('getUsage routing', () => {
     `Claude Code-credentials-${createHash('sha256').update(configDir).digest('hex').slice(0, 8)}`;
 
   beforeAll(() => {
-    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      configurable: true,
+    });
   });
 
   afterAll(() => {
-    Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      configurable: true,
+    });
   });
 
   beforeEach(async () => {
     vi.clearAllMocks();
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.readFileSync).mockReturnValue('{}');
-    vi.mocked(childProcess.execSync).mockImplementation(() => { throw new Error('mock: no keychain'); });
-    vi.mocked(childProcess.execFileSync).mockImplementation(() => { throw new Error('mock: no keychain'); });
+    vi.mocked(childProcess.execSync).mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
+    vi.mocked(childProcess.execFileSync).mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
     // Reset env
     delete process.env.ANTHROPIC_BASE_URL;
     delete process.env.ANTHROPIC_AUTH_TOKEN;
     // Get the mocked https module for assertions
-    httpsModule = await import('https') as unknown as typeof httpsModule;
+    httpsModule = (await import('https')) as unknown as typeof httpsModule;
   });
 
   afterEach(() => {
@@ -448,16 +536,25 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 15 },
-          seven_day: { utilization: 35 },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 15 },
+            seven_day: { utilization: 35 },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -504,16 +601,25 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 11 },
-          seven_day: { utilization: 22 },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 11 },
+            seven_day: { utilization: 22 },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -549,7 +655,11 @@ describe('getUsage routing', () => {
           },
         });
       }
-      if (argsArr && argsArr.includes('find-generic-password') && !argsArr.includes('-a')) {
+      if (
+        argsArr &&
+        argsArr.includes('find-generic-password') &&
+        !argsArr.includes('-a')
+      ) {
         return JSON.stringify({
           claudeAiOauth: {
             accessToken: 'stale-token',
@@ -562,16 +672,25 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 25 },
-          seven_day: { utilization: 50 },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 25 },
+            seven_day: { utilization: 50 },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -589,12 +708,17 @@ describe('getUsage routing', () => {
     });
     // Verify username-scoped call was made (first call includes -a <username>)
     const calls = execFileMock.mock.calls;
-    const userScopedCall = calls.find(c =>
-      Array.isArray(c[1]) && (c[1] as string[]).includes('-a') && (c[1] as string[]).includes(username)
+    const userScopedCall = calls.find(
+      (c) =>
+        Array.isArray(c[1]) &&
+        (c[1] as string[]).includes('-a') &&
+        (c[1] as string[]).includes(username),
     );
     expect(userScopedCall).toBeTruthy();
     expect(httpsModule.default.request).toHaveBeenCalledTimes(1);
-    expect(httpsModule.default.request.mock.calls[0][0].headers.Authorization).toBe('Bearer fresh-token');
+    expect(
+      httpsModule.default.request.mock.calls[0][0].headers.Authorization,
+    ).toBe('Bearer fresh-token');
   });
 
   it('falls back to the legacy service-only keychain entry when the username-scoped entry is expired', async () => {
@@ -614,7 +738,11 @@ describe('getUsage routing', () => {
           },
         });
       }
-      if (argsArr && argsArr.includes('find-generic-password') && !argsArr.includes('-a')) {
+      if (
+        argsArr &&
+        argsArr.includes('find-generic-password') &&
+        !argsArr.includes('-a')
+      ) {
         return JSON.stringify({
           claudeAiOauth: {
             accessToken: 'fresh-legacy-token',
@@ -627,16 +755,25 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 10 },
-          seven_day: { utilization: 20 },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 10 },
+            seven_day: { utilization: 20 },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -654,7 +791,9 @@ describe('getUsage routing', () => {
     });
     expect(execFileMock).toHaveBeenCalledTimes(2);
     expect(httpsModule.default.request).toHaveBeenCalledTimes(1);
-    expect(httpsModule.default.request.mock.calls[0][0].headers.Authorization).toBe('Bearer fresh-legacy-token');
+    expect(
+      httpsModule.default.request.mock.calls[0][0].headers.Authorization,
+    ).toBe('Bearer fresh-legacy-token');
   });
 
   it('preserves model-specific rate limits when generic subscription windows are nullish', () => {
@@ -675,7 +814,9 @@ describe('getUsage routing', () => {
     const mockedExistsSync = vi.mocked(fs.existsSync);
     const mockedReadFileSync = vi.mocked(fs.readFileSync);
 
-    mockedExistsSync.mockImplementation((path) => String(path).endsWith('.credentials.json'));
+    mockedExistsSync.mockImplementation((path) =>
+      String(path).endsWith('.credentials.json'),
+    );
     mockedReadFileSync.mockImplementation((path) => {
       if (String(path).endsWith('.credentials.json')) {
         return JSON.stringify({
@@ -692,23 +833,32 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 3 },
-          seven_day: { utilization: 16 },
-          seven_day_sonnet: { utilization: 0 },
-          extra_usage: {
-            is_enabled: true,
-            used_credits: 2726,
-            monthly_limit: 5000,
-            currency: 'USD',
-          },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 3 },
+            seven_day: { utilization: 16 },
+            seven_day_sonnet: { utilization: 0 },
+            extra_usage: {
+              is_enabled: true,
+              used_credits: 2726,
+              monthly_limit: 5000,
+              currency: 'USD',
+            },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -733,7 +883,9 @@ describe('getUsage routing', () => {
     const mockedExistsSync = vi.mocked(fs.existsSync);
     const mockedReadFileSync = vi.mocked(fs.readFileSync);
 
-    mockedExistsSync.mockImplementation((path) => String(path).endsWith('.credentials.json'));
+    mockedExistsSync.mockImplementation((path) =>
+      String(path).endsWith('.credentials.json'),
+    );
     mockedReadFileSync.mockImplementation((path) => {
       if (String(path).endsWith('.credentials.json')) {
         return JSON.stringify({
@@ -750,17 +902,29 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 36, resets_at: '2026-04-24T13:00:00Z' },
-          seven_day: { utilization: 32, resets_at: '2026-04-25T13:00:00Z' },
-          seven_day_sonnet: { utilization: 8, resets_at: '2026-04-25T13:00:00Z' },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            five_hour: { utilization: 36, resets_at: '2026-04-24T13:00:00Z' },
+            seven_day: { utilization: 32, resets_at: '2026-04-25T13:00:00Z' },
+            seven_day_sonnet: {
+              utilization: 8,
+              resets_at: '2026-04-25T13:00:00Z',
+            },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -826,7 +990,9 @@ describe('getUsage routing', () => {
     const mockedExistsSync = vi.mocked(fs.existsSync);
     const mockedReadFileSync = vi.mocked(fs.readFileSync);
 
-    mockedExistsSync.mockImplementation((path) => String(path).endsWith('.usage-cache-anthropic.json'));
+    mockedExistsSync.mockImplementation((path) =>
+      String(path).endsWith('.usage-cache-anthropic.json'),
+    );
     mockedReadFileSync.mockImplementation((path) => {
       if (String(path).endsWith('.usage-cache-anthropic.json')) {
         return JSON.stringify({
@@ -868,7 +1034,10 @@ describe('getUsage routing', () => {
 
     mockedExistsSync.mockImplementation((path) => {
       const file = String(path);
-      return file.endsWith('settings.json') || file.endsWith('.usage-cache-anthropic.json');
+      return (
+        file.endsWith('settings.json') ||
+        file.endsWith('.usage-cache-anthropic.json')
+      );
     });
     mockedReadFileSync.mockImplementation((path) => {
       const file = String(path);
@@ -921,7 +1090,9 @@ describe('getUsage routing', () => {
     const mockedReadFileSync = vi.mocked(fs.readFileSync);
     const mockedWriteFileSync = vi.mocked(fs.writeFileSync);
 
-    mockedExistsSync.mockImplementation((path) => String(path).endsWith('settings.json'));
+    mockedExistsSync.mockImplementation((path) =>
+      String(path).endsWith('settings.json'),
+    );
     mockedReadFileSync.mockImplementation((path) => {
       const file = String(path);
       if (file.endsWith('settings.json')) {
@@ -935,10 +1106,16 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 429;
         callback(res);
         res.emit('end');
@@ -954,7 +1131,9 @@ describe('getUsage routing', () => {
     });
     expect(mockedWriteFileSync).toHaveBeenCalled();
 
-    const writtenCache = JSON.parse(String(mockedWriteFileSync.mock.calls.at(-1)?.[1] ?? '{}'));
+    const writtenCache = JSON.parse(
+      String(mockedWriteFileSync.mock.calls.at(-1)?.[1] ?? '{}'),
+    );
     expect(writtenCache.rateLimited).toBe(true);
     expect(writtenCache.rateLimitedCount).toBe(1);
     expect(writtenCache.error).toBe(false);
@@ -977,7 +1156,9 @@ describe('getUsage routing', () => {
 
     mockedExistsSync.mockImplementation((path) => {
       const file = String(path);
-      return file.endsWith('settings.json') || file.endsWith('.usage-cache-zai.json');
+      return (
+        file.endsWith('settings.json') || file.endsWith('.usage-cache-zai.json')
+      );
     });
     mockedReadFileSync.mockImplementation((path) => {
       const file = String(path);
@@ -1002,10 +1183,16 @@ describe('getUsage routing', () => {
     });
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void; on: typeof EventEmitter.prototype.on };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+        on: typeof EventEmitter.prototype.on;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 429;
         callback(res);
         res.emit('end');
@@ -1016,9 +1203,13 @@ describe('getUsage routing', () => {
     const result = await getUsage();
 
     expect(result.error).toBe('rate_limited');
-    const writtenCache = JSON.parse(String(mockedWriteFileSync.mock.calls.at(-1)?.[1] ?? '{}'));
+    const writtenCache = JSON.parse(
+      String(mockedWriteFileSync.mock.calls.at(-1)?.[1] ?? '{}'),
+    );
     expect(writtenCache.rateLimitedCount).toBe(5);
-    expect(writtenCache.rateLimitedUntil - writtenCache.timestamp).toBe(300_000);
+    expect(writtenCache.rateLimitedUntil - writtenCache.timestamp).toBe(
+      300_000,
+    );
 
     vi.useRealTimers();
   });
@@ -1035,7 +1226,9 @@ describe('getUsage routing', () => {
 
     mockedExistsSync.mockImplementation((path) => {
       const file = String(path);
-      return file.endsWith('settings.json') || file.endsWith('.usage-cache-zai.json');
+      return (
+        file.endsWith('settings.json') || file.endsWith('.usage-cache-zai.json')
+      );
     });
     mockedReadFileSync.mockImplementation((path) => {
       const file = String(path);
@@ -1256,30 +1449,39 @@ describe('parseMinimaxResponse', () => {
           model_name: 'speech-hd',
           current_interval_total_count: 100,
           current_interval_usage_count: 0,
-          start_time: Date.now(), end_time: Date.now() + 3600_000,
+          start_time: Date.now(),
+          end_time: Date.now() + 3600_000,
           remains_time: 3600_000,
-          current_weekly_total_count: 700, current_weekly_usage_count: 0,
-          weekly_start_time: Date.now(), weekly_end_time: Date.now() + 86400_000,
+          current_weekly_total_count: 700,
+          current_weekly_usage_count: 0,
+          weekly_start_time: Date.now(),
+          weekly_end_time: Date.now() + 86400_000,
           weekly_remains_time: 86400_000,
         },
         {
           model_name: 'MiniMax-M2.7',
           current_interval_total_count: 1500,
           current_interval_usage_count: 750,
-          start_time: Date.now(), end_time: Date.now() + 3600_000,
+          start_time: Date.now(),
+          end_time: Date.now() + 3600_000,
           remains_time: 3600_000,
-          current_weekly_total_count: 15000, current_weekly_usage_count: 7500,
-          weekly_start_time: Date.now(), weekly_end_time: Date.now() + 86400_000,
+          current_weekly_total_count: 15000,
+          current_weekly_usage_count: 7500,
+          weekly_start_time: Date.now(),
+          weekly_end_time: Date.now() + 86400_000,
           weekly_remains_time: 86400_000,
         },
         {
           model_name: 'MiniMax-M1',
           current_interval_total_count: 1000,
           current_interval_usage_count: 800,
-          start_time: Date.now(), end_time: Date.now() + 3600_000,
+          start_time: Date.now(),
+          end_time: Date.now() + 3600_000,
           remains_time: 3600_000,
-          current_weekly_total_count: 10000, current_weekly_usage_count: 8000,
-          weekly_start_time: Date.now(), weekly_end_time: Date.now() + 86400_000,
+          current_weekly_total_count: 10000,
+          current_weekly_usage_count: 8000,
+          weekly_start_time: Date.now(),
+          weekly_end_time: Date.now() + 86400_000,
           weekly_remains_time: 86400_000,
         },
       ],
@@ -1299,10 +1501,13 @@ describe('parseMinimaxResponse', () => {
           model_name: 'MiniMax-M1',
           current_interval_total_count: 100,
           current_interval_usage_count: 50,
-          start_time: Date.now(), end_time: Date.now() + 3600_000,
+          start_time: Date.now(),
+          end_time: Date.now() + 3600_000,
           remains_time: 3600_000,
-          current_weekly_total_count: 700, current_weekly_usage_count: 350,
-          weekly_start_time: Date.now(), weekly_end_time: Date.now() + 86400_000,
+          current_weekly_total_count: 700,
+          current_weekly_usage_count: 350,
+          weekly_start_time: Date.now(),
+          weekly_end_time: Date.now() + 86400_000,
           weekly_remains_time: 86400_000,
         },
       ],
@@ -1323,12 +1528,16 @@ describe('getUsage routing - minimax', () => {
     vi.clearAllMocks();
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.readFileSync).mockReturnValue('{}');
-    vi.mocked(childProcess.execSync).mockImplementation(() => { throw new Error('mock: no keychain'); });
-    vi.mocked(childProcess.execFileSync).mockImplementation(() => { throw new Error('mock: no keychain'); });
+    vi.mocked(childProcess.execSync).mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
+    vi.mocked(childProcess.execFileSync).mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
     delete process.env.ANTHROPIC_BASE_URL;
     delete process.env.ANTHROPIC_AUTH_TOKEN;
     delete process.env.MINIMAX_API_KEY;
-    httpsModule = await import('https') as unknown as typeof httpsModule;
+    httpsModule = (await import('https')) as unknown as typeof httpsModule;
   });
 
   afterEach(() => {
@@ -1391,30 +1600,38 @@ describe('getUsage routing - minimax', () => {
     const weeklyEndTime = Date.now() + 86400_000 * 3;
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          model_remains: [
-            {
-              model_name: 'MiniMax-M2.7',
-              current_interval_total_count: 1500,
-              current_interval_usage_count: 750,
-              start_time: Date.now(),
-              end_time: endTime,
-              remains_time: 3600_000,
-              current_weekly_total_count: 15000,
-              current_weekly_usage_count: 12000,
-              weekly_start_time: Date.now(),
-              weekly_end_time: weeklyEndTime,
-              weekly_remains_time: 86400_000 * 3,
-            },
-          ],
-          base_resp: { status_code: 0, status_msg: 'success' },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            model_remains: [
+              {
+                model_name: 'MiniMax-M2.7',
+                current_interval_total_count: 1500,
+                current_interval_usage_count: 750,
+                start_time: Date.now(),
+                end_time: endTime,
+                remains_time: 3600_000,
+                current_weekly_total_count: 15000,
+                current_weekly_usage_count: 12000,
+                weekly_start_time: Date.now(),
+                weekly_end_time: weeklyEndTime,
+                weekly_remains_time: 86400_000 * 3,
+              },
+            ],
+            base_resp: { status_code: 0, status_msg: 'success' },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -1424,7 +1641,7 @@ describe('getUsage routing - minimax', () => {
 
     expect(result.rateLimits).not.toBeNull();
     expect(result.rateLimits!.fiveHourPercent).toBe(50); // (1500 - 750) / 1500
-    expect(result.rateLimits!.weeklyPercent).toBe(20);   // (15000 - 12000) / 15000
+    expect(result.rateLimits!.weeklyPercent).toBe(20); // (15000 - 12000) / 15000
     expect(result.rateLimits!.fiveHourResetsAt).toBeInstanceOf(Date);
     expect(result.rateLimits!.fiveHourResetsAt!.getTime()).toBe(endTime);
     expect(result.rateLimits!.weeklyResetsAt).toBeInstanceOf(Date);
@@ -1449,27 +1666,38 @@ describe('getUsage routing - minimax', () => {
     process.env.MINIMAX_API_KEY = 'test-key';
 
     httpsModule.default.request.mockImplementationOnce((_options, callback) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
+      const req = new EventEmitter() as EventEmitter & {
+        end: () => void;
+        destroy: () => void;
+      };
       req.destroy = vi.fn();
       req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
+        const res = new EventEmitter() as EventEmitter & {
+          statusCode?: number;
+        };
         res.statusCode = 200;
         callback(res);
-        res.emit('data', JSON.stringify({
-          model_remains: [
-            {
-              model_name: 'MiniMax-M1',
-              current_interval_total_count: 100,
-              current_interval_usage_count: 50,
-              start_time: Date.now(), end_time: Date.now() + 3600_000,
-              remains_time: 3600_000,
-              current_weekly_total_count: 700, current_weekly_usage_count: 350,
-              weekly_start_time: Date.now(), weekly_end_time: Date.now() + 86400_000,
-              weekly_remains_time: 86400_000,
-            },
-          ],
-          base_resp: { status_code: 0, status_msg: 'success' },
-        }));
+        res.emit(
+          'data',
+          JSON.stringify({
+            model_remains: [
+              {
+                model_name: 'MiniMax-M1',
+                current_interval_total_count: 100,
+                current_interval_usage_count: 50,
+                start_time: Date.now(),
+                end_time: Date.now() + 3600_000,
+                remains_time: 3600_000,
+                current_weekly_total_count: 700,
+                current_weekly_usage_count: 350,
+                weekly_start_time: Date.now(),
+                weekly_end_time: Date.now() + 86400_000,
+                weekly_remains_time: 86400_000,
+              },
+            ],
+            base_resp: { status_code: 0, status_msg: 'success' },
+          }),
+        );
         res.emit('end');
       };
       return req;
@@ -1477,9 +1705,11 @@ describe('getUsage routing - minimax', () => {
 
     await getUsage();
 
-    const writeCall = vi.mocked(fs.writeFileSync).mock.calls.find(
-      c => String(c[0]).includes('.usage-cache-minimax.json')
-    );
+    const writeCall = vi
+      .mocked(fs.writeFileSync)
+      .mock.calls.find((c) =>
+        String(c[0]).includes('.usage-cache-minimax.json'),
+      );
     expect(writeCall).toBeTruthy();
     const written = JSON.parse(String(writeCall![1]));
     expect(written.source).toBe('minimax');
@@ -1490,18 +1720,26 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
   const originalPlatform = process.platform;
 
   beforeAll(() => {
-    Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: 'darwin',
+      configurable: true,
+    });
   });
 
   afterAll(() => {
-    Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: originalPlatform,
+      configurable: true,
+    });
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(fs.existsSync).mockReturnValue(false);
     vi.mocked(fs.readFileSync).mockReturnValue('{}');
-    vi.mocked(childProcess.execFileSync).mockImplementation(() => { throw new Error('mock: no keychain'); });
+    vi.mocked(childProcess.execFileSync).mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
     delete process.env.ANTHROPIC_BASE_URL;
     delete process.env.ANTHROPIC_AUTH_TOKEN;
   });
@@ -1509,7 +1747,9 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
   it('writes refreshed token back to Keychain when source is keychain', async () => {
     const oneHourAgo = Date.now() - 60 * 60 * 1000;
     const execFileMock = vi.mocked(childProcess.execFileSync);
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const httpsModule = (await import('https')) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     // First call: read expired creds from keychain (username-scoped)
     // Second call: token refresh HTTP (handled via httpsModule mock)
@@ -1551,39 +1791,65 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
     });
 
     // Token refresh returns new tokens
-    httpsModule.default.request.mockImplementationOnce((_options: unknown, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
-      req.destroy = vi.fn();
-      req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-        res.statusCode = 200;
-        callback(res);
-        res.emit('data', JSON.stringify({
-          access_token: 'new-access-token',
-          refresh_token: 'new-refresh-token',
-          expires_in: 3600,
-        }));
-        res.emit('end');
-      };
-      return req;
-    });
+    httpsModule.default.request.mockImplementationOnce(
+      (
+        _options: unknown,
+        callback: (res: EventEmitter & { statusCode?: number }) => void,
+      ) => {
+        const req = new EventEmitter() as EventEmitter & {
+          end: () => void;
+          destroy: () => void;
+        };
+        req.destroy = vi.fn();
+        req.end = () => {
+          const res = new EventEmitter() as EventEmitter & {
+            statusCode?: number;
+          };
+          res.statusCode = 200;
+          callback(res);
+          res.emit(
+            'data',
+            JSON.stringify({
+              access_token: 'new-access-token',
+              refresh_token: 'new-refresh-token',
+              expires_in: 3600,
+            }),
+          );
+          res.emit('end');
+        };
+        return req;
+      },
+    );
 
     // Usage API call
-    httpsModule.default.request.mockImplementationOnce((_options: unknown, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
-      req.destroy = vi.fn();
-      req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-        res.statusCode = 200;
-        callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 30 },
-          seven_day: { utilization: 60 },
-        }));
-        res.emit('end');
-      };
-      return req;
-    });
+    httpsModule.default.request.mockImplementationOnce(
+      (
+        _options: unknown,
+        callback: (res: EventEmitter & { statusCode?: number }) => void,
+      ) => {
+        const req = new EventEmitter() as EventEmitter & {
+          end: () => void;
+          destroy: () => void;
+        };
+        req.destroy = vi.fn();
+        req.end = () => {
+          const res = new EventEmitter() as EventEmitter & {
+            statusCode?: number;
+          };
+          res.statusCode = 200;
+          callback(res);
+          res.emit(
+            'data',
+            JSON.stringify({
+              five_hour: { utilization: 30 },
+              seven_day: { utilization: 60 },
+            }),
+          );
+          res.emit('end');
+        };
+        return req;
+      },
+    );
 
     const result = await getUsage();
 
@@ -1592,7 +1858,9 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
 
     // Verify Keychain write-back was called with add-generic-password
     const writeBackCall = execFileMock.mock.calls.find(
-      c => Array.isArray(c[1]) && (c[1] as string[]).includes('add-generic-password')
+      (c) =>
+        Array.isArray(c[1]) &&
+        (c[1] as string[]).includes('add-generic-password'),
     );
     expect(writeBackCall).toBeTruthy();
 
@@ -1608,9 +1876,9 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
     expect(inner.refreshToken).toBe('new-refresh-token');
 
     // File credential store should NOT have been written
-    const fileWriteCall = vi.mocked(fs.writeFileSync).mock.calls.find(
-      c => String(c[0]).endsWith('.credentials.json')
-    );
+    const fileWriteCall = vi
+      .mocked(fs.writeFileSync)
+      .mock.calls.find((c) => String(c[0]).endsWith('.credentials.json'));
     expect(fileWriteCall).toBeUndefined();
   });
 
@@ -1619,12 +1887,18 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
     const execFileMock = vi.mocked(childProcess.execFileSync);
     const mockedExistsSync = vi.mocked(fs.existsSync);
     const mockedReadFileSync = vi.mocked(fs.readFileSync);
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const httpsModule = (await import('https')) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     // Keychain has no entry — only file credentials
-    execFileMock.mockImplementation(() => { throw new Error('mock: no keychain'); });
+    execFileMock.mockImplementation(() => {
+      throw new Error('mock: no keychain');
+    });
 
-    mockedExistsSync.mockImplementation((path) => String(path).endsWith('.credentials.json'));
+    mockedExistsSync.mockImplementation((path) =>
+      String(path).endsWith('.credentials.json'),
+    );
     mockedReadFileSync.mockImplementation((path) => {
       if (String(path).endsWith('.credentials.json')) {
         return JSON.stringify({
@@ -1639,39 +1913,65 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
     });
 
     // Token refresh returns new tokens
-    httpsModule.default.request.mockImplementationOnce((_options: unknown, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
-      req.destroy = vi.fn();
-      req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-        res.statusCode = 200;
-        callback(res);
-        res.emit('data', JSON.stringify({
-          access_token: 'new-file-access-token',
-          refresh_token: 'new-file-refresh-token',
-          expires_in: 3600,
-        }));
-        res.emit('end');
-      };
-      return req;
-    });
+    httpsModule.default.request.mockImplementationOnce(
+      (
+        _options: unknown,
+        callback: (res: EventEmitter & { statusCode?: number }) => void,
+      ) => {
+        const req = new EventEmitter() as EventEmitter & {
+          end: () => void;
+          destroy: () => void;
+        };
+        req.destroy = vi.fn();
+        req.end = () => {
+          const res = new EventEmitter() as EventEmitter & {
+            statusCode?: number;
+          };
+          res.statusCode = 200;
+          callback(res);
+          res.emit(
+            'data',
+            JSON.stringify({
+              access_token: 'new-file-access-token',
+              refresh_token: 'new-file-refresh-token',
+              expires_in: 3600,
+            }),
+          );
+          res.emit('end');
+        };
+        return req;
+      },
+    );
 
     // Usage API call
-    httpsModule.default.request.mockImplementationOnce((_options: unknown, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-      const req = new EventEmitter() as EventEmitter & { end: () => void; destroy: () => void };
-      req.destroy = vi.fn();
-      req.end = () => {
-        const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-        res.statusCode = 200;
-        callback(res);
-        res.emit('data', JSON.stringify({
-          five_hour: { utilization: 20 },
-          seven_day: { utilization: 40 },
-        }));
-        res.emit('end');
-      };
-      return req;
-    });
+    httpsModule.default.request.mockImplementationOnce(
+      (
+        _options: unknown,
+        callback: (res: EventEmitter & { statusCode?: number }) => void,
+      ) => {
+        const req = new EventEmitter() as EventEmitter & {
+          end: () => void;
+          destroy: () => void;
+        };
+        req.destroy = vi.fn();
+        req.end = () => {
+          const res = new EventEmitter() as EventEmitter & {
+            statusCode?: number;
+          };
+          res.statusCode = 200;
+          callback(res);
+          res.emit(
+            'data',
+            JSON.stringify({
+              five_hour: { utilization: 20 },
+              seven_day: { utilization: 40 },
+            }),
+          );
+          res.emit('end');
+        };
+        return req;
+      },
+    );
 
     const result = await getUsage();
 
@@ -1679,9 +1979,11 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
     expect(result.rateLimits?.fiveHourPercent).toBe(20);
 
     // File should have been written with new tokens
-    const fileWriteCall = vi.mocked(fs.writeFileSync).mock.calls.find(
-      c => String(c[0]).endsWith('.credentials.json.tmp.' + process.pid)
-    );
+    const fileWriteCall = vi
+      .mocked(fs.writeFileSync)
+      .mock.calls.find((c) =>
+        String(c[0]).endsWith('.credentials.json.tmp.' + process.pid),
+      );
     expect(fileWriteCall).toBeTruthy();
     const written = JSON.parse(String(fileWriteCall![1]));
     expect(written.claudeAiOauth.accessToken).toBe('new-file-access-token');
@@ -1689,7 +1991,9 @@ describe('writeBackCredentials — Keychain vs file refresh', () => {
 
     // Keychain write-back should NOT have been called with add-generic-password
     const keychainWriteCall = execFileMock.mock.calls.find(
-      c => Array.isArray(c[1]) && (c[1] as string[]).includes('add-generic-password')
+      (c) =>
+        Array.isArray(c[1]) &&
+        (c[1] as string[]).includes('add-generic-password'),
     );
     expect(keychainWriteCall).toBeUndefined();
   });

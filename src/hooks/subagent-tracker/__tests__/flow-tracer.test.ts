@@ -16,7 +16,10 @@ describe('flow-tracer', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `flow-tracer-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `flow-tracer-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(join(testDir, '.omc', 'state'), { recursive: true });
     resetSessionStartTimes();
   });
@@ -40,7 +43,15 @@ describe('flow-tracer', () => {
 
   describe('recordHookResult', () => {
     it('should record hook_result event with timing and context info', () => {
-      recordHookResult(testDir, 'sess2', 'keyword-detector', 'UserPromptSubmit', 15, true, 847);
+      recordHookResult(
+        testDir,
+        'sess2',
+        'keyword-detector',
+        'UserPromptSubmit',
+        15,
+        true,
+        847,
+      );
 
       const events = readReplayEvents(testDir, 'sess2');
       expect(events).toHaveLength(1);
@@ -117,7 +128,15 @@ describe('flow-tracer', () => {
       recordHookFire(testDir, 'sess7', 'keyword-detector', 'UserPromptSubmit');
       recordKeywordDetected(testDir, 'sess7', 'ralph');
       recordModeChange(testDir, 'sess7', 'none', 'ralph');
-      recordHookResult(testDir, 'sess7', 'keyword-detector', 'UserPromptSubmit', 25, true, 1200);
+      recordHookResult(
+        testDir,
+        'sess7',
+        'keyword-detector',
+        'UserPromptSubmit',
+        25,
+        true,
+        1200,
+      );
       recordSkillActivated(testDir, 'sess7', 'ralph', 'builtin');
 
       const events = readReplayEvents(testDir, 'sess7');

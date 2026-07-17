@@ -49,7 +49,12 @@ export interface TeamNotifierTarget {
   paneId?: string;
 }
 
-export type DispatchTransport = 'hook' | 'prompt_stdin' | 'tmux_send_keys' | 'mailbox' | 'none';
+export type DispatchTransport =
+  | 'hook'
+  | 'prompt_stdin'
+  | 'tmux_send_keys'
+  | 'mailbox'
+  | 'none';
 
 export interface DispatchOutcome {
   ok: boolean;
@@ -70,15 +75,36 @@ export type TeamNotifier = (
 
 /** Dependency interface for inbox write operations */
 export interface InboxWriter {
-  writeWorkerInbox(teamName: string, workerName: string, inbox: string, cwd: string): Promise<void>;
+  writeWorkerInbox(
+    teamName: string,
+    workerName: string,
+    inbox: string,
+    cwd: string,
+  ): Promise<void>;
 }
 
 /** Dependency interface for mailbox message operations */
 export interface MailboxSender {
-  sendDirectMessage(teamName: string, fromWorker: string, toWorker: string, body: string, cwd: string): Promise<{ message_id: string; to_worker: string }>;
+  sendDirectMessage(
+    teamName: string,
+    fromWorker: string,
+    toWorker: string,
+    body: string,
+    cwd: string,
+  ): Promise<{ message_id: string; to_worker: string }>;
   /** Retained for callers that provide the historical mailbox sender shape. */
-  broadcastMessage(teamName: string, fromWorker: string, body: string, cwd: string): Promise<Array<{ message_id: string; to_worker: string }>>;
-  markMessageNotified(teamName: string, workerName: string, messageId: string, cwd: string): Promise<void | boolean>;
+  broadcastMessage(
+    teamName: string,
+    fromWorker: string,
+    body: string,
+    cwd: string,
+  ): Promise<Array<{ message_id: string; to_worker: string }>>;
+  markMessageNotified(
+    teamName: string,
+    workerName: string,
+    messageId: string,
+    cwd: string,
+  ): Promise<void | boolean>;
 }
 
 export interface MailboxNotificationAttemptParams {
@@ -91,27 +117,51 @@ export interface MailboxNotificationAttemptParams {
 }
 
 export interface MailboxNotificationAttemptDependencies {
-  readGuard: (input: MailboxNotificationGuardInput, cwd: string) => Promise<MailboxNotificationGuardResult>;
-  readStrictDispatch: (teamName: string, requestId: string, cwd: string) => Promise<StrictDispatchReadResult>;
+  readGuard: (
+    input: MailboxNotificationGuardInput,
+    cwd: string,
+  ) => Promise<MailboxNotificationGuardResult>;
+  readStrictDispatch: (
+    teamName: string,
+    requestId: string,
+    cwd: string,
+  ) => Promise<StrictDispatchReadResult>;
   readStrictMailbox: (
     teamName: string,
     workerName: string,
     messageId: string,
     cwd: string,
   ) => Promise<StrictCanonicalMailboxMessageReadResult>;
-  invokeEffect: (target: MailboxNotificationTarget, message: string) => Promise<DirectMailboxEffectResult>;
-  markMailbox: (teamName: string, workerName: string, messageId: string, cwd: string) => Promise<boolean>;
-  markDispatch: (teamName: string, requestId: string, cwd: string) => Promise<TeamDispatchRequest | null>;
-  patchPendingReason: (teamName: string, requestId: string, reason: string, cwd: string) => Promise<{ kind: string }>;
+  invokeEffect: (
+    target: MailboxNotificationTarget,
+    message: string,
+  ) => Promise<DirectMailboxEffectResult>;
+  markMailbox: (
+    teamName: string,
+    workerName: string,
+    messageId: string,
+    cwd: string,
+  ) => Promise<boolean>;
+  markDispatch: (
+    teamName: string,
+    requestId: string,
+    cwd: string,
+  ) => Promise<TeamDispatchRequest | null>;
+  patchPendingReason: (
+    teamName: string,
+    requestId: string,
+    reason: string,
+    cwd: string,
+  ) => Promise<{ kind: string }>;
   withRequestLock: <T>(lockPath: string, fn: () => Promise<T>) => Promise<T>;
 }
 
 type MailboxTombstone =
   | { cause: 'delivery' }
   | {
-    cause: 'commit';
-    confirmationReason: 'worker_pane_notified' | 'leader_pane_notified';
-  };
+      cause: 'commit';
+      confirmationReason: 'worker_pane_notified' | 'leader_pane_notified';
+    };
 
 interface MailboxMarkerState {
   safe: boolean;
@@ -137,9 +187,11 @@ function isLeaderPaneMissingMailboxPersistedOutcome(
   request: TeamDispatchRequest,
   outcome: DispatchOutcome,
 ): boolean {
-  return request.to_worker === 'leader-fixed'
-    && outcome.ok
-    && outcome.reason === 'leader_pane_missing_mailbox_persisted';
+  return (
+    request.to_worker === 'leader-fixed' &&
+    outcome.ok &&
+    outcome.reason === 'leader_pane_missing_mailbox_persisted'
+  );
 }
 
 function fallbackTransportForPreference(
@@ -156,7 +208,9 @@ function notifyExceptionReason(error: unknown): string {
 }
 
 function isExactText(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0 && value === value.trim();
+  return (
+    typeof value === 'string' && value.length > 0 && value === value.trim()
+  );
 }
 
 function canonicalNotificationLockIdentity(lockPath: string): string {
@@ -181,16 +235,19 @@ function managedOutcome(
 
 function defaultMailboxNotificationDependencies(): MailboxNotificationAttemptDependencies {
   return {
-    readGuard: (input, cwd) => readCurrentMailboxNotificationGuard(input, cwd, {
-      verifyProviderOwnership: verifyTeamTargetOwnership,
-    }),
+    readGuard: (input, cwd) =>
+      readCurrentMailboxNotificationGuard(input, cwd, {
+        verifyProviderOwnership: verifyTeamTargetOwnership,
+      }),
     readStrictDispatch: readDispatchRequestStrict,
     readStrictMailbox: teamReadCanonicalMailboxMessageStrict,
     invokeEffect: invokeDirectMailboxEffect,
     markMailbox: teamMarkMessageNotified,
-    markDispatch: (teamName, requestId, cwd) => markDispatchRequestNotified(teamName, requestId, {}, cwd),
+    markDispatch: (teamName, requestId, cwd) =>
+      markDispatchRequestNotified(teamName, requestId, {}, cwd),
     patchPendingReason: patchPendingDispatchReason,
-    withRequestLock: (lockPath, fn) => withProcessIdentityFileLock(lockPath, fn),
+    withRequestLock: (lockPath, fn) =>
+      withProcessIdentityFileLock(lockPath, fn),
   };
 }
 
@@ -204,11 +261,13 @@ function requestMatchesAttempt(
   request: TeamDispatchRequest,
   params: MailboxNotificationAttemptParams,
 ): boolean {
-  return request.request_id === params.requestId
-    && request.kind === 'mailbox'
-    && request.team_name === params.teamName
-    && request.to_worker === params.recipient
-    && request.message_id === params.messageId;
+  return (
+    request.request_id === params.requestId &&
+    request.kind === 'mailbox' &&
+    request.team_name === params.teamName &&
+    request.to_worker === params.recipient &&
+    request.message_id === params.messageId
+  );
 }
 
 function mailboxResultMatchesAttempt(
@@ -216,7 +275,10 @@ function mailboxResultMatchesAttempt(
   params: MailboxNotificationAttemptParams,
 ): boolean {
   if (read.kind !== 'valid' && read.kind !== 'replay_suppressed') return false;
-  return read.message.message_id === params.messageId && read.message.to_worker === params.recipient;
+  return (
+    read.message.message_id === params.messageId &&
+    read.message.to_worker === params.recipient
+  );
 }
 
 async function readMailboxMarkerState(
@@ -226,13 +288,23 @@ async function readMailboxMarkerState(
   try {
     const [dispatch, mailbox] = await Promise.all([
       deps.readStrictDispatch(params.teamName, params.requestId, params.cwd),
-      deps.readStrictMailbox(params.teamName, params.recipient, params.messageId, params.cwd),
+      deps.readStrictMailbox(
+        params.teamName,
+        params.recipient,
+        params.messageId,
+        params.cwd,
+      ),
     ]);
-    const dispatchMatches = dispatch.kind === 'valid' && requestMatchesAttempt(dispatch.request, params);
+    const dispatchMatches =
+      dispatch.kind === 'valid' &&
+      requestMatchesAttempt(dispatch.request, params);
     const mailboxMatches = mailboxResultMatchesAttempt(mailbox, params);
     return {
       safe: dispatchMatches && mailboxMatches,
-      dispatchMarked: dispatchMatches && (dispatch.request.status === 'notified' || dispatch.request.status === 'delivered'),
+      dispatchMarked:
+        dispatchMatches &&
+        (dispatch.request.status === 'notified' ||
+          dispatch.request.status === 'delivered'),
       mailboxMarked: mailboxMatches && mailbox.kind === 'replay_suppressed',
     };
   } catch {
@@ -249,10 +321,23 @@ async function writeAndVerifyMailboxMarkers(
 
   const writes: Array<Promise<unknown>> = [];
   if (!before.mailboxMarked) {
-    writes.push(deps.markMailbox(params.teamName, params.recipient, params.messageId, params.cwd).catch(() => false));
+    writes.push(
+      deps
+        .markMailbox(
+          params.teamName,
+          params.recipient,
+          params.messageId,
+          params.cwd,
+        )
+        .catch(() => false),
+    );
   }
   if (!before.dispatchMarked) {
-    writes.push(deps.markDispatch(params.teamName, params.requestId, params.cwd).catch(() => null));
+    writes.push(
+      deps
+        .markDispatch(params.teamName, params.requestId, params.cwd)
+        .catch(() => null),
+    );
   }
   await Promise.all(writes);
   return readMailboxMarkerState(params, deps);
@@ -266,12 +351,24 @@ function markerOutcome(
     return managedOutcome(true, 'tmux_send_keys', confirmationReason);
   }
   if (state.mailboxMarked) {
-    return managedOutcome(true, 'tmux_send_keys', 'notification_commit_dispatch_failed');
+    return managedOutcome(
+      true,
+      'tmux_send_keys',
+      'notification_commit_dispatch_failed',
+    );
   }
   if (state.dispatchMarked) {
-    return managedOutcome(true, 'tmux_send_keys', 'notification_commit_mailbox_failed');
+    return managedOutcome(
+      true,
+      'tmux_send_keys',
+      'notification_commit_mailbox_failed',
+    );
   }
-  return managedOutcome(false, 'tmux_send_keys', 'notification_commit_uncertain');
+  return managedOutcome(
+    false,
+    'tmux_send_keys',
+    'notification_commit_uncertain',
+  );
 }
 
 async function persistPendingReason(
@@ -282,10 +379,19 @@ async function persistPendingReason(
 ): Promise<DispatchOutcome> {
   if (!canPatch) return managedOutcome(false, 'none', reason);
   try {
-    const patched = await deps.patchPendingReason(params.teamName, params.requestId, reason, params.cwd);
+    const patched = await deps.patchPendingReason(
+      params.teamName,
+      params.requestId,
+      reason,
+      params.cwd,
+    );
     if (patched.kind === 'patched') {
       if (reason === 'leader_pane_missing_deferred') {
-        return managedOutcome(true, 'mailbox', 'leader_pane_missing_mailbox_persisted');
+        return managedOutcome(
+          true,
+          'mailbox',
+          'leader_pane_missing_mailbox_persisted',
+        );
       }
       return managedOutcome(false, 'none', reason);
     }
@@ -300,7 +406,12 @@ async function suppressFromGuard(
   deps: MailboxNotificationAttemptDependencies,
   guard: Extract<MailboxNotificationGuardResult, { kind: 'suppress' }>,
 ): Promise<DispatchOutcome> {
-  return persistPendingReason(params, deps, guard.reason, !!guard.safePendingRequest);
+  return persistPendingReason(
+    params,
+    deps,
+    guard.reason,
+    !!guard.safePendingRequest,
+  );
 }
 
 async function reconcileTombstone(
@@ -322,7 +433,11 @@ async function reconcileTombstone(
     mailboxNotificationTombstones.delete(key);
     return markerOutcome(state, 'worker_pane_notified');
   }
-  return managedOutcome(false, 'tmux_send_keys', 'notification_delivery_uncertain');
+  return managedOutcome(
+    false,
+    'tmux_send_keys',
+    'notification_delivery_uncertain',
+  );
 }
 
 /**
@@ -334,19 +449,28 @@ export async function runMailboxNotificationAttempt(
   params: MailboxNotificationAttemptParams,
   overrides: Partial<MailboxNotificationAttemptDependencies> = {},
 ): Promise<DispatchOutcome> {
-  if (!isExactText(params.teamName) || !isExactText(params.recipient) || !isExactText(params.requestId)
-    || !isExactText(params.messageId) || !isExactText(params.triggerMessage)) {
+  if (
+    !isExactText(params.teamName) ||
+    !isExactText(params.recipient) ||
+    !isExactText(params.requestId) ||
+    !isExactText(params.messageId) ||
+    !isExactText(params.triggerMessage)
+  ) {
     return managedOutcome(false, 'none', 'mailbox_request_identity_mismatch');
   }
 
   const deps = mergeMailboxNotificationDependencies(overrides);
-  const lockPath = absPath(params.cwd, TeamPaths.mailboxNotificationLock(params.teamName, params.requestId));
+  const lockPath = absPath(
+    params.cwd,
+    TeamPaths.mailboxNotificationLock(params.teamName, params.requestId),
+  );
   const key = canonicalNotificationLockIdentity(lockPath);
 
   try {
     return await deps.withRequestLock(lockPath, async () => {
       const existingTombstone = mailboxNotificationTombstones.get(key);
-      if (existingTombstone) return reconcileTombstone(params, deps, key, existingTombstone);
+      if (existingTombstone)
+        return reconcileTombstone(params, deps, key, existingTombstone);
 
       const guardInput: MailboxNotificationGuardInput = {
         teamName: params.teamName,
@@ -356,18 +480,33 @@ export async function runMailboxNotificationAttempt(
         triggerMessage: params.triggerMessage,
       };
       const current = await deps.readGuard(guardInput, params.cwd);
-      if (current.kind === 'suppress') return suppressFromGuard(params, deps, current);
+      if (current.kind === 'suppress')
+        return suppressFromGuard(params, deps, current);
 
       const final = await deps.readGuard(guardInput, params.cwd);
-      if (final.kind === 'suppress') return suppressFromGuard(params, deps, final);
-      if (!mailboxNotificationSecurityTupleEquals(current.securityTuple, final.securityTuple)) {
-        return persistPendingReason(params, deps, 'mailbox_security_tuple_changed', true);
+      if (final.kind === 'suppress')
+        return suppressFromGuard(params, deps, final);
+      if (
+        !mailboxNotificationSecurityTupleEquals(
+          current.securityTuple,
+          final.securityTuple,
+        )
+      ) {
+        return persistPendingReason(
+          params,
+          deps,
+          'mailbox_security_tuple_changed',
+          true,
+        );
       }
 
       mailboxNotificationTombstones.set(key, { cause: 'delivery' });
       let effect: DirectMailboxEffectResult;
       try {
-        effect = await deps.invokeEffect(final.target, final.request.trigger_message);
+        effect = await deps.invokeEffect(
+          final.target,
+          final.request.trigger_message,
+        );
       } catch {
         effect = {
           kind: 'attempted_unconfirmed',
@@ -382,13 +521,21 @@ export async function runMailboxNotificationAttempt(
         return persistPendingReason(params, deps, effect.reason, true);
       }
       if (effect.kind === 'attempted_unconfirmed') {
-        return managedOutcome(false, effect.transport, 'notification_delivery_uncertain');
+        return managedOutcome(
+          false,
+          effect.transport,
+          'notification_delivery_uncertain',
+        );
       }
 
-      mailboxNotificationTombstones.set(key, { cause: 'commit', confirmationReason: effect.reason });
+      mailboxNotificationTombstones.set(key, {
+        cause: 'commit',
+        confirmationReason: effect.reason,
+      });
       const markers = await writeAndVerifyMailboxMarkers(params, deps);
       const outcome = markerOutcome(markers, effect.reason);
-      if (markers.mailboxMarked && markers.dispatchMarked) mailboxNotificationTombstones.delete(key);
+      if (markers.mailboxMarked && markers.dispatchMarked)
+        mailboxNotificationTombstones.delete(key);
       return outcome;
     });
   } catch {
@@ -411,7 +558,12 @@ async function markImmediateDispatchFailure(params: {
 
   const current = await readDispatchRequest(teamName, request.request_id, cwd);
   if (!current) return;
-  if (current.status === 'failed' || current.status === 'notified' || current.status === 'delivered') return;
+  if (
+    current.status === 'failed' ||
+    current.status === 'notified' ||
+    current.status === 'delivered'
+  )
+    return;
 
   await transitionDispatchRequest(
     teamName,
@@ -470,7 +622,9 @@ export interface QueueInboxParams {
   deps: InboxWriter;
 }
 
-export async function queueInboxInstruction(params: QueueInboxParams): Promise<DispatchOutcome> {
+export async function queueInboxInstruction(
+  params: QueueInboxParams,
+): Promise<DispatchOutcome> {
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
@@ -496,7 +650,12 @@ export async function queueInboxInstruction(params: QueueInboxParams): Promise<D
   }
 
   try {
-    await params.deps.writeWorkerInbox(params.teamName, params.workerName, params.inbox, params.cwd);
+    await params.deps.writeWorkerInbox(
+      params.teamName,
+      params.workerName,
+      params.inbox,
+      params.cwd,
+    );
   } catch (error) {
     await markImmediateDispatchFailure({
       teamName: params.teamName,
@@ -507,16 +666,28 @@ export async function queueInboxInstruction(params: QueueInboxParams): Promise<D
     throw error;
   }
 
-  const notifyOutcome = await Promise.resolve(params.notify(
-    { workerName: params.workerName, workerIndex: params.workerIndex, paneId: params.paneId },
-    params.triggerMessage,
-    { request: queued.request },
-  )).catch((error) => ({
-    ok: false,
-    transport: fallbackTransportForPreference(params.transportPreference),
-    reason: notifyExceptionReason(error),
-  } as DispatchOutcome));
-  const outcome: DispatchOutcome = { ...notifyOutcome, request_id: queued.request.request_id };
+  const notifyOutcome = await Promise.resolve(
+    params.notify(
+      {
+        workerName: params.workerName,
+        workerIndex: params.workerIndex,
+        paneId: params.paneId,
+      },
+      params.triggerMessage,
+      { request: queued.request },
+    ),
+  ).catch(
+    (error) =>
+      ({
+        ok: false,
+        transport: fallbackTransportForPreference(params.transportPreference),
+        reason: notifyExceptionReason(error),
+      }) as DispatchOutcome,
+  );
+  const outcome: DispatchOutcome = {
+    ...notifyOutcome,
+    request_id: queued.request.request_id,
+  };
 
   if (isConfirmedNotification(outcome)) {
     await markDispatchRequestNotified(
@@ -552,8 +723,16 @@ export interface QueueDirectMessageParams {
   deps: MailboxSender;
 }
 
-export async function queueDirectMailboxMessage(params: QueueDirectMessageParams): Promise<DispatchOutcome> {
-  const message = await params.deps.sendDirectMessage(params.teamName, params.fromWorker, params.toWorker, params.body, params.cwd);
+export async function queueDirectMailboxMessage(
+  params: QueueDirectMessageParams,
+): Promise<DispatchOutcome> {
+  const message = await params.deps.sendDirectMessage(
+    params.teamName,
+    params.fromWorker,
+    params.toWorker,
+    params.body,
+    params.cwd,
+  );
   const queued = await enqueueDispatchRequest(
     params.teamName,
     {
@@ -579,15 +758,24 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
     };
   }
 
-  const notifyOutcome = await Promise.resolve(params.notify(
-    { workerName: params.toWorker, workerIndex: params.toWorkerIndex, paneId: params.toPaneId },
-    params.triggerMessage,
-    { request: queued.request, message_id: message.message_id },
-  )).catch((error) => ({
-    ok: false,
-    transport: fallbackTransportForPreference(params.transportPreference),
-    reason: notifyExceptionReason(error),
-  } as DispatchOutcome));
+  const notifyOutcome = await Promise.resolve(
+    params.notify(
+      {
+        workerName: params.toWorker,
+        workerIndex: params.toWorkerIndex,
+        paneId: params.toPaneId,
+      },
+      params.triggerMessage,
+      { request: queued.request, message_id: message.message_id },
+    ),
+  ).catch(
+    (error) =>
+      ({
+        ok: false,
+        transport: fallbackTransportForPreference(params.transportPreference),
+        reason: notifyExceptionReason(error),
+      }) as DispatchOutcome,
+  );
   const { notification_managed: notificationManaged, ...outcome } = {
     ...notifyOutcome,
     request_id: queued.request.request_id,
@@ -606,7 +794,12 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
     return outcome;
   }
   if (isConfirmedNotification(outcome)) {
-    await params.deps.markMessageNotified(params.teamName, params.toWorker, message.message_id, params.cwd);
+    await params.deps.markMessageNotified(
+      params.teamName,
+      params.toWorker,
+      message.message_id,
+      params.cwd,
+    );
     await markDispatchRequestNotified(
       params.teamName,
       queued.request.request_id,
@@ -628,7 +821,11 @@ export async function queueDirectMailboxMessage(params: QueueDirectMessageParams
 export interface QueueBroadcastParams {
   teamName: string;
   fromWorker: string;
-  recipients: Array<{ workerName: string; workerIndex: number; paneId?: string }>;
+  recipients: Array<{
+    workerName: string;
+    workerIndex: number;
+    paneId?: string;
+  }>;
   body: string;
   cwd: string;
   triggerFor: (workerName: string) => string;
@@ -638,7 +835,9 @@ export interface QueueBroadcastParams {
   deps: MailboxSender;
 }
 
-export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams): Promise<DispatchOutcome[]> {
+export async function queueBroadcastMailboxMessage(
+  params: QueueBroadcastParams,
+): Promise<DispatchOutcome[]> {
   const recipientNames = new Set<string>();
   const recipients = params.recipients.map((recipient, index) => {
     const duplicate = recipientNames.has(recipient.workerName);
@@ -731,15 +930,24 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
       continue;
     }
 
-    const notifyOutcome = await Promise.resolve(params.notify(
-      { workerName: recipient.workerName, workerIndex: recipient.workerIndex, paneId: recipient.paneId },
-      recipient.triggerMessage,
-      { request: queued.request, message_id: recipient.message.message_id },
-    )).catch((error) => ({
-      ok: false,
-      transport: fallbackTransportForPreference(params.transportPreference),
-      reason: notifyExceptionReason(error),
-    } as DispatchOutcome));
+    const notifyOutcome = await Promise.resolve(
+      params.notify(
+        {
+          workerName: recipient.workerName,
+          workerIndex: recipient.workerIndex,
+          paneId: recipient.paneId,
+        },
+        recipient.triggerMessage,
+        { request: queued.request, message_id: recipient.message.message_id },
+      ),
+    ).catch(
+      (error) =>
+        ({
+          ok: false,
+          transport: fallbackTransportForPreference(params.transportPreference),
+          reason: notifyExceptionReason(error),
+        }) as DispatchOutcome,
+    );
     const { notification_managed: notificationManaged, ...outcome } = {
       ...notifyOutcome,
       request_id: queued.request.request_id,
@@ -750,11 +958,19 @@ export async function queueBroadcastMailboxMessage(params: QueueBroadcastParams)
     if (notificationManaged) continue;
 
     if (isConfirmedNotification(outcome)) {
-      await params.deps.markMessageNotified(params.teamName, recipient.workerName, recipient.message.message_id, params.cwd);
+      await params.deps.markMessageNotified(
+        params.teamName,
+        recipient.workerName,
+        recipient.message.message_id,
+        params.cwd,
+      );
       await markDispatchRequestNotified(
         params.teamName,
         queued.request.request_id,
-        { message_id: recipient.message.message_id, last_reason: outcome.reason },
+        {
+          message_id: recipient.message.message_id,
+          last_reason: outcome.reason,
+        },
         params.cwd,
       );
     } else {
@@ -786,7 +1002,11 @@ export async function waitForDispatchReceipt(
   while (Date.now() <= deadline) {
     const request = await readDispatchRequest(teamName, requestId, cwd);
     if (!request) return null;
-    if (request.status === 'notified' || request.status === 'delivered' || request.status === 'failed') {
+    if (
+      request.status === 'notified' ||
+      request.status === 'delivered' ||
+      request.status === 'failed'
+    ) {
       return request;
     }
     const jitter = Math.random() * currentPollMs * 0.3;

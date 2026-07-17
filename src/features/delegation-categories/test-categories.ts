@@ -1,7 +1,7 @@
 /**
  * Manual tests for delegation categories
  *
- * Run with: npx tsx src/features/delegation-categories/test-categories.ts
+ * Run with: pnpm exec tsx src/features/delegation-categories/test-categories.ts
  */
 
 import {
@@ -35,7 +35,9 @@ console.log();
 
 // Test 2: isValidCategory
 console.log('2. Testing isValidCategory():');
-console.log(`  isValidCategory('ultrabrain'): ${isValidCategory('ultrabrain')}`);
+console.log(
+  `  isValidCategory('ultrabrain'): ${isValidCategory('ultrabrain')}`,
+);
 console.log(`  isValidCategory('invalid'): ${isValidCategory('invalid')}`);
 console.log();
 
@@ -71,29 +73,43 @@ const explicitTier = getCategoryForTask({
   taskPrompt: 'Some task',
   explicitTier: 'LOW',
 });
-console.log(`  Explicit tier=LOW: ${explicitTier.category} (tier: ${explicitTier.tier})`);
+console.log(
+  `  Explicit tier=LOW: ${explicitTier.category} (tier: ${explicitTier.tier})`,
+);
 
 // Explicit category
 const explicitCategory = getCategoryForTask({
   taskPrompt: 'Some task',
   explicitCategory: 'ultrabrain',
 });
-console.log(`  Explicit category=ultrabrain: ${explicitCategory.category} (tier: ${explicitCategory.tier})`);
+console.log(
+  `  Explicit category=ultrabrain: ${explicitCategory.category} (tier: ${explicitCategory.tier})`,
+);
 
 // Auto-detect
 const autoDetect = getCategoryForTask({
   taskPrompt: 'Design a beautiful UI component with animations',
 });
-console.log(`  Auto-detect from prompt: ${autoDetect.category} (tier: ${autoDetect.tier})`);
+console.log(
+  `  Auto-detect from prompt: ${autoDetect.category} (tier: ${autoDetect.tier})`,
+);
 console.log();
 
 // Test 6: Tier extraction
 console.log('6. Testing tier extraction:');
-console.log(`  getCategoryTier('ultrabrain'): ${getCategoryTier('ultrabrain')}`);
+console.log(
+  `  getCategoryTier('ultrabrain'): ${getCategoryTier('ultrabrain')}`,
+);
 console.log(`  getCategoryTier('quick'): ${getCategoryTier('quick')}`);
-console.log(`  getCategoryTemperature('artistry'): ${getCategoryTemperature('artistry')}`);
-console.log(`  getCategoryThinkingBudget('ultrabrain'): ${getCategoryThinkingBudget('ultrabrain')}`);
-console.log(`  getCategoryThinkingBudgetTokens('ultrabrain'): ${getCategoryThinkingBudgetTokens('ultrabrain')}`);
+console.log(
+  `  getCategoryTemperature('artistry'): ${getCategoryTemperature('artistry')}`,
+);
+console.log(
+  `  getCategoryThinkingBudget('ultrabrain'): ${getCategoryThinkingBudget('ultrabrain')}`,
+);
+console.log(
+  `  getCategoryThinkingBudgetTokens('ultrabrain'): ${getCategoryThinkingBudgetTokens('ultrabrain')}`,
+);
 console.log();
 
 // Test 7: Prompt enhancement

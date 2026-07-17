@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { SlackSocketClient, validateSlackEnvelope } from "../slack-socket.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { SlackSocketClient, validateSlackEnvelope } from '../slack-socket.js';
 
-describe("SlackSocketClient", () => {
+describe('SlackSocketClient', () => {
   const config = {
-    appToken: "xapp-test-token",
-    botToken: "xoxb-test-token",
-    channelId: "C123456",
+    appToken: 'xapp-test-token',
+    botToken: 'xoxb-test-token',
+    channelId: 'C123456',
   };
   const mockHandler = vi.fn();
   const mockLog = vi.fn();
@@ -34,10 +34,13 @@ describe("SlackSocketClient", () => {
 
     originalWebSocket = globalThis.WebSocket;
     // Must use regular function (not arrow) so `new WebSocket()` returns mockWsInstance
-    (globalThis as unknown as Record<string, unknown>).WebSocket = Object.assign(
-      vi.fn(function () { return mockWsInstance; }),
-      { OPEN: 1, CLOSED: 3, CONNECTING: 0, CLOSING: 2 },
-    );
+    (globalThis as unknown as Record<string, unknown>).WebSocket =
+      Object.assign(
+        vi.fn(function () {
+          return mockWsInstance;
+        }),
+        { OPEN: 1, CLOSED: 3, CONNECTING: 0, CLOSING: 2 },
+      );
 
     // Mock fetch
     originalFetch = globalThis.fetch;
@@ -49,36 +52,39 @@ describe("SlackSocketClient", () => {
 
   afterEach(() => {
     vi.useRealTimers();
-    (globalThis as unknown as Record<string, unknown>).WebSocket = originalWebSocket;
+    (globalThis as unknown as Record<string, unknown>).WebSocket =
+      originalWebSocket;
     (globalThis as unknown as Record<string, unknown>).fetch = originalFetch;
   });
 
-  function mockFetchSuccess(url = "wss://test.slack.com/link") {
+  function mockFetchSuccess(url = 'wss://test.slack.com/link') {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       json: () => Promise.resolve({ ok: true, url }),
     } as Response);
   }
 
-  function mockFetchFailure(error = "invalid_auth") {
+  function mockFetchFailure(error = 'invalid_auth') {
     vi.mocked(globalThis.fetch).mockResolvedValue({
       json: () => Promise.resolve({ ok: false, error }),
     } as Response);
   }
 
-  describe("start()", () => {
-    it("connects and creates WebSocket on success", async () => {
+  describe('start()', () => {
+    it('connects and creates WebSocket on success', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
 
       expect(globalThis.fetch).toHaveBeenCalledWith(
-        "https://slack.com/api/apps.connections.open",
-        expect.objectContaining({ method: "POST" }),
+        'https://slack.com/api/apps.connections.open',
+        expect.objectContaining({ method: 'POST' }),
       );
-      expect(globalThis.WebSocket).toHaveBeenCalledWith("wss://test.slack.com/link");
+      expect(globalThis.WebSocket).toHaveBeenCalledWith(
+        'wss://test.slack.com/link',
+      );
     });
 
-    it("registers all four event listeners on WebSocket", async () => {
+    it('registers all four event listeners on WebSocket', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -87,12 +93,12 @@ describe("SlackSocketClient", () => {
       const events = mockWsInstance.addEventListener.mock.calls.map(
         (call: unknown[]) => call[0],
       );
-      expect(events.sort()).toEqual(["close", "error", "message", "open"]);
+      expect(events.sort()).toEqual(['close', 'error', 'message', 'open']);
     });
   });
 
-  describe("stop()", () => {
-    it("removes all four WebSocket event listeners", async () => {
+  describe('stop()', () => {
+    it('removes all four WebSocket event listeners', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -103,10 +109,10 @@ describe("SlackSocketClient", () => {
       const events = mockWsInstance.removeEventListener.mock.calls.map(
         (call: unknown[]) => call[0],
       );
-      expect(events.sort()).toEqual(["close", "error", "message", "open"]);
+      expect(events.sort()).toEqual(['close', 'error', 'message', 'open']);
     });
 
-    it("removed handlers match the added handlers", async () => {
+    it('removed handlers match the added handlers', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -130,7 +136,7 @@ describe("SlackSocketClient", () => {
       }
     });
 
-    it("closes the WebSocket", async () => {
+    it('closes the WebSocket', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -140,7 +146,7 @@ describe("SlackSocketClient", () => {
       expect(mockWsInstance.close).toHaveBeenCalled();
     });
 
-    it("clears pending reconnect timer", async () => {
+    it('clears pending reconnect timer', async () => {
       mockFetchFailure();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
 
@@ -152,15 +158,17 @@ describe("SlackSocketClient", () => {
 
       // Advance past any reconnect delay — fetch should NOT be called again
       await vi.advanceTimersByTimeAsync(120_000);
-      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCallCount);
+      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(
+        fetchCallCount,
+      );
     });
 
-    it("is safe to call before start()", () => {
+    it('is safe to call before start()', () => {
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       expect(() => client.stop()).not.toThrow();
     });
 
-    it("is idempotent (multiple calls are safe)", async () => {
+    it('is idempotent (multiple calls are safe)', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -173,8 +181,8 @@ describe("SlackSocketClient", () => {
     });
   });
 
-  describe("connect() shutdown guards", () => {
-    it("uses AbortSignal.timeout on fetch for timeout protection", async () => {
+  describe('connect() shutdown guards', () => {
+    it('uses AbortSignal.timeout on fetch for timeout protection', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
@@ -186,7 +194,7 @@ describe("SlackSocketClient", () => {
       client.stop();
     });
 
-    it("isShuttingDown prevents reconnect after stop", async () => {
+    it('isShuttingDown prevents reconnect after stop', async () => {
       mockFetchFailure();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
 
@@ -199,106 +207,108 @@ describe("SlackSocketClient", () => {
 
       // Advance past any reconnect delay — fetch should NOT be called again
       await vi.advanceTimersByTimeAsync(120_000);
-      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(fetchCallCount);
+      expect(vi.mocked(globalThis.fetch).mock.calls.length).toBe(
+        fetchCallCount,
+      );
     });
   });
 
-  describe("validateSlackEnvelope()", () => {
-    it("accepts hello control frames without envelope_id", () => {
-      expect(validateSlackEnvelope({ type: "hello" })).toEqual({ valid: true });
+  describe('validateSlackEnvelope()', () => {
+    it('accepts hello control frames without envelope_id', () => {
+      expect(validateSlackEnvelope({ type: 'hello' })).toEqual({ valid: true });
     });
 
-    it("accepts disconnect control frames without envelope_id", () => {
-      expect(validateSlackEnvelope({ type: "disconnect" })).toEqual({
+    it('accepts disconnect control frames without envelope_id', () => {
+      expect(validateSlackEnvelope({ type: 'disconnect' })).toEqual({
         valid: true,
       });
     });
 
-    it("rejects non-control envelopes without envelope_id", () => {
+    it('rejects non-control envelopes without envelope_id', () => {
       expect(
         validateSlackEnvelope({
-          type: "events_api",
-          payload: { event: { type: "message" } },
+          type: 'events_api',
+          payload: { event: { type: 'message' } },
         }),
-      ).toEqual({ valid: false, reason: "Missing or empty envelope_id" });
+      ).toEqual({ valid: false, reason: 'Missing or empty envelope_id' });
     });
   });
 
-  describe("handleEnvelope()", () => {
+  describe('handleEnvelope()', () => {
     async function getMessageHandler() {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
       const messageCall = mockWsInstance.addEventListener.mock.calls.find(
-        (call: unknown[]) => call[0] === "message",
+        (call: unknown[]) => call[0] === 'message',
       );
       const handler = messageCall![1] as (event: { data?: unknown }) => void;
 
       // Authenticate via hello envelope so messages can be dispatched
       handler({
-        data: JSON.stringify({ envelope_id: "env_hello", type: "hello" }),
+        data: JSON.stringify({ envelope_id: 'env_hello', type: 'hello' }),
       });
       await vi.advanceTimersByTimeAsync(0);
 
       return { client, handler };
     }
 
-    it("authenticates when hello control frame omits envelope_id", async () => {
+    it('authenticates when hello control frame omits envelope_id', async () => {
       mockFetchSuccess();
       const client = new SlackSocketClient(config, mockHandler, mockLog);
       await client.start();
       const messageCall = mockWsInstance.addEventListener.mock.calls.find(
-        (call: unknown[]) => call[0] === "message",
+        (call: unknown[]) => call[0] === 'message',
       );
       const handler = messageCall![1] as (event: { data?: unknown }) => void;
 
-      handler({ data: JSON.stringify({ type: "hello" }) });
+      handler({ data: JSON.stringify({ type: 'hello' }) });
       await vi.advanceTimersByTimeAsync(0);
 
-      expect(client.getConnectionState().getState()).toBe("authenticated");
+      expect(client.getConnectionState().getState()).toBe('authenticated');
       expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining("authenticated (hello received)"),
+        expect.stringContaining('authenticated (hello received)'),
       );
     });
 
-    it("acknowledges envelopes with envelope_id", async () => {
+    it('acknowledges envelopes with envelope_id', async () => {
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "test-envelope-123",
-          type: "events_api",
+          envelope_id: 'test-envelope-123',
+          type: 'events_api',
           payload: {
             event: {
-              type: "message",
-              channel: "C123456",
-              user: "U123",
-              text: "hello",
-              ts: "1234567890.123456",
+              type: 'message',
+              channel: 'C123456',
+              user: 'U123',
+              text: 'hello',
+              ts: '1234567890.123456',
             },
           },
         }),
       });
 
       expect(mockWsInstance.send).toHaveBeenCalledWith(
-        JSON.stringify({ envelope_id: "test-envelope-123" }),
+        JSON.stringify({ envelope_id: 'test-envelope-123' }),
       );
     });
 
-    it("dispatches message events matching channel to handler", async () => {
+    it('dispatches message events matching channel to handler', async () => {
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "env-1",
-          type: "events_api",
+          envelope_id: 'env-1',
+          type: 'events_api',
           payload: {
             event: {
-              type: "message",
-              channel: "C123456",
-              user: "U123",
-              text: "test message",
-              ts: "1234567890.123",
+              type: 'message',
+              channel: 'C123456',
+              user: 'U123',
+              text: 'test message',
+              ts: '1234567890.123',
             },
           },
         }),
@@ -309,27 +319,27 @@ describe("SlackSocketClient", () => {
 
       expect(mockHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          type: "message",
-          channel: "C123456",
-          text: "test message",
+          type: 'message',
+          channel: 'C123456',
+          text: 'test message',
         }),
       );
     });
 
-    it("filters messages from other channels", async () => {
+    it('filters messages from other channels', async () => {
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "env-2",
-          type: "events_api",
+          envelope_id: 'env-2',
+          type: 'events_api',
           payload: {
             event: {
-              type: "message",
-              channel: "C999999",
-              user: "U123",
-              text: "wrong channel",
-              ts: "1234567890.999",
+              type: 'message',
+              channel: 'C999999',
+              user: 'U123',
+              text: 'wrong channel',
+              ts: '1234567890.999',
             },
           },
         }),
@@ -339,21 +349,21 @@ describe("SlackSocketClient", () => {
       expect(mockHandler).not.toHaveBeenCalled();
     });
 
-    it("filters messages with subtypes (edits, joins, etc.)", async () => {
+    it('filters messages with subtypes (edits, joins, etc.)', async () => {
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "env-3",
-          type: "events_api",
+          envelope_id: 'env-3',
+          type: 'events_api',
           payload: {
             event: {
-              type: "message",
-              subtype: "message_changed",
-              channel: "C123456",
-              user: "U123",
-              text: "edited",
-              ts: "1234567890.444",
+              type: 'message',
+              subtype: 'message_changed',
+              channel: 'C123456',
+              user: 'U123',
+              text: 'edited',
+              ts: '1234567890.444',
             },
           },
         }),
@@ -363,35 +373,35 @@ describe("SlackSocketClient", () => {
       expect(mockHandler).not.toHaveBeenCalled();
     });
 
-    it("handles disconnect envelope by closing WebSocket", async () => {
+    it('handles disconnect envelope by closing WebSocket', async () => {
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "env_disc",
-          type: "disconnect",
-          reason: "link_disabled",
+          envelope_id: 'env_disc',
+          type: 'disconnect',
+          reason: 'link_disabled',
         }),
       });
 
       expect(mockWsInstance.close).toHaveBeenCalled();
     });
 
-    it("logs handler errors without crashing", async () => {
-      mockHandler.mockRejectedValue(new Error("handler boom"));
+    it('logs handler errors without crashing', async () => {
+      mockHandler.mockRejectedValue(new Error('handler boom'));
       const { handler } = await getMessageHandler();
 
       handler({
         data: JSON.stringify({
-          envelope_id: "env-err",
-          type: "events_api",
+          envelope_id: 'env-err',
+          type: 'events_api',
           payload: {
             event: {
-              type: "message",
-              channel: "C123456",
-              user: "U123",
-              text: "causes error",
-              ts: "1234567890.err",
+              type: 'message',
+              channel: 'C123456',
+              user: 'U123',
+              text: 'causes error',
+              ts: '1234567890.err',
             },
           },
         }),
@@ -399,28 +409,28 @@ describe("SlackSocketClient", () => {
 
       await vi.advanceTimersByTimeAsync(0);
       expect(mockLog).toHaveBeenCalledWith(
-        expect.stringContaining("handler error"),
+        expect.stringContaining('handler error'),
       );
     });
   });
 
-  describe("source code invariants", () => {
-    it("has shutdown guard and cleanup mechanisms", () => {
-      const fs = require("fs");
-      const path = require("path");
+  describe('source code invariants', () => {
+    it('has shutdown guard and cleanup mechanisms', () => {
+      const fs = require('fs');
+      const path = require('path');
       const source = fs.readFileSync(
-        path.join(__dirname, "..", "slack-socket.ts"),
-        "utf-8",
+        path.join(__dirname, '..', 'slack-socket.ts'),
+        'utf-8',
       ) as string;
 
       // Shutdown flag checked in connect and scheduleReconnect
-      expect(source).toContain("isShuttingDown");
+      expect(source).toContain('isShuttingDown');
       // Cleanup method removes listeners before closing
-      expect(source).toContain("cleanupWs");
+      expect(source).toContain('cleanupWs');
       // API timeout protection on fetch
-      expect(source).toContain("AbortSignal.timeout");
+      expect(source).toContain('AbortSignal.timeout');
       // Connection state tracking
-      expect(source).toContain("connectionState");
+      expect(source).toContain('connectionState');
     });
   });
 });

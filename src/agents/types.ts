@@ -18,13 +18,13 @@ export type AgentCost = 'FREE' | 'CHEAP' | 'EXPENSIVE';
  * Agent category for routing and grouping
  */
 export type AgentCategory =
-  | 'exploration'    // Code search and discovery
-  | 'specialist'     // Domain-specific implementation
-  | 'advisor'        // Strategic consultation (read-only)
-  | 'utility'        // General purpose helpers
-  | 'orchestration'  // Multi-agent coordination
-  | 'planner'        // Strategic planning
-  | 'reviewer';      // Plan/work review
+  | 'exploration' // Code search and discovery
+  | 'specialist' // Domain-specific implementation
+  | 'advisor' // Strategic consultation (read-only)
+  | 'utility' // General purpose helpers
+  | 'orchestration' // Multi-agent coordination
+  | 'planner' // Strategic planning
+  | 'reviewer'; // Plan/work review
 
 /**
  * Trigger condition for delegation

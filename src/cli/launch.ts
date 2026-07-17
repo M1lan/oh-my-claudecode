@@ -32,7 +32,10 @@ import {
   quoteShellArg,
   tmuxExec,
 } from './tmux-utils.js';
-import { configureTmuxClipboardForCurrentSession, configureTmuxClipboardForSession } from './tmux-clipboard.js';
+import {
+  configureTmuxClipboardForCurrentSession,
+  configureTmuxClipboardForSession,
+} from './tmux-clipboard.js';
 import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
 import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
 
@@ -51,7 +54,10 @@ const OMC_RUNTIME_DIRNAME = '.omc-launch';
 function hasOmcMarkers(path: string): boolean {
   if (!existsSync(path)) return false;
   const content = readFileSync(path, 'utf-8');
-  return content.includes('<!-- OMC:START -->') && content.includes('<!-- OMC:END -->');
+  return (
+    content.includes('<!-- OMC:START -->') &&
+    content.includes('<!-- OMC:END -->')
+  );
 }
 
 function ensureMirroredPath(
@@ -73,7 +79,11 @@ function ensureMirroredPath(
     }
 
     if (sourceStat.isDirectory()) {
-      symlinkSync(sourcePath, targetPath, process.platform === 'win32' ? 'junction' : 'dir');
+      symlinkSync(
+        sourcePath,
+        targetPath,
+        process.platform === 'win32' ? 'junction' : 'dir',
+      );
       return;
     }
 
@@ -105,7 +115,10 @@ function readJsonObject(path: string): Record<string, unknown> | null {
   }
 }
 
-function refreshRuntimeClaudeJsonMcpServers(baseConfigDir: string, runtimeClaudeJsonPath: string): void {
+function refreshRuntimeClaudeJsonMcpServers(
+  baseConfigDir: string,
+  runtimeClaudeJsonPath: string,
+): void {
   const sourceClaudeJsonPath = join(dirname(baseConfigDir), '.claude.json');
   const sourceClaudeJson = readJsonObject(sourceClaudeJsonPath);
   if (!sourceClaudeJson || !isJsonObject(sourceClaudeJson.mcpServers)) {
@@ -114,10 +127,15 @@ function refreshRuntimeClaudeJsonMcpServers(baseConfigDir: string, runtimeClaude
 
   const runtimeClaudeJson = readJsonObject(runtimeClaudeJsonPath) ?? {};
   runtimeClaudeJson.mcpServers = sourceClaudeJson.mcpServers;
-  writeFileSync(runtimeClaudeJsonPath, JSON.stringify(runtimeClaudeJson, null, 2));
+  writeFileSync(
+    runtimeClaudeJsonPath,
+    JSON.stringify(runtimeClaudeJson, null, 2),
+  );
 }
 
-export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()): string {
+export function prepareOmcLaunchConfigDir(
+  baseConfigDir = getClaudeConfigDir(),
+): string {
   const companionPath = join(baseConfigDir, 'CLAUDE-omc.md');
   if (!hasOmcMarkers(companionPath)) {
     return baseConfigDir;
@@ -165,10 +183,15 @@ export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()):
   const runtimeSettingsPath = join(runtimeConfigDir, 'settings.json');
   if (existsSync(runtimeSettingsPath)) {
     try {
-      const rawSettings = JSON.parse(readFileSync(runtimeSettingsPath, 'utf-8')) as Record<string, unknown>;
+      const rawSettings = JSON.parse(
+        readFileSync(runtimeSettingsPath, 'utf-8'),
+      ) as Record<string, unknown>;
       const repaired = stripRetiredTeamMcpServers(rawSettings);
       if (repaired.changed) {
-        writeFileSync(runtimeSettingsPath, JSON.stringify(repaired.settings, null, 2));
+        writeFileSync(
+          runtimeSettingsPath,
+          JSON.stringify(repaired.settings, null, 2),
+        );
       }
     } catch {
       // Best-effort compatibility repair; launch must continue even if a legacy
@@ -178,7 +201,11 @@ export function prepareOmcLaunchConfigDir(baseConfigDir = getClaudeConfigDir()):
 
   writeFileSync(
     join(runtimeConfigDir, '.omc-launch-profile.json'),
-    JSON.stringify({ sourceConfigDir: baseConfigDir, sourceClaudeMd: companionPath }, null, 2),
+    JSON.stringify(
+      { sourceConfigDir: baseConfigDir, sourceClaudeMd: companionPath },
+      null,
+      2,
+    ),
   );
 
   return runtimeConfigDir;
@@ -194,7 +221,10 @@ function isDefaultClaudeConfigDirPath(configDir: string): boolean {
  * --notify true   → enable notifications (default)
  * This flag must be stripped before passing args to Claude CLI.
  */
-export function extractNotifyFlag(args: string[]): { notifyEnabled: boolean; remainingArgs: string[] } {
+export function extractNotifyFlag(args: string[]): {
+  notifyEnabled: boolean;
+  remainingArgs: string[];
+} {
   let notifyEnabled = true;
   const remainingArgs: string[] = [];
 
@@ -204,7 +234,12 @@ export function extractNotifyFlag(args: string[]): { notifyEnabled: boolean; rem
       const next = args[i + 1];
       if (next !== undefined) {
         const lowered = next.toLowerCase();
-        if (lowered === 'true' || lowered === 'false' || lowered === '1' || lowered === '0') {
+        if (
+          lowered === 'true' ||
+          lowered === 'false' ||
+          lowered === '1' ||
+          lowered === '0'
+        ) {
           notifyEnabled = lowered !== 'false' && lowered !== '0';
           i++; // skip explicit value token
         }
@@ -232,7 +267,10 @@ export function extractNotifyFlag(args: string[]): { notifyEnabled: boolean; rem
  * Does NOT consume the next positional arg (no space-separated value).
  * This flag is stripped before passing args to Claude CLI.
  */
-export function extractOpenClawFlag(args: string[]): { openclawEnabled: boolean | undefined; remainingArgs: string[] } {
+export function extractOpenClawFlag(args: string[]): {
+  openclawEnabled: boolean | undefined;
+  remainingArgs: string[];
+} {
   let openclawEnabled: boolean | undefined = undefined;
   const remainingArgs: string[] = [];
 
@@ -267,11 +305,17 @@ export function extractOpenClawFlag(args: string[]): { openclawEnabled: boolean 
  * Does NOT consume the next positional arg (no space-separated value).
  * This flag is stripped before passing args to Claude CLI.
  */
-export function extractTelegramFlag(args: string[]): { telegramEnabled: boolean | undefined; remainingArgs: string[] } {
+export function extractTelegramFlag(args: string[]): {
+  telegramEnabled: boolean | undefined;
+  remainingArgs: string[];
+} {
   let telegramEnabled: boolean | undefined = undefined;
   const remainingArgs: string[] = [];
   for (const arg of args) {
-    if (arg === TELEGRAM_FLAG) { telegramEnabled = true; continue; }
+    if (arg === TELEGRAM_FLAG) {
+      telegramEnabled = true;
+      continue;
+    }
     if (arg.startsWith(`${TELEGRAM_FLAG}=`)) {
       const val = arg.slice(TELEGRAM_FLAG.length + 1).toLowerCase();
       telegramEnabled = val !== 'false' && val !== '0';
@@ -294,11 +338,17 @@ export function extractTelegramFlag(args: string[]): { telegramEnabled: boolean 
  * Does NOT consume the next positional arg (no space-separated value).
  * This flag is stripped before passing args to Claude CLI.
  */
-export function extractDiscordFlag(args: string[]): { discordEnabled: boolean | undefined; remainingArgs: string[] } {
+export function extractDiscordFlag(args: string[]): {
+  discordEnabled: boolean | undefined;
+  remainingArgs: string[];
+} {
   let discordEnabled: boolean | undefined = undefined;
   const remainingArgs: string[] = [];
   for (const arg of args) {
-    if (arg === DISCORD_FLAG) { discordEnabled = true; continue; }
+    if (arg === DISCORD_FLAG) {
+      discordEnabled = true;
+      continue;
+    }
     if (arg.startsWith(`${DISCORD_FLAG}=`)) {
       const val = arg.slice(DISCORD_FLAG.length + 1).toLowerCase();
       discordEnabled = val !== 'false' && val !== '0';
@@ -321,11 +371,17 @@ export function extractDiscordFlag(args: string[]): { discordEnabled: boolean | 
  * Does NOT consume the next positional arg (no space-separated value).
  * This flag is stripped before passing args to Claude CLI.
  */
-export function extractSlackFlag(args: string[]): { slackEnabled: boolean | undefined; remainingArgs: string[] } {
+export function extractSlackFlag(args: string[]): {
+  slackEnabled: boolean | undefined;
+  remainingArgs: string[];
+} {
   let slackEnabled: boolean | undefined = undefined;
   const remainingArgs: string[] = [];
   for (const arg of args) {
-    if (arg === SLACK_FLAG) { slackEnabled = true; continue; }
+    if (arg === SLACK_FLAG) {
+      slackEnabled = true;
+      continue;
+    }
     if (arg.startsWith(`${SLACK_FLAG}=`)) {
       const val = arg.slice(SLACK_FLAG.length + 1).toLowerCase();
       slackEnabled = val !== 'false' && val !== '0';
@@ -348,11 +404,17 @@ export function extractSlackFlag(args: string[]): { slackEnabled: boolean | unde
  * Does NOT consume the next positional arg (no space-separated value).
  * This flag is stripped before passing args to Claude CLI.
  */
-export function extractWebhookFlag(args: string[]): { webhookEnabled: boolean | undefined; remainingArgs: string[] } {
+export function extractWebhookFlag(args: string[]): {
+  webhookEnabled: boolean | undefined;
+  remainingArgs: string[];
+} {
   let webhookEnabled: boolean | undefined = undefined;
   const remainingArgs: string[] = [];
   for (const arg of args) {
-    if (arg === WEBHOOK_FLAG) { webhookEnabled = true; continue; }
+    if (arg === WEBHOOK_FLAG) {
+      webhookEnabled = true;
+      continue;
+    }
     if (arg.startsWith(`${WEBHOOK_FLAG}=`)) {
       const val = arg.slice(WEBHOOK_FLAG.length + 1).toLowerCase();
       webhookEnabled = val !== 'false' && val !== '0';
@@ -405,7 +467,10 @@ export function normalizeClaudeLaunchArgs(args: string[]): string[] {
  * - Environment setup
  * - Pre-launch checks
  */
-export async function preLaunch(_cwd: string, _sessionId: string): Promise<void> {
+export async function preLaunch(
+  _cwd: string,
+  _sessionId: string,
+): Promise<void> {
   // Placeholder for future pre-launch logic
   // e.g., session state, environment prep, etc.
 }
@@ -437,11 +502,17 @@ class MadmaxTmuxRequiredError extends Error {
 
 function abortMadmaxRequiresTmux(reason: 'missing' | 'launch-failed'): never {
   if (reason === 'missing') {
-    console.error('[omc] Error: --madmax/--yolo on macOS requires tmux, but tmux is not installed.');
+    console.error(
+      '[omc] Error: --madmax/--yolo on macOS requires tmux, but tmux is not installed.',
+    );
     console.error('  Install it with: brew install tmux');
   } else {
-    console.error('[omc] Error: --madmax/--yolo on macOS requires tmux, but launching tmux failed.');
-    console.error('  Verify tmux works: tmux -V && tmux new-session -d -s _omc_probe \\; kill-session -t _omc_probe');
+    console.error(
+      '[omc] Error: --madmax/--yolo on macOS requires tmux, but launching tmux failed.',
+    );
+    console.error(
+      '  Verify tmux works: tmux -V && tmux new-session -d -s _omc_probe \\; kill-session -t _omc_probe',
+    );
   }
   process.exit(1);
   // process.exit may be intercepted by tests; throwing guarantees the caller
@@ -464,7 +535,11 @@ function abortMadmaxRequiresTmux(reason: 'missing' | 'launch-failed'): never {
  * tmux is installed but new-session/attach-session fails, we surface the
  * error instead of silently demoting to direct mode.
  */
-export function runClaude(cwd: string, args: string[], sessionId: string): void {
+export function runClaude(
+  cwd: string,
+  args: string[],
+  sessionId: string,
+): void {
   // Print mode must bypass tmux so stdout flows to the parent process (issue #1665)
   if (isPrintMode(args)) {
     runClaudeDirect(cwd, args);
@@ -511,11 +586,15 @@ function runClaudeInsideTmux(cwd: string, args: string[]): void {
   // Enable OSC 52 clipboard forwarding and mouse scrolling in the current tmux session (non-fatal if unsupported).
   try {
     configureTmuxClipboardForCurrentSession({ stdio: 'ignore' });
-  } catch { /* non-fatal — user's tmux may not support these options */ }
+  } catch {
+    /* non-fatal — user's tmux may not support these options */
+  }
 
   try {
     tmuxExec(['set-option', 'mouse', 'on'], { stdio: 'ignore' });
-  } catch { /* non-fatal — user's tmux may not support these options */ }
+  } catch {
+    /* non-fatal — user's tmux may not support these options */
+  }
 
   // Launch Claude in current pane
   try {
@@ -578,16 +657,17 @@ function runClaudeOutsideTmux(
   options: { requireTmux?: boolean } = {},
 ): void {
   const forwardedEnv = Object.fromEntries(
-    TMUX_ENV_FORWARD
-      .map((name) => [name, process.env[name]] as const)
-      .filter(([, value]) => value !== undefined),
+    TMUX_ENV_FORWARD.map((name) => [name, process.env[name]] as const).filter(
+      ([, value]) => value !== undefined,
+    ),
   ) as Record<string, string>;
   const rawClaudeCmd = isNativeWindowsShell()
     ? buildTmuxShellCommandWithEnv('claude', args, forwardedEnv)
     : buildTmuxShellCommand('claude', args);
-  const envPrefix = !isNativeWindowsShell() && Object.keys(forwardedEnv).length > 0
-    ? buildEnvExportPrefix(TMUX_ENV_FORWARD)
-    : '';
+  const envPrefix =
+    !isNativeWindowsShell() && Object.keys(forwardedEnv).length > 0
+      ? buildEnvExportPrefix(TMUX_ENV_FORWARD)
+      : '';
   // Drain any pending terminal Device Attributes (DA1) response from stdin.
   // When tmux attach-session sends a DA1 query, the terminal replies with
   // \e[?6c which lands in the pty buffer before Claude reads input.
@@ -601,7 +681,10 @@ function runClaudeOutsideTmux(
   const sessionName = buildTmuxSessionName(cwd);
 
   try {
-    tmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], { stripTmux: true, stdio: 'inherit' });
+    tmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], {
+      stripTmux: true,
+      stdio: 'inherit',
+    });
   } catch {
     if (options.requireTmux) {
       abortMadmaxRequiresTmux('launch-failed');
@@ -611,19 +694,28 @@ function runClaudeOutsideTmux(
   }
 
   try {
-    configureTmuxClipboardForSession(sessionName, { stripTmux: true, stdio: 'ignore' });
+    configureTmuxClipboardForSession(sessionName, {
+      stripTmux: true,
+      stdio: 'ignore',
+    });
   } catch {
     /* non-fatal — user's tmux may not support these options */
   }
 
   try {
-    tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], { stripTmux: true, stdio: 'ignore' });
+    tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], {
+      stripTmux: true,
+      stdio: 'ignore',
+    });
   } catch {
     /* non-fatal — user's tmux may not support these options */
   }
 
   try {
-    tmuxExec(['attach-session', '-t', sessionName], { stripTmux: true, stdio: 'inherit' });
+    tmuxExec(['attach-session', '-t', sessionName], {
+      stripTmux: true,
+      stdio: 'inherit',
+    });
   } catch {
     if (options.requireTmux) {
       abortMadmaxRequiresTmux('launch-failed');
@@ -632,7 +724,10 @@ function runClaudeOutsideTmux(
     // attach paths (SSH disconnect, terminal drop, etc.) do not kill or
     // duplicate a valid Claude session.
     try {
-      tmuxExec(['has-session', '-t', sessionName], { stripTmux: true, stdio: 'ignore' });
+      tmuxExec(['has-session', '-t', sessionName], {
+        stripTmux: true,
+        stdio: 'ignore',
+      });
       return;
     } catch {
       runClaudeDirect(cwd, args);
@@ -669,7 +764,10 @@ function runClaudeDirect(cwd: string, args: string[]): void {
  * - State finalization
  * - Post-launch reporting
  */
-export async function postLaunch(_cwd: string, _sessionId: string): Promise<void> {
+export async function postLaunch(
+  _cwd: string,
+  _sessionId: string,
+): Promise<void> {
   // Placeholder for future post-launch logic
   // e.g., cleanup, finalization, etc.
 }
@@ -718,7 +816,8 @@ export async function launchCommand(args: string[]): Promise<void> {
   }
 
   // Extract OMC-specific --openclaw flag (presence-based, no value consumption)
-  const { openclawEnabled, remainingArgs: argsAfterOpenclaw } = extractOpenClawFlag(remainingArgs);
+  const { openclawEnabled, remainingArgs: argsAfterOpenclaw } =
+    extractOpenClawFlag(remainingArgs);
   if (openclawEnabled === true) {
     process.env.OMC_OPENCLAW = '1';
   } else if (openclawEnabled === false) {
@@ -726,7 +825,8 @@ export async function launchCommand(args: string[]): Promise<void> {
   }
 
   // Extract OMC-specific --telegram flag (presence-based)
-  const { telegramEnabled, remainingArgs: argsAfterTelegram } = extractTelegramFlag(argsAfterOpenclaw);
+  const { telegramEnabled, remainingArgs: argsAfterTelegram } =
+    extractTelegramFlag(argsAfterOpenclaw);
   if (telegramEnabled === true) {
     process.env.OMC_TELEGRAM = '1';
   } else if (telegramEnabled === false) {
@@ -734,7 +834,8 @@ export async function launchCommand(args: string[]): Promise<void> {
   }
 
   // Extract OMC-specific --discord flag (presence-based)
-  const { discordEnabled, remainingArgs: argsAfterDiscord } = extractDiscordFlag(argsAfterTelegram);
+  const { discordEnabled, remainingArgs: argsAfterDiscord } =
+    extractDiscordFlag(argsAfterTelegram);
   if (discordEnabled === true) {
     process.env.OMC_DISCORD = '1';
   } else if (discordEnabled === false) {
@@ -742,7 +843,8 @@ export async function launchCommand(args: string[]): Promise<void> {
   }
 
   // Extract OMC-specific --slack flag (presence-based)
-  const { slackEnabled, remainingArgs: argsAfterSlack } = extractSlackFlag(argsAfterDiscord);
+  const { slackEnabled, remainingArgs: argsAfterSlack } =
+    extractSlackFlag(argsAfterDiscord);
   if (slackEnabled === true) {
     process.env.OMC_SLACK = '1';
   } else if (slackEnabled === false) {
@@ -750,7 +852,8 @@ export async function launchCommand(args: string[]): Promise<void> {
   }
 
   // Extract OMC-specific --webhook flag (presence-based)
-  const { webhookEnabled, remainingArgs: argsAfterWebhook } = extractWebhookFlag(argsAfterSlack);
+  const { webhookEnabled, remainingArgs: argsAfterWebhook } =
+    extractWebhookFlag(argsAfterSlack);
   if (webhookEnabled === true) {
     process.env.OMC_WEBHOOK = '1';
   } else if (webhookEnabled === false) {
@@ -761,13 +864,17 @@ export async function launchCommand(args: string[]): Promise<void> {
 
   // Pre-flight: check for nested session
   if (process.env.CLAUDECODE) {
-    console.error('[omc] Error: Already inside a Claude Code session. Nested launches are not supported.');
+    console.error(
+      '[omc] Error: Already inside a Claude Code session. Nested launches are not supported.',
+    );
     process.exit(1);
   }
 
   // Pre-flight: check claude CLI availability
   if (!isClaudeAvailable()) {
-    console.error('[omc] Error: claude CLI not found. Install Claude Code first:');
+    console.error(
+      '[omc] Error: claude CLI not found. Install Claude Code first:',
+    );
     console.error('  https://code.claude.com/docs/en/setup');
     process.exit(1);
   }
@@ -787,7 +894,9 @@ export async function launchCommand(args: string[]): Promise<void> {
     await preLaunch(cwd, sessionId);
   } catch (err) {
     // preLaunch errors must NOT prevent Claude from starting
-    console.error(`[omc] preLaunch warning: ${err instanceof Error ? err.message : err}`);
+    console.error(
+      `[omc] preLaunch warning: ${err instanceof Error ? err.message : err}`,
+    );
   }
 
   // Phase 2: run

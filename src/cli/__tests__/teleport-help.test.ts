@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const cliIndexSource = readFileSync(
   join(dirname(fileURLToPath(import.meta.url)), '..', 'index.ts'),
-  'utf-8'
+  'utf-8',
 );
 
 describe('teleport help text (issue #968)', () => {
@@ -16,7 +16,8 @@ describe('teleport help text (issue #968)', () => {
   });
 
   it('documents shell comment behavior in both help surfaces', () => {
-    const matches = cliIndexSource.match(/In many shells, # starts a comment/g) ?? [];
+    const matches =
+      cliIndexSource.match(/In many shells, # starts a comment/g) ?? [];
     expect(matches).toHaveLength(2);
   });
 });

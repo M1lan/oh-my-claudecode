@@ -10,7 +10,14 @@
  * - Configurable update notifications
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+} from 'fs';
 import { join, dirname } from 'path';
 import { execSync, execFileSync } from 'child_process';
 import { TaskTool } from '../hooks/beads-context/types.js';
@@ -34,17 +41,17 @@ export const REPO_NAME = 'oh-my-claudecode';
 export const GITHUB_API_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`;
 export const GITHUB_RAW_URL = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}`;
 
-const CLAUDE_CODE_NPM_PACKAGE = '@anthropic-ai/claude-code';
+const CLAUDE_CODE_PACKAGE = '@anthropic-ai/claude-code';
 
 interface GlobalClaudeCodeInstall {
   status: 'present' | 'absent' | 'unknown';
   version?: string;
-  installMethod?: 'npm' | 'native' | 'manual';
+  installMethod?: 'pnpm' | 'native' | 'manual';
   binaryPath?: string;
   error?: string;
 }
 
-function npmExecOptions(verbose: boolean = false): {
+function pnpmExecOptions(verbose: boolean = false): {
   encoding: 'utf-8';
   stdio: 'inherit' | 'pipe';
   timeout: number;
@@ -58,20 +65,23 @@ function npmExecOptions(verbose: boolean = false): {
   };
 }
 
-function assertSafeNpmPackageSpec(packageSpec: string): void {
+function assertSafePackageSpec(packageSpec: string): void {
   if (!/^[A-Za-z0-9@._~+/-]+$/.test(packageSpec)) {
-    throw new Error(`Unsafe npm package spec: ${packageSpec}`);
+    throw new Error(`Unsafe package spec: ${packageSpec}`);
   }
 }
 
-function npmInstallGlobalPackage(packageSpec: string, verbose: boolean = false): void {
-  assertSafeNpmPackageSpec(packageSpec);
+function pnpmAddGlobalPackage(
+  packageSpec: string,
+  verbose: boolean = false,
+): void {
+  assertSafePackageSpec(packageSpec);
   if (process.platform === 'win32') {
-    execSync(`npm install -g ${packageSpec}`, npmExecOptions(verbose));
+    execSync(`pnpm add -g ${packageSpec}`, pnpmExecOptions(verbose));
     return;
   }
 
-  execFileSync('npm', ['install', '-g', packageSpec], npmExecOptions(verbose));
+  execFileSync('pnpm', ['add', '-g', packageSpec], pnpmExecOptions(verbose));
 }
 
 function parseClaudeCodeVersion(output: string): string | undefined {
@@ -83,10 +93,13 @@ function parseClaudeCodeVersion(output: string): string | undefined {
   return trimmed.match(/\b(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?)\b/)?.[1];
 }
 
-function getFirstResolvedBinaryPath(output: string, binaryName: string): string {
+function getFirstResolvedBinaryPath(
+  output: string,
+  binaryName: string,
+): string {
   const resolved = output
     .split(/\r?\n/)
-    .map(line => line.trim())
+    .map((line) => line.trim())
     .find(Boolean);
 
   if (!resolved) {
@@ -99,50 +112,72 @@ function getFirstResolvedBinaryPath(output: string, binaryName: string): string 
 function resolveClaudeBinaryPath(): string | undefined {
   try {
     if (process.platform === 'win32') {
-      return getFirstResolvedBinaryPath(execFileSync('where.exe', ['claude'], {
+      return getFirstResolvedBinaryPath(
+        execFileSync('where.exe', ['claude'], {
+          encoding: 'utf-8',
+          stdio: 'pipe',
+          timeout: 5000,
+          windowsHide: true,
+        }),
+        'claude',
+      );
+    }
+
+    return getFirstResolvedBinaryPath(
+      execSync('command -v claude 2>/dev/null || which claude 2>/dev/null', {
         encoding: 'utf-8',
         stdio: 'pipe',
         timeout: 5000,
-        windowsHide: true,
-      }), 'claude');
-    }
-
-    return getFirstResolvedBinaryPath(execSync('command -v claude 2>/dev/null || which claude 2>/dev/null', {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 5000,
-    }), 'claude');
+      }),
+      'claude',
+    );
   } catch {
     return undefined;
   }
 }
 
-function detectClaudeCodeFromBinary(npmRoot?: string): GlobalClaudeCodeInstall {
+function detectClaudeCodeFromBinary(
+  pnpmRoot?: string,
+): GlobalClaudeCodeInstall {
   try {
-    const versionOutput = String(execFileSync('claude', ['--version'], {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 10000,
-      ...(process.platform === 'win32' ? { shell: true, windowsHide: true } : {}),
-    }) ?? '');
+    const versionOutput = String(
+      execFileSync('claude', ['--version'], {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 10000,
+        ...(process.platform === 'win32'
+          ? { shell: true, windowsHide: true }
+          : {}),
+      }) ?? '',
+    );
     const binaryPath = resolveClaudeBinaryPath();
     const version = parseClaudeCodeVersion(versionOutput);
     if (!version && !binaryPath) {
-      return { status: 'unknown', error: 'claude --version returned no parseable version and binary path could not be resolved' };
+      return {
+        status: 'unknown',
+        error:
+          'claude --version returned no parseable version and binary path could not be resolved',
+      };
     }
 
     const normalizedBinaryPath = binaryPath?.replace(/\\/g, '/').toLowerCase();
-    const normalizedNpmRoot = npmRoot?.replace(/\\/g, '/').toLowerCase();
-    const isNpmBinary = Boolean(
+    const normalizedPnpmRoot = pnpmRoot?.replace(/\\/g, '/').toLowerCase();
+    const isGlobalBinary = Boolean(
       normalizedBinaryPath &&
-      normalizedNpmRoot &&
-      normalizedBinaryPath.startsWith(normalizedNpmRoot.replace(/\/node_modules$/, '')),
+      normalizedPnpmRoot &&
+      normalizedBinaryPath.startsWith(
+        normalizedPnpmRoot.replace(/\/node_modules$/, ''),
+      ),
     );
 
     return {
       status: 'present',
       version,
-      installMethod: isNpmBinary ? 'npm' : process.platform === 'win32' ? 'native' : 'manual',
+      installMethod: isGlobalBinary
+        ? 'pnpm'
+        : process.platform === 'win32'
+          ? 'native'
+          : 'manual',
       binaryPath,
     };
   } catch (error) {
@@ -154,40 +189,52 @@ function detectClaudeCodeFromBinary(npmRoot?: string): GlobalClaudeCodeInstall {
 }
 
 function detectGlobalClaudeCodeInstall(): GlobalClaudeCodeInstall {
-  let npmRoot: string | undefined;
+  let pnpmRoot: string | undefined;
 
   try {
-    npmRoot = String(execSync('npm root -g', {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 10000,
-      ...(process.platform === 'win32' ? { windowsHide: true } : {}),
-    }) ?? '').trim();
-    if (!npmRoot) {
+    pnpmRoot = String(
+      execSync('pnpm root -g', {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 10000,
+        ...(process.platform === 'win32' ? { windowsHide: true } : {}),
+      }) ?? '',
+    ).trim();
+    if (!pnpmRoot) {
       const binaryInstall = detectClaudeCodeFromBinary();
       return binaryInstall.status === 'present'
         ? binaryInstall
-        : { status: 'unknown', error: 'npm root -g returned an empty path' };
+        : { status: 'unknown', error: 'pnpm root -g returned an empty path' };
     }
 
-    const packageJsonPath = join(npmRoot, '@anthropic-ai', 'claude-code', 'package.json');
+    const packageJsonPath = join(
+      pnpmRoot,
+      '@anthropic-ai',
+      'claude-code',
+      'package.json',
+    );
     if (!existsSync(packageJsonPath)) {
-      const binaryInstall = detectClaudeCodeFromBinary(npmRoot);
-      return binaryInstall.status === 'present' ? binaryInstall : { status: 'absent' };
+      const binaryInstall = detectClaudeCodeFromBinary(pnpmRoot);
+      return binaryInstall.status === 'present'
+        ? binaryInstall
+        : { status: 'absent' };
     }
 
-    const packageJson = JSON.parse(String(readFileSync(packageJsonPath, 'utf-8') ?? '')) as {
+    const packageJson = JSON.parse(
+      String(readFileSync(packageJsonPath, 'utf-8') ?? ''),
+    ) as {
       version?: unknown;
     };
     return {
       status: 'present',
-      version: typeof packageJson.version === 'string' && packageJson.version.trim()
-        ? packageJson.version.trim()
-        : undefined,
-      installMethod: 'npm',
+      version:
+        typeof packageJson.version === 'string' && packageJson.version.trim()
+          ? packageJson.version.trim()
+          : undefined,
+      installMethod: 'pnpm',
     };
   } catch (error) {
-    const binaryInstall = detectClaudeCodeFromBinary(npmRoot);
+    const binaryInstall = detectClaudeCodeFromBinary(pnpmRoot);
     if (binaryInstall.status === 'present') {
       return binaryInstall;
     }
@@ -203,7 +250,10 @@ function restoreGlobalClaudeCodeIfNeeded(
   beforeUpdate: GlobalClaudeCodeInstall,
   verbose: boolean = false,
 ): { restored: boolean } {
-  if (beforeUpdate.status !== 'present' || beforeUpdate.installMethod !== 'npm') {
+  if (
+    beforeUpdate.status !== 'present' ||
+    beforeUpdate.installMethod !== 'pnpm'
+  ) {
     return { restored: false };
   }
 
@@ -211,22 +261,28 @@ function restoreGlobalClaudeCodeIfNeeded(
     return { restored: false };
   }
 
-  const versionSuffix = beforeUpdate.version ? `@${beforeUpdate.version}` : '@latest';
-  const packageSpec = `${CLAUDE_CODE_NPM_PACKAGE}${versionSuffix}`;
+  const versionSuffix = beforeUpdate.version
+    ? `@${beforeUpdate.version}`
+    : '@latest';
+  const packageSpec = `${CLAUDE_CODE_PACKAGE}${versionSuffix}`;
 
   if (verbose) {
-    console.log(`[omc update] Restoring global ${packageSpec} after npm update...`);
+    console.log(
+      `[omc update] Restoring global ${packageSpec} after pnpm update...`,
+    );
   }
 
-  npmInstallGlobalPackage(packageSpec, verbose);
+  pnpmAddGlobalPackage(packageSpec, verbose);
 
   const afterRestore = detectGlobalClaudeCodeInstall();
   if (afterRestore.status !== 'present') {
-    throw new Error(`Global ${CLAUDE_CODE_NPM_PACKAGE} was present before update but is still missing after restore`);
+    throw new Error(
+      `Global ${CLAUDE_CODE_PACKAGE} was present before update but is still missing after restore`,
+    );
   }
 
   if (verbose) {
-    console.log(`[omc update] Restored global ${CLAUDE_CODE_NPM_PACKAGE}`);
+    console.log(`[omc update] Restored global ${CLAUDE_CODE_PACKAGE}`);
   }
 
   return { restored: true };
@@ -238,24 +294,52 @@ function restoreGlobalClaudeCodeIfNeeded(
  * Claude Code to populate the plugin cache. If it's stale, `/plugin install`
  * and cache rebuilds reinstall old versions. (See #506)
  */
-function syncMarketplaceClone(verbose: boolean = false): { ok: boolean; message: string } {
-  const marketplacePath = join(getClaudeConfigDir(), 'plugins', 'marketplaces', 'omc');
+function syncMarketplaceClone(verbose: boolean = false): {
+  ok: boolean;
+  message: string;
+} {
+  const marketplacePath = join(
+    getClaudeConfigDir(),
+    'plugins',
+    'marketplaces',
+    'omc',
+  );
   if (!existsSync(marketplacePath)) {
     return { ok: true, message: 'Marketplace clone not found; skipping' };
   }
 
   const stdio = verbose ? 'inherit' : 'pipe';
-  const execOpts = { encoding: 'utf-8' as const, stdio: stdio as any, timeout: 60000, windowsHide: true };
-  const queryExecOpts = { encoding: 'utf-8' as const, stdio: 'pipe' as const, timeout: 60000, windowsHide: true };
+  const execOpts = {
+    encoding: 'utf-8' as const,
+    stdio: stdio as any,
+    timeout: 60000,
+    windowsHide: true,
+  };
+  const queryExecOpts = {
+    encoding: 'utf-8' as const,
+    stdio: 'pipe' as const,
+    timeout: 60000,
+    windowsHide: true,
+  };
 
   try {
-    execFileSync('git', ['-C', marketplacePath, 'fetch', '--all', '--prune'], execOpts);
+    execFileSync(
+      'git',
+      ['-C', marketplacePath, 'fetch', '--all', '--prune'],
+      execOpts,
+    );
   } catch (err) {
-    return { ok: false, message: `Failed to fetch marketplace clone: ${err instanceof Error ? err.message : err}` };
+    return {
+      ok: false,
+      message: `Failed to fetch marketplace clone: ${err instanceof Error ? err.message : err}`,
+    };
   }
 
   try {
-    execFileSync('git', ['-C', marketplacePath, 'checkout', 'main'], { ...execOpts, timeout: 15000 });
+    execFileSync('git', ['-C', marketplacePath, 'checkout', 'main'], {
+      ...execOpts,
+      timeout: 15000,
+    });
   } catch {
     // Fall through to explicit branch verification below.
   }
@@ -263,10 +347,17 @@ function syncMarketplaceClone(verbose: boolean = false): { ok: boolean; message:
   let currentBranch = '';
   try {
     currentBranch = String(
-      execFileSync('git', ['-C', marketplacePath, 'rev-parse', '--abbrev-ref', 'HEAD'], queryExecOpts) ?? ''
+      execFileSync(
+        'git',
+        ['-C', marketplacePath, 'rev-parse', '--abbrev-ref', 'HEAD'],
+        queryExecOpts,
+      ) ?? '',
     ).trim();
   } catch (err) {
-    return { ok: false, message: `Failed to inspect marketplace clone branch: ${err instanceof Error ? err.message : err}` };
+    return {
+      ok: false,
+      message: `Failed to inspect marketplace clone branch: ${err instanceof Error ? err.message : err}`,
+    };
   }
 
   if (currentBranch !== 'main') {
@@ -279,16 +370,30 @@ function syncMarketplaceClone(verbose: boolean = false): { ok: boolean; message:
   let statusOutput = '';
   try {
     statusOutput = String(
-      execFileSync('git', ['-C', marketplacePath, 'status', '--porcelain', '--untracked-files=normal'], queryExecOpts) ?? ''
+      execFileSync(
+        'git',
+        [
+          '-C',
+          marketplacePath,
+          'status',
+          '--porcelain',
+          '--untracked-files=normal',
+        ],
+        queryExecOpts,
+      ) ?? '',
     ).trim();
   } catch (err) {
-    return { ok: false, message: `Failed to inspect marketplace clone status: ${err instanceof Error ? err.message : err}` };
+    return {
+      ok: false,
+      message: `Failed to inspect marketplace clone status: ${err instanceof Error ? err.message : err}`,
+    };
   }
 
   if (statusOutput.length > 0) {
     return {
       ok: false,
-      message: 'Skipped marketplace clone update: repo has local modifications; commit, stash, or clean it first',
+      message:
+        'Skipped marketplace clone update: repo has local modifications; commit, stash, or clean it first',
     };
   }
 
@@ -296,19 +401,34 @@ function syncMarketplaceClone(verbose: boolean = false): { ok: boolean; message:
   let behindCount = 0;
   try {
     const revListOutput = String(
-      execFileSync('git', ['-C', marketplacePath, 'rev-list', '--left-right', '--count', 'HEAD...origin/main'], queryExecOpts) ?? ''
+      execFileSync(
+        'git',
+        [
+          '-C',
+          marketplacePath,
+          'rev-list',
+          '--left-right',
+          '--count',
+          'HEAD...origin/main',
+        ],
+        queryExecOpts,
+      ) ?? '',
     ).trim();
     const [aheadRaw = '0', behindRaw = '0'] = revListOutput.split(/\s+/);
     aheadCount = Number.parseInt(aheadRaw, 10) || 0;
     behindCount = Number.parseInt(behindRaw, 10) || 0;
   } catch (err) {
-    return { ok: false, message: `Failed to inspect marketplace clone divergence: ${err instanceof Error ? err.message : err}` };
+    return {
+      ok: false,
+      message: `Failed to inspect marketplace clone divergence: ${err instanceof Error ? err.message : err}`,
+    };
   }
 
   if (aheadCount > 0) {
     return {
       ok: false,
-      message: 'Skipped marketplace clone update: repo has local commits on main; manual reconciliation required',
+      message:
+        'Skipped marketplace clone update: repo has local commits on main; manual reconciliation required',
     };
   }
 
@@ -317,23 +437,38 @@ function syncMarketplaceClone(verbose: boolean = false): { ok: boolean; message:
   }
 
   try {
-    execFileSync('git', ['-C', marketplacePath, 'merge', '--ff-only', 'origin/main'], execOpts);
+    execFileSync(
+      'git',
+      ['-C', marketplacePath, 'merge', '--ff-only', 'origin/main'],
+      execOpts,
+    );
   } catch (err) {
-    return { ok: false, message: `Failed to fast-forward marketplace clone: ${err instanceof Error ? err.message : err}` };
+    return {
+      ok: false,
+      message: `Failed to fast-forward marketplace clone: ${err instanceof Error ? err.message : err}`,
+    };
   }
 
   return { ok: true, message: 'Marketplace clone updated' };
 }
 
-function replaceLastPathSegmentPreservingSeparators(pathValue: string, nextSegment: string): string {
+function replaceLastPathSegmentPreservingSeparators(
+  pathValue: string,
+  nextSegment: string,
+): string {
   const trimmed = pathValue.trim();
   if (!trimmed) {
     return trimmed;
   }
 
   const trailingSeparator = /[\\/]$/.test(trimmed) ? trimmed.slice(-1) : '';
-  const withoutTrailingSeparator = trailingSeparator ? trimmed.slice(0, -1) : trimmed;
-  const lastSeparatorIndex = Math.max(withoutTrailingSeparator.lastIndexOf('/'), withoutTrailingSeparator.lastIndexOf('\\'));
+  const withoutTrailingSeparator = trailingSeparator
+    ? trimmed.slice(0, -1)
+    : trimmed;
+  const lastSeparatorIndex = Math.max(
+    withoutTrailingSeparator.lastIndexOf('/'),
+    withoutTrailingSeparator.lastIndexOf('\\'),
+  );
 
   if (lastSeparatorIndex < 0) {
     return `${nextSegment}${trailingSeparator}`;
@@ -349,8 +484,14 @@ function deriveUpdatedPluginInstallPath(
 ): string {
   if (existingInstallPath?.trim()) {
     const normalized = existingInstallPath.replace(/\\/g, '/').toLowerCase();
-    if (normalized.includes('/plugins/cache/') && normalized.includes('/oh-my-claudecode/')) {
-      return replaceLastPathSegmentPreservingSeparators(existingInstallPath, newVersion);
+    if (
+      normalized.includes('/plugins/cache/') &&
+      normalized.includes('/oh-my-claudecode/')
+    ) {
+      return replaceLastPathSegmentPreservingSeparators(
+        existingInstallPath,
+        newVersion,
+      );
     }
   }
 
@@ -376,7 +517,11 @@ function syncInstalledPluginRegistryVersion(
   newVersion: string,
   fallbackInstallPath: string,
 ): { updated: boolean; errors: string[] } {
-  const installedPluginsPath = join(getClaudeConfigDir(), 'plugins', 'installed_plugins.json');
+  const installedPluginsPath = join(
+    getClaudeConfigDir(),
+    'plugins',
+    'installed_plugins.json',
+  );
   if (!existsSync(installedPluginsPath)) {
     return { updated: false, errors: [] };
   }
@@ -389,18 +534,23 @@ function syncInstalledPluginRegistryVersion(
 
     const raw = JSON.parse(rawText) as unknown;
     if (!raw || typeof raw !== 'object') {
-      return { updated: false, errors: ['installed_plugins.json has unexpected top-level structure'] };
+      return {
+        updated: false,
+        errors: ['installed_plugins.json has unexpected top-level structure'],
+      };
     }
 
     const root = raw as Record<string, unknown>;
-    const pluginsValue = root.plugins && typeof root.plugins === 'object' ? root.plugins : root;
+    const pluginsValue =
+      root.plugins && typeof root.plugins === 'object' ? root.plugins : root;
     const plugins = pluginsValue as Record<string, unknown>;
     let updated = false;
 
     for (const [pluginId, entriesValue] of Object.entries(plugins)) {
       const normalizedPluginId = pluginId.toLowerCase();
-      const isOmcPlugin = normalizedPluginId === 'oh-my-claudecode@omc'
-        || normalizedPluginId === 'oh-my-claudecode';
+      const isOmcPlugin =
+        normalizedPluginId === 'oh-my-claudecode@omc' ||
+        normalizedPluginId === 'oh-my-claudecode';
       if (!isOmcPlugin || !Array.isArray(entriesValue)) {
         continue;
       }
@@ -410,9 +560,16 @@ function syncInstalledPluginRegistryVersion(
           continue;
         }
         const pluginEntry = entry as Record<string, unknown>;
-        const existingInstallPath = typeof pluginEntry.installPath === 'string' ? pluginEntry.installPath : undefined;
+        const existingInstallPath =
+          typeof pluginEntry.installPath === 'string'
+            ? pluginEntry.installPath
+            : undefined;
         pluginEntry.version = newVersion;
-        pluginEntry.installPath = deriveUpdatedPluginInstallPath(existingInstallPath, fallbackInstallPath, newVersion);
+        pluginEntry.installPath = deriveUpdatedPluginInstallPath(
+          existingInstallPath,
+          fallbackInstallPath,
+          newVersion,
+        );
         updated = true;
       }
     }
@@ -426,7 +583,9 @@ function syncInstalledPluginRegistryVersion(
   } catch (error) {
     return {
       updated: false,
-      errors: [`Failed to update installed_plugins.json: ${error instanceof Error ? error.message : error}`],
+      errors: [
+        `Failed to update installed_plugins.json: ${error instanceof Error ? error.message : error}`,
+      ],
     };
   }
 }
@@ -451,7 +610,9 @@ export function shouldBlockStandaloneUpdateInCurrentSession(): boolean {
     return true;
   }
 
-  const sessionId = process.env.CLAUDE_SESSION_ID?.trim() || process.env.CLAUDECODE_SESSION_ID?.trim();
+  const sessionId =
+    process.env.CLAUDE_SESSION_ID?.trim() ||
+    process.env.CLAUDECODE_SESSION_ID?.trim();
   if (sessionId) {
     return true;
   }
@@ -459,29 +620,44 @@ export function shouldBlockStandaloneUpdateInCurrentSession(): boolean {
   return false;
 }
 
-export function syncPluginCache(verbose: boolean = false): { synced: boolean; skipped: boolean; errors: string[] } {
-  const pluginCacheRoot = join(getClaudeConfigDir(), 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+export function syncPluginCache(verbose: boolean = false): {
+  synced: boolean;
+  skipped: boolean;
+  errors: string[];
+} {
+  const pluginCacheRoot = join(
+    getClaudeConfigDir(),
+    'plugins',
+    'cache',
+    'omc',
+    'oh-my-claudecode',
+  );
   if (!existsSync(pluginCacheRoot)) {
     return { synced: false, skipped: true, errors: [] };
   }
 
   try {
-    const npmRoot = String(execSync('npm root -g', {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 10000,
-      ...(process.platform === 'win32' ? { windowsHide: true } : {}),
-    }) ?? '').trim();
+    const pnpmRoot = String(
+      execSync('pnpm root -g', {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 10000,
+        ...(process.platform === 'win32' ? { windowsHide: true } : {}),
+      }) ?? '',
+    ).trim();
 
-    if (!npmRoot) {
-      throw new Error('npm root -g returned an empty path');
+    if (!pnpmRoot) {
+      throw new Error('pnpm root -g returned an empty path');
     }
 
-    const sourceRoot = join(npmRoot, 'oh-my-claude-sisyphus');
+    const sourceRoot = join(pnpmRoot, 'oh-my-claude-sisyphus');
     const packageJsonPath = join(sourceRoot, 'package.json');
     const packageJsonRaw = String(readFileSync(packageJsonPath, 'utf-8') ?? '');
     const packageMetadata = JSON.parse(packageJsonRaw) as { version?: unknown };
-    const version = typeof packageMetadata.version === 'string' ? packageMetadata.version.trim() : '';
+    const version =
+      typeof packageMetadata.version === 'string'
+        ? packageMetadata.version.trim()
+        : '';
     if (!version) {
       throw new Error(`Missing version in ${packageJsonPath}`);
     }
@@ -489,7 +665,9 @@ export function syncPluginCache(verbose: boolean = false): { synced: boolean; sk
     const versionedPluginCacheRoot = join(pluginCacheRoot, version);
     mkdirSync(versionedPluginCacheRoot, { recursive: true });
 
-    const result = copyPluginSyncPayload(sourceRoot, [versionedPluginCacheRoot]);
+    const result = copyPluginSyncPayload(sourceRoot, [
+      versionedPluginCacheRoot,
+    ]);
 
     if (result.errors.length > 0) {
       for (const error of result.errors) {
@@ -501,7 +679,10 @@ export function syncPluginCache(verbose: boolean = false): { synced: boolean; sk
       // Keep Claude Code's plugin registry update after a successful cache copy.
       // If copying fails, installed_plugins.json is left untouched so sessions do
       // not point at a partially refreshed version directory.
-      const registryResult = syncInstalledPluginRegistryVersion(version, versionedPluginCacheRoot);
+      const registryResult = syncInstalledPluginRegistryVersion(
+        version,
+        versionedPluginCacheRoot,
+      );
       result.errors.push(...registryResult.errors);
       if (registryResult.updated && verbose) {
         console.log('[omc update] Updated Claude plugin registry');
@@ -707,8 +888,8 @@ export interface VersionMetadata {
   lastCheckAt?: string;
   /** Git commit hash if installed from source */
   commitHash?: string;
-  /** Installation method: 'script' | 'npm' | 'source' */
-  installMethod: 'script' | 'npm' | 'source';
+  /** Installation method: 'script' | 'pnpm' | 'source' */
+  installMethod: 'script' | 'pnpm' | 'source';
 }
 
 /**
@@ -757,24 +938,28 @@ export interface UpdateReconcileResult {
  */
 export function getInstalledVersion(): VersionMetadata | null {
   if (!existsSync(VERSION_FILE)) {
-    // Try to detect version from package.json if installed via npm
+    // Try to detect version from package.json if installed via pnpm
     try {
-      // Check if we can find the package in node_modules
-      const result = execSync('npm list -g oh-my-claude-sisyphus --json', {
+      // Check if we can find the package in the global store
+      const result = execSync('pnpm list -g oh-my-claude-sisyphus --json', {
         encoding: 'utf-8',
         timeout: 5000,
-        stdio: 'pipe'
+        stdio: 'pipe',
       });
-      const data = JSON.parse(result);
-      if (data.dependencies?.['oh-my-claude-sisyphus']?.version) {
+      const parsed = JSON.parse(result);
+      // pnpm emits an array of project objects; npm emitted a single object.
+      const deps = Array.isArray(parsed)
+        ? parsed[0]?.dependencies
+        : parsed?.dependencies;
+      if (deps?.['oh-my-claude-sisyphus']?.version) {
         return {
-          version: data.dependencies['oh-my-claude-sisyphus'].version,
+          version: deps['oh-my-claude-sisyphus'].version,
           installedAt: new Date().toISOString(),
-          installMethod: 'npm'
+          installMethod: 'pnpm',
         };
       }
     } catch {
-      // Not installed via npm or command failed
+      // Not installed via pnpm or command failed
     }
     return null;
   }
@@ -811,14 +996,15 @@ export function updateLastCheckTime(): void {
 }
 
 function getGitHubUpdateToken(): string | null {
-  const token = process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
+  const token =
+    process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim();
   return token || null;
 }
 
 function getGitHubReleaseHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
-    'Accept': 'application/vnd.github.v3+json',
-    'User-Agent': 'oh-my-claudecode-updater'
+    Accept: 'application/vnd.github.v3+json',
+    'User-Agent': 'oh-my-claudecode-updater',
   };
 
   const token = getGitHubUpdateToken();
@@ -830,7 +1016,11 @@ function getGitHubReleaseHeaders(): Record<string, string> {
 }
 
 function getHeader(response: Response, name: string): string | null {
-  return response.headers?.get(name) ?? response.headers?.get(name.toLowerCase()) ?? null;
+  return (
+    response.headers?.get(name) ??
+    response.headers?.get(name.toLowerCase()) ??
+    null
+  );
 }
 
 function formatRateLimitReset(resetHeader: string | null): string | null {
@@ -846,7 +1036,10 @@ function formatRateLimitReset(resetHeader: string | null): string | null {
   return new Date(resetSeconds * 1000).toISOString();
 }
 
-async function formatGitHubReleaseFetchError(response: Response, usedToken: boolean): Promise<string> {
+async function formatGitHubReleaseFetchError(
+  response: Response,
+  usedToken: boolean,
+): Promise<string> {
   let body = '';
   try {
     body = await response.text();
@@ -855,8 +1048,12 @@ async function formatGitHubReleaseFetchError(response: Response, usedToken: bool
   }
 
   const remaining = getHeader(response, 'x-ratelimit-remaining');
-  const resetAt = formatRateLimitReset(getHeader(response, 'x-ratelimit-reset'));
-  const bodyLooksRateLimited = /rate limit|api rate limit|secondary rate/i.test(body);
+  const resetAt = formatRateLimitReset(
+    getHeader(response, 'x-ratelimit-reset'),
+  );
+  const bodyLooksRateLimited = /rate limit|api rate limit|secondary rate/i.test(
+    body,
+  );
   const isRateLimited =
     response.status === 429 ||
     (response.status === 403 && (remaining === '0' || bodyLooksRateLimited));
@@ -879,19 +1076,19 @@ async function formatGitHubReleaseFetchError(response: Response, usedToken: bool
 export async function fetchLatestRelease(): Promise<ReleaseInfo> {
   const usedToken = getGitHubUpdateToken() !== null;
   const response = await fetch(`${GITHUB_API_URL}/releases/latest`, {
-    headers: getGitHubReleaseHeaders()
+    headers: getGitHubReleaseHeaders(),
   });
 
   if (response.status === 404) {
     // No releases found - try to get version from package.json in repo
     const pkgResponse = await fetch(`${GITHUB_RAW_URL}/main/package.json`, {
       headers: {
-        'User-Agent': 'oh-my-claudecode-updater'
-      }
+        'User-Agent': 'oh-my-claudecode-updater',
+      },
     });
 
     if (pkgResponse.ok) {
-      const pkg = await pkgResponse.json() as { version: string };
+      const pkg = (await pkgResponse.json()) as { version: string };
       return {
         tag_name: `v${pkg.version}`,
         name: `Version ${pkg.version}`,
@@ -899,7 +1096,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
         html_url: `https://github.com/${REPO_OWNER}/${REPO_NAME}`,
         body: 'No release notes available (fetched from package.json)',
         prerelease: false,
-        draft: false
+        draft: false,
       };
     }
 
@@ -910,7 +1107,7 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo> {
     throw new Error(await formatGitHubReleaseFetchError(response, usedToken));
   }
 
-  return await response.json() as ReleaseInfo;
+  return (await response.json()) as ReleaseInfo;
 }
 
 /**
@@ -922,8 +1119,8 @@ export function compareVersions(a: string, b: string): number {
   const cleanA = a.replace(/^v/, '');
   const cleanB = b.replace(/^v/, '');
 
-  const partsA = cleanA.split('.').map(n => parseInt(n, 10) || 0);
-  const partsB = cleanB.split('.').map(n => parseInt(n, 10) || 0);
+  const partsA = cleanA.split('.').map((n) => parseInt(n, 10) || 0);
+  const partsB = cleanB.split('.').map((n) => parseInt(n, 10) || 0);
 
   const maxLength = Math.max(partsA.length, partsB.length);
 
@@ -948,7 +1145,9 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
   const currentVersion = installed?.version ?? null;
   const latestVersion = release.tag_name.replace(/^v/, '');
 
-  const updateAvailable = currentVersion === null || compareVersions(currentVersion, latestVersion) < 0;
+  const updateAvailable =
+    currentVersion === null ||
+    compareVersions(currentVersion, latestVersion) < 0;
 
   // Update last check time
   updateLastCheckTime();
@@ -958,7 +1157,7 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
     latestVersion,
     updateAvailable,
     releaseInfo: release,
-    releaseNotes: release.body || 'No release notes available.'
+    releaseNotes: release.body || 'No release notes available.',
   };
 }
 
@@ -968,7 +1167,10 @@ export async function checkForUpdates(): Promise<UpdateCheckResult> {
  * This is safe to run repeatedly and refreshes local runtime artifacts that may
  * lag behind an updated package or plugin cache.
  */
-export function reconcileUpdateRuntime(options?: { verbose?: boolean; skipGracePeriod?: boolean }): UpdateReconcileResult {
+export function reconcileUpdateRuntime(options?: {
+  verbose?: boolean;
+  skipGracePeriod?: boolean;
+}): UpdateReconcileResult {
   const errors: string[] = [];
 
   const projectScopedPlugin = isProjectScopedPlugin();
@@ -1013,7 +1215,11 @@ export function reconcileUpdateRuntime(options?: { verbose?: boolean; skipGraceP
   try {
     const pluginSyncResult = syncActivePluginCache();
     if (pluginSyncResult.errors.length > 0) {
-      errors.push(...pluginSyncResult.errors.map(err => `Plugin cache sync failed: ${err}`));
+      errors.push(
+        ...pluginSyncResult.errors.map(
+          (err) => `Plugin cache sync failed: ${err}`,
+        ),
+      );
       if (options?.verbose) {
         for (const err of pluginSyncResult.errors) {
           console.warn(`[omc] Plugin cache sync error: ${err}`);
@@ -1030,9 +1236,13 @@ export function reconcileUpdateRuntime(options?: { verbose?: boolean; skipGraceP
 
   // Purge stale plugin cache versions (non-fatal)
   try {
-    const purgeResult = purgeStalePluginCacheVersions({ skipGracePeriod: options?.skipGracePeriod });
+    const purgeResult = purgeStalePluginCacheVersions({
+      skipGracePeriod: options?.skipGracePeriod,
+    });
     if (purgeResult.removed > 0 && options?.verbose) {
-      console.log(`[omc] Purged ${purgeResult.removed} stale plugin cache version(s)`);
+      console.log(
+        `[omc] Purged ${purgeResult.removed} stale plugin cache version(s)`,
+      );
     }
     if (purgeResult.errors.length > 0 && options?.verbose) {
       for (const err of purgeResult.errors) {
@@ -1059,19 +1269,25 @@ export function reconcileUpdateRuntime(options?: { verbose?: boolean; skipGraceP
 
 function resolveOmcBinaryPath(): string {
   if (process.platform === 'win32') {
-    return getFirstResolvedBinaryPath(execFileSync('where.exe', ['omc.cmd'], {
+    return getFirstResolvedBinaryPath(
+      execFileSync('where.exe', ['omc.cmd'], {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 5000,
+        windowsHide: true,
+      }),
+      'omc',
+    );
+  }
+
+  return getFirstResolvedBinaryPath(
+    execSync('which omc 2>/dev/null || where omc 2>NUL', {
       encoding: 'utf-8',
       stdio: 'pipe',
       timeout: 5000,
-      windowsHide: true,
-    }), 'omc');
-  }
-
-  return getFirstResolvedBinaryPath(execSync('which omc 2>/dev/null || where omc 2>NUL', {
-    encoding: 'utf-8',
-    stdio: 'pipe',
-    timeout: 5000,
-  }), 'omc');
+    }),
+    'omc',
+  );
 }
 
 /**
@@ -1087,14 +1303,15 @@ export async function performUpdate(options?: {
   const previousVersion = installed?.version ?? null;
 
   try {
-    // Block npm update only from active Claude Code/plugin sessions.
+    // Block pnpm update only from active Claude Code/plugin sessions.
     // Standalone terminals may inherit CLAUDE_PLUGIN_ROOT and should still update.
     if (shouldBlockStandaloneUpdateInCurrentSession() && !options?.standalone) {
       return {
         success: false,
         previousVersion,
         newVersion: 'unknown',
-        message: 'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force npm update.',
+        message:
+          'Running inside an active Claude Code plugin session. Use "/plugin install oh-my-claudecode" to update, or pass --standalone to force a pnpm update.',
       };
     }
 
@@ -1103,19 +1320,29 @@ export async function performUpdate(options?: {
     const newVersion = release.tag_name.replace(/^v/, '');
     const claudeCodeBeforeUpdate = detectGlobalClaudeCodeInstall();
 
-    // Use npm for updates on all platforms (install.sh was removed)
+    // Use pnpm for updates on all platforms (install.sh was removed)
     try {
-      execSync('npm install -g oh-my-claude-sisyphus@latest', npmExecOptions(options?.verbose ?? false));
+      execSync(
+        'pnpm add -g oh-my-claude-sisyphus@latest',
+        pnpmExecOptions(options?.verbose ?? false),
+      );
 
       try {
-        restoreGlobalClaudeCodeIfNeeded(claudeCodeBeforeUpdate, options?.verbose ?? false);
+        restoreGlobalClaudeCodeIfNeeded(
+          claudeCodeBeforeUpdate,
+          options?.verbose ?? false,
+        );
       } catch (restoreError) {
         return {
           success: false,
           previousVersion,
           newVersion,
-          message: `Updated to ${newVersion}, but failed to restore global ${CLAUDE_CODE_NPM_PACKAGE}`,
-          errors: [restoreError instanceof Error ? restoreError.message : String(restoreError)],
+          message: `Updated to ${newVersion}, but failed to restore global ${CLAUDE_CODE_PACKAGE}`,
+          errors: [
+            restoreError instanceof Error
+              ? restoreError.message
+              : String(restoreError),
+          ],
         };
       }
 
@@ -1132,7 +1359,7 @@ export async function performUpdate(options?: {
         }
       }
 
-      // CRITICAL FIX: After npm updates the global package, the current process
+      // CRITICAL FIX: After pnpm updates the global package, the current process
       // still has OLD code loaded in memory. We must re-exec to run reconciliation
       // with the NEW code. Otherwise, installOmc() runs OLD logic against NEW files.
       if (!process.env.OMC_UPDATE_RECONCILE) {
@@ -1144,20 +1371,33 @@ export async function performUpdate(options?: {
 
         // Re-exec with reconcile subcommand
         try {
-          execFileSync(omcPath, ['update-reconcile', ...(options?.clean ? ['--skip-grace-period'] : [])], {
-            encoding: 'utf-8',
-            stdio: options?.verbose ? 'inherit' : 'pipe',
-            timeout: 60000,
-            env: { ...process.env, OMC_UPDATE_RECONCILE: '1' },
-            ...(process.platform === 'win32' ? { windowsHide: true, shell: true } : {}),
-          });
+          execFileSync(
+            omcPath,
+            [
+              'update-reconcile',
+              ...(options?.clean ? ['--skip-grace-period'] : []),
+            ],
+            {
+              encoding: 'utf-8',
+              stdio: options?.verbose ? 'inherit' : 'pipe',
+              timeout: 60000,
+              env: { ...process.env, OMC_UPDATE_RECONCILE: '1' },
+              ...(process.platform === 'win32'
+                ? { windowsHide: true, shell: true }
+                : {}),
+            },
+          );
         } catch (reconcileError) {
           return {
             success: false,
             previousVersion,
             newVersion,
             message: `Updated to ${newVersion}, but runtime reconciliation failed`,
-            errors: [reconcileError instanceof Error ? reconcileError.message : String(reconcileError)],
+            errors: [
+              reconcileError instanceof Error
+                ? reconcileError.message
+                : String(reconcileError),
+            ],
           };
         }
 
@@ -1165,41 +1405,46 @@ export async function performUpdate(options?: {
         saveVersionMetadata({
           version: newVersion,
           installedAt: new Date().toISOString(),
-          installMethod: 'npm',
-          lastCheckAt: new Date().toISOString()
+          installMethod: 'pnpm',
+          lastCheckAt: new Date().toISOString(),
         });
 
         return {
           success: true,
           previousVersion,
           newVersion,
-          message: `Successfully updated from ${previousVersion ?? 'unknown'} to ${newVersion}`
+          message: `Successfully updated from ${previousVersion ?? 'unknown'} to ${newVersion}`,
         };
       } else {
         // We're in the re-exec'd process - run reconciliation directly
-        const reconcileResult = reconcileUpdateRuntime({ verbose: options?.verbose, skipGracePeriod: options?.clean });
+        const reconcileResult = reconcileUpdateRuntime({
+          verbose: options?.verbose,
+          skipGracePeriod: options?.clean,
+        });
         if (!reconcileResult.success) {
           return {
             success: false,
             previousVersion,
             newVersion,
             message: `Updated to ${newVersion}, but runtime reconciliation failed`,
-            errors: reconcileResult.errors?.map(e => `Reconciliation failed: ${e}`),
+            errors: reconcileResult.errors?.map(
+              (e) => `Reconciliation failed: ${e}`,
+            ),
           };
         }
         return {
           success: true,
           previousVersion,
           newVersion,
-          message: 'Reconciliation completed successfully'
+          message: 'Reconciliation completed successfully',
         };
       }
-    } catch (npmError) {
+    } catch (installError) {
       throw new Error(
-        'Auto-update via npm failed. Please run manually:\n' +
-        '  npm install -g oh-my-claude-sisyphus@latest\n' +
-        'Or use: /plugin install oh-my-claudecode\n' +
-        `Error: ${npmError instanceof Error ? npmError.message : npmError}`
+        'Auto-update via pnpm failed. Please run manually:\n' +
+          '  pnpm add -g oh-my-claude-sisyphus@latest\n' +
+          'Or use: /plugin install oh-my-claudecode\n' +
+          `Error: ${installError instanceof Error ? installError.message : installError}`,
       );
     }
   } catch (error) {
@@ -1209,7 +1454,7 @@ export async function performUpdate(options?: {
       previousVersion,
       newVersion: 'unknown',
       message: `Update failed: ${errorMessage}`,
-      errors: [errorMessage]
+      errors: [errorMessage],
     };
   }
 }
@@ -1217,7 +1462,9 @@ export async function performUpdate(options?: {
 /**
  * Get a formatted update notification message
  */
-export function formatUpdateNotification(checkResult: UpdateCheckResult): string {
+export function formatUpdateNotification(
+  checkResult: UpdateCheckResult,
+): string {
   if (!checkResult.updateAvailable) {
     return `oh-my-claudecode is up to date (v${checkResult.currentVersion ?? 'unknown'})`;
   }
@@ -1232,14 +1479,17 @@ export function formatUpdateNotification(checkResult: UpdateCheckResult): string
     '',
     '  To update, run: /update',
     '  Or reinstall via: /plugin install oh-my-claudecode',
-    ''
+    '',
   ];
 
   // Add truncated release notes if available
-  if (checkResult.releaseNotes && checkResult.releaseNotes !== 'No release notes available.') {
+  if (
+    checkResult.releaseNotes &&
+    checkResult.releaseNotes !== 'No release notes available.'
+  ) {
     lines.push('  Release notes:');
     const notes = checkResult.releaseNotes.split('\n').slice(0, 5);
-    notes.forEach(line => lines.push(`    ${line}`));
+    notes.forEach((line) => lines.push(`    ${line}`));
     if (checkResult.releaseNotes.split('\n').length > 5) {
       lines.push('    ...');
     }
@@ -1269,14 +1519,16 @@ export function shouldCheckForUpdates(intervalHours: number = 24): boolean {
 /**
  * Perform a background update check (non-blocking)
  */
-export function backgroundUpdateCheck(callback?: (result: UpdateCheckResult) => void): void {
+export function backgroundUpdateCheck(
+  callback?: (result: UpdateCheckResult) => void,
+): void {
   if (!shouldCheckForUpdates()) {
     return;
   }
 
   // Run the check asynchronously without blocking
   checkForUpdates()
-    .then(result => {
+    .then((result) => {
       if (callback) {
         callback(result);
       } else if (result.updateAvailable) {
@@ -1284,7 +1536,7 @@ export function backgroundUpdateCheck(callback?: (result: UpdateCheckResult) => 
         console.log('\n' + formatUpdateNotification(result));
       }
     })
-    .catch(error => {
+    .catch((error) => {
       // Silently ignore errors in background checks
       if (process.env.OMC_DEBUG) {
         console.error('Background update check failed:', error);
@@ -1302,7 +1554,9 @@ export async function interactiveUpdate(): Promise<void> {
     const checkResult = await checkForUpdates();
 
     if (!checkResult.updateAvailable) {
-      console.log(`✓ You are running the latest version (${checkResult.currentVersion})`);
+      console.log(
+        `✓ You are running the latest version (${checkResult.currentVersion})`,
+      );
       return;
     }
 
@@ -1313,16 +1567,21 @@ export async function interactiveUpdate(): Promise<void> {
 
     if (result.success) {
       console.log(`\n✓ ${result.message}`);
-      console.log('\nPlease restart your Claude Code session to use the new version.');
+      console.log(
+        '\nPlease restart your Claude Code session to use the new version.',
+      );
     } else {
       console.error(`\n✗ ${result.message}`);
       if (result.errors) {
-        result.errors.forEach(err => console.error(`  - ${err}`));
+        result.errors.forEach((err) => console.error(`  - ${err}`));
       }
       process.exit(1);
     }
   } catch (error) {
-    console.error('Update check failed:', error instanceof Error ? error.message : error);
+    console.error(
+      'Update check failed:',
+      error instanceof Error ? error.message : error,
+    );
     process.exit(1);
   }
 }
@@ -1342,7 +1601,10 @@ export interface SilentUpdateConfig {
 }
 
 /** State file for tracking silent update status */
-const SILENT_UPDATE_STATE_FILE = join(CLAUDE_CONFIG_DIR, '.omc-silent-update.json');
+const SILENT_UPDATE_STATE_FILE = join(
+  CLAUDE_CONFIG_DIR,
+  '.omc-silent-update.json',
+);
 
 interface SilentUpdateState {
   lastAttempt?: string;
@@ -1413,18 +1675,23 @@ function silentLog(message: string, logFile?: string): void {
  * @param config - Silent update configuration
  * @returns Promise resolving to update result or null if skipped
  */
-export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise<UpdateResult | null> {
+export async function silentAutoUpdate(
+  config: SilentUpdateConfig = {},
+): Promise<UpdateResult | null> {
   const {
     checkIntervalHours = 24,
     autoApply = true,
     logFile = join(CLAUDE_CONFIG_DIR, '.omc-update.log'),
-    maxRetries = 3
+    maxRetries = 3,
   } = config;
 
   // SECURITY: Check if silent auto-update is enabled in configuration
   // Default is disabled - users must explicitly opt-in during installation
   if (!isSilentAutoUpdateEnabled()) {
-    silentLog('Silent auto-update is disabled (run installer to enable, or use /update)', logFile);
+    silentLog(
+      'Silent auto-update is disabled (run installer to enable, or use /update)',
+      logFile,
+    );
     return null;
   }
 
@@ -1438,11 +1705,16 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
   // Check for consecutive failures and apply exponential backoff
   if (state.consecutiveFailures >= maxRetries) {
     const backoffHours = Math.min(24 * state.consecutiveFailures, 168); // Max 1 week
-    const lastAttempt = state.lastAttempt ? new Date(state.lastAttempt).getTime() : 0;
+    const lastAttempt = state.lastAttempt
+      ? new Date(state.lastAttempt).getTime()
+      : 0;
     const hoursSinceLastAttempt = (Date.now() - lastAttempt) / (1000 * 60 * 60);
 
     if (hoursSinceLastAttempt < backoffHours) {
-      silentLog(`Skipping update check (in backoff period: ${backoffHours}h)`, logFile);
+      silentLog(
+        `Skipping update check (in backoff period: ${backoffHours}h)`,
+        logFile,
+      );
       return null;
     }
   }
@@ -1455,14 +1727,20 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
     const checkResult = await checkForUpdates();
 
     if (!checkResult.updateAvailable) {
-      silentLog(`No update available (current: ${checkResult.currentVersion})`, logFile);
+      silentLog(
+        `No update available (current: ${checkResult.currentVersion})`,
+        logFile,
+      );
       state.consecutiveFailures = 0;
       state.pendingRestart = false;
       saveSilentUpdateState(state);
       return null;
     }
 
-    silentLog(`Update available: ${checkResult.currentVersion} -> ${checkResult.latestVersion}`, logFile);
+    silentLog(
+      `Update available: ${checkResult.currentVersion} -> ${checkResult.latestVersion}`,
+      logFile,
+    );
 
     if (!autoApply) {
       silentLog('Auto-apply disabled, skipping installation', logFile);
@@ -1472,11 +1750,14 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
     // Perform the update silently
     const result = await performUpdate({
       skipConfirmation: true,
-      verbose: false
+      verbose: false,
     });
 
     if (result.success) {
-      silentLog(`Update successful: ${result.previousVersion} -> ${result.newVersion}`, logFile);
+      silentLog(
+        `Update successful: ${result.previousVersion} -> ${result.newVersion}`,
+        logFile,
+      );
       state.consecutiveFailures = 0;
       state.pendingRestart = true;
       state.lastSuccess = new Date().toISOString();
@@ -1499,7 +1780,7 @@ export async function silentAutoUpdate(config: SilentUpdateConfig = {}): Promise
       previousVersion: null,
       newVersion: 'unknown',
       message: `Silent update failed: ${errorMessage}`,
-      errors: [errorMessage]
+      errors: [errorMessage],
     };
   }
 }

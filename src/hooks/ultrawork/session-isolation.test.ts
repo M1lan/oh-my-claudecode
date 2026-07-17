@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import {
+  mkdtempSync,
+  rmSync,
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import {
@@ -7,7 +14,7 @@ import {
   readUltraworkState,
   shouldReinforceUltrawork,
   deactivateUltrawork,
-  incrementReinforcement
+  incrementReinforcement,
 } from './index.js';
 
 describe('Ultrawork Session Isolation (Issue #269)', () => {
@@ -133,7 +140,7 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
   });
 
   describe('Cross-session isolation', () => {
-    it('should prevent Session B from reinforcing Session A\'s ultrawork', () => {
+    it("should prevent Session B from reinforcing Session A's ultrawork", () => {
       const sessionA = 'session-alice';
       const sessionB = 'session-bob';
 
@@ -272,7 +279,9 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
 
       // Session isolation should still apply
       expect(shouldReinforceUltrawork(sessionId, tempDir)).toBe(true);
-      expect(shouldReinforceUltrawork('different-session', tempDir)).toBe(false);
+      expect(shouldReinforceUltrawork('different-session', tempDir)).toBe(
+        false,
+      );
     });
 
     it('should maintain session isolation regardless of ralph link status', () => {
@@ -305,15 +314,16 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
       const initialTimestamp = initialState?.last_checked_at;
 
       // Wait a tiny bit to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       incrementReinforcement(tempDir, sessionId);
 
       const updatedState = readUltraworkState(tempDir, sessionId);
       expect(updatedState?.session_id).toBe(sessionId);
       // Timestamps are ISO strings, compare as dates
-      expect(new Date(updatedState?.last_checked_at || 0).getTime())
-        .toBeGreaterThanOrEqual(new Date(initialTimestamp || 0).getTime());
+      expect(
+        new Date(updatedState?.last_checked_at || 0).getTime(),
+      ).toBeGreaterThanOrEqual(new Date(initialTimestamp || 0).getTime());
     });
   });
 
@@ -322,7 +332,10 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
     function createLegacyState(data: Record<string, unknown>) {
       const stateDir = join(tempDir, '.omc', 'state');
       mkdirSync(stateDir, { recursive: true });
-      writeFileSync(join(stateDir, 'ultrawork-state.json'), JSON.stringify(data, null, 2));
+      writeFileSync(
+        join(stateDir, 'ultrawork-state.json'),
+        JSON.stringify(data, null, 2),
+      );
     }
 
     it('readUltraworkState with sessionId returns null when only legacy file exists', () => {
@@ -332,7 +345,7 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
         original_prompt: 'Legacy task',
         session_id: 'session-A',
         reinforcement_count: 0,
-        last_checked_at: new Date().toISOString()
+        last_checked_at: new Date().toISOString(),
       });
 
       // With sessionId, should NOT fall back to legacy file
@@ -358,7 +371,10 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
     function createLegacyState(data: Record<string, unknown>) {
       const stateDir = join(tempDir, '.omc', 'state');
       mkdirSync(stateDir, { recursive: true });
-      writeFileSync(join(stateDir, 'ultrawork-state.json'), JSON.stringify(data, null, 2));
+      writeFileSync(
+        join(stateDir, 'ultrawork-state.json'),
+        JSON.stringify(data, null, 2),
+      );
     }
 
     function legacyFileExists(): boolean {
@@ -377,7 +393,7 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
       createLegacyState({
         active: true,
         session_id: 'session-A',
-        original_prompt: 'Ghost legacy'
+        original_prompt: 'Ghost legacy',
       });
 
       expect(legacyFileExists()).toBe(true);
@@ -392,7 +408,7 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
       activateUltrawork('Task A', 'session-A', tempDir);
       createLegacyState({
         active: true,
-        original_prompt: 'Orphaned legacy'
+        original_prompt: 'Orphaned legacy',
         // Note: no session_id field
       });
 
@@ -407,7 +423,7 @@ describe('Ultrawork Session Isolation (Issue #269)', () => {
       createLegacyState({
         active: true,
         session_id: 'session-B',
-        original_prompt: 'Session B legacy'
+        original_prompt: 'Session B legacy',
       });
 
       deactivateUltrawork(tempDir, 'session-A');

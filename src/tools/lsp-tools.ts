@@ -23,7 +23,7 @@ import {
   formatDiagnostics,
   formatCodeActions,
   formatWorkspaceEdit,
-  countEdits
+  countEdits,
 } from './lsp/index.js';
 import { runDirectoryDiagnostics } from './diagnostics/index.js';
 import { ToolDefinition } from './types.js';
@@ -36,7 +36,11 @@ import { ToolDefinition } from './types.js';
 async function withLspClient<T>(
   filePath: string,
   operation: string,
-  fn: (client: NonNullable<Awaited<ReturnType<typeof lspClientManager.getClientForFile>>>) => Promise<T>
+  fn: (
+    client: NonNullable<
+      Awaited<ReturnType<typeof lspClientManager.getClientForFile>>
+    >,
+  ) => Promise<T>,
 ): Promise<{ isError?: true; content: Array<{ type: 'text'; text: string }> }> {
   try {
     // Pre-check: is there a server for this file type?
@@ -44,21 +48,28 @@ async function withLspClient<T>(
     if (!serverConfig) {
       return {
         isError: true as const,
-        content: [{
-          type: 'text' as const,
-          text: `No language server available for file type: ${filePath}\n\nUse lsp_servers tool to see available language servers.`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: `No language server available for file type: ${filePath}\n\nUse lsp_servers tool to see available language servers.`,
+          },
+        ],
       };
     }
 
-    const result = await lspClientManager.runWithClientLease(filePath, async (client) => {
-      return fn(client);
-    });
+    const result = await lspClientManager.runWithClientLease(
+      filePath,
+      async (client) => {
+        return fn(client);
+      },
+    );
     return {
-      content: [{
-        type: 'text' as const,
-        text: String(result)
-      }]
+      content: [
+        {
+          type: 'text' as const,
+          text: String(result),
+        },
+      ],
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -66,18 +77,22 @@ async function withLspClient<T>(
     if (message.includes('not found')) {
       return {
         isError: true as const,
-        content: [{
-          type: 'text' as const,
-          text: `${message}`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: `${message}`,
+          },
+        ],
       };
     }
     return {
       isError: true as const,
-      content: [{
-        type: 'text' as const,
-        text: `Error in ${operation}: ${message}`
-      }]
+      content: [
+        {
+          type: 'text' as const,
+          text: `Error in ${operation}: ${message}`,
+        },
+      ],
     };
   }
 }
@@ -91,11 +106,16 @@ export const lspHoverTool: ToolDefinition<{
   character: z.ZodNumber;
 }> = {
   name: 'lsp_hover',
-  description: 'Get type information, documentation, and signature at a specific position in a file. Useful for understanding what a symbol represents.',
+  description:
+    'Get type information, documentation, and signature at a specific position in a file. Useful for understanding what a symbol represents.',
   schema: {
     file: z.string().describe('Path to the source file'),
     line: z.number().int().min(1).describe('Line number (1-indexed)'),
-    character: z.number().int().min(0).describe('Character position in the line (0-indexed)')
+    character: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Character position in the line (0-indexed)'),
   },
   handler: async (args) => {
     const { file, line, character } = args;
@@ -103,7 +123,7 @@ export const lspHoverTool: ToolDefinition<{
       const hover = await client!.hover(file, line - 1, character);
       return formatHover(hover);
     });
-  }
+  },
 };
 
 /**
@@ -115,11 +135,16 @@ export const lspGotoDefinitionTool: ToolDefinition<{
   character: z.ZodNumber;
 }> = {
   name: 'lsp_goto_definition',
-  description: 'Find the definition location of a symbol (function, variable, class, etc.). Returns the file path and position where the symbol is defined.',
+  description:
+    'Find the definition location of a symbol (function, variable, class, etc.). Returns the file path and position where the symbol is defined.',
   schema: {
     file: z.string().describe('Path to the source file'),
     line: z.number().int().min(1).describe('Line number (1-indexed)'),
-    character: z.number().int().min(0).describe('Character position in the line (0-indexed)')
+    character: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Character position in the line (0-indexed)'),
   },
   handler: async (args) => {
     const { file, line, character } = args;
@@ -127,7 +152,7 @@ export const lspGotoDefinitionTool: ToolDefinition<{
       const locations = await client!.definition(file, line - 1, character);
       return formatLocations(locations);
     });
-  }
+  },
 };
 
 /**
@@ -140,23 +165,36 @@ export const lspFindReferencesTool: ToolDefinition<{
   includeDeclaration: z.ZodOptional<z.ZodBoolean>;
 }> = {
   name: 'lsp_find_references',
-  description: 'Find all references to a symbol across the codebase. Useful for understanding usage patterns and impact of changes.',
+  description:
+    'Find all references to a symbol across the codebase. Useful for understanding usage patterns and impact of changes.',
   schema: {
     file: z.string().describe('Path to the source file'),
     line: z.number().int().min(1).describe('Line number (1-indexed)'),
-    character: z.number().int().min(0).describe('Character position in the line (0-indexed)'),
-    includeDeclaration: z.boolean().optional().describe('Include the declaration in results (default: true)')
+    character: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Character position in the line (0-indexed)'),
+    includeDeclaration: z
+      .boolean()
+      .optional()
+      .describe('Include the declaration in results (default: true)'),
   },
   handler: async (args) => {
     const { file, line, character, includeDeclaration = true } = args;
     return withLspClient(file, 'find references', async (client) => {
-      const locations = await client!.references(file, line - 1, character, includeDeclaration);
+      const locations = await client!.references(
+        file,
+        line - 1,
+        character,
+        includeDeclaration,
+      );
       if (!locations || locations.length === 0) {
         return 'No references found';
       }
       return `Found ${locations.length} reference(s):\n\n${formatLocations(locations)}`;
     });
-  }
+  },
 };
 
 /**
@@ -166,9 +204,10 @@ export const lspDocumentSymbolsTool: ToolDefinition<{
   file: z.ZodString;
 }> = {
   name: 'lsp_document_symbols',
-  description: 'Get a hierarchical outline of all symbols in a file (functions, classes, variables, etc.). Useful for understanding file structure.',
+  description:
+    'Get a hierarchical outline of all symbols in a file (functions, classes, variables, etc.). Useful for understanding file structure.',
   schema: {
-    file: z.string().describe('Path to the source file')
+    file: z.string().describe('Path to the source file'),
   },
   handler: async (args) => {
     const { file } = args;
@@ -176,7 +215,7 @@ export const lspDocumentSymbolsTool: ToolDefinition<{
       const symbols = await client!.documentSymbols(file);
       return formatDocumentSymbols(symbols);
     });
-  }
+  },
 };
 
 /**
@@ -187,10 +226,15 @@ export const lspWorkspaceSymbolsTool: ToolDefinition<{
   file: z.ZodString;
 }> = {
   name: 'lsp_workspace_symbols',
-  description: 'Search for symbols (functions, classes, etc.) across the entire workspace by name. Useful for finding definitions without knowing the exact file.',
+  description:
+    'Search for symbols (functions, classes, etc.) across the entire workspace by name. Useful for finding definitions without knowing the exact file.',
   schema: {
     query: z.string().describe('Symbol name or pattern to search'),
-    file: z.string().describe('Any file in the workspace (used to determine which language server to use)')
+    file: z
+      .string()
+      .describe(
+        'Any file in the workspace (used to determine which language server to use)',
+      ),
   },
   handler: async (args) => {
     const { query, file } = args;
@@ -201,7 +245,7 @@ export const lspWorkspaceSymbolsTool: ToolDefinition<{
       }
       return `Found ${symbols.length} symbol(s) matching "${query}":\n\n${formatWorkspaceSymbols(symbols)}`;
     });
-  }
+  },
 };
 
 /**
@@ -212,10 +256,14 @@ export const lspDiagnosticsTool: ToolDefinition<{
   severity: z.ZodOptional<z.ZodEnum<['error', 'warning', 'info', 'hint']>>;
 }> = {
   name: 'lsp_diagnostics',
-  description: 'Get language server diagnostics (errors, warnings, hints) for a file. Useful for finding issues without running the compiler.',
+  description:
+    'Get language server diagnostics (errors, warnings, hints) for a file. Useful for finding issues without running the compiler.',
   schema: {
     file: z.string().describe('Path to the source file'),
-    severity: z.enum(['error', 'warning', 'info', 'hint']).optional().describe('Filter by severity level')
+    severity: z
+      .enum(['error', 'warning', 'info', 'hint'])
+      .optional()
+      .describe('Filter by severity level'),
   },
   handler: async (args) => {
     const { file, severity } = args;
@@ -232,13 +280,13 @@ export const lspDiagnosticsTool: ToolDefinition<{
 
       if (severity) {
         const severityMap: Record<string, number> = {
-          'error': 1,
-          'warning': 2,
-          'info': 3,
-          'hint': 4
+          error: 1,
+          warning: 2,
+          info: 3,
+          hint: 4,
         };
         const severityNum = severityMap[severity];
-        diagnostics = diagnostics.filter(d => d.severity === severityNum);
+        diagnostics = diagnostics.filter((d) => d.severity === severityNum);
       }
 
       if (diagnostics.length === 0) {
@@ -249,7 +297,7 @@ export const lspDiagnosticsTool: ToolDefinition<{
 
       return `Found ${diagnostics.length} diagnostic(s):\n\n${formatDiagnostics(diagnostics, file)}`;
     });
-  }
+  },
 };
 
 /**
@@ -257,13 +305,14 @@ export const lspDiagnosticsTool: ToolDefinition<{
  */
 export const lspServersTool: ToolDefinition<Record<string, never>> = {
   name: 'lsp_servers',
-  description: 'List all known language servers and their installation status. Shows which servers are available and how to install missing ones.',
+  description:
+    'List all known language servers and their installation status. Shows which servers are available and how to install missing ones.',
   schema: {},
   handler: async () => {
     const servers = getAllServers();
 
-    const installed = servers.filter(s => s.installed);
-    const notInstalled = servers.filter(s => !s.installed);
+    const installed = servers.filter((s) => s.installed);
+    const notInstalled = servers.filter((s) => !s.installed);
 
     let text = '## Language Server Status\n\n';
 
@@ -286,12 +335,14 @@ export const lspServersTool: ToolDefinition<Record<string, never>> = {
     }
 
     return {
-      content: [{
-        type: 'text' as const,
-        text
-      }]
+      content: [
+        {
+          type: 'text' as const,
+          text,
+        },
+      ],
     };
-  }
+  },
 };
 
 /**
@@ -303,11 +354,16 @@ export const lspPrepareRenameTool: ToolDefinition<{
   character: z.ZodNumber;
 }> = {
   name: 'lsp_prepare_rename',
-  description: 'Check if a symbol at the given position can be renamed. Returns the range of the symbol if rename is possible.',
+  description:
+    'Check if a symbol at the given position can be renamed. Returns the range of the symbol if rename is possible.',
   schema: {
     file: z.string().describe('Path to the source file'),
     line: z.number().int().min(1).describe('Line number (1-indexed)'),
-    character: z.number().int().min(0).describe('Character position in the line (0-indexed)')
+    character: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Character position in the line (0-indexed)'),
   },
   handler: async (args) => {
     const { file, line, character } = args;
@@ -318,7 +374,7 @@ export const lspPrepareRenameTool: ToolDefinition<{
       }
       return `Rename possible. Symbol range: line ${range.start.line + 1}, col ${range.start.character + 1} to line ${range.end.line + 1}, col ${range.end.character + 1}`;
     });
-  }
+  },
 };
 
 /**
@@ -331,12 +387,17 @@ export const lspRenameTool: ToolDefinition<{
   newName: z.ZodString;
 }> = {
   name: 'lsp_rename',
-  description: 'Rename a symbol (variable, function, class, etc.) across all files in the project. Returns the list of edits that would be made. Does NOT apply the changes automatically.',
+  description:
+    'Rename a symbol (variable, function, class, etc.) across all files in the project. Returns the list of edits that would be made. Does NOT apply the changes automatically.',
   schema: {
     file: z.string().describe('Path to the source file'),
     line: z.number().int().min(1).describe('Line number (1-indexed)'),
-    character: z.number().int().min(0).describe('Character position in the line (0-indexed)'),
-    newName: z.string().min(1).describe('New name for the symbol')
+    character: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Character position in the line (0-indexed)'),
+    newName: z.string().min(1).describe('New name for the symbol'),
   },
   handler: async (args) => {
     const { file, line, character, newName } = args;
@@ -349,7 +410,7 @@ export const lspRenameTool: ToolDefinition<{
       const { files, edits } = countEdits(edit);
       return `Rename to "${newName}" would affect ${files} file(s) with ${edits} edit(s):\n\n${formatWorkspaceEdit(edit)}\n\nNote: Use the Edit tool to apply these changes.`;
     });
-  }
+  },
 };
 
 /**
@@ -363,25 +424,42 @@ export const lspCodeActionsTool: ToolDefinition<{
   endCharacter: z.ZodNumber;
 }> = {
   name: 'lsp_code_actions',
-  description: 'Get available code actions (refactorings, quick fixes) for a selection. Returns a list of possible actions that can be applied.',
+  description:
+    'Get available code actions (refactorings, quick fixes) for a selection. Returns a list of possible actions that can be applied.',
   schema: {
     file: z.string().describe('Path to the source file'),
-    startLine: z.number().int().min(1).describe('Start line of selection (1-indexed)'),
-    startCharacter: z.number().int().min(0).describe('Start character of selection (0-indexed)'),
-    endLine: z.number().int().min(1).describe('End line of selection (1-indexed)'),
-    endCharacter: z.number().int().min(0).describe('End character of selection (0-indexed)')
+    startLine: z
+      .number()
+      .int()
+      .min(1)
+      .describe('Start line of selection (1-indexed)'),
+    startCharacter: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Start character of selection (0-indexed)'),
+    endLine: z
+      .number()
+      .int()
+      .min(1)
+      .describe('End line of selection (1-indexed)'),
+    endCharacter: z
+      .number()
+      .int()
+      .min(0)
+      .describe('End character of selection (0-indexed)'),
   },
   handler: async (args) => {
     const { file, startLine, startCharacter, endLine, endCharacter } = args;
     return withLspClient(file, 'code actions', async (client) => {
       const range = {
         start: { line: startLine - 1, character: startCharacter },
-        end: { line: endLine - 1, character: endCharacter }
+        end: { line: endLine - 1, character: endCharacter },
       };
       const actions = await client!.codeActions(file, range);
       return formatCodeActions(actions);
     });
-  }
+  },
 };
 
 /**
@@ -396,21 +474,51 @@ export const lspCodeActionResolveTool: ToolDefinition<{
   actionIndex: z.ZodNumber;
 }> = {
   name: 'lsp_code_action_resolve',
-  description: 'Get the full edit details for a specific code action. Use after lsp_code_actions to see what changes an action would make.',
+  description:
+    'Get the full edit details for a specific code action. Use after lsp_code_actions to see what changes an action would make.',
   schema: {
     file: z.string().describe('Path to the source file'),
-    startLine: z.number().int().min(1).describe('Start line of selection (1-indexed)'),
-    startCharacter: z.number().int().min(0).describe('Start character of selection (0-indexed)'),
-    endLine: z.number().int().min(1).describe('End line of selection (1-indexed)'),
-    endCharacter: z.number().int().min(0).describe('End character of selection (0-indexed)'),
-    actionIndex: z.number().int().min(1).describe('Index of the action (1-indexed, from lsp_code_actions output)')
+    startLine: z
+      .number()
+      .int()
+      .min(1)
+      .describe('Start line of selection (1-indexed)'),
+    startCharacter: z
+      .number()
+      .int()
+      .min(0)
+      .describe('Start character of selection (0-indexed)'),
+    endLine: z
+      .number()
+      .int()
+      .min(1)
+      .describe('End line of selection (1-indexed)'),
+    endCharacter: z
+      .number()
+      .int()
+      .min(0)
+      .describe('End character of selection (0-indexed)'),
+    actionIndex: z
+      .number()
+      .int()
+      .min(1)
+      .describe(
+        'Index of the action (1-indexed, from lsp_code_actions output)',
+      ),
   },
   handler: async (args) => {
-    const { file, startLine, startCharacter, endLine, endCharacter, actionIndex } = args;
+    const {
+      file,
+      startLine,
+      startCharacter,
+      endLine,
+      endCharacter,
+      actionIndex,
+    } = args;
     return withLspClient(file, 'code action resolve', async (client) => {
       const range = {
         start: { line: startLine - 1, character: startCharacter },
-        end: { line: endLine - 1, character: endCharacter }
+        end: { line: endLine - 1, character: endCharacter },
       };
       const actions = await client!.codeActions(file, range);
 
@@ -438,7 +546,7 @@ export const lspCodeActionResolveTool: ToolDefinition<{
 
       return result;
     });
-  }
+  },
 };
 
 /**
@@ -449,10 +557,16 @@ export const lspDiagnosticsDirectoryTool: ToolDefinition<{
   strategy: z.ZodOptional<z.ZodEnum<['tsc', 'lsp', 'auto']>>;
 }> = {
   name: 'lsp_diagnostics_directory',
-  description: 'Run project-level diagnostics on a directory using tsc --noEmit (preferred) or LSP iteration (fallback). Useful for checking the entire codebase for errors.',
+  description:
+    'Run project-level diagnostics on a directory using tsc --noEmit (preferred) or LSP iteration (fallback). Useful for checking the entire codebase for errors.',
   schema: {
     directory: z.string().describe('Project directory to check'),
-    strategy: z.enum(['tsc', 'lsp', 'auto']).optional().describe('Strategy to use: "tsc" (TypeScript compiler), "lsp" (Language Server iteration), or "auto" (default: auto-detect)')
+    strategy: z
+      .enum(['tsc', 'lsp', 'auto'])
+      .optional()
+      .describe(
+        'Strategy to use: "tsc" (TypeScript compiler), "lsp" (Language Server iteration), or "auto" (default: auto-detect)',
+      ),
   },
   handler: async (args) => {
     const { directory, strategy = 'auto' } = args;
@@ -470,21 +584,25 @@ export const lspDiagnosticsDirectoryTool: ToolDefinition<{
       }
 
       return {
-        content: [{
-          type: 'text' as const,
-          text: output
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: output,
+          },
+        ],
       };
     } catch (error) {
       return {
         isError: true as const,
-        content: [{
-          type: 'text' as const,
-          text: `Error running directory diagnostics: ${error instanceof Error ? error.message : String(error)}`
-        }]
+        content: [
+          {
+            type: 'text' as const,
+            text: `Error running directory diagnostics: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
       };
     }
-  }
+  },
 };
 
 /**
@@ -502,5 +620,5 @@ export const lspTools = [
   lspPrepareRenameTool,
   lspRenameTool,
   lspCodeActionsTool,
-  lspCodeActionResolveTool
+  lspCodeActionResolveTool,
 ];

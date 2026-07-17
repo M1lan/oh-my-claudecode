@@ -5,24 +5,49 @@
  * No external dependencies. Produces output matching current formatter.ts functions.
  */
 
-import type { NotificationPayload, NotificationEvent } from "./types.js";
-import { parseTmuxTail } from "./formatter.js";
-import { basename } from "path";
+import type { NotificationPayload, NotificationEvent } from './types.js';
+import { parseTmuxTail } from './formatter.js';
+import { basename } from 'path';
 
 /** Set of known template variables for validation */
 const KNOWN_VARIABLES = new Set<string>([
   // Raw payload fields
-  "event", "sessionId", "message", "timestamp", "tmuxSession",
-  "projectPath", "projectName", "modesUsed", "contextSummary",
-  "durationMs", "agentsSpawned", "agentsCompleted",
-  "reason", "activeMode", "iteration", "maxIterations",
-  "question", "questionOptions", "incompleteTasks", "agentName", "agentType",
-  "tmuxTail", "tmuxPaneId",
-  "replyChannel", "replyTarget", "replyThread",
+  'event',
+  'sessionId',
+  'message',
+  'timestamp',
+  'tmuxSession',
+  'projectPath',
+  'projectName',
+  'modesUsed',
+  'contextSummary',
+  'durationMs',
+  'agentsSpawned',
+  'agentsCompleted',
+  'reason',
+  'activeMode',
+  'iteration',
+  'maxIterations',
+  'question',
+  'questionOptions',
+  'incompleteTasks',
+  'agentName',
+  'agentType',
+  'tmuxTail',
+  'tmuxPaneId',
+  'replyChannel',
+  'replyTarget',
+  'replyThread',
   // Computed variables
-  "duration", "time", "modesDisplay", "iterationDisplay",
-  "agentDisplay", "projectDisplay", "footer", "tmuxTailBlock",
-  "reasonDisplay",
+  'duration',
+  'time',
+  'modesDisplay',
+  'iterationDisplay',
+  'agentDisplay',
+  'projectDisplay',
+  'footer',
+  'tmuxTailBlock',
+  'reasonDisplay',
 ]);
 
 /**
@@ -30,7 +55,7 @@ const KNOWN_VARIABLES = new Set<string>([
  * Mirrors formatDuration() in formatter.ts.
  */
 function formatDuration(ms?: number): string {
-  if (!ms) return "unknown";
+  if (!ms) return 'unknown';
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
@@ -51,7 +76,7 @@ function formatDuration(ms?: number): string {
 function getProjectDisplay(payload: NotificationPayload): string {
   if (payload.projectName) return payload.projectName;
   if (payload.projectPath) return basename(payload.projectPath);
-  return "unknown";
+  return 'unknown';
 }
 
 /**
@@ -64,7 +89,7 @@ function buildFooterText(payload: NotificationPayload): string {
     parts.push(`**tmux:** \`${payload.tmuxSession}\``);
   }
   parts.push(`**project:** \`${getProjectDisplay(payload)}\``);
-  return parts.join(" | ");
+  return parts.join(' | ');
 }
 
 /**
@@ -73,9 +98,9 @@ function buildFooterText(payload: NotificationPayload): string {
  * Includes two leading newlines (blank line separator) to match formatter output.
  */
 function buildTmuxTailBlock(payload: NotificationPayload): string {
-  if (!payload.tmuxTail) return "";
+  if (!payload.tmuxTail) return '';
   const parsed = parseTmuxTail(payload.tmuxTail, payload.maxTailLines);
-  if (!parsed) return "";
+  if (!parsed) return '';
   return `\n\n**Recent output:**\n\`\`\`\n${parsed}\n\`\`\``;
 }
 
@@ -89,73 +114,78 @@ export function computeTemplateVariables(
   const vars: Record<string, string> = {};
 
   // Raw payload fields (null/undefined → "")
-  vars.event = payload.event || "";
-  vars.sessionId = payload.sessionId || "";
-  vars.message = payload.message || "";
-  vars.timestamp = payload.timestamp || "";
-  vars.tmuxSession = payload.tmuxSession || "";
-  vars.projectPath = payload.projectPath || "";
-  vars.projectName = payload.projectName || "";
-  vars.modesUsed = payload.modesUsed?.join(", ") || "";
-  vars.contextSummary = payload.contextSummary || "";
+  vars.event = payload.event || '';
+  vars.sessionId = payload.sessionId || '';
+  vars.message = payload.message || '';
+  vars.timestamp = payload.timestamp || '';
+  vars.tmuxSession = payload.tmuxSession || '';
+  vars.projectPath = payload.projectPath || '';
+  vars.projectName = payload.projectName || '';
+  vars.modesUsed = payload.modesUsed?.join(', ') || '';
+  vars.contextSummary = payload.contextSummary || '';
   vars.durationMs =
-    payload.durationMs != null ? String(payload.durationMs) : "";
+    payload.durationMs != null ? String(payload.durationMs) : '';
   vars.agentsSpawned =
-    payload.agentsSpawned != null ? String(payload.agentsSpawned) : "";
+    payload.agentsSpawned != null ? String(payload.agentsSpawned) : '';
   vars.agentsCompleted =
-    payload.agentsCompleted != null ? String(payload.agentsCompleted) : "";
-  vars.reason = payload.reason || "";
-  vars.activeMode = payload.activeMode || "";
-  vars.iteration =
-    payload.iteration != null ? String(payload.iteration) : "";
+    payload.agentsCompleted != null ? String(payload.agentsCompleted) : '';
+  vars.reason = payload.reason || '';
+  vars.activeMode = payload.activeMode || '';
+  vars.iteration = payload.iteration != null ? String(payload.iteration) : '';
   vars.maxIterations =
-    payload.maxIterations != null ? String(payload.maxIterations) : "";
-  vars.question = payload.question || "";
-  vars.questionOptions = payload.askUserQuestionPrompts?.map((prompt) => {
-    const optionLines = prompt.options.map((option, index) => {
-      const description = option.description ? ` — ${option.description}` : "";
-      return `${index + 1}. ${option.label}${description}`;
-    });
-    if (prompt.allowOther !== false) {
-      optionLines.push(`${prompt.options.length + 1}. ${prompt.otherLabel || "Other"} — reply with free text`);
-    }
-    return optionLines.join("\n");
-  }).filter(Boolean).join("\n\n") || "";
+    payload.maxIterations != null ? String(payload.maxIterations) : '';
+  vars.question = payload.question || '';
+  vars.questionOptions =
+    payload.askUserQuestionPrompts
+      ?.map((prompt) => {
+        const optionLines = prompt.options.map((option, index) => {
+          const description = option.description
+            ? ` — ${option.description}`
+            : '';
+          return `${index + 1}. ${option.label}${description}`;
+        });
+        if (prompt.allowOther !== false) {
+          optionLines.push(
+            `${prompt.options.length + 1}. ${prompt.otherLabel || 'Other'} — reply with free text`,
+          );
+        }
+        return optionLines.join('\n');
+      })
+      .filter(Boolean)
+      .join('\n\n') || '';
   // incompleteTasks: undefined/null → "" (so {{#if}} is falsy when unset)
   // 0 → "0" (distinguishable from unset; templates can display "0 incomplete tasks")
   vars.incompleteTasks =
-    payload.incompleteTasks != null
-      ? String(payload.incompleteTasks)
-      : "";
-  vars.agentName = payload.agentName || "";
-  vars.agentType = payload.agentType || "";
-  vars.tmuxTail = payload.tmuxTail || "";
-  vars.tmuxPaneId = payload.tmuxPaneId || "";
-  vars.replyChannel = payload.replyChannel || "";
-  vars.replyTarget = payload.replyTarget || "";
-  vars.replyThread = payload.replyThread || "";
+    payload.incompleteTasks != null ? String(payload.incompleteTasks) : '';
+  vars.agentName = payload.agentName || '';
+  vars.agentType = payload.agentType || '';
+  vars.tmuxTail = payload.tmuxTail || '';
+  vars.tmuxPaneId = payload.tmuxPaneId || '';
+  vars.replyChannel = payload.replyChannel || '';
+  vars.replyTarget = payload.replyTarget || '';
+  vars.replyThread = payload.replyThread || '';
 
   // Computed variables
   vars.duration = formatDuration(payload.durationMs);
   vars.time = payload.timestamp
     ? new Date(payload.timestamp).toLocaleTimeString()
-    : "";
+    : '';
   vars.modesDisplay =
     payload.modesUsed && payload.modesUsed.length > 0
-      ? payload.modesUsed.join(", ")
-      : "";
+      ? payload.modesUsed.join(', ')
+      : '';
   vars.iterationDisplay =
     payload.iteration != null && payload.maxIterations != null
       ? `${payload.iteration}/${payload.maxIterations}`
-      : "";
+      : '';
   vars.agentDisplay =
     payload.agentsSpawned != null
       ? `${payload.agentsCompleted ?? 0}/${payload.agentsSpawned} completed`
-      : "";
+      : '';
   vars.projectDisplay = getProjectDisplay(payload);
   vars.footer = buildFooterText(payload);
   vars.tmuxTailBlock = buildTmuxTailBlock(payload);
-  vars.reasonDisplay = payload.reason || "unknown";
+  vars.reasonDisplay = payload.reason || 'unknown';
 
   return vars;
 }
@@ -171,8 +201,8 @@ function processConditionals(
   return template.replace(
     /\{\{#if\s+(\w+)\}\}([\s\S]*?)\{\{\/if\}\}/g,
     (_match, varName: string, content: string) => {
-      const value = vars[varName] || "";
-      return value ? content : "";
+      const value = vars[varName] || '';
+      return value ? content : '';
     },
   );
 }
@@ -187,7 +217,7 @@ function replaceVariables(
 ): string {
   return template.replace(
     /\{\{(\w+)\}\}/g,
-    (_match, varName: string) => vars[varName] ?? "",
+    (_match, varName: string) => vars[varName] ?? '',
   );
 }
 
@@ -224,9 +254,10 @@ export function interpolateTemplate(
  * Validate a template string for unknown variables.
  * Returns { valid, unknownVars }.
  */
-export function validateTemplate(
-  template: string,
-): { valid: boolean; unknownVars: string[] } {
+export function validateTemplate(template: string): {
+  valid: boolean;
+  unknownVars: string[];
+} {
   const unknownVars: string[] = [];
 
   // Check {{#if var}} conditionals
@@ -254,49 +285,49 @@ export function validateTemplate(
  * No post-processing collapsing is needed.
  */
 const DEFAULT_TEMPLATES: Record<NotificationEvent, string> = {
-  "session-start":
-    "# Session Started\n\n" +
-    "**Session:** `{{sessionId}}`\n" +
-    "**Project:** `{{projectDisplay}}`\n" +
-    "**Time:** {{time}}" +
-    "{{#if tmuxSession}}\n**tmux:** `{{tmuxSession}}`{{/if}}",
+  'session-start':
+    '# Session Started\n\n' +
+    '**Session:** `{{sessionId}}`\n' +
+    '**Project:** `{{projectDisplay}}`\n' +
+    '**Time:** {{time}}' +
+    '{{#if tmuxSession}}\n**tmux:** `{{tmuxSession}}`{{/if}}',
 
-  "session-stop":
-    "# Session Continuing\n" +
-    "{{#if activeMode}}\n**Mode:** {{activeMode}}{{/if}}" +
-    "{{#if iterationDisplay}}\n**Iteration:** {{iterationDisplay}}{{/if}}" +
-    "{{#if incompleteTasks}}\n**Incomplete tasks:** {{incompleteTasks}}{{/if}}" +
-    "\n\n{{footer}}",
+  'session-stop':
+    '# Session Continuing\n' +
+    '{{#if activeMode}}\n**Mode:** {{activeMode}}{{/if}}' +
+    '{{#if iterationDisplay}}\n**Iteration:** {{iterationDisplay}}{{/if}}' +
+    '{{#if incompleteTasks}}\n**Incomplete tasks:** {{incompleteTasks}}{{/if}}' +
+    '\n\n{{footer}}',
 
-  "session-end":
-    "# Session Ended\n\n" +
-    "**Session:** `{{sessionId}}`\n" +
-    "**Duration:** {{duration}}\n" +
-    "**Reason:** {{reasonDisplay}}" +
-    "{{#if agentDisplay}}\n**Agents:** {{agentDisplay}}{{/if}}" +
-    "{{#if modesDisplay}}\n**Modes:** {{modesDisplay}}{{/if}}" +
-    "{{#if contextSummary}}\n\n**Summary:** {{contextSummary}}{{/if}}" +
-    "{{tmuxTailBlock}}" +
-    "\n\n{{footer}}",
+  'session-end':
+    '# Session Ended\n\n' +
+    '**Session:** `{{sessionId}}`\n' +
+    '**Duration:** {{duration}}\n' +
+    '**Reason:** {{reasonDisplay}}' +
+    '{{#if agentDisplay}}\n**Agents:** {{agentDisplay}}{{/if}}' +
+    '{{#if modesDisplay}}\n**Modes:** {{modesDisplay}}{{/if}}' +
+    '{{#if contextSummary}}\n\n**Summary:** {{contextSummary}}{{/if}}' +
+    '{{tmuxTailBlock}}' +
+    '\n\n{{footer}}',
 
-  "session-idle":
-    "# Session Idle\n\n" +
-    "Claude has finished and is waiting for input.\n" +
-    "{{#if reason}}\n**Reason:** {{reason}}{{/if}}" +
-    "{{#if modesDisplay}}\n**Modes:** {{modesDisplay}}{{/if}}" +
-    "{{tmuxTailBlock}}" +
-    "\n\n{{footer}}",
+  'session-idle':
+    '# Session Idle\n\n' +
+    'Claude has finished and is waiting for input.\n' +
+    '{{#if reason}}\n**Reason:** {{reason}}{{/if}}' +
+    '{{#if modesDisplay}}\n**Modes:** {{modesDisplay}}{{/if}}' +
+    '{{tmuxTailBlock}}' +
+    '\n\n{{footer}}',
 
-  "ask-user-question":
-    "# Input Needed\n" +
-    "{{#if question}}\n**Question:** {{question}}\n{{/if}}" +
-    "\nClaude is waiting for your response.\n\n{{footer}}",
+  'ask-user-question':
+    '# Input Needed\n' +
+    '{{#if question}}\n**Question:** {{question}}\n{{/if}}' +
+    '\nClaude is waiting for your response.\n\n{{footer}}',
 
-  "agent-call":
-    "# Agent Spawned\n" +
-    "{{#if agentName}}\n**Agent:** `{{agentName}}`{{/if}}" +
-    "{{#if agentType}}\n**Type:** `{{agentType}}`{{/if}}" +
-    "\n\n{{footer}}",
+  'agent-call':
+    '# Agent Spawned\n' +
+    '{{#if agentName}}\n**Agent:** `{{agentName}}`{{/if}}' +
+    '{{#if agentType}}\n**Type:** `{{agentType}}`{{/if}}' +
+    '\n\n{{footer}}',
 };
 
 /**

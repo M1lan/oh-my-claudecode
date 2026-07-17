@@ -2,13 +2,26 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { describe, expect, it } from 'vitest';
-import { LSP_SERVERS, getServerForFile, getServerForLanguage, getTypeScriptServerForWorkspace } from '../tools/lsp/servers.js';
+import {
+  LSP_SERVERS,
+  getServerForFile,
+  getServerForLanguage,
+  getTypeScriptServerForWorkspace,
+} from '../tools/lsp/servers.js';
 
-function createTypeScriptProject(options: { version: string; tsserver?: boolean; getExePath?: boolean; tscBin?: boolean }): string {
+function createTypeScriptProject(options: {
+  version: string;
+  tsserver?: boolean;
+  getExePath?: boolean;
+  tscBin?: boolean;
+}): string {
   const root = mkdtempSync(join(tmpdir(), 'omc-lsp-ts-'));
   const typescriptRoot = join(root, 'node_modules', 'typescript');
   mkdirSync(join(typescriptRoot, 'lib'), { recursive: true });
-  writeFileSync(join(typescriptRoot, 'package.json'), JSON.stringify({ version: options.version }));
+  writeFileSync(
+    join(typescriptRoot, 'package.json'),
+    JSON.stringify({ version: options.version }),
+  );
 
   if (options.tsserver) {
     writeFileSync(join(typescriptRoot, 'lib', 'tsserver.js'), '');
@@ -21,7 +34,10 @@ function createTypeScriptProject(options: { version: string; tsserver?: boolean;
   if (options.tscBin) {
     const binDir = join(root, 'node_modules', '.bin');
     mkdirSync(binDir, { recursive: true });
-    writeFileSync(join(binDir, process.platform === 'win32' ? 'tsc.cmd' : 'tsc'), '');
+    writeFileSync(
+      join(binDir, process.platform === 'win32' ? 'tsc.cmd' : 'tsc'),
+      '',
+    );
   }
 
   return root;
@@ -53,7 +69,9 @@ describe('LSP Server Configurations', () => {
     for (const [key, config] of Object.entries(LSP_SERVERS)) {
       for (const ext of config.extensions) {
         if (seen.has(ext)) {
-          throw new Error(`Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`);
+          throw new Error(
+            `Extension "${ext}" mapped to both "${seen.get(ext)}" and "${key}"`,
+          );
         }
         seen.set(ext, key);
       }
@@ -113,22 +131,43 @@ describe('TypeScript server selection', () => {
     try {
       const server = getTypeScriptServerForWorkspace(root);
 
-      expect(server.name).toBe('TypeScript 7 Native Language Server (typescript-go)');
-      expect(server.command).toBe(join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.cmd' : 'tsc'));
+      expect(server.name).toBe(
+        'TypeScript 7 Native Language Server (typescript-go)',
+      );
+      expect(server.command).toBe(
+        join(
+          root,
+          'node_modules',
+          '.bin',
+          process.platform === 'win32' ? 'tsc.cmd' : 'tsc',
+        ),
+      );
       expect(server.args).toEqual(['--lsp', '--stdio']);
-      expect(getServerForFile(join(root, 'src', 'app.ts'), root)).toEqual(server);
+      expect(getServerForFile(join(root, 'src', 'app.ts'), root)).toEqual(
+        server,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
   });
 
   it('uses project-local tsc when TypeScript has no tsserver.js', () => {
-    const root = createTypeScriptProject({ version: '6.0.0-dev', tscBin: true });
+    const root = createTypeScriptProject({
+      version: '6.0.0-dev',
+      tscBin: true,
+    });
 
     try {
       const server = getTypeScriptServerForWorkspace(root);
 
-      expect(server.command).toBe(join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.cmd' : 'tsc'));
+      expect(server.command).toBe(
+        join(
+          root,
+          'node_modules',
+          '.bin',
+          process.platform === 'win32' ? 'tsc.cmd' : 'tsc',
+        ),
+      );
       expect(server.args).toEqual(['--lsp', '--stdio']);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -136,12 +175,24 @@ describe('TypeScript server selection', () => {
   });
 
   it('uses project-local tsc when TypeScript exposes native getExePath metadata', () => {
-    const root = createTypeScriptProject({ version: '6.0.0-dev', getExePath: true, tsserver: true, tscBin: true });
+    const root = createTypeScriptProject({
+      version: '6.0.0-dev',
+      getExePath: true,
+      tsserver: true,
+      tscBin: true,
+    });
 
     try {
       const server = getTypeScriptServerForWorkspace(root);
 
-      expect(server.command).toBe(join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'tsc.cmd' : 'tsc'));
+      expect(server.command).toBe(
+        join(
+          root,
+          'node_modules',
+          '.bin',
+          process.platform === 'win32' ? 'tsc.cmd' : 'tsc',
+        ),
+      );
       expect(server.args).toEqual(['--lsp', '--stdio']);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -149,7 +200,11 @@ describe('TypeScript server selection', () => {
   });
 
   it('keeps classic typescript-language-server for classic TypeScript projects', () => {
-    const root = createTypeScriptProject({ version: '5.7.2', tsserver: true, tscBin: true });
+    const root = createTypeScriptProject({
+      version: '5.7.2',
+      tsserver: true,
+      tscBin: true,
+    });
 
     try {
       const server = getTypeScriptServerForWorkspace(root);
@@ -220,14 +275,19 @@ describe('getServerForLanguage', () => {
     ['v', 'Verible Verilog Language Server'],
   ];
 
-  it.each(cases)('should resolve language "%s" to "%s"', (lang, expectedName) => {
-    const server = getServerForLanguage(lang);
-    expect(server).not.toBeNull();
-    expect(server!.name).toBe(expectedName);
-  });
+  it.each(cases)(
+    'should resolve language "%s" to "%s"',
+    (lang, expectedName) => {
+      const server = getServerForLanguage(lang);
+      expect(server).not.toBeNull();
+      expect(server!.name).toBe(expectedName);
+    },
+  );
 
   it('should be case-insensitive', () => {
-    expect(getServerForLanguage('PHP')?.name).toBe('PHP Language Server (Intelephense)');
+    expect(getServerForLanguage('PHP')?.name).toBe(
+      'PHP Language Server (Intelephense)',
+    );
     expect(getServerForLanguage('Kotlin')?.name).toBe('Kotlin Language Server');
   });
 

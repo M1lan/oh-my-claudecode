@@ -18,7 +18,12 @@ import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '..', '..');
-const TEMPLATE_TXT = join(REPO_ROOT, 'scripts', 'lib', 'hud-wrapper-template.txt');
+const TEMPLATE_TXT = join(
+  REPO_ROOT,
+  'scripts',
+  'lib',
+  'hud-wrapper-template.txt',
+);
 const PLUGIN_SETUP_MJS = join(REPO_ROOT, 'scripts', 'plugin-setup.mjs');
 
 describe('paths consistency — TS constants vs. non-TS template files', () => {
@@ -31,7 +36,9 @@ describe('paths consistency — TS constants vs. non-TS template files', () => {
   });
 
   describe('scripts/lib/hud-wrapper-template.txt', () => {
-    const template = existsSync(TEMPLATE_TXT) ? readFileSync(TEMPLATE_TXT, 'utf8') : '';
+    const template = existsSync(TEMPLATE_TXT)
+      ? readFileSync(TEMPLATE_TXT, 'utf8')
+      : '';
 
     it(`contains OMC_PLUGIN_ROOT_ENV ("${OMC_PLUGIN_ROOT_ENV}")`, () => {
       expect(template).toContain(OMC_PLUGIN_ROOT_ENV);

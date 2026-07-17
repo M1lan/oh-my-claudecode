@@ -10,10 +10,7 @@
  * Adapted from oh-my-opencode's auto-slash-command hook.
  */
 
-import {
-  detectSlashCommand,
-  extractPromptText,
-} from './detector.js';
+import { detectSlashCommand, extractPromptText } from './detector.js';
 import {
   executeSlashCommand,
   findCommand,
@@ -64,7 +61,7 @@ export function createAutoSlashCommandHook() {
      */
     processMessage: (
       input: AutoSlashCommandHookInput,
-      parts: Array<{ type: string; text?: string }>
+      parts: Array<{ type: string; text?: string }>,
     ): AutoSlashCommandResult => {
       const promptText = extractPromptText(parts);
 
@@ -149,8 +146,5 @@ export function createAutoSlashCommandHook() {
  */
 export function processSlashCommand(prompt: string): AutoSlashCommandResult {
   const hook = createAutoSlashCommandHook();
-  return hook.processMessage(
-    {},
-    [{ type: 'text', text: prompt }]
-  );
+  return hook.processMessage({}, [{ type: 'text', text: prompt }]);
 }

@@ -97,7 +97,8 @@ describe('redactTokens', () => {
   });
 
   it('preserves non-token parts of the message', () => {
-    const input = 'Slack Socket Mode connection error: fetch failed for Bearer xoxb-secret-123';
+    const input =
+      'Slack Socket Mode connection error: fetch failed for Bearer xoxb-secret-123';
     const result = redactTokens(input);
     expect(result).toContain('Slack Socket Mode connection error:');
     expect(result).toContain('fetch failed for');
@@ -107,7 +108,8 @@ describe('redactTokens', () => {
   // ── Multiple tokens in one string ─────────────────────────────────────
 
   it('redacts multiple different tokens in one string', () => {
-    const input = 'appToken=xapp-1-AAA-BBB botToken=xoxb-123-secret channelId=C12345';
+    const input =
+      'appToken=xapp-1-AAA-BBB botToken=xoxb-123-secret channelId=C12345';
     const result = redactTokens(input);
     expect(result).not.toContain('AAA-BBB');
     expect(result).not.toContain('123-secret');
@@ -127,7 +129,8 @@ describe('redactTokens', () => {
   });
 
   it('redacts tokens in error stack-like strings', () => {
-    const input = 'Error: apps.connections.open failed\n  at fetch (Bearer xoxb-my-secret-token)';
+    const input =
+      'Error: apps.connections.open failed\n  at fetch (Bearer xoxb-my-secret-token)';
     const result = redactTokens(input);
     expect(result).not.toContain('my-secret-token');
   });

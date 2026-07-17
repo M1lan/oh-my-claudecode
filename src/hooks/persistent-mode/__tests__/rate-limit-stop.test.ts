@@ -21,16 +21,20 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
     mkdirSync(stateDir, { recursive: true });
     writeFileSync(
       join(stateDir, 'ralph-state.json'),
-      JSON.stringify({
-        active: true,
-        iteration: 3,
-        max_iterations: 10,
-        started_at: new Date().toISOString(),
-        prompt: 'Finish the task',
-        session_id: sessionId,
-        project_path: tempDir,
-        linked_ultrawork: false,
-      }, null, 2)
+      JSON.stringify(
+        {
+          active: true,
+          iteration: 3,
+          max_iterations: 10,
+          started_at: new Date().toISOString(),
+          prompt: 'Finish the task',
+          session_id: sessionId,
+          project_path: tempDir,
+          linked_ultrawork: false,
+        },
+        null,
+        2,
+      ),
     );
     return tempDir;
   }
@@ -66,11 +70,9 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
       const sessionId = `session-777-${reason.replace(/[^a-z0-9]/g, '-')}`;
       const tempDir = makeRalphWorktree(sessionId);
       try {
-        const result = await checkPersistentModes(
-          sessionId,
-          tempDir,
-          { stop_reason: reason }
-        );
+        const result = await checkPersistentModes(sessionId, tempDir, {
+          stop_reason: reason,
+        });
         expect(result.shouldBlock).toBe(false);
         expect(result.mode).toBe('none');
       } finally {
@@ -84,11 +86,9 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
       const sessionId = `session-1308-${reason.replace(/[^a-z0-9]/g, '-')}`;
       const tempDir = makeRalphWorktree(sessionId);
       try {
-        const result = await checkPersistentModes(
-          sessionId,
-          tempDir,
-          { stop_reason: reason }
-        );
+        const result = await checkPersistentModes(sessionId, tempDir, {
+          stop_reason: reason,
+        });
         expect(result.shouldBlock).toBe(false);
         expect(result.mode).toBe('none');
         expect(result.message).toMatch(/authentication/i);
@@ -103,11 +103,9 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
       const sessionId = `session-2693-${reason.replace(/[^a-z0-9]/gi, '-')}`;
       const tempDir = makeRalphWorktree(sessionId);
       try {
-        const result = await checkPersistentModes(
-          sessionId,
-          tempDir,
-          { stop_reason: reason }
-        );
+        const result = await checkPersistentModes(sessionId, tempDir, {
+          stop_reason: reason,
+        });
         expect(result.shouldBlock).toBe(false);
         expect(result.mode).toBe('none');
         expect(result.message).toBe('');
@@ -121,11 +119,10 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
     const sessionId = 'session-2693-tool-name';
     const tempDir = makeRalphWorktree(sessionId);
     try {
-      const result = await checkPersistentModes(
-        sessionId,
-        tempDir,
-        { tool_name: 'ScheduleWakeup', stop_reason: 'end_turn' }
-      );
+      const result = await checkPersistentModes(sessionId, tempDir, {
+        tool_name: 'ScheduleWakeup',
+        stop_reason: 'end_turn',
+      });
       expect(result.shouldBlock).toBe(false);
       expect(result.mode).toBe('none');
       expect(result.message).toBe('');
@@ -150,7 +147,9 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
     const sessionId = 'session-777-end-turn';
     const tempDir = makeRalphWorktree(sessionId);
     try {
-      const result = await checkPersistentModes(sessionId, tempDir, { stop_reason: 'end_turn' });
+      const result = await checkPersistentModes(sessionId, tempDir, {
+        stop_reason: 'end_turn',
+      });
       expect(result.shouldBlock).toBe(true);
       expect(result.mode).toBe('ralph');
     } finally {
@@ -162,11 +161,9 @@ describe('persistent-mode rate-limit stop guard (fix #777)', () => {
     const sessionId = 'session-777-message';
     const tempDir = makeRalphWorktree(sessionId);
     try {
-      const result = await checkPersistentModes(
-        sessionId,
-        tempDir,
-        { stop_reason: 'rate_limit' }
-      );
+      const result = await checkPersistentModes(sessionId, tempDir, {
+        stop_reason: 'rate_limit',
+      });
       expect(result.shouldBlock).toBe(false);
       expect(result.message).toMatch(/rate.limit/i);
     } finally {

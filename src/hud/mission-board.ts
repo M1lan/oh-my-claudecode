@@ -1,4 +1,11 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { atomicWriteJsonSync } from '../lib/atomic-write.js';
 import { withFileLockSync } from '../lib/file-lock.js';
@@ -13,7 +20,11 @@ import { canonicalizeWorkers } from '../team/worker-canonicalization.js';
 
 export type MissionBoardSource = 'session' | 'team';
 export type MissionBoardStatus = 'blocked' | 'waiting' | 'running' | 'done';
-export type MissionTimelineEventType = 'handoff' | 'completion' | 'failure' | 'update';
+export type MissionTimelineEventType =
+  | 'handoff'
+  | 'completion'
+  | 'failure'
+  | 'update';
 
 export interface MissionBoardConfig {
   enabled: boolean;
@@ -158,7 +169,9 @@ const STATUS_ORDER: Record<MissionBoardStatus, number> = {
 
 export const DEFAULT_MISSION_BOARD_CONFIG: MissionBoardConfig = DEFAULT_CONFIG;
 
-function resolveConfig(config?: MissionBoardConfig): Required<MissionBoardConfig> {
+function resolveConfig(
+  config?: MissionBoardConfig,
+): Required<MissionBoardConfig> {
   return {
     ...DEFAULT_CONFIG,
     ...config,
@@ -197,7 +210,9 @@ function readJsonLinesSafe<T>(path: string): T[] {
  * No caller opt-in is exposed — gated solely on the env var because
  * mission-board callers don't thread a migration flag through the call stack.
  */
-function maybeMigrateLegacy(paths: ReturnType<typeof resolveSessionStatePaths>): void {
+function maybeMigrateLegacy(
+  paths: ReturnType<typeof resolveSessionStatePaths>,
+): void {
   if (!isLegacyStateMigrationEnabled()) return;
   if (!paths.sessionScoped) return;
   if (existsSync(paths.sessionScoped)) return;
@@ -213,11 +228,19 @@ function maybeMigrateLegacy(paths: ReturnType<typeof resolveSessionStatePaths>):
     renameSync(sentinel, paths.sessionScoped);
   } catch {
     // migration is best-effort; ignore failures so normal write proceeds
-    try { renameSync(sentinel, sentinel + '.failed'); } catch { /* ignore */ }
+    try {
+      renameSync(sentinel, sentinel + '.failed');
+    } catch {
+      /* ignore */
+    }
   }
 }
 
-function writeState(directory: string, state: MissionBoardState, sessionId?: string): MissionBoardState {
+function writeState(
+  directory: string,
+  state: MissionBoardState,
+  sessionId?: string,
+): MissionBoardState {
   const paths = resolveSessionStatePaths('mission-state', sessionId, directory);
   const writePath = paths.effectiveWrite;
   const stateDir = join(writePath, '..');
@@ -236,8 +259,12 @@ function parseTime(value: string | undefined | null): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function compactText(value: string | null | undefined, width = 64): string | null {
-  const trimmed = typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
+function compactText(
+  value: string | null | undefined,
+  width = 64,
+): string | null {
+  const trimmed =
+    typeof value === 'string' ? value.replace(/\s+/g, ' ').trim() : '';
   if (!trimmed) return null;
   return truncateToWidth(trimmed, width);
 }
@@ -248,7 +275,9 @@ function formatTime(value: string): string {
   return date.toISOString().slice(11, 16);
 }
 
-function latest(...values: Array<string | undefined | null>): string | undefined {
+function latest(
+  ...values: Array<string | undefined | null>
+): string | undefined {
   return values
     .filter((value): value is string => Boolean(value))
     .sort((left, right) => parseTime(right) - parseTime(left))[0];
@@ -264,19 +293,36 @@ function sessionAgentName(agentType: string, agentId: string): string {
 
 function summarizeTask(task?: TeamTaskLike | null): string | null {
   if (!task) return null;
-  return compactText(task.result || task.summary || task.error || task.subject || task.description, 56);
+  return compactText(
+    task.result ||
+      task.summary ||
+      task.error ||
+      task.subject ||
+      task.description,
+    56,
+  );
 }
 
 function deriveSessionStatus(mission: MissionBoardMission): MissionBoardStatus {
   if (mission.taskCounts.inProgress > 0) return 'running';
-  if (mission.taskCounts.blocked > 0 || mission.taskCounts.failed > 0) return 'blocked';
-  if (mission.taskCounts.completed === mission.taskCounts.total && mission.taskCounts.total > 0) return 'done';
+  if (mission.taskCounts.blocked > 0 || mission.taskCounts.failed > 0)
+    return 'blocked';
+  if (
+    mission.taskCounts.completed === mission.taskCounts.total &&
+    mission.taskCounts.total > 0
+  )
+    return 'done';
   return 'waiting';
 }
 
-function ensureSessionMission(state: MissionBoardState, input: MissionAgentStartInput): MissionBoardMission {
+function ensureSessionMission(
+  state: MissionBoardState,
+  input: MissionAgentStartInput,
+): MissionBoardMission {
   const missionId = `session:${input.sessionId}:${input.parentMode || 'session'}`;
-  let mission = state.missions.find((entry) => entry.id === missionId && entry.source === 'session');
+  let mission = state.missions.find(
+    (entry) => entry.id === missionId && entry.source === 'session',
+  );
   if (!mission) {
     mission = {
       id: missionId,
@@ -287,7 +333,14 @@ function ensureSessionMission(state: MissionBoardState, input: MissionAgentStart
       updatedAt: input.at || new Date().toISOString(),
       status: 'running',
       workerCount: 0,
-      taskCounts: { total: 0, pending: 0, blocked: 0, inProgress: 0, completed: 0, failed: 0 },
+      taskCounts: {
+        total: 0,
+        pending: 0,
+        blocked: 0,
+        inProgress: 0,
+        completed: 0,
+        failed: 0,
+      },
       agents: [],
       timeline: [],
     };
@@ -300,18 +353,28 @@ function recalcSessionMission(mission: MissionBoardMission): void {
   mission.workerCount = mission.agents.length;
   mission.taskCounts = {
     total: mission.agents.length,
-    pending: mission.agents.filter((agent) => agent.status === 'waiting').length,
-    blocked: mission.agents.filter((agent) => agent.status === 'blocked').length,
-    inProgress: mission.agents.filter((agent) => agent.status === 'running').length,
+    pending: mission.agents.filter((agent) => agent.status === 'waiting')
+      .length,
+    blocked: mission.agents.filter((agent) => agent.status === 'blocked')
+      .length,
+    inProgress: mission.agents.filter((agent) => agent.status === 'running')
+      .length,
     completed: mission.agents.filter((agent) => agent.status === 'done').length,
     failed: 0,
   };
   mission.status = deriveSessionStatus(mission);
 }
 
-export function readMissionBoardState(directory: string, sessionId?: string): MissionBoardState | null {
+export function readMissionBoardState(
+  directory: string,
+  sessionId?: string,
+): MissionBoardState | null {
   const effectiveSessionId = sessionId ?? getProcessSessionId();
-  const paths = resolveSessionStatePaths('mission-state', effectiveSessionId, directory);
+  const paths = resolveSessionStatePaths(
+    'mission-state',
+    effectiveSessionId,
+    directory,
+  );
   maybeMigrateLegacy(paths);
 
   if (effectiveSessionId) {
@@ -325,13 +388,22 @@ export function readMissionBoardState(directory: string, sessionId?: string): Mi
   return readJsonSafe<MissionBoardState>(paths.effectiveRead);
 }
 
-export function recordMissionAgentStart(directory: string, input: MissionAgentStartInput, sessionId?: string): MissionBoardState {
+export function recordMissionAgentStart(
+  directory: string,
+  input: MissionAgentStartInput,
+  sessionId?: string,
+): MissionBoardState {
   const effectiveSessionId = sessionId ?? getProcessSessionId();
   const now = input.at || new Date().toISOString();
-  const state = readMissionBoardState(directory, effectiveSessionId) || { updatedAt: now, missions: [] };
+  const state = readMissionBoardState(directory, effectiveSessionId) || {
+    updatedAt: now,
+    missions: [],
+  };
   const mission = ensureSessionMission(state, input);
   const agentName = sessionAgentName(input.agentType, input.agentId);
-  const agent = mission.agents.find((entry) => entry.ownership === input.agentId) || {
+  const agent = mission.agents.find(
+    (entry) => entry.ownership === input.agentId,
+  ) || {
     name: agentName,
     role: shortAgentType(input.agentType),
     ownership: input.agentId,
@@ -357,7 +429,9 @@ export function recordMissionAgentStart(directory: string, input: MissionAgentSt
     at: now,
     kind: 'update',
     agent: agent.name,
-    detail: compactText(input.taskDescription || `started ${agent.name}`, 72) || `started ${agent.name}`,
+    detail:
+      compactText(input.taskDescription || `started ${agent.name}`, 72) ||
+      `started ${agent.name}`,
     sourceKey: `session-start:${input.agentId}`,
   });
   mission.timeline = mission.timeline.slice(-DEFAULT_CONFIG.maxTimelineEvents);
@@ -366,26 +440,45 @@ export function recordMissionAgentStart(directory: string, input: MissionAgentSt
   return writeState(directory, state, effectiveSessionId);
 }
 
-export function recordMissionAgentStop(directory: string, input: MissionAgentStopInput, sessionId?: string): MissionBoardState {
+export function recordMissionAgentStop(
+  directory: string,
+  input: MissionAgentStopInput,
+  sessionId?: string,
+): MissionBoardState {
   const effectiveSessionId = sessionId ?? getProcessSessionId();
   const now = input.at || new Date().toISOString();
-  const state = readMissionBoardState(directory, effectiveSessionId) || { updatedAt: now, missions: [] };
+  const state = readMissionBoardState(directory, effectiveSessionId) || {
+    updatedAt: now,
+    missions: [],
+  };
   const mission = state.missions
-    .filter((entry) => entry.source === 'session' && entry.id.startsWith(`session:${input.sessionId}:`))
-    .sort((left, right) => parseTime(right.updatedAt) - parseTime(left.updatedAt))[0];
+    .filter(
+      (entry) =>
+        entry.source === 'session' &&
+        entry.id.startsWith(`session:${input.sessionId}:`),
+    )
+    .sort(
+      (left, right) => parseTime(right.updatedAt) - parseTime(left.updatedAt),
+    )[0];
   if (!mission) {
     return state;
   }
 
-  const agent = mission.agents.find((entry) => entry.ownership === input.agentId) || mission.agents[0];
+  const agent =
+    mission.agents.find((entry) => entry.ownership === input.agentId) ||
+    mission.agents[0];
   if (!agent) {
     return state;
   }
 
   agent.status = input.success ? 'done' : 'blocked';
   agent.currentStep = null;
-  agent.latestUpdate = compactText(input.outputSummary, 64) || (input.success ? 'completed' : 'blocked');
-  agent.completedSummary = input.success ? compactText(input.outputSummary, 64) : null;
+  agent.latestUpdate =
+    compactText(input.outputSummary, 64) ||
+    (input.success ? 'completed' : 'blocked');
+  agent.completedSummary = input.success
+    ? compactText(input.outputSummary, 64)
+    : null;
   agent.updatedAt = now;
   mission.updatedAt = now;
   mission.timeline.push({
@@ -393,7 +486,11 @@ export function recordMissionAgentStop(directory: string, input: MissionAgentSto
     at: now,
     kind: input.success ? 'completion' : 'failure',
     agent: agent.name,
-    detail: compactText(input.outputSummary || (input.success ? 'completed' : 'blocked'), 72) || (input.success ? 'completed' : 'blocked'),
+    detail:
+      compactText(
+        input.outputSummary || (input.success ? 'completed' : 'blocked'),
+        72,
+      ) || (input.success ? 'completed' : 'blocked'),
     sourceKey: `session-stop:${input.agentId}`,
   });
   recalcSessionMission(mission);
@@ -401,11 +498,21 @@ export function recordMissionAgentStop(directory: string, input: MissionAgentSto
   return writeState(directory, state, effectiveSessionId);
 }
 
-function deriveTeamStatus(taskCounts: MissionBoardMission['taskCounts'], agents: MissionBoardAgent[]): MissionBoardStatus {
-  if (taskCounts.inProgress > 0 || agents.some((agent) => agent.status === 'running')) {
+function deriveTeamStatus(
+  taskCounts: MissionBoardMission['taskCounts'],
+  agents: MissionBoardAgent[],
+): MissionBoardStatus {
+  if (
+    taskCounts.inProgress > 0 ||
+    agents.some((agent) => agent.status === 'running')
+  ) {
     return 'running';
   }
-  if (taskCounts.blocked > 0 || taskCounts.failed > 0 || agents.some((agent) => agent.status === 'blocked')) {
+  if (
+    taskCounts.blocked > 0 ||
+    taskCounts.failed > 0 ||
+    agents.some((agent) => agent.status === 'blocked')
+  ) {
     return 'blocked';
   }
   if (taskCounts.total > 0 && taskCounts.completed === taskCounts.total) {
@@ -414,29 +521,52 @@ function deriveTeamStatus(taskCounts: MissionBoardMission['taskCounts'], agents:
   return 'waiting';
 }
 
-function deriveWorkerStatus(workerStatus: WorkerStatusLike | null, task?: TeamTaskLike): MissionBoardStatus {
-  if (workerStatus?.state === 'blocked' || workerStatus?.state === 'failed' || task?.status === 'blocked' || task?.status === 'failed') return 'blocked';
-  if (workerStatus?.state === 'working' || task?.status === 'in_progress') return 'running';
-  if (workerStatus?.state === 'done' || task?.status === 'completed') return 'done';
+function deriveWorkerStatus(
+  workerStatus: WorkerStatusLike | null,
+  task?: TeamTaskLike,
+): MissionBoardStatus {
+  if (
+    workerStatus?.state === 'blocked' ||
+    workerStatus?.state === 'failed' ||
+    task?.status === 'blocked' ||
+    task?.status === 'failed'
+  )
+    return 'blocked';
+  if (workerStatus?.state === 'working' || task?.status === 'in_progress')
+    return 'running';
+  if (workerStatus?.state === 'done' || task?.status === 'completed')
+    return 'done';
   return 'waiting';
 }
 
-function collectTeamMission(teamRoot: string, teamName: string, config: Required<MissionBoardConfig>): MissionBoardMission | null {
-  const teamConfig = readJsonSafe<TeamConfigLike>(join(teamRoot, 'config.json'));
+function collectTeamMission(
+  teamRoot: string,
+  teamName: string,
+  config: Required<MissionBoardConfig>,
+): MissionBoardMission | null {
+  const teamConfig = readJsonSafe<TeamConfigLike>(
+    join(teamRoot, 'config.json'),
+  );
   if (!teamConfig) return null;
 
-  const workers = canonicalizeWorkers((Array.isArray(teamConfig.workers) ? teamConfig.workers : []).map((worker, index) => ({
-    name: worker.name ?? '',
-    index: index + 1,
-    role: worker.role ?? 'worker',
-    assigned_tasks: Array.isArray(worker.assigned_tasks) ? worker.assigned_tasks : [],
-  }))).workers;
+  const workers = canonicalizeWorkers(
+    (Array.isArray(teamConfig.workers) ? teamConfig.workers : []).map(
+      (worker, index) => ({
+        name: worker.name ?? '',
+        index: index + 1,
+        role: worker.role ?? 'worker',
+        assigned_tasks: Array.isArray(worker.assigned_tasks)
+          ? worker.assigned_tasks
+          : [],
+      }),
+    ),
+  ).workers;
   const tasksDir = join(teamRoot, 'tasks');
   const tasks = existsSync(tasksDir)
     ? readdirSync(tasksDir)
-      .filter((entry) => /^(?:task-)?\d+\.json$/i.test(entry))
-      .map((entry) => readJsonSafe<TeamTaskLike>(join(tasksDir, entry)))
-      .filter((task): task is TeamTaskLike => Boolean(task?.id))
+        .filter((entry) => /^(?:task-)?\d+\.json$/i.test(entry))
+        .map((entry) => readJsonSafe<TeamTaskLike>(join(tasksDir, entry)))
+        .filter((task): task is TeamTaskLike => Boolean(task?.id))
     : [];
   const taskById = new Map(tasks.map((task) => [task.id!, task] as const));
   const taskCounts = {
@@ -449,7 +579,9 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
   };
 
   const timeline: MissionBoardTimelineEvent[] = [];
-  for (const event of readJsonLinesSafe<TeamEventLike>(join(teamRoot, 'events.jsonl'))) {
+  for (const event of readJsonLinesSafe<TeamEventLike>(
+    join(teamRoot, 'events.jsonl'),
+  )) {
     if (!event.created_at || !event.type) continue;
     if (event.type === 'task_completed' || event.type === 'task_failed') {
       timeline.push({
@@ -457,16 +589,26 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
         at: event.created_at,
         kind: event.type === 'task_completed' ? 'completion' : 'failure',
         agent: event.worker || 'leader-fixed',
-        detail: compactText(`${event.type === 'task_completed' ? 'completed' : 'failed'} task ${event.task_id ?? '?'}`, 72) || event.type,
+        detail:
+          compactText(
+            `${event.type === 'task_completed' ? 'completed' : 'failed'} task ${event.task_id ?? '?'}`,
+            72,
+          ) || event.type,
         sourceKey: `event:${event.event_id || event.type}`,
       });
-    } else if (event.type === 'team_leader_nudge' || event.type === 'worker_idle' || event.type === 'worker_stopped') {
+    } else if (
+      event.type === 'team_leader_nudge' ||
+      event.type === 'worker_idle' ||
+      event.type === 'worker_stopped'
+    ) {
       timeline.push({
         id: `event:${event.event_id || `${event.type}:${event.created_at}`}`,
         at: event.created_at,
         kind: 'update',
         agent: event.worker || 'leader-fixed',
-        detail: compactText(event.reason || event.type.replace(/_/g, ' '), 72) || event.type,
+        detail:
+          compactText(event.reason || event.type.replace(/_/g, ' '), 72) ||
+          event.type,
         sourceKey: `event:${event.event_id || event.type}`,
       });
     }
@@ -475,7 +617,9 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
   for (const worker of workers) {
     const workerName = worker.name?.trim();
     if (!workerName) continue;
-    const mailbox = readJsonSafe<TeamMailboxLike>(join(teamRoot, 'mailbox', `${workerName}.json`));
+    const mailbox = readJsonSafe<TeamMailboxLike>(
+      join(teamRoot, 'mailbox', `${workerName}.json`),
+    );
     for (const message of mailbox?.messages ?? []) {
       if (!message.created_at || !message.body) continue;
       timeline.push({
@@ -493,22 +637,40 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
 
   const agents = workers.slice(0, config.maxAgentsPerMission).map((worker) => {
     const workerName = worker.name?.trim() || 'worker';
-    const workerStatus = readJsonSafe<WorkerStatusLike>(join(teamRoot, 'workers', workerName, 'status.json'));
-    const heartbeat = readJsonSafe<WorkerHeartbeatLike>(join(teamRoot, 'workers', workerName, 'heartbeat.json'));
+    const workerStatus = readJsonSafe<WorkerStatusLike>(
+      join(teamRoot, 'workers', workerName, 'status.json'),
+    );
+    const heartbeat = readJsonSafe<WorkerHeartbeatLike>(
+      join(teamRoot, 'workers', workerName, 'heartbeat.json'),
+    );
     const ownedTasks = tasks.filter((task) => task.owner === workerName);
-    const currentTask = (workerStatus?.current_task_id ? taskById.get(workerStatus.current_task_id) : undefined)
-      || ownedTasks.find((task) => task.status === 'in_progress')
-      || ownedTasks.find((task) => task.status === 'blocked')
-      || (worker.assigned_tasks || []).map((taskId) => taskById.get(taskId)).find(Boolean)
-      || undefined;
+    const currentTask =
+      (workerStatus?.current_task_id
+        ? taskById.get(workerStatus.current_task_id)
+        : undefined) ||
+      ownedTasks.find((task) => task.status === 'in_progress') ||
+      ownedTasks.find((task) => task.status === 'blocked') ||
+      (worker.assigned_tasks || [])
+        .map((taskId) => taskById.get(taskId))
+        .find(Boolean) ||
+      undefined;
     const completedTask = [...ownedTasks]
       .filter((task) => task.status === 'completed' || task.status === 'failed')
-      .sort((left, right) => parseTime(right.completed_at) - parseTime(left.completed_at))[0];
-    const latestTimeline = [...timeline].reverse().find((entry) => entry.agent === workerName);
-    const ownership = Array.from(new Set([
-      ...(worker.assigned_tasks || []),
-      ...ownedTasks.map((task) => task.id || ''),
-    ].filter(Boolean)))
+      .sort(
+        (left, right) =>
+          parseTime(right.completed_at) - parseTime(left.completed_at),
+      )[0];
+    const latestTimeline = [...timeline]
+      .reverse()
+      .find((entry) => entry.agent === workerName);
+    const ownership = Array.from(
+      new Set(
+        [
+          ...(worker.assigned_tasks || []),
+          ...ownedTasks.map((task) => task.id || ''),
+        ].filter(Boolean),
+      ),
+    )
       .map((taskId) => `#${taskId}`)
       .join(',');
 
@@ -518,19 +680,39 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
       ownership: ownership || undefined,
       status: deriveWorkerStatus(workerStatus ?? null, currentTask),
       currentStep: compactText(
-        workerStatus?.reason
-        || (currentTask?.id && currentTask.subject ? `#${currentTask.id} ${currentTask.subject}` : currentTask?.subject)
-        || currentTask?.description,
+        workerStatus?.reason ||
+          (currentTask?.id && currentTask.subject
+            ? `#${currentTask.id} ${currentTask.subject}`
+            : currentTask?.subject) ||
+          currentTask?.description,
         56,
       ),
-      latestUpdate: compactText(workerStatus?.reason || latestTimeline?.detail || summarizeTask(currentTask), 64),
+      latestUpdate: compactText(
+        workerStatus?.reason ||
+          latestTimeline?.detail ||
+          summarizeTask(currentTask),
+        64,
+      ),
       completedSummary: summarizeTask(completedTask),
-      updatedAt: latest(workerStatus?.updated_at, heartbeat?.last_turn_at, latestTimeline?.at, completedTask?.completed_at),
+      updatedAt: latest(
+        workerStatus?.updated_at,
+        heartbeat?.last_turn_at,
+        latestTimeline?.at,
+        completedTask?.completed_at,
+      ),
     } satisfies MissionBoardAgent;
   });
 
-  const createdAt = teamConfig.created_at || latest(...timeline.map((entry) => entry.at)) || new Date().toISOString();
-  const updatedAt = latest(createdAt, ...timeline.map((entry) => entry.at), ...agents.map((agent) => agent.updatedAt)) || createdAt;
+  const createdAt =
+    teamConfig.created_at ||
+    latest(...timeline.map((entry) => entry.at)) ||
+    new Date().toISOString();
+  const updatedAt =
+    latest(
+      createdAt,
+      ...timeline.map((entry) => entry.at),
+      ...agents.map((agent) => agent.updatedAt),
+    ) || createdAt;
 
   return {
     id: `team:${teamName}`,
@@ -548,37 +730,51 @@ function collectTeamMission(teamRoot: string, teamName: string, config: Required
   };
 }
 
-function mergeMissions(previous: MissionBoardState | null, teamMissions: MissionBoardMission[], config: Required<MissionBoardConfig>): MissionBoardMission[] {
+function mergeMissions(
+  previous: MissionBoardState | null,
+  teamMissions: MissionBoardMission[],
+  config: Required<MissionBoardConfig>,
+): MissionBoardMission[] {
   const previousMissions = previous?.missions || [];
-  const sessionMissions = previousMissions.filter((mission) => mission.source === 'session');
+  const sessionMissions = previousMissions.filter(
+    (mission) => mission.source === 'session',
+  );
   const currentIds = new Set(teamMissions.map((mission) => mission.id));
-  const cutoff = Date.now() - (config.persistCompletedForMinutes * 60_000);
-  const preservedTeams = previousMissions.filter((mission) => (
-    mission.source === 'team'
-    && !currentIds.has(mission.id)
-    && mission.status === 'done'
-    && parseTime(mission.updatedAt) >= cutoff
-  ));
+  const cutoff = Date.now() - config.persistCompletedForMinutes * 60_000;
+  const preservedTeams = previousMissions.filter(
+    (mission) =>
+      mission.source === 'team' &&
+      !currentIds.has(mission.id) &&
+      mission.status === 'done' &&
+      parseTime(mission.updatedAt) >= cutoff,
+  );
 
   return [...teamMissions, ...sessionMissions, ...preservedTeams]
     .sort((left, right) => {
-      const statusDelta = STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
+      const statusDelta =
+        STATUS_ORDER[left.status] - STATUS_ORDER[right.status];
       if (statusDelta !== 0) return statusDelta;
       return parseTime(right.updatedAt) - parseTime(left.updatedAt);
     })
     .slice(0, config.maxMissions);
 }
 
-export function refreshMissionBoardState(directory: string, rawConfig: MissionBoardConfig = DEFAULT_CONFIG, sessionId?: string): MissionBoardState {
+export function refreshMissionBoardState(
+  directory: string,
+  rawConfig: MissionBoardConfig = DEFAULT_CONFIG,
+  sessionId?: string,
+): MissionBoardState {
   const effectiveSessionId = sessionId ?? getProcessSessionId();
   const config = resolveConfig(rawConfig);
   const previous = readMissionBoardState(directory, effectiveSessionId);
   const teamsRoot = join(getOmcRoot(directory), 'state', 'team');
   const teamMissions = existsSync(teamsRoot)
     ? readdirSync(teamsRoot, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => collectTeamMission(join(teamsRoot, entry.name), entry.name, config))
-      .filter((mission): mission is MissionBoardMission => Boolean(mission))
+        .filter((entry) => entry.isDirectory())
+        .map((entry) =>
+          collectTeamMission(join(teamsRoot, entry.name), entry.name, config),
+        )
+        .filter((mission): mission is MissionBoardMission => Boolean(mission))
     : [];
 
   const state: MissionBoardState = {
@@ -592,41 +788,63 @@ export function renderMissionBoard(
   state: MissionBoardState | null,
   rawConfig: MissionBoardConfig = DEFAULT_CONFIG,
 ): string[] {
-  if (!state || !Array.isArray(state.missions) || state.missions.length === 0) return [];
+  if (!state || !Array.isArray(state.missions) || state.missions.length === 0)
+    return [];
   const config = resolveConfig(rawConfig);
   const lines: string[] = [];
 
   for (const mission of state.missions.slice(0, config.maxMissions)) {
     const summary = [
       `${mission.taskCounts.completed}/${mission.taskCounts.total} done`,
-      ...(mission.taskCounts.inProgress > 0 ? [`${mission.taskCounts.inProgress} active`] : []),
-      ...(mission.taskCounts.blocked > 0 ? [`${mission.taskCounts.blocked} blocked`] : []),
-      ...(mission.taskCounts.pending > 0 ? [`${mission.taskCounts.pending} waiting`] : []),
-      ...(mission.taskCounts.failed > 0 ? [`${mission.taskCounts.failed} failed`] : []),
+      ...(mission.taskCounts.inProgress > 0
+        ? [`${mission.taskCounts.inProgress} active`]
+        : []),
+      ...(mission.taskCounts.blocked > 0
+        ? [`${mission.taskCounts.blocked} blocked`]
+        : []),
+      ...(mission.taskCounts.pending > 0
+        ? [`${mission.taskCounts.pending} waiting`]
+        : []),
+      ...(mission.taskCounts.failed > 0
+        ? [`${mission.taskCounts.failed} failed`]
+        : []),
     ].join(' · ');
-    lines.push(`MISSION ${mission.name} [${mission.status}] · ${summary} · ${mission.objective}`);
+    lines.push(
+      `MISSION ${mission.name} [${mission.status}] · ${summary} · ${mission.objective}`,
+    );
     for (const agent of mission.agents.slice(0, config.maxAgentsPerMission)) {
-      const badge = agent.status === 'running'
-        ? 'run'
-        : agent.status === 'blocked'
-          ? 'blk'
-          : agent.status === 'done'
-            ? 'done'
-            : 'wait';
-      const detail = agent.status === 'done'
-        ? agent.completedSummary || agent.latestUpdate || agent.currentStep || 'done'
-        : agent.latestUpdate || agent.currentStep || 'no update';
-      lines.push(`  [${badge}] ${agent.name}${agent.role ? ` (${agent.role})` : ''}${agent.ownership ? ` · own:${agent.ownership}` : ''} · ${detail}`);
+      const badge =
+        agent.status === 'running'
+          ? 'run'
+          : agent.status === 'blocked'
+            ? 'blk'
+            : agent.status === 'done'
+              ? 'done'
+              : 'wait';
+      const detail =
+        agent.status === 'done'
+          ? agent.completedSummary ||
+            agent.latestUpdate ||
+            agent.currentStep ||
+            'done'
+          : agent.latestUpdate || agent.currentStep || 'no update';
+      lines.push(
+        `  [${badge}] ${agent.name}${agent.role ? ` (${agent.role})` : ''}${agent.ownership ? ` · own:${agent.ownership}` : ''} · ${detail}`,
+      );
     }
     if (mission.timeline.length > 0) {
-      const timeline = mission.timeline.slice(-config.maxTimelineEvents).map((entry) => {
-        const label = entry.kind === 'completion'
-          ? 'done'
-          : entry.kind === 'failure'
-            ? 'fail'
-            : entry.kind;
-        return `${formatTime(entry.at)} ${label} ${entry.agent}: ${entry.detail}`;
-      }).join(' | ');
+      const timeline = mission.timeline
+        .slice(-config.maxTimelineEvents)
+        .map((entry) => {
+          const label =
+            entry.kind === 'completion'
+              ? 'done'
+              : entry.kind === 'failure'
+                ? 'fail'
+                : entry.kind;
+          return `${formatTime(entry.at)} ${label} ${entry.agent}: ${entry.detail}`;
+        })
+        .join(' | ');
       lines.push(`  timeline: ${timeline}`);
     }
   }

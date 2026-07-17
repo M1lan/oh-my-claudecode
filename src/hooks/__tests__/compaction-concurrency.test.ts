@@ -37,7 +37,10 @@ function createTempDir(): string {
   return dir;
 }
 
-function makePreCompactInput(cwd: string, trigger: 'manual' | 'auto' = 'auto'): PreCompactInput {
+function makePreCompactInput(
+  cwd: string,
+  trigger: 'manual' | 'auto' = 'auto',
+): PreCompactInput {
   return {
     session_id: 'test-session',
     transcript_path: join(cwd, 'transcript.json'),
@@ -62,7 +65,9 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
   afterEach(() => {
     try {
       rmSync(tempDir, { recursive: true, force: true });
-    } catch { /* ignore cleanup errors */ }
+    } catch {
+      /* ignore cleanup errors */
+    }
   });
 
   it('should complete successfully for a single call', async () => {
@@ -98,12 +103,16 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
     const input = makePreCompactInput(tempDir);
 
     // Fire concurrent requests
-    await Promise.all(Array.from({ length: 3 }, () => processPreCompact(input)));
+    await Promise.all(
+      Array.from({ length: 3 }, () => processPreCompact(input)),
+    );
 
     // Check checkpoint directory
     const checkpointDir = join(tempDir, '.omc', 'state', 'checkpoints');
     if (existsSync(checkpointDir)) {
-      const files = readdirSync(checkpointDir).filter(f => f.startsWith('checkpoint-'));
+      const files = readdirSync(checkpointDir).filter((f) =>
+        f.startsWith('checkpoint-'),
+      );
       // Should have exactly 1 checkpoint (not 3)
       expect(files.length).toBe(1);
     }
@@ -136,7 +145,9 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
     // behavior — the important assertion is that both calls succeed independently.
     const checkpointDir = join(tempDir, '.omc', 'state', 'checkpoints');
     if (existsSync(checkpointDir)) {
-      const files = readdirSync(checkpointDir).filter(f => f.startsWith('checkpoint-'));
+      const files = readdirSync(checkpointDir).filter((f) =>
+        f.startsWith('checkpoint-'),
+      );
       expect(files.length).toBeGreaterThanOrEqual(1);
     }
   });
@@ -163,11 +174,15 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
       const checkpointDir2 = join(tempDir2, '.omc', 'state', 'checkpoints');
 
       if (existsSync(checkpointDir1)) {
-        const files1 = readdirSync(checkpointDir1).filter(f => f.startsWith('checkpoint-'));
+        const files1 = readdirSync(checkpointDir1).filter((f) =>
+          f.startsWith('checkpoint-'),
+        );
         expect(files1.length).toBe(1);
       }
       if (existsSync(checkpointDir2)) {
-        const files2 = readdirSync(checkpointDir2).filter(f => f.startsWith('checkpoint-'));
+        const files2 = readdirSync(checkpointDir2).filter((f) =>
+          f.startsWith('checkpoint-'),
+        );
         expect(files2.length).toBe(1);
       }
     } finally {
@@ -177,28 +192,34 @@ describe('processPreCompact - Compaction Mutex (issue #453)', () => {
 
   it('should propagate rejection to all coalesced callers and clear mutex', async () => {
     // Use a nonexistent directory to trigger an error in doProcessPreCompact
-    const badDir = '/tmp/nonexistent-compaction-dir-' + Date.now();
+    const badDir = join(tmpdir(), 'nonexistent-compaction-dir-' + Date.now());
     const input = makePreCompactInput(badDir);
 
-    // Fire 3 concurrent calls sharing the same in-flight promise
-    const results = await Promise.allSettled(
-      Array.from({ length: 3 }, () => processPreCompact(input))
-    );
+    try {
+      // Fire 3 concurrent calls sharing the same in-flight promise
+      const results = await Promise.allSettled(
+        Array.from({ length: 3 }, () => processPreCompact(input)),
+      );
 
-    // All should either reject or return an error-like result
-    // processPreCompact may catch internally and return a result rather than throwing
-    for (const result of results) {
-      if (result.status === 'rejected') {
-        expect(result.reason).toBeDefined();
-      } else {
-        // If it doesn't throw, at minimum it should still complete
-        expect(result.value).toBeDefined();
+      // All should either reject or return an error-like result
+      // processPreCompact may catch internally and return a result rather than throwing
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          expect(result.reason).toBeDefined();
+        } else {
+          // If it doesn't throw, at minimum it should still complete
+          expect(result.value).toBeDefined();
+        }
+      }
+
+      // Mutex state should be cleared regardless
+      expect(isCompactionInProgress(badDir)).toBe(false);
+      expect(getCompactionQueueDepth(badDir)).toBe(0);
+    } finally {
+      if (existsSync(badDir)) {
+        rmSync(badDir, { recursive: true, force: true });
       }
     }
-
-    // Mutex state should be cleared regardless
-    expect(isCompactionInProgress(badDir)).toBe(false);
-    expect(getCompactionQueueDepth(badDir)).toBe(0);
   });
 });
 

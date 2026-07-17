@@ -5,7 +5,14 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, symlinkSync } from 'node:fs';
+import {
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  existsSync,
+  readFileSync,
+  symlinkSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
@@ -36,14 +43,19 @@ function createFile(relativePath: string, content = ''): void {
   writeFileSync(fullPath, content);
 }
 
-function createManifest(directories: Record<string, { files: string[] }>): void {
+function createManifest(
+  directories: Record<string, { files: string[] }>,
+): void {
   const manifestPath = join(TEST_DIR, '.omc', 'deepinit-manifest.json');
   mkdirSync(join(TEST_DIR, '.omc'), { recursive: true });
-  writeFileSync(manifestPath, JSON.stringify({
-    version: 1,
-    generatedAt: new Date().toISOString(),
-    directories,
-  }));
+  writeFileSync(
+    manifestPath,
+    JSON.stringify({
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      directories,
+    }),
+  );
 }
 
 // Mock validateWorkingDirectory to return our test dir
@@ -248,19 +260,19 @@ describe('computeDiff', () => {
   it('first run (null previous): all directories are added', () => {
     const current = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
 
     const result = computeDiff(null, current);
     expect(result.summary.added).toBe(2);
     expect(result.summary.unchanged).toBe(0);
-    expect(result.entries.every(e => e.status === 'added')).toBe(true);
+    expect(result.entries.every((e) => e.status === 'added')).toBe(true);
   });
 
   it('no changes: all directories are unchanged', () => {
     const state = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
 
     const result = computeDiff(state, state);
@@ -271,21 +283,21 @@ describe('computeDiff', () => {
   });
 
   it('file added to directory: marked as modified', () => {
-    const previous = { 'src': { files: ['app.ts'] } };
-    const current = { 'src': { files: ['app.ts', 'utils.ts'] } };
+    const previous = { src: { files: ['app.ts'] } };
+    const current = { src: { files: ['app.ts', 'utils.ts'] } };
 
     const result = computeDiff(previous, current);
-    const srcEntry = result.entries.find(e => e.path === 'src');
+    const srcEntry = result.entries.find((e) => e.path === 'src');
     expect(srcEntry?.status).toBe('modified');
     expect(srcEntry?.reason).toContain('files added: utils.ts');
   });
 
   it('file removed from directory: marked as modified', () => {
-    const previous = { 'src': { files: ['app.ts', 'old.ts'] } };
-    const current = { 'src': { files: ['app.ts'] } };
+    const previous = { src: { files: ['app.ts', 'old.ts'] } };
+    const current = { src: { files: ['app.ts'] } };
 
     const result = computeDiff(previous, current);
-    const srcEntry = result.entries.find(e => e.path === 'src');
+    const srcEntry = result.entries.find((e) => e.path === 'src');
     expect(srcEntry?.status).toBe('modified');
     expect(srcEntry?.reason).toContain('files removed: old.ts');
   });
@@ -294,22 +306,24 @@ describe('computeDiff', () => {
     const previous = { '.': { files: ['index.ts'] } };
     const current = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src')?.status).toBe('added');
+    expect(result.entries.find((e) => e.path === 'src')?.status).toBe('added');
   });
 
   it('deleted directory: marked as deleted', () => {
     const previous = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
     const current = { '.': { files: ['index.ts'] } };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src')?.status).toBe('deleted');
+    expect(result.entries.find((e) => e.path === 'src')?.status).toBe(
+      'deleted',
+    );
   });
 
   it('renamed directory: old deleted, new added', () => {
@@ -323,8 +337,12 @@ describe('computeDiff', () => {
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src/auth')?.status).toBe('deleted');
-    expect(result.entries.find(e => e.path === 'src/authentication')?.status).toBe('added');
+    expect(result.entries.find((e) => e.path === 'src/auth')?.status).toBe(
+      'deleted',
+    );
+    expect(
+      result.entries.find((e) => e.path === 'src/authentication')?.status,
+    ).toBe('added');
   });
 
   it('entries are sorted by path', () => {
@@ -335,7 +353,7 @@ describe('computeDiff', () => {
     };
 
     const result = computeDiff(null, current);
-    const paths = result.entries.map(e => e.path);
+    const paths = result.entries.map((e) => e.path);
     expect(paths).toEqual(['.', 'a-dir', 'z-dir']);
   });
 });
@@ -348,54 +366,68 @@ describe('ancestor cascading', () => {
   it('child added marks parent as modified', () => {
     const previous = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
     const current = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
       'src/hooks': { files: ['bridge.ts'] },
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src/hooks')?.status).toBe('added');
-    expect(result.entries.find(e => e.path === 'src')?.status).toBe('modified');
-    expect(result.entries.find(e => e.path === 'src')?.reason).toContain('child directory added');
+    expect(result.entries.find((e) => e.path === 'src/hooks')?.status).toBe(
+      'added',
+    );
+    expect(result.entries.find((e) => e.path === 'src')?.status).toBe(
+      'modified',
+    );
+    expect(result.entries.find((e) => e.path === 'src')?.reason).toContain(
+      'child directory added',
+    );
   });
 
   it('child deleted marks parent and root as modified', () => {
     const previous = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
       'src/hooks': { files: ['bridge.ts'] },
     };
     const current = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src/hooks')?.status).toBe('deleted');
-    expect(result.entries.find(e => e.path === 'src')?.status).toBe('modified');
+    expect(result.entries.find((e) => e.path === 'src/hooks')?.status).toBe(
+      'deleted',
+    );
+    expect(result.entries.find((e) => e.path === 'src')?.status).toBe(
+      'modified',
+    );
   });
 
   it('multiple children in different subtrees cascade independently', () => {
     const previous = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
-      'docs': { files: ['readme.md'] },
+      src: { files: ['app.ts'] },
+      docs: { files: ['readme.md'] },
     };
     const current = {
       '.': { files: ['index.ts'] },
-      'src': { files: ['app.ts'] },
+      src: { files: ['app.ts'] },
       'src/new-module': { files: ['mod.ts'] },
-      'docs': { files: ['readme.md'] },
+      docs: { files: ['readme.md'] },
       'docs/api': { files: ['spec.md'] },
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === 'src')?.status).toBe('modified');
-    expect(result.entries.find(e => e.path === 'docs')?.status).toBe('modified');
-    expect(result.entries.find(e => e.path === '.')?.status).toBe('modified');
+    expect(result.entries.find((e) => e.path === 'src')?.status).toBe(
+      'modified',
+    );
+    expect(result.entries.find((e) => e.path === 'docs')?.status).toBe(
+      'modified',
+    );
+    expect(result.entries.find((e) => e.path === '.')?.status).toBe('modified');
   });
 
   it('root directory (.) is cascaded when child is added', () => {
@@ -408,7 +440,7 @@ describe('ancestor cascading', () => {
     };
 
     const result = computeDiff(previous, current);
-    expect(result.entries.find(e => e.path === '.')?.status).toBe('modified');
+    expect(result.entries.find((e) => e.path === '.')?.status).toBe('modified');
   });
 });
 
@@ -444,7 +476,7 @@ describe('deepinitManifestTool handler', () => {
 
     it('no changes: all directories returned as unchanged', async () => {
       createFile('src/index.ts');
-      createManifest({ 'src': { files: ['index.ts'] } });
+      createManifest({ src: { files: ['index.ts'] } });
 
       const result = await deepinitManifestTool.handler({
         action: 'diff',
@@ -459,7 +491,7 @@ describe('deepinitManifestTool handler', () => {
 
     it('mode=full returns all as added regardless of manifest', async () => {
       createFile('src/index.ts');
-      createManifest({ 'src': { files: ['index.ts'] } });
+      createManifest({ src: { files: ['index.ts'] } });
 
       const result = await deepinitManifestTool.handler({
         action: 'diff',
@@ -475,7 +507,10 @@ describe('deepinitManifestTool handler', () => {
     it('corrupted manifest treated as first run', async () => {
       createFile('src/index.ts');
       mkdirSync(join(TEST_DIR, '.omc'), { recursive: true });
-      writeFileSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'), '{ broken json');
+      writeFileSync(
+        join(TEST_DIR, '.omc', 'deepinit-manifest.json'),
+        '{ broken json',
+      );
 
       const result = await deepinitManifestTool.handler({
         action: 'diff',
@@ -514,7 +549,9 @@ describe('deepinitManifestTool handler', () => {
         dryRun: false,
       });
 
-      expect(existsSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'))).toBe(true);
+      expect(existsSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'))).toBe(
+        true,
+      );
     });
 
     it('dryRun=true does not write file', async () => {
@@ -527,7 +564,9 @@ describe('deepinitManifestTool handler', () => {
       });
 
       expect(result.content[0].text).toContain('Dry run');
-      expect(existsSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'))).toBe(false);
+      expect(existsSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'))).toBe(
+        false,
+      );
     });
   });
 
@@ -546,7 +585,7 @@ describe('deepinitManifestTool handler', () => {
 
     it('returns exists=true, valid=true when valid manifest exists', async () => {
       createFile('src/index.ts');
-      createManifest({ 'src': { files: ['index.ts'] } });
+      createManifest({ src: { files: ['index.ts'] } });
 
       const result = await deepinitManifestTool.handler({
         action: 'check',
@@ -562,7 +601,10 @@ describe('deepinitManifestTool handler', () => {
 
     it('returns exists=true, valid=false when manifest is corrupted', async () => {
       mkdirSync(join(TEST_DIR, '.omc'), { recursive: true });
-      writeFileSync(join(TEST_DIR, '.omc', 'deepinit-manifest.json'), 'not json');
+      writeFileSync(
+        join(TEST_DIR, '.omc', 'deepinit-manifest.json'),
+        'not json',
+      );
 
       const result = await deepinitManifestTool.handler({
         action: 'check',
@@ -585,7 +627,9 @@ describe('deepinitManifestTool handler', () => {
       });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("'mode' parameter is only valid with action='diff'");
+      expect(result.content[0].text).toContain(
+        "'mode' parameter is only valid with action='diff'",
+      );
     });
 
     it('rejects dryRun with action=diff', async () => {
@@ -598,7 +642,9 @@ describe('deepinitManifestTool handler', () => {
       });
 
       expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("'dryRun' parameter is only valid with action='save'");
+      expect(result.content[0].text).toContain(
+        "'dryRun' parameter is only valid with action='save'",
+      );
     });
   });
 });

@@ -8,7 +8,11 @@ import { getClaudeConfigDir } from '../../utils/config-dir.js';
 import { OmcPaths } from '../../lib/worktree-paths.js';
 
 /** User-level skills directory (read by skill-injector.mjs hook) */
-export const USER_SKILLS_DIR = join(getClaudeConfigDir(), 'skills', 'omc-learned');
+export const USER_SKILLS_DIR = join(
+  getClaudeConfigDir(),
+  'skills',
+  'omc-learned',
+);
 
 /** Global skills directory (new preferred location: ~/.omc/skills) */
 export const GLOBAL_SKILLS_DIR = join(homedir(), '.omc', 'skills');
@@ -38,7 +42,13 @@ export const MAX_SKILL_CONTENT_LENGTH = 4000;
 export const MIN_QUALITY_SCORE = 50;
 
 /** Required metadata fields */
-export const REQUIRED_METADATA_FIELDS = ['id', 'name', 'description', 'triggers', 'source'];
+export const REQUIRED_METADATA_FIELDS = [
+  'id',
+  'name',
+  'description',
+  'triggers',
+  'source',
+];
 
 /** Maximum skills to inject per session */
 export const MAX_SKILLS_PER_SESSION = 10;

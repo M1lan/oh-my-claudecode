@@ -41,7 +41,7 @@ function resolveParentPid(
  * are closed without forwarding SIGTERM/SIGINT.
  */
 export function registerStandaloneShutdownHandlers(
-  options: RegisterStandaloneShutdownHandlersOptions
+  options: RegisterStandaloneShutdownHandlersOptions,
 ): { shutdown: (reason: string) => Promise<void> } {
   const processRef = options.processRef ?? process;
   const pollIntervalMs = Math.max(100, options.pollIntervalMs ?? 1000);
@@ -83,14 +83,17 @@ export function registerStandaloneShutdownHandlers(
 
   const expectedParentPid = resolveParentPid(processRef, options.parentPid);
   if (typeof expectedParentPid === 'number' && expectedParentPid > 1) {
-    const getParentPid = options.getParentPid ?? (() => resolveParentPid(processRef));
+    const getParentPid =
+      options.getParentPid ?? (() => resolveParentPid(processRef));
     parentWatch = setIntervalFn(() => {
       const currentParentPid = getParentPid();
       if (typeof currentParentPid !== 'number') {
         return;
       }
       if (currentParentPid <= 1 || currentParentPid !== expectedParentPid) {
-        void shutdown(`parent pid changed (${expectedParentPid} -> ${currentParentPid})`);
+        void shutdown(
+          `parent pid changed (${expectedParentPid} -> ${currentParentPid})`,
+        );
       }
     }, pollIntervalMs);
     (parentWatch as { unref?: () => void }).unref?.();

@@ -32,9 +32,18 @@ export const DEBUG_FILE = join(tmpdir(), 'recovery-debug.log');
 /**
  * Part type sets for categorization
  */
-export const THINKING_TYPES = new Set(['thinking', 'redacted_thinking', 'reasoning']);
+export const THINKING_TYPES = new Set([
+  'thinking',
+  'redacted_thinking',
+  'reasoning',
+]);
 export const META_TYPES = new Set(['step-start', 'step-finish']);
-export const CONTENT_TYPES = new Set(['text', 'tool', 'tool_use', 'tool_result']);
+export const CONTENT_TYPES = new Set([
+  'text',
+  'tool',
+  'tool_use',
+  'tool_result',
+]);
 
 /**
  * Placeholder text for empty content

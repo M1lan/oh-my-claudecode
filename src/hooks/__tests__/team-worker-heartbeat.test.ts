@@ -11,7 +11,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { maybeNotifyLeaderAllWorkersIdle, type TmuxRunner } from '../team-worker-hook.js';
+import {
+  maybeNotifyLeaderAllWorkersIdle,
+  type TmuxRunner,
+} from '../team-worker-hook.js';
 
 describe('team-worker-hook heartbeat missing file', () => {
   let tmpDir: string;

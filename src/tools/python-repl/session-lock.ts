@@ -39,14 +39,14 @@ export class LockTimeoutError extends Error {
   constructor(
     public readonly lockPath: string,
     public readonly timeout: number,
-    public readonly lastHolder?: LockInfo
+    public readonly lastHolder?: LockInfo,
   ) {
     super(
       `Failed to acquire lock within ${timeout}ms. ` +
         (lastHolder
           ? `Held by PID ${lastHolder.pid} on ${lastHolder.hostname} since ${lastHolder.acquiredAt}`
           : 'Unknown holder') +
-        `. Lock path: ${lockPath}`
+        `. Lock path: ${lockPath}`,
     );
     this.name = 'LockTimeoutError';
   }
@@ -89,7 +89,9 @@ function isValidPid(pid: unknown): pid is number {
  * Get the start time of the current process.
  * Used when creating lock files to enable PID reuse detection.
  */
-export async function getCurrentProcessStartTime(): Promise<number | undefined> {
+export async function getCurrentProcessStartTime(): Promise<
+  number | undefined
+> {
   return getProcessStartTime(process.pid);
 }
 
@@ -104,7 +106,10 @@ export async function getCurrentProcessStartTime(): Promise<number | undefined> 
  * @param recordedStartTime - Start time recorded when lock was acquired
  * @returns true if process is alive AND start time matches (or wasn't recorded)
  */
-export async function isProcessAlive(pid: number, recordedStartTime?: number): Promise<boolean> {
+export async function isProcessAlive(
+  pid: number,
+  recordedStartTime?: number,
+): Promise<boolean> {
   if (!isValidPid(pid)) return false;
 
   if (process.platform === 'linux') {
@@ -112,7 +117,10 @@ export async function isProcessAlive(pid: number, recordedStartTime?: number): P
     if (currentStartTime === undefined) return false;
 
     // If we have a recorded start time, verify it matches
-    if (recordedStartTime !== undefined && currentStartTime !== recordedStartTime) {
+    if (
+      recordedStartTime !== undefined &&
+      currentStartTime !== recordedStartTime
+    ) {
       return false; // PID reuse detected
     }
 
@@ -120,9 +128,13 @@ export async function isProcessAlive(pid: number, recordedStartTime?: number): P
   } else if (process.platform === 'darwin') {
     try {
       // First check if process exists
-      const { stdout } = await execFileAsync('ps', ['-p', String(pid), '-o', 'pid='], {
-        env: { ...process.env, LC_ALL: 'C' },
-      });
+      const { stdout } = await execFileAsync(
+        'ps',
+        ['-p', String(pid), '-o', 'pid='],
+        {
+          env: { ...process.env, LC_ALL: 'C' },
+        },
+      );
       if (stdout.trim() === '') return false;
 
       // If we have a recorded start time, verify it matches
@@ -152,7 +164,10 @@ export async function isProcessAlive(pid: number, recordedStartTime?: number): P
     if (recordedStartTime !== undefined) {
       const currentStartTime = await getProcessStartTime(pid);
       // If start-time metadata is unavailable, avoid misclassifying a live process as dead.
-      if (currentStartTime !== undefined && currentStartTime !== recordedStartTime) {
+      if (
+        currentStartTime !== undefined &&
+        currentStartTime !== recordedStartTime
+      ) {
         return false; // PID reuse detected
       }
     }
@@ -182,9 +197,9 @@ async function isWindowsProcessAlivePowerShell(pid: number): Promise<boolean> {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        `$p = Get-CimInstance Win32_Process -Filter "ProcessId = ${pid}" -ErrorAction SilentlyContinue; if (-not $p) { $p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue }; if ($p) { '1' }`
+        `$p = Get-CimInstance Win32_Process -Filter "ProcessId = ${pid}" -ErrorAction SilentlyContinue; if (-not $p) { $p = Get-Process -Id ${pid} -ErrorAction SilentlyContinue }; if ($p) { '1' }`,
       ],
-      { timeout: 5000, windowsHide: true }
+      { timeout: 5000, windowsHide: true },
     );
     return stdout.trim() === '1';
   } catch {
@@ -203,7 +218,7 @@ async function isWindowsProcessAlivePowerShell(pid: number): Promise<boolean> {
 async function openNoFollow(
   filePath: string,
   flags: number,
-  mode: number
+  mode: number,
 ): Promise<fs.FileHandle> {
   // Add O_NOFOLLOW if available (Linux, macOS)
   // O_NOFOLLOW doesn't exist on Windows. Use 0 to disable the flag.
@@ -405,11 +420,15 @@ export class SessionLock {
 
         // Atomic exclusive create with O_NOFOLLOW
         const flags =
-          fsSync.constants.O_WRONLY | fsSync.constants.O_CREAT | fsSync.constants.O_EXCL;
+          fsSync.constants.O_WRONLY |
+          fsSync.constants.O_CREAT |
+          fsSync.constants.O_EXCL;
 
         const lockFile = await openNoFollow(this.lockPath, flags, 0o644);
         try {
-          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), { encoding: 'utf8' });
+          await lockFile.writeFile(JSON.stringify(newLockInfo, null, 2), {
+            encoding: 'utf8',
+          });
           await lockFile.sync();
         } finally {
           await lockFile.close();
@@ -531,7 +550,7 @@ function sleep(ms: number): Promise<void> {
 export async function withLock<T>(
   sessionId: string,
   fn: () => Promise<T>,
-  timeout: number = DEFAULT_ACQUIRE_TIMEOUT_MS
+  timeout: number = DEFAULT_ACQUIRE_TIMEOUT_MS,
 ): Promise<T> {
   const lock = new SessionLock(sessionId);
   await lock.acquire(timeout);
@@ -564,7 +583,8 @@ export async function getLockStatus(sessionId: string): Promise<{
   }
 
   const canBreakResult = await canBreakLock(lockInfo);
-  const ownedByUs = lockInfo.pid === process.pid && lockInfo.hostname === os.hostname();
+  const ownedByUs =
+    lockInfo.pid === process.pid && lockInfo.hostname === os.hostname();
 
   return {
     locked: true,

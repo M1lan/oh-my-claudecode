@@ -14,7 +14,10 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import type { CallToolRequest, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import type {
+  CallToolRequest,
+  CallToolResult,
+} from '@modelcontextprotocol/sdk/types.js';
 import { registerStandaloneShutdownHandlers } from './standalone-shutdown.js';
 import { cleanupOwnedBridgeSessions } from '../tools/python-repl/bridge-manager.js';
 import { buildListToolsResponse, getEnabledTools } from './tool-registry.js';
@@ -39,21 +42,24 @@ const server = new Server(
     capabilities: {
       tools: {},
     },
-  }
+  },
 );
 
 // List available tools — delegates to tool-registry so tests exercise the same path.
-server.setRequestHandler(ListToolsRequestSchema, async () => buildListToolsResponse());
+server.setRequestHandler(ListToolsRequestSchema, async () =>
+  buildListToolsResponse(),
+);
 const getStandaloneTools = () => getEnabledTools();
 
 // Handle tool calls
-const setStandaloneCallToolRequestHandler =
-  (server.setRequestHandler as unknown as StandaloneCallToolRequestRegistrar).bind(server);
+const setStandaloneCallToolRequestHandler = (
+  server.setRequestHandler as unknown as StandaloneCallToolRequestRegistrar
+).bind(server);
 
 setStandaloneCallToolRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
 
-  const tool = getStandaloneTools().find(t => t.name === name);
+  const tool = getStandaloneTools().find((t) => t.name === name);
   if (!tool) {
     return {
       content: [{ type: 'text', text: `Unknown tool: ${name}` }],
@@ -84,7 +90,9 @@ async function gracefulShutdown(signal: string): Promise<void> {
   const forceExitTimer = setTimeout(() => process.exit(1), 5_000);
   forceExitTimer.unref();
 
-  console.error(`OMC MCP Server: received ${signal}, disconnecting LSP servers...`);
+  console.error(
+    `OMC MCP Server: received ${signal}, disconnecting LSP servers...`,
+  );
 
   try {
     await cleanupOwnedBridgeSessions();

@@ -8,14 +8,8 @@
  * The LLM caller synthesizes answers from returned matches.
  */
 
-import {
-  type WikiQueryOptions,
-  type WikiQueryMatch,
-} from './types.js';
-import {
-  readAllPages,
-  appendLog,
-} from './storage.js';
+import { type WikiQueryOptions, type WikiQueryMatch } from './types.js';
+import { readAllPages, appendLog } from './storage.js';
 
 /**
  * Tokenize text for search, with CJK bi-gram support.
@@ -54,7 +48,7 @@ export function tokenize(text: string): string[] {
     .replace(/[a-z0-9\u00C0-\u024F]+/g, ' ')
     .replace(cjkPattern, ' ')
     .split(/\s+/)
-    .filter(t => t.length > 0 && /\p{L}/u.test(t));
+    .filter((t) => t.length > 0 && /\p{L}/u.test(t));
   if (remaining.length > 0) tokens.push(...remaining);
 
   return tokens;
@@ -96,15 +90,17 @@ export function queryWiki(
 
     // Tag matching (weight: 3 per matching tag)
     if (filterTags && filterTags.length > 0) {
-      const tagOverlap = filterTags.filter(t =>
-        page.frontmatter.tags.some(pt => pt.toLowerCase() === t.toLowerCase())
+      const tagOverlap = filterTags.filter((t) =>
+        page.frontmatter.tags.some(
+          (pt) => pt.toLowerCase() === t.toLowerCase(),
+        ),
       );
       score += tagOverlap.length * 3;
     }
 
     // Also match query terms against page tags
     for (const term of queryTerms) {
-      if (page.frontmatter.tags.some(t => t.toLowerCase().includes(term))) {
+      if (page.frontmatter.tags.some((t) => t.toLowerCase().includes(term))) {
         score += 2;
       }
     }
@@ -129,8 +125,14 @@ export function queryWiki(
         if (!snippet) {
           const start = Math.max(0, idx - 40);
           const end = Math.min(contentLower.length, idx + term.length + 80);
-          const raw = page.content.slice(start, end).replace(/\n+/g, ' ').trim();
-          snippet = (start > 0 ? '...' : '') + raw + (end < contentLower.length ? '...' : '');
+          const raw = page.content
+            .slice(start, end)
+            .replace(/\n+/g, ' ')
+            .trim();
+          snippet =
+            (start > 0 ? '...' : '') +
+            raw +
+            (end < contentLower.length ? '...' : '');
         }
       }
     }
@@ -138,7 +140,11 @@ export function queryWiki(
     if (score > 0) {
       if (!snippet) {
         // Default snippet: first non-empty line
-        snippet = page.content.split('\n').find(l => l.trim().length > 0)?.trim() || '';
+        snippet =
+          page.content
+            .split('\n')
+            .find((l) => l.trim().length > 0)
+            ?.trim() || '';
         if (snippet.length > 120) snippet = snippet.slice(0, 117) + '...';
       }
 
@@ -154,7 +160,7 @@ export function queryWiki(
   appendLog(root, {
     timestamp: new Date().toISOString(),
     operation: 'query',
-    pagesAffected: limited.map(m => m.page.filename),
+    pagesAffected: limited.map((m) => m.page.filename),
     summary: `Query "${queryText}" → ${limited.length} results (of ${matches.length} total)`,
   });
 

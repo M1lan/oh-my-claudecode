@@ -9,7 +9,9 @@ function createFsMock(initialFiles: Record<string, string>) {
   const files = new Map(Object.entries(initialFiles));
   const directories = new Set<string>([CLAUDE_CONFIG_DIR]);
 
-  const existsSync = vi.fn((path: string) => files.has(String(path)) || directories.has(String(path)));
+  const existsSync = vi.fn(
+    (path: string) => files.has(String(path)) || directories.has(String(path)),
+  );
   const readFileSync = vi.fn((path: string) => {
     const content = files.get(String(path));
     if (content == null) throw new Error(`ENOENT: ${path}`);
@@ -111,7 +113,9 @@ describe('getUsage lock failure fallback', () => {
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
     vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+      ...(await vi.importActual<typeof import('child_process')>(
+        'child_process',
+      )),
       execSync: vi.fn(),
     }));
     vi.doMock('fs', () => fsModule);
@@ -122,7 +126,9 @@ describe('getUsage lock failure fallback', () => {
     }));
 
     const { getUsage } = await import('../../hud/usage-api.js');
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const httpsModule = (await import('https')) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     // Should NOT throw, should return stale data
     const result = await getUsage();
@@ -158,7 +164,9 @@ describe('getUsage lock failure fallback', () => {
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
     vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+      ...(await vi.importActual<typeof import('child_process')>(
+        'child_process',
+      )),
       execSync: vi.fn(),
     }));
     vi.doMock('fs', () => fsModule);
@@ -220,42 +228,60 @@ describe('getUsage lock behavior', () => {
       validateAnthropicBaseUrl: () => ({ allowed: true }),
     }));
     vi.doMock('child_process', async () => ({
-      ...(await vi.importActual<typeof import('child_process')>('child_process')),
+      ...(await vi.importActual<typeof import('child_process')>(
+        'child_process',
+      )),
       execSync: vi.fn(),
     }));
     vi.doMock('fs', () => fsModule);
     vi.doMock('https', () => ({
       default: {
-        request: vi.fn((options: Record<string, unknown>, callback: (res: EventEmitter & { statusCode?: number }) => void) => {
-          requestSawLock = files.has(LOCK_PATH);
+        request: vi.fn(
+          (
+            options: Record<string, unknown>,
+            callback: (res: EventEmitter & { statusCode?: number }) => void,
+          ) => {
+            requestSawLock = files.has(LOCK_PATH);
 
-          const req = new EventEmitter() as EventEmitter & {
-            destroy: () => void;
-            end: () => void;
-          };
-          req.destroy = vi.fn();
-          req.end = () => {
-            setTimeout(() => {
-              const res = new EventEmitter() as EventEmitter & { statusCode?: number };
-              res.statusCode = 200;
-              callback(res);
-              res.emit('data', JSON.stringify({
-                data: {
-                  limits: [
-                    { type: 'TOKENS_LIMIT', percentage: 67, nextResetTime: Date.now() + 3_600_000 },
-                  ],
-                },
-              }));
-              res.emit('end');
-            }, 10);
-          };
-          return req;
-        }),
+            const req = new EventEmitter() as EventEmitter & {
+              destroy: () => void;
+              end: () => void;
+            };
+            req.destroy = vi.fn();
+            req.end = () => {
+              setTimeout(() => {
+                const res = new EventEmitter() as EventEmitter & {
+                  statusCode?: number;
+                };
+                res.statusCode = 200;
+                callback(res);
+                res.emit(
+                  'data',
+                  JSON.stringify({
+                    data: {
+                      limits: [
+                        {
+                          type: 'TOKENS_LIMIT',
+                          percentage: 67,
+                          nextResetTime: Date.now() + 3_600_000,
+                        },
+                      ],
+                    },
+                  }),
+                );
+                res.emit('end');
+              }, 10);
+            };
+            return req;
+          },
+        ),
       },
     }));
 
     const { getUsage } = await import('../../hud/usage-api.js');
-    const httpsModule = await import('https') as unknown as { default: { request: ReturnType<typeof vi.fn> } };
+    const httpsModule = (await import('https')) as unknown as {
+      default: { request: ReturnType<typeof vi.fn> };
+    };
 
     const [first, second] = await Promise.all([getUsage(), getUsage()]);
 

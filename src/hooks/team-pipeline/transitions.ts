@@ -1,6 +1,9 @@
-import type { TeamPipelinePhase, TeamPipelineState, TeamTransitionResult } from './types.js';
+import type {
+  TeamPipelinePhase,
+  TeamPipelineState,
+  TeamTransitionResult,
+} from './types.js';
 import { markTeamPhase } from './state.js';
-
 
 const ALLOWED: Record<TeamPipelinePhase, TeamPipelinePhase[]> = {
   'team-plan': ['team-prd'],
@@ -13,16 +16,24 @@ const ALLOWED: Record<TeamPipelinePhase, TeamPipelinePhase[]> = {
   cancelled: ['team-plan', 'team-exec'],
 };
 
-function isAllowedTransition(from: TeamPipelinePhase, to: TeamPipelinePhase): boolean {
+function isAllowedTransition(
+  from: TeamPipelinePhase,
+  to: TeamPipelinePhase,
+): boolean {
   return ALLOWED[from].includes(to);
 }
 
 /** Validates that a value is a non-negative finite integer */
 export function isNonNegativeFiniteInteger(n: unknown): n is number {
-  return typeof n === 'number' && Number.isFinite(n) && Number.isInteger(n) && n >= 0;
+  return (
+    typeof n === 'number' && Number.isFinite(n) && Number.isInteger(n) && n >= 0
+  );
 }
 
-function hasRequiredArtifactsForPhase(state: TeamPipelineState, next: TeamPipelinePhase): string | null {
+function hasRequiredArtifactsForPhase(
+  state: TeamPipelineState,
+  next: TeamPipelinePhase,
+): string | null {
   if (next === 'team-exec') {
     if (!state.artifacts.plan_path && !state.artifacts.prd_path) {
       return 'team-exec requires plan_path or prd_path artifact';
@@ -93,7 +104,10 @@ export function transitionTeamPhase(
   return markTeamPhase(state, next, reason);
 }
 
-export function requestTeamCancel(state: TeamPipelineState, preserveForResume = true): TeamPipelineState {
+export function requestTeamCancel(
+  state: TeamPipelineState,
+  preserveForResume = true,
+): TeamPipelineState {
   return {
     ...state,
     cancel: {

@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -29,7 +37,10 @@ describe('HUD cache wrapper stale render cleanup', () => {
     const emptyStdoutTmp = join(cacheDir, 'statusline.issue-3002.123.tmp');
     const emptyStderrTmp = join(cacheDir, 'statusline.issue-3002.123.err');
     const emptyInputTmp = join(cacheDir, 'stdin.123.tmp');
-    const diagnosticErr = join(cacheDir, 'statusline.issue-3002.diagnostic.err');
+    const diagnosticErr = join(
+      cacheDir,
+      'statusline.issue-3002.diagnostic.err',
+    );
     writeFileSync(emptyStdoutTmp, '');
     writeFileSync(emptyStderrTmp, '');
     writeFileSync(emptyInputTmp, '');
@@ -39,7 +50,10 @@ describe('HUD cache wrapper stale render cleanup', () => {
     writeFileSync(diagnosticErr, 'renderer exploded\n');
 
     const hudScript = join(tempRoot, 'fake-hud.mjs');
-    writeFileSync(hudScript, "process.stdin.resume(); process.stdin.on('end', () => console.log('rendered issue 3002'));\n");
+    writeFileSync(
+      hudScript,
+      "process.stdin.resume(); process.stdin.on('end', () => console.log('rendered issue 3002'));\n",
+    );
 
     const output = execFileSync('sh', [wrapperPath, hudScript], {
       input: JSON.stringify({ session_id: 'issue-3002', cwd: tempRoot }),
@@ -60,7 +74,9 @@ describe('HUD cache wrapper stale render cleanup', () => {
     expect(() => statSync(emptyStderrTmp)).toThrow();
     expect(() => statSync(emptyInputTmp)).toThrow();
     expect(readFileSync(diagnosticErr, 'utf8')).toBe('renderer exploded\n');
-    expect(readFileSync(join(cacheDir, 'statusline.issue-3002.txt'), 'utf8')).toBe('rendered issue 3002\n');
+    expect(
+      readFileSync(join(cacheDir, 'statusline.issue-3002.txt'), 'utf8'),
+    ).toBe('rendered issue 3002\n');
 
     rmSync(tempRoot, { recursive: true, force: true });
   });

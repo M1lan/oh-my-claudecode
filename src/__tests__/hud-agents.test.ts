@@ -26,7 +26,7 @@ const GREEN = '\x1b[32m';
 function createAgent(
   type: string,
   model?: string,
-  startTime?: Date
+  startTime?: Date,
 ): ActiveAgent {
   return {
     id: `agent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
@@ -130,7 +130,7 @@ describe('Agents Element', () => {
         createAgent(
           'oh-my-claudecode:architect',
           'opus',
-          new Date(Date.now() - 30000)
+          new Date(Date.now() - 30000),
         ), // 30 seconds ago
       ];
       const result = renderAgentsCodedWithDuration(agents);
@@ -143,7 +143,7 @@ describe('Agents Element', () => {
         createAgent(
           'oh-my-claudecode:architect',
           'opus',
-          new Date(Date.now() - 180000)
+          new Date(Date.now() - 180000),
         ), // 3 minutes ago
       ];
       const result = renderAgentsCodedWithDuration(agents);
@@ -156,7 +156,7 @@ describe('Agents Element', () => {
         createAgent(
           'oh-my-claudecode:architect',
           'opus',
-          new Date(Date.now() - 600000)
+          new Date(Date.now() - 600000),
         ), // 10 minutes ago
       ];
       const result = renderAgentsCodedWithDuration(agents);
@@ -189,7 +189,7 @@ describe('Agents Element', () => {
         createAgent(
           'oh-my-claudecode:architect',
           'opus',
-          new Date(Date.now() - 120000)
+          new Date(Date.now() - 120000),
         ), // 2 minutes
       ];
       const result = renderAgentsDetailed(agents);
@@ -358,9 +358,7 @@ describe('Agents Element', () => {
     });
 
     it('should use cyan for unknown model', () => {
-      const agents: ActiveAgent[] = [
-        createAgent('oh-my-claudecode:architect'),
-      ];
+      const agents: ActiveAgent[] = [createAgent('oh-my-claudecode:architect')];
       const result = renderAgentsCoded(agents);
       expect(result).toContain(CYAN);
     });
@@ -420,7 +418,11 @@ describe('Agents Element', () => {
       const now = Date.now();
       const agents: ActiveAgent[] = [
         {
-          ...createAgent('oh-my-claudecode:architect', 'opus', new Date(now - 1000)),
+          ...createAgent(
+            'oh-my-claudecode:architect',
+            'opus',
+            new Date(now - 1000),
+          ),
           description: 'analyzing code',
         },
         {
@@ -458,7 +460,7 @@ describe('Agents Element', () => {
         createAgent(
           'oh-my-claudecode:architect',
           'opus',
-          new Date(Date.now() - 120000) // 2 minutes ago
+          new Date(Date.now() - 120000), // 2 minutes ago
         ),
       ];
       const result = renderAgentsMultiLine(agents);
@@ -483,14 +485,18 @@ describe('Agents Element', () => {
     });
 
     it('should handle agents without descriptions', () => {
-      const agents: ActiveAgent[] = [createAgent('oh-my-claudecode:architect', 'opus')];
+      const agents: ActiveAgent[] = [
+        createAgent('oh-my-claudecode:architect', 'opus'),
+      ];
       const result = renderAgentsMultiLine(agents);
       expect(result.detailLines).toHaveLength(1);
       expect(result.detailLines[0]).toContain('...');
     });
 
     it('should route to multiline from renderAgentsByFormat', () => {
-      const agents: ActiveAgent[] = [createAgent('oh-my-claudecode:architect', 'opus')];
+      const agents: ActiveAgent[] = [
+        createAgent('oh-my-claudecode:architect', 'opus'),
+      ];
       const result = renderAgentsByFormat(agents, 'multiline');
       // Should return the header part only (backward compatibility)
       expect(result).toContain('agents:');

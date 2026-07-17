@@ -90,11 +90,19 @@ describe('memory-tools payload validation', () => {
         workingDirectory: TEST_DIR,
       });
 
-      const centralizedPath = join(stateDir, getProjectIdentifier(TEST_DIR), 'project-memory.json');
+      const centralizedPath = join(
+        stateDir,
+        getProjectIdentifier(TEST_DIR),
+        'project-memory.json',
+      );
 
       expect(result.content[0].text).toContain(centralizedPath);
-      expect(JSON.parse(readFileSync(centralizedPath, 'utf-8')).projectRoot).toBe(TEST_DIR);
-      expect(existsSync(join(TEST_DIR, '.omc', 'project-memory.json'))).toBe(false);
+      expect(
+        JSON.parse(readFileSync(centralizedPath, 'utf-8')).projectRoot,
+      ).toBe(TEST_DIR);
+      expect(existsSync(join(TEST_DIR, '.omc', 'project-memory.json'))).toBe(
+        false,
+      );
       expect(result.isError).toBeUndefined();
     } finally {
       rmSync(stateDir, { recursive: true, force: true });
@@ -103,11 +111,14 @@ describe('memory-tools payload validation', () => {
 
   it('should add a directive when existing memory lacks userDirectives', async () => {
     const memoryPath = join(TEST_DIR, '.omc', 'project-memory.json');
-    writeFileSync(memoryPath, JSON.stringify({
-      version: '1.0.0',
-      lastScanned: Date.now(),
-      projectRoot: TEST_DIR,
-    }));
+    writeFileSync(
+      memoryPath,
+      JSON.stringify({
+        version: '1.0.0',
+        lastScanned: Date.now(),
+        projectRoot: TEST_DIR,
+      }),
+    );
 
     const result = await projectMemoryAddDirectiveTool.handler({
       directive: 'Prefer focused regression tests',
@@ -129,11 +140,14 @@ describe('memory-tools payload validation', () => {
 
   it('should add a note when existing memory lacks customNotes', async () => {
     const memoryPath = join(TEST_DIR, '.omc', 'project-memory.json');
-    writeFileSync(memoryPath, JSON.stringify({
-      version: '1.0.0',
-      lastScanned: Date.now(),
-      projectRoot: TEST_DIR,
-    }));
+    writeFileSync(
+      memoryPath,
+      JSON.stringify({
+        version: '1.0.0',
+        lastScanned: Date.now(),
+        projectRoot: TEST_DIR,
+      }),
+    );
 
     const result = await projectMemoryAddNoteTool.handler({
       category: 'test',

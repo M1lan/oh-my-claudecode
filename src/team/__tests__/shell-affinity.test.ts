@@ -13,7 +13,10 @@ vi.mock('fs', async (importOriginal) => {
 import { existsSync } from 'fs';
 const mockExistsSync = existsSync as ReturnType<typeof vi.fn>;
 
-const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
+  process,
+  'platform',
+);
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -27,24 +30,47 @@ afterEach(() => {
 describe('resolveShellFromCandidates', () => {
   it('returns first existing candidate', () => {
     mockExistsSync.mockImplementation((p: string) => p === '/usr/bin/zsh');
-    const result = resolveShellFromCandidates(['/bin/zsh', '/usr/bin/zsh'], '/home/user/.zshrc');
-    expect(result).toEqual({ shell: '/usr/bin/zsh', rcFile: '/home/user/.zshrc' });
+    const result = resolveShellFromCandidates(
+      ['/bin/zsh', '/usr/bin/zsh'],
+      '/home/user/.zshrc',
+    );
+    expect(result).toEqual({
+      shell: '/usr/bin/zsh',
+      rcFile: '/home/user/.zshrc',
+    });
   });
 
   it('returns null when no candidates exist', () => {
     mockExistsSync.mockReturnValue(false);
-    expect(resolveShellFromCandidates(['/bin/zsh', '/usr/bin/zsh'], '/home/user/.zshrc')).toBeNull();
+    expect(
+      resolveShellFromCandidates(
+        ['/bin/zsh', '/usr/bin/zsh'],
+        '/home/user/.zshrc',
+      ),
+    ).toBeNull();
   });
 
   it('resolves bash.exe from PATH on Windows when fixed Unix candidates do not exist', () => {
-    const originalDescriptor = Object.getOwnPropertyDescriptor(process, 'platform');
+    const originalDescriptor = Object.getOwnPropertyDescriptor(
+      process,
+      'platform',
+    );
     Object.defineProperty(process, 'platform', { value: 'win32' });
     vi.stubEnv('PATH', 'C:\\Windows\\System32;D:\\SoftWare\\Git\\bin');
-    mockExistsSync.mockImplementation((p: string) => p.replace(/\\/g, '/').replace(/\/+/g, '/') === 'D:/SoftWare/Git/bin/bash.exe');
+    mockExistsSync.mockImplementation(
+      (p: string) =>
+        p.replace(/\\/g, '/').replace(/\/+/g, '/') ===
+        'D:/SoftWare/Git/bin/bash.exe',
+    );
 
-    const result = resolveShellFromCandidates(['/bin/bash', '/usr/bin/bash'], 'C:/Users/test/.bashrc');
+    const result = resolveShellFromCandidates(
+      ['/bin/bash', '/usr/bin/bash'],
+      'C:/Users/test/.bashrc',
+    );
     expect(result?.rcFile).toBe('C:/Users/test/.bashrc');
-    expect(result?.shell.replace(/\\/g, '/')).toBe('D:/SoftWare/Git/bin/bash.exe');
+    expect(result?.shell.replace(/\\/g, '/')).toBe(
+      'D:/SoftWare/Git/bin/bash.exe',
+    );
 
     if (originalDescriptor) {
       Object.defineProperty(process, 'platform', originalDescriptor);
@@ -76,14 +102,20 @@ describe('resolveSupportedShellAffinity', () => {
     mockExistsSync.mockReturnValue(true);
     vi.stubEnv('HOME', '/home/testuser');
     const result = resolveSupportedShellAffinity('/bin/zsh');
-    expect(result).toEqual({ shell: '/bin/zsh', rcFile: '/home/testuser/.zshrc' });
+    expect(result).toEqual({
+      shell: '/bin/zsh',
+      rcFile: '/home/testuser/.zshrc',
+    });
   });
 
   it('returns spec for existing bash', () => {
     mockExistsSync.mockReturnValue(true);
     vi.stubEnv('HOME', '/home/testuser');
     const result = resolveSupportedShellAffinity('/bin/bash');
-    expect(result).toEqual({ shell: '/bin/bash', rcFile: '/home/testuser/.bashrc' });
+    expect(result).toEqual({
+      shell: '/bin/bash',
+      rcFile: '/home/testuser/.bashrc',
+    });
   });
 });
 

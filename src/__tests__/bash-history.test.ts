@@ -11,7 +11,9 @@ describe('Bash History Integration', () => {
   const testHistoryPath = join(tmpdir(), `.bash_history_test_${process.pid}`);
 
   afterEach(() => {
-    try { unlinkSync(testHistoryPath); } catch {
+    try {
+      unlinkSync(testHistoryPath);
+    } catch {
       // Cleanup failure is non-critical
     }
   });
@@ -35,9 +37,9 @@ describe('Bash History Integration', () => {
 
     it('should append multiple commands', () => {
       appendToBashHistory('git status', testHistoryPath);
-      appendToBashHistory('npm test', testHistoryPath);
+      appendToBashHistory('pnpm test', testHistoryPath);
       const content = readFileSync(testHistoryPath, 'utf-8');
-      expect(content).toBe('git status\nnpm test\n');
+      expect(content).toBe('git status\npnpm test\n');
     });
 
     it('should trim whitespace', () => {
@@ -61,7 +63,12 @@ describe('Bash History Integration', () => {
   describe('config reading', () => {
     function getBashHistoryEnabled(config: unknown): boolean {
       if (config === false) return false;
-      if (typeof config === 'object' && config !== null && (config as any).enabled === false) return false;
+      if (
+        typeof config === 'object' &&
+        config !== null &&
+        (config as any).enabled === false
+      )
+        return false;
       return true;
     }
 

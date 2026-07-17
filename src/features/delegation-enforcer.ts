@@ -16,7 +16,10 @@
 import { getAgentDefinitions } from '../agents/definitions.js';
 import { normalizeDelegationRole } from './delegation-routing/types.js';
 import { loadConfig } from '../config/loader.js';
-import { isProviderSpecificModelId, resolveClaudeFamily } from '../config/models.js';
+import {
+  isProviderSpecificModelId,
+  resolveClaudeFamily,
+} from '../config/models.js';
 import type { PluginConfig } from '../shared/types.js';
 
 // ---------------------------------------------------------------------------
@@ -79,7 +82,6 @@ function getCachedConfig(): PluginConfig {
   return _cachedConfig;
 }
 
-
 /** Map Claude model family to CC-supported alias */
 const FAMILY_TO_ALIAS: Record<string, string> = {
   SONNET: 'sonnet',
@@ -135,7 +137,9 @@ function canonicalizeSubagentType(subagentType: string): string {
   const hasPrefix = subagentType.startsWith('oh-my-claudecode:');
   const rawAgentType = subagentType.replace(/^oh-my-claudecode:/, '');
   const canonicalAgentType = normalizeDelegationRole(rawAgentType);
-  return hasPrefix ? `oh-my-claudecode:${canonicalAgentType}` : canonicalAgentType;
+  return hasPrefix
+    ? `oh-my-claudecode:${canonicalAgentType}`
+    : canonicalAgentType;
 }
 
 /**
@@ -149,14 +153,19 @@ function canonicalizeSubagentType(subagentType: string): string {
  * @throws Error if agent type has no default model
  */
 export function enforceModel(agentInput: AgentInput): EnforcementResult {
-  const canonicalSubagentType = canonicalizeSubagentType(agentInput.subagent_type);
+  const canonicalSubagentType = canonicalizeSubagentType(
+    agentInput.subagent_type,
+  );
 
   // If forceInherit is enabled, skip model injection entirely so agents
   // inherit the user's Claude Code model setting (issue #1135)
   const config = getCachedConfig();
   if (config.routing?.forceInherit) {
     const { model: _existing, ...rest } = agentInput;
-    const cleanedInput: AgentInput = { ...(rest as AgentInput), subagent_type: canonicalSubagentType };
+    const cleanedInput: AgentInput = {
+      ...(rest as AgentInput),
+      subagent_type: canonicalSubagentType,
+    };
     return {
       originalInput: agentInput,
       modifiedInput: cleanedInput,
@@ -172,7 +181,11 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
     const normalizedModel = normalizeToCcAlias(agentInput.model);
     return {
       originalInput: agentInput,
-      modifiedInput: { ...agentInput, subagent_type: canonicalSubagentType, model: normalizedModel },
+      modifiedInput: {
+        ...agentInput,
+        subagent_type: canonicalSubagentType,
+        model: normalizedModel,
+      },
       injected: false,
       model: normalizedModel,
     };
@@ -183,7 +196,9 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   const agentDef = agentDefs[agentType];
 
   if (!agentDef) {
-    throw new Error(`Unknown agent type: ${agentType} (from ${agentInput.subagent_type})`);
+    throw new Error(
+      `Unknown agent type: ${agentType} (from ${agentInput.subagent_type})`,
+    );
   }
 
   if (!agentDef.model) {
@@ -206,7 +221,10 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
   // If the resolved model is 'inherit', don't inject any model parameter.
   if (resolvedModel === 'inherit') {
     const { model: _existing, ...rest } = agentInput;
-    const cleanedInput: AgentInput = { ...(rest as AgentInput), subagent_type: canonicalSubagentType };
+    const cleanedInput: AgentInput = {
+      ...(rest as AgentInput),
+      subagent_type: canonicalSubagentType,
+    };
     return {
       originalInput: agentInput,
       modifiedInput: cleanedInput,
@@ -227,12 +245,14 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
 
   let warning: string | undefined;
   if (process.env.OMC_DEBUG === 'true') {
-    const aliasNote = resolvedModel !== agentDef.model && aliasSourceModel
-      ? ` (aliased from ${aliasSourceModel})`
-      : '';
-    const normalizedNote = normalizedModel !== resolvedModel
-      ? ` (normalized from ${resolvedModel})`
-      : '';
+    const aliasNote =
+      resolvedModel !== agentDef.model && aliasSourceModel
+        ? ` (aliased from ${aliasSourceModel})`
+        : '';
+    const normalizedNote =
+      normalizedModel !== resolvedModel
+        ? ` (normalized from ${resolvedModel})`
+        : '';
     warning = `[OMC] Auto-injecting model: ${normalizedModel} for ${agentType}${aliasNote}${normalizedNote}`;
   }
 
@@ -248,7 +268,10 @@ export function enforceModel(agentInput: AgentInput): EnforcementResult {
 /**
  * Check if tool input is an agent delegation call
  */
-export function isAgentCall(toolName: string, toolInput: unknown): toolInput is AgentInput {
+export function isAgentCall(
+  toolName: string,
+  toolInput: unknown,
+): toolInput is AgentInput {
   if (!isDelegationToolName(toolName)) {
     return false;
   }
@@ -270,7 +293,7 @@ export function isAgentCall(toolName: string, toolInput: unknown): toolInput is 
  */
 export function processPreToolUse(
   toolName: string,
-  toolInput: unknown
+  toolInput: unknown,
 ): { modifiedInput: unknown; warning?: string } {
   if (!isAgentCall(toolName, toolInput)) {
     return { modifiedInput: toolInput };
@@ -292,7 +315,9 @@ export function processPreToolUse(
  * Get model for an agent type (for testing/debugging)
  */
 export function getModelForAgent(agentType: string): string {
-  const normalizedType = normalizeDelegationRole(agentType.replace(/^oh-my-claudecode:/, ''));
+  const normalizedType = normalizeDelegationRole(
+    agentType.replace(/^oh-my-claudecode:/, ''),
+  );
   const agentDefs = getAgentDefinitions({ config: getCachedConfig() });
   const agentDef = agentDefs[normalizedType];
 

@@ -36,17 +36,30 @@ export interface CadenceOwnership {
 
 const cadenceOwners = new Map<string, CadenceOwnership>();
 
-function ownsCadence(ctx: WorkerCadenceContext & Partial<CadenceOwnership>): boolean {
+function ownsCadence(
+  ctx: WorkerCadenceContext & Partial<CadenceOwnership>,
+): boolean {
   const current = cadenceOwners.get(ctx.worktreePath);
-  return !current || ctx.serviceGeneration === undefined
-    || (current.serviceGeneration === ctx.serviceGeneration && current.attemptId === ctx.attemptId);
+  return (
+    !current ||
+    ctx.serviceGeneration === undefined ||
+    (current.serviceGeneration === ctx.serviceGeneration &&
+      current.attemptId === ctx.attemptId)
+  );
 }
 
-function registerCadenceOwner(ctx: WorkerCadenceContext & Partial<CadenceOwnership>): boolean {
-  if (ctx.serviceGeneration === undefined || ctx.attemptId === undefined) return true;
+function registerCadenceOwner(
+  ctx: WorkerCadenceContext & Partial<CadenceOwnership>,
+): boolean {
+  if (ctx.serviceGeneration === undefined || ctx.attemptId === undefined)
+    return true;
   const current = cadenceOwners.get(ctx.worktreePath);
-  if (current && current.serviceGeneration > ctx.serviceGeneration) return false;
-  cadenceOwners.set(ctx.worktreePath, { serviceGeneration: ctx.serviceGeneration, attemptId: ctx.attemptId });
+  if (current && current.serviceGeneration > ctx.serviceGeneration)
+    return false;
+  cadenceOwners.set(ctx.worktreePath, {
+    serviceGeneration: ctx.serviceGeneration,
+    attemptId: ctx.attemptId,
+  });
   return true;
 }
 
@@ -202,7 +215,11 @@ export async function installPostToolUseHook(
   const hookCommand = buildHookCommand(workerName);
   const merged = await mergeSettingsWithHook(settingsPath, hookCommand);
 
-  await writeFile(settingsPath, JSON.stringify(merged, null, 2) + '\n', 'utf-8');
+  await writeFile(
+    settingsPath,
+    JSON.stringify(merged, null, 2) + '\n',
+    'utf-8',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +230,9 @@ export async function installPostToolUseHook(
  * Touches `{worktreePath}/.hook-paused` to suppress auto-commits.
  * Idempotent — no error if already paused.
  */
-export async function pauseHookViaSentinel(worktreePath: string): Promise<void> {
+export async function pauseHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   // Ensure parent dir exists (should always be the worktree root, but be safe).
   await mkdir(dirname(sentinelPath), { recursive: true });
@@ -224,7 +243,9 @@ export async function pauseHookViaSentinel(worktreePath: string): Promise<void> 
  * Removes `{worktreePath}/.hook-paused` to re-enable auto-commits.
  * Idempotent — no error if already absent.
  */
-export async function resumeHookViaSentinel(worktreePath: string): Promise<void> {
+export async function resumeHookViaSentinel(
+  worktreePath: string,
+): Promise<void> {
   const sentinelPath = join(worktreePath, SENTINEL_FILENAME);
   try {
     await unlink(sentinelPath);
@@ -294,12 +315,20 @@ export function startFallbackPoller(
 
   // Watch the worktree root recursively (node:fs.watch with recursive flag).
   // On macOS/Linux this uses FSEvents/inotify.
-  const watcher = fsWatch(worktreePath, { recursive: true }, (eventType, filename) => {
-    if (stopped) return;
-    // Ignore .git internal changes to avoid feedback loops.
-    if (filename && (filename.startsWith('.git') || filename.startsWith('.git/'))) return;
-    scheduleDebounce();
-  });
+  const watcher = fsWatch(
+    worktreePath,
+    { recursive: true },
+    (eventType, filename) => {
+      if (stopped) return;
+      // Ignore .git internal changes to avoid feedback loops.
+      if (
+        filename &&
+        (filename.startsWith('.git') || filename.startsWith('.git/'))
+      )
+        return;
+      scheduleDebounce();
+    },
+  );
 
   return {
     stop(): void {
@@ -349,12 +378,18 @@ export async function installCommitCadence(
  */
 export async function uninstallCommitCadence(
   ctx: WorkerCadenceContext & Partial<CadenceOwnership>,
-  io: { readFile: typeof readFile; writeFile: typeof writeFile } = { readFile, writeFile },
+  io: { readFile: typeof readFile; writeFile: typeof writeFile } = {
+    readFile,
+    writeFile,
+  },
 ): Promise<void> {
   if (!ownsCadence(ctx)) return;
   const owner = cadenceOwners.get(ctx.worktreePath);
-  const ownsRegisteredGeneration = owner && ctx.serviceGeneration !== undefined
-    && owner.serviceGeneration === ctx.serviceGeneration && owner.attemptId === ctx.attemptId;
+  const ownsRegisteredGeneration =
+    owner &&
+    ctx.serviceGeneration !== undefined &&
+    owner.serviceGeneration === ctx.serviceGeneration &&
+    owner.attemptId === ctx.attemptId;
   if (ctx.agentType !== 'claude') {
     if (ownsRegisteredGeneration) cadenceOwners.delete(ctx.worktreePath);
     return;
@@ -365,7 +400,11 @@ export async function uninstallCommitCadence(
   try {
     raw = await io.readFile(settingsPath, 'utf-8');
   } catch (error: unknown) {
-    if (typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'ENOENT') {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      (error as { code?: unknown }).code === 'ENOENT'
+    ) {
       if (ownsRegisteredGeneration) cadenceOwners.delete(ctx.worktreePath);
       return;
     }
@@ -382,7 +421,11 @@ export async function uninstallCommitCadence(
       PostToolUse: filtered,
     },
   };
-  await io.writeFile(settingsPath, JSON.stringify(updated, null, 2) + '\n', 'utf-8');
+  await io.writeFile(
+    settingsPath,
+    JSON.stringify(updated, null, 2) + '\n',
+    'utf-8',
+  );
   if (ownsRegisteredGeneration) cadenceOwners.delete(ctx.worktreePath);
 }
 
@@ -390,7 +433,9 @@ export async function uninstallCommitCadence(
  * Pauses commit cadence by touching the sentinel file.
  * Used by the orchestrator before fanning out a rebase.
  */
-export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function pauseCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await pauseHookViaSentinel(ctx.worktreePath);
 }
 
@@ -398,6 +443,8 @@ export async function pauseCommitCadence(ctx: WorkerCadenceContext): Promise<voi
  * Resumes commit cadence by removing the sentinel file.
  * Used by the orchestrator after rebase conflict resolution.
  */
-export async function resumeCommitCadence(ctx: WorkerCadenceContext): Promise<void> {
+export async function resumeCommitCadence(
+  ctx: WorkerCadenceContext,
+): Promise<void> {
   await resumeHookViaSentinel(ctx.worktreePath);
 }

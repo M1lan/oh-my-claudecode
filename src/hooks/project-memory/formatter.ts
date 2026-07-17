@@ -3,15 +3,15 @@
  * Generates context strings for injection
  */
 
-import path from "path";
+import path from 'path';
 import {
   ProjectMemory,
   FrameworkDetection,
   ProjectMemoryContext,
   CustomNote,
   UserDirective,
-} from "./types.js";
-import { getTopHotPaths } from "./hot-path-tracker.js";
+} from './types.js';
+import { getTopHotPaths } from './hot-path-tracker.js';
 
 const SUMMARY_CHAR_BUDGET = 650;
 const MAX_HOT_PATH_ITEMS = 3;
@@ -34,7 +34,7 @@ export function formatContextSummary(
   pushTier(formatDirectivesTier(memory));
   pushTier(formatLearningsTier(memory, context));
 
-  return trimToBudget(lines.join("\n"), SUMMARY_CHAR_BUDGET);
+  return trimToBudget(lines.join('\n'), SUMMARY_CHAR_BUDGET);
 }
 
 /**
@@ -43,27 +43,27 @@ export function formatContextSummary(
 export function formatFullContext(memory: ProjectMemory): string {
   const lines: string[] = [];
 
-  lines.push("<project-memory>");
-  lines.push("");
-  lines.push("## Project Environment");
-  lines.push("");
+  lines.push('<project-memory>');
+  lines.push('');
+  lines.push('## Project Environment');
+  lines.push('');
 
   if (memory.techStack.languages.length > 0) {
-    lines.push("**Languages:**");
+    lines.push('**Languages:**');
     for (const lang of memory.techStack.languages) {
-      const version = lang.version ? ` (${lang.version})` : "";
+      const version = lang.version ? ` (${lang.version})` : '';
       lines.push(`- ${lang.name}${version}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   if (memory.techStack.frameworks.length > 0) {
-    lines.push("**Frameworks:**");
+    lines.push('**Frameworks:**');
     for (const fw of memory.techStack.frameworks) {
-      const version = fw.version ? ` (${fw.version})` : "";
+      const version = fw.version ? ` (${fw.version})` : '';
       lines.push(`- ${fw.name}${version} [${fw.category}]`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   const hasCommands =
@@ -71,7 +71,7 @@ export function formatFullContext(memory: ProjectMemory): string {
     memory.build.testCommand ||
     memory.build.lintCommand;
   if (hasCommands) {
-    lines.push("**Commands:**");
+    lines.push('**Commands:**');
     if (memory.build.buildCommand) {
       lines.push(`- Build: \`${memory.build.buildCommand}\``);
     }
@@ -84,7 +84,7 @@ export function formatFullContext(memory: ProjectMemory): string {
     if (memory.build.devCommand) {
       lines.push(`- Dev: \`${memory.build.devCommand}\``);
     }
-    lines.push("");
+    lines.push('');
   }
 
   const hasConventions =
@@ -101,30 +101,30 @@ export function formatFullContext(memory: ProjectMemory): string {
     if (memory.conventions.testPattern) {
       lines.push(`**Test Pattern:** ${memory.conventions.testPattern}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
   if (memory.structure.isMonorepo) {
-    lines.push("**Structure:** Monorepo");
+    lines.push('**Structure:** Monorepo');
     if (memory.structure.workspaces.length > 0) {
       lines.push(
-        `- Workspaces: ${memory.structure.workspaces.slice(0, 3).join(", ")}`,
+        `- Workspaces: ${memory.structure.workspaces.slice(0, 3).join(', ')}`,
       );
     }
-    lines.push("");
+    lines.push('');
   }
 
   if (memory.customNotes.length > 0) {
-    lines.push("**Custom Notes:**");
+    lines.push('**Custom Notes:**');
     for (const note of memory.customNotes.slice(0, 5)) {
       lines.push(`- [${note.category}] ${note.content}`);
     }
-    lines.push("");
+    lines.push('');
   }
 
-  lines.push("</project-memory>");
+  lines.push('</project-memory>');
 
-  return lines.join("\n");
+  return lines.join('\n');
 }
 
 function formatEnvironmentTier(memory: ProjectMemory): string[] {
@@ -133,7 +133,7 @@ function formatEnvironmentTier(memory: ProjectMemory): string[] {
 
   const primaryLang =
     memory.techStack.languages
-      .filter((l) => l.confidence === "high")
+      .filter((l) => l.confidence === 'high')
       .sort((a, b) => b.markers.length - a.markers.length)[0] ??
     memory.techStack.languages[0];
 
@@ -158,8 +158,8 @@ function formatEnvironmentTier(memory: ProjectMemory): string[] {
     return lines;
   }
 
-  lines.push("[Project Environment]");
-  lines.push(`- ${parts.join(" | ")}`);
+  lines.push('[Project Environment]');
+  lines.push(`- ${parts.join(' | ')}`);
 
   const commands: string[] = [];
   if (memory.build.buildCommand)
@@ -169,7 +169,7 @@ function formatEnvironmentTier(memory: ProjectMemory): string[] {
   if (memory.build.lintCommand)
     commands.push(`lint=${memory.build.lintCommand}`);
   if (commands.length > 0) {
-    lines.push(`- ${commands.join(" | ")}`);
+    lines.push(`- ${commands.join(' | ')}`);
   }
 
   return lines;
@@ -184,7 +184,7 @@ function formatHotPathsTier(
     return [];
   }
 
-  const lines = ["[Hot Paths]"];
+  const lines = ['[Hot Paths]'];
   for (const hotPath of topPaths) {
     lines.push(`- ${hotPath.path} (${hotPath.accessCount}x)`);
   }
@@ -200,9 +200,9 @@ function formatDirectivesTier(memory: ProjectMemory): string[] {
     return [];
   }
 
-  const lines = ["[Directives]"];
+  const lines = ['[Directives]'];
   for (const directive of directives) {
-    const priority = directive.priority === "high" ? "critical" : "note";
+    const priority = directive.priority === 'high' ? 'critical' : 'note';
     lines.push(`- ${priority}: ${directive.directive}`);
   }
   return lines;
@@ -220,7 +220,7 @@ function formatLearningsTier(
     return [];
   }
 
-  const lines = ["[Recent Learnings]"];
+  const lines = ['[Recent Learnings]'];
   for (const note of notes) {
     lines.push(`- [${note.category}] ${note.content}`);
   }
@@ -234,7 +234,7 @@ function createBoundedTierWriter(lines: string[]) {
     }
 
     if (lines.length > 0) {
-      lines.push("");
+      lines.push('');
     }
 
     lines.push(...tierLines);
@@ -251,7 +251,7 @@ function trimToBudget(summary: string, budget: number): string {
 
 function scoreDirective(directive: UserDirective): number {
   return (
-    (directive.priority === "high" ? 1_000_000_000_000 : 0) +
+    (directive.priority === 'high' ? 1_000_000_000_000 : 0) +
     directive.timestamp
   );
 }
@@ -275,7 +275,7 @@ function scoreLearning(
   const recencyWeight = Math.max(0, 100 - ageHours);
   const scopePath = normalizeScopePath(context.workingDirectory);
   const scopeBoost =
-    scopePath && note.content.includes(scopePath.split("/").pop() ?? "")
+    scopePath && note.content.includes(scopePath.split('/').pop() ?? '')
       ? 10
       : 0;
 
@@ -289,9 +289,9 @@ function normalizeScopePath(workingDirectory?: string): string | null {
 
   const normalized = path
     .normalize(workingDirectory)
-    .replace(/^\.[/\\]?/, "")
-    .replace(/\\/g, "/");
-  if (normalized === "" || normalized === ".") {
+    .replace(/^\.[/\\]?/, '')
+    .replace(/\\/g, '/');
+  if (normalized === '' || normalized === '.') {
     return null;
   }
 
@@ -307,7 +307,7 @@ function getPrimaryFramework(
 ): FrameworkDetection | null {
   if (frameworks.length === 0) return null;
 
-  const priority = ["fullstack", "frontend", "backend", "testing", "build"];
+  const priority = ['fullstack', 'frontend', 'backend', 'testing', 'build'];
 
   for (const category of priority) {
     const match = frameworks.find((f) => f.category === category);

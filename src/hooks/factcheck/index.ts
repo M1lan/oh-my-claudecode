@@ -113,7 +113,9 @@ export function runChecks(
         detail: `Unverified gates in declared/manual mode: ${JSON.stringify(falseGates)}`,
       });
     } else {
-      notes.push('No source files declared; unverified gates are ignored by policy');
+      notes.push(
+        'No source files declared; unverified gates are ignored by policy',
+      );
     }
   }
 

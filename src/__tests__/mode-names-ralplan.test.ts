@@ -22,7 +22,7 @@ describe('mode-names ralplan', () => {
 
   it('SESSION_END_MODE_STATE_FILES should include autoresearch', () => {
     const entry = SESSION_END_MODE_STATE_FILES.find(
-      item => item.mode === 'autoresearch'
+      (item) => item.mode === 'autoresearch',
     );
     expect(entry).toBeDefined();
     expect(entry!.file).toBe('autoresearch-state.json');
@@ -30,7 +30,7 @@ describe('mode-names ralplan', () => {
 
   it('SESSION_METRICS_MODE_FILES should include autoresearch', () => {
     const entry = SESSION_METRICS_MODE_FILES.find(
-      item => item.mode === 'autoresearch'
+      (item) => item.mode === 'autoresearch',
     );
     expect(entry).toBeDefined();
     expect(entry!.file).toBe('autoresearch-state.json');
@@ -52,7 +52,7 @@ describe('mode-names ralplan', () => {
 
   it('SESSION_END_MODE_STATE_FILES should include ralplan', () => {
     const ralplanEntry = SESSION_END_MODE_STATE_FILES.find(
-      entry => entry.mode === 'ralplan'
+      (entry) => entry.mode === 'ralplan',
     );
     expect(ralplanEntry).toBeDefined();
     expect(ralplanEntry!.file).toBe('ralplan-state.json');
@@ -60,7 +60,7 @@ describe('mode-names ralplan', () => {
 
   it('SESSION_METRICS_MODE_FILES should include ralplan', () => {
     const ralplanEntry = SESSION_METRICS_MODE_FILES.find(
-      entry => entry.mode === 'ralplan'
+      (entry) => entry.mode === 'ralplan',
     );
     expect(ralplanEntry).toBeDefined();
     expect(ralplanEntry!.file).toBe('ralplan-state.json');

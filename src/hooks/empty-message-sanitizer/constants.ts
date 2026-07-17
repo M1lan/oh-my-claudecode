@@ -15,11 +15,7 @@ export const PLACEHOLDER_TEXT = '[user interrupted]';
 /**
  * Tool-related part types that count as valid content
  */
-export const TOOL_PART_TYPES = new Set([
-  'tool',
-  'tool_use',
-  'tool_result',
-]);
+export const TOOL_PART_TYPES = new Set(['tool', 'tool_use', 'tool_result']);
 
 /**
  * Hook name identifier

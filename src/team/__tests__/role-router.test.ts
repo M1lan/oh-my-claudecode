@@ -27,8 +27,12 @@ describe('role-router', () => {
     });
 
     it('detects design intent', () => {
-      expect(inferLaneIntent('design the authentication system')).toBe('design');
-      expect(inferLaneIntent('architecture for the new service')).toBe('design');
+      expect(inferLaneIntent('design the authentication system')).toBe(
+        'design',
+      );
+      expect(inferLaneIntent('architecture for the new service')).toBe(
+        'design',
+      );
       expect(inferLaneIntent('UI design for dashboard')).toBe('design');
     });
 
@@ -45,14 +49,22 @@ describe('role-router', () => {
     });
 
     it('detects verification intent', () => {
-      expect(inferLaneIntent('write unit tests for the service')).toBe('verification');
-      expect(inferLaneIntent('add test coverage for login')).toBe('verification');
+      expect(inferLaneIntent('write unit tests for the service')).toBe(
+        'verification',
+      );
+      expect(inferLaneIntent('add test coverage for login')).toBe(
+        'verification',
+      );
       expect(inferLaneIntent('verify the integration')).toBe('verification');
     });
 
     it('detects implementation intent', () => {
-      expect(inferLaneIntent('implement the auth module')).toBe('implementation');
-      expect(inferLaneIntent('add feature for user profile')).toBe('implementation');
+      expect(inferLaneIntent('implement the auth module')).toBe(
+        'implementation',
+      );
+      expect(inferLaneIntent('add feature for user profile')).toBe(
+        'implementation',
+      );
     });
 
     it('returns unknown for ambiguous text', () => {
@@ -93,7 +105,11 @@ describe('role-router', () => {
     });
 
     it('routes review + security domain to security-reviewer', () => {
-      const result = routeTaskToRole('review the auth security', 'check for XSS vulnerabilities', 'executor');
+      const result = routeTaskToRole(
+        'review the auth security',
+        'check for XSS vulnerabilities',
+        'executor',
+      );
       expect(result.role).toBe('security-reviewer');
       expect(result.confidence).toBe('high');
     });
@@ -111,7 +127,11 @@ describe('role-router', () => {
     });
 
     it('keeps implementation + security domain on fallback role (not security-reviewer)', () => {
-      const result = routeTaskToRole('implement auth', 'add authentication with JWT and authorization checks', 'executor');
+      const result = routeTaskToRole(
+        'implement auth',
+        'add authentication with JWT and authorization checks',
+        'executor',
+      );
       expect(result.role).toBe('executor');
       expect(result.confidence).toBe('medium');
     });
