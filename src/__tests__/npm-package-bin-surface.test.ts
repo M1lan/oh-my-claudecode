@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import {
+  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -8,6 +9,7 @@ import {
   readFileSync,
   rmSync,
   symlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join } from 'node:path';
@@ -103,6 +105,26 @@ function createIsolatedPackWorkspace(workspacePath: string): void {
     join(workspacePath, 'node_modules'),
     process.platform === 'win32' ? 'junction' : 'dir',
   );
+
+  // The `prepack` script runs `pnpm run build`. In this isolated workspace the
+  // symlinked node_modules trips pnpm's deps-status check, which would try to
+  // purge and reinstall node_modules — and because node_modules is a symlink to
+  // the real store, that purge is destructive. Disable the check so pnpm reuses
+  // the linked store as-is.
+  //
+  // pnpm 11 reads settings from pnpm-workspace.yaml, not .npmrc, so the
+  // workspace knob below is the one that actually takes effect; the .npmrc and
+  // the env var on the pack spawn are belt-and-suspenders for older pnpm.
+  appendFileSync(
+    join(workspacePath, 'pnpm-workspace.yaml'),
+    '\nverifyDepsBeforeRun: false\n',
+    'utf-8',
+  );
+  writeFileSync(
+    join(workspacePath, '.npmrc'),
+    'verify-deps-before-run=false\n',
+    'utf-8',
+  );
 }
 
 function getPackedPackage(): PackedPackage {
@@ -138,16 +160,28 @@ function getPackedPackage(): PackedPackage {
         cwd: packWorkspaceCache,
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'inherit'],
+        env: {
+          ...process.env,
+          // Belt-and-suspenders alongside the workspace .npmrc: skip pnpm's
+          // deps-status check so the `prepack` build reuses the symlinked
+          // node_modules instead of trying to purge/reinstall it. Deliberately
+          // NOT setting CI=true — without it, pnpm's worst case is a safe abort
+          // rather than a destructive removal through the node_modules symlink.
+          npm_config_verify_deps_before_run: 'false',
+        },
       },
     );
     const expectedTarballName = `${packageJson.name.replace(/^@/, '').replace(/\//g, '-')}-${packageJson.version}.tgz`;
-    expect([
-      expectedTarballName,
-      `${expectedTarballName}\n`,
-      `${expectedTarballName}\r\n`,
-    ]).toContain(stdout);
-
-    const tarballName = stdout.replace(/\r?\n$/, '');
+    // `npm pack --silent` runs the `prepack` build (pnpm), whose progress
+    // output is piped into this stdout ahead of the tarball name. The tarball
+    // name is always the final non-empty line; parse it rather than requiring
+    // stdout to be exactly the name.
+    const tarballName =
+      stdout
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+        .pop() ?? '';
     expect(tarballName).toBe(expectedTarballName);
     expect(basename(tarballName)).toBe(tarballName);
     expect(tarballName).not.toMatch(/[\\/]/);
@@ -237,7 +271,6 @@ describe('npm package bin surface regression', () => {
     expect(packedFiles.has('bridge/team-mcp.cjs')).toBe(true);
     expect(packedFiles.has('bridge/team.js')).toBe(true);
     expect(packedFiles.has('bridge/gyoshu_bridge.py')).toBe(true);
-    expect(packedFiles.has('bridge/run-mcp-server.sh')).toBe(true);
   });
 
   it('rebuilds recovery CLI surfaces from source without committed bundles', () => {

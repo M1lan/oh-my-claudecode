@@ -18,8 +18,16 @@ const SESSION_END_SCRIPTS = [
   ['session-end', join(REPO_ROOT, 'scripts', 'session-end.mjs')],
   ['wiki-session-end', join(REPO_ROOT, 'scripts', 'wiki-session-end.mjs')],
 ] as const;
-const COMMAND_CEILING_MS = 500;
-const SEQUENTIAL_CEILING_MS = 1_000;
+// These budgets double as the SIGKILL watchdog and the "exited promptly"
+// assertion. Their purpose (#3477) is to distinguish a session-end that EXITS
+// from one that HANGS on a lock/adapter -- a genuine hang is indefinite and is
+// caught regardless (SIGKILL fires, timedOut becomes true, or the 60s
+// testTimeout trips). The absolute number is not a precise SLA: node child
+// cold-start under the full parallel suite on a high-core box can spike well
+// past a few hundred ms, so the budget is set generously enough to absorb
+// contention while still failing fast on an actual hang.
+const COMMAND_CEILING_MS = 4_000;
+const SEQUENTIAL_CEILING_MS = 8_000;
 const HAS_GENERATED_DIST = existsSync(
   join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'worker.js'),
 );

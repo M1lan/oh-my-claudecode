@@ -259,32 +259,35 @@ describe('atomicWriteJson', () => {
     expect(existsSync(`${filePath}.mutation.lock`)).toBe(true);
   });
 
-  it('preserves legacy unlocked behavior without flock even when a lock artifact exists', () => {
-    const directory = mkdtempSync(join(tmpdir(), 'atomic-write-lock-live-'));
-    directories.push(directory);
-    process.env.NODE_ENV = 'test';
-    process.env.OMC_TEST_FLOCK_AVAILABLE = '0';
-    const filePath = join(directory, 'state.json');
-    const stat = readFileSync(`/proc/${process.pid}/stat`, 'utf8');
-    const processStart = stat
-      .slice(stat.lastIndexOf(')') + 2)
-      .trim()
-      .split(/\s+/)[19];
-    writeFileSync(
-      `${filePath}.mutation.lock`,
-      JSON.stringify({
-        version: 1,
-        pid: process.pid,
-        processStart,
-        createdAt: new Date().toISOString(),
-        nonce: randomUUID(),
-      }),
-    );
+  it.skipIf(process.platform !== 'linux')(
+    'preserves legacy unlocked behavior without flock even when a lock artifact exists',
+    () => {
+      const directory = mkdtempSync(join(tmpdir(), 'atomic-write-lock-live-'));
+      directories.push(directory);
+      process.env.NODE_ENV = 'test';
+      process.env.OMC_TEST_FLOCK_AVAILABLE = '0';
+      const filePath = join(directory, 'state.json');
+      const stat = readFileSync(`/proc/${process.pid}/stat`, 'utf8');
+      const processStart = stat
+        .slice(stat.lastIndexOf(')') + 2)
+        .trim()
+        .split(/\s+/)[19];
+      writeFileSync(
+        `${filePath}.mutation.lock`,
+        JSON.stringify({
+          version: 1,
+          pid: process.pid,
+          processStart,
+          createdAt: new Date().toISOString(),
+          nonce: randomUUID(),
+        }),
+      );
 
-    expect(withStateFileLockSync(filePath, () => 'written')).toEqual({
-      acquired: true,
-      value: 'written',
-    });
-    expect(existsSync(`${filePath}.mutation.lock`)).toBe(true);
-  });
+      expect(withStateFileLockSync(filePath, () => 'written')).toEqual({
+        acquired: true,
+        value: 'written',
+      });
+      expect(existsSync(`${filePath}.mutation.lock`)).toBe(true);
+    },
+  );
 });

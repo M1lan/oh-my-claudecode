@@ -536,17 +536,21 @@ describe('workflow-drift-guard Stop hook', () => {
 
   it.skipIf(process.env[AMBIENT_PARENT_LANE_SENTINEL] === '1')(
     'passes the complete suite with disabled ambient parent variables',
+    // Spawns a nested full run of this file. Under the outer suite's parallel
+    // load that nested run is CPU-starved and blows past the default 60s
+    // ceiling (measured ~128s), so give it headroom — this is a
+    // load-absorbing timeout, not a hang mask (a real failure still throws).
+    { timeout: 240_000 },
     () => {
       const cleanEnv = { ...process.env };
       delete cleanEnv.DISABLE_OMC;
       delete cleanEnv.OMC_SKIP_HOOKS;
       expect(() =>
         execFileSync(
-          'npm',
+          'pnpm',
           [
             'exec',
             'vitest',
-            '--',
             'run',
             'src/hooks/__tests__/workflow-drift-guard-script.test.ts',
           ],

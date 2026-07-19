@@ -212,7 +212,7 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       session_id: 'session-a',
       transcript_path: transcriptPath,
       tool_name: 'Bash',
-      tool_input: { command: 'npm test' },
+      tool_input: { command: 'pnpm test' },
     });
 
     expect(result.hookSpecificOutput?.permissionDecision).not.toBe('deny');
@@ -375,7 +375,7 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
       session_id: 'session-a',
       transcript_path: transcriptPath,
       tool_name: 'Bash',
-      tool_input: { command: 'npm test' },
+      tool_input: { command: 'pnpm test' },
       goal: { objective: PLAN_OBJECTIVE, status: 'active' },
     });
 

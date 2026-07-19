@@ -42,7 +42,7 @@ function killIfAlive(pid: number | undefined): void {
   }
 }
 
-async function waitForDeath(pid: number, timeoutMs = 2000): Promise<void> {
+async function waitForDeath(pid: number, timeoutMs = 8000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
@@ -67,31 +67,49 @@ describe('run.cjs generic hook timeout supervisor', () => {
     expect(runCjs.resolveGenericTimeoutMs(manifestHook)).toBe(2500);
   });
 
-  it('reaps a timed-out generic hook and its POSIX grandchild', async () => {
-    const directory = mkdtempSync(join(tmpdir(), 'omc-hung-generic-'));
-    const pidfile = join(directory, 'grandchild.pid');
-    const previousPidfile = process.env.OMC_TEST_PIDFILE;
-    let grandchildPid: number | undefined;
-    process.env.OMC_TEST_PIDFILE = pidfile;
-    try {
-      const startedAt = Date.now();
-      const status = await withWatchdog(
-        runCjs.runGenericChild(HUNG_PARENT, [], 250, null),
-      );
-      const elapsed = Date.now() - startedAt;
-      expect(status).toBe(0);
-      expect(elapsed).toBeGreaterThanOrEqual(200);
-      expect(elapsed).toBeLessThan(5000);
-      grandchildPid = Number(readFileSync(pidfile, 'utf8'));
-      expect(grandchildPid).toBeGreaterThan(0);
-      if (process.platform !== 'win32') await waitForDeath(grandchildPid);
-    } finally {
-      if (previousPidfile === undefined) delete process.env.OMC_TEST_PIDFILE;
-      else process.env.OMC_TEST_PIDFILE = previousPidfile;
-      killIfAlive(grandchildPid);
-      rmSync(directory, { recursive: true, force: true });
-    }
-  });
+  // retry: this test asserts the wall-clock of a process-tree reap. Under the
+  // full parallel suite on a high-core box the worker's event loop can be so
+  // CPU-starved that even its own setTimeout timers drift several-fold, blowing
+  // the elapsed bound / watchdog. A genuine non-reap fails every attempt (the
+  // grandchild deterministically survives waitForDeath); only starvation drift
+  // recovers on retry.
+  //
+  // The inner timeout must exceed the two node cold-starts (parent -> grandchild)
+  // so the grandchild registers its pidfile BEFORE the supervisor reaps the hung
+  // tree; a too-short timeout reaps first and the pidfile never appears (ENOENT).
+  // The exact value is immaterial to the intent (a hung tree gets reaped); it
+  // only needs to be finite and generous enough to survive a loaded dev box.
+  const INNER_TIMEOUT_MS = 1500;
+  it(
+    'reaps a timed-out generic hook and its POSIX grandchild',
+    { retry: 2 },
+    async () => {
+      const directory = mkdtempSync(join(tmpdir(), 'omc-hung-generic-'));
+      const pidfile = join(directory, 'grandchild.pid');
+      const previousPidfile = process.env.OMC_TEST_PIDFILE;
+      let grandchildPid: number | undefined;
+      process.env.OMC_TEST_PIDFILE = pidfile;
+      try {
+        const startedAt = Date.now();
+        const status = await withWatchdog(
+          runCjs.runGenericChild(HUNG_PARENT, [], INNER_TIMEOUT_MS, null),
+          15000,
+        );
+        const elapsed = Date.now() - startedAt;
+        expect(status).toBe(0);
+        expect(elapsed).toBeGreaterThanOrEqual(INNER_TIMEOUT_MS - 50);
+        expect(elapsed).toBeLessThan(12000);
+        grandchildPid = Number(readFileSync(pidfile, 'utf8'));
+        expect(grandchildPid).toBeGreaterThan(0);
+        if (process.platform !== 'win32') await waitForDeath(grandchildPid);
+      } finally {
+        if (previousPidfile === undefined) delete process.env.OMC_TEST_PIDFILE;
+        else process.env.OMC_TEST_PIDFILE = previousPidfile;
+        killIfAlive(grandchildPid);
+        rmSync(directory, { recursive: true, force: true });
+      }
+    },
+  );
 
   it('propagates numeric exits and fail-opens for signal exits and spawn errors', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'omc-generic-exit-'));

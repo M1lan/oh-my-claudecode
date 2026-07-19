@@ -365,80 +365,86 @@ describe('Session-Scoped State Isolation', () => {
   });
 
   describe('Stale session cleanup', () => {
-    it('serializes marker writers on the same lock used by cleanup', () => {
-      expect(
-        createModeMarker('ralph', tempDir, {
-          session_id: 'session-A',
-          workflowRunId: 'old-run',
-        }),
-      ).toBe(true);
-      const markerPath = join(
-        tempDir,
-        '.omc',
-        'state',
-        'ralph-verification.json',
-      );
-      const lockPath = `${markerPath}.mutation.lock`;
-      writeFileSync(lockPath, liveLockOwner());
+    it.skipIf(process.platform !== 'linux')(
+      'serializes marker writers on the same lock used by cleanup',
+      () => {
+        expect(
+          createModeMarker('ralph', tempDir, {
+            session_id: 'session-A',
+            workflowRunId: 'old-run',
+          }),
+        ).toBe(true);
+        const markerPath = join(
+          tempDir,
+          '.omc',
+          'state',
+          'ralph-verification.json',
+        );
+        const lockPath = `${markerPath}.mutation.lock`;
+        writeFileSync(lockPath, liveLockOwner());
 
-      expect(
-        createModeMarker('ralph', tempDir, {
-          session_id: 'session-A',
-          workflowRunId: 'new-run',
-        }),
-      ).toBe(false);
-      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
-        'old-run',
-      );
+        expect(
+          createModeMarker('ralph', tempDir, {
+            session_id: 'session-A',
+            workflowRunId: 'new-run',
+          }),
+        ).toBe(false);
+        expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
+          'old-run',
+        );
 
-      unlinkSync(lockPath);
-      expect(
-        createModeMarker('ralph', tempDir, {
-          session_id: 'session-A',
-          workflowRunId: 'new-run',
-        }),
-      ).toBe(true);
-      expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
-        'new-run',
-      );
-    });
+        unlinkSync(lockPath);
+        expect(
+          createModeMarker('ralph', tempDir, {
+            session_id: 'session-A',
+            workflowRunId: 'new-run',
+          }),
+        ).toBe(true);
+        expect(JSON.parse(readFileSync(markerPath, 'utf8')).workflowRunId).toBe(
+          'new-run',
+        );
+      },
+    );
 
-    it('waits for an in-flight marker publisher before treating it as absent', async () => {
-      const sessionId = 'marker-in-flight';
-      const markerPath = join(
-        tempDir,
-        '.omc',
-        'state',
-        'ralph-verification.json',
-      );
-      mkdirSync(join(tempDir, '.omc', 'state'), { recursive: true });
-      const lockPath = `${markerPath}.mutation.lock`;
-      writeFileSync(lockPath, liveLockOwner());
-      const childScript = String.raw`
+    it.skipIf(process.platform !== 'linux')(
+      'waits for an in-flight marker publisher before treating it as absent',
+      async () => {
+        const sessionId = 'marker-in-flight';
+        const markerPath = join(
+          tempDir,
+          '.omc',
+          'state',
+          'ralph-verification.json',
+        );
+        mkdirSync(join(tempDir, '.omc', 'state'), { recursive: true });
+        const lockPath = `${markerPath}.mutation.lock`;
+        writeFileSync(lockPath, liveLockOwner());
+        const childScript = String.raw`
         const fs = require('fs');
         const [markerPath, lockPath] = process.argv.slice(1);
         Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
         fs.writeFileSync(markerPath, JSON.stringify({ pending: true, session_id: 'marker-in-flight' }));
         fs.unlinkSync(lockPath);
       `;
-      const child = spawn(
-        process.execPath,
-        ['-e', childScript, markerPath, lockPath],
-        { stdio: 'ignore' },
-      );
-      const completed = new Promise<void>((resolve, reject) => {
-        child.once('error', reject);
-        child.once('close', (code) =>
-          code === 0
-            ? resolve()
-            : reject(new Error(`marker publisher exited ${code}`)),
+        const child = spawn(
+          process.execPath,
+          ['-e', childScript, markerPath, lockPath],
+          { stdio: 'ignore' },
         );
-      });
+        const completed = new Promise<void>((resolve, reject) => {
+          child.once('error', reject);
+          child.once('close', (code) =>
+            code === 0
+              ? resolve()
+              : reject(new Error(`marker publisher exited ${code}`)),
+          );
+        });
 
-      expect(clearModeState('ralph', tempDir, sessionId)).toBe(true);
-      await completed;
-      expect(existsSync(markerPath)).toBe(false);
-    });
+        expect(clearModeState('ralph', tempDir, sessionId)).toBe(true);
+        await completed;
+        expect(existsSync(markerPath)).toBe(false);
+      },
+    );
 
     it('should remove empty session directories', () => {
       const emptyDir = join(

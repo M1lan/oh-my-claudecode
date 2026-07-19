@@ -411,49 +411,52 @@ describe('AutopilotCancel', () => {
       expect(ultraqaLoop.clearUltraQAState).not.toHaveBeenCalled();
     });
 
-    it('does not clean linked state when the primary named mutation lock is held', () => {
-      const sessionId = 'named-primary-lock';
-      const state = initAutopilot(testDir, 'ship it', sessionId)!;
-      state.workflow = createWorkflowDescriptor('release-flow', {
-        version: 1,
-        stages: ['ralplan', 'execution'],
-      })!;
-      state.workflowRunId = '11111111-1111-4111-8111-111111111111';
-      writeAutopilotState(testDir, state, sessionId);
-      const statePath = resolveSessionStatePath(
-        'autopilot',
-        sessionId,
-        testDir,
-      );
-      const stat = require('fs').readFileSync(
-        `/proc/${process.pid}/stat`,
-        'utf8',
-      );
-      const processStart = stat
-        .slice(stat.lastIndexOf(')') + 2)
-        .trim()
-        .split(/\s+/)[19];
-      writeFileSync(
-        `${statePath}.mutation.lock`,
-        JSON.stringify({
+    it.skipIf(process.platform !== 'linux')(
+      'does not clean linked state when the primary named mutation lock is held',
+      () => {
+        const sessionId = 'named-primary-lock';
+        const state = initAutopilot(testDir, 'ship it', sessionId)!;
+        state.workflow = createWorkflowDescriptor('release-flow', {
           version: 1,
-          pid: process.pid,
-          processStart,
-          createdAt: new Date().toISOString(),
-          nonce: '22222222-2222-4222-8222-222222222222',
-        }),
-      );
+          stages: ['ralplan', 'execution'],
+        })!;
+        state.workflowRunId = '11111111-1111-4111-8111-111111111111';
+        writeAutopilotState(testDir, state, sessionId);
+        const statePath = resolveSessionStatePath(
+          'autopilot',
+          sessionId,
+          testDir,
+        );
+        const stat = require('fs').readFileSync(
+          `/proc/${process.pid}/stat`,
+          'utf8',
+        );
+        const processStart = stat
+          .slice(stat.lastIndexOf(')') + 2)
+          .trim()
+          .split(/\s+/)[19];
+        writeFileSync(
+          `${statePath}.mutation.lock`,
+          JSON.stringify({
+            version: 1,
+            pid: process.pid,
+            processStart,
+            createdAt: new Date().toISOString(),
+            nonce: '22222222-2222-4222-8222-222222222222',
+          }),
+        );
 
-      expect(cancelAutopilot(testDir, sessionId).success).toBe(false);
-      expect(clearAutopilot(testDir, sessionId).success).toBe(false);
-      expect(ralphLoop.clearRalphState).not.toHaveBeenCalled();
-      expect(ralphLoop.clearLinkedUltraworkState).not.toHaveBeenCalled();
-      expect(ultraqaLoop.clearUltraQAState).not.toHaveBeenCalled();
-      expect(readAutopilotState(testDir, sessionId)).toMatchObject({
-        active: true,
-        workflowRunId: state.workflowRunId,
-      });
-    });
+        expect(cancelAutopilot(testDir, sessionId).success).toBe(false);
+        expect(clearAutopilot(testDir, sessionId).success).toBe(false);
+        expect(ralphLoop.clearRalphState).not.toHaveBeenCalled();
+        expect(ralphLoop.clearLinkedUltraworkState).not.toHaveBeenCalled();
+        expect(ultraqaLoop.clearUltraQAState).not.toHaveBeenCalled();
+        expect(readAutopilotState(testDir, sessionId)).toMatchObject({
+          active: true,
+          workflowRunId: state.workflowRunId,
+        });
+      },
+    );
 
     it('retries failed dependent cleanup for an already-paused named run', () => {
       const sessionId = 'dependent-cleanup-failure';
@@ -951,291 +954,302 @@ describe('AutopilotCancel', () => {
       expect(require('fs').readFileSync(stateFile)).toEqual(before);
     });
 
-    it('rejects a named traversal boundary without mutating paused bytes', () => {
-      const sessionId = 'resume-auth-session';
-      const root = join(testDir, 'claude-config', 'projects');
-      process.env.CLAUDE_CONFIG_DIR = join(testDir, 'claude-config');
-      mkdirSync(root, { recursive: true });
-      const encodedProject = join(root, '-workspace-project');
-      mkdirSync(encodedProject);
-      const transcript = join(encodedProject, `${sessionId}.jsonl`);
-      writeFileSync(transcript, '');
-      const stat = statSync(transcript);
-      const state = initAutopilot(testDir, 'ship it', sessionId)!;
-      const descriptor = createWorkflowDescriptor('release-flow', {
-        version: 1,
-        stages: ['ralplan', 'execution'],
-      })!;
-      const identity = {
-        device: stat.dev,
-        inode: stat.ino,
-        size: 0,
-        mtimeNs: '0',
-        ctimeNs: '0',
-        contentSha256: createHash('sha256').update('').digest('hex'),
-      };
-      Object.assign(state, {
-        active: false,
-        phase: 'ralplan',
-        prompt: 'ship it',
-        workflow: descriptor,
-        workflowRunId: '11111111-1111-4111-8111-111111111111',
-        pipelineTracking: {
-          stages: [
-            {
-              id: 'ralplan',
-              status: 'active',
-              iterations: 0,
-              startedAt: new Date().toISOString(),
-            },
-            { id: 'execution', status: 'pending', iterations: 0 },
-          ],
-          currentStageIndex: 0,
-          trackingRevision: 0,
-          activationBoundary: {
-            transcriptPath: `${encodedProject}${sep}nested${sep}..${sep}${sessionId}.jsonl`,
-            transcriptRoot: root,
-            transcriptBasename: `${sessionId}.jsonl`,
-            sessionId,
-            byteOffset: 0,
-            fileIdentity: identity,
-          },
-          completionObservations: [],
-        },
-      });
-      writeAutopilotState(testDir, state, sessionId);
-      const stateFile = resolveSessionStatePath(
-        'autopilot',
-        sessionId,
-        testDir,
-      );
-      const before = require('fs').readFileSync(stateFile);
-
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: false,
-        message: 'workflow_descriptor_integrity_failed',
-      });
-      expect(require('fs').readFileSync(stateFile)).toEqual(before);
-
-      state.pipelineTracking!.activationBoundary!.transcriptPath = transcript;
-      writeAutopilotState(testDir, state, sessionId);
-      const target = join(encodedProject, 'target.jsonl');
-      writeFileSync(target, '');
-      rmSync(transcript);
-      symlinkSync(target, transcript);
-      const symlinkBytes = require('fs').readFileSync(stateFile);
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: false,
-        message: 'workflow_descriptor_integrity_failed',
-      });
-      expect(require('fs').readFileSync(stateFile)).toEqual(symlinkBytes);
-
-      rmSync(transcript);
-      writeFileSync(transcript, '');
-      const validStat = statSync(transcript);
-      Object.assign(state.pipelineTracking!.activationBoundary!.fileIdentity, {
-        device: validStat.dev,
-        inode: validStat.ino,
-      });
-
-      state.pipelineTracking!.activationBoundary!.transcriptPath = transcript;
-      writeAutopilotState(testDir, state, sessionId);
-      const replacement = structuredClone(state);
-      replacement.pipelineTracking!.activationBoundary!.transcriptPath = `${encodedProject}${sep}nested${sep}..${sep}${sessionId}.jsonl`;
-      process.env.OMC_TEST_CONDITIONAL_WRITE_REPLACEMENT_PATH = stateFile;
-      process.env.OMC_TEST_CONDITIONAL_WRITE_REPLACEMENT_BASE64 = Buffer.from(
-        JSON.stringify(replacement),
-      ).toString('base64');
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: false,
-        message: 'workflow_descriptor_integrity_failed',
-      });
-      expect(readAutopilotState(testDir, sessionId)).toEqual(replacement);
-
-      writeAutopilotState(testDir, state, sessionId);
-      expect(
-        validateNamedWorkflowState(
-          readAutopilotState(testDir, sessionId)!,
-          sessionId,
-        ),
-      ).not.toBeNull();
-      const finalResume = resumeAutopilot(testDir, sessionId);
-      expect(finalResume.message).toBe('Resuming autopilot at phase: ralplan');
-      expect(finalResume).toMatchObject({
-        success: true,
-        state: { active: true, workflowRunId: state.workflowRunId },
-      });
-    });
-    it('rejects forged completion observations and resumes an authenticated advanced named workflow', () => {
-      const sessionId = 'resume-observation-session';
-      const root = join(testDir, 'claude-config', 'projects');
-      const project = join(root, '-workspace-project');
-      const transcript = join(project, `${sessionId}.jsonl`);
-      process.env.CLAUDE_CONFIG_DIR = join(testDir, 'claude-config');
-      mkdirSync(project, { recursive: true });
-      writeFileSync(transcript, '');
-      const initial = statSync(transcript);
-      const initialIdentity = {
-        device: initial.dev,
-        inode: initial.ino,
-        size: 0,
-        mtimeNs: '0',
-        ctimeNs: '0',
-        contentSha256: createHash('sha256').update('').digest('hex'),
-      };
-      const state = initAutopilot(testDir, 'ship it', sessionId)!;
-      const descriptor = createWorkflowDescriptor('release-flow', {
-        version: 1,
-        stages: ['ralplan', 'execution'],
-      })!;
-      const record = JSON.stringify({
-        sessionId,
-        type: 'assistant',
-        message: {
-          role: 'assistant',
-          content: [
-            { type: 'text', text: 'Signal: PIPELINE_RALPLAN_COMPLETE' },
-          ],
-        },
-      });
-      const content = Buffer.from(`${record}\n`);
-      writeFileSync(transcript, content);
-      const stable = statSync(transcript);
-      const stableIdentity = {
-        device: stable.dev,
-        inode: stable.ino,
-        size: stable.size,
-        mtimeNs: '0',
-        ctimeNs: '0',
-        contentSha256: createHash('sha256').update(content).digest('hex'),
-      };
-      const now = new Date().toISOString();
-      Object.assign(state, {
-        active: false,
-        phase: 'execution',
-        prompt: 'ship it',
-        workflow: descriptor,
-        workflowRunId: '11111111-1111-4111-8111-111111111111',
-        pipelineTracking: {
-          stages: [
-            {
-              id: 'ralplan',
-              status: 'complete',
-              iterations: 0,
-              startedAt: now,
-              completedAt: now,
-            },
-            {
-              id: 'execution',
-              status: 'active',
-              iterations: 0,
-              startedAt: now,
-            },
-          ],
-          currentStageIndex: 1,
-          trackingRevision: 1,
-          activationBoundary: {
-            transcriptPath: transcript,
-            transcriptRoot: root,
-            transcriptBasename: `${sessionId}.jsonl`,
-            sessionId,
-            byteOffset: stable.size,
-            fileIdentity: stableIdentity,
-          },
-          completionObservations: [
-            {
-              stageId: 'ralplan',
-              sessionId,
-              signalId: 'PIPELINE_RALPLAN_COMPLETE',
-              lineNumber: 0,
-              byteOffset: 0,
-              recordContentSha256: createHash('sha256')
-                .update(record)
-                .digest('hex'),
-              stableFile: stableIdentity,
-              activationBoundary: {
-                transcriptPath: transcript,
-                transcriptRoot: root,
-                transcriptBasename: `${sessionId}.jsonl`,
-                sessionId,
-                byteOffset: 0,
-                fileIdentity: initialIdentity,
+    it.skipIf(process.platform !== 'linux')(
+      'rejects a named traversal boundary without mutating paused bytes',
+      () => {
+        const sessionId = 'resume-auth-session';
+        const root = join(testDir, 'claude-config', 'projects');
+        process.env.CLAUDE_CONFIG_DIR = join(testDir, 'claude-config');
+        mkdirSync(root, { recursive: true });
+        const encodedProject = join(root, '-workspace-project');
+        mkdirSync(encodedProject);
+        const transcript = join(encodedProject, `${sessionId}.jsonl`);
+        writeFileSync(transcript, '');
+        const stat = statSync(transcript);
+        const state = initAutopilot(testDir, 'ship it', sessionId)!;
+        const descriptor = createWorkflowDescriptor('release-flow', {
+          version: 1,
+          stages: ['ralplan', 'execution'],
+        })!;
+        const identity = {
+          device: stat.dev,
+          inode: stat.ino,
+          size: 0,
+          mtimeNs: '0',
+          ctimeNs: '0',
+          contentSha256: createHash('sha256').update('').digest('hex'),
+        };
+        Object.assign(state, {
+          active: false,
+          phase: 'ralplan',
+          prompt: 'ship it',
+          workflow: descriptor,
+          workflowRunId: '11111111-1111-4111-8111-111111111111',
+          pipelineTracking: {
+            stages: [
+              {
+                id: 'ralplan',
+                status: 'active',
+                iterations: 0,
+                startedAt: new Date().toISOString(),
               },
-              observedAt: now,
+              { id: 'execution', status: 'pending', iterations: 0 },
+            ],
+            currentStageIndex: 0,
+            trackingRevision: 0,
+            activationBoundary: {
+              transcriptPath: `${encodedProject}${sep}nested${sep}..${sep}${sessionId}.jsonl`,
+              transcriptRoot: root,
+              transcriptBasename: `${sessionId}.jsonl`,
+              sessionId,
+              byteOffset: 0,
+              fileIdentity: identity,
             },
-          ],
-        },
-      });
-      writeAutopilotState(testDir, state, sessionId);
-      expect(
-        validateNamedWorkflowState(
-          readAutopilotState(testDir, sessionId)!,
+            completionObservations: [],
+          },
+        });
+        writeAutopilotState(testDir, state, sessionId);
+        const stateFile = resolveSessionStatePath(
+          'autopilot',
           sessionId,
-        ),
-      ).not.toBeNull();
-      const forged = structuredClone(state);
-      forged.pipelineTracking!.completionObservations![0].recordContentSha256 =
-        '0'.repeat(64);
-      writeAutopilotState(testDir, forged, sessionId);
-      const stateFile = resolveSessionStatePath(
-        'autopilot',
-        sessionId,
-        testDir,
-      );
-      const before = require('fs').readFileSync(stateFile);
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: false,
-        message: 'workflow_descriptor_integrity_failed',
-      });
-      expect(require('fs').readFileSync(stateFile)).toEqual(before);
-      const skippedRecord = JSON.stringify({
-        sessionId,
-        type: 'assistant',
-        message: {
-          role: 'assistant',
-          content: [
-            { type: 'text', text: 'Signal: PIPELINE_EXECUTION_COMPLETE' },
-          ],
-        },
-      });
-      const skippedContent = Buffer.from(`${skippedRecord}\n`);
-      writeFileSync(transcript, skippedContent);
-      const skippedStat = statSync(transcript);
-      const skippedIdentity = {
-        device: skippedStat.dev,
-        inode: skippedStat.ino,
-        size: skippedStat.size,
-        mtimeNs: '0',
-        ctimeNs: '0',
-        contentSha256: createHash('sha256')
-          .update(skippedContent)
-          .digest('hex'),
-      };
-      const skipped = structuredClone(state);
-      skipped.pipelineTracking!.completionObservations![0].stableFile =
-        skippedIdentity;
-      skipped.pipelineTracking!.completionObservations![0].recordContentSha256 =
-        createHash('sha256').update(skippedRecord).digest('hex');
-      skipped.pipelineTracking!.activationBoundary!.fileIdentity =
-        skippedIdentity;
-      skipped.pipelineTracking!.activationBoundary!.byteOffset =
-        skippedIdentity.size;
-      writeAutopilotState(testDir, skipped, sessionId);
-      const skippedBefore = require('fs').readFileSync(stateFile);
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: false,
-        message: 'workflow_descriptor_integrity_failed',
-      });
-      expect(require('fs').readFileSync(stateFile)).toEqual(skippedBefore);
-      writeFileSync(transcript, content);
-      forged.pipelineTracking!.completionObservations![0].recordContentSha256 =
-        createHash('sha256').update(record).digest('hex');
-      writeAutopilotState(testDir, forged, sessionId);
-      expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
-        success: true,
-        state: { active: true, phase: 'execution' },
-      });
-    });
+          testDir,
+        );
+        const before = require('fs').readFileSync(stateFile);
+
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: false,
+          message: 'workflow_descriptor_integrity_failed',
+        });
+        expect(require('fs').readFileSync(stateFile)).toEqual(before);
+
+        state.pipelineTracking!.activationBoundary!.transcriptPath = transcript;
+        writeAutopilotState(testDir, state, sessionId);
+        const target = join(encodedProject, 'target.jsonl');
+        writeFileSync(target, '');
+        rmSync(transcript);
+        symlinkSync(target, transcript);
+        const symlinkBytes = require('fs').readFileSync(stateFile);
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: false,
+          message: 'workflow_descriptor_integrity_failed',
+        });
+        expect(require('fs').readFileSync(stateFile)).toEqual(symlinkBytes);
+
+        rmSync(transcript);
+        writeFileSync(transcript, '');
+        const validStat = statSync(transcript);
+        Object.assign(
+          state.pipelineTracking!.activationBoundary!.fileIdentity,
+          {
+            device: validStat.dev,
+            inode: validStat.ino,
+          },
+        );
+
+        state.pipelineTracking!.activationBoundary!.transcriptPath = transcript;
+        writeAutopilotState(testDir, state, sessionId);
+        const replacement = structuredClone(state);
+        replacement.pipelineTracking!.activationBoundary!.transcriptPath = `${encodedProject}${sep}nested${sep}..${sep}${sessionId}.jsonl`;
+        process.env.OMC_TEST_CONDITIONAL_WRITE_REPLACEMENT_PATH = stateFile;
+        process.env.OMC_TEST_CONDITIONAL_WRITE_REPLACEMENT_BASE64 = Buffer.from(
+          JSON.stringify(replacement),
+        ).toString('base64');
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: false,
+          message: 'workflow_descriptor_integrity_failed',
+        });
+        expect(readAutopilotState(testDir, sessionId)).toEqual(replacement);
+
+        writeAutopilotState(testDir, state, sessionId);
+        expect(
+          validateNamedWorkflowState(
+            readAutopilotState(testDir, sessionId)!,
+            sessionId,
+          ),
+        ).not.toBeNull();
+        const finalResume = resumeAutopilot(testDir, sessionId);
+        expect(finalResume.message).toBe(
+          'Resuming autopilot at phase: ralplan',
+        );
+        expect(finalResume).toMatchObject({
+          success: true,
+          state: { active: true, workflowRunId: state.workflowRunId },
+        });
+      },
+    );
+    it.skipIf(process.platform !== 'linux')(
+      'rejects forged completion observations and resumes an authenticated advanced named workflow',
+      () => {
+        const sessionId = 'resume-observation-session';
+        const root = join(testDir, 'claude-config', 'projects');
+        const project = join(root, '-workspace-project');
+        const transcript = join(project, `${sessionId}.jsonl`);
+        process.env.CLAUDE_CONFIG_DIR = join(testDir, 'claude-config');
+        mkdirSync(project, { recursive: true });
+        writeFileSync(transcript, '');
+        const initial = statSync(transcript);
+        const initialIdentity = {
+          device: initial.dev,
+          inode: initial.ino,
+          size: 0,
+          mtimeNs: '0',
+          ctimeNs: '0',
+          contentSha256: createHash('sha256').update('').digest('hex'),
+        };
+        const state = initAutopilot(testDir, 'ship it', sessionId)!;
+        const descriptor = createWorkflowDescriptor('release-flow', {
+          version: 1,
+          stages: ['ralplan', 'execution'],
+        })!;
+        const record = JSON.stringify({
+          sessionId,
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'Signal: PIPELINE_RALPLAN_COMPLETE' },
+            ],
+          },
+        });
+        const content = Buffer.from(`${record}\n`);
+        writeFileSync(transcript, content);
+        const stable = statSync(transcript);
+        const stableIdentity = {
+          device: stable.dev,
+          inode: stable.ino,
+          size: stable.size,
+          mtimeNs: '0',
+          ctimeNs: '0',
+          contentSha256: createHash('sha256').update(content).digest('hex'),
+        };
+        const now = new Date().toISOString();
+        Object.assign(state, {
+          active: false,
+          phase: 'execution',
+          prompt: 'ship it',
+          workflow: descriptor,
+          workflowRunId: '11111111-1111-4111-8111-111111111111',
+          pipelineTracking: {
+            stages: [
+              {
+                id: 'ralplan',
+                status: 'complete',
+                iterations: 0,
+                startedAt: now,
+                completedAt: now,
+              },
+              {
+                id: 'execution',
+                status: 'active',
+                iterations: 0,
+                startedAt: now,
+              },
+            ],
+            currentStageIndex: 1,
+            trackingRevision: 1,
+            activationBoundary: {
+              transcriptPath: transcript,
+              transcriptRoot: root,
+              transcriptBasename: `${sessionId}.jsonl`,
+              sessionId,
+              byteOffset: stable.size,
+              fileIdentity: stableIdentity,
+            },
+            completionObservations: [
+              {
+                stageId: 'ralplan',
+                sessionId,
+                signalId: 'PIPELINE_RALPLAN_COMPLETE',
+                lineNumber: 0,
+                byteOffset: 0,
+                recordContentSha256: createHash('sha256')
+                  .update(record)
+                  .digest('hex'),
+                stableFile: stableIdentity,
+                activationBoundary: {
+                  transcriptPath: transcript,
+                  transcriptRoot: root,
+                  transcriptBasename: `${sessionId}.jsonl`,
+                  sessionId,
+                  byteOffset: 0,
+                  fileIdentity: initialIdentity,
+                },
+                observedAt: now,
+              },
+            ],
+          },
+        });
+        writeAutopilotState(testDir, state, sessionId);
+        expect(
+          validateNamedWorkflowState(
+            readAutopilotState(testDir, sessionId)!,
+            sessionId,
+          ),
+        ).not.toBeNull();
+        const forged = structuredClone(state);
+        forged.pipelineTracking!.completionObservations![0].recordContentSha256 =
+          '0'.repeat(64);
+        writeAutopilotState(testDir, forged, sessionId);
+        const stateFile = resolveSessionStatePath(
+          'autopilot',
+          sessionId,
+          testDir,
+        );
+        const before = require('fs').readFileSync(stateFile);
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: false,
+          message: 'workflow_descriptor_integrity_failed',
+        });
+        expect(require('fs').readFileSync(stateFile)).toEqual(before);
+        const skippedRecord = JSON.stringify({
+          sessionId,
+          type: 'assistant',
+          message: {
+            role: 'assistant',
+            content: [
+              { type: 'text', text: 'Signal: PIPELINE_EXECUTION_COMPLETE' },
+            ],
+          },
+        });
+        const skippedContent = Buffer.from(`${skippedRecord}\n`);
+        writeFileSync(transcript, skippedContent);
+        const skippedStat = statSync(transcript);
+        const skippedIdentity = {
+          device: skippedStat.dev,
+          inode: skippedStat.ino,
+          size: skippedStat.size,
+          mtimeNs: '0',
+          ctimeNs: '0',
+          contentSha256: createHash('sha256')
+            .update(skippedContent)
+            .digest('hex'),
+        };
+        const skipped = structuredClone(state);
+        skipped.pipelineTracking!.completionObservations![0].stableFile =
+          skippedIdentity;
+        skipped.pipelineTracking!.completionObservations![0].recordContentSha256 =
+          createHash('sha256').update(skippedRecord).digest('hex');
+        skipped.pipelineTracking!.activationBoundary!.fileIdentity =
+          skippedIdentity;
+        skipped.pipelineTracking!.activationBoundary!.byteOffset =
+          skippedIdentity.size;
+        writeAutopilotState(testDir, skipped, sessionId);
+        const skippedBefore = require('fs').readFileSync(stateFile);
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: false,
+          message: 'workflow_descriptor_integrity_failed',
+        });
+        expect(require('fs').readFileSync(stateFile)).toEqual(skippedBefore);
+        writeFileSync(transcript, content);
+        forged.pipelineTracking!.completionObservations![0].recordContentSha256 =
+          createHash('sha256').update(record).digest('hex');
+        writeAutopilotState(testDir, forged, sessionId);
+        expect(resumeAutopilot(testDir, sessionId)).toMatchObject({
+          success: true,
+          state: { active: true, phase: 'execution' },
+        });
+      },
+    );
   });
 
   describe('formatCancelMessage', () => {

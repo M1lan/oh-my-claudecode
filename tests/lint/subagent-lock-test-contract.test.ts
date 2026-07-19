@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { describe, expect, it } from "vitest";
 
@@ -16,7 +16,13 @@ const FUNCTIONAL_SCRIPTS = {
 } as const;
 
 function readRepoFile(path: string): string {
-  return readFileSync(join(REPO_ROOT, path), "utf8");
+  const full = join(REPO_ROOT, path);
+  // Workflows may be shipped disabled (renamed to *.yml.disabled); the
+  // structural contract still holds against the disabled file's contents.
+  if (!existsSync(full) && existsSync(`${full}.disabled`)) {
+    return readFileSync(`${full}.disabled`, "utf8");
+  }
+  return readFileSync(full, "utf8");
 }
 
 function tokens(command: string): string[] {

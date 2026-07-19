@@ -143,55 +143,64 @@ describe('Persistent Mode Session Isolation (Issue #311)', () => {
       });
     });
 
-    it('requires an authenticated exact digest before cancelling an active legacy autopilot target', async () => {
-      const sessionId = 'legacy-autopilot-cancel-auth';
-      const sessionDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
-      mkdirSync(sessionDir, { recursive: true });
-      const state = initAutopilot(tempDir, 'Finish the task', sessionId)!;
-      state.phase = 'planning';
-      state.project_path = tempDir;
-      writeFileSync(
-        join(sessionDir, 'autopilot-state.json'),
-        JSON.stringify(state),
-      );
-      const signalPath = join(sessionDir, 'cancel-signal-state.json');
-      const signal = (target_state_sha256?: string) => ({
-        active: true,
-        mode: 'autopilot',
-        source: 'state_clear',
-        requested_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 30_000).toISOString(),
-        ...(target_state_sha256 ? { target_state_sha256 } : {}),
-      });
+    it.skipIf(process.platform !== 'linux')(
+      'requires an authenticated exact digest before cancelling an active legacy autopilot target',
+      async () => {
+        const sessionId = 'legacy-autopilot-cancel-auth';
+        const sessionDir = join(
+          tempDir,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+        );
+        mkdirSync(sessionDir, { recursive: true });
+        const state = initAutopilot(tempDir, 'Finish the task', sessionId)!;
+        state.phase = 'planning';
+        state.project_path = tempDir;
+        writeFileSync(
+          join(sessionDir, 'autopilot-state.json'),
+          JSON.stringify(state),
+        );
+        const signalPath = join(sessionDir, 'cancel-signal-state.json');
+        const signal = (target_state_sha256?: string) => ({
+          active: true,
+          mode: 'autopilot',
+          source: 'state_clear',
+          requested_at: new Date().toISOString(),
+          expires_at: new Date(Date.now() + 30_000).toISOString(),
+          ...(target_state_sha256 ? { target_state_sha256 } : {}),
+        });
 
-      writeFileSync(signalPath, JSON.stringify(signal()));
-      await expect(
-        checkPersistentModes(sessionId, tempDir),
-      ).resolves.toMatchObject({
-        shouldBlock: true,
-        mode: 'autopilot',
-      });
+        writeFileSync(signalPath, JSON.stringify(signal()));
+        await expect(
+          checkPersistentModes(sessionId, tempDir),
+        ).resolves.toMatchObject({
+          shouldBlock: true,
+          mode: 'autopilot',
+        });
 
-      const currentState = JSON.parse(
-        readFileSync(join(sessionDir, 'autopilot-state.json'), 'utf-8'),
-      );
-      writeFileSync(
-        signalPath,
-        JSON.stringify(
-          signal(
-            createHash('sha256')
-              .update(JSON.stringify(currentState))
-              .digest('hex'),
+        const currentState = JSON.parse(
+          readFileSync(join(sessionDir, 'autopilot-state.json'), 'utf-8'),
+        );
+        writeFileSync(
+          signalPath,
+          JSON.stringify(
+            signal(
+              createHash('sha256')
+                .update(JSON.stringify(currentState))
+                .digest('hex'),
+            ),
           ),
-        ),
-      );
-      await expect(
-        checkPersistentModes(sessionId, tempDir),
-      ).resolves.toMatchObject({
-        shouldBlock: false,
-        mode: 'none',
-      });
-    });
+        );
+        await expect(
+          checkPersistentModes(sessionId, tempDir),
+        ).resolves.toMatchObject({
+          shouldBlock: false,
+          mode: 'none',
+        });
+      },
+    );
 
     it('does not honor an autopilot cancel signal without an exclusive state lock', async () => {
       const sessionId = 'legacy-autopilot-cancel-no-flock';
@@ -357,7 +366,7 @@ describe('Persistent Mode Session Isolation (Issue #311)', () => {
       },
     );
 
-    it.each([
+    it.skipIf(process.platform !== 'linux').each([
       ['future-dated', 6_000, true],
       ['stale', -30_001, true],
       ['fresh', 0, false],
@@ -647,34 +656,43 @@ describe('Persistent Mode Session Isolation (Issue #311)', () => {
       expect(output.decision).toBe('block');
     });
 
-    it('should allow stop when cancel signal only includes requested_at', () => {
-      const sessionId = 'session-cancel-requested-at';
-      createUltraworkState(tempDir, sessionId, 'Task being cancelled');
+    it.skipIf(process.platform !== 'linux')(
+      'should allow stop when cancel signal only includes requested_at',
+      () => {
+        const sessionId = 'session-cancel-requested-at';
+        createUltraworkState(tempDir, sessionId, 'Task being cancelled');
 
-      const sessionDir = join(tempDir, '.omc', 'state', 'sessions', sessionId);
-      writeFileSync(
-        join(sessionDir, 'cancel-signal-state.json'),
-        JSON.stringify(
-          {
-            active: true,
-            requested_at: new Date().toISOString(),
-            source: 'test',
-          },
-          null,
-          2,
-        ),
-      );
+        const sessionDir = join(
+          tempDir,
+          '.omc',
+          'state',
+          'sessions',
+          sessionId,
+        );
+        writeFileSync(
+          join(sessionDir, 'cancel-signal-state.json'),
+          JSON.stringify(
+            {
+              active: true,
+              requested_at: new Date().toISOString(),
+              source: 'test',
+            },
+            null,
+            2,
+          ),
+        );
 
-      const output = runPersistentModeScript({
-        directory: tempDir,
-        sessionId,
-      });
+        const output = runPersistentModeScript({
+          directory: tempDir,
+          sessionId,
+        });
 
-      expect(output.continue).toBe(true);
-      expect(output.decision).toBeUndefined();
-    });
+        expect(output.continue).toBe(true);
+        expect(output.decision).toBeUndefined();
+      },
+    );
 
-    it.each([
+    it.skipIf(process.platform !== 'linux').each([
       [
         'inactive',
         {

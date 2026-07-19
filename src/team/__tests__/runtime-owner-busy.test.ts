@@ -259,79 +259,82 @@ describe('runtime owner team mutation contention', () => {
     });
   });
 
-  it('rejects PID-reuse takeover when the active recovery belongs to a different attempt', async () => {
-    cwd = mkdtempSync(join(tmpdir(), 'runtime-owner-pid-reuse-'));
-    const teamName = 'pid-reuse-team';
-    const configPath = absPath(cwd, TeamPaths.config(teamName));
-    mkdirSync(join(configPath, '..'), { recursive: true });
-    writeFileSync(
-      configPath,
-      JSON.stringify({
-        name: teamName,
-        worker_count: 1,
-        workers: [
-          { name: 'worker-1', index: 1, ...launchMetadata, pane_id: '%1' },
-        ],
-        agent_type: 'claude',
-        created_at: new Date().toISOString(),
-        tmux_session: 'pid-reuse-team:0',
-        lifecycle_state: 'active',
-        state_revision: 3,
-        active_recovery: {
-          request_id: 'other-request',
-          recovery_id: 'other-recovery',
-          worker_name: 'worker-1',
-          owner_epoch: 1,
-          owner_nonce: 'reused-pid-owner',
-          phase: 'active',
-          state_revision: 3,
+  it.skipIf(process.platform !== 'linux')(
+    'rejects PID-reuse takeover when the active recovery belongs to a different attempt',
+    async () => {
+      cwd = mkdtempSync(join(tmpdir(), 'runtime-owner-pid-reuse-'));
+      const teamName = 'pid-reuse-team';
+      const configPath = absPath(cwd, TeamPaths.config(teamName));
+      mkdirSync(join(configPath, '..'), { recursive: true });
+      writeFileSync(
+        configPath,
+        JSON.stringify({
+          name: teamName,
+          worker_count: 1,
+          workers: [
+            { name: 'worker-1', index: 1, ...launchMetadata, pane_id: '%1' },
+          ],
+          agent_type: 'claude',
           created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      }),
-    );
-    publishOwnerEpoch(cwd, teamName, 1, {
-      pid: process.pid,
-      processStartedAt: 'linux:1',
-      nonce: 'reused-pid-owner',
-    });
-    reserveRecoveryRequest(
-      cwd,
-      'waiting-pid-request',
-      {
-        operation: 'recover-worker',
-        workspaceHash: createHash('sha256').update(cwd).digest('hex'),
-        teamName,
-        workerName: 'worker-1',
-      },
-      'waiting-pid-recovery',
-    );
-
-    await expect(
-      executeRecoverDeadWorkerV2Owner({
-        teamName,
+          tmux_session: 'pid-reuse-team:0',
+          lifecycle_state: 'active',
+          state_revision: 3,
+          active_recovery: {
+            request_id: 'other-request',
+            recovery_id: 'other-recovery',
+            worker_name: 'worker-1',
+            owner_epoch: 1,
+            owner_nonce: 'reused-pid-owner',
+            phase: 'active',
+            state_revision: 3,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        }),
+      );
+      publishOwnerEpoch(cwd, teamName, 1, {
+        pid: process.pid,
+        processStartedAt: 'linux:1',
+        nonce: 'reused-pid-owner',
+      });
+      reserveRecoveryRequest(
         cwd,
-        workerName: 'worker-1',
-        requestId: 'waiting-pid-request',
-      }),
-    ).resolves.toMatchObject({
-      outcome: 'failed',
-      error: 'runtime_owner_fence_lost',
-    });
-    const owner = readLatestOwnerEpoch(cwd, teamName);
-    expect(owner).toMatchObject({
-      epoch: 1,
-      pid: process.pid,
-      process_started_at: 'linux:1',
-    });
-    await expect(
-      readRevisionedTeamConfig(teamName, cwd),
-    ).resolves.toMatchObject({
-      config: {
-        active_recovery: { recovery_id: 'other-recovery', owner_epoch: 1 },
-      },
-    });
-  });
+        'waiting-pid-request',
+        {
+          operation: 'recover-worker',
+          workspaceHash: createHash('sha256').update(cwd).digest('hex'),
+          teamName,
+          workerName: 'worker-1',
+        },
+        'waiting-pid-recovery',
+      );
+
+      await expect(
+        executeRecoverDeadWorkerV2Owner({
+          teamName,
+          cwd,
+          workerName: 'worker-1',
+          requestId: 'waiting-pid-request',
+        }),
+      ).resolves.toMatchObject({
+        outcome: 'failed',
+        error: 'runtime_owner_fence_lost',
+      });
+      const owner = readLatestOwnerEpoch(cwd, teamName);
+      expect(owner).toMatchObject({
+        epoch: 1,
+        pid: process.pid,
+        process_started_at: 'linux:1',
+      });
+      await expect(
+        readRevisionedTeamConfig(teamName, cwd),
+      ).resolves.toMatchObject({
+        config: {
+          active_recovery: { recovery_id: 'other-recovery', owner_epoch: 1 },
+        },
+      });
+    },
+  );
   it('retains a committed pane on unknown liveness without spawning a duplicate replacement', async () => {
     cwd = mkdtempSync(join(tmpdir(), 'runtime-owner-unknown-committed-pane-'));
     const teamName = 'committed-team';

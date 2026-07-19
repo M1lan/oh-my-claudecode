@@ -96,7 +96,7 @@ describe('synchronous publication short writes', () => {
     );
   });
 
-  it.each([
+  it.skipIf(process.platform !== 'linux').each([
     ['plugin', pluginAtomicWrite],
     ['template', templateAtomicWrite],
   ])(

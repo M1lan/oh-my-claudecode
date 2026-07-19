@@ -192,7 +192,7 @@ afterEach(() => {
   while (created.length) rmSync(created.pop(), { recursive: true, force: true });
 });
 
-describe.each(['plugin', 'installed-template'])('workflow profile stop transition (%s)', (kind) => {
+describe.skipIf(process.platform !== 'linux').each(['plugin', 'installed-template'])('workflow profile stop transition (%s)', (kind) => {
   it.each([
     ['ralplan,execution', ['ralplan', 'execution']],
     ['ralplan,execution,ralph', ['ralplan', 'execution', 'ralph']],

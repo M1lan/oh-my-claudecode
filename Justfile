@@ -229,10 +229,13 @@ mcp-smoke:
 test *args:
     {{PM}} test "$@"
 
-# Run the full vitest suite once (CI mode)
+# Run the full vitest suite once (CI mode). Process-reap/wall-clock timing
+# tests are split into a serialized second pass so the in-suite package build
+# (npm-package-bin-surface) cannot CPU-starve their millisecond budgets.
 [group('test')]
 test-run *args:
-    {{PM}} run test:run -- "$@"
+    {{PM}} exec vitest run --exclude "tests/perf/**" --exclude "**/session-end-process-exit.test.ts" --exclude "**/run-cjs-generic-timeout.test.ts" --exclude "**/run-cjs-graceful-fallback.test.ts" --exclude "**/windows-prompt-hook-runner.test.ts" "$@"
+    {{PM}} exec vitest run --no-file-parallelism src/__tests__/session-end-process-exit.test.ts src/__tests__/run-cjs-generic-timeout.test.ts src/__tests__/run-cjs-graceful-fallback.test.ts src/__tests__/windows-prompt-hook-runner.test.ts
 
 # Only run tests for files changed since last commit (vitest --changed)
 [group('test')]
