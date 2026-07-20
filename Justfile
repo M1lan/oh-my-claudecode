@@ -313,7 +313,7 @@ fmt-check:
 # Lint markdown via rumdl (no-op when rumdl is missing)
 [group('lint')]
 mdlint:
-    @if command -v rumdl >/dev/null 2>&1; then rumdl check --respect-gitignore "**/*.md"; else echo "rumdl not installed -- skipping (cargo install rumdl-cli)"; fi
+    @if command -v rumdl >/dev/null 2>&1; then rumdl check --respect-gitignore "./**/*.md"; else echo "rumdl not installed -- skipping (cargo install rumdl-cli)"; fi
 
 # Lint shell (helpers + scripts) via shellcheck (no-op when missing)
 [group('lint')]
