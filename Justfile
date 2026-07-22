@@ -267,6 +267,21 @@ test-coverage:
 coverage-open:
     @if [[ -f coverage/index.html ]]; then open coverage/index.html 2>/dev/null || xdg-open coverage/index.html 2>/dev/null || echo "open coverage/index.html manually"; else echo "no coverage/index.html -- run 'just test-coverage' first"; fi
 
+# Verify omc interop: targeted tests + interop tool registration in built bridge
+[group('test')]
+interop-verify:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    pnpm exec vitest run src/__tests__/cli-interop-flags.test.ts src/mcp/__tests__/standalone-listtools.test.ts src/interop
+    [[ -f bridge/mcp-server.cjs ]] || { echo "bridge/mcp-server.cjs missing -- run 'just build' first"; exit 1; }
+    count=$({ printf '%s\n' \
+      '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"interop-verify","version":"0"}}}' \
+      '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+      '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'; sleep 3; } \
+      | OMC_INTEROP_TOOLS_ENABLED=1 node bridge/mcp-server.cjs 2>/dev/null \
+      | jq -r 'select(.id==2) | [.result.tools[].name | select(startswith("interop_"))] | length')
+    [[ "$count" == "8" ]] && echo "interop-verify OK: 8 interop tools registered" || { echo "interop-verify FAIL: expected 8 interop tools, got ${count:-0}"; exit 1; }
+
 # ── Benchmark ────────────────────────────────────────────────────────────────
 
 # Run all prompt benchmarks
