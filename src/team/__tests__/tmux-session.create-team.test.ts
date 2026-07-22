@@ -11,6 +11,10 @@ const mockedCalls = vi.hoisted(() => ({
   splitCount: 0,
   newSplitStdouts: [] as string[],
   tmuxSplitStdouts: [] as string[],
+  // Whether a tmux-compatible multiplexer (rmux/tmux) is resolvable. Detection
+  // now prefers that path over cmux; the cmux code path is exercised by
+  // simulating its absence (the last-resort fallback).
+  multiplexerAvailable: false,
   tmuxSplitError: null as {
     stdout: string;
     stderr: string;
@@ -149,6 +153,20 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
+// Detection now prefers a tmux-compatible multiplexer (rmux/tmux) over cmux.
+// Stub the availability probe so cmux-vs-tmux branching is deterministic and
+// does not depend on whether rmux/tmux is actually installed on the host.
+vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+  return {
+    ...actual,
+    isTmuxCompatibleMultiplexerAvailable: vi.fn(
+      () => mockedCalls.multiplexerAvailable,
+    ),
+  };
+});
+
 import {
   createTeamSession,
   detectTeamMultiplexerContext,
@@ -159,6 +177,7 @@ import {
 describe('detectTeamMultiplexerContext', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
+    mockedCalls.multiplexerAvailable = false;
   });
 
   it('returns tmux when TMUX is present', () => {
@@ -168,9 +187,19 @@ describe('detectTeamMultiplexerContext', () => {
     expect(detectTeamMultiplexerContext()).toBe('tmux');
   });
 
-  it('returns cmux when CMUX_SURFACE_ID is present without TMUX', () => {
+  it('returns tmux inside a cmux surface when a tmux-compatible multiplexer is available', () => {
+    // rmux masquerades through the tmux code path, so it outranks cmux.
     vi.stubEnv('TMUX', '');
     vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
+    mockedCalls.multiplexerAvailable = true;
+
+    expect(detectTeamMultiplexerContext()).toBe('tmux');
+  });
+
+  it('returns cmux only when CMUX_SURFACE_ID is set and no rmux/tmux is available', () => {
+    vi.stubEnv('TMUX', '');
+    vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
+    mockedCalls.multiplexerAvailable = false;
 
     expect(detectTeamMultiplexerContext()).toBe('cmux');
   });
@@ -188,6 +217,8 @@ describe('createTeamSession context resolution', () => {
     mockedCalls.execFileArgs = [];
     mockedCalls.splitCount = 0;
     mockedCalls.newSplitStdouts = [];
+    // No rmux/tmux resolvable → the cmux surface tests drive the cmux fallback.
+    mockedCalls.multiplexerAvailable = false;
   });
 
   afterEach(() => {

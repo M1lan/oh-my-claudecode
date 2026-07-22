@@ -41,8 +41,8 @@ Spawn N CLI worker processes in tmux panes to execute tasks in parallel. Support
 
 ## Requirements
 
-- **tmux binary** must be installed and discoverable (`command -v tmux`) when running from a plain terminal; classic tmux sessions reuse the current tmux surface.
-- **cmux surface optional** for in-place native splits (`CMUX_SURFACE_ID` set without `$TMUX`). Plain terminals still use the detached tmux fallback.
+- **A tmux-compatible multiplexer** (`rmux` preferred, or `tmux`) must be installed and discoverable when running from a plain terminal; classic tmux sessions reuse the current surface. On POSIX, a plain `rmux` on PATH is driven in preference to `tmux`.
+- **cmux is a last-resort fallback**, not the default. Even inside a cmux surface (`CMUX_SURFACE_ID` set without `$TMUX`), OMC drives rmux/tmux when either is resolvable; native cmux splits are used only when no rmux/tmux binary is available. Plain terminals use the detached rmux/tmux session fallback.
 - **claude** CLI: install and authenticate Claude Code using the [official setup instructions](https://code.claude.com/docs/en/setup); the legacy Anthropic npm package install path is deprecated for normal user installs.
 - **codex** CLI: `npm install -g @openai/codex`
 - **gemini** CLI: `npm install -g @google/gemini-cli` (enterprise/API-key tier)
@@ -60,10 +60,10 @@ Check the active multiplexer before claiming tmux is missing. If `$TMUX` is empt
 command -v tmux >/dev/null 2>&1
 ```
 
-- If the plain-terminal tmux check fails, report that **tmux is not installed** and stop.
-- If `$TMUX` is set, `omc team` can reuse the current tmux window/panes directly.
-- If `$TMUX` is empty but `CMUX_SURFACE_ID` is set, report that the user is running inside **cmux**. Do **not** say tmux is missing or that they are "not inside tmux"; `omc team` will create **native cmux splits** for workers.
-- If neither `$TMUX` nor `CMUX_SURFACE_ID` is set, report that the user is in a **plain terminal**. `omc team` can still launch a **detached tmux session**, but if they specifically want in-place pane/window topology they should start from a classic tmux session first.
+- If the plain-terminal check fails for both `rmux` and `tmux`, report that **no tmux-compatible multiplexer is installed** and stop.
+- If `$TMUX` is set, `omc team` can reuse the current tmux/rmux window/panes directly.
+- If `$TMUX` is empty but `CMUX_SURFACE_ID` is set, OMC still **prefers rmux/tmux**: when either binary is resolvable it drives that (through the tmux code path), and only falls back to **native cmux splits** when neither rmux nor tmux is available. Do **not** say tmux is missing or that they are "not inside tmux".
+- If neither `$TMUX` nor `CMUX_SURFACE_ID` is set, report that the user is in a **plain terminal**. `omc team` can still launch a **detached rmux/tmux session**, but if they specifically want in-place pane/window topology they should start from a classic tmux/rmux session first.
 - If you need to confirm the active tmux session, use:
 
 ```bash
@@ -184,7 +184,7 @@ If encountered, switch to `omc team ...` CLI commands.
 | Error                        | Cause                               | Fix                                                                                 |
 | ---------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------- |
 | `not inside tmux`            | Requested in-place pane topology from a non-tmux surface | Start tmux and rerun, or let `omc team` use its detached-session fallback           |
-| `cmux surface detected`      | Running inside cmux without `$TMUX` | Use the normal `omc team ...` flow; OMC will create native cmux worker splits      |
+| `cmux surface detected`      | Running inside cmux without `$TMUX` and no rmux/tmux resolvable | Use the normal `omc team ...` flow; OMC prefers rmux/tmux and only creates native cmux worker splits when neither is available |
 | `Unsupported agent type`     | Requested agent is not claude/codex/gemini/antigravity/grok/cursor | Use `claude`, `codex`, `gemini`, `antigravity`, `grok`, or `cursor`; for native Claude Code agents use `/oh-my-claudecode:team` |
 | `codex: command not found`   | Codex CLI not installed             | `npm install -g @openai/codex`                                                      |
 | `gemini: command not found`  | Gemini CLI not installed            | `npm install -g @google/gemini-cli` (enterprise/API-key tier)                       |

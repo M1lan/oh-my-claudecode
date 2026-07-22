@@ -77,6 +77,8 @@ vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
     await importOriginal<typeof import('../../cli/tmux-utils.js')>();
   return {
     ...actual,
+    // These tests exercise the cmux fallback path, i.e. no rmux/tmux resolvable.
+    isTmuxCompatibleMultiplexerAvailable: vi.fn(() => false),
     tmuxExec: vi.fn((args: string[]) => {
       mockedCalls.tmuxArgs.push(args);
       return '';

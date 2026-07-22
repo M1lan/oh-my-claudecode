@@ -339,6 +339,18 @@ export function isTmuxAvailable(): boolean {
 }
 
 /**
+ * True when a tmux-compatible multiplexer can be driven on this host: a plain
+ * `rmux` on PATH (preferred, POSIX-only) or tmux itself. rmux masquerades
+ * through the tmux code path, so callers inside a cmux surface prefer this over
+ * cmux's own dialect — cmux is the last resort, used only when neither rmux nor
+ * tmux is usable. On native Windows rmux is absent, so this reduces to the
+ * tmux/psmux probe.
+ */
+export function isTmuxCompatibleMultiplexerAvailable(): boolean {
+  return resolveRmuxBinaryPath() !== null || isTmuxAvailable();
+}
+
+/**
  * Check if claude CLI is available on the system
  */
 export function isClaudeAvailable(): boolean {
@@ -379,12 +391,16 @@ export function resolveLaunchPolicy(
   }
   if (env.TMUX) return 'inside-tmux';
   // Terminal emulators that embed their own multiplexer (e.g. cmux, a
-  // Ghostty-based terminal) set CMUX_SURFACE_ID but not TMUX. tmux
-  // attach-session fails in these environments because the host PTY is
-  // not directly compatible, leaving orphaned detached sessions.
-  // Demote to direct unless the caller explicitly requires tmux.
-  if (env.CMUX_SURFACE_ID && !options.requireTmux) return 'direct';
-  if (!isTmuxAvailable()) {
+  // Ghostty-based terminal) set CMUX_SURFACE_ID but not TMUX. Prefer a
+  // tmux-compatible multiplexer (rmux, or tmux itself) when one is usable —
+  // rmux drives these surfaces cleanly through the tmux code path. Demote to
+  // direct only when neither rmux nor tmux is available (cmux's own dialect is
+  // the last resort, handled by the team runtime rather than this launch path).
+  const multiplexerAvailable = isTmuxCompatibleMultiplexerAvailable();
+  if (env.CMUX_SURFACE_ID && !options.requireTmux && !multiplexerAvailable) {
+    return 'direct';
+  }
+  if (!multiplexerAvailable) {
     return 'direct';
   }
   return 'outside-tmux';

@@ -27,6 +27,7 @@ import {
   buildTmuxShellCommandWithEnv,
   createHudWatchPane,
   isClaudeAvailable,
+  isTmuxCompatibleMultiplexerAvailable,
   killTmuxPane,
   listHudWatchPaneIdsInCurrentWindow,
   resolveLaunchPolicy,
@@ -120,8 +121,21 @@ describe('resolveLaunchPolicy', () => {
     );
   });
 
-  it('returns "direct" when CMUX_SURFACE_ID is set (cmux terminal)', () => {
+  it('returns "outside-tmux" in a cmux surface when a tmux-compatible multiplexer is available', () => {
+    // New priority: rmux/tmux drives a cmux surface through the tmux code path,
+    // so cmux is no longer forced to "direct" when a multiplexer is resolvable.
     mockedExecFileSync.mockReturnValue('tmux 3.6a' as any);
+    expect(
+      resolveLaunchPolicy({
+        CMUX_SURFACE_ID: 'C0D4B400-6C27-4957-BD01-32735B2251CD',
+      }),
+    ).toBe('outside-tmux');
+  });
+
+  it('returns "direct" in a cmux surface only when neither rmux nor tmux is available', () => {
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error('tmux not found');
+    });
     expect(
       resolveLaunchPolicy({
         CMUX_SURFACE_ID: 'C0D4B400-6C27-4957-BD01-32735B2251CD',
@@ -237,6 +251,51 @@ describe('resolveLaunchPolicy', () => {
       value: originalPlatform,
       configurable: true,
     });
+  });
+});
+
+describe('isTmuxCompatibleMultiplexerAvailable', () => {
+  it('is true when a plain rmux binary is on PATH', () => {
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+
+    expect(isTmuxCompatibleMultiplexerAvailable()).toBe(true);
+  });
+
+  it('is true when rmux is absent but tmux is available', () => {
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExecFileSync.mockReturnValue('tmux 3.6a' as any);
+
+    expect(isTmuxCompatibleMultiplexerAvailable()).toBe(true);
+  });
+
+  it('is false when neither rmux nor tmux is available', () => {
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error('tmux not found');
+    });
+
+    expect(isTmuxCompatibleMultiplexerAvailable()).toBe(false);
   });
 });
 

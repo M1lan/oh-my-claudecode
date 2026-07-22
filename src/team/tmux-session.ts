@@ -20,6 +20,7 @@ import {
   tmuxExecAsync,
   tmuxShell,
   tmuxCmdAsync,
+  isTmuxCompatibleMultiplexerAvailable,
 } from '../cli/tmux-utils.js';
 import {
   configureTmuxClipboardForSession,
@@ -41,7 +42,14 @@ export function detectTeamMultiplexerContext(
   env: NodeJS.ProcessEnv = process.env,
 ): TeamMultiplexerContext {
   if (env.TMUX) return 'tmux';
-  if (env.CMUX_SURFACE_ID) return 'cmux';
+  if (env.CMUX_SURFACE_ID) {
+    // A cmux surface (Ghostty-embedded multiplexer) sets CMUX_SURFACE_ID but
+    // not TMUX. Prefer a tmux-compatible multiplexer when one is usable: rmux
+    // (and tmux) drive the surface through the tmux code path, so it wins over
+    // cmux's own dialect. cmux is the last resort — chosen only when neither
+    // rmux nor tmux is resolvable.
+    return isTmuxCompatibleMultiplexerAvailable() ? 'tmux' : 'cmux';
+  }
   return 'none';
 }
 
