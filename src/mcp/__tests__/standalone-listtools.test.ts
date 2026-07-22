@@ -21,7 +21,7 @@
  *   of scope here.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildListToolsResponse, allTools } from '../tool-registry.js';
 
 describe('standalone MCP server – ListTools E2E drift guard', () => {
@@ -138,5 +138,55 @@ describe('standalone MCP server – OMC_DISABLE_TOOLS filtering', () => {
     expect(names).toContain('lsp_hover');
     expect(names).toContain('python_repl');
     expect(tools.length).toBe(allTools.length - 2);
+  });
+});
+
+describe('standalone MCP server – interop tool gating (OMC_INTEROP_TOOLS_ENABLED)', () => {
+  // The gate is evaluated at module load, so each case re-imports the registry
+  // with a fresh module graph and controlled env.
+  let savedEnv: string | undefined;
+
+  beforeEach(() => {
+    savedEnv = process.env.OMC_INTEROP_TOOLS_ENABLED;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    if (savedEnv !== undefined) {
+      process.env.OMC_INTEROP_TOOLS_ENABLED = savedEnv;
+    } else {
+      delete process.env.OMC_INTEROP_TOOLS_ENABLED;
+    }
+    vi.resetModules();
+  });
+
+  it('excludes interop tools by default', async () => {
+    delete process.env.OMC_INTEROP_TOOLS_ENABLED;
+    const registry = await import('../tool-registry.js');
+    const names = registry.buildListToolsResponse('').tools.map((t) => t.name);
+    expect(names.filter((n) => n.startsWith('interop_'))).toEqual([]);
+  });
+
+  it('registers interop tools when OMC_INTEROP_TOOLS_ENABLED=1 (as set by `omc interop`)', async () => {
+    process.env.OMC_INTEROP_TOOLS_ENABLED = '1';
+    const registry = await import('../tool-registry.js');
+    const names = registry.buildListToolsResponse('').tools.map((t) => t.name);
+    expect(names).toContain('interop_send_task');
+    expect(names).toContain('interop_read_results');
+    expect(names).toContain('interop_send_message');
+    expect(names).toContain('interop_read_messages');
+    expect(names).toContain('interop_list_omx_teams');
+    expect(names).toContain('interop_send_omx_message');
+    expect(names).toContain('interop_read_omx_messages');
+    expect(names).toContain('interop_read_omx_tasks');
+  });
+
+  it('interop tools can be disabled again via OMC_DISABLE_TOOLS=interop', async () => {
+    process.env.OMC_INTEROP_TOOLS_ENABLED = '1';
+    const registry = await import('../tool-registry.js');
+    const names = registry
+      .buildListToolsResponse('interop')
+      .tools.map((t) => t.name);
+    expect(names.filter((n) => n.startsWith('interop_'))).toEqual([]);
   });
 });

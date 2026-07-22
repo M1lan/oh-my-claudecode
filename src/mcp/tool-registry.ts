@@ -27,6 +27,7 @@ import { sharedMemoryTools } from '../tools/shared-memory-tools.js';
 import { deepinitManifestTool } from '../tools/deepinit-manifest.js';
 import { wikiTools } from '../tools/wiki-tools.js';
 import { skillsTools } from '../tools/skills-tools.js';
+import { getInteropTools } from '../interop/mcp-bridge.js';
 import { TOOL_CATEGORIES, type ToolCategory } from '../constants/index.js';
 import { filterDisabledTools, tagCategory } from './disable-tools.js';
 import { z } from 'zod';
@@ -48,6 +49,16 @@ export interface ToolDef {
     isError?: boolean;
   }>;
 }
+
+/**
+ * Interop tools are opt-in: they register only when OMC_INTEROP_TOOLS_ENABLED=1
+ * at server startup (set automatically by `omc interop` for the claude pane).
+ * Mirrors the gate in omc-tools-server.ts so both server surfaces agree.
+ */
+const interopToolsEnabled = process.env.OMC_INTEROP_TOOLS_ENABLED === '1';
+const interopTools: ToolDef[] = interopToolsEnabled
+  ? tagCategory(getInteropTools() as unknown as ToolDef[], TOOL_CATEGORIES.INTEROP)
+  : [];
 
 /** All tools exposed by the standalone server, in registration order. */
 export const allTools: ToolDef[] = [
@@ -71,6 +82,7 @@ export const allTools: ToolDef[] = [
   },
   ...tagCategory(wikiTools as unknown as ToolDef[], TOOL_CATEGORIES.WIKI),
   ...tagCategory(skillsTools as unknown as ToolDef[], TOOL_CATEGORIES.SKILLS),
+  ...interopTools,
 ];
 
 /** Tools currently enabled for standalone ListTools after OMC_DISABLE_TOOLS filtering. */
