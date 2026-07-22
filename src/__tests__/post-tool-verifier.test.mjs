@@ -3,7 +3,7 @@
  * Covers issue #696: false positive "permission denied" from Claude Code temp CWD errors on macOS
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';

@@ -35,9 +35,10 @@ const mockedSpawnSync = vi.mocked(spawnSync);
 const mockedExistsSync = vi.mocked(existsSync);
 const baselinePlatform = process.platform;
 
-function spawnResult(status: number | null, stdout = ''): ReturnType<
-  typeof spawnSync
-> {
+function spawnResult(
+  status: number | null,
+  stdout = '',
+): ReturnType<typeof spawnSync> {
   return {
     status,
     stdout,

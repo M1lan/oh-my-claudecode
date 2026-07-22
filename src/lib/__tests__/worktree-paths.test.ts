@@ -308,7 +308,9 @@ describe('worktree-paths', () => {
       const errorSpy = vi
         .spyOn(console, 'error')
         .mockImplementation(() => undefined);
-      const nonGitDir = mkdtempSync(join(tmpdir(), 'worktree-paths-fswalk-none-'));
+      const nonGitDir = mkdtempSync(
+        join(tmpdir(), 'worktree-paths-fswalk-none-'),
+      );
 
       const originalPath = process.env.PATH;
       process.env.PATH = nonGitDir;

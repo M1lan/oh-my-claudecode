@@ -2910,7 +2910,7 @@ export async function prepareRecoveryOwnerBootstrap(
 ): Promise<void> {
   const bootstrap = input.bootstrap;
   if (!bootstrap) throw new Error('runtime_owner_bootstrap_fence_lost');
-  let owner = await ensureRecoveryOwner(
+  const owner = await ensureRecoveryOwner(
     input.teamName,
     input.cwd,
     input,

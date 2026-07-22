@@ -54,7 +54,9 @@ export async function doctorRmuxCommand(
 
   console.log(colors.bold('rmux multiplexer — availability probe'));
   if (detected.installed) {
-    console.log(`  ${colors.green('✓')} rmux: ${detected.version ?? 'installed'}`);
+    console.log(
+      `  ${colors.green('✓')} rmux: ${detected.version ?? 'installed'}`,
+    );
   } else if (process.platform === 'win32') {
     console.log(
       `  ${colors.gray('ℹ')} rmux is POSIX-only — not applicable on native Windows (OMC uses tmux/psmux).`,
@@ -65,9 +67,7 @@ export async function doctorRmuxCommand(
     );
     if (plan.command) {
       console.log(`    Install: ${plan.command}`);
-      console.log(
-        `    ${colors.gray('Or run: omc doctor rmux --install')}`,
-      );
+      console.log(`    ${colors.gray('Or run: omc doctor rmux --install')}`);
     } else {
       console.log(colors.gray(RMUX_MANUAL_INSTRUCTIONS));
     }
