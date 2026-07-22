@@ -1,12 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const REPO_ROOT = join(__dirname, '..', '..');
-const CI_WORKFLOW = readFileSync(
+// Forks may disable GitHub workflows by renaming them to *.disabled; the
+// release-guidance contract still applies to the disabled copy.
+const CI_WORKFLOW_PATH = [
   join(REPO_ROOT, '.github', 'workflows', 'ci.yml'),
-  'utf-8',
-);
+  join(REPO_ROOT, '.github', 'workflows', 'ci.yml.disabled'),
+].find(existsSync);
+if (!CI_WORKFLOW_PATH) {
+  throw new Error(
+    'ci.yml (or ci.yml.disabled) not found under .github/workflows',
+  );
+}
+const CI_WORKFLOW = readFileSync(CI_WORKFLOW_PATH, 'utf-8');
 const CONTRIBUTING = readFileSync(join(REPO_ROOT, 'CONTRIBUTING.md'), 'utf-8');
 const RELEASE_SCRIPT = readFileSync(
   join(REPO_ROOT, 'scripts', 'release.ts'),
@@ -72,7 +80,8 @@ describe('plugin shipping release guidance', () => {
       'node scripts/plugin-shipping-surface.mjs stage',
     );
     expect(RELEASE_SCRIPT).toMatch(
-      /npm run plugin:shipping:verify\n\s+npm run plugin:shipping:stage\n\s+git add --/,
+      // This fork standardizes on pnpm (469733ef); accept either runner.
+      /p?npm run plugin:shipping:verify\n\s+p?npm run plugin:shipping:stage\n\s+git add --/,
     );
     expect(RELEASE_SCRIPT).toContain('git commit -S');
     expect(RELEASE_SCRIPT).toContain(

@@ -12,16 +12,24 @@ describe('.omc gitignore state contract', () => {
       .map((line) => line.trim())
       .filter(Boolean);
 
+    // Nested .omc/ dirs (any depth) are always accidental and ignored via
+    // '**/.omc/'; only the root-anchored '!/.omc/' re-includes the canonical
+    // anchor. An unanchored '!.omc/' would re-include nested dirs too and
+    // defeat the guard.
     expect(gitignore).toEqual(
       expect.arrayContaining([
-        '!.omc/',
+        '**/.omc/',
+        '!/.omc/',
         '.omc/*',
         '!.omc/skills/',
         '!.omc/skills/**',
       ]),
     );
 
-    expect(gitignore.indexOf('!.omc/')).toBeLessThan(
+    expect(gitignore.indexOf('**/.omc/')).toBeLessThan(
+      gitignore.indexOf('!/.omc/'),
+    );
+    expect(gitignore.indexOf('!/.omc/')).toBeLessThan(
       gitignore.indexOf('.omc/*'),
     );
     expect(gitignore.indexOf('.omc/*')).toBeLessThan(
