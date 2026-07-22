@@ -15,7 +15,6 @@ describe('cli interop flag validation', () => {
     expect(flags.enabled).toBe(false);
     expect(flags.mode).toBe('off');
     expect(flags.omcInteropToolsEnabled).toBe(false);
-    expect(flags.failClosed).toBe(true);
   });
 
   it('rejects non-off mode when interop is disabled', () => {
@@ -47,7 +46,6 @@ describe('cli interop flag validation', () => {
       OMX_OMC_INTEROP_ENABLED: '1',
       OMX_OMC_INTEROP_MODE: 'active',
       OMC_INTEROP_TOOLS_ENABLED: '1',
-      OMX_OMC_INTEROP_FAIL_CLOSED: '1',
     } as NodeJS.ProcessEnv);
 
     const verdict = validateInteropRuntimeFlags(flags);

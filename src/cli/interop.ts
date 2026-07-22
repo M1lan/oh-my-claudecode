@@ -53,7 +53,6 @@ export interface InteropRuntimeFlags {
   enabled: boolean;
   mode: InteropMode;
   omcInteropToolsEnabled: boolean;
-  failClosed: boolean;
 }
 
 export function readInteropRuntimeFlags(
@@ -66,7 +65,6 @@ export function readInteropRuntimeFlags(
     enabled: env.OMX_OMC_INTEROP_ENABLED === '1',
     mode,
     omcInteropToolsEnabled: env.OMC_INTEROP_TOOLS_ENABLED === '1',
-    failClosed: env.OMX_OMC_INTEROP_FAIL_CLOSED !== '0',
   };
 }
 
@@ -156,7 +154,7 @@ export function launchInteropSession(
   const flagCheck = validateInteropRuntimeFlags(flags);
 
   console.log(
-    `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, failClosed=${flags.failClosed ? '1' : '0'}, yolo=${yolo ? '1' : '0'}`,
+    `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, yolo=${yolo ? '1' : '0'}`,
   );
   if (yolo) {
     console.warn(
