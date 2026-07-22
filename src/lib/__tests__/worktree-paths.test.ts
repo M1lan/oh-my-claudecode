@@ -272,6 +272,64 @@ describe('worktree-paths', () => {
       errorSpy.mockRestore();
       rmSync(bareRepoDir, { recursive: true, force: true });
     });
+
+    it('rescues the ancestor repo root via fs walk-up when git resolution fails but a .git ancestor exists (bead ob2)', () => {
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      const repoRoot = mkdtempSync(join(tmpdir(), 'worktree-paths-fswalk-'));
+      const subDir = join(repoRoot, 'sub', 'deeper');
+      mkdirSync(join(repoRoot, '.git'), { recursive: true });
+      mkdirSync(subDir, { recursive: true });
+
+      // Point PATH at a directory with no `git` executable so the git-based
+      // resolvers throw ENOENT — simulating a transient/unavailable git
+      // resolution rather than a genuine non-repo directory.
+      const originalPath = process.env.PATH;
+      process.env.PATH = repoRoot;
+      let result;
+      try {
+        result = resolveToWorktreeRoot(subDir);
+      } finally {
+        process.env.PATH = originalPath;
+      }
+
+      expect(result).toBe(repoRoot);
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[worktree] git resolution failed; recovered repo root via filesystem walk-up',
+        { directory: subDir, recoveredRoot: repoRoot },
+      );
+
+      errorSpy.mockRestore();
+      rmSync(repoRoot, { recursive: true, force: true });
+    });
+
+    it('falls back to process root when git resolution fails and no .git ancestor exists anywhere (bead ob2)', () => {
+      const errorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => undefined);
+      const nonGitDir = mkdtempSync(join(tmpdir(), 'worktree-paths-fswalk-none-'));
+
+      const originalPath = process.env.PATH;
+      process.env.PATH = nonGitDir;
+      let result;
+      try {
+        result = resolveToWorktreeRoot(nonGitDir);
+      } finally {
+        process.env.PATH = originalPath;
+      }
+
+      // No .git ancestor anywhere above nonGitDir — preserved cwd fallback.
+      const expectedRoot = getWorktreeRoot(process.cwd()) || process.cwd();
+      expect(result).toBe(expectedRoot);
+      expect(errorSpy).toHaveBeenCalledWith(
+        '[worktree] non-git directory provided, falling back to process root',
+        { directory: nonGitDir },
+      );
+
+      errorSpy.mockRestore();
+      rmSync(nonGitDir, { recursive: true, force: true });
+    });
   });
 
   describe('validateWorkingDirectory (#576)', () => {
