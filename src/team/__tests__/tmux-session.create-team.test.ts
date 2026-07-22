@@ -187,13 +187,15 @@ describe('detectTeamMultiplexerContext', () => {
     expect(detectTeamMultiplexerContext()).toBe('tmux');
   });
 
-  it('returns tmux inside a cmux surface when a tmux-compatible multiplexer is available', () => {
-    // rmux masquerades through the tmux code path, so it outranks cmux.
+  it('returns none inside a cmux surface when a tmux-compatible multiplexer is available', () => {
+    // rmux/tmux outrank cmux's own dialect, but there is no live server/pane
+    // context here (TMUX unset) — 'none' routes to detached-session creation
+    // instead of the inside-a-session path, which would throw.
     vi.stubEnv('TMUX', '');
     vi.stubEnv('CMUX_SURFACE_ID', 'cmux-surface');
     mockedCalls.multiplexerAvailable = true;
 
-    expect(detectTeamMultiplexerContext()).toBe('tmux');
+    expect(detectTeamMultiplexerContext()).toBe('none');
   });
 
   it('returns cmux only when CMUX_SURFACE_ID is set and no rmux/tmux is available', () => {

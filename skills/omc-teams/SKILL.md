@@ -42,7 +42,7 @@ Spawn N CLI worker processes in tmux panes to execute tasks in parallel. Support
 ## Requirements
 
 - **A tmux-compatible multiplexer** (`rmux` preferred, or `tmux`) must be installed and discoverable when running from a plain terminal; classic tmux sessions reuse the current surface. On POSIX, a plain `rmux` on PATH is driven in preference to `tmux`.
-- **cmux is a last-resort fallback**, not the default. Even inside a cmux surface (`CMUX_SURFACE_ID` set without `$TMUX`), OMC drives rmux/tmux when either is resolvable; native cmux splits are used only when no rmux/tmux binary is available. Plain terminals use the detached rmux/tmux session fallback.
+- **cmux is a last-resort fallback**, not the default. Even inside a cmux surface (`CMUX_SURFACE_ID` set without `$TMUX`), OMC prefers rmux/tmux when either is resolvable — since there is no live pane context to reuse, it creates a **detached** rmux/tmux session (same as a plain terminal) rather than splitting the cmux surface; native cmux splits are used only when no rmux/tmux binary is available.
 - **claude** CLI: install and authenticate Claude Code using the [official setup instructions](https://code.claude.com/docs/en/setup); the legacy Anthropic npm package install path is deprecated for normal user installs.
 - **codex** CLI: `npm install -g @openai/codex`
 - **gemini** CLI: `npm install -g @google/gemini-cli` (enterprise/API-key tier)
@@ -62,7 +62,7 @@ command -v tmux >/dev/null 2>&1
 
 - If the plain-terminal check fails for both `rmux` and `tmux`, report that **no tmux-compatible multiplexer is installed** and stop.
 - If `$TMUX` is set, `omc team` can reuse the current tmux/rmux window/panes directly.
-- If `$TMUX` is empty but `CMUX_SURFACE_ID` is set, OMC still **prefers rmux/tmux**: when either binary is resolvable it drives that (through the tmux code path), and only falls back to **native cmux splits** when neither rmux nor tmux is available. Do **not** say tmux is missing or that they are "not inside tmux".
+- If `$TMUX` is empty but `CMUX_SURFACE_ID` is set, OMC still **prefers rmux/tmux**: when either binary is resolvable it creates a **detached** rmux/tmux session (there is no live pane to reuse), and only falls back to **native cmux splits** when neither rmux nor tmux is available. Do **not** say tmux is missing or that they are "not inside tmux".
 - If neither `$TMUX` nor `CMUX_SURFACE_ID` is set, report that the user is in a **plain terminal**. `omc team` can still launch a **detached rmux/tmux session**, but if they specifically want in-place pane/window topology they should start from a classic tmux/rmux session first.
 - If you need to confirm the active tmux session, use:
 

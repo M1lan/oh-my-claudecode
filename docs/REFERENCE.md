@@ -553,7 +553,7 @@ Native team worker worktrees are an opt-in/config-gated runtime-v2 rollout. See 
 Topology behavior:
 
 - inside classic tmux/rmux (`$TMUX` set): reuse the current surface for split-pane or `--new-window` layouts (rmux preferred over tmux on POSIX)
-- inside cmux (`CMUX_SURFACE_ID` without `$TMUX`): prefer rmux/tmux when either is resolvable (driven through the tmux code path); create native cmux splits only as a last resort when neither rmux nor tmux is available
+- inside cmux (`CMUX_SURFACE_ID` without `$TMUX`): prefer rmux/tmux when either is resolvable — creates a **detached** rmux/tmux session (no live pane context to reuse), same as a plain terminal; create native cmux splits only as a last resort when neither rmux nor tmux is available
 - plain terminal: launch a detached rmux/tmux session for team workers
 
 ### `omc session search`

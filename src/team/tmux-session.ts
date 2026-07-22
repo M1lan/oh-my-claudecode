@@ -46,9 +46,14 @@ export function detectTeamMultiplexerContext(
     // A cmux surface (Ghostty-embedded multiplexer) sets CMUX_SURFACE_ID but
     // not TMUX. Prefer a tmux-compatible multiplexer when one is usable: rmux
     // (and tmux) drive the surface through the tmux code path, so it wins over
-    // cmux's own dialect. cmux is the last resort — chosen only when neither
-    // rmux nor tmux is resolvable.
-    return isTmuxCompatibleMultiplexerAvailable() ? 'tmux' : 'cmux';
+    // cmux's own dialect. But there is no LIVE server/current-pane context
+    // here (TMUX is unset) — returning 'tmux' would send createTeamSession
+    // down the inside-a-session path, which queries the current pane and
+    // throws when none exists. Route to 'none' instead so it creates a fresh
+    // detached session (resolveTmuxInvocation() still prefers rmux/tmux
+    // there). cmux is the last resort — chosen only when neither rmux nor
+    // tmux is resolvable.
+    return isTmuxCompatibleMultiplexerAvailable() ? 'none' : 'cmux';
   }
   return 'none';
 }
