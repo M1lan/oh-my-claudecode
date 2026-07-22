@@ -10,6 +10,7 @@ import { randomUUID } from 'crypto';
 import {
   isTmuxAvailable,
   isClaudeAvailable,
+  resolveRmuxInvocation,
   rmuxExec,
   buildRmuxShellCommandWithEnv,
   wrapWithLoginShell,
@@ -128,13 +129,36 @@ function isCodexAvailable(): boolean {
 /**
  * Type the caveman activation into the Codex (OMX) pane. Sent as a literal
  * string (`-l`) followed by Enter so shell/tmux never reinterpret its spaces —
- * mirrors the autoresearch setup injection. Failures are swallowed: the OMX
+ * mirrors the autoresearch setup injection. On rmux, first wait for the pane
+ * to settle (`wait-pane --quiet`) so the keystrokes are not swallowed while
+ * the login shell / codex TUI is still starting; plain tmux has no such wait,
+ * so that path fires immediately as before. Failures are swallowed: the OMX
  * pane simply stays at its global caveman level.
  */
 export function sendInteropCavemanActivation(
   paneId: string,
   activation: string = INTEROP_CAVEMAN_ACTIVATION,
 ): void {
+  if (resolveRmuxInvocation()) {
+    try {
+      // Wait until pane output has been quiet for 500ms (rmux >= 0.8.0).
+      rmuxExec(
+        [
+          'wait-pane',
+          '-t',
+          paneId,
+          '--quiet',
+          '--stable-for',
+          '500ms',
+          '--timeout',
+          '15s',
+        ],
+        { stdio: 'ignore' },
+      );
+    } catch {
+      // Timeout or unsupported wait-pane — proceed with best-effort send-keys.
+    }
+  }
   try {
     rmuxExec(['send-keys', '-t', paneId, '-l', activation], {
       stdio: 'ignore',
