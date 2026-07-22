@@ -115,7 +115,10 @@ export function buildInteropSessionEnv(
  */
 function isCodexAvailable(): boolean {
   try {
-    execFileSync('codex', ['--version'], { stdio: 'ignore' });
+    execFileSync('codex', ['--version'], {
+      stdio: 'ignore',
+      shell: process.platform === 'win32',
+    });
     return true;
   } catch {
     return false;
