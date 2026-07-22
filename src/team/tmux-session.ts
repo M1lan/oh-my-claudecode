@@ -1078,12 +1078,15 @@ export function validateTmux(hasTmuxContext = false): void {
     tmuxShell('-V', { stripTmux: true, timeout: 5000, stdio: 'pipe' });
   } catch {
     throw new Error(
-      'tmux is not available. Install it:\n' +
-        '  macOS: brew install tmux\n' +
-        '  Ubuntu/Debian: sudo apt-get install tmux\n' +
-        '  Fedora: sudo dnf install tmux\n' +
-        '  Arch: sudo pacman -S tmux\n' +
-        '  Windows: winget install psmux',
+      'No tmux-compatible multiplexer is available. Install rmux (preferred, POSIX) or tmux:\n' +
+        '  rmux (recommended): cargo binstall rmux   (or: brew install rmux, cargo install rmux)\n' +
+        '    then re-run, or: omc doctor rmux --install\n' +
+        '  tmux:\n' +
+        '    macOS: brew install tmux\n' +
+        '    Ubuntu/Debian: sudo apt-get install tmux\n' +
+        '    Fedora: sudo dnf install tmux\n' +
+        '    Arch: sudo pacman -S tmux\n' +
+        '    Windows: winget install psmux',
     );
   }
 }

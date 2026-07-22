@@ -226,6 +226,36 @@ Skip this step. Agent teams will remain disabled. User can enable later by addin
 
 Or by running `/oh-my-claudecode:omc-setup --force` and choosing to enable teams.
 
+## Step 3.4: Offer rmux Multiplexer Install (POSIX only)
+
+rmux is the multiplexer OMC prefers on POSIX hosts (macOS/Linux) for `/team`, HUD panes, and interop. It is **optional** — OMC falls back to tmux when rmux is absent — so this step must never block or fail setup. Skip entirely on native Windows (rmux is POSIX-only; tmux/psmux is used there).
+
+First detect + report (read-only):
+
+```bash
+node "${OMC_SETUP_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/bin/oh-my-claudecode.js" doctor rmux || true
+```
+
+If rmux is reported as **not found** (and not on native Windows), use AskUserQuestion:
+
+**Question:** "rmux (preferred multiplexer) is not installed. Install it now? OMC works without it (falls back to tmux)."
+
+**Options:**
+1. **Yes, install rmux (Recommended)** - Installs from `~/mysrc/rmux` local source if present, else `cargo binstall rmux` (or `cargo install rmux`)
+2. **No, skip** - Keep using tmux; install later with `omc doctor rmux --install`
+
+### If User Chooses YES:
+
+```bash
+node "${OMC_SETUP_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/bin/oh-my-claudecode.js" doctor rmux --install || true
+```
+
+The installer is non-fatal: if neither cargo nor cargo-binstall is available it prints manual instructions and continues. Never treat a failed rmux install as a setup failure.
+
+### If User Chooses NO:
+
+Skip. rmux can be installed later with `omc doctor rmux --install` or `cargo binstall rmux`.
+
 ## Save Progress
 
 ```bash

@@ -61,6 +61,10 @@ describe('validateTmux', () => {
       throw new Error('tmux missing');
     });
 
-    expect(() => validateTmux(false)).toThrow(/tmux is not available/i);
+    // rmux (the preferred multiplexer) is surfaced first, tmux as fallback.
+    expect(() => validateTmux(false)).toThrow(
+      /No tmux-compatible multiplexer is available/i,
+    );
+    expect(() => validateTmux(false)).toThrow(/rmux/i);
   });
 });
