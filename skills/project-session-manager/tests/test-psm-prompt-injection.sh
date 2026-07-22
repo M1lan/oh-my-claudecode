@@ -61,6 +61,10 @@ assert_file_exists() {
 # We must stub the real `tmux` binary before sourcing so that
 # psm_has_tmux (which calls `command -v tmux`) still works without a real tmux.
 tmux() { :; }
+# Force the resolver to target the stub above, regardless of whether a real
+# rmux/tmux binary is present on PATH (tmux.sh's `:=` leaves a pre-set
+# MUX_BIN untouched).
+MUX_BIN=tmux
 source "${PSM_LIB_DIR}/tmux.sh"
 
 TMPDIR_TEST=$(mktemp -d)

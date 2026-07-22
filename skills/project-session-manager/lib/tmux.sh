@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
 # PSM Tmux Session Management
 
-# Check if tmux is available
+# Resolve the active multiplexer binary once. rmux is fully tmux-CLI-compatible
+# (same subcommands and flags), so only the binary name needs resolving: prefer
+# a plain `rmux` on PATH, fall back to `tmux`. The `:=` form leaves a
+# caller-provided override untouched (e.g. tests stub `tmux` as a shell
+# function and pre-set MUX_BIN=tmux so calls still reach the stub).
+: "${MUX_BIN:=$(command -v rmux || command -v tmux || true)}"
+
+# Check if a multiplexer (rmux preferred, tmux fallback) is available
 psm_has_tmux() {
-    command -v tmux &> /dev/null
+    [[ -n "$MUX_BIN" ]]
 }
 
 # Canonical tmux-safe session-name contract (issue #3528).
@@ -38,13 +45,13 @@ psm_create_tmux_session() {
     fi
 
     # Check if session already exists
-    if tmux has-session -t "$session_name" 2>/dev/null; then
+    if "$MUX_BIN" has-session -t "$session_name" 2>/dev/null; then
         echo "exists|$session_name"
         return 1
     fi
 
     # Create detached session
-    tmux new-session -d -s "$session_name" -c "$working_dir" 2>/dev/null || {
+    "$MUX_BIN" new-session -d -s "$session_name" -c "$working_dir" 2>/dev/null || {
         echo "error|Failed to create tmux session"
         return 1
     }
@@ -52,7 +59,7 @@ psm_create_tmux_session() {
     # Fail closed: verify the session exists under the exact name PSM will use
     # for later lookups (issue #3528). If tmux rewrote the name, every later
     # has-session / send-keys / kill / attach would silently miss.
-    if ! tmux has-session -t "$session_name" 2>/dev/null; then
+    if ! "$MUX_BIN" has-session -t "$session_name" 2>/dev/null; then
         echo "error|tmux session not found after create: $session_name"
         return 1
     fi
@@ -76,7 +83,7 @@ psm_launch_claude() {
     session_name=$(psm_tmux_safe_name "$1")
     local initial_context="${2:-}"
 
-    if ! tmux has-session -t "$session_name" 2>/dev/null; then
+    if ! "$MUX_BIN" has-session -t "$session_name" 2>/dev/null; then
         echo "error|Session not found: $session_name"
         return 1
     fi
@@ -84,11 +91,11 @@ psm_launch_claude() {
     # --dangerously-skip-permissions bypasses both the directory-trust prompt and
     # every per-tool approval prompt. Without this flag, unattended PSM sessions
     # can block indefinitely on the first tool call (issue #2508).
-    tmux send-keys -t "$session_name" "claude --dangerously-skip-permissions" Enter
+    "$MUX_BIN" send-keys -t "$session_name" "claude --dangerously-skip-permissions" Enter
 
     if [[ -n "$initial_context" ]]; then
         local session_path=""
-        session_path=$(tmux display-message -p -t "$session_name" '#{pane_current_path}' 2>/dev/null || true)
+        session_path=$("$MUX_BIN" display-message -p -t "$session_name" '#{pane_current_path}' 2>/dev/null || true)
 
         # If the second arg resolves to a file in the worktree, preserve the
         # existing context-file flow. Otherwise treat it as a literal prompt.
@@ -98,8 +105,8 @@ psm_launch_claude() {
             local startup_delay="${PSM_CLAUDE_STARTUP_DELAY:-5}"
             (
                 sleep "$startup_delay"
-                tmux send-keys -t "$session_name" -l -- "$initial_context" 2>/dev/null || true
-                tmux send-keys -t "$session_name" Enter 2>/dev/null || true
+                "$MUX_BIN" send-keys -t "$session_name" -l -- "$initial_context" 2>/dev/null || true
+                "$MUX_BIN" send-keys -t "$session_name" Enter 2>/dev/null || true
             ) &
         fi
     fi
@@ -152,7 +159,7 @@ psm_wait_for_claude_prompt() {
 
     while [[ $waited -lt $max_wait ]]; do
         local pane_content
-        pane_content=$(tmux capture-pane -t "$session_name" -p 2>/dev/null) || return 1
+        pane_content=$("$MUX_BIN" capture-pane -t "$session_name" -p 2>/dev/null) || return 1
         if _psm_pane_has_claude_prompt "$pane_content"; then
             return 0
         fi
@@ -179,9 +186,9 @@ psm_inject_prompt() {
     local trigger="Read ${context_file} for full task context, then begin."
 
     # Use literal mode (-l) to prevent tmux from interpreting key names in the text
-    tmux send-keys -t "$session_name" -l -- "$trigger"
+    "$MUX_BIN" send-keys -t "$session_name" -l -- "$trigger"
     sleep 0.15
-    tmux send-keys -t "$session_name" Enter
+    "$MUX_BIN" send-keys -t "$session_name" Enter
 
     return 0
 }
@@ -192,12 +199,12 @@ psm_kill_tmux_session() {
     local session_name
     session_name=$(psm_tmux_safe_name "$1")
 
-    if ! tmux has-session -t "$session_name" 2>/dev/null; then
+    if ! "$MUX_BIN" has-session -t "$session_name" 2>/dev/null; then
         echo "not_found|$session_name"
         return 0
     fi
 
-    tmux kill-session -t "$session_name" 2>/dev/null || {
+    "$MUX_BIN" kill-session -t "$session_name" 2>/dev/null || {
         echo "error|Failed to kill session"
         return 1
     }
@@ -212,7 +219,7 @@ psm_list_tmux_sessions() {
         return 0
     fi
 
-    tmux list-sessions -F "#{session_name}|#{session_created}|#{session_attached}" 2>/dev/null | grep "^psm_" || true
+    "$MUX_BIN" list-sessions -F "#{session_name}|#{session_created}|#{session_attached}" 2>/dev/null | grep "^psm_" || true
 }
 
 # Check if a tmux session exists
@@ -220,13 +227,13 @@ psm_list_tmux_sessions() {
 psm_tmux_session_exists() {
     local session_name
     session_name=$(psm_tmux_safe_name "$1")
-    tmux has-session -t "$session_name" 2>/dev/null
+    "$MUX_BIN" has-session -t "$session_name" 2>/dev/null
 }
 
 # Get current tmux session name
 psm_current_tmux_session() {
     if [[ -n "$TMUX" ]]; then
-        tmux display-message -p "#{session_name}" 2>/dev/null
+        "$MUX_BIN" display-message -p "#{session_name}" 2>/dev/null
     fi
 }
 

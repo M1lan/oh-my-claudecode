@@ -41,7 +41,7 @@ describe('PSM launch trust fix (issue #2508)', () => {
 
     it('preserves context-file injection for relative task files', () => {
       expect(source).toContain(
-        'tmux display-message -p -t "$session_name" \'#{pane_current_path}\'',
+        '"$MUX_BIN" display-message -p -t "$session_name" \'#{pane_current_path}\'',
       );
       expect(source).toContain('-f "$session_path/$initial_context"');
       expect(source).toContain(

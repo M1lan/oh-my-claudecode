@@ -123,9 +123,9 @@ check_dependencies() {
         exit 1
     fi
 
-    # tmux is optional but warn if missing
-    if ! command -v tmux &> /dev/null; then
-        log_warn "tmux not found. Sessions will be created without tmux."
+    # A multiplexer (rmux or tmux) is optional but warn if neither is found
+    if [[ -z "$MUX_BIN" ]]; then
+        log_warn "Neither rmux nor tmux found. Sessions will be created without a multiplexer."
     fi
 }
 
@@ -333,7 +333,7 @@ cmd_review() {
     echo "  Tmux:     $session_name"
     echo ""
     echo "Commands:"
-    echo "  Attach:   tmux attach -t $session_name"
+    echo "  Attach:   $MUX_BIN attach -t $session_name"
     echo "  Kill:     psm kill $session_id"
     echo "  Cleanup:  psm cleanup"
     echo ""
@@ -596,7 +596,7 @@ cmd_attach() {
     fi
 
     echo "Attaching to $session_name..."
-    echo "Run: tmux attach -t $session_name"
+    echo "Run: $MUX_BIN attach -t $session_name"
 }
 
 # Command: kill

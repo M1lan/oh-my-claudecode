@@ -4,8 +4,18 @@ import { spawnSync } from 'node:child_process';
 
 const SESSION_PREFIX = 'omc-team-';
 
+// Resolve the active multiplexer binary: rmux is fully tmux-CLI-compatible,
+// so only the binary name needs resolving. Prefer a plain `rmux` on PATH,
+// fall back to `tmux`.
+function resolveMuxBin() {
+  const probe = spawnSync('rmux', ['-V'], { stdio: 'ignore' });
+  return probe.error ? 'tmux' : 'rmux';
+}
+
+const MUX_BIN = resolveMuxBin();
+
 function runTmux(args) {
-  const result = spawnSync('tmux', args, {
+  const result = spawnSync(MUX_BIN, args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -85,8 +95,8 @@ function main() {
   const sessionsResult = runTmux(['list-sessions', '-F', '#{session_name}']);
 
   if (!sessionsResult.ok) {
-    const err = sessionsResult.stderr || 'tmux is unavailable or no server is running.';
-    console.error(`Failed to list tmux sessions: ${err}`);
+    const err = sessionsResult.stderr || `${MUX_BIN} is unavailable or no server is running.`;
+    console.error(`Failed to list ${MUX_BIN} sessions: ${err}`);
     process.exit(1);
   }
 
@@ -96,7 +106,7 @@ function main() {
     .filter((s) => s.startsWith(SESSION_PREFIX));
 
   if (sessions.length === 0) {
-    console.error(`No tmux sessions found with prefix '${SESSION_PREFIX}'.`);
+    console.error(`No ${MUX_BIN} sessions found with prefix '${SESSION_PREFIX}'.`);
     process.exit(0);
   }
 

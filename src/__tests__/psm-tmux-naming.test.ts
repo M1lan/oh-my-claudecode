@@ -34,7 +34,12 @@ function runShell(script: string, home?: string): string {
 
 // A stateful mock tmux: has-session consults a "created" registry file,
 // new-session records the exact -s name, kill-session removes it.
+// MUX_BIN=tmux forces tmux.sh's resolver to target this mock even when a
+// real rmux/tmux binary is present on PATH (tmux.sh's \`:=\` leaves a
+// pre-set MUX_BIN untouched) -- without it these tests would spawn real
+// multiplexer sessions instead of exercising the mock.
 const MOCK_TMUX = `
+MUX_BIN=tmux
 tmux() {
   local sub="$1"; shift
   case "$sub" in
@@ -88,6 +93,7 @@ describe('PSM tmux-safe naming contract (issue #3528)', () => {
     it('fail-closed: errors when the session is absent after new-session', () => {
       // Mock where new-session silently drops the name (simulates tmux rewrite miss).
       const failMock = `
+MUX_BIN=tmux
 tmux() {
   case "$1" in
     has-session) return 1 ;;
@@ -116,6 +122,7 @@ tmux() {
   describe('list', () => {
     it('greps the tmux-safe psm_ prefix, not psm:', () => {
       const listMock = `
+MUX_BIN=tmux
 tmux() {
   case "$1" in
     list-sessions) printf 'psm_omc_pr-1|100|0\\nother|101|0\\n' ;;
