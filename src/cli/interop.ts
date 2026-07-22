@@ -193,7 +193,7 @@ export function launchInteropSession(
       'Warning: codex CLI is not available. Only Claude Code will be launched.',
     );
     console.warn(
-      'Install oh-my-codex (pnpm add -g @openai/codex) for full interop support.\n',
+      'Install the Codex CLI (`codex`) and oh-my-codex for full interop support.\n',
     );
   }
 
@@ -204,7 +204,9 @@ export function launchInteropSession(
     console.error(
       'Error: Interop mode requires running inside a tmux session.',
     );
-    console.error('Start tmux first: tmux new-session -s myproject');
+    console.error(
+      'Start a tmux-compatible multiplexer session first (rmux or tmux): e.g. `rmux new-session -s myproject` or `tmux new-session -s myproject`.',
+    );
     process.exit(1);
   }
 
@@ -298,8 +300,9 @@ export function launchInteropSession(
     } else {
       // Codex not available, just inform user
       console.log('\nLaunching Claude Code in this pane.');
-      console.log('Install oh-my-codex to enable split-pane interop mode.');
-      console.log('\nInstall: pnpm add -g @openai/codex');
+      console.log(
+        'Install the Codex CLI (`codex`) and oh-my-codex for full interop support.',
+      );
     }
   } catch (error) {
     if (codexPaneId) killRmuxPane(codexPaneId);
