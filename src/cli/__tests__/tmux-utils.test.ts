@@ -581,6 +581,94 @@ describe('plain rmux binary preference (POSIX)', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// tmuxShellCommandPrefix (via tmuxCmdAsync's format-arg -> tmuxShellAsync
+// routing) — must mirror resolveTmuxInvocation's 3-tier ladder: shim ->
+// plain rmux on PATH -> tmux. Regression coverage for the bug where this
+// shell-string prefix skipped the plain-rmux-on-PATH tier entirely.
+// ---------------------------------------------------------------------------
+describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
+  it('prefers a plain rmux binary on PATH when no rmux-shim is active', async () => {
+    vi.stubEnv('TERM_PROGRAM', '');
+    vi.stubEnv('TMUX_PROGRAM', '');
+    vi.stubEnv('TMUX', '');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'rmux 1.0.0\n',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExec.mockClear();
+    mockExecAsync('42\n');
+
+    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+
+    expect(mockedSpawnSync).toHaveBeenCalledWith(
+      'rmux',
+      ['-V'],
+      expect.objectContaining({ stdio: 'ignore' }),
+    );
+    expect(mockedExec).toHaveBeenLastCalledWith(
+      "'rmux' 'display-message' '-p' '#{window_width}'",
+      expect.objectContaining({ encoding: 'utf-8' }),
+      expect.any(Function),
+    );
+  });
+
+  it('falls back to plain tmux when the rmux -V probe fails (rmux absent)', async () => {
+    vi.stubEnv('TERM_PROGRAM', '');
+    vi.stubEnv('TMUX_PROGRAM', '');
+    vi.stubEnv('TMUX', '');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExec.mockClear();
+    mockExecAsync('42\n');
+
+    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+
+    expect(mockedExec).toHaveBeenLastCalledWith(
+      "tmux 'display-message' '-p' '#{window_width}'",
+      expect.objectContaining({ encoding: 'utf-8' }),
+      expect.any(Function),
+    );
+  });
+
+  it('prefers the active rmux-shim over a plain rmux binary on PATH', async () => {
+    vi.stubEnv('TERM_PROGRAM', 'rmux');
+    vi.stubEnv('TMUX_PROGRAM', '/tmp/rmux-shim-abc/tmux');
+    vi.stubEnv('TMUX', '/private/tmp/rmux-502/default,42222,7');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'rmux 1.0.0\n',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExec.mockClear();
+    mockExecAsync('42\n');
+
+    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+
+    expect(mockedExec).toHaveBeenLastCalledWith(
+      "'/tmp/rmux-shim-abc/tmux' '-S' '/private/tmp/rmux-502/default' 'display-message' '-p' '#{window_width}'",
+      expect.objectContaining({ encoding: 'utf-8' }),
+      expect.any(Function),
+    );
+  });
+});
+
 describe('tmux command execution parity on Windows', () => {
   it('routes tmuxExec through COMSPEC when where resolves tmux.cmd', () => {
     const originalPlatform = process.platform;
@@ -735,6 +823,18 @@ describe('tmux command execution parity on Windows', () => {
       value: 'linux',
       configurable: true,
     });
+    __resetRmuxBinaryPathCache();
+    // No rmux-shim and no plain rmux on PATH: pin the multiplexer resolution
+    // to the literal-tmux tier so this test exercises POSIX quoting in
+    // isolation from the rmux-preference behavior covered elsewhere.
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
     mockedExec.mockClear();
     mockedExecFile.mockClear();
     mockExecAsync('42\n');

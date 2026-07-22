@@ -145,11 +145,26 @@ vi.mock('child_process', async (importOriginal) => {
     return '';
   });
 
+  // The tmux-command resolution ladder now probes for a plain `rmux` binary
+  // on PATH (POSIX only) before falling back to literal `tmux`. Pin that
+  // probe to "absent" here so this file's tmux-shell-string assertions (and
+  // parseTmuxShellCmd's `^tmux\s+` parsing) stay deterministic regardless of
+  // whether rmux happens to be installed on the host running the test.
+  const spawnSyncMock = vi.fn(() => ({
+    status: 1,
+    stdout: '',
+    stderr: '',
+    pid: 0,
+    output: [],
+    signal: null,
+  }));
+
   return {
     ...actual,
     exec: execMock,
     execFile: execFileMock,
     execSync: execSyncMock,
+    spawnSync: spawnSyncMock,
   };
 });
 

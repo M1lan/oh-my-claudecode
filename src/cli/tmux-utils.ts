@@ -88,6 +88,13 @@ function tmuxShellCommandPrefix(): string {
   if (rmux) {
     return [rmux.bin, ...rmux.socketArgs].map(quoteShellArg).join(' ');
   }
+  // Prefer a plain `rmux` binary on PATH (POSIX only) as a tmux drop-in,
+  // before falling back to literal tmux — mirrors resolveTmuxInvocation's
+  // 3-tier ladder (shim -> plain rmux on PATH -> tmux).
+  const rmuxBinary = resolveRmuxBinaryPath();
+  if (rmuxBinary) {
+    return quoteShellArg(rmuxBinary);
+  }
   return 'tmux';
 }
 

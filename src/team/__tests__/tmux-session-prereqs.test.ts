@@ -5,16 +5,31 @@ vi.mock('child_process', async (importOriginal) => {
   return {
     ...actual,
     execSync: vi.fn(),
+    // The tmux-command resolution ladder now probes for a plain `rmux`
+    // binary on PATH (POSIX only) before falling back to literal `tmux`.
+    // Pin that probe to "absent" so the 'tmux -V' assertions below stay
+    // deterministic regardless of whether rmux is installed on the host
+    // running the test.
+    spawnSync: vi.fn(() => ({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    })),
   };
 });
 
 import { execSync } from 'child_process';
+import { __resetRmuxBinaryPathCache } from '../../cli/tmux-utils.js';
 import { validateTmux } from '../tmux-session.js';
 
 const mockedExecSync = vi.mocked(execSync);
 
 afterEach(() => {
   vi.restoreAllMocks();
+  __resetRmuxBinaryPathCache();
 });
 
 describe('validateTmux', () => {
