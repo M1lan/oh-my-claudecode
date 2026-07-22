@@ -188,7 +188,7 @@ Optional settings in `.claude/omc.jsonc` (project) or `~/.config/claude-omc/conf
 }
 ```
 
-To run autopilot implementation through the tmux CLI team runtime and prefer Cursor executor workers:
+To run autopilot implementation through the rmux (preferred; tmux-compatible) CLI team runtime and prefer Cursor executor workers:
 
 ```jsonc
 {

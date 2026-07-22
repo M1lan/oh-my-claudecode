@@ -143,7 +143,7 @@ OMC exposes two different surfaces:
 | ---------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Setup                                          | `omc setup`                                   | `/setup` or `/omc-setup`                                                | Both are real entrypoints. `/setup` is the easiest plugin-first path.                                                                |
 | Ask providers                                  | `omc ask codex "review this patch"`           | `/ask codex "review this patch"`                                        | Both route through the same advisor flow. Providers: `claude`, `codex`, `gemini`, `antigravity`, `grok`, `cursor`.                                            |
-| Team orchestration                             | `omc team 2:codex "review auth flow"`         | `/team 3:executor "fix all TypeScript errors"`                          | Both exist, but they are different runtimes: `omc team` launches tmux CLI workers; `/team` runs the in-session native team workflow. |
+| Team orchestration                             | `omc team 2:codex "review auth flow"`         | `/team 3:executor "fix all TypeScript errors"`                          | Both exist, but they are different runtimes: `omc team` launches rmux (preferred; tmux-compatible) CLI workers; `/team` runs the in-session native team workflow. |
 | Autopilot / Ralph / Ultrawork / Deep Interview | —                                             | `/autopilot ...`, `/ralph ...`, `/ultrawork ...`, `/deep-interview ...` | These are in-session skills. There is no `omc autopilot` / `omc ralph` / `omc ultrawork` CLI subcommand in this repo.                |
 | Autoresearch                                   | `omc autoresearch` (**hard-deprecated shim**) | `/deep-interview --autoresearch ...` + `/oh-my-claudecode:autoresearch` | Setup stays in deep-interview; execution now belongs to the stateful skill.                                                          |
 
@@ -171,7 +171,7 @@ Starting in **v4.1.7**, **Team** is the canonical orchestration surface in OMC. 
 /team 3:executor "fix all TypeScript errors"
 ```
 
-Use `/team ...` when you want Claude Code's in-session native team workflow. Use `omc team ...` when you want terminal-launched tmux CLI workers (`claude` / `codex` / `gemini` panes).
+Use `/team ...` when you want Claude Code's in-session native team workflow. Use `omc team ...` when you want terminal-launched rmux (preferred; tmux-compatible) CLI workers (`claude` / `codex` / `gemini` panes).
 
 Team runs as a staged pipeline:
 
@@ -189,9 +189,9 @@ Enable Claude Code native teams in `~/.claude/settings.json`:
 
 > If teams are disabled, OMC will warn you and fall back to non-team execution where possible.
 
-### tmux CLI Workers — Codex, Gemini & Antigravity (v4.4.0+)
+### rmux/tmux CLI Workers — Codex, Gemini & Antigravity (v4.4.0+)
 
-**v4.4.0 removes the Codex/Gemini MCP servers** (`x`, `g` providers). Use the CLI-first Team runtime (`omc team ...`) to spawn real tmux worker panes:
+**v4.4.0 removes the Codex/Gemini MCP servers** (`x`, `g` providers). Use the CLI-first Team runtime (`omc team ...`) to spawn real worker panes in rmux (preferred; tmux-compatible) or tmux:
 
 ```bash
 omc team 2:codex "review auth module for security issues"
@@ -218,10 +218,10 @@ For mixed Codex + Antigravity work in one command, use the **`/ccg`** skill (rou
 | `omc team N:antigravity "..."`  | N Antigravity (`agy`) panes   | UI/UX design, docs, large-context tasks                      |
 | `omc team N:grok "..."`         | N Grok Build CLI panes        | Code review, analysis cross-check            |
 | `omc team N:cursor "..."`       | N Cursor agent panes          | Executor-style implementation tasks          |
-| `omc team N:claude "..."`       | N Claude CLI panes            | General tasks via Claude CLI in tmux         |
+| `omc team N:claude "..."`       | N Claude CLI panes            | General tasks via Claude CLI in rmux/tmux    |
 | `/ccg`                          | /ask codex + /ask antigravity | Tri-model advisor synthesis                  |
 
-Workers spawn on-demand and die when their task completes — no idle resource usage. Requires the selected CLI (`codex`, `gemini`, `agy` (antigravity), `grok`, or `cursor-agent`) installed/authenticated and an active tmux session.
+Workers spawn on-demand and die when their task completes — no idle resource usage. Requires the selected CLI (`codex`, `gemini`, `agy` (antigravity), `grok`, or `cursor-agent`) installed/authenticated and an active rmux (preferred; tmux-compatible) or tmux session.
 
 Autopilot can prefer Cursor executor workers during team execution via `.claude/omc.jsonc`:
 
@@ -300,7 +300,7 @@ Multiple strategies for different use cases — from Team-backed orchestration t
 | Mode                        | What it is                                                                              | Use For                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Team (recommended)**      | Canonical staged pipeline (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Coordinated Claude agents on a shared task list                         |
-| **omc team (CLI)**          | tmux CLI workers — real `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Antigravity/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
+| **omc team (CLI)**          | rmux (preferred; tmux-compatible) CLI workers — real `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Antigravity/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
 | **ccg**                     | Tri-model advisors via `/ask codex` + `/ask antigravity`, Claude synthesizes             | Mixed backend+UI work needing both Codex and Antigravity                     |
 | **Autopilot**               | Autonomous execution (single lead agent)                                                | End-to-end feature work with minimal ceremony                           |
 | **Ultrawork**               | Maximum parallelism (non-team)                                                          | Burst parallel fixes/refactors where Team isn't needed                  |
@@ -466,7 +466,7 @@ omc wait --start  # Enable auto-resume daemon
 omc wait --stop   # Disable daemon
 ```
 
-**Requires:** tmux (for session detection)
+**Requires:** rmux (preferred; tmux-compatible) or tmux (for session detection)
 
 ### Monitoring & Observability
 
@@ -592,20 +592,21 @@ See `scripts/openclaw-gateway-demo.mjs` for a reference gateway that relays Open
 - [Claude Code](https://docs.anthropic.com/claude-code) CLI
 - Claude Max/Pro subscription OR Anthropic API key
 
-### Platform & tmux
+### Platform & Multiplexer
 
-OMC features like `omc team` and rate-limit detection require **tmux**:
+OMC features like `omc team` and rate-limit detection require a tmux-compatible multiplexer. **rmux (preferred; tmux-compatible)** is used on POSIX hosts when installed, with **tmux as fallback**:
 
-| Platform       | tmux provider                                         | Install                 |
-| -------------- | ----------------------------------------------------- | ----------------------- |
-| macOS          | [tmux](https://github.com/tmux/tmux)                  | `brew install tmux`     |
-| Ubuntu/Debian  | tmux                                                  | `sudo apt install tmux` |
-| Fedora         | tmux                                                  | `sudo dnf install tmux` |
-| Arch           | tmux                                                  | `sudo pacman -S tmux`   |
-| Windows        | [psmux](https://github.com/marlocarlo/psmux) (native) | `winget install psmux`  |
-| Windows (WSL2) | tmux (inside WSL)                                     | `sudo apt install tmux` |
+| Platform       | Multiplexer                                            | Install                                            |
+| -------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| macOS / Linux  | rmux (preferred)                                       | `omc doctor rmux --install` (cargo binstall/install) |
+| macOS          | [tmux](https://github.com/tmux/tmux) (fallback)        | `brew install tmux`     |
+| Ubuntu/Debian  | tmux (fallback)                                        | `sudo apt install tmux` |
+| Fedora         | tmux (fallback)                                        | `sudo dnf install tmux` |
+| Arch           | tmux (fallback)                                        | `sudo pacman -S tmux`   |
+| Windows        | [psmux](https://github.com/marlocarlo/psmux) (native)  | `winget install psmux`  |
+| Windows (WSL2) | tmux (inside WSL)                                      | `sudo apt install tmux` |
 
-> **Windows users:** [psmux](https://github.com/marlocarlo/psmux) provides a native `tmux` binary for Windows with 76 tmux-compatible commands. No WSL required.
+> **Windows users:** [psmux](https://github.com/marlocarlo/psmux) provides a native `tmux` binary for Windows with 76 tmux-compatible commands. No WSL required. rmux is POSIX-only and is not used on native Windows.
 
 ### Optional: Multi-AI Orchestration
 

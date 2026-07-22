@@ -77,9 +77,9 @@ Ative os times nativos do Claude Code em `~/.claude/settings.json`:
 
 > Se os times estiverem desativados, o OMC vai avisar você e fazer fallback para execução sem Team quando possível.
 
-### Trabalhadores CLI tmux — Codex & Gemini (v4.4.0+)
+### Trabalhadores CLI rmux/tmux — Codex & Gemini (v4.4.0+)
 
-**v4.4.0 remove os servidores MCP de Codex/Gemini** (provedores `x`, `g`). Use `/omc-teams` para lançar processos CLI reais em painéis divididos do tmux:
+**v4.4.0 remove os servidores MCP de Codex/Gemini** (provedores `x`, `g`). Use `/omc-teams` para lançar processos CLI reais em painéis divididos do rmux (preferido; compatível com tmux) ou tmux:
 
 ```bash
 /omc-teams 2:codex   "review auth module for security issues"
@@ -97,10 +97,10 @@ Para trabalho misto de Codex + Gemini em um único comando, use a skill **`/ccg`
 |-------|---------|----------|
 | `/omc-teams N:codex` | N painéis Codex CLI | Revisão de código, análise de segurança, arquitetura |
 | `/omc-teams N:gemini` | N painéis Gemini CLI | Design UI/UX, docs, tarefas de grande contexto |
-| `/omc-teams N:claude` | N painéis Claude CLI | Tarefas gerais via Claude CLI no tmux |
+| `/omc-teams N:claude` | N painéis Claude CLI | Tarefas gerais via Claude CLI no rmux/tmux |
 | `/ccg` | 1 Codex + 1 Gemini | Orquestração tri-modelo em paralelo |
 
-Trabalhadores são iniciados sob demanda e encerrados quando a tarefa é concluída — sem uso ocioso de recursos. Requer as CLIs `codex` / `gemini` instaladas e uma sessão tmux ativa.
+Trabalhadores são iniciados sob demanda e encerrados quando a tarefa é concluída — sem uso ocioso de recursos. Requer as CLIs `codex` / `gemini` instaladas e uma sessão rmux (preferido; compatível com tmux) ou tmux ativa.
 
 > **Observação: Nome do pacote** — O projeto usa a marca **oh-my-claudecode** (repo, plugin, comandos), mas o pacote npm é publicado como [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Se você instalar as ferramentas de CLI via pnpm/bun, use `pnpm add -g oh-my-claude-sisyphus`.
 
@@ -151,7 +151,7 @@ Múltiplas estratégias para diferentes casos de uso — da orquestração com T
 | Modo | O que é | Usar para |
 |------|---------|-----------|
 | **Team (recommended)** | Pipeline canônico em estágios (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Agentes coordenados trabalhando em uma lista de tarefas compartilhada |
-| **omc-teams** | Trabalhadores CLI tmux — processos reais `claude`/`codex`/`gemini` em painéis divididos | Tarefas Codex/Gemini CLI; criados sob demanda, encerrados ao terminar |
+| **omc-teams** | Trabalhadores CLI rmux/tmux — processos reais `claude`/`codex`/`gemini` em painéis divididos | Tarefas Codex/Gemini CLI; criados sob demanda, encerrados ao terminar |
 | **ccg** | Tri-modelo: Codex (analítico) + Gemini (design) em paralelo, Claude sintetiza | Trabalho misto de backend+UI que precisa de Codex e Gemini |
 | **Autopilot** | Execução autônoma (um único agente líder) | Trabalho de feature ponta a ponta com cerimônia mínima |
 | **Ultrawork** | Paralelismo máximo (sem Team) | Rajadas de correções/refatorações paralelas quando Team não é necessário |
@@ -217,7 +217,7 @@ Atalhos opcionais para usuários avançados. Linguagem natural funciona bem sem 
 | Palavra-chave | Efeito | Exemplo |
 |---------------|--------|---------|
 | `team` | Orquestração canônica com Team | `/team 3:executor "fix all TypeScript errors"` |
-| `omc-teams` | Trabalhadores CLI tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
+| `omc-teams` | Trabalhadores CLI rmux/tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
 | `ccg` | Orquestação tri-modelo Codex+Gemini | `/ccg review this PR` |
 | `autopilot` | Execução autônoma completa | `autopilot: build a todo app` |
 | `ralph` | Modo persistente | `ralph: refactor auth` |
@@ -244,7 +244,7 @@ omc wait --start  # Enable auto-resume daemon
 omc wait --stop   # Disable daemon
 ```
 
-**Requer:** tmux (para detecção de sessão)
+**Requer:** rmux (preferido; compatível com tmux) ou tmux (para detecção de sessão)
 
 ### Tags de Notificação (Telegram/Discord/Slack)
 

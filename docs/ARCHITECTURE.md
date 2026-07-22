@@ -84,7 +84,7 @@ Domain experts called in when needed.
 | `test-engineer` | sonnet | Test strategy, coverage, flaky-test hardening |
 | `designer` | sonnet | UI/UX architecture, interaction design |
 | `writer` | haiku | Documentation, migration notes |
-| `qa-tester` | sonnet | Interactive CLI/service runtime validation via tmux |
+| `qa-tester` | sonnet | Interactive CLI/service runtime validation via rmux/tmux |
 | `scientist` | sonnet | Data analysis, statistical research |
 | `git-master` | sonnet | Git operations, commits, rebase, history management |
 | `document-specialist` | sonnet | External documentation, API/SDK reference lookup |

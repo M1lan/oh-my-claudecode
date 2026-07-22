@@ -7,7 +7,7 @@
 
 ## Executive Summary
 
-Project Session Manager (PSM) automates the creation and management of isolated development environments using git worktrees and tmux sessions with Claude Code. It enables parallel work across multiple tasks, projects, and repositories while maintaining clean separation and easy context switching.
+Project Session Manager (PSM) automates the creation and management of isolated development environments using git worktrees and rmux (preferred; tmux-compatible) or tmux sessions with Claude Code. It enables parallel work across multiple tasks, projects, and repositories while maintaining clean separation and easy context switching.
 
 ---
 
@@ -36,14 +36,14 @@ Project Session Manager (PSM) automates the creation and management of isolated 
 1. **Context Switching Overhead**: Switching between tasks requires stashing changes, switching branches, and losing Claude Code context
 2. **PR Review Isolation**: Reviewing PRs often contaminates the working directory
 3. **Parallel Work Limitation**: Can only work on one task at a time per repository
-4. **Session Management**: Manual tmux session creation is tedious and inconsistent
+4. **Session Management**: Manual rmux/tmux session creation is tedious and inconsistent
 5. **Cleanup Burden**: Orphaned worktrees and sessions accumulate over time
 
 ### Solution
 
 PSM provides a unified interface to:
 - Create isolated worktrees with a single command
-- Spawn pre-configured tmux sessions with Claude Code
+- Spawn pre-configured rmux/tmux sessions with Claude Code
 - Track and manage all active sessions
 - Automate cleanup of completed work
 
@@ -67,7 +67,7 @@ PSM provides a unified interface to:
 **What happens:**
 1. Fetches PR branch
 2. Creates worktree at `~/.psm/worktrees/omc/pr-123`
-3. Spawns tmux session `psm:omc:pr-123`
+3. Spawns rmux/tmux session `psm:omc:pr-123`
 4. Launches Claude Code with PR context pre-loaded
 5. Opens diff in editor (optional)
 
@@ -88,7 +88,7 @@ PSM provides a unified interface to:
 1. Fetches issue details via `gh`
 2. Creates feature branch from main
 3. Creates worktree at `~/.psm/worktrees/omc/issue-42`
-4. Spawns tmux session with issue context
+4. Spawns rmux/tmux session with issue context
 5. Pre-populates Claude Code with issue description
 
 ### 2.3 Feature Development
@@ -276,15 +276,15 @@ https://github.com/anthropics/claude-code/pull/123
               │               │               │
               ▼               ▼               ▼
     ┌─────────────────┐ ┌─────────────┐ ┌─────────────────┐
-    │ Worktree Manager│ │Tmux Manager │ │ Claude Launcher │
-    │   (git cmd)     │ │ (tmux cmd)  │ │  (claude cmd)   │
+    │ Worktree Manager│ │Rmux/Tmux Mgr│ │ Claude Launcher │
+    │   (git cmd)     │ │(rmux/tmux)  │ │  (claude cmd)   │
     └─────────────────┘ └─────────────┘ └─────────────────┘
               │               │               │
               └───────────────┼───────────────┘
                               ▼
     ┌─────────────────────────────────────────────────────────┐
     │                    Integration Layer                     │
-    │  (gh CLI, git, tmux, claude, omc skills, webhooks)        │
+    │  (gh CLI, git, rmux/tmux, claude, omc skills, webhooks)   │
     └─────────────────────────────────────────────────────────┘
 ```
 
@@ -298,9 +298,9 @@ https://github.com/anthropics/claude-code/pull/123
       │                  │                  │                  │
       ▼                  ▼                  ▼                  ▼
   - Fetch refs      - Claude active    - Session saved    - Worktree kept
-  - Create worktree - Tmux attached    - Tmux running     - PR merged
-  - Create branch   - Work in progress - Can resume       - Ready for GC
-  - Start tmux
+  - Create worktree - Rmux/Tmux attached - Rmux/Tmux running - PR merged
+  - Create branch   - Work in progress   - Can resume        - Ready for GC
+  - Start rmux/tmux
   - Launch claude
 ```
 
@@ -337,7 +337,7 @@ User Command
      │
      ▼
 ┌─────────────────┐
-│ Launch Tmux +   │
+│ Launch Rmux/Tmux│
 │ Claude Code     │
 └─────────────────┘
 ```
@@ -411,7 +411,7 @@ User Command
 
 ## 6. Session Naming Conventions
 
-### 6.1 Tmux Session Names
+### 6.1 Rmux/Tmux Session Names
 
 Format: `psm:<project>:<type>-<identifier>`
 
@@ -784,7 +784,7 @@ interface CustomAgentGatewayIntegration {
 /psm review omc#123 --editor nvim
 ```
 
-Opens editor in worktree directory alongside tmux session.
+Opens editor in worktree directory alongside rmux/tmux session.
 
 ### 10.5 HUD Integration
 
@@ -803,21 +803,21 @@ PSM status in OMC HUD statusline:
 | Scenario | Handling |
 |----------|----------|
 | Worktree already exists | Offer: attach, recreate, or abort |
-| Tmux session name conflict | Append timestamp suffix |
+| Rmux/Tmux session name conflict | Append timestamp suffix |
 | PR branch force-pushed | Warn and offer to refetch |
 | Network offline | Cache what's possible, queue GitHub ops |
 | Git dirty state in main repo | Warn but allow (worktree is isolated) |
 | Worktree on different filesystem | Use git clone instead |
 | Very large repository | Shallow clone option |
-| Session metadata corrupted | Rebuild from git/tmux state |
+| Session metadata corrupted | Rebuild from git/rmux/tmux state |
 
 ### 11.2 Error Recovery
 
 ```bash
-# Rebuild sessions.json from existing worktrees and tmux
+# Rebuild sessions.json from existing worktrees and rmux/tmux
 /psm repair
 
-# Fix orphaned tmux sessions (no worktree)
+# Fix orphaned rmux/tmux sessions (no worktree)
 /psm repair --orphaned-tmux
 
 # Fix orphaned worktrees (no session record)
@@ -1009,7 +1009,7 @@ $ /psm review omc#123
    Branch: feature/webhook-support
    Base: main
 
-🖥️  Creating tmux session: psm:omc:pr-123...
+🖥️  Creating rmux/tmux session: psm:omc:pr-123...
 
 🤖 Launching Claude Code with PR context...
 
@@ -1017,7 +1017,7 @@ $ /psm review omc#123
 
    Session ID: omc:pr-123
    Worktree:   ~/.psm/worktrees/omc/pr-123
-   Tmux:       psm:omc:pr-123
+   Rmux/Tmux:  psm:omc:pr-123
 
    Commands:
      /psm attach omc:pr-123  - Reattach later

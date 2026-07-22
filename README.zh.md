@@ -77,9 +77,9 @@ Team 按阶段化流水线运行：
 
 > 如果团队被禁用，OMC 会发出警告并在可能的情况下回退到非 Team 执行模式。
 
-### tmux CLI 工作者 — Codex & Gemini (v4.4.0+)
+### rmux/tmux CLI 工作者 — Codex & Gemini (v4.4.0+)
 
-**v4.4.0 移除了 Codex/Gemini MCP 服务器**（`x`、`g` 提供商）。请改用 `/omc-teams` 在 tmux 分屏中启动真实的 CLI 进程：
+**v4.4.0 移除了 Codex/Gemini MCP 服务器**（`x`、`g` 提供商）。请改用 `/omc-teams` 在 rmux（首选，兼容 tmux）或 tmux 分屏中启动真实的 CLI 进程：
 
 ```bash
 /omc-teams 2:codex   "review auth module for security issues"
@@ -97,10 +97,10 @@ Team 按阶段化流水线运行：
 |-------|---------|----------|
 | `/omc-teams N:codex` | N 个 Codex CLI 窗格 | 代码审查、安全分析、架构 |
 | `/omc-teams N:gemini` | N 个 Gemini CLI 窗格 | UI/UX 设计、文档、大上下文任务 |
-| `/omc-teams N:claude` | N 个 Claude CLI 窗格 | 通过 tmux 中的 Claude CLI 处理通用任务 |
+| `/omc-teams N:claude` | N 个 Claude CLI 窗格 | 通过 rmux/tmux 中的 Claude CLI 处理通用任务 |
 | `/ccg` | 1 个 Codex + 1 个 Gemini | 并行三模型编排 |
 
-工作者按需生成，任务完成后自动退出 — 无空闲资源浪费。需要安装 `codex` / `gemini` CLI 并有活跃的 tmux 会话。
+工作者按需生成，任务完成后自动退出 — 无空闲资源浪费。需要安装 `codex` / `gemini` CLI 并有活跃的 rmux（首选，兼容 tmux）或 tmux 会话。
 
 > **注意：包命名** — 项目品牌名为 **oh-my-claudecode**（仓库、插件、命令），但 npm 包以 [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) 发布。通过 pnpm/bun 安装 CLI 工具时，请使用 `pnpm add -g oh-my-claude-sisyphus`。
 
@@ -151,7 +151,7 @@ Team 按阶段化流水线运行：
 | 模式 | 特点 | 适用场景 |
 |------|---------|---------|
 | **Team（推荐）** | 阶段化流水线 | 在共享任务列表上协作的 Claude 智能体 |
-| **omc-teams** | tmux CLI 工作者 | Codex/Gemini CLI 任务；按需生成，完成后退出 |
+| **omc-teams** | rmux/tmux CLI 工作者 | Codex/Gemini CLI 任务；按需生成，完成后退出 |
 | **ccg** | 三模型并行 | Codex（分析）+ Gemini（设计），Claude 合成 |
 | **Autopilot** | 自主执行 | 最小化繁琐配置的端到端功能开发 |
 | **Ultrawork** | 最大并行 | 不需要 Team 的并行修复/重构 |
@@ -217,7 +217,7 @@ source: extracted
 | 关键词 | 效果 | 示例 |
 |---------|--------|---------|
 | `team` | 标准 Team 编排 | `/team 3:executor "fix all TypeScript errors"` |
-| `omc-teams` | tmux CLI 工作者 (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
+| `omc-teams` | rmux/tmux CLI 工作者 (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
 | `ccg` | 三模型 Codex+Gemini 编排 | `/ccg review this PR` |
 | `autopilot` | 全自动执行 | `autopilot: build a todo app` |
 | `ralph` | 持久模式 | `ralph: refactor auth` |
@@ -246,7 +246,7 @@ omc wait --start  # 启用自动恢复守护进程
 omc wait --stop   # 禁用守护进程
 ```
 
-**需要：** tmux（用于会话检测）
+**需要：** rmux（首选，兼容 tmux）或 tmux（用于会话检测）
 
 ### 通知标签配置 (Telegram/Discord/Slack)
 

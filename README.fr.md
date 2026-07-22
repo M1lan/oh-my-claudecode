@@ -207,7 +207,7 @@ omc wait --start  # Activer le daemon de reprise automatique
 omc wait --stop   # Désactiver le daemon
 ```
 
-**Prérequis :** tmux (pour la détection de session)
+**Prérequis :** rmux (préféré ; compatible tmux) ou tmux (pour la détection de session)
 
 ### Tags de notification (Telegram/Discord)
 

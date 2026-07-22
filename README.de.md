@@ -207,7 +207,7 @@ omc wait --start  # Auto-Resume-Daemon aktivieren
 omc wait --stop   # Daemon deaktivieren
 ```
 
-**Voraussetzung:** tmux (für Sitzungserkennung)
+**Voraussetzung:** rmux (bevorzugt; tmux-kompatibel) oder tmux (für Sitzungserkennung)
 
 ### Benachrichtigungs-Tags (Telegram/Discord)
 

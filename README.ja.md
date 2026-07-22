@@ -77,9 +77,9 @@ Team はステージ型パイプラインで実行されます:
 
 > チームが無効の場合、OMC は警告を表示し、可能な場合は Team なしの実行にフォールバックします。
 
-### tmux CLI ワーカー — Codex & Gemini (v4.4.0+)
+### rmux/tmux CLI ワーカー — Codex & Gemini (v4.4.0+)
 
-**v4.4.0 で Codex/Gemini MCP サーバー**（`x`、`g` プロバイダー）が**削除されます**。代わりに `/omc-teams` を使って tmux 分割ペインで実際の CLI プロセスを起動してください:
+**v4.4.0 で Codex/Gemini MCP サーバー**（`x`、`g` プロバイダー）が**削除されます**。代わりに `/omc-teams` を使って rmux（推奨、tmux 互換）または tmux の分割ペインで実際の CLI プロセスを起動してください:
 
 ```bash
 /omc-teams 2:codex   "review auth module for security issues"
@@ -97,10 +97,10 @@ Codex + Gemini を一つのコマンドで使うには **`/ccg`** スキルを�
 |-------|---------|----------|
 | `/omc-teams N:codex` | N 個の Codex CLI ペイン | コードレビュー、セキュリティ解析、アーキテクチャ |
 | `/omc-teams N:gemini` | N 個の Gemini CLI ペイン | UI/UX デザイン、ドキュメント、大規模コンテキスト |
-| `/omc-teams N:claude` | N 個の Claude CLI ペイン | tmux で Claude CLI を使う汎用タスク |
+| `/omc-teams N:claude` | N 個の Claude CLI ペイン | rmux/tmux で Claude CLI を使う汎用タスク |
 | `/ccg` | Codex 1 個 + Gemini 1 個 | 並列トライモデルオーケストレーション |
 
-ワーカーはオンデマンドで起動し、タスク完了後に終了します — アイドルリソースの無駄なし。`codex` / `gemini` CLI のインストールとアクティブな tmux セッションが必要です。
+ワーカーはオンデマンドで起動し、タスク完了後に終了します — アイドルリソースの無駄なし。`codex` / `gemini` CLI のインストールとアクティブな rmux（推奨、tmux 互換）または tmux セッションが必要です。
 
 > **注意: パッケージ名について** — プロジェクトのブランド名は **oh-my-claudecode**（リポジトリ、プラグイン、コマンド）ですが、npmパッケージは [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus) として公開されています。pnpm/bunでCLIツールをインストールする場合は `pnpm add -g oh-my-claude-sisyphus` を使用してください。
 
@@ -151,7 +151,7 @@ Codex + Gemini を一つのコマンドで使うには **`/ccg`** スキルを�
 | モード | 特徴 | 用途 |
 |------|---------|------|
 | **Team（推奨）** | ステージ型パイプライン | 共有タスクリストで協力する Claude エージェント |
-| **omc-teams** | tmux CLI ワーカー | Codex/Gemini CLI タスク; オンデマンド起動、完了後終了 |
+| **omc-teams** | rmux/tmux CLI ワーカー | Codex/Gemini CLI タスク; オンデマンド起動、完了後終了 |
 | **ccg** | トライモデル並列 | Codex（分析）+ Gemini（デザイン）、Claude が統合 |
 | **Autopilot** | 自律実行 | 最小限のセレモニーで end-to-end 機能開発 |
 | **Ultrawork** | 最大並列 | Team 不要な並列修正/リファクタリング |
@@ -217,7 +217,7 @@ server.py:42 のハンドラーを try/except ClientDisconnectedError で囲ん�
 | キーワード | 効果 | 例 |
 |---------|-----|-----|
 | `team` | 標準 Team オーケストレーション | `/team 3:executor "fix all TypeScript errors"` |
-| `omc-teams` | tmux CLI ワーカー (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
+| `omc-teams` | rmux/tmux CLI ワーカー (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
 | `ccg` | トライモデル Codex+Gemini オーケストレーション | `/ccg review this PR` |
 | `autopilot` | 完全自律実行 | `autopilot: build a todo app` |
 | `ralph` | 粘り強いモード | `ralph: refactor auth` |
@@ -246,7 +246,7 @@ omc wait --start  # 自動再開デーモンを有効化
 omc wait --stop   # デーモンを無効化
 ```
 
-**必要なもの:** tmux (セッション検出用)
+**必要なもの:** rmux（推奨、tmux 互換）または tmux (セッション検出用)
 
 ### 通知タグ設定 (Telegram/Discord/Slack)
 

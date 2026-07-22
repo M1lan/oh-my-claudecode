@@ -207,7 +207,7 @@ omc wait --start  # Otomatik devam daemon'ını etkinleştir
 omc wait --stop   # Daemon'ı devre dışı bırak
 ```
 
-**Gereklidir:** tmux (oturum algılama için)
+**Gereklidir:** rmux (tercih edilir; tmux uyumlu) veya tmux (oturum algılama için)
 
 ### Bildirim Etiketleri (Telegram/Discord)
 

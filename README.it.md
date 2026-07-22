@@ -198,7 +198,7 @@ omc wait --start  # Abilita il daemon di ripristino automatico
 omc wait --stop   # Disabilita il daemon
 ```
 
-**Requisiti:** tmux (per il rilevamento della sessione)
+**Requisiti:** rmux (preferito; compatibile con tmux) o tmux (per il rilevamento della sessione)
 
 ### Tag di notifica (Telegram/Discord)
 

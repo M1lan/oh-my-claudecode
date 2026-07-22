@@ -1,11 +1,12 @@
 /**
- * QA Tester Agent - Interactive CLI Testing with tmux
+ * QA Tester Agent - Interactive CLI Testing with rmux/tmux
  *
  * Specialized agent for QA testing of CLI applications and services
- * using tmux for session management and interactive testing.
+ * using rmux (preferred; tmux-compatible) or tmux for session management
+ * and interactive testing.
  *
  * Enables:
- * - Spinning up services in isolated tmux sessions
+ * - Spinning up services in isolated rmux/tmux sessions
  * - Sending commands and capturing output
  * - Verifying CLI behavior and responses
  * - Clean teardown of test environments
@@ -50,7 +51,7 @@ export const QA_TESTER_PROMPT_METADATA: AgentPromptMetadata = {
 export const qaTesterAgent: AgentConfig = {
   name: 'qa-tester',
   description:
-    'Interactive CLI testing specialist using tmux. Tests CLI applications, background services, and interactive tools. Manages test sessions, sends commands, verifies output, and ensures cleanup.',
+    'Interactive CLI testing specialist using rmux (preferred; tmux-compatible) or tmux. Tests CLI applications, background services, and interactive tools. Manages test sessions, sends commands, verifies output, and ensures cleanup.',
   prompt: loadAgentPrompt('qa-tester'),
   model: 'sonnet',
   defaultModel: 'sonnet',

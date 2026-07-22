@@ -29,7 +29,7 @@ This directory defines all agents available in oh-my-claudecode:
 | `critic.ts` | Critical plan review (Opus) |
 | `analyst.ts` | Pre-planning analysis (Opus) |
 | `planner.ts` | Strategic planning (Opus) |
-| `qa-tester.ts` | CLI/service testing with tmux (Sonnet) |
+| `qa-tester.ts` | CLI/service testing with rmux/tmux (Sonnet) |
 | `scientist.ts` | Data analysis & hypothesis testing (Sonnet) |
 | `index.ts` | Exports all agents and utilities |
 

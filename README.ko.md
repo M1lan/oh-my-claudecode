@@ -77,9 +77,9 @@ Team은 단계별 파이프라인으로 실행됩니다:
 
 > 팀이 비활성화된 경우 OMC가 경고를 표시하고 가능한 경우 팀 없이 실행으로 폴백합니다.
 
-### tmux CLI 워커 — Codex & Gemini (v4.4.0+)
+### rmux/tmux CLI 워커 — Codex & Gemini (v4.4.0+)
 
-**v4.4.0에서 Codex/Gemini MCP 서버**(`x`, `g` 프로바이더)가 **제거됩니다**. CLI 우선 Team 런타임(`omc team ...`)으로 tmux 분할 창에서 실제 CLI 프로세스를 실행하세요:
+**v4.4.0에서 Codex/Gemini MCP 서버**(`x`, `g` 프로바이더)가 **제거됩니다**. CLI 우선 Team 런타임(`omc team ...`)으로 rmux(선호; tmux 호환) 또는 tmux 분할 창에서 실제 CLI 프로세스를 실행하세요:
 
 ```bash
 omc team 2:codex "review auth module for security issues"
@@ -101,10 +101,10 @@ omc team shutdown auth-review
 |-------|---------|----------|
 | `omc team N:codex "..."` | N개 Codex CLI 창 | 코드 리뷰, 보안 분석, 아키텍처 |
 | `omc team N:gemini "..."` | N개 Gemini CLI 창 | UI/UX 디자인, 문서, 대용량 컨텍스트 |
-| `omc team N:claude "..."` | N개 Claude CLI 창 | tmux에서 Claude CLI를 통한 일반 작업 |
+| `omc team N:claude "..."` | N개 Claude CLI 창 | rmux/tmux에서 Claude CLI를 통한 일반 작업 |
 | `/ccg` | ask-codex + ask-gemini | Codex+Gemini 조언을 Claude가 통합 |
 
-워커는 요청 시 생성되고 작업 완료 후 종료됩니다 — 유휴 리소스 낭비 없음. `codex` / `gemini` CLI가 설치되어 있고 활성 tmux 세션이 필요합니다.
+워커는 요청 시 생성되고 작업 완료 후 종료됩니다 — 유휴 리소스 낭비 없음. `codex` / `gemini` CLI가 설치되어 있고 활성 rmux(선호; tmux 호환) 또는 tmux 세션이 필요합니다.
 
 > **참고: 패키지 이름** — 프로젝트 브랜드명은 **oh-my-claudecode** (저장소, 플러그인, 명령어)이지만, npm 패키지는 [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus)로 배포됩니다. pnpm/bun으로 CLI 도구를 설치할 때는 `pnpm add -g oh-my-claude-sisyphus`를 사용하세요.
 
@@ -155,7 +155,7 @@ omc team shutdown auth-review
 | 모드 | 특징 | 용도 |
 |------|---------|---------|
 | **Team (권장)** | 단계별 파이프라인 | 공유 작업 목록에서 협력하는 Claude 에이전트 |
-| **omc team (CLI)** | tmux CLI 워커 | Codex/Gemini CLI 작업; 요청 시 실행, 완료 후 종료 |
+| **omc team (CLI)** | rmux/tmux CLI 워커 | Codex/Gemini CLI 작업; 요청 시 실행, 완료 후 종료 |
 | **ccg** | 트라이-모델 병렬 | Codex(분석) + Gemini(디자인), Claude가 통합 |
 | **Autopilot** | 자율 실행 | 최소한의 설정으로 end-to-end 기능 개발 |
 | **Ultrawork** | 최대 병렬 | Team이 필요 없는 병렬 수정/리팩토링 |
@@ -221,7 +221,7 @@ server.py:42의 핸들러를 try/except ClientDisconnectedError로 감싸세요.
 | 키워드 | 효과 | 예시 |
 |---------|--------|---------|
 | `team` | 표준 Team 오케스트레이션 | `/team 3:executor "fix all TypeScript errors"` |
-| `omc team` | tmux CLI 워커 (codex/gemini/claude) | `omc team 2:codex "security review"` |
+| `omc team` | rmux/tmux CLI 워커 (codex/gemini/claude) | `omc team 2:codex "security review"` |
 | `ccg` | 트라이-모델 Codex+Gemini 오케스트레이션 | `/ccg review this PR` |
 | `autopilot` | 완전 자율 실행 | `autopilot: build a todo app` |
 | `ralph` | 지속 모드 | `ralph: refactor auth` |
@@ -251,7 +251,7 @@ omc wait --start  # 자동 재개 데몬 활성화
 omc wait --stop   # 데몬 비활성화
 ```
 
-**요구사항:** tmux (세션 감지용)
+**요구사항:** rmux(선호; tmux 호환) 또는 tmux (세션 감지용)
 
 ### 알림 태그 설정 (Telegram/Discord/Slack)
 

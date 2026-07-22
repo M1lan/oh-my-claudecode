@@ -55,7 +55,7 @@ autopilot→ralph/ultraqa) must be cleared separately by running the fallback on
 Replace `MODE` with the specific mode (e.g. `ralplan`, `ralph`, `ultrawork`, `ultraqa`).
 
 **WARNING:** Do NOT use this fallback for `autopilot` or `omc-teams`. Autopilot requires
-`state_write(active=false)` to preserve resume data. omc-teams requires tmux session
+`state_write(active=false)` to preserve resume data. omc-teams requires rmux/tmux session
 cleanup that cannot be done via file deletion alone.
 
 ```bash
@@ -117,7 +117,7 @@ Active modes are still cancelled in dependency order:
 6. Ultrapilot (standalone)
 7. Pipeline (standalone)
 8. Team (Claude Code native)
-9. OMC Teams (tmux CLI workers)
+9. OMC Teams (rmux/tmux CLI workers)
 10. Plan Consensus (standalone)
 11. Self-Improve (standalone — clear state, clean orphaned worktrees, preserve iteration_state for resume, set status: "user_stopped" in the resolved `<self-improve-root>/state/agent-settings.json`; new runs use `.omc/self-improve/topics/<topic-slug>/`, with flat `.omc/self-improve/` retained only for legacy single-track resumes)
 
@@ -234,13 +234,13 @@ After graceful pass:
   2. Check for linked ralph: state_read(mode="ralph") — if linked_team is true:
      a. Clear ralph state: state_clear(mode="ralph")
      b. Clear linked ultrawork if present: state_clear(mode="ultrawork")
-  3. Run OMC tmux/CLI orphan scan only for legacy `omc team` / `/omc-teams` workers (see below)
+  3. Run OMC rmux/tmux CLI orphan scan only for legacy `omc team` / `/omc-teams` workers (see below)
   4. Emit structured cancel report
 ```
 
 **Orphan Detection (Post-Cleanup):**
 
-For legacy OMC tmux/CLI worker runs, verify no worker processes remain:
+For legacy OMC rmux/tmux CLI worker runs, verify no worker processes remain:
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-orphans.mjs" --team-name "{team_name}"
 ```
@@ -260,7 +260,7 @@ Team "{team_name}" cancelled:
   - Unresponsive: K (list names if any)
   - OMC state cleared: yes/no
   - Manual cleanup needed: yes/no
-    Path: OMC team state / tmux worker processes, if any
+    Path: OMC team state / rmux/tmux worker processes, if any
 ```
 
 **Implementation note:** The cancel skill is executed by the LLM, not as a bash script. When you detect an active team:
@@ -371,7 +371,7 @@ When cancelling modes that may have spawned MCP workers (team bridge daemons), t
 
 1. **Check for active MCP workers**: Look for heartbeat files at `.omc/state/team-bridge/{team}/*.heartbeat.json`
 2. **Send shutdown signals**: Write shutdown signal files for each active worker
-3. **Kill tmux sessions**: Run `tmux kill-session -t omc-team-{team}-{worker}` for each worker
+3. **Kill rmux/tmux sessions**: Run `tmux kill-session -t omc-team-{team}-{worker}` for each worker
 4. **Clean up heartbeat files**: Remove all heartbeat files for the team
 5. **Clean up shadow registry**: Remove `.omc/state/team-mcp-workers.json`
 
@@ -381,6 +381,6 @@ When `--force` is used, also clean up:
 ```bash
 rm -rf .omc/state/team-bridge/       # Heartbeat files
 rm -f .omc/state/team-mcp-workers.json  # Shadow registry
-# Kill all omc-team-* tmux sessions
+# Kill all omc-team-* rmux/tmux sessions
 tmux list-sessions -F '#{session_name}' 2>/dev/null | grep '^omc-team-' | while read s; do tmux kill-session -t "$s" 2>/dev/null; done
 ```

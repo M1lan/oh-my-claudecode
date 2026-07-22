@@ -100,9 +100,9 @@ Use AskUserQuestion:
 **Question:** "How should teammates be displayed?"
 
 **Options:**
-1. **Auto (Recommended)** - Uses split panes if in tmux, otherwise in-process. Best for most users.
+1. **Auto (Recommended)** - Uses split panes if in rmux/tmux, otherwise in-process. Best for most users.
 2. **In-process** - All teammates in your main terminal. Use Shift+Up/Down to select. Works everywhere.
-3. **Split panes (tmux)** - Each teammate in its own pane. Requires tmux or iTerm2.
+3. **Split panes (rmux/tmux)** - Each teammate in its own pane. Requires rmux (preferred; tmux-compatible), tmux, or iTerm2.
 
 If user chooses anything other than "Auto", add `teammateMode` to settings.json:
 
@@ -115,7 +115,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-# TEAMMATE_MODE is "in-process" or "tmux" based on user choice
+# TEAMMATE_MODE is "in-process" or "tmux" based on user choice (the "tmux" split-pane mode runs in rmux when present, tmux otherwise)
 # Skip this if user chose "Auto" (that's the default)
 TEMP_FILE=$(mktemp "${SETTINGS_FILE}.tmp.XXXXXX")
 trap 'rm -f "$TEMP_FILE"' EXIT

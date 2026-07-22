@@ -77,9 +77,9 @@ Habilita los equipos nativos de Claude Code en `~/.claude/settings.json`:
 
 > Si los equipos están desactivados, OMC te avisará y hará fallback a ejecución sin Team cuando sea posible.
 
-### Trabajadores CLI tmux — Codex & Gemini (v4.4.0+)
+### Trabajadores CLI rmux/tmux — Codex & Gemini (v4.4.0+)
 
-**v4.4.0 elimina los servidores MCP de Codex/Gemini** (proveedores `x`, `g`). Usa `/omc-teams` para lanzar procesos CLI reales en paneles divididos de tmux:
+**v4.4.0 elimina los servidores MCP de Codex/Gemini** (proveedores `x`, `g`). Usa `/omc-teams` para lanzar procesos CLI reales en paneles divididos de rmux (preferido; compatible con tmux) o tmux:
 
 ```bash
 /omc-teams 2:codex   "review auth module for security issues"
@@ -97,10 +97,10 @@ Para trabajo mixto de Codex + Gemini en un solo comando, usa la habilidad **`/cc
 |-------|---------|----------|
 | `/omc-teams N:codex` | N paneles Codex CLI | Revisión de código, análisis de seguridad, arquitectura |
 | `/omc-teams N:gemini` | N paneles Gemini CLI | Diseño UI/UX, docs, tareas de gran contexto |
-| `/omc-teams N:claude` | N paneles Claude CLI | Tareas generales via Claude CLI en tmux |
+| `/omc-teams N:claude` | N paneles Claude CLI | Tareas generales via Claude CLI en rmux/tmux |
 | `/ccg` | 1 Codex + 1 Gemini | Orquestación tri-modelo en paralelo |
 
-Los trabajadores se inician bajo demanda y terminan cuando su tarea se completa — sin uso de recursos en espera. Requiere las CLIs `codex` / `gemini` instaladas y una sesión tmux activa.
+Los trabajadores se inician bajo demanda y terminan cuando su tarea se completa — sin uso de recursos en espera. Requiere las CLIs `codex` / `gemini` instaladas y una sesión rmux (preferido; compatible con tmux) o tmux activa.
 
 > **Nota: Nombre del paquete** — El proyecto usa la marca **oh-my-claudecode** (repositorio, plugin, comandos), pero el paquete npm se publica como [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Si instalas las herramientas CLI via pnpm/bun, usa `pnpm add -g oh-my-claude-sisyphus`.
 
@@ -151,7 +151,7 @@ Múltiples estrategias para diferentes casos de uso - desde construcciones compl
 | Modo | Característica | Usar Para |
 |------|---------|---------|
 | **Team (recomendado)** | Pipeline por etapas | Agentes Claude coordinados en una lista de tareas compartida |
-| **omc-teams** | Trabajadores CLI tmux | Tareas Codex/Gemini CLI; se inician bajo demanda, terminan al completar |
+| **omc-teams** | Trabajadores CLI rmux/tmux | Tareas Codex/Gemini CLI; se inician bajo demanda, terminan al completar |
 | **ccg** | Tri-modelo en paralelo | Codex (analítico) + Gemini (diseño), Claude sintetiza |
 | **Autopilot** | Ejecución autónoma | Trabajo de feature end-to-end con mínima ceremonia |
 | **Ultrawork** | Máximo paralelismo | Correcciones/refactorizaciones en ráfaga cuando Team no es necesario |
@@ -208,7 +208,7 @@ Atajos opcionales para usuarios avanzados. El lenguaje natural funciona bien sin
 | Palabra Clave | Efecto | Ejemplo |
 |---------|--------|---------|
 | `team` | Orquestación canónica con Team | `/team 3:executor "fix all TypeScript errors"` |
-| `omc-teams` | Trabajadores CLI tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
+| `omc-teams` | Trabajadores CLI rmux/tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
 | `ccg` | Orquestación tri-modelo Codex+Gemini | `/ccg review this PR` |
 | `autopilot` | Ejecución completamente autónoma | `autopilot: build a todo app` |
 | `ralph` | Modo persistencia | `ralph: refactor auth` |
@@ -237,7 +237,7 @@ omc wait --start  # Habilitar demonio de reanudación automática
 omc wait --stop   # Deshabilitar demonio
 ```
 
-**Requiere:** tmux (para detección de sesión)
+**Requiere:** rmux (preferido; compatible con tmux) o tmux (para detección de sesión)
 
 ### Etiquetas de notificación (Telegram/Discord/Slack)
 

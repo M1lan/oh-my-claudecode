@@ -82,7 +82,7 @@ If no structured goal provided, interpret the argument as a custom goal.
 | **Goal Met**          | Exit with success: "ULTRAQA COMPLETE: Goal met after N cycles"                |
 | **Cycle 5 Reached**   | Exit with diagnosis: "ULTRAQA STOPPED: Max cycles. Diagnosis: ..."            |
 | **Same Failure 3x**   | Exit early: "ULTRAQA STOPPED: Same failure detected 3 times. Root cause: ..." |
-| **Environment Error** | Exit: "ULTRAQA ERROR: [tmux/port/dependency issue]"                           |
+| **Environment Error** | Exit: "ULTRAQA ERROR: [rmux/tmux/port/dependency issue]"                       |
 
 ## Observability
 
