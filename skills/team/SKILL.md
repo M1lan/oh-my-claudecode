@@ -1007,7 +1007,7 @@ MCP workers can operate in isolated git worktrees to prevent file conflicts betw
 
 ### Important Notes
 
-- `createSession()` in `tmux-session.ts` does NOT handle worktree creation — worktree lifecycle is managed separately via `git-worktree.ts`
+- `createSession()` in `rmux-session.ts` does NOT handle worktree creation — worktree lifecycle is managed separately via `git-worktree.ts`
 - Worktrees are NOT cleaned up on individual worker shutdown — only on team shutdown, to allow post-mortem inspection
 - Branch names are sanitized via `sanitizeName()` to prevent injection
 - All paths are validated against directory traversal

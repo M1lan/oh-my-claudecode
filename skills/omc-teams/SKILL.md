@@ -1,13 +1,13 @@
 ---
 name: omc-teams
-description: CLI-team runtime for claude, codex, gemini, antigravity, grok, or cursor workers in tmux panes when you need process-based parallel execution
+description: CLI-team runtime for claude, codex, gemini, antigravity, grok, or cursor workers in rmux/tmux panes (rmux preferred) when you need process-based parallel execution
 aliases: []
 level: 4
 ---
 
 # OMC Teams Skill
 
-Spawn N CLI worker processes in tmux panes to execute tasks in parallel. Supports `claude`, `codex`, `gemini`, `antigravity`, `grok`, and `cursor` agent types. Cursor workers are executor-style only.
+Spawn N CLI worker processes in rmux/tmux panes (rmux preferred) to execute tasks in parallel. Supports `claude`, `codex`, `gemini`, `antigravity`, `grok`, and `cursor` agent types. Cursor workers are executor-style only.
 
 `/omc-teams` is a legacy compatibility skill for the CLI-first runtime: use `omc team ...` commands (not deprecated MCP runtime tools).
 
@@ -196,7 +196,7 @@ If encountered, switch to `omc team ...` CLI commands.
 
 | Aspect       | `/team`                                                       | `/omc-teams`                                         |
 | ------------ | ------------------------------------------------------------- | ---------------------------------------------------- |
-| Worker type  | Claude Code implicit agent-team teammates                     | claude / codex / gemini / antigravity CLI processes in tmux        |
+| Worker type  | Claude Code implicit agent-team teammates                     | claude / codex / gemini / antigravity CLI processes in rmux/tmux   |
 | Invocation   | Agent/Task spawn with distinct `name` values; no TeamCreate/TeamDelete in Claude Code 2.1.178+ | `omc team [N:agent]` + `status` + `shutdown` + `api` |
-| Coordination | Native implicit-team messaging and staged pipeline            | tmux worker runtime + CLI API state files            |
+| Coordination | Native implicit-team messaging and staged pipeline            | rmux/tmux worker runtime + CLI API state files       |
 | Use when     | You want Claude-native in-session agent orchestration         | You want external CLI worker execution               |
