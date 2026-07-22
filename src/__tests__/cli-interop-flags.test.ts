@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildInteropSessionEnv,
   readInteropRuntimeFlags,
   validateInteropRuntimeFlags,
   INTEROP_CAVEMAN_LEVEL_ENV,
   INTEROP_CAVEMAN_LEVEL,
   INTEROP_CAVEMAN_ACTIVATION,
 } from '../cli/interop.js';
+import { getInteropDir } from '../interop/shared-state.js';
 
 describe('cli interop flag validation', () => {
   it('reads defaults', () => {
@@ -50,6 +52,38 @@ describe('cli interop flag validation', () => {
 
     const verdict = validateInteropRuntimeFlags(flags);
     expect(verdict.ok).toBe(true);
+  });
+});
+
+// Cross-repo contract: env var names read by oh-my-codex and OMC's own MCP
+// server. Lock the shape so a rename on either side is caught here.
+describe('buildInteropSessionEnv', () => {
+  const sessionId = 'interop-abc123';
+  const cwd = '/some/project';
+
+  it('promotes mode off to observe', () => {
+    const env = buildInteropSessionEnv('off', sessionId, cwd);
+    expect(env.OMX_OMC_INTEROP_MODE).toBe('observe');
+  });
+
+  it('preserves observe and active modes', () => {
+    expect(
+      buildInteropSessionEnv('observe', sessionId, cwd).OMX_OMC_INTEROP_MODE,
+    ).toBe('observe');
+    expect(
+      buildInteropSessionEnv('active', sessionId, cwd).OMX_OMC_INTEROP_MODE,
+    ).toBe('active');
+  });
+
+  it('exports the full interop env contract', () => {
+    const env = buildInteropSessionEnv('observe', sessionId, cwd);
+    expect(env).toEqual({
+      OMX_OMC_INTEROP_ENABLED: '1',
+      OMX_OMC_INTEROP_MODE: 'observe',
+      OMC_INTEROP_TOOLS_ENABLED: '1',
+      OMX_OMC_INTEROP_SESSION_ID: sessionId,
+      OMX_OMC_INTEROP_DIR: getInteropDir(cwd),
+    });
   });
 });
 

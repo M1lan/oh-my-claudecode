@@ -89,6 +89,26 @@ export function validateInteropRuntimeFlags(flags: InteropRuntimeFlags): {
 }
 
 /**
+ * Compute the effective interop env exported into both panes at launch.
+ * Names are a cross-repo contract with oh-my-codex — do not rename.
+ * Launching interop implies interop is on: a mode of 'off' is promoted to
+ * 'observe' so the exported env is always a valid enabled configuration.
+ */
+export function buildInteropSessionEnv(
+  mode: InteropMode,
+  sessionId: string,
+  cwd: string,
+): Record<string, string> {
+  return {
+    OMX_OMC_INTEROP_ENABLED: '1',
+    OMX_OMC_INTEROP_MODE: mode === 'off' ? 'observe' : mode,
+    OMC_INTEROP_TOOLS_ENABLED: '1',
+    OMX_OMC_INTEROP_SESSION_ID: sessionId,
+    OMX_OMC_INTEROP_DIR: getInteropDir(cwd),
+  };
+}
+
+/**
  * Check if codex CLI is available
  */
 function isCodexAvailable(): boolean {
@@ -193,6 +213,10 @@ export function launchInteropSession(
   console.log(`Working directory: ${cwd}`);
   console.log(`Config saved to: ${getInteropDir(cwd)}/config.json\n`);
 
+  // Effective interop env, exported into both panes so the OMC MCP server
+  // and the OMX pane actually see the interop session they were launched for.
+  const effectiveEnv = buildInteropSessionEnv(flags.mode, sessionId, cwd);
+
   // Get current pane ID
   let currentPaneId: string;
   try {
@@ -224,6 +248,7 @@ export function launchInteropSession(
       // pane id (-P -F) so failures can clean it up.
       const codexCommand = wrapWithLoginShell(
         buildRmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
+          ...effectiveEnv,
           [INTEROP_CAVEMAN_LEVEL_ENV]: INTEROP_CAVEMAN_LEVEL,
         }),
       );
@@ -282,7 +307,11 @@ export function launchInteropSession(
   // claude takes over this terminal until it exits, mirroring how codex
   // runs as the foreground process in the right pane.
   const claudeArgs = yolo ? [CLAUDE_YOLO_FLAG] : [];
-  const result = spawnSync('claude', claudeArgs, { stdio: 'inherit', cwd });
+  const result = spawnSync('claude', claudeArgs, {
+    stdio: 'inherit',
+    cwd,
+    env: { ...process.env, ...effectiveEnv },
+  });
   if (result.error) {
     // Claude never started — tear down the codex pane we just created so it
     // isn't left running headless without its OMC counterpart.
