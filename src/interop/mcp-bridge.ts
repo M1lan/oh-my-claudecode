@@ -108,7 +108,7 @@ export const interopSendTaskTool: ToolDefinition<{
 }> = {
   name: 'interop_send_task',
   description:
-    'Send a task to the other tool (OMC -> OMX or OMX -> OMC) for execution. The task will be queued in shared state for the target tool to pick up.',
+    'Send a task to the other tool (OMC -> OMX or OMX -> OMC) for execution. The task is written to shared interop state (.omc/state/interop); the target tool must read it explicitly — delivery is not automatic.',
   schema: {
     target: z.enum(['omc', 'omx']).describe('Target tool to send the task to'),
     type: z
@@ -160,7 +160,9 @@ export const interopSendTaskTool: ToolDefinition<{
               `**Status:** ${task.status}\n` +
               `**Created:** ${task.createdAt}\n\n` +
               (task.files ? `**Files:** ${task.files.join(', ')}\n\n` : '') +
-              `The task has been queued for ${target.toUpperCase()} to pick up.`,
+              `Task written to shared interop state (.omc/state/interop). ` +
+              `${target.toUpperCase()} must read it explicitly (via its interop tools ` +
+              `or the shared state directory) — delivery is not automatic.`,
           },
         ],
       };
@@ -342,7 +344,8 @@ export const interopSendMessageTool: ToolDefinition<{
                 ? `**Content artifact:** ${message.contentArtifact.path}\n`
                 : '') +
               `**Timestamp:** ${message.timestamp}\n\n` +
-              `The message has been queued for ${target.toUpperCase()}.`,
+              `Message written to shared interop state (.omc/state/interop). ` +
+              `${target.toUpperCase()} must read it explicitly — delivery is not automatic.`,
           },
         ],
       };
