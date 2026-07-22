@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import * as nodeFs from 'node:fs';
 import {
   mkdtempSync,
@@ -9,9 +11,10 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, win32 } from 'node:path';
 import {
   executeClaudeMdTransaction,
+  isStrictChildPath,
   type ClaudeMdTransactionFs,
 } from '../claude-md-transaction.js';
 import {
@@ -363,6 +366,67 @@ describe('CLAUDE.md transactions', () => {
   });
 });
 
+describe('strict rooted path containment', () => {
+  it.each([
+    ['same-drive child', 'C:\\root', 'C:\\root\\child\\CLAUDE.md', true],
+    ['drive mismatch', 'C:\\root', 'D:\\root\\CLAUDE.md', false],
+    [
+      'same-share UNC child',
+      '\\\\server\\share\\root',
+      '\\\\server\\share\\root\\child\\CLAUDE.md',
+      true,
+    ],
+    [
+      'share mismatch',
+      '\\\\server\\share-a\\root',
+      '\\\\server\\share-b\\root\\CLAUDE.md',
+      false,
+    ],
+    [
+      'server mismatch',
+      '\\\\server-a\\share\\root',
+      '\\\\server-b\\share\\root\\CLAUDE.md',
+      false,
+    ],
+    [
+      'local and UNC mix',
+      'C:\\root',
+      '\\\\server\\share\\root\\CLAUDE.md',
+      false,
+    ],
+    ['traversal', 'C:\\root', 'C:\\root\\..\\outside\\CLAUDE.md', false],
+    ['root equality', 'C:\\root', 'C:\\root', false],
+    [
+      'device namespace candidate',
+      'C:\\root',
+      '\\\\?\\C:\\root\\CLAUDE.md',
+      false,
+    ],
+    ['device namespace root', '\\\\.\\C:\\root', 'C:\\root\\CLAUDE.md', false],
+  ])('%s', (_name, root, candidate, expected) => {
+    expect(isStrictChildPath(root, candidate, win32)).toBe(expected);
+  });
+
+  it('rejects an escaped transaction source before mutation', () => {
+    const { root } = fixture();
+    const outside = join(root, 'outside.md');
+    writeFileSync(outside, '<!-- OMC:START -->\noutside\n<!-- OMC:END -->\n');
+    const result = executeClaudeMdTransaction({
+      mode: 'local',
+      root,
+      source: outside,
+      sourceRoot: join(root, 'plugin'),
+    });
+    expect(result).toMatchObject({
+      ok: false,
+      exitCode: 3,
+      failedPhase: 'validation',
+    });
+    expect(nodeFs.existsSync(join(root, 'CLAUDE.md'))).toBe(false);
+    expect(readFileSync(outside, 'utf8')).toContain('outside');
+  });
+});
+
 describe('CLAUDE.md coordinator protocol', () => {
   it('reports an unavailable ordinary-module handshake without exposing build internals', () => {
     const outcome = runClaudeMdCoordinatorHandshake();
@@ -388,5 +452,39 @@ describe('CLAUDE.md coordinator protocol', () => {
         schemaVersion: CLAUDE_MD_COORDINATOR_SCHEMA_VERSION,
       },
     });
+  });
+  it('rejects an escaped built coordinator request before transaction mutation', () => {
+    const { root } = fixture();
+    const pluginRoot = process.cwd();
+    const canonicalSource = join(pluginRoot, 'docs', 'CLAUDE.md');
+    const packageVersion = JSON.parse(
+      readFileSync(join(pluginRoot, 'package.json'), 'utf8'),
+    ).version;
+    const sourceSha256 = createHash('sha256')
+      .update(readFileSync(canonicalSource))
+      .digest('hex');
+    const outcome = spawnSync(
+      process.execPath,
+      ['bridge/claude-md-coordinator.cjs'],
+      {
+        cwd: pluginRoot,
+        encoding: 'utf8',
+        input: JSON.stringify({
+          schemaVersion: CLAUDE_MD_COORDINATOR_SCHEMA_VERSION,
+          engineVersion: packageVersion,
+          mode: 'local',
+          configRoot: root,
+          pluginRoot,
+          sourcePath: join(root, 'outside.md'),
+          sourceSha256,
+          sourceVersion: packageVersion,
+        }),
+      },
+    );
+    expect(outcome.status).toBe(3);
+    const response = JSON.parse(outcome.stdout);
+    expect(response).toMatchObject({ ok: false, exitCode: 3 });
+    expect(response.error).toContain('Source must be inside plugin root');
+    expect(nodeFs.existsSync(join(root, 'CLAUDE.md'))).toBe(false);
   });
 });

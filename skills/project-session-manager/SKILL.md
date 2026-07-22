@@ -1,6 +1,6 @@
 ---
 name: project-session-manager
-description: Worktree-first dev environment manager for issues, PRs, and features with optional tmux sessions
+description: Worktree-first dev environment manager for issues, PRs, and features with optional rmux/tmux sessions
 aliases: [psm]
 level: 2
 ---
@@ -9,7 +9,7 @@ level: 2
 
 `psm` is the compatibility alias for this canonical skill entrypoint.
 
-> **Quick Start (worktree-first):** Start with `omc teleport` when you want an isolated issue/PR/feature worktree before adding any tmux/session orchestration:
+> **Quick Start (worktree-first):** Start with `omc teleport` when you want an isolated issue/PR/feature worktree before adding any rmux/tmux session orchestration:
 > ```bash
 > omc teleport #123          # Create worktree for issue/PR
 > omc teleport my-feature    # Create worktree for feature
@@ -17,7 +17,7 @@ level: 2
 > ```
 > See [Teleport Command](#teleport-command) below for details.
 
-Automate isolated development environments using git worktrees and tmux sessions with Claude Code. Enables parallel work across multiple tasks, projects, and repositories.
+Automate isolated development environments using git worktrees and rmux (preferred; tmux-compatible) or tmux sessions with Claude Code. Enables parallel work across multiple tasks, projects, and repositories.
 
 Canonical slash command: `/oh-my-claudecode:project-session-manager` (alias: `/oh-my-claudecode:psm`).
 
@@ -154,11 +154,19 @@ The Jira CLI handles authentication separately from PSM.
 
 ## Session Naming
 
-| Type | Tmux Session | Worktree Dir |
-|------|--------------|--------------|
-| PR Review | `psm:omc:pr-123` | `~/.psm/worktrees/omc/pr-123` |
-| Issue Fix | `psm:omc:issue-42` | `~/.psm/worktrees/omc/issue-42` |
-| Feature | `psm:omc:feat-auth` | `~/.psm/worktrees/omc/feat-auth` |
+The **public session ID** (colon form, e.g. `omc:pr-123`) is the human-facing
+identifier stored in `sessions.json` and used with `psm attach`/`psm kill`. tmux
+(and rmux, which shares the same session-target syntax)
+reserves `:` and `.` for its `session:window.pane` target syntax and silently
+rewrites them, so the **actual rmux/tmux session name** uses a tmux-safe form where
+those characters become `_` (issue #3528). PSM translates the public ID to the
+tmux-safe name at every rmux/tmux boundary; attach directly with the tmux-safe name.
+
+| Type | Public ID (`psm attach`/`kill`) | Rmux/Tmux Session (`tmux attach -t`) | Worktree Dir |
+|------|---------------------------------|---------------------------------|--------------|
+| PR Review | `omc:pr-123` | `psm_omc_pr-123` | `~/.psm/worktrees/omc/pr-123` |
+| Issue Fix | `omc:issue-42` | `psm_omc_issue-42` | `~/.psm/worktrees/omc/issue-42` |
+| Feature | `omc:feat-auth` | `psm_omc_feat-auth` | `~/.psm/worktrees/omc/feat-auth` |
 
 ---
 
@@ -224,7 +232,7 @@ Parse `{{ARGUMENTS}}` to determine:
      "branch": "<head_branch>",
      "base": "<base_branch>",
      "created_at": "$(date -Iseconds)",
-     "tmux_session": "psm:$project_alias:pr-$pr_number",
+     "tmux_session": "psm_${project_alias}_pr-$pr_number",
      "worktree_path": "$worktree_path",
      "source_repo": "$local_path",
      "github": {
@@ -243,21 +251,21 @@ Parse `{{ARGUMENTS}}` to determine:
    # Add to ~/.psm/sessions.json
    ```
 
-7. **Create tmux session**:
+7. **Create tmux session** (tmux-safe name; `:`/`.` are translated to `_`):
    ```bash
-   tmux new-session -d -s "psm:$project_alias:pr-$pr_number" -c "$worktree_path"
+   tmux new-session -d -s "psm_${project_alias}_pr-$pr_number" -c "$worktree_path"
    ```
 
 8. **Launch Claude Code** (unless --no-claude):
    ```bash
    # --dangerously-skip-permissions prevents the "Do you trust this directory?" prompt
    # and repeated tool-approval prompts from stalling the session (issue #2508).
-   tmux send-keys -t "psm:$project_alias:pr-$pr_number" "claude --dangerously-skip-permissions" Enter
+   tmux send-keys -t "psm_${project_alias}_pr-$pr_number" "claude --dangerously-skip-permissions" Enter
 
    # After claude boots (PSM_CLAUDE_STARTUP_DELAY, default 5s), deliver the task.
    # Use -l (literal) so special characters are not misinterpreted by tmux.
    sleep "${PSM_CLAUDE_STARTUP_DELAY:-5}"
-   tmux send-keys -t "psm:$project_alias:pr-$pr_number" -l \
+   tmux send-keys -t "psm_${project_alias}_pr-$pr_number" -l \
      "Review PR #$pr_number: \"$pr_title\" by @$pr_author ($head_branch → $base_branch). URL: $pr_url." Enter
    ```
 
@@ -267,9 +275,9 @@ Parse `{{ARGUMENTS}}` to determine:
 
      ID: omc:pr-123
      Worktree: ~/.psm/worktrees/omc/pr-123
-     Tmux: psm:omc:pr-123
+     Rmux/Tmux: psm_omc_pr-123
 
-   To attach: tmux attach -t psm:omc:pr-123
+   To attach: tmux attach -t psm_omc_pr-123   (or: psm attach omc:pr-123)
    ```
 
 ### Subcommand: `fix <ref>`
@@ -301,12 +309,12 @@ Parse `{{ARGUMENTS}}` to determine:
 
 5. **Create session metadata** (similar to review, type="fix")
 
-6. **Update registry, create tmux, launch claude**:
+6. **Update registry, create rmux/tmux session, launch claude**:
    Same as review, but pass issue context as the initial task prompt:
    ```bash
-   tmux send-keys -t "psm:$project_alias:issue-$issue_number" "claude --dangerously-skip-permissions" Enter
+   tmux send-keys -t "psm_${project_alias}_issue-$issue_number" "claude --dangerously-skip-permissions" Enter
    # After claude boots, deliver the task (see PSM_CLAUDE_STARTUP_DELAY):
-   tmux send-keys -t "psm:$project_alias:issue-$issue_number" -l \
+   tmux send-keys -t "psm_${project_alias}_issue-$issue_number" -l \
      "Fix issue #$issue_number: \"$issue_title\". URL: $issue_url. Branch: $branch_name." Enter
    ```
 
@@ -332,10 +340,10 @@ Parse `{{ARGUMENTS}}` to determine:
    git worktree add "$worktree_path" "$branch_name"
    ```
 
-4. **Create session, tmux, launch claude** with feature context as initial prompt:
+4. **Create session, rmux/tmux, launch claude** with feature context as initial prompt:
    ```bash
-   tmux send-keys -t "psm:$project_alias:feat-$feature_name" "claude --dangerously-skip-permissions" Enter
-   tmux send-keys -t "psm:$project_alias:feat-$feature_name" -l \
+   tmux send-keys -t "psm_${project_alias}_feat-$feature_name" "claude --dangerously-skip-permissions" Enter
+   tmux send-keys -t "psm_${project_alias}_feat-$feature_name" -l \
      "Implement feature \"$feature_name\" for project $project. Branch: $branch_name." Enter
    ```
 
@@ -350,9 +358,9 @@ Parse `{{ARGUMENTS}}` to determine:
    cat ~/.psm/sessions.json 2>/dev/null || echo '{"sessions":{}}'
    ```
 
-2. **Check tmux sessions**:
+2. **Check rmux/tmux sessions**:
    ```bash
-   tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^psm:"
+   tmux list-sessions -F "#{session_name}" 2>/dev/null | grep "^psm_"
    ```
 
 3. **Check worktrees**:
@@ -380,12 +388,12 @@ Parse `{{ARGUMENTS}}` to determine:
 
 2. **Verify session exists**:
    ```bash
-   tmux has-session -t "psm:$session_id" 2>/dev/null
+   tmux has-session -t "psm_${session_id//[.:]/_}" 2>/dev/null   # translate public id to tmux-safe name
    ```
 
 3. **Attach**:
    ```bash
-   tmux attach -t "psm:$session_id"
+   tmux attach -t "psm_${session_id//[.:]/_}"
    ```
 
 ### Subcommand: `kill <session>`
@@ -394,9 +402,9 @@ Parse `{{ARGUMENTS}}` to determine:
 
 **Steps**:
 
-1. **Kill tmux session**:
+1. **Kill rmux/tmux session**:
    ```bash
-   tmux kill-session -t "psm:$session_id" 2>/dev/null
+   tmux kill-session -t "psm_${session_id//[.:]/_}" 2>/dev/null
    ```
 
 2. **Remove worktree**:
@@ -432,7 +440,7 @@ Parse `{{ARGUMENTS}}` to determine:
    ```
 
 4. **Clean up merged/closed sessions**:
-   - Kill tmux session
+   - Kill rmux/tmux session
    - Remove worktree
    - Update registry
 
@@ -450,7 +458,7 @@ Parse `{{ARGUMENTS}}` to determine:
 
 **Steps**:
 
-1. **Detect current session** from tmux or cwd:
+1. **Detect current session** from rmux/tmux or cwd:
    ```bash
    tmux display-message -p "#{session_name}" 2>/dev/null
    # or check if cwd is inside a worktree
@@ -478,12 +486,12 @@ Parse `{{ARGUMENTS}}` to determine:
 |-------|------------|
 | Worktree exists | Offer: attach, recreate, or abort |
 | PR not found | Verify URL/number, check permissions |
-| No tmux | Warn and skip session creation |
+| No rmux/tmux | Warn and skip session creation |
 | No gh CLI | Error with install instructions |
 
 ## Teleport Command
 
-The `omc teleport` command provides a lightweight alternative to full PSM sessions. It creates git worktrees without tmux session management — ideal for quick, isolated development.
+The `omc teleport` command provides a lightweight alternative to full PSM sessions. It creates git worktrees without rmux/tmux session management — ideal for quick, isolated development.
 
 ### Usage
 
@@ -530,7 +538,7 @@ omc teleport remove --force feat/my-repo-my-feature
 | Feature | PSM | Teleport |
 |---------|-----|----------|
 | Git worktree | Yes | Yes |
-| Tmux session | Yes | No |
+| Rmux/Tmux session | Yes | No |
 | Claude Code launch | Yes | No |
 | Session registry | Yes | No |
 | Auto-cleanup | Yes | No |
@@ -545,7 +553,7 @@ Use **PSM** for full managed sessions. Use **teleport** for quick worktree creat
 Required:
 - `git` - Version control (with worktree support v2.5+)
 - `jq` - JSON parsing
-- `tmux` - Session management (optional, but recommended)
+- `rmux` (preferred; tmux-compatible) or `tmux` - Session management (optional, but recommended)
 
 Optional (per provider):
 - `gh` - GitHub CLI (for GitHub workflows)

@@ -13,7 +13,7 @@ import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { listMcpWorkers } from './team-registration.js';
 import { readHeartbeat, isWorkerAlive } from './heartbeat.js';
 import { listTaskIds, readTask } from './task-file-ops.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import type { HeartbeatData, TaskFile, OutboxMessage } from './types.js';
 import { generateUsageReport } from './usage-tracker.js';
 

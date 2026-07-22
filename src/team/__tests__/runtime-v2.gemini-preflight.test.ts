@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
   sendToWorker: vi.fn(),
   waitForPaneReady: vi.fn(),
   applyMainVerticalLayout: vi.fn(),
-  tmuxExecAsync: vi.fn(),
+  rmuxExecAsync: vi.fn(),
   queueInboxInstruction: vi.fn(),
 }));
 
@@ -55,11 +55,11 @@ const modelContractMocks = vi.hoisted(() => ({
   validateWorkerLaunchDescriptor: vi.fn((value: unknown) => value),
 }));
 
-vi.mock('../../cli/tmux-utils.js', () => ({
-  tmuxExecAsync: mocks.tmuxExecAsync,
+vi.mock('../../cli/rmux-utils.js', () => ({
+  rmuxExecAsync: mocks.rmuxExecAsync,
 }));
 
-vi.mock('../tmux-session.js', () => ({
+vi.mock('../rmux-session.js', () => ({
   createTeamSession: mocks.createTeamSession,
   spawnWorkerInPane: mocks.spawnWorkerInPane,
   sendToWorker: mocks.sendToWorker,
@@ -105,7 +105,7 @@ describe('runtime-v2 Gemini preflight routing', () => {
     mocks.spawnWorkerInPane.mockResolvedValue(undefined);
     mocks.waitForPaneReady.mockResolvedValue(true);
     mocks.applyMainVerticalLayout.mockResolvedValue(undefined);
-    mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+    mocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'split-window') {
         return { stdout: '%2\n', stderr: '' };
       }

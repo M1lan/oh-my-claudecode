@@ -24,7 +24,7 @@ import {
   atomicWriteJson,
   ensureDirWithMode,
 } from './fs-utils.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import type { OutboxMessage } from './types.js';
 
 /** Outbox cursor stored alongside outbox files */

@@ -613,6 +613,7 @@ async function detectGitBranch(
       ['symbolic-ref', 'refs/remotes/origin/HEAD'],
       {
         cwd: projectRoot,
+        windowsHide: true,
       },
     );
 

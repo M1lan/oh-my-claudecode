@@ -26,7 +26,7 @@ import {
 import { existsSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
-import { tmuxExecAsync } from '../cli/tmux-utils.js';
+import { rmuxExecAsync } from '../cli/rmux-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -460,7 +460,7 @@ async function defaultInjector(
 
   const paneTarget = target.value;
   try {
-    const inMode = await tmuxExecAsync(
+    const inMode = await rmuxExecAsync(
       ['display-message', '-t', paneTarget, '-p', '#{pane_in_mode}'],
       { timeout: 1000 },
     );
@@ -484,7 +484,7 @@ async function defaultInjector(
   let preCaptureHasTrigger = false;
   if (attemptCountAtStart >= 1) {
     try {
-      const preCapture = await tmuxExecAsync(
+      const preCapture = await rmuxExecAsync(
         ['capture-pane', '-t', paneTarget, '-p', '-S', '-8'],
         { timeout: 2000 },
       );
@@ -500,7 +500,7 @@ async function defaultInjector(
   const shouldTypePrompt = attemptCountAtStart === 0 || !preCaptureHasTrigger;
   if (shouldTypePrompt) {
     if (attemptCountAtStart >= 1) {
-      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-u'], {
+      await rmuxExecAsync(['send-keys', '-t', paneTarget, 'C-u'], {
         timeout: 1000,
       }).catch(() => {});
       await new Promise((r) => setTimeout(r, 50));
@@ -512,14 +512,14 @@ async function defaultInjector(
       /[\x00-\x1f\x7f]/g,
       '',
     );
-    await tmuxExecAsync(
+    await rmuxExecAsync(
       ['send-keys', '-t', paneTarget, '-l', sanitizedMessage],
       { timeout: 3000 },
     );
   }
 
   for (let i = 0; i < submitKeyPresses; i++) {
-    await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
+    await rmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
       timeout: 3000,
     });
     if (i < submitKeyPresses - 1) {
@@ -531,11 +531,11 @@ async function defaultInjector(
   for (let round = 0; round < INJECT_VERIFY_ROUNDS; round++) {
     await new Promise((r) => setTimeout(r, INJECT_VERIFY_DELAY_MS));
     try {
-      const narrowCap = await tmuxExecAsync(
+      const narrowCap = await rmuxExecAsync(
         ['capture-pane', '-t', paneTarget, '-p', '-S', '-8'],
         { timeout: 2000 },
       );
-      const wideCap = await tmuxExecAsync(
+      const wideCap = await rmuxExecAsync(
         ['capture-pane', '-t', paneTarget, '-p'],
         { timeout: 2000 },
       );
@@ -573,7 +573,7 @@ async function defaultInjector(
     }
 
     for (let i = 0; i < submitKeyPresses; i++) {
-      await tmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
+      await rmuxExecAsync(['send-keys', '-t', paneTarget, 'C-m'], {
         timeout: 3000,
       }).catch(() => {});
     }

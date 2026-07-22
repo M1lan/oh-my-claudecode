@@ -227,6 +227,7 @@ function readGit(repoPath: string, args: string[]): string {
       cwd: repoPath,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
     }).trim();
   } catch (error) {
     const err = error as NodeJS.ErrnoException & { stderr?: string | Buffer };
@@ -247,6 +248,7 @@ function tryResolveGitCommit(worktreePath: string, ref: string): string | null {
     {
       cwd: worktreePath,
       encoding: 'utf-8',
+      windowsHide: true,
     },
   );
   if (result.status !== 0) return null;
@@ -348,6 +350,7 @@ function requireGitSuccess(worktreePath: string, args: string[]): void {
   const result = spawnSync('git', args, {
     cwd: worktreePath,
     encoding: 'utf-8',
+    windowsHide: true,
   });
   if (result.status === 0) return;
   throw new Error(
@@ -362,6 +365,7 @@ function gitStatusLines(worktreePath: string): string[] {
     {
       cwd: worktreePath,
       encoding: 'utf-8',
+      windowsHide: true,
     },
   );
   if (result.status !== 0) {

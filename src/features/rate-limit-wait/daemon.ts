@@ -39,7 +39,7 @@ import {
   scanForBlockedPanes,
   sendResumeSequence,
   formatBlockedPanesSummary,
-} from './tmux-detector.js';
+} from './rmux-detector.js';
 import type {
   DaemonState,
   DaemonConfig,

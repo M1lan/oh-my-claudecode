@@ -824,7 +824,7 @@ Available template variables:
 RAW FIELDS:
   {{sessionId}}      - Session identifier
   {{timestamp}}      - ISO timestamp
-  {{tmuxSession}}    - tmux session name
+  {{tmuxSession}}    - rmux/tmux session name
   {{projectPath}}    - Full project directory path
   {{projectName}}    - Project directory basename
   {{reason}}         - Stop/end reason
@@ -840,7 +840,7 @@ COMPUTED (smart formatting):
   {{iterationDisplay}} - "3/10" format or empty
   {{agentDisplay}}   - "2/5 completed" or empty
   {{projectDisplay}} - Project name with fallbacks
-  {{footer}}         - tmux + project info line
+  {{footer}}         - rmux/tmux + project info line
   {{tmuxTailBlock}}  - Recent output in code fence or empty
   {{reasonDisplay}}  - Reason with "unknown" fallback
 
@@ -1197,7 +1197,7 @@ All custom integrations support these template variables:
 | `{{duration}}` | Human-readable duration | `45s` |
 | `{{durationMs}}` | Duration in milliseconds | `45000` |
 | `{{reason}}` | Stop/end reason | `completed` |
-| `{{tmuxSession}}` | tmux session name | `claude:my-project` |
+| `{{tmuxSession}}` | rmux/tmux session name | `claude:my-project` |
 
 Session-end only:
 - `{{agentsSpawned}}`, `{{agentsCompleted}}`, `{{modesUsed}}`, `{{contextSummary}}`

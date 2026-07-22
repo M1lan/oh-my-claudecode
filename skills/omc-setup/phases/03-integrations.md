@@ -100,9 +100,9 @@ Use AskUserQuestion:
 **Question:** "How should teammates be displayed?"
 
 **Options:**
-1. **Auto (Recommended)** - Uses split panes if in tmux, otherwise in-process. Best for most users.
+1. **Auto (Recommended)** - Uses split panes if in rmux/tmux, otherwise in-process. Best for most users.
 2. **In-process** - All teammates in your main terminal. Use Shift+Up/Down to select. Works everywhere.
-3. **Split panes (tmux)** - Each teammate in its own pane. Requires tmux or iTerm2.
+3. **Split panes (rmux/tmux)** - Each teammate in its own pane. Requires rmux (preferred; tmux-compatible), tmux, or iTerm2.
 
 If user chooses anything other than "Auto", add `teammateMode` to settings.json:
 
@@ -115,7 +115,7 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-# TEAMMATE_MODE is "in-process" or "tmux" based on user choice
+# TEAMMATE_MODE is "in-process" or "tmux" based on user choice (the "tmux" split-pane mode runs in rmux when present, tmux otherwise)
 # Skip this if user chose "Auto" (that's the default)
 TEMP_FILE=$(mktemp "${SETTINGS_FILE}.tmp.XXXXXX")
 trap 'rm -f "$TEMP_FILE"' EXIT
@@ -225,6 +225,36 @@ Skip this step. Agent teams will remain disabled. User can enable later by addin
 ```
 
 Or by running `/oh-my-claudecode:omc-setup --force` and choosing to enable teams.
+
+## Step 3.4: Offer rmux Multiplexer Install (POSIX only)
+
+rmux is the multiplexer OMC prefers on POSIX hosts (macOS/Linux) for `/team`, HUD panes, and interop. It is **optional** — OMC falls back to tmux when rmux is absent — so this step must never block or fail setup. Skip entirely on native Windows (rmux is POSIX-only; tmux/psmux is used there).
+
+First detect + report (read-only):
+
+```bash
+node "${OMC_SETUP_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/bin/oh-my-claudecode.js" doctor rmux || true
+```
+
+If rmux is reported as **not found** (and not on native Windows), use AskUserQuestion:
+
+**Question:** "rmux (preferred multiplexer) is not installed. Install it now? OMC works without it (falls back to tmux)."
+
+**Options:**
+1. **Yes, install rmux (Recommended)** - Installs from `~/mysrc/rmux` local source if present, else `cargo binstall rmux` (or `cargo install rmux`)
+2. **No, skip** - Keep using tmux; install later with `omc doctor rmux --install`
+
+### If User Chooses YES:
+
+```bash
+node "${OMC_SETUP_PLUGIN_ROOT:-${CLAUDE_PLUGIN_ROOT}}/bin/oh-my-claudecode.js" doctor rmux --install || true
+```
+
+The installer is non-fatal: if neither cargo nor cargo-binstall is available it prints manual instructions and continues. Never treat a failed rmux install as a setup failure.
+
+### If User Chooses NO:
+
+Skip. rmux can be installed later with `omc doctor rmux --install` or `cargo binstall rmux`.
 
 ## Save Progress
 

@@ -10,7 +10,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { tmuxExec } from '../../cli/tmux-utils.js';
+import { rmuxExec } from '../../cli/rmux-utils.js';
 
 const STATE_FILE = 'pane-tail-positions.json';
 
@@ -60,7 +60,7 @@ function writePaneTailState(stateDir: string, state: PaneTailState): void {
  */
 export function getPaneHistorySize(paneId: string): number | null {
   try {
-    const raw = tmuxExec(
+    const raw = rmuxExec(
       ['display-message', '-t', paneId, '-p', '#{pane_dead} #{history_size}'],
       { stripTmux: true, timeout: 3000 },
     ).trim();
@@ -89,7 +89,7 @@ export function getPaneHistorySize(paneId: string): number | null {
 function capturePaneLines(paneId: string, lines: number): string {
   try {
     const safeLines = Math.max(1, Math.min(500, Math.floor(lines)));
-    return tmuxExec(
+    return rmuxExec(
       ['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`],
       { stripTmux: true, timeout: 5000 },
     );

@@ -16,7 +16,7 @@ import {
   validateResolvedPath,
 } from './fs-utils.js';
 import { getTeamMembers } from './unified-team.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import type { InboxMessage } from './types.js';
 
 export interface RouteResult {

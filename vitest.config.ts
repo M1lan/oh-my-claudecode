@@ -12,6 +12,14 @@ export default defineConfig({
     // comfortably in isolation; the higher ceiling absorbs load-induced timeout
     // flake without hiding a genuine hang (which still fails, just at 60s).
     testTimeout: 60000,
+    // Cap fork workers at 50% of cores. Several tests measure the wall-clock of
+    // a spawned child process against hard budgets (e.g. COMMAND_CEILING_MS=500
+    // in session-end-process-exit.test.ts). At the default (~cores-1 workers)
+    // each worker plus its spawned child over-subscribes a high-core dev box,
+    // inflating elapsed time past those budgets. Reserving half the cores for
+    // child processes keeps a ~1:1 process/core ratio so the budgets hold under
+    // the full parallel suite while staying adaptive across machines/CI.
+    maxWorkers: '50%',
     include: [
       'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
       'tests/**/*.bench.ts',

@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { isTmuxAvailable } from './tmux-utils.js';
+import { isTmuxAvailable } from './rmux-utils.js';
 
 /**
  * Warn if running on native Windows (win32) without tmux available.

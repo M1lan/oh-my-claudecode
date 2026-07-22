@@ -19,9 +19,9 @@ import { tmpdir } from 'os';
 
 const mockTmuxExecAsync = vi.fn();
 
-vi.mock('../cli/tmux-utils.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../cli/tmux-utils.js')>();
-  return { ...actual, tmuxExecAsync: mockTmuxExecAsync };
+vi.mock('../cli/rmux-utils.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../cli/rmux-utils.js')>();
+  return { ...actual, rmuxExecAsync: mockTmuxExecAsync };
 });
 
 vi.mock('../team/model-contract.js', () => ({
@@ -35,7 +35,7 @@ vi.mock('../team/model-contract.js', () => ({
   isHeadlessSupportedOnPlatform: vi.fn(() => true),
 }));
 
-vi.mock('../team/tmux-session.js', () => ({
+vi.mock('../team/rmux-session.js', () => ({
   createTeamSession: vi.fn(),
   spawnWorkerInPane: vi.fn(),
   sendToWorker: vi.fn(() => Promise.resolve(true)),

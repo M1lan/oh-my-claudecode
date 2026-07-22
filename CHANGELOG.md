@@ -1,29 +1,30 @@
-# oh-my-claudecode v4.15.4: Bug Fixes
+# oh-my-claudecode v4.15.6: Named Stage Profiles & Reliability Fixes
 
 ## Release Notes
 
-Release with **7 bug fixes**, **1 other change** across **8 merged PRs**.
+Release with **1 new feature**, **10 bug fixes** across **11 merged PRs**.
 
 ### Highlights
 
-- **fix(team): recover confirmed-dead runtime-v2 workers** (#3462)
-- **fix(merge-readiness): close red-team proof and authority gaps** (#3467)
-- **fix(ultragoal): recover the active /goal from the transcript on Claude Code** (#3468)
+- **feat(autopilot): add named stage profiles** (#3492)
+
+### New Features
+
+- **feat(autopilot): add named stage profiles** (#3492)
 
 ### Bug Fixes
 
-- **fix(team): recover confirmed-dead runtime-v2 workers** (#3462)
-- **fix(merge-readiness): close red-team proof and authority gaps** (#3467)
-- **fix(ultragoal): recover the active /goal from the transcript on Claude Code** (#3468)
-- **fix(ci): isolate subagent lock benchmark** (#3459)
-- **fix(resolve-node): add windowsHide to node binary resolution execSync** (#3455)
-- **fix(installer): remove legacy pre-marker OMC guides** (#3450)
-- **fix(windows): hide console window for git execSync calls** (#3445)
-
-### Other Changes
-
-- **Add deterministic capabilities lockfile preflight** (#3440)
+- **fix(release): guard coordinator across shipped surfaces** (#3516)
+- **fix: ship complete plugin runtime closure** (#3479)
+- **fix(windows): ship hidden worktree git subprocesses** (#3501)
+- **fix(ultragoal): make the /goal handoff satisfy the guard, not just the ledger** (#3514)
+- **fix(lsp): handle server-to-client requests** (#3511)
+- **fix(ultragoal): defer /goal guard until confirmation** (#3510)
+- **fix(beads): correct CLI instruction syntax** (#3505)
+- **fix(session-start): keep plugin drift guidance on marketplace channel** (#3500)
+- **fix(session-start): align update notices with plugin channel** (#3499)
+- **fix(windows): bound generic-hook runner timeout ownership and nested git** (#3496)
 
 ### Stats
 
-- **8 PRs merged** | **0 new features** | **7 bug fixes** | **0 security/hardening improvements** | **1 other change**
+- **11 PRs merged** | **1 new feature** | **10 bug fixes** | **0 security/hardening improvements** | **0 other changes**

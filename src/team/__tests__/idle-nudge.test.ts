@@ -14,19 +14,19 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // Mocks — must be set up before importing the module under test
 // ---------------------------------------------------------------------------
 
-// Mock tmux-utils so tmux calls don't require a real tmux install
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+// Mock rmux-utils so tmux calls don't require a real tmux install
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
-    tmuxExecAsync: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
+    rmuxExecAsync: vi.fn().mockResolvedValue({ stdout: '', stderr: '' }),
   };
 });
 
-// Mock sendToWorker from tmux-session to avoid real tmux calls
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+// Mock sendToWorker from rmux-session to avoid real tmux calls
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     sendToWorker: vi.fn(async () => true),
@@ -45,15 +45,15 @@ import {
   sendToWorker,
   paneLooksReady,
   paneHasActiveTask,
-} from '../tmux-session.js';
-import { tmuxExecAsync } from '../../cli/tmux-utils.js';
+} from '../rmux-session.js';
+import { rmuxExecAsync } from '../../cli/rmux-utils.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function mockCaptureOutput(output: string): void {
-  vi.mocked(tmuxExecAsync).mockResolvedValue({ stdout: output, stderr: '' });
+  vi.mocked(rmuxExecAsync).mockResolvedValue({ stdout: output, stderr: '' });
 }
 
 /** Pane content that looks idle (shows prompt, no active task) */
@@ -92,7 +92,7 @@ describe('DEFAULT_NUDGE_CONFIG', () => {
 });
 
 // ---------------------------------------------------------------------------
-// paneLooksReady / paneHasActiveTask (pure functions, exported from tmux-session)
+// paneLooksReady / paneHasActiveTask (pure functions, exported from rmux-session)
 // ---------------------------------------------------------------------------
 
 describe('idle detection helpers', () => {
@@ -135,7 +135,7 @@ describe('capturePane', () => {
 
   it('returns empty string on error', async () => {
     vi.useRealTimers();
-    vi.mocked(tmuxExecAsync).mockRejectedValue(new Error('tmux not found'));
+    vi.mocked(rmuxExecAsync).mockRejectedValue(new Error('tmux not found'));
     const result = await capturePane('%1');
     expect(result).toBe('');
   });
@@ -343,7 +343,7 @@ describe('NudgeTracker', () => {
     const tracker = new NudgeTracker({ delayMs: 0, maxCount: 1 });
 
     // %2 is idle, %3 is active
-    vi.mocked(tmuxExecAsync).mockImplementation(async (args: string[]) => {
+    vi.mocked(rmuxExecAsync).mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
         const paneId = args[2];
         if (paneId === '%2') return { stdout: IDLE_PANE_CONTENT, stderr: '' };

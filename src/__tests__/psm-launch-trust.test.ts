@@ -12,7 +12,7 @@ import { join } from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 const PSM_ROOT = join(__dirname, '../../skills/project-session-manager');
-const TMUX_SH = join(PSM_ROOT, 'lib/tmux.sh');
+const RMUX_SH = join(PSM_ROOT, 'lib/rmux.sh');
 const PSM_SH = join(PSM_ROOT, 'psm.sh');
 
 function readScript(path: string): string {
@@ -23,7 +23,7 @@ describe('PSM launch trust fix (issue #2508)', () => {
   describe('tmux.sh psm_launch_claude', () => {
     let source: string;
     beforeAll(() => {
-      source = readScript(TMUX_SH);
+      source = readScript(RMUX_SH);
     });
 
     it('passes --dangerously-skip-permissions to claude', () => {
@@ -41,7 +41,7 @@ describe('PSM launch trust fix (issue #2508)', () => {
 
     it('preserves context-file injection for relative task files', () => {
       expect(source).toContain(
-        'tmux display-message -p -t "$session_name" \'#{pane_current_path}\'',
+        '"$MUX_BIN" display-message -p -t "$session_name" \'#{pane_current_path}\'',
       );
       expect(source).toContain('-f "$session_path/$initial_context"');
       expect(source).toContain(

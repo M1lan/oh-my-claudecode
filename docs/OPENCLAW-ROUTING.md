@@ -93,7 +93,7 @@ Generic `tool.started` / `tool.finished` remain available as low-priority fallba
 ## Noise reduction
 
 - `AskUserQuestion` now emits only the dedicated `question.requested` signal instead of also emitting generic tool lifecycle events.
-- OpenClaw now collapses repeated attached-tmux lifecycle bursts before dispatching them to downstream native gateways.
+- OpenClaw now collapses repeated attached-rmux/tmux lifecycle bursts before dispatching them to downstream native gateways.
   - `session-start` collapses on `{projectPath, tmuxSession}` for a short burst window.
   - `keyword-detector` (the `UserPromptSubmit` bridge surface) collapses prompt-submitted bursts on `{projectPath, tmuxSession, normalized prompt}`.
   - `stop` / `session-end` collapse on `{projectPath, tmuxSession}` for a short burst window.

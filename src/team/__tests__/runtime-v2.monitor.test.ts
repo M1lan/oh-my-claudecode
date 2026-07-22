@@ -7,7 +7,7 @@ import { canonicalizeTeamConfigWorkers } from '../worker-canonicalization.js';
 const mocks = vi.hoisted(() => ({
   getWorkerLiveness: vi.fn(async () => 'alive'),
   execFile: vi.fn(),
-  tmuxExecAsync: vi.fn(),
+  rmuxExecAsync: vi.fn(),
 }));
 
 vi.mock('child_process', async (importOriginal) => {
@@ -18,17 +18,17 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
-    tmuxExecAsync: mocks.tmuxExecAsync,
+    rmuxExecAsync: mocks.rmuxExecAsync,
   };
 });
 
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     getWorkerLiveness: mocks.getWorkerLiveness,
@@ -42,7 +42,7 @@ describe('monitorTeamV2 pane-based stall inference', () => {
     vi.resetModules();
     mocks.getWorkerLiveness.mockReset();
     mocks.execFile.mockReset();
-    mocks.tmuxExecAsync.mockReset();
+    mocks.rmuxExecAsync.mockReset();
     mocks.getWorkerLiveness.mockResolvedValue('alive');
     mocks.execFile.mockImplementation(
       (
@@ -57,7 +57,7 @@ describe('monitorTeamV2 pane-based stall inference', () => {
         cb(null, '', '');
       },
     );
-    mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+    mocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
         return { stdout: '> \n', stderr: '' };
       }
@@ -194,7 +194,7 @@ describe('monitorTeamV2 pane-based stall inference', () => {
         cb(null, '', '');
       },
     );
-    mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+    mocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
         return {
           stdout: 'Working on task...\n  esc to interrupt\n',
@@ -267,7 +267,7 @@ describe('monitorTeamV2 pane-based stall inference', () => {
         cb(null, '', '');
       },
     );
-    mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+    mocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'capture-pane') {
         return {
           stdout: 'model: loading\ngpt-5.3-codex high · 80% left\n',

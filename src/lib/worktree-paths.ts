@@ -10,7 +10,7 @@
  */
 
 import { createHash } from 'crypto';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import {
   existsSync,
   mkdirSync,
@@ -202,13 +202,17 @@ function resolveSuperprojectRoot(cwd: string): string | null {
   for (let depth = 0; depth < 32; depth++) {
     let superRoot: string;
     try {
-      superRoot = execSync('git rev-parse --show-superproject-working-tree', {
-        cwd: probeCwd,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-        windowsHide: true,
-        timeout: 5000,
-      }).trim();
+      superRoot = execFileSync(
+        'git',
+        ['rev-parse', '--show-superproject-working-tree'],
+        {
+          cwd: probeCwd,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+          windowsHide: true,
+          timeout: 5000,
+        },
+      ).trim();
     } catch (error) {
       completed = depth === 0 && isDefinitiveNonGitError(error);
       break;
@@ -275,7 +279,7 @@ export function getGitTopLevel(cwd?: string): string | null {
   }
 
   try {
-    const root = execSync('git rev-parse --show-toplevel', {
+    const root = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -550,7 +554,7 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
 
   let source: string;
   try {
-    const remoteUrl = execSync('git remote get-url origin', {
+    const remoteUrl = execFileSync('git', ['remote', 'get-url', 'origin'], {
       cwd: root,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -569,8 +573,9 @@ export function getProjectIdentifier(worktreeRoot?: string): string {
   // directories despite sharing the same remote URL hash.
   let primaryRoot = root;
   try {
-    const commonDir = execSync(
-      'git rev-parse --path-format=absolute --git-common-dir',
+    const commonDir = execFileSync(
+      'git',
+      ['rev-parse', '--path-format=absolute', '--git-common-dir'],
       {
         cwd: root,
         encoding: 'utf-8',
@@ -1169,10 +1174,51 @@ export function ensureSessionStateDir(
 }
 
 /**
+ * Walk up from `startDir` on the filesystem alone (no git subprocess) looking
+ * for a `.git` entry (directory or file — a file covers linked worktrees and
+ * submodules, whose `.git` is a pointer file). Returns the directory
+ * containing it, or null if none is found before the filesystem root or the
+ * user's home directory.
+ *
+ * This is a rescue path, NOT a replacement for `git rev-parse
+ * --show-toplevel`: it is only consulted after a git-based resolver has
+ * already failed, to distinguish a genuine non-repo directory from a
+ * transient git-command failure (timeout, lock contention under concurrent
+ * load — bead ob2) that would otherwise silently degrade `.omc/` placement
+ * to the raw cwd. Bare repositories keep their `.git`-less root layout, so
+ * this walk correctly finds nothing for them and defers to the existing
+ * fallback.
+ */
+export function findGitRootByFsWalk(startDir: string): string | null {
+  try {
+    let cursor = resolve(startDir);
+    const home = (() => {
+      try {
+        return resolve(homedir());
+      } catch {
+        return null;
+      }
+    })();
+    const MAX_WALK_DEPTH = 128;
+    for (let depth = 0; depth < MAX_WALK_DEPTH; depth++) {
+      if (existsSync(join(cursor, '.git'))) return cursor;
+      const parent = dirname(cursor);
+      if (parent === cursor) break;
+      if (home && cursor === home) break;
+      cursor = parent;
+    }
+  } catch {
+    // walk failed — caller falls through to its existing fallback
+  }
+  return null;
+}
+
+/**
  * Resolve a directory path to its git worktree root.
  *
- * Walks up from `directory` using `git rev-parse --show-toplevel`.
- * Falls back to `getWorktreeRoot(process.cwd())`, then `process.cwd()`.
+ * Walks up from `directory` using `git rev-parse --show-toplevel`. If that
+ * fails, rescues via `findGitRootByFsWalk` before falling back to
+ * `getWorktreeRoot(process.cwd())`, then `process.cwd()`.
  *
  * This ensures .omc/ state is always written at the worktree root,
  * even when called from a subdirectory (fixes #576).
@@ -1200,6 +1246,23 @@ export function resolveToWorktreeRoot(directory?: string): string {
     const root = resolveRoot(resolved);
     if (root) return root;
 
+    // git resolution failed — this can be a genuine non-repo directory (e.g.
+    // a bare repo, or truly no repo) OR a transient git-command failure
+    // (timeout, lock contention) under concurrent load (bead ob2). Rescue via
+    // a pure filesystem walk-up for a `.git` entry before degrading to the
+    // raw-cwd fallback below.
+    const fsWalkRoot = findGitRootByFsWalk(resolved);
+    if (fsWalkRoot) {
+      console.error(
+        '[worktree] git resolution failed; recovered repo root via filesystem walk-up',
+        {
+          directory: resolved,
+          recoveredRoot: fsWalkRoot,
+        },
+      );
+      return fsWalkRoot;
+    }
+
     console.error(
       '[worktree] non-git directory provided, falling back to process root',
       {
@@ -1208,7 +1271,11 @@ export function resolveToWorktreeRoot(directory?: string): string {
     );
   }
   // Fallback: derive from process CWD (the MCP server / CLI entry point)
-  return resolveRoot(process.cwd()) || process.cwd();
+  return (
+    resolveRoot(process.cwd()) ||
+    findGitRootByFsWalk(process.cwd()) ||
+    process.cwd()
+  );
 }
 
 // ============================================================================
@@ -1292,12 +1359,16 @@ export function resolveTranscriptPath(
   // the main repo's encoded path. Use `git rev-parse --git-common-dir`
   // to find the main repo root and re-encode.
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', {
-      cwd: effectiveCwd,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      windowsHide: true,
-    }).trim();
+    const gitCommonDir = execFileSync(
+      'git',
+      ['rev-parse', '--git-common-dir'],
+      {
+        cwd: effectiveCwd,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+        windowsHide: true,
+      },
+    ).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
     // For linked worktrees, git-common-dir is <repo>/.git/worktrees/<name>
@@ -1314,7 +1385,7 @@ export function resolveTranscriptPath(
       /* keep as-is */
     }
 
-    const worktreeTop = execSync('git rev-parse --show-toplevel', {
+    const worktreeTop = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -1426,8 +1497,9 @@ export function validateWorkingDirectory(workingDirectory?: string): string {
 
 function getGitCommonDir(cwd: string): string | null {
   try {
-    const commonDir = execSync(
-      'git rev-parse --path-format=absolute --git-common-dir',
+    const commonDir = execFileSync(
+      'git',
+      ['rev-parse', '--path-format=absolute', '--git-common-dir'],
       {
         cwd,
         encoding: 'utf-8',

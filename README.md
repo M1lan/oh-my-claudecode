@@ -7,7 +7,7 @@ English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](READM
 [![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
-[![Discord](https://img.shields.io/discord/1452487457085063218?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/PUwSMR9XNk)
+[![Discord](https://img.shields.io/discord/1452487457085063218?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/jq6jnSGABY)
 
 > **For Codex users:** Check out [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — the same orchestration experience for OpenAI Codex CLI.
 
@@ -15,7 +15,7 @@ English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](READM
 
 _Don't learn Claude Code. Just use OMC._
 
-[Get Started](#quick-start) • [Documentation](https://yeachan-heo.github.io/oh-my-claudecode-website) • [CLI Reference](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#cli-reference) • [Workflows](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#workflows) • [Migration Guide](docs/MIGRATION.md) • [Discord](https://discord.gg/PUwSMR9XNk)
+[Get Started](#quick-start) • [Documentation](https://yeachan-heo.github.io/oh-my-claudecode-website) • [CLI Reference](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#cli-reference) • [Workflows](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#workflows) • [Migration Guide](docs/MIGRATION.md) • [Discord](https://discord.gg/jq6jnSGABY)
 
 ---
 
@@ -100,6 +100,36 @@ If you run OMC via `omc --plugin-dir <path>` or `claude --plugin-dir <path>`, ad
 autopilot: build a REST API for managing tasks
 ```
 
+#### Named autopilot stage profiles (v1)
+
+Select a configured stage profile only through `/autopilot --workflow <name> <task>`:
+
+```text
+/autopilot --workflow plan-build-qa "build a REST API for managing tasks"
+```
+
+Profiles are configured under `autopilot.workflows` in `.claude/omc.jsonc` (project) or `~/.config/claude-omc/config.jsonc` (user). A v1 profile contains only `version: 1` and `stages`:
+
+```jsonc
+{
+  "autopilot": {
+    "workflows": {
+      "plan-build-qa": {
+        "version": 1,
+        "stages": ["ralplan", "execution", "qa"]
+      }
+    }
+  }
+}
+```
+
+The admitted sequences are `[ralplan, execution]`, `[ralplan, execution, ralph]`, `[ralplan, execution, qa]`, and `[ralplan, execution, ralph, qa]`. A project profile of the same name wholly replaces the user profile; different names coexist. Environment variables cannot define profiles. Profiles remain within autopilot's existing state, cancel, resume, Stop, and HUD lifecycle; legacy invocations without `--workflow` remain compatible.
+
+Named profiles currently require Linux with the `flock` utility because their transcript evidence boundary uses Linux no-follow file-descriptor traversal and their recoverable mutation lock uses kernel advisory locking. Unsupported environments reject explicit `--workflow` invocation before creating or changing autopilot state; legacy autopilot remains available.
+
+V1 intentionally excludes model fields or routing (`stageModels`), inline execution, dynamic commands/modes/state, arbitrary stages or plugins, and the separate custom-skill frontmatter parser mismatch. See [Named Autopilot Stage Profiles ADR](docs/adr/03487-named-autopilot-stage-profiles.md) and [Reference](docs/REFERENCE.md#named-autopilot-stage-profiles-v1).
+
+
 That's it. Everything else is automatic.
 
 ### CLI Commands vs In-Session Skills
@@ -113,7 +143,7 @@ OMC exposes two different surfaces:
 | ---------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Setup                                          | `omc setup`                                   | `/setup` or `/omc-setup`                                                | Both are real entrypoints. `/setup` is the easiest plugin-first path.                                                                |
 | Ask providers                                  | `omc ask codex "review this patch"`           | `/ask codex "review this patch"`                                        | Both route through the same advisor flow. Providers: `claude`, `codex`, `gemini`, `antigravity`, `grok`, `cursor`.                                            |
-| Team orchestration                             | `omc team 2:codex "review auth flow"`         | `/team 3:executor "fix all TypeScript errors"`                          | Both exist, but they are different runtimes: `omc team` launches tmux CLI workers; `/team` runs the in-session native team workflow. |
+| Team orchestration                             | `omc team 2:codex "review auth flow"`         | `/team 3:executor "fix all TypeScript errors"`                          | Both exist, but they are different runtimes: `omc team` launches rmux (preferred; tmux-compatible) CLI workers; `/team` runs the in-session native team workflow. |
 | Autopilot / Ralph / Ultrawork / Deep Interview | —                                             | `/autopilot ...`, `/ralph ...`, `/ultrawork ...`, `/deep-interview ...` | These are in-session skills. There is no `omc autopilot` / `omc ralph` / `omc ultrawork` CLI subcommand in this repo.                |
 | Autoresearch                                   | `omc autoresearch` (**hard-deprecated shim**) | `/deep-interview --autoresearch ...` + `/oh-my-claudecode:autoresearch` | Setup stays in deep-interview; execution now belongs to the stateful skill.                                                          |
 
@@ -141,7 +171,7 @@ Starting in **v4.1.7**, **Team** is the canonical orchestration surface in OMC. 
 /team 3:executor "fix all TypeScript errors"
 ```
 
-Use `/team ...` when you want Claude Code's in-session native team workflow. Use `omc team ...` when you want terminal-launched tmux CLI workers (`claude` / `codex` / `gemini` panes).
+Use `/team ...` when you want Claude Code's in-session native team workflow. Use `omc team ...` when you want terminal-launched rmux (preferred; tmux-compatible) CLI workers (`claude` / `codex` / `gemini` panes).
 
 Team runs as a staged pipeline:
 
@@ -159,9 +189,9 @@ Enable Claude Code native teams in `~/.claude/settings.json`:
 
 > If teams are disabled, OMC will warn you and fall back to non-team execution where possible.
 
-### tmux CLI Workers — Codex, Gemini & Antigravity (v4.4.0+)
+### rmux/tmux CLI Workers — Codex, Gemini & Antigravity (v4.4.0+)
 
-**v4.4.0 removes the Codex/Gemini MCP servers** (`x`, `g` providers). Use the CLI-first Team runtime (`omc team ...`) to spawn real tmux worker panes:
+**v4.4.0 removes the Codex/Gemini MCP servers** (`x`, `g` providers). Use the CLI-first Team runtime (`omc team ...`) to spawn real worker panes in rmux (preferred; tmux-compatible) or tmux:
 
 ```bash
 omc team 2:codex "review auth module for security issues"
@@ -188,10 +218,10 @@ For mixed Codex + Antigravity work in one command, use the **`/ccg`** skill (rou
 | `omc team N:antigravity "..."`  | N Antigravity (`agy`) panes   | UI/UX design, docs, large-context tasks                      |
 | `omc team N:grok "..."`         | N Grok Build CLI panes        | Code review, analysis cross-check            |
 | `omc team N:cursor "..."`       | N Cursor agent panes          | Executor-style implementation tasks          |
-| `omc team N:claude "..."`       | N Claude CLI panes            | General tasks via Claude CLI in tmux         |
+| `omc team N:claude "..."`       | N Claude CLI panes            | General tasks via Claude CLI in rmux/tmux    |
 | `/ccg`                          | /ask codex + /ask antigravity | Tri-model advisor synthesis                  |
 
-Workers spawn on-demand and die when their task completes — no idle resource usage. Requires the selected CLI (`codex`, `gemini`, `agy` (antigravity), `grok`, or `cursor-agent`) installed/authenticated and an active tmux session.
+Workers spawn on-demand and die when their task completes — no idle resource usage. Requires the selected CLI (`codex`, `gemini`, `agy` (antigravity), `grok`, or `cursor-agent`) installed/authenticated and an active rmux (preferred; tmux-compatible) or tmux session.
 
 Autopilot can prefer Cursor executor workers during team execution via `.claude/omc.jsonc`:
 
@@ -270,7 +300,7 @@ Multiple strategies for different use cases — from Team-backed orchestration t
 | Mode                        | What it is                                                                              | Use For                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | **Team (recommended)**      | Canonical staged pipeline (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Coordinated Claude agents on a shared task list                         |
-| **omc team (CLI)**          | tmux CLI workers — real `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Antigravity/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
+| **omc team (CLI)**          | rmux (preferred; tmux-compatible) CLI workers — real `claude`/`codex`/`gemini`/`antigravity`/`grok`/`cursor-agent` processes in split-panes       | Codex/Gemini/Antigravity/Grok/Cursor CLI tasks; on-demand spawn, die when done             |
 | **ccg**                     | Tri-model advisors via `/ask codex` + `/ask antigravity`, Claude synthesizes             | Mixed backend+UI work needing both Codex and Antigravity                     |
 | **Autopilot**               | Autonomous execution (single lead agent)                                                | End-to-end feature work with minimal ceremony                           |
 | **Ultrawork**               | Maximum parallelism (non-team)                                                          | Burst parallel fixes/refactors where Team isn't needed                  |
@@ -436,7 +466,7 @@ omc wait --start  # Enable auto-resume daemon
 omc wait --stop   # Disable daemon
 ```
 
-**Requires:** tmux (for session detection)
+**Requires:** rmux (preferred; tmux-compatible) or tmux (for session detection)
 
 ### Monitoring & Observability
 
@@ -562,20 +592,21 @@ See `scripts/openclaw-gateway-demo.mjs` for a reference gateway that relays Open
 - [Claude Code](https://docs.anthropic.com/claude-code) CLI
 - Claude Max/Pro subscription OR Anthropic API key
 
-### Platform & tmux
+### Platform & Multiplexer
 
-OMC features like `omc team` and rate-limit detection require **tmux**:
+OMC features like `omc team` and rate-limit detection require a tmux-compatible multiplexer. **rmux (preferred; tmux-compatible)** is used on POSIX hosts when installed, with **tmux as fallback**:
 
-| Platform       | tmux provider                                         | Install                 |
-| -------------- | ----------------------------------------------------- | ----------------------- |
-| macOS          | [tmux](https://github.com/tmux/tmux)                  | `brew install tmux`     |
-| Ubuntu/Debian  | tmux                                                  | `sudo apt install tmux` |
-| Fedora         | tmux                                                  | `sudo dnf install tmux` |
-| Arch           | tmux                                                  | `sudo pacman -S tmux`   |
-| Windows        | [psmux](https://github.com/marlocarlo/psmux) (native) | `winget install psmux`  |
-| Windows (WSL2) | tmux (inside WSL)                                     | `sudo apt install tmux` |
+| Platform       | Multiplexer                                            | Install                                            |
+| -------------- | ------------------------------------------------------- | --------------------------------------------------- |
+| macOS / Linux  | rmux (preferred)                                       | `omc doctor rmux --install` (cargo binstall/install) |
+| macOS          | [tmux](https://github.com/tmux/tmux) (fallback)        | `brew install tmux`     |
+| Ubuntu/Debian  | tmux (fallback)                                        | `sudo apt install tmux` |
+| Fedora         | tmux (fallback)                                        | `sudo dnf install tmux` |
+| Arch           | tmux (fallback)                                        | `sudo pacman -S tmux`   |
+| Windows        | [psmux](https://github.com/marlocarlo/psmux) (native)  | `winget install psmux`  |
+| Windows (WSL2) | tmux (inside WSL)                                      | `sudo apt install tmux` |
 
-> **Windows users:** [psmux](https://github.com/marlocarlo/psmux) provides a native `tmux` binary for Windows with 76 tmux-compatible commands. No WSL required.
+> **Windows users:** [psmux](https://github.com/marlocarlo/psmux) provides a native `tmux` binary for Windows with 76 tmux-compatible commands. No WSL required. rmux is POSIX-only and is not used on native Windows.
 
 ### Optional: Multi-AI Orchestration
 
@@ -613,20 +644,21 @@ MIT
 
 Top personal non-fork, non-archived repos from all-time OMC contributors (100+ GitHub stars).
 
-- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 37k)
-- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 3.9k)
-- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 2.6k)
-- [@BowTiedSwan](https://github.com/BowTiedSwan) — [buildflow](https://github.com/BowTiedSwan/buildflow) (⭐ 294)
+- [@Yeachan-Heo](https://github.com/Yeachan-Heo) — [oh-my-claudecode](https://github.com/Yeachan-Heo/oh-my-claudecode) (⭐ 38k)
+- [@junhoyeo](https://github.com/junhoyeo) — [tokscale](https://github.com/junhoyeo/tokscale) (⭐ 4.5k)
+- [@psmux](https://github.com/psmux) — [psmux](https://github.com/psmux/psmux) (⭐ 3k)
+- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 330)
+- [@BowTiedSwan](https://github.com/BowTiedSwan) — [buildflow](https://github.com/BowTiedSwan/buildflow) (⭐ 295)
 - [@J-Pster](https://github.com/J-Pster) — [Psters_AI_Workflow](https://github.com/J-Pster/Psters_AI_Workflow) (⭐ 291)
-- [@MeroZemory](https://github.com/MeroZemory) — [ida-multi-mcp](https://github.com/MeroZemory/ida-multi-mcp) (⭐ 279)
-- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 270)
+- [@alohays](https://github.com/alohays) — [awesome-visual-representation-learning-with-transformers](https://github.com/alohays/awesome-visual-representation-learning-with-transformers) (⭐ 271)
+- [@devswha](https://github.com/devswha) — [patina](https://github.com/devswha/patina) (⭐ 264)
 - [@jcwleo](https://github.com/jcwleo) — [random-network-distillation-pytorch](https://github.com/jcwleo/random-network-distillation-pytorch) (⭐ 263)
-- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 220)
-- [@HaD0Yun](https://github.com/HaD0Yun) — [Doyunha-Gopeak](https://github.com/HaD0Yun/Doyunha-Gopeak) (⭐ 216)
+- [@HaD0Yun](https://github.com/HaD0Yun) — [Doyunha-Gopeak](https://github.com/HaD0Yun/Doyunha-Gopeak) (⭐ 234)
+- [@shaun0927](https://github.com/shaun0927) — [openchrome](https://github.com/shaun0927/openchrome) (⭐ 224)
 - [@emgeee](https://github.com/emgeee) — [mean-tutorial](https://github.com/emgeee/mean-tutorial) (⭐ 200)
-- [@devswha](https://github.com/devswha) — [patina](https://github.com/devswha/patina) (⭐ 176)
-- [@anduinnn](https://github.com/anduinnn) — [HiFiNi-Auto-CheckIn](https://github.com/anduinnn/HiFiNi-Auto-CheckIn) (⭐ 171)
+- [@anduinnn](https://github.com/anduinnn) — [HiFiNi-Auto-CheckIn](https://github.com/anduinnn/HiFiNi-Auto-CheckIn) (⭐ 170)
 - [@Znuff](https://github.com/Znuff) — [consolas-powerline](https://github.com/Znuff/consolas-powerline) (⭐ 146)
+- [@changeroa](https://github.com/changeroa) — [StyleGallery](https://github.com/changeroa/StyleGallery) (⭐ 133)
 
 <!-- OMC:FEATURED-CONTRIBUTORS:END -->
 

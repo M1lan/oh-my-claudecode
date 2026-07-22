@@ -14,7 +14,7 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 const mockGetCurrentTmuxSession = vi.fn<() => string | null>(() => null);
-vi.mock('../../notifications/tmux.js', () => ({
+vi.mock('../../notifications/rmux.js', () => ({
   getCurrentTmuxSession: () => mockGetCurrentTmuxSession(),
 }));
 

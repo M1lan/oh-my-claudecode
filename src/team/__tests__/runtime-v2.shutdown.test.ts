@@ -22,8 +22,8 @@ const tmuxMocks = vi.hoisted(() => ({
   getWorkerLiveness: vi.fn(async () => 'dead'),
 }));
 
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     killWorkerPanes: tmuxMocks.killWorkerPanes,

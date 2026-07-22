@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
   getWorkerLiveness: vi.fn(async () => 'dead'),
   execFile: vi.fn(),
   spawnSync: vi.fn(() => ({ status: 0 })),
-  tmuxExecAsync: vi.fn(),
+  rmuxExecAsync: vi.fn(),
 }));
 
 const mergeMocks = vi.hoisted(() => ({
@@ -80,12 +80,12 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
-    tmuxExecAsync: mocks.tmuxExecAsync,
+    rmuxExecAsync: mocks.rmuxExecAsync,
   };
 });
 
@@ -104,8 +104,8 @@ vi.mock('../model-contract.js', () => ({
   isHeadlessSupportedOnPlatform: () => true,
 }));
 
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     createTeamSession: mocks.createTeamSession,
@@ -233,7 +233,7 @@ describe('runtime v2 startup inbox dispatch', () => {
       }
       return { stdout: '', stderr: '' };
     };
-    mocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+    mocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
       if (args[0] === 'split-window') {
         return { stdout: '%2\n', stderr: '' };
       }

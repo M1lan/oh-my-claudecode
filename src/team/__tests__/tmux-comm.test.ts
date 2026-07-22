@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { sendTmuxTrigger } from '../tmux-comm.js';
-import { sendToWorker } from '../tmux-session.js';
+import { sendToWorker } from '../rmux-session.js';
 
-vi.mock('../tmux-session.js', () => ({
+vi.mock('../rmux-session.js', () => ({
   sendToWorker: vi.fn(),
 }));
 

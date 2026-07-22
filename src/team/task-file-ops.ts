@@ -31,7 +31,7 @@ import { join } from 'path';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import type { TaskFile, TaskFileUpdate, TaskFailureSidecar } from './types.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import {
   atomicWriteJson,
   validateResolvedPath,

@@ -46,16 +46,15 @@ describe('teleportCommand', () => {
   beforeEach(async () => {
     vi.resetAllMocks();
 
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
-      (command: string) => {
-        if (command === 'git rev-parse --show-toplevel') return '/repo';
-        if (command === 'git remote get-url origin')
+    (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string, args: string[]) => {
+        if (command === 'git' && args.join(' ') === 'rev-parse --show-toplevel')
+          return '/repo';
+        if (command === 'git' && args.join(' ') === 'remote get-url origin')
           return 'git@github.com:owner/repo.git';
-        return '';
+        return Buffer.from('');
       },
     );
-
-    (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
 
     (existsSync as ReturnType<typeof vi.fn>).mockImplementation(
       (target: unknown) => {
@@ -110,18 +109,11 @@ describe('teleportCommand', () => {
       worktreePath: '/root',
     });
 
-    const calls = (execFileSync as ReturnType<typeof vi.fn>).mock.calls;
-    for (const [cmd, args] of calls) {
-      expect(Array.isArray(args)).toBe(true);
-      if (cmd !== 'git') continue;
-      expect(typeof cmd).toBe('string');
-    }
-
-    expect(calls).toContainEqual([
+    expect(execFileSync).toHaveBeenCalledWith(
       'git',
       ['fetch', 'origin', 'main; touch /tmp/pwned'],
-      expect.objectContaining({ cwd: '/repo' }),
-    ]);
+      { cwd: '/repo', stdio: 'pipe', windowsHide: true },
+    );
   });
 
   it('does not invoke execSync for git fetch/branch/worktree creation commands', async () => {
@@ -263,11 +255,13 @@ describe('teleportRemoveCommand', () => {
   it.each(['.git', '/repo/.git', 'C:\\repo\\.git'])(
     'refuses a main repo git-dir shape %s and does not remove the directory',
     async (gitDir) => {
-      (execSync as ReturnType<typeof vi.fn>).mockImplementation(
-        (command: string) => {
-          if (command === 'git status --porcelain') return '';
-          if (command === 'git rev-parse --git-dir') return `${gitDir}\n`;
-          return '';
+      (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+        (command: string, args: string[]) => {
+          if (command === 'git' && args.join(' ') === 'status --porcelain')
+            return '';
+          if (command === 'git' && args.join(' ') === 'rev-parse --git-dir')
+            return `${gitDir}\n`;
+          return Buffer.from('');
         },
       );
 
@@ -287,12 +281,13 @@ describe('teleportRemoveCommand', () => {
   );
 
   it('refuses an unexpected non-worktree git-dir and does not remove the directory', async () => {
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
-      (command: string) => {
-        if (command === 'git status --porcelain') return '';
-        if (command === 'git rev-parse --git-dir')
+    (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string, args: string[]) => {
+        if (command === 'git' && args.join(' ') === 'status --porcelain')
+          return '';
+        if (command === 'git' && args.join(' ') === 'rev-parse --git-dir')
           return '/tmp/unexpected/gitdir\n';
-        return '';
+        return Buffer.from('');
       },
     );
 
@@ -311,12 +306,13 @@ describe('teleportRemoveCommand', () => {
   });
 
   it('removes a registered worktree through git worktree remove', async () => {
-    (execSync as ReturnType<typeof vi.fn>).mockImplementation(
-      (command: string) => {
-        if (command === 'git status --porcelain') return '';
-        if (command === 'git rev-parse --git-dir')
+    (execFileSync as ReturnType<typeof vi.fn>).mockImplementation(
+      (command: string, args: string[]) => {
+        if (command === 'git' && args.join(' ') === 'status --porcelain')
+          return '';
+        if (command === 'git' && args.join(' ') === 'rev-parse --git-dir')
           return '/repo/.git/worktrees/repo-3089\n';
-        return '';
+        return Buffer.from('');
       },
     );
 
@@ -327,7 +323,7 @@ describe('teleportRemoveCommand', () => {
     expect(execFileSync).toHaveBeenCalledWith(
       'git',
       ['worktree', 'remove', '--force', targetPath],
-      expect.objectContaining({ cwd: '/repo' }),
+      { cwd: '/repo', stdio: 'pipe', windowsHide: true },
     );
   });
 });

@@ -8,7 +8,7 @@ level: 4
 
 # Team Skill
 
-Spawn N coordinated agents working on a shared task list using Claude Code's implicit agent team. Claude Code 2.1.178+ removed native `TeamCreate`/`TeamDelete`; with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, each session has one implicit team and teammates are spawned directly with the Agent/Task tool using distinct `name` values. This skill still preserves OMC's legacy tmux/CLI worker orchestration where documented (`omc team` / `/omc-teams`).
+Spawn N coordinated agents working on a shared task list using Claude Code's implicit agent team. Claude Code 2.1.178+ removed native `TeamCreate`/`TeamDelete`; with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`, each session has one implicit team and teammates are spawned directly with the Agent/Task tool using distinct `name` values. This skill still preserves OMC's legacy rmux/tmux CLI worker orchestration where documented (`omc team` / `/omc-teams`).
 
 The `swarm` compatibility alias was removed in #1131.
 
@@ -113,7 +113,7 @@ Each pipeline stage uses **specialized agents** -- not just executors. The lead 
 **Routing rules:**
 
 1. **The lead picks agents per stage, not the user.** The user's `N:agent-type` parameter only overrides the `team-exec` stage worker type. All other stages use stage-appropriate specialists.
-2. **Specialist agents complement executor agents.** Route analysis/review to architect/critic Claude agents and UI work to designer agents. Tmux CLI workers are one-shot and don't participate in team communication.
+2. **Specialist agents complement executor agents.** Route analysis/review to architect/critic Claude agents and UI work to designer agents. Rmux/Tmux CLI workers are one-shot and don't participate in team communication.
 3. **Cost mode affects model tier.** In downgrade: `opus` agents to `sonnet`, `sonnet` to `haiku` where quality permits. `team-verify` always uses at least `sonnet`.
 4. **Risk level escalates review.** Security-sensitive or >20 file changes must include `security-reviewer` + `code-reviewer` (opus) in `team-verify`.
 
@@ -468,7 +468,7 @@ Do NOT mark the task as completed. Leave it in_progress so the lead can reassign
 
 == RULES ==
 - NEVER spawn sub-agents or use the Task tool
-- NEVER run tmux pane/session orchestration commands (for example `tmux split-window`, `tmux new-session`)
+- NEVER run rmux/tmux pane/session orchestration commands (for example `tmux split-window`, `tmux new-session`)
 - NEVER run team spawning/orchestration skills or commands (for example `$team`, `$ultrawork`, `$autopilot`, `$ralph`, `omc team ...`, `omx team ...`)
 - ALWAYS use absolute file paths
 - ALWAYS report progress to "team-lead" through the active team/conversation surface
@@ -564,9 +564,9 @@ After approval, the teammate terminates or stops accepting new work. Claude Code
 
 Claude Code 2.1.178+ has no `TeamDelete`. Clear OMC team state and local task bookkeeping after the blocking shutdown pass completes.
 
-**Step 5: Orphan scan for OMC tmux/CLI workers only**
+**Step 5: Orphan scan for OMC rmux/tmux CLI workers only**
 
-For legacy OMC tmux/CLI worker runs (`omc team` / `/omc-teams`), check for worker processes that survived cleanup:
+For legacy OMC rmux/tmux CLI worker runs (`omc team` / `/omc-teams`), check for worker processes that survived cleanup:
 
 ```bash
 node "${CLAUDE_PLUGIN_ROOT}/scripts/cleanup-orphans.mjs" --team-name fix-ts-errors
@@ -592,23 +592,23 @@ Tasks are tagged with an execution mode during decomposition:
 | Execution Mode  | Provider               | Capabilities                                                                                                                                                                               |
 | --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `claude_worker` | Claude agent           | Full Claude Code tool access (Read/Write/Edit/Bash/Task). Best for tasks needing Claude's reasoning + iterative tool use.                                                                  |
-| `codex_worker`  | Codex CLI (tmux pane)  | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `npm install -g @openai/codex`. |
-| `gemini_worker`      | Gemini CLI (tmux pane)      | Full filesystem access in working_directory. Runs autonomously via tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `npm install -g @google/gemini-cli` (enterprise/API-key tier). |
-| `antigravity_worker` | Antigravity CLI (tmux pane) | Full filesystem access in working_directory. Runs autonomously via tmux pane. Same strengths as gemini_worker; Google's successor to the Gemini CLI. Install per the [official instructions](https://antigravity.google) (`agy` binary). |
+| `codex_worker`  | Codex CLI (rmux/tmux pane)  | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `npm install -g @openai/codex`. |
+| `gemini_worker`      | Gemini CLI (rmux/tmux pane)      | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `npm install -g @google/gemini-cli` (enterprise/API-key tier). |
+| `antigravity_worker` | Antigravity CLI (rmux/tmux pane) | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Same strengths as gemini_worker; Google's successor to the Gemini CLI. Install per the [official instructions](https://antigravity.google) (`agy` binary). |
 
 ### How CLI Workers Operate
 
-Tmux CLI workers run in dedicated tmux panes with filesystem access. They are **autonomous executors**, not just analysts:
+Rmux/Tmux CLI workers run in dedicated rmux/tmux panes with filesystem access. They are **autonomous executors**, not just analysts:
 
 1. Lead writes task instructions to a prompt file
-2. Lead spawns a tmux CLI worker with `working_directory` set to the project root
+2. Lead spawns a rmux/tmux CLI worker with `working_directory` set to the project root
 3. The worker reads files, makes changes, runs commands -- all within the working directory
 4. Results/summary are written to an output file
 5. Lead reads the output, marks the task complete, and feeds results to dependent tasks
 
 **Key difference from Claude teammates:**
 
-- CLI workers operate via tmux, not Claude Code's tool system
+- CLI workers operate via rmux/tmux, not Claude Code's tool system
 - They cannot use Claude Code's native task-list or team messaging surfaces
 - They run as one-shot autonomous jobs, not persistent teammates
 - The lead manages their lifecycle (spawn, monitor, collect results)
@@ -974,7 +974,7 @@ On successful completion:
    ```
    state_clear(mode="ralph")
    ```
-2. For legacy OMC tmux/CLI workers, run the documented `omc team shutdown` / cleanup path.
+2. For legacy OMC rmux/tmux CLI workers, run the documented `omc team shutdown` / cleanup path.
 3. Or run `/oh-my-claudecode:cancel` which handles OMC state cleanup automatically.
 
 **IMPORTANT:** Clear OMC team state only AFTER all teammates have been shut down or timed out.
@@ -1007,7 +1007,7 @@ MCP workers can operate in isolated git worktrees to prevent file conflicts betw
 
 ### Important Notes
 
-- `createSession()` in `tmux-session.ts` does NOT handle worktree creation — worktree lifecycle is managed separately via `git-worktree.ts`
+- `createSession()` in `rmux-session.ts` does NOT handle worktree creation — worktree lifecycle is managed separately via `git-worktree.ts`
 - Worktrees are NOT cleaned up on individual worker shutdown — only on team shutdown, to allow post-mortem inspection
 - Branch names are sanitized via `sanitizeName()` to prevent injection
 - All paths are validated against directory traversal
@@ -1034,7 +1034,7 @@ MCP workers can operate in isolated git worktrees to prevent file conflicts betw
 
 10. **Broadcast is expensive** -- Each broadcast sends a separate message to every teammate. Use `message` (DM) by default. Only broadcast for truly team-wide critical alerts.
 
-11. **CLI workers are one-shot, not persistent** -- Tmux CLI workers have full filesystem access and CAN make code changes. However, they run as autonomous one-shot jobs -- they cannot use Claude Code's native task-list or team messaging surfaces. The lead must manage their lifecycle: write prompt_file, spawn CLI worker, read output_file, mark task complete. They don't participate in team communication like Claude teammates do.
+11. **CLI workers are one-shot, not persistent** -- Rmux/Tmux CLI workers have full filesystem access and CAN make code changes. However, they run as autonomous one-shot jobs -- they cannot use Claude Code's native task-list or team messaging surfaces. The lead must manage their lifecycle: write prompt_file, spawn CLI worker, read output_file, mark task complete. They don't participate in team communication like Claude teammates do.
 
 ## Parallel session caveats
 

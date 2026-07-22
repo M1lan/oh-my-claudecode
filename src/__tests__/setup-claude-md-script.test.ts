@@ -49,7 +49,70 @@ const LEGACY_583_LINE_GUIDE = staticLegacyGuide(583);
 const LEGACY_292_LINE_GUIDE = staticLegacyGuide(292);
 
 const tempRoots: string[] = [];
+const COMMITTED_COORDINATOR = 'bridge/claude-md-coordinator.cjs';
 
+interface CoordinatorHandshake {
+  schemaVersion: number;
+  engineVersion: string;
+  sourceSha256: string;
+}
+
+function exportCommittedPlugin(pluginRoot: string) {
+  mkdirSync(pluginRoot, { recursive: true });
+  const result = spawnSync(
+    'git',
+    ['checkout-index', '--all', `--prefix=${pluginRoot}/`],
+    {
+      cwd: REPO_ROOT,
+      encoding: 'utf-8',
+    },
+  );
+  if (result.status !== 0) {
+    throw new Error(`Unable to export tracked plugin tree: ${result.stderr}`);
+  }
+}
+
+function installSetupSurface(pluginRoot: string): void {
+  mkdirSync(join(pluginRoot, 'scripts', 'lib'), { recursive: true });
+  copyFileSync(SETUP_SCRIPT, join(pluginRoot, 'scripts', 'setup-claude-md.sh'));
+  copyFileSync(
+    CONFIG_DIR_HELPER,
+    join(pluginRoot, 'scripts', 'lib', 'config-dir.sh'),
+  );
+}
+
+function createCommittedPluginFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'omc-committed-plugin-'));
+  tempRoots.push(root);
+
+  const pluginRoot = join(root, 'plugin');
+  const projectRoot = join(root, 'project');
+  const homeRoot = join(root, 'home');
+  exportCommittedPlugin(pluginRoot);
+  mkdirSync(projectRoot, { recursive: true });
+  mkdirSync(homeRoot, { recursive: true });
+
+  return {
+    pluginRoot,
+    projectRoot,
+    homeRoot,
+    scriptPath: join(pluginRoot, 'scripts', 'setup-claude-md.sh'),
+  };
+}
+
+function coordinatorHandshake(coordinator: string): CoordinatorHandshake {
+  const result = spawnSync('node', [coordinator, '--handshake'], {
+    encoding: 'utf-8',
+  });
+  if (result.status !== 0) {
+    throw new Error(`Coordinator handshake failed: ${result.stderr}`);
+  }
+  return JSON.parse(result.stdout) as CoordinatorHandshake;
+}
+
+// Fixture compilation exercises coordinator behavior with synthetic documents. It
+// does not prove that a clean plugin checkout ships a runnable coordinator; the
+// issue #3476 suite below tests that committed runtime surface.
 function buildCoordinatorFixture(
   pluginRoot: string,
   claudeMdContent: string,
@@ -121,6 +184,152 @@ afterEach(() => {
       rmSync(root, { recursive: true, force: true });
     }
   }
+});
+describe('setup-claude-md.sh committed plugin shipping surface (issue #3476)', () => {
+  it('tracks the coordinator artifact required by plugin setup', () => {
+    const result = spawnSync(
+      'git',
+      ['ls-files', '--error-unmatch', '--', COMMITTED_COORDINATOR],
+      {
+        cwd: REPO_ROOT,
+        encoding: 'utf-8',
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(COMMITTED_COORDINATOR);
+  });
+
+  it('embeds the SHA-256 of the exact committed docs/CLAUDE.md bytes', () => {
+    const fixture = createCommittedPluginFixture();
+    const handshake = coordinatorHandshake(
+      join(fixture.pluginRoot, COMMITTED_COORDINATOR),
+    );
+    const sourceSha256 = createHash('sha256')
+      .update(readFileSync(join(fixture.pluginRoot, 'docs', 'CLAUDE.md')))
+      .digest('hex');
+
+    expect(handshake.schemaVersion).toBe(1);
+    expect(handshake.sourceSha256).toBe(sourceSha256);
+  });
+
+  it('runs local setup from a source-only tracked plugin checkout without a consumer build', () => {
+    const fixture = createCommittedPluginFixture();
+    expect(existsSync(join(fixture.pluginRoot, 'node_modules'))).toBe(false);
+
+    const result = spawnSync('bash', [fixture.scriptPath, 'local'], {
+      cwd: fixture.projectRoot,
+      env: { ...process.env, HOME: fixture.homeRoot },
+      encoding: 'utf-8',
+    });
+
+    expect(result.status).toBe(0);
+    expect(
+      readFileSync(join(fixture.projectRoot, '.claude', 'CLAUDE.md'), 'utf-8'),
+    ).toBe(
+      readFileSync(join(fixture.pluginRoot, 'docs', 'CLAUDE.md'), 'utf-8'),
+    );
+    expect(
+      readFileSync(
+        join(
+          fixture.projectRoot,
+          '.claude',
+          'skills',
+          'omc-reference',
+          'SKILL.md',
+        ),
+        'utf-8',
+      ),
+    ).toBe(
+      readFileSync(
+        join(fixture.pluginRoot, 'skills', 'omc-reference', 'SKILL.md'),
+        'utf-8',
+      ),
+    );
+  });
+
+  for (const scenario of ['missing', 'stale'] as const) {
+    it(`fails before local mutation when the committed coordinator is ${scenario}`, () => {
+      const fixture = createCommittedPluginFixture();
+      const coordinator = join(fixture.pluginRoot, COMMITTED_COORDINATOR);
+      if (scenario === 'missing') {
+        rmSync(coordinator);
+      } else {
+        writeFileSync(
+          join(fixture.pluginRoot, 'docs', 'CLAUDE.md'),
+          '<!-- OMC:START -->\n<!-- OMC:VERSION:stale -->\n# stale\n<!-- OMC:END -->\n',
+        );
+      }
+
+      const result = spawnSync('bash', [fixture.scriptPath, 'local'], {
+        cwd: fixture.projectRoot,
+        env: { ...process.env, HOME: fixture.homeRoot },
+        encoding: 'utf-8',
+      });
+
+      expect(result.status).not.toBe(0);
+      expect(`${result.stdout}\n${result.stderr}`).toContain(
+        scenario === 'missing'
+          ? 'Active plugin root lacks the required coordinator artifact'
+          : 'Coordinator handshake validation failed',
+      );
+      expect(existsSync(join(fixture.projectRoot, '.claude'))).toBe(false);
+    });
+  }
+
+  it('uses one active cache root for the coordinator, canonical source, and engine version', () => {
+    const root = mkdtempSync(join(tmpdir(), 'omc-committed-root-coherence-'));
+    tempRoots.push(root);
+
+    const cacheBase = join(
+      root,
+      '.claude',
+      'plugins',
+      'cache',
+      'omc',
+      'oh-my-claudecode',
+    );
+    const staleRoot = join(cacheBase, '0.0.1');
+    const activeRoot = join(cacheBase, '0.0.2');
+    const projectRoot = join(root, 'project');
+    const homeRoot = join(root, 'home');
+    exportCommittedPlugin(staleRoot);
+    exportCommittedPlugin(activeRoot);
+    rmSync(join(staleRoot, COMMITTED_COORDINATOR));
+    writeFileSync(
+      join(staleRoot, 'docs', 'CLAUDE.md'),
+      '<!-- OMC:START -->\n<!-- OMC:VERSION:stale -->\n# stale root\n<!-- OMC:END -->\n',
+    );
+    mkdirSync(projectRoot, { recursive: true });
+    mkdirSync(homeRoot, { recursive: true });
+
+    const result = spawnSync(
+      'bash',
+      [join(staleRoot, 'scripts', 'setup-claude-md.sh'), 'local'],
+      {
+        cwd: projectRoot,
+        env: { ...process.env, HOME: homeRoot },
+        encoding: 'utf-8',
+      },
+    );
+
+    const activeDocs = readFileSync(
+      join(activeRoot, 'docs', 'CLAUDE.md'),
+      'utf-8',
+    );
+    const activeHandshake = coordinatorHandshake(
+      join(activeRoot, COMMITTED_COORDINATOR),
+    );
+    expect(result.status).toBe(0);
+    const installed = readFileSync(
+      join(projectRoot, '.claude', 'CLAUDE.md'),
+      'utf-8',
+    );
+    expect(installed).toBe(activeDocs);
+    expect(installed).toContain(
+      `<!-- OMC:VERSION:${activeHandshake.engineVersion} -->`,
+    );
+  });
 });
 
 describe('setup-claude-md.sh (issue #3442)', () => {
@@ -1184,6 +1393,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n# New\n<!-- OMC:END -->\n`,
     );
+    installSetupSurface(newVersion);
     buildCoordinatorFixture(
       newVersion,
       readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
@@ -1255,6 +1465,15 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       CONFIG_DIR_HELPER,
       join(oldVersion, 'scripts', 'lib', 'config-dir.sh'),
     );
+    const staleMutationSentinel = join(root, 'stale-launcher-mutated');
+    const oldSetupPath = join(oldVersion, 'scripts', 'setup-claude-md.sh');
+    writeFileSync(
+      oldSetupPath,
+      readFileSync(oldSetupPath, 'utf-8').replace(
+        'ensure_local_omc_git_exclude() {',
+        `ensure_local_omc_git_exclude() { touch "${staleMutationSentinel}";`,
+      ),
+    );
     writeFileSync(
       join(oldVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.8.2 -->\n\n# Old Version\n<!-- OMC:END -->\n`,
@@ -1271,6 +1490,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
+    installSetupSurface(newVersion);
     buildCoordinatorFixture(
       newVersion,
       readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
@@ -1321,6 +1541,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
     expect(installed).toContain('<!-- OMC:VERSION:4.9.0 -->');
     expect(installed).toContain('# New Version');
     expect(installed).not.toContain('<!-- OMC:VERSION:4.8.2 -->');
+    expect(existsSync(staleMutationSentinel)).toBe(false);
   });
 
   it('uses docs/CLAUDE.md from the active version in installed_plugins.json, not the stale script location', () => {
@@ -1369,6 +1590,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
+    installSetupSurface(newVersion);
     buildCoordinatorFixture(
       newVersion,
       readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
@@ -1467,6 +1689,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New Version\n<!-- OMC:END -->\n`,
     );
+    installSetupSurface(newVersion);
     buildCoordinatorFixture(
       newVersion,
       readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),
@@ -1565,6 +1788,7 @@ describe('setup-claude-md.sh stale CLAUDE_PLUGIN_ROOT resolution', () => {
       join(newVersion, 'docs', 'CLAUDE.md'),
       `<!-- OMC:START -->\n<!-- OMC:VERSION:4.9.0 -->\n\n# New\n<!-- OMC:END -->\n`,
     );
+    installSetupSurface(newVersion);
     buildCoordinatorFixture(
       newVersion,
       readFileSync(join(newVersion, 'docs', 'CLAUDE.md'), 'utf-8'),

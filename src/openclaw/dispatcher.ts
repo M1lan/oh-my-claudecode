@@ -80,7 +80,7 @@ export function isCommandGateway(
 /**
  * Shell-escape a string for safe embedding in a shell command.
  * Uses single-quote wrapping with internal quote escaping.
- * Follows the sanitizeForTmux pattern from tmux-detector.ts.
+ * Follows the sanitizeForTmux pattern from rmux-detector.ts.
  */
 export function shellEscapeArg(value: string): string {
   return "'" + value.replace(/'/g, "'\\''") + "'";

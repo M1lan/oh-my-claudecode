@@ -18,7 +18,7 @@ import { deleteHeartbeat } from './heartbeat.js';
 import { unregisterMcpWorker } from './team-registration.js';
 import { getWorktreeRoot } from '../lib/worktree-paths.js';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 
 /**
  * Validate that a config path is under the user's home directory

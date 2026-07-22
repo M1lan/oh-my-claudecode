@@ -10,7 +10,7 @@ import { closeSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readF
 import { createHash } from 'crypto';
 import { dirname, join, resolve, basename } from 'path';
 import { homedir } from 'os';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
 import { encodeProjectPath } from './lib/encode-project-path.mjs';
@@ -19,6 +19,7 @@ import { evaluateForceAgentDelegation } from './lib/force-agent-delegation-prefl
 import { resolveOmcStateRoot } from './lib/state-root.mjs';
 import { readStdin } from './lib/stdin.mjs';
 import { resolveConfiguredAgentModel } from './lib/agent-model-config.mjs';
+import { BOUNDED_GIT_TIMEOUT_MS } from './lib/bounded-git-timeout.mjs';
 
 // Inlined from src/config/models.ts — avoids a dist/ import so the hook works
 // before a build and stays consistent with the TypeScript source.
@@ -432,6 +433,40 @@ function getQuietLevel() {
 }
 
 /**
+ * Walk up from startDir on the filesystem alone (no git subprocess) looking
+ * for a `.git` entry (directory or file — a file covers linked worktrees and
+ * submodules, whose `.git` is a pointer file). Returns the directory
+ * containing it, or null if none is found before the filesystem root or the
+ * user's home directory.
+ *
+ * Rescue path only: consulted after `git rev-parse --show-toplevel` has
+ * already thrown, to distinguish a genuine non-repo directory from a
+ * transient git-command failure (timeout, lock contention under concurrent
+ * load — bead ob2) that would otherwise silently degrade `.omc/` placement
+ * to the raw startDir.
+ *
+ * @param {string} startDir
+ * @returns {string|null}
+ */
+function findGitRootByFsWalk(startDir) {
+  try {
+    let cursor = resolve(startDir);
+    const home = (() => { try { return resolve(homedir()); } catch { return null; } })();
+    const MAX_WALK_DEPTH = 128;
+    for (let depth = 0; depth < MAX_WALK_DEPTH; depth++) {
+      if (existsSync(join(cursor, '.git'))) return cursor;
+      const parent = dirname(cursor);
+      if (parent === cursor) break;
+      if (home && cursor === home) break;
+      cursor = parent;
+    }
+  } catch {
+    // walk failed — caller falls through to its existing fallback
+  }
+  return null;
+}
+
+/**
  * Resolve the .omc root directory for a given starting directory.
  *
  * Resolution order (mirrors src/lib/worktree-paths.ts getOmcRoot):
@@ -441,12 +476,14 @@ function getQuietLevel() {
  *   2) Walk up from startDir looking for a .omc-workspace marker file.
  *      The first directory containing that file is the workspace anchor.
  *   3) git rev-parse --show-toplevel from startDir.
+ *   3.5) If that failed (rather than cleanly returning "not a repo"), rescue
+ *        via findGitRootByFsWalk before giving up — see bead ob2.
  *   4) Fallback to startDir itself.
  *
  * @param {string} startDir - Directory to resolve from (usually cwd from hook payload)
  * @returns {string} Absolute path to the .omc root directory
  */
-function resolveOmcRoot(startDir) {
+export function resolveOmcRoot(startDir) {
   const dir = startDir || process.cwd();
 
   // 1) OMC_STATE_DIR: full project-id derivation is TS-only; warn and fall through.
@@ -475,17 +512,34 @@ function resolveOmcRoot(startDir) {
   }
 
   // 3) git rev-parse --show-toplevel
+  let gitRevParseFailed = false;
   try {
-    const top = execSync('git rev-parse --show-toplevel', {
+    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: dir,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
     if (top) return join(top, '.omc');
   } catch {
-    // not in a git repo — fall through
+    // git rev-parse threw — could be a genuine non-repo dir, or a transient
+    // failure (timeout, lock contention). Rescue below before assuming the
+    // former.
+    gitRevParseFailed = true;
+  }
+
+  // 3.5) fs walk-up rescue (bead ob2): only when git rev-parse actually
+  // threw. Finding nothing here means startDir truly has no ancestor repo,
+  // so behavior for that case is unchanged (silent cwd fallback below).
+  if (gitRevParseFailed) {
+    const fsWalkRoot = findGitRootByFsWalk(dir);
+    if (fsWalkRoot) {
+      process.stderr.write(
+        `[omc] git rev-parse --show-toplevel failed from ${dir}; resolved repo root via filesystem walk-up to ${fsWalkRoot}\n`,
+      );
+      return join(fsWalkRoot, '.omc');
+    }
   }
 
   // 4) Fallback to startDir
@@ -513,20 +567,22 @@ function resolveTranscriptPath(transcriptPath, cwd) {
 
   const effectiveCwd = cwd || process.cwd();
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', {
+    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
     const mainRepoRoot = dirname(absoluteCommonDir);
 
-    const worktreeTop = execSync('git rev-parse --show-toplevel', {
+    const worktreeTop = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
 
@@ -678,6 +734,25 @@ const ULTRAGOAL_TERMINAL_PHASES = new Set([
   'canceled',
   'aborted',
 ]);
+
+const AWAITING_CONFIRMATION_TTL_MS = 2 * 60 * 1000;
+
+function isAwaitingConfirmation(state) {
+  if (!state || state.awaiting_confirmation !== true) return false;
+
+  const preferred = state.awaiting_confirmation_set_at;
+  const timestamp = typeof preferred === 'string' && preferred.trim()
+    ? preferred
+    : typeof state.started_at === 'string' && state.started_at.trim()
+      ? state.started_at
+      : null;
+  if (!timestamp) return false;
+
+  const timestampMs = new Date(timestamp).getTime();
+  const ageMs = Date.now() - timestampMs;
+  return Number.isFinite(ageMs) && ageMs >= 0 && ageMs < AWAITING_CONFIRMATION_TTL_MS;
+}
+
 
 function isStaleModeState(state) {
   if (!state || typeof state !== 'object') return true;
@@ -936,6 +1011,7 @@ function evaluateUltragoalPreToolEnforcement(stateDir, directory, sessionId, dat
   if (isStaleModeState(state)) return null;
   if (state.project_path && resolve(String(state.project_path)) !== resolve(directory)) return null;
   if (isUltragoalTerminalState(state, directory)) return null;
+  if (isAwaitingConfirmation(state)) return null;
 
   const expected = getExpectedUltragoalObjective(state, directory);
   const actual = extractClaudeGoalSnapshot(data, sessionId, directory);
@@ -1692,4 +1768,9 @@ async function main() {
   }
 }
 
-main();
+// Only run when executed directly (not when imported for testing) — mirrors
+// scripts/post-tool-verifier.mjs so exported helpers (e.g. resolveOmcRoot)
+// can be unit-tested via direct import without triggering a real hook run.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

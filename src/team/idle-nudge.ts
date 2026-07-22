@@ -16,7 +16,7 @@ import {
   paneHasActiveTask,
   sendToWorker,
   captureTeamPane,
-} from './tmux-session.js';
+} from './rmux-session.js';
 
 // ---------------------------------------------------------------------------
 // Config

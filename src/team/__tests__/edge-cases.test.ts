@@ -64,8 +64,8 @@ import {
 } from '../heartbeat.js';
 import type { HeartbeatData } from '../types.js';
 
-// --- tmux-session imports ---
-import { sanitizeName, sessionName } from '../tmux-session.js';
+// --- rmux-session imports ---
+import { sanitizeName, sessionName } from '../rmux-session.js';
 
 // --- team-registration imports ---
 import {
@@ -905,10 +905,10 @@ describe('heartbeat edge cases', () => {
 });
 
 // ============================================================
-// 4. tmux-session edge cases
+// 4. rmux-session edge cases
 // ============================================================
 
-describe('tmux-session edge cases', () => {
+describe('rmux-session edge cases', () => {
   describe('sanitizeName with empty string', () => {
     it('throws for empty string', () => {
       expect(() => sanitizeName('')).toThrow('no valid characters');

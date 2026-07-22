@@ -82,10 +82,15 @@ describe('setup-progress.sh', () => {
     const originalConfig = '{\n  "existing": true\n}\n';
     writeFileSync(configPath, originalConfig);
 
+    // Strip BASH_ENV: a non-interactive startup file (e.g. fnm/Homebrew
+    // init) can re-add real bin dirs to PATH and defeat the jq-absence
+    // simulation. Without this the test only fails when the runner has
+    // such a startup file configured.
+    const { BASH_ENV: _bashEnv, ...cleanEnv } = process.env;
     const result = spawnSync('/bin/bash', [SCRIPT_PATH, 'complete', 'v9.9.9'], {
       cwd: projectRoot,
       env: {
-        ...process.env,
+        ...cleanEnv,
         HOME: homeRoot,
         CLAUDE_CONFIG_DIR: configDir,
         PATH: binDir,

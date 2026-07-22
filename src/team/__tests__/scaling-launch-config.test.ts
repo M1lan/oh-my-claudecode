@@ -6,8 +6,8 @@ import type { CliAgentType } from '../model-contract.js';
 import type { TeamConfig } from '../types.js';
 
 const tmuxUtilsMocks = vi.hoisted(() => ({
-  tmuxExec: vi.fn(),
-  tmuxSpawn: vi.fn(),
+  rmuxExec: vi.fn(),
+  rmuxSpawn: vi.fn(),
 }));
 
 const modelContractMocks = vi.hoisted(() => ({
@@ -51,9 +51,9 @@ const gitWorktreeMocks = vi.hoisted(() => ({
   prepareWorkerWorktreeForRemoval: vi.fn(),
 }));
 
-vi.mock('../../cli/tmux-utils.js', () => ({
-  tmuxExec: tmuxUtilsMocks.tmuxExec,
-  tmuxSpawn: tmuxUtilsMocks.tmuxSpawn,
+vi.mock('../../cli/rmux-utils.js', () => ({
+  rmuxExec: tmuxUtilsMocks.rmuxExec,
+  rmuxSpawn: tmuxUtilsMocks.rmuxSpawn,
 }));
 
 vi.mock('../model-contract.js', () => ({
@@ -81,7 +81,7 @@ vi.mock('../monitor.js', () => ({
   saveTeamConfigAtRevision: monitorMocks.saveTeamConfigAtRevision,
 }));
 
-vi.mock('../tmux-session.js', () => ({
+vi.mock('../rmux-session.js', () => ({
   sanitizeName: tmuxSessionMocks.sanitizeName,
   isWorkerAlive: tmuxSessionMocks.isWorkerAlive,
   getWorkerLiveness: tmuxSessionMocks.getWorkerLiveness,
@@ -177,7 +177,7 @@ describe('scaleUp launch config', () => {
         OMC_WORKER_AGENT_TYPE: agentType,
       }),
     );
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (args[0] === 'split-window') {
         return { status: 0, stdout: '%12\n', stderr: '' };
       }
@@ -284,7 +284,7 @@ describe('scaleUp launch config', () => {
           args: workerArgv.slice(1),
         },
       });
-      const splitIndex = tmuxUtilsMocks.tmuxSpawn.mock.calls.findIndex(
+      const splitIndex = tmuxUtilsMocks.rmuxSpawn.mock.calls.findIndex(
         ([args]) => args[0] === 'split-window',
       );
       expect(splitIndex).toBeGreaterThanOrEqual(0);
@@ -302,7 +302,7 @@ describe('scaleUp launch config', () => {
           },
         )!,
       ).toBeLessThan(
-        tmuxUtilsMocks.tmuxSpawn.mock.invocationCallOrder[splitIndex]!,
+        tmuxUtilsMocks.rmuxSpawn.mock.invocationCallOrder[splitIndex]!,
       );
     },
   );
@@ -333,7 +333,7 @@ describe('scaleUp launch config', () => {
     );
     expect(result).toEqual({ ok: false, error: 'team_mutation_busy' });
     expect(
-      tmuxUtilsMocks.tmuxSpawn.mock.calls.some(
+      tmuxUtilsMocks.rmuxSpawn.mock.calls.some(
         ([args]) => args[0] === 'split-window',
       ),
     ).toBe(false);

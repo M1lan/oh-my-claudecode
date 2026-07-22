@@ -29,13 +29,13 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../tmux-utils.js', () => ({
+vi.mock('../rmux-utils.js', () => ({
   resolveLaunchPolicy: vi.fn(),
-  buildTmuxSessionName: vi.fn(() => 'test-session'),
-  buildTmuxShellCommand: vi.fn(
+  buildRmuxSessionName: vi.fn(() => 'test-session'),
+  buildRmuxShellCommand: vi.fn(
     (cmd: string, args: string[]) => `${cmd} ${args.join(' ')}`,
   ),
-  buildTmuxShellCommandWithEnv: vi.fn(
+  buildRmuxShellCommandWithEnv: vi.fn(
     (cmd: string, args: string[], envVars: Record<string, string>) => {
       const envPart = Object.entries(envVars)
         .map(([k, v]) => `${k}=${v}`)
@@ -50,7 +50,7 @@ vi.mock('../tmux-utils.js', () => ({
   quoteShellArg: vi.fn((s: string) => s),
   isClaudeAvailable: vi.fn(() => true),
   isTmuxAvailable: vi.fn(() => true),
-  tmuxExec: vi.fn(),
+  rmuxExec: vi.fn(),
 }));
 
 import {
@@ -71,13 +71,13 @@ import {
 } from '../launch.js';
 import {
   resolveLaunchPolicy,
-  buildTmuxShellCommand,
-  buildTmuxShellCommandWithEnv,
+  buildRmuxShellCommand,
+  buildRmuxShellCommandWithEnv,
   isNativeWindowsShell,
   wrapWithLoginShell,
   isTmuxAvailable,
-  tmuxExec,
-} from '../tmux-utils.js';
+  rmuxExec,
+} from '../rmux-utils.js';
 
 // ---------------------------------------------------------------------------
 // extractNotifyFlag
@@ -383,7 +383,7 @@ describe('runClaude OMC HUD behavior', () => {
 
     runClaude('/tmp/cwd', [], 'test-session');
 
-    const calls = vi.mocked(buildTmuxShellCommand).mock.calls;
+    const calls = vi.mocked(buildRmuxShellCommand).mock.calls;
     const omcHudCall = calls.find(
       ([cmd, args]) =>
         cmd === 'node' && Array.isArray(args) && args.includes('hud'),
@@ -398,7 +398,7 @@ describe('runClaude OMC HUD behavior', () => {
 
     runClaude('/tmp/cwd', [], 'test-session');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls;
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls;
     expect(tmuxCalls.length).toBeGreaterThan(0);
     expect(tmuxCalls.every(([args]) => !args.includes('split-window'))).toBe(
       true,
@@ -430,7 +430,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   it('uses session-targeted mouse option instead of global (-t sessionName, not -g)', () => {
     runClaude('/tmp', [], 'sid');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls;
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls;
     const tmuxCall = tmuxCalls.find(
       ([args]) => args[0] === 'set-option' && args.includes('mouse'),
     );
@@ -448,7 +448,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   it('does not set terminal-overrides in tmux args', () => {
     runClaude('/tmp', [], 'sid');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls;
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls;
     const tmuxCall = tmuxCalls.find(([args]) => args[0] === 'new-session');
     expect(tmuxCall).toBeDefined();
     const tmuxArgs = tmuxCall![0];
@@ -460,7 +460,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   it('places mouse mode setup before attach-session', () => {
     runClaude('/tmp', [], 'sid');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls.map(([args]) => args);
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
     const mouseIdx = tmuxCalls.findIndex(
       (args) => args[0] === 'set-option' && args.includes('mouse'),
     );
@@ -475,7 +475,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   it('applies session-scoped OSC 52 clipboard options before attach-session', () => {
     runClaude('/tmp', [], 'sid');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls.map(([args]) => args);
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
     expect(tmuxCalls).toContainEqual([
       'set-option',
       '-t',
@@ -512,7 +512,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   });
 
   it('preserves a valid detached session when attach-session is interrupted', () => {
-    vi.mocked(tmuxExec).mockImplementation((args: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((args: string[]) => {
       if (args[0] === 'attach-session') {
         throw new Error('attach interrupted');
       }
@@ -521,7 +521,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
 
     runClaude('/tmp', [], 'sid');
 
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls.map(([args]) => args);
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
     expect(tmuxCalls.map((args) => args[0])).toEqual([
       'new-session',
       'set-option',
@@ -539,7 +539,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
   });
 
   it('falls back to direct launch when detached session creation fails', () => {
-    vi.mocked(tmuxExec).mockImplementation((args: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((args: string[]) => {
       if (args[0] === 'new-session') {
         throw new Error('tmux launch failed');
       }
@@ -548,7 +548,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
 
     runClaude('/tmp', ['--dangerously-skip-permissions'], 'sid');
 
-    expect(vi.mocked(tmuxExec).mock.calls).toHaveLength(1);
+    expect(vi.mocked(rmuxExec).mock.calls).toHaveLength(1);
     expect(
       vi
         .mocked(execFileSync)
@@ -585,8 +585,8 @@ describe('runClaude inside-tmux — mouse configuration (issue #890)', () => {
   it('enables mouse mode before launching claude', () => {
     runClaude('/tmp', [], 'sid');
 
-    // tmuxExec should have been called for mouse config
-    const tmuxCalls = vi.mocked(tmuxExec).mock.calls;
+    // rmuxExec should have been called for mouse config
+    const tmuxCalls = vi.mocked(rmuxExec).mock.calls;
     const mouseCall = tmuxCalls.find(
       ([args]) => args[0] === 'set-option' && args.includes('mouse'),
     );
@@ -1589,8 +1589,8 @@ describe('runClaude — print mode bypasses tmux (issue #1665)', () => {
 
     runClaude('/tmp', ['--dangerously-skip-permissions'], 'sid');
 
-    // tmux calls go through tmuxExec, not execFileSync
-    expect(vi.mocked(tmuxExec).mock.calls.length).toBeGreaterThan(0);
+    // tmux calls go through rmuxExec, not execFileSync
+    expect(vi.mocked(rmuxExec).mock.calls.length).toBeGreaterThan(0);
   });
 });
 
@@ -1670,7 +1670,7 @@ describe('buildEnvExportPrefix — quoting delegation', () => {
     process.env.TEST_QUOTE_VAR = 'has spaces';
     buildEnvExportPrefix(['TEST_QUOTE_VAR']);
     const { quoteShellArg: mockQuote } = vi.mocked(
-      await import('../tmux-utils.js'),
+      await import('../rmux-utils.js'),
     );
     expect(mockQuote).toHaveBeenCalledWith('has spaces');
   });
@@ -1772,7 +1772,7 @@ describe('runClaude outside-tmux — env forwarding', () => {
 
     runClaude('/tmp', ['--print-system-prompt', 'hello world'], 'sid');
 
-    expect(vi.mocked(buildTmuxShellCommandWithEnv)).toHaveBeenCalledWith(
+    expect(vi.mocked(buildRmuxShellCommandWithEnv)).toHaveBeenCalledWith(
       'claude',
       ['--print-system-prompt', 'hello world'],
       { CLAUDE_CONFIG_DIR: 'C:\\Users\\bellman\\config dir' },
@@ -2018,7 +2018,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
     });
     vi.mocked(isTmuxAvailable).mockReturnValue(true);
     vi.mocked(resolveLaunchPolicy).mockReturnValue('outside-tmux');
-    vi.mocked(tmuxExec).mockImplementation((tmuxArgs: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((tmuxArgs: string[]) => {
       if (tmuxArgs[0] === 'new-session') {
         throw new Error('tmux new-session failed');
       }
@@ -2045,7 +2045,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
     });
     vi.mocked(isTmuxAvailable).mockReturnValue(true);
     vi.mocked(resolveLaunchPolicy).mockReturnValue('outside-tmux');
-    vi.mocked(tmuxExec).mockImplementation((tmuxArgs: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((tmuxArgs: string[]) => {
       if (tmuxArgs[0] === 'attach-session' || tmuxArgs[0] === 'has-session') {
         throw new Error(`tmux ${tmuxArgs[0]} failed`);
       }
@@ -2072,7 +2072,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
     });
     vi.mocked(isTmuxAvailable).mockReturnValue(true);
     vi.mocked(resolveLaunchPolicy).mockReturnValue('outside-tmux');
-    vi.mocked(tmuxExec).mockImplementation((tmuxArgs: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((tmuxArgs: string[]) => {
       if (tmuxArgs[0] === 'attach-session') {
         throw new Error('tmux attach-session failed');
       }
@@ -2087,7 +2087,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
       .join('\n');
     expect(messages).toContain('launching tmux failed');
     const tmuxCalls = vi
-      .mocked(tmuxExec)
+      .mocked(rmuxExec)
       .mock.calls.map(([tmuxArgs]) => tmuxArgs[0]);
     expect(tmuxCalls).toContain('attach-session');
     expect(tmuxCalls).not.toContain('has-session');
@@ -2104,7 +2104,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
     });
     vi.mocked(isTmuxAvailable).mockReturnValue(true);
     vi.mocked(resolveLaunchPolicy).mockReturnValue('outside-tmux');
-    vi.mocked(tmuxExec).mockImplementation((tmuxArgs: string[]) => {
+    vi.mocked(rmuxExec).mockImplementation((tmuxArgs: string[]) => {
       if (tmuxArgs[0] === 'new-session') {
         throw new Error('tmux new-session failed');
       }

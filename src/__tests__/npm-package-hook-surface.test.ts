@@ -22,15 +22,17 @@ describe('npm package hook surface regression', () => {
     };
 
     expect(packageJson.scripts?.build).toMatch(
-      /npm run compose-docs && npm run build:claude-md-coordinator/,
+      /pnpm run compose-docs && pnpm run build:claude-md-coordinator/,
     );
     for (const entrypoint of ['test', 'test:ui', 'test:run', 'test:coverage']) {
       expect(packageJson.scripts?.[entrypoint], entrypoint).not.toContain(
         'build:claude-md-coordinator',
       );
     }
-    expect(packageJson.scripts?.prepack).toBe('npm run build');
-    expect(packageJson.scripts?.prepublishOnly).toBe('npm run build');
+    expect(packageJson.scripts?.prepack).toBe('pnpm run build');
+    expect(packageJson.scripts?.prepublishOnly).toBe(
+      'pnpm run build && pnpm run compose-docs',
+    );
     expect(packageJson.files).toEqual(
       expect.arrayContaining([
         '.claude-plugin',

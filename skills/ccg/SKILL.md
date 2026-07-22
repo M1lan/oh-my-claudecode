@@ -8,7 +8,7 @@ level: 5
 
 CCG routes through the canonical `/ask` skill (`/ask codex` + `/ask antigravity`), then Claude synthesizes both outputs into one answer.
 
-Use this when you want parallel external perspectives without launching tmux team workers.
+Use this when you want parallel external perspectives without launching rmux/tmux team workers.
 
 ## When to Use
 

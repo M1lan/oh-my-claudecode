@@ -24,10 +24,10 @@ vi.mock('../../utils/daemon-module-path.js', () => ({
   resolveDaemonModulePath: mockResolveDaemonModulePath,
 }));
 
-vi.mock('../../features/rate-limit-wait/tmux-detector.js', async () => {
+vi.mock('../../features/rate-limit-wait/rmux-detector.js', async () => {
   const actual = await vi.importActual<
-    typeof import('../../features/rate-limit-wait/tmux-detector.js')
-  >('../../features/rate-limit-wait/tmux-detector.js');
+    typeof import('../../features/rate-limit-wait/rmux-detector.js')
+  >('../../features/rate-limit-wait/rmux-detector.js');
   return {
     ...actual,
     isTmuxAvailable: mockIsTmuxAvailable,

@@ -11,7 +11,7 @@
  * Polls task files, builds prompts, spawns CLI processes, reports results.
  */
 
-import { spawn, execSync, ChildProcess } from 'child_process';
+import { spawn, execFileSync, ChildProcess } from 'child_process';
 import { existsSync, openSync, readSync, closeSync } from 'fs';
 import { join } from 'path';
 import { writeFileWithMode, ensureDirWithMode } from './fs-utils.js';
@@ -35,7 +35,7 @@ import {
 } from './inbox-outbox.js';
 import { unregisterMcpWorker } from './team-registration.js';
 import { writeHeartbeat, deleteHeartbeat } from './heartbeat.js';
-import { killSession } from './tmux-session.js';
+import { killSession } from './rmux-session.js';
 import { logAuditEvent } from './audit-log.js';
 import type { AuditEvent } from './audit-log.js';
 import {
@@ -89,10 +89,11 @@ export function captureFileSnapshot(cwd: string): Set<string> {
   const files = new Set<string>();
   try {
     // Get all tracked files that are modified, added, or staged
-    const statusOutput = execSync('git status --porcelain', {
+    const statusOutput = execFileSync('git', ['status', '--porcelain'], {
       cwd,
       encoding: 'utf-8',
       timeout: 10000,
+      windowsHide: true,
     });
     for (const line of statusOutput.split('\n')) {
       if (!line.trim()) continue;
@@ -105,9 +106,10 @@ export function captureFileSnapshot(cwd: string): Set<string> {
     }
 
     // Get untracked files
-    const untrackedOutput = execSync(
-      'git ls-files --others --exclude-standard',
-      { cwd, encoding: 'utf-8', timeout: 10000 },
+    const untrackedOutput = execFileSync(
+      'git',
+      ['ls-files', '--others', '--exclude-standard'],
+      { cwd, encoding: 'utf-8', timeout: 10000, windowsHide: true },
     );
     for (const line of untrackedOutput.split('\n')) {
       if (line.trim()) files.add(line.trim());

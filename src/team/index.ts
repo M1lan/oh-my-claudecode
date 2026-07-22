@@ -43,7 +43,7 @@ export {
   isSessionAlive,
   listActiveSessions,
   spawnBridgeInSession,
-} from './tmux-session.js';
+} from './rmux-session.js';
 
 export {
   appendOutbox,
@@ -288,7 +288,7 @@ export type {
   PublishTaskRecoveryCheckpointResult,
 } from './task-recovery-checkpoint.js';
 
-export { injectToLeaderPane } from './tmux-session.js';
+export { injectToLeaderPane } from './rmux-session.js';
 
 // api-interop (CLI API for workers)
 export {

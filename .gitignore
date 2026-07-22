@@ -1,7 +1,13 @@
 node_modules/
 *.log
 .DS_Store
-!.omc/
+# Nested .omc/ dirs (any depth below root) are always accidental — the
+# canonical anchor is the repo root. Matched first so a misresolved
+# .omc root (e.g. resolveOmcRoot()/resolveToWorktreeRoot() cwd-fallback bugs,
+# bead ob2) never leaves untracked noise. Root .omc/ is explicitly
+# re-included by the rules below.
+**/.omc/
+!/.omc/
 .omc/*
 !.omc/skills/
 !.omc/skills/**
@@ -42,6 +48,9 @@ __pycache__/
 *.py[cod]
 .forks/
 .beads/
+
+# Justfile helper runtime state (helpers themselves are committed)
+.just/state/
 
 # Beads / Dolt files (added by bd init)
 .dolt/

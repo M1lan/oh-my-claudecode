@@ -38,7 +38,7 @@ vi.mock('fs/promises', () => ({
 }));
 
 // Mock tmux dependency
-vi.mock('../team/tmux-session.js', () => ({
+vi.mock('../team/rmux-session.js', () => ({
   killWorkerPanes: vi.fn(() => Promise.resolve()),
 }));
 

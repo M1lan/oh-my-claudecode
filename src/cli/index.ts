@@ -41,6 +41,7 @@ import {
   waitDetectCommand,
 } from './commands/wait.js';
 import { doctorConflictsCommand } from './commands/doctor-conflicts.js';
+import { doctorRmuxCommand } from './commands/doctor-rmux.js';
 import { doctorTeamRoutingCommand } from './commands/doctor-team-routing.js';
 import {
   capabilitiesCheckCommand,
@@ -1561,6 +1562,8 @@ const doctorCmd = program
     `
 Examples:
   $ omc doctor conflicts                        Check for plugin conflicts
+  $ omc doctor rmux                             Detect the rmux multiplexer (POSIX)
+  $ omc doctor rmux --install                   Install rmux when missing (non-fatal)
   $ omc doctor team-routing                     Probe /team role-routing provider CLIs
   $ omc doctor --team-routing                   Same as above (flag form)
   $ omc doctor --plugin-dir /path/to/plugin     Run diagnostics against a specific plugin dir`,
@@ -1620,6 +1623,29 @@ Examples:
   .action(async (options) => {
     applyPluginDirOption(options.pluginDir);
     const exitCode = await doctorConflictsCommand(options);
+    process.exit(exitCode);
+  });
+
+doctorCmd
+  .command('rmux')
+  .description(
+    'Detect the rmux multiplexer and optionally install it (POSIX; non-fatal)',
+  )
+  .option('--json', 'Output as JSON')
+  .option(
+    '--install',
+    'Install rmux when missing (local source > cargo binstall > cargo; falls back to tmux)',
+  )
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ omc doctor rmux                             Detect rmux and suggest an install command
+  $ omc doctor rmux --json                      Output detection + suggested command as JSON
+  $ omc doctor rmux --install                   Install rmux when missing (never hard-fails)`,
+  )
+  .action(async (options) => {
+    const exitCode = await doctorRmuxCommand(options);
     process.exit(exitCode);
   });
 

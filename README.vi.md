@@ -7,7 +7,7 @@
 [![GitHub stars](https://img.shields.io/github/stars/Yeachan-Heo/oh-my-claudecode?style=flat&color=yellow)](https://github.com/Yeachan-Heo/oh-my-claudecode/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Sponsor](https://img.shields.io/badge/Sponsor-❤️-red?style=flat&logo=github)](https://github.com/sponsors/Yeachan-Heo)
-[![Discord](https://img.shields.io/discord/1452487457085063218?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/PUwSMR9XNk)
+[![Discord](https://img.shields.io/discord/1452487457085063218?color=5865F2&logo=discord&logoColor=white&label=Discord)](https://discord.gg/jq6jnSGABY)
 
 > **Dành cho người dùng Codex:** Hãy xem [oh-my-codex](https://github.com/Yeachan-Heo/oh-my-codex) — cùng trải nghiệm điều phối cho OpenAI Codex CLI.
 
@@ -15,7 +15,7 @@
 
 *Đừng học Claude Code. Cứ dùng OMC.*
 
-[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#cli-reference) • [Quy trình](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#workflows) • [Hướng dẫn di chuyển](docs/MIGRATION.md) • [Discord](https://discord.gg/PUwSMR9XNk)
+[Bắt đầu nhanh](#bắt-đầu-nhanh) • [Tài liệu](https://yeachan-heo.github.io/oh-my-claudecode-website) • [Tham chiếu CLI](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#cli-reference) • [Quy trình](https://yeachan-heo.github.io/oh-my-claudecode-website/docs/#workflows) • [Hướng dẫn di chuyển](docs/MIGRATION.md) • [Discord](https://discord.gg/jq6jnSGABY)
 
 ---
 
@@ -77,9 +77,9 @@ Bật Claude Code native teams trong `~/.claude/settings.json`:
 
 > Nếu teams bị tắt, OMC sẽ cảnh báo và chuyển sang chế độ thực thi không dùng team khi có thể.
 
-### Công nhân CLI tmux — Codex & Gemini (v4.4.0+)
+### Công nhân CLI rmux/tmux — Codex & Gemini (v4.4.0+)
 
-**v4.4.0 xóa các máy chủ MCP Codex/Gemini** (nhà cung cấp `x`, `g`). Dùng `/omc-teams` để khởi động tiến trình CLI thực sự trong các pane tmux phân chia:
+**v4.4.0 xóa các máy chủ MCP Codex/Gemini** (nhà cung cấp `x`, `g`). Dùng `/omc-teams` để khởi động tiến trình CLI thực sự trong các pane rmux (ưu tiên; tương thích tmux) hoặc tmux phân chia:
 
 ```bash
 /omc-teams 2:codex   "review auth module for security issues"
@@ -97,10 +97,10 @@ Bật Claude Code native teams trong `~/.claude/settings.json`:
 |-------|---------|----------|
 | `/omc-teams N:codex` | N pane Codex CLI | Xem xét code, phân tích bảo mật, kiến trúc |
 | `/omc-teams N:gemini` | N pane Gemini CLI | Thiết kế UI/UX, tài liệu, tác vụ ngữ cảnh lớn |
-| `/omc-teams N:claude` | N pane Claude CLI | Tác vụ chung qua Claude CLI trong tmux |
+| `/omc-teams N:claude` | N pane Claude CLI | Tác vụ chung qua Claude CLI trong rmux/tmux |
 | `/ccg` | 1 Codex + 1 Gemini | Điều phối ba mô hình song song |
 
-Công nhân được tạo theo yêu cầu và tắt khi hoàn thành tác vụ — không lãng phí tài nguyên. Cần cài `codex` / `gemini` CLI và có phiên tmux đang hoạt động.
+Công nhân được tạo theo yêu cầu và tắt khi hoàn thành tác vụ — không lãng phí tài nguyên. Cần cài `codex` / `gemini` CLI và có phiên rmux (ưu tiên; tương thích tmux) hoặc tmux đang hoạt động.
 
 > **Lưu ý: Tên package** — Dự án được xây dựng thương hiệu là **oh-my-claudecode** (repo, plugin, commands), nhưng package npm được phát hành dưới tên [`oh-my-claude-sisyphus`](https://www.npmjs.com/package/oh-my-claude-sisyphus). Nếu bạn cài công cụ CLI qua pnpm/bun, hãy dùng `pnpm add -g oh-my-claude-sisyphus`.
 
@@ -151,7 +151,7 @@ Nhiều chiến lược cho nhiều tình huống — từ điều phối dựa 
 | Mode | Nó là gì | Dùng cho |
 |------|------------|---------|
 | **Team (khuyến nghị)** | Pipeline chuẩn theo giai đoạn (`team-plan → team-prd → team-exec → team-verify → team-fix`) | Các tác tử phối hợp trên một danh sách nhiệm vụ chung |
-| **omc-teams** | Công nhân CLI tmux — tiến trình `claude`/`codex`/`gemini` thực trong pane chia | Tác vụ Codex/Gemini CLI; tạo theo yêu cầu, tắt khi xong |
+| **omc-teams** | Công nhân CLI rmux/tmux — tiến trình `claude`/`codex`/`gemini` thực trong pane chia | Tác vụ Codex/Gemini CLI; tạo theo yêu cầu, tắt khi xong |
 | **ccg** | Tri-model: Codex (phân tích) + Gemini (thiết kế) song song, Claude tổng hợp | Công việc backend+UI cần cả Codex và Gemini |
 | **Autopilot** | Thực thi tự động (một tác tử dẫn dắt) | Làm tính năng end-to-end với ít thao tác phụ |
 | **Ultrawork** | Song song tối đa (không dùng team) | Sửa lỗi/refactor kiểu burst song song khi không cần Team |
@@ -217,7 +217,7 @@ Các phím tắt tùy chọn cho người dùng nâng cao. Không dùng chúng t
 | Keyword | Hiệu ứng | Ví dụ |
 |---------|--------|---------|
 | `team` | Điều phối Team chuẩn | `/team 3:executor "fix all TypeScript errors"` |
-| `omc-teams` | Công nhân CLI tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
+| `omc-teams` | Công nhân CLI rmux/tmux (codex/gemini/claude) | `/omc-teams 2:codex "security review"` |
 | `ccg` | Điều phối tri-model Codex+Gemini | `/ccg review this PR` |
 | `autopilot` | Thực thi tự động toàn phần | `autopilot: build a todo app` |
 | `ralph` | Chế độ bền bỉ | `ralph: refactor auth` |
@@ -244,7 +244,7 @@ omc wait --start  # Enable auto-resume daemon
 omc wait --stop   # Disable daemon
 ```
 
-**Yêu cầu:** tmux (để phát hiện phiên)
+**Yêu cầu:** rmux (ưu tiên; tương thích tmux) hoặc tmux (để phát hiện phiên)
 
 ### Notification Tags (Telegram/Discord/Slack)
 
