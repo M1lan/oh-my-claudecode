@@ -10,7 +10,6 @@ import { randomUUID } from 'crypto';
 import {
   isTmuxAvailable,
   isClaudeAvailable,
-  resolveRmuxInvocation,
   rmuxExec,
   buildRmuxShellCommandWithEnv,
   wrapWithLoginShell,
@@ -42,13 +41,6 @@ export const INTEROP_CAVEMAN_LEVEL_ENV = 'OMX_INTEROP_CAVEMAN_LEVEL';
  * unknown value is warned + ignored on the codex side, disabling activation.
  */
 export const INTEROP_CAVEMAN_LEVEL = 'wenyan-ultra';
-/**
- * Natural-language activation the Codex caveman skill recognizes ("use caveman"
- * + level). Typed into the pane as a fallback for Codex builds that predate the
- * INTEROP_CAVEMAN_LEVEL_ENV startup hook. Idempotent: re-activating the same
- * level is a no-op, so it is safe even when the env path already fired.
- */
-export const INTEROP_CAVEMAN_ACTIVATION = `use caveman ${INTEROP_CAVEMAN_LEVEL} mode`;
 
 export interface InteropRuntimeFlags {
   enabled: boolean;
@@ -123,49 +115,6 @@ function isCodexAvailable(): boolean {
     return true;
   } catch {
     return false;
-  }
-}
-
-/**
- * Type the caveman activation into the Codex (OMX) pane. Sent as a literal
- * string (`-l`) followed by Enter so shell/tmux never reinterpret its spaces —
- * mirrors the autoresearch setup injection. On rmux, first wait for the pane
- * to settle (`wait-pane --quiet`) so the keystrokes are not swallowed while
- * the login shell / codex TUI is still starting; plain tmux has no such wait,
- * so that path fires immediately as before. Failures are swallowed: the OMX
- * pane simply stays at its global caveman level.
- */
-export function sendInteropCavemanActivation(
-  paneId: string,
-  activation: string = INTEROP_CAVEMAN_ACTIVATION,
-): void {
-  if (resolveRmuxInvocation()) {
-    try {
-      // Wait until pane output has been quiet for 500ms (rmux >= 0.8.0).
-      rmuxExec(
-        [
-          'wait-pane',
-          '-t',
-          paneId,
-          '--quiet',
-          '--stable-for',
-          '500ms',
-          '--timeout',
-          '15s',
-        ],
-        { stdio: 'ignore' },
-      );
-    } catch {
-      // Timeout or unsupported wait-pane — proceed with best-effort send-keys.
-    }
-  }
-  try {
-    rmuxExec(['send-keys', '-t', paneId, '-l', activation], {
-      stdio: 'ignore',
-    });
-    rmuxExec(['send-keys', '-t', paneId, 'Enter'], { stdio: 'ignore' });
-  } catch {
-    // Non-fatal — the deterministic env-hook path in oh-my-codex is primary.
   }
 }
 
@@ -300,13 +249,13 @@ export function launchInteropSession(
       const newPaneId = splitOutput.split('\n')[0]?.trim() ?? '';
       codexPaneId = newPaneId.startsWith('%') ? newPaneId : null;
 
-      // Fallback caveman activation for the OMX pane. The deterministic path is
-      // the INTEROP_CAVEMAN_LEVEL_ENV startup hook in oh-my-codex; this typed
-      // command covers older codex builds without that hook. Gated to --yolo:
-      // only then does codex bypass its "Trust this directory?" prompt, so the
-      // literal keystrokes can never race that prompt and answer it by accident.
-      // In non-yolo runs the readiness-aware codex hook is the sole activation.
-      if (yolo && codexPaneId) sendInteropCavemanActivation(codexPaneId);
+      // Caveman activation happens exclusively via the deterministic
+      // INTEROP_CAVEMAN_LEVEL_ENV startup hook inside oh-my-codex (exported
+      // above). No keystrokes are ever typed into the codex pane at launch:
+      // live QA showed codex can still be sitting at interactive prompts
+      // (trust/login/update) even under --yolo, so blind send-keys risks
+      // answering an arbitrary prompt. Older codex builds without the hook
+      // simply stay at their global caveman level.
 
       // Select left pane (original/current)
       rmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
