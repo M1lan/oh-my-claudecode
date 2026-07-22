@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtempSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
+import { execFile } from 'child_process';
 import {
   canUseOmxDirectWriteBridge,
   getInteropMode,
@@ -17,6 +18,40 @@ import {
   readSharedTasks,
   updateSharedTask,
 } from '../shared-state.js';
+
+vi.mock('child_process', () => ({
+  execFile: vi.fn(),
+}));
+
+type ExecFileError = Error & { code?: string | number };
+
+type ExecFileCallback = (
+  error: ExecFileError | null,
+  stdout: string,
+  stderr: string,
+) => void;
+
+const execFileMock = vi.mocked(execFile) as unknown as ReturnType<
+  typeof vi.fn
+>;
+
+function mockOmxCliResult(result: {
+  error?: ExecFileError | null;
+  stdout?: string;
+  stderr?: string;
+}) {
+  execFileMock.mockImplementation(
+    (
+      _cmd: string,
+      _args: string[],
+      _options: unknown,
+      callback: ExecFileCallback,
+    ) => {
+      callback(result.error ?? null, result.stdout ?? '', result.stderr ?? '');
+      return {} as never;
+    },
+  );
+}
 
 describe('interop mcp bridge gating', () => {
   it('getInteropMode normalizes invalid values to off', () => {
@@ -89,6 +124,167 @@ describe('interop mcp bridge gating', () => {
         delete process.env.OMC_INTEROP_TOOLS_ENABLED;
       else process.env.OMC_INTEROP_TOOLS_ENABLED = savedTools;
     }
+  });
+});
+
+describe('interop_send_omx_message via omx team api CLI', () => {
+  const savedEnv: Record<string, string | undefined> = {};
+  const envKeys = [
+    'OMX_OMC_INTEROP_ENABLED',
+    'OMX_OMC_INTEROP_MODE',
+    'OMC_INTEROP_TOOLS_ENABLED',
+  ] as const;
+
+  beforeEach(() => {
+    for (const key of envKeys) savedEnv[key] = process.env[key];
+    process.env.OMX_OMC_INTEROP_ENABLED = '1';
+    process.env.OMX_OMC_INTEROP_MODE = 'active';
+    process.env.OMC_INTEROP_TOOLS_ENABLED = '1';
+    execFileMock.mockReset();
+  });
+
+  afterEach(() => {
+    for (const key of envKeys) {
+      if (savedEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = savedEnv[key];
+    }
+  });
+
+  it('send-message happy path parses the ok envelope', async () => {
+    mockOmxCliResult({
+      stdout: JSON.stringify({
+        schema_version: '1.0',
+        timestamp: '2026-07-22T00:00:00.000Z',
+        command: 'omx team api send-message',
+        ok: true,
+        operation: 'send-message',
+        data: {
+          message: {
+            message_id: 'msg-42',
+            from_worker: 'omc-bridge',
+            to_worker: 'worker-1',
+            body: 'hello',
+            created_at: '2026-07-22T00:00:00.000Z',
+          },
+          dispatch: { ok: true },
+        },
+      }),
+    });
+
+    const response = await interopSendOmxMessageTool.handler({
+      teamName: 'alpha-team',
+      fromWorker: 'omc-bridge',
+      toWorker: 'worker-1',
+      body: 'hello',
+    });
+
+    expect(response.isError).toBeUndefined();
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('Message Sent to OMX Worker');
+    expect(text).toContain('msg-42');
+    expect(text).toContain('worker-1');
+
+    expect(execFileMock).toHaveBeenCalledTimes(1);
+    const [cmd, args] = execFileMock.mock.calls[0];
+    expect(cmd).toBe('omx');
+    expect(args.slice(0, 3)).toEqual(['team', 'api', 'send-message']);
+    expect(args[3]).toBe('--input');
+    expect(JSON.parse(args[4])).toEqual({
+      team_name: 'alpha-team',
+      from_worker: 'omc-bridge',
+      to_worker: 'worker-1',
+      body: 'hello',
+    });
+    expect(args[5]).toBe('--json');
+  });
+
+  it('broadcast happy path parses the ok envelope', async () => {
+    mockOmxCliResult({
+      stdout: JSON.stringify({
+        schema_version: '1.0',
+        timestamp: '2026-07-22T00:00:00.000Z',
+        command: 'omx team api broadcast',
+        ok: true,
+        operation: 'broadcast',
+        data: {
+          count: 2,
+          messages: [{ message_id: 'msg-1' }, { message_id: 'msg-2' }],
+        },
+      }),
+    });
+
+    const response = await interopSendOmxMessageTool.handler({
+      teamName: 'alpha-team',
+      fromWorker: 'omc-bridge',
+      toWorker: 'ignored',
+      body: 'all hands',
+      broadcast: true,
+    });
+
+    expect(response.isError).toBeUndefined();
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('Broadcast Sent to OMX Team: alpha-team');
+    expect(text).toContain('**Recipients:** 2');
+    expect(text).toContain('msg-1, msg-2');
+
+    const [cmd, args] = execFileMock.mock.calls[0];
+    expect(cmd).toBe('omx');
+    expect(args.slice(0, 3)).toEqual(['team', 'api', 'broadcast']);
+    expect(JSON.parse(args[4])).toEqual({
+      team_name: 'alpha-team',
+      from_worker: 'omc-bridge',
+      body: 'all hands',
+    });
+  });
+
+  it('reports a clear error when the omx binary is missing', async () => {
+    const enoent: ExecFileError = Object.assign(new Error('spawn omx ENOENT'), {
+      code: 'ENOENT',
+    });
+    mockOmxCliResult({ error: enoent });
+
+    const response = await interopSendOmxMessageTool.handler({
+      teamName: 'alpha-team',
+      fromWorker: 'omc-bridge',
+      toWorker: 'worker-1',
+      body: 'hello',
+    });
+
+    expect(response.isError).toBe(true);
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('oh-my-codex must be installed');
+  });
+
+  it('surfaces the envelope error message on ok:false', async () => {
+    // omx exits non-zero on ok:false envelopes but still prints the JSON
+    // envelope on stdout; the bridge must prefer the envelope over the
+    // process error.
+    mockOmxCliResult({
+      error: Object.assign(new Error('Command failed: omx'), { code: 1 }),
+      stdout: JSON.stringify({
+        schema_version: '1.0',
+        timestamp: '2026-07-22T00:00:00.000Z',
+        command: 'omx team api send-message',
+        ok: false,
+        operation: 'send-message',
+        error: {
+          code: 'team_not_found',
+          message: 'Team alpha-team not found',
+        },
+      }),
+    });
+
+    const response = await interopSendOmxMessageTool.handler({
+      teamName: 'alpha-team',
+      fromWorker: 'omc-bridge',
+      toWorker: 'worker-1',
+      body: 'hello',
+    });
+
+    expect(response.isError).toBe(true);
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('team_not_found');
+    expect(text).toContain('Team alpha-team not found');
   });
 });
 

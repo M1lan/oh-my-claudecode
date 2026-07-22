@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { execFile } from 'child_process';
 import { ToolDefinition } from '../tools/types.js';
 import type { ArtifactDescriptor } from '../shared/artifact-descriptor.js';
 import {
@@ -20,8 +21,6 @@ import {
   listOmxTeams,
   readOmxTeamConfig,
   listOmxMailboxMessages,
-  sendOmxDirectMessage,
-  broadcastOmxMessage,
   listOmxTasks,
 } from './omx-team-state.js';
 import { validateWorkingDirectory } from '../lib/worktree-paths.js';
@@ -73,6 +72,94 @@ function formatToolError(action: string, error: unknown) {
 
 function truncatePreview(text: string, maxChars: number): string {
   return text.length > maxChars ? `${text.slice(0, maxChars)}...` : text;
+}
+
+// ============================================================================
+// omx team api CLI bridge (OMX mutation contract)
+// ============================================================================
+
+// Per the OMX interop mutation contract (oh-my-codex
+// docs/interop-team-mutation-contract.md), direct writes to
+// .omx/state/team/... are unsupported; `omx team api <operation> --input
+// <json> --json` is the rule of record for mutations. Reads stay direct.
+
+const OMX_CLI_TIMEOUT_MS = 30_000;
+
+interface OmxTeamApiEnvelope {
+  ok?: boolean;
+  operation?: string;
+  data?: Record<string, unknown>;
+  error?: { code?: string; message?: string };
+}
+
+function runOmxTeamApi(
+  operation: 'send-message' | 'broadcast',
+  input: Record<string, unknown>,
+  cwd: string,
+): Promise<OmxTeamApiEnvelope> {
+  return new Promise((resolvePromise, rejectPromise) => {
+    execFile(
+      'omx',
+      ['team', 'api', operation, '--input', JSON.stringify(input), '--json'],
+      { cwd, timeout: OMX_CLI_TIMEOUT_MS },
+      (error, stdout, stderr) => {
+        if (error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          rejectPromise(
+            new Error(
+              'omx CLI not found. oh-my-codex must be installed for direct OMX messaging (`omx team api` is the only supported mutation path).',
+            ),
+          );
+          return;
+        }
+
+        // `omx team api ... --json` prints the envelope on stdout even for
+        // ok:false results (which exit non-zero), so parse stdout before
+        // treating a process error as fatal.
+        const raw = typeof stdout === 'string' ? stdout.trim() : '';
+        if (raw) {
+          try {
+            resolvePromise(JSON.parse(raw) as OmxTeamApiEnvelope);
+            return;
+          } catch {
+            // Not a JSON envelope; fall through to error handling.
+          }
+        }
+
+        if (error) {
+          const stderrText = typeof stderr === 'string' ? stderr.trim() : '';
+          rejectPromise(
+            new Error(
+              `omx team api ${operation} failed: ${error.message}${stderrText ? `\n${stderrText}` : ''}`,
+            ),
+          );
+          return;
+        }
+
+        rejectPromise(
+          new Error(
+            `omx team api ${operation} returned no parseable JSON envelope`,
+          ),
+        );
+      },
+    );
+  });
+}
+
+function formatOmxEnvelopeError(
+  operation: 'send-message' | 'broadcast',
+  envelope: OmxTeamApiEnvelope,
+) {
+  const code = envelope.error?.code ? ` (${envelope.error.code})` : '';
+  const message = envelope.error?.message ?? 'unknown error';
+  return {
+    content: [
+      {
+        type: 'text' as const,
+        text: `omx team api ${operation} failed${code}: ${message}`,
+      },
+    ],
+    isError: true,
+  };
 }
 
 function formatArtifactDescriptorLines(
@@ -582,12 +669,24 @@ export const interopSendOmxMessageTool: ToolDefinition<{
       const cwd = resolveWorkingDirectory(args.workingDirectory);
 
       if (args.broadcast) {
-        const messages = await broadcastOmxMessage(
-          args.teamName,
-          args.fromWorker,
-          args.body,
+        const envelope = await runOmxTeamApi(
+          'broadcast',
+          {
+            team_name: args.teamName,
+            from_worker: args.fromWorker,
+            body: args.body,
+          },
           cwd,
         );
+        if (!envelope.ok) {
+          return formatOmxEnvelopeError('broadcast', envelope);
+        }
+        const data = envelope.data ?? {};
+        const messages = Array.isArray(data.messages)
+          ? (data.messages as Array<{ message_id?: string }>)
+          : [];
+        const count =
+          typeof data.count === 'number' ? data.count : messages.length;
         return {
           content: [
             {
@@ -595,21 +694,34 @@ export const interopSendOmxMessageTool: ToolDefinition<{
               text:
                 `## Broadcast Sent to OMX Team: ${args.teamName}\n\n` +
                 `**From:** ${args.fromWorker}\n` +
-                `**Recipients:** ${messages.length}\n` +
+                `**Recipients:** ${count}\n` +
                 `**Message IDs:** ${messages.map((m) => m.message_id).join(', ')}\n\n` +
-                `Message delivered to ${messages.length} worker mailbox(es).`,
+                `Message delivered to ${count} worker mailbox(es) via omx team api.`,
             },
           ],
         };
       }
 
-      const msg = await sendOmxDirectMessage(
-        args.teamName,
-        args.fromWorker,
-        args.toWorker,
-        args.body,
+      const envelope = await runOmxTeamApi(
+        'send-message',
+        {
+          team_name: args.teamName,
+          from_worker: args.fromWorker,
+          to_worker: args.toWorker,
+          body: args.body,
+        },
         cwd,
       );
+      if (!envelope.ok) {
+        return formatOmxEnvelopeError('send-message', envelope);
+      }
+      const msg = (envelope.data?.message ?? {}) as {
+        message_id?: string;
+        from_worker?: string;
+        to_worker?: string;
+        created_at?: string;
+      };
+      const toWorker = msg.to_worker ?? args.toWorker;
       return {
         content: [
           {
@@ -617,11 +729,11 @@ export const interopSendOmxMessageTool: ToolDefinition<{
             text:
               `## Message Sent to OMX Worker\n\n` +
               `**Team:** ${args.teamName}\n` +
-              `**From:** ${msg.from_worker}\n` +
-              `**To:** ${msg.to_worker}\n` +
-              `**Message ID:** ${msg.message_id}\n` +
-              `**Created:** ${msg.created_at}\n\n` +
-              `Message delivered to ${msg.to_worker}'s mailbox.`,
+              `**From:** ${msg.from_worker ?? args.fromWorker}\n` +
+              `**To:** ${toWorker}\n` +
+              `**Message ID:** ${msg.message_id ?? 'unknown'}\n` +
+              `**Created:** ${msg.created_at ?? 'unknown'}\n\n` +
+              `Message delivered to ${toWorker}'s mailbox via omx team api.`,
           },
         ],
       };

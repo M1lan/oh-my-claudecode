@@ -1,8 +1,11 @@
 /**
  * OMX Team State Layer (forked from oh-my-codex)
  *
- * Provides read/write access to .omx/state/team/{name}/ directories,
- * enabling omc to communicate with omx teams using the native omx format.
+ * Provides read access to .omx/state/team/{name}/ directories, enabling omc
+ * to observe omx teams using the native omx format. Mutations must go through
+ * `omx team api <operation> --input <json> --json` per the OMX interop
+ * mutation contract (oh-my-codex docs/interop-team-mutation-contract.md);
+ * direct writes to .omx/state/team/... are unsupported.
  *
  * Data layout: .omx/state/team/{name}/
  *   config.json              — TeamConfig
@@ -12,10 +15,9 @@
  *   events/events.ndjson     — TeamEvent (append-only)
  */
 
-import { readFile, readdir, appendFile, mkdir } from 'fs/promises';
-import { join, dirname, resolve, relative, isAbsolute } from 'path';
+import { readFile, readdir } from 'fs/promises';
+import { join, resolve, relative, isAbsolute } from 'path';
 import { existsSync } from 'fs';
-import { randomUUID } from 'crypto';
 import { z } from 'zod';
 import { atomicWriteJson } from '../lib/atomic-write.js';
 import { withFileLock } from '../lib/file-lock.js';
@@ -74,30 +76,6 @@ export interface OmxTeamMailboxMessage {
 export interface OmxTeamMailbox {
   worker: string;
   messages: OmxTeamMailboxMessage[];
-}
-
-export interface OmxTeamEvent {
-  event_id: string;
-  team: string;
-  type:
-    | 'task_completed'
-    | 'worker_idle'
-    | 'worker_stopped'
-    | 'message_received'
-    | 'shutdown_ack'
-    | 'approval_decision'
-    | 'team_leader_nudge';
-  worker: string;
-  task_id?: string;
-  message_id?: string | null;
-  reason?: string;
-  next_action?:
-    | 'shutdown'
-    | 'reuse-current-team'
-    | 'launch-new-team'
-    | 'keep-checking-status';
-  message?: string;
-  created_at: string;
 }
 
 export interface OmxTeamManifestV2 {
@@ -199,10 +177,6 @@ function taskFilePath(teamName: string, taskId: string, cwd: string): string {
   const p = join(dir, `task-${taskId}.json`);
   assertWithin(dir, p);
   return p;
-}
-
-function eventLogPath(teamName: string, cwd: string): string {
-  return join(teamDir(teamName, cwd), 'events', 'events.ndjson');
 }
 
 // ============================================================================
@@ -320,79 +294,10 @@ export async function listOmxMailboxMessages(
   return mailbox.messages;
 }
 
-/**
- * Send a direct message to an omx worker's mailbox
- *
- * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
- * Kept for legacy compatibility and observe-mode tooling only.
- */
-export async function sendOmxDirectMessage(
-  teamName: string,
-  fromWorker: string,
-  toWorker: string,
-  body: string,
-  cwd: string,
-): Promise<OmxTeamMailboxMessage> {
-  const msg: OmxTeamMailboxMessage = {
-    message_id: randomUUID(),
-    from_worker: fromWorker,
-    to_worker: toWorker,
-    body,
-    created_at: new Date().toISOString(),
-  };
-
-  // Lock the mailbox file across the read-modify-write so concurrent senders
-  // (OMC bridge + an OMX worker) cannot clobber each other's appended message.
-  const p = mailboxPath(teamName, toWorker, cwd);
-  await withFileLock(
-    p + '.lock',
-    async () => {
-      const mailbox = await readOmxMailbox(teamName, toWorker, cwd);
-      mailbox.messages.push(msg);
-      await atomicWriteJson(p, mailbox);
-    },
-    { timeoutMs: 5000 },
-  );
-
-  // Append event (separate append-only file; outside the mailbox lock)
-  await appendOmxTeamEvent(
-    teamName,
-    {
-      type: 'message_received',
-      worker: toWorker,
-      task_id: undefined,
-      message_id: msg.message_id,
-      reason: undefined,
-    },
-    cwd,
-  );
-
-  return msg;
-}
-
-/**
- * Broadcast a message to all workers in an omx team
- *
- * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
- */
-export async function broadcastOmxMessage(
-  teamName: string,
-  fromWorker: string,
-  body: string,
-  cwd: string,
-): Promise<OmxTeamMailboxMessage[]> {
-  const config = await readOmxTeamConfig(teamName, cwd);
-  if (!config) throw new Error(`OMX team ${teamName} not found`);
-
-  const delivered: OmxTeamMailboxMessage[] = [];
-  for (const w of config.workers) {
-    if (w.name === fromWorker) continue;
-    delivered.push(
-      await sendOmxDirectMessage(teamName, fromWorker, w.name, body, cwd),
-    );
-  }
-  return delivered;
-}
+// Direct mailbox mutations (sendOmxDirectMessage, broadcastOmxMessage,
+// appendOmxTeamEvent) were removed: the OMX mutation contract forbids direct
+// writes to .omx/state/team/... — interop_send_omx_message now shells out to
+// `omx team api send-message|broadcast --input <json> --json` instead.
 
 /**
  * Mark a message as delivered in an omx worker's mailbox
@@ -479,30 +384,4 @@ export async function listOmxTasks(
   } catch {
     return [];
   }
-}
-
-// ============================================================================
-// Events
-// ============================================================================
-
-/**
- * Append an event to the omx team event log
- *
- * @deprecated Interop active write path must go through broker -> OMX team_* MCP APIs.
- */
-export async function appendOmxTeamEvent(
-  teamName: string,
-  event: Omit<OmxTeamEvent, 'event_id' | 'created_at' | 'team'>,
-  cwd: string,
-): Promise<OmxTeamEvent> {
-  const full: OmxTeamEvent = {
-    event_id: randomUUID(),
-    team: teamName,
-    created_at: new Date().toISOString(),
-    ...event,
-  };
-  const p = eventLogPath(teamName, cwd);
-  await mkdir(dirname(p), { recursive: true });
-  await appendFile(p, `${JSON.stringify(full)}\n`, 'utf8');
-  return full;
 }

@@ -1,46 +1,18 @@
 /**
  * Regression tests for interop tier-1 hardening:
- *  - #1 unlocked read-modify-write races (omx mailbox writers, markMessageAsRead)
+ *  - #1 unlocked read-modify-write races (markMessageAsRead)
  *  - #4b path-traversal guards on OMX team/worker names
+ *
+ * Note: direct OMX mailbox write helpers (sendOmxDirectMessage,
+ * broadcastOmxMessage) were removed — the OMX mutation contract routes all
+ * mailbox writes through `omx team api`. Traversal guards are exercised via
+ * the remaining read paths.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mkdtempSync, rmSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-
-describe('omx mailbox concurrency (locking)', () => {
-  let tempDir: string;
-
-  beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'omx-mailbox-lock-'));
-  });
-
-  afterEach(() => {
-    rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('concurrent sendOmxDirectMessage to one worker keeps every message', async () => {
-    const { sendOmxDirectMessage, listOmxMailboxMessages } =
-      await import('../omx-team-state.js');
-
-    const team = 'alpha';
-    const toWorker = 'worker-1';
-    const count = 12;
-
-    // Without locking the read-modify-write, concurrent senders clobber each
-    // other and messages are lost. With the lock, all must survive.
-    await Promise.all(
-      Array.from({ length: count }, (_unused, i) =>
-        sendOmxDirectMessage(team, 'omc-bridge', toWorker, `msg-${i}`, tempDir),
-      ),
-    );
-
-    const messages = await listOmxMailboxMessages(team, toWorker, tempDir);
-    expect(messages).toHaveLength(count);
-    expect(new Set(messages.map((m) => m.body)).size).toBe(count);
-  });
-});
 
 describe('omx team path traversal guards', () => {
   let tempDir: string;
@@ -61,28 +33,20 @@ describe('omx team path traversal guards', () => {
   });
 
   it('rejects traversal in workerName', async () => {
-    const { sendOmxDirectMessage } = await import('../omx-team-state.js');
+    const { markOmxMessageDelivered } = await import('../omx-team-state.js');
     await expect(
-      sendOmxDirectMessage('alpha', 'omc-bridge', '../../evil', 'x', tempDir),
+      markOmxMessageDelivered('alpha', '../../evil', 'msg-1', tempDir),
     ).rejects.toThrow(/OMX team boundary/);
   });
 
   it('allows ordinary team/worker names', async () => {
-    const { sendOmxDirectMessage, listOmxMailboxMessages } =
-      await import('../omx-team-state.js');
-    await sendOmxDirectMessage(
-      'alpha-team',
-      'omc-bridge',
-      'worker-1',
-      'ok',
-      tempDir,
-    );
+    const { listOmxMailboxMessages } = await import('../omx-team-state.js');
     const messages = await listOmxMailboxMessages(
       'alpha-team',
       'worker-1',
       tempDir,
     );
-    expect(messages.map((m) => m.body)).toContain('ok');
+    expect(messages).toEqual([]);
   });
 });
 
