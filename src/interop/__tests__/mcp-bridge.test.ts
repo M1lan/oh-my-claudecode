@@ -31,9 +31,7 @@ type ExecFileCallback = (
   stderr: string,
 ) => void;
 
-const execFileMock = vi.mocked(execFile) as unknown as ReturnType<
-  typeof vi.fn
->;
+const execFileMock = vi.mocked(execFile) as unknown as ReturnType<typeof vi.fn>;
 
 function mockOmxCliResult(result: {
   error?: ExecFileError | null;

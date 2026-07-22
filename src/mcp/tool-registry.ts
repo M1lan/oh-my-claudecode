@@ -57,7 +57,10 @@ export interface ToolDef {
  */
 const interopToolsEnabled = process.env.OMC_INTEROP_TOOLS_ENABLED === '1';
 const interopTools: ToolDef[] = interopToolsEnabled
-  ? tagCategory(getInteropTools() as unknown as ToolDef[], TOOL_CATEGORIES.INTEROP)
+  ? tagCategory(
+      getInteropTools() as unknown as ToolDef[],
+      TOOL_CATEGORIES.INTEROP,
+    )
   : [];
 
 /** All tools exposed by the standalone server, in registration order. */
