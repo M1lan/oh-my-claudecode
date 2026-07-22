@@ -137,8 +137,8 @@ async function writeToFile(
 }
 
 /**
- * Remote callback delivery is explicitly at-least-once: after remote
- * acceptance but before a response, a retry may send a duplicate.
+ * Deferred remote delivery is terminal after its first manifest attempt: a lost
+ * response is indistinguishable from remote acceptance, so it is never retried.
  */
 async function sendTelegram(
   config: StopCallbackTelegramConfig,
@@ -168,7 +168,7 @@ async function sendTelegram(
   if (!response.ok) throw new Error(`Telegram API error: ${response.status}`);
 }
 
-/** See sendTelegram: Discord webhooks have the same at-least-once boundary. */
+/** See sendTelegram: failed Discord delivery is terminal to avoid duplicate remote side effects. */
 async function sendDiscord(
   config: StopCallbackDiscordConfig,
   message: string,
@@ -324,9 +324,8 @@ export async function runSessionEndDeferredAction(
             signal,
           );
           return 'completed' as const;
-        // Notification transports are at-least-once; acceptance can precede an
-        // unavailable response, so a durable retry may notify again.
-
+        // A notification attempt is terminal in the manifest because remote
+        // acceptance can precede an unavailable response.
         case 'notification': {
           const { notify } = await import('../../notifications/index.js');
           const result = await notify('session-end', {
@@ -346,8 +345,8 @@ export async function runSessionEndDeferredAction(
           if (!result?.anySuccess) throw new Error('notification-not-accepted');
           return 'completed' as const;
         }
-        // OpenClaw wake is at-least-once for the same acceptance-before-result
-        // ambiguity; callers must tolerate duplicate wake requests.
+        // OpenClaw wake attempts are terminal in the manifest because remote
+        // acceptance can precede an unavailable response.
         case 'openclaw-wake': {
           if (
             action.payload.enabled !== true ||

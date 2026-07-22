@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import {
   appendFileSync,
   cpSync,
@@ -12,7 +13,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
+import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
   PLUGIN_JSON_PATH,
@@ -24,6 +25,8 @@ import {
   type McpServerConfig,
   type PluginJson,
 } from './npm-package-surface-helpers.js';
+// @ts-expect-error The shipping transaction is an ESM maintainer script without declarations.
+import { collectPluginRuntimeClosure } from '../../scripts/plugin-shipping-surface.mjs';
 
 const PACKAGE_ROOT = process.cwd();
 const PACKAGE_JSON_PATH = join(PACKAGE_ROOT, 'package.json');
@@ -35,11 +38,16 @@ type PackageJson = {
 };
 
 type PackedPackage = {
+  extractedPackageRoot: string;
   files: Set<string>;
   packageJson: PackageJson;
   pluginJson: PluginJson;
   mcpServers: Record<string, McpServerConfig>;
   startedWithoutGeneratedBundles: boolean;
+};
+
+type PluginShippingSurface = {
+  requiredPaths: string[];
 };
 
 const CLI_BIN_TARGET = 'bin/oh-my-claudecode.js';
@@ -60,46 +68,40 @@ let packedPackageInitialized = false;
 let fixtureRootCache: string | null = null;
 let packDirCache: string | null = null;
 let packWorkspaceCache: string | null = null;
+let committedSnapshotCache: string | null = null;
 let tarballPathCache: string | null = null;
 
 function readPackageJson(): PackageJson {
   return JSON.parse(readFileSync(PACKAGE_JSON_PATH, 'utf-8')) as PackageJson;
 }
 
-function createIsolatedPackWorkspace(workspacePath: string): void {
+function sha256(path: string): string {
+  return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+
+function createIsolatedPackWorkspace(
+  workspacePath: string,
+  snapshotPath: string,
+): void {
   mkdirSync(workspacePath, { recursive: true });
-
-  const files = execFileSync(
+  mkdirSync(snapshotPath, { recursive: true });
+  execFileSync(
     'git',
-    ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
-    { cwd: PACKAGE_ROOT, encoding: 'utf-8' },
-  )
-    .split('\0')
-    .filter(Boolean);
-
-  for (const relativePath of files) {
-    const normalized = relativePath.replace(/\\/g, '/');
-    if (
-      normalized === '.gjc' ||
-      normalized.startsWith('.gjc/') ||
-      normalized === '.omc' ||
-      normalized.startsWith('.omc/') ||
-      GENERATED_BRIDGE_FILES.has(normalized) ||
-      normalized === 'dist' ||
-      normalized.startsWith('dist/') ||
-      normalized.endsWith('.tgz')
-    ) {
-      continue;
-    }
-
-    const destination = join(workspacePath, relativePath);
-    mkdirSync(dirname(destination), { recursive: true });
-    cpSync(join(PACKAGE_ROOT, relativePath), destination, {
-      dereference: false,
-      preserveTimestamps: true,
-    });
+    ['checkout-index', '--all', `--prefix=${snapshotPath}/`],
+    {
+      cwd: PACKAGE_ROOT,
+      stdio: 'pipe',
+    },
+  );
+  cpSync(snapshotPath, workspacePath, {
+    recursive: true,
+    dereference: false,
+    preserveTimestamps: true,
+  });
+  rmSync(join(workspacePath, 'dist'), { recursive: true, force: true });
+  for (const relativePath of GENERATED_BRIDGE_FILES) {
+    rmSync(join(workspacePath, relativePath), { force: true });
   }
-
   symlinkSync(
     join(PACKAGE_ROOT, 'node_modules'),
     join(workspacePath, 'node_modules'),
@@ -146,8 +148,9 @@ function getPackedPackage(): PackedPackage {
     }
     fixtureRootCache = mkdtempSync(join(tmpdir(), 'omc-pack-fixture-'));
     packWorkspaceCache = join(fixtureRootCache, 'workspace');
+    committedSnapshotCache = join(fixtureRootCache, 'committed');
     packDirCache = join(fixtureRootCache, 'packed');
-    createIsolatedPackWorkspace(packWorkspaceCache);
+    createIsolatedPackWorkspace(packWorkspaceCache, committedSnapshotCache);
     const startedWithoutGeneratedBundles = [...GENERATED_BRIDGE_FILES].every(
       (file) => !existsSync(join(packWorkspaceCache!, file)),
     );
@@ -195,23 +198,11 @@ function getPackedPackage(): PackedPackage {
       .filter(Boolean)
       .map((file) => file.replace(/^package\//, ''));
 
-    execFileSync('tar', [
-      '-xzf',
-      tarballPathCache,
-      '-C',
-      packDirCache,
-      'package/package.json',
-      'package/.claude-plugin/plugin.json',
-      'package/.mcp.json',
-      'package/agents',
-      'package/dist',
-      'package/bridge/cli.cjs',
-      'package/bridge/runtime-cli.cjs',
-      'package/bridge/team.js',
-    ]);
+    execFileSync('tar', ['-xzf', tarballPathCache, '-C', packDirCache]);
 
     const extractedPackageRoot = join(packDirCache, 'package');
     packedPackageCache = {
+      extractedPackageRoot,
       files: new Set(files),
       packageJson: JSON.parse(
         readFileSync(join(extractedPackageRoot, 'package.json'), 'utf-8'),
@@ -273,6 +264,23 @@ describe('npm package bin surface regression', () => {
     expect(packedFiles.has('bridge/gyoshu_bridge.py')).toBe(true);
   });
 
+  it('keeps the committed plugin runtime closure as a byte-identical npm package subset', () => {
+    const surface = collectPluginRuntimeClosure(
+      committedSnapshotCache!,
+    ) as PluginShippingSurface;
+    const extractedPackageRoot = join(packDirCache!, 'package');
+
+    for (const relativePath of surface.requiredPaths) {
+      expect(packedPackageFixture.files.has(relativePath), relativePath).toBe(
+        true,
+      );
+      expect(
+        sha256(join(extractedPackageRoot, relativePath)),
+        relativePath,
+      ).toBe(sha256(join(committedSnapshotCache!, relativePath)));
+    }
+  });
+
   it('rebuilds recovery CLI surfaces from source without committed bundles', () => {
     expect(packedPackageFixture.startedWithoutGeneratedBundles).toBe(true);
 
@@ -294,6 +302,29 @@ describe('npm package bin surface regression', () => {
     );
     expect(resultHelp).toContain('team_name');
     expect(resultHelp).toContain('request_id');
+  });
+
+  it('packs the fixed worktree-paths dist with hidden Windows git subprocesses', () => {
+    const source = readFileSync(
+      join(PACKAGE_ROOT, 'src', 'lib', 'worktree-paths.ts'),
+      'utf-8',
+    );
+    const packedDist = readFileSync(
+      join(
+        packedPackageFixture.extractedPackageRoot,
+        'dist',
+        'lib',
+        'worktree-paths.js',
+      ),
+      'utf-8',
+    );
+
+    expect(packedPackageFixture.files.has('dist/lib/worktree-paths.js')).toBe(
+      true,
+    );
+    expect(source.match(/windowsHide/g)).toHaveLength(7);
+    expect(packedDist).not.toContain('execSync(');
+    expect(packedDist.match(/windowsHide: true/g)).toHaveLength(7);
   });
 
   it('packs the complete source-controlled plugin and hook payload', () => {

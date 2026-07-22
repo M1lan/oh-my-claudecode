@@ -98,10 +98,12 @@ Fires when the user submits a prompt.
 
 | Script | Role | Timeout |
 |--------|------|---------|
-| `keyword-detector.mjs` | Detects magic keywords and invokes the corresponding skill | 10s |
-| `skill-injector.mjs` | Injects skill prompts | 15s |
+| `keyword-detector.mjs` | Detects magic keywords and invokes the corresponding skill | 30s outer host fuse; 8s trusted Worker limit |
+| `skill-injector.mjs` | Injects skill prompts | 30s outer host fuse; 12s trusted Worker limit |
 
 Runs on all user input (`matcher: "*"`). When the keyword detector finds keywords like "ultrawork", "ralph", or "autopilot", it injects the corresponding skill invocation instruction via `additionalContext`.
+
+The 30s timeout is a per-command outer host fuse that includes launcher startup before `run.cjs`. Once the runner reaches its exact trusted Worker branch, `keyword-detector.mjs` is limited to 8s and `skill-injector.mjs` to 12s; lower manifest limits are never extended. A command that never reaches `run.cjs` can consume its full 30s outer fuse. The host schedules the two commands externally, so this does not claim an aggregate prompt latency.
 
 ### SessionStart
 
@@ -195,10 +197,10 @@ Fires when Claude finishes a response.
 |--------|------|---------|
 | `context-guard-stop.mjs` | Monitors context usage | 5s |
 | `workflow-drift-guard.mjs` | Blocks narrow structured-question and fake-completion drift | 3s |
-| `persistent-mode.cjs` | Maintains active mode state (ralph, ultrawork, etc.) | 10s |
+| `persistent-mode.mjs` | Maintains active mode state (ralph, ultrawork, etc.) | 10s |
 | `code-simplifier.mjs` | Auto-simplifies modified files (opt-in) | 5s |
 
-`persistent-mode` injects a reinforcement message like "The boulder never stops" when an active execution mode is running, prompting continued work.
+`persistent-mode` injects a reinforcement message like "The boulder never stops" when an active execution mode is running, prompting continued work. A fresh unconfirmed ultragoal is exempt while Claude `/goal` confirmation is pending; confirmed runs remain fail-closed.
 
 ### SessionEnd
 
@@ -294,9 +296,10 @@ When a session ID is present, state is stored in session scope under `.omc/state
 `ultragoal-state.json` is the session-scoped Stop/PreToolUse guard for `$ultragoal` runs. The durable plan and audit trail remain `.omc/ultragoal/goals.json` and `.omc/ultragoal/ledger.jsonl`; the state file only records the active runtime guard.
 
 - **Location**: `.omc/state/sessions/{sessionId}/ultragoal-state.json` when a Claude session id is available; legacy fallback is `.omc/state/ultragoal-state.json`.
-- **Active fields**: `active: true`, `session_id`, `project_path`, `started_at`, `last_checked_at`, `current_phase`, optional `claude_goal_objective`, and `reinforcement_count`.
-- **Stop hook**: reinforces only when the state is active, fresh (within the normal 2-hour mode-state freshness window), session-matching, and project-matching. Terminal phases (`complete`, `completed`, `done`, `all-done`, `failed`, `cancelled`) and all-done `.omc/ultragoal/goals.json` plans are ignored.
-- **PreToolUse guard**: while active, tools are denied unless the hook can see a matching active Claude `/goal` snapshot. Use `ALLOW_ULTRAGOAL_WITHOUT_GOAL=1` only as an intentional local bypass.
+- **Active fields**: `active: true`, `session_id`, `project_path`, `started_at`, `last_checked_at`, `current_phase`, optional `claude_goal_objective`, `reinforcement_count`, `awaiting_confirmation`, and `awaiting_confirmation_set_at`.
+- **Pending confirmation**: a fresh unconfirmed state is exempt from both Stop reinforcement and matching-`/goal` PreToolUse enforcement. Freshness requires `awaiting_confirmation: true` and a timestamp age in `[0, 2 minutes)`; a non-empty `awaiting_confirmation_set_at` is authoritative, while an absent or blank value may fall back to `started_at`. Invalid, future, or expired timestamps fail closed.
+- **Stop hook**: after confirmation, reinforces only when the state is active, fresh (within the normal 2-hour mode-state freshness window), session-matching, and project-matching. Terminal phases (`complete`, `completed`, `done`, `all-done`, `failed`, `cancelled`) and all-done `.omc/ultragoal/goals.json` plans are ignored.
+- **PreToolUse guard**: after confirmation, tools are denied unless the hook can see a matching active Claude `/goal` snapshot. Use `ALLOW_ULTRAGOAL_WITHOUT_GOAL=1` only as an intentional local bypass.
 - **Completion**: after the final quality gate and ultragoal checkpoint, mark the state inactive or run `/oh-my-claudecode:cancel` so the state file is cleared with other workflow state.
 
 #### Canceling a Mode

@@ -83,6 +83,39 @@ export interface SessionEndJobV1 {
   };
 }
 
+export interface OpenClawRoutingSnapshot {
+  openClawConfig?: string;
+  replyChannel?: string;
+  replyTarget?: string;
+  replyThread?: string;
+  tmux?: string;
+  tmuxPane?: string;
+}
+
+function openClawRoutingSnapshot(): OpenClawRoutingSnapshot {
+  const values: Array<[keyof OpenClawRoutingSnapshot, string]> = [
+    ['openClawConfig', 'OMC_OPENCLAW_CONFIG'],
+    ['replyChannel', 'OPENCLAW_REPLY_CHANNEL'],
+    ['replyTarget', 'OPENCLAW_REPLY_TARGET'],
+    ['replyThread', 'OPENCLAW_REPLY_THREAD'],
+    ['tmux', 'TMUX'],
+    ['tmuxPane', 'TMUX_PANE'],
+  ];
+  return Object.fromEntries(
+    values.flatMap(([property, environment]) =>
+      process.env[environment] === undefined
+        ? []
+        : [[property, process.env[environment]]],
+    ),
+  ) as OpenClawRoutingSnapshot;
+}
+
+function withOpenClawRouting(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  return { ...payload, openClawRouting: openClawRoutingSnapshot() };
+}
+
 const ACTIONS: Array<[SessionEndActionName, 'required' | 'best-effort']> = [
   ['foreground-cleanup', 'required'],
   ['wiki-capture', 'required'],
@@ -93,6 +126,19 @@ const ACTIONS: Array<[SessionEndActionName, 'required' | 'best-effort']> = [
   ['notification', 'best-effort'],
   ['openclaw', 'best-effort'],
 ];
+const TEST_PRODUCER_GRACE_ENV = 'OMC_SESSION_END_TEST_PRODUCER_GRACE_MS';
+const PRODUCER_GRACE_MS =
+  process.env.NODE_ENV === 'test' &&
+  /^\d+$/.test(process.env[TEST_PRODUCER_GRACE_ENV] ?? '')
+    ? Math.max(1, Number(process.env[TEST_PRODUCER_GRACE_ENV]))
+    : 30_000;
+const REQUIRED_ACTION_EXECUTION_MS =
+  ACTIONS.filter(([, actionClass]) => actionClass === 'required').length *
+  9_000;
+const BEST_EFFORT_ACTION_EXECUTION_MS =
+  ACTIONS.filter(([, actionClass]) => actionClass === 'best-effort').length *
+  2_000;
+const REQUIRED_ACTION_MAX_ATTEMPTS = 3;
 const LOCK_WAIT = new Int32Array(new SharedArrayBuffer(4));
 const DISCOVERY_FILE = 'discovery.json';
 export interface DiscoveryTicket {
@@ -130,6 +176,24 @@ function digest(value: unknown): string {
 function nowIso(): string {
   return new Date().toISOString();
 }
+function initialDeadlines(): {
+  producerGraceExpiresAt: string;
+  bestEffortDeadlineAt: string;
+} {
+  const startedAt = Date.now();
+  return {
+    producerGraceExpiresAt: new Date(
+      startedAt + PRODUCER_GRACE_MS,
+    ).toISOString(),
+    bestEffortDeadlineAt: new Date(
+      startedAt +
+        PRODUCER_GRACE_MS +
+        REQUIRED_ACTION_EXECUTION_MS +
+        BEST_EFFORT_ACTION_EXECUTION_MS,
+    ).toISOString(),
+  };
+}
+
 function lockPath(file: string): string {
   return `${file}.lock`;
 }
@@ -319,10 +383,8 @@ export function isManifestTerminal(job: SessionEndJobV1): boolean {
   return (
     ['sealed', 'no-op'].includes(job.producers.core.state) &&
     ['sealed', 'no-op'].includes(job.producers.wiki.state) &&
-    Object.values(job.actions).every((action) =>
-      action.class === 'required'
-        ? action.status === 'completed'
-        : action.status === 'completed' || action.status === 'expired',
+    Object.values(job.actions).every(
+      (action) => action.status === 'completed' || action.status === 'expired',
     ) &&
     job.owner === null &&
     Object.values(job.actions).every(
@@ -413,6 +475,7 @@ export function prepareCoreManifest(
   sessionId: string,
   payload: Record<string, unknown>,
 ): SessionEndJobV1 | null {
+  const durablePayload = withOpenClawRouting(payload);
   let jobPath: string;
   try {
     jobPath = sessionEndJobPath(directory, sessionId);
@@ -434,8 +497,8 @@ export function prepareCoreManifest(
             ...existing.producers,
             core: {
               state: 'prepared' as const,
-              intentKey: digest(payload),
-              payloadDigest: digest(payload),
+              intentKey: digest(durablePayload),
+              payloadDigest: digest(durablePayload),
             },
           },
           actions: { ...existing.actions },
@@ -443,7 +506,7 @@ export function prepareCoreManifest(
           updatedAt: nowIso(),
         };
         for (const [name, action] of Object.entries(next.actions))
-          if (name !== 'wiki-capture') action.payload = payload;
+          if (name !== 'wiki-capture') action.payload = durablePayload;
         atomicWriteJsonSync(jobPath, next);
         const reread = readPath(jobPath);
         if (!reread || reread.revision !== next.revision)
@@ -452,7 +515,10 @@ export function prepareCoreManifest(
       }
       const now = nowIso();
       const actions = Object.fromEntries(
-        ACTIONS.map(([name, klass]) => [name, newAction(name, klass, payload)]),
+        ACTIONS.map(([name, klass]) => [
+          name,
+          newAction(name, klass, durablePayload),
+        ]),
       ) as SessionEndJobV1['actions'];
       const job: SessionEndJobV1 = {
         version: 1,
@@ -462,13 +528,12 @@ export function prepareCoreManifest(
         revision: 0,
         createdAt: now,
         updatedAt: now,
-        producerGraceExpiresAt: new Date(Date.now() + 30_000).toISOString(),
-        bestEffortDeadlineAt: new Date(Date.now() + 10_000).toISOString(),
+        ...initialDeadlines(),
         producers: {
           core: {
             state: 'prepared',
-            intentKey: digest(payload),
-            payloadDigest: digest(payload),
+            intentKey: digest(durablePayload),
+            payloadDigest: digest(durablePayload),
           },
           wiki: { state: 'absent' },
         },
@@ -589,8 +654,7 @@ export function sealWikiManifest(
           revision: 0,
           createdAt: now,
           updatedAt: now,
-          producerGraceExpiresAt: new Date(Date.now() + 30_000).toISOString(),
-          bestEffortDeadlineAt: new Date(Date.now() + 10_000).toISOString(),
+          ...initialDeadlines(),
           producers: { core: { state: 'absent' }, wiki },
           actions,
           owner: null,
@@ -713,9 +777,13 @@ export function reapStaleSessionEndOwner(
         action.status === 'claimed' &&
         action.claimantNonce === expectedNonce
       ) {
-        action.status = 'retryable';
+        action.status =
+          action.class === 'best-effort' ? 'expired' : 'retryable';
         action.claimantNonce = undefined;
-        action.lastOutcomeCode = 'owner-reaped';
+        action.lastOutcomeCode =
+          action.class === 'best-effort'
+            ? 'delivery-uncertain-owner-reaped'
+            : 'owner-reaped';
         if (action.runner) action.runner.phase = 'terminal';
       }
     }
@@ -771,12 +839,25 @@ export function claimSessionEndAction(
       action.claimantNonce
     )
       throw new Error('action-claim-conflict');
+    if (action.class === 'best-effort' && action.attempts > 0) {
+      action.status = 'expired';
+      action.lastOutcomeCode = 'delivery-attempted';
+      return;
+    }
     if (
-      action.class === 'best-effort' &&
-      Date.now() >= Date.parse(job.bestEffortDeadlineAt)
+      (action.class === 'required' &&
+        (action.attempts >= REQUIRED_ACTION_MAX_ATTEMPTS ||
+          Date.now() >= Date.parse(job.bestEffortDeadlineAt))) ||
+      (action.class === 'best-effort' &&
+        Date.now() >= Date.parse(job.bestEffortDeadlineAt))
     ) {
       action.status = 'expired';
-      action.lastOutcomeCode = 'deadline-expired';
+      action.lastOutcomeCode =
+        action.class === 'required'
+          ? action.attempts >= REQUIRED_ACTION_MAX_ATTEMPTS
+            ? 'required-attempt-limit'
+            : 'required-deadline-expired'
+          : 'deadline-expired';
       return;
     }
     action.status = 'claimed';
@@ -826,14 +907,18 @@ export function finishSessionEndAction(
       action.runner?.runnerNonce !== runnerNonce
     )
       throw new Error('action-result-conflict');
-    action.status = completed ? 'completed' : 'retryable';
+    action.status = completed
+      ? 'completed'
+      : action.class === 'best-effort'
+        ? 'expired'
+        : 'retryable';
     action.lastOutcomeCode = code;
     action.completedAt = completed ? nowIso() : undefined;
     action.claimantNonce = undefined;
     action.runner.phase = 'terminal';
   });
 }
-/** Claims fair durable discovery tickets. Completion acknowledgement is independent from manifest terminality. */
+/** Claims fair durable discovery tickets and retires tickets whose manifests are terminal. */
 export function claimSessionEndDiscoveryTickets(
   directory: string,
   limit = 4,
@@ -842,7 +927,7 @@ export function claimSessionEndDiscoveryTickets(
   try {
     const file = discoveryPath(directory);
     if (!fs.existsSync(file)) return [];
-    return withLock(file, () => {
+    const claimed = withLock(file, () => {
       const index = readIndex(file);
       const now = Date.now();
       const claimed: Array<{ sessionId: string; nonce: string }> = [];
@@ -853,10 +938,17 @@ export function claimSessionEndDiscoveryTickets(
       ) {
         const ticket =
           index.tickets[(index.cursor + offset) % index.tickets.length];
+        if (ticket.acknowledgedAt) continue;
+        const job = readSessionEndJob(directory, ticket.sessionId);
+        if (job?.phase === 'complete' || (job && isManifestTerminal(job))) {
+          ticket.acknowledgedAt = nowIso();
+          ticket.claimNonce = undefined;
+          ticket.leaseExpiresAt = undefined;
+          continue;
+        }
         const leased =
           ticket.leaseExpiresAt && Date.parse(ticket.leaseExpiresAt) > now;
-        if (ticket.acknowledgedAt || leased || Date.parse(ticket.retryAt) > now)
-          continue;
+        if (leased || Date.parse(ticket.retryAt) > now) continue;
         const nonce = randomUUID();
         ticket.claimNonce = nonce;
         ticket.leaseExpiresAt = new Date(now + leaseMs).toISOString();
@@ -868,6 +960,7 @@ export function claimSessionEndDiscoveryTickets(
       atomicWriteJsonSync(file, index);
       return claimed;
     });
+    return claimed;
   } catch {
     return [];
   }
@@ -948,12 +1041,111 @@ export function recoverPreparedCoreProducer(
         sealedAt: nowIso(),
         sealedBy: 'recovery',
       };
+    if (job.producers.wiki.state === 'absent') {
+      job.producers.wiki = {
+        state: 'no-op',
+        sealedAt: nowIso(),
+        sealedBy: 'recovery',
+      };
+      const wikiCapture = job.actions['wiki-capture'];
+      if (
+        wikiCapture.status === 'pending' ||
+        wikiCapture.status === 'retryable'
+      ) {
+        wikiCapture.status = 'completed';
+        wikiCapture.completedAt = nowIso();
+        wikiCapture.lastOutcomeCode = 'producer-absent';
+      }
+    }
+    if (job.phase === 'collecting') job.phase = 'ready';
+  });
+}
+
+/** A prepared core cannot be recovered once its foreground prerequisite is exhausted after grace. */
+export function failClosedExhaustedForegroundCleanup(
+  directory: string,
+  sessionId: string,
+): SessionEndJobV1 | null {
+  return mutateLatest(directory, sessionId, (job) => {
+    const foreground = job.actions['foreground-cleanup'];
+    const exhausted =
+      foreground.status === 'expired' ||
+      (foreground.status === 'retryable' &&
+        foreground.attempts >= REQUIRED_ACTION_MAX_ATTEMPTS);
+    if (
+      job.producers.core.state !== 'prepared' ||
+      Date.now() < Date.parse(job.producerGraceExpiresAt) ||
+      !exhausted
+    )
+      return;
+
+    const evidence = {
+      reason: 'foreground-cleanup-exhausted',
+      attempts: foreground.attempts,
+      outcomeCode: foreground.lastOutcomeCode,
+    };
+    job.producers.core = {
+      ...job.producers.core,
+      state: 'no-op',
+      sealedAt: nowIso(),
+      sealedBy: 'recovery',
+    };
     if (job.producers.wiki.state === 'absent')
       job.producers.wiki = {
         state: 'no-op',
         sealedAt: nowIso(),
         sealedBy: 'recovery',
       };
+    for (const [name, action] of Object.entries(job.actions) as Array<
+      [SessionEndActionName, SessionEndActionState]
+    >) {
+      if (action.status !== 'pending' && action.status !== 'retryable')
+        continue;
+      action.status = 'expired';
+      action.lastOutcomeCode =
+        name === 'foreground-cleanup'
+          ? 'required-foreground-cleanup-exhausted'
+          : action.class === 'required'
+            ? 'required-core-producer-unavailable'
+            : 'best-effort-core-producer-unavailable';
+      action.payload = { ...action.payload, terminalization: evidence };
+      if (action.runner) action.runner.phase = 'terminal';
+    }
+    if (job.phase === 'collecting') job.phase = 'ready';
+  });
+}
+
+/** A wiki-only handoff cannot safely infer the missing core cleanup intent. */
+export function failClosedMissingCoreProducer(
+  directory: string,
+  sessionId: string,
+): SessionEndJobV1 | null {
+  return mutateLatest(directory, sessionId, (job) => {
+    if (
+      job.producers.core.state !== 'absent' ||
+      !['sealed', 'no-op'].includes(job.producers.wiki.state) ||
+      Date.now() < Date.parse(job.producerGraceExpiresAt)
+    )
+      return;
+    job.producers.core = {
+      state: 'no-op',
+      sealedAt: nowIso(),
+      sealedBy: 'recovery',
+    };
+    for (const [name, action] of Object.entries(job.actions) as Array<
+      [SessionEndActionName, SessionEndActionState]
+    >) {
+      if (
+        name === 'wiki-capture' ||
+        (action.status !== 'pending' && action.status !== 'retryable')
+      )
+        continue;
+      action.status = 'expired';
+      action.lastOutcomeCode =
+        action.class === 'required'
+          ? 'required-core-producer-absent'
+          : 'best-effort-core-producer-absent';
+    }
     if (job.phase === 'collecting') job.phase = 'ready';
   });
 }

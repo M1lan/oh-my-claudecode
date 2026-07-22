@@ -26,6 +26,7 @@ import {
   completeForegroundCleanup,
   completeForegroundCleanupAndSealCore,
   prepareCoreManifest,
+  readSessionEndJob,
   sealWikiManifest,
 } from './cleanup-manifest.js';
 import { spawnSessionEndWorker } from './worker.js';
@@ -940,20 +941,64 @@ export async function cleanupSessionReplies(sessionId: string): Promise<void> {
   }
 }
 
+function deferredSessionEndSnapshot(
+  directory: string,
+  sessionId: string,
+): {
+  metrics: SessionMetrics;
+  input: {
+    session_id: string;
+    cwd: string;
+    transcript_path?: string;
+    reason?: string;
+  };
+} {
+  const payload = readSessionEndJob(directory, sessionId)?.actions.callback
+    .payload;
+  const metrics = payload?.metrics as SessionMetrics | undefined;
+  const input = payload?.input as
+    | {
+        session_id?: unknown;
+        cwd?: unknown;
+        transcript_path?: unknown;
+        reason?: unknown;
+      }
+    | undefined;
+  if (
+    metrics &&
+    input?.session_id === sessionId &&
+    typeof input.cwd === 'string'
+  ) {
+    return {
+      metrics,
+      input: input as {
+        session_id: string;
+        cwd: string;
+        transcript_path?: string;
+        reason?: string;
+      },
+    };
+  }
+  return {
+    metrics: recordSessionMetrics(directory, {
+      session_id: sessionId,
+      transcript_path: '',
+      cwd: directory,
+      permission_mode: '',
+      hook_event_name: 'SessionEnd',
+      reason: 'other',
+    }),
+    input: { session_id: sessionId, cwd: directory },
+  };
+}
+
 export async function runSessionEndCallbacks(
   directory: string,
   sessionId: string,
   idempotencyKey?: string,
   strict = false,
 ): Promise<void> {
-  const metrics = recordSessionMetrics(directory, {
-    session_id: sessionId,
-    transcript_path: '',
-    cwd: directory,
-    permission_mode: '',
-    hook_event_name: 'SessionEnd',
-    reason: 'other',
-  });
+  const { metrics, input } = deferredSessionEndSnapshot(directory, sessionId);
   const profileName = process.env.OMC_NOTIFY_PROFILE;
   const config = getNotificationConfig(profileName);
   const platforms =
@@ -977,9 +1022,9 @@ export async function runSessionEndCallbacks(
     {
       directory,
       sessionId,
-      transcriptPath: '',
+      transcriptPath: input.transcript_path ?? '',
       metrics,
-      input: { session_id: sessionId, cwd: directory },
+      input,
       deadlineAt: new Date(Date.now() + 2_000).toISOString(),
       action: {
         name: 'legacy-callback',
@@ -1002,14 +1047,7 @@ export async function runSessionEndNotifications(
   const profileName = process.env.OMC_NOTIFY_PROFILE;
   const config = getNotificationConfig(profileName);
   if (!config || !hasExplicitNotificationConfig(profileName)) return;
-  const metrics = recordSessionMetrics(directory, {
-    session_id: sessionId,
-    transcript_path: '',
-    cwd: directory,
-    permission_mode: '',
-    hook_event_name: 'SessionEnd',
-    reason: 'other',
-  });
+  const { metrics, input } = deferredSessionEndSnapshot(directory, sessionId);
   const outcome = await runSessionEndDeferredAction(
     {
       name: 'notification',
@@ -1020,9 +1058,9 @@ export async function runSessionEndNotifications(
     {
       directory,
       sessionId,
-      transcriptPath: '',
+      transcriptPath: input.transcript_path ?? '',
       metrics,
-      input: { session_id: sessionId, cwd: directory },
+      input,
       deadlineAt: new Date(Date.now() + 2_000).toISOString(),
       action: {
         name: 'notification',
@@ -1041,14 +1079,7 @@ export async function runSessionEndOpenClaw(
   sessionId: string,
   strict = false,
 ): Promise<void> {
-  const metrics = recordSessionMetrics(directory, {
-    session_id: sessionId,
-    transcript_path: '',
-    cwd: directory,
-    permission_mode: '',
-    hook_event_name: 'SessionEnd',
-    reason: 'other',
-  });
+  const { metrics, input } = deferredSessionEndSnapshot(directory, sessionId);
   const outcome = await runSessionEndDeferredAction(
     {
       name: 'openclaw-wake',
@@ -1063,9 +1094,9 @@ export async function runSessionEndOpenClaw(
     {
       directory,
       sessionId,
-      transcriptPath: '',
+      transcriptPath: input.transcript_path ?? '',
       metrics,
-      input: { session_id: sessionId, cwd: directory },
+      input,
       deadlineAt: new Date(Date.now() + 2_000).toISOString(),
       action: {
         name: 'openclaw-wake',
@@ -1104,6 +1135,7 @@ export async function runForegroundSessionEndCleanup(
 function buildDurableSessionEndPayload(
   directory: string,
   input: SessionEndInput,
+  metrics: SessionMetrics,
 ): Record<string, unknown> {
   const teamState = readModeState<Record<string, unknown>>(
     'team',
@@ -1116,6 +1148,8 @@ function buildDurableSessionEndPayload(
     transcriptPath: input.transcript_path,
     cwd: input.cwd,
     reason: input.reason,
+    input,
+    metrics,
     initialTeamNames: teamName ? [teamName] : [],
     notificationProfile:
       typeof process.env.OMC_NOTIFY_PROFILE === 'string'
@@ -1129,10 +1163,10 @@ export async function processSessionEnd(
   input: SessionEndInput,
 ): Promise<HookOutput> {
   const directory = resolveToWorktreeRoot(input.cwd);
-  const payload = buildDurableSessionEndPayload(directory, input);
+  const metrics = recordSessionMetrics(directory, input);
+  const payload = buildDurableSessionEndPayload(directory, input, metrics);
   const manifest = prepareCoreManifest(directory, input.session_id, payload);
   if (!manifest) return { continue: true };
-  const metrics = recordSessionMetrics(directory, input);
   exportSessionSummary(directory, metrics);
   let foregroundOutcome: Record<string, unknown>;
   try {

@@ -5,6 +5,8 @@ import {
   claimSessionEndAction,
   claimSessionEndDiscoveryTickets,
   claimSessionEndJob,
+  failClosedExhaustedForegroundCleanup,
+  failClosedMissingCoreProducer,
   finishSessionEndAction,
   markSessionEndActionRunner,
   readSessionEndJob,
@@ -29,8 +31,8 @@ export interface SessionEndWorkerPayload {
   sessionId: string;
 }
 
-/** Routing and CA paths are passed to the child, but never copied into a durable manifest. */
-function workerEnvironment(): NodeJS.ProcessEnv {
+/** Durable OpenClaw routing is supplied from the manifest to the action runner, never from worker ambient state. */
+export function workerEnvironment(): NodeJS.ProcessEnv {
   const keys = [
     'PATH',
     'HOME',
@@ -49,7 +51,24 @@ function workerEnvironment(): NodeJS.ProcessEnv {
     'OMC_CONFIG_PATH',
     'OMC_NOTIFY',
     'OMC_NOTIFY_PROFILE',
-    'OMC_OPENCLAW',
+    'OMC_TELEGRAM',
+    'OMC_DISCORD',
+    'OMC_SLACK',
+    'OMC_WEBHOOK',
+    'OMC_DISCORD_MENTION',
+    'OMC_DISCORD_NOTIFIER_BOT_TOKEN',
+    'OMC_DISCORD_NOTIFIER_CHANNEL',
+    'OMC_DISCORD_WEBHOOK_URL',
+    'OMC_TELEGRAM_BOT_TOKEN',
+    'OMC_TELEGRAM_NOTIFIER_BOT_TOKEN',
+    'OMC_TELEGRAM_CHAT_ID',
+    'OMC_TELEGRAM_NOTIFIER_CHAT_ID',
+    'OMC_TELEGRAM_NOTIFIER_UID',
+    'OMC_SLACK_WEBHOOK_URL',
+    'OMC_SLACK_MENTION',
+    'OMC_SLACK_BOT_TOKEN',
+    'OMC_SLACK_APP_TOKEN',
+    'OMC_SLACK_BOT_CHANNEL',
     'HTTP_PROXY',
     'HTTPS_PROXY',
     'ALL_PROXY',
@@ -63,6 +82,9 @@ function workerEnvironment(): NodeJS.ProcessEnv {
     'SSL_CERT_DIR',
     'REQUESTS_CA_BUNDLE',
     'CURL_CA_BUNDLE',
+    ...(process.env.NODE_ENV === 'test'
+      ? ['OMC_SESSION_END_TEST_PRODUCER_GRACE_MS']
+      : []),
   ];
   return Object.fromEntries(
     keys.flatMap((key) =>
@@ -188,6 +210,41 @@ async function reapIfProvenStale(
       liveness,
     );
 }
+function reschedulePendingWorker(
+  payload: SessionEndWorkerPayload,
+  job: ReturnType<typeof readSessionEndJob>,
+): void {
+  if (!job || job.phase === 'complete') return;
+  const retryableAttempts = Object.values(job.actions)
+    .filter((action) => action.status === 'retryable')
+    .map((action) => action.attempts);
+  const producersReady =
+    ['sealed', 'no-op'].includes(job.producers.core.state) &&
+    ['sealed', 'no-op'].includes(job.producers.wiki.state);
+  const hasPendingAction =
+    producersReady &&
+    Object.values(job.actions).some((action) => action.status === 'pending');
+  const awaitingProducerGrace =
+    Date.now() < Date.parse(job.producerGraceExpiresAt) &&
+    (job.producers.core.state === 'prepared' ||
+      (job.producers.core.state === 'absent' &&
+        ['sealed', 'no-op'].includes(job.producers.wiki.state)));
+  if (
+    !awaitingProducerGrace &&
+    retryableAttempts.length === 0 &&
+    !hasPendingAction
+  )
+    return;
+  const delay = awaitingProducerGrace
+    ? Math.max(1, Date.parse(job.producerGraceExpiresAt) - Date.now())
+    : retryableAttempts.length > 0
+      ? Math.min(30_000, 250 * 2 ** Math.min(Math.max(...retryableAttempts), 7))
+      : 250;
+  setTimeout(() => {
+    void processSessionEndWorker(payload);
+  }, delay);
+}
+
 export async function processSessionEndWorker(
   payload: SessionEndWorkerPayload,
 ): Promise<void> {
@@ -222,6 +279,8 @@ export async function processSessionEndWorker(
     : false;
   if (admitted && graceExpired) {
     recoverPreparedCoreProducer(payload.directory, payload.sessionId);
+    failClosedExhaustedForegroundCleanup(payload.directory, payload.sessionId);
+    failClosedMissingCoreProducer(payload.directory, payload.sessionId);
     admitted = readSessionEndJob(payload.directory, payload.sessionId);
   }
   let producerReady = Boolean(
@@ -344,11 +403,21 @@ export async function processSessionEndWorker(
       generation = heartbeat.owner.leaseGeneration;
     }
   } finally {
-    releaseSessionEndJob(
+    const released = releaseSessionEndJob(
       payload.directory,
       payload.sessionId,
       nonce,
       generation,
+    );
+    const terminalized = failClosedExhaustedForegroundCleanup(
+      payload.directory,
+      payload.sessionId,
+    );
+    reschedulePendingWorker(
+      payload,
+      terminalized ??
+        released ??
+        readSessionEndJob(payload.directory, payload.sessionId),
     );
   }
 }
