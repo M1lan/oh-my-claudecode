@@ -44,7 +44,7 @@ export {
   sendResumeSequence,
   sendToPane,
   formatBlockedPanesSummary,
-} from './tmux-detector.js';
+} from './rmux-detector.js';
 
 // Daemon exports
 export {

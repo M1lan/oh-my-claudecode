@@ -30,7 +30,7 @@ import {
   validateResolvedPath,
 } from './fs-utils.js';
 import { validateWorktreeRemovalTarget } from '../lib/worktree-cleanup-safety.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import { withFileLockSync } from '../lib/file-lock.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 

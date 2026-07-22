@@ -9,7 +9,7 @@ vi.mock('../session-registry.js', () => ({
 // Mock tmux to control pane ID
 const mockGetCurrentTmuxPaneId = vi.fn<() => string | null>();
 const mockGetCurrentTmuxSession = vi.fn<() => string | null>();
-vi.mock('../tmux.js', () => ({
+vi.mock('../rmux.js', () => ({
   getCurrentTmuxPaneId: () => mockGetCurrentTmuxPaneId(),
   getCurrentTmuxSession: () => mockGetCurrentTmuxSession(),
   getTeamTmuxSessions: () => [],
@@ -18,7 +18,7 @@ vi.mock('../tmux.js', () => ({
 
 const mockCapturePaneContent =
   vi.fn<(paneId: string, lines?: number) => string>();
-vi.mock('../../features/rate-limit-wait/tmux-detector.js', () => ({
+vi.mock('../../features/rate-limit-wait/rmux-detector.js', () => ({
   capturePaneContent: (paneId: string, lines?: number) =>
     mockCapturePaneContent(paneId, lines),
 }));

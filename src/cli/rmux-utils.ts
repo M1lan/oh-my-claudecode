@@ -1,6 +1,10 @@
 /**
- * tmux utility functions for omc native shell launch
- * Adapted from oh-my-codex patterns for omc
+ * Multiplexer utility functions for omc native shell launch.
+ *
+ * rmux is the primary multiplexer; tmux is the drop-in fallback. All raw
+ * multiplexer invocations in the codebase route through the centralized
+ * wrappers here (rmuxExec, rmuxExecAsync, rmuxShell, …), which resolve the
+ * active multiplexer once. Adapted from oh-my-codex patterns for omc.
  */
 
 import {
@@ -17,16 +21,16 @@ import {
 import { basename, isAbsolute, win32 as win32Path } from 'path';
 import { promisify } from 'util';
 
-// ── tmux environment & execution wrappers ────────────────────────────────────
+// ── multiplexer environment & execution wrappers ─────────────────────────────
 
-export interface TmuxExecOptions {
+export interface RmuxExecOptions {
   /** Strip TMUX env var so the command targets the default tmux server.
    *  Default: false — preserves TMUX (targets the current server).
    *  Set to true for OMC-owned background sessions and cross-session scans. */
   stripTmux?: boolean;
 }
 
-export function tmuxEnv(): NodeJS.ProcessEnv {
+export function rmuxEnv(): NodeJS.ProcessEnv {
   // Strip both TMUX (real tmux) and PSMUX_SESSION (psmux's drop-in tmux on
   // native Windows). psmux gates `new-session -d` nesting on PSMUX_SESSION,
   // not TMUX, so dropping only TMUX leaves psmux silently no-op'ing detached
@@ -35,11 +39,11 @@ export function tmuxEnv(): NodeJS.ProcessEnv {
   return env;
 }
 
-function resolveEnv(opts?: TmuxExecOptions): NodeJS.ProcessEnv {
-  return opts?.stripTmux ? tmuxEnv() : process.env;
+function resolveEnv(opts?: RmuxExecOptions): NodeJS.ProcessEnv {
+  return opts?.stripTmux ? rmuxEnv() : process.env;
 }
 
-interface TmuxCommandInvocation {
+interface RmuxCommandInvocation {
   command: string;
   args: string[];
 }
@@ -83,13 +87,13 @@ export function resolveRmuxInvocation(
  * Shell-command prefix for the active multiplexer (rmux `bin -S sock`, or plain
  * `tmux`). Used by the string-based shell wrappers below.
  */
-function tmuxShellCommandPrefix(): string {
+function multiplexerShellCommandPrefix(): string {
   const rmux = resolveRmuxInvocation();
   if (rmux) {
     return [rmux.bin, ...rmux.socketArgs].map(quoteShellArg).join(' ');
   }
   // Prefer a plain `rmux` binary on PATH (POSIX only) as a tmux drop-in,
-  // before falling back to literal tmux — mirrors resolveTmuxInvocation's
+  // before falling back to literal tmux — mirrors resolveMultiplexerInvocation's
   // 3-tier ladder (shim -> plain rmux on PATH -> tmux).
   const rmuxBinary = resolveRmuxBinaryPath();
   if (rmuxBinary) {
@@ -161,7 +165,7 @@ export function __resetRmuxBinaryPathCache(): void {
   cachedRmuxBinaryPath = undefined;
 }
 
-function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
+function resolveMultiplexerInvocation(args: string[]): RmuxCommandInvocation {
   const rmux = resolveRmuxInvocation();
   if (rmux) {
     return { command: rmux.bin, args: [...rmux.socketArgs, ...args] };
@@ -191,15 +195,15 @@ function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
   };
 }
 
-export function tmuxExec(
+export function rmuxExec(
   args: string[],
-  opts?: TmuxExecOptions &
+  opts?: RmuxExecOptions &
     Omit<ExecFileSyncOptionsWithStringEncoding, 'env' | 'encoding'> & {
       encoding?: BufferEncoding;
     },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
-  const invocation = resolveTmuxInvocation(args);
+  const invocation = resolveMultiplexerInvocation(args);
   return execFileSync(invocation.command, invocation.args, {
     encoding: 'utf-8',
     ...execOpts,
@@ -207,12 +211,12 @@ export function tmuxExec(
   });
 }
 
-export async function tmuxExecAsync(
+export async function rmuxExecAsync(
   args: string[],
-  opts?: TmuxExecOptions & { timeout?: number },
+  opts?: RmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
-  const invocation = resolveTmuxInvocation(args);
+  const invocation = resolveMultiplexerInvocation(args);
   return promisify(execFile)(invocation.command, invocation.args, {
     encoding: 'utf-8',
     env: resolveEnv(opts),
@@ -221,27 +225,27 @@ export async function tmuxExecAsync(
   });
 }
 
-export function tmuxShell(
+export function rmuxShell(
   command: string,
-  opts?: TmuxExecOptions &
+  opts?: RmuxExecOptions &
     Omit<ExecSyncOptionsWithStringEncoding, 'env' | 'encoding'> & {
       encoding?: BufferEncoding;
     },
 ): string {
   const { stripTmux: _, ...execOpts } = opts ?? {};
-  return execSync(`${tmuxShellCommandPrefix()} ${command}`, {
+  return execSync(`${multiplexerShellCommandPrefix()} ${command}`, {
     encoding: 'utf-8',
     ...execOpts,
     env: resolveEnv(opts),
   }) as string;
 }
 
-export async function tmuxShellAsync(
+export async function rmuxShellAsync(
   command: string,
-  opts?: TmuxExecOptions & { timeout?: number },
+  opts?: RmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   const { stripTmux: _, timeout, ...rest } = opts ?? {};
-  return promisify(exec)(`${tmuxShellCommandPrefix()} ${command}`, {
+  return promisify(exec)(`${multiplexerShellCommandPrefix()} ${command}`, {
     encoding: 'utf-8',
     env: resolveEnv(opts),
     ...(timeout !== undefined ? { timeout } : {}),
@@ -249,15 +253,15 @@ export async function tmuxShellAsync(
   });
 }
 
-export function tmuxSpawn(
+export function rmuxSpawn(
   args: string[],
-  opts?: TmuxExecOptions &
+  opts?: RmuxExecOptions &
     Omit<SpawnSyncOptionsWithStringEncoding, 'env' | 'encoding'> & {
       encoding?: BufferEncoding;
     },
 ): SpawnSyncReturns<string> {
   const { stripTmux: _, ...spawnOpts } = opts ?? {};
-  const invocation = resolveTmuxInvocation(args);
+  const invocation = resolveMultiplexerInvocation(args);
   return spawnSync(invocation.command, invocation.args, {
     encoding: 'utf-8',
     ...spawnOpts,
@@ -265,22 +269,22 @@ export function tmuxSpawn(
   });
 }
 
-export async function tmuxCmdAsync(
+export async function rmuxCmdAsync(
   args: string[],
-  opts?: TmuxExecOptions & { timeout?: number },
+  opts?: RmuxExecOptions & { timeout?: number },
 ): Promise<{ stdout: string; stderr: string }> {
   if (args.some((a) => a.includes('#{')) && !isNativeWindowsShell()) {
     const escaped = args
       .map((a) => "'" + a.replace(/'/g, "'\\''") + "'")
       .join(' ');
-    return tmuxShellAsync(escaped, opts);
+    return rmuxShellAsync(escaped, opts);
   }
-  return tmuxExecAsync(args, opts);
+  return rmuxExecAsync(args, opts);
 }
 
 export type ClaudeLaunchPolicy = 'inside-tmux' | 'outside-tmux' | 'direct';
 
-export interface TmuxPaneSnapshot {
+export interface RmuxPaneSnapshot {
   paneId: string;
   currentCommand: string;
   startCommand: string;
@@ -338,7 +342,7 @@ export function isTmuxAvailable(): boolean {
       return result.status === 0;
     }
 
-    tmuxExec(['-V'], { stripTmux: true, stdio: 'ignore' });
+    rmuxExec(['-V'], { stripTmux: true, stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -418,8 +422,8 @@ export function resolveLaunchPolicy(
  * Format: omc-{dir}-{branch}-{utctimestamp}
  * e.g.  omc-myproject-dev-20260221143052
  */
-export function buildTmuxSessionName(cwd: string): string {
-  const dirToken = sanitizeTmuxToken(basename(cwd));
+export function buildRmuxSessionName(cwd: string): string {
+  const dirToken = sanitizeRmuxToken(basename(cwd));
   let branchToken = 'detached';
 
   try {
@@ -430,7 +434,7 @@ export function buildTmuxSessionName(cwd: string): string {
       windowsHide: true,
     }).trim();
     if (branch) {
-      branchToken = sanitizeTmuxToken(branch);
+      branchToken = sanitizeRmuxToken(branch);
     }
   } catch {
     // Non-git directory or git unavailable
@@ -454,7 +458,7 @@ export function buildTmuxSessionName(cwd: string): string {
  * Sanitize string for use in tmux session/window names
  * Lowercase, alphanumeric + hyphens only
  */
-export function sanitizeTmuxToken(value: string): string {
+export function sanitizeRmuxToken(value: string): string {
   const cleaned = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -465,31 +469,31 @@ export function sanitizeTmuxToken(value: string): string {
 /**
  * Build shell command string for tmux with proper quoting
  */
-export function buildTmuxShellCommand(command: string, args: string[]): string {
+export function buildRmuxShellCommand(command: string, args: string[]): string {
   if (isNativeWindowsShell()) {
     return [command, ...args].map(quoteForCmd).join(' ');
   }
   return [quoteShellArg(command), ...args.map(quoteShellArg)].join(' ');
 }
 
-export function buildTmuxShellCommandWithEnv(
+export function buildRmuxShellCommandWithEnv(
   command: string,
   args: string[],
   envVars: Record<string, string>,
 ): string {
   const envEntries = Object.entries(envVars);
   if (envEntries.length === 0) {
-    return buildTmuxShellCommand(command, args);
+    return buildRmuxShellCommand(command, args);
   }
 
   if (isNativeWindowsShell()) {
     const envPrefix = envEntries
       .map(([key, value]) => `set "${key}=${escapeForCmdSet(value)}"`)
       .join(' && ');
-    return `${envPrefix} && ${buildTmuxShellCommand(command, args)}`;
+    return `${envPrefix} && ${buildRmuxShellCommand(command, args)}`;
   }
 
-  return buildTmuxShellCommand('env', [
+  return buildRmuxShellCommand('env', [
     ...envEntries.map(([key, value]) => `${key}=${value}`),
     command,
     ...args,
@@ -531,7 +535,7 @@ export function quoteShellArg(value: string): string {
 /**
  * Parse tmux pane list output into structured data
  */
-export function parseTmuxPaneSnapshot(output: string): TmuxPaneSnapshot[] {
+export function parseRmuxPaneSnapshot(output: string): RmuxPaneSnapshot[] {
   return output
     .split('\n')
     .map((line) => line.trim())
@@ -551,7 +555,7 @@ export function parseTmuxPaneSnapshot(output: string): TmuxPaneSnapshot[] {
 /**
  * Check if pane is running a HUD watch command
  */
-export function isHudWatchPane(pane: TmuxPaneSnapshot): boolean {
+export function isHudWatchPane(pane: RmuxPaneSnapshot): boolean {
   const command = `${pane.startCommand} ${pane.currentCommand}`.toLowerCase();
   return (
     /\bhud\b/.test(command) &&
@@ -564,7 +568,7 @@ export function isHudWatchPane(pane: TmuxPaneSnapshot): boolean {
  * Find HUD watch pane IDs in current window
  */
 export function findHudWatchPaneIds(
-  panes: TmuxPaneSnapshot[],
+  panes: RmuxPaneSnapshot[],
   currentPaneId?: string,
 ): string[] {
   return panes
@@ -580,12 +584,12 @@ export function listHudWatchPaneIdsInCurrentWindow(
   currentPaneId?: string,
 ): string[] {
   try {
-    const output = tmuxExec([
+    const output = rmuxExec([
       'list-panes',
       '-F',
       '#{pane_id}\t#{pane_current_command}\t#{pane_start_command}',
     ]);
-    return findHudWatchPaneIds(parseTmuxPaneSnapshot(output), currentPaneId);
+    return findHudWatchPaneIds(parseRmuxPaneSnapshot(output), currentPaneId);
   } catch {
     return [];
   }
@@ -598,7 +602,7 @@ export function listHudWatchPaneIdsInCurrentWindow(
 export function createHudWatchPane(cwd: string, hudCmd: string): string | null {
   try {
     const wrappedCmd = wrapWithLoginShell(hudCmd);
-    const output = tmuxExec([
+    const output = rmuxExec([
       'split-window',
       '-v',
       '-l',
@@ -621,10 +625,10 @@ export function createHudWatchPane(cwd: string, hudCmd: string): string | null {
 /**
  * Kill tmux pane by ID
  */
-export function killTmuxPane(paneId: string): void {
+export function killRmuxPane(paneId: string): void {
   if (!paneId.startsWith('%')) return;
   try {
-    tmuxExec(['kill-pane', '-t', paneId], { stdio: 'ignore' });
+    rmuxExec(['kill-pane', '-t', paneId], { stdio: 'ignore' });
   } catch {
     // Pane may already be gone; ignore
   }

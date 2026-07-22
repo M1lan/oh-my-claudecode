@@ -5,7 +5,7 @@ import {
   verifyTeamTargetOwnership,
   type DirectMailboxEffectDependencies,
   type MailboxTargetOwnershipDependencies,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 import type { MailboxNotificationTarget } from '../mailbox-notification-guard.js';
 
 function workerTarget(
@@ -26,12 +26,12 @@ function ownershipDependencies(
   tmuxOutput: string = '',
   cmuxOutputs: string[] = [],
 ): MailboxTargetOwnershipDependencies & {
-  tmuxExec: ReturnType<typeof vi.fn>;
+  rmuxExec: ReturnType<typeof vi.fn>;
   cmuxExec: ReturnType<typeof vi.fn>;
 } {
   const outputs = [...cmuxOutputs];
   return {
-    tmuxExec: vi.fn(async () => ({ stdout: tmuxOutput, stderr: '' })),
+    rmuxExec: vi.fn(async () => ({ stdout: tmuxOutput, stderr: '' })),
     cmuxExec: vi.fn(async () => ({
       stdout: outputs.shift() ?? '',
       stderr: '',
@@ -54,8 +54,8 @@ describe('direct mailbox target ownership', () => {
       providerTarget: 'dispatch-session:workers',
       paneId: '%9',
     });
-    expect(dependencies.tmuxExec).toHaveBeenCalledOnce();
-    expect(dependencies.tmuxExec).toHaveBeenCalledWith([
+    expect(dependencies.rmuxExec).toHaveBeenCalledOnce();
+    expect(dependencies.rmuxExec).toHaveBeenCalledWith([
       'list-panes',
       '-t',
       'dispatch-session:workers',
@@ -89,7 +89,7 @@ describe('direct mailbox target ownership', () => {
     );
 
     expect(result).toEqual({ kind: 'unavailable' });
-    expect(dependencies.tmuxExec).not.toHaveBeenCalled();
+    expect(dependencies.rmuxExec).not.toHaveBeenCalled();
   });
 
   it('proves exact cmux workspace to pane to surface membership using read-only commands', async () => {
@@ -135,7 +135,7 @@ describe('direct mailbox target ownership', () => {
         ],
       ],
     ]);
-    expect(dependencies.tmuxExec).not.toHaveBeenCalled();
+    expect(dependencies.rmuxExec).not.toHaveBeenCalled();
   });
 
   it('rejects a tmux-shaped cmux surface before any provider query', async () => {
@@ -154,7 +154,7 @@ describe('direct mailbox target ownership', () => {
     );
 
     expect(result).toEqual({ kind: 'unavailable' });
-    expect(dependencies.tmuxExec).not.toHaveBeenCalled();
+    expect(dependencies.rmuxExec).not.toHaveBeenCalled();
     expect(dependencies.cmuxExec).not.toHaveBeenCalled();
   });
 
@@ -167,7 +167,7 @@ describe('direct mailbox target ownership', () => {
     );
 
     expect(result).toEqual({ kind: 'provider_mismatch' });
-    expect(dependencies.tmuxExec).not.toHaveBeenCalled();
+    expect(dependencies.rmuxExec).not.toHaveBeenCalled();
     expect(dependencies.cmuxExec).not.toHaveBeenCalled();
   });
 });

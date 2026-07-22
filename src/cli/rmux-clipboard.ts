@@ -1,8 +1,8 @@
-import { tmuxExec, tmuxExecAsync } from './tmux-utils.js';
+import { rmuxExec, rmuxExecAsync } from './rmux-utils.js';
 
 const UNIVERSAL_CLIPBOARD_FEATURE = '*:clipboard';
-type SyncTmuxClipboardOptions = Parameters<typeof tmuxExec>[1];
-type AsyncTmuxClipboardOptions = Parameters<typeof tmuxExecAsync>[1];
+type SyncTmuxClipboardOptions = Parameters<typeof rmuxExec>[1];
+type AsyncTmuxClipboardOptions = Parameters<typeof rmuxExecAsync>[1];
 
 export function hasUniversalClipboardTerminalFeature(
   features: string,
@@ -21,12 +21,12 @@ export function configureTmuxClipboardForSession(
   sessionName: string,
   opts?: SyncTmuxClipboardOptions,
 ): void {
-  tmuxExec(['set-option', '-t', sessionName, 'set-clipboard', 'on'], opts);
+  rmuxExec(['set-option', '-t', sessionName, 'set-clipboard', 'on'], opts);
 
   let terminalFeatures = '';
   try {
     terminalFeatures = String(
-      tmuxExec(
+      rmuxExec(
         ['show-options', '-t', sessionName, '-v', 'terminal-features'],
         opts,
       ) ?? '',
@@ -36,7 +36,7 @@ export function configureTmuxClipboardForSession(
   }
 
   if (!hasUniversalClipboardTerminalFeature(terminalFeatures)) {
-    tmuxExec(
+    rmuxExec(
       [
         'set-option',
         '-at',
@@ -53,7 +53,7 @@ export function configureTmuxClipboardForCurrentSession(
   opts?: SyncTmuxClipboardOptions,
 ): void {
   const sessionName = String(
-    tmuxExec(['display-message', '-p', '#S'], opts) ?? '',
+    rmuxExec(['display-message', '-p', '#S'], opts) ?? '',
   ).trim();
   if (sessionName) {
     configureTmuxClipboardForSession(sessionName, opts);
@@ -64,14 +64,14 @@ export async function configureTmuxClipboardForSessionAsync(
   sessionName: string,
   opts?: AsyncTmuxClipboardOptions,
 ): Promise<void> {
-  await tmuxExecAsync(
+  await rmuxExecAsync(
     ['set-option', '-t', sessionName, 'set-clipboard', 'on'],
     opts,
   );
 
   let terminalFeatures = '';
   try {
-    const result = await tmuxExecAsync(
+    const result = await rmuxExecAsync(
       ['show-options', '-t', sessionName, '-v', 'terminal-features'],
       opts,
     );
@@ -81,7 +81,7 @@ export async function configureTmuxClipboardForSessionAsync(
   }
 
   if (!hasUniversalClipboardTerminalFeature(terminalFeatures)) {
-    await tmuxExecAsync(
+    await rmuxExecAsync(
       [
         'set-option',
         '-at',

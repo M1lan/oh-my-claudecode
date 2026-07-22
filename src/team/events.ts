@@ -15,7 +15,7 @@ import { existsSync } from 'fs';
 import { TeamPaths, absPath } from './state-paths.js';
 import type { TeamEventType } from './contracts.js';
 import type { TeamEvent } from './types.js';
-import type { WorkerPaneLiveness } from './tmux-session.js';
+import type { WorkerPaneLiveness } from './rmux-session.js';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
 
 /**

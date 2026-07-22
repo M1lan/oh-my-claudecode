@@ -3,7 +3,7 @@ import { join, dirname } from 'path';
 import { sanitizePromptContent } from '../agents/prompt-helpers.js';
 import { formatOmcCliInvocation } from '../utils/omc-cli-rendering.js';
 import type { CliAgentType } from './model-contract.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import { validateResolvedPath } from './fs-utils.js';
 
 export interface WorkerBootstrapParams {

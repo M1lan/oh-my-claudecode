@@ -14,7 +14,7 @@ vi.mock('../team/heartbeat.js', () => ({
   isWorkerAlive: vi.fn(() => false),
 }));
 
-vi.mock('../team/tmux-session.js', () => ({
+vi.mock('../team/rmux-session.js', () => ({
   sanitizeName: vi.fn((name: string) => name),
 }));
 

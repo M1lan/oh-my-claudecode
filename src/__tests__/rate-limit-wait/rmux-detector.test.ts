@@ -1,5 +1,5 @@
 /**
- * Tests for tmux-detector.ts
+ * Tests for rmux-detector.ts
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -10,14 +10,14 @@ import {
   capturePaneContent,
   formatBlockedPanesSummary,
   scanForBlockedPanes,
-} from '../../features/rate-limit-wait/tmux-detector.js';
+} from '../../features/rate-limit-wait/rmux-detector.js';
 import type { BlockedPane } from '../../features/rate-limit-wait/types.js';
 
-// Mock tmux-utils wrappers
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+// Mock rmux-utils wrappers
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
-  return { ...actual, tmuxExec: vi.fn(), tmuxSpawn: vi.fn() };
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
+  return { ...actual, rmuxExec: vi.fn(), rmuxSpawn: vi.fn() };
 });
 
 // Mock pane-fresh-capture for scanForBlockedPanes cursor-tracking tests
@@ -26,10 +26,10 @@ vi.mock('../../features/rate-limit-wait/pane-fresh-capture.js', () => ({
   getPaneHistorySize: vi.fn(),
 }));
 
-import { tmuxExec, tmuxSpawn } from '../../cli/tmux-utils.js';
+import { rmuxExec, rmuxSpawn } from '../../cli/rmux-utils.js';
 import { getNewPaneTail } from '../../features/rate-limit-wait/pane-fresh-capture.js';
 
-describe('tmux-detector', () => {
+describe('rmux-detector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -299,7 +299,7 @@ describe('tmux-detector', () => {
     it('should not treat search output containing HUD markers as OMC pane evidence', () => {
       const content = `
         $ rg "OMC#|shift\\+tab|rate limit" src
-        src/__tests__/rate-limit-wait/tmux-detector.test.ts
+        src/__tests__/rate-limit-wait/rmux-detector.test.ts
         *152cz|          [OMC#4.15.1L] | Model: Opus 4.8 | 5h:100% wk:14% | thinking | session:80m | ctx:14%
         *153lu|          ⏵⏵ auto mode on (shift+tab to cycle) · ← for agents
         *154aa|          Error: rate limit exceeded
@@ -314,7 +314,7 @@ describe('tmux-detector', () => {
 
     it('should not treat test output containing shift-tab HUD help as OMC pane evidence', () => {
       const content = `
-        FAIL src/team/__tests__/tmux-session.test.ts
+        FAIL src/team/__tests__/rmux-session.test.ts
         AssertionError: expected output to contain "⏵⏵ auto mode on (shift+tab to cycle)"
         stderr | api-client.test.ts > retries after rate limit exceeded
       `;
@@ -359,7 +359,7 @@ describe('tmux-detector', () => {
 
   describe('isTmuxAvailable', () => {
     it('should return true when tmux is installed', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 0,
         stdout: '/usr/bin/tmux\n',
         stderr: '',
@@ -372,7 +372,7 @@ describe('tmux-detector', () => {
     });
 
     it('should return false when tmux is not installed', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 1,
         stdout: '',
         stderr: '',
@@ -385,7 +385,7 @@ describe('tmux-detector', () => {
     });
 
     it('should return false when spawnSync throws', () => {
-      vi.mocked(tmuxSpawn).mockImplementation(() => {
+      vi.mocked(rmuxSpawn).mockImplementation(() => {
         throw new Error('Command not found');
       });
 
@@ -395,7 +395,7 @@ describe('tmux-detector', () => {
 
   describe('listTmuxPanes', () => {
     it('should parse tmux pane list correctly', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 0,
         stdout: '/usr/bin/tmux',
         stderr: '',
@@ -404,7 +404,7 @@ describe('tmux-detector', () => {
         output: [],
       });
 
-      vi.mocked(tmuxExec).mockReturnValue(
+      vi.mocked(rmuxExec).mockReturnValue(
         'main:0.0 %0 1 dev Claude\nmain:0.1 %1 0 dev Other\n',
       );
 
@@ -432,7 +432,7 @@ describe('tmux-detector', () => {
     });
 
     it('should return empty array when tmux not available', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 1,
         stdout: '',
         stderr: '',
@@ -449,7 +449,7 @@ describe('tmux-detector', () => {
 
   describe('capturePaneContent', () => {
     it('should capture pane content', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 0,
         stdout: '/usr/bin/tmux',
         stderr: '',
@@ -458,19 +458,19 @@ describe('tmux-detector', () => {
         output: [],
       });
 
-      vi.mocked(tmuxExec).mockReturnValue('Line 1\nLine 2\nLine 3\n');
+      vi.mocked(rmuxExec).mockReturnValue('Line 1\nLine 2\nLine 3\n');
 
       const content = capturePaneContent('%0', 3);
 
       expect(content).toBe('Line 1\nLine 2\nLine 3\n');
-      expect(tmuxExec).toHaveBeenCalledWith(
+      expect(rmuxExec).toHaveBeenCalledWith(
         ['capture-pane', '-t', '%0', '-p', '-S', '-3'],
         expect.any(Object),
       );
     });
 
     it('should return empty string when tmux not available', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 1,
         stdout: '',
         stderr: '',
@@ -487,7 +487,7 @@ describe('tmux-detector', () => {
 
   describe('security: input validation', () => {
     it('should reject invalid pane IDs in capturePaneContent', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 0,
         stdout: '/usr/bin/tmux',
         stderr: '',
@@ -497,7 +497,7 @@ describe('tmux-detector', () => {
       });
 
       // Valid pane ID should work
-      vi.mocked(tmuxExec).mockReturnValue('content');
+      vi.mocked(rmuxExec).mockReturnValue('content');
       const validResult = capturePaneContent('%0');
       expect(validResult).toBe('content');
 
@@ -513,14 +513,14 @@ describe('tmux-detector', () => {
       ];
 
       for (const invalidId of invalidIds) {
-        vi.mocked(tmuxExec).mockClear();
+        vi.mocked(rmuxExec).mockClear();
         const result = capturePaneContent(invalidId);
         expect(result).toBe('');
       }
     });
 
     it('should validate lines parameter bounds', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue({
+      vi.mocked(rmuxSpawn).mockReturnValue({
         status: 0,
         stdout: '/usr/bin/tmux',
         stderr: '',
@@ -529,19 +529,19 @@ describe('tmux-detector', () => {
         output: [],
       });
 
-      vi.mocked(tmuxExec).mockReturnValue('content');
+      vi.mocked(rmuxExec).mockReturnValue('content');
 
       // Should clamp negative to 1
       capturePaneContent('%0', -5);
-      expect(tmuxExec).toHaveBeenCalledWith(
+      expect(rmuxExec).toHaveBeenCalledWith(
         expect.arrayContaining(['-S', '-1']),
         expect.any(Object),
       );
 
       // Should clamp excessive values to 100
-      vi.mocked(tmuxExec).mockClear();
+      vi.mocked(rmuxExec).mockClear();
       capturePaneContent('%0', 1000);
-      expect(tmuxExec).toHaveBeenCalledWith(
+      expect(rmuxExec).toHaveBeenCalledWith(
         expect.arrayContaining(['-S', '-100']),
         expect.any(Object),
       );
@@ -704,8 +704,8 @@ describe('tmux-detector', () => {
     };
 
     it('skips panes with no new output when stateDir is provided (stale suppression)', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      vi.mocked(tmuxExec).mockReturnValue('main:0.0 %0 1 dev Claude\n');
+      vi.mocked(rmuxSpawn).mockReturnValue(tmuxAvailableReturn);
+      vi.mocked(rmuxExec).mockReturnValue('main:0.0 %0 1 dev Claude\n');
       // getNewPaneTail returns '' → no new lines → pane should be skipped
       vi.mocked(getNewPaneTail).mockReturnValue('');
 
@@ -721,8 +721,8 @@ describe('tmux-detector', () => {
     });
 
     it('detects a blocked pane from fresh delta lines when stateDir is provided', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      vi.mocked(tmuxExec).mockReturnValue('main:0.0 %0 1 dev Claude\n');
+      vi.mocked(rmuxSpawn).mockReturnValue(tmuxAvailableReturn);
+      vi.mocked(rmuxExec).mockReturnValue('main:0.0 %0 1 dev Claude\n');
       // getNewPaneTail returns new rate-limit content
       vi.mocked(getNewPaneTail).mockReturnValue(
         "Claude Code\nYou've hit your limit · resets Feb 17 at 2pm\n❯ 1. Stop and wait\nEnter to confirm",
@@ -736,9 +736,9 @@ describe('tmux-detector', () => {
     });
 
     it('falls back to capturePaneContent when no stateDir provided', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      // listTmuxPanes + capturePaneContent both use tmuxExec
-      vi.mocked(tmuxExec)
+      vi.mocked(rmuxSpawn).mockReturnValue(tmuxAvailableReturn);
+      // listTmuxPanes + capturePaneContent both use rmuxExec
+      vi.mocked(rmuxExec)
         .mockReturnValueOnce('main:0.0 %0 1 dev Claude\n') // listTmuxPanes
         .mockReturnValueOnce(''); // capturePaneContent → empty
 
@@ -750,8 +750,8 @@ describe('tmux-detector', () => {
     });
 
     it('does not report non-Claude panes with copied HUD and rate-limit output', () => {
-      vi.mocked(tmuxSpawn).mockReturnValue(tmuxAvailableReturn);
-      vi.mocked(tmuxExec).mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
+      vi.mocked(rmuxSpawn).mockReturnValue(tmuxAvailableReturn);
+      vi.mocked(rmuxExec).mockReturnValueOnce('main:0.0 %0 1 dev shell\n')
         .mockReturnValueOnce(`
           $ cat copied-hud.txt
           [OMC#4.15.1L] | Model: Opus 4.8 | 5h:100% wk:14% | thinking | session:80m | ctx:14%

@@ -72,18 +72,18 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
     // These tests exercise the cmux fallback path, i.e. no rmux/tmux resolvable.
     isTmuxCompatibleMultiplexerAvailable: vi.fn(() => false),
-    tmuxExec: vi.fn((args: string[]) => {
+    rmuxExec: vi.fn((args: string[]) => {
       mockedCalls.tmuxArgs.push(args);
       return '';
     }),
-    tmuxExecAsync: vi.fn(async (args: string[]) => {
+    rmuxExecAsync: vi.fn(async (args: string[]) => {
       mockedCalls.tmuxArgs.push(args);
       if (args[0] === 'capture-pane') {
         if (mockedCalls.delayedSubmitCapturesRemaining !== null) {
@@ -138,7 +138,7 @@ vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
       }
       return { stdout: '', stderr: '' };
     }),
-    tmuxCmdAsync: vi.fn(async (args: string[]) => {
+    rmuxCmdAsync: vi.fn(async (args: string[]) => {
       mockedCalls.tmuxArgs.push(args);
       if (
         args[0] === 'display-message' &&
@@ -155,7 +155,7 @@ import {
   sendTeamPaneKey,
   spawnBridgeInSession,
   spawnWorkerInPane,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 
 describe('spawnWorkerInPane', () => {
   beforeEach(() => {

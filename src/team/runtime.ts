@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, rename, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
-import { tmuxExecAsync } from '../cli/tmux-utils.js';
+import { rmuxExecAsync } from '../cli/rmux-utils.js';
 import type { CliAgentType } from './model-contract.js';
 import {
   buildWorkerArgv,
@@ -26,7 +26,7 @@ import {
   splitTeamWorkerPane,
   type TeamSession,
   type WorkerPaneConfig,
-} from './tmux-session.js';
+} from './rmux-session.js';
 import {
   composeInitialInbox,
   ensureWorkerStateDir,
@@ -1237,13 +1237,13 @@ export async function resumeTeam(
   const sName = configData.tmuxSession || `omc-team-${teamName}`;
 
   try {
-    await tmuxExecAsync(['has-session', '-t', sName.split(':')[0]]);
+    await rmuxExecAsync(['has-session', '-t', sName.split(':')[0]]);
   } catch {
     return null; // Session not alive
   }
 
   const paneTarget = sName.includes(':') ? sName : sName.split(':')[0];
-  const panesResult = await tmuxExecAsync([
+  const panesResult = await rmuxExecAsync([
     'list-panes',
     '-t',
     paneTarget,

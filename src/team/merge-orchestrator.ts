@@ -66,7 +66,7 @@ import {
 } from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import { isRuntimeV2Enabled } from './runtime-flags.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import {
   listTeamWorktrees,
   getWorktreePath,

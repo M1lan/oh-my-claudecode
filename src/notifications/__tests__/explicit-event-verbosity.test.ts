@@ -28,7 +28,7 @@ vi.mock('../config.js', () => ({
   shouldIncludeTmuxTail: () => false,
 }));
 
-vi.mock('../tmux.js', () => ({
+vi.mock('../rmux.js', () => ({
   getCurrentTmuxSession: () => 'test-tmux',
   getCurrentTmuxPaneId: () => '%99',
   getTeamTmuxSessions: () => [],

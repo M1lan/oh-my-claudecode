@@ -69,8 +69,8 @@ const modelContractMocks = vi.hoisted(() => ({
   resolveValidatedBinaryPath: vi.fn(() => '/usr/bin/codex'),
 }));
 
-vi.mock('../tmux-session.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../tmux-session.js')>()),
+vi.mock('../rmux-session.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../rmux-session.js')>()),
   isWorkerAlive: tmuxMocks.isWorkerAlive,
   spawnWorkerInPane: tmuxMocks.spawnWorkerInPane,
   sendToWorker: tmuxMocks.sendToWorker,

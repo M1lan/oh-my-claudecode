@@ -20,7 +20,7 @@ vi.mock('../../features/rate-limit-wait/pane-fresh-capture.js', () => ({
     mockGetNewPaneTail(paneId, stateDir, maxLines),
 }));
 
-vi.mock('../../notifications/tmux.js', () => ({
+vi.mock('../../notifications/rmux.js', () => ({
   getCurrentTmuxSession: () => 'test-session',
 }));
 

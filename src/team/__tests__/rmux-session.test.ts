@@ -12,7 +12,7 @@ import {
   paneLooksReady,
   paneHasActiveTask,
   paneHasTrustPrompt,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -565,7 +565,7 @@ describe('pane readiness startup banners', () => {
 
 describe('sendToWorker implementation guards', () => {
   const source = readFileSync(
-    join(__dirname, '..', 'tmux-session.ts'),
+    join(__dirname, '..', 'rmux-session.ts'),
     'utf-8',
   );
 

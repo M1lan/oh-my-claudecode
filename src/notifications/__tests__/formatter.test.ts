@@ -377,8 +377,8 @@ describe('parseTmuxTail noise filters', () => {
 
   it('drops grep/source lines that only contain static error markers', () => {
     const input = [
-      'skills/project-session-manager/lib/tmux.sh:16:        echo "error|tmux not found"',
-      'skills/project-session-manager/lib/tmux.sh:28:        echo "error|Failed to create tmux session"',
+      'skills/project-session-manager/lib/rmux.sh:16:        echo "error|tmux not found"',
+      'skills/project-session-manager/lib/rmux.sh:28:        echo "error|Failed to create tmux session"',
     ].join('\n');
 
     expect(parseTmuxTail(input)).toBe('');

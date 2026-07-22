@@ -31,12 +31,12 @@ const paneMocks = vi.hoisted(() => ({
   }),
 }));
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../cli/tmux-utils.js')>()),
-  tmuxExecAsync: vi.fn(async () => ({ stdout: '', stderr: '' })),
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../cli/rmux-utils.js')>()),
+  rmuxExecAsync: vi.fn(async () => ({ stdout: '', stderr: '' })),
 }));
-vi.mock('../tmux-session.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../tmux-session.js')>()),
+vi.mock('../rmux-session.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../rmux-session.js')>()),
   ...paneMocks,
 }));
 vi.mock('../model-contract.js', async (importOriginal) => ({

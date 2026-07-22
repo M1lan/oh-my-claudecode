@@ -137,11 +137,11 @@ async function defaultTmuxSendKeys(
   text: string,
   literal = false,
 ): Promise<void> {
-  const { tmuxExecAsync } = await import('../cli/tmux-utils.js');
+  const { rmuxExecAsync } = await import('../cli/rmux-utils.js');
   const args = literal
     ? ['send-keys', '-t', target, '-l', text]
     : ['send-keys', '-t', target, text];
-  await tmuxExecAsync(args, { timeout: 3000 });
+  await rmuxExecAsync(args, { timeout: 3000 });
 }
 
 const defaultTmux: TmuxRunner = {

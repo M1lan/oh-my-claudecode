@@ -132,7 +132,7 @@ import {
   recoverFromRestart,
   type OrchestratorConfig,
 } from '../merge-orchestrator.js';
-import { sanitizeName } from '../tmux-session.js';
+import { sanitizeName } from '../rmux-session.js';
 import { atomicWriteJson } from '../fs-utils.js';
 
 // ---------------------------------------------------------------------------

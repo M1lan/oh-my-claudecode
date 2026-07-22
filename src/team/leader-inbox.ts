@@ -10,7 +10,7 @@
 import { appendFile, mkdir, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import { validateResolvedPath } from './fs-utils.js';
 
 const LEADER_INBOX_HEADER = `# Leader Inbox

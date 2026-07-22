@@ -22,8 +22,8 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 import { execSync } from 'child_process';
-import { __resetRmuxBinaryPathCache } from '../../cli/tmux-utils.js';
-import { validateTmux } from '../tmux-session.js';
+import { __resetRmuxBinaryPathCache } from '../../cli/rmux-utils.js';
+import { validateTmux } from '../rmux-session.js';
 
 const mockedExecSync = vi.mocked(execSync);
 

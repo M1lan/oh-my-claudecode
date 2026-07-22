@@ -14,7 +14,7 @@ import { execFileSync } from 'child_process';
 import { mkdtempSync, readFileSync, rmSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { wrapWithLoginShell, quoteShellArg } from '../tmux-utils.js';
+import { wrapWithLoginShell, quoteShellArg } from '../rmux-utils.js';
 import { buildEnvExportPrefix } from '../launch.js';
 
 function isTmuxAvailable(): boolean {

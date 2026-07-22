@@ -57,7 +57,7 @@ assert_file_exists() {
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
-# Source only the lib/tmux.sh functions needed for testing.
+# Source only the lib/rmux.sh functions needed for testing.
 # We must stub the real `tmux` binary before sourcing so that
 # psm_has_tmux (which calls `command -v tmux`) still works without a real tmux.
 tmux() { :; }
@@ -65,7 +65,7 @@ tmux() { :; }
 # rmux/tmux binary is present on PATH (tmux.sh's `:=` leaves a pre-set
 # MUX_BIN untouched).
 MUX_BIN=tmux
-source "${PSM_LIB_DIR}/tmux.sh"
+source "${PSM_LIB_DIR}/rmux.sh"
 
 TMPDIR_TEST=$(mktemp -d)
 TEMPLATE_TMP="${TMPDIR_TEST}/template.md"

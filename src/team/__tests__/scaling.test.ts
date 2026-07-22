@@ -5,8 +5,8 @@ import { join, resolve } from 'path';
 import { tmpdir } from 'os';
 
 const tmuxUtilsMocks = vi.hoisted(() => ({
-  tmuxExec: vi.fn(),
-  tmuxSpawn: vi.fn(),
+  rmuxExec: vi.fn(),
+  rmuxSpawn: vi.fn(),
 }));
 
 const modelContractMocks = vi.hoisted(() => ({
@@ -68,9 +68,9 @@ const gitWorktreeMocks = vi.hoisted(() => ({
   prepareWorkerWorktreeForRemoval: vi.fn(),
 }));
 
-vi.mock('../../cli/tmux-utils.js', () => ({
-  tmuxExec: tmuxUtilsMocks.tmuxExec,
-  tmuxSpawn: tmuxUtilsMocks.tmuxSpawn,
+vi.mock('../../cli/rmux-utils.js', () => ({
+  rmuxExec: tmuxUtilsMocks.rmuxExec,
+  rmuxSpawn: tmuxUtilsMocks.rmuxSpawn,
 }));
 
 vi.mock('../model-contract.js', () => ({
@@ -99,7 +99,7 @@ vi.mock('../monitor.js', () => ({
   saveTeamConfigAtRevision: monitorMocks.saveTeamConfigAtRevision,
 }));
 
-vi.mock('../tmux-session.js', () => ({
+vi.mock('../rmux-session.js', () => ({
   sanitizeName: tmuxSessionMocks.sanitizeName,
   getWorkerLiveness: tmuxSessionMocks.getWorkerLiveness,
   killWorkerPanes: tmuxSessionMocks.killWorkerPanes,
@@ -221,7 +221,7 @@ describe('scaleUp duplicate worker guard', () => {
       }),
     );
 
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (
         args[0] === 'display-message' &&
         args.includes('#{session_name}:#{window_index}')
@@ -264,7 +264,7 @@ describe('scaleUp duplicate worker guard', () => {
       'worker-1',
       'worker-2',
     ]);
-    expect(tmuxUtilsMocks.tmuxSpawn).toHaveBeenCalledWith([
+    expect(tmuxUtilsMocks.rmuxSpawn).toHaveBeenCalledWith([
       'split-window',
       '-v',
       '-t',
@@ -368,7 +368,7 @@ describe('scaleUp duplicate worker guard', () => {
 
       expect(result).toEqual({ ok: false, error: 'team_mutation_busy' });
       expect(
-        tmuxUtilsMocks.tmuxSpawn.mock.calls.some(
+        tmuxUtilsMocks.rmuxSpawn.mock.calls.some(
           ([args]) => args[0] === 'split-window',
         ),
       ).toBe(false);
@@ -414,13 +414,13 @@ describe('scaleUp duplicate worker guard', () => {
     expect(reclamation.active_scale_up?.operation_id).not.toBe(
       'abandoned-scale-up',
     );
-    const splitCall = tmuxUtilsMocks.tmuxSpawn.mock.calls.findIndex(
+    const splitCall = tmuxUtilsMocks.rmuxSpawn.mock.calls.findIndex(
       ([args]) => args[0] === 'split-window',
     );
     expect(
       monitorMocks.saveTeamConfigAtRevision.mock.invocationCallOrder[0],
     ).toBeLessThan(
-      tmuxUtilsMocks.tmuxSpawn.mock.invocationCallOrder[splitCall]!,
+      tmuxUtilsMocks.rmuxSpawn.mock.invocationCallOrder[splitCall]!,
     );
   });
 
@@ -476,8 +476,8 @@ describe('scaleUp duplicate worker guard', () => {
       'worker-2',
     ]);
     expect(monitorMocks.saveTeamConfigAtRevision).not.toHaveBeenCalled();
-    expect(tmuxUtilsMocks.tmuxSpawn).not.toHaveBeenCalled();
-    expect(tmuxUtilsMocks.tmuxExec).not.toHaveBeenCalled();
+    expect(tmuxUtilsMocks.rmuxSpawn).not.toHaveBeenCalled();
+    expect(tmuxUtilsMocks.rmuxExec).not.toHaveBeenCalled();
     expect(gitWorktreeMocks.removeWorkerWorktree).not.toHaveBeenCalled();
     expect(teamOpsMocks.teamWriteWorkerIdentity).not.toHaveBeenCalled();
   });
@@ -511,8 +511,8 @@ describe('scaleUp duplicate worker guard', () => {
       phase: 'failed',
     });
     expect(monitorMocks.saveTeamConfigAtRevision).not.toHaveBeenCalled();
-    expect(tmuxUtilsMocks.tmuxSpawn).not.toHaveBeenCalled();
-    expect(tmuxUtilsMocks.tmuxExec).not.toHaveBeenCalled();
+    expect(tmuxUtilsMocks.rmuxSpawn).not.toHaveBeenCalled();
+    expect(tmuxUtilsMocks.rmuxExec).not.toHaveBeenCalled();
   });
 
   it.each([
@@ -550,7 +550,7 @@ describe('scaleUp duplicate worker guard', () => {
       );
       expect(monitorMocks.saveTeamConfigAtRevision).not.toHaveBeenCalled();
       expect(
-        tmuxUtilsMocks.tmuxSpawn.mock.calls.some(
+        tmuxUtilsMocks.rmuxSpawn.mock.calls.some(
           ([args]) => args[0] === 'split-window',
         ),
       ).toBe(false);
@@ -582,7 +582,7 @@ describe('scaleUp duplicate worker guard', () => {
 
     expect(result).toEqual({ ok: false, error: 'team_mutation_busy' });
     expect(
-      tmuxUtilsMocks.tmuxSpawn.mock.calls.some(
+      tmuxUtilsMocks.rmuxSpawn.mock.calls.some(
         ([args]) => args[0] === 'split-window',
       ),
     ).toBe(false);
@@ -622,7 +622,7 @@ describe('scaleUp duplicate worker guard', () => {
       (config as TeamConfig & { active_scale_up?: unknown }).active_scale_up,
     ).toBeUndefined();
     expect(
-      tmuxUtilsMocks.tmuxSpawn.mock.calls.some(
+      tmuxUtilsMocks.rmuxSpawn.mock.calls.some(
         ([args]) => args[0] === 'split-window',
       ),
     ).toBe(false);
@@ -668,7 +668,7 @@ describe('scaleUp duplicate worker guard', () => {
       ok: false,
       error: expect.stringContaining('config commit lost its revision'),
     });
-    expect(tmuxUtilsMocks.tmuxExec).toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxExec).toHaveBeenCalledWith(
       ['kill-pane', '-t', '%12'],
       { stdio: 'pipe' },
     );
@@ -801,7 +801,7 @@ describe('scaleUp duplicate worker guard', () => {
       leader_pane_id: '%0',
       tmux_session: 'demo-session',
     });
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (args[0] === 'display-message' && args.includes('#{session_name}')) {
         return { status: 0, stdout: 'demo-session\n', stderr: '' };
       }
@@ -828,14 +828,14 @@ describe('scaleUp duplicate worker guard', () => {
       newWorkerCount: 1,
       nextWorkerIndex: 2,
     });
-    expect(tmuxUtilsMocks.tmuxSpawn).toHaveBeenCalledWith([
+    expect(tmuxUtilsMocks.rmuxSpawn).toHaveBeenCalledWith([
       'display-message',
       '-t',
       '%0',
       '-p',
       '#{session_name}',
     ]);
-    expect(tmuxUtilsMocks.tmuxSpawn).toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxSpawn).toHaveBeenCalledWith(
       expect.arrayContaining(['split-window']),
     );
   });
@@ -863,7 +863,7 @@ describe('scaleUp duplicate worker guard', () => {
     if (!result.ok) {
       expect(result.error).toContain('missing configured tmux_session');
     }
-    expect(tmuxUtilsMocks.tmuxSpawn).not.toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxSpawn).not.toHaveBeenCalledWith(
       expect.arrayContaining(['split-window']),
     );
     expect(modelContractMocks.buildWorkerArgv).not.toHaveBeenCalled();
@@ -877,7 +877,7 @@ describe('scaleUp duplicate worker guard', () => {
       leader_pane_id: '%999',
       tmux_session: 'demo-session:0',
     });
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (
         args[0] === 'display-message' &&
         args.includes('#{session_name}:#{window_index}')
@@ -907,7 +907,7 @@ describe('scaleUp duplicate worker guard', () => {
       expect(result.error).toContain('Refusing to split tmux pane %999');
       expect(result.error).toContain('expected demo-session');
     }
-    expect(tmuxUtilsMocks.tmuxSpawn).not.toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxSpawn).not.toHaveBeenCalledWith(
       expect.arrayContaining(['split-window']),
     );
   });
@@ -920,7 +920,7 @@ describe('scaleUp duplicate worker guard', () => {
       leader_pane_id: '%998',
       tmux_session: 'demo-session:0',
     });
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (
         args[0] === 'display-message' &&
         args.includes('#{session_name}:#{window_index}')
@@ -950,7 +950,7 @@ describe('scaleUp duplicate worker guard', () => {
       expect(result.error).toContain('Refusing to split tmux pane %998');
       expect(result.error).toContain('expected demo-session:0');
     }
-    expect(tmuxUtilsMocks.tmuxSpawn).not.toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxSpawn).not.toHaveBeenCalledWith(
       expect.arrayContaining(['split-window']),
     );
   });
@@ -1028,7 +1028,7 @@ describe('scaleUp duplicate worker guard', () => {
     expect(result).toMatchObject({ ok: false });
     if (!result.ok)
       expect(result.error).toContain('config commit lost its revision');
-    expect(tmuxUtilsMocks.tmuxExec).toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxExec).toHaveBeenCalledWith(
       ['kill-pane', '-t', '%12'],
       { stdio: 'pipe' },
     );
@@ -1086,7 +1086,7 @@ describe('scaleUp duplicate worker guard', () => {
 
     expect(result).toMatchObject({ ok: false });
     if (!result.ok) expect(result.error).toContain('post-effect failed');
-    expect(tmuxUtilsMocks.tmuxExec).toHaveBeenCalledWith(
+    expect(tmuxUtilsMocks.rmuxExec).toHaveBeenCalledWith(
       ['kill-pane', '-t', '%12'],
       { stdio: 'pipe' },
     );
@@ -1151,7 +1151,7 @@ describe('scaleUp duplicate worker guard', () => {
       next_worker_index: 2,
       worktree_mode: 'disabled',
     });
-    tmuxUtilsMocks.tmuxSpawn.mockImplementation((args: string[]) => {
+    tmuxUtilsMocks.rmuxSpawn.mockImplementation((args: string[]) => {
       if (args[0] === 'display-message')
         return { status: 0, stdout: 'demo-session:0\n', stderr: '' };
       if (args[0] === 'split-window')
@@ -1207,7 +1207,7 @@ describe('scaleUp duplicate worker guard', () => {
     gitWorktreeMocks.removeWorkerWorktree.mockImplementation(() => {
       throw new Error('worktree busy');
     });
-    tmuxUtilsMocks.tmuxExec.mockImplementation(() => {
+    tmuxUtilsMocks.rmuxExec.mockImplementation(() => {
       throw new Error('pane still alive');
     });
     tmuxSessionMocks.getWorkerLiveness.mockResolvedValue('alive');

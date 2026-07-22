@@ -35,9 +35,9 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../../team/tmux-session.js', async (importOriginal) => {
+vi.mock('../../team/rmux-session.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../team/tmux-session.js')>();
+    await importOriginal<typeof import('../../team/rmux-session.js')>();
   return {
     ...actual,
     killWorkerPanes: mocks.killWorkerPanes,

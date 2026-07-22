@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
   isWorkerPaneAlive: vi.fn(async () => false),
   getWorkerLiveness: vi.fn(async () => 'dead'),
   execFile: vi.fn(),
-  tmuxExecAsync: vi.fn(),
+  rmuxExecAsync: vi.fn(),
 }));
 
 vi.mock('child_process', async (importOriginal) => {
@@ -19,17 +19,17 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
-    tmuxExecAsync: mocks.tmuxExecAsync,
+    rmuxExecAsync: mocks.rmuxExecAsync,
   };
 });
 
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     isWorkerAlive: mocks.isWorkerAlive,
@@ -47,7 +47,7 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
     mocks.isWorkerPaneAlive.mockReset();
     mocks.getWorkerLiveness.mockReset();
     mocks.execFile.mockReset();
-    mocks.tmuxExecAsync.mockReset();
+    mocks.rmuxExecAsync.mockReset();
     mocks.isWorkerAlive.mockResolvedValue(false);
     mocks.isWorkerPaneAlive.mockResolvedValue(false);
     mocks.getWorkerLiveness.mockResolvedValue('dead');
@@ -60,7 +60,7 @@ describe('runtime-v2 role routing — processCliWorkerVerdicts (AC-7)', () => {
         cb(null, '', '');
       },
     );
-    mocks.tmuxExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
+    mocks.rmuxExecAsync.mockResolvedValue({ stdout: '', stderr: '' });
   });
 
   afterEach(async () => {

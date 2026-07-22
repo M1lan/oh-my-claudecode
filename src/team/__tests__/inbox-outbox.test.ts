@@ -16,7 +16,7 @@ import {
   cleanupWorkerFiles,
   rotateInboxIfNeeded,
 } from '../inbox-outbox.js';
-import { sanitizeName } from '../tmux-session.js';
+import { sanitizeName } from '../rmux-session.js';
 import { validateResolvedPath } from '../fs-utils.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
 import type { OutboxMessage, InboxMessage } from '../types.js';

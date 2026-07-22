@@ -11,14 +11,14 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const tmuxMocks = vi.hoisted(() => ({
-  tmuxExecAsync: vi.fn(async (_args: string[]) => ({ stdout: '', stderr: '' })),
-  tmuxCmdAsync: vi.fn(
+  rmuxExecAsync: vi.fn(async (_args: string[]) => ({ stdout: '', stderr: '' })),
+  rmuxCmdAsync: vi.fn(
     async (_args: string[]): Promise<{ stdout: string; stderr: string }> => {
       throw new Error('tmux transport unavailable');
     },
   ),
 }));
-vi.mock('../../cli/tmux-utils.js', () => tmuxMocks);
+vi.mock('../../cli/rmux-utils.js', () => tmuxMocks);
 
 import {
   readRecoveryOutcome,
@@ -416,7 +416,7 @@ describe('runtime owner team mutation contention', () => {
       recoveryId: 'committed-recovery',
     });
     expect(
-      tmuxMocks.tmuxExecAsync.mock.calls.some(
+      tmuxMocks.rmuxExecAsync.mock.calls.some(
         ([args]) => args[0] === 'split-window',
       ),
     ).toBe(false);
@@ -524,12 +524,12 @@ describe('runtime owner team mutation contention', () => {
         );
       }
       if (liveness === 'alive') {
-        tmuxMocks.tmuxCmdAsync.mockResolvedValueOnce({
+        tmuxMocks.rmuxCmdAsync.mockResolvedValueOnce({
           stdout: '0',
           stderr: '',
         });
       } else if (liveness === 'unknown') {
-        tmuxMocks.tmuxCmdAsync.mockRejectedValueOnce(
+        tmuxMocks.rmuxCmdAsync.mockRejectedValueOnce(
           new Error('tmux transport unavailable'),
         );
       }
@@ -546,7 +546,7 @@ describe('runtime owner team mutation contention', () => {
           : { outcome: 'failed', error: 'worker_liveness_unknown', recoveryId },
       );
       expect(
-        tmuxMocks.tmuxExecAsync.mock.calls.some(
+        tmuxMocks.rmuxExecAsync.mock.calls.some(
           ([args]) => args[0] === 'split-window',
         ),
       ).toBe(false);
@@ -637,7 +637,7 @@ describe('runtime owner team mutation contention', () => {
         }),
       ).resolves.toMatchObject({ outcome: 'failed', error: expectedError });
       expect(
-        tmuxMocks.tmuxExecAsync.mock.calls.some(
+        tmuxMocks.rmuxExecAsync.mock.calls.some(
           ([args]) => args[0] === 'split-window',
         ),
       ).toBe(false);

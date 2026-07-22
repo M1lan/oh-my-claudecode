@@ -19,7 +19,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const PSM_ROOT = join(process.cwd(), 'skills', 'project-session-manager');
-const TMUX_SH = join(PSM_ROOT, 'lib', 'tmux.sh');
+const TMUX_SH = join(PSM_ROOT, 'lib', 'rmux.sh');
 const SESSION_SH = join(PSM_ROOT, 'lib', 'session.sh');
 const CONFIG_SH = join(PSM_ROOT, 'lib', 'config.sh');
 const PSM_SH = join(PSM_ROOT, 'psm.sh');

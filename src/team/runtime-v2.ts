@@ -16,7 +16,7 @@
  * assignTask, resumeTeam as discrete operations driven by the caller.
  */
 
-import { tmuxExecAsync } from '../cli/tmux-utils.js';
+import { rmuxExecAsync } from '../cli/rmux-utils.js';
 import { join, resolve } from 'path';
 import { existsSync } from 'fs';
 import {
@@ -107,7 +107,7 @@ import {
   type WorkerPaneLiveness,
   type WorkerPaneSplitEvidence,
   type TeamSessionMode,
-} from './tmux-session.js';
+} from './rmux-session.js';
 import {
   composeInitialInbox,
   ensureWorkerStateDir,
@@ -1618,7 +1618,7 @@ async function cleanupRecoveryPaneAttempt(
   pending: PendingRecoveryPane,
   reason: string,
 ): Promise<boolean> {
-  const { killTeamPane } = await import('./tmux-session.js');
+  const { killTeamPane } = await import('./rmux-session.js');
   let liveness: WorkerPaneLiveness = 'unknown';
   for (let attempt = 0; attempt < 2; attempt++) {
     await killTeamPane(pending.paneId).catch(() => undefined);
@@ -3045,7 +3045,7 @@ export async function executeRecoverDeadWorkerV2Owner(
         recoveryError(input, recoveryId, 'team_session_dead'),
       );
     try {
-      await tmuxExecAsync([
+      await rmuxExecAsync([
         'has-session',
         '-t',
         owner.config.tmux_session.split(':')[0],
@@ -5356,7 +5356,7 @@ export async function shutdownTeamV2(
       killTeamSession,
       resolveSplitPaneWorkerPaneIds,
       getWorkerLiveness,
-    } = await import('./tmux-session.js');
+    } = await import('./rmux-session.js');
     const ownsWindow = config.tmux_window_owned === true;
     const workerPaneIds = ownsWindow
       ? recordedWorkerPaneIds
@@ -5490,7 +5490,7 @@ export async function resumeTeamV2(
   // Verify tmux session is alive
   try {
     const sessionName = config.tmux_session || `omc-team-${sanitized}`;
-    await tmuxExecAsync(['has-session', '-t', sessionName.split(':')[0]]);
+    await rmuxExecAsync(['has-session', '-t', sessionName.split(':')[0]]);
 
     return {
       teamName: sanitized,

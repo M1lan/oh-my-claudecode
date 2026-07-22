@@ -57,7 +57,7 @@ export {
   getCurrentTmuxPaneId,
   getTeamTmuxSessions,
   formatTmuxInfo,
-} from './tmux.js';
+} from './rmux.js';
 export {
   getNotificationConfig,
   isEventEnabled,
@@ -109,7 +109,7 @@ import {
 } from './config.js';
 import { formatNotification } from './formatter.js';
 import { dispatchNotifications } from './dispatcher.js';
-import { getCurrentTmuxSession } from './tmux.js';
+import { getCurrentTmuxSession } from './rmux.js';
 import { getHookConfig, resolveEventTemplate } from './hook-config.js';
 import { interpolateTemplate } from './template-engine.js';
 import { basename, join } from 'path';
@@ -158,7 +158,7 @@ export async function notify(
     }
 
     // Get tmux pane ID
-    const { getCurrentTmuxPaneId } = await import('./tmux.js');
+    const { getCurrentTmuxPaneId } = await import('./rmux.js');
 
     // Build the full payload
     const payload: NotificationPayload = {
@@ -204,7 +204,7 @@ export async function notify(
     ) {
       try {
         const { capturePaneContent } =
-          await import('../features/rate-limit-wait/tmux-detector.js');
+          await import('../features/rate-limit-wait/rmux-detector.js');
         const { getNewPaneTail } =
           await import('../features/rate-limit-wait/pane-fresh-capture.js');
         const tailLines = getTmuxTailLines(config);

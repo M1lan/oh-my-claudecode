@@ -51,7 +51,7 @@ import {
   runMailboxNotificationAttempt,
   type DispatchOutcome,
 } from './mcp-comm.js';
-import { verifyTeamTargetOwnership } from './tmux-session.js';
+import { verifyTeamTargetOwnership } from './rmux-session.js';
 import { readDispatchRequestStrict } from './dispatch-queue.js';
 import {
   readCurrentMailboxNotificationGuard,

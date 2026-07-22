@@ -35,7 +35,7 @@ vi.mock('child_process', async (importOriginal) => {
   };
 });
 
-import { killWorkerPanes, killTeamSession } from '../../team/tmux-session.js';
+import { killWorkerPanes, killTeamSession } from '../../team/rmux-session.js';
 
 let killedPanes: string[] = [];
 let killedSessions: string[] = [];

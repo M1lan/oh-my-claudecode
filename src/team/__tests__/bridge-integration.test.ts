@@ -18,7 +18,7 @@ import {
   appendOutbox,
 } from '../inbox-outbox.js';
 import { writeHeartbeat, readHeartbeat } from '../heartbeat.js';
-import { sanitizeName } from '../tmux-session.js';
+import { sanitizeName } from '../rmux-session.js';
 import { logAuditEvent, readAuditLog } from '../audit-log.js';
 import { getClaudeConfigDir } from '../../utils/config-dir.js';
 

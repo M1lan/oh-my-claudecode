@@ -5,24 +5,24 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 const tmuxUtilsMocks = vi.hoisted(() => ({
-  tmuxExecAsync: vi.fn(async (_args: string[]) => ({ stdout: '', stderr: '' })),
-  tmuxCmdAsync: vi.fn(async (_args: string[]) => ({
+  rmuxExecAsync: vi.fn(async (_args: string[]) => ({ stdout: '', stderr: '' })),
+  rmuxCmdAsync: vi.fn(async (_args: string[]) => ({
     stdout: '0\n',
     stderr: '',
   })),
 }));
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../cli/tmux-utils.js')>()),
-  tmuxExecAsync: tmuxUtilsMocks.tmuxExecAsync,
-  tmuxCmdAsync: tmuxUtilsMocks.tmuxCmdAsync,
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../cli/rmux-utils.js')>()),
+  rmuxExecAsync: tmuxUtilsMocks.rmuxExecAsync,
+  rmuxCmdAsync: tmuxUtilsMocks.rmuxCmdAsync,
 }));
 
 import { executeTeamApiOperation } from '../api-interop.js';
 import { listDispatchRequests } from '../dispatch-queue.js';
 
 function mockOwnedTmuxPanes(...paneIds: string[]): void {
-  tmuxUtilsMocks.tmuxExecAsync.mockImplementation(async (args: string[]) => {
+  tmuxUtilsMocks.rmuxExecAsync.mockImplementation(async (args: string[]) => {
     if (args[0] === 'list-panes')
       return { stdout: `${paneIds.join('\n')}\n`, stderr: '' };
     if (args[0] === 'display-message') return { stdout: '0\n', stderr: '' };
@@ -36,10 +36,10 @@ describe('team api dispatch-aware messaging', () => {
   const teamName = 'dispatch-team';
 
   beforeEach(async () => {
-    tmuxUtilsMocks.tmuxExecAsync
+    tmuxUtilsMocks.rmuxExecAsync
       .mockReset()
       .mockResolvedValue({ stdout: '', stderr: '' });
-    tmuxUtilsMocks.tmuxCmdAsync
+    tmuxUtilsMocks.rmuxCmdAsync
       .mockReset()
       .mockResolvedValue({ stdout: '0\n', stderr: '' });
     cwd = await mkdtemp(join(tmpdir(), 'omc-team-api-dispatch-'));
@@ -418,7 +418,7 @@ describe('team api dispatch-aware messaging', () => {
       status: 'notified',
     });
     expect(
-      tmuxUtilsMocks.tmuxExecAsync.mock.calls.some(
+      tmuxUtilsMocks.rmuxExecAsync.mock.calls.some(
         ([args]) => args[0] === 'send-keys',
       ),
     ).toBe(true);
@@ -560,7 +560,7 @@ describe('team api dispatch-aware messaging', () => {
     expect(requests[0]?.message_id).toBe(messageId);
     expect(requests[0]?.pane_id).toBe('%9');
     expect(['pending', 'notified']).toContain(requests[0]?.status);
-    expect(tmuxUtilsMocks.tmuxExecAsync).toHaveBeenCalledWith([
+    expect(tmuxUtilsMocks.rmuxExecAsync).toHaveBeenCalledWith([
       'list-panes',
       '-t',
       'dispatch-session',
@@ -568,7 +568,7 @@ describe('team api dispatch-aware messaging', () => {
       '#{pane_id}',
     ]);
     expect(
-      tmuxUtilsMocks.tmuxExecAsync.mock.calls.some(
+      tmuxUtilsMocks.rmuxExecAsync.mock.calls.some(
         ([args]) => args[0] === 'send-keys',
       ),
     ).toBe(false);

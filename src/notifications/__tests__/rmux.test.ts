@@ -1,20 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
-  return { ...actual, tmuxShell: vi.fn() };
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
+  return { ...actual, rmuxShell: vi.fn() };
 });
 
-import { tmuxShell } from '../../cli/tmux-utils.js';
+import { rmuxShell } from '../../cli/rmux-utils.js';
 import {
   getCurrentTmuxSession,
   getCurrentTmuxPaneId,
   formatTmuxInfo,
   getTeamTmuxSessions,
-} from '../tmux.js';
+} from '../rmux.js';
 
-const mockTmuxShell = vi.mocked(tmuxShell);
+const mockTmuxShell = vi.mocked(rmuxShell);
 
 describe('getCurrentTmuxSession', () => {
   const originalEnv = process.env;

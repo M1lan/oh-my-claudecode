@@ -1,4 +1,4 @@
-// src/team/tmux-session.ts
+// src/team/rmux-session.ts
 
 /**
  * Tmux Session Management for MCP Team Bridge
@@ -16,16 +16,16 @@ import fs from 'fs/promises';
 import { validateTeamName } from './team-name.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import {
-  tmuxExec,
-  tmuxExecAsync,
-  tmuxShell,
-  tmuxCmdAsync,
+  rmuxExec,
+  rmuxExecAsync,
+  rmuxShell,
+  rmuxCmdAsync,
   isTmuxCompatibleMultiplexerAvailable,
-} from '../cli/tmux-utils.js';
+} from '../cli/rmux-utils.js';
 import {
   configureTmuxClipboardForSession,
   configureTmuxClipboardForSessionAsync,
-} from '../cli/tmux-clipboard.js';
+} from '../cli/rmux-clipboard.js';
 import type {
   MailboxNotificationTarget,
   MailboxTargetOwnership,
@@ -50,7 +50,7 @@ export function detectTeamMultiplexerContext(
     // here (TMUX is unset) — returning 'tmux' would send createTeamSession
     // down the inside-a-session path, which queries the current pane and
     // throws when none exists. Route to 'none' instead so it creates a fresh
-    // detached session (resolveTmuxInvocation() still prefers rmux/tmux
+    // detached session (resolveMultiplexerInvocation() still prefers rmux/tmux
     // there). cmux is the last resort — chosen only when neither rmux nor
     // tmux is resolvable.
     return isTmuxCompatibleMultiplexerAvailable() ? 'none' : 'cmux';
@@ -73,13 +73,13 @@ export async function applyMainVerticalLayout(
   teamTarget: string,
 ): Promise<void> {
   try {
-    await tmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
+    await rmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
   } catch {
     // Layout may not apply if only 1 pane; ignore.
   }
 
   try {
-    const widthResult = await tmuxCmdAsync([
+    const widthResult = await rmuxCmdAsync([
       'display-message',
       '-p',
       '-t',
@@ -89,14 +89,14 @@ export async function applyMainVerticalLayout(
     const width = parseInt(widthResult.stdout.trim(), 10);
     if (Number.isFinite(width) && width >= 40) {
       const half = String(Math.floor(width / 2));
-      await tmuxExecAsync([
+      await rmuxExecAsync([
         'set-window-option',
         '-t',
         teamTarget,
         'main-pane-width',
         half,
       ]);
-      await tmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
+      await rmuxExecAsync(['select-layout', '-t', teamTarget, 'main-vertical']);
     }
   } catch {
     /* ignore layout sizing errors */
@@ -351,13 +351,13 @@ type MailboxOwnershipCommand = (
 ) => Promise<{ stdout: string; stderr: string }>;
 
 export interface MailboxTargetOwnershipDependencies {
-  tmuxExec: MailboxOwnershipCommand;
+  rmuxExec: MailboxOwnershipCommand;
   cmuxExec: MailboxOwnershipCommand;
 }
 
 const defaultMailboxTargetOwnershipDependencies: MailboxTargetOwnershipDependencies =
   {
-    tmuxExec: (args) => tmuxExecAsync(args),
+    rmuxExec: (args) => rmuxExecAsync(args),
     cmuxExec: cmuxExecAsync,
   };
 
@@ -388,7 +388,7 @@ export async function verifyTeamTargetOwnership(
     }
 
     try {
-      const result = await dependencies.tmuxExec([
+      const result = await dependencies.rmuxExec([
         'list-panes',
         '-t',
         target.providerTarget,
@@ -736,7 +736,7 @@ function workerStartCommandPreview(command: string, maxLength = 180): string {
 }
 
 function logWorkerSpawnDiagnostic(message: string): void {
-  process.stderr.write(`[team/tmux-session] ${message}\n`);
+  process.stderr.write(`[team/rmux-session] ${message}\n`);
 }
 
 function paneCurrentCommandLooksReady(command: string): boolean {
@@ -753,7 +753,7 @@ async function getPaneCurrentCommandStatus(
   paneId: string,
 ): Promise<{ dead: boolean; command: string } | null> {
   try {
-    const result = await tmuxCmdAsync(
+    const result = await rmuxCmdAsync(
       [
         'display-message',
         '-p',
@@ -1075,7 +1075,7 @@ export function validateTmux(hasTmuxContext = false): void {
     return;
   }
   try {
-    tmuxShell('-V', { stripTmux: true, timeout: 5000, stdio: 'pipe' });
+    rmuxShell('-V', { stripTmux: true, timeout: 5000, stdio: 'pipe' });
   } catch {
     throw new Error(
       'No tmux-compatible multiplexer is available. Install rmux (preferred, POSIX) or tmux:\n' +
@@ -1124,7 +1124,7 @@ export function createSession(
 
   // Kill existing session if present (stale from previous run)
   try {
-    tmuxExec(['kill-session', '-t', name], {
+    rmuxExec(['kill-session', '-t', name], {
       stripTmux: true,
       stdio: 'pipe',
       timeout: 5000,
@@ -1139,7 +1139,7 @@ export function createSession(
     args.push('-c', workingDirectory);
   }
   args.push(...workerPaneShellCommand());
-  tmuxExec(args, { stripTmux: true, stdio: 'pipe', timeout: 5000 });
+  rmuxExec(args, { stripTmux: true, stdio: 'pipe', timeout: 5000 });
   try {
     configureTmuxClipboardForSession(name, {
       stripTmux: true,
@@ -1158,7 +1158,7 @@ export function createSession(
 export function killSession(teamName: string, workerName: string): void {
   const name = sessionName(teamName, workerName);
   try {
-    tmuxExec(['kill-session', '-t', name], {
+    rmuxExec(['kill-session', '-t', name], {
       stripTmux: true,
       stdio: 'pipe',
       timeout: 5000,
@@ -1173,7 +1173,7 @@ export function killSession(teamName: string, workerName: string): void {
 export function isSessionAlive(teamName: string, workerName: string): boolean {
   const name = sessionName(teamName, workerName);
   try {
-    tmuxExec(['has-session', '-t', name], {
+    rmuxExec(['has-session', '-t', name], {
       stripTmux: true,
       stdio: 'pipe',
       timeout: 5000,
@@ -1191,7 +1191,7 @@ export function listActiveSessions(teamName: string): string[] {
     // Use shell execution for format strings containing #{} to prevent
     // MSYS2/Git Bash from stripping curly braces in execFileSync args.
     // All arguments here are hardcoded constants, not user input.
-    const output = tmuxShell("list-sessions -F '#{session_name}'", {
+    const output = rmuxShell("list-sessions -F '#{session_name}'", {
       timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -1224,7 +1224,7 @@ export function spawnBridgeInSession(
   const cmd = [process.execPath, bridgeScriptPath, '--config', configFilePath]
     .map(quoteBridgeShellArg)
     .join(' ');
-  tmuxExec(['send-keys', '-t', tmuxSession, cmd, 'Enter'], {
+  rmuxExec(['send-keys', '-t', tmuxSession, cmd, 'Enter'], {
     stripTmux: true,
     stdio: 'pipe',
     timeout: 5000,
@@ -1287,7 +1287,7 @@ export async function splitTeamWorkerPaneWithEvidence(
       };
     }
     const splitType = direction === 'right' ? '-h' : '-v';
-    const splitResult = await tmuxExecAsync([
+    const splitResult = await rmuxExecAsync([
       'split-window',
       splitType,
       '-t',
@@ -1379,7 +1379,7 @@ export async function createTeamSession(
     // Backward-compatible fallback: create an isolated detached tmux session
     // so workflows can run when launched outside any multiplexer.
     const detachedSessionName = `${TMUX_SESSION_PREFIX}-${sanitizeName(teamName)}-${Date.now().toString(36)}`;
-    const detachedResult = await tmuxExecAsync(
+    const detachedResult = await rmuxExecAsync(
       [
         'new-session',
         '-d',
@@ -1407,7 +1407,7 @@ export async function createTeamSession(
 
   if (inTmux && envPaneId) {
     try {
-      const targetedContextResult = await tmuxExecAsync([
+      const targetedContextResult = await rmuxExecAsync([
         'display-message',
         '-p',
         '-t',
@@ -1423,7 +1423,7 @@ export async function createTeamSession(
 
   if (!sessionAndWindow || !leaderPaneId) {
     // Fallback when TMUX_PANE is unavailable/invalid.
-    const contextResult = await tmuxCmdAsync([
+    const contextResult = await rmuxCmdAsync([
       'display-message',
       '-p',
       '#S:#I #{pane_id}',
@@ -1440,7 +1440,7 @@ export async function createTeamSession(
   if (useDedicatedWindow) {
     const targetSession = sessionAndWindow.split(':')[0] ?? sessionAndWindow;
     const windowName = `omc-${sanitizeName(teamName)}`.slice(0, 32);
-    const newWindowResult = await tmuxExecAsync([
+    const newWindowResult = await rmuxExecAsync([
       'new-window',
       '-d',
       '-P',
@@ -1479,7 +1479,7 @@ export async function createTeamSession(
   if (workerCount <= 0) {
     if (!inCmux) {
       try {
-        await tmuxExecAsync([
+        await rmuxExecAsync([
           'set-option',
           '-t',
           resolvedSessionName,
@@ -1491,7 +1491,7 @@ export async function createTeamSession(
       }
       if (sessionMode !== 'dedicated-window') {
         try {
-          await tmuxExecAsync(['select-pane', '-t', leaderPaneId]);
+          await rmuxExecAsync(['select-pane', '-t', leaderPaneId]);
         } catch {
           /* ignore */
         }
@@ -1520,7 +1520,7 @@ export async function createTeamSession(
     }
 
     const splitType = i === 0 ? '-h' : '-v';
-    const splitResult = await tmuxCmdAsync([
+    const splitResult = await rmuxCmdAsync([
       'split-window',
       splitType,
       '-t',
@@ -1543,7 +1543,7 @@ export async function createTeamSession(
     await applyMainVerticalLayout(teamTarget);
 
     try {
-      await tmuxExecAsync([
+      await rmuxExecAsync([
         'set-option',
         '-t',
         resolvedSessionName,
@@ -1556,7 +1556,7 @@ export async function createTeamSession(
 
     if (sessionMode !== 'dedicated-window') {
       try {
-        await tmuxExecAsync(['select-pane', '-t', leaderPaneId]);
+        await rmuxExecAsync(['select-pane', '-t', leaderPaneId]);
       } catch {
         /* ignore */
       }
@@ -1621,7 +1621,7 @@ export async function spawnWorkerInPane(
 
   try {
     // Use -l (literal) flag to prevent tmux key-name parsing of the command string.
-    const sendResult = await tmuxExecAsync(
+    const sendResult = await rmuxExecAsync(
       ['send-keys', '-t', paneId, '-l', startCmd],
       { timeout: 5000 },
     );
@@ -1648,7 +1648,7 @@ export async function spawnWorkerInPane(
   }
 
   try {
-    const enterResult = await tmuxExecAsync(
+    const enterResult = await rmuxExecAsync(
       ['send-keys', '-t', paneId, 'Enter'],
       { timeout: 5000 },
     );
@@ -1693,7 +1693,7 @@ async function capturePaneAsync(
     const args = opts.joinWrappedLines
       ? ['capture-pane', '-J', '-t', paneId, '-p', '-S', '-80']
       : ['capture-pane', '-t', paneId, '-p', '-S', '-80'];
-    const result = await tmuxExecAsync(args);
+    const result = await rmuxExecAsync(args);
     return result.stdout;
   } catch {
     return '';
@@ -1712,7 +1712,7 @@ export async function sendTeamPaneKey(
     await cmuxSendSurfaceKey(paneId, key);
     return;
   }
-  await tmuxExecAsync(['send-keys', '-t', paneId, key]);
+  await rmuxExecAsync(['send-keys', '-t', paneId, key]);
 }
 
 export async function killTeamPane(paneId: string): Promise<void> {
@@ -1720,7 +1720,7 @@ export async function killTeamPane(paneId: string): Promise<void> {
     await cmuxCloseSurface(paneId);
     return;
   }
-  await tmuxExecAsync(['kill-pane', '-t', paneId]);
+  await rmuxExecAsync(['kill-pane', '-t', paneId]);
 }
 
 type PaneTrustPromptKind = 'directory' | 'codex_hooks';
@@ -1874,7 +1874,7 @@ export async function waitForPaneReady(
   }
 
   console.warn(
-    `[tmux-session] waitForPaneReady: pane ${paneId} timed out after ${timeoutMs}ms ` +
+    `[rmux-session] waitForPaneReady: pane ${paneId} timed out after ${timeoutMs}ms ` +
       `(set OMC_SHELL_READY_TIMEOUT_MS to tune)`,
   );
   return false;
@@ -1887,7 +1887,7 @@ function paneTailContainsLiteralLine(captured: string, text: string): boolean {
 async function paneInCopyMode(paneId: string): Promise<boolean> {
   if (isCmuxSurfaceTarget(paneId)) return false;
   try {
-    const result = await tmuxCmdAsync([
+    const result = await rmuxCmdAsync([
       'display-message',
       '-t',
       paneId,
@@ -1933,7 +1933,7 @@ export async function sendToWorker(
 ): Promise<boolean> {
   if (message.length > 200) {
     console.warn(
-      `[tmux-session] sendToWorker: message rejected (${message.length} chars exceeds 200 char limit)`,
+      `[rmux-session] sendToWorker: message rejected (${message.length} chars exceeds 200 char limit)`,
     );
     return false;
   }
@@ -1974,7 +1974,7 @@ export async function sendToWorker(
     if (isCmuxSurfaceTarget(paneId)) {
       await cmuxSendSurface(paneId, message);
     } else {
-      await tmuxExecAsync(['send-keys', '-t', paneId, '-l', '--', message]);
+      await rmuxExecAsync(['send-keys', '-t', paneId, '-l', '--', message]);
     }
 
     // Allow input buffer to settle
@@ -2031,7 +2031,7 @@ export async function sendToWorker(
       if (isCmuxSurfaceTarget(paneId)) {
         await cmuxSendSurface(paneId, message);
       } else {
-        await tmuxExecAsync(['send-keys', '-t', paneId, '-l', '--', message]);
+        await rmuxExecAsync(['send-keys', '-t', paneId, '-l', '--', message]);
       }
       await sleep(120);
       for (let round = 0; round < 4; round++) {
@@ -2093,7 +2093,7 @@ export async function injectToLeaderPane(
       if (isCmuxSurfaceTarget(leaderPaneId)) {
         await cmuxSendSurfaceKey(leaderPaneId, 'C-c');
       } else {
-        await tmuxExecAsync(['send-keys', '-t', leaderPaneId, 'C-c']);
+        await rmuxExecAsync(['send-keys', '-t', leaderPaneId, 'C-c']);
       }
       await new Promise<void>((r) => setTimeout(r, 250));
     }
@@ -2137,7 +2137,7 @@ export async function getWorkerLiveness(
   }
 
   try {
-    const result = await tmuxCmdAsync([
+    const result = await rmuxCmdAsync([
       'display-message',
       '-t',
       paneId,
@@ -2234,7 +2234,7 @@ export async function resolveSplitPaneWorkerPaneIds(
   if (!sessionName.includes(':')) return resolved;
 
   try {
-    const paneResult = await tmuxCmdAsync([
+    const paneResult = await rmuxCmdAsync([
       'list-panes',
       '-t',
       sessionName,
@@ -2286,7 +2286,7 @@ export async function killTeamSession(
 
   if (sessionMode === 'dedicated-window') {
     try {
-      await tmuxExecAsync(['kill-window', '-t', sessionName]);
+      await rmuxExecAsync(['kill-window', '-t', sessionName]);
     } catch {
       // Window may already be gone.
     }
@@ -2300,7 +2300,7 @@ export async function killTeamSession(
     process.env.TMUX
   ) {
     try {
-      const current = await tmuxCmdAsync(['display-message', '-p', '#S']);
+      const current = await rmuxCmdAsync(['display-message', '-p', '#S']);
       const currentSessionName = current.stdout.trim();
       if (currentSessionName && currentSessionName === sessionTarget) {
         return;
@@ -2311,7 +2311,7 @@ export async function killTeamSession(
   }
 
   try {
-    await tmuxExecAsync(['kill-session', '-t', sessionTarget]);
+    await rmuxExecAsync(['kill-session', '-t', sessionTarget]);
   } catch {
     // Session may already be dead.
   }

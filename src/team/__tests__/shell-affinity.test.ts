@@ -3,7 +3,7 @@ import {
   buildWorkerLaunchSpec,
   resolveSupportedShellAffinity,
   resolveShellFromCandidates,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();

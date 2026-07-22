@@ -26,7 +26,7 @@ import type {
   DrainSignal,
   InboxCursor,
 } from './types.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import {
   appendFileWithMode,
   writeFileWithMode,

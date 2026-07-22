@@ -14,7 +14,7 @@ import { join, resolve } from 'path';
 import { mkdir, readFile, rm } from 'fs/promises';
 import { existsSync } from 'node:fs';
 import { createHash, randomUUID } from 'node:crypto';
-import { tmuxExec, tmuxSpawn } from '../cli/tmux-utils.js';
+import { rmuxExec, rmuxSpawn } from '../cli/rmux-utils.js';
 import {
   buildWorkerArgv,
   getWorkerEnv as getModelWorkerEnv,
@@ -53,7 +53,7 @@ import {
   killWorkerPanes,
   buildWorkerStartCommand,
   waitForPaneReady,
-} from './tmux-session.js';
+} from './rmux-session.js';
 import { TeamPaths, absPath } from './state-paths.js';
 import { writeWorkerOverlay } from './worker-bootstrap.js';
 import {
@@ -136,7 +136,7 @@ function validateSplitTargetPaneInConfiguredSession(
     return `Refusing to split tmux pane ${splitTarget}: missing configured tmux_session.`;
   }
 
-  const result = tmuxSpawn([
+  const result = rmuxSpawn([
     'display-message',
     '-t',
     splitTarget,
@@ -474,7 +474,7 @@ export async function scaleUpOwned(
         ): Promise<void> => {
           for (let attempt = 0; attempt < 2; attempt++) {
             try {
-              tmuxExec(['kill-pane', '-t', candidate], { stdio: 'pipe' });
+              rmuxExec(['kill-pane', '-t', candidate], { stdio: 'pipe' });
             } catch {
               /* verify below */
             }
@@ -995,7 +995,7 @@ export async function scaleUpOwned(
           }
 
           // Split from the rightmost worker pane or the leader pane
-          const result = tmuxSpawn([
+          const result = rmuxSpawn([
             'split-window',
             splitDirection,
             '-t',
@@ -1027,7 +1027,7 @@ export async function scaleUpOwned(
           // Get PID
           let panePid: number | undefined;
           try {
-            const pidResult = tmuxSpawn([
+            const pidResult = rmuxSpawn([
               'display-message',
               '-t',
               paneId,

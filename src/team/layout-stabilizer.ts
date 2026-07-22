@@ -1,4 +1,4 @@
-import { tmuxExecAsync, tmuxCmdAsync } from '../cli/tmux-utils.js';
+import { rmuxExecAsync, rmuxCmdAsync } from '../cli/rmux-utils.js';
 
 export interface LayoutStabilizerOptions {
   sessionTarget: string;
@@ -82,7 +82,7 @@ export class LayoutStabilizer {
     this.running = true;
     try {
       try {
-        await tmuxExecAsync([
+        await rmuxExecAsync([
           'select-layout',
           '-t',
           this.sessionTarget,
@@ -93,7 +93,7 @@ export class LayoutStabilizer {
       }
 
       try {
-        const widthResult = await tmuxCmdAsync([
+        const widthResult = await rmuxCmdAsync([
           'display-message',
           '-p',
           '-t',
@@ -103,14 +103,14 @@ export class LayoutStabilizer {
         const width = parseInt(widthResult.stdout.trim(), 10);
         if (Number.isFinite(width) && width >= 40) {
           const half = String(Math.floor(width / 2));
-          await tmuxExecAsync([
+          await rmuxExecAsync([
             'set-window-option',
             '-t',
             this.sessionTarget,
             'main-pane-width',
             half,
           ]);
-          await tmuxExecAsync([
+          await rmuxExecAsync([
             'select-layout',
             '-t',
             this.sessionTarget,
@@ -122,7 +122,7 @@ export class LayoutStabilizer {
       }
 
       try {
-        await tmuxExecAsync(['select-pane', '-t', this.leaderPaneId]);
+        await rmuxExecAsync(['select-pane', '-t', this.leaderPaneId]);
       } catch {
         // ignore
       }

@@ -17,7 +17,7 @@ import {
 } from 'fs';
 import { join } from 'path';
 import type { HeartbeatData } from './types.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import { atomicWriteJson } from './fs-utils.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 

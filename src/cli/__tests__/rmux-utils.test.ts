@@ -1,10 +1,10 @@
 /**
- * Tests for src/cli/tmux-utils.ts
+ * Tests for src/cli/rmux-utils.ts
  *
  * Covers:
  * - wrapWithLoginShell (issue #1153 — shell RC not loaded in tmux)
  * - quoteShellArg
- * - sanitizeTmuxToken
+ * - sanitizeRmuxToken
  * - createHudWatchPane login shell wrapping
  */
 
@@ -23,24 +23,24 @@ vi.mock('child_process', async (importOriginal) => {
 });
 
 import {
-  buildTmuxShellCommand,
-  buildTmuxShellCommandWithEnv,
+  buildRmuxShellCommand,
+  buildRmuxShellCommandWithEnv,
   createHudWatchPane,
   isClaudeAvailable,
   isTmuxCompatibleMultiplexerAvailable,
-  killTmuxPane,
+  killRmuxPane,
   listHudWatchPaneIdsInCurrentWindow,
   resolveLaunchPolicy,
   resolveRmuxInvocation,
   __resetRmuxBinaryPathCache,
-  tmuxExec,
-  tmuxEnv,
-  tmuxSpawn,
-  tmuxCmdAsync,
+  rmuxExec,
+  rmuxEnv,
+  rmuxSpawn,
+  rmuxCmdAsync,
   wrapWithLoginShell,
   quoteShellArg,
-  sanitizeTmuxToken,
-} from '../tmux-utils.js';
+  sanitizeRmuxToken,
+} from '../rmux-utils.js';
 
 const mockedExecFileSync = vi.mocked(execFileSync);
 const mockedExec = vi.mocked(exec);
@@ -322,14 +322,14 @@ describe('isClaudeAvailable', () => {
 });
 
 // ---------------------------------------------------------------------------
-// tmuxEnv — psmux detached-session env stripping (issue #3265)
+// rmuxEnv — psmux detached-session env stripping (issue #3265)
 // ---------------------------------------------------------------------------
-describe('tmuxEnv', () => {
+describe('rmuxEnv', () => {
   it('strips PSMUX_SESSION so psmux does not block detached new-session -d', () => {
     vi.stubEnv('TMUX', '/tmp/tmux-0/default,1,0');
     vi.stubEnv('PSMUX_SESSION', 'psmux-session-1');
 
-    const env = tmuxEnv();
+    const env = rmuxEnv();
 
     expect(env.TMUX).toBeUndefined();
     expect(env.PSMUX_SESSION).toBeUndefined();
@@ -339,7 +339,7 @@ describe('tmuxEnv', () => {
     vi.stubEnv('PSMUX_SESSION', 'psmux-session-1');
     vi.stubEnv('CLAUDE_CONFIG_DIR', '/tmp/cfg');
 
-    const env = tmuxEnv();
+    const env = rmuxEnv();
 
     expect(env.CLAUDE_CONFIG_DIR).toBe('/tmp/cfg');
     expect(env.PSMUX_SESSION).toBeUndefined();
@@ -350,7 +350,7 @@ describe('tmuxEnv', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['new-session', '-d', '-s', 'omc-detached'], { stripTmux: true });
+    rmuxExec(['new-session', '-d', '-s', 'omc-detached'], { stripTmux: true });
 
     const lastCall = mockedExecFileSync.mock.calls.at(-1);
     expect(lastCall).toBeDefined();
@@ -363,7 +363,7 @@ describe('tmuxEnv', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['split-window', '-h']);
+    rmuxExec(['split-window', '-h']);
 
     const lastCall = mockedExecFileSync.mock.calls.at(-1);
     expect(lastCall).toBeDefined();
@@ -431,17 +431,17 @@ describe('resolveRmuxInvocation', () => {
 });
 
 // ---------------------------------------------------------------------------
-// rmux command routing — tmuxExec drives the rmux server with -S <socket>
+// rmux command routing — rmuxExec drives the rmux server with -S <socket>
 // ---------------------------------------------------------------------------
 describe('rmux command routing', () => {
-  it('routes tmuxExec through TMUX_PROGRAM with -S <socket> prepended', () => {
+  it('routes rmuxExec through TMUX_PROGRAM with -S <socket> prepended', () => {
     vi.stubEnv('TERM_PROGRAM', 'rmux');
     vi.stubEnv('TMUX_PROGRAM', '/tmp/rmux-shim-abc/tmux');
     vi.stubEnv('TMUX', '/private/tmp/rmux-502/default,42222,7');
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('%7\n' as any);
 
-    tmuxExec(['display-message', '-p', '#{pane_id}']);
+    rmuxExec(['display-message', '-p', '#{pane_id}']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       '/tmp/rmux-shim-abc/tmux',
@@ -463,7 +463,7 @@ describe('rmux command routing', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['list-sessions'], { stripTmux: true });
+    rmuxExec(['list-sessions'], { stripTmux: true });
 
     const lastCall = mockedExecFileSync.mock.calls.at(-1);
     expect(lastCall?.[0]).toBe('/tmp/rmux-shim-abc/tmux');
@@ -483,7 +483,7 @@ describe('rmux command routing', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['kill-pane', '-t', '%3']);
+    rmuxExec(['kill-pane', '-t', '%3']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'tmux',
@@ -514,7 +514,7 @@ describe('plain rmux binary preference (POSIX)', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['kill-pane', '-t', '%3']);
+    rmuxExec(['kill-pane', '-t', '%3']);
 
     expect(mockedSpawnSync).toHaveBeenCalledWith(
       'rmux',
@@ -544,7 +544,7 @@ describe('plain rmux binary preference (POSIX)', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['kill-pane', '-t', '%3']);
+    rmuxExec(['kill-pane', '-t', '%3']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'tmux',
@@ -571,7 +571,7 @@ describe('plain rmux binary preference (POSIX)', () => {
     mockedExecFileSync.mockClear();
     mockedExecFileSync.mockReturnValue('' as any);
 
-    tmuxExec(['kill-pane', '-t', '%3']);
+    rmuxExec(['kill-pane', '-t', '%3']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       '/tmp/rmux-shim-abc/tmux',
@@ -582,12 +582,12 @@ describe('plain rmux binary preference (POSIX)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// tmuxShellCommandPrefix (via tmuxCmdAsync's format-arg -> tmuxShellAsync
-// routing) — must mirror resolveTmuxInvocation's 3-tier ladder: shim ->
+// multiplexerShellCommandPrefix (via rmuxCmdAsync's format-arg -> rmuxShellAsync
+// routing) — must mirror resolveMultiplexerInvocation's 3-tier ladder: shim ->
 // plain rmux on PATH -> tmux. Regression coverage for the bug where this
 // shell-string prefix skipped the plain-rmux-on-PATH tier entirely.
 // ---------------------------------------------------------------------------
-describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
+describe('multiplexerShellCommandPrefix plain-rmux tier (via rmuxCmdAsync)', () => {
   it('prefers a plain rmux binary on PATH when no rmux-shim is active', async () => {
     vi.stubEnv('TERM_PROGRAM', '');
     vi.stubEnv('TMUX_PROGRAM', '');
@@ -604,7 +604,7 @@ describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
     mockedExec.mockClear();
     mockExecAsync('42\n');
 
-    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+    await rmuxCmdAsync(['display-message', '-p', '#{window_width}']);
 
     expect(mockedSpawnSync).toHaveBeenCalledWith(
       'rmux',
@@ -634,7 +634,7 @@ describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
     mockedExec.mockClear();
     mockExecAsync('42\n');
 
-    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+    await rmuxCmdAsync(['display-message', '-p', '#{window_width}']);
 
     expect(mockedExec).toHaveBeenLastCalledWith(
       "tmux 'display-message' '-p' '#{window_width}'",
@@ -659,7 +659,7 @@ describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
     mockedExec.mockClear();
     mockExecAsync('42\n');
 
-    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+    await rmuxCmdAsync(['display-message', '-p', '#{window_width}']);
 
     expect(mockedExec).toHaveBeenLastCalledWith(
       "'/tmp/rmux-shim-abc/tmux' '-S' '/private/tmp/rmux-502/default' 'display-message' '-p' '#{window_width}'",
@@ -670,7 +670,7 @@ describe('tmuxShellCommandPrefix plain-rmux tier (via tmuxCmdAsync)', () => {
 });
 
 describe('tmux command execution parity on Windows', () => {
-  it('routes tmuxExec through COMSPEC when where resolves tmux.cmd', () => {
+  it('routes rmuxExec through COMSPEC when where resolves tmux.cmd', () => {
     const originalPlatform = process.platform;
     Object.defineProperty(process, 'platform', {
       value: 'win32',
@@ -690,7 +690,7 @@ describe('tmux command execution parity on Windows', () => {
     } as ReturnType<typeof spawnSync>);
     mockedExecFileSync.mockReturnValue('ok' as any);
 
-    tmuxExec(['list-sessions']);
+    rmuxExec(['list-sessions']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
@@ -704,7 +704,7 @@ describe('tmux command execution parity on Windows', () => {
     });
   });
 
-  it('routes tmuxSpawn through COMSPEC when where resolves tmux.cmd', () => {
+  it('routes rmuxSpawn through COMSPEC when where resolves tmux.cmd', () => {
     const originalPlatform = process.platform;
     Object.defineProperty(process, 'platform', {
       value: 'win32',
@@ -731,7 +731,7 @@ describe('tmux command execution parity on Windows', () => {
         signal: null,
       } as ReturnType<typeof spawnSync>);
 
-    tmuxSpawn(['list-panes']);
+    rmuxSpawn(['list-panes']);
 
     expect(mockedSpawnSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
@@ -765,7 +765,7 @@ describe('tmux command execution parity on Windows', () => {
     } as ReturnType<typeof spawnSync>);
     mockedExecFileSync.mockReturnValue('ok' as any);
 
-    tmuxExec(['send-keys', 'foo(bar)']);
+    rmuxExec(['send-keys', 'foo(bar)']);
 
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'C:\\Windows\\System32\\cmd.exe',
@@ -802,7 +802,7 @@ describe('tmux command execution parity on Windows', () => {
     } as ReturnType<typeof spawnSync>);
     mockExecFileAsync('42\n');
 
-    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+    await rmuxCmdAsync(['display-message', '-p', '#{window_width}']);
 
     expect(mockedExec).not.toHaveBeenCalled();
     expect(mockedExecFile).toHaveBeenLastCalledWith(
@@ -839,7 +839,7 @@ describe('tmux command execution parity on Windows', () => {
     mockedExecFile.mockClear();
     mockExecAsync('42\n');
 
-    await tmuxCmdAsync(['display-message', '-p', '#{window_width}']);
+    await rmuxCmdAsync(['display-message', '-p', '#{window_width}']);
 
     expect(mockedExecFile).not.toHaveBeenCalled();
     expect(mockedExec).toHaveBeenLastCalledWith(
@@ -887,7 +887,7 @@ describe('wrapWithLoginShell', () => {
       configurable: true,
     });
 
-    expect(buildTmuxShellCommand('claude', ['--print', 'hello world'])).toBe(
+    expect(buildRmuxShellCommand('claude', ['--print', 'hello world'])).toBe(
       'claude --print "hello world"',
     );
 
@@ -905,7 +905,7 @@ describe('wrapWithLoginShell', () => {
     });
 
     expect(
-      buildTmuxShellCommandWithEnv('claude', ['--print'], {
+      buildRmuxShellCommandWithEnv('claude', ['--print'], {
         CODEX_HOME: 'C:\\Users\\me\\codex home',
       }),
     ).toBe('set "CODEX_HOME=C:\\Users\\me\\codex home" && claude --print');
@@ -1041,22 +1041,22 @@ describe('quoteShellArg', () => {
 });
 
 // ---------------------------------------------------------------------------
-// sanitizeTmuxToken
+// sanitizeRmuxToken
 // ---------------------------------------------------------------------------
-describe('sanitizeTmuxToken', () => {
+describe('sanitizeRmuxToken', () => {
   it('lowercases and replaces non-alphanumeric with hyphens', () => {
-    expect(sanitizeTmuxToken('My_Project.Name')).toBe('my-project-name');
-    expect(sanitizeTmuxToken('MyProject')).toBe('myproject');
-    expect(sanitizeTmuxToken('my project!')).toBe('my-project');
+    expect(sanitizeRmuxToken('My_Project.Name')).toBe('my-project-name');
+    expect(sanitizeRmuxToken('MyProject')).toBe('myproject');
+    expect(sanitizeRmuxToken('my project!')).toBe('my-project');
   });
 
   it('strips leading and trailing hyphens', () => {
-    expect(sanitizeTmuxToken('--hello--')).toBe('hello');
+    expect(sanitizeRmuxToken('--hello--')).toBe('hello');
   });
 
   it('returns "unknown" for empty result', () => {
-    expect(sanitizeTmuxToken('...')).toBe('unknown');
-    expect(sanitizeTmuxToken('!!!')).toBe('unknown');
+    expect(sanitizeRmuxToken('...')).toBe('unknown');
+    expect(sanitizeRmuxToken('!!!')).toBe('unknown');
   });
 });
 
@@ -1069,7 +1069,7 @@ describe('createHudWatchPane login shell wrapping', () => {
     const fs = require('fs');
     const path = require('path');
     const source = fs.readFileSync(
-      path.join(__dirname, '..', 'tmux-utils.ts'),
+      path.join(__dirname, '..', 'rmux-utils.ts'),
       'utf-8',
     );
     expect(source).toContain('wrapWithLoginShell(hudCmd)');
@@ -1109,7 +1109,7 @@ describe('HUD pane tmux server targeting', () => {
     vi.stubEnv('TMUX', '/tmp/tmux-100/default,123,0');
     mockedExecFileSync.mockReturnValue('' as any);
 
-    killTmuxPane('%9');
+    killRmuxPane('%9');
 
     const lastCall = mockedExecFileSync.mock.calls.at(-1);
     expect(lastCall?.[1]).toEqual(['kill-pane', '-t', '%9']);

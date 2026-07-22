@@ -1,14 +1,14 @@
 /**
  * Integration test: rmux multiplexer timing risks (real binary, no mocks)
  *
- * Every other tmux-session test in this directory mocks child_process /
- * tmux-utils entirely (see tmux-session.spawn.test.ts). This file is the
+ * Every other rmux-session test in this directory mocks child_process /
+ * rmux-utils entirely (see rmux-session.spawn.test.ts). This file is the
  * deliberate exception: it shells out to a REAL `rmux` binary to exercise
  * the three timing-sensitive code paths the tmux->rmux migration analysis
  * flagged as highest risk:
  *
  *  1. Capture-diff readiness polling — waitForShellReady() /
- *     getPaneCurrentCommandStatus() (tmux-session.ts, private, poll
+ *     getPaneCurrentCommandStatus() (rmux-session.ts, private, poll
  *     `#{pane_dead} #{pane_current_command}` every 50ms) and
  *     verifyWorkerStartCommandDelivered() (private, capture-diffs 5x50ms).
  *     Neither function is exported, so this file reaches them the only way
@@ -50,8 +50,8 @@ import {
   killTeamSession,
   type TeamSession,
   type WorkerPaneConfig,
-} from '../tmux-session.js';
-import { tmuxCmdAsync } from '../../cli/tmux-utils.js';
+} from '../rmux-session.js';
+import { rmuxCmdAsync } from '../../cli/rmux-utils.js';
 
 function isRmuxAvailable(): boolean {
   try {
@@ -65,10 +65,10 @@ function isRmuxAvailable(): boolean {
 const HAS_RMUX = isRmuxAvailable();
 
 /**
- * Best-effort raw cleanup, deliberately bypassing tmux-session.ts /
- * tmux-utils.ts entirely (this is test hygiene, not something under test).
+ * Best-effort raw cleanup, deliberately bypassing rmux-session.ts /
+ * rmux-utils.ts entirely (this is test hygiene, not something under test).
  * createTeamSession() can create the session + leader pane and THEN throw
- * partway through worker-pane setup (e.g. the tmuxCmdAsync `#{...}`
+ * partway through worker-pane setup (e.g. the rmuxCmdAsync `#{...}`
  * resolution divergence documented below), in which case `session` is never
  * assigned and a normal `killTeamSession(session...)` cleanup path never
  * runs. Sweep for any session whose name carries this run's TEAM_NAME so a
@@ -182,13 +182,13 @@ describe.skipIf(!HAS_RMUX)(
     it('worker panes report a live, ready shell via a real pane_dead/pane_current_command query (risk 1 + risk 3 baseline)', async () => {
       // createTeamSession() awaits waitForShellReady() internally but does
       // NOT check its return value (Promise.all result is discarded — see
-      // tmux-session.ts createTeamSession, worker readiness loop). A
+      // rmux-session.ts createTeamSession, worker readiness loop). A
       // successful createTeamSession() return is therefore NOT proof of
       // readiness by itself; verify independently here by issuing the same
       // `#{pane_dead} #{pane_current_command}` display-message query the
       // private getPaneCurrentCommandStatus()/waitForShellReady() use.
       for (const paneId of session!.workerPaneIds) {
-        const result = await tmuxCmdAsync([
+        const result = await rmuxCmdAsync([
           'display-message',
           '-p',
           '-t',
@@ -237,7 +237,7 @@ describe.skipIf(!HAS_RMUX)(
     it('applyMainVerticalLayout() sizes the main pane to floor(window_width/2) against real rmux (risk 2)', async () => {
       await applyMainVerticalLayout(session!.sessionName);
 
-      const widthResult = await tmuxCmdAsync([
+      const widthResult = await rmuxCmdAsync([
         'display-message',
         '-p',
         '-t',
@@ -248,7 +248,7 @@ describe.skipIf(!HAS_RMUX)(
       expect(Number.isFinite(windowWidth)).toBe(true);
       expect(windowWidth).toBeGreaterThan(0);
 
-      const mainWidthResult = await tmuxCmdAsync([
+      const mainWidthResult = await rmuxCmdAsync([
         'display-message',
         '-p',
         '-t',
@@ -263,7 +263,7 @@ describe.skipIf(!HAS_RMUX)(
       // an independent sanity check that main-vertical actually put the
       // leader pane on the "main" (wide) side of the layout.
       for (const paneId of session!.workerPaneIds) {
-        const workerWidthResult = await tmuxCmdAsync([
+        const workerWidthResult = await rmuxCmdAsync([
           'display-message',
           '-p',
           '-t',
@@ -282,7 +282,7 @@ describe.skipIf(!HAS_RMUX)(
       // it) once its shell process exits, so the dead state is observable —
       // mirrors what production code assumes when it later polls a pane
       // whose worker process crashed or was killed.
-      await tmuxCmdAsync([
+      await rmuxCmdAsync([
         'set-window-option',
         '-t',
         deadPaneId,
@@ -293,7 +293,7 @@ describe.skipIf(!HAS_RMUX)(
       const before = await getWorkerLiveness(deadPaneId);
       expect(before).toBe('alive');
 
-      const pidResult = await tmuxCmdAsync([
+      const pidResult = await rmuxCmdAsync([
         'display-message',
         '-p',
         '-t',

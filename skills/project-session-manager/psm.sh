@@ -10,7 +10,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/config.sh"
 source "$SCRIPT_DIR/lib/parse.sh"
 source "$SCRIPT_DIR/lib/worktree.sh"
-source "$SCRIPT_DIR/lib/tmux.sh"
+source "$SCRIPT_DIR/lib/rmux.sh"
 source "$SCRIPT_DIR/lib/session.sh"
 
 # Source provider files

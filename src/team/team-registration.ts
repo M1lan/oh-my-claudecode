@@ -12,7 +12,7 @@ import { join } from 'path';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
 import type { McpWorkerMember, ConfigProbeResult } from './types.js';
-import { sanitizeName } from './tmux-session.js';
+import { sanitizeName } from './rmux-session.js';
 import { atomicWriteJson, validateResolvedPath } from './fs-utils.js';
 import { withFileLockSync } from '../lib/file-lock.js';
 

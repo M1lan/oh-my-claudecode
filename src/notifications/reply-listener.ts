@@ -31,7 +31,7 @@ import { join } from 'path';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { spawn } from 'child_process';
 import { randomUUID } from 'crypto';
-import { tmuxExec } from '../cli/tmux-utils.js';
+import { rmuxExec } from '../cli/rmux-utils.js';
 import { request as httpsRequest } from 'https';
 import { resolveDaemonModulePath } from '../utils/daemon-module-path.js';
 import { getGlobalOmcStateRoot } from '../utils/paths.js';
@@ -39,7 +39,7 @@ import {
   capturePaneContent,
   sendToPane,
   isTmuxAvailable,
-} from '../features/rate-limit-wait/tmux-detector.js';
+} from '../features/rate-limit-wait/rmux-detector.js';
 import {
   lookupByMessageId,
   lockRegistryIfEmpty,
@@ -479,12 +479,12 @@ function sendReplyInjectionSteps(
   try {
     for (const step of steps) {
       if (step.kind === 'literal') {
-        tmuxExec(['send-keys', '-t', paneId, '-l', step.value], {
+        rmuxExec(['send-keys', '-t', paneId, '-l', step.value], {
           stripTmux: true,
           timeout: 2000,
         });
       } else {
-        tmuxExec(['send-keys', '-t', paneId, step.value], {
+        rmuxExec(['send-keys', '-t', paneId, step.value], {
           stripTmux: true,
           timeout: 2000,
         });

@@ -8,9 +8,9 @@ import { registerMcpWorker } from '../team-registration.js';
 import { logAuditEvent } from '../audit-log.js';
 import type { HeartbeatData } from '../types.js';
 
-// Mock tmux-session to avoid needing actual tmux
-vi.mock('../tmux-session.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../tmux-session.js')>();
+// Mock rmux-session to avoid needing actual tmux
+vi.mock('../rmux-session.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../rmux-session.js')>();
   return {
     ...actual,
     isSessionAlive: vi.fn(() => false),
@@ -36,7 +36,7 @@ describe('worker-health', () => {
       name,
       'codex',
       'gpt-5.3-codex',
-      'tmux-session',
+      'rmux-session',
       testDir,
       testDir,
     );

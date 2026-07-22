@@ -9,7 +9,7 @@
  * - Text inputs are sanitized to prevent command injection
  */
 
-import { tmuxExec, tmuxSpawn } from '../../cli/tmux-utils.js';
+import { rmuxExec, rmuxSpawn } from '../../cli/rmux-utils.js';
 import { getNewPaneTail } from './pane-fresh-capture.js';
 import type { TmuxPane, PaneAnalysisResult, BlockedPane } from './types.js';
 
@@ -183,7 +183,7 @@ const WAITING_PATTERNS = [
  */
 export function isTmuxAvailable(): boolean {
   try {
-    const result = tmuxSpawn(['-V'], {
+    const result = rmuxSpawn(['-V'], {
       stripTmux: true,
       stdio: 'pipe',
       timeout: 3000,
@@ -213,7 +213,7 @@ export function listTmuxPanes(): TmuxPane[] {
     // Format: session_name:window_index.pane_index pane_id pane_active window_name pane_title
     const format =
       '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_active} #{window_name} #{pane_title}';
-    const result = tmuxExec(['list-panes', '-a', '-F', format], {
+    const result = rmuxExec(['list-panes', '-a', '-F', format], {
       stripTmux: true,
       timeout: 5000,
     });
@@ -267,7 +267,7 @@ export function isPaneAlive(paneId: string): boolean {
     return false;
   }
   try {
-    const result = tmuxExec(
+    const result = rmuxExec(
       ['display-message', '-t', paneId, '-p', '#{pane_dead}'],
       { stripTmux: true, stdio: 'pipe', timeout: 3000 },
     );
@@ -300,7 +300,7 @@ export function capturePaneContent(paneId: string, lines = 15): string {
 
   try {
     // Capture the last N lines from the pane
-    const result = tmuxExec(
+    const result = rmuxExec(
       ['capture-pane', '-t', paneId, '-p', '-S', `-${safeLines}`],
       {
         stripTmux: true,
@@ -448,7 +448,7 @@ export function sendResumeSequence(paneId: string): boolean {
 
   try {
     // Send "1" to select the first option (typically "Continue" or similar)
-    tmuxExec(['send-keys', '-t', paneId, '1', 'Enter'], {
+    rmuxExec(['send-keys', '-t', paneId, '1', 'Enter'], {
       stripTmux: true,
       timeout: 2000,
     });
@@ -486,13 +486,13 @@ export function sendToPane(
   try {
     const sanitizedText = sanitizeForTmux(text);
     // Send text with -l flag (literal) to avoid key interpretation issues in TUI apps
-    tmuxExec(['send-keys', '-t', paneId, '-l', sanitizedText], {
+    rmuxExec(['send-keys', '-t', paneId, '-l', sanitizedText], {
       stripTmux: true,
       timeout: 2000,
     });
     // Send Enter as a separate command so it is interpreted as a key press
     if (pressEnter) {
-      tmuxExec(['send-keys', '-t', paneId, 'Enter'], {
+      rmuxExec(['send-keys', '-t', paneId, 'Enter'], {
         stripTmux: true,
         timeout: 2000,
       });

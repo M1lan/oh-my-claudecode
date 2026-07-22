@@ -33,14 +33,14 @@ import {
   type AutoresearchSetupSessionInput,
 } from './autoresearch-setup-session.js';
 import {
-  buildTmuxShellCommand,
-  buildTmuxShellCommandWithEnv,
+  buildRmuxShellCommand,
+  buildRmuxShellCommandWithEnv,
   isTmuxAvailable,
   quoteShellArg,
-  tmuxExec,
+  rmuxExec,
   wrapWithLoginShell,
-} from './tmux-utils.js';
-import { configureTmuxClipboardForSession } from './tmux-clipboard.js';
+} from './rmux-utils.js';
+import { configureTmuxClipboardForSession } from './rmux-clipboard.js';
 
 const CLAUDE_BYPASS_FLAG = '--dangerously-skip-permissions';
 const AUTORESEARCH_SETUP_SLASH_COMMAND = '/deep-interview --autoresearch';
@@ -406,7 +406,7 @@ function resolveMissionRepoRoot(missionDir: string): string {
 
 function assertTmuxSessionAvailable(sessionName: string): void {
   try {
-    tmuxExec(['has-session', '-t', sessionName], {
+    rmuxExec(['has-session', '-t', sessionName], {
       stripTmux: true,
       stdio: 'ignore',
     });
@@ -428,7 +428,7 @@ export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
   const sessionName = `omc-autoresearch-${slug}`;
 
   try {
-    tmuxExec(['has-session', '-t', sessionName], {
+    rmuxExec(['has-session', '-t', sessionName], {
       stripTmux: true,
       stdio: 'ignore',
     });
@@ -446,14 +446,14 @@ export function spawnAutoresearchTmux(missionDir: string, slug: string): void {
 
   const repoRoot = resolveMissionRepoRoot(missionDir);
   const omcPath = resolve(join(__dirname, '..', '..', 'bin', 'omc.js'));
-  const command = buildTmuxShellCommand(process.execPath, [
+  const command = buildRmuxShellCommand(process.execPath, [
     omcPath,
     'autoresearch',
     missionDir,
   ]);
   const wrappedCommand = wrapWithLoginShell(command);
 
-  tmuxExec(
+  rmuxExec(
     ['new-session', '-d', '-s', sessionName, '-c', repoRoot, wrappedCommand],
     { stripTmux: true, stdio: 'ignore' },
   );
@@ -531,13 +531,13 @@ export function spawnAutoresearchSetupTmux(repoRoot: string): void {
 
   const sessionName = `omc-autoresearch-setup-${Date.now().toString(36)}`;
   const codexHome = prepareAutoresearchSetupCodexHome(repoRoot, sessionName);
-  const claudeCommand = buildTmuxShellCommandWithEnv(
+  const claudeCommand = buildRmuxShellCommandWithEnv(
     'claude',
     [CLAUDE_BYPASS_FLAG],
     { CODEX_HOME: codexHome },
   );
   const wrappedClaudeCommand = wrapWithLoginShell(claudeCommand);
-  const paneId = tmuxExec(
+  const paneId = rmuxExec(
     [
       'new-session',
       '-d',
@@ -564,11 +564,11 @@ export function spawnAutoresearchSetupTmux(repoRoot: string): void {
   assertTmuxSessionAvailable(sessionName);
 
   if (paneId) {
-    tmuxExec(
+    rmuxExec(
       ['send-keys', '-t', paneId, '-l', buildAutoresearchSetupSlashCommand()],
       { stripTmux: true, stdio: 'ignore' },
     );
-    tmuxExec(['send-keys', '-t', paneId, 'Enter'], {
+    rmuxExec(['send-keys', '-t', paneId, 'Enter'], {
       stripTmux: true,
       stdio: 'ignore',
     });

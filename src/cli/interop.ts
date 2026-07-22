@@ -10,11 +10,11 @@ import { randomUUID } from 'crypto';
 import {
   isTmuxAvailable,
   isClaudeAvailable,
-  tmuxExec,
-  buildTmuxShellCommandWithEnv,
+  rmuxExec,
+  buildRmuxShellCommandWithEnv,
   wrapWithLoginShell,
-  killTmuxPane,
-} from './tmux-utils.js';
+  killRmuxPane,
+} from './rmux-utils.js';
 import { initInteropSession, getInteropDir } from '../interop/shared-state.js';
 
 export type InteropMode = 'off' | 'observe' | 'active';
@@ -111,10 +111,10 @@ export function sendInteropCavemanActivation(
   activation: string = INTEROP_CAVEMAN_ACTIVATION,
 ): void {
   try {
-    tmuxExec(['send-keys', '-t', paneId, '-l', activation], {
+    rmuxExec(['send-keys', '-t', paneId, '-l', activation], {
       stdio: 'ignore',
     });
-    tmuxExec(['send-keys', '-t', paneId, 'Enter'], { stdio: 'ignore' });
+    rmuxExec(['send-keys', '-t', paneId, 'Enter'], { stdio: 'ignore' });
   } catch {
     // Non-fatal — the deterministic env-hook path in oh-my-codex is primary.
   }
@@ -196,7 +196,7 @@ export function launchInteropSession(
   // Get current pane ID
   let currentPaneId: string;
   try {
-    const output = tmuxExec(['display-message', '-p', '#{pane_id}']);
+    const output = rmuxExec(['display-message', '-p', '#{pane_id}']);
     currentPaneId = output.trim();
   } catch (_error) {
     console.error('Error: Failed to get current tmux pane ID');
@@ -223,11 +223,11 @@ export function launchInteropSession(
       // (spawnSync inherits this process's env) — already see. Capture the new
       // pane id (-P -F) so failures can clean it up.
       const codexCommand = wrapWithLoginShell(
-        buildTmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
+        buildRmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
           [INTEROP_CAVEMAN_LEVEL_ENV]: INTEROP_CAVEMAN_LEVEL,
         }),
       );
-      const splitOutput = tmuxExec([
+      const splitOutput = rmuxExec([
         'split-window',
         '-h',
         '-c',
@@ -251,7 +251,7 @@ export function launchInteropSession(
       if (yolo && codexPaneId) sendInteropCavemanActivation(codexPaneId);
 
       // Select left pane (original/current)
-      tmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
+      rmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
 
       console.log('\nInterop session ready!');
       console.log('- Left pane: Claude Code (this terminal)');
@@ -270,7 +270,7 @@ export function launchInteropSession(
       console.log('\nInstall: pnpm add -g @openai/codex');
     }
   } catch (error) {
-    if (codexPaneId) killTmuxPane(codexPaneId);
+    if (codexPaneId) killRmuxPane(codexPaneId);
     console.error(
       'Error creating split pane:',
       error instanceof Error ? error.message : String(error),
@@ -286,7 +286,7 @@ export function launchInteropSession(
   if (result.error) {
     // Claude never started — tear down the codex pane we just created so it
     // isn't left running headless without its OMC counterpart.
-    if (codexPaneId) killTmuxPane(codexPaneId);
+    if (codexPaneId) killRmuxPane(codexPaneId);
     console.error(
       'Error launching claude:',
       result.error instanceof Error

@@ -87,7 +87,7 @@ vi.mock('child_process', async (importOriginal) => {
 import {
   killTeamSession,
   resolveSplitPaneWorkerPaneIds,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 
 describe('killTeamSession safeguards', () => {
   afterEach(() => {

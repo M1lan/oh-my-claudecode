@@ -62,7 +62,7 @@ describe('OMC_PLUGIN_ROOT tmux env forwarding', () => {
  *
  * We mock `child_process.execFileSync` so that any spawn of `claude` captures
  * the parent `process.env` snapshot at call time, then throws to short-circuit
- * the rest of `runClaude`. We also mock `./tmux-utils.js` so the launch policy
+ * the rest of `runClaude`. We also mock `./rmux-utils.js` so the launch policy
  * is forced to `direct` (no tmux dependency) and `claude` is reported as
  * available. CLAUDE_CONFIG_DIR is pointed at a throwaway tmpdir so
  * `prepareOmcLaunchConfigDir` short-circuits cheaply.
@@ -105,10 +105,10 @@ vi.mock('child_process', async () => {
   };
 });
 
-vi.mock('../tmux-utils.js', async () => {
+vi.mock('../rmux-utils.js', async () => {
   const actual =
-    await vi.importActual<typeof import('../tmux-utils.js')>(
-      '../tmux-utils.js',
+    await vi.importActual<typeof import('../rmux-utils.js')>(
+      '../rmux-utils.js',
     );
   return {
     ...actual,

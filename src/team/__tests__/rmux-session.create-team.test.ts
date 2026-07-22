@@ -171,9 +171,9 @@ vi.mock('child_process', async (importOriginal) => {
 // Detection now prefers a tmux-compatible multiplexer (rmux/tmux) over cmux.
 // Stub the availability probe so cmux-vs-tmux branching is deterministic and
 // does not depend on whether rmux/tmux is actually installed on the host.
-vi.mock('../../cli/tmux-utils.js', async (importOriginal) => {
+vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import('../../cli/tmux-utils.js')>();
+    await importOriginal<typeof import('../../cli/rmux-utils.js')>();
   return {
     ...actual,
     isTmuxCompatibleMultiplexerAvailable: vi.fn(
@@ -187,7 +187,7 @@ import {
   detectTeamMultiplexerContext,
   splitTeamWorkerPane,
   splitTeamWorkerPaneWithEvidence,
-} from '../tmux-session.js';
+} from '../rmux-session.js';
 
 describe('detectTeamMultiplexerContext', () => {
   afterEach(() => {

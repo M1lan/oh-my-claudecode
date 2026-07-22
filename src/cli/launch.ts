@@ -22,20 +22,20 @@ import { stripRetiredTeamMcpServers } from '../installer/mcp-registry.js';
 import { getClaudeConfigDir } from '../utils/config-dir.js';
 import {
   resolveLaunchPolicy,
-  buildTmuxSessionName,
-  buildTmuxShellCommand,
-  buildTmuxShellCommandWithEnv,
+  buildRmuxSessionName,
+  buildRmuxShellCommand,
+  buildRmuxShellCommandWithEnv,
   isNativeWindowsShell,
   wrapWithLoginShell,
   isClaudeAvailable,
   isTmuxAvailable,
   quoteShellArg,
-  tmuxExec,
-} from './tmux-utils.js';
+  rmuxExec,
+} from './rmux-utils.js';
 import {
   configureTmuxClipboardForCurrentSession,
   configureTmuxClipboardForSession,
-} from './tmux-clipboard.js';
+} from './rmux-clipboard.js';
 import { OMC_PLUGIN_ROOT_ENV } from '../lib/env-vars.js';
 import { OMC_CONFIG_FILE_REL } from '../lib/paths.js';
 
@@ -591,7 +591,7 @@ function runClaudeInsideTmux(cwd: string, args: string[]): void {
   }
 
   try {
-    tmuxExec(['set-option', 'mouse', 'on'], { stdio: 'ignore' });
+    rmuxExec(['set-option', 'mouse', 'on'], { stdio: 'ignore' });
   } catch {
     /* non-fatal — user's tmux may not support these options */
   }
@@ -662,8 +662,8 @@ function runClaudeOutsideTmux(
     ),
   ) as Record<string, string>;
   const rawClaudeCmd = isNativeWindowsShell()
-    ? buildTmuxShellCommandWithEnv('claude', args, forwardedEnv)
-    : buildTmuxShellCommand('claude', args);
+    ? buildRmuxShellCommandWithEnv('claude', args, forwardedEnv)
+    : buildRmuxShellCommand('claude', args);
   const envPrefix =
     !isNativeWindowsShell() && Object.keys(forwardedEnv).length > 0
       ? buildEnvExportPrefix(TMUX_ENV_FORWARD)
@@ -678,10 +678,10 @@ function runClaudeOutsideTmux(
     ? envPrefix
     : `${envPrefix}sleep 0.3; perl -e 'use POSIX;tcflush(0,TCIFLUSH)' 2>/dev/null; `;
   const claudeCmd = wrapWithLoginShell(`${preflight}${rawClaudeCmd}`);
-  const sessionName = buildTmuxSessionName(cwd);
+  const sessionName = buildRmuxSessionName(cwd);
 
   try {
-    tmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], {
+    rmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], {
       stripTmux: true,
       stdio: 'inherit',
     });
@@ -703,7 +703,7 @@ function runClaudeOutsideTmux(
   }
 
   try {
-    tmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], {
+    rmuxExec(['set-option', '-t', sessionName, 'mouse', 'on'], {
       stripTmux: true,
       stdio: 'ignore',
     });
@@ -712,7 +712,7 @@ function runClaudeOutsideTmux(
   }
 
   try {
-    tmuxExec(['attach-session', '-t', sessionName], {
+    rmuxExec(['attach-session', '-t', sessionName], {
       stripTmux: true,
       stdio: 'inherit',
     });
@@ -724,7 +724,7 @@ function runClaudeOutsideTmux(
     // attach paths (SSH disconnect, terminal drop, etc.) do not kill or
     // duplicate a valid Claude session.
     try {
-      tmuxExec(['has-session', '-t', sessionName], {
+      rmuxExec(['has-session', '-t', sessionName], {
         stripTmux: true,
         stdio: 'ignore',
       });

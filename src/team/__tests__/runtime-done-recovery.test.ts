@@ -14,10 +14,10 @@ const mocks = vi.hoisted(() => ({
   isWorkerAlive: vi.fn(),
 }));
 
-vi.mock('../tmux-session.js', async () => {
+vi.mock('../rmux-session.js', async () => {
   const actual =
-    await vi.importActual<typeof import('../tmux-session.js')>(
-      '../tmux-session.js',
+    await vi.importActual<typeof import('../rmux-session.js')>(
+      '../rmux-session.js',
     );
   return {
     ...actual,

@@ -1,6 +1,6 @@
 import { mkdir, appendFile, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
-import { sendToWorker } from './tmux-session.js';
+import { sendToWorker } from './rmux-session.js';
 import { TeamPaths, absPath } from './state-paths.js';
 
 interface MailboxMessage {

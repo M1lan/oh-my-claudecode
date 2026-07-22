@@ -20,7 +20,7 @@ vi.mock('../../team/runtime.js', () => ({
 vi.mock('../../team/git-worktree.js', () => ({
   cleanupTeamWorktrees: vi.fn(),
 }));
-vi.mock('../../team/tmux-session.js', () => ({
+vi.mock('../../team/rmux-session.js', () => ({
   killWorkerPanes: vi.fn(),
   killTeamSession: vi.fn(),
 }));

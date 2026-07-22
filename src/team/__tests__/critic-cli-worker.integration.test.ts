@@ -14,8 +14,8 @@ import { join } from 'path';
 const tmuxMocks = vi.hoisted(() => ({
   getWorkerLiveness: vi.fn(async () => 'dead' as const),
 }));
-vi.mock('../tmux-session.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../tmux-session.js')>()),
+vi.mock('../rmux-session.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../rmux-session.js')>()),
   getWorkerLiveness: tmuxMocks.getWorkerLiveness,
 }));
 import { processCliWorkerVerdicts } from '../runtime-v2.js';

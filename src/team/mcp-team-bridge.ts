@@ -35,7 +35,7 @@ import {
 } from './inbox-outbox.js';
 import { unregisterMcpWorker } from './team-registration.js';
 import { writeHeartbeat, deleteHeartbeat } from './heartbeat.js';
-import { killSession } from './tmux-session.js';
+import { killSession } from './rmux-session.js';
 import { logAuditEvent } from './audit-log.js';
 import type { AuditEvent } from './audit-log.js';
 import {

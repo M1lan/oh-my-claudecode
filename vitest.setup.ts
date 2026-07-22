@@ -1,7 +1,7 @@
 /**
  * Global test setup: strip host env vars that leak into the suite.
  *
- * tmux-utils resolves the active multiplexer (tmux vs rmux) from process.env
+ * rmux-utils resolves the active multiplexer (tmux vs rmux) from process.env
  * (TMUX / TMUX_PROGRAM / TERM_PROGRAM). When the test suite is run from inside a
  * tmux or rmux session those vars leak in and make command-resolution tests
  * non-deterministic.

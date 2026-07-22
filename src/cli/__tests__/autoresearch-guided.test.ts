@@ -48,13 +48,13 @@ vi.mock('node:child_process', async (importOriginal) => {
 
 const tmuxExecMock = vi.hoisted(() => vi.fn());
 
-vi.mock('../tmux-utils.js', () => ({
+vi.mock('../rmux-utils.js', () => ({
   isTmuxAvailable: tmuxAvailableMock,
-  buildTmuxShellCommand: buildTmuxShellCommandMock,
-  buildTmuxShellCommandWithEnv: buildTmuxShellCommandWithEnvMock,
+  buildRmuxShellCommand: buildTmuxShellCommandMock,
+  buildRmuxShellCommandWithEnv: buildTmuxShellCommandWithEnvMock,
   wrapWithLoginShell: wrapWithLoginShellMock,
   quoteShellArg: quoteShellArgMock,
-  tmuxExec: tmuxExecMock,
+  rmuxExec: tmuxExecMock,
 }));
 
 import {
@@ -389,7 +389,7 @@ describe('checkTmuxAvailable', () => {
     tmuxAvailableMock.mockReset();
   });
 
-  it('delegates to tmux-utils', () => {
+  it('delegates to rmux-utils', () => {
     tmuxAvailableMock.mockReturnValue(true);
     expect(checkTmuxAvailable()).toBe(true);
     expect(tmuxAvailableMock).toHaveBeenCalled();
@@ -431,7 +431,7 @@ describe('spawnAutoresearchTmux', () => {
       }
       throw new Error(`unexpected execFileSync call: ${String(cmd)}`);
     });
-    // tmux calls go through tmuxExec
+    // tmux calls go through rmuxExec
     tmuxExecMock.mockImplementation((args: string[]) => {
       if (args[0] === 'set-option' && args.includes('set-clipboard')) return '';
       if (args[0] === 'show-options') return 'xterm*:clipboard:focus\n';
@@ -459,7 +459,7 @@ describe('spawnAutoresearchTmux', () => {
         );
         return '';
       }
-      throw new Error(`unexpected tmuxExec call: ${String(args)}`);
+      throw new Error(`unexpected rmuxExec call: ${String(args)}`);
     });
 
     spawnAutoresearchTmux('/repo/missions/demo', 'demo');
@@ -555,7 +555,7 @@ describe('spawnAutoresearchSetupTmux', () => {
     const repo = await initRepo();
     let hasSessionCalls = 0;
     try {
-      // tmux calls go through tmuxExec
+      // tmux calls go through rmuxExec
       tmuxExecMock.mockImplementation((args: string[]) => {
         if (args[0] === 'new-session') {
           expect(args.slice(0, 9)).toEqual([
@@ -595,7 +595,7 @@ describe('spawnAutoresearchSetupTmux', () => {
         if (args[0] === 'send-keys') {
           return '';
         }
-        throw new Error(`unexpected tmuxExec call: ${String(args)}`);
+        throw new Error(`unexpected rmuxExec call: ${String(args)}`);
       });
 
       spawnAutoresearchSetupTmux(repo);
@@ -667,7 +667,7 @@ describe('spawnAutoresearchSetupTmux', () => {
         if (args[0] === 'set-option' && args.includes('terminal-features'))
           return '';
         if (args[0] === 'has-session' || args[0] === 'send-keys') return '';
-        throw new Error(`unexpected tmuxExec call: ${String(args)}`);
+        throw new Error(`unexpected rmuxExec call: ${String(args)}`);
       });
 
       spawnAutoresearchSetupTmux(repo);

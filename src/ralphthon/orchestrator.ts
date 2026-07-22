@@ -8,7 +8,7 @@
  * Terminates after N consecutive hardening waves with no new issues.
  */
 
-import { tmuxExec } from '../cli/tmux-utils.js';
+import { rmuxExec } from '../cli/rmux-utils.js';
 import {
   writeModeState,
   readModeState,
@@ -85,7 +85,7 @@ export function clearRalphthonState(
  */
 export function isPaneIdle(paneId: string): boolean {
   try {
-    const output = tmuxExec(
+    const output = rmuxExec(
       ['display-message', '-t', paneId, '-p', '#{pane_current_command}'],
       { timeout: 5000 },
     ).trim();
@@ -102,7 +102,7 @@ export function isPaneIdle(paneId: string): boolean {
  */
 export function paneExists(paneId: string): boolean {
   try {
-    tmuxExec(['has-session', '-t', paneId], { timeout: 5000, stdio: 'pipe' });
+    rmuxExec(['has-session', '-t', paneId], { timeout: 5000, stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -114,7 +114,7 @@ export function paneExists(paneId: string): boolean {
  */
 export function sendKeysToPane(paneId: string, text: string): boolean {
   try {
-    tmuxExec(['send-keys', '-t', paneId, text, 'Enter'], { timeout: 10000 });
+    rmuxExec(['send-keys', '-t', paneId, text, 'Enter'], { timeout: 10000 });
     return true;
   } catch {
     return false;
@@ -126,7 +126,7 @@ export function sendKeysToPane(paneId: string, text: string): boolean {
  */
 export function capturePaneContent(paneId: string, lines = 50): string {
   try {
-    return tmuxExec(['capture-pane', '-t', paneId, '-p', '-S', `-${lines}`], {
+    return rmuxExec(['capture-pane', '-t', paneId, '-p', '-S', `-${lines}`], {
       timeout: 5000,
     }).trim();
   } catch {

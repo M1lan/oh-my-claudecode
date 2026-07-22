@@ -10,7 +10,7 @@
  */
 
 import chalk from 'chalk';
-import { tmuxShell } from '../../cli/tmux-utils.js';
+import { rmuxShell } from '../../cli/rmux-utils.js';
 import { existsSync } from 'fs';
 import {
   readRalphthonPrd,
@@ -267,7 +267,7 @@ function createEventLogger(): (event: OrchestratorEvent) => void {
 
 function getCurrentTmuxSession(): string | null {
   try {
-    return tmuxShell("display-message -p '#S'", {
+    return rmuxShell("display-message -p '#S'", {
       timeout: 5000,
     }).trim();
   } catch {
@@ -277,7 +277,7 @@ function getCurrentTmuxSession(): string | null {
 
 function getCurrentTmuxPane(): string | null {
   try {
-    return tmuxShell("display-message -p '#{pane_id}'", {
+    return rmuxShell("display-message -p '#{pane_id}'", {
       timeout: 5000,
     }).trim();
   } catch {

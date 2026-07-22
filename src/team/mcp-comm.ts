@@ -36,7 +36,7 @@ import {
   invokeDirectMailboxEffect,
   verifyTeamTargetOwnership,
   type DirectMailboxEffectResult,
-} from './tmux-session.js';
+} from './rmux-session.js';
 import { absPath, TeamPaths } from './state-paths.js';
 import { withProcessIdentityFileLock } from './process-identity-lock.js';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';

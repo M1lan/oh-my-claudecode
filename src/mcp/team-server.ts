@@ -30,7 +30,7 @@ import {
   killWorkerPanes,
   killTeamSession,
   getWorkerLiveness,
-} from '../team/tmux-session.js';
+} from '../team/rmux-session.js';
 import { validateTeamName } from '../team/team-name.js';
 import { readTeamConfig } from '../team/monitor.js';
 import { NudgeTracker } from '../team/idle-nudge.js';

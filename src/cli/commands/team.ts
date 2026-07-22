@@ -20,7 +20,7 @@ import type { TeamTaskDelegationPlan } from '../../team/types.js';
 import { loadConfig } from '../../config/loader.js';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { tmuxExec } from '../tmux-utils.js';
+import { rmuxExec } from '../rmux-utils.js';
 import { getOmcRoot } from '../../lib/worktree-paths.js';
 
 const HELP_TOKENS = new Set(['--help', '-h', 'help']);
@@ -382,7 +382,7 @@ function isTeamStateLive(config: { tmux_session?: string } | null): boolean {
     typeof config?.tmux_session === 'string' ? config.tmux_session.trim() : '';
   if (!target) return false;
   try {
-    tmuxExec(['has-session', '-t', target], { stdio: 'ignore' });
+    rmuxExec(['has-session', '-t', target], { stdio: 'ignore' });
     return true;
   } catch {
     return false;
