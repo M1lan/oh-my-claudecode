@@ -31,6 +31,7 @@ import {
   listHudWatchPaneIdsInCurrentWindow,
   resolveLaunchPolicy,
   resolveRmuxInvocation,
+  __resetRmuxBinaryPathCache,
   tmuxExec,
   tmuxEnv,
   tmuxSpawn,
@@ -88,6 +89,7 @@ const baselinePlatform = process.platform;
 afterEach(() => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
+  __resetRmuxBinaryPathCache();
   Object.defineProperty(process, 'platform', {
     value: baselinePlatform,
     configurable: true,
@@ -200,6 +202,7 @@ describe('resolveLaunchPolicy', () => {
       configurable: true,
     });
     vi.stubEnv('COMSPEC', 'C:\\Windows\\System32\\cmd.exe');
+    mockedSpawnSync.mockClear();
     mockedSpawnSync
       .mockReturnValueOnce({
         status: 0,
@@ -426,6 +429,94 @@ describe('rmux command routing', () => {
     expect(mockedExecFileSync).toHaveBeenLastCalledWith(
       'tmux',
       ['kill-pane', '-t', '%3'],
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// plain-rmux-on-PATH preference — rmux drop-in preferred over tmux (POSIX)
+// ---------------------------------------------------------------------------
+describe('plain rmux binary preference (POSIX)', () => {
+  it('drives a plain rmux binary when rmux is found on PATH', () => {
+    // No rmux-shim markers, but a plain `rmux` binary is installed.
+    vi.stubEnv('TERM_PROGRAM', '');
+    vi.stubEnv('TMUX_PROGRAM', '');
+    vi.stubEnv('TMUX', '/tmp/tmux-501/default,1,0');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'rmux 1.0.0\n',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('' as any);
+
+    tmuxExec(['kill-pane', '-t', '%3']);
+
+    expect(mockedSpawnSync).toHaveBeenCalledWith(
+      'rmux',
+      ['-V'],
+      expect.objectContaining({ stdio: 'ignore' }),
+    );
+    expect(mockedExecFileSync).toHaveBeenLastCalledWith(
+      'rmux',
+      ['kill-pane', '-t', '%3'],
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+  });
+
+  it('falls back to plain tmux when rmux -V probe fails (rmux absent)', () => {
+    vi.stubEnv('TERM_PROGRAM', '');
+    vi.stubEnv('TMUX_PROGRAM', '');
+    vi.stubEnv('TMUX', '/tmp/tmux-501/default,1,0');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('' as any);
+
+    tmuxExec(['kill-pane', '-t', '%3']);
+
+    expect(mockedExecFileSync).toHaveBeenLastCalledWith(
+      'tmux',
+      ['kill-pane', '-t', '%3'],
+      expect.objectContaining({ encoding: 'utf-8' }),
+    );
+  });
+
+  it('rmux-shim detection wins over a plain rmux binary on PATH', () => {
+    // Inside an rmux-launched shell AND a plain rmux exists: the shim path
+    // (with its explicit -S <socket>) must take precedence over plain `rmux`.
+    vi.stubEnv('TERM_PROGRAM', 'rmux');
+    vi.stubEnv('TMUX_PROGRAM', '/tmp/rmux-shim-abc/tmux');
+    vi.stubEnv('TMUX', '/private/tmp/rmux-502/default,42222,7');
+    __resetRmuxBinaryPathCache();
+    mockedSpawnSync.mockReturnValue({
+      status: 0,
+      stdout: 'rmux 1.0.0\n',
+      stderr: '',
+      pid: 0,
+      output: [],
+      signal: null,
+    } as ReturnType<typeof spawnSync>);
+    mockedExecFileSync.mockClear();
+    mockedExecFileSync.mockReturnValue('' as any);
+
+    tmuxExec(['kill-pane', '-t', '%3']);
+
+    expect(mockedExecFileSync).toHaveBeenLastCalledWith(
+      '/tmp/rmux-shim-abc/tmux',
+      ['-S', '/private/tmp/rmux-502/default', 'kill-pane', '-t', '%3'],
       expect.objectContaining({ encoding: 'utf-8' }),
     );
   });

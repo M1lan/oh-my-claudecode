@@ -112,10 +112,58 @@ function escapeForCmdSet(value: string): string {
   return value.replace(/"/g, '""');
 }
 
+/**
+ * Cached result of the plain-`rmux`-on-PATH probe (`undefined` = not yet
+ * probed, `string` = binary name, `null` = absent). rmux presence on PATH is
+ * fixed for a process lifetime, so we memoize to avoid re-spawning `rmux -V`
+ * on every multiplexer call — the readiness loops poll every ~50ms.
+ */
+let cachedRmuxBinaryPath: string | null | undefined;
+
+/**
+ * Discover a plain `rmux` binary on PATH (POSIX only).
+ *
+ * rmux is a tmux-compatible multiplexer; when a plain `rmux` is installed we
+ * prefer it as the multiplexer OMC drives, even outside an rmux-launched shell
+ * (that shim case is handled first by resolveRmuxInvocation). Mirrors
+ * resolveTmuxBinaryPath's discovery approach — probe with the `-V` version flag
+ * (`rmux -V` works; `rmux --version` only prints usage). Never applies on
+ * native Windows (rmux is POSIX-only; the psmux path stays untouched).
+ *
+ * @returns 'rmux' when a plain rmux binary is available, else null (plain tmux).
+ */
+function resolveRmuxBinaryPath(): string | null {
+  if (process.platform === 'win32') return null;
+  if (cachedRmuxBinaryPath !== undefined) return cachedRmuxBinaryPath;
+  let resolved: string | null = null;
+  try {
+    const result = spawnSync('rmux', ['-V'], {
+      timeout: 5000,
+      stdio: 'ignore',
+    });
+    if (result?.status === 0) resolved = 'rmux';
+  } catch {
+    // rmux not found or not executable; fall back to tmux resolution.
+  }
+  cachedRmuxBinaryPath = resolved;
+  return resolved;
+}
+
+/** Test-only: reset the memoized plain-rmux discovery result. */
+export function __resetRmuxBinaryPathCache(): void {
+  cachedRmuxBinaryPath = undefined;
+}
+
 function resolveTmuxInvocation(args: string[]): TmuxCommandInvocation {
   const rmux = resolveRmuxInvocation();
   if (rmux) {
     return { command: rmux.bin, args: [...rmux.socketArgs, ...args] };
+  }
+  // Prefer a plain `rmux` binary on PATH (POSIX only) as a tmux drop-in,
+  // before falling back to literal tmux resolution.
+  const rmuxBinary = resolveRmuxBinaryPath();
+  if (rmuxBinary) {
+    return { command: rmuxBinary, args };
   }
   const resolvedBinary = resolveTmuxBinaryPath();
   if (process.platform === 'win32' && /\.(cmd|bat)$/i.test(resolvedBinary)) {
