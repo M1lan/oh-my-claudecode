@@ -163,7 +163,7 @@ Environment:
 program
   .command('interop')
   .description(
-    'Launch split-pane tmux session with Claude Code (OMC) and Codex (OMX)',
+    'Launch split-pane rmux/tmux session with Claude Code (OMC) and Codex (OMX)',
   )
   .option(
     '--yolo',
@@ -173,7 +173,7 @@ program
     'after',
     `
 Requirements:
-  - Must be running inside a tmux session
+  - Must be running inside an rmux or tmux session (rmux preferred)
   - Claude CLI must be installed
   - Codex CLI recommended (graceful fallback if missing)`,
   )
