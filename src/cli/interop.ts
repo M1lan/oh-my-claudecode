@@ -15,7 +15,11 @@ import {
   wrapWithLoginShell,
   killRmuxPane,
 } from './rmux-utils.js';
-import { initInteropSession, getInteropDir } from '../interop/shared-state.js';
+import {
+  initInteropSession,
+  getInteropDir,
+  updateInteropStatus,
+} from '../interop/shared-state.js';
 
 export type InteropMode = 'off' | 'observe' | 'active';
 
@@ -223,11 +227,13 @@ export function launchInteropSession(
     const output = rmuxExec(['display-message', '-p', '#{pane_id}']);
     currentPaneId = output.trim();
   } catch (_error) {
+    updateInteropStatus(cwd, 'failed');
     console.error('Error: Failed to get current tmux pane ID');
     process.exit(1);
   }
 
   if (!currentPaneId.startsWith('%')) {
+    updateInteropStatus(cwd, 'failed');
     console.error('Error: Invalid tmux pane ID format');
     process.exit(1);
   }
@@ -296,6 +302,7 @@ export function launchInteropSession(
     }
   } catch (error) {
     if (codexPaneId) killRmuxPane(codexPaneId);
+    updateInteropStatus(cwd, 'failed');
     console.error(
       'Error creating split pane:',
       error instanceof Error ? error.message : String(error),
@@ -316,6 +323,7 @@ export function launchInteropSession(
     // Claude never started — tear down the codex pane we just created so it
     // isn't left running headless without its OMC counterpart.
     if (codexPaneId) killRmuxPane(codexPaneId);
+    updateInteropStatus(cwd, 'failed');
     console.error(
       'Error launching claude:',
       result.error instanceof Error
@@ -324,6 +332,7 @@ export function launchInteropSession(
     );
     process.exit(1);
   }
+  updateInteropStatus(cwd, 'completed');
   process.exit(result.status ?? 0);
 }
 

@@ -238,6 +238,31 @@ export function readInteropConfig(cwd: string): InteropConfig | null {
 }
 
 /**
+ * Update the interop session status in config.json.
+ * Missing or invalid config is tolerated silently (best-effort lifecycle
+ * bookkeeping — the launch path must never fail on this).
+ */
+export function updateInteropStatus(
+  cwd: string,
+  status: InteropConfig['status'],
+): void {
+  const configPath = join(getInteropDir(cwd), 'config.json');
+
+  if (!existsSync(configPath)) {
+    return;
+  }
+
+  try {
+    const content = readFileSync(configPath, 'utf-8');
+    const parsed = InteropConfigSchema.safeParse(JSON.parse(content));
+    if (!parsed.success) return;
+    atomicWriteJsonSync(configPath, { ...parsed.data, status });
+  } catch {
+    // best-effort only
+  }
+}
+
+/**
  * Add a shared task for cross-tool communication
  */
 export function addSharedTask(
