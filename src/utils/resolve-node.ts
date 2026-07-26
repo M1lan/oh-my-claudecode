@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, realpathSync } from 'fs';
 import { execSync } from 'child_process';
 import { join } from 'path';
 import { homedir } from 'os';
@@ -7,6 +7,9 @@ const EPHEMERAL_NODE_PATH_MARKERS = [
   'hostedtoolcache',
   '/runner/',
   '\\runner\\',
+  // fnm creates a per-shell symlink directory and removes it when that shell
+  // exits, so `which node` under fnm yields a path that dies with the session.
+  'fnm_multishells',
 ];
 const SYSTEM_NODE_PATHS = [
   '/opt/homebrew/bin/node',
@@ -18,6 +21,29 @@ function isKnownEphemeralNodePath(nodePath: string): boolean {
   return EPHEMERAL_NODE_PATH_MARKERS.some((marker) =>
     nodePath.includes(marker),
   );
+}
+
+/**
+ * Turn an ephemeral node path into the durable install it points at.
+ *
+ * A per-shell symlink (fnm) resolves to the versioned installation directory,
+ * which outlives the shell. Returns undefined when the path cannot be rescued,
+ * so the caller falls through to the version-manager and system candidates.
+ */
+function resolveDurableNodePath(nodePath: string): string | undefined {
+  if (!existsSync(nodePath)) return undefined;
+  if (!isKnownEphemeralNodePath(nodePath)) return nodePath;
+
+  try {
+    const real = realpathSync(nodePath);
+    if (real && existsSync(real) && !isKnownEphemeralNodePath(real)) {
+      return real;
+    }
+  } catch {
+    // Broken link or unreadable path — fall through to the other candidates.
+  }
+
+  return undefined;
 }
 
 function resolveLatestVersionedNode(
@@ -41,7 +67,9 @@ function resolveLatestVersionedNode(
  * Resolve the absolute path to the Node.js binary.
  *
  * Priority order:
- * 1. which/where node  — if Node is on PATH (usually the most stable symlink)
+ * 1. which/where node  — if Node is on PATH (usually the most stable symlink);
+ *    per-shell paths such as fnm's multishell links are resolved to the
+ *    versioned installation they point at, since the link dies with the shell
  * 2. process.execPath  — current Node.js process when PATH lookup is unavailable
  * 3. nvm versioned paths (~/.nvm/versions/node/<latest>/bin/node)
  * 4. fnm versioned paths (~/.fnm/node-versions/<latest>/installation/bin/node)
@@ -70,8 +98,9 @@ export function resolveNodeBinary(): string {
       .trim()
       .split('\n')[0]
       .trim();
-    if (result && existsSync(result)) {
-      return result;
+    const durable = result ? resolveDurableNodePath(result) : undefined;
+    if (durable) {
+      return durable;
     }
   } catch {
     // node not on PATH — continue to process.execPath and manager fallbacks
@@ -79,12 +108,11 @@ export function resolveNodeBinary(): string {
 
   // 2. Current process's node — usable fallback, but not preferred because it
   // may point to unstable locations (CI toolcache, runner paths, Cellar bins).
-  if (
-    process.execPath &&
-    existsSync(process.execPath) &&
-    !isKnownEphemeralNodePath(process.execPath)
-  ) {
-    return process.execPath;
+  const durableExecPath = process.execPath
+    ? resolveDurableNodePath(process.execPath)
+    : undefined;
+  if (durableExecPath) {
+    return durableExecPath;
   }
 
   // Unix-only fallbacks below (nvm and fnm are not used on Windows)

@@ -6,6 +6,7 @@ vi.mock('fs', async () => {
     ...actual,
     existsSync: vi.fn(),
     readdirSync: vi.fn(),
+    realpathSync: vi.fn(),
   };
 });
 
@@ -26,12 +27,13 @@ vi.mock('os', async () => {
   };
 });
 
-import { existsSync, readdirSync } from 'fs';
+import { existsSync, readdirSync, realpathSync } from 'fs';
 import { execSync } from 'child_process';
 import { pickLatestVersion, resolveNodeBinary } from '../utils/resolve-node.js';
 
 const mockedExistsSync = vi.mocked(existsSync);
 const mockedReaddirSync = vi.mocked(readdirSync);
+const mockedRealpathSync = vi.mocked(realpathSync);
 const mockedExecSync = vi.mocked(execSync);
 
 const originalExecPath = process.execPath;
@@ -89,10 +91,61 @@ describe('resolveNodeBinary', () => {
     mockedExecSync.mockImplementation(() => {
       throw new Error('node not on PATH');
     });
+    mockedRealpathSync.mockImplementation((pathLike) => String(pathLike) as any);
   });
 
   afterEach(() => {
     setExecPath(originalExecPath);
+  });
+
+  it('resolves an fnm per-shell PATH node to its durable installation', () => {
+    const multishell =
+      '/home/tester/.local/state/fnm_multishells/44915_1785029659297/bin/node';
+    const installation =
+      '/home/tester/.local/share/fnm/node-versions/v20.20.2/installation/bin/node';
+
+    setExecPath(multishell);
+    mockedExecSync.mockReturnValue(`${multishell}\n` as any);
+    mockedExistsSync.mockImplementation((pathLike) => {
+      const path = String(pathLike);
+      return path === multishell || path === installation;
+    });
+    mockedRealpathSync.mockImplementation((pathLike) =>
+      String(pathLike) === multishell ? (installation as any) : (String(pathLike) as any),
+    );
+
+    // The per-shell directory is removed when that shell exits, so persisting it
+    // would leave hooks pointing at a dangling path.
+    expect(resolveNodeBinary()).toBe(installation);
+  });
+
+  it('falls back to a versioned install when the fnm shell link is dangling', () => {
+    const multishell =
+      '/home/tester/.local/state/fnm_multishells/44915_1785029659297/bin/node';
+
+    setExecPath(multishell);
+    mockedExecSync.mockReturnValue(`${multishell}\n` as any);
+    mockedExistsSync.mockImplementation((pathLike) => {
+      const path = String(pathLike);
+      return (
+        path === multishell ||
+        path === '/home/tester/.local/share/fnm/node-versions' ||
+        path ===
+          '/home/tester/.local/share/fnm/node-versions/v22.20.0/installation/bin/node'
+      );
+    });
+    mockedReaddirSync.mockImplementation((pathLike) =>
+      String(pathLike) === '/home/tester/.local/share/fnm/node-versions'
+        ? (['v20.20.2', 'v22.20.0'] as any)
+        : ([] as any),
+    );
+    mockedRealpathSync.mockImplementation(() => {
+      throw new Error('ENOENT: dangling symlink');
+    });
+
+    expect(resolveNodeBinary()).toBe(
+      '/home/tester/.local/share/fnm/node-versions/v22.20.0/installation/bin/node',
+    );
   });
 
   it('reproduces the prior bug: process.execPath would beat PATH node', () => {
