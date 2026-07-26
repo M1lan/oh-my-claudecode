@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { execFileSync, spawnSync } from 'node:child_process';
 import {
+  cpSync,
   mkdtempSync,
   mkdirSync,
   rmSync,
@@ -10,16 +11,36 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const SCRIPT_PATH = join(
+const TEMPLATE_HOOKS_DIR = join(
   __dirname,
   '..',
   '..',
   '..',
   'templates',
   'hooks',
-  'session-start.mjs',
 );
+const SCRIPT_PATH = join(TEMPLATE_HOOKS_DIR, 'session-start.mjs');
 const NODE = process.execPath;
+
+/**
+ * Stage the hook into a plain package directory.
+ *
+ * Running it straight out of `templates/hooks/` makes the repo checkout its
+ * package root, and a checkout is git-governed: the hook deliberately withholds
+ * npm update notices there. Update-notice behaviour has to be exercised from a
+ * package that is not a checkout.
+ */
+function stageStandaloneHook(baseDir: string, version = '1.0.0'): string {
+  const packageDir = join(baseDir, 'omc-package');
+  const hooksDir = join(packageDir, 'hooks');
+  mkdirSync(packageDir, { recursive: true });
+  cpSync(TEMPLATE_HOOKS_DIR, hooksDir, { recursive: true });
+  writeFileSync(
+    join(packageDir, 'package.json'),
+    JSON.stringify({ name: 'oh-my-claude-sisyphus', version }),
+  );
+  return join(hooksDir, 'session-start.mjs');
+}
 
 describe('session-start template guard for same-root parallel sessions (#1744)', () => {
   let tempDir: string;
@@ -254,7 +275,7 @@ ${'- oversized startup guidance\n'.repeat(700)}
       }),
     );
 
-    const result = spawnSync(NODE, [SCRIPT_PATH], {
+    const result = spawnSync(NODE, [stageStandaloneHook(tempDir)], {
       input: JSON.stringify({
         hook_event_name: 'SessionStart',
         session_id: 'session-update-visible',
@@ -305,7 +326,7 @@ ${'- oversized startup guidance\n'.repeat(700)}
       }),
     );
 
-    const result = spawnSync(NODE, [SCRIPT_PATH], {
+    const result = spawnSync(NODE, [stageStandaloneHook(tempDir)], {
       input: JSON.stringify({
         hook_event_name: 'SessionStart',
         session_id: 'session-update-passive',
@@ -323,6 +344,41 @@ ${'- oversized startup guidance\n'.repeat(700)}
     const output = JSON.parse(result.stdout) as { systemMessage?: string };
     expect(output.systemMessage).toContain('To update later, run: omc update');
     expect(output.systemMessage).not.toContain('Run /update to upgrade now');
+  });
+
+  it('withholds npm update notices when the hook runs from a local checkout', () => {
+    const omcDir = join(fakeHome, '.claude', '.omc');
+    mkdirSync(omcDir, { recursive: true });
+    writeFileSync(
+      join(omcDir, 'update-check.json'),
+      JSON.stringify({
+        timestamp: Date.now(),
+        latestVersion: '999.0.0',
+        currentVersion: '1.0.0',
+        updateAvailable: true,
+      }),
+    );
+
+    // SCRIPT_PATH lives in this repo, which is a git checkout carrying the OMC
+    // marketplace manifest — git governs it, so the registry is not a channel.
+    const result = spawnSync(NODE, [SCRIPT_PATH], {
+      input: JSON.stringify({
+        hook_event_name: 'SessionStart',
+        session_id: 'session-update-local-source',
+        cwd: fakeProject,
+      }),
+      encoding: 'utf-8',
+      env: {
+        ...process.env,
+        HOME: fakeHome,
+        USERPROFILE: fakeHome,
+      },
+      timeout: 15000,
+    });
+
+    expect(result.status).toBe(0);
+    const output = JSON.parse(result.stdout) as { systemMessage?: string };
+    expect(output.systemMessage ?? '').not.toContain('[OMC UPDATE AVAILABLE]');
   });
 });
 

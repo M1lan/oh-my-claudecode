@@ -12,6 +12,7 @@ import { join, dirname, basename, resolve, relative, isAbsolute } from 'path';
 import { homedir } from 'os';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir, getUpdateCheckCachePath } from './lib/config-dir.mjs';
+import { getLocalSourceVersion, isLocalSourcePluginRoot } from './lib/local-install.mjs';
 import { resolveOmcStateRoot } from './lib/state-root.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -644,8 +645,16 @@ function writeUpdateCheckCache(latestVersion, currentVersion, updateAvailable, s
 
 function getPluginUpdateChannelVersion() {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
-  if (!pluginRoot || !isManagedPluginCacheRoot(pluginRoot)) return { managed: false, version: null };
-  return { managed: true, version: getMarketplaceCloneVersion() };
+  if (!pluginRoot) return { managed: false, local: false, version: null };
+  if (isManagedPluginCacheRoot(pluginRoot)) {
+    return { managed: true, local: false, version: getMarketplaceCloneVersion() };
+  }
+  // Local checkout loaded in place (directory marketplace / linked source):
+  // git governs this install, so the npm registry is not an actionable channel.
+  if (isLocalSourcePluginRoot(pluginRoot, configDir)) {
+    return { managed: true, local: true, version: getLocalSourceVersion(pluginRoot) };
+  }
+  return { managed: false, local: false, version: null };
 }
 
 // Get plugin version from CLAUDE_PLUGIN_ROOT
@@ -721,7 +730,11 @@ function detectVersionDrift() {
     npmVersion,
     claudeMdVersion,
     drift,
-    source: marketplaceChannel.managed ? 'marketplace' : 'npm',
+    source: marketplaceChannel.local
+      ? 'local-source'
+      : marketplaceChannel.managed
+        ? 'marketplace'
+        : 'npm',
   };
 }
 
@@ -756,6 +769,10 @@ function shouldNotifyDrift(driftInfo) {
 // not advertise npm-only releases that `/plugin marketplace update` cannot install.
 async function checkNpmUpdate(currentVersion) {
   const marketplaceChannel = getPluginUpdateChannelVersion();
+  if (marketplaceChannel.local) {
+    writeUpdateCheckCache(marketplaceChannel.version || currentVersion, currentVersion, false, 'local-source');
+    return null;
+  }
   if (marketplaceChannel.managed) {
     const marketplaceVersion = marketplaceChannel.version;
     if (!marketplaceVersion) {
@@ -928,9 +945,11 @@ async function main() {
       for (const d of driftInfo.drift) {
         driftMsg += `${d.component}: ${d.current} (expected ${d.expected})\n`;
       }
-      driftMsg += driftInfo.source === 'marketplace'
-        ? `\nRun '/plugin marketplace update omc && /omc-setup' to sync plugin-managed components.`
-        : `\nRun 'omc update' to sync all components.`;
+      driftMsg += driftInfo.source === 'local-source'
+        ? `\nRun '/omc-setup' from your local checkout to sync components (git governs this install, not npm).`
+        : driftInfo.source === 'marketplace'
+          ? `\nRun '/plugin marketplace update omc && /omc-setup' to sync plugin-managed components.`
+          : `\nRun 'omc update' to sync all components.`;
 
       messages.push(`<session-restore>\n\n${driftMsg}\n\n</session-restore>\n\n---\n`);
     }

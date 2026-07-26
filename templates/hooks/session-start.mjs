@@ -13,6 +13,7 @@ const __dirname = dirname(__filename);
 const { getClaudeConfigDir, getUpdateCheckCachePath } = await import(pathToFileURL(join(__dirname, 'lib', 'config-dir.mjs')).href);
 const configDir = getClaudeConfigDir();
 const { resolveSessionStatePathsForHook, resolveOmcStateRoot } = await import(pathToFileURL(join(__dirname, 'lib', 'state-root.mjs')).href);
+const { isLocalSourcePluginRoot } = await import(pathToFileURL(join(__dirname, 'lib', 'local-install.mjs')).href);
 
 // Import timeout-protected stdin reader (prevents hangs on Linux/Windows, see issue #240, #524)
 let readStdin;
@@ -542,11 +543,13 @@ async function main() {
     // Check for updates (non-blocking)
     // Read version from OMC's own package.json, not the project's (fixes #516)
     let currentVersion = null;
+    let currentVersionRoot = null;
     for (let i = 1; i <= 4; i++) {
-      const candidate = join(__dirname, ...Array(i).fill('..'), 'package.json');
-      const pkg = readJsonFile(candidate);
+      const packageRoot = join(__dirname, ...Array(i).fill('..'));
+      const pkg = readJsonFile(join(packageRoot, 'package.json'));
       if ((pkg?.name === 'oh-my-claude-sisyphus' || pkg?.name === 'oh-my-claudecode') && pkg?.version) {
         currentVersion = pkg.version;
+        currentVersionRoot = packageRoot;
         break;
       }
     }
@@ -570,7 +573,14 @@ async function main() {
       } catch { /* non-fatal */ }
     }
 
-    const updateInfo = currentVersion ? await checkForUpdates(currentVersion) : null;
+    // A local checkout is governed by git, not the npm registry — never advertise
+    // a registry release that would overwrite the user's own build.
+    const localSourceInstall =
+      isLocalSourcePluginRoot(process.env.CLAUDE_PLUGIN_ROOT, configDir) ||
+      isLocalSourcePluginRoot(currentVersionRoot, configDir);
+    const updateInfo = currentVersion && !localSourceInstall
+      ? await checkForUpdates(currentVersion)
+      : null;
     if (updateInfo) {
       const configPath = join(getClaudeConfigDir(), '.omc-config.json');
       const omcConfig = readJsonFile(configPath) || {};
