@@ -2072,6 +2072,29 @@ function getPackageDir(): string {
   }
 }
 
+/**
+ * How this install is governed. A root that is a git working tree carrying the
+ * repo's own marketplace manifest is updated through git, not the npm registry;
+ * recording it as 'npm' sends `omc update` and the update notices down a channel
+ * that would overwrite the user's local build.
+ */
+function detectInstallMethod(): 'npm' | 'source' {
+  const roots = [process.env.CLAUDE_PLUGIN_ROOT, getPackageDir()].filter(
+    (root): root is string => typeof root === 'string' && root.length > 0,
+  );
+
+  for (const root of roots) {
+    if (
+      existsSync(join(root, '.git')) &&
+      existsSync(join(root, '.claude-plugin', 'marketplace.json'))
+    ) {
+      return 'source';
+    }
+  }
+
+  return 'npm';
+}
+
 export function getRuntimePackageRoot(): string {
   return getPackageDir();
 }
@@ -2803,7 +2826,7 @@ export function install(options: InstallOptions = {}): InstallResult {
       const versionMetadata = {
         version: targetVersion,
         installedAt: new Date().toISOString(),
-        installMethod: 'npm' as const,
+        installMethod: detectInstallMethod(),
         lastCheckAt: new Date().toISOString(),
       };
       writeFileSync(VERSION_FILE, JSON.stringify(versionMetadata, null, 2));
