@@ -114,7 +114,20 @@ const JS_PATTERNS = [
   "`${$_}\\.omc\\$$$`",
 ];
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'bridge', 'coverage', '.omc']);
+// '.claude' holds registered agent worktrees (.claude/worktrees/<id>/), which are
+// full checkouts of this repo. Walking into them re-flags whitelisted files under
+// their worktree copy paths — WHITELIST_FILES is REPO_ROOT-absolute and cannot match
+// those — so the gate went red whenever an agent worktree existed. See bead
+// oh-my-claudecode-l1u.
+const SKIP_DIRS = new Set([
+  'node_modules',
+  '.git',
+  '.claude',
+  'dist',
+  'bridge',
+  'coverage',
+  '.omc',
+]);
 
 function* walkFiles(dir) {
   let entries;
