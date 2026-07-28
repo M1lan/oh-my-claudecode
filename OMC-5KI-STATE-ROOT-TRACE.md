@@ -6,6 +6,16 @@ Read-only survey of every `.omc` root resolver in `scripts/` and `src/`, done be
 touching anything, per the bead's own precondition. Resume from "Next actions" at the
 bottom.
 
+> **Superseded in part — 2026-07-28.** A six-lane review (OMC critic / debugger /
+> code-reviewer / code-simplifier + forge-cloud gpt-oss / kimi / glm) confirmed the
+> *survey* below but overturned the *plan*: do **not** lift from
+> `pre-tool-enforcer.mjs:486`, the sync/async item is not a blocker, and the
+> "marker tests first" precondition targeted the wrong layer. Corrected plan lives in
+> bead `oh-my-claudecode-5ki`'s notes; lane reports in `~/tmp/5ki-*.md`. Two sections
+> below are updated in place ("CI gate state", "Next actions"); the inventory sections
+> are unchanged and still accurate, except that the call-site count is ~22, not 9 —
+> see bead `oh-my-claudecode-wul` for the `templates/hooks/**` copy this trace missed.
+
 ---
 
 ## Bead summary
@@ -127,17 +137,19 @@ Compliant consumers (leave alone): `src/lib/mode-state-io.ts`,
 
 ---
 
-## CI gate state — currently RED, and blind
+## CI gate state — green since `4db2dcbf`, still blind
 
-`node scripts/ci/check-multirepo-paths.mjs` → **FAIL, 14 hits** as of this session.
+`node scripts/ci/check-multirepo-paths.mjs` → **OK, exit 0** (re-verified 2026-07-28).
 
-All 14 are inside the live agent worktree
-`.claude/worktrees/agent-aeb447c741d43cdbe/` plus `tests/`. Cause: the whitelist
-(`scripts/ci/check-multirepo-paths.mjs:27-42`) holds absolute paths under
-`REPO_ROOT`, and `SKIP_DIRS` (`:117`) omits `.claude`, so the walker descends into
-registered agent worktrees and re-flags whitelisted files under their worktree copy
-paths. **The gate goes red whenever an agent worktree exists** — noise, not a real
-regression, but it means the gate is not gating right now.
+Historical note (this trace's original text): the gate was FAIL/14-hits, all inside
+the live agent worktree `.claude/worktrees/agent-aeb447c741d43cdbe/` plus `tests/`,
+because the whitelist (`:27-42`) holds `REPO_ROOT`-absolute paths while `SKIP_DIRS`
+(`:117`) omitted `.claude`, so the walker descended into registered agent worktrees
+and re-flagged whitelisted files under their worktree copy paths. **Fixed in
+`4db2dcbf`** — the gate no longer goes red merely because an agent worktree exists.
+
+The blind spots below are unaffected by that fix and still stand (bead
+`oh-my-claudecode-l1u`).
 
 Blind spots that let Class 3 through:
 
@@ -154,24 +166,40 @@ Blind spots that let Class 3 through:
 
 ---
 
-## Next actions (resume here)
+## Next actions (rewritten 2026-07-28 — supersedes the original five steps)
 
-1. **Marker tests first.** Land coverage for the non-git `.omc-workspace` contract.
-   The bead names this as the precondition; nothing else is safe until it exists.
-2. **Move the logic into `state-root.mjs`** — marker-first → git-climb → fs-walk
-   rescue, lifted from `pre-tool-enforcer.mjs:486`. Class 1's nine sites then need no
-   edits.
-3. **Delete the duplicates** (`pre-tool-enforcer.mjs:486`, `post-tool-verifier.mjs:89`,
-   `skill-injector.mjs:102`), re-pointing `post-tool-verifier.mjs:662/694/986` and
-   `skill-injector.mjs:586` at the shared resolver.
-   ⚠ **Sync/async mismatch:** those four call sites are synchronous;
-   `resolveOmcStateRoot` is async. Needs either a sync export from `state-root.mjs` or
-   a call-site refactor. Decide this before starting step 2.
-4. **`src/team/**` + `src/openclaw/dedupe.ts`** — separate, larger change. Give it its
-   own bead rather than letting it ride along.
-5. **Gate fixes, last:** add `.claude` to `SKIP_DIRS`, add a bare-relative-literal
-   pattern, verify the `` `${$_}/.omc/$$$` `` pattern actually fires, then shrink the
-   four file whitelists once step 3 removes the duplicate resolvers.
+Full rationale and evidence in bead `oh-my-claudecode-5ki`'s notes; lane reports in
+`~/tmp/5ki-{critic,debugger,reviewer,simplifier}.md` and `~/tmp/5ki-forge-{kimi,glm}.md`.
+
+1. **Precondition tests — at `state-root.{mjs,cjs}`, not at `getOmcRoot`.** The marker
+   contract is already covered ~20 ways in the TS layer, which this change does not
+   touch. Zero behavioral tests exist for `scripts/lib/state-root.{mjs,cjs}`, and the
+   four existing `.mjs` resolver tests neuter `PATH` so the primary git branch is
+   never exercised. Twelve required cases are enumerated in the bead notes.
+2. **Compose, do not lift.** In `state-root.mjs`'s dist branch:
+   `return getOmcRoot(findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory));`
+   plus the same normalization for `resolveSessionStatePathsForHook`. No new
+   resolution logic in JS. Class 1's raw-cwd feeders then need no edits.
+   ⚠ Do **not** lift `pre-tool-enforcer.mjs:486` — it is dead code, and it drops
+   `OMC_STATE_DIR`, drops `OMC_DISABLE_MULTIREPO`, drops the submodule→superproject
+   climb, and inverts the `$HOME` marker boundary relative to the TS canonical.
+3. **Delete the three duplicates** and make the four sync call sites `await`
+   (~6 signatures, ~5 keywords). A sync export is not viable: `dist` is ESM-only and
+   `engines.node` is `>=20`, so it would force a fourth copy. **Decision made — this
+   is no longer an open blocker.**
+4. **Ship with `oh-my-claudecode-u3a` in the same release.** Fixing the team-state
+   reader without the writer silently kills the `[TEAM ROUTING REQUIRED]` guard for
+   subdirectory launches.
+5. **Whitelist shrink in the same commit as the deletions** (`post-tool-verifier.mjs`,
+   `skill-injector.mjs` drop out; `pre-tool-enforcer.mjs` and `session-start.mjs` stay
+   for their Class 3 literals), plus the remaining gate blind spots under
+   `oh-my-claudecode-l1u`.
+6. **Definition of done:** extend `scripts/smoke-multirepo.mjs` with
+   `cd <subdir> && <trigger hook> && test ! -d <subdir>/.omc`.
+
+Related new beads: `oh-my-claudecode-wul` (standalone/`templates/hooks/**` second copy;
+its inline fallback is load-bearing in production, not dev-only), `oh-my-claudecode-i49`
+(migration for `.omc` dirs orphaned by the relocation).
 
 ## Build reminder
 
