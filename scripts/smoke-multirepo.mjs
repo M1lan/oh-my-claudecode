@@ -14,6 +14,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 const DIST = join(REPO_ROOT, 'dist');
 const BRIDGE_CLI = join(REPO_ROOT, 'bridge', 'cli.cjs');
+const SESSION_START_HOOK = join(REPO_ROOT, 'scripts', 'session-start.mjs');
 
 // --------------------------------------------------------------------------
 // Dynamic import helpers (dist is CJS-wrapped ESM — use createRequire)
@@ -140,6 +141,37 @@ assert(
   'resolveSessionStatePaths api effectiveWrite → WRONG',
   `returned: ${apiPaths.effectiveWrite}\n        expected: ${expectedApiWrite}`,
   'effectiveWrite must be session-scoped under shared .omc/'
+);
+
+// --------------------------------------------------------------------------
+// Step 1c — hook fired from a repo subdirectory must not create nested .omc
+// --------------------------------------------------------------------------
+const hookSubdir = join(apiDir, 'deep', 'hook-cwd');
+mkdirSync(hookSubdir, { recursive: true });
+const hookResult = spawnSync(process.execPath, [SESSION_START_HOOK], {
+  cwd: hookSubdir,
+  input: JSON.stringify({
+    hook_event_name: 'SessionStart',
+    session_id: 'smoke-subdir-hook',
+    cwd: hookSubdir,
+  }),
+  env: { ...process.env, CLAUDE_PLUGIN_ROOT: REPO_ROOT },
+  encoding: 'utf-8',
+  timeout: 30000,
+});
+assert(
+  hookResult.status === 0,
+  'SessionStart hook from nested repo subdirectory exits 0',
+  'SessionStart hook from nested repo subdirectory exits non-zero',
+  `exit=${hookResult.status}\nstderr=${hookResult.stderr?.slice(0, 300)}`,
+  'A hook fired from a valid repo subdirectory must complete'
+);
+assert(
+  !existsSync(join(hookSubdir, '.omc')),
+  'Hook from nested repo subdirectory creates no nested .omc',
+  'Hook from nested repo subdirectory created nested .omc',
+  `nested path: ${join(hookSubdir, '.omc')}`,
+  'State must anchor at the workspace root, never the raw hook cwd'
 );
 
 // --------------------------------------------------------------------------

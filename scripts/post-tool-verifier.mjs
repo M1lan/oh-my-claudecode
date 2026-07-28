@@ -35,120 +35,6 @@ function getQuietLevel() {
   return Math.max(0, parsed);
 }
 
-/**
- * Walk up from startDir on the filesystem alone (no git subprocess) looking
- * for a `.git` entry (directory or file — a file covers linked worktrees and
- * submodules, whose `.git` is a pointer file). Returns the directory
- * containing it, or null if none is found before the filesystem root or the
- * user's home directory.
- *
- * Rescue path only: consulted after `git rev-parse --show-toplevel` has
- * already thrown, to distinguish a genuine non-repo directory from a
- * transient git-command failure (timeout, lock contention under concurrent
- * load — bead ob2) that would otherwise silently degrade `.omc/` placement
- * to the raw startDir.
- *
- * @param {string} startDir
- * @returns {string|null}
- */
-function findGitRootByFsWalk(startDir) {
-  try {
-    let cursor = resolve(startDir);
-    const home = (() => { try { return resolve(homedir()); } catch { return null; } })();
-    const MAX_WALK_DEPTH = 128;
-    for (let depth = 0; depth < MAX_WALK_DEPTH; depth++) {
-      if (existsSync(join(cursor, '.git'))) return cursor;
-      const parent = dirname(cursor);
-      if (parent === cursor) break;
-      if (home && cursor === home) break;
-      cursor = parent;
-    }
-  } catch {
-    // walk failed — caller falls through to its existing fallback
-  }
-  return null;
-}
-
-/**
- * Resolve the .omc root directory for a given starting directory.
- *
- * Resolution order (mirrors src/lib/worktree-paths.ts getOmcRoot):
- *   1) OMC_STATE_DIR env — log a warning and fall through (full project-id
- *      derivation lives in the TS layer; .mjs scripts use resolveOmcStateRoot
- *      for the async TS-backed path when they need OMC_STATE_DIR honoring).
- *   2) Walk up from startDir looking for a .omc-workspace marker file.
- *      The first directory containing that file is the workspace anchor.
- *   3) git rev-parse --show-toplevel from startDir.
- *   3.5) If that failed (rather than cleanly returning "not a repo"), rescue
- *        via findGitRootByFsWalk before giving up — see bead ob2.
- *   4) Fallback to startDir itself.
- *
- * @param {string} startDir - Directory to resolve from (usually cwd from hook payload)
- * @returns {string} Absolute path to the .omc root directory
- */
-export function resolveOmcRoot(startDir) {
-  const dir = startDir || process.cwd();
-
-  // 1) OMC_STATE_DIR: full project-id derivation is TS-only; warn and fall through.
-  if (process.env.OMC_STATE_DIR) {
-    process.stderr.write(
-      '[omc] OMC_STATE_DIR is set; resolveOmcRoot() falling through to workspace-marker ' +
-      'resolution. Use resolveOmcStateRoot() for full OMC_STATE_DIR support.\n'
-    );
-  }
-
-  // 2) Walk up looking for .omc-workspace marker
-  try {
-    let cursor = resolve(dir);
-    const home = (() => { try { return resolve(homedir()); } catch { return null; } })();
-    while (true) {
-      if (existsSync(join(cursor, '.omc-workspace'))) {
-        return join(cursor, '.omc');
-      }
-      const parent = dirname(cursor);
-      if (parent === cursor) break;
-      if (home && cursor === home) break;
-      cursor = parent;
-    }
-  } catch {
-    // walk failed — continue to git fallback
-  }
-
-  // 3) git rev-parse --show-toplevel
-  let gitRevParseFailed = false;
-  try {
-    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-      cwd: dir,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: BOUNDED_GIT_TIMEOUT_MS,
-      windowsHide: true,
-    }).trim();
-    if (top) return join(top, '.omc');
-  } catch {
-    // git rev-parse threw — could be a genuine non-repo dir, or a transient
-    // failure (timeout, lock contention). Rescue below before assuming the
-    // former.
-    gitRevParseFailed = true;
-  }
-
-  // 3.5) fs walk-up rescue (bead ob2): only when git rev-parse actually
-  // threw. Finding nothing here means startDir truly has no ancestor repo,
-  // so behavior for that case is unchanged (silent cwd fallback below).
-  if (gitRevParseFailed) {
-    const fsWalkRoot = findGitRootByFsWalk(dir);
-    if (fsWalkRoot) {
-      process.stderr.write(
-        `[omc] git rev-parse --show-toplevel failed from ${dir}; resolved repo root via filesystem walk-up to ${fsWalkRoot}\n`,
-      );
-      return join(fsWalkRoot, '.omc');
-    }
-  }
-
-  // 4) Fallback to startDir
-  return join(dir, '.omc');
-}
-
 function clampPercent(percent, fallback) {
   if (!Number.isFinite(percent)) return fallback;
   return Math.min(100, Math.max(1, percent));
@@ -658,8 +544,8 @@ function isConsensusPlanningSkillInvocation(skillName, toolInput) {
   return getSkillInvocationArgs(toolInput).toLowerCase().includes('--consensus');
 }
 
-function getSkillActiveStatePaths(directory, sessionId) {
-  const stateDir = join(resolveOmcRoot(directory), 'state');
+async function getSkillActiveStatePaths(directory, sessionId) {
+  const stateDir = join(await resolveOmcStateRoot(directory), 'state');
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
   return [
     safeSessionId ? join(stateDir, 'sessions', safeSessionId, 'skill-active-state.json') : null,
@@ -667,8 +553,8 @@ function getSkillActiveStatePaths(directory, sessionId) {
   ].filter(Boolean);
 }
 
-function readSkillActiveState(directory, sessionId) {
-  for (const statePath of getSkillActiveStatePaths(directory, sessionId)) {
+async function readSkillActiveState(directory, sessionId) {
+  for (const statePath of await getSkillActiveStatePaths(directory, sessionId)) {
     try {
       if (!existsSync(statePath)) continue;
       const state = JSON.parse(readFileSync(statePath, 'utf-8'));
@@ -680,8 +566,8 @@ function readSkillActiveState(directory, sessionId) {
   return null;
 }
 
-function clearSkillActiveState(directory, sessionId) {
-  for (const statePath of getSkillActiveStatePaths(directory, sessionId)) {
+async function clearSkillActiveState(directory, sessionId) {
+  for (const statePath of await getSkillActiveStatePaths(directory, sessionId)) {
     try {
       unlinkSync(statePath);
     } catch {
@@ -690,8 +576,8 @@ function clearSkillActiveState(directory, sessionId) {
   }
 }
 
-function getRalplanStatePaths(directory, sessionId) {
-  const stateDir = join(resolveOmcRoot(directory), 'state');
+async function getRalplanStatePaths(directory, sessionId) {
+  const stateDir = join(await resolveOmcStateRoot(directory), 'state');
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
   return [
     safeSessionId ? join(stateDir, 'sessions', safeSessionId, 'ralplan-state.json') : null,
@@ -699,12 +585,12 @@ function getRalplanStatePaths(directory, sessionId) {
   ].filter(Boolean);
 }
 
-function deactivateRalplanState(directory, sessionId) {
+async function deactivateRalplanState(directory, sessionId) {
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
   const terminalPhases = new Set(['complete', 'completed', 'failed', 'cancelled', 'done']);
   const now = new Date().toISOString();
 
-  for (const statePath of getRalplanStatePaths(directory, sessionId)) {
+  for (const statePath of await getRalplanStatePaths(directory, sessionId)) {
     try {
       if (!existsSync(statePath)) continue;
       const state = JSON.parse(readFileSync(statePath, 'utf-8'));
@@ -982,8 +868,8 @@ function hasStructuredWriteFailure(rawResponse) {
 // Get agent completion summary from tracking state.
 // Checks session-scoped path first (Wave A migration), falls back to legacy path.
 // sessionId is extracted from the hook payload; when absent only the legacy path is tried.
-function getAgentCompletionSummary(directory, quietLevel = QUIET_LEVEL, sessionId = '') {
-  const stateDir = join(resolveOmcRoot(directory), 'state');
+async function getAgentCompletionSummary(directory, quietLevel = QUIET_LEVEL, sessionId = '') {
+  const stateDir = join(await resolveOmcStateRoot(directory), 'state');
   const safeSessionId = sessionId && SESSION_ID_ALLOWLIST.test(sessionId) ? sessionId : '';
 
   // Build candidate paths: session-scoped first, then legacy fallback
@@ -1017,7 +903,7 @@ function getAgentCompletionSummary(directory, quietLevel = QUIET_LEVEL, sessionI
 }
 
 // Generate contextual message
-function generateMessage(toolName, toolOutput, sessionId, toolCount, directory, options = {}) {
+async function generateMessage(toolName, toolOutput, sessionId, toolCount, directory, options = {}) {
   const {
     wasTruncated = false,
     rawLength = 0,
@@ -1043,7 +929,7 @@ function generateMessage(toolName, toolOutput, sessionId, toolCount, directory, 
     case 'Task':
     case 'TaskCreate':
     case 'TaskUpdate': {
-      const agentSummary = getAgentCompletionSummary(directory, QUIET_LEVEL, sessionId);
+      const agentSummary = await getAgentCompletionSummary(directory, QUIET_LEVEL, sessionId);
       if (detectWriteFailure(toolOutput)) {
         message = 'Task delegation failed. Verify agent name and parameters.';
       } else if (QUIET_LEVEL < 2 && detectBackgroundOperation(toolOutput)) {
@@ -1171,21 +1057,21 @@ async function main() {
     if (toolName === 'Skill' || toolName === 'skill') {
       const toolInput = data.tool_input || data.toolInput || {};
       const skillName = getInvokedSkillName(toolInput);
-      const currentState = readSkillActiveState(directory, sessionId);
+      const currentState = await readSkillActiveState(directory, sessionId);
       const completingSkill = (skillName ?? '')
         .toLowerCase()
         .replace(/^oh-my-claudecode:/, '');
       if (!currentState || !currentState.active || currentState.skill_name === completingSkill) {
-        clearSkillActiveState(directory, sessionId);
+        await clearSkillActiveState(directory, sessionId);
       }
       if (isConsensusPlanningSkillInvocation(skillName, toolInput)) {
-        deactivateRalplanState(directory, sessionId);
+        await deactivateRalplanState(directory, sessionId);
       }
     }
 
     // Generate contextual message
     const message = combineMessages(
-      generateMessage(toolName, clippedToolOutput, sessionId, toolCount, directory, {
+      await generateMessage(toolName, clippedToolOutput, sessionId, toolCount, directory, {
         wasTruncated,
         rawLength: toolOutput.length,
         structuredWriteSuccess,

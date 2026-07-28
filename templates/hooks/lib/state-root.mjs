@@ -16,6 +16,10 @@
  *     canonical behavior for local-only repos; may differ for remote-backed
  *     repos when dist is missing — acceptable since dist is always present
  *     in production (CLAUDE_PLUGIN_ROOT is always set).
+ *
+ * Symlink limitation: git resolution may return a physical path while the
+ * filesystem-walk rescue preserves a logical symlink path. Both name the same
+ * directory; this delegator intentionally does not normalize with realpath.
  */
 
 import { join, basename } from 'path';
@@ -33,10 +37,12 @@ export async function resolveOmcStateRoot(directory) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (pluginRoot) {
     try {
-      const { getOmcRoot } = await import(
+      const { findWorkspaceRoot, getOmcRoot, resolveToWorktreeRoot } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      return getOmcRoot(directory);
+      return getOmcRoot(
+        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory)
+      );
     } catch {
       // dist not built or unavailable — fall through to inline fallback
     }
@@ -65,10 +71,16 @@ export async function resolveSessionStatePathsForHook(directory, stateName, sess
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (pluginRoot) {
     try {
-      const { resolveSessionStatePaths } = await import(
+      const {
+        findWorkspaceRoot,
+        resolveSessionStatePaths,
+        resolveToWorktreeRoot,
+      } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      const result = resolveSessionStatePaths(stateName, sessionId, directory);
+      const root =
+        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory);
+      const result = resolveSessionStatePaths(stateName, sessionId, root);
       return { readPath: result.effectiveRead, writePath: result.effectiveWrite };
     } catch {
       // dist not built or unavailable — fall through to inline fallback

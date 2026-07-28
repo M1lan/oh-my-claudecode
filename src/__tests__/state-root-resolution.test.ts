@@ -16,13 +16,15 @@ import {
   existsSync,
   mkdtempSync,
   mkdirSync,
+  realpathSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { basename, dirname, join, resolve } from 'node:path';
 import { getOmcRoot, clearWorktreeCache } from '../lib/worktree-paths.js';
+import { absPath } from '../team/state-paths.js';
 
 const NODE = process.execPath;
 const REPO_ROOT = resolve(join(__dirname, '..', '..'));
@@ -30,6 +32,15 @@ const SESSION_START = join(REPO_ROOT, 'scripts', 'session-start.mjs');
 const HOOK_RUNNER = join(REPO_ROOT, 'scripts', 'run.cjs');
 const STOP_HOOK = join(REPO_ROOT, 'scripts', 'persistent-mode.cjs');
 const PRE_TOOL_ENFORCER = join(REPO_ROOT, 'scripts', 'pre-tool-enforcer.mjs');
+const STATE_ROOT_ESM = join(REPO_ROOT, 'scripts', 'lib', 'state-root.mjs');
+const STATE_ROOT_CJS = join(REPO_ROOT, 'scripts', 'lib', 'state-root.cjs');
+const SELF_IMPROVE_RESOLVER = join(
+  REPO_ROOT,
+  'skills',
+  'self-improve',
+  'scripts',
+  'resolve-paths.mjs',
+);
 
 function buildHookEnv(
   extraEnv: Record<string, string> = {},
@@ -654,5 +665,424 @@ describe('OMC_STATE_DIR state-root resolution (issue #2532)', () => {
     );
     expect(existsSync(centralizedPath)).toBe(true);
     expect(existsSync(defaultPath)).toBe(false);
+  });
+});
+
+describe('state-root resolver consolidation precondition (bead 5ki.1)', () => {
+  const tempRoots: string[] = [];
+
+  function makeTempRoot(prefix: string): string {
+    const root = mkdtempSync(join(tmpdir(), prefix));
+    tempRoots.push(root);
+    return root;
+  }
+
+  function git(cwd: string, args: string[]): string {
+    return execFileSync('git', args, {
+      cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 15000,
+    }).trim();
+  }
+
+  function initGitRepo(root: string, commit = false): void {
+    mkdirSync(root, { recursive: true });
+    git(root, ['init', '--quiet']);
+    if (!commit) return;
+    writeFileSync(join(root, 'fixture.txt'), 'fixture\n');
+    git(root, ['add', 'fixture.txt']);
+    git(root, [
+      '-c',
+      'user.name=Fixture',
+      '-c',
+      'user.email=fixture@example.test',
+      'commit',
+      '--quiet',
+      '-m',
+      'fixture',
+    ]);
+  }
+
+  function buildResolverEnv(
+    extraEnv: Record<string, string> = {},
+  ): Record<string, string> {
+    const env = buildHookEnv(extraEnv);
+    if (!Object.hasOwn(extraEnv, 'OMC_DISABLE_MULTIREPO')) {
+      delete env.OMC_DISABLE_MULTIREPO;
+    }
+    return env;
+  }
+
+  function runStateRootResolver(
+    modulePath: string,
+    cwd: string,
+    extraEnv: Record<string, string> = {},
+  ): string {
+    const source = modulePath.endsWith('.cjs')
+      ? [
+          'const resolver = require(process.argv[1]);',
+          'Promise.resolve(resolver.resolveOmcStateRoot(process.cwd()))',
+          '  .then((value) => process.stdout.write(`${value}\\n`))',
+          '  .catch((error) => { console.error(error); process.exit(1); });',
+        ].join('\n')
+      : [
+          "const { pathToFileURL } = require('node:url');",
+          'import(pathToFileURL(process.argv[1]).href)',
+          '  .then((resolver) => resolver.resolveOmcStateRoot(process.cwd()))',
+          '  .then((value) => process.stdout.write(`${value}\\n`))',
+          '  .catch((error) => { console.error(error); process.exit(1); });',
+        ].join('\n');
+
+    return execFileSync(NODE, ['-e', source, modulePath], {
+      cwd,
+      encoding: 'utf-8',
+      env: buildResolverEnv(extraEnv),
+      timeout: 15000,
+    }).trim();
+  }
+
+  function normalizeBehaviorPath(path: string): string {
+    const suffix: string[] = [];
+    let existing = path;
+    while (!existsSync(existing)) {
+      const parent = dirname(existing);
+      if (parent === existing) break;
+      suffix.unshift(basename(existing));
+      existing = parent;
+    }
+    return join(realpathSync(existing), ...suffix);
+  }
+
+  function expectRoot(
+    caseNumber: number,
+    actual: string,
+    expected: string,
+    detail = '',
+  ): void {
+    const normalizedActual = normalizeBehaviorPath(actual);
+    const normalizedExpected = normalizeBehaviorPath(expected);
+    expect(
+      normalizedActual,
+      `case ${caseNumber}${detail ? ` (${detail})` : ''}: expected root ${normalizedExpected}; actual root ${normalizedActual}`,
+    ).toBe(normalizedExpected);
+  }
+
+  function marker(root: string): void {
+    writeFileSync(join(root, '.omc-workspace'), '{}\n');
+  }
+
+  afterEach(() => {
+    delete process.env.OMC_STATE_DIR;
+    delete process.env.OMC_DISABLE_MULTIREPO;
+    clearWorktreeCache();
+    while (tempRoots.length > 0) {
+      rmSync(tempRoots.pop()!, { recursive: true, force: true });
+    }
+  });
+
+  it('case 01: repo root without marker anchors .omc at repo root', () => {
+    const fixture = makeTempRoot('omc-state-root-case-01-');
+    const repoRoot = join(fixture, 'repo');
+    initGitRepo(repoRoot);
+
+    expectRoot(
+      1,
+      runStateRootResolver(STATE_ROOT_ESM, repoRoot),
+      join(repoRoot, '.omc'),
+    );
+  });
+
+  it('case 02: deep git-repo subdirectory anchors .omc at repo root', () => {
+    const fixture = makeTempRoot('omc-state-root-case-02-');
+    const repoRoot = join(fixture, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+
+    expectRoot(
+      2,
+      runStateRootResolver(STATE_ROOT_ESM, cwd),
+      join(repoRoot, '.omc'),
+    );
+  });
+
+  it('case 03: sub-repo under marker parent anchors .omc at parent', () => {
+    const workspaceRoot = makeTempRoot('omc-state-root-case-03-');
+    const repoRoot = join(workspaceRoot, 'repo');
+    marker(workspaceRoot);
+    initGitRepo(repoRoot);
+
+    expectRoot(
+      3,
+      runStateRootResolver(STATE_ROOT_ESM, repoRoot),
+      join(workspaceRoot, '.omc'),
+    );
+  });
+
+  it('case 04: deep subdirectory of marker-parent sub-repo anchors .omc at parent', () => {
+    const workspaceRoot = makeTempRoot('omc-state-root-case-04-');
+    const repoRoot = join(workspaceRoot, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    marker(workspaceRoot);
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+
+    expectRoot(
+      4,
+      runStateRootResolver(STATE_ROOT_ESM, cwd),
+      join(workspaceRoot, '.omc'),
+    );
+  });
+
+  it('case 05: OMC_STATE_DIR wins when workspace marker is present', () => {
+    const workspaceRoot = makeTempRoot('omc-state-root-case-05-');
+    const repoRoot = join(workspaceRoot, 'repo');
+    const stateDir = join(workspaceRoot, 'centralized');
+    marker(workspaceRoot);
+    initGitRepo(repoRoot);
+    mkdirSync(stateDir, { recursive: true });
+
+    expectRoot(
+      5,
+      runStateRootResolver(STATE_ROOT_ESM, repoRoot, {
+        OMC_STATE_DIR: stateDir,
+      }),
+      getCentralizedOmcRoot(realpathSync(repoRoot), stateDir),
+    );
+  });
+
+  it('case 06: OMC_STATE_DIR project identity derives from climbed repo root', () => {
+    const fixture = makeTempRoot('omc-state-root-case-06-');
+    const repoRoot = join(fixture, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    const stateDir = join(fixture, 'centralized');
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+    mkdirSync(stateDir, { recursive: true });
+
+    expectRoot(
+      6,
+      runStateRootResolver(STATE_ROOT_ESM, cwd, {
+        OMC_STATE_DIR: stateDir,
+      }),
+      getCentralizedOmcRoot(realpathSync(repoRoot), stateDir),
+    );
+  });
+
+  it('case 07: submodule uses superproject location and its own centralized identity', () => {
+    const fixture = makeTempRoot('omc-state-root-case-07-');
+    const sourceRoot = join(fixture, 'submodule-source');
+    const superprojectRoot = join(fixture, 'superproject');
+    const submoduleRoot = join(superprojectRoot, 'modules', 'child');
+    const cwd = join(submoduleRoot, 'deep');
+    const stateDir = join(fixture, 'centralized');
+    initGitRepo(sourceRoot, true);
+    initGitRepo(superprojectRoot, true);
+    git(superprojectRoot, [
+      '-c',
+      'protocol.file.allow=always',
+      'submodule',
+      'add',
+      '--quiet',
+      sourceRoot,
+      'modules/child',
+    ]);
+    mkdirSync(cwd, { recursive: true });
+    mkdirSync(stateDir, { recursive: true });
+
+    const locationRoot = runStateRootResolver(STATE_ROOT_ESM, cwd);
+    expect
+      .soft(
+        normalizeBehaviorPath(locationRoot),
+        `case 7 (location): expected root ${normalizeBehaviorPath(join(superprojectRoot, '.omc'))}; actual root ${normalizeBehaviorPath(locationRoot)}`,
+      )
+      .toBe(normalizeBehaviorPath(join(superprojectRoot, '.omc')));
+
+    expectRoot(
+      7,
+      runStateRootResolver(STATE_ROOT_ESM, cwd, {
+        OMC_STATE_DIR: stateDir,
+      }),
+      getCentralizedOmcRoot(realpathSync(submoduleRoot), stateDir),
+      'centralized identity',
+    );
+  });
+
+  it('case 08: linked-worktree subdirectory anchors .omc at linked worktree root', () => {
+    const fixture = makeTempRoot('omc-state-root-case-08-');
+    const mainRoot = join(fixture, 'main');
+    const linkedRoot = join(fixture, 'linked');
+    const cwd = join(linkedRoot, 'deep', 'nested');
+    initGitRepo(mainRoot, true);
+    git(mainRoot, [
+      'worktree',
+      'add',
+      '--quiet',
+      '-b',
+      'fixture-linked',
+      linkedRoot,
+    ]);
+    mkdirSync(cwd, { recursive: true });
+
+    expectRoot(
+      8,
+      runStateRootResolver(STATE_ROOT_ESM, cwd),
+      join(linkedRoot, '.omc'),
+    );
+  });
+
+  it('case 09: filesystem walk rescues repo root when git rev-parse fails', () => {
+    const fixture = makeTempRoot('omc-state-root-case-09-');
+    const repoRoot = join(fixture, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    const emptyPath = join(fixture, 'empty-path');
+    mkdirSync(join(repoRoot, '.git'), { recursive: true });
+    mkdirSync(cwd, { recursive: true });
+    mkdirSync(emptyPath, { recursive: true });
+
+    expectRoot(
+      9,
+      runStateRootResolver(STATE_ROOT_ESM, cwd, { PATH: emptyPath }),
+      join(repoRoot, '.omc'),
+    );
+  });
+
+  it('case 10: non-git directory without marker remains raw-directory anchored', () => {
+    const cwd = makeTempRoot('omc-state-root-case-10-');
+
+    expectRoot(
+      10,
+      runStateRootResolver(STATE_ROOT_ESM, cwd),
+      join(cwd, '.omc'),
+    );
+  });
+
+  it('case 11: OMC_DISABLE_MULTIREPO ignores marker but still climbs to git root', () => {
+    const workspaceRoot = makeTempRoot('omc-state-root-case-11-');
+    const repoRoot = join(workspaceRoot, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    marker(workspaceRoot);
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+
+    expectRoot(
+      11,
+      runStateRootResolver(STATE_ROOT_ESM, cwd, {
+        OMC_DISABLE_MULTIREPO: '1',
+      }),
+      join(repoRoot, '.omc'),
+    );
+  });
+
+  it('case 12: state-root.cjs matches cases 1-4', () => {
+    const plainFixture = makeTempRoot('omc-state-root-case-12-plain-');
+    const plainRepo = join(plainFixture, 'repo');
+    const plainDeep = join(plainRepo, 'deep');
+    initGitRepo(plainRepo);
+    mkdirSync(plainDeep, { recursive: true });
+
+    const workspaceRoot = makeTempRoot('omc-state-root-case-12-workspace-');
+    const workspaceRepo = join(workspaceRoot, 'repo');
+    const workspaceDeep = join(workspaceRepo, 'deep');
+    marker(workspaceRoot);
+    initGitRepo(workspaceRepo);
+    mkdirSync(workspaceDeep, { recursive: true });
+
+    const scenarios = [
+      [plainRepo, join(plainRepo, '.omc'), 'case 1'],
+      [plainDeep, join(plainRepo, '.omc'), 'case 2'],
+      [workspaceRepo, join(workspaceRoot, '.omc'), 'case 3'],
+      [workspaceDeep, join(workspaceRoot, '.omc'), 'case 4'],
+    ] as const;
+
+    for (const [cwd, expected, detail] of scenarios) {
+      const actual = runStateRootResolver(STATE_ROOT_CJS, cwd);
+      expect
+        .soft(
+          normalizeBehaviorPath(actual),
+          `case 12 (${detail}): expected root ${normalizeBehaviorPath(expected)}; actual root ${normalizeBehaviorPath(actual)}`,
+        )
+        .toBe(normalizeBehaviorPath(expected));
+    }
+  });
+
+  it('case 13: marker below git root wins from deeper cwd', () => {
+    const fixture = makeTempRoot('omc-state-root-case-13-');
+    const repoRoot = join(fixture, 'repo');
+    const markerRoot = join(repoRoot, 'packages');
+    const cwd = join(markerRoot, 'service', 'deep');
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+    marker(markerRoot);
+
+    expectRoot(
+      13,
+      runStateRootResolver(STATE_ROOT_ESM, cwd),
+      join(markerRoot, '.omc'),
+    );
+  });
+
+  it('case 14: self-improve resolver without --project-root anchors at repo root', () => {
+    const fixture = makeTempRoot('omc-state-root-case-14-');
+    const repoRoot = join(fixture, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+
+    const raw = execFileSync(NODE, [SELF_IMPROVE_RESOLVER], {
+      cwd,
+      encoding: 'utf-8',
+      env: buildResolverEnv(),
+      timeout: 15000,
+    });
+    const paths = JSON.parse(raw) as { base_root: string };
+    expectRoot(14, paths.base_root, join(repoRoot, '.omc', 'self-improve'));
+  });
+
+  it('case 15: team writer and reader agree when launched from repo subdirectory', () => {
+    const fixture = makeTempRoot('omc-state-root-case-15-');
+    const repoRoot = join(fixture, 'repo');
+    const cwd = join(repoRoot, 'deep', 'nested');
+    const sessionId = 'state-root-case-15';
+    initGitRepo(repoRoot);
+    mkdirSync(cwd, { recursive: true });
+
+    const writerPath = absPath(
+      cwd,
+      join('.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+    );
+    mkdirSync(dirname(writerPath), { recursive: true });
+    writeFileSync(
+      writerPath,
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'state-root-case-15',
+        current_phase: 'team-exec',
+      }),
+    );
+
+    expectRoot(
+      15,
+      writerPath,
+      join(repoRoot, '.omc', 'state', 'sessions', sessionId, 'team-state.json'),
+      'writer',
+    );
+
+    const output = runHook(PRE_TOOL_ENFORCER, {
+      hook_event_name: 'PreToolUse',
+      tool_name: 'Task',
+      tool_input: { subagent_type: 'executor', description: 'fixture task' },
+      session_id: sessionId,
+      cwd,
+    });
+    const context =
+      (output as { hookSpecificOutput?: { additionalContext?: string } })
+        .hookSpecificOutput?.additionalContext ?? '';
+    expect(
+      context,
+      `case 15 (reader): expected getActiveTeamState() to find ${writerPath}; actual context ${JSON.stringify(context)}`,
+    ).toContain('[TEAM ROUTING REQUIRED]');
   });
 });

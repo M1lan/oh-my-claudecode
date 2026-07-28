@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import { isAbsolute, join } from 'path';
+import { realpathSync } from 'node:fs';
+import { isAbsolute, join, relative, resolve } from 'path';
+import {
+  findWorkspaceRoot,
+  getOmcRoot,
+  resolveToWorktreeRoot,
+} from '../lib/worktree-paths.js';
 
 /**
  * Typed path builders for all team state files.
@@ -233,28 +239,88 @@ export const TeamPaths = {
   recoveryAuditIndex: () => '.omc/state/team-recovery/audit.jsonl',
 } as const;
 
+const OMC_RELATIVE_PREFIX = '.omc/';
+
+/**
+ * Anchor a `TeamPaths.*`-shaped relative path (always prefixed with
+ * `.omc/`) onto the resolved omc root for `cwd`. This is the single place
+ * team-state writers agree with the reader's anchoring — including the
+ * `OMC_STATE_DIR` centralized layout, where the root is
+ * `$OMC_STATE_DIR/{projectId}` and is not itself named `.omc`.
+ *
+ * `cwd` is normalized with the SAME composition the `.mjs`/`.cjs` hook
+ * reader uses (`scripts/lib/state-root.mjs`): `getOmcRoot` honors an
+ * explicit directory verbatim by contract, so passing a raw subdirectory
+ * would anchor the writer under that subdirectory while the reader anchors
+ * at the repo root — and, under `OMC_STATE_DIR`, would derive a different
+ * project identifier. Marker-first is required (decision D1): the outer
+ * `findWorkspaceRoot` must see the UNCLIMBED directory so an inner
+ * `.omc-workspace` is honored.
+ *
+ * The leading `.omc/` segment of `relativePath` is stripped before joining
+ * so the result is never doubled (`.omc/.omc/...`).
+ */
+function resolveTeamStatePath(cwd: string, relativePath: string): string {
+  const resolvedCwd = resolve(cwd);
+  const marker = findWorkspaceRoot(resolvedCwd);
+  let root = marker;
+
+  if (!root) {
+    const candidate = resolveToWorktreeRoot(resolvedCwd);
+    let comparableCandidate: string;
+    let comparableCwd: string;
+    try {
+      comparableCandidate = realpathSync(candidate);
+    } catch {
+      comparableCandidate = resolve(candidate);
+    }
+    try {
+      comparableCwd = realpathSync(resolvedCwd);
+    } catch {
+      comparableCwd = resolve(resolvedCwd);
+    }
+    const relativeCwd = relative(comparableCandidate, comparableCwd);
+    const candidateContainsCwd =
+      relativeCwd === '' ||
+      (!relativeCwd.startsWith('..') && !isAbsolute(relativeCwd));
+    root = candidateContainsCwd ? candidate : resolvedCwd;
+  }
+
+  const omcRoot = getOmcRoot(root);
+  const withinOmcRoot = relativePath.startsWith(OMC_RELATIVE_PREFIX)
+    ? relativePath.slice(OMC_RELATIVE_PREFIX.length)
+    : relativePath;
+  return join(omcRoot, withinOmcRoot);
+}
+
 /**
  * Get absolute path for a team state file.
  */
 export function absPath(cwd: string, relativePath: string): string {
-  return isAbsolute(relativePath) ? relativePath : join(cwd, relativePath);
+  return isAbsolute(relativePath)
+    ? relativePath
+    : resolveTeamStatePath(cwd, relativePath);
 }
 
 /**
  * Get absolute root path for a team's state directory.
  */
 export function teamStateRoot(cwd: string, teamName: string): string {
-  return join(cwd, TeamPaths.root(teamName));
+  return resolveTeamStatePath(cwd, TeamPaths.root(teamName));
 }
 
 /**
  * Canonical task storage path builder.
  *
  * All task files live at:
- *   {cwd}/.omc/state/team/{teamName}/tasks/task-{taskId}.json
+ *   {omcRoot}/state/team/{teamName}/tasks/task-{taskId}.json
  *
  * When taskId is omitted, returns the tasks directory:
- *   {cwd}/.omc/state/team/{teamName}/tasks/
+ *   {omcRoot}/state/team/{teamName}/tasks/
+ *
+ * `{omcRoot}` is whatever `resolveTeamStatePath` resolves for `cwd`: the
+ * repo/workspace root's `.omc/` by default, or `$OMC_STATE_DIR/{projectId}`
+ * under the centralized layout — not literally `{cwd}/.omc`.
  *
  * Use this as the single source of truth for task file locations.
  * New writes always use this canonical path.
@@ -265,9 +331,9 @@ export function getTaskStoragePath(
   taskId?: string,
 ): string {
   if (taskId !== undefined) {
-    return join(cwd, TeamPaths.taskFile(teamName, taskId));
+    return resolveTeamStatePath(cwd, TeamPaths.taskFile(teamName, taskId));
   }
-  return join(cwd, TeamPaths.tasks(teamName));
+  return resolveTeamStatePath(cwd, TeamPaths.tasks(teamName));
 }
 
 /**

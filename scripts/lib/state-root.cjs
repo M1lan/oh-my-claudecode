@@ -7,6 +7,10 @@
  * CJS hook scripts, respecting the OMC_STATE_DIR environment variable.
  *
  * See scripts/lib/state-root.mjs for full documentation.
+ *
+ * Symlink limitation: git resolution may return a physical path while the
+ * filesystem-walk rescue preserves a logical symlink path. Both name the same
+ * directory; this delegator intentionally does not normalize with realpath.
  */
 
 'use strict';
@@ -26,10 +30,12 @@ async function resolveOmcStateRoot(directory) {
   if (pluginRoot) {
     try {
       const { pathToFileURL } = require('url');
-      const { getOmcRoot } = await import(
+      const { findWorkspaceRoot, getOmcRoot, resolveToWorktreeRoot } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      return getOmcRoot(directory);
+      return getOmcRoot(
+        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory)
+      );
     } catch {
       // dist not built or unavailable — fall through to inline fallback
     }
@@ -59,10 +65,16 @@ async function resolveSessionStatePathsForHook(directory, stateName, sessionId) 
   if (pluginRoot) {
     try {
       const { pathToFileURL } = require('url');
-      const { resolveSessionStatePaths } = await import(
+      const {
+        findWorkspaceRoot,
+        resolveSessionStatePaths,
+        resolveToWorktreeRoot,
+      } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      const result = resolveSessionStatePaths(stateName, sessionId, directory);
+      const root =
+        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory);
+      const result = resolveSessionStatePaths(stateName, sessionId, root);
       return { readPath: result.effectiveRead, writePath: result.effectiveWrite };
     } catch {
       // dist not built or unavailable — fall through to inline fallback

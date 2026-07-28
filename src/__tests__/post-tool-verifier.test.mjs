@@ -3,13 +3,13 @@
  * Covers issue #696: false positive "permission denied" from Claude Code temp CWD errors on macOS
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import process from 'process';
-import { detectBashFailure, detectWriteFailure, isClaudeCodeWriteSuccess, isNonZeroExitWithOutput, resolveOmcRoot, summarizeAgentResult } from '../../scripts/post-tool-verifier.mjs';
+import { detectBashFailure, detectWriteFailure, isClaudeCodeWriteSuccess, isNonZeroExitWithOutput, summarizeAgentResult } from '../../scripts/post-tool-verifier.mjs';
 
 const SCRIPT_PATH = join(process.cwd(), 'scripts', 'post-tool-verifier.mjs');
 const TEMPLATE_HOOK_PATH = join(process.cwd(), 'templates', 'hooks', 'post-tool-use.mjs');
@@ -1064,47 +1064,5 @@ describe('Skill active state cleanup on PostToolUse (issue #2103)', () => {
       expect(existsSync(skillStatePath(tempDir, sessionId))).toBe(false);
       expect(existsSync(legacySkillStatePath(tempDir))).toBe(false);
     });
-  });
-});
-
-describe('resolveOmcRoot fs-walk rescue (bead ob2)', () => {
-  // resolveOmcRoot() is the live .omc-root resolver used by
-  // getSkillActiveStatePaths()/getRalplanStatePaths() above (via `directory`,
-  // the hook's raw cwd). A transient git-command failure — e.g. timeout or
-  // lock contention under concurrent load while an agent's persisted shell
-  // cwd sits in a subdirectory — previously fell straight through to the
-  // blanket `catch { not in a git repo }` and anchored `.omc/` at that raw
-  // subdirectory instead of the repo root.
-  let tempDir;
-  let originalPath;
-
-  beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'post-tool-verifier-fswalk-'));
-    originalPath = process.env.PATH;
-  });
-
-  afterEach(() => {
-    if (originalPath === undefined) delete process.env.PATH;
-    else process.env.PATH = originalPath;
-    rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('resolves the ancestor repo root via fs walk-up when git rev-parse fails but a .git ancestor exists', () => {
-    const repoRoot = join(tempDir, 'repo');
-    const subDir = join(repoRoot, 'sub', 'deeper');
-    mkdirSync(join(repoRoot, '.git'), { recursive: true });
-    mkdirSync(subDir, { recursive: true });
-
-    // Point PATH at a directory with no `git` executable so execFileSync('git', ...)
-    // throws ENOENT — simulating a transient/unavailable git resolution.
-    process.env.PATH = tempDir;
-
-    expect(resolveOmcRoot(subDir)).toBe(join(repoRoot, '.omc'));
-  });
-
-  it('falls back to startDir when git rev-parse fails and no .git ancestor exists anywhere', () => {
-    process.env.PATH = tempDir;
-
-    expect(resolveOmcRoot(tempDir)).toBe(join(tempDir, '.omc'));
   });
 });

@@ -9,7 +9,6 @@
 import { closeSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readFileSync, readSync, readdirSync, renameSync, writeFileSync } from 'fs';
 import { createHash } from 'crypto';
 import { dirname, join, resolve, basename } from 'path';
-import { homedir } from 'os';
 import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
@@ -431,121 +430,6 @@ function getQuietLevel() {
   if (Number.isNaN(parsed)) return 0;
   return Math.max(0, parsed);
 }
-
-/**
- * Walk up from startDir on the filesystem alone (no git subprocess) looking
- * for a `.git` entry (directory or file — a file covers linked worktrees and
- * submodules, whose `.git` is a pointer file). Returns the directory
- * containing it, or null if none is found before the filesystem root or the
- * user's home directory.
- *
- * Rescue path only: consulted after `git rev-parse --show-toplevel` has
- * already thrown, to distinguish a genuine non-repo directory from a
- * transient git-command failure (timeout, lock contention under concurrent
- * load — bead ob2) that would otherwise silently degrade `.omc/` placement
- * to the raw startDir.
- *
- * @param {string} startDir
- * @returns {string|null}
- */
-function findGitRootByFsWalk(startDir) {
-  try {
-    let cursor = resolve(startDir);
-    const home = (() => { try { return resolve(homedir()); } catch { return null; } })();
-    const MAX_WALK_DEPTH = 128;
-    for (let depth = 0; depth < MAX_WALK_DEPTH; depth++) {
-      if (existsSync(join(cursor, '.git'))) return cursor;
-      const parent = dirname(cursor);
-      if (parent === cursor) break;
-      if (home && cursor === home) break;
-      cursor = parent;
-    }
-  } catch {
-    // walk failed — caller falls through to its existing fallback
-  }
-  return null;
-}
-
-/**
- * Resolve the .omc root directory for a given starting directory.
- *
- * Resolution order (mirrors src/lib/worktree-paths.ts getOmcRoot):
- *   1) OMC_STATE_DIR env — log a warning and fall through (full project-id
- *      derivation lives in the TS layer; use resolveOmcStateRoot() for async
- *      TS-backed OMC_STATE_DIR support in main()).
- *   2) Walk up from startDir looking for a .omc-workspace marker file.
- *      The first directory containing that file is the workspace anchor.
- *   3) git rev-parse --show-toplevel from startDir.
- *   3.5) If that failed (rather than cleanly returning "not a repo"), rescue
- *        via findGitRootByFsWalk before giving up — see bead ob2.
- *   4) Fallback to startDir itself.
- *
- * @param {string} startDir - Directory to resolve from (usually cwd from hook payload)
- * @returns {string} Absolute path to the .omc root directory
- */
-export function resolveOmcRoot(startDir) {
-  const dir = startDir || process.cwd();
-
-  // 1) OMC_STATE_DIR: full project-id derivation is TS-only; warn and fall through.
-  if (process.env.OMC_STATE_DIR) {
-    process.stderr.write(
-      '[omc] OMC_STATE_DIR is set; resolveOmcRoot() falling through to workspace-marker ' +
-      'resolution. Use resolveOmcStateRoot() for full OMC_STATE_DIR support.\n'
-    );
-  }
-
-  // 2) Walk up looking for .omc-workspace marker
-  try {
-    let cursor = resolve(dir);
-    const home = (() => { try { return resolve(homedir()); } catch { return null; } })();
-    while (true) {
-      if (existsSync(join(cursor, '.omc-workspace'))) {
-        return join(cursor, '.omc');
-      }
-      const parent = dirname(cursor);
-      if (parent === cursor) break;
-      if (home && cursor === home) break;
-      cursor = parent;
-    }
-  } catch {
-    // walk failed — continue to git fallback
-  }
-
-  // 3) git rev-parse --show-toplevel
-  let gitRevParseFailed = false;
-  try {
-    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-      cwd: dir,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: BOUNDED_GIT_TIMEOUT_MS,
-      windowsHide: true,
-    }).trim();
-    if (top) return join(top, '.omc');
-  } catch {
-    // git rev-parse threw — could be a genuine non-repo dir, or a transient
-    // failure (timeout, lock contention). Rescue below before assuming the
-    // former.
-    gitRevParseFailed = true;
-  }
-
-  // 3.5) fs walk-up rescue (bead ob2): only when git rev-parse actually
-  // threw. Finding nothing here means startDir truly has no ancestor repo,
-  // so behavior for that case is unchanged (silent cwd fallback below).
-  if (gitRevParseFailed) {
-    const fsWalkRoot = findGitRootByFsWalk(dir);
-    if (fsWalkRoot) {
-      process.stderr.write(
-        `[omc] git rev-parse --show-toplevel failed from ${dir}; resolved repo root via filesystem walk-up to ${fsWalkRoot}\n`,
-      );
-      return join(fsWalkRoot, '.omc');
-    }
-  }
-
-  // 4) Fallback to startDir
-  return join(dir, '.omc');
-}
-
 
 /**
  * Resolve transcript path in worktree environments.
@@ -1768,9 +1652,7 @@ async function main() {
   }
 }
 
-// Only run when executed directly (not when imported for testing) — mirrors
-// scripts/post-tool-verifier.mjs so exported helpers (e.g. resolveOmcRoot)
-// can be unit-tested via direct import without triggering a real hook run.
+// Only run when executed directly (not when imported for testing).
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main();
 }

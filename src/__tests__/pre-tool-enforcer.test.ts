@@ -16,9 +16,6 @@ vi.unmock('node:child_process');
 import { execFileSync } from 'child_process';
 // @ts-expect-error Local hook helper is a JS module loaded directly by the tests.
 import { evaluateAgentHeavyPreflight } from '../../scripts/lib/pre-tool-enforcer-preflight.mjs';
-// @ts-expect-error Local hook script is a JS module loaded directly by the tests;
-// safe because pre-tool-enforcer.mjs guards main() behind an entrypoint check.
-import { resolveOmcRoot } from '../../scripts/pre-tool-enforcer.mjs';
 
 const SCRIPT_PATH = join(process.cwd(), 'scripts', 'pre-tool-enforcer.mjs');
 
@@ -277,48 +274,6 @@ describe('pre-tool-enforcer advisory throttling (issue #3163)', () => {
     };
     expect(Object.keys(state.entries)).toHaveLength(1);
     expect(Object.values(state.entries)[0].last_emitted_at_ms).toBe(20_000);
-  });
-});
-
-describe('pre-tool-enforcer resolveOmcRoot fs-walk rescue (bead ob2)', () => {
-  // NOTE: resolveOmcRoot() is not currently called from main() in this script
-  // (the live .omc-root resolution for this hook goes through
-  // resolveOmcStateRoot()/getOmcRoot() instead — see worktree-paths.test.ts
-  // for coverage of that path). This function is exercised directly so its
-  // git-failure rescue behaves correctly regardless of which caller reaches
-  // it, matching the shape of the identical (and live) copy in
-  // post-tool-verifier.mjs.
-  let tempDir: string;
-  let originalPath: string | undefined;
-
-  beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-fswalk-'));
-    originalPath = process.env.PATH;
-  });
-
-  afterEach(() => {
-    if (originalPath === undefined) delete process.env.PATH;
-    else process.env.PATH = originalPath;
-    rmSync(tempDir, { recursive: true, force: true });
-  });
-
-  it('resolves the ancestor repo root via fs walk-up when git rev-parse fails but a .git ancestor exists', () => {
-    const repoRoot = join(tempDir, 'repo');
-    const subDir = join(repoRoot, 'sub', 'deeper');
-    mkdirSync(join(repoRoot, '.git'), { recursive: true });
-    mkdirSync(subDir, { recursive: true });
-
-    // Point PATH at a directory with no `git` executable so execFileSync('git', ...)
-    // throws ENOENT — simulating a transient/unavailable git resolution.
-    process.env.PATH = tempDir;
-
-    expect(resolveOmcRoot(subDir)).toBe(join(repoRoot, '.omc'));
-  });
-
-  it('falls back to startDir when git rev-parse fails and no .git ancestor exists anywhere', () => {
-    process.env.PATH = tempDir;
-
-    expect(resolveOmcRoot(tempDir)).toBe(join(tempDir, '.omc'));
   });
 });
 

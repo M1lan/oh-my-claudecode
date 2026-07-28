@@ -11,9 +11,10 @@
  */
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, statSync, openSync, closeSync, unlinkSync, writeSync, constants as fsConstants } from 'fs';
-import { join, basename, dirname } from 'path';
+import { join, dirname } from 'path';
 import { homedir } from 'os';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
+import { resolveOmcStateRoot } from './lib/state-root.mjs';
 import { readStdin } from './lib/stdin.mjs';
 import { createRequire } from 'module';
 import { atomicWriteFileSync, ensureDirSync } from './lib/atomic-write.mjs';
@@ -80,43 +81,6 @@ function validateSessionId(sessionId) {
   if (sessionId.includes('..') || sessionId.includes('/') || sessionId.includes('\\')) return undefined;
   if (!SESSION_ID_REGEX.test(sessionId)) return undefined;
   return sessionId;
-}
-
-// ============================================================================
-// OMC root resolver — walk up from cwd looking for workspace markers.
-// Mirrors getOmcRoot from src/lib/worktree-paths.ts — inlined for .mjs.
-// ============================================================================
-
-/**
- * Walk up from startDir looking for .omc-workspace, then .git, then fallback
- * to startDir itself. Returns the .omc subdirectory of the found root.
- * Mirrors getOmcRoot from src/lib/worktree-paths.ts — inlined synchronously for .mjs.
- *
- * NOTE: OMC_STATE_DIR with content-hash is handled asynchronously in state-root.mjs.
- * This inline sync resolver skips OMC_STATE_DIR and always uses the walk-up result,
- * which is correct for the fallback path (bridge handles OMC_STATE_DIR when available).
- *
- * @param {string} startDir - Directory to start from (data.cwd)
- * @returns {string} Absolute path to the .omc root directory
- */
-function resolveOmcRootSync(startDir) {
-  let dir = startDir;
-
-  // Walk up looking for .omc-workspace or .git
-  while (dir) {
-    if (existsSync(join(dir, '.omc-workspace'))) {
-      return join(dir, '.omc');
-    }
-    if (existsSync(join(dir, '.git'))) {
-      return join(dir, '.omc');
-    }
-    const parent = dirname(dir);
-    if (parent === dir) break; // filesystem root reached
-    dir = parent;
-  }
-
-  // Fallback: use startDir
-  return join(startDir, '.omc');
 }
 
 // ============================================================================
@@ -582,8 +546,7 @@ async function main() {
     const rawSessionId = resolveHookSessionId(data);
     const sessionId = validateSessionId(rawSessionId) ?? (data.session_id || data.sessionId || 'unknown');
 
-    // Resolve OMC root (walk up from data.cwd looking for workspace markers)
-    const omcRoot = resolveOmcRootSync(directory);
+    const omcRoot = await resolveOmcStateRoot(directory);
 
     // Skip if no prompt
     if (!prompt) {
