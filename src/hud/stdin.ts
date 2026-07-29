@@ -410,12 +410,23 @@ export function getRateLimitsFromStdin(
     return null;
   }
 
-  return {
-    fiveHourPercent: clampPercent(fiveHour),
-    weeklyPercent: sevenDay == null ? undefined : clampPercent(sevenDay),
-    fiveHourResetsAt: parseResetDate(stdin.rate_limits?.five_hour?.resets_at),
-    weeklyResetsAt: parseResetDate(stdin.rate_limits?.seven_day?.resets_at),
-  };
+  const result: RateLimits = {};
+
+  if (fiveHour != null) {
+    result.fiveHourPercent = clampPercent(fiveHour);
+    result.fiveHourResetsAt = parseResetDate(
+      stdin.rate_limits?.five_hour?.resets_at,
+    );
+  }
+
+  if (sevenDay != null) {
+    result.weeklyPercent = clampPercent(sevenDay);
+    result.weeklyResetsAt = parseResetDate(
+      stdin.rate_limits?.seven_day?.resets_at,
+    );
+  }
+
+  return result;
 }
 
 /**

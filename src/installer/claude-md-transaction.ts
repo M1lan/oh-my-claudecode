@@ -50,6 +50,7 @@ export interface ClaudeMdTransactionResult {
 export interface ClaudeMdTransactionFs {
   existsSync: typeof nodeFs.existsSync;
   lstatSync: typeof nodeFs.lstatSync;
+  realpathSync: typeof nodeFs.realpathSync;
   mkdirSync: typeof nodeFs.mkdirSync;
   openSync: typeof nodeFs.openSync;
   closeSync: typeof nodeFs.closeSync;
@@ -169,15 +170,71 @@ export function validateRootedRegularFile(
       throw new Error(`Not a regular file: ${normalizedPath}`);
     throw new Error(`Path escapes root: ${path}`);
   }
-  if (!fs.existsSync(normalizedPath)) {
-    if (allowAbsent) return normalizedPath;
-    throw new Error(`Missing path: ${normalizedPath}`);
+  let stat: nodeFs.Stats;
+  try {
+    stat = fs.lstatSync(normalizedPath);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT' && allowAbsent)
+      return normalizedPath;
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT')
+      throw new Error(`Missing path: ${normalizedPath}`);
+    throw error;
   }
-  const stat = fs.lstatSync(normalizedPath);
   if (stat.isSymbolicLink())
     throw new Error(`Refusing symlink: ${normalizedPath}`);
   if (!stat.isFile()) throw new Error(`Not a regular file: ${normalizedPath}`);
   return normalizedPath;
+}
+
+interface CapturedRoot {
+  alias: string;
+  canonical: string;
+  dev?: number;
+  ino?: number;
+}
+function captureTransactionRoot(
+  root: string,
+  fs: ClaudeMdTransactionFs,
+): CapturedRoot {
+  const alias = resolve(root);
+  const canonical = resolve(fs.realpathSync(alias));
+  const stat = fs.lstatSync(canonical);
+  if (stat.isSymbolicLink() || !stat.isDirectory())
+    throw new Error(`Invalid transaction root: ${alias}`);
+  return {
+    alias,
+    canonical,
+    dev: typeof stat.dev === 'number' ? stat.dev : undefined,
+    ino: typeof stat.ino === 'number' ? stat.ino : undefined,
+  };
+}
+function verifyCapturedRoot(
+  root: CapturedRoot,
+  fs: ClaudeMdTransactionFs,
+  verifyAlias: boolean,
+): void {
+  if (verifyAlias && resolve(fs.realpathSync(root.alias)) !== root.canonical)
+    throw new Error(`Transaction root changed: ${root.alias}`);
+  if (resolve(fs.realpathSync(root.canonical)) !== root.canonical)
+    throw new Error(`Transaction root changed: ${root.canonical}`);
+  const stat = fs.lstatSync(root.canonical);
+  if (
+    stat.isSymbolicLink() ||
+    !stat.isDirectory() ||
+    (root.dev !== undefined && stat.dev !== root.dev) ||
+    (root.ino !== undefined && stat.ino !== root.ino)
+  )
+    throw new Error(`Invalid transaction root: ${root.canonical}`);
+}
+function validateTransactionTarget(
+  root: CapturedRoot,
+  path: string,
+  allowAbsent: boolean,
+  fs: ClaudeMdTransactionFs,
+  verifyAlias: boolean,
+): string {
+  verifyCapturedRoot(root, fs, verifyAlias);
+  return validateRootedRegularFile(root.canonical, path, allowAbsent, fs);
 }
 
 function cleanCanonical(source: string): string {
@@ -287,6 +344,7 @@ function mergeForOverwrite(
 
 function exclusiveVerifiedBackup(
   state: PreState,
+  root: CapturedRoot,
   fs: ClaudeMdTransactionFs,
 ): string {
   const directory = dirname(state.path);
@@ -294,17 +352,20 @@ function exclusiveVerifiedBackup(
   for (let attempt = 0; attempt < 16; attempt += 1) {
     const backup = `${directory}/${stem}.${randomBytes(12).toString('hex')}`;
     try {
+      validateTransactionTarget(root, backup, true, fs, true);
       const fd = fs.openSync(backup, 'wx', 0o600);
       try {
         fs.writeFileSync(fd, state.bytes!);
       } finally {
         fs.closeSync(fd);
       }
+      validateTransactionTarget(root, backup, false, fs, true);
       if (!fs.readFileSync(backup).equals(state.bytes!))
         throw new Error(`Backup readback mismatch: ${backup}`);
       return backup;
     } catch (error) {
       try {
+        validateTransactionTarget(root, backup, true, fs, false);
         fs.unlinkSync(backup);
       } catch {
         /* partial backup is best effort */
@@ -316,27 +377,33 @@ function exclusiveVerifiedBackup(
 }
 function atomicWrite(
   operation: PlannedOperation,
+  root: CapturedRoot,
   fs: ClaudeMdTransactionFs,
+  verifyAlias: boolean,
 ): void {
   const directory = dirname(operation.path);
-  fs.mkdirSync(directory, { recursive: true });
   operation.tempPath = `${directory}/.${basename(operation.path)}.omc-tmp-${randomBytes(12).toString('hex')}`;
+  validateTransactionTarget(root, operation.tempPath, true, fs, verifyAlias);
   fs.writeFileSync(operation.tempPath, operation.bytes!, {
     flag: 'wx',
     mode: 0o600,
   });
+  validateTransactionTarget(root, operation.tempPath, false, fs, verifyAlias);
+  validateTransactionTarget(root, operation.path, true, fs, verifyAlias);
   fs.renameSync(operation.tempPath, operation.path);
   operation.tempPath = undefined;
 }
 function cleanupTemps(
   operations: readonly PlannedOperation[],
   result: ClaudeMdTransactionResult,
+  root: CapturedRoot,
   fs: ClaudeMdTransactionFs,
 ): void {
   for (const operation of operations)
     if (operation.tempPath) {
       const tempPath = operation.tempPath;
       try {
+        validateTransactionTarget(root, tempPath, true, fs, false);
         fs.rmSync(tempPath, { force: true });
         result.tempCleanup.push({ path: tempPath, ok: true });
       } catch (error) {
@@ -348,20 +415,26 @@ function cleanupTemps(
       }
     }
 }
+function lstatPresent(path: string, fs: ClaudeMdTransactionFs): boolean {
+  try {
+    fs.lstatSync(path);
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+}
 
 export function executeClaudeMdTransaction(
   request: ClaudeMdTransactionRequest,
 ): ClaudeMdTransactionResult {
   const fs = request.fs ?? defaultFs;
-  let root: string;
+  let capturedRoot: CapturedRoot;
   let sourcePath: string;
   try {
-    root = resolve(request.root);
-    const rootStat = fs.lstatSync(root);
-    if (rootStat.isSymbolicLink() || !rootStat.isDirectory())
-      throw new Error(`Invalid transaction root: ${root}`);
+    capturedRoot = captureTransactionRoot(request.root, fs);
     sourcePath = validateRootedRegularFile(
-      request.sourceRoot ?? root,
+      request.sourceRoot ?? request.root,
       request.source,
       !request.sourceBytes,
       fs,
@@ -369,12 +442,14 @@ export function executeClaudeMdTransaction(
   } catch (error) {
     return failure(request, 3, message(error), 'validation');
   }
+  const root = capturedRoot.canonical;
   const main = resolve(root, 'CLAUDE.md');
   const companion = resolve(root, 'CLAUDE-omc.md');
   try {
-    validateRootedRegularFile(root, main, true, fs);
+    verifyCapturedRoot(capturedRoot, fs, true);
+    validateTransactionTarget(capturedRoot, main, true, fs, true);
     if (request.mode !== 'local')
-      validateRootedRegularFile(root, companion, true, fs);
+      validateTransactionTarget(capturedRoot, companion, true, fs, true);
     const canonical = decodeClaudeMdUtf8(
       request.sourceBytes ?? fs.readFileSync(sourcePath),
       sourcePath,
@@ -494,9 +569,10 @@ export function executeClaudeMdTransaction(
       tempCleanup: [],
     };
     try {
+      verifyCapturedRoot(capturedRoot, fs, true);
       for (const state of states.values())
         if (state.existedBefore) {
-          state.backupPath = exclusiveVerifiedBackup(state, fs);
+          state.backupPath = exclusiveVerifiedBackup(state, capturedRoot, fs);
           result.backups.push(state.backupPath);
         }
     } catch (error) {
@@ -507,7 +583,9 @@ export function executeClaudeMdTransaction(
     }
     try {
       for (const operation of effectiveOperations) {
-        if (operation.type === 'write') atomicWrite(operation, fs);
+        validateTransactionTarget(capturedRoot, operation.path, true, fs, true);
+        if (operation.type === 'write')
+          atomicWrite(operation, capturedRoot, fs, true);
         else fs.unlinkSync(operation.path);
         result.completedOperations.push(publicOperation(operation));
         result.mutatedPaths.push(operation.path);
@@ -516,6 +594,7 @@ export function executeClaudeMdTransaction(
         if (operation.type === 'delete')
           result.deletedPaths.push(operation.path);
       }
+      verifyCapturedRoot(capturedRoot, fs, true);
       result.ok = true;
       result.exitCode = 0;
       return result;
@@ -540,8 +619,17 @@ export function executeClaudeMdTransaction(
               bytes: state.bytes,
             };
             rollbackOperations.push(rollbackOperation);
-            atomicWrite(rollbackOperation, fs);
-          } else if (fs.existsSync(state.path)) fs.unlinkSync(state.path);
+            atomicWrite(rollbackOperation, capturedRoot, fs, false);
+          } else if (lstatPresent(state.path, fs)) {
+            validateTransactionTarget(
+              capturedRoot,
+              state.path,
+              true,
+              fs,
+              false,
+            );
+            fs.unlinkSync(state.path);
+          }
           result.rollback.push({ path: state.path, ok: true });
         } catch (rollbackError) {
           result.failedPhase = 'rollback';
@@ -553,7 +641,12 @@ export function executeClaudeMdTransaction(
           });
         }
       }
-      cleanupTemps([...effectiveOperations, ...rollbackOperations], result, fs);
+      cleanupTemps(
+        [...effectiveOperations, ...rollbackOperations],
+        result,
+        capturedRoot,
+        fs,
+      );
       result.exitCode =
         result.rollback.every((item) => item.ok) &&
         result.tempCleanup.every((item) => item.ok)
