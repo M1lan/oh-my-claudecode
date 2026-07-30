@@ -30,7 +30,11 @@ describe('session-start.mjs local-source update channel', () => {
     mkdirSync(join(checkoutRoot, '.git'), { recursive: true });
     writeFileSync(
       join(checkoutRoot, 'package.json'),
-      JSON.stringify({ name: 'oh-my-claude-sisyphus', version, type: 'module' }),
+      JSON.stringify({
+        name: 'oh-my-claude-sisyphus',
+        version,
+        type: 'module',
+      }),
     );
     writeFileSync(
       join(checkoutRoot, '.claude-plugin', 'marketplace.json'),

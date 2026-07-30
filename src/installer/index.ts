@@ -144,9 +144,7 @@ function hasAuthenticatedHistoricalAgentBytes(
   );
 }
 
-function readRegularAgentFile(
-  filepath: string,
-): {
+function readRegularAgentFile(filepath: string): {
   content: Buffer;
   dev: number;
   ino: number;

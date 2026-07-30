@@ -91,7 +91,9 @@ describe('resolveNodeBinary', () => {
     mockedExecSync.mockImplementation(() => {
       throw new Error('node not on PATH');
     });
-    mockedRealpathSync.mockImplementation((pathLike) => String(pathLike) as any);
+    mockedRealpathSync.mockImplementation(
+      (pathLike) => String(pathLike) as any,
+    );
   });
 
   afterEach(() => {
@@ -111,7 +113,9 @@ describe('resolveNodeBinary', () => {
       return path === multishell || path === installation;
     });
     mockedRealpathSync.mockImplementation((pathLike) =>
-      String(pathLike) === multishell ? (installation as any) : (String(pathLike) as any),
+      String(pathLike) === multishell
+        ? (installation as any)
+        : (String(pathLike) as any),
     );
 
     // The per-shell directory is removed when that shell exits, so persisting it
