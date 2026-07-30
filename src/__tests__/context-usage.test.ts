@@ -7,12 +7,7 @@ import { getContextPercent } from '../hud/stdin.js';
 import type { StatuslineStdin } from '../hud/types.js';
 
 // @ts-expect-error Local hook helper is a JS module loaded directly by the tests.
-import {
-  resolveContextPercent,
-  resolveHookContextPercent,
-  resolveHudCacheContextPercent,
-  resolveTranscriptContextPercent,
-} from '../../scripts/lib/context-usage.mjs';
+import { resolveContextPercent, resolveHookContextPercent, resolveHudCacheContextPercent, resolveTranscriptContextPercent } from '../../scripts/lib/context-usage.mjs';
 
 const HUD_CACHE_FILENAME = 'hud-stdin-cache.json';
 
