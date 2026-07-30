@@ -12,11 +12,11 @@ import { pathToFileURL } from 'node:url';
 
 const REPOSITORY = 'Yeachan-Heo/oh-my-claudecode';
 const OWNER = 'Yeachan-Heo';
-const MERGE_BASE_SHA = '761ed112868072c2bc5866f5b0dbe5b0dda114c2';
-const LIVE_BASE_SHA = '1111111111111111111111111111111111111111';
-const HEAD_SHA = '8065c11a32e58b4dd2e44b2c768e0d37fb4f4b86';
+const MERGE_BASE_SHA = '76c90920b74494df6e34d6165be963bca8a9adf6';
+const LIVE_BASE_SHA = '21a6e488ce12d79b9a22d37e1093ac8e79f21029';
+const HEAD_SHA = '10078ece166ad36332390ecbaab2d5e247852bbc';
 const MAIN_SHA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-const PULL_NUMBER = 3479;
+const PULL_NUMBER = 3537;
 const ROOT = process.cwd();
 const WORKFLOW_PATH = join(
   ROOT,
@@ -52,6 +52,7 @@ type Manifest = {
     mergeBaseSha: string;
     headSha: string;
     owner: string;
+    expiresAt: string;
     generatedDelta: { count: number; sha256: string };
     generatedFiles: CanonicalRecord[];
   }>;
@@ -159,9 +160,168 @@ const exactAuthorization = (() => {
     (entry) => entry.pullNumber === PULL_NUMBER,
   );
   if (!authorization)
-    throw new Error('Missing exact #3479 base-owned authorization fixture');
+    throw new Error('Missing exact #3537 base-owned authorization fixture');
   return authorization;
 })();
+
+const EXPECTED_3588_GENERATED_FILES: CanonicalRecord[] = [
+  {
+    status: 'modified',
+    filename: 'bridge/cli.cjs',
+    sha: 'a50096a54e2e1a0d7a82c0b4ef1095119ee8ba84',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'bridge/runtime-cli.cjs',
+    sha: 'daddf3ea59e5d9a554675dcee943279348c34d99',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'bridge/team-bridge.cjs',
+    sha: '4c25ee5a53f9a27a430a7d10ae6c0c917ce2bdde',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'bridge/team-mcp.cjs',
+    sha: 'ecbee86bd37bb8ba83b968986c993b632ee6b306',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'bridge/team.js',
+    sha: '62e303af09fade0595048fa01f7df951a39981a6',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/index.d.ts',
+    sha: 'a7b4ae6f0811a13aff6c54302bf26032d625e49a',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/index.js',
+    sha: 'c7e247002b408f349f36ebf6b14fac0b1c7d1de6',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/monitor.js',
+    sha: 'feef0b2951e16c0bac113ffb6c8d8f40637d27d1',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-cli.d.ts',
+    sha: 'e8dfded2257219ed4028cb5decdaea47914cb162',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-cli.js',
+    sha: '7bed920ebd5855360d9ba431df7fd4abc7063bf8',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-owner-client.d.ts',
+    sha: 'ad452c0db54d66a19d6e76c26289c8606ea1f9dc',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-owner-client.js',
+    sha: '6a371f69558e05e5a1ac1b26e7bdea663ef4ce0d',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-v2.d.ts',
+    sha: 'b1a5fec4232d3b8aaec4b07a9ec9f8a089d64cf2',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/runtime-v2.js',
+    sha: 'bbf8a52f200b596e20662d772c03f03c7510e033',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/state-paths.d.ts',
+    sha: 'c856172f9f69955e939f5965baa370857499e073',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/state-paths.js',
+    sha: '1681f143d69734698863f24f714e2386b1093294',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/state/tasks.d.ts',
+    sha: 'a1005e1e0776bbf91254f47c3cc2f4348d64fdd6',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/state/tasks.js',
+    sha: 'be59a54641b9b897cfd598b7adb9fee8e107173f',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/team-ops.js',
+    sha: 'c7ea3a30a9ed26b56096b41f88d6c2543de86ab8',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/tmux-session.d.ts',
+    sha: 'eb23d740d3b0ff1c3c8119190e6b7887c632831a',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/tmux-session.js',
+    sha: 'd124245bcef0335e1fd8d88ddf206b528d87c4b0',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/types.d.ts',
+    sha: 'f049d689c78b82cb3145e1d59dddb118c899fa79',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/worker-activation-gate.js',
+    sha: '810bba3e250dc44b5aab7308b323b4cb046bd199',
+    previousFilename: null,
+  },
+  {
+    status: 'modified',
+    filename: 'dist/team/worker-bootstrap.js',
+    sha: '50add30c9bfb8e7e0a767243840d10086bc8d4b4',
+    previousFilename: null,
+  },
+  {
+    status: 'added',
+    filename: 'dist/team/worker-launch-ack.d.ts',
+    sha: 'a64bfe0a4be73f9324c290cc0743a785342968e1',
+    previousFilename: null,
+  },
+  {
+    status: 'added',
+    filename: 'dist/team/worker-launch-ack.js',
+    sha: '2a9466f679d3a8c533515d975eeae7dd6a137484',
+    previousFilename: null,
+  },
+];
 
 function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
@@ -188,7 +348,7 @@ function authorizedInput(): MutableInput {
       githubSha: MAIN_SHA,
       githubWorkflowRef: `${REPOSITORY}/.github/workflows/generated-artifact-authorization.yml@refs/heads/main`,
       githubWorkflowSha: MAIN_SHA,
-      trustedEventBaseRef: 'dev',
+      trustedEventBaseRef: 'main',
       trustedEventBaseSha: LIVE_BASE_SHA,
     },
     manifest: clone(manifest),
@@ -206,7 +366,7 @@ function authorizedInput(): MutableInput {
       repository: { full_name: REPOSITORY, owner: { login: OWNER } },
       pull_request: {
         base: {
-          ref: 'dev',
+          ref: 'main',
           sha: LIVE_BASE_SHA,
           repo: { full_name: REPOSITORY },
         },
@@ -217,7 +377,11 @@ function authorizedInput(): MutableInput {
     },
     livePull: {
       number: PULL_NUMBER,
-      base: { ref: 'dev', sha: LIVE_BASE_SHA, repo: { full_name: REPOSITORY } },
+      base: {
+        ref: 'main',
+        sha: LIVE_BASE_SHA,
+        repo: { full_name: REPOSITORY },
+      },
       head: { sha: HEAD_SHA, repo: { full_name: REPOSITORY } },
       user: { login: OWNER },
       author_association: 'OWNER',
@@ -253,7 +417,7 @@ describe('generated-artifact base trust root workflow', () => {
     const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
 
     expect(workflow).toMatch(
-      /^on:\n\x20{2}pull_request_target:\n\x20{4}branches: \[dev\]\n\x20{4}types: \[opened, synchronize, reopened\]$/m,
+      /^on:\n\x20{2}pull_request_target:\n\x20{4}branches: \[main, dev\]\n\x20{4}types: \[opened, synchronize, reopened\]$/m,
     );
     expect(workflow).not.toMatch(/^\x20{2}pull_request:/m);
     expect(workflow).toContain('contents: read');
@@ -300,15 +464,76 @@ describe('generated-artifact base trust root workflow', () => {
     );
   });
 
-  it('documents that a dev-targeted prerequisite is inert until promotion to default main', () => {
+  it('covers both the main promotion and the retained dev authorization targets', () => {
     const workflow = readFileSync(WORKFLOW_PATH, 'utf8');
 
     expect(workflow).toContain('workflow bytes from the default branch, main');
-    expect(workflow).toMatch(
-      /cannot activate or authorize itself until this exact\s*\n# workflow is promoted to main/,
-    );
-    expect(workflow).toContain('runtime GITHUB_REF/GITHUB_SHA bind main');
-    expect(workflow).toContain('branches: [dev]');
+    expect(workflow).toContain('branches: [main, dev]');
+    expect(
+      manifest.authorizations.map((entry) => [
+        entry.pullNumber,
+        entry.targetRef,
+      ]),
+    ).toEqual([
+      [3537, 'main'],
+      [3538, 'dev'],
+      [3539, 'dev'],
+      [3541, 'dev'],
+      [3572, 'dev'],
+      [3588, 'dev'],
+      [3603, 'dev'],
+    ]);
+    expect(
+      manifest.authorizations.find((entry) => entry.pullNumber === 3538),
+    ).toMatchObject({
+      targetRef: 'dev',
+      headSha: '24e4e2f0e92dc4c4f61636d32fc411614fae3728',
+      mergeBaseSha: '3219495628cbf7680632f37e261351929508f295',
+      generatedDelta: {
+        count: 5,
+        sha256:
+          '05928b05a6f218fed553ecbb17ad276d4019ba70ac97b2581c39b104b38a4fd8',
+      },
+    });
+    expect(
+      manifest.authorizations.find((entry) => entry.pullNumber === 3539),
+    ).toMatchObject({
+      targetRef: 'dev',
+      headSha: '719087055945fd2a55024c02587e1f7f3e35ee26',
+      mergeBaseSha: '275226395a5e0772edbf8f791cdd74ea3ec082d7',
+    });
+    expect(
+      manifest.authorizations.find((entry) => entry.pullNumber === 3572),
+    ).toMatchObject({
+      targetRef: 'dev',
+      headSha: '4de95829712c955ff633799388c6fbbf2b08258f',
+      mergeBaseSha: '275226395a5e0772edbf8f791cdd74ea3ec082d7',
+      generatedDelta: {
+        count: 2,
+        sha256:
+          '7cf3f27718f502104fdc009df2e461cd633c4ebd69f62d5fcd562d244dd02530',
+      },
+    });
+    const expected3588Authorization = {
+      pullNumber: 3588,
+      targetRef: 'dev',
+      mergeBaseSha: '3219495628cbf7680632f37e261351929508f295',
+      headSha: 'ec957a82679842cffa6f05ec99611b0bd66d08b5',
+      owner: 'Yeachan-Heo',
+      expiresAt: '2026-08-12T00:00:00.000Z',
+      generatedDelta: {
+        count: 26,
+        sha256:
+          '6cf90633cb22fd95fd4ead28fe318e5486e5e900b505dab02b5d0471e94faa20',
+      },
+      generatedFiles: EXPECTED_3588_GENERATED_FILES,
+    };
+    expect(
+      manifest.authorizations.find((entry) => entry.pullNumber === 3588),
+    ).toEqual(expected3588Authorization);
+    expect(
+      verifier.calculateGeneratedDelta(EXPECTED_3588_GENERATED_FILES),
+    ).toEqual(expected3588Authorization.generatedDelta);
   });
 
   it('is immune to candidate workflow and checker replacement because the trusted workflow checks out only base bytes', () => {
@@ -350,22 +575,23 @@ describe('generated-artifact base trust root workflow', () => {
 });
 
 describe('generated-artifact base-owned authorization decision', () => {
-  it('contains the exact independently derived #3479 closure and allows only its exact positive case', () => {
+  it('contains the exact independently derived #3537 closure and allows only its exact positive case', () => {
     expect(manifest).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       repository: REPOSITORY,
       owner: OWNER,
     });
     expect(exactAuthorization).toMatchObject({
       pullNumber: PULL_NUMBER,
-      targetRef: 'dev',
+      targetRef: 'main',
       mergeBaseSha: MERGE_BASE_SHA,
       headSha: HEAD_SHA,
       owner: OWNER,
+      expiresAt: '2026-08-05T00:00:00.000Z',
       generatedDelta: {
-        count: 55,
+        count: 199,
         sha256:
-          '71ab926f799a6ad1ae2fc0baf7a41203ee7f6bcfc7973d590e8b7dbfe063823d',
+          '3c1987d239441a787e5428d38b74e9bff51d694ad554d9fe34eae72cd78b059f',
       },
     });
     expect(
@@ -439,7 +665,7 @@ describe('generated-artifact base-owned authorization decision', () => {
       input.workflowCommit.sha = 'b'.repeat(40);
     }, 'runtime GITHUB_WORKFLOW_SHA does not match the current protected default-main workflow commit SHA');
     expectDenied((input) => {
-      input.environment.trustedEventBaseRef = 'main';
+      input.environment.trustedEventBaseRef = 'dev';
     }, 'explicit event base ref does not match');
     expectDenied((input) => {
       input.environment.trustedEventBaseRef = '';
@@ -601,6 +827,9 @@ describe('generated-artifact base-owned authorization decision', () => {
     expectDenied((input) => {
       input.files[0].sha = 'c'.repeat(40);
     }, 'authorized closure');
+    expectDenied((input) => {
+      input.manifest.authorizations[0].expiresAt = '2000-01-01T00:00:00.000Z';
+    }, 'authorization has expired');
     expectDenied((input) => {
       input.files.push({
         status: 'added',
@@ -881,10 +1110,15 @@ describe('generated-artifact base-owned authorization decision', () => {
           path.includes(`/pulls/${PULL_NUMBER}/files`) &&
           path.endsWith('page=1')
         )
-          body = input.files;
+          body = input.files.slice(0, 100);
         else if (
           path.includes(`/pulls/${PULL_NUMBER}/files`) &&
           path.endsWith('page=2')
+        )
+          body = input.files.slice(100);
+        else if (
+          path.includes(`/pulls/${PULL_NUMBER}/files`) &&
+          path.endsWith('page=3')
         )
           body = [];
         else if (path.startsWith(`/repos/${REPOSITORY}/compare/`))
