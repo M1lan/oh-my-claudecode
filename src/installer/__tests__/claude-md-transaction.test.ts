@@ -6,6 +6,7 @@ import {
   mkdtempSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -26,7 +27,11 @@ import corpus from './fixtures/legacy-guides.json' with { type: 'json' };
 
 const roots: string[] = [];
 function fixture(): { root: string; source: string } {
-  const root = mkdtempSync(join(tmpdir(), 'omc-claude-md-transaction-'));
+  // realpath the tmpdir: macOS /var is a symlink and the transaction reports
+  // canonical paths, so a non-canonical fixture root breaks path equality.
+  const root = mkdtempSync(
+    join(realpathSync(tmpdir()), 'omc-claude-md-transaction-'),
+  );
   roots.push(root);
   const plugin = join(root, 'plugin');
   mkdirSync(plugin);
@@ -297,7 +302,7 @@ describe('CLAUDE.md transactions', () => {
   it('fails a changed root alias between forward operations and rolls back through the canonical root', () => {
     const { root, source } = fixture();
     const alternate = mkdtempSync(
-      join(tmpdir(), 'omc-claude-md-transaction-alternate-'),
+      join(realpathSync(tmpdir()), 'omc-claude-md-transaction-alternate-'),
     );
     const alias = `${root}-alias`;
     roots.push(alternate, alias);
@@ -335,7 +340,7 @@ describe('CLAUDE.md transactions', () => {
   it('revalidates a changed root alias after the final local write and rolls back canonically', () => {
     const { root, source } = fixture();
     const alternate = mkdtempSync(
-      join(tmpdir(), 'omc-claude-md-transaction-final-local-alternate-'),
+      join(realpathSync(tmpdir()), 'omc-claude-md-transaction-final-local-alternate-'),
     );
     const alias = `${root}-alias`;
     roots.push(alternate, alias);
@@ -374,7 +379,7 @@ describe('CLAUDE.md transactions', () => {
   it('revalidates a changed root alias after the final delete and rolls back canonically', () => {
     const { root, source } = fixture();
     const alternate = mkdtempSync(
-      join(tmpdir(), 'omc-claude-md-transaction-final-delete-alternate-'),
+      join(realpathSync(tmpdir()), 'omc-claude-md-transaction-final-delete-alternate-'),
     );
     const alias = `${root}-alias`;
     roots.push(alternate, alias);

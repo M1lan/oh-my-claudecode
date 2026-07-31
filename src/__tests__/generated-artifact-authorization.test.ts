@@ -481,6 +481,7 @@ describe('generated-artifact base trust root workflow', () => {
       [3541, 'dev'],
       [3572, 'dev'],
       [3588, 'dev'],
+      [3603, 'dev'],
     ]);
     expect(
       manifest.authorizations.find((entry) => entry.pullNumber === 3538),

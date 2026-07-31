@@ -81,7 +81,8 @@ function readJson(root, repoPath, label = repoPath) {
 }
 
 function git(root, args, { allowFailure = false } = {}) {
-  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8' });
+  // ls-files over a tree with node_modules exceeds spawnSync's 1MB default.
+  const result = spawnSync('git', args, { cwd: root, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (result.error) fail(`git ${args.join(' ')} could not start: ${result.error.message}`);
   if (result.status !== 0 && !allowFailure) {
     const detail = result.stderr.trim() || result.stdout.trim() || `exit ${result.status}`;

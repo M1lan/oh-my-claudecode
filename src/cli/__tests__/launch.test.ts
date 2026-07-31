@@ -15,6 +15,7 @@ import {
   mkdtempSync,
   readFileSync,
   readlinkSync,
+  realpathSync,
   rmSync,
   statSync,
   symlinkSync,
@@ -1085,7 +1086,9 @@ describe('prepareOmcLaunchConfigDir / launchCommand OMC companion loading', () =
   beforeEach(() => {
     vi.resetAllMocks();
     delete process.env.CLAUDECODE;
-    tempRoot = mkdtempSync(join(tmpdir(), 'omc-launch-profile-'));
+    // realpath the tmpdir: macOS /var is a symlink, and the credential
+    // symlink-chain tests count kernel symlink hops from an absolute prefix.
+    tempRoot = mkdtempSync(join(realpathSync(tmpdir()), 'omc-launch-profile-'));
     process.env.HOME = join(tempRoot, 'home');
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
     (resolveLaunchPolicy as ReturnType<typeof vi.fn>).mockReturnValue('direct');

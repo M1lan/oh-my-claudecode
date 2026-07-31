@@ -6,13 +6,25 @@
 import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import { join } from 'path';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { tmpdir } from 'os';
 import process from 'process';
 import { detectAnnouncedBackgroundLaunch, detectBashFailure, detectWriteFailure, isBackgroundToolInvocation, isClaudeCodeWriteSuccess, isNonZeroExitWithOutput, summarizeAgentResult } from '../../scripts/post-tool-verifier.mjs';
 
 const SCRIPT_PATH = join(process.cwd(), 'scripts', 'post-tool-verifier.mjs');
-const TEMPLATE_HOOK_PATH = join(process.cwd(), 'templates', 'hooks', 'post-tool-use.mjs');
+const TEMPLATE_HOOK_PATH = join(
+  process.cwd(),
+  'templates',
+  'hooks',
+  'post-tool-use.mjs',
+);
 const PYTEST_RED_RUN_OUTPUT = [
   'Error: Exit code 1',
   '============================= test session starts ==============================',
@@ -58,7 +70,14 @@ function withTempDir(fn) {
 }
 
 function skillStatePath(tempDir, sessionId) {
-  return join(tempDir, '.omc', 'state', 'sessions', sessionId, 'skill-active-state.json');
+  return join(
+    tempDir,
+    '.omc',
+    'state',
+    'sessions',
+    sessionId,
+    'skill-active-state.json',
+  );
 }
 
 function legacySkillStatePath(tempDir) {
@@ -66,11 +85,20 @@ function legacySkillStatePath(tempDir) {
 }
 
 function ralplanStatePath(tempDir, sessionId) {
-  return join(tempDir, '.omc', 'state', 'sessions', sessionId, 'ralplan-state.json');
+  return join(
+    tempDir,
+    '.omc',
+    'state',
+    'sessions',
+    sessionId,
+    'ralplan-state.json',
+  );
 }
 
 function writeSkillStateFixtures(tempDir, sessionId, skillName = 'plan') {
-  mkdirSync(join(tempDir, '.omc', 'state', 'sessions', sessionId), { recursive: true });
+  mkdirSync(join(tempDir, '.omc', 'state', 'sessions', sessionId), {
+    recursive: true,
+  });
   writeFileSync(
     skillStatePath(tempDir, sessionId),
     JSON.stringify({
@@ -95,7 +123,9 @@ function writeSkillStateFixtures(tempDir, sessionId, skillName = 'plan') {
 }
 
 function writeRalplanStateFixture(tempDir, sessionId, overrides = {}) {
-  mkdirSync(join(tempDir, '.omc', 'state', 'sessions', sessionId), { recursive: true });
+  mkdirSync(join(tempDir, '.omc', 'state', 'sessions', sessionId), {
+    recursive: true,
+  });
   writeFileSync(
     ralplanStatePath(tempDir, sessionId),
     JSON.stringify({
@@ -111,17 +141,20 @@ function writeRalplanStateFixture(tempDir, sessionId, overrides = {}) {
 describe('detectBashFailure', () => {
   describe('Claude Code temp CWD false positives (issue #696)', () => {
     it('should not flag macOS temp CWD permission error as a failure', () => {
-      const output = 'zsh:1: permission denied: /var/folders/xx/yyyyyyy/T/claude-abc123def-cwd';
+      const output =
+        'zsh:1: permission denied: /var/folders/xx/yyyyyyy/T/claude-abc123def-cwd';
       expect(detectBashFailure(output)).toBe(false);
     });
 
     it('should not flag temp CWD error with different session id', () => {
-      const output = 'zsh:1: permission denied: /var/folders/ab/cdefgh/T/claude-xyz789-cwd';
+      const output =
+        'zsh:1: permission denied: /var/folders/ab/cdefgh/T/claude-xyz789-cwd';
       expect(detectBashFailure(output)).toBe(false);
     });
 
     it('should not flag temp CWD error with different zsh line numbers', () => {
-      const output = 'zsh:42: permission denied: /var/folders/ab/cdefgh/T/claude-abc000-cwd';
+      const output =
+        'zsh:42: permission denied: /var/folders/ab/cdefgh/T/claude-abc000-cwd';
       expect(detectBashFailure(output)).toBe(false);
     });
 
@@ -183,7 +216,8 @@ describe('detectBashFailure', () => {
     });
 
     it('should not flag successful grep output containing "Command failed" text', () => {
-      const output = 'scripts/post-tool-verifier.mjs:683:        message = \'Command failed. Please investigate the error and fix before continuing.\'';
+      const output =
+        "scripts/post-tool-verifier.mjs:683:        message = 'Command failed. Please investigate the error and fix before continuing.'";
       expect(detectBashFailure(output)).toBe(false);
     });
 
@@ -205,7 +239,11 @@ describe('detectBashFailure', () => {
     });
 
     it('should ignore quoted error field string literals', () => {
-      expect(detectBashFailure(`return { rateLimits: fallbackData, error: 'network', stale: true };`)).toBe(false);
+      expect(
+        detectBashFailure(
+          `return { rateLimits: fallbackData, error: 'network', stale: true };`,
+        ),
+      ).toBe(false);
     });
 
     it('should ignore severity metadata lines', () => {
@@ -213,7 +251,9 @@ describe('detectBashFailure', () => {
     });
 
     it('should ignore quoted field names inside inert object literals', () => {
-      expect(detectBashFailure(`{ "error": "rate limit", "severity": "warning" }`)).toBe(false);
+      expect(
+        detectBashFailure(`{ "error": "rate limit", "severity": "warning" }`),
+      ).toBe(false);
     });
 
     it('should ignore zero-error summaries', () => {
@@ -293,7 +333,9 @@ describe('isNonZeroExitWithOutput (issue #960)', () => {
     });
 
     it('exit code with only whitespace after', () => {
-      expect(isNonZeroExitWithOutput('Error: Exit code 1\n   \n  ')).toBe(false);
+      expect(isNonZeroExitWithOutput('Error: Exit code 1\n   \n  ')).toBe(
+        false,
+      );
     });
 
     it('no exit code prefix at all', () => {
@@ -330,15 +372,25 @@ describe('isNonZeroExitWithOutput (issue #960)', () => {
 
 describe('isClaudeCodeWriteSuccess', () => {
   it('detects canonical edit success output', () => {
-    expect(isClaudeCodeWriteSuccess('The file /tmp/doc.md has been updated successfully.')).toBe(true);
+    expect(
+      isClaudeCodeWriteSuccess(
+        'The file /tmp/doc.md has been updated successfully.',
+      ),
+    ).toBe(true);
   });
 
   it('detects canonical write success output with location suffix', () => {
-    expect(isClaudeCodeWriteSuccess('File created successfully at: /tmp/doc.md')).toBe(true);
+    expect(
+      isClaudeCodeWriteSuccess('File created successfully at: /tmp/doc.md'),
+    ).toBe(true);
   });
 
   it('detects file-state confirmation output', () => {
-    expect(isClaudeCodeWriteSuccess('The file state is current in your context window.')).toBe(true);
+    expect(
+      isClaudeCodeWriteSuccess(
+        'The file state is current in your context window.',
+      ),
+    ).toBe(true);
   });
 
   it('ignores arbitrary markdown diagnostic prose without a success marker', () => {
@@ -355,7 +407,8 @@ describe('isClaudeCodeWriteSuccess', () => {
 describe('detectWriteFailure', () => {
   describe('Claude Code temp CWD false positives (issue #696)', () => {
     it('should not flag macOS temp CWD permission error as a write failure', () => {
-      const output = 'zsh:1: permission denied: /var/folders/xx/yyyyyyy/T/claude-abc123def-cwd';
+      const output =
+        'zsh:1: permission denied: /var/folders/xx/yyyyyyy/T/claude-abc123def-cwd';
       expect(detectWriteFailure(output)).toBe(false);
     });
 
@@ -421,10 +474,18 @@ describe('detectWriteFailure', () => {
 
   describe('false positive prevention (issue #1005)', () => {
     it('should not flag file content containing error-handling code', () => {
-      expect(detectWriteFailure('const [error, setError] = useState(null)')).toBe(false);
-      expect(detectWriteFailure('} catch (err) { console.error(err) }')).toBe(false);
-      expect(detectWriteFailure('<div className="error-banner">{error}</div>')).toBe(false);
-      expect(detectWriteFailure('export class ApiError extends Error {}')).toBe(false);
+      expect(
+        detectWriteFailure('const [error, setError] = useState(null)'),
+      ).toBe(false);
+      expect(detectWriteFailure('} catch (err) { console.error(err) }')).toBe(
+        false,
+      );
+      expect(
+        detectWriteFailure('<div className="error-banner">{error}</div>'),
+      ).toBe(false);
+      expect(detectWriteFailure('export class ApiError extends Error {}')).toBe(
+        false,
+      );
     });
 
     it('should not flag file content containing "failed" in identifiers or i18n keys', () => {
@@ -461,14 +522,26 @@ describe('detectWriteFailure', () => {
     });
 
     it('should not flag inline error-like assertion strings inside edited tests', () => {
-      expect(detectWriteFailure('expect(output).toContain("error: boom")')).toBe(false);
-      expect(detectWriteFailure('await expect(run()).rejects.toThrow("Error: missing fixture")')).toBe(false);
+      expect(
+        detectWriteFailure('expect(output).toContain("error: boom")'),
+      ).toBe(false);
+      expect(
+        detectWriteFailure(
+          'await expect(run()).rejects.toThrow("Error: missing fixture")',
+        ),
+      ).toBe(false);
     });
 
     it('should still detect real tool-level errors alongside code content', () => {
-      expect(detectWriteFailure('error: EACCES writing to /etc/hosts')).toBe(true);
-      expect(detectWriteFailure('failed to write file: permission denied')).toBe(true);
-      expect(detectWriteFailure('no such file or directory: /missing/path')).toBe(true);
+      expect(detectWriteFailure('error: EACCES writing to /etc/hosts')).toBe(
+        true,
+      );
+      expect(
+        detectWriteFailure('failed to write file: permission denied'),
+      ).toBe(true);
+      expect(
+        detectWriteFailure('no such file or directory: /missing/path'),
+      ).toBe(true);
     });
   });
 });
@@ -505,8 +578,12 @@ describe('agent output summarization / truncation (issue #1373)', () => {
     );
 
     expect(out.continue).toBe(true);
-    expect(out.hookSpecificOutput?.additionalContext).toContain('TaskOutput summary:');
-    expect(out.hookSpecificOutput?.additionalContext).toContain('TaskOutput clipped');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'TaskOutput summary:',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'TaskOutput clipped',
+    );
   });
 });
 
@@ -526,8 +603,12 @@ describe('post-tool hook regression coverage (issue #2615)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Code modified.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Code modified.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Edit operation failed',
+    );
   });
 
   it('prefers exact Claude Code edit success output over embedded diagnostics', () => {
@@ -543,9 +624,15 @@ describe('post-tool hook regression coverage (issue #2615)', () => {
       cwd: process.cwd(),
     });
 
-    expect(isClaudeCodeWriteSuccess('The file has been updated successfully.')).toBe(true);
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Code modified.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Edit operation failed');
+    expect(
+      isClaudeCodeWriteSuccess('The file has been updated successfully.'),
+    ).toBe(true);
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Code modified.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Edit operation failed',
+    );
   });
 
   it('keeps exact edit failure text classified as an Edit failure', () => {
@@ -556,7 +643,9 @@ describe('post-tool hook regression coverage (issue #2615)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Edit operation failed',
+    );
   });
 
   it('prefers canonical write success output over serialized tool output with diagnostics', () => {
@@ -570,8 +659,12 @@ describe('post-tool hook regression coverage (issue #2615)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('File written.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Write operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'File written.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Write operation failed',
+    );
   });
 
   it('does not treat inline error-like strings in Edit output as an edit failure', () => {
@@ -582,8 +675,12 @@ describe('post-tool hook regression coverage (issue #2615)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Code modified.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Code modified.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Edit operation failed',
+    );
   });
 
   it('does not treat pytest red runs as bash tool failures during TDD workflows', () => {
@@ -613,7 +710,10 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
             oldLines: 1,
             newStart: 1,
             newLines: 1,
-            lines: ['-throw new Error("old fixture")', '+expect(output).toContain("error: boom")'],
+            lines: [
+              '-throw new Error("old fixture")',
+              '+expect(output).toContain("error: boom")',
+            ],
           },
         ],
       },
@@ -621,25 +721,37 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Code modified.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Code modified.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Edit operation failed',
+    );
   });
 
-  it.each(['create', 'update'])('trusts real Write %s success envelopes before scanning content', type => {
-    const out = runPostToolVerifier({
-      tool_name: 'Write',
-      tool_response: {
-        type,
-        filePath: `/tmp/issue-2840-${type}.ts`,
-        content: 'const message = "error: fixture only";\n// failed to write appears in content',
-      },
-      session_id: `issue-2840-write-${type}-envelope`,
-      cwd: process.cwd(),
-    });
+  it.each(['create', 'update'])(
+    'trusts real Write %s success envelopes before scanning content',
+    (type) => {
+      const out = runPostToolVerifier({
+        tool_name: 'Write',
+        tool_response: {
+          type,
+          filePath: `/tmp/issue-2840-${type}.ts`,
+          content:
+            'const message = "error: fixture only";\n// failed to write appears in content',
+        },
+        session_id: `issue-2840-write-${type}-envelope`,
+        cwd: process.cwd(),
+      });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('File written.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Write operation failed');
-  });
+      expect(out.hookSpecificOutput?.additionalContext).toContain(
+        'File written.',
+      );
+      expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+        'Write operation failed',
+      );
+    },
+  );
 
   it('trusts Write success envelopes with payload JSON containing error and failure keys', () => {
     const out = runPostToolVerifier({
@@ -659,8 +771,12 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('File written.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Write operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'File written.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Write operation failed',
+    );
   });
 
   it('trusts Edit success envelopes with payload fields containing error and failure keys', () => {
@@ -668,9 +784,12 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       tool_name: 'Edit',
       tool_response: {
         filePath: '/tmp/issue-2841-edit-payload.ts',
-        oldString: '{"error":"old payload fixture","failure":"old payload fixture"}',
-        newString: '{"error":"new payload fixture","failure":"new payload fixture"}',
-        originalFile: '{"error":"original payload fixture","failure":"original payload fixture"}',
+        oldString:
+          '{"error":"old payload fixture","failure":"old payload fixture"}',
+        newString:
+          '{"error":"new payload fixture","failure":"new payload fixture"}',
+        originalFile:
+          '{"error":"original payload fixture","failure":"original payload fixture"}',
         structuredPatch: [
           {
             oldStart: 1,
@@ -688,13 +807,17 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Code modified.');
-    expect(out.hookSpecificOutput?.additionalContext).not.toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Code modified.',
+    );
+    expect(out.hookSpecificOutput?.additionalContext).not.toContain(
+      'Edit operation failed',
+    );
   });
 
   it.each(['message', 'output', 'stdout', 'stderr'])(
     'does not trust Write-shaped envelopes with %s failure status text',
-    field => {
+    (field) => {
       const out = runPostToolVerifier({
         tool_name: 'Write',
         tool_response: {
@@ -707,13 +830,15 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
         cwd: process.cwd(),
       });
 
-      expect(out.hookSpecificOutput?.additionalContext).toContain('Write operation failed');
+      expect(out.hookSpecificOutput?.additionalContext).toContain(
+        'Write operation failed',
+      );
     },
   );
 
   it.each(['message', 'output', 'stdout', 'stderr'])(
     'does not trust Edit-shaped envelopes with %s failure status text',
-    field => {
+    (field) => {
       const out = runPostToolVerifier({
         tool_name: 'Edit',
         tool_response: {
@@ -721,7 +846,8 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
           [field]: 'error: failed to edit',
           oldString: '{"error":"payload fixture"}',
           newString: '{"failure":"payload fixture"}',
-          originalFile: '{"error":"payload fixture","failure":"payload fixture"}',
+          originalFile:
+            '{"error":"payload fixture","failure":"payload fixture"}',
           structuredPatch: [
             {
               oldStart: 1,
@@ -739,7 +865,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
         cwd: process.cwd(),
       });
 
-      expect(out.hookSpecificOutput?.additionalContext).toContain('Edit operation failed');
+      expect(out.hookSpecificOutput?.additionalContext).toContain(
+        'Edit operation failed',
+      );
     },
   );
 
@@ -756,7 +884,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Write operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Write operation failed',
+    );
   });
 
   it('does not trust nested Write-shaped envelopes with explicit failure fields', () => {
@@ -774,7 +904,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Write operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Write operation failed',
+    );
   });
 
   it('does not trust Edit-shaped envelopes with explicit error fields', () => {
@@ -799,7 +931,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Edit operation failed',
+    );
   });
 
   it('does not trust nested Edit-shaped envelopes with explicit failure fields', () => {
@@ -826,7 +960,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Edit operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Edit operation failed',
+    );
   });
 
   it('keeps plain string Write failure detection unchanged', () => {
@@ -837,7 +973,9 @@ describe('post-tool hook structured Write/Edit envelopes (issue #2840)', () => {
       cwd: process.cwd(),
     });
 
-    expect(out.hookSpecificOutput?.additionalContext).toContain('Write operation failed');
+    expect(out.hookSpecificOutput?.additionalContext).toContain(
+      'Write operation failed',
+    );
   });
 });
 
@@ -877,8 +1015,9 @@ describe('OMC_QUIET hook message suppression (issue #1646)', () => {
       { OMC_QUIET: '1' },
     );
 
-    expect(writeFailure.hookSpecificOutput?.additionalContext)
-      .toContain('Write operation failed');
+    expect(writeFailure.hookSpecificOutput?.additionalContext).toContain(
+      'Write operation failed',
+    );
   });
 
   it('keeps important warnings at OMC_QUIET=2 but suppresses routine task summaries', () => {
@@ -892,15 +1031,18 @@ describe('OMC_QUIET hook message suppression (issue #1646)', () => {
       { OMC_QUIET: '2' },
     );
 
-    expect(nonZero.hookSpecificOutput?.additionalContext)
-      .toContain('produced valid output');
+    expect(nonZero.hookSpecificOutput?.additionalContext).toContain(
+      'produced valid output',
+    );
 
     const taskSummary = withTempDir((tempDir) => {
       mkdirSync(join(tempDir, '.omc', 'state'), { recursive: true });
       writeFileSync(
         join(tempDir, '.omc', 'state', 'subagent-tracking.json'),
         JSON.stringify({
-          agents: [{ status: 'running', agent_type: 'oh-my-claudecode:executor' }],
+          agents: [
+            { status: 'running', agent_type: 'oh-my-claudecode:executor' },
+          ],
           total_completed: 1,
           total_failed: 0,
         }),
@@ -909,7 +1051,8 @@ describe('OMC_QUIET hook message suppression (issue #1646)', () => {
       return runPostToolVerifier(
         {
           tool_name: 'TaskOutput',
-          tool_response: 'Completed worker step A\nUpdated src/foo.ts\nTests: 12 passed',
+          tool_response:
+            'Completed worker step A\nUpdated src/foo.ts\nTests: 12 passed',
           session_id: 'quiet-2',
           cwd: tempDir,
         },
@@ -994,7 +1137,9 @@ describe('Skill active state cleanup on PostToolUse (issue #2103)', () => {
 
       expect(out).toEqual({ continue: true, suppressOutput: true });
 
-      const state = JSON.parse(readFileSync(ralplanStatePath(tempDir, sessionId), 'utf-8'));
+      const state = JSON.parse(
+        readFileSync(ralplanStatePath(tempDir, sessionId), 'utf-8'),
+      );
       expect(state.active).toBe(false);
       expect(state.current_phase).toBe('complete');
       expect(state.deactivated_reason).toBe('skill_completed');
@@ -1020,7 +1165,9 @@ describe('Skill active state cleanup on PostToolUse (issue #2103)', () => {
 
       expect(out).toEqual({ continue: true, suppressOutput: true });
 
-      const state = JSON.parse(readFileSync(ralplanStatePath(tempDir, sessionId), 'utf-8'));
+      const state = JSON.parse(
+        readFileSync(ralplanStatePath(tempDir, sessionId), 'utf-8'),
+      );
       expect(state.active).toBe(false);
       expect(state.current_phase).toBe('complete');
       expect(state.deactivated_reason).toBe('skill_completed');
@@ -1068,46 +1215,77 @@ describe('Skill active state cleanup on PostToolUse (issue #2103)', () => {
 });
 
 describe('background operation detection (issue #3578)', () => {
-  const TRIGGER_WORDS = ['started', 'running', 'background', 'async', 'task_id', 'spawned'];
+  const TRIGGER_WORDS = [
+    'started',
+    'running',
+    'background',
+    'async',
+    'task_id',
+    'spawned',
+  ];
 
   describe('isBackgroundToolInvocation', () => {
     it('is true only when run_in_background is exactly true', () => {
-      expect(isBackgroundToolInvocation({ run_in_background: true })).toBe(true);
-      expect(isBackgroundToolInvocation({ run_in_background: false })).toBe(false);
-      expect(isBackgroundToolInvocation({ run_in_background: 'true' })).toBe(false);
-      expect(isBackgroundToolInvocation({ command: 'echo running' })).toBe(false);
+      expect(isBackgroundToolInvocation({ run_in_background: true })).toBe(
+        true,
+      );
+      expect(isBackgroundToolInvocation({ run_in_background: false })).toBe(
+        false,
+      );
+      expect(isBackgroundToolInvocation({ run_in_background: 'true' })).toBe(
+        false,
+      );
+      expect(isBackgroundToolInvocation({ command: 'echo running' })).toBe(
+        false,
+      );
     });
 
     it('fails safe on malformed or missing tool_input', () => {
       expect(isBackgroundToolInvocation(undefined)).toBe(false);
       expect(isBackgroundToolInvocation(null)).toBe(false);
       expect(isBackgroundToolInvocation('run_in_background')).toBe(false);
-      expect(isBackgroundToolInvocation([{ run_in_background: true }])).toBe(false);
+      expect(isBackgroundToolInvocation([{ run_in_background: true }])).toBe(
+        false,
+      );
       expect(isBackgroundToolInvocation(42)).toBe(false);
     });
   });
 
   describe('detectAnnouncedBackgroundLaunch', () => {
     it('matches the harness announcement only at the start of output', () => {
-      expect(detectAnnouncedBackgroundLaunch('Async agent launched successfully\nagentId: a8de3dd')).toBe(true);
-      expect(detectAnnouncedBackgroundLaunch('  Background task launched\n')).toBe(true);
-      expect(detectAnnouncedBackgroundLaunch('Background task resumed')).toBe(true);
+      expect(
+        detectAnnouncedBackgroundLaunch(
+          'Async agent launched successfully\nagentId: a8de3dd',
+        ),
+      ).toBe(true);
+      expect(
+        detectAnnouncedBackgroundLaunch('  Background task launched\n'),
+      ).toBe(true);
+      expect(detectAnnouncedBackgroundLaunch('Background task resumed')).toBe(
+        true,
+      );
     });
 
     it('does not match the phrase quoted elsewhere in the output', () => {
       expect(
-        detectAnnouncedBackgroundLaunch('Report: the parser checks for Async agent launched strings.'),
+        detectAnnouncedBackgroundLaunch(
+          'Report: the parser checks for Async agent launched strings.',
+        ),
       ).toBe(false);
     });
 
     it('is case-sensitive by design', () => {
-      expect(detectAnnouncedBackgroundLaunch('async agent launched successfully')).toBe(false);
+      expect(
+        detectAnnouncedBackgroundLaunch('async agent launched successfully'),
+      ).toBe(false);
     });
 
     it('fails safe on non-string output', () => {
       expect(detectAnnouncedBackgroundLaunch(undefined)).toBe(false);
       expect(detectAnnouncedBackgroundLaunch(null)).toBe(false);
-      expect(detectAnnouncedBackgroundLaunch({ text: 'Async agent launched' })).toBe(false);
+      expect(
+        detectAnnouncedBackgroundLaunch({ text: 'Async agent launched' }),
+      ).toBe(false);
     });
   });
 
@@ -1157,7 +1335,9 @@ describe('background operation detection (issue #3578)', () => {
         session_id: 'bg-real-bash',
       });
 
-      expect(out.hookSpecificOutput.additionalContext).toContain('Background operation detected');
+      expect(out.hookSpecificOutput.additionalContext).toContain(
+        'Background operation detected',
+      );
     });
 
     it('fires for Task with run_in_background=true', () => {
@@ -1168,7 +1348,9 @@ describe('background operation detection (issue #3578)', () => {
         session_id: 'bg-real-task',
       });
 
-      expect(out.hookSpecificOutput.additionalContext).toContain('Background task launched');
+      expect(out.hookSpecificOutput.additionalContext).toContain(
+        'Background task launched',
+      );
     });
 
     it('fires for a Task output leading with the launch announcement', () => {
@@ -1179,14 +1361,17 @@ describe('background operation detection (issue #3578)', () => {
         session_id: 'bg-real-announce',
       });
 
-      expect(out.hookSpecificOutput.additionalContext).toContain('Background task launched');
+      expect(out.hookSpecificOutput.additionalContext).toContain(
+        'Background task launched',
+      );
     });
 
     it('does not fire for a foreground Task result that merely quotes the announcement', () => {
       const out = runPostToolVerifier({
         tool_name: 'Task',
         tool_input: { description: 'investigate' },
-        tool_response: 'Investigation report: the parser matches "Async agent launched" text.',
+        tool_response:
+          'Investigation report: the parser matches "Async agent launched" text.',
         session_id: 'bg-fg-task-quote',
       });
 
