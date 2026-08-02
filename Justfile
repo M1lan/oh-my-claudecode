@@ -1,4 +1,4 @@
-# ── oh-my-claudecode Justfile ─────────────────────────────────────────────────
+# --- oh-my-claudecode Justfile ---
 #
 # TypeScript / Node multi-agent build harness. Thin Justfile: TUI + logic live
 # in .just/helpers/*.bash (GNU Bash >= 5.3). Recipes are one-liners.
@@ -23,7 +23,7 @@ PM := "pnpm"
 EDITOR_CMD := env_var_or_default("EDITOR", "vim")
 helpers := justfile_directory() / ".just" / "helpers"
 
-# ── Aliases ──────────────────────────────────────────────────────────────────
+# --- Aliases ---
 
 alias m   := menu
 alias f   := fzf
@@ -45,7 +45,7 @@ alias h   := help
 alias i   := info
 alias doc := doctor
 
-# ── Meta ─────────────────────────────────────────────────────────────────────
+# --- Meta ---
 
 # Bare `just`: info splash + launchers (always shows the splash, never --list)
 [private]
@@ -86,7 +86,7 @@ recipes:
     @printf 'groups:  %s\n' "$(just --groups 2>/dev/null | tail -n +2 | rg -c '.' || echo 0)"
     @printf 'aliases: %s\n' "$(rg -c '^alias\s' Justfile 2>/dev/null || echo 0)"
 
-# ── Install ──────────────────────────────────────────────────────────────────
+# --- Install ---
 
 # Install dependencies (clean, reproducible from lockfile)
 [group('install')]
@@ -109,7 +109,7 @@ outdated:
 update *args:
     {{PM}} update --interactive --latest "$@"
 
-# ── Build ────────────────────────────────────────────────────────────────────
+# --- Build ---
 
 # Full build (TS + every bundle + composed docs)
 [group('build')]
@@ -171,7 +171,7 @@ bundle-size:
     @if [[ ! -d dist ]]; then echo "no dist/ -- run 'just build' first"; exit 0; fi
     @if command -v dust >/dev/null 2>&1; then dust -d 2 dist; else du -sh dist/* 2>/dev/null | sort -rh; fi
 
-# ── Dev ──────────────────────────────────────────────────────────────────────
+# --- Dev ---
 
 # Watch TypeScript compilation
 [group('dev')]
@@ -191,7 +191,7 @@ watch recipe='check':
               --ignore 'dist/**' --ignore 'node_modules/**' --ignore '.omc/**' \
               -- just '{{recipe}}'
 
-# ── Run ──────────────────────────────────────────────────────────────────────
+# --- Run ---
 
 # Run the compiled binary entry
 [group('run')]
@@ -222,7 +222,7 @@ mcp-smoke:
         && echo "mcp-smoke: MCP server boots ✓" \
         || { code=$?; if (( code == 124 )); then echo "mcp-smoke: server is alive (timed out as expected)"; else echo "mcp-smoke: server failed to boot (exit $code)" >&2; exit 1; fi; }
 
-# ── Test ─────────────────────────────────────────────────────────────────────
+# --- Test ---
 
 # Run vitest in watch mode (default test runner)
 [group('test')]
@@ -282,7 +282,7 @@ interop-verify:
       | jq -r 'select(.id==2) | [.result.tools[].name | select(startswith("interop_"))] | length')
     [[ "$count" == "8" ]] && echo "interop-verify OK: 8 interop tools registered" || { echo "interop-verify FAIL: expected 8 interop tools, got ${count:-0}"; exit 1; }
 
-# ── Benchmark ────────────────────────────────────────────────────────────────
+# --- Benchmark ---
 
 # Run all prompt benchmarks
 [group('bench')]
@@ -299,7 +299,7 @@ bench-save:
 bench-compare:
     {{PM}} run bench:prompts:compare
 
-# ── Lint & Format ────────────────────────────────────────────────────────────
+# --- Lint & Format ---
 
 # Run eslint over src
 [group('lint')]
@@ -357,7 +357,7 @@ typoscheck:
 deadcode:
     @if {{PM}} exec knip --version >/dev/null 2>&1; then {{PM}} exec knip; elif command -v knip >/dev/null 2>&1; then knip; else echo "knip not installed -- {{PM}} add -D knip"; fi
 
-# ── Check & Verify ───────────────────────────────────────────────────────────
+# --- Check & Verify ---
 
 # Audit dependencies for known advisories
 [group('verify')]
@@ -372,25 +372,25 @@ check: typecheck lint test-run
 [group('verify')]
 verify-fast: fmt-check typecheck lint test-run
     @echo
-    @echo "── verify-fast: GREEN ✓ (skipped audit, mdlint, shell-lint, typoscheck)"
+    @echo "verify-fast: GREEN (skipped audit, mdlint, shell-lint, typoscheck)"
 
 # Full pre-push gate -- run before opening a PR
 [group('verify')]
 verify: fmt-check typecheck lint test-run mdlint shell-lint shell-fmt-check typoscheck
     @echo
-    @echo "═══════════════════════════════════════"
+    @echo "---------------------------------------"
     @echo "  verify: ALL GREEN  ✓"
-    @echo "═══════════════════════════════════════"
+    @echo "---------------------------------------"
 
 # Full CI pipeline (install + build + verify + sync gates)
 [group('verify')]
 ci: install build verify sync-metadata-verify sync-contributors-verify
     @echo
-    @echo "═══════════════════════════════════════"
+    @echo "---------------------------------------"
     @echo "  ci: ALL GREEN  ✓"
-    @echo "═══════════════════════════════════════"
+    @echo "---------------------------------------"
 
-# ── Documentation ────────────────────────────────────────────────────────────
+# --- Documentation ---
 
 # Build composed docs bundle
 [group('docs')]
@@ -407,7 +407,7 @@ docs-open:
 loc:
     @if command -v tokei >/dev/null 2>&1; then tokei .; elif command -v scc >/dev/null 2>&1; then scc .; elif command -v fd >/dev/null 2>&1; then fd -e ts -e mjs -e cjs -e js --exclude dist --exclude node_modules -X wc -l | tail -1; else echo "install tokei or scc for a loc report"; fi
 
-# ── Release & Publish ────────────────────────────────────────────────────────
+# --- Release & Publish ---
 
 # Sync versions across package.json and shipped manifests
 [group('release')]
@@ -458,10 +458,10 @@ release-notes ref='':
     if [[ -z "$base" ]]; then
         base=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
     fi
-    echo "── changes since $base ──"
+    echo "changes since $base"
     git log --pretty='- %s (%h)' "$base..HEAD"
 
-# ── Clean ────────────────────────────────────────────────────────────────────
+# --- Clean ---
 
 # Remove build artifacts (dist + tsbuildinfo)
 [group('clean')]
@@ -479,15 +479,15 @@ clean-deep: clean
 # Remove only the .omc/cache, keep state and notepad
 [group('clean')]
 clean-cache:
-    rm -rf .omc/cache .clawhip
+    rm -rf .omc/cache .fraumeship
     @echo "(state and notepad preserved)"
 
-# Remove the omc local-state caches (cache + state + clawhip)
+# Remove the omc local-state caches (cache + state + fraumeship)
 [group('clean')]
 clean-omc:
-    rm -rf .omc/cache .omc/state .clawhip
+    rm -rf .omc/cache .omc/state .fraumeship
 
-# ── Git ──────────────────────────────────────────────────────────────────────
+# --- Git ---
 
 # Show repo status (short)
 [group('git')]
@@ -536,18 +536,18 @@ git-pr-checks:
     @if ! command -v gh >/dev/null 2>&1; then echo "gh not installed -- brew install gh"; exit 1; fi
     gh pr checks --watch
 
-# ── OMC ──────────────────────────────────────────────────────────────────────
+# --- OMC ---
 
 # Uninstall all global omc installations (pnpm global remove)
 [group('omc')]
 omc-uninstall:
     #!/usr/bin/env bash
     set -euo pipefail
-    source ~/.config/sh/fnm-init.sh 2>/dev/null || true
-    echo "── omc-uninstall: removing global oh-my-claude-sisyphus ──"
+    source ~/scripts/tools/agent-shell-harness/lib/dev-shell-init.sh 2>/dev/null || true
+    echo "omc-uninstall: removing global oh-my-claude-sisyphus"
     if pnpm list -g --depth=0 2>/dev/null | rg -q 'oh-my-claude-sisyphus'; then
         pnpm remove -g oh-my-claude-sisyphus
-        echo "omc-uninstall: removed ✓"
+        echo "omc-uninstall: removed"
     else
         echo "omc-uninstall: nothing to remove (not installed globally)"
     fi
@@ -555,7 +555,7 @@ omc-uninstall:
         echo "WARNING: omc still found after uninstall:" >&2
         type -af omc >&2
     else
-        echo "omc-uninstall: verified not in PATH ✓"
+        echo "omc-uninstall: verified not in PATH"
     fi
 
 # Install omc from this local checkout (pnpm add -g <abs-path>)
@@ -563,12 +563,12 @@ omc-uninstall:
 omc-install:
     #!/usr/bin/env bash
     set -euo pipefail
-    source ~/.config/sh/fnm-init.sh 2>/dev/null || true
+    source ~/scripts/tools/agent-shell-harness/lib/dev-shell-init.sh 2>/dev/null || true
     REPO_DIR="{{justfile_directory()}}"
-    echo "── omc-install: installing from $REPO_DIR ──"
+    echo "omc-install: installing from $REPO_DIR"
     pnpm run build
     pnpm add -g "$REPO_DIR"
-    echo "omc-install: installed ✓"
+    echo "omc-install: installed"
     echo "  $(type -af omc 2>/dev/null | head -1)"
 
 # Uninstall then reinstall omc from this local checkout (full cycle)
@@ -591,7 +591,7 @@ state:
     mapfile -t files < <(fd -e json . .omc/state 2>/dev/null || find .omc/state -type f -name '*.json' 2>/dev/null)
     if (( ${#files[@]} == 0 )); then echo "(no active mode states)"; exit 0; fi
     for f in "${files[@]}"; do
-        echo "── $f ──"
+        echo "--- $f ---"
         if command -v jq >/dev/null 2>&1; then jq . "$f"; else cat "$f"; fi
     done
 
@@ -625,7 +625,7 @@ tail-log:
     latest=$(fd -e log . .omc/logs 2>/dev/null | sort | tail -1)
     if [[ -n "$latest" ]]; then echo "tailing $latest"; tail -f "$latest"; else echo "no logs under .omc/logs"; fi
 
-# ── Utilities ────────────────────────────────────────────────────────────────
+# --- Utilities ---
 
 # fzf-pick a source file and open it in $EDITOR (fd + bat preview)
 [no-exit-message]
