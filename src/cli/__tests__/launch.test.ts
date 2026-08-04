@@ -82,6 +82,19 @@ import {
   rmuxExec,
 } from '../rmux-utils.js';
 
+function mockRmuxLaunchContextStore(): void {
+  let requestIdClaim = '';
+  vi.mocked(rmuxExec).mockImplementation((args: string[]) => {
+    if (args[0] === 'set-option' && args.includes('@hausgeist_request_id')) {
+      requestIdClaim = args.at(-1) ?? '';
+    }
+    if (args[0] === 'show-options' && args.includes('@hausgeist_request_id')) {
+      return `${requestIdClaim}\n`;
+    }
+    return '';
+  });
+}
+
 // ---------------------------------------------------------------------------
 // extractNotifyFlag
 // ---------------------------------------------------------------------------
@@ -383,6 +396,7 @@ describe('runClaude OMC HUD behavior', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
+    mockRmuxLaunchContextStore();
   });
 
   it('does not build an omc hud --watch command inside tmux', () => {
@@ -430,6 +444,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       'outside-tmux',
     );
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
+    mockRmuxLaunchContextStore();
   });
 
   afterEach(() => {
@@ -466,7 +481,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     expect(tmuxArgs).not.toContain('*:smcup@:rmcup@');
   });
 
-  it('records complete provenance in detached rmux session environment', () => {
+  it('records mutable launch-context claims in detached rmux session metadata', () => {
     runClaude('/tmp', [], 'request-123');
 
     const newSession = vi
@@ -488,6 +503,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       expect.arrayContaining([
         [
           'set-option',
+          '-o',
           '-t',
           'test-session',
           '@hausgeist_creator',
@@ -495,6 +511,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
         ],
         [
           'set-option',
+          '-o',
           '-t',
           'test-session',
           '@hausgeist_parent',
@@ -502,6 +519,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
         ],
         [
           'set-option',
+          '-o',
           '-t',
           'test-session',
           '@hausgeist_purpose',
@@ -509,10 +527,18 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
         ],
         [
           'set-option',
+          '-o',
           '-t',
           'test-session',
           '@hausgeist_request_id',
           'request-123',
+        ],
+        [
+          'show-options',
+          '-v',
+          '-t',
+          'test-session',
+          '@hausgeist_request_id',
         ],
       ]),
     );
@@ -577,6 +603,9 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       if (args[0] === 'attach-session') {
         throw new Error('attach interrupted');
       }
+      if (args[0] === 'show-options' && args.includes('@hausgeist_request_id')) {
+        return 'sid\n';
+      }
       return '';
     });
 
@@ -589,6 +618,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       'set-option',
       'set-option',
       'set-option',
+      'show-options',
       'set-option',
       'show-options',
       'set-option',
@@ -603,7 +633,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     expect(processExitSpy).not.toHaveBeenCalled();
   });
 
-  it('falls back to direct launch when detached session creation fails', () => {
+  it('fails closed when explicit detached session creation fails', () => {
     vi.mocked(rmuxExec).mockImplementation((args: string[]) => {
       if (args[0] === 'new-session') {
         throw new Error('tmux launch failed');
@@ -611,18 +641,35 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       return '';
     });
 
-    runClaude('/tmp', ['--dangerously-skip-permissions'], 'sid');
+    expect(() =>
+      runClaude('/tmp', ['--dangerously-skip-permissions'], 'sid'),
+    ).toThrow(/explicit rmux session creation failed/);
 
     expect(vi.mocked(rmuxExec).mock.calls).toHaveLength(1);
     expect(
-      vi
-        .mocked(execFileSync)
-        .mock.calls.find(
-          ([cmd, args]) =>
-            cmd === 'claude' &&
-            (args as string[])[0] === '--dangerously-skip-permissions',
-        ),
-    ).toBeDefined();
+      vi.mocked(execFileSync).mock.calls.find(([cmd]) => cmd === 'claude'),
+    ).toBeUndefined();
+  });
+
+  it('fails closed and removes its new session when provenance options cannot be recorded', () => {
+    vi.mocked(rmuxExec).mockImplementation((args: string[]) => {
+      if (args[0] === 'set-option' && args.includes('@hausgeist_creator')) {
+        throw new Error('user options unsupported');
+      }
+      return '';
+    });
+
+    expect(() => runClaude('/tmp', [], 'sid')).toThrow(
+      /rmux provenance recording failed/,
+    );
+    expect(vi.mocked(rmuxExec).mock.calls.map(([args]) => args)).toContainEqual([
+      'kill-session',
+      '-t',
+      'test-session',
+    ]);
+    expect(
+      vi.mocked(execFileSync).mock.calls.find(([cmd]) => cmd === 'claude'),
+    ).toBeUndefined();
   });
 });
 
@@ -2490,6 +2537,7 @@ describe('runClaude — print mode bypasses tmux (issue #1665)', () => {
       .spyOn(process, 'exit')
       .mockImplementation(() => undefined as never);
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
+    mockRmuxLaunchContextStore();
   });
 
   afterEach(() => {
@@ -2668,6 +2716,7 @@ describe('runClaude outside-tmux — env forwarding', () => {
     (resolveLaunchPolicy as ReturnType<typeof vi.fn>).mockReturnValue(
       'outside-tmux',
     );
+    mockRmuxLaunchContextStore();
   });
 
   afterEach(() => {
@@ -2817,6 +2866,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
       .mockImplementation(() => undefined as never);
     stderrSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     (execFileSync as ReturnType<typeof vi.fn>).mockReturnValue(Buffer.from(''));
+    mockRmuxLaunchContextStore();
     delete process.env.TMUX;
   });
 
@@ -3007,6 +3057,12 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
       if (tmuxArgs[0] === 'attach-session' || tmuxArgs[0] === 'has-session') {
         throw new Error(`tmux ${tmuxArgs[0]} failed`);
       }
+      if (
+        tmuxArgs[0] === 'show-options' &&
+        tmuxArgs.includes('@hausgeist_request_id')
+      ) {
+        return 'sid\n';
+      }
       return '';
     });
 
@@ -3034,6 +3090,12 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
       if (tmuxArgs[0] === 'attach-session') {
         throw new Error('tmux attach-session failed');
       }
+      if (
+        tmuxArgs[0] === 'show-options' &&
+        tmuxArgs.includes('@hausgeist_request_id')
+      ) {
+        return 'sid\n';
+      }
       return '';
     });
 
@@ -3055,7 +3117,7 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
     expect(claudeCall).toBeUndefined();
   });
 
-  it('preserves the existing direct fallback when tmux new-session fails WITHOUT --madmax', () => {
+  it('fails closed when explicit detached launch fails without --madmax', () => {
     Object.defineProperty(process, 'platform', {
       value: 'darwin',
       configurable: true,
@@ -3069,13 +3131,14 @@ describe('runClaude — --madmax on macOS forces tmux', () => {
       return '';
     });
 
-    runClaude('/tmp', [], 'sid');
+    expect(() => runClaude('/tmp', [], 'sid')).toThrow(
+      /explicit rmux session creation failed/,
+    );
 
-    // No --madmax: existing behavior preserved (direct path runs, no exit-1).
     expect(processExitSpy).not.toHaveBeenCalledWith(1);
     const claudeCall = vi
       .mocked(execFileSync)
       .mock.calls.find(([cmd]) => cmd === 'claude');
-    expect(claudeCall).toBeDefined();
+    expect(claudeCall).toBeUndefined();
   });
 });

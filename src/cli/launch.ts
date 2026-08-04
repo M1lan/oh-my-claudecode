@@ -1225,12 +1225,13 @@ function runClaudeOutsideTmux(
         stdio: 'inherit',
       },
     );
-  } catch {
+  } catch (error) {
     if (options.requireTmux) {
       abortMadmaxRequiresTmux('launch-failed');
     }
-    runClaudeDirect(cwd, args);
-    return;
+    throw new Error('[omc] explicit rmux session creation failed', {
+      cause: error,
+    });
   }
 
   try {
@@ -1240,14 +1241,36 @@ function runClaudeOutsideTmux(
       ['@hausgeist_purpose', 'interactive-leader'],
       ['@hausgeist_request_id', sessionId],
     ]) {
-      rmuxExec(['set-option', '-t', sessionName, option, value], {
+      rmuxExec(['set-option', '-o', '-t', sessionName, option, value], {
         stripTmux: true,
         stdio: 'ignore',
       });
     }
-  } catch {
-    // Session environment already holds atomic provenance. User options are a
-    // readable compatibility mirror for rmux/tmux implementations supporting them.
+    const requestIdClaim = String(
+      rmuxExec(
+        [
+          'show-options',
+          '-v',
+          '-t',
+          sessionName,
+          '@hausgeist_request_id',
+        ],
+        { stripTmux: true, stdio: 'pipe' },
+      ) ?? '',
+    ).trim();
+    if (requestIdClaim !== sessionId) {
+      throw new Error('rmux provenance readback mismatch');
+    }
+  } catch (error) {
+    try {
+      rmuxExec(['kill-session', '-t', sessionName], {
+        stripTmux: true,
+        stdio: 'ignore',
+      });
+    } catch {
+      // Preserve original provenance error; never broaden cleanup beyond session.
+    }
+    throw new Error('[omc] rmux provenance recording failed', { cause: error });
   }
 
   try {
