@@ -1,0 +1,17 @@
+# betterhook configuration for oh-my-claudecode.
+
+[meta]
+version = 1
+
+[hooks.pre-commit]
+parallel = false
+fail_fast = true
+stash_untracked = false
+priority = ["pnpm-rmux-guard"]
+
+[hooks.pre-commit.jobs.pnpm-rmux-guard]
+run = "bash scripts/pnpm-rmux-guard.bash --staged"
+reads = ["**/*"]
+writes = []
+concurrent_safe = true
+timeout = "1m"

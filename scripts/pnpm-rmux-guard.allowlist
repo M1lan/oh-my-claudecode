@@ -1,0 +1,40 @@
+# pnpm-rmux-guard.allowlist -- extra line-content regexes kept per docs/PNPM-RMUX-LAW.md
+# One ERE regex per line (matched against the flagged line's content). Comments (#) and
+# blank lines are ignored. Keep this in sync with docs/PNPM-RMUX-LAW.md's tables.
+
+# npm -- registry URLs, badges, package name, node_modules, lockfiles, .npmrc
+npmjs\.(org|com)
+img\.shields\.io/npm/
+oh-my-claude-sisyphus
+node_modules
+package-lock\.json
+\.npmrc
+
+# npm -- banned-package-manager guard code (the ban list must contain the literal words)
+BANNED_PACKAGE_MANAGERS
+\[PNPM ONLY\]
+
+# npm -- caller-repo package-manager detection (OMC inspects arbitrary user projects)
+npmCommand
+npm root -g
+npmIntegrity
+pkg:npm/
+
+# tmux -- documented last-resort fallback and multiplexer implementation internals
+rmux \(preferred; tmux-compatible\)
+cmux
+rmux/tmux
+rmux and tmux
+tmux/rmux
+CMUX_SURFACE_ID
+tmux-compatible
+no tmux-compatible multiplexer
+not inside tmux
+tmux (install|list-panes|capture-pane|display-message|split-window|new session)
+command -v tmux
+active tmux session
+psmux
+Anthropic npm package install path is deprecated
+
+# npm -- generic "npm CLI surface" prose (pre-existing docs, not this concern's sweep)
+npm CLI surface
