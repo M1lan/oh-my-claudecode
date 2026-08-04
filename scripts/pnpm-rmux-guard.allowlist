@@ -38,3 +38,9 @@ Anthropic npm package install path is deprecated
 
 # npm -- generic "npm CLI surface" prose (pre-existing docs, not this concern's sweep)
 npm CLI surface
+npm-installed `omc` CLI
+npm package exposes both
+Requires .better-sqlite3. npm package
+
+# tmux -- version-check invocation, not an install/run instruction
+tmux -V
