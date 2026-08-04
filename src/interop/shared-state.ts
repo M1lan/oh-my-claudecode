@@ -31,8 +31,24 @@ export interface InteropConfig {
   createdAt: string;
   omcCwd: string;
   omxCwd?: string;
+  multiplexerServerId?: string;
+  omxPaneId?: string;
+  omxSessionId?: string;
+  omxWindowId?: string;
+  omxLaunchCommand?: string;
+  omxReadiness?: 'pending' | 'ready' | 'failed';
   status: 'active' | 'completed' | 'failed';
 }
+
+export type InteropOmxRuntime = Pick<
+  InteropConfig,
+  | 'multiplexerServerId'
+  | 'omxPaneId'
+  | 'omxSessionId'
+  | 'omxWindowId'
+  | 'omxLaunchCommand'
+  | 'omxReadiness'
+>;
 
 export interface SharedTask {
   id: string;
@@ -96,6 +112,12 @@ const InteropConfigSchema = z.object({
   createdAt: z.string(),
   omcCwd: z.string(),
   omxCwd: z.string().optional(),
+  multiplexerServerId: z.string().optional(),
+  omxPaneId: z.string().optional(),
+  omxSessionId: z.string().optional(),
+  omxWindowId: z.string().optional(),
+  omxLaunchCommand: z.string().optional(),
+  omxReadiness: z.enum(['pending', 'ready', 'failed']).optional(),
   status: z.enum(['active', 'completed', 'failed']),
 });
 
@@ -200,6 +222,7 @@ export function initInteropSession(
   sessionId: string,
   omcCwd: string,
   omxCwd?: string,
+  omxRuntime: InteropOmxRuntime = {},
 ): InteropConfig {
   const interopDir = getInteropDir(omcCwd);
   mkdirSync(interopDir, { recursive: true });
@@ -209,13 +232,75 @@ export function initInteropSession(
     createdAt: new Date().toISOString(),
     omcCwd,
     omxCwd,
+    ...omxRuntime,
     status: 'active',
   };
 
   const configPath = join(interopDir, 'config.json');
-  atomicWriteJsonSync(configPath, config);
+  return withFileLockSync(
+    configPath + '.lock',
+    () => {
+      if (existsSync(configPath)) {
+        const existing = InteropConfigSchema.safeParse(
+          JSON.parse(readFileSync(configPath, 'utf-8')),
+        );
+        if (
+          existing.success &&
+          existing.data.status === 'active' &&
+          existing.data.sessionId !== sessionId
+        ) {
+          throw new Error(
+            `Interop session ${existing.data.sessionId} is already active`,
+          );
+        }
+      }
+      atomicWriteJsonSync(configPath, config);
+      return config;
+    },
+    { timeoutMs: 500, retryDelayMs: 25 },
+  );
+}
 
-  return config;
+function updateInteropConfig(
+  cwd: string,
+  updates: Partial<InteropConfig>,
+  expectedSessionId?: string,
+): InteropConfig | null {
+  const configPath = join(getInteropDir(cwd), 'config.json');
+
+  if (!existsSync(configPath)) return null;
+
+  return withFileLockSync(
+    configPath + '.lock',
+    () => {
+      const content = readFileSync(configPath, 'utf-8');
+      const parsed = InteropConfigSchema.safeParse(JSON.parse(content));
+      if (!parsed.success) return null;
+      if (
+        expectedSessionId &&
+        parsed.data.sessionId !== expectedSessionId
+      ) {
+        return null;
+      }
+      const updated = { ...parsed.data, ...updates };
+      atomicWriteJsonSync(configPath, updated);
+      return updated;
+    },
+    { timeoutMs: 500, retryDelayMs: 25 },
+  );
+}
+
+/** Persist restart metadata for the Codex side of an interop session. */
+export function updateInteropOmxRuntime(
+  cwd: string,
+  updates: InteropOmxRuntime,
+  expectedSessionId?: string,
+): InteropConfig {
+  const updated = updateInteropConfig(cwd, updates, expectedSessionId);
+  if (!updated) {
+    throw new Error('Interop config.json is missing or invalid');
+  }
+  return updated;
 }
 
 /**
@@ -245,6 +330,7 @@ export function readInteropConfig(cwd: string): InteropConfig | null {
 export function updateInteropStatus(
   cwd: string,
   status: InteropConfig['status'],
+  expectedSessionId?: string,
 ): void {
   const configPath = join(getInteropDir(cwd), 'config.json');
 
@@ -253,10 +339,7 @@ export function updateInteropStatus(
   }
 
   try {
-    const content = readFileSync(configPath, 'utf-8');
-    const parsed = InteropConfigSchema.safeParse(JSON.parse(content));
-    if (!parsed.success) return;
-    atomicWriteJsonSync(configPath, { ...parsed.data, status });
+    updateInteropConfig(cwd, { status }, expectedSessionId);
   } catch {
     // best-effort only
   }

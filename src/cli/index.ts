@@ -163,22 +163,29 @@ Environment:
 program
   .command('interop')
   .description(
-    'Launch split-pane rmux/tmux session with Claude Code (OMC) and Codex (OMX)',
+    'Launch split-pane rmux session with Claude Code (OMC) and Codex (OMX)',
   )
   .option(
     '--yolo',
     'Start both OMC and OMX in yolo mode (Claude --dangerously-skip-permissions, Codex --dangerously-bypass-approvals-and-sandbox)',
   )
+  .option(
+    '--respawn-omx',
+    'Restart the stored Codex pane with its original command and environment',
+  )
   .addHelpText(
     'after',
     `
 Requirements:
-  - Must be running inside an rmux or tmux session (rmux preferred)
+  - Must be running inside an rmux session
   - Claude CLI must be installed
   - Codex CLI recommended (graceful fallback if missing)`,
   )
-  .action((options: { yolo?: boolean }) => {
-    interopCommand({ yolo: options.yolo });
+  .action((options: { yolo?: boolean; respawnOmx?: boolean }) => {
+    interopCommand({
+      yolo: options.yolo,
+      respawnOmx: options.respawnOmx,
+    });
   });
 
 /**

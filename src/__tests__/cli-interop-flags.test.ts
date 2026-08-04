@@ -1,11 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildCodexLaunchCommand,
   buildInteropSessionEnv,
+  buildOmxPanePersistenceArgs,
+  buildOmxRespawnArgs,
+  parseOmxPaneIdentity,
   readInteropRuntimeFlags,
+  isRmuxInteropEnvironment,
+  validateOmxRespawnOwnership,
   validateInteropRuntimeFlags,
   INTEROP_CAVEMAN_LEVEL_ENV,
   INTEROP_CAVEMAN_LEVEL,
 } from '../cli/interop.js';
+import {
+  getMultiplexerServerIdentity,
+  wrapWithBashLoginShell,
+} from '../cli/rmux-utils.js';
 import { getInteropDir } from '../interop/shared-state.js';
 
 describe('cli interop flag validation', () => {
@@ -95,5 +105,127 @@ describe('interop caveman activation contract', () => {
 
   it('uses wenyan-ultra as the interop level', () => {
     expect(INTEROP_CAVEMAN_LEVEL).toBe('wenyan-ultra');
+  });
+});
+
+describe('Codex interop launch command', () => {
+  it('accepts rmux sessions and rejects plain tmux sessions', () => {
+    expect(
+      isRmuxInteropEnvironment({
+        TERM_PROGRAM: 'rmux',
+        TMUX_PROGRAM: '/path/rmux-shim-1/tmux',
+        TMUX: '/socket/rmux,123,0',
+      } as NodeJS.ProcessEnv),
+    ).toBe(true);
+    expect(
+      isRmuxInteropEnvironment({
+        TMUX_PROGRAM: '/opt/homebrew/bin/tmux',
+        TMUX: '/socket/tmux,456,0',
+      } as NodeJS.ProcessEnv),
+    ).toBe(false);
+  });
+
+  it('uses PATH-resolved Bash login shell without manually sourcing an RC file', () => {
+    expect(wrapWithBashLoginShell('codex --version')).toBe(
+      "exec 'bash' -lc 'codex --version'",
+    );
+  });
+
+  it('builds a YOLO launch with the complete interop environment', () => {
+    const command = buildCodexLaunchCommand(
+      'active',
+      'interop-abc123',
+      '/some/project',
+      true,
+    );
+
+    expect(command).toContain("exec 'bash' -lc");
+    expect(command).toContain("'OMX_OMC_INTEROP_ENABLED=1'");
+    expect(command).toContain("'OMX_INTEROP_CAVEMAN_LEVEL=wenyan-ultra'");
+    expect(command).toContain(
+      "'--dangerously-bypass-approvals-and-sandbox'",
+    );
+    expect(command).not.toContain('.bashrc');
+    expect(command).not.toContain('zsh');
+  });
+
+  it('keeps dead Codex panes available without injecting startup keystrokes', () => {
+    const args = buildOmxPanePersistenceArgs('%9');
+
+    expect(args).toEqual([
+      'set-option',
+      '-p',
+      '-t',
+      '%9',
+      'remain-on-exit',
+      'on',
+    ]);
+    expect(args).not.toContain('send-keys');
+  });
+
+  it('respawns the stored pane with the stored launch command', () => {
+    expect(buildOmxRespawnArgs('%9', "exec 'bash' -lc 'codex'")).toEqual([
+      'respawn-pane',
+      '-k',
+      '-t',
+      '%9',
+      "exec 'bash' -lc 'codex'",
+    ]);
+  });
+
+  it('derives server identity from the active multiplexer socket', () => {
+    expect(
+      getMultiplexerServerIdentity({
+        TMUX: '/socket/server-a,123,0',
+        TMUX_PROGRAM: '/path/to/rmux-shim',
+      } as NodeJS.ProcessEnv),
+    ).toBe('/socket/server-a,123');
+  });
+
+  it('rejects a reused pane ID from another multiplexer server', () => {
+    const observed = parseOmxPaneIdentity('%9\t$2\t@4');
+
+    expect(() =>
+      validateOmxRespawnOwnership(
+        {
+          multiplexerServerId: '/socket/server-a',
+          paneId: '%9',
+          sessionId: '$2',
+          windowId: '@4',
+        },
+        '/socket/server-b',
+        observed,
+      ),
+    ).toThrow(/server identity mismatch/);
+  });
+
+  it('rejects a reused pane ID with different session ownership', () => {
+    expect(() =>
+      validateOmxRespawnOwnership(
+        {
+          multiplexerServerId: '/socket/server-a',
+          paneId: '%9',
+          sessionId: '$2',
+          windowId: '@4',
+        },
+        '/socket/server-a',
+        parseOmxPaneIdentity('%9\t$7\t@4'),
+      ),
+    ).toThrow(/pane ownership mismatch/);
+  });
+
+  it('rejects reused ownership after a same-socket server restart', () => {
+    expect(() =>
+      validateOmxRespawnOwnership(
+        {
+          multiplexerServerId: '/socket/server-a,123',
+          paneId: '%9',
+          sessionId: '$2',
+          windowId: '@4',
+        },
+        '/socket/server-a,456',
+        parseOmxPaneIdentity('%9\t$2\t@4'),
+      ),
+    ).toThrow(/server identity mismatch/);
   });
 });

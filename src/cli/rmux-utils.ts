@@ -54,6 +54,17 @@ export interface RmuxInvocation {
   socketArgs: string[];
 }
 
+/** Stable identity of the active tmux-compatible server for this process. */
+export function getMultiplexerServerIdentity(
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const tmux = env.TMUX;
+  if (!tmux) return null;
+  const [socket, serverPid] = tmux.split(',');
+  if (!socket || !serverPid) return null;
+  return `${socket},${serverPid}`;
+}
+
 /**
  * Detect an rmux session and resolve how to drive its multiplexer server.
  *
@@ -522,6 +533,22 @@ export function wrapWithLoginShell(command: string): string {
     ? `[ -f ${quoteShellArg(rcFile)} ] && . ${quoteShellArg(rcFile)}; `
     : '';
   return `exec ${quoteShellArg(shell)} -lc ${quoteShellArg(`${sourcePrefix}${command}`)}`;
+}
+
+/**
+ * Run an agent command through the PATH-resolved Bash login shell.
+ *
+ * Agent panes use Bash regardless of the operator's interactive shell. Bash
+ * owns its login startup sequence, so this wrapper deliberately does not
+ * source an RC file before invoking `-lc`.
+ */
+export function wrapWithBashLoginShell(command: string): string {
+  if (isNativeWindowsShell()) {
+    const comspec = process.env.COMSPEC || 'cmd.exe';
+    return `${quoteForCmd(comspec)} /d /s /c ${quoteForCmd(command)}`;
+  }
+
+  return `exec ${quoteShellArg('bash')} -lc ${quoteShellArg(command)}`;
 }
 
 /**

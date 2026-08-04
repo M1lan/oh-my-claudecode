@@ -8,16 +8,19 @@
 import { execFileSync, spawnSync } from 'child_process';
 import { randomUUID } from 'crypto';
 import {
-  isTmuxAvailable,
   isClaudeAvailable,
   rmuxExec,
   buildRmuxShellCommandWithEnv,
-  wrapWithLoginShell,
+  getMultiplexerServerIdentity,
+  resolveRmuxInvocation,
+  wrapWithBashLoginShell,
   killRmuxPane,
 } from './rmux-utils.js';
 import {
   initInteropSession,
   getInteropDir,
+  readInteropConfig,
+  updateInteropOmxRuntime,
   updateInteropStatus,
 } from '../interop/shared-state.js';
 
@@ -103,6 +106,156 @@ export function buildInteropSessionEnv(
   };
 }
 
+export function isRmuxInteropEnvironment(
+  env: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return resolveRmuxInvocation(env) !== null;
+}
+
+export function buildCodexLaunchCommand(
+  mode: InteropMode,
+  sessionId: string,
+  cwd: string,
+  yolo: boolean,
+): string {
+  return wrapWithBashLoginShell(
+    buildRmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
+      ...buildInteropSessionEnv(mode, sessionId, cwd),
+      [INTEROP_CAVEMAN_LEVEL_ENV]: INTEROP_CAVEMAN_LEVEL,
+    }),
+  );
+}
+
+export function buildOmxPanePersistenceArgs(paneId: string): string[] {
+  return ['set-option', '-p', '-t', paneId, 'remain-on-exit', 'on'];
+}
+
+export function buildOmxRespawnArgs(
+  paneId: string,
+  launchCommand: string,
+): string[] {
+  return ['respawn-pane', '-k', '-t', paneId, launchCommand];
+}
+
+export interface OmxPaneIdentity {
+  paneId: string;
+  sessionId: string;
+  windowId: string;
+}
+
+export interface OmxRespawnOwnership extends OmxPaneIdentity {
+  multiplexerServerId: string;
+}
+
+const OMX_PANE_IDENTITY_FORMAT =
+  '#{pane_id}\t#{session_id}\t#{window_id}';
+
+export function parseOmxPaneIdentity(output: string): OmxPaneIdentity {
+  const [paneId = '', sessionId = '', windowId = ''] = output
+    .trim()
+    .split('\t');
+  if (
+    !paneId.startsWith('%') ||
+    !sessionId.startsWith('$') ||
+    !windowId.startsWith('@')
+  ) {
+    throw new Error('Invalid Codex pane identity returned by multiplexer');
+  }
+  return { paneId, sessionId, windowId };
+}
+
+export function validateOmxRespawnOwnership(
+  expected: OmxRespawnOwnership,
+  currentServerId: string,
+  observed: OmxPaneIdentity,
+): void {
+  if (expected.multiplexerServerId !== currentServerId) {
+    throw new Error('Codex pane server identity mismatch');
+  }
+  if (
+    expected.paneId !== observed.paneId ||
+    expected.sessionId !== observed.sessionId ||
+    expected.windowId !== observed.windowId
+  ) {
+    throw new Error('Codex pane ownership mismatch');
+  }
+}
+
+export function respawnOmxPane(cwd: string = process.cwd()): void {
+  const config = readInteropConfig(cwd);
+  if (
+    !config?.multiplexerServerId ||
+    !config.omxPaneId ||
+    !config.omxSessionId ||
+    !config.omxWindowId ||
+    !config.omxLaunchCommand
+  ) {
+    console.error(
+      'Error: No restartable Codex pane found in interop config.json.',
+    );
+    process.exit(1);
+  }
+
+  try {
+    if (!isRmuxInteropEnvironment()) {
+      throw new Error('Interop restart requires an active rmux session');
+    }
+    const currentServerId = getMultiplexerServerIdentity();
+    if (!currentServerId) {
+      throw new Error('No active tmux-compatible server identity');
+    }
+    if (config.multiplexerServerId !== currentServerId) {
+      throw new Error('Codex pane server identity mismatch');
+    }
+    const observed = parseOmxPaneIdentity(
+      rmuxExec([
+        'display-message',
+        '-p',
+        '-t',
+        config.omxPaneId,
+        OMX_PANE_IDENTITY_FORMAT,
+      ]),
+    );
+    validateOmxRespawnOwnership(
+      {
+        multiplexerServerId: config.multiplexerServerId,
+        paneId: config.omxPaneId,
+        sessionId: config.omxSessionId,
+        windowId: config.omxWindowId,
+      },
+      currentServerId,
+      observed,
+    );
+    rmuxExec(buildOmxRespawnArgs(config.omxPaneId, config.omxLaunchCommand), {
+      stdio: 'ignore',
+    });
+    updateInteropOmxRuntime(
+      cwd,
+      { omxReadiness: 'pending' },
+      config.sessionId,
+    );
+    updateInteropStatus(cwd, 'active', config.sessionId);
+    console.log(
+      'Codex pane respawned with stored launch command. Startup readiness pending; inspect Codex pane for MCP startup failures.',
+    );
+  } catch (error) {
+    try {
+      updateInteropOmxRuntime(
+        cwd,
+        { omxReadiness: 'failed' },
+        config.sessionId,
+      );
+    } catch {
+      // Preserve the original restart or persistence error below.
+    }
+    console.error(
+      'Error respawning Codex pane:',
+      error instanceof Error ? error.message : String(error),
+    );
+    process.exit(1);
+  }
+}
+
 /**
  * Check if codex CLI is available
  */
@@ -144,9 +297,9 @@ export function launchInteropSession(
   }
 
   // Check prerequisites
-  if (!isTmuxAvailable()) {
+  if (!isRmuxInteropEnvironment()) {
     console.error(
-      'Error: tmux is not available. Install tmux to use interop mode.',
+      'Error: Interop mode requires an active rmux session.',
     );
     process.exit(1);
   }
@@ -170,32 +323,38 @@ export function launchInteropSession(
     );
   }
 
-  // Check if already in tmux
-  const inTmux = Boolean(process.env.TMUX);
-
-  if (!inTmux) {
-    console.error(
-      'Error: Interop mode requires running inside a tmux session.',
-    );
-    console.error(
-      'Start a tmux-compatible multiplexer session first (rmux or tmux): e.g. `rmux new-session -s myproject` or `tmux new-session -s myproject`.',
-    );
+  // Generate session ID
+  const sessionId = `interop-${randomUUID().split('-')[0]}`;
+  const multiplexerServerId = getMultiplexerServerIdentity();
+  if (!multiplexerServerId) {
+    console.error('Error: Failed to identify active tmux-compatible server');
     process.exit(1);
   }
 
-  // Generate session ID
-  const sessionId = `interop-${randomUUID().split('-')[0]}`;
+  // Effective interop env, exported into both panes so the OMC MCP server
+  // and the OMX pane see the same session they were launched for.
+  const effectiveEnv = buildInteropSessionEnv(flags.mode, sessionId, cwd);
+  const codexCommand = hasCodex
+    ? buildCodexLaunchCommand(flags.mode, sessionId, cwd, yolo)
+    : undefined;
 
   // Initialize interop session (writes config.json as a side effect)
-  initInteropSession(sessionId, cwd, hasCodex ? cwd : undefined);
+  initInteropSession(
+    sessionId,
+    cwd,
+    hasCodex ? cwd : undefined,
+    codexCommand
+      ? {
+          multiplexerServerId,
+          omxLaunchCommand: codexCommand,
+          omxReadiness: 'pending',
+        }
+      : undefined,
+  );
 
   console.log(`Initializing interop session: ${sessionId}`);
   console.log(`Working directory: ${cwd}`);
   console.log(`Config saved to: ${getInteropDir(cwd)}/config.json\n`);
-
-  // Effective interop env, exported into both panes so the OMC MCP server
-  // and the OMX pane actually see the interop session they were launched for.
-  const effectiveEnv = buildInteropSessionEnv(flags.mode, sessionId, cwd);
 
   // Get current pane ID
   let currentPaneId: string;
@@ -203,13 +362,13 @@ export function launchInteropSession(
     const output = rmuxExec(['display-message', '-p', '#{pane_id}']);
     currentPaneId = output.trim();
   } catch (_error) {
-    updateInteropStatus(cwd, 'failed');
+    updateInteropStatus(cwd, 'failed', sessionId);
     console.error('Error: Failed to get current tmux pane ID');
     process.exit(1);
   }
 
   if (!currentPaneId.startsWith('%')) {
-    updateInteropStatus(cwd, 'failed');
+    updateInteropStatus(cwd, 'failed', sessionId);
     console.error('Error: Invalid tmux pane ID format');
     process.exit(1);
   }
@@ -224,16 +383,9 @@ export function launchInteropSession(
       // Create right pane with codex
       console.log('Splitting pane: Left (Claude Code) | Right (Codex)');
 
-      // Wrap in a login shell so the codex pane inherits the same PATH setup
-      // (fnm/pnpm/etc.) that the parent shell — and the left-pane claude
-      // (spawnSync inherits this process's env) — already see. Capture the new
-      // pane id (-P -F) so failures can clean it up.
-      const codexCommand = wrapWithLoginShell(
-        buildRmuxShellCommandWithEnv('codex', yolo ? [CODEX_YOLO_FLAG] : [], {
-          ...effectiveEnv,
-          [INTEROP_CAVEMAN_LEVEL_ENV]: INTEROP_CAVEMAN_LEVEL,
-        }),
-      );
+      // Codex runs through the PATH-resolved Bash login shell. Capture the new
+      // pane id (-P -F) so failures can clean it up and restarts can reuse the
+      // identical environment-wrapped command stored in config.json.
       const splitOutput = rmuxExec([
         'split-window',
         '-h',
@@ -243,11 +395,24 @@ export function launchInteropSession(
         currentPaneId,
         '-P',
         '-F',
-        '#{pane_id}',
-        codexCommand,
+        OMX_PANE_IDENTITY_FORMAT,
+        codexCommand!,
       ]);
-      const newPaneId = splitOutput.split('\n')[0]?.trim() ?? '';
-      codexPaneId = newPaneId.startsWith('%') ? newPaneId : null;
+      const paneIdentity = parseOmxPaneIdentity(
+        splitOutput.split('\n')[0] ?? '',
+      );
+      codexPaneId = paneIdentity.paneId;
+      rmuxExec(buildOmxPanePersistenceArgs(codexPaneId), { stdio: 'ignore' });
+      updateInteropOmxRuntime(
+        cwd,
+        {
+          omxPaneId: codexPaneId,
+          omxSessionId: paneIdentity.sessionId,
+          omxWindowId: paneIdentity.windowId,
+          omxReadiness: 'pending',
+        },
+        sessionId,
+      );
 
       // Caveman activation happens exclusively via the deterministic
       // INTEROP_CAVEMAN_LEVEL_ENV startup hook inside oh-my-codex (exported
@@ -260,9 +425,14 @@ export function launchInteropSession(
       // Select left pane (original/current)
       rmuxExec(['select-pane', '-t', currentPaneId], { stdio: 'ignore' });
 
-      console.log('\nInterop session ready!');
+      console.log('\nInterop panes launched.');
       console.log('- Left pane: Claude Code (this terminal)');
-      console.log('- Right pane: Codex CLI');
+      console.log(
+        '- Right pane: Codex CLI startup pending; MCP startup failures appear there.',
+      );
+      console.log(
+        '- Restart Codex with identical environment: omc interop --respawn-omx',
+      );
       console.log(
         '\nYou can now use interop MCP tools to communicate between the two:',
       );
@@ -279,7 +449,7 @@ export function launchInteropSession(
     }
   } catch (error) {
     if (codexPaneId) killRmuxPane(codexPaneId);
-    updateInteropStatus(cwd, 'failed');
+    updateInteropStatus(cwd, 'failed', sessionId);
     console.error(
       'Error creating split pane:',
       error instanceof Error ? error.message : String(error),
@@ -300,7 +470,7 @@ export function launchInteropSession(
     // Claude never started — tear down the codex pane we just created so it
     // isn't left running headless without its OMC counterpart.
     if (codexPaneId) killRmuxPane(codexPaneId);
-    updateInteropStatus(cwd, 'failed');
+    updateInteropStatus(cwd, 'failed', sessionId);
     console.error(
       'Error launching claude:',
       result.error instanceof Error
@@ -309,7 +479,7 @@ export function launchInteropSession(
     );
     process.exit(1);
   }
-  updateInteropStatus(cwd, 'completed');
+  updateInteropStatus(cwd, 'completed', sessionId);
   process.exit(result.status ?? 0);
 }
 
@@ -317,8 +487,12 @@ export function launchInteropSession(
  * CLI entry point for interop command
  */
 export function interopCommand(
-  options: { cwd?: string; yolo?: boolean } = {},
+  options: { cwd?: string; yolo?: boolean; respawnOmx?: boolean } = {},
 ): void {
   const cwd = options.cwd || process.cwd();
+  if (options.respawnOmx) {
+    respawnOmxPane(cwd);
+    return;
+  }
   launchInteropSession(cwd, { yolo: options.yolo });
 }
