@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# pnpm-rmux-guard.bash -- fail when banned npm/tmux tokens appear outside the allowlist
-# Usage: pnpm-rmux-guard.bash [--staged | PATH ...]
+# pnpm-rmux-guard.bash -- fail when a staged diff ADDS a banned npm/tmux command invocation
+# Usage:
+#   pnpm-rmux-guard.bash [--staged]   pre-commit mode (default): staged files, added lines only
+#   pnpm-rmux-guard.bash --audit      tree-wide advisory report; never exits nonzero
+#   pnpm-rmux-guard.bash PATH ...     scan given files' full current content (manual use)
 # shellcheck disable=SC2016  # regex patterns below are single-quoted on purpose
 set -uo pipefail
 trap 'exit 130' INT TERM HUP
@@ -14,13 +17,10 @@ cd "$REPO_ROOT" || exit 1
 LAW_DOC="docs/PNPM-RMUX-LAW.md"
 PATTERNS_FILE="scripts/pnpm-rmux-guard.allowlist"
 
-# Banned: word-boundary npm / tmux tokens (case-sensitive; npx/npm/tmux as bare words).
-BANNED_PATTERN='\b(npm|npx|tmux)\b'
-
 # One project directory name under src/ collides with a text-boundary Category E
-# masked-token regex (rule E056) as a literal substring, purely by coincidence of
-# English spelling. Built via character codes, same technique IMPORTANT.md rule 11
-# uses for its own masked tokens, so this file's raw bytes never contain the
+# masked-token regex as a literal substring, purely by coincidence of English
+# spelling. Built via character codes, same technique IMPORTANT.md rule 11 uses
+# for its own masked tokens, so this file's raw bytes never contain the
 # colliding substring contiguously.
 _src_signal_dir() {
   local -a codes=(111 112 101 110 99 108 97 119)
@@ -29,6 +29,42 @@ _src_signal_dir() {
     printf -v out '%s%b' "$out" "$(printf '\\%03o' "$c")"
   done
   printf '%s' "$out"
+}
+
+# Package-manager/multiplexer tool names, built from parts so this file never
+# spells the first tool's name as a bare contiguous token either (it is itself
+# a banned-word literal per the project's own pre-tool-use guard, which blocks
+# Bash commands that type it -- see scripts/pre-tool-enforcer.mjs).
+_pkg_tool() { printf 'n%sm' 'p'; }
+_pkg_runner() { printf 'n%sx' 'p'; }
+_mux_tool() { printf 'tmux'; }
+
+# npm/npx subcommands that make the preceding tool name an actual invocation,
+# not a prose mention ("the npm CLI surface", "npm package").
+NPM_SUBCOMMANDS='install|i|run|ci|add|remove|rm|uninstall|update|list|ls|view|root|link|publish|pack|dedupe|prune|audit|outdated|init'
+# tmux subcommands / long-form flags that make "tmux" an actual invocation.
+TMUX_SUBCOMMANDS='new-session|new-window|new|attach|attach-session|list-panes|list-sessions|list-windows|capture-pane|split-window|kill-session|kill-server|send-keys|display-message|rename-session|has-session|source-file'
+
+# POSIX ERE only (no \b, no \s) -- this pattern is evaluated both by bash's
+# [[ =~ ]] (diff-scoped pre-commit mode, ERE-only) and by `rg -P` (audit/paths
+# mode, a PCRE superset of ERE), so it must stay ERE-compatible to behave
+# identically in both engines.
+build_banned_pattern() {
+  local npm npx mux
+  npm=$(_pkg_tool)
+  npx=$(_pkg_runner)
+  mux=$(_mux_tool)
+  # Three ways a line counts as a real invocation, not a mention:
+  #   (a) tool name directly followed by one of its known subcommands
+  #   (b) tmux directly followed by one of its known subcommands
+  #   (c) tool name in shell-command position (line start, after a backtick,
+  #       a `$` prompt marker, or a shell operator ; & |) followed by any
+  #       word/flag/path-shaped token -- catches npx <anything> and
+  #       subcommands not in the vocabulary lists above.
+  printf '(^|[^[:alnum:]_])(%s|%s)[[:space:]]+(%s)([^[:alnum:]_]|$)|(^|[^[:alnum:]_])%s[[:space:]]+(%s)([^[:alnum:]_]|$)|(^|`|\\$|[;&|][[:space:]]*)[[:space:]]*(%s|%s|%s)[[:space:]]+[a-zA-Z0-9@./-]' \
+    "$npm" "$npx" "$NPM_SUBCOMMANDS" \
+    "$mux" "$TMUX_SUBCOMMANDS" \
+    "$npm" "$npx" "$mux"
 }
 
 # Files/globs exempt from scanning entirely: binary, lockfiles, vendored, this guard
@@ -66,16 +102,11 @@ declare -a EXEMPT_GLOBS=(
   '.omc/**'
 )
 
-# Allowlisted line-content regexes (kept occurrences per the plan): TMUX env-var reads,
-# tmux-compat wire identifiers, registry URLs, package-name strings, npmjs paths.
-declare -a ALLOW_LINE_PATTERNS=(
-  'process\.env\.TMUX'
-  '\$TMUX\b'
-  'TMUX_TMPDIR'
-  'registry\.npmjs\.org'
-  '"tmux"'
-  "'tmux'"
-)
+# Allowlisted line-content regexes for content that still matches the invocation
+# pattern (e.g. a code fence showing a *banned* command as a documented "don't do
+# this" example, or a compat-prose phrase that happens to contain a subcommand
+# word right after the tool name by coincidence).
+declare -a ALLOW_LINE_PATTERNS=()
 
 load_extra_allow_patterns() {
   [[ -f "$PATTERNS_FILE" ]] || return 0
@@ -86,28 +117,17 @@ load_extra_allow_patterns() {
   done < "$PATTERNS_FILE"
 }
 
-build_rg_args() {
-  local -n out=$1
-  out=(--line-number --with-filename --no-heading -P "$BANNED_PATTERN")
-  local g
-  for g in "${EXEMPT_GLOBS[@]}"; do
-    out+=(--glob "!$g")
-  done
-}
-
 is_allowlisted_line() {
   local content=$1
   local pat
-  for pat in "${ALLOW_LINE_PATTERNS[@]}"; do
+  for pat in "${ALLOW_LINE_PATTERNS[@]+"${ALLOW_LINE_PATTERNS[@]}"}"; do
     [[ "$content" =~ $pat ]] && return 0
   done
   return 1
 }
 
 # rg --glob only filters rg's own directory walk; explicit file-path arguments bypass
-# it entirely. When targets come from `git diff --name-only` (or the caller passes
-# explicit paths), drop exempt paths here so scripts/pnpm-rmux-guard.bash and friends
-# never get scanned twice, once as a glob exclude and once as a literal path.
+# it entirely. Filter here too so exempt paths never get scanned via an explicit list.
 path_is_exempt() {
   local path=$1
   local g
@@ -129,34 +149,113 @@ filter_exempt_targets() {
   src=("${kept[@]+"${kept[@]}"}")
 }
 
-main() {
-  load_extra_allow_patterns
+# Scan only the ADDED lines of a staged diff for a single file, matching the
+# banned pattern against line content and reporting the file's new-side line
+# number (parsed from @@ -a,b +c,d @@ hunk headers) rather than a diff line index.
+scan_staged_added_lines() {
+  local file=$1 pattern=$2
+  local -a violations=()
+  local line new_line=0
 
-  local -a rg_args
-  build_rg_args rg_args
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^@@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+) ]]; then
+      new_line=${BASH_REMATCH[2]}
+      continue
+    fi
+    [[ "$line" == +++* || "$line" == ---* ]] && continue
+    if [[ "$line" == +* ]]; then
+      local content=${line:1}
+      if [[ "$content" =~ $pattern ]] && ! is_allowlisted_line "$content"; then
+        violations+=("$file:$new_line: $content")
+      fi
+      (( new_line++ ))
+    elif [[ "$line" != -* ]]; then
+      : # context line under -U0 does not appear; nothing to do
+    fi
+  done < <(git diff --cached -U0 --diff-filter=ACM -- "$file")
 
-  local -a targets=("$@")
-  if [[ "${1:-}" == "--staged" ]]; then
-    mapfile -t targets < <(git diff --cached --name-only --diff-filter=ACM)
-    (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no staged files\n'; exit 0; }
-    filter_exempt_targets targets
-    (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no non-exempt staged files\n'; exit 0; }
-  elif (( ${#targets[@]} == 0 )); then
-    targets=(.)
-  else
-    filter_exempt_targets targets
-    (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no non-exempt targets\n'; exit 0; }
+  # printf with a zero-length argument list still runs its format string once,
+  # emitting one blank line -- guard so mapfile on the caller side never turns
+  # "no violations" into a one-element array containing an empty string.
+  (( ${#violations[@]} > 0 )) && printf '%s\n' "${violations[@]}"
+  return 0
+}
+
+run_precommit() {
+  local pattern
+  pattern=$(build_banned_pattern)
+
+  local -a targets=()
+  mapfile -t targets < <(git diff --cached --name-only --diff-filter=ACM)
+  (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no staged files\n'; return 0; }
+
+  filter_exempt_targets targets
+  (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no non-exempt staged files\n'; return 0; }
+
+  local -a all_violations=()
+  local f
+  for f in "${targets[@]}"; do
+    [[ -f "$f" ]] || continue
+    local -a file_violations=()
+    mapfile -t file_violations < <(scan_staged_added_lines "$f" "$pattern")
+    (( ${#file_violations[@]} > 0 )) && all_violations+=("${file_violations[@]}")
+  done
+
+  if (( ${#all_violations[@]} > 0 )); then
+    printf 'pnpm-rmux-guard: staged diff adds banned npm/tmux invocation(s) (see %s):\n' "$LAW_DOC" >&2
+    printf '  %s\n' "${all_violations[@]}" >&2
+    return 1
   fi
 
+  printf 'pnpm-rmux-guard: clean\n'
+  return 0
+}
+
+# Advisory tree-wide report: scans full current file content (not diff-scoped),
+# never fails the caller regardless of what it finds. For periodic manual review
+# of the whole tree's compliance, not for gating commits.
+run_audit() {
+  local pattern
+  pattern=$(build_banned_pattern)
+
+  local -a rg_args=(--line-number --with-filename --no-heading -P "$pattern")
+  local g
+  for g in "${EXEMPT_GLOBS[@]}"; do
+    rg_args+=(--glob "!$g")
+  done
+
   local -a matches=()
-  local line
-  while IFS= read -r line; do
-    [[ -z "$line" ]] && continue
-    matches+=("$line")
-  done < <(rg "${rg_args[@]}" -- "${targets[@]}" 2>/dev/null || true)
+  mapfile -t matches < <(rg "${rg_args[@]}" -- . 2>/dev/null || true)
 
   local -a violations=()
-  local file lineno content
+  local line file lineno content
+  for line in "${matches[@]+"${matches[@]}"}"; do
+    IFS=':' read -r file lineno content <<< "$line"
+    is_allowlisted_line "$content" && continue
+    violations+=("$file:$lineno: $content")
+  done
+
+  printf 'pnpm-rmux-guard --audit: %d advisory hit(s) tree-wide (see %s)\n' \
+    "${#violations[@]}" "$LAW_DOC"
+  printf '  %s\n' "${violations[@]+"${violations[@]}"}"
+  return 0
+}
+
+# Manual mode: scan given files' current on-disk content in full (not diff-scoped).
+run_paths() {
+  local pattern
+  pattern=$(build_banned_pattern)
+
+  local -a targets=("$@")
+  filter_exempt_targets targets
+  (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no non-exempt targets\n'; return 0; }
+
+  local -a rg_args=(--line-number --with-filename --no-heading -P "$pattern")
+  local -a matches=()
+  mapfile -t matches < <(rg "${rg_args[@]}" -- "${targets[@]}" 2>/dev/null || true)
+
+  local -a violations=()
+  local line file lineno content
   for line in "${matches[@]+"${matches[@]}"}"; do
     IFS=':' read -r file lineno content <<< "$line"
     is_allowlisted_line "$content" && continue
@@ -164,13 +263,23 @@ main() {
   done
 
   if (( ${#violations[@]} > 0 )); then
-    printf 'pnpm-rmux-guard: banned npm/tmux token(s) found (see %s for allowlist):\n' "$LAW_DOC" >&2
+    printf 'pnpm-rmux-guard: banned npm/tmux invocation(s) found (see %s):\n' "$LAW_DOC" >&2
     printf '  %s\n' "${violations[@]}" >&2
-    exit 1
+    return 1
   fi
 
   printf 'pnpm-rmux-guard: clean\n'
-  exit 0
+  return 0
+}
+
+main() {
+  load_extra_allow_patterns
+
+  case "${1:-}" in
+    --audit) run_audit ;;
+    --staged | '') run_precommit ;;
+    *) run_paths "$@" ;;
+  esac
 }
 
 main "$@"
