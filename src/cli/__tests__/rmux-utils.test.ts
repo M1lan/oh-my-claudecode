@@ -101,6 +101,11 @@ afterEach(() => {
 // resolveLaunchPolicy
 // ---------------------------------------------------------------------------
 describe('resolveLaunchPolicy', () => {
+  afterEach(() => {
+    mockedSpawnSync.mockReset();
+    __resetRmuxBinaryPathCache();
+  });
+
   it('forces direct mode for --print even when tmux is available', () => {
     vi.mocked(execFileSync).mockReturnValue(Buffer.from('tmux 3.4'));
 
@@ -126,9 +131,10 @@ describe('resolveLaunchPolicy', () => {
     // so cmux is no longer forced to "direct" when a multiplexer is resolvable.
     mockedExecFileSync.mockReturnValue('tmux 3.6a' as any);
     expect(
-      resolveLaunchPolicy({
-        CMUX_SURFACE_ID: 'C0D4B400-6C27-4957-BD01-32735B2251CD',
-      }),
+      resolveLaunchPolicy(
+        { CMUX_SURFACE_ID: 'C0D4B400-6C27-4957-BD01-32735B2251CD' },
+        ['--rmux'],
+      ),
     ).toBe('outside-tmux');
   });
 
@@ -162,9 +168,14 @@ describe('resolveLaunchPolicy', () => {
     ).toBe('inside-tmux');
   });
 
-  it('returns "outside-tmux" when tmux is available but no TMUX or CMUX env', () => {
+  it('returns "direct" when tmux is available but no detached launch was requested', () => {
     mockedExecFileSync.mockReturnValue('tmux 3.6a' as any);
-    expect(resolveLaunchPolicy({})).toBe('outside-tmux');
+    expect(resolveLaunchPolicy({})).toBe('direct');
+  });
+
+  it('allows detached session creation after explicit --rmux', () => {
+    mockedExecFileSync.mockReturnValue('tmux 3.6a' as any);
+    expect(resolveLaunchPolicy({}, ['--rmux'])).toBe('outside-tmux');
   });
 
   it('returns "direct" when tmux is not available', () => {
@@ -235,7 +246,7 @@ describe('resolveLaunchPolicy', () => {
         signal: null,
       } as ReturnType<typeof spawnSync>);
 
-    expect(resolveLaunchPolicy({})).toBe('outside-tmux');
+    expect(resolveLaunchPolicy({}, ['--rmux'])).toBe('outside-tmux');
     expect(mockedSpawnSync).toHaveBeenNthCalledWith(1, 'where', ['tmux'], {
       timeout: 5000,
       encoding: 'utf8',

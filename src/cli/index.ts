@@ -145,12 +145,18 @@ Examples:
   $ omc launch --madmax                Explicit launch with flags
 
 Options:
+  --rmux            Create and attach an explicit detached rmux session
+  --direct          Launch directly without creating a detached session
   --notify <bool>   Enable/disable CCNotifier events. false sets OMC_NOTIFY=0
                     and suppresses all stop/session-start/session-idle notifications.
                     Default: true
 
 Environment:
   OMC_NOTIFY=0              Suppress all notifications (set by --notify false)
+
+Detached rmux sessions record creator, parent PID, purpose, and request ID in
+HAUSGEIST_SESSION_CREATOR, HAUSGEIST_SESSION_PARENT,
+HAUSGEIST_SESSION_PURPOSE, and HAUSGEIST_REQUEST_ID.
 `,
   )
   .action(async (args: string[]) => {

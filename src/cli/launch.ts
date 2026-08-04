@@ -944,8 +944,17 @@ export function normalizeClaudeLaunchArgs(args: string[]): string[] {
   const normalized: string[] = [];
   let wantsBypass = false;
   let hasBypass = false;
+  let passthroughOnly = false;
 
   for (const arg of args) {
+    if (arg === '--') {
+      passthroughOnly = true;
+      normalized.push(arg);
+      continue;
+    }
+    if (!passthroughOnly && (arg === '--rmux' || arg === '--direct')) {
+      continue;
+    }
     if (arg === MADMAX_FLAG || arg === YOLO_FLAG) {
       wantsBypass = true;
       continue;
@@ -1034,7 +1043,7 @@ function abortMadmaxRequiresTmux(reason: 'missing' | 'launch-failed'): never {
  * runClaude: Launch Claude CLI (blocks until exit)
  * Handles 3 scenarios:
  * 1. inside-tmux: Launch claude in current pane
- * 2. outside-tmux: Create new tmux session with claude
+ * 2. outside-tmux: Create explicitly requested detached rmux session
  * 3. direct: tmux not available, run claude directly
  *
  * When --print/-p is present, always runs direct to preserve stdout piping.
@@ -1049,6 +1058,7 @@ export function runClaude(
   cwd: string,
   args: string[],
   sessionId: string,
+  launchPolicyArgs: string[] = args,
 ): void {
   // Print mode must bypass tmux so stdout flows to the parent process (issue #1665)
   if (isPrintMode(args)) {
@@ -1062,7 +1072,9 @@ export function runClaude(
       abortMadmaxRequiresTmux('missing');
     }
 
-    const policy = resolveLaunchPolicy(process.env, args, { requireTmux });
+    const policy = resolveLaunchPolicy(process.env, launchPolicyArgs, {
+      requireTmux,
+    });
 
     switch (policy) {
       case 'inside-tmux':
@@ -1155,7 +1167,7 @@ export function buildEnvExportPrefix(vars: string[]): string {
 }
 
 /**
- * Run Claude outside tmux - create new session.
+ * Run Claude outside rmux - create explicitly requested detached session.
  *
  * `requireTmux=true` (set by --madmax on macOS) turns the tmux launch
  * failures from silent demotions into hard errors with a remediation hint.
@@ -1163,7 +1175,7 @@ export function buildEnvExportPrefix(vars: string[]): string {
 function runClaudeOutsideTmux(
   cwd: string,
   args: string[],
-  _sessionId: string,
+  sessionId: string,
   options: { requireTmux?: boolean } = {},
 ): void {
   const forwardedEnv = Object.fromEntries(
@@ -1189,18 +1201,53 @@ function runClaudeOutsideTmux(
     : `${envPrefix}sleep 0.3; perl -e 'use POSIX;tcflush(0,TCIFLUSH)' 2>/dev/null; `;
   const claudeCmd = wrapWithLoginShell(`${preflight}${rawClaudeCmd}`);
   const sessionName = buildRmuxSessionName(cwd);
+  const provenanceEnv = [
+    'HAUSGEIST_SESSION_CREATOR=omc',
+    `HAUSGEIST_SESSION_PARENT=pid:${process.pid}`,
+    'HAUSGEIST_SESSION_PURPOSE=interactive-leader',
+    `HAUSGEIST_REQUEST_ID=${sessionId}`,
+  ];
 
   try {
-    rmuxExec(['new-session', '-d', '-s', sessionName, '-c', cwd, claudeCmd], {
-      stripTmux: true,
-      stdio: 'inherit',
-    });
+    rmuxExec(
+      [
+        'new-session',
+        '-d',
+        '-s',
+        sessionName,
+        '-c',
+        cwd,
+        ...provenanceEnv.flatMap((value) => ['-e', value]),
+        claudeCmd,
+      ],
+      {
+        stripTmux: true,
+        stdio: 'inherit',
+      },
+    );
   } catch {
     if (options.requireTmux) {
       abortMadmaxRequiresTmux('launch-failed');
     }
     runClaudeDirect(cwd, args);
     return;
+  }
+
+  try {
+    for (const [option, value] of [
+      ['@hausgeist_creator', 'omc'],
+      ['@hausgeist_parent', `pid:${process.pid}`],
+      ['@hausgeist_purpose', 'interactive-leader'],
+      ['@hausgeist_request_id', sessionId],
+    ]) {
+      rmuxExec(['set-option', '-t', sessionName, option, value], {
+        stripTmux: true,
+        stdio: 'ignore',
+      });
+    }
+  } catch {
+    // Session environment already holds atomic provenance. User options are a
+    // readable compatibility mirror for rmux/tmux implementations supporting them.
   }
 
   try {
@@ -1411,7 +1458,7 @@ export async function launchCommand(args: string[]): Promise<void> {
 
   // Phase 2: run
   try {
-    runClaude(cwd, normalizedArgs, sessionId);
+    runClaude(cwd, normalizedArgs, sessionId, argsAfterWebhook);
   } finally {
     // Phase 3: postLaunch
     await postLaunch(cwd, sessionId);

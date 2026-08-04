@@ -168,6 +168,12 @@ describe('normalizeClaudeLaunchArgs', () => {
       '--verbose',
     ]);
   });
+
+  it('strips OMC rmux transport flags before invoking Claude', () => {
+    expect(
+      normalizeClaudeLaunchArgs(['--rmux', '--model', 'opus', '--direct']),
+    ).toEqual(['--model', 'opus']);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -460,6 +466,58 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     expect(tmuxArgs).not.toContain('*:smcup@:rmcup@');
   });
 
+  it('records complete provenance in detached rmux session environment', () => {
+    runClaude('/tmp', [], 'request-123');
+
+    const newSession = vi
+      .mocked(rmuxExec)
+      .mock.calls.find(([args]) => args[0] === 'new-session')?.[0];
+    expect(newSession).toBeDefined();
+    expect(newSession).toEqual(
+      expect.arrayContaining([
+        '-e',
+        'HAUSGEIST_SESSION_CREATOR=omc',
+        'HAUSGEIST_SESSION_PARENT=pid:' + process.pid,
+        'HAUSGEIST_SESSION_PURPOSE=interactive-leader',
+        'HAUSGEIST_REQUEST_ID=request-123',
+      ]),
+    );
+
+    const calls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
+    expect(calls).toEqual(
+      expect.arrayContaining([
+        [
+          'set-option',
+          '-t',
+          'test-session',
+          '@hausgeist_creator',
+          'omc',
+        ],
+        [
+          'set-option',
+          '-t',
+          'test-session',
+          '@hausgeist_parent',
+          `pid:${process.pid}`,
+        ],
+        [
+          'set-option',
+          '-t',
+          'test-session',
+          '@hausgeist_purpose',
+          'interactive-leader',
+        ],
+        [
+          'set-option',
+          '-t',
+          'test-session',
+          '@hausgeist_request_id',
+          'request-123',
+        ],
+      ]),
+    );
+  });
+
   it('places mouse mode setup before attach-session', () => {
     runClaude('/tmp', [], 'sid');
 
@@ -527,6 +585,10 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     const tmuxCalls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
     expect(tmuxCalls.map((args) => args[0])).toEqual([
       'new-session',
+      'set-option',
+      'set-option',
+      'set-option',
+      'set-option',
       'set-option',
       'show-options',
       'set-option',

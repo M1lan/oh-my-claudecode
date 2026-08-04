@@ -411,7 +411,15 @@ export function resolveLaunchPolicy(
   if (args.some((arg) => arg === '--print' || arg === '-p')) {
     return 'direct';
   }
+  let explicitPolicy: ClaudeLaunchPolicy | undefined;
+  for (const arg of args) {
+    if (arg === '--') break;
+    if (arg === '--direct') explicitPolicy = 'direct';
+    if (arg === '--rmux') explicitPolicy = 'outside-tmux';
+  }
+  if (explicitPolicy === 'direct') return 'direct';
   if (env.TMUX) return 'inside-tmux';
+  if (explicitPolicy !== 'outside-tmux' && !options.requireTmux) return 'direct';
   // Terminal emulators that embed their own multiplexer (e.g. cmux, a
   // Ghostty-based terminal) set CMUX_SURFACE_ID but not TMUX. Prefer a
   // tmux-compatible multiplexer (rmux, or tmux itself) when one is usable —
