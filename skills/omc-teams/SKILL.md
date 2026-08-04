@@ -44,8 +44,8 @@ Spawn N CLI worker processes in rmux/tmux panes (rmux preferred) to execute task
 - **A tmux-compatible multiplexer** (`rmux` preferred, or `tmux`) must be installed and discoverable when running from a plain terminal; classic tmux sessions reuse the current surface. On POSIX, a plain `rmux` on PATH is driven in preference to `tmux`.
 - **cmux is a last-resort fallback**, not the default. Even inside a cmux surface (`CMUX_SURFACE_ID` set without `$TMUX`), OMC prefers rmux/tmux when either is resolvable — since there is no live pane context to reuse, it creates a **detached** rmux/tmux session (same as a plain terminal) rather than splitting the cmux surface; native cmux splits are used only when no rmux/tmux binary is available.
 - **claude** CLI: install and authenticate Claude Code using the [official setup instructions](https://code.claude.com/docs/en/setup); the legacy Anthropic npm package install path is deprecated for normal user installs.
-- **codex** CLI: `npm install -g @openai/codex`
-- **gemini** CLI: `npm install -g @google/gemini-cli` (enterprise/API-key tier)
+- **codex** CLI: `pnpm add -g @openai/codex`
+- **gemini** CLI: `pnpm add -g @google/gemini-cli` (enterprise/API-key tier)
 - **antigravity** CLI: Install per the [official instructions](https://antigravity.google) (provides the `agy` binary) — verify with `agy --version`; Google's successor to the Gemini CLI
 - **grok** CLI: install and authenticate the Grok CLI used by your environment
 - **cursor** CLI: install and authenticate `cursor-agent`; if unavailable, report this setup requirement instead of silently falling back to Claude-only execution
@@ -186,8 +186,8 @@ If encountered, switch to `omc team ...` CLI commands.
 | `not inside tmux`            | Requested in-place pane topology from a non-tmux surface | Start tmux and rerun, or let `omc team` use its detached-session fallback           |
 | `cmux surface detected`      | Running inside cmux without `$TMUX` and no rmux/tmux resolvable | Use the normal `omc team ...` flow; OMC prefers rmux/tmux and only creates native cmux worker splits when neither is available |
 | `Unsupported agent type`     | Requested agent is not claude/codex/gemini/antigravity/grok/cursor | Use `claude`, `codex`, `gemini`, `antigravity`, `grok`, or `cursor`; for native Claude Code agents use `/oh-my-claudecode:team` |
-| `codex: command not found`   | Codex CLI not installed             | `npm install -g @openai/codex`                                                      |
-| `gemini: command not found`  | Gemini CLI not installed            | `npm install -g @google/gemini-cli` (enterprise/API-key tier)                       |
+| `codex: command not found`   | Codex CLI not installed             | `pnpm add -g @openai/codex`                                                      |
+| `gemini: command not found`  | Gemini CLI not installed            | `pnpm add -g @google/gemini-cli` (enterprise/API-key tier)                       |
 | `agy: command not found`     | Antigravity CLI not installed       | Install per the [official instructions](https://antigravity.google)                |
 | `Team <name> is not running` | stale or missing runtime state      | `omc team status <team-name>` then `omc team shutdown <team-name> --force` if stale |
 | `status: failed`             | Workers exited with incomplete work | inspect runtime output, narrow scope, rerun                                         |

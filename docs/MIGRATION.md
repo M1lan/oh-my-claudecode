@@ -102,7 +102,7 @@ Maintenance release fixing test suite issues and continuing skill consolidation 
 ### Migration Steps
 
 1. **No breaking changes** - All functionality preserved
-2. **Test suite** now runs cleanly with `npm run test:run`
+2. **Test suite** now runs cleanly with `pnpm run test:run`
 3. **Deprecated skills** removed (already replaced in v3.5.3)
 
 ### For Developers
@@ -196,10 +196,10 @@ The project was rebranded to better reflect its purpose and improve discoverabil
 
 > **Why the difference?** The npm package name `oh-my-claude-sisyphus` was kept for backward compatibility with existing installations. The project, GitHub repository, plugin, and all commands use `oh-my-claudecode`.
 
-#### NPM Install Command (unchanged)
+#### Install Command (unchanged)
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 ```
 
 ### What Changed
@@ -326,10 +326,10 @@ No more `/oh-my-claudecode:cancel-ralph` - just say "cancel"!
 
 Follow these steps to migrate your existing setup:
 
-#### 1. Uninstall Old Package (if installed via npm)
+#### 1. Uninstall Old Package (if installed via pnpm)
 
 ```bash
-npm uninstall -g oh-my-claude-sisyphus
+pnpm remove -g oh-my-claude-sisyphus
 ```
 
 #### 2. Install via Plugin System
@@ -340,7 +340,7 @@ npm uninstall -g oh-my-claude-sisyphus
 /plugin install oh-my-claudecode
 ```
 
-> **Note**: npm/bun global installs no longer provide the in-session plugin surface by themselves. Use the plugin system for slash commands, hooks, and skills; use the published npm package `oh-my-claude-sisyphus` when you need the terminal `omc` CLI.
+> **Note**: pnpm/bun global installs no longer provide the in-session plugin surface by themselves. Use the plugin system for slash commands, hooks, and skills; use the published npm package `oh-my-claude-sisyphus` when you need the terminal `omc` CLI.
 
 #### 3. Preserve Existing OMC Directories
 
@@ -356,7 +356,7 @@ mv ~/.claude/omc/mnemosyne.json ~/.claude/omc/learner.json
 
 #### 5. Review Scripts and Configurations
 
-Search your local scripts and docs for stale references to removed commands or the old config filename. Keep the npm package name as `oh-my-claude-sisyphus` for npm/bun installs; do not rewrite it to the project/plugin brand name.
+Search your local scripts and docs for stale references to removed commands or the old config filename. Keep the npm package name as `oh-my-claude-sisyphus` for pnpm/bun installs; do not rewrite it to the project/plugin brand name.
 
 #### 6. Run One-Time Setup
 
@@ -377,7 +377,7 @@ After migration, verify your setup:
 1. **Check CLI installation, if you use the npm CLI surface**:
 
    ```bash
-   npm list -g oh-my-claude-sisyphus
+   pnpm list -g oh-my-claude-sisyphus
    ```
 
 2. **Verify directories exist**:
@@ -565,7 +565,7 @@ Background agents can be resumed with full context via `resume-session` tool.
 Version 3.1 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claude-sisyphus
+pnpm update -g oh-my-claude-sisyphus
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -673,7 +673,7 @@ Users set their default mode preference via `/oh-my-claudecode:omc-setup`.
 Version 3.4.0 is a drop-in upgrade. No migration required!
 
 ```bash
-npm update -g oh-my-claude-sisyphus
+pnpm update -g oh-my-claude-sisyphus
 ```
 
 All existing configurations, plans, and workflows continue working unchanged.
@@ -742,7 +742,7 @@ After upgrading, verify new features:
 1. **Check CLI installation, if you use the npm CLI surface**:
 
    ```bash
-   npm list -g oh-my-claude-sisyphus
+   pnpm list -g oh-my-claude-sisyphus
    ```
 
 2. **Test unified cancel**:

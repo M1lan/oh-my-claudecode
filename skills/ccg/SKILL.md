@@ -19,11 +19,11 @@ Use this when you want parallel external perspectives without launching rmux/tmu
 
 ## Requirements
 
-- **Codex CLI**: `npm install -g @openai/codex` (or `@openai/codex`)
+- **Codex CLI**: `pnpm add -g @openai/codex` (or `@openai/codex`)
 - **Antigravity CLI** (Google's successor to the Gemini CLI): install the `agy` binary
   per the [official Antigravity instructions](https://antigravity.google) (inspect any
   installer before running it). Verify: `agy --version`
-- **Gemini CLI** remains supported for enterprise/API-key use cases: `npm install -g @google/gemini-cli`
+- **Gemini CLI** remains supported for enterprise/API-key use cases: `pnpm add -g @google/gemini-cli`
 - `omc ask` command available
 - If either CLI is unavailable, continue with whichever provider is available and note the limitation
 
