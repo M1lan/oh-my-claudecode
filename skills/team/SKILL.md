@@ -35,9 +35,9 @@ The `swarm` compatibility alias was removed in #1131.
 /team 4:designer "implement responsive layouts for all page components"
 /team "refactor the auth module with security review"
 /team ralph "build a complete REST API for user management"
-# With Codex CLI workers (requires: npm install -g @openai/codex)
+# With Codex CLI workers (requires: pnpm add -g @openai/codex)
 /team 2:codex "review architecture and suggest improvements"
-# With Gemini CLI workers (requires: npm install -g @google/gemini-cli)
+# With Gemini CLI workers (requires: pnpm add -g @google/gemini-cli)
 /team 2:gemini "redesign the UI components"
 # With Antigravity CLI workers (requires: install per https://antigravity.google)
 /team 2:antigravity "redesign the UI components"
@@ -592,8 +592,8 @@ Tasks are tagged with an execution mode during decomposition:
 | Execution Mode  | Provider               | Capabilities                                                                                                                                                                               |
 | --------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `claude_worker` | Claude agent           | Full Claude Code tool access (Read/Write/Edit/Bash/Task). Best for tasks needing Claude's reasoning + iterative tool use.                                                                  |
-| `codex_worker`  | Codex CLI (rmux/tmux pane)  | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `npm install -g @openai/codex`. |
-| `gemini_worker`      | Gemini CLI (rmux/tmux pane)      | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `npm install -g @google/gemini-cli` (enterprise/API-key tier). |
+| `codex_worker`  | Codex CLI (rmux/tmux pane)  | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for code review, security analysis, refactoring, architecture. Requires `pnpm add -g @openai/codex`. |
+| `gemini_worker`      | Gemini CLI (rmux/tmux pane)      | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Best for UI/design work, documentation, large-context tasks. Requires `pnpm add -g @google/gemini-cli` (enterprise/API-key tier). |
 | `antigravity_worker` | Antigravity CLI (rmux/tmux pane) | Full filesystem access in working_directory. Runs autonomously via rmux/tmux pane. Same strengths as gemini_worker; Google's successor to the Gemini CLI. Install per the [official instructions](https://antigravity.google) (`agy` binary). |
 
 ### How CLI Workers Operate
@@ -1039,6 +1039,6 @@ MCP workers can operate in isolated git worktrees to prevent file conflicts betw
 ## Parallel session caveats
 
 - **Multi-repo workspace anchor:** drop a `.omc-workspace` marker at the parent directory so multiple sessions across sub-repos share one `.omc/`. Resolution order: `OMC_STATE_DIR > .omc-workspace > git > cwd`. See `docs/REFERENCE.md`.
-- **Session id source:** OMC_SESSION_ID env var wins in CLI contexts; hook payload data.session_id wins in hook contexts.
+- **Session id source:** OMC_SESSION_ID env var wins in CLI contexts; hook input data.session_id wins in hook contexts.
 - **Plan id (when applicable):** Team state is session-scoped. Team handoffs at `.omc/handoffs/` are shared by design (see Wave G in the workspace plan).
 - **Parallel verdict:** supported (session-scoped + shared handoffs by design)

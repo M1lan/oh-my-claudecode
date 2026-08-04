@@ -45,7 +45,7 @@ This integrates directly with Claude Code's plugin system and uses Node.js hooks
 ### Terminal CLI
 
 ```bash
-npm i -g oh-my-claude-sisyphus@latest
+pnpm add -g oh-my-claude-sisyphus@latest
 omc setup
 ```
 
@@ -271,17 +271,17 @@ Multi-plan layout, enabled by `--plan-id <id>` or `--auto-plan-id` on `omc ultra
 - **Different machines**: Run on each machine where you use Claude Code
 - **New projects**: Run `/oh-my-claudecode:omc-setup --local` in each project that needs omc
 
-> **NOTE**: After updating the plugin (via `npm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
+> **NOTE**: After updating the plugin (via `pnpm update`, `git pull`, or Claude Code's plugin update), you MUST re-run `/oh-my-claudecode:omc-setup` to apply the latest CLAUDE.md changes.
 
 ### Remote OMC / Remote MCP Access
 
-Issue #1653 asked whether OMC can "connect to a remote OMC" so one development machine can browse files on lab/test machines without opening an interactive SSH session.
+Issue #1653 asked whether OMC can "connect to a remote OMC" so one development machine can browse files on lab/test machines without opening an interactive secure-remote-shell session.
 
 The narrow, coherent answer today is:
 
 - **Supported**: connect to a **remote MCP server** through the unified MCP registry
 - **Not implemented**: a general "OMC cluster", shared remote filesystem view, or automatic remote-OMC federation
-- **Still appropriate for full remote shell workflows**: SSH, worktrees, or a mounted/network filesystem
+- **Still appropriate for full remote shell workflows**: a secure remote shell, worktrees, or a mounted/network filesystem
 
 If a remote host already exposes an MCP endpoint, add it to your MCP registry (or Claude settings and then re-run setup so OMC syncs the registry to Codex too):
 
@@ -296,7 +296,7 @@ If a remote host already exposes an MCP endpoint, add it to your MCP registry (o
 }
 ```
 
-This gives OMC a coherent remote connection surface for MCP-backed tools. It does **not** make all remote files magically appear as a local workspace, and it does **not** replace SSH for arbitrary shell access.
+This gives OMC a coherent remote connection surface for MCP-backed tools. It does **not** make all remote files magically appear as a local workspace, and it does **not** replace a secure remote shell for arbitrary shell access.
 
 If you need richer cross-machine behavior in the future, that would require a separate authenticated remote execution/filesystem design rather than stretching the current local-workspace architecture.
 
@@ -630,7 +630,7 @@ omc session friction report --project all --json
 
 Use OMC's terminal and library surfaces in non-interactive environments:
 
-- Run CLI commands that have deterministic exit codes, for example `omc setup`, `omc ask ...`, `omc session search ... --json`, or repo-owned verification scripts such as `npm run sync-metadata:verify`.
+- Run CLI commands that have deterministic exit codes, for example `omc setup`, `omc ask ...`, `omc session search ... --json`, or repo-owned verification scripts such as `pnpm run sync-metadata:verify`.
 - Provide authentication through runner environment variables (`ANTHROPIC_API_KEY`) or pre-authenticated provider CLIs for `codex`, `gemini`, `antigravity`, `grok`, or `cursor` when using `omc ask` / `omc team`.
 - Keep state explicit for ephemeral runners by setting `OMC_STATE_DIR` when state must survive worktree deletion or checkout replacement.
 - Avoid interactive slash skills (`/autopilot`, `/ralph`, `/ultrawork`, `/deep-interview`, `/team`) in CI jobs; they require an active Claude Code session and user-visible conversation loop.
@@ -684,7 +684,7 @@ OMC handoffs follow an artifact-first discipline:
 
 - **Control plane** data stays small and operational: queue state, worker claims, session state, and interop task/message envelopes.
 - **Data plane** artifacts stay durable: plans, prompts, specs, traces, and result files.
-- Large payloads should be referenced by descriptor instead of copied into control-plane state.
+- Large data bodies should be referenced by descriptor instead of copied into control-plane state.
 - Current low-risk call sites follow this split explicitly:
   - shared interop state writes oversized task descriptions, task results, and shared messages to `.omc/state/interop/artifacts/**`
   - prompt persistence keeps durable prompt/response files in `.omc/prompts/**` and exposes descriptor metadata through job status records
@@ -704,8 +704,8 @@ Canonical descriptor fields:
 
 Bounded handoff policy:
 
-1. Keep small payloads inline only when the call site's explicit threshold allows it.
-2. For larger payloads, pass a short summary plus the descriptor.
+1. Keep small data bodies inline only when the call site's explicit threshold allows it.
+2. For larger data bodies, pass a short summary plus the descriptor.
 3. Keep durable content in artifact paths such as `.omc/plans/`, `.omc/prompts/`, and related artifact stores rather than embedding full bodies into queue or status records.
 
 ## Agents (29 Total)
@@ -1188,7 +1188,7 @@ For complete documentation, see **[Performance Monitoring Guide](./PERFORMANCE-M
 | Feature                   | Description                                           | Access                                 |
 | ------------------------- | ----------------------------------------------------- | -------------------------------------- |
 | **Agent Observatory**     | Real-time agent status, efficiency, bottlenecks       | HUD / API                              |
-| **Session-End Summaries** | Persisted per-session summaries and callback payloads | `.omc/sessions/*.json`, `session-end`  |
+| **Session-End Summaries** | Persisted per-session summaries and callback data bodies | `.omc/sessions/*.json`, `session-end`  |
 | **Session Replay**        | Event timeline for post-session analysis              | `.omc/state/agent-replay-*.jsonl`      |
 | **Session Search**        | Search prior local transcript/session artifacts       | `omc session search`, `session_search` |
 | **Intervention System**   | Auto-detection of stale agents, cost overruns         | Automatic                              |
@@ -1309,7 +1309,7 @@ Available presets: `minimal`, `focused`, `full`, `dense`, `analytics`, `opencode
 | Commands not found    | Re-run `/oh-my-claudecode:omc-setup`                                             |
 | Hooks not executing   | Check hook permissions: `chmod +x ~/.claude/hooks/**/*.sh`                       |
 | Agents not delegating | Verify CLAUDE.md is loaded: check `./.claude/CLAUDE.md` or `~/.claude/CLAUDE.md` |
-| LSP tools not working | Install language servers: `npm install -g typescript-language-server`            |
+| LSP tools not working | Install language servers: `pnpm add -g typescript-language-server`            |
 | Token limit errors    | Use `/oh-my-claudecode:` for token-efficient execution                           |
 
 ### Auto-Update
