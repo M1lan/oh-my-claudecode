@@ -337,10 +337,19 @@ export async function teamReadConfig(
   const manifestPath = absPath(cwd, TeamPaths.manifest(teamName));
   const [manifest, config] = await Promise.all([
     teamReadManifest(teamName, cwd),
-    readJsonSafe<TeamConfig>(configPath),
+    readJsonSafe<TeamConfig & { agentTypes?: unknown[] }>(configPath),
   ]);
   if (!config && existsSync(configPath))
     throw new Error('invalid_persisted_state');
+  // Preserve raw V1 agentTypes provenance before worker canonicalization. The
+  // provenance is the only reliable signal used to route legacy cleanup.
+  if (config && Array.isArray(config.agentTypes)) {
+    const { workers: rawWorkers, ...rest } = config;
+    return {
+      ...rest,
+      workers: Array.isArray(rawWorkers) ? rawWorkers : [],
+    } as TeamConfig;
+  }
   if (
     config &&
     typeof config.state_revision === 'number' &&
@@ -643,6 +652,7 @@ export async function teamClaimTask(
     taskFilePath: (tn: string, tid: string, c: string) =>
       canonicalTaskFilePath(tn, tid, c),
     writeAtomic,
+    launchAttemptId: process.env.OMC_WORKER_LAUNCH_ATTEMPT_ID,
   });
 }
 

@@ -24,8 +24,8 @@ const teamCleanupMocks = vi.hoisted(() => ({
   teamReadManifest: vi.fn(async () => null),
   teamReadConfig: vi.fn(async () => null),
   teamCleanup: vi.fn(async () => undefined),
-  shutdownTeamV2: vi.fn(async () => undefined),
-  shutdownTeam: vi.fn(async () => undefined),
+  shutdownTeamV2: vi.fn(async () => ({ outcome: 'cleaned' as const })),
+  shutdownTeam: vi.fn(async () => true),
 }));
 
 vi.mock('../../../team/team-ops.js', async (_importOriginal) => {
@@ -91,8 +91,44 @@ describe('processSessionEnd team cleanup (#1632)', () => {
     teamCleanupMocks.teamReadManifest.mockResolvedValue(null);
     teamCleanupMocks.teamReadConfig.mockResolvedValue(null);
     teamCleanupMocks.teamCleanup.mockResolvedValue(undefined);
-    teamCleanupMocks.shutdownTeamV2.mockResolvedValue(undefined);
-    teamCleanupMocks.shutdownTeam.mockResolvedValue(undefined);
+    teamCleanupMocks.shutdownTeamV2.mockResolvedValue({ outcome: 'cleaned' });
+    teamCleanupMocks.shutdownTeam.mockResolvedValue(true);
+  });
+
+  it('records missing team config as preserved instead of deleting ownership evidence', async () => {
+    const sessionId = 'pid-1632-missing-config';
+    const teamSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
+    fs.mkdirSync(teamSessionDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(teamSessionDir, 'team-state.json'),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'missing-config-team',
+        current_phase: 'team-exec',
+      }),
+      'utf-8',
+    );
+    teamCleanupMocks.teamReadConfig.mockResolvedValue(null);
+
+    await expect(cleanupSessionOwnedTeams(tmpDir, sessionId)).resolves.toEqual({
+      attempted: ['missing-config-team'],
+      cleaned: [],
+      failed: [
+        {
+          teamName: 'missing-config-team',
+          error: 'team-shutdown-preserved:config_missing_cleanup_evidence',
+        },
+      ],
+    });
+    expect(teamCleanupMocks.teamCleanup).not.toHaveBeenCalled();
+    expect(teamCleanupMocks.shutdownTeamV2).not.toHaveBeenCalled();
   });
 
   it('force-shuts down a session-owned runtime-v2 team from session team state', async () => {
@@ -128,6 +164,47 @@ describe('processSessionEnd team cleanup (#1632)', () => {
       { force: true, timeoutMs: 0 },
     );
     expect(teamCleanupMocks.shutdownTeam).not.toHaveBeenCalled();
+  });
+
+  it('records a preserved runtime-v2 shutdown as incomplete cleanup', async () => {
+    const sessionId = 'pid-1632-v2-preserved';
+    const teamSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
+    fs.mkdirSync(teamSessionDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(teamSessionDir, 'team-state.json'),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'preserved-team',
+      }),
+      'utf-8',
+    );
+    teamCleanupMocks.teamReadConfig.mockResolvedValue({
+      workers: [{ name: 'worker-1', pane_id: '%1' }],
+    } as never);
+    teamCleanupMocks.shutdownTeamV2.mockResolvedValueOnce({
+      outcome: 'preserved',
+      reason: 'provider_cleanup_unverified',
+      workers: ['worker-1'],
+    } as never);
+
+    await expect(
+      cleanupSessionOwnedTeams(tmpDir, sessionId),
+    ).resolves.toMatchObject({
+      cleaned: [],
+      failed: [
+        {
+          teamName: 'preserved-team',
+          error: 'team-shutdown-preserved:provider_cleanup_unverified',
+        },
+      ],
+    });
   });
 
   it('force-shuts down a legacy runtime team referenced by the ending session', async () => {
@@ -170,6 +247,46 @@ describe('processSessionEnd team cleanup (#1632)', () => {
       false,
     );
     expect(teamCleanupMocks.shutdownTeamV2).not.toHaveBeenCalled();
+  });
+
+  it('records an unverified legacy shutdown as failed instead of cleaned', async () => {
+    const sessionId = 'pid-1632-legacy-failed';
+    const teamSessionDir = path.join(
+      tmpDir,
+      '.omc',
+      'state',
+      'sessions',
+      sessionId,
+    );
+    fs.mkdirSync(teamSessionDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(teamSessionDir, 'team-state.json'),
+      JSON.stringify({
+        active: true,
+        session_id: sessionId,
+        team_name: 'legacy-failed-team',
+        current_phase: 'team-exec',
+      }),
+      'utf-8',
+    );
+    teamCleanupMocks.teamReadConfig.mockResolvedValue({
+      agentTypes: ['codex'],
+      tmuxSession: 'legacy-failed-team:0',
+      leaderPaneId: '%0',
+      tmuxOwnsWindow: false,
+    } as never);
+    teamCleanupMocks.shutdownTeam.mockResolvedValueOnce(false);
+
+    await expect(cleanupSessionOwnedTeams(tmpDir, sessionId)).resolves.toEqual({
+      attempted: ['legacy-failed-team'],
+      cleaned: [],
+      failed: [
+        {
+          teamName: 'legacy-failed-team',
+          error: 'team-shutdown-failed:legacy_cleanup_unverified',
+        },
+      ],
+    });
   });
 
   it('uses initial team names when session-scoped mode state has already been deleted', async () => {

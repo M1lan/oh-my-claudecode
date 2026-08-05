@@ -10,8 +10,8 @@ import type {
   SessionEndJobV1,
 } from './cleanup-manifest.js';
 import {
-  getProcessStartIdentity,
-  killProcessTree,
+  getProcessStartIdentitySync,
+  terminateOwnedProcessTree,
 } from '../../platform/process-utils.js';
 import {
   markSessionEndActionRunner,
@@ -177,6 +177,11 @@ export async function runSessionEndAction(
         env: runnerEnvironment(context),
       },
     );
+    // Capture identity synchronously, in the same tick as spawn, before
+    // child.unref() or any async operation. This eliminates the PID-reuse
+    // window that an async identity lookup would create. If the child already
+    // exited or /proc is unreadable, identity is null and we fail closed.
+    const identity = child.pid ? getProcessStartIdentitySync(child.pid) : null;
     child.unref();
     let settled = false;
     let exitCode: number | null = null;
@@ -204,29 +209,40 @@ export async function runSessionEndAction(
         );
         timer.unref();
       });
-      await Promise.race([
-        Promise.resolve(killProcessTree(child.pid!, 'SIGKILL')).catch(
-          () => false,
-        ),
-        postKillWait,
-      ]);
+      if (identity && child.pid) {
+        await Promise.race([
+          terminateOwnedProcessTree({
+            pid: child.pid,
+            expectedStartIdentity: identity,
+            deadlineAt: new Date(
+              context.deadlineAt + POST_KILL_SETTLE_MS,
+            ).toISOString(),
+            force: true,
+          }).catch(() => 'unknown' as const),
+          postKillWait,
+        ]);
+      }
       await Promise.race([childExit, postKillWait]);
     };
+    if (!identity || !child.pid) {
+      // Identity capture failed: fail closed WITHOUT signalling any PID or
+      // process group. The child has its own deadline timer (set in the
+      // runner entrypoint) and will self-exit. Signalling a raw PID/group
+      // after identity failure could hit a reused PID.
+      await Promise.race([
+        childExit,
+        new Promise<void>((resolve) =>
+          setTimeout(resolve, POST_KILL_SETTLE_MS),
+        ),
+      ]);
+      return { code: 'runner-identity-unavailable', completed: false };
+    }
     const timeout = setTimeout(
       () => {
         deadlineTermination ??= terminate().finally(resolveTermination);
       },
       Math.max(1, context.deadlineAt - Date.now()),
     );
-    const identity = await getProcessStartIdentity(
-      child.pid!,
-      context.deadlineAt,
-    );
-    if (!identity) {
-      clearTimeout(timeout);
-      await terminate();
-      return { code: 'runner-identity-unavailable', completed: false };
-    }
     if (settled) {
       clearTimeout(timeout);
       return {

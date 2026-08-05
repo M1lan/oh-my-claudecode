@@ -8,7 +8,7 @@
  * runner retains ownership of their synchronous timeout boundary.
  */
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { existsSync, readFileSync, realpathSync } = require('fs');
 const path = require('path');
 const { join, basename, dirname } = path;
@@ -205,6 +205,24 @@ function resolveWorkerTarget(resolution, extraArgs) {
   }
 }
 
+function resolveTrustedSessionEndTarget(resolution, extraArgs) {
+  const trustedRoot = resolution.trustedPluginRoot;
+  if (!trustedRoot || extraArgs.length !== 0) return null;
+  try {
+    const canonicalTarget = normalizedComparisonPath(resolution.targetPath);
+    const canonicalRoot = normalizedComparisonPath(trustedRoot);
+    if (!isContainedBy(canonicalRoot, canonicalTarget)) return null;
+    const expectedTargets = ['session-end.mjs', 'wiki-session-end.mjs']
+      .map(script => normalizedComparisonPath(join(trustedRoot, 'scripts', script)));
+    if (!expectedTargets.includes(canonicalTarget)) return null;
+    const manifestHook = resolveHookTimeoutMsFromRoot(trustedRoot, resolution.targetPath, []);
+    return manifestHook?.event === 'SessionEnd' ? manifestHook : null;
+  } catch {
+    return null;
+  }
+}
+
+
 function writeTimeoutDiagnostic(targetPath, manifestHook, timeoutMs) {
   const message = `[run.cjs] Hook ${basename(targetPath)} timed out after ${timeoutMs}ms; exiting fail-open.\n`;
   if (manifestHook?.event !== 'UserPromptSubmit' || isDebugHooksEnabled()) {
@@ -212,7 +230,52 @@ function writeTimeoutDiagnostic(targetPath, manifestHook, timeoutMs) {
   }
 }
 
-function reapTree(child) {
+function captureProcessStartIdentity(pid) {
+  if (!Number.isInteger(pid) || pid <= 0) return null;
+  if (process.platform === 'linux') {
+    try {
+      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+      const closeParen = stat.lastIndexOf(')');
+      if (closeParen === -1) return null;
+      const fields = stat.substring(closeParen + 2).split(' ');
+      const startTime = parseInt(fields[19], 10);
+      return isNaN(startTime) ? null : String(startTime);
+    } catch {
+      return null;
+    }
+  }
+  if (process.platform === 'darwin') {
+    try {
+      const { status, stdout } = spawnSync('ps', ['-p', String(pid), '-o', 'lstart='],
+        { env: { ...process.env, LC_ALL: 'C' }, timeout: 2000, windowsHide: true });
+      if (status !== 0) return null;
+      const time = new Date(stdout.trim()).getTime();
+      return isNaN(time) ? null : `mac:${time}`;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function processIdentityMatches(pid, expectedIdentity) {
+  if (!expectedIdentity) return false;
+  try {
+    process.kill(pid, 0);
+  } catch {
+    return false;
+  }
+  return captureProcessStartIdentity(pid) === expectedIdentity;
+}
+
+function reapTree(child, childIdentity) {
+  // Identity-safe reap: verify the PID still belongs to the child we spawned
+  // before killing its process group. If the PID was reused by the OS after
+  // the child exited, processIdentityMatches returns false and we skip the
+  // kill entirely, relying on child.unref() for fail-open exit.
+  if (childIdentity && !processIdentityMatches(child.pid, childIdentity)) {
+    return;
+  }
   if (process.platform === 'win32') {
     // Fire-and-forget: a slow, denied, or missing taskkill must not block the
     // runner past the outer hooks.json budget. The runner still exits fail-open
@@ -254,6 +317,9 @@ function runGenericChild(targetPath, extraArgs, timeoutMs, manifestHook) {
       windowsHide: true,
       detached: process.platform !== 'win32',
     });
+    // Capture the durable start identity immediately so reapTree can reject
+    // a PID that was reused after the child exited.
+    const childIdentity = child.pid ? captureProcessStartIdentity(child.pid) : null;
 
     // The generic child is detached into its own process group (POSIX). If the
     // runner is terminated or cancelled BEFORE the inner timer fires (outer
@@ -268,20 +334,20 @@ function runGenericChild(targetPath, extraArgs, timeoutMs, manifestHook) {
       if (terminal) return;
       terminal = true;
       detachHandlers();
-      reapTree(child);
+      reapTree(child, childIdentity);
       process.exit(0);
     }
     function onRunnerExit() {
       if (terminal) return;
       terminal = true;
-      reapTree(child);
+      reapTree(child, childIdentity);
     }
 
     timer = setTimeout(() => {
       if (terminal) return;
       terminal = true;
       detachHandlers();
-      reapTree(child);
+      reapTree(child, childIdentity);
       // The runner MUST exit fail-open even if the tree reap did not (or could
       // not) complete — the core #3493 symptom is run.cjs parents living for
       // tens of minutes. unref() releases the child handle from the event loop.
@@ -410,11 +476,19 @@ if (require.main === module) {
         process.exitCode = status;
       });
     } else {
+      const sessionEndManifestHook = resolveTrustedSessionEndTarget(resolution, extraArgs);
+      if (sessionEndManifestHook) {
+        const timeoutMs = Math.min(resolveGenericTimeoutMs(sessionEndManifestHook), 300);
+        runWorker(resolution.targetPath, sessionEndManifestHook, timeoutMs).then(status => {
+          process.exitCode = status;
+        });
+      } else {
       const manifestHook = resolveHookTimeoutMs(resolution.targetPath, extraArgs);
       const timeoutMs = resolveGenericTimeoutMs(manifestHook);
       runGenericChild(resolution.targetPath, extraArgs, timeoutMs, manifestHook).then(status => {
         process.exitCode = status;
       });
+      }
     }
   }
 }
@@ -427,4 +501,5 @@ module.exports = {
   resolveGenericTimeoutMs,
   runGenericChild,
   DEFAULT_GENERIC_TIMEOUT_MS,
+  resolveTrustedSessionEndTarget,
 };

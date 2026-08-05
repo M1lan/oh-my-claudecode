@@ -799,8 +799,7 @@ export async function cleanupSessionOwnedTeams(
     return { attempted, cleaned, failed };
   }
 
-  const { teamReadConfig, teamCleanup } =
-    await import('../../team/team-ops.js');
+  const { teamReadConfig } = await import('../../team/team-ops.js');
   const { shutdownTeamV2 } = await import('../../team/runtime-v2.js');
   const { shutdownTeam } = await import('../../team/runtime.js');
 
@@ -810,21 +809,22 @@ export async function cleanupSessionOwnedTeams(
       try {
         const config = (await teamReadConfig(teamName, directory)) as unknown;
         if (!config || typeof config !== 'object') {
-          await teamCleanup(teamName, directory);
-          cleaned.push(teamName);
-          return;
-        }
-
-        if (Array.isArray((config as { workers?: unknown[] }).workers)) {
-          await shutdownTeamV2(teamName, directory, {
-            force: true,
-            timeoutMs: 0,
+          failed.push({
+            teamName,
+            error: 'team-shutdown-preserved:config_missing_cleanup_evidence',
           });
-          cleaned.push(teamName);
           return;
         }
 
-        if (Array.isArray((config as { agentTypes?: unknown[] }).agentTypes)) {
+        // Classify raw provenance: agentTypes => legacy V1, even if workers:[] was injected.
+        const hasAgentTypes = Array.isArray(
+          (config as { agentTypes?: unknown[] }).agentTypes,
+        );
+        const workers = (config as { workers?: unknown[] }).workers;
+        // V2 when workers array present and not legacy agentTypes provenance.
+        const hasV2Workers = !hasAgentTypes && Array.isArray(workers);
+
+        if (hasAgentTypes) {
           const legacyConfig = config as {
             tmuxSession?: string;
             leaderPaneId?: string | null;
@@ -840,21 +840,47 @@ export async function cleanupSessionOwnedTeams(
             legacyConfig.leaderPaneId.trim() !== ''
               ? legacyConfig.leaderPaneId.trim()
               : undefined;
-          await shutdownTeam(
-            teamName,
-            sessionName,
-            directory,
-            0,
-            undefined,
-            leaderPaneId,
-            legacyConfig.tmuxOwnsWindow === true,
-          );
-          cleaned.push(teamName);
+          if (
+            await shutdownTeam(
+              teamName,
+              sessionName,
+              directory,
+              0,
+              undefined,
+              leaderPaneId,
+              legacyConfig.tmuxOwnsWindow === true,
+            )
+          ) {
+            cleaned.push(teamName);
+          } else {
+            failed.push({
+              teamName,
+              error: 'team-shutdown-failed:legacy_cleanup_unverified',
+            });
+          }
           return;
         }
 
-        await teamCleanup(teamName, directory);
-        cleaned.push(teamName);
+        if (hasV2Workers) {
+          const shutdown = await shutdownTeamV2(teamName, directory, {
+            force: true,
+            timeoutMs: 0,
+          });
+          if (shutdown.outcome === 'cleaned') {
+            cleaned.push(teamName);
+          } else {
+            failed.push({
+              teamName,
+              error: `team-shutdown-${shutdown.outcome}:${shutdown.reason}`,
+            });
+          }
+          return;
+        }
+
+        failed.push({
+          teamName,
+          error: 'team-shutdown-preserved:config_cleanup_unsupported',
+        });
       } catch (error) {
         failed.push({
           teamName,

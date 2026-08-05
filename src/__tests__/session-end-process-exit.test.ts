@@ -18,21 +18,13 @@ const SESSION_END_SCRIPTS = [
   ['session-end', join(REPO_ROOT, 'scripts', 'session-end.mjs')],
   ['wiki-session-end', join(REPO_ROOT, 'scripts', 'wiki-session-end.mjs')],
 ] as const;
-// These budgets double as the SIGKILL watchdog and the "exited promptly"
-// assertion. Their purpose (#3477) is to distinguish a session-end that EXITS
-// from one that HANGS on a lock/adapter -- a genuine hang is indefinite and is
-// caught regardless (SIGKILL fires, timedOut becomes true, or the 60s
-// testTimeout trips). The absolute number is not a precise SLA: node child
-// cold-start under the full parallel suite on a high-core box can spike well
-// past a few hundred ms, so the budget is set generously enough to absorb
-// contention while still failing fast on an actual hang.
-const COMMAND_CEILING_MS = 4_000;
-const SEQUENTIAL_CEILING_MS = 8_000;
+const COMMAND_CEILING_MS = 500;
+const SEQUENTIAL_CEILING_MS = 1_000;
 const HAS_GENERATED_DIST = existsSync(
   join(REPO_ROOT, 'dist', 'hooks', 'session-end', 'worker.js'),
 );
 const TEST_PRODUCER_GRACE_MS = '25';
-const DETACHED_WORKER_CEILING_MS = 3_000;
+const DETACHED_WORKER_CEILING_MS = 5_000;
 
 interface ExitResult {
   elapsedMs: number;
@@ -55,6 +47,7 @@ function runUntilClose(
       env: {
         ...process.env,
         ...extraEnv,
+        CLAUDE_PLUGIN_ROOT: REPO_ROOT,
         CLAUDE_CONFIG_DIR: join(cwd, '.claude'),
       },
       stdio: ['pipe', 'ignore', 'ignore'],
@@ -145,7 +138,17 @@ async function waitForTerminalCallback(
     }
     await new Promise<void>((resolve) => setTimeout(resolve, 10));
   }
-  throw new Error('detached SessionEnd worker did not complete its callback');
+  const manifest = existsSync(manifestPath)
+    ? (JSON.parse(readFileSync(manifestPath, 'utf-8')) as {
+        phase?: string;
+        owner?: unknown;
+        actions?: Record<string, { status?: string; error?: string }>;
+      })
+    : null;
+  const callback = manifest?.actions?.callback;
+  throw new Error(
+    `detached SessionEnd worker did not complete its callback: phase=${manifest?.phase ?? 'missing'} owner=${manifest?.owner === null ? 'none' : typeof manifest?.owner} callback=${callback?.status ?? 'missing'} error=${callback?.error ?? 'none'} file=${existsSync(callbackPath)}`,
+  );
 }
 
 describe('SessionEnd run.cjs process exit regressions (#3477)', () => {
@@ -174,6 +177,28 @@ describe('SessionEnd run.cjs process exit regressions (#3477)', () => {
     async (_name, script) => {
       const result = await runUntilClose(script, createProject(), undefined);
       expectPromptExit(result);
+    },
+  );
+
+  it.skipIf(!HAS_GENERATED_DIST).each(SESSION_END_SCRIPTS)(
+    '%s terminates a live manifest-lock contender within the foreground ceiling',
+    async (_name, script) => {
+      const cwd = createProject();
+      const sessionId = `live-manifest-lock-${_name}`;
+      const jobsDir = join(cwd, '.omc', 'state', 'session-end-jobs');
+      mkdirSync(jobsDir, { recursive: true });
+      writeFileSync(
+        join(jobsDir, `${sessionId}.json.lock`),
+        JSON.stringify({
+          pid: process.pid,
+          processStartIdentity: null,
+          nonce: 'live-owner',
+          createdAt: new Date().toISOString(),
+        }),
+      );
+      expectPromptExit(
+        await runUntilClose(script, cwd, validSessionEndInput(cwd, sessionId)),
+      );
     },
   );
 

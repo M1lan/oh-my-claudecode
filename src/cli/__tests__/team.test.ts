@@ -94,6 +94,7 @@ describe('team cli', () => {
     mocks.resumeTeam.mockReset();
     mocks.monitorTeam.mockReset();
     mocks.shutdownTeam.mockReset();
+    mocks.shutdownTeam.mockResolvedValue(true);
     mocks.isRuntimeV2Enabled.mockReset();
     mocks.isRuntimeV2Enabled.mockReturnValue(false);
     mocks.monitorTeamV2.mockReset();
@@ -1146,7 +1147,7 @@ describe('team cli', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
     mocks.isRuntimeV2Enabled.mockReturnValue(true);
-    mocks.shutdownTeamV2.mockResolvedValue(undefined);
+    mocks.shutdownTeamV2.mockResolvedValue({ outcome: 'cleaned' });
 
     const cwd = mkdtempSync(join(tmpdir(), 'omc-team-cli-v2-shutdown-'));
     const root = join(cwd, '.omc', 'state', 'team', 'beta-team');
@@ -1243,6 +1244,33 @@ describe('team cli', () => {
     };
     expect(payload.shutdown).toBe(true);
     expect(payload.forced).toBe(true);
+
+    logSpy.mockRestore();
+  });
+
+  it('team shutdown reports failed cleanup when shutdownTeam returns false', async () => {
+    const { teamCommand } = await import('../team.js');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    mocks.resumeTeam.mockResolvedValue({
+      teamName: 'beta-team',
+      sessionName: 'omc-team-beta:0',
+      leaderPaneId: '%0',
+      config: { teamName: 'beta-team', workerCount: 1, agentTypes: ['codex'], tasks: [], cwd: '/tmp/demo' },
+      workerNames: ['worker-1'],
+      workerPaneIds: ['%1'],
+      activeWorkers: new Map(),
+      cwd: '/tmp/demo',
+    });
+    mocks.shutdownTeam.mockResolvedValueOnce(false);
+
+    await teamCommand(['shutdown', 'beta-team', '--force', '--json']);
+
+    expect(mocks.shutdownTeam).toHaveBeenCalledWith('beta-team', 'omc-team-beta:0', '/tmp/demo', 0, ['%1'], '%0', undefined);
+    const payload = JSON.parse(logSpy.mock.calls[0][0] as string) as { shutdown: boolean; forced: boolean; error?: string };
+    expect(payload.shutdown).toBe(false);
+    expect(payload.forced).toBe(true);
+    expect(payload.error).toContain('cleanup_unverified');
 
     logSpy.mockRestore();
   });

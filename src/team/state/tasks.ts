@@ -74,6 +74,7 @@ interface ClaimTaskDeps extends TaskReadDeps {
   isTerminalTaskStatus: (status: TeamTaskStatus) => boolean;
   taskFilePath: (teamName: string, taskId: string, cwd: string) => string;
   writeAtomic: (path: string, data: string) => Promise<void>;
+  launchAttemptId?: string;
 }
 
 export async function claimTask(
@@ -153,6 +154,9 @@ export async function claimTask(
           owner: workerName,
           token: claimToken,
           leased_until: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+          ...(deps.launchAttemptId
+            ? { launch_attempt_id: deps.launchAttemptId }
+            : {}),
         },
         version: v.version + 1,
       };

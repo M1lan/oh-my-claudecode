@@ -1,9 +1,12 @@
 #!/usr/bin/env node
 import { readSessionEndFrame } from './lib/stdin.mjs';
+import { isMainThread } from 'node:worker_threads';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
 
 const fallback = { continue: true, suppressOutput: true };
 
-async function main() {
+export async function runWikiSessionEndHook() {
   const frame = await readSessionEndFrame();
 
   if (frame.status !== 'ok') {
@@ -21,4 +24,4 @@ async function main() {
   }
 }
 
-main();
+if (!isMainThread || (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url))) void runWikiSessionEndHook();

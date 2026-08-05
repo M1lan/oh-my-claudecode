@@ -11,15 +11,36 @@ import {
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { createWorkerWorktree } from '../git-worktree.js';
+import {
+  awaitWorkerLaunchAcknowledgement,
+  prepareWorkerLaunchAttempt,
+} from '../worker-launch-ack.js';
+import { currentProcessStartIdentity } from '../team-owner-epoch.js';
 
 const tmuxMocks = vi.hoisted(() => ({
   killWorkerPanes: vi.fn(async () => undefined),
-  killTeamSession: vi.fn(async () => undefined),
+  killTeamSession: vi.fn(async () => true),
   resolveSplitPaneWorkerPaneIds: vi.fn(
     async (_session: string | undefined, paneIds: string[]) => paneIds,
   ),
   isWorkerAlive: vi.fn(async () => false),
   getWorkerLiveness: vi.fn(async () => 'dead'),
+  adoptWorkerPaneOwnership: vi.fn(
+    async (input: {
+      provider: string;
+      providerTarget: string;
+      paneId: string;
+    }) => ({
+      ok: true as const,
+      ownership: {
+        provider: input.provider,
+        providerTarget: input.providerTarget,
+        paneId: input.paneId,
+      },
+    }),
+  ),
+  killOwnedWorkerPane: vi.fn(async () => undefined),
+  verifyTeamTargetOwnership: vi.fn(async () => ({ kind: 'owned' as const })),
 }));
 
 vi.mock('../rmux-session.js', async (importOriginal) => {
@@ -31,8 +52,54 @@ vi.mock('../rmux-session.js', async (importOriginal) => {
     resolveSplitPaneWorkerPaneIds: tmuxMocks.resolveSplitPaneWorkerPaneIds,
     isWorkerAlive: tmuxMocks.isWorkerAlive,
     getWorkerLiveness: tmuxMocks.getWorkerLiveness,
+    adoptWorkerPaneOwnership: tmuxMocks.adoptWorkerPaneOwnership,
+    killOwnedWorkerPane: tmuxMocks.killOwnedWorkerPane,
+    verifyTeamTargetOwnership: tmuxMocks.verifyTeamTargetOwnership,
   };
 });
+
+async function prepareAcceptedLaunch(
+  cwd: string,
+  teamName: string,
+  workerName: string,
+  paneId: string,
+) {
+  const attempt = await prepareWorkerLaunchAttempt({
+    cwd,
+    teamName,
+    workerName,
+    paneId,
+    provider: 'claude',
+    runtimeCliPath: '/runtime-cli.cjs',
+    context: { kind: 'initial' },
+  });
+  const expected = JSON.parse(readFileSync(attempt.expectedPath, 'utf8'));
+  writeFileSync(
+    attempt.ackPath,
+    JSON.stringify({
+      ...expected,
+      kind: 'worker_launch_ack',
+      written_at: new Date().toISOString(),
+    }),
+  );
+  await awaitWorkerLaunchAcknowledgement(attempt, {
+    timeoutMs: 1_000,
+    pollIntervalMs: 5,
+  });
+  writeFileSync(
+    `${attempt.startedPath}.terminal`,
+    JSON.stringify({
+      ...expected,
+      kind: 'worker_launch_provider_terminal',
+      outcome: 'exit',
+      cleanup_verified: true,
+      pid: 999_999,
+      process_start_identity: '1',
+      written_at: new Date().toISOString(),
+    }),
+  );
+  return attempt;
+}
 
 describe('shutdownTeamV2 detached worktree cleanup', () => {
   let repoDir: string;
@@ -48,6 +115,22 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     tmuxMocks.isWorkerAlive.mockResolvedValue(false);
     tmuxMocks.getWorkerLiveness.mockReset();
     tmuxMocks.getWorkerLiveness.mockResolvedValue('dead');
+    tmuxMocks.adoptWorkerPaneOwnership.mockImplementation(
+      async (input: {
+        provider: string;
+        providerTarget: string;
+        paneId: string;
+      }) => ({
+        ok: true as const,
+        ownership: {
+          provider: input.provider,
+          providerTarget: input.providerTarget,
+          paneId: input.paneId,
+        },
+      }),
+    );
+    tmuxMocks.killOwnedWorkerPane.mockResolvedValue(undefined);
+    tmuxMocks.verifyTeamTargetOwnership.mockResolvedValue({ kind: 'owned' });
     repoDir = mkdtempSync(join(tmpdir(), 'omc-runtime-v2-shutdown-'));
     execFileSync('git', ['init'], { cwd: repoDir, stdio: 'pipe' });
     execFileSync('git', ['config', 'user.email', 'test@example.com'], {
@@ -275,6 +358,12 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     const teamRoot = join(repoDir, '.omc', 'state', 'team', teamName);
     mkdirSync(teamRoot, { recursive: true });
     const worktree = createWorkerWorktree(teamName, 'worker-live', repoDir);
+    const launchAttempt = await prepareAcceptedLaunch(
+      repoDir,
+      teamName,
+      'worker-live',
+      '%42',
+    );
     writeFileSync(
       join(teamRoot, 'config.json'),
       JSON.stringify(
@@ -292,6 +381,15 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
               role: 'executor',
               assigned_tasks: [],
               pane_id: '%42',
+              worker_cli: 'claude',
+              launch_attempt_id: launchAttempt.attempt_id,
+              launch_descriptor: {
+                schema_version: 1,
+                provider: 'claude',
+                model: null,
+                binary: '/bin/echo',
+                args: [],
+              },
               working_dir: worktree.path,
               team_state_root: teamRoot,
               worktree_path: worktree.path,
@@ -314,11 +412,21 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     tmuxMocks.getWorkerLiveness.mockResolvedValue('alive');
 
     const { shutdownTeamV2 } = await import('../runtime-v2.js');
-    await shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 });
+    await expect(
+      shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 }),
+    ).resolves.toEqual({
+      outcome: 'preserved',
+      reason: 'worker_panes_alive',
+      workers: ['worker-live'],
+    });
 
-    expect(tmuxMocks.killWorkerPanes).toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     expect(existsSync(worktree.path)).toBe(true);
     expect(existsSync(teamRoot)).toBe(true);
+    expect(existsSync(launchAttempt.currentPath)).toBe(true);
+    expect(
+      existsSync(`${launchAttempt.decisionPath}.retired.cleanup-complete`),
+    ).toBe(false);
   });
 
   it('keeps worktrees and team state when pane liveness probe is unknown after shutdown kill', async () => {
@@ -326,6 +434,12 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     const teamRoot = join(repoDir, '.omc', 'state', 'team', teamName);
     mkdirSync(teamRoot, { recursive: true });
     const worktree = createWorkerWorktree(teamName, 'worker-unknown', repoDir);
+    const launchAttempt = await prepareAcceptedLaunch(
+      repoDir,
+      teamName,
+      'worker-unknown',
+      '%44',
+    );
     writeFileSync(
       join(teamRoot, 'config.json'),
       JSON.stringify(
@@ -343,6 +457,15 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
               role: 'executor',
               assigned_tasks: [],
               pane_id: '%44',
+              worker_cli: 'claude',
+              launch_attempt_id: launchAttempt.attempt_id,
+              launch_descriptor: {
+                schema_version: 1,
+                provider: 'claude',
+                model: null,
+                binary: '/bin/echo',
+                args: [],
+              },
               working_dir: worktree.path,
               team_state_root: teamRoot,
               worktree_path: worktree.path,
@@ -365,9 +488,15 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     tmuxMocks.getWorkerLiveness.mockResolvedValue('unknown');
 
     const { shutdownTeamV2 } = await import('../runtime-v2.js');
-    await shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 });
+    await expect(
+      shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 }),
+    ).resolves.toEqual({
+      outcome: 'preserved',
+      reason: 'worker_pane_liveness_unknown',
+      workers: ['worker-unknown'],
+    });
 
-    expect(tmuxMocks.killWorkerPanes).toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     expect(existsSync(worktree.path)).toBe(true);
     expect(existsSync(teamRoot)).toBe(true);
   });
@@ -380,6 +509,12 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
       teamName,
       'worker-kill-fails',
       repoDir,
+    );
+    const launchAttempt = await prepareAcceptedLaunch(
+      repoDir,
+      teamName,
+      'worker-kill-fails',
+      '%43',
     );
     writeFileSync(
       join(teamRoot, 'config.json'),
@@ -398,6 +533,15 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
               role: 'executor',
               assigned_tasks: [],
               pane_id: '%43',
+              worker_cli: 'claude',
+              launch_attempt_id: launchAttempt.attempt_id,
+              launch_descriptor: {
+                schema_version: 1,
+                provider: 'claude',
+                model: null,
+                binary: '/bin/echo',
+                args: [],
+              },
               working_dir: worktree.path,
               team_state_root: teamRoot,
               worktree_path: worktree.path,
@@ -406,7 +550,8 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
           ],
           created_at: new Date().toISOString(),
           tmux_session: `${teamName}:0`,
-          leader_pane_id: null,
+          leader_pane_id: '%1',
+          tmux_window_owned: true,
           hud_pane_id: null,
           resize_hook_name: null,
           resize_hook_target: null,
@@ -417,14 +562,23 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
       ),
       'utf-8',
     );
-    tmuxMocks.killWorkerPanes.mockRejectedValueOnce(
-      new Error('tmux unavailable'),
-    );
+    tmuxMocks.killTeamSession.mockResolvedValueOnce(false);
 
     const { shutdownTeamV2 } = await import('../runtime-v2.js');
-    await shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 });
+    await expect(
+      shutdownTeamV2(teamName, repoDir, { timeoutMs: 0 }),
+    ).resolves.toEqual({
+      outcome: 'failed',
+      reason: 'tmux_cleanup_failed',
+      detail: 'tmux cleanup unverified',
+    });
 
-    expect(tmuxMocks.killWorkerPanes).toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).toHaveBeenCalledWith(
+      `${teamName}:0`,
+      [],
+      '%1',
+      { sessionMode: 'dedicated-window' },
+    );
     expect(existsSync(worktree.path)).toBe(true);
     expect(existsSync(teamRoot)).toBe(true);
   });
@@ -480,6 +634,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
         shutdownTeamV2(teamName, repoDir, { timeoutMs: 0, force }),
       ).rejects.toThrow('shutdown_blocked:active_recovery:recovery-active');
       expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+      expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
       expect(existsSync(configPath)).toBe(true);
       expect(JSON.parse(readFileSync(configPath, 'utf8')).lifecycle_state).toBe(
         'active',
@@ -524,6 +679,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
       shutdownTeamV2(teamName, repoDir, { timeoutMs: 0, force: true }),
     ).rejects.toThrow('invalid_persisted_state');
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     expect(JSON.parse(readFileSync(configPath, 'utf8'))).toMatchObject({
       lifecycle_state: 'active',
       state_revision: 4,
@@ -584,6 +740,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
       shutdownTeamV2(teamName, repoDir, { timeoutMs: 0, force: true }),
     ).rejects.toThrow('shutdown_blocked:active_scale_down:scale-down-active');
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     expect(JSON.parse(readFileSync(configPath, 'utf8')).lifecycle_state).toBe(
       'active',
     );
@@ -635,6 +792,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     ).rejects.toThrow('shutdown_rejected:worker-1:still working');
 
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     const persisted = JSON.parse(readFileSync(configPath, 'utf8'));
     expect(persisted.lifecycle_state).toBe('active');
     expect(persisted.state_revision).toBe(6);
@@ -673,7 +831,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
         shutdown_attempt: {
           nonce: 'force-owner',
           pid: process.pid,
-          process_started_at: 'owner-start',
+          process_started_at: currentProcessStartIdentity(),
           state_revision: 5,
           created_at: now,
         },
@@ -692,9 +850,10 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     const { shutdownTeamV2 } = await import('../runtime-v2.js');
     await expect(
       shutdownTeamV2(teamName, repoDir, { timeoutMs: 25 }),
-    ).rejects.toThrow('shutdown_rejected_fence_lost:worker-1:still working');
+    ).rejects.toThrow('shutdown_in_progress');
 
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     const persisted = JSON.parse(readFileSync(configPath, 'utf8'));
     expect(persisted.lifecycle_state).toBe('shutting_down');
     expect(persisted.state_revision).toBe(5);
@@ -755,6 +914,7 @@ describe('shutdownTeamV2 detached worktree cleanup', () => {
     );
 
     expect(tmuxMocks.killWorkerPanes).not.toHaveBeenCalled();
+    expect(tmuxMocks.killTeamSession).not.toHaveBeenCalled();
     const persisted = JSON.parse(readFileSync(configPath, 'utf8'));
     expect(persisted.lifecycle_state).toBe('active');
     expect(persisted.state_revision).toBe(4);

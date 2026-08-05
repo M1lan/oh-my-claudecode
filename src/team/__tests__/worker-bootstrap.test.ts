@@ -135,6 +135,10 @@ describe('worker-bootstrap', () => {
       expect(overlay).toContain(
         '$OMC_TEAM_STATE_ROOT/workers/worker-1/shutdown-ack.json',
       );
+      expect(overlay).toContain('OMC_WORKER_LAUNCH_ATTEMPT_ID');
+      expect(overlay).toContain(
+        '"launch_attempt_id": "<exact OMC_WORKER_LAUNCH_ATTEMPT_ID>"',
+      );
       expect(overlay).not.toContain('$OMC_TEAM_STATE_ROOT/team/test-team');
     });
 
@@ -284,6 +288,28 @@ describe('worker-bootstrap', () => {
       expect(env.OMC_TEAM_WORKER).toBe('my-team/worker-2');
       expect(env.OMC_TEAM_NAME).toBe('my-team');
       expect(env.OMC_WORKER_AGENT_TYPE).toBe('gemini');
+    });
+  });
+  describe('overlay control character safety', () => {
+    it('generated overlay rejects all disallowed control bytes (NUL, BEL, BS, etc.)', () => {
+      const overlay = generateWorkerOverlay(baseParams);
+      // Reject all C0 control characters except HT (\t=0x09), LF (\n=0x0a), CR (\r=0x0d).
+      // This catches NUL bytes and any other invisible control characters that could
+      // corrupt terminal rendering or Markdown parsing in the worker overlay.
+      for (let i = 0; i < overlay.length; i++) {
+        const code = overlay.charCodeAt(i);
+        if (code < 0x20 && code !== 0x09 && code !== 0x0a && code !== 0x0d) {
+          throw new Error(
+            `Overlay contains disallowed control character 0x${code.toString(16).padStart(2, '0')} at offset ${i}`,
+          );
+        }
+      }
+    });
+
+    it('overlay uses backtick-delimited metadata references instead of NUL bytes', () => {
+      const overlay = generateWorkerOverlay(baseParams);
+      expect(overlay).toContain('`OMC_WORKER_LAUNCH_ATTEMPT_ID`');
+      expect(overlay).toContain('`launch_attempt_id`');
     });
   });
 });

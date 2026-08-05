@@ -2,15 +2,14 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import {
-  appendFileSync,
   cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   writeFileSync,
+  symlinkSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
@@ -35,6 +34,7 @@ type PackageJson = {
   bin?: Record<string, string>;
   name?: string;
   version?: string;
+  devDependencies?: Record<string, string>;
 };
 
 type PackedPackage = {
@@ -52,7 +52,7 @@ type PluginShippingSurface = {
 
 const CLI_BIN_TARGET = 'bin/oh-my-claudecode.js';
 const SUPPORTED_CLI_ALIASES = ['oh-my-claudecode', 'omc'] as const;
-const GENERATED_BRIDGE_FILES = new Set([
+const GENERATED_RUNTIME_ENTRYPOINTS = new Set([
   'bridge/claude-md-coordinator.cjs',
   'bridge/cli.cjs',
   'bridge/mcp-server.cjs',
@@ -60,6 +60,7 @@ const GENERATED_BRIDGE_FILES = new Set([
   'bridge/team-bridge.cjs',
   'bridge/team-mcp.cjs',
   'bridge/team.js',
+  'dist/hooks/skill-bridge.cjs',
 ]);
 
 let packedPackageCache: PackedPackage | null = null;
@@ -99,33 +100,13 @@ function createIsolatedPackWorkspace(
     preserveTimestamps: true,
   });
   rmSync(join(workspacePath, 'dist'), { recursive: true, force: true });
-  for (const relativePath of GENERATED_BRIDGE_FILES) {
+  for (const relativePath of GENERATED_RUNTIME_ENTRYPOINTS) {
     rmSync(join(workspacePath, relativePath), { force: true });
   }
   symlinkSync(
     join(PACKAGE_ROOT, 'node_modules'),
     join(workspacePath, 'node_modules'),
     process.platform === 'win32' ? 'junction' : 'dir',
-  );
-
-  // The `prepack` script runs `pnpm run build`. In this isolated workspace the
-  // symlinked node_modules trips pnpm's deps-status check, which would try to
-  // purge and reinstall node_modules — and because node_modules is a symlink to
-  // the real store, that purge is destructive. Disable the check so pnpm reuses
-  // the linked store as-is.
-  //
-  // pnpm 11 reads settings from pnpm-workspace.yaml, not .npmrc, so the
-  // workspace knob below is the one that actually takes effect; the .npmrc and
-  // the env var on the pack spawn are belt-and-suspenders for older pnpm.
-  appendFileSync(
-    join(workspacePath, 'pnpm-workspace.yaml'),
-    '\nverifyDepsBeforeRun: false\n',
-    'utf-8',
-  );
-  writeFileSync(
-    join(workspacePath, '.npmrc'),
-    'verify-deps-before-run=false\n',
-    'utf-8',
   );
 }
 
@@ -151,9 +132,9 @@ function getPackedPackage(): PackedPackage {
     committedSnapshotCache = join(fixtureRootCache, 'committed');
     packDirCache = join(fixtureRootCache, 'packed');
     createIsolatedPackWorkspace(packWorkspaceCache, committedSnapshotCache);
-    const startedWithoutGeneratedBundles = [...GENERATED_BRIDGE_FILES].every(
-      (file) => !existsSync(join(packWorkspaceCache!, file)),
-    );
+    const startedWithoutGeneratedBundles = [
+      ...GENERATED_RUNTIME_ENTRYPOINTS,
+    ].every((file) => !existsSync(join(packWorkspaceCache!, file)));
     mkdirSync(packDirCache, { recursive: true });
 
     const stdout = execFileSync(
@@ -163,28 +144,16 @@ function getPackedPackage(): PackedPackage {
         cwd: packWorkspaceCache,
         encoding: 'utf-8',
         stdio: ['ignore', 'pipe', 'inherit'],
-        env: {
-          ...process.env,
-          // Belt-and-suspenders alongside the workspace .npmrc: skip pnpm's
-          // deps-status check so the `prepack` build reuses the symlinked
-          // node_modules instead of trying to purge/reinstall it. Deliberately
-          // NOT setting CI=true — without it, pnpm's worst case is a safe abort
-          // rather than a destructive removal through the node_modules symlink.
-          npm_config_verify_deps_before_run: 'false',
-        },
       },
     );
     const expectedTarballName = `${packageJson.name.replace(/^@/, '').replace(/\//g, '-')}-${packageJson.version}.tgz`;
-    // `npm pack --silent` runs the `prepack` build (pnpm), whose progress
-    // output is piped into this stdout ahead of the tarball name. The tarball
-    // name is always the final non-empty line; parse it rather than requiring
-    // stdout to be exactly the name.
-    const tarballName =
-      stdout
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
-        .pop() ?? '';
+    expect([
+      expectedTarballName,
+      `${expectedTarballName}\n`,
+      `${expectedTarballName}\r\n`,
+    ]).toContain(stdout);
+
+    const tarballName = stdout.replace(/\r?\n$/, '');
     expect(tarballName).toBe(expectedTarballName);
     expect(basename(tarballName)).toBe(tarballName);
     expect(tarballName).not.toMatch(/[\\/]/);
@@ -253,15 +222,11 @@ describe('npm package bin surface regression', () => {
     const packedFiles = packedPackageFixture.files;
 
     expect(packedFiles.has(CLI_BIN_TARGET)).toBe(true);
-    expect(packedFiles.has('dist/hooks/skill-bridge.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/cli.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/claude-md-coordinator.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/mcp-server.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/runtime-cli.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/team-bridge.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/team-mcp.cjs')).toBe(true);
-    expect(packedFiles.has('bridge/team.js')).toBe(true);
+    for (const relativePath of GENERATED_RUNTIME_ENTRYPOINTS) {
+      expect(packedFiles.has(relativePath), relativePath).toBe(true);
+    }
     expect(packedFiles.has('bridge/gyoshu_bridge.py')).toBe(true);
+    expect(packedFiles.has('bridge/run-mcp-server.sh')).toBe(true);
   });
 
   it('keeps the committed plugin runtime closure as a byte-identical npm package subset', () => {
@@ -274,11 +239,126 @@ describe('npm package bin surface regression', () => {
       expect(packedPackageFixture.files.has(relativePath), relativePath).toBe(
         true,
       );
+      if (
+        relativePath.startsWith('dist/') ||
+        relativePath.startsWith('bridge/')
+      )
+        continue;
       expect(
         sha256(join(extractedPackageRoot, relativePath)),
         relativePath,
       ).toBe(sha256(join(committedSnapshotCache!, relativePath)));
     }
+  });
+
+  it('typechecks the packed team declaration closure with skipLibCheck disabled', () => {
+    const consumerRoot = join(fixtureRootCache!, 'type-consumer');
+    const consumerModules = join(consumerRoot, 'node_modules');
+    const packageName = packedPackageFixture.packageJson.name!;
+    mkdirSync(consumerModules, { recursive: true });
+    symlinkSync(
+      packedPackageFixture.extractedPackageRoot,
+      join(consumerModules, packageName),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
+    symlinkSync(
+      join(PACKAGE_ROOT, 'node_modules'),
+      join(packedPackageFixture.extractedPackageRoot, 'node_modules'),
+      process.platform === 'win32' ? 'junction' : 'dir',
+    );
+    writeFileSync(
+      join(consumerRoot, 'package.json'),
+      JSON.stringify({ type: 'module' }),
+    );
+    writeFileSync(
+      join(consumerRoot, 'index.ts'),
+      `import { recoverDeadWorkerV2 } from ${JSON.stringify(`./node_modules/${packageName}/dist/team/index.js`)};\nvoid recoverDeadWorkerV2;\n`,
+    );
+    writeFileSync(
+      join(consumerRoot, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {
+          target: 'ES2022',
+          module: 'NodeNext',
+          moduleResolution: 'NodeNext',
+          strict: true,
+          skipLibCheck: false,
+          noEmit: true,
+          types: ['node'],
+          typeRoots: [join(PACKAGE_ROOT, 'node_modules', '@types')],
+        },
+        include: ['index.ts'],
+      }),
+    );
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [
+          join(PACKAGE_ROOT, 'node_modules', 'typescript', 'bin', 'tsc'),
+          '-p',
+          join(consumerRoot, 'tsconfig.json'),
+        ],
+        { cwd: consumerRoot, stdio: 'pipe' },
+      ),
+    ).not.toThrow();
+  });
+
+  it('typechecks the supported team export from a clean tarball install', () => {
+    const consumerRoot = join(fixtureRootCache!, 'clean-type-consumer');
+    const sourcePackage = readPackageJson();
+    const typescriptVersion = sourcePackage.devDependencies?.typescript;
+    const nodeTypesVersion = sourcePackage.devDependencies?.['@types/node'];
+    if (!typescriptVersion || !nodeTypesVersion)
+      throw new Error('typecheck fixture dependencies missing');
+    mkdirSync(consumerRoot, { recursive: true });
+    writeFileSync(
+      join(consumerRoot, 'package.json'),
+      JSON.stringify({ type: 'module', private: true }),
+    );
+    execFileSync(
+      'npm',
+      [
+        'install',
+        tarballPathCache!,
+        `typescript@${typescriptVersion}`,
+        `@types/node@${nodeTypesVersion}`,
+        '--ignore-scripts',
+        '--no-audit',
+        '--no-fund',
+      ],
+      { cwd: consumerRoot, stdio: 'pipe' },
+    );
+    writeFileSync(
+      join(consumerRoot, 'index.ts'),
+      `import { recoverDeadWorkerV2 } from ${JSON.stringify(`${packedPackageFixture.packageJson.name!}/team`)};\nvoid recoverDeadWorkerV2;\n`,
+    );
+    writeFileSync(
+      join(consumerRoot, 'tsconfig.json'),
+      JSON.stringify({
+        compilerOptions: {
+          target: 'ES2022',
+          module: 'NodeNext',
+          moduleResolution: 'NodeNext',
+          strict: true,
+          skipLibCheck: false,
+          noEmit: true,
+        },
+        include: ['index.ts'],
+      }),
+    );
+
+    expect(() =>
+      execFileSync(
+        process.execPath,
+        [
+          join(consumerRoot, 'node_modules', 'typescript', 'bin', 'tsc'),
+          '-p',
+          join(consumerRoot, 'tsconfig.json'),
+        ],
+        { cwd: consumerRoot, stdio: 'pipe' },
+      ),
+    ).not.toThrow();
   });
 
   it('rebuilds recovery CLI surfaces from source without committed bundles', () => {

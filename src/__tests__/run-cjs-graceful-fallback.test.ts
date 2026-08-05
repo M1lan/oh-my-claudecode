@@ -640,6 +640,46 @@ describe('run.cjs trusted UserPromptSubmit Worker selection', () => {
     ).toMatchObject({ status: 0, stdout: 'child' });
   });
 
+  it('selects only exact trusted SessionEnd scripts for in-process execution', () => {
+    const root = join(tmpDir, 'session-end-root');
+    const target = join(root, 'scripts', 'session-end.mjs');
+    const outside = join(tmpDir, 'outside', 'scripts', 'session-end.mjs');
+    createTrustedPlugin(root, { 'session-end.mjs': 'export async function runSessionEndHook() {}' }, 'SessionEnd');
+    writeFileSync(join(root, 'scripts', 'wiki-session-end.mjs'), 'export async function runWikiSessionEndHook() {}');
+    mkdirSync(join(tmpDir, 'outside', 'scripts'), { recursive: true });
+    writeFileSync(outside, 'export async function runSessionEndHook() {}');
+    const probe = `
+      const runner = require(process.argv[1]);
+      const target = process.argv[2];
+      const trustedRoot = process.argv[3];
+      process.stdout.write(JSON.stringify([
+        Boolean(runner.resolveTrustedSessionEndTarget({ targetPath: target, trustedPluginRoot: trustedRoot }, [])),
+        Boolean(runner.resolveTrustedSessionEndTarget({ targetPath: target, trustedPluginRoot: trustedRoot }, ['extra'])),
+        Boolean(runner.resolveTrustedSessionEndTarget({ targetPath: process.argv[4], trustedPluginRoot: trustedRoot }, [])),
+        Boolean(runner.resolveTrustedSessionEndTarget({ targetPath: target, trustedPluginRoot: null }, [])),
+      ]));
+    `;
+    expect(JSON.parse(execFileSync(NODE, ['-e', probe, RUN_CJS_PATH, target, root, outside], { encoding: 'utf-8' })))
+      .toEqual([true, false, false, false]);
+  });
+
+  it('rejects an exact SessionEnd pathname that escapes its trusted root through a symlink', () => {
+    if (process.platform === 'win32') return;
+    const root = join(tmpDir, 'session-end-symlink-root');
+    const target = join(root, 'scripts', 'session-end.mjs');
+    const outside = join(tmpDir, 'outside-session-end.mjs');
+    createTrustedPlugin(root, {
+      'session-end.mjs': 'export async function runSessionEndHook() {}',
+      'wiki-session-end.mjs': 'export async function runWikiSessionEndHook() {}',
+    }, 'SessionEnd');
+    writeFileSync(outside, 'export async function runSessionEndHook() {}');
+    rmSync(target);
+    symlinkSync(outside, target);
+    const probe = `const runner = require(process.argv[1]); process.stdout.write(String(Boolean(
+      runner.resolveTrustedSessionEndTarget({ targetPath: process.argv[2], trustedPluginRoot: process.argv[3] }, []))));`;
+    expect(execFileSync(NODE, ['-e', probe, RUN_CJS_PATH, target, root], { encoding: 'utf-8' })).toBe('false');
+  });
+
   it('rejects a lexical trusted-root path that escapes through a symlink', () => {
     if (process.platform === 'win32') return;
     const root = join(tmpDir, 'trusted-root');

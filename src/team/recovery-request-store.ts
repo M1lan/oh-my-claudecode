@@ -583,7 +583,9 @@ const RECOVERY_ERRORS = new Set<RecoverDeadWorkerV2Error>([
   'auto_merge_unavailable',
   'stale_state_revision',
   'config_commit_failed',
+  'worker_cleanup_incomplete',
 ]);
+
 const RECOVERY_WARNINGS = new Set([
   'projection_repair_required',
   'identity_repair_required',
