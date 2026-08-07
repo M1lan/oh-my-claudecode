@@ -97,6 +97,7 @@ declare -a EXEMPT_GLOBS=(
   'src/__tests__/**'
   'src/installer/__tests__/**'
   'src/skills/__tests__/omc-doctor-skill.test.ts'
+  'src/hooks/persistent-mode/__tests__/ultragoal-persistence.test.ts'
   'tests/lint/**'
   'shellmark/sessions/**'
   '.omc/**'

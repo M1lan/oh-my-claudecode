@@ -679,7 +679,7 @@ describe('generated-artifact base-owned authorization decision', () => {
       mergeBaseSha: MERGE_BASE_SHA,
       headSha: HEAD_SHA,
       owner: OWNER,
-      expiresAt: '2026-08-05T00:00:00.000Z',
+      expiresAt: '2026-08-19T00:00:00.000Z',
       generatedDelta: {
         count: 199,
         sha256:

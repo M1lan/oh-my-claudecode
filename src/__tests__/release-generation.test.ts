@@ -527,7 +527,7 @@ describe('release generation', () => {
     expect(fallbackPublish).toBeLessThan(fallbackVerification);
 
     const fallbackPropagationLimit = workflow.indexOf(
-      'MAX_FALLBACK_PROPAGATION_ATTEMPTS=6',
+      'MAX_FALLBACK_PROPAGATION_ATTEMPTS=12',
     );
     const fallbackPropagationLoop = workflow.indexOf(
       'while [ "$FALLBACK_ATTEMPT" -le "$MAX_FALLBACK_PROPAGATION_ATTEMPTS" ]; do',
@@ -550,6 +550,12 @@ describe('release generation', () => {
       fallbackPropagationFailure,
     );
     expect(fallbackPropagationFailure).toBeLessThan(fallbackPropagationExit);
+    expect(workflow).toContain('FALLBACK_BACKOFF_SECONDS=10');
+    expect(workflow).toContain('sleep "$FALLBACK_BACKOFF_SECONDS"');
+    expect(workflow).toContain('FALLBACK_BACKOFF_SECONDS=$((FALLBACK_BACKOFF_SECONDS * 2))');
+    expect(workflow).toContain(
+      'if [ "$FALLBACK_BACKOFF_SECONDS" -gt 60 ]; then\n                FALLBACK_BACKOFF_SECONDS=60\n              fi',
+    );
     expect(workflow).toContain(
       'workflow_dispatch:\n    inputs:\n      tag:\n        description: Exact annotated release tag to recover\n        required: true\n        type: string\n      sha:\n        description: Exact 40-character hexadecimal commit SHA to recover\n        required: true\n        type: string',
     );
@@ -571,7 +577,7 @@ describe('release generation', () => {
 
     expect(recoveryJob).not.toContain('npm publish');
 
-    expect(releaseJob).toContain('MAX_PROPAGATION_ATTEMPTS=6');
+    expect(releaseJob).toContain('MAX_PROPAGATION_ATTEMPTS=12');
     expect(releaseJob).toContain(
       'while [ "$ATTEMPT" -le "$MAX_PROPAGATION_ATTEMPTS" ]; do',
     );
@@ -584,8 +590,20 @@ describe('release generation', () => {
       'npm registry propagation did not complete after $MAX_PROPAGATION_ATTEMPTS attempts',
     );
     expect(releaseJob).toContain('ATTEMPT=$((ATTEMPT + 1))');
+    expect(releaseJob).toContain('BACKOFF_SECONDS=10');
+    expect(releaseJob).toContain('sleep "$BACKOFF_SECONDS"');
+    expect(releaseJob).toContain('BACKOFF_SECONDS=$((BACKOFF_SECONDS * 2))');
+    expect(releaseJob).toContain(
+      'if [ "$BACKOFF_SECONDS" -gt 60 ]; then\n                BACKOFF_SECONDS=60\n              fi',
+    );
+    const propagationLimits = [...workflow.matchAll(/MAX(?:_FALLBACK)?_PROPAGATION_ATTEMPTS=(\d+)/g)].map(
+      (match) => match[1],
+    );
+    expect(propagationLimits).toEqual(['12', '12']);
+    const backoffCaps = [...workflow.matchAll(/BACKOFF_SECONDS" -gt (\d+)/g)].map((match) => match[1]);
+    expect(backoffCaps).toEqual(['60', '60']);
 
-    const propagationLimit = releaseJob.indexOf('MAX_PROPAGATION_ATTEMPTS=6');
+    const propagationLimit = releaseJob.indexOf('MAX_PROPAGATION_ATTEMPTS=12');
     const propagationLoop = releaseJob.indexOf(
       'while [ "$ATTEMPT" -le "$MAX_PROPAGATION_ATTEMPTS" ]; do',
     );
@@ -606,6 +624,10 @@ describe('release generation', () => {
       'npm registry propagation did not complete after $MAX_PROPAGATION_ATTEMPTS attempts',
     );
     const propagationExit = releaseJob.indexOf('exit 1', propagationExhaustion);
+    const backoffInit = releaseJob.indexOf('BACKOFF_SECONDS=10');
+    const backoffSleep = releaseJob.indexOf('sleep "$BACKOFF_SECONDS"');
+    const backoffDouble = releaseJob.indexOf('BACKOFF_SECONDS=$((BACKOFF_SECONDS * 2))');
+    const backoffCap = releaseJob.indexOf('if [ "$BACKOFF_SECONDS" -gt 60 ]');
 
     const requiredRegistryVerifications = [
       ...releaseJob.matchAll(
@@ -625,6 +647,11 @@ describe('release generation', () => {
     expect(propagationExhaustion).toBeLessThan(propagationFailure);
     expect(propagationFailure).toBeLessThan(propagationExit);
     expect(propagationExit).toBeLessThan(requiredRegistryVerification);
+    expect(propagationLimit).toBeLessThan(backoffInit);
+    expect(backoffInit).toBeLessThan(propagationLoop);
+    expect(propagationExit).toBeLessThan(backoffSleep);
+    expect(backoffSleep).toBeLessThan(backoffDouble);
+    expect(backoffDouble).toBeLessThan(backoffCap);
 
     expect(recoveryJob).toContain(
       'RECOVERY_TAG: v4.15.4\n      RECOVERY_SHA: cb6932311ac956687e3c66bb6a48d52a8df14d56\n      RECOVERY_INPUT_TAG: ${{ inputs.tag }}\n      RECOVERY_INPUT_SHA: ${{ inputs.sha }}',

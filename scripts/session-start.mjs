@@ -438,8 +438,18 @@ function validateCwd(candidate) {
   let home = null;
   try { home = homedir(); } catch { home = null; }
   let cursor = candidate;
+  const startedAtHome = Boolean(home) && candidate === home;
   while (true) {
-    if (home && cursor === home) break;
+    if (home && cursor === home) {
+      // $HOME may anchor ONLY itself, and ONLY via an explicit
+      // `.omc-workspace` marker — never via a stray `.git`. Walking up from a
+      // subdirectory still fails here, so a marker in $HOME cannot silently
+      // validate unrelated directories below it.
+      if (startedAtHome && existsSync(join(cursor, '.omc-workspace'))) {
+        return candidate;
+      }
+      break;
+    }
     if (existsSync(join(cursor, '.omc-workspace')) || existsSync(join(cursor, '.git'))) {
       return candidate;
     }

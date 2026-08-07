@@ -45,6 +45,32 @@ function getGlobalNodeModuleRoots() {
     roots.push(join(process.env.APPDATA, "npm", "node_modules"));
   }
 
+  // pnpm keeps its global root outside every npm prefix
+  // (`$PNPM_HOME/global/<store-version>/node_modules`), so `pnpm add -g` and
+  // `pnpm link --global` installs are invisible to the npm-oriented probes
+  // above. Enumerate it directly rather than shelling out to `pnpm root -g`,
+  // so the statusline stays subprocess-free on this path.
+  const addPnpmGlobalRoots = () => {
+    const bases = [];
+    if (process.env.PNPM_HOME) bases.push(process.env.PNPM_HOME);
+    let home = null;
+    try { home = homedir(); } catch { home = null; }
+    if (home) {
+      if (process.platform === "darwin") bases.push(join(home, "Library", "pnpm"));
+      else if (process.platform !== "win32") bases.push(join(home, ".local", "share", "pnpm"));
+    }
+    if (process.platform === "win32" && process.env.LOCALAPPDATA) {
+      bases.push(join(process.env.LOCALAPPDATA, "pnpm"));
+    }
+    for (const base of bases) {
+      const globalDir = join(base, "global");
+      let entries;
+      try { entries = readdirSync(globalDir); } catch { continue; }
+      for (const entry of entries) roots.push(join(globalDir, entry, "node_modules"));
+    }
+  };
+  addPnpmGlobalRoots();
+
   try {
     const isWin = process.platform === "win32";
     const npmCommand = isWin ? "npm.cmd" : "npm";

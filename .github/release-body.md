@@ -49,3 +49,27 @@ Release with **1 new feature**, **11 bug fixes**, **17 other changes** across **
 ### Stats
 
 - **30 PRs merged** | **1 new feature** | **11 bug fixes** | **0 security/hardening improvements** | **17 other changes**
+
+### Install / Update
+
+The npm CLI and the Claude Code marketplace/plugin are separate install tracks, not either/or replacements. Update whichever track you use; if you have both installed, update both. CLI-dependent skill paths such as `ask`, `ccg`, and CLI-backed `team` require the `omc` CLI from the npm package.
+
+**CLI / runtime:**
+
+```bash
+npm install -g oh-my-claude-sisyphus@4.15.8
+```
+
+**Claude Code plugin:**
+
+```text
+/plugin marketplace update omc
+```
+
+**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.15.7...v4.15.8
+
+## Contributors
+
+Thank you to all contributors who made this release possible!
+
+@ltspace @Yeachan-Heo

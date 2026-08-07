@@ -195,6 +195,56 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
     );
     expect(clearState.hookSpecificOutput?.permissionDecision).not.toBe('deny');
   });
+  it('allows trusted plugin CLI cancel/state bootstrap and denies untrusted node scripts (#3630)', () => {
+    const cwd = makeTempProject('omc-ultragoal-plugin-cancel-');
+    writeUltragoalState(cwd);
+    const pluginEntry = join(cwd, 'bin', 'oh-my-claudecode.js');
+    mkdirSync(join(cwd, 'bin'), { recursive: true });
+    writeFileSync(pluginEntry, '#!/usr/bin/env node\n');
+
+    const allowed = [
+      `node ${pluginEntry} cancel`,
+      `nodejs ${pluginEntry} state clear --mode ultragoal`,
+      `node "${pluginEntry}" cancel`,
+      'omc cancel',
+    ];
+    for (const command of allowed) {
+      const result = runHook(preToolScript, {
+        cwd,
+        session_id: 'session-a',
+        tool_name: 'Bash',
+        tool_input: { command },
+      });
+      expect(result.hookSpecificOutput?.permissionDecision).not.toBe('deny');
+    }
+
+    const ultragoalDenied = [
+      `node ${join(cwd, 'evil.js')} cancel`,
+      `node ${pluginEntry} cancel; echo pwned`,
+    ];
+    writeFileSync(join(cwd, 'evil.js'), '#!/usr/bin/env node\n');
+    for (const command of ultragoalDenied) {
+      const result = runHook(preToolScript, {
+        cwd,
+        session_id: 'session-a',
+        tool_name: 'Bash',
+        tool_input: { command },
+      });
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
+      expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('[ULTRAGOAL /GOAL REQUIRED]');
+    }
+
+    const npmResult = runHook(preToolScript, {
+      cwd,
+      session_id: 'session-a',
+      tool_name: 'Bash',
+      tool_input: { command: `node ${pluginEntry} cancel && npm test` },
+    });
+    expect(npmResult.hookSpecificOutput?.permissionDecision).toBe('deny');
+    expect(npmResult.hookSpecificOutput?.permissionDecisionReason).toContain(
+      '[PNPM ONLY]',
+    );
+  });
 
   it('denies PreToolUse when active ultragoal has no visible Claude /goal', () => {
     const cwd = makeTempProject('omc-ultragoal-deny-');
