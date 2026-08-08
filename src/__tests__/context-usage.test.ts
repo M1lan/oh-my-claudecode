@@ -6,7 +6,6 @@ import { join } from 'path';
 import { getContextPercent } from '../hud/stdin.js';
 import type { StatuslineStdin } from '../hud/types.js';
 
-// @ts-expect-error Local hook helper is a JS module loaded directly by the tests.
 import {
   resolveContextPercent,
   resolveHookContextPercent,
