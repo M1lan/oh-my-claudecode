@@ -1,29 +1,26 @@
-# oh-my-claudecode v4.15.4: Bug Fixes
+# oh-my-claudecode v4.15.7: Bug Fixes
 
 ## Release Notes
 
-Release with **7 bug fixes**, **1 other change** across **8 merged PRs**.
+Release with **4 bug fixes**, **1 other change** across **5 merged PRs**.
 
 ### Highlights
 
-- **fix(team): recover confirmed-dead runtime-v2 workers** (#3462)
-- **fix(merge-readiness): close red-team proof and authority gaps** (#3467)
-- **fix(ultragoal): recover the active /goal from the transcript on Claude Code** (#3468)
+- **fix(psm): fail closed on malformed worktree results** (#3531)
+- **fix(psm): use jira-cli --raw instead of non-existent --output json** (#3529)
+- **fix(psm): use tmux-safe session names so sessions stay manageable** (#3530)
 
 ### Bug Fixes
 
-- **fix(team): recover confirmed-dead runtime-v2 workers** (#3462)
-- **fix(merge-readiness): close red-team proof and authority gaps** (#3467)
-- **fix(ultragoal): recover the active /goal from the transcript on Claude Code** (#3468)
-- **fix(ci): isolate subagent lock benchmark** (#3459)
-- **fix(resolve-node): add windowsHide to node binary resolution execSync** (#3455)
-- **fix(installer): remove legacy pre-marker OMC guides** (#3450)
-- **fix(windows): hide console window for git execSync calls** (#3445)
+- **fix(psm): fail closed on malformed worktree results** (#3531)
+- **fix(psm): use jira-cli --raw instead of non-existent --output json** (#3529)
+- **fix(psm): use tmux-safe session names so sessions stay manageable** (#3530)
+- **fix(windows): separate prompt host and worker timeouts** (#3525)
 
 ### Other Changes
 
-- **Add deterministic capabilities lockfile preflight** (#3440)
+- **ci: add main generated-artifact authorization trust root** (#3540)
 
 ### Stats
 
-- **8 PRs merged** | **0 new features** | **7 bug fixes** | **0 security/hardening improvements** | **1 other change**
+- **5 PRs merged** | **0 new features** | **4 bug fixes** | **0 security/hardening improvements** | **1 other change**

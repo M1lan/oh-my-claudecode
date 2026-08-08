@@ -10,7 +10,7 @@ import { closeSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync, readF
 import { createHash } from 'crypto';
 import { dirname, join, resolve, basename } from 'path';
 import { homedir } from 'os';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir } from './lib/config-dir.mjs';
 import { encodeProjectPath } from './lib/encode-project-path.mjs';
@@ -19,6 +19,7 @@ import { evaluateForceAgentDelegation } from './lib/force-agent-delegation-prefl
 import { resolveOmcStateRoot } from './lib/state-root.mjs';
 import { readStdin } from './lib/stdin.mjs';
 import { resolveConfiguredAgentModel } from './lib/agent-model-config.mjs';
+import { BOUNDED_GIT_TIMEOUT_MS } from './lib/bounded-git-timeout.mjs';
 
 // Inlined from src/config/models.ts — avoids a dist/ import so the hook works
 // before a build and stays consistent with the TypeScript source.
@@ -476,11 +477,11 @@ function resolveOmcRoot(startDir) {
 
   // 3) git rev-parse --show-toplevel
   try {
-    const top = execSync('git rev-parse --show-toplevel', {
+    const top = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: dir,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
-      timeout: 5000,
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
     if (top) return join(top, '.omc');
@@ -513,20 +514,22 @@ function resolveTranscriptPath(transcriptPath, cwd) {
 
   const effectiveCwd = cwd || process.cwd();
   try {
-    const gitCommonDir = execSync('git rev-parse --git-common-dir', {
+    const gitCommonDir = execFileSync('git', ['rev-parse', '--git-common-dir'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
 
     const absoluteCommonDir = resolve(effectiveCwd, gitCommonDir);
     const mainRepoRoot = dirname(absoluteCommonDir);
 
-    const worktreeTop = execSync('git rev-parse --show-toplevel', {
+    const worktreeTop = execFileSync('git', ['rev-parse', '--show-toplevel'], {
       cwd: effectiveCwd,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: BOUNDED_GIT_TIMEOUT_MS,
       windowsHide: true,
     }).trim();
 
@@ -639,6 +642,25 @@ const ULTRAGOAL_TERMINAL_PHASES = new Set([
   'canceled',
   'aborted',
 ]);
+
+const AWAITING_CONFIRMATION_TTL_MS = 2 * 60 * 1000;
+
+function isAwaitingConfirmation(state) {
+  if (!state || state.awaiting_confirmation !== true) return false;
+
+  const preferred = state.awaiting_confirmation_set_at;
+  const timestamp = typeof preferred === 'string' && preferred.trim()
+    ? preferred
+    : typeof state.started_at === 'string' && state.started_at.trim()
+      ? state.started_at
+      : null;
+  if (!timestamp) return false;
+
+  const timestampMs = new Date(timestamp).getTime();
+  const ageMs = Date.now() - timestampMs;
+  return Number.isFinite(ageMs) && ageMs >= 0 && ageMs < AWAITING_CONFIRMATION_TTL_MS;
+}
+
 
 function isStaleModeState(state) {
   if (!state || typeof state !== 'object') return true;
@@ -897,6 +919,7 @@ function evaluateUltragoalPreToolEnforcement(stateDir, directory, sessionId, dat
   if (isStaleModeState(state)) return null;
   if (state.project_path && resolve(String(state.project_path)) !== resolve(directory)) return null;
   if (isUltragoalTerminalState(state, directory)) return null;
+  if (isAwaitingConfirmation(state)) return null;
 
   const expected = getExpectedUltragoalObjective(state, directory);
   const actual = extractClaudeGoalSnapshot(data, sessionId, directory);
