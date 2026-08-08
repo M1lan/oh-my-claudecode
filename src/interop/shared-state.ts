@@ -30,6 +30,8 @@ export interface InteropConfig {
   sessionId: string;
   createdAt: string;
   omcCwd: string;
+  /** PID of the `omc interop` launcher; used to detect stale sessions. */
+  omcPid?: number;
   omxCwd?: string;
   multiplexerServerId?: string;
   omxPaneId?: string;
@@ -111,6 +113,7 @@ const InteropConfigSchema = z.object({
   sessionId: z.string(),
   createdAt: z.string(),
   omcCwd: z.string(),
+  omcPid: z.number().optional(),
   omxCwd: z.string().optional(),
   multiplexerServerId: z.string().optional(),
   omxPaneId: z.string().optional(),
@@ -215,6 +218,26 @@ export function getInteropDir(cwd: string): string {
 }
 
 /**
+ * Check whether the launcher that owns an interop config is still running.
+ * Configs written before the pid was recorded (older builds) have no
+ * verifiable owner and are treated as not alive, i.e. reclaimable — a crashed
+ * launcher must not block interop forever.
+ */
+function isInteropOwnerAlive(config: InteropConfig): boolean {
+  const pid = config.omcPid;
+  if (typeof pid !== 'number' || !Number.isInteger(pid) || pid <= 0) {
+    return false;
+  }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    // EPERM = process exists but is owned by someone else: still alive.
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
+}
+
+/**
  * Initialize an interop session
  * Creates the interop directory and session config
  */
@@ -223,6 +246,7 @@ export function initInteropSession(
   omcCwd: string,
   omxCwd?: string,
   omxRuntime: InteropOmxRuntime = {},
+  options: { force?: boolean } = {},
 ): InteropConfig {
   const interopDir = getInteropDir(omcCwd);
   mkdirSync(interopDir, { recursive: true });
@@ -231,6 +255,7 @@ export function initInteropSession(
     sessionId,
     createdAt: new Date().toISOString(),
     omcCwd,
+    omcPid: process.pid,
     omxCwd,
     ...omxRuntime,
     status: 'active',
@@ -249,8 +274,16 @@ export function initInteropSession(
           existing.data.status === 'active' &&
           existing.data.sessionId !== sessionId
         ) {
-          throw new Error(
-            `Interop session ${existing.data.sessionId} is already active`,
+          if (!options.force && isInteropOwnerAlive(existing.data)) {
+            throw new Error(
+              `Interop session ${existing.data.sessionId} is already active ` +
+                `(owner pid ${existing.data.omcPid} is running)`,
+            );
+          }
+          console.warn(
+            options.force
+              ? `[interop] --force: taking over session ${existing.data.sessionId}`
+              : `[interop] Reclaiming stale session ${existing.data.sessionId} (owner no longer running)`,
           );
         }
       }

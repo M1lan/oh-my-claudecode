@@ -179,6 +179,10 @@ program
     '--respawn-omx',
     'Restart the stored Codex pane with its original command and environment',
   )
+  .option(
+    '--force',
+    'Take over an interop session left marked active by a crashed or killed launcher',
+  )
   .addHelpText(
     'after',
     `
@@ -187,12 +191,15 @@ Requirements:
   - Claude CLI must be installed
   - Codex CLI recommended (graceful fallback if missing)`,
   )
-  .action((options: { yolo?: boolean; respawnOmx?: boolean }) => {
-    interopCommand({
-      yolo: options.yolo,
-      respawnOmx: options.respawnOmx,
-    });
-  });
+  .action(
+    (options: { yolo?: boolean; respawnOmx?: boolean; force?: boolean }) => {
+      interopCommand({
+        yolo: options.yolo,
+        respawnOmx: options.respawnOmx,
+        force: options.force,
+      });
+    },
+  );
 
 /**
  * Ask command - Run provider advisor prompt (claude|gemini)

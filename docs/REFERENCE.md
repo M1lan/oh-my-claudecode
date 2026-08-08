@@ -563,6 +563,7 @@ Topology behavior:
 ```bash
 omc interop          # split-pane session: Claude Code (left) | Codex (right)
 omc interop --yolo   # same, both sides in bypass mode
+omc interop --force  # take over a session left marked active by a crashed launcher
 ```
 
 Launches a side-by-side OMC + OMX session in the current rmux (preferred) or
@@ -585,6 +586,11 @@ What the launcher does:
   typed into the codex pane at launch.
 - `--yolo` starts Claude with `--dangerously-skip-permissions` and Codex with
   `--dangerously-bypass-approvals-and-sandbox`.
+- Records the launcher pid (`omcPid`) in `config.json`. A second launch in the
+  same state root refuses to start only while that pid is still running; a
+  config left `active` by a crashed/killed launcher (or written by an older
+  build without a pid) is reclaimed automatically, and `--force` overrides the
+  check entirely.
 
 Interop MCP tools (`interop_send_task`, `interop_read_results`,
 `interop_send_message`, `interop_read_messages`, `interop_list_omx_teams`,

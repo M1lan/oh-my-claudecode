@@ -276,7 +276,7 @@ function isCodexAvailable(): boolean {
  */
 export function launchInteropSession(
   cwd: string = process.cwd(),
-  options: { yolo?: boolean } = {},
+  options: { yolo?: boolean; force?: boolean } = {},
 ): void {
   const yolo = Boolean(options.yolo);
   const flags = readInteropRuntimeFlags();
@@ -339,18 +339,30 @@ export function launchInteropSession(
     : undefined;
 
   // Initialize interop session (writes config.json as a side effect)
-  initInteropSession(
-    sessionId,
-    cwd,
-    hasCodex ? cwd : undefined,
-    codexCommand
-      ? {
-          multiplexerServerId,
-          omxLaunchCommand: codexCommand,
-          omxReadiness: 'pending',
-        }
-      : undefined,
-  );
+  try {
+    initInteropSession(
+      sessionId,
+      cwd,
+      hasCodex ? cwd : undefined,
+      codexCommand
+        ? {
+            multiplexerServerId,
+            omxLaunchCommand: codexCommand,
+            omxReadiness: 'pending',
+          }
+        : undefined,
+      { force: Boolean(options.force) },
+    );
+  } catch (error) {
+    console.error(
+      'Error:',
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      'If no interop session is actually running there, re-run with --force to take over.',
+    );
+    process.exit(1);
+  }
 
   console.log(`Initializing interop session: ${sessionId}`);
   console.log(`Working directory: ${cwd}`);
@@ -487,12 +499,17 @@ export function launchInteropSession(
  * CLI entry point for interop command
  */
 export function interopCommand(
-  options: { cwd?: string; yolo?: boolean; respawnOmx?: boolean } = {},
+  options: {
+    cwd?: string;
+    yolo?: boolean;
+    respawnOmx?: boolean;
+    force?: boolean;
+  } = {},
 ): void {
   const cwd = options.cwd || process.cwd();
   if (options.respawnOmx) {
     respawnOmxPane(cwd);
     return;
   }
-  launchInteropSession(cwd, { yolo: options.yolo });
+  launchInteropSession(cwd, { yolo: options.yolo, force: options.force });
 }

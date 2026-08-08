@@ -17,6 +17,7 @@ import {
   existsSync,
   writeFileSync,
 } from 'fs';
+import { spawnSync } from 'child_process';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
@@ -236,5 +237,71 @@ describe('interop session ownership', () => {
       sessionId: 'session-a',
       status: 'active',
     });
+  });
+
+  it('records the launcher pid in config.json', async () => {
+    const { initInteropSession, readInteropConfig } = await import(
+      '../shared-state.js'
+    );
+
+    initInteropSession('session-a', tempDir, tempDir);
+
+    expect(readInteropConfig(tempDir)?.omcPid).toBe(process.pid);
+  });
+
+  it('reclaims a stale active session whose owner pid is dead', async () => {
+    const { getInteropDir, initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
+
+    initInteropSession('session-a', tempDir, tempDir);
+
+    // Simulate a crashed launcher: rewrite the config with the pid of a
+    // process that has already exited.
+    const exited = spawnSync(process.execPath, ['--version']);
+    const configPath = join(getInteropDir(tempDir), 'config.json');
+    const stale = JSON.parse(readFileSync(configPath, 'utf-8'));
+    stale.omcPid = exited.pid;
+    writeFileSync(configPath, JSON.stringify(stale));
+
+    initInteropSession('session-b', tempDir, tempDir);
+
+    expect(readInteropConfig(tempDir)).toMatchObject({
+      sessionId: 'session-b',
+      status: 'active',
+    });
+  });
+
+  it('reclaims an active session written by a build without a recorded pid', async () => {
+    const { getInteropDir, initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
+
+    initInteropSession('session-a', tempDir, tempDir);
+
+    // Configs from pre-pid builds have no verifiable owner; a crashed
+    // launcher must not block interop forever.
+    const configPath = join(getInteropDir(tempDir), 'config.json');
+    const legacy = JSON.parse(readFileSync(configPath, 'utf-8'));
+    delete legacy.omcPid;
+    writeFileSync(configPath, JSON.stringify(legacy));
+
+    initInteropSession('session-b', tempDir, tempDir);
+
+    expect(readInteropConfig(tempDir)?.sessionId).toBe('session-b');
+  });
+
+  it('replaces a live session when force is set', async () => {
+    const { initInteropSession, readInteropConfig } = await import(
+      '../shared-state.js'
+    );
+
+    initInteropSession('session-a', tempDir, tempDir);
+
+    expect(() => initInteropSession('session-b', tempDir, tempDir)).toThrow(
+      /already active/,
+    );
+
+    initInteropSession('session-b', tempDir, tempDir, {}, { force: true });
+
+    expect(readInteropConfig(tempDir)?.sessionId).toBe('session-b');
   });
 });
