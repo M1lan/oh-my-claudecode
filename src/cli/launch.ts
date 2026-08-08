@@ -1248,13 +1248,7 @@ function runClaudeOutsideTmux(
     }
     const requestIdClaim = String(
       rmuxExec(
-        [
-          'show-options',
-          '-v',
-          '-t',
-          sessionName,
-          '@hausgeist_request_id',
-        ],
+        ['show-options', '-v', '-t', sessionName, '@hausgeist_request_id'],
         { stripTmux: true, stdio: 'pipe' },
       ) ?? '',
     ).trim();

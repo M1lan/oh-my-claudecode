@@ -261,8 +261,7 @@ const CONTRACTS: Record<CliAgentType, CliAgentContract> = {
   gemini: {
     agentType: 'gemini',
     binary: 'gemini',
-    installInstructions:
-      'Install Gemini CLI: pnpm add -g @google/gemini-cli',
+    installInstructions: 'Install Gemini CLI: pnpm add -g @google/gemini-cli',
     supportsPromptMode: true,
     promptModeFlag: '-p',
     buildLaunchArgs(model?: string, extraFlags: string[] = []): string[] {

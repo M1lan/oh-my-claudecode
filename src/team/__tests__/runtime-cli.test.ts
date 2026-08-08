@@ -135,7 +135,9 @@ describe('runtime-cli legacy watchdog shutdown', () => {
     const barrier = createRuntimeStartupShutdownBarrier();
     barrier.requestShutdown();
     let released = false;
-    const waiting = barrier.waitForStartup().then(() => { released = true; });
+    const waiting = barrier.waitForStartup().then(() => {
+      released = true;
+    });
     await Promise.resolve();
     expect(barrier.isShutdownRequested()).toBe(true);
     expect(released).toBe(false);
@@ -146,16 +148,25 @@ describe('runtime-cli legacy watchdog shutdown', () => {
 
   it('does not publish a terminal result when shutdown cleanup fails', async () => {
     const phases: string[] = [];
-    await expect(finalizeRuntimeShutdown(
-      null,
-      true,
-      async () => { phases.push('collect'); return { status: 'failed' }; },
-      async () => { phases.push('shutdown'); throw new Error('team_shutdown_provider_cleanup_unverified:worker-1'); },
-      async () => { phases.push('publish'); },
-    )).rejects.toThrow('team_shutdown_provider_cleanup_unverified:worker-1');
+    await expect(
+      finalizeRuntimeShutdown(
+        null,
+        true,
+        async () => {
+          phases.push('collect');
+          return { status: 'failed' };
+        },
+        async () => {
+          phases.push('shutdown');
+          throw new Error('team_shutdown_provider_cleanup_unverified:worker-1');
+        },
+        async () => {
+          phases.push('publish');
+        },
+      ),
+    ).rejects.toThrow('team_shutdown_provider_cleanup_unverified:worker-1');
     expect(phases).toEqual(['collect', 'shutdown']);
   });
-
 });
 
 describe('runtime-cli auto-merge compatibility', () => {
@@ -172,9 +183,12 @@ describe('runtime-cli auto-merge compatibility', () => {
 
 describe('runtime-cli worker launch bootstrap', () => {
   it('rejects malformed launch JSON without echoing its secret payload', async () => {
-    process.env.OMC_WORKER_LAUNCH_SPEC = '{"provider_argv":["codex","--token","SUPERSECRET"],';
+    process.env.OMC_WORKER_LAUNCH_SPEC =
+      '{"provider_argv":["codex","--token","SUPERSECRET"],';
     try {
-      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow('worker_launch_invalid_spec_json');
+      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow(
+        'worker_launch_invalid_spec_json',
+      );
     } finally {
       delete process.env.OMC_WORKER_LAUNCH_SPEC;
     }
@@ -182,9 +196,14 @@ describe('runtime-cli worker launch bootstrap', () => {
 
   it('fails closed when inline and descriptor launch-spec sources conflict', async () => {
     process.env.OMC_WORKER_LAUNCH_SPEC = '{}';
-    process.env.OMC_WORKER_LAUNCH_SPEC_FILE = join(tmpdir(), 'conflicting-worker-launch.json');
+    process.env.OMC_WORKER_LAUNCH_SPEC_FILE = join(
+      tmpdir(),
+      'conflicting-worker-launch.json',
+    );
     try {
-      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow('worker_launch_spec_source_conflict');
+      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow(
+        'worker_launch_spec_source_conflict',
+      );
     } finally {
       delete process.env.OMC_WORKER_LAUNCH_SPEC;
       delete process.env.OMC_WORKER_LAUNCH_SPEC_FILE;
@@ -192,20 +211,39 @@ describe('runtime-cli worker launch bootstrap', () => {
   });
 
   it('fails closed when the attempt-owned descriptor is missing', async () => {
-    process.env.OMC_WORKER_LAUNCH_SPEC_FILE = join(tmpdir(), 'missing-worker-launch.json');
+    process.env.OMC_WORKER_LAUNCH_SPEC_FILE = join(
+      tmpdir(),
+      'missing-worker-launch.json',
+    );
     try {
-      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow('worker_launch_descriptor_missing');
+      await expect(runWorkerLaunchFromEnvironment()).rejects.toThrow(
+        'worker_launch_descriptor_missing',
+      );
     } finally {
       delete process.env.OMC_WORKER_LAUNCH_SPEC_FILE;
     }
   });
 
   it('prioritizes explicit worker launch and recovery gate modes over inherited owner state', () => {
-    const inheritedOwner = { OMC_RECOVERY_OWNER_INPUT: '{"requestId":"stale"}' };
+    const inheritedOwner = {
+      OMC_RECOVERY_OWNER_INPUT: '{"requestId":"stale"}',
+    };
 
-    expect(selectRuntimeCliMode(['node', 'runtime-cli.cjs', '--worker-launch'], inheritedOwner)).toBe('worker-launch');
-    expect(selectRuntimeCliMode(['node', 'runtime-cli.cjs', '--recovery-gate'], inheritedOwner)).toBe('recovery-gate');
-    expect(selectRuntimeCliMode(['node', 'runtime-cli.cjs'], inheritedOwner)).toBe('recovery-owner');
+    expect(
+      selectRuntimeCliMode(
+        ['node', 'runtime-cli.cjs', '--worker-launch'],
+        inheritedOwner,
+      ),
+    ).toBe('worker-launch');
+    expect(
+      selectRuntimeCliMode(
+        ['node', 'runtime-cli.cjs', '--recovery-gate'],
+        inheritedOwner,
+      ),
+    ).toBe('recovery-gate');
+    expect(
+      selectRuntimeCliMode(['node', 'runtime-cli.cjs'], inheritedOwner),
+    ).toBe('recovery-owner');
   });
 });
 

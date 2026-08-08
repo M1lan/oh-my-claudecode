@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 const doctorTeamRoutingCommandMock = vi.hoisted(() => vi.fn());
 
@@ -21,7 +29,9 @@ describe('doctor team-routing Commander integration', () => {
   beforeEach(() => {
     doctorTeamRoutingCommandMock.mockReset();
     doctorTeamRoutingCommandMock.mockResolvedValue(0);
-    exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as () => never);
+    exitSpy = vi
+      .spyOn(process, 'exit')
+      .mockImplementation((() => {}) as () => never);
   });
 
   afterEach(() => {

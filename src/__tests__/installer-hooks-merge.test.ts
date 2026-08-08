@@ -389,7 +389,11 @@ describe('Hook merge during omc update', () => {
     it('installs hooks when none exist yet and no force flag is set', () => {
       const existing: HookGroup[] = [];
       const newOmc = [omcGroup(NEW_OMC_CMD)];
-      const { merged, conflicts, logMessages } = mergeEventHooks(existing, newOmc, {});
+      const { merged, conflicts, logMessages } = mergeEventHooks(
+        existing,
+        newOmc,
+        {},
+      );
       expect(merged).toEqual(newOmc);
       expect(conflicts).toHaveLength(0);
       expect(logMessages[0]).not.toMatch(/already configured/);

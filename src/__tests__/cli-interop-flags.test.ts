@@ -142,9 +142,7 @@ describe('Codex interop launch command', () => {
     expect(command).toContain("exec 'bash' -lc");
     expect(command).toContain("'OMX_OMC_INTEROP_ENABLED=1'");
     expect(command).toContain("'OMX_INTEROP_CAVEMAN_LEVEL=wenyan-ultra'");
-    expect(command).toContain(
-      "'--dangerously-bypass-approvals-and-sandbox'",
-    );
+    expect(command).toContain("'--dangerously-bypass-approvals-and-sandbox'");
     expect(command).not.toContain('.bashrc');
     expect(command).not.toContain('zsh');
   });

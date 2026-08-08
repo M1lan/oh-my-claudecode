@@ -581,22 +581,44 @@ describe('plugin shipping surface transaction', () => {
       main: './dist/index.js',
       types: './dist/public.d.ts',
       bin: { fixture: './bridge/cli.cjs' },
-      files: ['dist/index.js', 'dist/public.d.ts', 'bridge/claude-md-coordinator.cjs'],
+      files: [
+        'dist/index.js',
+        'dist/public.d.ts',
+        'bridge/claude-md-coordinator.cjs',
+      ],
     });
-    writeFileSync(join(fixture.root, 'dist', 'public.d.ts'), "export * from './runtime.js';\n");
+    writeFileSync(
+      join(fixture.root, 'dist', 'public.d.ts'),
+      "export * from './runtime.js';\n",
+    );
     git(fixture.root, ['add', 'package.json']);
     git(fixture.root, ['add', '-f', '--', 'dist/public.d.ts']);
-    git(fixture.root, ['commit', '--quiet', '-m', 'declare public type entrypoint']);
+    git(fixture.root, [
+      'commit',
+      '--quiet',
+      '-m',
+      'declare public type entrypoint',
+    ]);
     const base = git(fixture.root, ['rev-parse', 'HEAD']).trim();
 
-    writeFileSync(join(fixture.root, 'dist', 'runtime.d.ts'), 'export declare const fixture: true;\n');
+    writeFileSync(
+      join(fixture.root, 'dist', 'runtime.d.ts'),
+      'export declare const fixture: true;\n',
+    );
     git(fixture.root, ['add', '-f', '--', 'dist/runtime.d.ts']);
-    git(fixture.root, ['commit', '--quiet', '-m', 'add generated declaration counterpart']);
+    git(fixture.root, [
+      'commit',
+      '--quiet',
+      '-m',
+      'add generated declaration counterpart',
+    ]);
 
     const result = run(fixture.root, 'check-pr', '--base', base);
 
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('plugin shipping surface PR check verified');
+    expect(result.stdout).toContain(
+      'plugin shipping surface PR check verified',
+    );
   });
 
   it('rejects a PR diff with an out-of-closure generated artifact', () => {

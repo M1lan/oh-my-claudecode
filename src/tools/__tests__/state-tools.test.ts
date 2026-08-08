@@ -1901,7 +1901,8 @@ describe('state-tools', () => {
           active: true,
           session_id: sessionId,
           current_phase: 'executing',
-          claude_goal_objective: 'Complete all ultragoal stories in .omc/ultragoal/goals.json: G001',
+          claude_goal_objective:
+            'Complete all ultragoal stories in .omc/ultragoal/goals.json: G001',
         }),
       );
 

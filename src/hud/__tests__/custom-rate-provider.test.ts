@@ -12,7 +12,10 @@ describe('custom rate provider child lifecycle', () => {
     const pidFile = join(directory, 'pid');
     try {
       await expect(
-        spawnWithTimeout(`echo $$ > ${JSON.stringify(pidFile)}; while :; do :; done`, 50),
+        spawnWithTimeout(
+          `echo $$ > ${JSON.stringify(pidFile)}; while :; do :; done`,
+          50,
+        ),
       ).rejects.toThrow('timed out');
 
       const pid = Number(readFileSync(pidFile, 'utf8').trim());
@@ -25,7 +28,8 @@ describe('custom rate provider child lifecycle', () => {
   }, 2_000);
 
   it('returns normal command output before the timeout', async () => {
-    await expect(spawnWithTimeout('printf normal-output', 500)).resolves.toBe('normal-output');
+    await expect(spawnWithTimeout('printf normal-output', 500)).resolves.toBe(
+      'normal-output',
+    );
   });
-
 });

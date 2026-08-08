@@ -918,14 +918,23 @@ describe('unified MCP registry sync', () => {
       fred: { command: winCommand, args: [winArg, '--stdio'] },
     };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(registry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: registry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.fred]',
-      `command = '${winCommand}'`,
-      `args = ['${winArg}', '--stdio']`,
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(registry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: registry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.fred]',
+        `command = '${winCommand}'`,
+        `args = ['${winArg}', '--stdio']`,
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -943,14 +952,23 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(registry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: registry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.gitnexus]',
-      'command = "C:\\\\tools\\\\gitnexus.exe"',
-      'args = ["--config=C:\\\\data\\\\app.json", "--name=\\"my server\\""]',
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(registry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: registry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.gitnexus]',
+        'command = "C:\\\\tools\\\\gitnexus.exe"',
+        'args = ["--config=C:\\\\data\\\\app.json", "--name=\\"my server\\""]',
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -968,14 +986,23 @@ describe('unified MCP registry sync', () => {
       mixed: { command: 'python', args: [literalRich, basicEscaped] },
     };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(registry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: registry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.mixed]',
-      'command = "python"',
-      `args = ['${literalRich}', "${basicEscaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`,
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(registry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: registry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.mixed]',
+        'command = "python"',
+        `args = ['${literalRich}', "${basicEscaped.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"]`,
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -992,17 +1019,26 @@ describe('unified MCP registry sync', () => {
       },
     };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(registry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: registry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.remote]',
-      "url = 'https://lab.example.com/mcp'",
-      "type = 'sse'",
-      '',
-      '[mcp_servers.remote.headers]',
-      "Authorization = 'Bearer test-token'",
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(registry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: registry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.remote]',
+        "url = 'https://lab.example.com/mcp'",
+        "type = 'sse'",
+        '',
+        '[mcp_servers.remote.headers]',
+        "Authorization = 'Bearer test-token'",
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -1039,16 +1075,37 @@ describe('unified MCP registry sync', () => {
 
     const fullRegistry = { ...registry, ...registryControl };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(fullRegistry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: fullRegistry }, null, 2));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(fullRegistry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: fullRegistry }, null, 2),
+    );
 
     const codexLines: string[] = [];
     for (const [name, argsValue] of Object.entries(poisonedCodexArgs)) {
-      codexLines.push(`[mcp_servers.${name}]`, `command = 'python'`, `args = ${argsValue}`, '');
+      codexLines.push(
+        `[mcp_servers.${name}]`,
+        `command = 'python'`,
+        `args = ${argsValue}`,
+        '',
+      );
       // Control carries the SAME malformed args so any non-empty parse mismatches it.
-      codexLines.push(`[mcp_servers.${name}_control]`, `command = 'python'`, `args = ${argsValue}`, '');
+      codexLines.push(
+        `[mcp_servers.${name}_control]`,
+        `command = 'python'`,
+        `args = ${argsValue}`,
+        '',
+      );
     }
-    codexLines.push('[mcp_servers.valid_neighbor]', `command = 'node'`, `args = ['server.js']`, '');
+    codexLines.push(
+      '[mcp_servers.valid_neighbor]',
+      `command = 'node'`,
+      `args = ['server.js']`,
+      '',
+    );
 
     writeFileSync(getCodexConfigPath(), codexLines.join('\n'));
 
@@ -1089,26 +1146,35 @@ describe('unified MCP registry sync', () => {
     };
 
     const fullRegistry = { ...registry, ...registryControl };
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(fullRegistry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: fullRegistry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.no_open]',
-      "command = 'python'",
-      "args = 'prefix']",
-      '',
-      '[mcp_servers.no_open_control]',
-      "command = 'python'",
-      "args = 'prefix']",
-      '',
-      '[mcp_servers.no_close]',
-      "command = 'python'",
-      "args = ['prefix'",
-      '',
-      '[mcp_servers.no_close_control]',
-      "command = 'python'",
-      "args = ['prefix'",
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(fullRegistry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: fullRegistry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.no_open]',
+        "command = 'python'",
+        "args = 'prefix']",
+        '',
+        '[mcp_servers.no_open_control]',
+        "command = 'python'",
+        "args = 'prefix']",
+        '',
+        '[mcp_servers.no_close]',
+        "command = 'python'",
+        "args = ['prefix'",
+        '',
+        '[mcp_servers.no_close_control]',
+        "command = 'python'",
+        "args = ['prefix'",
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -1127,20 +1193,29 @@ describe('unified MCP registry sync', () => {
     };
 
     const fullRegistry = { ...registry, ...registryControl };
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(fullRegistry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: fullRegistry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.multiline]',
-      "command = 'python'",
-      "args = ['prefix',",
-      "  'second']",
-      '',
-      '[mcp_servers.multiline_control]',
-      "command = 'python'",
-      "args = ['prefix',",
-      "  'second']",
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(fullRegistry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: fullRegistry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.multiline]',
+        "command = 'python'",
+        "args = ['prefix',",
+        "  'second']",
+        '',
+        '[mcp_servers.multiline_control]',
+        "command = 'python'",
+        "args = ['prefix',",
+        "  'second']",
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 
@@ -1155,14 +1230,23 @@ describe('unified MCP registry sync', () => {
       trailing: { command: 'python', args: ['first', 'second'] },
     };
 
-    writeFileSync(getUnifiedMcpRegistryPath(), JSON.stringify(registry, null, 2));
-    writeFileSync(getClaudeMcpConfigPath(), JSON.stringify({ mcpServers: registry }, null, 2));
-    writeFileSync(getCodexConfigPath(), [
-      '[mcp_servers.trailing]',
-      "command = 'python'",
-      "args = ['first', 'second',]",
-      '',
-    ].join('\n'));
+    writeFileSync(
+      getUnifiedMcpRegistryPath(),
+      JSON.stringify(registry, null, 2),
+    );
+    writeFileSync(
+      getClaudeMcpConfigPath(),
+      JSON.stringify({ mcpServers: registry }, null, 2),
+    );
+    writeFileSync(
+      getCodexConfigPath(),
+      [
+        '[mcp_servers.trailing]',
+        "command = 'python'",
+        "args = ['first', 'second',]",
+        '',
+      ].join('\n'),
+    );
 
     const status = inspectUnifiedMcpRegistrySync();
 

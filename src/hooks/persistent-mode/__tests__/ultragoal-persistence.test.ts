@@ -231,7 +231,9 @@ describe('ultragoal persistence and Claude /goal enforcement', () => {
         tool_input: { command },
       });
       expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
-      expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('[ULTRAGOAL /GOAL REQUIRED]');
+      expect(result.hookSpecificOutput?.permissionDecisionReason).toContain(
+        '[ULTRAGOAL /GOAL REQUIRED]',
+      );
     }
 
     const npmResult = runHook(preToolScript, {

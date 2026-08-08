@@ -340,7 +340,10 @@ describe('CLAUDE.md transactions', () => {
   it('revalidates a changed root alias after the final local write and rolls back canonically', () => {
     const { root, source } = fixture();
     const alternate = mkdtempSync(
-      join(realpathSync(tmpdir()), 'omc-claude-md-transaction-final-local-alternate-'),
+      join(
+        realpathSync(tmpdir()),
+        'omc-claude-md-transaction-final-local-alternate-',
+      ),
     );
     const alias = `${root}-alias`;
     roots.push(alternate, alias);
@@ -379,7 +382,10 @@ describe('CLAUDE.md transactions', () => {
   it('revalidates a changed root alias after the final delete and rolls back canonically', () => {
     const { root, source } = fixture();
     const alternate = mkdtempSync(
-      join(realpathSync(tmpdir()), 'omc-claude-md-transaction-final-delete-alternate-'),
+      join(
+        realpathSync(tmpdir()),
+        'omc-claude-md-transaction-final-delete-alternate-',
+      ),
     );
     const alias = `${root}-alias`;
     roots.push(alternate, alias);

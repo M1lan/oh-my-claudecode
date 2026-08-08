@@ -1021,7 +1021,9 @@ describe('Builtin Skills', () => {
     it('conditions team Claude fallback guidance on Claude CLI availability', () => {
       const skill = getBuiltinSkill('team');
       expect(skill).toBeDefined();
-      expect(skill?.template).toContain('only when the Claude CLI is resolvable');
+      expect(skill?.template).toContain(
+        'only when the Claude CLI is resolvable',
+      );
       expect(skill?.template).toContain('no runnable fallback exists');
       expect(skill?.template).toContain('orchestration/startup is unavailable');
       expect(skill?.template).toContain('omc doctor --team-routing');

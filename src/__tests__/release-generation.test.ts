@@ -552,7 +552,9 @@ describe('release generation', () => {
     expect(fallbackPropagationFailure).toBeLessThan(fallbackPropagationExit);
     expect(workflow).toContain('FALLBACK_BACKOFF_SECONDS=10');
     expect(workflow).toContain('sleep "$FALLBACK_BACKOFF_SECONDS"');
-    expect(workflow).toContain('FALLBACK_BACKOFF_SECONDS=$((FALLBACK_BACKOFF_SECONDS * 2))');
+    expect(workflow).toContain(
+      'FALLBACK_BACKOFF_SECONDS=$((FALLBACK_BACKOFF_SECONDS * 2))',
+    );
     expect(workflow).toContain(
       'if [ "$FALLBACK_BACKOFF_SECONDS" -gt 60 ]; then\n                FALLBACK_BACKOFF_SECONDS=60\n              fi',
     );
@@ -596,11 +598,13 @@ describe('release generation', () => {
     expect(releaseJob).toContain(
       'if [ "$BACKOFF_SECONDS" -gt 60 ]; then\n                BACKOFF_SECONDS=60\n              fi',
     );
-    const propagationLimits = [...workflow.matchAll(/MAX(?:_FALLBACK)?_PROPAGATION_ATTEMPTS=(\d+)/g)].map(
-      (match) => match[1],
-    );
+    const propagationLimits = [
+      ...workflow.matchAll(/MAX(?:_FALLBACK)?_PROPAGATION_ATTEMPTS=(\d+)/g),
+    ].map((match) => match[1]);
     expect(propagationLimits).toEqual(['12', '12']);
-    const backoffCaps = [...workflow.matchAll(/BACKOFF_SECONDS" -gt (\d+)/g)].map((match) => match[1]);
+    const backoffCaps = [
+      ...workflow.matchAll(/BACKOFF_SECONDS" -gt (\d+)/g),
+    ].map((match) => match[1]);
     expect(backoffCaps).toEqual(['60', '60']);
 
     const propagationLimit = releaseJob.indexOf('MAX_PROPAGATION_ATTEMPTS=12');
@@ -626,7 +630,9 @@ describe('release generation', () => {
     const propagationExit = releaseJob.indexOf('exit 1', propagationExhaustion);
     const backoffInit = releaseJob.indexOf('BACKOFF_SECONDS=10');
     const backoffSleep = releaseJob.indexOf('sleep "$BACKOFF_SECONDS"');
-    const backoffDouble = releaseJob.indexOf('BACKOFF_SECONDS=$((BACKOFF_SECONDS * 2))');
+    const backoffDouble = releaseJob.indexOf(
+      'BACKOFF_SECONDS=$((BACKOFF_SECONDS * 2))',
+    );
     const backoffCap = releaseJob.indexOf('if [ "$BACKOFF_SECONDS" -gt 60 ]');
 
     const requiredRegistryVerifications = [

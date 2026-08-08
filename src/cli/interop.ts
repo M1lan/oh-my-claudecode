@@ -147,8 +147,7 @@ export interface OmxRespawnOwnership extends OmxPaneIdentity {
   multiplexerServerId: string;
 }
 
-const OMX_PANE_IDENTITY_FORMAT =
-  '#{pane_id}\t#{session_id}\t#{window_id}';
+const OMX_PANE_IDENTITY_FORMAT = '#{pane_id}\t#{session_id}\t#{window_id}';
 
 export function parseOmxPaneIdentity(output: string): OmxPaneIdentity {
   const [paneId = '', sessionId = '', windowId = ''] = output
@@ -229,11 +228,7 @@ export function respawnOmxPane(cwd: string = process.cwd()): void {
     rmuxExec(buildOmxRespawnArgs(config.omxPaneId, config.omxLaunchCommand), {
       stdio: 'ignore',
     });
-    updateInteropOmxRuntime(
-      cwd,
-      { omxReadiness: 'pending' },
-      config.sessionId,
-    );
+    updateInteropOmxRuntime(cwd, { omxReadiness: 'pending' }, config.sessionId);
     updateInteropStatus(cwd, 'active', config.sessionId);
     console.log(
       'Codex pane respawned with stored launch command. Startup readiness pending; inspect Codex pane for MCP startup failures.',
@@ -298,9 +293,7 @@ export function launchInteropSession(
 
   // Check prerequisites
   if (!isRmuxInteropEnvironment()) {
-    console.error(
-      'Error: Interop mode requires an active rmux session.',
-    );
+    console.error('Error: Interop mode requires an active rmux session.');
     process.exit(1);
   }
 

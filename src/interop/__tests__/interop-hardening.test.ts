@@ -125,9 +125,8 @@ describe('interop OMX restart state', () => {
   });
 
   it('persists the exact launch command and pending readiness', async () => {
-    const { initInteropSession, readInteropConfig } = await import(
-      '../shared-state.js'
-    );
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
 
     initInteropSession('session-1', tempDir, tempDir, {
       multiplexerServerId: '/socket/server-a',
@@ -142,11 +141,8 @@ describe('interop OMX restart state', () => {
   });
 
   it('records the pane without losing the stored launch command', async () => {
-    const {
-      initInteropSession,
-      readInteropConfig,
-      updateInteropOmxRuntime,
-    } = await import('../shared-state.js');
+    const { initInteropSession, readInteropConfig, updateInteropOmxRuntime } =
+      await import('../shared-state.js');
 
     initInteropSession('session-1', tempDir, tempDir, {
       multiplexerServerId: '/socket/server-a',
@@ -184,9 +180,9 @@ describe('interop OMX restart state', () => {
       JSON.stringify({ pid: process.pid, timestamp: Date.now() }),
     );
 
-    expect(() =>
-      updateInteropOmxRuntime(tempDir, { omxPaneId: '%9' }),
-    ).toThrow(/Failed to acquire file lock/);
+    expect(() => updateInteropOmxRuntime(tempDir, { omxPaneId: '%9' })).toThrow(
+      /Failed to acquire file lock/,
+    );
   });
 });
 
@@ -202,15 +198,14 @@ describe('interop session ownership', () => {
   });
 
   it('refuses to replace another active session in the same workspace', async () => {
-    const { initInteropSession, readInteropConfig } = await import(
-      '../shared-state.js'
-    );
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
 
     initInteropSession('session-a', tempDir, tempDir);
 
-    expect(() =>
-      initInteropSession('session-b', tempDir, tempDir),
-    ).toThrow(/already active/);
+    expect(() => initInteropSession('session-b', tempDir, tempDir)).toThrow(
+      /already active/,
+    );
     expect(readInteropConfig(tempDir)?.sessionId).toBe('session-a');
   });
 
@@ -240,9 +235,8 @@ describe('interop session ownership', () => {
   });
 
   it('records the launcher pid in config.json', async () => {
-    const { initInteropSession, readInteropConfig } = await import(
-      '../shared-state.js'
-    );
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
 
     initInteropSession('session-a', tempDir, tempDir);
 
@@ -290,9 +284,8 @@ describe('interop session ownership', () => {
   });
 
   it('replaces a live session when force is set', async () => {
-    const { initInteropSession, readInteropConfig } = await import(
-      '../shared-state.js'
-    );
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
 
     initInteropSession('session-a', tempDir, tempDir);
 

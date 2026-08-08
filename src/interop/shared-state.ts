@@ -309,10 +309,7 @@ function updateInteropConfig(
       const content = readFileSync(configPath, 'utf-8');
       const parsed = InteropConfigSchema.safeParse(JSON.parse(content));
       if (!parsed.success) return null;
-      if (
-        expectedSessionId &&
-        parsed.data.sessionId !== expectedSessionId
-      ) {
+      if (expectedSessionId && parsed.data.sessionId !== expectedSessionId) {
         return null;
       }
       const updated = { ...parsed.data, ...updates };

@@ -501,14 +501,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     const calls = vi.mocked(rmuxExec).mock.calls.map(([args]) => args);
     expect(calls).toEqual(
       expect.arrayContaining([
-        [
-          'set-option',
-          '-o',
-          '-t',
-          'test-session',
-          '@hausgeist_creator',
-          'omc',
-        ],
+        ['set-option', '-o', '-t', 'test-session', '@hausgeist_creator', 'omc'],
         [
           'set-option',
           '-o',
@@ -533,13 +526,7 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
           '@hausgeist_request_id',
           'request-123',
         ],
-        [
-          'show-options',
-          '-v',
-          '-t',
-          'test-session',
-          '@hausgeist_request_id',
-        ],
+        ['show-options', '-v', '-t', 'test-session', '@hausgeist_request_id'],
       ]),
     );
   });
@@ -603,7 +590,10 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
       if (args[0] === 'attach-session') {
         throw new Error('attach interrupted');
       }
-      if (args[0] === 'show-options' && args.includes('@hausgeist_request_id')) {
+      if (
+        args[0] === 'show-options' &&
+        args.includes('@hausgeist_request_id')
+      ) {
         return 'sid\n';
       }
       return '';
@@ -662,11 +652,9 @@ describe('runClaude outside-tmux — mouse scrolling (issue #890)', () => {
     expect(() => runClaude('/tmp', [], 'sid')).toThrow(
       /rmux provenance recording failed/,
     );
-    expect(vi.mocked(rmuxExec).mock.calls.map(([args]) => args)).toContainEqual([
-      'kill-session',
-      '-t',
-      'test-session',
-    ]);
+    expect(vi.mocked(rmuxExec).mock.calls.map(([args]) => args)).toContainEqual(
+      ['kill-session', '-t', 'test-session'],
+    );
     expect(
       vi.mocked(execFileSync).mock.calls.find(([cmd]) => cmd === 'claude'),
     ).toBeUndefined();

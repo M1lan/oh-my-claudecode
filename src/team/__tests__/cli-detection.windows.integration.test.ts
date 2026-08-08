@@ -1,5 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { delimiter, join } from 'path';
 import { tmpdir } from 'os';
 import { probeCli } from '../cli-detection.js';
@@ -19,7 +28,6 @@ describe.skipIf(!isWindows)('cli-detection native Windows integration', () => {
   let sentinelPath: string | undefined;
   let originalSentinelEnv: string | undefined;
 
-
   beforeEach(() => {
     originalPath = process.env.PATH;
     originalComspec = process.env.ComSpec;
@@ -37,7 +45,8 @@ describe.skipIf(!isWindows)('cli-detection native Windows integration', () => {
     else process.env.ComSpec = originalComspec;
     if (originalCOMSPEC === undefined) delete process.env.COMSPEC;
     else process.env.COMSPEC = originalCOMSPEC;
-    if (originalSentinelEnv === undefined) delete process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH;
+    if (originalSentinelEnv === undefined)
+      delete process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH;
     else process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH = originalSentinelEnv;
     if (fixtureRoot) rmSync(fixtureRoot, { recursive: true, force: true });
     fixtureRoot = undefined;
@@ -52,7 +61,9 @@ describe.skipIf(!isWindows)('cli-detection native Windows integration', () => {
 
     expect(result.found).toBe(true);
     expect(result.path).toBeDefined();
-    expect(canonicalWindowsPath(result.path!)).toBe(canonicalWindowsPath(exePath));
+    expect(canonicalWindowsPath(result.path!)).toBe(
+      canonicalWindowsPath(exePath),
+    );
     expect(result.version).toBeDefined();
   });
 
@@ -76,19 +87,29 @@ describe.skipIf(!isWindows)('cli-detection native Windows integration', () => {
       ].join('\r\n'),
       'utf8',
     );
-    process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH = join(fixtureRoot!, 'expected-launch.txt');
+    process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH = join(
+      fixtureRoot!,
+      'expected-launch.txt',
+    );
     process.env.PATH = `${fixtureRoot!}${delimiter}${first}${delimiter}${second}${delimiter}${originalPath ?? ''}`;
 
     const multi = probeCli('omc-multi');
     expect(multi.found).toBe(true);
     expect(multi.path).toBeDefined();
-    expect(canonicalWindowsPath(multi.path!)).toBe(canonicalWindowsPath(join(first, 'omc-multi.exe')));
+    expect(canonicalWindowsPath(multi.path!)).toBe(
+      canonicalWindowsPath(join(first, 'omc-multi.exe')),
+    );
 
     const safe = probeCli('safe-provider');
     expect(safe).toMatchObject({ found: true, version: 'safe-provider 1.0.0' });
     expect(safe.path).toBeDefined();
-    expect(canonicalWindowsPath(safe.path!)).toBe(canonicalWindowsPath(safeBatch));
-    const launches = readFileSync(process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH!, 'utf8')
+    expect(canonicalWindowsPath(safe.path!)).toBe(
+      canonicalWindowsPath(safeBatch),
+    );
+    const launches = readFileSync(
+      process.env.OMC_CLI_DETECTION_EXPECTED_LAUNCH!,
+      'utf8',
+    )
       .split(/\r?\n/)
       .filter(Boolean);
     expect(launches).toEqual(['expected-launch']);
@@ -120,16 +141,32 @@ describe.skipIf(!isWindows)('cli-detection native Windows integration', () => {
         error: 'version probe skipped: batch path is not literal-safe',
       });
       expect(result.path).toBeDefined();
-      expect(canonicalWindowsPath(result.path!)).toBe(canonicalWindowsPath(unsafeBatch));
+      expect(canonicalWindowsPath(result.path!)).toBe(
+        canonicalWindowsPath(unsafeBatch),
+      );
       expect(existsSync(sentinelPath!)).toBe(false);
     }
   });
 
   it('does not execute unsafe candidate names or create an injection sentinel', () => {
-    const unsafeNames = ['unsafe%provider', 'unsafe!provider', 'unsafe^provider', 'unsafe&provider', 'unsafe|provider', 'unsafe<provider', 'unsafe>provider', 'unsafe(provider)', 'unsafe"provider', 'unsafe\nprovider'];
+    const unsafeNames = [
+      'unsafe%provider',
+      'unsafe!provider',
+      'unsafe^provider',
+      'unsafe&provider',
+      'unsafe|provider',
+      'unsafe<provider',
+      'unsafe>provider',
+      'unsafe(provider)',
+      'unsafe"provider',
+      'unsafe\nprovider',
+    ];
 
     for (const binary of unsafeNames) {
-      expect(probeCli(binary)).toEqual({ found: false, error: 'invalid CLI name' });
+      expect(probeCli(binary)).toEqual({
+        found: false,
+        error: 'invalid CLI name',
+      });
     }
     expect(existsSync(sentinelPath!)).toBe(false);
   });

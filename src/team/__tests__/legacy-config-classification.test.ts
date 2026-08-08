@@ -18,16 +18,19 @@ describe('legacy on-disk config classification (exact-head 70d5 P1)', () => {
     const configPath = absPath(cwd, TeamPaths.config(teamName));
     mkdirSync(join(configPath, '..'), { recursive: true });
     // Real legacy shape: agentTypes, no workers field
-    writeFileSync(configPath, JSON.stringify({
-      name: teamName,
-      task: 'legacy task',
-      agentTypes: ['codex'],
-      tmuxSession: 'omc-team-legacy',
-      workerCount: 2,
-      tmuxOwnsWindow: false,
-    }));
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        name: teamName,
+        task: 'legacy task',
+        agentTypes: ['codex'],
+        tmuxSession: 'omc-team-legacy',
+        workerCount: 2,
+        tmuxOwnsWindow: false,
+      }),
+    );
 
-    const loaded = await teamReadConfig(teamName, cwd) as any;
+    const loaded = (await teamReadConfig(teamName, cwd)) as any;
     expect(loaded).toBeTruthy();
     expect(Array.isArray(loaded.agentTypes)).toBe(true);
     expect(loaded.agentTypes).toEqual(['codex']);

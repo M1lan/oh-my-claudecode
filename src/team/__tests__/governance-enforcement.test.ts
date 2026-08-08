@@ -120,10 +120,16 @@ describe('team governance enforcement', () => {
     try {
       const claimed = await teamClaimTask(teamName, '1', 'worker-1', null, cwd);
       expect(claimed.ok).toBe(true);
-      const task = JSON.parse(await readFile(join(cwd, `.omc/state/team/${teamName}/tasks/task-1.json`), 'utf-8'));
+      const task = JSON.parse(
+        await readFile(
+          join(cwd, `.omc/state/team/${teamName}/tasks/task-1.json`),
+          'utf-8',
+        ),
+      );
       expect(task.claim?.launch_attempt_id).toBe('attempt-current');
     } finally {
-      if (previousAttemptId === undefined) delete process.env.OMC_WORKER_LAUNCH_ATTEMPT_ID;
+      if (previousAttemptId === undefined)
+        delete process.env.OMC_WORKER_LAUNCH_ATTEMPT_ID;
       else process.env.OMC_WORKER_LAUNCH_ATTEMPT_ID = previousAttemptId;
     }
   });
@@ -161,6 +167,8 @@ describe('team governance enforcement', () => {
       created_at: new Date().toISOString(),
     });
 
-    await expect(shutdownTeamV2(teamName, cwd)).resolves.toEqual({ outcome: 'cleaned' });
+    await expect(shutdownTeamV2(teamName, cwd)).resolves.toEqual({
+      outcome: 'cleaned',
+    });
   });
 });
