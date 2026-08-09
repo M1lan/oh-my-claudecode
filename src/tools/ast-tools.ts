@@ -96,31 +96,28 @@ function toLangEnum(
   sg: typeof import('@ast-grep/napi'),
   language: SupportedLanguage,
 ): import('@ast-grep/napi').Lang | string {
-  const langMap: Record<
-    SupportedLanguage,
-    import('@ast-grep/napi').Lang | string
-  > = {
-    javascript: sg.Lang.JavaScript,
-    typescript: sg.Lang.TypeScript,
-    tsx: sg.Lang.Tsx,
-    python: 'python',
-    ruby: 'ruby',
-    go: 'go',
-    rust: 'rust',
-    java: 'java',
-    kotlin: 'kotlin',
-    swift: 'swift',
-    c: 'c',
-    cpp: 'cpp',
-    csharp: 'csharp',
-    html: sg.Lang.Html,
-    css: sg.Lang.Css,
-    json: 'json',
-    yaml: 'yaml',
+  const langMap: Record<SupportedLanguage, string> = {
+    javascript: 'JavaScript',
+    typescript: 'TypeScript',
+    tsx: 'Tsx',
+    python: 'Python',
+    ruby: 'Ruby',
+    go: 'Go',
+    rust: 'Rust',
+    java: 'Java',
+    kotlin: 'Kotlin',
+    swift: 'Swift',
+    c: 'C',
+    cpp: 'Cpp',
+    csharp: 'CSharp',
+    html: 'Html',
+    css: 'Css',
+    json: 'Json',
+    yaml: 'Yaml',
   };
 
   const lang = langMap[language];
-  if (!lang) {
+  if (!(lang in sg.Lang)) {
     throw new Error(
       `Unsupported language: ${language}. The loaded @ast-grep/napi runtime does not provide this language.\n${AST_GREP_RECOVERY_GUIDANCE}`,
     );

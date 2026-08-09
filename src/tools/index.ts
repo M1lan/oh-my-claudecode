@@ -73,6 +73,19 @@ export interface SdkToolFormat {
   };
 }
 
+type ZodTypeForSchema = z.ZodType & {
+  def: {
+    defaultValue?: unknown;
+    format?: unknown;
+    type?: string;
+  };
+  description?: string;
+  isInt?: boolean;
+  isOptional(): boolean;
+  unwrap(): z.ZodType;
+  element?: z.ZodType;
+};
+
 /**
  * Convert our tool definitions to SDK format
  */
@@ -100,69 +113,62 @@ function zodToJsonSchema(schema: z.ZodObject<z.ZodRawShape>): {
   const required: string[] = [];
 
   for (const [key, value] of Object.entries(shape)) {
-    const zodType = value as z.ZodTypeAny;
+    const zodType = value as unknown as ZodTypeForSchema;
     properties[key] = zodTypeToJsonSchema(zodType);
 
-    // Check if the field is required (not optional)
     if (!zodType.isOptional()) {
       required.push(key);
     }
   }
 
-  return {
-    type: 'object',
-    properties,
-    required,
-  };
+  return { type: 'object', properties, required };
 }
 
 /**
  * Convert individual Zod types to JSON Schema
  */
-function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
+function zodTypeToJsonSchema(
+  zodType: ZodTypeForSchema,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
-  // Handle optional wrapper
-  if (zodType instanceof z.ZodOptional) {
-    return zodTypeToJsonSchema(zodType._def.innerType as z.ZodTypeAny);
+  if (!zodType?.def) {
+    return { type: 'string' };
   }
 
-  // Handle default wrapper
+  if (zodType instanceof z.ZodOptional) {
+    return zodTypeToJsonSchema(zodType.unwrap() as unknown as ZodTypeForSchema);
+  }
+
   if (zodType instanceof z.ZodDefault) {
-    const inner = zodTypeToJsonSchema(zodType._def.innerType as z.ZodTypeAny);
-    inner.default = (zodType._def.defaultValue as () => unknown)();
+    const inner = zodTypeToJsonSchema(
+      zodType.unwrap() as unknown as ZodTypeForSchema,
+    );
+    inner.default = zodType.def.defaultValue;
     return inner;
   }
 
-  // Get description if available
-  const description = (zodType._def as { description?: string }).description;
-  if (description) {
-    result.description = description;
+  if (zodType.description) {
+    result.description = zodType.description;
   }
 
-  // Handle basic types
   if (zodType instanceof z.ZodString) {
     result.type = 'string';
   } else if (zodType instanceof z.ZodNumber) {
-    result.type = zodType._def.checks?.some(
-      (c) => (c as { kind?: string }).kind === 'int',
-    )
-      ? 'integer'
-      : 'number';
+    result.type = zodType.isInt ? 'integer' : 'number';
   } else if (zodType instanceof z.ZodBoolean) {
     result.type = 'boolean';
   } else if (zodType instanceof z.ZodArray) {
     result.type = 'array';
-    result.items = zodTypeToJsonSchema(
-      zodType._def.type as unknown as z.ZodTypeAny,
-    );
+    result.items = zodType.element
+      ? zodTypeToJsonSchema(zodType.element as unknown as ZodTypeForSchema)
+      : { type: 'string' };
   } else if (zodType instanceof z.ZodEnum) {
     result.type = 'string';
     result.enum = zodType.options;
   } else if (zodType instanceof z.ZodObject) {
     return zodToJsonSchema(zodType);
   } else {
-    // Fallback for unknown types
     result.type = 'string';
   }
 

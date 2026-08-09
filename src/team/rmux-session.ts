@@ -764,7 +764,7 @@ function paneCurrentCommandLooksReady(command: string): boolean {
     .toLowerCase();
   return (
     SUPPORTED_POSIX_SHELLS.has(normalized) ||
-    ['cmd', 'powershell', 'pwsh', 'nu', 'elvish'].includes(normalized)
+    ['atuin', 'cmd', 'powershell', 'pwsh', 'nu', 'elvish'].includes(normalized)
   );
 }
 
@@ -788,6 +788,13 @@ async function getPaneCurrentCommandStatus(
   } catch {
     return null;
   }
+}
+
+function paneCurrentCommandUsesPromptWrapper(command: string): boolean {
+  const normalized = basename(command.replace(/\\/g, '/'))
+    .replace(/\.(exe|cmd|bat)$/i, '')
+    .toLowerCase();
+  return normalized === 'atuin';
 }
 
 function paneCurrentCommandLooksSubmitted(command: string): boolean {
@@ -912,7 +919,11 @@ async function verifyWorkerStartCommandSubmitted(
     if (status?.dead) {
       return false;
     }
-    if (status && paneCurrentCommandLooksSubmitted(status.command)) {
+    if (
+      status &&
+      (paneCurrentCommandLooksSubmitted(status.command) ||
+        paneCurrentCommandUsesPromptWrapper(status.command))
+    ) {
       return true;
     }
     const remainingMs = deadline - Date.now();

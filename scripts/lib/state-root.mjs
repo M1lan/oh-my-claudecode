@@ -37,12 +37,10 @@ export async function resolveOmcStateRoot(directory) {
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (pluginRoot) {
     try {
-      const { findWorkspaceRoot, getOmcRoot, resolveToWorktreeRoot } = await import(
+      const { findWorkspaceRoot, getOmcRoot } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      return getOmcRoot(
-        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory)
-      );
+      return getOmcRoot(findWorkspaceRoot(directory) ?? directory);
     } catch {
       // dist not built or unavailable — fall through to inline fallback
     }
@@ -71,15 +69,10 @@ export async function resolveSessionStatePathsForHook(directory, stateName, sess
   const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
   if (pluginRoot) {
     try {
-      const {
-        findWorkspaceRoot,
-        resolveSessionStatePaths,
-        resolveToWorktreeRoot,
-      } = await import(
+      const { findWorkspaceRoot, resolveSessionStatePaths } = await import(
         pathToFileURL(join(pluginRoot, 'dist', 'lib', 'worktree-paths.js')).href
       );
-      const root =
-        findWorkspaceRoot(directory) ?? resolveToWorktreeRoot(directory);
+      const root = findWorkspaceRoot(directory) ?? directory;
       const result = resolveSessionStatePaths(stateName, sessionId, root);
       return { readPath: result.effectiveRead, writePath: result.effectiveWrite };
     } catch {

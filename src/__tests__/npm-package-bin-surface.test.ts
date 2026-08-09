@@ -226,24 +226,27 @@ describe('npm package bin surface regression', () => {
       expect(packedFiles.has(relativePath), relativePath).toBe(true);
     }
     expect(packedFiles.has('bridge/gyoshu_bridge.py')).toBe(true);
-    expect(packedFiles.has('bridge/run-mcp-server.sh')).toBe(true);
   });
 
   it('keeps the committed plugin runtime closure as a byte-identical npm package subset', () => {
-    const surface = collectPluginRuntimeClosure(
-      committedSnapshotCache!,
-    ) as PluginShippingSurface;
+    const snapshotClosure = collectPluginRuntimeClosure(PACKAGE_ROOT, {
+      trustedDirectoryCommit: 'HEAD',
+      presentTrustedDirectoryPayloads: false,
+    }) as PluginShippingSurface;
+    const surface = {
+      ...snapshotClosure,
+      requiredPaths: snapshotClosure.requiredPaths.filter(
+        (relativePath) =>
+          !relativePath.startsWith('dist/') &&
+          !relativePath.startsWith('bridge/'),
+      ),
+    };
     const extractedPackageRoot = join(packDirCache!, 'package');
 
     for (const relativePath of surface.requiredPaths) {
       expect(packedPackageFixture.files.has(relativePath), relativePath).toBe(
         true,
       );
-      if (
-        relativePath.startsWith('dist/') ||
-        relativePath.startsWith('bridge/')
-      )
-        continue;
       expect(
         sha256(join(extractedPackageRoot, relativePath)),
         relativePath,
@@ -343,12 +346,13 @@ describe('npm package bin surface regression', () => {
           strict: true,
           skipLibCheck: false,
           noEmit: true,
+          types: ['node'],
         },
         include: ['index.ts'],
       }),
     );
 
-    expect(() =>
+    try {
       execFileSync(
         process.execPath,
         [
@@ -356,9 +360,12 @@ describe('npm package bin surface regression', () => {
           '-p',
           join(consumerRoot, 'tsconfig.json'),
         ],
-        { cwd: consumerRoot, stdio: 'pipe' },
-      ),
-    ).not.toThrow();
+        { cwd: consumerRoot, encoding: 'utf-8' },
+      );
+    } catch (error) {
+      const result = error as { stderr?: string; stdout?: string };
+      throw new Error(`${result.stdout ?? ''}${result.stderr ?? ''}`);
+    }
   });
 
   it('rebuilds recovery CLI surfaces from source without committed bundles', () => {

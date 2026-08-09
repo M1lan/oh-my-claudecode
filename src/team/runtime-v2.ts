@@ -5304,10 +5304,16 @@ export async function startTeamV2(
         workerPaneIds,
         sessionMode: session.sessionMode,
         launchedWorkers,
+      }).catch((cleanupError) => {
+        process.stderr.write(
+          `[team/runtime-v2] auto-merge rollback incomplete: ${String(cleanupError)}\n`,
+        );
       });
       const reason =
         orchErr instanceof Error ? orchErr.message : String(orchErr);
-      throw new Error(`auto-merge startup failed: ${reason}`);
+      throw new Error(`auto-merge startup failed: ${reason}`, {
+        cause: orchErr,
+      });
     }
   }
 

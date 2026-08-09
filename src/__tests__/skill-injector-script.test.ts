@@ -164,7 +164,12 @@ Write concise release notes.`,
     const libDir = join(scriptsDir, 'lib');
     mkdirSync(libDir, { recursive: true });
     mkdirSync(join(pluginRoot, 'hooks'), { recursive: true });
-    for (const file of ['config-dir.mjs', 'stdin.mjs', 'atomic-write.mjs']) {
+    for (const file of [
+      'config-dir.mjs',
+      'stdin.mjs',
+      'atomic-write.mjs',
+      'state-root.mjs',
+    ]) {
       writeFileSync(
         join(libDir, file),
         readFileSync(join(process.cwd(), 'scripts', 'lib', file)),

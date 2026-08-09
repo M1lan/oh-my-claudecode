@@ -91,8 +91,7 @@ describe('sendSocketRequest TCP fallback', () => {
   });
 
   it('sends parameters correctly over TCP', async () => {
-    // Upgrade server to echo params
-    tcpServer.close();
+    await new Promise<void>((resolve) => tcpServer.close(() => resolve()));
 
     tcpServer = net.createServer((conn) => {
       let buf = '';

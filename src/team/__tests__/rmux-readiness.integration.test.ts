@@ -199,7 +199,7 @@ describe.skipIf(!HAS_RMUX)(
         const command = commandParts.join(' ');
         expect(dead).toBe('0');
         expect(command.length).toBeGreaterThan(0);
-        expect(command).toMatch(/^(sh|bash|zsh|fish|ksh)$/);
+        expect(command).toMatch(/^(sh|bash|zsh|fish|ksh|atuin)$/);
 
         const liveness = await getWorkerLiveness(paneId);
         expect(liveness).toBe('alive');
