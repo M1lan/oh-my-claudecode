@@ -19,12 +19,7 @@ export interface AgentConfig {
 export type AutopilotExecutionBackend = 'team' | 'solo';
 export type AutopilotPlanningMode = 'ralplan' | 'direct' | false;
 export type AutopilotTeamAgentType =
-  | 'claude'
-  | 'codex'
-  | 'gemini'
-  | 'grok'
-  | 'cursor'
-  | 'antigravity';
+  'claude' | 'codex' | 'gemini' | 'grok' | 'cursor' | 'antigravity';
 
 /** Built-in stages admitted by version 1 named autopilot workflows. */
 export type AutopilotWorkflowStage = 'ralplan' | 'execution' | 'ralph' | 'qa';
@@ -480,12 +475,7 @@ export const CURSOR_EXECUTOR_TEAM_ROLES = ['executor'] as const;
 
 /** Provider for /team role routing. */
 export type TeamRoleProvider =
-  | 'claude'
-  | 'codex'
-  | 'gemini'
-  | 'grok'
-  | 'cursor'
-  | 'antigravity';
+  'claude' | 'codex' | 'gemini' | 'grok' | 'cursor' | 'antigravity';
 
 /** Tier name accepted in role-assignment `model` field. */
 export type TeamRoleTier = 'HIGH' | 'MEDIUM' | 'LOW';

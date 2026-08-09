@@ -14,11 +14,7 @@ export type SessionEndActionName =
   | 'notification'
   | 'openclaw';
 export type ActionStatus =
-  | 'pending'
-  | 'claimed'
-  | 'retryable'
-  | 'completed'
-  | 'expired';
+  'pending' | 'claimed' | 'retryable' | 'completed' | 'expired';
 
 export interface SessionEndActionState {
   class: 'required' | 'best-effort';
@@ -71,11 +67,7 @@ export interface SessionEndJobV1 {
   actions: Record<SessionEndActionName, SessionEndActionState>;
   owner: WorkerOwner | null;
   phase:
-    | 'collecting'
-    | 'ready'
-    | 'processing'
-    | 'recoverable-failure'
-    | 'complete';
+    'collecting' | 'ready' | 'processing' | 'recoverable-failure' | 'complete';
   completion?: {
     completedAt: string;
     terminalDigest: string;

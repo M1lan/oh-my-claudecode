@@ -15,11 +15,7 @@
  */
 
 export type MergeReadinessDimension =
-  | 'why'
-  | 'change'
-  | 'tradeoff'
-  | 'risk'
-  | 'team';
+  'why' | 'change' | 'tradeoff' | 'risk' | 'team';
 
 export type MergeReadinessProfile = 'quick' | 'standard' | 'deep';
 

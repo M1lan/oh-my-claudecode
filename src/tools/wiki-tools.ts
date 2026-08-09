@@ -70,9 +70,9 @@ export const wikiIngestTool: ToolDefinition<{
       .max(10)
       .optional()
       .describe('Source identifiers (e.g., session IDs)'),
-    confidence: WIKI_CONFIDENCE_SCHEMA
-      .optional()
-      .describe('Confidence level (default: medium)'),
+    confidence: WIKI_CONFIDENCE_SCHEMA.optional().describe(
+      'Confidence level (default: medium)',
+    ),
     workingDirectory: z
       .string()
       .optional()
@@ -291,9 +291,9 @@ export const wikiAddTool: ToolDefinition<{
       .max(20)
       .optional()
       .describe('Tags (default: [])'),
-    category: WIKI_CATEGORY_SCHEMA
-      .optional()
-      .describe('Category (default: reference)'),
+    category: WIKI_CATEGORY_SCHEMA.optional().describe(
+      'Category (default: reference)',
+    ),
     workingDirectory: z
       .string()
       .optional()

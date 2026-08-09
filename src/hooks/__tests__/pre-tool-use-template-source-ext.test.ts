@@ -40,8 +40,7 @@ describe('pre-tool-use template source extension detection', () => {
   it('still warns for real source files with redirection', () => {
     const output = runPreToolUseHook('cat src/app.js > /tmp/out.txt');
     const hookSpecificOutput = output.hookSpecificOutput as
-      | { additionalContext?: string }
-      | undefined;
+      { additionalContext?: string } | undefined;
 
     expect(output.continue).toBe(true);
     expect(hookSpecificOutput?.additionalContext).toContain(

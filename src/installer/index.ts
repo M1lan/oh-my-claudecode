@@ -1876,11 +1876,9 @@ function getGlobalInstalledPackageRoot(): string | null {
 function isCacheInstalledPluginRoot(root: string): boolean {
   const normalizedRoot = normalizePath(root);
   const cacheBase = normalizePath(join(CLAUDE_CONFIG_DIR, 'plugins', 'cache'));
-  if (
-    !(
-      normalizedRoot === cacheBase || normalizedRoot.startsWith(`${cacheBase}/`)
-    )
-  ) {
+  if (!(
+    normalizedRoot === cacheBase || normalizedRoot.startsWith(`${cacheBase}/`)
+  )) {
     return false;
   }
 

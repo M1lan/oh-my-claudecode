@@ -3,10 +3,7 @@ import { basename } from 'path';
 const PLANNING_ARTIFACT_TIMESTAMP_PATTERN = /^\d{8}T\d{6}Z$/;
 
 export type PlanningArtifactKind =
-  | 'prd'
-  | 'test-spec'
-  | 'deep-interview'
-  | 'deep-interview-autoresearch';
+  'prd' | 'test-spec' | 'deep-interview' | 'deep-interview-autoresearch';
 
 export interface PlanningArtifactNameInfo {
   kind: PlanningArtifactKind;

@@ -3,11 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 export type ClaudeGoalSnapshotStatus =
-  | 'active'
-  | 'complete'
-  | 'cancelled'
-  | 'failed'
-  | 'unknown';
+  'active' | 'complete' | 'cancelled' | 'failed' | 'unknown';
 
 export interface ClaudeGoalSnapshot {
   available: boolean;

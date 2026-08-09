@@ -1,12 +1,7 @@
 // src/team/phase-controller.ts
 
 export type TeamPhase =
-  | 'initializing'
-  | 'planning'
-  | 'executing'
-  | 'fixing'
-  | 'completed'
-  | 'failed';
+  'initializing' | 'planning' | 'executing' | 'fixing' | 'completed' | 'failed';
 
 export interface PhaseableTask {
   status: string;

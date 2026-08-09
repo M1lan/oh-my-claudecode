@@ -102,8 +102,7 @@ function getWorkflowProgress(
   const state = readJsonSafe<Record<string, unknown>>(statePath);
   const workflow = state?.workflow as Record<string, unknown> | undefined;
   const tracking = state?.pipelineTracking as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const stages = Array.isArray(workflow?.stages) ? workflow.stages : null;
   const index = tracking?.currentStageIndex;
   const allowedStages = new Set(['ralplan', 'execution', 'ralph', 'qa']);

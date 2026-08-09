@@ -95,8 +95,7 @@ vi.mock('tls', () => {
       socket.write = vi.fn();
       socket.destroy = vi.fn();
       const callback = args.find((arg) => typeof arg === 'function') as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       setImmediate(() => {
         socket.emit('secureConnect');
         callback?.();

@@ -430,8 +430,7 @@ class RateLimiter {
  * Returns true if injection succeeded, false otherwise.
  */
 export type ReplyInjectionStep =
-  | { kind: 'literal'; value: string }
-  | { kind: 'key'; value: string };
+  { kind: 'literal'; value: string } | { kind: 'key'; value: string };
 
 export function buildReplyInjectionSteps(
   text: string,

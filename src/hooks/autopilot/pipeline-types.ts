@@ -26,11 +26,7 @@ export type PipelinePhase = PipelineStageId | PipelineTerminalState;
 
 /** Status of an individual stage */
 export type StageStatus =
-  | 'pending'
-  | 'active'
-  | 'complete'
-  | 'failed'
-  | 'skipped';
+  'pending' | 'active' | 'complete' | 'failed' | 'skipped';
 
 /** The canonical stage execution order */
 export const STAGE_ORDER: readonly PipelineStageId[] = [
@@ -98,12 +94,7 @@ export type ExecutionBackend = 'team' | 'solo';
 
 /** CLI-backed worker types supported by the tmux team runtime. */
 export type AutopilotTeamAgentType =
-  | 'claude'
-  | 'codex'
-  | 'gemini'
-  | 'grok'
-  | 'cursor'
-  | 'antigravity';
+  'claude' | 'codex' | 'gemini' | 'grok' | 'cursor' | 'antigravity';
 
 /** Team execution options for autopilot execution=team. */
 export interface AutopilotTeamConfig {

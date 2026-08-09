@@ -7,10 +7,7 @@ import {
 import type { PluginConfig } from '../../shared/types.js';
 
 export type PromptPrerequisiteSectionKind =
-  | 'memory'
-  | 'skills'
-  | 'verifyFirst'
-  | 'context';
+  'memory' | 'skills' | 'verifyFirst' | 'context';
 
 export interface PromptPrerequisiteSection {
   kind: PromptPrerequisiteSectionKind;

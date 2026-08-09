@@ -190,8 +190,7 @@ export function resolveRoleAssignment(
     : role;
 
   const roleRouting = cfg.team?.roleRouting as
-    | Record<string, TeamRoleAssignmentSpec | undefined>
-    | undefined;
+    Record<string, TeamRoleAssignmentSpec | undefined> | undefined;
   const spec = getRoleRoutingSpec(roleRouting, canonical);
 
   const isOrchestrator = canonical === 'orchestrator';
@@ -236,8 +235,7 @@ export function buildResolvedRoutingSnapshot(
     { primary: RoleAssignment; fallback: RoleAssignment }
   >;
   const roleRouting = cfg.team?.roleRouting as
-    | Record<string, TeamRoleAssignmentSpec | undefined>
-    | undefined;
+    Record<string, TeamRoleAssignmentSpec | undefined> | undefined;
 
   for (const role of CANONICAL_TEAM_ROLES) {
     const primary = resolveRoleAssignment(role, cfg);

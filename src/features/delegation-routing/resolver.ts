@@ -162,8 +162,7 @@ function resolveDefault(
 
 export function isDeprecatedMcpProvider(
   provider:
-    | DelegationRoute['provider']
-    | DelegationRoutingConfig['defaultProvider'],
+    DelegationRoute['provider'] | DelegationRoutingConfig['defaultProvider'],
 ): provider is 'codex' | 'gemini' {
   return provider ? DEPRECATED_MCP_PROVIDERS.has(provider) : false;
 }

@@ -129,9 +129,7 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
 
   // Handle default wrapper
   if (zodType instanceof z.ZodDefault) {
-    const inner = zodTypeToJsonSchema(
-      zodType._def.innerType as z.ZodTypeAny,
-    );
+    const inner = zodTypeToJsonSchema(zodType._def.innerType as z.ZodTypeAny);
     inner.default = (zodType._def.defaultValue as () => unknown)();
     return inner;
   }

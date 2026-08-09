@@ -21,10 +21,7 @@ import { canonicalizeWorkers } from '../team/worker-canonicalization.js';
 export type MissionBoardSource = 'session' | 'team';
 export type MissionBoardStatus = 'blocked' | 'waiting' | 'running' | 'done';
 export type MissionTimelineEventType =
-  | 'handoff'
-  | 'completion'
-  | 'failure'
-  | 'update';
+  'handoff' | 'completion' | 'failure' | 'update';
 
 export interface MissionBoardConfig {
   enabled: boolean;

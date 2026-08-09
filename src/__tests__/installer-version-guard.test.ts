@@ -25,8 +25,7 @@ const mockedWriteFileSync = vi.mocked(writeFileSync);
 
 function withUnixPaths(
   pathLike:
-    | Parameters<typeof existsSync>[0]
-    | Parameters<typeof readFileSync>[0],
+    Parameters<typeof existsSync>[0] | Parameters<typeof readFileSync>[0],
 ): string {
   return String(pathLike).replace(/\\/g, '/');
 }

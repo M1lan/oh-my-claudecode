@@ -855,8 +855,7 @@ export function resolveTaskAssignment(
     { primary: RoleAssignment; fallback: RoleAssignment }
   >,
   roleRoutingConfig:
-    | Partial<Record<CanonicalTeamRole, TeamRoleAssignmentSpec>>
-    | undefined,
+    Partial<Record<CanonicalTeamRole, TeamRoleAssignmentSpec>> | undefined,
   resolvedBinaryPaths: Partial<Record<CliAgentType, string>>,
   fallbackAgent: CliAgentType,
 ): { agentType: CliAgentType; model: string; role: CanonicalTeamRole | null } {
@@ -883,8 +882,7 @@ export function resolveTaskAssignment(
   // per-role routing, even if the task text incidentally mentions "reviewer".
   const hasConfigForRole = !!getRoleRoutingSpec(
     roleRoutingConfig as
-      | Record<string, TeamRoleAssignmentSpec | undefined>
-      | undefined,
+      Record<string, TeamRoleAssignmentSpec | undefined> | undefined,
     canonical,
   );
   if (fallbackAgent === 'cursor') {

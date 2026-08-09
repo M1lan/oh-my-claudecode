@@ -94,10 +94,7 @@ export async function refreshRuntimeWorkerPaneIds(
 }
 
 export type AllDeadRecoveryEvidence =
-  | 'all_dead'
-  | 'alive'
-  | 'unknown'
-  | 'clear';
+  'all_dead' | 'alive' | 'unknown' | 'clear';
 
 export function classifyAllDeadRecoveryEvidence(
   refresh: RuntimeWorkerPaneRefresh,
@@ -1887,10 +1884,7 @@ export async function runRecoveryOwnerFromEnvironment(): Promise<void> {
 }
 
 export type RuntimeCliMode =
-  | 'worker-launch'
-  | 'recovery-gate'
-  | 'recovery-owner'
-  | 'main';
+  'worker-launch' | 'recovery-gate' | 'recovery-owner' | 'main';
 
 export function selectRuntimeCliMode(
   argv: readonly string[] = process.argv,

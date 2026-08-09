@@ -8,8 +8,7 @@ import {
 } from 'fs';
 const fsPromisesControl = vi.hoisted(() => ({
   renameHook: undefined as
-    | undefined
-    | ((from: string | URL, to: string | URL) => Promise<void>),
+    undefined | ((from: string | URL, to: string | URL) => Promise<void>),
   taskTargetWriteFileCalls: 0,
   taskTargetPath: undefined as string | undefined,
 }));

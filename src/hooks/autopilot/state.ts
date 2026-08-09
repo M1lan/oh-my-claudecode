@@ -179,11 +179,9 @@ function sameAutopilotRun(
   observed: AutopilotState,
 ): boolean {
   const currentWorkflow = current.workflow as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   const observedWorkflow = observed.workflow as unknown as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   return (
     current.session_id === observed.session_id &&
     current.started_at === observed.started_at &&

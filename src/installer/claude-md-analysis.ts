@@ -81,7 +81,7 @@ function hasBareCarriageReturn(content: string): boolean {
 export function parseClaudeMdLines(content: string): ClaudeMdLine[] {
   const lines: ClaudeMdLine[] = [];
   let start = 0;
-  for (let index = 0; index < content.length; ) {
+  for (let index = 0; index < content.length;) {
     if (content[index] !== '\n') {
       index += 1;
       continue;
@@ -285,7 +285,7 @@ export function analyzeLegacyClaudeMd(content: string): LegacyGuideAnalysis {
     (left, right) => left.start - right.start || right.end - left.end,
   );
   const accepted: LegacyExactMatch[] = [];
-  for (let index = 0; index < sorted.length; ) {
+  for (let index = 0; index < sorted.length;) {
     let end = sorted[index].end;
     let cursor = index + 1;
     while (cursor < sorted.length && sorted[cursor].start < end) {

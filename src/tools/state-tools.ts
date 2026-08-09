@@ -1327,7 +1327,9 @@ export const stateWriteTool: ToolDefinition<{
     openWorldHint: false,
   },
   schema: {
-    mode: z.enum(STATE_WRITE_MODE_VALUES).describe('The mode to write state for'),
+    mode: z
+      .enum(STATE_WRITE_MODE_VALUES)
+      .describe('The mode to write state for'),
     active: z
       .boolean()
       .optional()
@@ -1738,7 +1740,9 @@ export const stateClearTool: ToolDefinition<{
     openWorldHint: false,
   },
   schema: {
-    mode: z.enum(STATE_TOOL_MODE_VALUES).describe('The mode to clear state for'),
+    mode: z
+      .enum(STATE_TOOL_MODE_VALUES)
+      .describe('The mode to clear state for'),
     workingDirectory: z
       .string()
       .optional()

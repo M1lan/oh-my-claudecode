@@ -51,9 +51,7 @@ async function readJsonSafe<T>(filePath: string): Promise<T | null> {
 }
 
 type JsonFileState<T> =
-  | { kind: 'missing' }
-  | { kind: 'invalid' }
-  | { kind: 'value'; value: T };
+  { kind: 'missing' } | { kind: 'invalid' } | { kind: 'value'; value: T };
 
 async function readJsonFileState<T>(
   filePath: string,
@@ -884,22 +882,18 @@ export function assertActiveFenceOwnershipTransition(
   checkScaleLike(
     'active_scale_up',
     current.active_scale_up as
-      | (Record<string, unknown> & { phase?: string })
-      | undefined,
+      (Record<string, unknown> & { phase?: string }) | undefined,
     proposed.active_scale_up as
-      | (Record<string, unknown> & { phase?: string })
-      | undefined,
+      (Record<string, unknown> & { phase?: string }) | undefined,
     SCALE_UP_PHASES,
     false,
   );
   checkScaleLike(
     'active_scale_down',
     current.active_scale_down as
-      | (Record<string, unknown> & { phase?: string })
-      | undefined,
+      (Record<string, unknown> & { phase?: string }) | undefined,
     proposed.active_scale_down as
-      | (Record<string, unknown> & { phase?: string })
-      | undefined,
+      (Record<string, unknown> & { phase?: string }) | undefined,
     SCALE_DOWN_PHASES,
     true,
   );
@@ -907,8 +901,7 @@ export function assertActiveFenceOwnershipTransition(
   {
     const cur = current.active_recovery as Record<string, unknown> | undefined;
     const next = proposed.active_recovery as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     if (cur && !next) {
       if (!release.active_recovery) throw new Error('invalid_persisted_state');
     } else if (cur && next) {
@@ -926,8 +919,7 @@ export function assertActiveFenceOwnershipTransition(
   {
     const cur = current.shutdown_attempt as Record<string, unknown> | undefined;
     const next = proposed.shutdown_attempt as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     if (cur && !next) {
       if (!release.shutdown_attempt) throw new Error('invalid_persisted_state');
     } else if (cur && next) {
@@ -939,11 +931,9 @@ export function assertActiveFenceOwnershipTransition(
 
   {
     const cur = current.all_dead_recovery as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const next = proposed.all_dead_recovery as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     if (cur && !next) {
       if (!release.all_dead_recovery)
         throw new Error('invalid_persisted_state');

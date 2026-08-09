@@ -63,12 +63,7 @@ export interface ClaudeMdFileStatus {
   hasMarkers: boolean;
   hasUserContent: boolean;
   markerState:
-    | 'none'
-    | 'complete'
-    | 'corrupt'
-    | 'symlink'
-    | 'unreadable'
-    | 'invalid-utf8';
+    'none' | 'complete' | 'corrupt' | 'symlink' | 'unreadable' | 'invalid-utf8';
   exactLegacy: boolean;
   manualReview: boolean;
 }

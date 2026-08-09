@@ -4,11 +4,7 @@ import type { TeamConfig, TeamManifestV2 } from './types.js';
 import { absPath, TeamPaths } from './state-paths.js';
 
 export type TeamStateSource =
-  | 'absent'
-  | 'legacy'
-  | 'revisioned'
-  | 'malformed'
-  | 'io_error';
+  'absent' | 'legacy' | 'revisioned' | 'malformed' | 'io_error';
 export type TeamStateClassification =
   | 'absent'
   | 'legacy_merged'

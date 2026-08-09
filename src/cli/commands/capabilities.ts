@@ -256,8 +256,7 @@ function supportsSimpleStringFixture(tool: CapabilityToolSurface): boolean {
     tool.inputSchema.required.length > 0 &&
     tool.inputSchema.required.every((name) => {
       const property = tool.inputSchema.properties[name] as
-        | { type?: unknown; enum?: unknown }
-        | undefined;
+        { type?: unknown; enum?: unknown } | undefined;
       return property?.type === 'string' && property.enum === undefined;
     })
   );

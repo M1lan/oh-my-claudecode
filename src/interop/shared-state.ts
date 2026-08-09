@@ -82,9 +82,7 @@ export interface SharedMessage {
 
 const INTEROP_ARTIFACT_THRESHOLD_BYTES = 2048;
 type SharedStateArtifactCategory =
-  | 'task-description'
-  | 'task-result'
-  | 'message-content';
+  'task-description' | 'task-result' | 'message-content';
 
 type SharedStateTextHandoff = {
   text: string;

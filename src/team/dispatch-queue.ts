@@ -22,14 +22,9 @@ import { WORKER_NAME_SAFE_PATTERN } from './contracts.js';
 
 export type TeamDispatchRequestKind = 'inbox' | 'mailbox' | 'nudge';
 export type TeamDispatchRequestStatus =
-  | 'pending'
-  | 'notified'
-  | 'delivered'
-  | 'failed';
+  'pending' | 'notified' | 'delivered' | 'failed';
 export type TeamDispatchTransportPreference =
-  | 'hook_preferred_with_fallback'
-  | 'transport_direct'
-  | 'prompt_stdin';
+  'hook_preferred_with_fallback' | 'transport_direct' | 'prompt_stdin';
 
 export interface TeamDispatchRequest {
   request_id: string;
@@ -382,8 +377,7 @@ interface StrictValidatedDispatchStore {
 }
 
 type StrictDispatchStoreResult =
-  | StrictValidatedDispatchStore
-  | StrictDispatchStoreFailure;
+  StrictValidatedDispatchStore | StrictDispatchStoreFailure;
 
 type StrictDispatchLookupResult =
   | { kind: 'valid'; request: TeamDispatchRequest; rowIndex: number }

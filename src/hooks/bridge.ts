@@ -1907,8 +1907,7 @@ async function processStopContinuation(_input: HookInput): Promise<HookOutput> {
  */
 async function processPersistentMode(input: HookInput): Promise<HookOutput> {
   const rawSessionId = (input as Record<string, unknown>).session_id as
-    | string
-    | undefined;
+    string | undefined;
   const sessionId = input.sessionId ?? rawSessionId;
   const directory = resolveToWorktreeRoot(input.directory);
 
@@ -1926,37 +1925,28 @@ async function processPersistentMode(input: HookInput): Promise<HookOutput> {
   // Extract stop context for abort detection (supports both camelCase and snake_case)
   const stopContext: StopContext = {
     stop_reason: (input as Record<string, unknown>).stop_reason as
-      | string
-      | undefined,
+      string | undefined,
     stopReason: (input as Record<string, unknown>).stopReason as
-      | string
-      | undefined,
+      string | undefined,
     end_turn_reason: (input as Record<string, unknown>).end_turn_reason as
-      | string
-      | undefined,
+      string | undefined,
     endTurnReason: (input as Record<string, unknown>).endTurnReason as
-      | string
-      | undefined,
+      string | undefined,
     user_requested: (input as Record<string, unknown>).user_requested as
-      | boolean
-      | undefined,
+      boolean | undefined,
     userRequested: (input as Record<string, unknown>).userRequested as
-      | boolean
-      | undefined,
+      boolean | undefined,
     prompt: input.prompt,
     tool_name: (input as Record<string, unknown>).tool_name as
-      | string
-      | undefined,
+      string | undefined,
     toolName: input.toolName,
     tool_input: (input as Record<string, unknown>).tool_input,
     toolInput: input.toolInput,
     reason: (input as Record<string, unknown>).reason as string | undefined,
     transcript_path: (input as Record<string, unknown>).transcript_path as
-      | string
-      | undefined,
+      string | undefined,
     transcriptPath: (input as Record<string, unknown>).transcriptPath as
-      | string
-      | undefined,
+      string | undefined,
   };
 
   const result = await checkPersistentModes(sessionId, directory, stopContext);
@@ -2370,8 +2360,7 @@ function stringOrUndefined(value: unknown): string | undefined {
 
 export function extractAskUserQuestionPrompts(toolInput: unknown) {
   const input = toolInput as
-    | { questions?: AskUserQuestionToolPrompt[] }
-    | undefined;
+    { questions?: AskUserQuestionToolPrompt[] } | undefined;
   const questions = Array.isArray(input?.questions) ? input.questions : [];
 
   return questions
@@ -2598,8 +2587,7 @@ function processPreToolUse(input: HookInput): HookOutput {
   // (issues #1135, #1201, #1415)
   if (isDelegationToolName(input.toolName)) {
     const originalInput = input.toolInput as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const inputModel = originalInput?.model;
 
     if (inputModel) {
@@ -2623,8 +2611,7 @@ function processPreToolUse(input: HookInput): HookOutput {
 
   if (input.toolName === 'Task') {
     const originalTaskInput = input.toolInput as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     if (originalTaskInput?.run_in_background === true) {
       const subagentType =
@@ -2649,8 +2636,7 @@ function processPreToolUse(input: HookInput): HookOutput {
 
   if (input.toolName === 'Bash') {
     const originalBashInput = input.toolInput as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const nextBashInput = originalBashInput ? { ...originalBashInput } : {};
 
     if (nextBashInput.run_in_background === true) {
@@ -2685,8 +2671,7 @@ function processPreToolUse(input: HookInput): HookOutput {
       projectPath: directory,
       question: (() => {
         const ti = input.toolInput as
-          | { questions?: Array<{ question?: string }> }
-          | undefined;
+          { questions?: Array<{ question?: string }> } | undefined;
         return (
           ti?.questions
             ?.map((q) => q.question || '')
@@ -2767,8 +2752,7 @@ function processPreToolUse(input: HookInput): HookOutput {
   // Matches: pkill -f, pkill -9 -f, pkill --full, etc.
   if (input.toolName === 'Bash') {
     const effectiveBashInput = (modifiedToolInput ?? input.toolInput) as
-      | { command?: string }
-      | undefined;
+      { command?: string } | undefined;
     const command = effectiveBashInput?.command ?? '';
     if (
       PKILL_F_FLAG_PATTERN.test(command) ||

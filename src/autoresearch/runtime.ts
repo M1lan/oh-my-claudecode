@@ -13,10 +13,7 @@ import {
 } from './contracts.js';
 
 export type AutoresearchCandidateStatus =
-  | 'candidate'
-  | 'noop'
-  | 'abort'
-  | 'interrupted';
+  'candidate' | 'noop' | 'abort' | 'interrupted';
 export type AutoresearchDecisionStatus =
   | 'baseline'
   | 'keep'
@@ -27,10 +24,7 @@ export type AutoresearchDecisionStatus =
   | 'interrupted'
   | 'error';
 export type AutoresearchRunStatus =
-  | 'running'
-  | 'stopped'
-  | 'completed'
-  | 'failed';
+  'running' | 'stopped' | 'completed' | 'failed';
 
 export interface PreparedAutoresearchRuntime {
   runId: string;

@@ -1353,8 +1353,7 @@ export async function executeTeamApiOperation(
         const owner = args.owner as string | undefined;
         const blockedBy = args.blocked_by as string[] | undefined;
         const requiresCodeChange = args.requires_code_change as
-          | boolean
-          | undefined;
+          boolean | undefined;
         let delegation: TeamTaskDelegationPlan | undefined;
         if ('delegation' in args) {
           try {

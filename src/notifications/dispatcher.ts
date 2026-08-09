@@ -738,8 +738,7 @@ function getEffectivePlatformConfig<T>(
   event: NotificationEvent,
 ): T | undefined {
   const topLevel = config[platform as keyof NotificationConfig] as
-    | T
-    | undefined;
+    T | undefined;
   const eventConfig = config.events?.[event];
   const eventPlatform = eventConfig?.[platform as keyof typeof eventConfig];
 

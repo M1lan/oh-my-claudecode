@@ -1,12 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const monitorMocks = vi.hoisted(() => ({
-  readRevisionedTeamConfig: vi.fn(
-    async (): Promise<LifecycleRead> => ({
-      config: { lifecycle_state: 'active' },
-      stateRevision: 1,
-    }),
-  ),
+  readRevisionedTeamConfig: vi.fn(async (): Promise<LifecycleRead> => ({
+    config: { lifecycle_state: 'active' },
+    stateRevision: 1,
+  })),
 }));
 const mergeMocks = vi.hoisted(() => ({
   registerWorker: vi.fn(async (_worker: string) => undefined),

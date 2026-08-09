@@ -816,8 +816,7 @@ export function getIdleNotificationCooldownSeconds(): number {
         unknown
       >;
       const cooldown = config?.notificationCooldown as
-        | Record<string, unknown>
-        | undefined;
+        Record<string, unknown> | undefined;
       const val = cooldown?.sessionIdleSeconds;
       if (typeof val === 'number' && Number.isFinite(val))
         return Math.max(0, val);
@@ -1793,9 +1792,7 @@ const THINKING_ONLY_STREAK_BAILOUT_MESSAGE =
   'or /cancel the active mode.';
 
 type ThinkingOnlyClassification =
-  | 'tool_use'
-  | 'thinking_only'
-  | 'indeterminate';
+  'tool_use' | 'thinking_only' | 'indeterminate';
 
 /**
  * Does a user-role transcript record carry a tool_result block? A tool_result

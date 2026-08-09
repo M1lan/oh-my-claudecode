@@ -141,10 +141,7 @@ export async function runRecoverySaga(
     continuation: 'none' | 'selected' | 'reserved' | 'adopted',
     adoption: 'not_started' | 'pending' | 'adopted',
     services:
-      | 'not_started'
-      | 'pending'
-      | 'synced'
-      | 'repair_required' = 'not_started',
+      'not_started' | 'pending' | 'synced' | 'repair_required' = 'not_started',
   ) => {
     writeRecoveryPhase(deps.cwd, {
       schema_version: 1,
@@ -166,9 +163,7 @@ export async function runRecoverySaga(
     _continuation: 'none' | 'selected' | 'reserved' | 'adopted',
     _adoption: 'not_started' | 'pending' | 'adopted',
     _services:
-      | 'synced'
-      | 'repair_required'
-      | 'terminal_degraded' = 'terminal_degraded',
+      'synced' | 'repair_required' | 'terminal_degraded' = 'terminal_degraded',
   ): RecoverDeadWorkerV2Result => result;
 
   const liveness = await deps.getLiveness(input.teamName, input.workerName);

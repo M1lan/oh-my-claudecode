@@ -20,12 +20,7 @@ export type NotificationEvent =
 
 /** Supported notification platforms */
 export type NotificationPlatform =
-  | 'discord'
-  | 'discord-bot'
-  | 'telegram'
-  | 'slack'
-  | 'slack-bot'
-  | 'webhook';
+  'discord' | 'discord-bot' | 'telegram' | 'slack' | 'slack-bot' | 'webhook';
 
 /** Discord webhook configuration */
 export interface DiscordNotificationConfig {

@@ -562,9 +562,7 @@ export async function invokeDirectMailboxEffect(
 }
 
 export type TeamSessionMode =
-  | 'split-pane'
-  | 'dedicated-window'
-  | 'detached-session';
+  'split-pane' | 'dedicated-window' | 'detached-session';
 
 export interface TeamSession {
   sessionName: string;
@@ -1743,8 +1741,7 @@ export async function spawnWorkerInPane(
   let startCmd = '';
   let fingerprint = config.launchAttempt?.attempt_id.slice(0, 12) ?? 'unbuilt';
   let materializedTransport:
-    | Awaited<ReturnType<typeof materializeWorkerLaunchTransport>>
-    | undefined;
+    Awaited<ReturnType<typeof materializeWorkerLaunchTransport>> | undefined;
   const nativeAttemptTransport =
     process.platform === 'win32' &&
     !isUnixLikeOnWindows() &&
@@ -1972,8 +1969,7 @@ function normalizeTmuxCaptureForDelivery(value: string): string {
 }
 
 export type PaneCaptureObservation =
-  | { ok: true; captured: string }
-  | { ok: false; error: string };
+  { ok: true; captured: string } | { ok: false; error: string };
 
 function safePaneDiagnosticToken(paneId: string): string {
   return paneId.replace(/[^A-Za-z0-9%._:-]/g, '?').slice(0, 128);

@@ -49,10 +49,7 @@ const VALID_ENVELOPE_TYPES = new Set([
 
 /** Connection states for Slack Socket Mode */
 export type SlackConnectionState =
-  | 'disconnected'
-  | 'connecting'
-  | 'authenticated'
-  | 'reconnecting';
+  'disconnected' | 'connecting' | 'authenticated' | 'reconnecting';
 
 /** Result of message validation */
 export interface SlackValidationResult {
@@ -663,8 +660,7 @@ export class SlackSocketClient {
         const envelopeAny = envelope as Record<string, unknown>;
         const sig = envelopeAny['x_slack_signature'] as string | undefined;
         const ts = envelopeAny['x_slack_request_timestamp'] as
-          | string
-          | undefined;
+          string | undefined;
         if (sig && ts) {
           if (!verifySlackSignature(this.config.signingSecret, sig, ts, raw)) {
             this.log('REJECTED Slack message: Signature verification failed');

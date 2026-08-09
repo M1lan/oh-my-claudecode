@@ -278,12 +278,7 @@ function isInsideCodeBlock(
 
 interface ParsedDirective {
   type:
-    | 'basic'
-    | 'cache'
-    | 'if-modified'
-    | 'if-branch'
-    | 'only-once'
-    | 'format';
+    'basic' | 'cache' | 'if-modified' | 'if-branch' | 'only-once' | 'format';
   command: string;
   format?: OutputFormat;
   ttl?: number;

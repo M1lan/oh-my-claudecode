@@ -561,10 +561,7 @@ function timeoutResult(
 }
 
 type TeamRecoveryState =
-  | 'v2'
-  | 'team_not_found'
-  | 'runtime_v2_required'
-  | 'invalid_persisted_state';
+  'v2' | 'team_not_found' | 'runtime_v2_required' | 'invalid_persisted_state';
 
 async function teamRecoveryState(
   cwd: string,

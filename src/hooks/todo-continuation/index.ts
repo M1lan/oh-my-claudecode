@@ -400,8 +400,7 @@ export function isExplicitCancelCommand(context?: StopContext): boolean {
     .toLowerCase()
     .replace(/[\s-]+/g, '_');
   const toolInput = (context.tool_input ?? context.toolInput) as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (
     toolName.includes('skill') &&
     toolInput &&

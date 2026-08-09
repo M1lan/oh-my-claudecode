@@ -105,9 +105,7 @@ export function parseYamlMetadata(yamlContent: string): Partial<SkillMetadata> {
         break;
       case 'source':
         metadata.source = parseStringValue(rawValue) as
-          | 'extracted'
-          | 'promoted'
-          | 'manual';
+          'extracted' | 'promoted' | 'manual';
         break;
       case 'createdAt':
         metadata.createdAt = parseStringValue(rawValue);

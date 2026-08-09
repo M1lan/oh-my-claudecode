@@ -139,13 +139,7 @@ function formatTimelineEvent(event: ReplayEvent): string {
 }
 
 type FilterType =
-  | 'all'
-  | 'hooks'
-  | 'skills'
-  | 'agents'
-  | 'keywords'
-  | 'tools'
-  | 'modes';
+  'all' | 'hooks' | 'skills' | 'agents' | 'keywords' | 'tools' | 'modes';
 
 /**
  * Filter events by category

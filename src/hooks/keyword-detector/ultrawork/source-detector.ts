@@ -1,9 +1,5 @@
 export type UltraworkSource =
-  | 'planner'
-  | 'gpt'
-  | 'gemini'
-  | 'antigravity'
-  | 'default';
+  'planner' | 'gpt' | 'gemini' | 'antigravity' | 'default';
 
 function normalizeToken(value?: string): string {
   return value?.trim().toLowerCase() ?? '';

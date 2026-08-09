@@ -199,10 +199,7 @@ function shouldPrintTeamHelpForError(error: unknown): boolean {
 // ---------------------------------------------------------------------------
 
 export type DecompositionStrategy =
-  | 'numbered'
-  | 'bulleted'
-  | 'conjunction'
-  | 'atomic';
+  'numbered' | 'bulleted' | 'conjunction' | 'atomic';
 
 export interface DecompositionPlan {
   strategy: DecompositionStrategy;

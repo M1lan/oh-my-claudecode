@@ -264,8 +264,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
       const newString = (input.tool_input.new_string ??
         input.tool_input.newString) as string | undefined;
       const edits = input.tool_input.edits as
-        | Array<{ old_string: string; new_string: string }>
-        | undefined;
+        Array<{ old_string: string; new_string: string }> | undefined;
 
       if (!filePath) {
         return null;
@@ -343,8 +342,7 @@ export function createCommentCheckerHook(config?: CommentCheckerConfig) {
           newString: (input.tool_input.new_string ??
             input.tool_input.newString) as string | undefined,
           edits: input.tool_input.edits as
-            | Array<{ old_string: string; new_string: string }>
-            | undefined,
+            Array<{ old_string: string; new_string: string }> | undefined,
           tool: toolLower as 'write' | 'edit' | 'multiedit',
           sessionId: input.session_id,
           timestamp: Date.now(),

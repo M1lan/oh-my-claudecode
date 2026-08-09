@@ -42,8 +42,7 @@ export interface OpenClawCommandGatewayConfig {
 
 /** Gateway configuration — HTTP or CLI command */
 export type OpenClawGatewayConfig =
-  | OpenClawHttpGatewayConfig
-  | OpenClawCommandGatewayConfig;
+  OpenClawHttpGatewayConfig | OpenClawCommandGatewayConfig;
 
 /** Per-hook-event mapping to a gateway + instruction */
 export interface OpenClawHookMapping {
@@ -67,21 +66,11 @@ export interface OpenClawConfig {
 
 /** Normalized signal kinds for downstream routing */
 export type OpenClawSignalKind =
-  | 'session'
-  | 'tool'
-  | 'test'
-  | 'pull-request'
-  | 'question'
-  | 'keyword';
+  'session' | 'tool' | 'test' | 'pull-request' | 'question' | 'keyword';
 
 /** Supported lifecycle phases for normalized signals */
 export type OpenClawSignalPhase =
-  | 'started'
-  | 'finished'
-  | 'failed'
-  | 'idle'
-  | 'detected'
-  | 'requested';
+  'started' | 'finished' | 'failed' | 'idle' | 'detected' | 'requested';
 
 /** Relative priority for downstream routing */
 export type OpenClawSignalPriority = 'high' | 'low';

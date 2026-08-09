@@ -16,19 +16,11 @@ export type TaskPriority = 'critical' | 'high' | 'medium' | 'low';
 
 /** Status of an individual task */
 export type TaskStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'done'
-  | 'skipped'
-  | 'failed';
+  'pending' | 'in_progress' | 'done' | 'skipped' | 'failed';
 
 /** Phase of the ralphthon lifecycle */
 export type RalphthonPhase =
-  | 'interview'
-  | 'execution'
-  | 'hardening'
-  | 'complete'
-  | 'failed';
+  'interview' | 'execution' | 'hardening' | 'complete' | 'failed';
 
 /**
  * A single actionable task within a story

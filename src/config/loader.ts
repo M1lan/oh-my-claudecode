@@ -519,8 +519,7 @@ const TEAM_ROLE_TIERS = new Set(['HIGH', 'MEDIUM', 'LOW']);
 
 export function validateTeamConfig(config: PluginConfig): void {
   const team = (config as Record<string, unknown>).team as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!team || typeof team !== 'object') return;
 
   const ops = team.ops as Record<string, unknown> | undefined;
@@ -762,11 +761,9 @@ function composeAutopilotWorkflows(
       ...config.autopilot,
       workflows: {
         ...(userWorkflows as
-          | Record<string, AutopilotWorkflowProfileV1>
-          | undefined),
+          Record<string, AutopilotWorkflowProfileV1> | undefined),
         ...(projectWorkflows as
-          | Record<string, AutopilotWorkflowProfileV1>
-          | undefined),
+          Record<string, AutopilotWorkflowProfileV1> | undefined),
       },
     },
   };
@@ -774,8 +771,7 @@ function composeAutopilotWorkflows(
 
 export function validateAutopilotConfig(config: PluginConfig): void {
   const autopilot = (config as Record<string, unknown>).autopilot as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!autopilot || typeof autopilot !== 'object') return;
 
   validateAutopilotWorkflows(config, 'effective');
@@ -831,8 +827,7 @@ function isValidModelValue(value: unknown): value is string {
 }
 
 function parseTeamRoleOverridesFromEnv():
-  | Record<string, TeamRoleAssignmentSpec>
-  | undefined {
+  Record<string, TeamRoleAssignmentSpec> | undefined {
   const raw = process.env.OMC_TEAM_ROLE_OVERRIDES;
   if (!raw) return undefined;
   try {

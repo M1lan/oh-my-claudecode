@@ -120,8 +120,7 @@ export function repairTeamProjection(
     renameSync(temp, manifestPath);
     const afterRename = parseConfig(configPath);
     const written = parseManifest(manifestPath) as
-      | (TeamManifestV2 & { state_revision?: number })
-      | null;
+      (TeamManifestV2 & { state_revision?: number }) | null;
     if (
       checkOwnerFence(cwd, teamName, options.fence).ok &&
       afterRename?.state_revision === config.state_revision &&

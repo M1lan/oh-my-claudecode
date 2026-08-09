@@ -96,7 +96,10 @@ function toLangEnum(
   sg: typeof import('@ast-grep/napi'),
   language: SupportedLanguage,
 ): import('@ast-grep/napi').Lang | string {
-  const langMap: Record<SupportedLanguage, import('@ast-grep/napi').Lang | string> = {
+  const langMap: Record<
+    SupportedLanguage,
+    import('@ast-grep/napi').Lang | string
+  > = {
     javascript: sg.Lang.JavaScript,
     typescript: sg.Lang.TypeScript,
     tsx: sg.Lang.Tsx,

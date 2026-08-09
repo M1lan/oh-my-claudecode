@@ -187,10 +187,7 @@ export interface TeamTaskV2 extends TeamTask {
 
 export type TeamTaskDelegationMode = 'none' | 'optional' | 'auto' | 'required';
 export type TeamTaskChildModelPolicy =
-  | 'standard'
-  | 'fast'
-  | 'inherit'
-  | 'frontier';
+  'standard' | 'fast' | 'inherit' | 'frontier';
 
 export interface TeamTaskDelegationComplianceEvidence {
   status: 'spawned' | 'skipped';
@@ -417,8 +414,7 @@ export interface RecoverDeadWorkerV2Failure extends RecoverDeadWorkerV2OutcomeBa
 }
 
 export type RecoverDeadWorkerV2Result =
-  | RecoverDeadWorkerV2Success
-  | RecoverDeadWorkerV2Failure;
+  RecoverDeadWorkerV2Success | RecoverDeadWorkerV2Failure;
 
 export interface TeamRuntimeOwnerEpoch {
   epoch: number;
@@ -550,12 +546,7 @@ export interface WorkerInfo {
   index: number;
   role: string;
   worker_cli?:
-    | 'codex'
-    | 'claude'
-    | 'gemini'
-    | 'cursor'
-    | 'grok'
-    | 'antigravity';
+    'codex' | 'claude' | 'gemini' | 'cursor' | 'grok' | 'antigravity';
   assigned_tasks: string[];
   pid?: number;
   pane_id?: string;
@@ -658,14 +649,9 @@ export interface TeamConfig {
 /** Dispatch request kinds */
 export type TeamDispatchRequestKind = 'inbox' | 'mailbox' | 'nudge';
 export type TeamDispatchRequestStatus =
-  | 'pending'
-  | 'notified'
-  | 'delivered'
-  | 'failed';
+  'pending' | 'notified' | 'delivered' | 'failed';
 export type TeamDispatchTransportPreference =
-  | 'hook_preferred_with_fallback'
-  | 'transport_direct'
-  | 'prompt_stdin';
+  'hook_preferred_with_fallback' | 'transport_direct' | 'prompt_stdin';
 
 /** Dispatch request for worker notification */
 export interface TeamDispatchRequest {
@@ -879,13 +865,7 @@ export interface TeamPhaseState {
 /** Worker status for event-driven coordination */
 export interface WorkerStatus {
   state:
-    | 'idle'
-    | 'working'
-    | 'blocked'
-    | 'done'
-    | 'failed'
-    | 'draining'
-    | 'unknown';
+    'idle' | 'working' | 'blocked' | 'done' | 'failed' | 'draining' | 'unknown';
   current_task_id?: string;
   reason?: string;
   launch_attempt_id?: string;

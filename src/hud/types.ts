@@ -250,12 +250,7 @@ export interface RateLimits {
  * - 'no_credentials': No OAuth credentials available (expected for API key users)
  */
 export type UsageErrorReason =
-  | 'network'
-  | 'timeout'
-  | 'http'
-  | 'auth'
-  | 'no_credentials'
-  | 'rate_limited';
+  'network' | 'timeout' | 'http' | 'auth' | 'no_credentials' | 'rate_limited';
 
 /**
  * Result of fetching usage data from the API.
@@ -310,9 +305,7 @@ export interface BucketUsageString {
 }
 
 export type CustomBucketUsage =
-  | BucketUsagePercent
-  | BucketUsageCredit
-  | BucketUsageString;
+  BucketUsagePercent | BucketUsageCredit | BucketUsageString;
 
 /** A single rate limit bucket returned by the custom provider command */
 export interface CustomBucket {

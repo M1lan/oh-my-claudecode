@@ -50,11 +50,7 @@ export interface TeamNotifierTarget {
 }
 
 export type DispatchTransport =
-  | 'hook'
-  | 'prompt_stdin'
-  | 'tmux_send_keys'
-  | 'mailbox'
-  | 'none';
+  'hook' | 'prompt_stdin' | 'tmux_send_keys' | 'mailbox' | 'none';
 
 export interface DispatchOutcome {
   ok: boolean;

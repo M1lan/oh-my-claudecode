@@ -35,9 +35,7 @@ const directories: string[] = [];
 function context(
   directory: string,
   actionName:
-    | 'foreground-cleanup'
-    | 'notification'
-    | 'openclaw' = 'foreground-cleanup',
+    'foreground-cleanup' | 'notification' | 'openclaw' = 'foreground-cleanup',
 ) {
   return {
     directory,

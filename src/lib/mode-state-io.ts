@@ -43,8 +43,7 @@ type MutationLockOwner = {
   nonce: string;
 };
 type MutationLock =
-  | { fd: number; path: string; owner: MutationLockOwner }
-  | { unlocked: true };
+  { fd: number; path: string; owner: MutationLockOwner } | { unlocked: true };
 function flockPath(): string | null {
   return process.env.NODE_ENV === 'test' &&
     process.env.OMC_TEST_FLOCK_AVAILABLE === '0'
@@ -1343,8 +1342,7 @@ export function emergencyMutateStateFileIf(
   filePath: string,
   predicate: (current: Record<string, unknown>) => boolean,
   transform:
-    | ((current: Record<string, unknown>) => Record<string, unknown>)
-    | null,
+    ((current: Record<string, unknown>) => Record<string, unknown>) | null,
   recoveryOptions?: EmergencyRecoveryOptions,
 ): boolean {
   if (!recoverEmergencyStateFile(filePath, recoveryOptions)) return false;

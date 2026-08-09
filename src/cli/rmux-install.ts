@@ -24,11 +24,7 @@ import { colors } from './utils/formatting.js';
 
 /** How rmux would be (or was) installed. */
 export type RmuxInstallMethod =
-  | 'present'
-  | 'local-source'
-  | 'cargo-binstall'
-  | 'cargo'
-  | 'unavailable';
+  'present' | 'local-source' | 'cargo-binstall' | 'cargo' | 'unavailable';
 
 export interface RmuxDetectResult {
   installed: boolean;

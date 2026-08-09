@@ -2802,11 +2802,9 @@ describe('pre-tool-enforcer agents.<name>.model injection (issue #3242)', () => 
 
   function updatedModel(output: Record<string, unknown>): unknown {
     const hookOutput = output.hookSpecificOutput as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     const updatedInput = hookOutput?.updatedInput as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
     return updatedInput?.model;
   }
 

@@ -11,12 +11,7 @@ import { isExternalLLMDisabled } from '../lib/security-config.js';
 import type { WorkerLaunchDescriptor } from './types.js';
 
 export type CliAgentType =
-  | 'claude'
-  | 'codex'
-  | 'gemini'
-  | 'cursor'
-  | 'grok'
-  | 'antigravity';
+  'claude' | 'codex' | 'gemini' | 'cursor' | 'grok' | 'antigravity';
 
 export interface CliAgentContract {
   agentType: CliAgentType;

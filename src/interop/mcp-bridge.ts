@@ -187,7 +187,13 @@ function formatArtifactDescriptorLines(
 
 export const interopSendTaskTool: ToolDefinition<{
   target: z.ZodEnum<{ omc: 'omc'; omx: 'omx' }>;
-  type: z.ZodEnum<{ analyze: 'analyze'; implement: 'implement'; review: 'review'; test: 'test'; custom: 'custom' }>;
+  type: z.ZodEnum<{
+    analyze: 'analyze';
+    implement: 'implement';
+    review: 'review';
+    test: 'test';
+    custom: 'custom';
+  }>;
   description: z.ZodString;
   context: z.ZodOptional<z.ZodRecord<z.ZodString, z.ZodUnknown>>;
   files: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -266,7 +272,12 @@ export const interopSendTaskTool: ToolDefinition<{
 export const interopReadResultsTool: ToolDefinition<{
   source: z.ZodOptional<z.ZodEnum<{ omc: 'omc'; omx: 'omx' }>>;
   status: z.ZodOptional<
-    z.ZodEnum<{ pending: 'pending'; in_progress: 'in_progress'; completed: 'completed'; failed: 'failed' }>
+    z.ZodEnum<{
+      pending: 'pending';
+      in_progress: 'in_progress';
+      completed: 'completed';
+      failed: 'failed';
+    }>
   >;
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
@@ -826,7 +837,13 @@ export const interopReadOmxMessagesTool: ToolDefinition<{
 export const interopReadOmxTasksTool: ToolDefinition<{
   teamName: z.ZodString;
   status: z.ZodOptional<
-    z.ZodEnum<{ pending: 'pending'; blocked: 'blocked'; in_progress: 'in_progress'; completed: 'completed'; failed: 'failed' }>
+    z.ZodEnum<{
+      pending: 'pending';
+      blocked: 'blocked';
+      in_progress: 'in_progress';
+      completed: 'completed';
+      failed: 'failed';
+    }>
   >;
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;

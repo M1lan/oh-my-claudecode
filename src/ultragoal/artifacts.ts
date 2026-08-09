@@ -39,11 +39,7 @@ export const ULTRAGOAL_PLANS_SUBDIR = 'plans';
  */
 
 export type UltragoalStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'complete'
-  | 'failed'
-  | 'review_blocked';
+  'pending' | 'in_progress' | 'complete' | 'failed' | 'review_blocked';
 export type UltragoalClaudeGoalMode = 'aggregate' | 'per_story';
 
 export interface UltragoalItem {
@@ -579,22 +575,20 @@ export async function createUltragoalPlan(
   }> = options.goals?.length
     ? options.goals
     : deriveGoalCandidates(options.brief);
-  const candidates = sourceGoals.map(
-    (goal, index): UltragoalItem => ({
-      id: normalizeGoalId(
-        goal.title ?? titleFromObjective(goal.objective, `Goal ${index + 1}`),
-        index,
-      ),
-      title:
-        goal.title ?? titleFromObjective(goal.objective, `Goal ${index + 1}`),
-      objective: goal.objective.trim(),
-      status: 'pending',
-      tokenBudget: goal.tokenBudget,
-      attempt: 0,
-      createdAt: now,
-      updatedAt: now,
-    }),
-  );
+  const candidates = sourceGoals.map((goal, index): UltragoalItem => ({
+    id: normalizeGoalId(
+      goal.title ?? titleFromObjective(goal.objective, `Goal ${index + 1}`),
+      index,
+    ),
+    title:
+      goal.title ?? titleFromObjective(goal.objective, `Goal ${index + 1}`),
+    objective: goal.objective.trim(),
+    status: 'pending',
+    tokenBudget: goal.tokenBudget,
+    attempt: 0,
+    createdAt: now,
+    updatedAt: now,
+  }));
 
   const planDir = planDirRelative(planId);
   const plan: UltragoalPlan = {

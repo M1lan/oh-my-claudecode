@@ -233,7 +233,7 @@ function hashTranscriptRange(
 ): string | null {
   const hash = createHash('sha256');
   const chunk = Buffer.allocUnsafe(TRANSCRIPT_CHUNK_BYTES);
-  for (let offset = start; offset < end; ) {
+  for (let offset = start; offset < end;) {
     const count = readSync(
       fd,
       chunk,
@@ -290,7 +290,7 @@ function scanTranscriptJsonl(
       )
     );
   };
-  for (let offset = start; offset < end; ) {
+  for (let offset = start; offset < end;) {
     const maxRead =
       recordBytes >= MAX_JSONL_RECORD_BYTES
         ? 1

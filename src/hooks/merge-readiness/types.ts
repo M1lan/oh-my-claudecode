@@ -26,17 +26,9 @@ import type {
 } from './mcq.js';
 
 export type MergeReadinessPhase =
-  | 'evidence'
-  | 'content'
-  | 'questioning'
-  | 'complete';
+  'evidence' | 'content' | 'questioning' | 'complete';
 export type MergeReadinessResult =
-  | 'pending'
-  | 'pass'
-  | 'paused'
-  | 'blocked'
-  | 'overridden'
-  | 'cancelled';
+  'pending' | 'pass' | 'paused' | 'blocked' | 'overridden' | 'cancelled';
 
 export interface MergeReadinessEvidence {
   changedFiles: string[];

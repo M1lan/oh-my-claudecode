@@ -47,8 +47,7 @@ function migrateStopHookCallbacks(
   raw: Record<string, unknown>,
 ): NotificationConfig | null {
   const callbacks = raw.stopHookCallbacks as
-    | Record<string, unknown>
-    | undefined;
+    Record<string, unknown> | undefined;
   if (!callbacks) return null;
 
   const config: NotificationConfig = {
@@ -543,8 +542,7 @@ export function getNotificationConfig(
   // Priority 0: Named profile from notificationProfiles
   if (effectiveProfile && raw) {
     const profiles = raw.notificationProfiles as
-      | Record<string, NotificationConfig>
-      | undefined;
+      Record<string, NotificationConfig> | undefined;
     if (profiles && profiles[effectiveProfile]) {
       const profileConfig = profiles[effectiveProfile];
       if (typeof profileConfig.enabled !== 'boolean') {
@@ -1036,8 +1034,7 @@ export function getCustomIntegrationsConfig(): CustomIntegrationsConfig | null {
   if (!raw) return null;
 
   const customIntegrations = raw.customIntegrations as
-    | CustomIntegrationsConfig
-    | undefined;
+    CustomIntegrationsConfig | undefined;
   if (!customIntegrations) return null;
 
   // Validate and filter out invalid integrations

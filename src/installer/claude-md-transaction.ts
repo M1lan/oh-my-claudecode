@@ -16,9 +16,7 @@ export const CLAUDE_MD_IMPORT_END = '<!-- OMC:IMPORT:END -->';
 export const CLAUDE_MD_IMPORT_BLOCK = `${CLAUDE_MD_IMPORT_START}\n@CLAUDE-omc.md\n${CLAUDE_MD_IMPORT_END}\n`;
 
 export type ClaudeMdTransactionMode =
-  | 'local'
-  | 'global-overwrite'
-  | 'global-preserve';
+  'local' | 'global-overwrite' | 'global-preserve';
 export type ClaudeMdTransactionExitCode = 0 | 3 | 4 | 5 | 6;
 
 /** Metadata returned to callers. Content bytes and temporary paths are deliberately private. */

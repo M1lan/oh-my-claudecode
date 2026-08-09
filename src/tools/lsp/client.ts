@@ -723,9 +723,7 @@ export class LspClient {
       },
     );
     return this.translateIncomingPayload(result) as
-      | Location
-      | Location[]
-      | null;
+      Location | Location[] | null;
   }
 
   /**
@@ -762,9 +760,7 @@ export class LspClient {
       textDocument: { uri },
     });
     return this.translateIncomingPayload(result) as
-      | DocumentSymbol[]
-      | SymbolInformation[]
-      | null;
+      DocumentSymbol[] | SymbolInformation[] | null;
   }
 
   /**

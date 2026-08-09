@@ -367,8 +367,7 @@ export function getJob(
       'SELECT * FROM jobs WHERE provider = ? AND job_id = ?',
     );
     const row = stmt.get(provider, jobId) as
-      | Record<string, unknown>
-      | undefined;
+      Record<string, unknown> | undefined;
 
     if (!row) return null;
     return rowToJobStatus(row);

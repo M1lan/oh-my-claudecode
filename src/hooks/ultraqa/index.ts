@@ -13,11 +13,7 @@ import {
 } from '../../lib/mode-state-io.js';
 
 export type UltraQAGoalType =
-  | 'tests'
-  | 'build'
-  | 'lint'
-  | 'typecheck'
-  | 'custom';
+  'tests' | 'build' | 'lint' | 'typecheck' | 'custom';
 
 export interface UltraQAState {
   /** Whether the loop is currently active */
@@ -54,11 +50,7 @@ export interface UltraQAResult {
   cycles: number;
   /** Reason for exit */
   reason:
-    | 'goal_met'
-    | 'max_cycles'
-    | 'same_failure'
-    | 'env_error'
-    | 'cancelled';
+    'goal_met' | 'max_cycles' | 'same_failure' | 'env_error' | 'cancelled';
   /** Diagnosis message if failed */
   diagnosis?: string;
 }

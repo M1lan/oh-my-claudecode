@@ -1627,11 +1627,10 @@ export async function scaleDownOwned(
             scaleUpFenceBlocks(current.config) ||
             !identitiesMatch(
               selectedNames
-                .map(
-                  (name) =>
-                    current.config.workers.find(
-                      (worker) => worker.name === name,
-                    )!,
+                .map((name) =>
+                  current.config.workers.find(
+                    (worker) => worker.name === name,
+                  )!,
                 )
                 .filter(Boolean),
               reservation.workers,

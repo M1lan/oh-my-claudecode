@@ -19,8 +19,7 @@ import { tmpdir } from 'os';
 
 const fsPromisesControl = vi.hoisted(() => ({
   renameHook: undefined as
-    | undefined
-    | ((from: string | URL, to: string | URL) => Promise<void>),
+    undefined | ((from: string | URL, to: string | URL) => Promise<void>),
   openHook: undefined as undefined | (() => Promise<void>),
   writeHook: undefined as undefined | ((fd: FileHandle) => void),
 }));

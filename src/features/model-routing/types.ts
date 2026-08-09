@@ -69,11 +69,7 @@ export interface StructuralSignals {
   hasTestRequirements: boolean;
   /** Domain specificity of the task */
   domainSpecificity:
-    | 'generic'
-    | 'frontend'
-    | 'backend'
-    | 'infrastructure'
-    | 'security';
+    'generic' | 'frontend' | 'backend' | 'infrastructure' | 'security';
   /** Whether external knowledge is needed */
   requiresExternalKnowledge: boolean;
   /** How reversible the changes are */

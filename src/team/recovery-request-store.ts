@@ -107,8 +107,7 @@ export interface RecoveryOutcomeFinal {
 }
 
 export type RecoveryDurableOutcome =
-  | RecoveryOutcomePending
-  | RecoveryOutcomeFinal;
+  RecoveryOutcomePending | RecoveryOutcomeFinal;
 export type RequestReservationResult =
   | {
       kind: 'created' | 'joined' | 'aliased';
