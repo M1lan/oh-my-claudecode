@@ -33,6 +33,9 @@ export default tseslint.config(
       'no-regex-spaces': 'warn',
       // Pre-existing code patterns - disable
       'no-useless-catch': 'off',
+      'no-useless-assignment': 'off',
+      'no-unassigned-vars': 'off',
+      'preserve-caught-error': 'off',
       // Allow ANSI escape codes in regexes (used for terminal output stripping)
       'no-control-regex': 'off',
     },
