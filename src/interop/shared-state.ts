@@ -236,6 +236,24 @@ function isInteropOwnerAlive(config: InteropConfig): boolean {
 }
 
 /**
+ * Read and validate config.json, tolerating every way it can be broken:
+ * unreadable file, malformed JSON, or a payload that fails the schema. All
+ * three mean the same thing to callers — there is no usable config — and none
+ * of them may throw, because a corrupt file would otherwise wedge both the
+ * launch path and its own `--force` escape hatch.
+ */
+function parseInteropConfigFile(configPath: string): InteropConfig | null {
+  try {
+    const result = InteropConfigSchema.safeParse(
+      JSON.parse(readFileSync(configPath, 'utf-8')),
+    );
+    return result.success ? result.data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Initialize an interop session
  * Creates the interop directory and session config
  */
@@ -264,24 +282,31 @@ export function initInteropSession(
     configPath + '.lock',
     () => {
       if (existsSync(configPath)) {
-        const existing = InteropConfigSchema.safeParse(
-          JSON.parse(readFileSync(configPath, 'utf-8')),
-        );
-        if (
-          existing.success &&
-          existing.data.status === 'active' &&
-          existing.data.sessionId !== sessionId
+        const existing = parseInteropConfigFile(configPath);
+        if (!existing) {
+          // A config we cannot parse claims nothing: a truncated half-written
+          // file must not wedge interop forever, and must not make --force
+          // (the advertised remedy) fail with the same parse error. Ownership
+          // is proven by the omcPid inside the file, so an unparseable config
+          // is reclaimed without --force — the same treatment configs with no
+          // recorded pid already get.
+          console.warn(
+            '[interop] config.json is unparseable; starting a fresh session.',
+          );
+        } else if (
+          existing.status === 'active' &&
+          existing.sessionId !== sessionId
         ) {
-          if (!options.force && isInteropOwnerAlive(existing.data)) {
+          if (!options.force && isInteropOwnerAlive(existing)) {
             throw new Error(
-              `Interop session ${existing.data.sessionId} is already active ` +
-                `(owner pid ${existing.data.omcPid} is running)`,
+              `Interop session ${existing.sessionId} is already active ` +
+                `(owner pid ${existing.omcPid} is running)`,
             );
           }
           console.warn(
             options.force
-              ? `[interop] --force: taking over session ${existing.data.sessionId}`
-              : `[interop] Reclaiming stale session ${existing.data.sessionId} (owner no longer running)`,
+              ? `[interop] --force: taking over session ${existing.sessionId}`
+              : `[interop] Reclaiming stale session ${existing.sessionId} (owner no longer running)`,
           );
         }
       }
@@ -304,13 +329,12 @@ function updateInteropConfig(
   return withFileLockSync(
     configPath + '.lock',
     () => {
-      const content = readFileSync(configPath, 'utf-8');
-      const parsed = InteropConfigSchema.safeParse(JSON.parse(content));
-      if (!parsed.success) return null;
-      if (expectedSessionId && parsed.data.sessionId !== expectedSessionId) {
+      const parsed = parseInteropConfigFile(configPath);
+      if (!parsed) return null;
+      if (expectedSessionId && parsed.sessionId !== expectedSessionId) {
         return null;
       }
-      const updated = { ...parsed.data, ...updates };
+      const updated = { ...parsed, ...updates };
       atomicWriteJsonSync(configPath, updated);
       return updated;
     },
@@ -341,13 +365,7 @@ export function readInteropConfig(cwd: string): InteropConfig | null {
     return null;
   }
 
-  try {
-    const content = readFileSync(configPath, 'utf-8');
-    const result = InteropConfigSchema.safeParse(JSON.parse(content));
-    return result.success ? result.data : null;
-  } catch {
-    return null;
-  }
+  return parseInteropConfigFile(configPath);
 }
 
 /**

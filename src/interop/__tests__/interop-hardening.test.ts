@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   mkdtempSync,
+  mkdirSync,
   rmSync,
   readFileSync,
   existsSync,
@@ -296,5 +297,86 @@ describe('interop session ownership', () => {
     initInteropSession('session-b', tempDir, tempDir, {}, { force: true });
 
     expect(readInteropConfig(tempDir)?.sessionId).toBe('session-b');
+  });
+});
+
+describe('interop tolerance for a damaged config.json', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'interop-corrupt-config-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  const writeConfig = async (contents: string) => {
+    const { getInteropDir } = await import('../shared-state.js');
+    const interopDir = getInteropDir(tempDir);
+    mkdirSync(interopDir, { recursive: true });
+    writeFileSync(join(interopDir, 'config.json'), contents);
+  };
+
+  it('starts a fresh session over malformed JSON instead of wedging', async () => {
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
+
+    // A launcher killed mid-write leaves a truncated file behind.
+    await writeConfig('{"sessionId": "session-a"');
+
+    expect(() =>
+      initInteropSession('session-b', tempDir, tempDir),
+    ).not.toThrow();
+    expect(readInteropConfig(tempDir)).toMatchObject({
+      sessionId: 'session-b',
+      status: 'active',
+    });
+  });
+
+  it('starts a fresh session over schema-invalid JSON', async () => {
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
+
+    await writeConfig(JSON.stringify({ nothing: 'that matches the schema' }));
+
+    initInteropSession('session-b', tempDir, tempDir);
+
+    expect(readInteropConfig(tempDir)?.sessionId).toBe('session-b');
+  });
+
+  it('lets --force recover a malformed config too', async () => {
+    const { initInteropSession, readInteropConfig } =
+      await import('../shared-state.js');
+
+    // The launch path tells the user to retry with --force, so --force must
+    // not fail with the same parse error the plain path would.
+    await writeConfig('{not json');
+
+    initInteropSession('session-b', tempDir, tempDir, {}, { force: true });
+
+    expect(readInteropConfig(tempDir)?.sessionId).toBe('session-b');
+  });
+
+  it('tolerates a malformed config in status bookkeeping', async () => {
+    const { updateInteropStatus } = await import('../shared-state.js');
+
+    await writeConfig('{not json');
+
+    // Teardown runs on the CLI error paths; it must stay best-effort rather
+    // than turning a clean failure exit into an unhandled throw.
+    expect(() => updateInteropStatus(tempDir, 'failed')).not.toThrow();
+  });
+
+  it('reports a malformed config as missing runtime state', async () => {
+    const { updateInteropOmxRuntime, readInteropConfig } =
+      await import('../shared-state.js');
+
+    await writeConfig('{not json');
+
+    expect(readInteropConfig(tempDir)).toBeNull();
+    expect(() =>
+      updateInteropOmxRuntime(tempDir, { omxReadiness: 'pending' }),
+    ).toThrow(/missing or invalid/);
   });
 });
