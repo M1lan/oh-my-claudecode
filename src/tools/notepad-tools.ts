@@ -25,12 +25,12 @@ import {
 } from '../hooks/notepad/index.js';
 import { ToolDefinition } from './types.js';
 
-const SECTION_NAMES: [string, ...string[]] = [
-  'all',
-  'priority',
-  'working',
-  'manual',
-];
+const SECTION_NAMES = {
+  all: 'all',
+  priority: 'priority',
+  working: 'working',
+  manual: 'manual',
+} as const;
 
 // ============================================================================
 // notepad_read - Read notepad content

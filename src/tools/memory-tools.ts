@@ -27,17 +27,15 @@ import { ToolDefinition } from './types.js';
 
 export const projectMemoryReadTool: ToolDefinition<{
   section: z.ZodOptional<
-    z.ZodEnum<
-      [
-        'all',
-        'techStack',
-        'build',
-        'conventions',
-        'structure',
-        'notes',
-        'directives',
-      ]
-    >
+    z.ZodEnum<{
+      all: 'all';
+      techStack: 'techStack';
+      build: 'build';
+      conventions: 'conventions';
+      structure: 'structure';
+      notes: 'notes';
+      directives: 'directives';
+    }>
   >;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
@@ -287,7 +285,9 @@ export const projectMemoryAddNoteTool: ToolDefinition<{
 export const projectMemoryAddDirectiveTool: ToolDefinition<{
   directive: z.ZodString;
   context: z.ZodOptional<z.ZodString>;
-  priority: z.ZodOptional<z.ZodEnum<['high', 'normal']>>;
+  priority: z.ZodOptional<
+    z.ZodEnum<{ high: 'high'; normal: 'normal' }>
+  >;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'project_memory_add_directive',

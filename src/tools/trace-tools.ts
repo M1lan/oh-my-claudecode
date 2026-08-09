@@ -232,17 +232,14 @@ function buildExecutionFlow(events: ReplayEvent[]): string[] {
   return flow;
 }
 
-// ============================================================================
-// trace_timeline - Chronological event timeline
-// ============================================================================
+const TRACE_FILTER_SCHEMA = z
+  .enum(['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes'])
+  .optional()
+  .describe('Filter to show specific event types (default: all)');
 
 export const traceTimelineTool: ToolDefinition<{
   sessionId: z.ZodOptional<z.ZodString>;
-  filter: z.ZodOptional<
-    z.ZodEnum<
-      ['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes']
-    >
-  >;
+  filter: typeof TRACE_FILTER_SCHEMA;
   last: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
@@ -254,10 +251,7 @@ export const traceTimelineTool: ToolDefinition<{
       .string()
       .optional()
       .describe('Session ID (auto-detects latest if omitted)'),
-    filter: z
-      .enum(['all', 'hooks', 'skills', 'agents', 'keywords', 'tools', 'modes'])
-      .optional()
-      .describe('Filter to show specific event types (default: all)'),
+    filter: TRACE_FILTER_SCHEMA,
     last: z.number().optional().describe('Limit to last N events'),
     workingDirectory: z
       .string()

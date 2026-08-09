@@ -124,18 +124,20 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
 
   // Handle optional wrapper
   if (zodType instanceof z.ZodOptional) {
-    return zodTypeToJsonSchema(zodType._def.innerType);
+    return zodTypeToJsonSchema(zodType._def.innerType as z.ZodTypeAny);
   }
 
   // Handle default wrapper
   if (zodType instanceof z.ZodDefault) {
-    const inner = zodTypeToJsonSchema(zodType._def.innerType);
-    inner.default = zodType._def.defaultValue();
+    const inner = zodTypeToJsonSchema(
+      zodType._def.innerType as z.ZodTypeAny,
+    );
+    inner.default = (zodType._def.defaultValue as () => unknown)();
     return inner;
   }
 
   // Get description if available
-  const description = zodType._def.description;
+  const description = (zodType._def as { description?: string }).description;
   if (description) {
     result.description = description;
   }
@@ -145,7 +147,7 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
     result.type = 'string';
   } else if (zodType instanceof z.ZodNumber) {
     result.type = zodType._def.checks?.some(
-      (c: { kind: string }) => c.kind === 'int',
+      (c) => (c as { kind?: string }).kind === 'int',
     )
       ? 'integer'
       : 'number';
@@ -153,10 +155,12 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
     result.type = 'boolean';
   } else if (zodType instanceof z.ZodArray) {
     result.type = 'array';
-    result.items = zodTypeToJsonSchema(zodType._def.type);
+    result.items = zodTypeToJsonSchema(
+      zodType._def.type as unknown as z.ZodTypeAny,
+    );
   } else if (zodType instanceof z.ZodEnum) {
     result.type = 'string';
-    result.enum = zodType._def.values;
+    result.enum = zodType.options;
   } else if (zodType instanceof z.ZodObject) {
     return zodToJsonSchema(zodType);
   } else {

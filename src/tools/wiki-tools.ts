@@ -21,7 +21,7 @@ import { lintWiki } from '../hooks/wiki/lint.js';
 import type { WikiCategory } from '../hooks/wiki/types.js';
 import { ToolDefinition } from './types.js';
 
-const WIKI_CATEGORIES: [string, ...string[]] = [
+const WIKI_CATEGORIES = [
   'architecture',
   'decision',
   'pattern',
@@ -30,7 +30,10 @@ const WIKI_CATEGORIES: [string, ...string[]] = [
   'session-log',
   'reference',
   'convention',
-];
+] as const;
+
+const WIKI_CATEGORY_SCHEMA = z.enum(WIKI_CATEGORIES);
+const WIKI_CONFIDENCE_SCHEMA = z.enum(['high', 'medium', 'low']);
 
 // ============================================================================
 // wiki_ingest
@@ -40,9 +43,9 @@ export const wikiIngestTool: ToolDefinition<{
   title: z.ZodString;
   content: z.ZodString;
   tags: z.ZodArray<z.ZodString>;
-  category: z.ZodEnum<typeof WIKI_CATEGORIES>;
+  category: typeof WIKI_CATEGORY_SCHEMA;
   sources: z.ZodOptional<z.ZodArray<z.ZodString>>;
-  confidence: z.ZodOptional<z.ZodEnum<['high', 'medium', 'low']>>;
+  confidence: z.ZodOptional<typeof WIKI_CONFIDENCE_SCHEMA>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'wiki_ingest',
@@ -61,14 +64,13 @@ export const wikiIngestTool: ToolDefinition<{
       .array(z.string().max(50))
       .max(20)
       .describe('Searchable tags (max 20 tags, 50 chars each)'),
-    category: z.enum(WIKI_CATEGORIES).describe('Page category'),
+    category: WIKI_CATEGORY_SCHEMA.describe('Page category'),
     sources: z
       .array(z.string().max(100))
       .max(10)
       .optional()
       .describe('Source identifiers (e.g., session IDs)'),
-    confidence: z
-      .enum(['high', 'medium', 'low'])
+    confidence: WIKI_CONFIDENCE_SCHEMA
       .optional()
       .describe('Confidence level (default: medium)'),
     workingDirectory: z
@@ -120,7 +122,7 @@ export const wikiIngestTool: ToolDefinition<{
 export const wikiQueryTool: ToolDefinition<{
   query: z.ZodString;
   tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
-  category: z.ZodOptional<z.ZodEnum<typeof WIKI_CATEGORIES>>;
+  category: z.ZodOptional<typeof WIKI_CATEGORY_SCHEMA>;
   limit: z.ZodOptional<z.ZodNumber>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
@@ -132,7 +134,7 @@ export const wikiQueryTool: ToolDefinition<{
       .string()
       .describe('Search text (matched against title, tags, and content)'),
     tags: z.array(z.string()).optional().describe('Filter by tags (OR match)'),
-    category: z.enum(WIKI_CATEGORIES).optional().describe('Filter by category'),
+    category: WIKI_CATEGORY_SCHEMA.optional().describe('Filter by category'),
     limit: z
       .number()
       .int()
@@ -272,7 +274,7 @@ export const wikiAddTool: ToolDefinition<{
   title: z.ZodString;
   content: z.ZodString;
   tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
-  category: z.ZodOptional<z.ZodEnum<typeof WIKI_CATEGORIES>>;
+  category: z.ZodOptional<typeof WIKI_CATEGORY_SCHEMA>;
   workingDirectory: z.ZodOptional<z.ZodString>;
 }> = {
   name: 'wiki_add',
@@ -289,8 +291,7 @@ export const wikiAddTool: ToolDefinition<{
       .max(20)
       .optional()
       .describe('Tags (default: [])'),
-    category: z
-      .enum(WIKI_CATEGORIES)
+    category: WIKI_CATEGORY_SCHEMA
       .optional()
       .describe('Category (default: reference)'),
     workingDirectory: z

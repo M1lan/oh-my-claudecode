@@ -253,7 +253,14 @@ export const lspWorkspaceSymbolsTool: ToolDefinition<{
  */
 export const lspDiagnosticsTool: ToolDefinition<{
   file: z.ZodString;
-  severity: z.ZodOptional<z.ZodEnum<['error', 'warning', 'info', 'hint']>>;
+  severity: z.ZodOptional<
+    z.ZodEnum<{
+      error: 'error';
+      warning: 'warning';
+      info: 'info';
+      hint: 'hint';
+    }>
+  >;
 }> = {
   name: 'lsp_diagnostics',
   description:
@@ -554,7 +561,13 @@ export const lspCodeActionResolveTool: ToolDefinition<{
  */
 export const lspDiagnosticsDirectoryTool: ToolDefinition<{
   directory: z.ZodString;
-  strategy: z.ZodOptional<z.ZodEnum<['tsc', 'lsp', 'auto']>>;
+  strategy: z.ZodOptional<
+    z.ZodEnum<{
+      tsc: 'tsc';
+      lsp: 'lsp';
+      auto: 'auto';
+    }>
+  >;
 }> = {
   name: 'lsp_diagnostics_directory',
   description:

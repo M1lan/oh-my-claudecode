@@ -97,24 +97,37 @@ export function getEnabledTools(envValue?: string): ToolDef[] {
 // Zod → JSON Schema helpers (mirrors what the MCP server sends over the wire)
 // ---------------------------------------------------------------------------
 
-function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
+type ZodTypeForSchema = z.ZodType & {
+  def: {
+    defaultValue?: unknown;
+    format?: unknown;
+    type?: string;
+  };
+  isOptional(): boolean;
+};
+
+function zodTypeToJsonSchema(
+  zodType: ZodTypeForSchema,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
-  if (!zodType || !zodType._def) {
+  if (!zodType || !zodType.def) {
     return { type: 'string' };
   }
 
   if (zodType instanceof z.ZodOptional) {
-    return zodTypeToJsonSchema(zodType._def.innerType);
+    return zodTypeToJsonSchema(zodType.unwrap() as unknown as ZodTypeForSchema);
   }
 
   if (zodType instanceof z.ZodDefault) {
-    const inner = zodTypeToJsonSchema(zodType._def.innerType);
-    inner.default = zodType._def.defaultValue();
+    const inner = zodTypeToJsonSchema(
+      zodType.unwrap() as unknown as ZodTypeForSchema,
+    );
+    inner.default = zodType.def.defaultValue;
     return inner;
   }
 
-  const description = zodType._def?.description;
+  const description = (zodType as { description?: string }).description;
   if (description) {
     result.description = description;
   }
@@ -122,27 +135,30 @@ function zodTypeToJsonSchema(zodType: z.ZodTypeAny): Record<string, unknown> {
   if (zodType instanceof z.ZodString) {
     result.type = 'string';
   } else if (zodType instanceof z.ZodNumber) {
-    result.type = zodType._def?.checks?.some(
-      (c: { kind: string }) => c.kind === 'int',
-    )
-      ? 'integer'
-      : 'number';
+    result.type =
+      zodType.def.type === 'number' &&
+      'format' in zodType.def &&
+      zodType.def.format === 'safeint'
+        ? 'integer'
+        : 'number';
   } else if (zodType instanceof z.ZodBoolean) {
     result.type = 'boolean';
   } else if (zodType instanceof z.ZodArray) {
     result.type = 'array';
-    result.items = zodType._def?.type
-      ? zodTypeToJsonSchema(zodType._def.type)
+    result.items = zodType.element
+      ? zodTypeToJsonSchema(zodType.element as unknown as ZodTypeForSchema)
       : { type: 'string' };
   } else if (zodType instanceof z.ZodEnum) {
     result.type = 'string';
-    result.enum = zodType._def?.values;
+    result.enum = zodType.options;
   } else if (zodType instanceof z.ZodObject) {
     return zodToJsonSchema(zodType.shape);
   } else if (zodType instanceof z.ZodRecord) {
     result.type = 'object';
-    if (zodType._def?.valueType) {
-      result.additionalProperties = zodTypeToJsonSchema(zodType._def.valueType);
+    if (zodType.valueType) {
+      result.additionalProperties = zodTypeToJsonSchema(
+        zodType.valueType as unknown as ZodTypeForSchema,
+      );
     }
   } else {
     result.type = 'string';
@@ -164,7 +180,7 @@ export function zodToJsonSchema(
   const required: string[] = [];
 
   for (const [key, value] of Object.entries(rawShape)) {
-    const zodType = value as z.ZodTypeAny;
+    const zodType = value as unknown as ZodTypeForSchema;
     properties[key] = zodTypeToJsonSchema(zodType);
 
     const isOptional =

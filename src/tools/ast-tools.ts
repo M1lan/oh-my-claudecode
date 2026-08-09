@@ -94,26 +94,26 @@ export function validateToolPath(inputPath: string): string {
  */
 function toLangEnum(
   sg: typeof import('@ast-grep/napi'),
-  language: string,
-): import('@ast-grep/napi').Lang {
-  const langMap: Record<string, import('@ast-grep/napi').Lang> = {
+  language: SupportedLanguage,
+): import('@ast-grep/napi').Lang | string {
+  const langMap: Record<SupportedLanguage, import('@ast-grep/napi').Lang | string> = {
     javascript: sg.Lang.JavaScript,
     typescript: sg.Lang.TypeScript,
     tsx: sg.Lang.Tsx,
-    python: sg.Lang.Python,
-    ruby: sg.Lang.Ruby,
-    go: sg.Lang.Go,
-    rust: sg.Lang.Rust,
-    java: sg.Lang.Java,
-    kotlin: sg.Lang.Kotlin,
-    swift: sg.Lang.Swift,
-    c: sg.Lang.C,
-    cpp: sg.Lang.Cpp,
-    csharp: sg.Lang.CSharp,
+    python: 'python',
+    ruby: 'ruby',
+    go: 'go',
+    rust: 'rust',
+    java: 'java',
+    kotlin: 'kotlin',
+    swift: 'swift',
+    c: 'c',
+    cpp: 'cpp',
+    csharp: 'csharp',
     html: sg.Lang.Html,
     css: sg.Lang.Css,
-    json: sg.Lang.Json,
-    yaml: sg.Lang.Yaml,
+    json: 'json',
+    yaml: 'yaml',
   };
 
   const lang = langMap[language];
@@ -138,7 +138,7 @@ export interface AstToolDefinition<T extends z.ZodRawShape> {
  * Supported languages for AST analysis
  * Maps to ast-grep language identifiers
  */
-export const SUPPORTED_LANGUAGES: [string, ...string[]] = [
+export const SUPPORTED_LANGUAGES = [
   'javascript',
   'typescript',
   'tsx',
@@ -156,7 +156,9 @@ export const SUPPORTED_LANGUAGES: [string, ...string[]] = [
   'css',
   'json',
   'yaml',
-];
+] as const;
+
+const SUPPORTED_LANGUAGE_SCHEMA = z.enum(SUPPORTED_LANGUAGES);
 
 export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
 
@@ -294,7 +296,7 @@ function formatMatch(
  */
 export const astGrepSearchTool: AstToolDefinition<{
   pattern: z.ZodString;
-  language: z.ZodEnum<[string, ...string[]]>;
+  language: typeof SUPPORTED_LANGUAGE_SCHEMA;
   path: z.ZodOptional<z.ZodString>;
   context: z.ZodOptional<z.ZodNumber>;
   maxResults: z.ZodOptional<z.ZodNumber>;
@@ -318,7 +320,7 @@ Note: Patterns must be valid AST nodes for the language.`,
     pattern: z
       .string()
       .describe('AST pattern with meta-variables ($VAR, $$$VARS)'),
-    language: z.enum(SUPPORTED_LANGUAGES).describe('Programming language'),
+    language: SUPPORTED_LANGUAGE_SCHEMA.describe('Programming language'),
     path: z
       .string()
       .optional()
@@ -449,7 +451,7 @@ Note: Patterns must be valid AST nodes for the language.`,
 export const astGrepReplaceTool: AstToolDefinition<{
   pattern: z.ZodString;
   replacement: z.ZodString;
-  language: z.ZodEnum<[string, ...string[]]>;
+  language: typeof SUPPORTED_LANGUAGE_SCHEMA;
   path: z.ZodOptional<z.ZodString>;
   dryRun: z.ZodOptional<z.ZodBoolean>;
 }> = {
@@ -471,7 +473,7 @@ IMPORTANT: dryRun=true (default) only previews changes. Set dryRun=false to appl
     replacement: z
       .string()
       .describe('Replacement pattern (use same meta-variables)'),
-    language: z.enum(SUPPORTED_LANGUAGES).describe('Programming language'),
+    language: SUPPORTED_LANGUAGE_SCHEMA.describe('Programming language'),
     path: z
       .string()
       .optional()

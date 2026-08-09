@@ -84,7 +84,7 @@ import type { AutopilotState } from '../hooks/autopilot/types.js';
 // Canonical execution modes from mode-registry (deep-interview and self-improve
 // are first-class modes with dedicated MODE_CONFIGS entries; ralplan remains an
 // extra state-only mode handled via the registry-fallback path).
-const EXECUTION_MODES: [string, ...string[]] = [
+const EXECUTION_MODES = [
   'autopilot',
   'autoresearch',
   'team',
@@ -93,10 +93,10 @@ const EXECUTION_MODES: [string, ...string[]] = [
   'ultraqa',
   'deep-interview',
   'self-improve',
-];
+] as const;
 
 // merge-readiness is read/clear-eligible (state_read/status/clear + /cancel work) but NOT write-eligible.
-const STATE_TOOL_MODES: [string, ...string[]] = [
+const STATE_TOOL_MODES = [
   ...EXECUTION_MODES,
   'ralplan',
   'omc-teams',
@@ -104,14 +104,14 @@ const STATE_TOOL_MODES: [string, ...string[]] = [
   'merge-readiness',
   // Runtime guard mode for $ultragoal; not MODE_CONFIGS-backed (#3630).
   'ultragoal',
-];
+] as const;
 // Modes that may be generically written via state_write. Excludes merge-readiness (runtime-owned).
-const STATE_WRITE_MODES: [string, ...string[]] = [
+const STATE_WRITE_MODES = [
   ...EXECUTION_MODES,
   'ralplan',
   'omc-teams',
   'skill-active',
-];
+] as const;
 const EXTRA_STATE_ONLY_MODES = [
   'ralplan',
   'omc-teams',
@@ -119,6 +119,10 @@ const EXTRA_STATE_ONLY_MODES = [
   'ultragoal',
 ] as const;
 type StateToolMode = (typeof STATE_TOOL_MODES)[number];
+const STATE_TOOL_MODE_VALUES: StateToolMode[] = [...STATE_TOOL_MODES];
+const STATE_WRITE_MODE_VALUES: Array<(typeof STATE_WRITE_MODES)[number]> = [
+  ...STATE_WRITE_MODES,
+];
 const CANCEL_SIGNAL_TTL_MS = 30_000;
 const OWNER_SESSION_FALLBACK_MODES = new Set<StateToolMode>(['ralph']);
 const CONVERGED_STATE_PATH_MODES = new Set<StateToolMode>([
@@ -1122,7 +1126,7 @@ function publicStateForMode(mode: StateToolMode, state: unknown): unknown {
 // ============================================================================
 
 export const stateReadTool: ToolDefinition<{
-  mode: z.ZodEnum<typeof STATE_TOOL_MODES>;
+  mode: z.ZodType<StateToolMode>;
   workingDirectory: z.ZodOptional<z.ZodString>;
   session_id: z.ZodOptional<z.ZodString>;
 }> = {
@@ -1136,7 +1140,7 @@ export const stateReadTool: ToolDefinition<{
     openWorldHint: false,
   },
   schema: {
-    mode: z.enum(STATE_TOOL_MODES).describe('The mode to read state for'),
+    mode: z.enum(STATE_TOOL_MODE_VALUES).describe('The mode to read state for'),
     workingDirectory: z
       .string()
       .optional()
@@ -1299,7 +1303,7 @@ export const stateReadTool: ToolDefinition<{
 // ============================================================================
 
 export const stateWriteTool: ToolDefinition<{
-  mode: z.ZodEnum<typeof STATE_WRITE_MODES>;
+  mode: z.ZodType<(typeof STATE_WRITE_MODES)[number]>;
   active: z.ZodOptional<z.ZodBoolean>;
   iteration: z.ZodOptional<z.ZodNumber>;
   max_iterations: z.ZodOptional<z.ZodNumber>;
@@ -1323,7 +1327,7 @@ export const stateWriteTool: ToolDefinition<{
     openWorldHint: false,
   },
   schema: {
-    mode: z.enum(STATE_WRITE_MODES).describe('The mode to write state for'),
+    mode: z.enum(STATE_WRITE_MODE_VALUES).describe('The mode to write state for'),
     active: z
       .boolean()
       .optional()
@@ -1720,7 +1724,7 @@ function recoverAutopilotEmergencyTransactions(
 }
 
 export const stateClearTool: ToolDefinition<{
-  mode: z.ZodEnum<typeof STATE_TOOL_MODES>;
+  mode: z.ZodType<StateToolMode>;
   workingDirectory: z.ZodOptional<z.ZodString>;
   session_id: z.ZodOptional<z.ZodString>;
 }> = {
@@ -1734,7 +1738,7 @@ export const stateClearTool: ToolDefinition<{
     openWorldHint: false,
   },
   schema: {
-    mode: z.enum(STATE_TOOL_MODES).describe('The mode to clear state for'),
+    mode: z.enum(STATE_TOOL_MODE_VALUES).describe('The mode to clear state for'),
     workingDirectory: z
       .string()
       .optional()
@@ -2908,7 +2912,7 @@ export const stateListActiveTool: ToolDefinition<{
 // ============================================================================
 
 export const stateGetStatusTool: ToolDefinition<{
-  mode: z.ZodOptional<z.ZodEnum<typeof STATE_TOOL_MODES>>;
+  mode: z.ZodOptional<z.ZodType<StateToolMode>>;
   workingDirectory: z.ZodOptional<z.ZodString>;
   session_id: z.ZodOptional<z.ZodString>;
 }> = {
@@ -2923,7 +2927,7 @@ export const stateGetStatusTool: ToolDefinition<{
   },
   schema: {
     mode: z
-      .enum(STATE_TOOL_MODES)
+      .enum(STATE_TOOL_MODE_VALUES)
       .optional()
       .describe('Specific mode to check (omit for all modes)'),
     workingDirectory: z

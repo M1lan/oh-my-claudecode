@@ -22,7 +22,7 @@ function isWindowsStylePath(value: string): boolean {
 function selectPathApi(
   baseDir: string,
   candidatePath: string,
-): path.PlatformPath {
+): typeof path.posix | typeof path.win32 {
   if (process.platform === 'win32') {
     return path.win32;
   }
