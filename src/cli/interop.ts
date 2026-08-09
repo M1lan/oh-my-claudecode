@@ -64,6 +64,22 @@ export function readInteropRuntimeFlags(
   };
 }
 
+const INTEROP_MODES: readonly string[] = ['off', 'observe', 'active'];
+
+/**
+ * Return an OMX_OMC_INTEROP_MODE value that is neither empty nor a known mode,
+ * else null. readInteropRuntimeFlags normalizes such a value to 'off' silently;
+ * oh-my-codex warns on the same input (resolveInteropContextNotice), so the OMC
+ * side warns too rather than starting in a mode the operator never asked for.
+ */
+export function findUnknownInteropMode(
+  env: NodeJS.ProcessEnv = process.env,
+): string | null {
+  const raw = (env.OMX_OMC_INTEROP_MODE || '').trim();
+  if (!raw) return null;
+  return INTEROP_MODES.includes(raw.toLowerCase()) ? null : raw;
+}
+
 export function validateInteropRuntimeFlags(flags: InteropRuntimeFlags): {
   ok: boolean;
   reason?: string;
@@ -280,6 +296,12 @@ export function launchInteropSession(
   console.log(
     `[interop] mode=${flags.mode}, enabled=${flags.enabled ? '1' : '0'}, tools=${flags.omcInteropToolsEnabled ? '1' : '0'}, yolo=${yolo ? '1' : '0'}`,
   );
+  const unknownMode = findUnknownInteropMode();
+  if (unknownMode) {
+    console.warn(
+      `[interop] Unknown OMX_OMC_INTEROP_MODE '${unknownMode}'; treating it as "off".`,
+    );
+  }
   if (yolo) {
     console.warn(
       '[interop] --yolo: launching Claude with --dangerously-skip-permissions and Codex with --dangerously-bypass-approvals-and-sandbox.',

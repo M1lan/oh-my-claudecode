@@ -219,7 +219,12 @@ export const interopSendTaskTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     const { target, type, description, context, files, workingDirectory } =
@@ -298,7 +303,12 @@ export const interopReadResultsTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     const { source, status, limit = 10, workingDirectory } = args;
@@ -414,7 +424,12 @@ export const interopSendMessageTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     const { target, content, metadata, workingDirectory } = args;
@@ -484,7 +499,12 @@ export const interopReadMessagesTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     const {
@@ -580,7 +600,12 @@ export const interopListOmxTeamsTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     try {
@@ -661,7 +686,12 @@ export const interopSendOmxMessageTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     try {
@@ -776,7 +806,12 @@ export const interopReadOmxMessagesTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     try {
@@ -863,7 +898,12 @@ export const interopReadOmxTasksTool: ToolDefinition<{
     workingDirectory: z
       .string()
       .optional()
-      .describe('Working directory (defaults to cwd)'),
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
   },
   handler: async (args) => {
     try {

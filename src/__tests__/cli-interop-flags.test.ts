@@ -6,6 +6,7 @@ import {
   buildOmxRespawnArgs,
   parseOmxPaneIdentity,
   readInteropRuntimeFlags,
+  findUnknownInteropMode,
   isRmuxInteropEnvironment,
   validateOmxRespawnOwnership,
   validateInteropRuntimeFlags,
@@ -64,6 +65,32 @@ describe('cli interop flag validation', () => {
 
 // Cross-repo contract: env var names read by oh-my-codex and OMC's own MCP
 // server. Lock the shape so a rename on either side is caught here.
+describe('findUnknownInteropMode', () => {
+  const env = (mode?: string) =>
+    ({ OMX_OMC_INTEROP_MODE: mode }) as NodeJS.ProcessEnv;
+
+  it('reports a mode value that is not a known mode', () => {
+    expect(findUnknownInteropMode(env('banana'))).toBe('banana');
+  });
+
+  it('accepts the known modes case-insensitively', () => {
+    expect(findUnknownInteropMode(env('off'))).toBeNull();
+    expect(findUnknownInteropMode(env('observe'))).toBeNull();
+    expect(findUnknownInteropMode(env('ACTIVE'))).toBeNull();
+  });
+
+  it('treats unset or blank as nothing to warn about', () => {
+    expect(findUnknownInteropMode({} as NodeJS.ProcessEnv)).toBeNull();
+    expect(findUnknownInteropMode(env('   '))).toBeNull();
+  });
+
+  it('agrees with readInteropRuntimeFlags, which normalizes to off', () => {
+    // The warning exists precisely because the normalization is silent.
+    expect(readInteropRuntimeFlags(env('banana')).mode).toBe('off');
+    expect(findUnknownInteropMode(env('banana'))).toBe('banana');
+  });
+});
+
 describe('buildInteropSessionEnv', () => {
   const sessionId = 'interop-abc123';
   const cwd = '/some/project';
