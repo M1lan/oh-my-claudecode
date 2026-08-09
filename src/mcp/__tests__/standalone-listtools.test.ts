@@ -173,6 +173,7 @@ describe('standalone MCP server – interop tool gating (OMC_INTEROP_TOOLS_ENABL
     const names = registry.buildListToolsResponse('').tools.map((t) => t.name);
     expect(names).toContain('interop_send_task');
     expect(names).toContain('interop_read_results');
+    expect(names).toContain('interop_update_task');
     expect(names).toContain('interop_send_message');
     expect(names).toContain('interop_read_messages');
     expect(names).toContain('interop_list_omx_teams');

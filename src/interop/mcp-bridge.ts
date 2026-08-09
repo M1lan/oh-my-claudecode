@@ -12,9 +12,12 @@ import type { ArtifactDescriptor } from '../shared/artifact-descriptor.js';
 import {
   addSharedTask,
   readSharedTasks,
+  updateSharedTask,
   addSharedMessage,
   readSharedMessages,
   markMessageAsRead,
+  refreshOmxReadiness,
+  InteropConfig,
   SharedTask,
 } from './shared-state.js';
 import {
@@ -181,6 +184,26 @@ function formatArtifactDescriptorLines(
   return lines;
 }
 
+/**
+ * One-line readiness banner for the read tools.
+ *
+ * `pending` is reported explicitly because it is indistinguishable from a dead
+ * OMX otherwise: nothing polls the codex pane, so readiness only ever advances
+ * when OMX itself writes into the shared state.
+ */
+function formatOmxReadinessLines(
+  readiness: InteropConfig['omxReadiness'],
+): string[] {
+  if (!readiness) return [];
+
+  const note =
+    readiness === 'pending'
+      ? ' (OMX has not written to the shared state since this session started)'
+      : '';
+
+  return [`_OMX readiness: ${readiness}${note}_\n`];
+}
+
 // ============================================================================
 // interop_send_task - Send a task to the other tool
 // ============================================================================
@@ -315,6 +338,7 @@ export const interopReadResultsTool: ToolDefinition<{
 
     try {
       const cwd = resolveWorkingDirectory(workingDirectory);
+      const readinessLines = formatOmxReadinessLines(refreshOmxReadiness(cwd));
 
       const tasks = readSharedTasks(cwd, {
         source: source as 'omc' | 'omx' | undefined,
@@ -328,7 +352,10 @@ export const interopReadResultsTool: ToolDefinition<{
           content: [
             {
               type: 'text' as const,
-              text: '## No Tasks Found\n\nNo tasks match the specified filters.',
+              text: [
+                '## No Tasks Found\n\nNo tasks match the specified filters.',
+                ...readinessLines,
+              ].join('\n'),
             },
           ],
         };
@@ -336,6 +363,7 @@ export const interopReadResultsTool: ToolDefinition<{
 
       const lines: string[] = [
         `## Tasks (${limitedTasks.length}${tasks.length > limit ? ` of ${tasks.length}` : ''})\n`,
+        ...readinessLines,
       ];
 
       for (const task of limitedTasks) {
@@ -395,6 +423,125 @@ export const interopReadResultsTool: ToolDefinition<{
       };
     } catch (error) {
       return formatToolError('reading tasks', error);
+    }
+  },
+};
+
+// ============================================================================
+// interop_update_task - Claim a task and write back its status/result
+// ============================================================================
+
+export const interopUpdateTaskTool: ToolDefinition<{
+  taskId: z.ZodString;
+  status: z.ZodOptional<
+    z.ZodEnum<{
+      pending: 'pending';
+      in_progress: 'in_progress';
+      completed: 'completed';
+      failed: 'failed';
+    }>
+  >;
+  result: z.ZodOptional<z.ZodString>;
+  error: z.ZodOptional<z.ZodString>;
+  workingDirectory: z.ZodOptional<z.ZodString>;
+}> = {
+  name: 'interop_update_task',
+  description:
+    'Update a task in the shared interop state: claim it (status ' +
+    'in_progress), or close it out with a result (completed) or an error ' +
+    '(failed). This is the only writeback path — a task read via ' +
+    'interop_read_results stays pending forever until it is updated here, ' +
+    'so the sender cannot tell the difference between "not started" and ' +
+    '"done but never reported".',
+  schema: {
+    taskId: z.string().describe('ID of the task to update'),
+    status: z
+      .enum(['pending', 'in_progress', 'completed', 'failed'])
+      .optional()
+      .describe(
+        'New status. Set in_progress when picking the task up, and ' +
+          'completed/failed when finishing it (completedAt is stamped ' +
+          'automatically).',
+      ),
+    result: z
+      .string()
+      .optional()
+      .describe(
+        'Result/output for the task. Long values are spilled to an ' +
+          'artifact file automatically.',
+      ),
+    error: z.string().optional().describe('Error detail for a failed task'),
+    workingDirectory: z
+      .string()
+      .optional()
+      .describe(
+        'Working directory (defaults to cwd). Clamped to the trusted ' +
+          'worktree root: a path outside it is rejected, and a subdirectory ' +
+          'of it resolves to the root, so this cannot target another ' +
+          "workspace's interop state.",
+      ),
+  },
+  handler: async (args) => {
+    const { taskId, status, result, error, workingDirectory } = args;
+
+    try {
+      if (status === undefined && result === undefined && error === undefined) {
+        return formatToolError(
+          'updating task',
+          new Error(
+            'Nothing to update: provide at least one of status, result, error.',
+          ),
+        );
+      }
+
+      const cwd = resolveWorkingDirectory(workingDirectory);
+
+      const updates: Partial<Omit<SharedTask, 'id' | 'createdAt'>> = {};
+      if (status !== undefined) updates.status = status;
+      if (result !== undefined) updates.result = result;
+      if (error !== undefined) updates.error = error;
+
+      const task = updateSharedTask(cwd, taskId, updates);
+
+      if (!task) {
+        return formatToolError(
+          'updating task',
+          new Error(
+            `Task ${taskId} not found (or unreadable) in the interop state at this working directory.`,
+          ),
+        );
+      }
+
+      const lines: string[] = [
+        `## Task Updated\n`,
+        `**Task ID:** ${task.id}`,
+        `**Source:** ${task.source.toUpperCase()} → **Target:** ${task.target.toUpperCase()}`,
+        `**Status:** ${task.status}`,
+      ];
+
+      if (task.result) {
+        lines.push(`**Result:** ${truncatePreview(task.result, 200)}`);
+      }
+      lines.push(...formatArtifactDescriptorLines('Result', task.resultArtifact));
+
+      if (task.error) {
+        lines.push(`**Error:** ${task.error}`);
+      }
+
+      if (task.completedAt) {
+        lines.push(`**Completed:** ${task.completedAt}`);
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: lines.join('\n'),
+          },
+        ],
+      };
+    } catch (err) {
+      return formatToolError('updating task', err);
     }
   },
 };
@@ -517,6 +664,7 @@ export const interopReadMessagesTool: ToolDefinition<{
 
     try {
       const cwd = resolveWorkingDirectory(workingDirectory);
+      const readinessLines = formatOmxReadinessLines(refreshOmxReadiness(cwd));
 
       const messages = readSharedMessages(cwd, {
         source: source as 'omc' | 'omx' | undefined,
@@ -530,7 +678,10 @@ export const interopReadMessagesTool: ToolDefinition<{
           content: [
             {
               type: 'text' as const,
-              text: '## No Messages Found\n\nNo messages match the specified filters.',
+              text: [
+                '## No Messages Found\n\nNo messages match the specified filters.',
+                ...readinessLines,
+              ].join('\n'),
             },
           ],
         };
@@ -545,6 +696,7 @@ export const interopReadMessagesTool: ToolDefinition<{
 
       const lines: string[] = [
         `## Messages (${limitedMessages.length}${messages.length > limit ? ` of ${messages.length}` : ''})\n`,
+        ...readinessLines,
       ];
 
       for (const message of limitedMessages) {
@@ -979,6 +1131,7 @@ export function getInteropTools(): ToolDefinition<any>[] {
   return [
     interopSendTaskTool,
     interopReadResultsTool,
+    interopUpdateTaskTool,
     interopSendMessageTool,
     interopReadMessagesTool,
     interopListOmxTeamsTool,

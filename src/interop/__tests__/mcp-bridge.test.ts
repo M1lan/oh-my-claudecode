@@ -11,9 +11,12 @@ import {
   interopSendMessageTool,
   interopSendOmxMessageTool,
   interopSendTaskTool,
+  interopUpdateTaskTool,
 } from '../mcp-bridge.js';
 import {
+  addSharedMessage,
   initInteropSession,
+  readInteropConfig,
   readSharedMessages,
   readSharedTasks,
   updateSharedTask,
@@ -337,6 +340,75 @@ describe('interop mcp bridge artifact surfacing', () => {
     expect(readText).toContain('.omc/state/interop/artifacts/task-result/');
   });
 
+  it('closes the task loop: a sent task can be claimed and completed', async () => {
+    await interopSendTaskTool.handler({
+      target: 'omx',
+      type: 'implement',
+      description: 'do the thing',
+      workingDirectory: tempDir,
+    });
+
+    const [task] = readSharedTasks(tempDir);
+    expect(task.status).toBe('pending');
+
+    const claim = await interopUpdateTaskTool.handler({
+      taskId: task.id,
+      status: 'in_progress',
+      workingDirectory: tempDir,
+    });
+    expect(claim.isError).toBeFalsy();
+    expect(readSharedTasks(tempDir)[0].status).toBe('in_progress');
+
+    const done = await interopUpdateTaskTool.handler({
+      taskId: task.id,
+      status: 'completed',
+      result: 'thing done',
+      workingDirectory: tempDir,
+    });
+    expect(done.isError).toBeFalsy();
+
+    const finished = readSharedTasks(tempDir)[0];
+    expect(finished.status).toBe('completed');
+    expect(finished.result).toContain('thing done');
+    expect(finished.completedAt).toBeTruthy();
+
+    const readResponse = await interopReadResultsTool.handler({
+      status: 'completed',
+      workingDirectory: tempDir,
+    });
+    expect(readResponse.content[0]?.text ?? '').toContain('thing done');
+  });
+
+  it('rejects an update for an unknown task id', async () => {
+    const response = await interopUpdateTaskTool.handler({
+      taskId: 'task-does-not-exist',
+      status: 'completed',
+      workingDirectory: tempDir,
+    });
+
+    expect(response.isError).toBe(true);
+    expect(response.content[0]?.text ?? '').toContain('not found');
+  });
+
+  it('rejects an update that carries no fields', async () => {
+    await interopSendTaskTool.handler({
+      target: 'omx',
+      type: 'custom',
+      description: 'noop',
+      workingDirectory: tempDir,
+    });
+    const [task] = readSharedTasks(tempDir);
+
+    const response = await interopUpdateTaskTool.handler({
+      taskId: task.id,
+      workingDirectory: tempDir,
+    });
+
+    expect(response.isError).toBe(true);
+    expect(response.content[0]?.text ?? '').toContain('Nothing to update');
+    expect(readSharedTasks(tempDir)[0].status).toBe('pending');
+  });
+
   it('reports artifact-backed shared messages', async () => {
     const sendResponse = await interopSendMessageTool.handler({
       target: 'omx',
@@ -357,5 +429,48 @@ describe('interop mcp bridge artifact surfacing', () => {
     const readText = readResponse.content[0]?.text ?? '';
     expect(readText).toContain('Content artifact:');
     expect(readText).toContain('.omc/state/interop/artifacts/message-content/');
+  });
+});
+
+describe('interop mcp bridge readiness surfacing', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'mcp-bridge-readiness-'));
+    vi.spyOn(process, 'cwd').mockReturnValue(tempDir);
+    initInteropSession('session-readiness', tempDir, tempDir, {
+      omxReadiness: 'pending',
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('reports pending readiness even when nothing matches the filters', async () => {
+    const response = await interopReadResultsTool.handler({
+      workingDirectory: tempDir,
+    });
+
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('No Tasks Found');
+    expect(text).toContain('OMX readiness: pending');
+  });
+
+  it('flips to ready once OMX has written into the shared state', async () => {
+    addSharedMessage(tempDir, {
+      source: 'omx',
+      target: 'omc',
+      content: 'pong',
+    });
+
+    const response = await interopReadMessagesTool.handler({
+      workingDirectory: tempDir,
+    });
+
+    const text = response.content[0]?.text ?? '';
+    expect(text).toContain('OMX readiness: ready');
+    expect(readInteropConfig(tempDir)?.omxReadiness).toBe('ready');
   });
 });

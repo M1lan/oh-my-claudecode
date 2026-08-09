@@ -380,3 +380,102 @@ describe('interop tolerance for a damaged config.json', () => {
     ).toThrow(/missing or invalid/);
   });
 });
+
+describe('omxReadiness promotion', () => {
+  let tempDir: string;
+
+  beforeEach(() => {
+    tempDir = mkdtempSync(join(tmpdir(), 'interop-readiness-'));
+  });
+
+  afterEach(() => {
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  async function startSession() {
+    const state = await import('../shared-state.js');
+    state.initInteropSession('session-ready', tempDir, tempDir, {
+      omxReadiness: 'pending',
+    });
+    return state;
+  }
+
+  it('stays pending while only OMC has written', async () => {
+    const { addSharedMessage, refreshOmxReadiness } = await startSession();
+
+    addSharedMessage(tempDir, {
+      source: 'omc',
+      target: 'omx',
+      content: 'anyone there?',
+    });
+
+    expect(refreshOmxReadiness(tempDir)).toBe('pending');
+  });
+
+  it('promotes to ready once OMX writes a message', async () => {
+    const { addSharedMessage, readInteropConfig, refreshOmxReadiness } =
+      await startSession();
+
+    addSharedMessage(tempDir, {
+      source: 'omx',
+      target: 'omc',
+      content: 'pong',
+    });
+
+    expect(refreshOmxReadiness(tempDir)).toBe('ready');
+    expect(readInteropConfig(tempDir)?.omxReadiness).toBe('ready');
+  });
+
+  it('promotes to ready once OMX writes a task', async () => {
+    const { addSharedTask, refreshOmxReadiness } = await startSession();
+
+    addSharedTask(tempDir, {
+      source: 'omx',
+      target: 'omc',
+      type: 'custom',
+      description: 'please review',
+    });
+
+    expect(refreshOmxReadiness(tempDir)).toBe('ready');
+  });
+
+  it('ignores an OMX message left over from an earlier session', async () => {
+    const { getInteropDir, refreshOmxReadiness } = await startSession();
+
+    const messagesDir = join(getInteropDir(tempDir), 'messages');
+    mkdirSync(messagesDir, { recursive: true });
+    writeFileSync(
+      join(messagesDir, 'msg-stale.json'),
+      JSON.stringify({
+        id: 'msg-stale',
+        source: 'omx',
+        target: 'omc',
+        content: 'from a previous run',
+        timestamp: '2020-01-01T00:00:00.000Z',
+        read: false,
+      }),
+    );
+
+    expect(refreshOmxReadiness(tempDir)).toBe('pending');
+  });
+
+  it('never overwrites a recorded failure', async () => {
+    const { addSharedMessage, updateInteropOmxRuntime, refreshOmxReadiness } =
+      await startSession();
+
+    updateInteropOmxRuntime(tempDir, { omxReadiness: 'failed' });
+    addSharedMessage(tempDir, {
+      source: 'omx',
+      target: 'omc',
+      content: 'pong',
+    });
+
+    expect(refreshOmxReadiness(tempDir)).toBe('failed');
+  });
+
+  it('tolerates a missing config', async () => {
+    const { refreshOmxReadiness } = await import('../shared-state.js');
+
+    expect(refreshOmxReadiness(tempDir)).toBeUndefined();
+  });
+});

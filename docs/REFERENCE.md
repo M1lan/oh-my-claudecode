@@ -593,14 +593,19 @@ What the launcher does:
   check entirely.
 
 Interop MCP tools (`interop_send_task`, `interop_read_results`,
-`interop_send_message`, `interop_read_messages`, `interop_list_omx_teams`,
-`interop_send_omx_message`, `interop_read_omx_messages`,
-`interop_read_omx_tasks`) are opt-in: the standalone MCP server registers them
+`interop_update_task`, `interop_send_message`, `interop_read_messages`,
+`interop_list_omx_teams`, `interop_send_omx_message`,
+`interop_read_omx_messages`, `interop_read_omx_tasks`) are opt-in: the
+standalone MCP server registers them
 only when `OMC_INTEROP_TOOLS_ENABLED=1` is set at server startup — which
 `omc interop` does automatically for the claude pane. They can be re-disabled
 via `OMC_DISABLE_TOOLS=interop`. Delivery is poll-based shared state, not
 push: the target tool must read `.omc/state/interop` explicitly. Writes into
 OMX team mailboxes route through the `omx team api` CLI when available.
+`interop_update_task` is the only writeback path: a task stays `pending`
+forever until someone claims it (`in_progress`) and closes it out
+(`completed`/`failed`), so without it the sender cannot distinguish "not
+started" from "done but never reported".
 
 Note: in a directory codex has not seen before, the right pane shows codex's
 native "Do you trust this directory?" prompt — even under `--yolo`. Answer it

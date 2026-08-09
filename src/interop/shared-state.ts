@@ -369,6 +369,61 @@ export function readInteropConfig(cwd: string): InteropConfig | null {
 }
 
 /**
+ * Promote `omxReadiness` from `pending` to `ready` once OMX has proven it can
+ * reach the shared state.
+ *
+ * The launch path can only ever write `pending` (the pane was split) or
+ * `failed` (the respawn threw); it cannot observe codex finishing its own
+ * startup. The one thing OMC can observe is an OMX-authored file in the shared
+ * state — OMX writes those directly, since it has no interop MCP tools of its
+ * own. An entry authored at or after the session was created therefore proves
+ * both that OMX booted and that it can reach `.omc/state/interop`, which is
+ * exactly what readiness is supposed to mean.
+ *
+ * Only `pending` is promoted: `failed` is a recorded launch outcome and is left
+ * for the operator to see, and nothing is ever demoted.
+ *
+ * Best-effort: returns the current readiness without throwing when the config
+ * is missing, unreadable, or not writable.
+ */
+export function refreshOmxReadiness(
+  cwd: string,
+): InteropConfig['omxReadiness'] {
+  const config = readInteropConfig(cwd);
+  if (!config) return undefined;
+  if (config.omxReadiness !== 'pending') return config.omxReadiness;
+
+  const sessionStart = new Date(config.createdAt).getTime();
+  if (Number.isNaN(sessionStart)) return config.omxReadiness;
+
+  const authoredInSession = (isoTimestamp: string): boolean => {
+    const at = new Date(isoTimestamp).getTime();
+    return !Number.isNaN(at) && at >= sessionStart;
+  };
+
+  const omxIsAlive =
+    readSharedMessages(cwd, { source: 'omx' }).some((message) =>
+      authoredInSession(message.timestamp),
+    ) ||
+    readSharedTasks(cwd, { source: 'omx' }).some((task) =>
+      authoredInSession(task.createdAt),
+    );
+
+  if (!omxIsAlive) return config.omxReadiness;
+
+  try {
+    const updated = updateInteropConfig(
+      cwd,
+      { omxReadiness: 'ready' },
+      config.sessionId,
+    );
+    return updated?.omxReadiness ?? config.omxReadiness;
+  } catch {
+    return config.omxReadiness;
+  }
+}
+
+/**
  * Update the interop session status in config.json.
  * Missing or invalid config is tolerated silently (best-effort lifecycle
  * bookkeeping — the launch path must never fail on this).
