@@ -182,19 +182,16 @@ Now `pnpm version patch` automatically:
 
 ### Pre-Commit Hook
 
-Add to `.husky/pre-commit`:
+Add a Betterhook job to `betterhook.toml`:
 
-```bash
-#!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# Verify metadata is in sync
-pnpm run sync-metadata -- --verify
-
-if [ $? -ne 0 ]; then
-  echo "❌ Metadata out of sync! Run: pnpm run sync-metadata"
-  exit 1
-fi
+```toml
+[hooks.pre-commit.jobs.sync-metadata]
+run = "pnpm run sync-metadata -- --verify"
+glob = ["package.json", "*.json"]
+reads = ["package.json", "src/**"]
+writes = []
+concurrent_safe = true
+timeout = "1m"
 ```
 
 ### CI/CD Pipeline
