@@ -160,10 +160,50 @@ build-runtime-cli:
 build-team-server:
     {{PM}} run build:team-server
 
+# Build the CLAUDE.md coordinator bundle
+[group('build')]
+build-coordinator:
+    {{PM}} run build:claude-md-coordinator
+
 # Compose docs into bundled markdown
 [group('build')]
 compose-docs:
     {{PM}} run compose-docs
+
+# Build the prompt SSOT projections (generated/prompt-ssot/)
+[group('build')]
+prompt-ssot-build:
+    {{PM}} run prompt-ssot:build
+
+# Check prompt SSOT projections are in sync (CI gate)
+[group('build')]
+prompt-ssot-check:
+    {{PM}} run prompt-ssot:check
+
+# Measure prompt SSOT token counts
+[group('build')]
+prompt-ssot-measure:
+    {{PM}} run prompt-ssot:measure
+
+# Regenerate prompt projections (generate:prompt-projections)
+[group('build')]
+prompt-projections:
+    {{PM}} run generate:prompt-projections
+
+# Verify prompt projections are fresh (CI gate)
+[group('build')]
+prompt-projections-verify:
+    {{PM}} run verify:prompt-projections
+
+# Regenerate the inventory graph (inventory/inventory-graph.json)
+[group('build')]
+inventory:
+    {{PM}} run generate:inventory
+
+# Verify the inventory graph is fresh (CI gate)
+[group('build')]
+inventory-verify:
+    {{PM}} run generate:inventory:verify
 
 # Show bundle sizes (dust if installed; falls back to du)
 [group('build')]
@@ -382,9 +422,9 @@ verify: fmt-check typecheck lint test-run mdlint shell-lint shell-fmt-check typo
     @echo "  verify: ALL GREEN  ✓"
     @echo "---------------------------------------"
 
-# Full CI pipeline (install + build + verify + sync gates)
+# Full CI pipeline (install + build + verify + shipping/generation/sync gates)
 [group('verify')]
-ci: install build verify sync-metadata-verify sync-contributors-verify
+ci: install build verify plugin-verify prompt-projections-verify inventory-verify sync-metadata-verify sync-contributors-verify
     @echo
     @echo "---------------------------------------"
     @echo "  ci: ALL GREEN  ✓"
@@ -438,6 +478,21 @@ sync-contributors:
 [group('release')]
 sync-contributors-verify:
     {{PM}} run sync-featured-contributors:verify
+
+# Verify the plugin shipping surface (CI gate)
+[group('release')]
+plugin-verify:
+    {{PM}} run plugin:shipping:verify
+
+# Check plugin shipping surface for a PR diff
+[group('release')]
+plugin-check-pr:
+    {{PM}} run plugin:shipping:check-pr
+
+# Stage plugin shipping surface changes
+[group('release')]
+plugin-stage:
+    {{PM}} run plugin:shipping:stage
 
 # Cut a release (interactive script)
 [group('release')]
@@ -558,20 +613,45 @@ omc-uninstall:
         echo "omc-uninstall: verified not in PATH"
     fi
 
-# Install omc from this local checkout (pnpm add -g <abs-path>)
+# Install omc globally from a packed tarball -- the installed copy is
+# self-contained in the pnpm global store and does NOT depend on this repo
+# (a dirty/mid-merge checkout can no longer break the omc on PATH).
 [group('omc')]
 omc-install:
     #!/usr/bin/env bash
     set -euo pipefail
     source ~/scripts/tools/agent-shell-harness/lib/dev-shell-init.sh 2>/dev/null || true
     REPO_DIR="{{justfile_directory()}}"
-    echo "omc-install: installing from $REPO_DIR"
+    echo "omc-install: building in $REPO_DIR"
     pnpm run build
-    pnpm add -g "$REPO_DIR"
+    pack_dir=$(mktemp -d)
+    trap 'rm -rf "$pack_dir"' EXIT
+    echo "omc-install: packing tarball"
+    tarball=$(pnpm pack --pack-destination "$pack_dir" | tail -1)
+    [[ -f "$tarball" ]] || { echo "omc-install: pack failed ($tarball)" >&2; exit 1; }
+    echo "omc-install: installing $(basename "$tarball") globally (copy, not symlink)"
+    pnpm add -g "$tarball"
     echo "omc-install: installed"
     echo "  $(type -af omc 2>/dev/null | head -1)"
+    if pnpm list -g --depth=0 --json 2>/dev/null | rg -q '"from":\s*"link:'; then
+        echo "WARNING: global install is still a link into a checkout" >&2
+        exit 1
+    fi
+    omc --version 2>/dev/null || echo "(omc --version failed -- check install)" >&2
 
-# Uninstall then reinstall omc from this local checkout (full cycle)
+# DEV ONLY: symlink-install this checkout globally (breaks whenever the repo
+# is dirty or mid-merge -- prefer omc-install)
+[group('omc')]
+omc-link:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    source ~/scripts/tools/agent-shell-harness/lib/dev-shell-init.sh 2>/dev/null || true
+    echo "omc-link: LINKING checkout into global pnpm (dev only)"
+    pnpm run build
+    pnpm add -g "{{justfile_directory()}}"
+    echo "omc-link: linked -- installed omc now tracks this repo live"
+
+# Uninstall then reinstall omc from a packed tarball (full cycle)
 [group('omc')]
 omc-reinstall: omc-uninstall omc-install
 
