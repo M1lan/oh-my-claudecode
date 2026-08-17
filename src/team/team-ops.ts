@@ -15,9 +15,10 @@ import { appendFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { TeamPaths, absPath } from './state-paths.js';
-import { normalizeTeamManifest } from './governance.js';
+import { normalizeTeamManifest, resolveMaxWorkers } from './governance.js';
 import { normalizeTeamGovernance } from './governance.js';
 import {
+  isValidPersistedMaxWorkers,
   migrateTeamConfigRevision,
   readRevisionedTeamConfig,
   saveTeamConfigAtRevision,
@@ -325,7 +326,7 @@ function mergeTeamConfigSources(
       config.next_task_id ?? 1,
       manifest.next_task_id ?? 1,
     ),
-    max_workers: Math.max(config.max_workers ?? 0, 20),
+    max_workers: resolveMaxWorkers(config.max_workers),
   });
 }
 
@@ -340,6 +341,8 @@ export async function teamReadConfig(
     readJsonSafe<TeamConfig & { agentTypes?: unknown[] }>(configPath),
   ]);
   if (!config && existsSync(configPath))
+    throw new Error('invalid_persisted_state');
+  if (config && !isValidPersistedMaxWorkers(config.max_workers))
     throw new Error('invalid_persisted_state');
   // Preserve raw V1 agentTypes provenance before worker canonicalization. The
   // provenance is the only reliable signal used to route legacy cleanup.

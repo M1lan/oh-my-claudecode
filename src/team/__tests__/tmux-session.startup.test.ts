@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -40,14 +40,11 @@ vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
       }
       if (args[0] === 'send-keys' && args.includes('-l')) {
         const command = String(args.at(-1) ?? '');
-        const encoded = command.match(
-          /OMC_WORKER_LAUNCH_SPEC_B64(?:=|=")'?([A-Za-z0-9+/=]+)/,
-        )?.[1];
-        const raw = command.match(/OMC_WORKER_LAUNCH_SPEC='([^']+)'/)?.[1];
-        if (encoded || raw) {
-          const spec = JSON.parse(
-            encoded ? Buffer.from(encoded, 'base64').toString('utf8') : raw!,
-          );
+        const descriptorMatch = command.match(/OMC_WORKER_LAUNCH_SPEC_FILE='([^']+)'/);
+        if (descriptorMatch) {
+          // Supervised launches (issue #3655) deliver the attempt-owned
+          // descriptor by path; the runtime CLI reads it from disk.
+          const spec = JSON.parse(await readFile(descriptorMatch[1], 'utf8'));
           tmuxState.activeAttempt = {
             schema_version: spec.schema_version,
             attempt_id: spec.attempt_id,
@@ -69,6 +66,33 @@ vi.mock('../../cli/rmux-utils.js', async (importOriginal) => {
             runtimeCliPath: '/runtime-cli.js',
             context: spec.context,
           };
+        } else {
+          const encoded = command.match(/OMC_WORKER_LAUNCH_SPEC_B64(?:=|=")'?([A-Za-z0-9+/=]+)/)?.[1];
+          const raw = command.match(/OMC_WORKER_LAUNCH_SPEC='([^']+)'/)?.[1];
+          if (encoded || raw) {
+            const spec = JSON.parse(encoded ? Buffer.from(encoded, 'base64').toString('utf8') : raw!);
+            tmuxState.activeAttempt = {
+              schema_version: spec.schema_version,
+              attempt_id: spec.attempt_id,
+              nonce: spec.nonce,
+              team_name: spec.team_name,
+              worker_name: spec.worker_name,
+              pane_id: spec.pane_id,
+              provider: spec.provider,
+              created_at: spec.created_at,
+              currentPath: spec.current_path,
+              expectedPath: spec.expected_path,
+              ackPath: spec.ack_path,
+              decisionPath: spec.decision_path,
+              startedPath: spec.started_path,
+              transportOwnerPath: spec.transport_owner_path,
+              bootstrapDescriptorPath: spec.bootstrap_descriptor_path,
+              wrapperPath: spec.wrapper_path,
+              transportCleanupCompletePath: spec.transport_cleanup_complete_path,
+              runtimeCliPath: '/runtime-cli.js',
+              context: spec.context,
+            };
+          }
         }
       }
       if (
@@ -404,6 +428,46 @@ describe('worker pane startup safety', () => {
     },
   );
 
+  it('POSIX supervised writer delivers an attempt-owned descriptor the runtime CLI accepts', async () => {
+    cwd = await mkdtemp(join(tmpdir(), 'startup-posix-descriptor-'));
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    const attempt = await prepareWorkerLaunchAttempt({
+      cwd,
+      teamName: 'startup-team',
+      workerName: 'worker-1',
+      paneId: '%2',
+      provider: 'codex',
+      runtimeCliPath: '/runtime-cli.cjs',
+    });
+
+    await expect(spawnWorkerInPane('startup:0', '%2', {
+      teamName: 'startup-team',
+      workerName: 'worker-1',
+      envVars: { OMC_TEAM_WORKER: 'startup-team/worker-1' },
+      launchBinary: '/usr/bin/codex',
+      launchArgs: ['--full-auto'],
+      cwd,
+      provider: 'codex',
+      launchAttempt: attempt,
+    })).resolves.toBeUndefined();
+
+    const launchSend = tmuxState.args.find(args => args[0] === 'send-keys' && args.includes('-l'));
+    const cmd = String(launchSend?.at(-1) ?? '');
+    // The delivered command references the attempt-owned descriptor by path;
+    // the bootstrap spec never travels inline (issue #3655).
+    expect(cmd).toContain("OMC_WORKER_LAUNCH_SPEC_FILE='");
+    expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC=');
+    expect(cmd).not.toContain('--full-auto');
+    const descriptorPath = cmd.match(/OMC_WORKER_LAUNCH_SPEC_FILE='([^']+)'/)?.[1];
+    expect(descriptorPath).toBe(attempt.bootstrapDescriptorPath);
+    const descriptor = JSON.parse(await readFile(descriptorPath!, 'utf8')) as Record<string, unknown>;
+    expect(descriptor.attempt_id).toBe(attempt.attempt_id);
+    expect(descriptor.provider_argv).toEqual(['/usr/bin/codex', '--full-auto']);
+    expect(Buffer.byteLength(cmd, 'utf8')).toBeLessThan(2_048);
+    // POSIX delivery does not need the Windows-native post-enter capture pass;
+    // readiness is proven through the ack/provider-start handoff instead.
+    expect(tmuxState.args.some(args => args[0] === 'capture-pane')).toBe(false);
+  });
   it('clears an exact Codex directory selector before typing the inbox trigger', async () => {
     const context = await acceptedContext('codex');
     tmuxState.captures = [

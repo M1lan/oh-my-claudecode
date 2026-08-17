@@ -34,7 +34,6 @@ import type { CliAgentType } from './model-contract.js';
 import {
   awaitWorkerLaunchAcknowledgement,
   awaitWorkerLaunchProviderStarted,
-  buildWorkerLaunchBootstrapSpec,
   cleanupWorkerLaunchTransport,
   isWorkerLaunchAttemptAccepted,
   isWorkerLaunchAttemptCurrent,
@@ -1013,18 +1012,11 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
   const envVars = config.launchAttempt
     ? {
         ...config.envVars,
-        OMC_WORKER_LAUNCH_SPEC: JSON.stringify(
-          buildWorkerLaunchBootstrapSpec(
-            config.launchAttempt,
-            providerLaunchWords,
-            config.cwd,
-            {
-              releaseAfterSpawn: Boolean(
-                config.envVars?.OMC_RECOVERY_GATE_SPEC,
-              ),
-            },
-          ),
-        ),
+        // Supervised launches carry the attempt-owned bootstrap descriptor by
+        // path (never inline): secrets stay out of the process list and tmux
+        // scrollback, and the delivered command stays small. The runtime CLI
+        // validates and consumes the descriptor before running the provider.
+        OMC_WORKER_LAUNCH_SPEC_FILE: config.launchAttempt.bootstrapDescriptorPath,
       }
     : config.envVars;
   const shouldSourceRc = process.env.OMC_TEAM_NO_RC !== '1';
@@ -1758,6 +1750,7 @@ export async function spawnWorkerInPane(
     !isUnixLikeOnWindows() &&
     Boolean(config.launchAttempt) &&
     !isCmuxSurfaceTarget(paneId);
+  const supervisedLaunch = Boolean(config.launchAttempt);
   const requireAcknowledgement = async (): Promise<void> => {
     if (!config.launchAttempt) return;
     const accepted = await awaitWorkerLaunchAcknowledgement(
@@ -1776,24 +1769,36 @@ export async function spawnWorkerInPane(
   };
 
   try {
-    if (nativeAttemptTransport && config.launchAttempt) {
+    if (supervisedLaunch && config.launchAttempt) {
+      // Every supervised launch (Windows native, cmux surface, or POSIX tmux)
+      // materializes the attempt-owned transport: owner + bootstrap descriptor
+      // + wrapper. Native Windows then delivers the wrapper command; POSIX and
+      // cmux deliver the runtime CLI invocation pointing at the descriptor.
       materializedTransport = await materializeWorkerLaunchTransport({
         attempt: config.launchAttempt,
         providerArgv: getLaunchWords(config),
         cwd: config.cwd,
         providerEnv: config.envVars,
         releaseAfterSpawn: Boolean(config.envVars.OMC_RECOVERY_GATE_SPEC),
+        windowsDelivery: nativeAttemptTransport,
       });
-      startCmd = materializedTransport.wrapperRelativePath;
+      startCmd = nativeAttemptTransport
+        ? materializedTransport.wrapperRelativePath
+        : buildWorkerStartCommand(config);
     } else {
       startCmd = buildWorkerStartCommand(config);
     }
+    const transportKind = nativeAttemptTransport
+      ? 'attempt_wrapper'
+      : supervisedLaunch
+        ? 'attempt_descriptor'
+        : 'inline';
     fingerprint = commandFingerprint(startCmd);
     const commandBytes = Buffer.byteLength(startCmd, 'utf8');
     logWorkerSpawnDiagnostic(
       `worker start delivery begin session=${sessionName} pane=${paneId} ` +
         `worker=${config.workerName} cmdSha=${fingerprint} cmdBytes=${commandBytes} ` +
-        `transport=${nativeAttemptTransport ? 'attempt_wrapper' : 'inline'}`,
+        `transport=${transportKind}`,
     );
 
     if (isCmuxSurfaceTarget(paneId)) {
@@ -1886,7 +1891,6 @@ export async function spawnWorkerInPane(
       ).catch(() => undefined);
     }
     if (
-      nativeAttemptTransport &&
       config.launchAttempt &&
       (!materializedTransport ||
         existsSync(materializedTransport.bootstrapDescriptorPath))

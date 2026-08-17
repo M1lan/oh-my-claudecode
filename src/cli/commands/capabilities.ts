@@ -174,17 +174,11 @@ export function skillNameFromSkillFilePath(skillFilePath: string): string {
   return basename(dirname(normalizedPath)) || skillFilePath;
 }
 
-function normalizeToolSchema(schema: unknown): z.ZodRawShape {
-  return schema instanceof z.ZodObject
-    ? schema.shape
-    : (schema as z.ZodRawShape);
-}
 
 export function collectCapabilitySurface(
   root = packageRoot(),
 ): CapabilitySurface {
   const tools = allCustomTools
-    .map((tool) => ({ ...tool, schema: normalizeToolSchema(tool.schema) }))
     .map((tool) => toSdkToolFormat(tool))
     .map((tool) => ({
       name: tool.name,
@@ -339,9 +333,7 @@ function validateToolArgs(
   if (!tool) {
     return { ok: false, message: `tool not found: ${toolName}` };
   }
-  const result = z
-    .object(normalizeToolSchema(tool.schema))
-    .safeParse(args ?? {});
+  const result = z.object(tool.schema).safeParse(args ?? {});
   if (result.success) {
     return { ok: true, message: 'args valid' };
   }

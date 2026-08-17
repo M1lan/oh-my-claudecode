@@ -136,8 +136,15 @@ function zodTypeToJsonSchema(
     return { type: 'string' };
   }
 
+  // Handle optional/default wrappers. `.optional()` / `.default()` normally run
+  // before `.describe()`, so the description sits on the wrapper and must be
+  // carried onto the unwrapped schema.
   if (zodType instanceof z.ZodOptional) {
-    return zodTypeToJsonSchema(zodType.unwrap() as unknown as ZodTypeForSchema);
+    const inner = zodTypeToJsonSchema(
+      zodType.unwrap() as unknown as ZodTypeForSchema,
+    );
+    if (zodType.description) inner.description = zodType.description;
+    return inner;
   }
 
   if (zodType instanceof z.ZodDefault) {
@@ -145,6 +152,7 @@ function zodTypeToJsonSchema(
       zodType.unwrap() as unknown as ZodTypeForSchema,
     );
     inner.default = zodType.def.defaultValue;
+    if (zodType.description) inner.description = zodType.description;
     return inner;
   }
 

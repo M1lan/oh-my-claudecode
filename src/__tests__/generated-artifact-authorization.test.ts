@@ -17,6 +17,7 @@ const LIVE_BASE_SHA = '21a6e488ce12d79b9a22d37e1093ac8e79f21029';
 const HEAD_SHA = '10078ece166ad36332390ecbaab2d5e247852bbc';
 const MAIN_SHA = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const PULL_NUMBER = 3537;
+const FIXTURE_NOW = new Date('2026-08-01T00:00:00.000Z');
 const ROOT = process.cwd();
 const WORKFLOW_PATH = join(
   ROOT,
@@ -72,6 +73,7 @@ type ApiFile = {
 };
 
 type MutableInput = {
+  now: Date;
   environment: {
     githubEventName: string;
     githubRepository: string;
@@ -431,6 +433,7 @@ function apiFiles(records = exactAuthorization.generatedFiles): ApiFile[] {
 function authorizedInput(): MutableInput {
   const files = apiFiles();
   return {
+    now: new Date(FIXTURE_NOW),
     environment: {
       githubEventName: 'pull_request_target',
       githubRepository: REPOSITORY,
@@ -574,6 +577,10 @@ describe('generated-artifact base trust root workflow', () => {
       [3602, 'dev'],
       [3603, 'dev'],
       [3610, 'dev'],
+      [3651, 'dev'],
+      [3660, 'dev'],
+      [3697, 'dev'],
+      [3692, 'dev'],
     ]);
     expect(
       manifest.authorizations.find((entry) => entry.pullNumber === 3538),
@@ -930,6 +937,16 @@ describe('generated-artifact base-owned authorization decision', () => {
       });
       input.livePull.changed_files += 1;
     }, 'authorized closure');
+  });
+
+  it('keeps expiry validation effective after the frozen fixture date', () => {
+    const input = authorizedInput();
+    input.now = new Date('2026-08-20T00:00:00.000Z');
+
+    expect(verifier.evaluateGeneratedArtifactAuthorization(input)).toEqual({
+      allowed: false,
+      reason: 'generated-artifact authorization has expired',
+    });
   });
 
   it('requires exact authorization for generated-path rename, copy, and deletion records', () => {

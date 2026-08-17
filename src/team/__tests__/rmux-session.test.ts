@@ -192,13 +192,16 @@ describe('buildWorkerStartCommand', () => {
       },
     });
 
-    expect(cmd).toContain("OMC_WORKER_LAUNCH_SPEC='");
+    // Supervised POSIX launches reference the attempt-owned descriptor by path
+    // (issue #3655); the bootstrap spec itself must never travel inline.
+    expect(cmd).toContain("OMC_WORKER_LAUNCH_SPEC_FILE='/tmp/bootstrap.json'");
+    expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC=');
     expect(cmd).toContain('exec "$@"');
     expect(cmd).toContain("'--worker-launch'");
     expect(cmd).toContain("'/opt/omc/runtime-cli.cjs'");
   });
 
-  it('preserves native Windows percent and quote escaping inside the bootstrap specification', () => {
+  it('keeps provider percent/quote metacharacters out of the native Windows cmd command', () => {
     vi.spyOn(process, 'platform', 'get').mockReturnValue('win32');
     vi.stubEnv('COMSPEC', 'C:\\Windows\\System32\\cmd.exe');
     const cmd = buildWorkerStartCommand({
@@ -233,24 +236,14 @@ describe('buildWorkerStartCommand', () => {
     });
 
     expect(cmd).toContain('C:\\Windows\\System32\\cmd.exe /d /s /c');
-    const marker = 'set "OMC_WORKER_LAUNCH_SPEC_B64=';
-    const encodedStart = cmd.indexOf(marker) + marker.length;
-    const encodedEnd = cmd.indexOf('" &&', encodedStart);
-    const decodedSpec = Buffer.from(
-      cmd.slice(encodedStart, encodedEnd),
-      'base64',
-    ).toString('utf8');
-    const spec = JSON.parse(decodedSpec);
-    expect(spec.pane_id).toBe('%2');
-    expect(spec.provider_argv).toEqual([
-      'C:\\Program Files\\Codex\\codex.exe',
-      '--label',
-      '100% ready %USERPROFILE%',
-      '--title="quoted"',
-    ]);
+    // Supervised launches deliver the attempt-owned descriptor by path; the
+    // bootstrap spec (and its percent/quote metacharacters) never travels in
+    // the command line or cmd environment (issue #3655).
+    expect(cmd).toContain('set "OMC_WORKER_LAUNCH_SPEC_FILE=C:\\state\\bootstrap.json"');
+    expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC_B64=');
+    expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC=');
     expect(cmd).not.toContain('100% ready %USERPROFILE%');
     expect(cmd).not.toContain('pane_id=%%2');
-    expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC=');
   });
 
   it('escapes psmux cmd.exe env vars and quoted launch args without PowerShell syntax', () => {

@@ -17,6 +17,7 @@ import type { TeamEventType } from './contracts.js';
 import type { TeamEvent } from './types.js';
 import type { WorkerPaneLiveness } from './rmux-session.js';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
+import { countOutstandingForWorker } from './mailbox-outstanding.js';
 
 /**
  * Append a team event to the JSONL event log.
@@ -160,12 +161,16 @@ export async function emitMonitorDerivedEvents(
     }
 
     if (prevState === 'working' && worker.status.state === 'idle') {
+      const mailboxDir = dirname(absPath(cwd, TeamPaths.mailbox(teamName, worker.name)));
+      const outstanding = await countOutstandingForWorker(mailboxDir, worker.name);
       await appendTeamEvent(
         teamName,
         {
           type: 'worker_idle',
           worker: worker.name,
           reason: `state_transition:${prevState}->${worker.status.state}`,
+          undelivered_inbound_count: outstanding.undeliveredInbound,
+          undelivered_outbound_count: outstanding.undeliveredOutbound,
         },
         cwd,
       ).catch(logDerivedEventFailure);

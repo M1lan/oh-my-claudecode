@@ -1,6 +1,6 @@
 {
   "name": "oh-my-claude-sisyphus",
-  "version": "4.15.8",
+  "version": "4.15.10",
   "description": "Multi-agent orchestration system for Claude Code - Inspired by oh-my-opencode",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,10 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsc && node scripts/build-workflow-stage-prompts.mjs && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-bridge-entry.mjs && pnpm run compose-docs && pnpm run build:claude-md-coordinator && pnpm run build:runtime-cli && pnpm run build:team-server && pnpm run build:cli",
+    "prompt-ssot:build": "tsx scripts/build-prompt-ssot.ts",
+    "prompt-ssot:check": "tsx scripts/build-prompt-ssot.ts --check",
+    "prompt-ssot:measure": "tsx scripts/measure-prompt-ssot.ts",
+    "build": "tsc && node scripts/build-workflow-stage-prompts.mjs && node scripts/build-skill-bridge.mjs && node scripts/build-mcp-server.mjs && node scripts/build-bridge-entry.mjs && pnpm run compose-docs && pnpm run generate:prompt-projections && pnpm run build:claude-md-coordinator && pnpm run build:runtime-cli && pnpm run build:team-server && pnpm run build:cli",
     "build:bridge": "node scripts/build-skill-bridge.mjs",
     "build:bridge-entry": "node scripts/build-bridge-entry.mjs",
     "build:claude-md-coordinator": "node scripts/build-claude-md-coordinator.mjs",
@@ -74,9 +77,13 @@
     "sync-metadata": "tsx scripts/sync-metadata.ts",
     "sync-metadata:verify": "tsx scripts/sync-metadata.ts --verify",
     "sync-metadata:dry-run": "tsx scripts/sync-metadata.ts --dry-run",
+    "generate:inventory": "node scripts/generate-inventory-graph.mjs --write",
+    "generate:inventory:verify": "node scripts/generate-inventory-graph.mjs --verify",
     "release": "tsx scripts/release.ts",
     "prepublishOnly": "pnpm run build && pnpm run compose-docs",
-    "version": "bash scripts/sync-version.sh"
+    "version": "bash scripts/sync-version.sh",
+    "generate:prompt-projections": "node scripts/generate-prompt-projections.mjs",
+    "verify:prompt-projections": "node scripts/generate-prompt-projections.mjs --verify"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.225",

@@ -34,6 +34,7 @@ import {
   killBridgeWithEscalation,
   spawnBridgeServer,
 } from './bridge-manager.js';
+import { PYTHON_REPL_SANDBOX_BOUNDARY } from './sandbox.js';
 
 // =============================================================================
 // CONSTANTS
@@ -81,7 +82,7 @@ export const pythonReplSchema = z.object({
     .optional()
     .describe(
       'Human-readable label for this code execution. ' +
-        'Examples: "Load dataset", "Train model", "Generate plot"',
+        'Examples: "Summarize response times", "Compare cohort means", "Recompute totals"',
     ),
 
   executionTimeout: z
@@ -652,7 +653,6 @@ export async function pythonReplHandler(
         '',
         'Ensure you have a Python virtual environment:',
         '  python -m venv .venv',
-        '  .venv/bin/pip install pandas numpy matplotlib',
       ].join('\n');
     }
 
@@ -742,7 +742,7 @@ export const pythonReplTool = {
     'Execute Python code in a persistent REPL environment. ' +
     'Variables and state persist between calls within the same session. ' +
     'Actions: execute (run code), interrupt (stop execution), reset (clear state), get_state (view memory/variables). ' +
-    'Supports scientific computing with pandas, numpy, matplotlib.',
+    PYTHON_REPL_SANDBOX_BOUNDARY,
   schema: pythonReplSchema.shape,
   handler: async (args: unknown) => {
     const output = await pythonReplHandler(args as PythonReplInput);

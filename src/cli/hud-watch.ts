@@ -49,8 +49,6 @@ export async function runHudWatchLoop(
         wakeSleep = null;
         resolve();
       };
-
-      (timer as { unref?: () => void }).unref?.();
     });
   }
 }

@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from 'url';
 import { getClaudeConfigDir, getUpdateCheckCachePath } from './lib/config-dir.mjs';
 import { getLocalSourceVersion, isLocalSourcePluginRoot } from './lib/local-install.mjs';
 import { resolveOmcStateRoot } from './lib/state-root.mjs';
+import { publishCacheOccupancy, readOccupiedPluginRoots } from './lib/cache-occupancy.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -931,6 +932,23 @@ async function main() {
     const messages = [];
     const userMessages = [];
 
+    // Restore the newest PreCompact checkpoint after compaction (issue #3730).
+    // Only fires when Claude Code signals the session resumed from compaction
+    // (source === 'compact'); never on startup, resume, or clear.
+    if (data.source === 'compact' && sessionId) {
+      try {
+        const { restorePreCompactCheckpoint } = await import(
+          pathToFileURL(join(__dirname, 'lib', 'precompact-restore.mjs')).href
+        );
+        const restored = restorePreCompactCheckpoint(omcRoot, sessionId);
+        if (restored) {
+          messages.push(`<session-restore>\n\n${restored.text}\n\n</session-restore>\n\n---\n`);
+        }
+      } catch {
+        // Restore is advisory: never break session start on a checkpoint error.
+      }
+    }
+
     // Fire sibling-retrofit warning once per session (lifted off getOmcRoot hot path)
     try {
       const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
@@ -945,6 +963,9 @@ async function main() {
     const projectMemoryModules = await loadProjectMemoryModules();
 
     writeSessionStartedMarker(omcRoot, directory, sessionId);
+    if (process.env.CLAUDE_PLUGIN_ROOT) {
+      publishCacheOccupancy(process.env.CLAUDE_PLUGIN_ROOT, configDir);
+    }
     reconcileAbandonedSessionStarts(omcRoot, sessionId);
     reconcileSessionEndJobsInBackground(getRuntimeBaseDir(), directory);
 
@@ -1147,6 +1168,7 @@ ${cleanContent}
     // plugin update whose CLAUDE_PLUGIN_ROOT still points to the old version.
     try {
       const cacheBase = join(configDir, 'plugins', 'cache', 'omc', 'oh-my-claudecode');
+      const occupancy = readOccupiedPluginRoots(configDir);
       let versions = [];
       if (existsSync(cacheBase)) {
         versions = readdirSync(cacheBase)
@@ -1188,6 +1210,7 @@ ${cleanContent}
                   }
                 }
               } else if (stat.isDirectory()) {
+                if (occupancy.unavailable || occupancy.roots.has(resolve(versionPath))) continue;
                 // Directory → symlink: cannot be atomic, but run.cjs now
                 // handles missing targets gracefully (issue #1007).
                 rmSync(versionPath, { recursive: true, force: true });

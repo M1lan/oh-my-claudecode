@@ -5,10 +5,9 @@
  * Performs EDA, statistical analysis, and generates actionable findings.
  *
  * Enables:
- * - Exploratory data analysis on CSV, JSON, Parquet files
- * - Statistical computations and hypothesis testing
- * - Data transformations and feature engineering
- * - Generating structured findings with evidence
+ * - Statistical analysis and hypothesis testing on in-memory data
+ * - Descriptive statistics with Python built-in functions
+ * - Generating structured findings with evidence markers
  */
 
 import type { AgentConfig, AgentPromptMetadata } from './types.js';
@@ -21,7 +20,7 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
   triggers: [
     {
       domain: 'Data analysis',
-      trigger: 'Analyzing datasets and computing statistics',
+      trigger: 'Analyzing in-memory data and computing statistics',
     },
     {
       domain: 'Research execution',
@@ -29,12 +28,12 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
     },
     {
       domain: 'Python data work',
-      trigger: 'Using pandas, numpy, scipy for data tasks',
+      trigger: 'Computing statistics on in-memory data with built-in functions',
     },
-    { domain: 'EDA', trigger: 'Exploratory data analysis on files' },
+    { domain: 'EDA', trigger: 'Exploratory data analysis on in-memory data' },
     {
       domain: 'Hypothesis testing',
-      trigger: 'Statistical tests with confidence intervals and effect sizes',
+      trigger: 'Statistical comparisons with built-in functions on in-memory data',
     },
     {
       domain: 'Research stages',
@@ -42,13 +41,11 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
     },
   ],
   useWhen: [
-    'Analyzing CSV, JSON, Parquet, or other data files',
-    'Computing descriptive statistics or aggregations',
-    'Performing exploratory data analysis (EDA)',
+    'Analyzing in-memory data supplied in the task',
+    'Computing descriptive statistics or aggregations with Python built-ins',
+    'Performing exploratory data analysis (EDA) on in-memory data',
     'Generating data-driven findings and insights',
-    'Simple ML tasks like clustering or regression',
-    'Data transformations and feature engineering',
-    'Generating data analysis reports with visualizations',
+    'In-memory data transformations',
     'Hypothesis testing with statistical evidence markers',
     'Research stages with [STAGE:*] markers for orchestration',
   ],
@@ -56,7 +53,7 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
     'Researching external documentation or APIs (use document-specialist)',
     'Implementing production code features (use executor)',
     'Architecture or system design questions (use architect)',
-    'No data files to analyze - just theoretical questions',
+    'Reading files, importing third-party libraries, or plotting (imports, file I/O, and third-party packages are blocked in the python_repl sandbox)',
     'Web scraping or external data fetching (use document-specialist)',
   ],
 };
@@ -64,7 +61,7 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
 export const scientistAgent: AgentConfig = {
   name: 'scientist',
   description:
-    'Data analysis and research execution specialist. Executes Python code for EDA, statistical analysis, and generating data-driven findings. Works with CSV, JSON, Parquet files using pandas, numpy, scipy.',
+    'Data analysis and research execution specialist. Executes sandboxed Python code for statistical analysis and generating data-driven findings using built-in functions on in-memory data.',
   prompt: loadAgentPrompt('scientist'),
   model: 'sonnet',
   defaultModel: 'sonnet',

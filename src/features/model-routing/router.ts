@@ -51,16 +51,20 @@ export function routeTask(
     );
   }
 
-  // If explicit model is specified, respect it
+  // If explicit model is specified, respect it. Preserve the exact modelType
+  // (e.g. 'fable') instead of collapsing it to the tier default via
+  // createDecision, so explicit selection is not lost (issue #3726).
   if (context.explicitModel) {
     const explicitTier = modelTypeToTier(context.explicitModel);
-    return createDecision(
-      explicitTier,
-      mergedConfig.tierModels,
-      ['Explicit model specified by user'],
-      false,
-      explicitTier,
-    );
+    return {
+      model: mergedConfig.tierModels[explicitTier],
+      modelType: context.explicitModel,
+      tier: explicitTier,
+      confidence: 0.7,
+      reasons: ['Explicit model specified by user'],
+      escalated: false,
+      originalTier: explicitTier,
+    };
   }
 
   // Check for agent-specific overrides
@@ -167,6 +171,7 @@ function createDecision(
 function modelTypeToTier(modelType: string): ComplexityTier {
   switch (modelType) {
     case 'opus':
+    case 'fable': // Fable sits above Opus; both select the HIGH tier (issue #3726)
       return 'HIGH';
     case 'haiku':
       return 'LOW';
@@ -302,14 +307,14 @@ export function quickTierForAgent(agentType: string): ComplexityTier | null {
  *
  * @param agentType - The agent to delegate to
  * @param taskPrompt - The task description
- * @returns The recommended model type ('haiku', 'sonnet', or 'opus')
+ * @returns The recommended model type ('haiku', 'sonnet', 'opus', or 'fable')
  */
 export function getModelForTask(
   agentType: string,
   taskPrompt: string,
   config: Partial<RoutingConfig> = {},
 ): {
-  model: 'haiku' | 'sonnet' | 'opus';
+  model: 'haiku' | 'sonnet' | 'opus' | 'fable';
   tier: ComplexityTier;
   reason: string;
 } {
@@ -318,7 +323,7 @@ export function getModelForTask(
   const decision = routeTask({ taskPrompt, agentType }, config);
 
   return {
-    model: decision.modelType as 'haiku' | 'sonnet' | 'opus',
+    model: decision.modelType as 'haiku' | 'sonnet' | 'opus' | 'fable',
     tier: decision.tier,
     reason: decision.reasons[0] ?? 'Complexity analysis',
   };
