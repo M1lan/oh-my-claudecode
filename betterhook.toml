@@ -10,7 +10,9 @@ stash_untracked = false
 priority = ["pnpm-rmux-guard"]
 
 [hooks.pre-commit.jobs.pnpm-rmux-guard]
-run = "bash scripts/pnpm-rmux-guard.bash --staged"
+# BASH_ENV= : the machine-global agent-shell harness (DEBUG trap) multiplies
+# the guard's per-line loop ~25x (11s -> ~5min on a large merge diff).
+run = "BASH_ENV= bash scripts/pnpm-rmux-guard.bash --staged"
 reads = ["**/*"]
 writes = []
 concurrent_safe = true

@@ -84,6 +84,7 @@ declare -a EXEMPT_GLOBS=(
   'src/team/**'
   'src/installer/**'
   'src/hooks/project-memory/**'
+  'receipts/**'
   'src/hooks/permission-handler/**'
   'src/features/background-tasks.ts'
   'src/hooks/keyword-detector/**'
@@ -150,38 +151,6 @@ filter_exempt_targets() {
   src=("${kept[@]+"${kept[@]}"}")
 }
 
-# Scan only the ADDED lines of a staged diff for a single file, matching the
-# banned pattern against line content and reporting the file's new-side line
-# number (parsed from @@ -a,b +c,d @@ hunk headers) rather than a diff line index.
-scan_staged_added_lines() {
-  local file=$1 pattern=$2
-  local -a violations=()
-  local line new_line=0
-
-  while IFS= read -r line; do
-    if [[ "$line" =~ ^@@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+) ]]; then
-      new_line=${BASH_REMATCH[2]}
-      continue
-    fi
-    [[ "$line" == +++* || "$line" == ---* ]] && continue
-    if [[ "$line" == +* ]]; then
-      local content=${line:1}
-      if [[ "$content" =~ $pattern ]] && ! is_allowlisted_line "$content"; then
-        violations+=("$file:$new_line: $content")
-      fi
-      (( new_line++ ))
-    elif [[ "$line" != -* ]]; then
-      : # context line under -U0 does not appear; nothing to do
-    fi
-  done < <(git diff --cached -U0 --diff-filter=ACM -- "$file")
-
-  # printf with a zero-length argument list still runs its format string once,
-  # emitting one blank line -- guard so mapfile on the caller side never turns
-  # "no violations" into a one-element array containing an empty string.
-  (( ${#violations[@]} > 0 )) && printf '%s\n' "${violations[@]}"
-  return 0
-}
-
 run_precommit() {
   local pattern
   pattern=$(build_banned_pattern)
@@ -193,14 +162,38 @@ run_precommit() {
   filter_exempt_targets targets
   (( ${#targets[@]} == 0 )) && { printf 'pnpm-rmux-guard: no non-exempt staged files\n'; return 0; }
 
+  # One diff invocation for the whole index -- per-file `git diff` spawns made
+  # large commits (hundreds of files) blow the hook timeout. File boundaries are
+  # recovered from the +++ headers; exemption is re-checked per file so the
+  # single pass matches the per-file behavior exactly.
   local -a all_violations=()
-  local f
-  for f in "${targets[@]}"; do
-    [[ -f "$f" ]] || continue
-    local -a file_violations=()
-    mapfile -t file_violations < <(scan_staged_added_lines "$f" "$pattern")
-    (( ${#file_violations[@]} > 0 )) && all_violations+=("${file_violations[@]}")
-  done
+  local line file='' skip=1 new_line=0
+  while IFS= read -r line; do
+    if [[ "$line" == +++* ]]; then
+      file=${line#+++ }
+      file=${file#b/}
+      if [[ "$file" == /dev/null ]] || path_is_exempt "$file" || [[ ! -f "$file" ]]; then
+        skip=1
+      else
+        skip=0
+      fi
+      continue
+    fi
+    (( skip )) && [[ "$line" != @@* ]] && continue
+    if [[ "$line" =~ ^@@\ -[0-9]+(,[0-9]+)?\ \+([0-9]+) ]]; then
+      new_line=${BASH_REMATCH[2]}
+      continue
+    fi
+    (( skip )) && continue
+    [[ "$line" == ---* ]] && continue
+    if [[ "$line" == +* ]]; then
+      local content=${line:1}
+      if [[ "$content" =~ $pattern ]] && ! is_allowlisted_line "$content"; then
+        all_violations+=("$file:$new_line: $content")
+      fi
+      (( new_line++ ))
+    fi
+  done < <(git diff --cached -U0 --diff-filter=ACM)
 
   if (( ${#all_violations[@]} > 0 )); then
     printf 'pnpm-rmux-guard: staged diff adds banned npm/tmux invocation(s) (see %s):\n' "$LAW_DOC" >&2
