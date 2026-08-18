@@ -244,10 +244,10 @@ run *args:
 cli *args:
     node bridge/cli.cjs "$@"
 
-# Print the current omc status (smoke test)
+# Print the local built CLI version (smoke test)
 [group('run')]
 status:
-    @node bridge/cli.cjs status 2>/dev/null || echo "(no status yet -- run 'just build' first)"
+    @node bridge/cli.cjs --version 2>/dev/null || echo "(no status yet -- run 'just build' first)"
 
 # Smoke-boot the MCP server -- exits cleanly if it boots, fails loudly otherwise
 [group('run')]

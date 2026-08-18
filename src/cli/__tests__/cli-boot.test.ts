@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI_ENTRY = join(__dirname, '../../../bridge/cli.cjs');
 const CLI_SOURCE = join(__dirname, '../index.ts');
+const JUSTFILE = join(__dirname, '../../../Justfile');
 
 // ---------------------------------------------------------------------------
 // Static: no duplicate command names in src/cli/index.ts
@@ -49,6 +50,14 @@ describe('CLI command registration — no duplicates', () => {
 // Runtime: CLI boots without crashing
 // ---------------------------------------------------------------------------
 describe('CLI runtime boot', () => {
+  it('keeps the Justfile status recipe aligned with the CLI version flag', () => {
+    const justfile = readFileSync(JUSTFILE, 'utf-8');
+
+    expect(justfile).toMatch(
+      /status:\n\s+@node bridge\/cli\.cjs --version 2>\/dev\/null/,
+    );
+  });
+
   it('omc --help exits cleanly (no duplicate command error)', () => {
     const result = execFileSync('node', [CLI_ENTRY, '--help'], {
       timeout: 10_000,
