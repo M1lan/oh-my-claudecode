@@ -1016,7 +1016,8 @@ export function buildWorkerStartCommand(config: WorkerPaneConfig): string {
         // path (never inline): secrets stay out of the process list and tmux
         // scrollback, and the delivered command stays small. The runtime CLI
         // validates and consumes the descriptor before running the provider.
-        OMC_WORKER_LAUNCH_SPEC_FILE: config.launchAttempt.bootstrapDescriptorPath,
+        OMC_WORKER_LAUNCH_SPEC_FILE:
+          config.launchAttempt.bootstrapDescriptorPath,
       }
     : config.envVars;
   const shouldSourceRc = process.env.OMC_TEAM_NO_RC !== '1';

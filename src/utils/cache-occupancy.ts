@@ -14,27 +14,56 @@ function processStartIdentity(pid: number): string | null {
     try {
       const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
       const closeParen = stat.lastIndexOf(')');
-      return closeParen === -1 ? null : stat.substring(closeParen + 2).split(' ')[19] || null;
-    } catch { return null; }
+      return closeParen === -1
+        ? null
+        : stat.substring(closeParen + 2).split(' ')[19] || null;
+    } catch {
+      return null;
+    }
   }
   if (process.platform === 'darwin') {
     try {
-      return String(Number(new Date(execFileSync('ps', ['-p', String(pid), '-o', 'lstart='], { encoding: 'utf8' }).trim()).getTime()));
-    } catch { return null; }
+      return String(
+        Number(
+          new Date(
+            execFileSync('ps', ['-p', String(pid), '-o', 'lstart='], {
+              encoding: 'utf8',
+            }).trim(),
+          ).getTime(),
+        ),
+      );
+    } catch {
+      return null;
+    }
   }
   if (process.platform === 'win32') {
     try {
-      const output = execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-Command', `$p=Get-Process -Id ${pid} -ErrorAction Stop; $p.StartTime.ToUniversalTime().Ticks`], { encoding: 'utf8', windowsHide: true });
+      const output = execFileSync(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          `$p=Get-Process -Id ${pid} -ErrorAction Stop; $p.StartTime.ToUniversalTime().Ticks`,
+        ],
+        { encoding: 'utf8', windowsHide: true },
+      );
       const ticks = output.trim().match(/^\d+$/)?.[0];
       return ticks ? `ticks:${ticks}` : null;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
   return null;
 }
 
 function processAlive(pid: number): boolean {
-  try { process.kill(pid, 0); return true; }
-  catch (error) { return (error as NodeJS.ErrnoException).code === 'EPERM'; }
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === 'EPERM';
+  }
 }
 
 export interface CacheOccupancyRecord {
@@ -53,11 +82,22 @@ function recordName(pluginRoot: string, pid: number, identity: string): string {
   return `${createHash('sha256').update(`${pluginRoot}\0${pid}\0${identity}`).digest('hex')}.json`;
 }
 
-function recordPath(pluginRoot: string, pid: number, identity: string, configDir?: string): string {
-  return join(getCacheOccupancyDir(configDir), recordName(pluginRoot, pid, identity));
+function recordPath(
+  pluginRoot: string,
+  pid: number,
+  identity: string,
+  configDir?: string,
+): string {
+  return join(
+    getCacheOccupancyDir(configDir),
+    recordName(pluginRoot, pid, identity),
+  );
 }
 
-export async function publishCacheOccupancy(pluginRoot: string, configDir?: string): Promise<boolean> {
+export async function publishCacheOccupancy(
+  pluginRoot: string,
+  configDir?: string,
+): Promise<boolean> {
   const normalizedRoot = resolve(pluginRoot);
   const identity = processStartIdentity(process.pid);
   if (!identity) return false;
@@ -71,8 +111,14 @@ export async function publishCacheOccupancy(pluginRoot: string, configDir?: stri
   const target = recordPath(normalizedRoot, process.pid, identity, configDir);
   const temporary = `${target}.${process.pid}.${randomUUID()}.tmp`;
   try {
-    await mkdir(getCacheOccupancyDir(configDir), { recursive: true, mode: 0o700 });
-    await writeFile(temporary, JSON.stringify(record), { encoding: 'utf8', mode: 0o600 });
+    await mkdir(getCacheOccupancyDir(configDir), {
+      recursive: true,
+      mode: 0o700,
+    });
+    await writeFile(temporary, JSON.stringify(record), {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
     await rename(temporary, target);
     return true;
   } catch {
@@ -84,19 +130,33 @@ export async function publishCacheOccupancy(pluginRoot: string, configDir?: stri
 function validRecord(value: unknown): value is CacheOccupancyRecord {
   if (!value || typeof value !== 'object') return false;
   const record = value as Partial<CacheOccupancyRecord>;
-  return record.version === REGISTRY_VERSION && Number.isSafeInteger(record.pid) && typeof record.pid === 'number' && record.pid > 0
-    && typeof record.processStartIdentity === 'string' && record.processStartIdentity.length > 0
-    && typeof record.pluginRoot === 'string' && record.pluginRoot.length > 0
-    && typeof record.updatedAt === 'string' && Number.isFinite(Date.parse(record.updatedAt));
+  return (
+    record.version === REGISTRY_VERSION &&
+    Number.isSafeInteger(record.pid) &&
+    typeof record.pid === 'number' &&
+    record.pid > 0 &&
+    typeof record.processStartIdentity === 'string' &&
+    record.processStartIdentity.length > 0 &&
+    typeof record.pluginRoot === 'string' &&
+    record.pluginRoot.length > 0 &&
+    typeof record.updatedAt === 'string' &&
+    Number.isFinite(Date.parse(record.updatedAt))
+  );
 }
 
-export function readOccupiedPluginRoots(configDir = getClaudeConfigDir()): { roots: Set<string>; unavailable: boolean } {
+export function readOccupiedPluginRoots(configDir = getClaudeConfigDir()): {
+  roots: Set<string>;
+  unavailable: boolean;
+} {
   const directory = getCacheOccupancyDir(configDir);
   let names: string[];
   try {
-    names = readdirSync(directory).filter(name => RECORD_PATTERN.test(name));
+    names = readdirSync(directory).filter((name) => RECORD_PATTERN.test(name));
   } catch (error) {
-    return { roots: new Set(), unavailable: (error as NodeJS.ErrnoException).code !== 'ENOENT' };
+    return {
+      roots: new Set(),
+      unavailable: (error as NodeJS.ErrnoException).code !== 'ENOENT',
+    };
   }
 
   const roots = new Set<string>();
@@ -104,13 +164,50 @@ export function readOccupiedPluginRoots(configDir = getClaudeConfigDir()): { roo
   for (const name of names) {
     const path = join(directory, name);
     let record: unknown;
-    try { record = JSON.parse(readFileSync(path, 'utf8')); } catch { try { unlinkSync(path); } catch { /* best effort */ } continue; }
-    if (!validRecord(record)) { try { unlinkSync(path); } catch { /* best effort */ } continue; }
+    try {
+      record = JSON.parse(readFileSync(path, 'utf8'));
+    } catch {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* best effort */
+      }
+      continue;
+    }
+    if (!validRecord(record)) {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* best effort */
+      }
+      continue;
+    }
     const age = now - Date.parse(record.updatedAt);
-    if (age < -5 * 60 * 1000) { try { unlinkSync(path); } catch { /* best effort */ } continue; }
-    if (!processAlive(record.pid)) { try { unlinkSync(path); } catch { /* best effort */ } continue; }
+    if (age < -5 * 60 * 1000) {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* best effort */
+      }
+      continue;
+    }
+    if (!processAlive(record.pid)) {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* best effort */
+      }
+      continue;
+    }
     const currentIdentity = processStartIdentity(record.pid);
-    if (currentIdentity && currentIdentity !== record.processStartIdentity) { try { unlinkSync(path); } catch { /* best effort */ } continue; }
+    if (currentIdentity && currentIdentity !== record.processStartIdentity) {
+      try {
+        unlinkSync(path);
+      } catch {
+        /* best effort */
+      }
+      continue;
+    }
     // A live process whose identity cannot be read (including EPERM) is retained
     // conservatively; only a proven-dead PID or proven mismatch self-invalidates.
     roots.add(resolve(record.pluginRoot));

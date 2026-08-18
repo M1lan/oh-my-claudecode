@@ -33,7 +33,9 @@ export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   const obj = value as Record<string, unknown>;
-  const keys = Object.keys(obj).filter((k) => obj[k] !== undefined).sort();
+  const keys = Object.keys(obj)
+    .filter((k) => obj[k] !== undefined)
+    .sort();
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalJson(obj[k])}`).join(',')}}`;
 }
 
@@ -93,7 +95,11 @@ export function buildRegistryProjection(
 ): RegistryProjection {
   const projected = entries
     .map(toProjectionEntry)
-    .sort((a, b) => (a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind.localeCompare(b.kind)));
+    .sort((a, b) =>
+      a.kind === b.kind
+        ? a.name.localeCompare(b.name)
+        : a.kind.localeCompare(b.kind),
+    );
   return {
     schemaVersion: REGISTRY_SCHEMA_VERSION,
     registryVersion: REGISTRY_VERSION,
@@ -102,7 +108,9 @@ export function buildRegistryProjection(
   };
 }
 
-export function computeRegistryDigest(entries: readonly WorkflowEntry[] = WORKFLOW_ENTRIES): string {
+export function computeRegistryDigest(
+  entries: readonly WorkflowEntry[] = WORKFLOW_ENTRIES,
+): string {
   return buildRegistryProjection(entries).digest;
 }
 
@@ -116,12 +124,17 @@ export interface InstalledSurfaces {
 }
 
 /** Enumerate installed surfaces from the repository filesystem (pre-#3702 census). */
-export function enumerateInstalledSurfaces(repoRoot: string): InstalledSurfaces {
+export function enumerateInstalledSurfaces(
+  repoRoot: string,
+): InstalledSurfaces {
   const skillsDir = join(repoRoot, 'skills');
   const commandsDir = join(repoRoot, 'commands');
   const skills = existsSync(skillsDir)
     ? readdirSync(skillsDir, { withFileTypes: true })
-        .filter((d) => d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')))
+        .filter(
+          (d) =>
+            d.isDirectory() && existsSync(join(skillsDir, d.name, 'SKILL.md')),
+        )
         .map((d) => d.name)
         .sort()
     : [];
@@ -161,7 +174,8 @@ export function checkProjectionDrift(
     if (!registered.has(`skill:${name}`)) unregistered.push(`skill:${name}`);
   }
   for (const name of installed.commands) {
-    if (!registered.has(`command:${name}`)) unregistered.push(`command:${name}`);
+    if (!registered.has(`command:${name}`))
+      unregistered.push(`command:${name}`);
   }
   const installedSet = new Set([
     ...installed.skills.map((n) => `skill:${n}`),
@@ -173,5 +187,9 @@ export function checkProjectionDrift(
     const key = `${e.kind}:${e.name}`;
     if (!installedSet.has(key)) missing.push(key);
   }
-  return { ok: unregistered.length === 0 && missing.length === 0, unregistered, missing };
+  return {
+    ok: unregistered.length === 0 && missing.length === 0,
+    unregistered,
+    missing,
+  };
 }

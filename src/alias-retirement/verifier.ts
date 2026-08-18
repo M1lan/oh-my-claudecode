@@ -15,7 +15,11 @@
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { ALIAS_REGISTRY, ALIAS_RETIREMENT_SCHEMA_VERSION, type AliasRecord } from './registry.js';
+import {
+  ALIAS_REGISTRY,
+  ALIAS_RETIREMENT_SCHEMA_VERSION,
+  type AliasRecord,
+} from './registry.js';
 import {
   RETIREMENT_POLICY,
   isTemporalThresholdMet,
@@ -88,8 +92,11 @@ export interface AliasRetirementReceipt {
   removalMilestone: string;
 }
 
-export function evaluateAlias(input: AliasEvaluationInput): AliasRetirementReceipt {
-  const { record, currentVersion, now, usageHistory, criticalIntegrations } = input;
+export function evaluateAlias(
+  input: AliasEvaluationInput,
+): AliasRetirementReceipt {
+  const { record, currentVersion, now, usageHistory, criticalIntegrations } =
+    input;
 
   const temporal = isTemporalThresholdMet(
     record.introducedVersion,
@@ -100,7 +107,9 @@ export function evaluateAlias(input: AliasEvaluationInput): AliasRetirementRecei
 
   const consecutiveShare = isConsecutiveCanonicalShareMet(usageHistory);
 
-  const criticalItems = Array.isArray(criticalIntegrations) ? criticalIntegrations : [];
+  const criticalItems = Array.isArray(criticalIntegrations)
+    ? criticalIntegrations
+    : [];
   const criticalMet = criticalItems.length === 0;
   const criticalReason = criticalMet
     ? 'zero known critical integrations'
@@ -108,13 +117,16 @@ export function evaluateAlias(input: AliasEvaluationInput): AliasRetirementRecei
 
   const blockers: string[] = [];
   if (!temporal.met) {
-    if (!temporal.minors.met) blockers.push(`temporal: ${temporal.minors.reason}`);
+    if (!temporal.minors.met)
+      blockers.push(`temporal: ${temporal.minors.reason}`);
     if (!temporal.days.met) blockers.push(`temporal: ${temporal.days.reason}`);
   }
-  if (!consecutiveShare.met) blockers.push(`canonical-share: ${consecutiveShare.reason}`);
+  if (!consecutiveShare.met)
+    blockers.push(`canonical-share: ${consecutiveShare.reason}`);
   if (!criticalMet) blockers.push(`critical-integrations: ${criticalReason}`);
 
-  const verdict: RetirementVerdict = blockers.length === 0 ? 'eligible' : 'extended';
+  const verdict: RetirementVerdict =
+    blockers.length === 0 ? 'eligible' : 'extended';
 
   return {
     schemaVersion: ALIAS_RETIREMENT_SCHEMA_VERSION,
@@ -152,21 +164,31 @@ function getPackageVersionFallback(): string {
     let dir = dirname(fileURLToPath(import.meta.url));
     for (let i = 0; i < 6; i++) {
       try {
-        const pkg = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf-8')) as {
+        const pkg = JSON.parse(
+          readFileSync(join(dir, 'package.json'), 'utf-8'),
+        ) as {
           version?: string;
         };
         if (pkg.version) return pkg.version;
-      } catch { /* empty — no package.json at this level, try parent */ }
+      } catch {
+        /* empty — no package.json at this level, try parent */
+      }
       const parent = dirname(dir);
       if (parent === dir) break;
       dir = parent;
     }
-  } catch { /* empty — no package.json found in any ancestor */ }
+  } catch {
+    /* empty — no package.json found in any ancestor */
+  }
   return '0.0.0';
 }
 
-export function verifyAllAliases(input: BulkEvaluationInput = {}): AliasRetirementReceipt[] {
-  const currentVersion = (input.currentVersion ?? getPackageVersionFallback()).trim().replace(/^v/, '');
+export function verifyAllAliases(
+  input: BulkEvaluationInput = {},
+): AliasRetirementReceipt[] {
+  const currentVersion = (input.currentVersion ?? getPackageVersionFallback())
+    .trim()
+    .replace(/^v/, '');
   const now = input.now ?? new Date();
   const usageByAlias = input.usageHistoryByAlias ?? {};
   const integrationsByAlias = input.criticalIntegrationsByAlias ?? {};
@@ -174,7 +196,8 @@ export function verifyAllAliases(input: BulkEvaluationInput = {}): AliasRetireme
   return ALIAS_REGISTRY.map((record) => {
     const key = record.alias.toLowerCase();
     const history = usageByAlias[record.alias] ?? usageByAlias[key] ?? [];
-    const integrations = integrationsByAlias[record.alias] ?? integrationsByAlias[key] ?? [];
+    const integrations =
+      integrationsByAlias[record.alias] ?? integrationsByAlias[key] ?? [];
     return evaluateAlias({
       record,
       currentVersion,

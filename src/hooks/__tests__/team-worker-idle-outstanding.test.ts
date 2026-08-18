@@ -6,10 +6,21 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readFileSync, existsSync } from 'fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+  readFileSync,
+  existsSync,
+} from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { maybeNotifyLeaderWorkerIdle, maybeNotifyLeaderAllWorkersIdle, type TmuxRunner } from '../team-worker-hook.js';
+import {
+  maybeNotifyLeaderWorkerIdle,
+  maybeNotifyLeaderAllWorkersIdle,
+  type TmuxRunner,
+} from '../team-worker-hook.js';
 
 const TEAM = 'test-team';
 const WORKER = 'worker-1';
@@ -53,23 +64,39 @@ function seed(options: SeedOptions, teamDir: string, stateDir: string): void {
     updated_at: nowIso,
     ...(options.state === 'done' ? { reason: 'completed' } : {}),
   };
-  writeFileSync(join(teamDir, 'workers', WORKER, 'status.json'), JSON.stringify(status));
+  writeFileSync(
+    join(teamDir, 'workers', WORKER, 'status.json'),
+    JSON.stringify(status),
+  );
 
   // prev-notify-state.json: force the working->idle transition
   writeFileSync(
     join(teamDir, 'workers', WORKER, 'prev-notify-state.json'),
-    JSON.stringify({ state: options.prevState ?? 'working', updated_at: nowIso }),
+    JSON.stringify({
+      state: options.prevState ?? 'working',
+      updated_at: nowIso,
+    }),
   );
 
   // heartbeat.json (fresh)
   if (options.heartbeat !== false) {
     writeFileSync(
       join(teamDir, 'workers', WORKER, 'heartbeat.json'),
-      JSON.stringify({ pid: process.pid, last_turn_at: nowIso, turn_count: 1, alive: true }),
+      JSON.stringify({
+        pid: process.pid,
+        last_turn_at: nowIso,
+        turn_count: 1,
+        alive: true,
+      }),
     );
     writeFileSync(
       join(teamDir, 'workers', OTHER_WORKER, 'heartbeat.json'),
-      JSON.stringify({ pid: process.pid, last_turn_at: nowIso, turn_count: 1, alive: true }),
+      JSON.stringify({
+        pid: process.pid,
+        last_turn_at: nowIso,
+        turn_count: 1,
+        alive: true,
+      }),
     );
   }
 
@@ -108,7 +135,14 @@ function seed(options: SeedOptions, teamDir: string, stateDir: string): void {
       join(mailboxDir, `${OTHER_WORKER}.json`),
       JSON.stringify({
         worker: OTHER_WORKER,
-        messages: [{ ...inboundMessage(false), message_id: 'msg-inbound-other', to_worker: OTHER_WORKER, from_worker: 'leader-fixed' }],
+        messages: [
+          {
+            ...inboundMessage(false),
+            message_id: 'msg-inbound-other',
+            to_worker: OTHER_WORKER,
+            from_worker: 'leader-fixed',
+          },
+        ],
       }),
     );
   }
@@ -124,7 +158,10 @@ function seed(options: SeedOptions, teamDir: string, stateDir: string): void {
   }
 }
 
-function makeTmux(): { tmux: TmuxRunner; sent: Array<{ target: string; text: string }> } {
+function makeTmux(): {
+  tmux: TmuxRunner;
+  sent: Array<{ target: string; text: string }>;
+} {
   const sent: Array<{ target: string; text: string }> = [];
   const tmux: TmuxRunner = {
     async sendKeys(target: string, text: string) {

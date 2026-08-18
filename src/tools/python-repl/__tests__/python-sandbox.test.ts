@@ -180,16 +180,17 @@ describe('gyoshu bridge execution builtins hardening', () => {
     );
   });
 
-  it.each([
-    ['import numpy as np'],
-    ['import pandas'],
-    ['import matplotlib'],
-  ])('blocks the advertised scientific imports: %s', (code) => {
-    const result = executeBridgeCode(code);
-    expect(result.success).toBe(false);
-    expect(result.error?.type).toBe('GyoshuSecurityError');
-    expect(result.error?.message).toContain('Import statements are not available');
-  });
+  it.each([['import numpy as np'], ['import pandas'], ['import matplotlib']])(
+    'blocks the advertised scientific imports: %s',
+    (code) => {
+      const result = executeBridgeCode(code);
+      expect(result.success).toBe(false);
+      expect(result.error?.type).toBe('GyoshuSecurityError');
+      expect(result.error?.message).toContain(
+        'Import statements are not available',
+      );
+    },
+  );
 
   it.each([
     ['print(numpy.array([1, 2, 3]).sum())'],
@@ -223,8 +224,14 @@ interface BridgeLifecycleResult {
 // and runs identically on macOS, Linux, and Windows; the Windows-specific TCP
 // socket fallback is covered separately by tcp-fallback.test.ts.
 function runBridgeLifecycle(seedCode: string): BridgeLifecycleResult {
-  const bridgePath = new URL('../../../../bridge/gyoshu_bridge.py', import.meta.url).pathname;
-  const tmpScript = join(tmpdir(), `omc-bridge-lifecycle-${process.pid}-${Date.now()}.py`);
+  const bridgePath = new URL(
+    '../../../../bridge/gyoshu_bridge.py',
+    import.meta.url,
+  ).pathname;
+  const tmpScript = join(
+    tmpdir(),
+    `omc-bridge-lifecycle-${process.pid}-${Date.now()}.py`,
+  );
   const script = [
     'import importlib.util, json',
     `spec = importlib.util.spec_from_file_location("gyoshu_bridge", ${JSON.stringify(bridgePath)})`,
@@ -263,9 +270,15 @@ function runBridgeLifecycle(seedCode: string): BridgeLifecycleResult {
   ].join('\n');
   writeFileSync(tmpScript, script, 'utf-8');
   try {
-    return JSON.parse(execSync(`python3 ${tmpScript}`, { timeout: 10000 }).toString().trim());
+    return JSON.parse(
+      execSync(`python3 ${tmpScript}`, { timeout: 10000 }).toString().trim(),
+    );
   } finally {
-    try { unlinkSync(tmpScript); } catch { /* ignore */ }
+    try {
+      unlinkSync(tmpScript);
+    } catch {
+      /* ignore */
+    }
   }
 }
 

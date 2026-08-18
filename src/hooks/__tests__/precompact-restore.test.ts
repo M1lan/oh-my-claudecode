@@ -115,7 +115,12 @@ describe('PreCompact writer - plan anchors (issue #3730)', () => {
   it('captures PRD anchors when a PRD is active', async () => {
     // Arrange: session-scoped PRD (ralph PRD mode)
     // PRD lives at .omc/state/sessions/{sessionId}/prd.json
-    const prdDir = join(getOmcRootForTest(tempDir), 'state', 'sessions', 'test-session');
+    const prdDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'sessions',
+      'test-session',
+    );
     mkdirSync(prdDir, { recursive: true });
     writeFileSync(
       join(prdDir, 'prd.json'),
@@ -145,7 +150,11 @@ describe('PreCompact writer - plan anchors (issue #3730)', () => {
       'utf-8',
     );
 
-    const checkpoint = await createCompactCheckpoint(tempDir, 'auto', 'test-session');
+    const checkpoint = await createCompactCheckpoint(
+      tempDir,
+      'auto',
+      'test-session',
+    );
 
     expect(checkpoint.plan_refs?.prd).toBeDefined();
     expect(checkpoint.plan_refs!.prd!.path).toContain('prd.json');
@@ -215,10 +224,18 @@ describe('PreCompact writer - plan anchors (issue #3730)', () => {
 
     await processPreCompact(makePreCompactInput(tempDir));
 
-    const checkpointDir = join(getOmcRootForTest(tempDir), 'state', 'checkpoints');
-    const files = readdirSync(checkpointDir).filter((f) => f.startsWith('checkpoint-'));
+    const checkpointDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'checkpoints',
+    );
+    const files = readdirSync(checkpointDir).filter((f) =>
+      f.startsWith('checkpoint-'),
+    );
     expect(files.length).toBe(1);
-    const raw = JSON.parse(readFileSync(join(checkpointDir, files[0]), 'utf-8'));
+    const raw = JSON.parse(
+      readFileSync(join(checkpointDir, files[0]), 'utf-8'),
+    );
     expect(raw.plan_refs.boulder.plan_name).toBe('refactor');
 
     const summary = formatCompactSummary(raw as CompactCheckpoint);
@@ -255,7 +272,10 @@ describe('PreCompact restore (issue #3730)', () => {
       todo_summary: { pending: 3, in_progress: 2, completed: 0 },
     });
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(true);
     if (candidate.ok) {
       expect(candidate.checkpoint.created_at).toBe(newer);
@@ -268,7 +288,10 @@ describe('PreCompact restore (issue #3730)', () => {
     try {
       writeCheckpoint(tempDir, new Date().toISOString());
       // dir B has no checkpoints
-      const candidateB = await findLatestCheckpointForRestore(dirB, 'test-session');
+      const candidateB = await findLatestCheckpointForRestore(
+        dirB,
+        'test-session',
+      );
       expect(candidateB.ok).toBe(false);
     } finally {
       rmSync(dirB, { recursive: true, force: true });
@@ -276,15 +299,24 @@ describe('PreCompact restore (issue #3730)', () => {
   });
 
   it('rejects checkpoints older than the age bound', async () => {
-    const stale = new Date(Date.now() - CHECKPOINT_MAX_AGE_MS - 5_000).toISOString();
+    const stale = new Date(
+      Date.now() - CHECKPOINT_MAX_AGE_MS - 5_000,
+    ).toISOString();
     writeCheckpoint(tempDir, stale);
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
   });
 
   it('rejects oversized checkpoint files', async () => {
-    const checkpointDir = join(getOmcRootForTest(tempDir), 'state', 'checkpoints');
+    const checkpointDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'checkpoints',
+    );
     mkdirSync(checkpointDir, { recursive: true });
     writeFileSync(
       join(checkpointDir, 'checkpoint-huge.json'),
@@ -292,16 +324,30 @@ describe('PreCompact restore (issue #3730)', () => {
       'utf-8',
     );
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
   });
 
   it('fails open on malformed JSON', async () => {
-    const checkpointDir = join(getOmcRootForTest(tempDir), 'state', 'checkpoints');
+    const checkpointDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'checkpoints',
+    );
     mkdirSync(checkpointDir, { recursive: true });
-    writeFileSync(join(checkpointDir, 'checkpoint-bad.json'), '{not json', 'utf-8');
+    writeFileSync(
+      join(checkpointDir, 'checkpoint-bad.json'),
+      '{not json',
+      'utf-8',
+    );
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
     if (!candidate.ok) {
       expect(candidate.reason).toBeDefined();
@@ -309,30 +355,57 @@ describe('PreCompact restore (issue #3730)', () => {
   });
 
   it('fails open when no checkpoint directory exists', async () => {
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
     if (!candidate.ok) {
-      expect(['missing', 'no_checkpoints'].includes(candidate.reason)).toBe(true);
+      expect(['missing', 'no_checkpoints'].includes(candidate.reason)).toBe(
+        true,
+      );
     }
   });
 
   it('ignores non-checkpoint files in the directory', async () => {
-    const checkpointDir = join(getOmcRootForTest(tempDir), 'state', 'checkpoints');
+    const checkpointDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'checkpoints',
+    );
     mkdirSync(checkpointDir, { recursive: true });
-    writeFileSync(join(checkpointDir, 'wisdom-some.md'), 'not a checkpoint', 'utf-8');
+    writeFileSync(
+      join(checkpointDir, 'wisdom-some.md'),
+      'not a checkpoint',
+      'utf-8',
+    );
     writeFileSync(join(checkpointDir, 'readme.txt'), 'nope', 'utf-8');
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
   });
 
   it('ignores checkpoint files outside the expected naming pattern', async () => {
-    const checkpointDir = join(getOmcRootForTest(tempDir), 'state', 'checkpoints');
+    const checkpointDir = join(
+      getOmcRootForTest(tempDir),
+      'state',
+      'checkpoints',
+    );
     mkdirSync(checkpointDir, { recursive: true });
     // Wrong prefix: must not be picked up
-    writeFileSync(join(checkpointDir, 'notacheckpoint.json'), '{"created_at":1}', 'utf-8');
+    writeFileSync(
+      join(checkpointDir, 'notacheckpoint.json'),
+      '{"created_at":1}',
+      'utf-8',
+    );
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(false);
   });
 
@@ -357,10 +430,16 @@ describe('PreCompact restore (issue #3730)', () => {
       },
     } as Partial<CompactCheckpoint>);
 
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(true);
     if (candidate.ok) {
-      const text = formatCheckpointRestoreContext(candidate.checkpoint, candidate.path);
+      const text = formatCheckpointRestoreContext(
+        candidate.checkpoint,
+        candidate.path,
+      );
       expect(text).toContain('PRECOMPACT CHECKPOINT RESTORED');
       expect(text).toContain('Fix the login bug');
       expect(text).toContain('refactor');
@@ -378,7 +457,10 @@ describe('PreCompact restore (issue #3730)', () => {
     if (first.ok) {
       markCheckpointRestored(tempDir, 'test-session', first.path);
 
-      const second = await findLatestCheckpointForRestore(tempDir, 'test-session');
+      const second = await findLatestCheckpointForRestore(
+        tempDir,
+        'test-session',
+      );
       expect(second.ok).toBe(false);
     }
   });
@@ -411,7 +493,10 @@ describe('PreCompact restore (issue #3730)', () => {
     }
 
     // Newest is consumed; the older one is still valid (not replay, different file)
-    const second = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const second = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(second.ok).toBe(true);
     if (second.ok) {
       expect(second.checkpoint.created_at).toBe(t1);
@@ -465,11 +550,17 @@ describe('writer → restore lifecycle (issue #3730)', () => {
     expect(out.continue).toBe(true);
 
     // Assert: the same directory/session can restore the checkpoint
-    const candidate = await findLatestCheckpointForRestore(tempDir, 'test-session');
+    const candidate = await findLatestCheckpointForRestore(
+      tempDir,
+      'test-session',
+    );
     expect(candidate.ok).toBe(true);
     if (candidate.ok) {
       expect(candidate.checkpoint.plan_refs?.boulder?.plan_name).toBe('epic');
-      const text = formatCheckpointRestoreContext(candidate.checkpoint, candidate.path);
+      const text = formatCheckpointRestoreContext(
+        candidate.checkpoint,
+        candidate.path,
+      );
       expect(text).toContain('epic');
     }
   });

@@ -74,13 +74,15 @@ describe('runHudWatchLoop', () => {
   it('keeps the polling timer referenced while watch mode is active', async () => {
     const intervalMs = 60_000;
     let shutdownHandler: ((reason: string) => Promise<void>) | undefined;
-    const registerShutdownHandlers = vi.fn((options: RegisterStandaloneShutdownHandlersOptions) => {
-      const onShutdown = async (reason: string): Promise<void> => {
-        await options.onShutdown(reason);
-      };
-      shutdownHandler = onShutdown;
-      return { shutdown: onShutdown };
-    });
+    const registerShutdownHandlers = vi.fn(
+      (options: RegisterStandaloneShutdownHandlersOptions) => {
+        const onShutdown = async (reason: string): Promise<void> => {
+          await options.onShutdown(reason);
+        };
+        shutdownHandler = onShutdown;
+        return { shutdown: onShutdown };
+      },
+    );
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
 
     const loopPromise = runHudWatchLoop({
@@ -91,13 +93,16 @@ describe('runHudWatchLoop', () => {
 
     try {
       await vi.waitFor(() => {
-        expect(setTimeoutSpy.mock.calls.some(([, delay]) => delay === intervalMs)).toBe(true);
+        expect(
+          setTimeoutSpy.mock.calls.some(([, delay]) => delay === intervalMs),
+        ).toBe(true);
       });
 
-      const pollingTimers = setTimeoutSpy.mock.calls.flatMap(([, delay], index) =>
-        delay === intervalMs
-          ? [setTimeoutSpy.mock.results[index]?.value as NodeJS.Timeout]
-          : []
+      const pollingTimers = setTimeoutSpy.mock.calls.flatMap(
+        ([, delay], index) =>
+          delay === intervalMs
+            ? [setTimeoutSpy.mock.results[index]?.value as NodeJS.Timeout]
+            : [],
       );
 
       expect(pollingTimers).toHaveLength(1);

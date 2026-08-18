@@ -392,7 +392,9 @@ export const traceSummaryTool: ToolDefinition<{
         `- **Total Events:** ${summary.total_events}`,
         `- **Agents:** ${summary.agents_spawned} spawned, ${summary.agents_completed} completed, ${summary.agents_failed} failed${summary.agents_untracked_stops ? `, ${summary.agents_untracked_stops} untracked stop(s)` : ''}`,
         ...(summary.dirty_worktrees
-          ? [`- **Dirty worktrees on stop:** ${summary.dirty_worktrees} agent(s) terminated leaving uncommitted work (issue #3663) — preserve before reset/cleanup; see subagent-tracking state`]
+          ? [
+              `- **Dirty worktrees on stop:** ${summary.dirty_worktrees} agent(s) terminated leaving uncommitted work (issue #3663) — preserve before reset/cleanup; see subagent-tracking state`,
+            ]
           : []),
         '',
       ];

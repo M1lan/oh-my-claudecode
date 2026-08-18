@@ -746,7 +746,7 @@ export {
   markCheckpointRestored,
   CHECKPOINT_MAX_AGE_MS,
   CHECKPOINT_MAX_BYTES,
-  type RestoreCandidate
+  type RestoreCandidate,
 } from './pre-compact/restore.js';
 
 export {

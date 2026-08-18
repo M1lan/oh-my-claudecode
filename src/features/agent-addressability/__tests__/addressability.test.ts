@@ -23,7 +23,9 @@ import {
 } from '../index.js';
 import type { AddressableAgent } from '../index.js';
 
-function agent(overrides: Partial<AddressableAgent> & { id: string }): AddressableAgent {
+function agent(
+  overrides: Partial<AddressableAgent> & { id: string },
+): AddressableAgent {
   return {
     type: 'general-purpose',
     status: 'running',
@@ -64,7 +66,9 @@ describe('hasExplicitName / hasDescription', () => {
   it('treats empty or whitespace-only descriptions as absent', () => {
     expect(hasDescription(agent({ id: 'a', description: '' }))).toBe(false);
     expect(hasDescription(agent({ id: 'a', description: '  ' }))).toBe(false);
-    expect(hasDescription(agent({ id: 'a', description: 'S2 nspin4 A/B vehicle' }))).toBe(true);
+    expect(
+      hasDescription(agent({ id: 'a', description: 'S2 nspin4 A/B vehicle' })),
+    ).toBe(true);
   });
 });
 
@@ -75,7 +79,9 @@ describe('hasExplicitName / hasDescription', () => {
 describe('addressFor', () => {
   it('prefers the explicit name (unchanged named-agent addressing)', () => {
     expect(
-      addressFor(agent({ id: 'id-1', name: 'worker-1', description: 'does things' })),
+      addressFor(
+        agent({ id: 'id-1', name: 'worker-1', description: 'does things' }),
+      ),
     ).toBe('worker-1');
   });
 
@@ -86,11 +92,15 @@ describe('addressFor', () => {
   });
 
   it('falls back to the full id for legacy records without name/description', () => {
-    expect(addressFor(agent({ id: 'ae1e2be26cb41fc74' }))).toBe('ae1e2be26cb41fc74');
+    expect(addressFor(agent({ id: 'ae1e2be26cb41fc74' }))).toBe(
+      'ae1e2be26cb41fc74',
+    );
   });
 
   it('trims surrounding whitespace from the address', () => {
-    expect(addressFor(agent({ id: 'id-1', description: '  padded  ' }))).toBe('padded');
+    expect(addressFor(agent({ id: 'id-1', description: '  padded  ' }))).toBe(
+      'padded',
+    );
   });
 
   it('never surfaces the prompt as an address (no privacy leak)', () => {
@@ -109,23 +119,33 @@ describe('addressFor', () => {
 
 describe('listingLabel', () => {
   it('keeps the explicit name as the label (backward compatible)', () => {
-    const a = agent({ id: 'id-1', name: 'worker-1', description: 'does things' });
+    const a = agent({
+      id: 'id-1',
+      name: 'worker-1',
+      description: 'does things',
+    });
     expect(listingLabel(a)).toBe('worker-1');
   });
 
   it('shows description + short id for unnamed agents', () => {
-    const a = agent({ id: 'ae1e2be26cb41fc74', description: 'S2 nspin4 A/B vehicle' });
+    const a = agent({
+      id: 'ae1e2be26cb41fc74',
+      description: 'S2 nspin4 A/B vehicle',
+    });
     expect(listingLabel(a)).toBe('S2 nspin4 A/B vehicle (ae1e2be)');
   });
 
   it('shows the full id for unnamed agents without a description (legacy records)', () => {
-    expect(listingLabel(agent({ id: 'ae1e2be26cb41fc74' }))).toBe('ae1e2be26cb41fc74');
+    expect(listingLabel(agent({ id: 'ae1e2be26cb41fc74' }))).toBe(
+      'ae1e2be26cb41fc74',
+    );
   });
 
   it('truncates long descriptions for display but always keeps the short id', () => {
     const a = agent({
       id: 'ae1e2be26cb41fc74',
-      description: 'This is a very long description that should be truncated for display',
+      description:
+        'This is a very long description that should be truncated for display',
     });
     const label = listingLabel(a, 30);
     expect(label).toContain('(ae1e2be)');
@@ -153,7 +173,10 @@ describe('listingLabel', () => {
   });
 
   it('handles tiny max widths without dropping the short id', () => {
-    const a = agent({ id: 'ae1e2be26cb41fc74', description: 'long description here' });
+    const a = agent({
+      id: 'ae1e2be26cb41fc74',
+      description: 'long description here',
+    });
     expect(listingLabel(a, 4)).toContain('(ae1e2be)');
   });
 });
@@ -165,14 +188,19 @@ describe('listingLabel', () => {
 describe('notificationReference', () => {
   it('uses the explicit name for named agents', () => {
     expect(
-      notificationReference(agent({ id: 'id-1', name: 'worker-1', description: 'd' })),
+      notificationReference(
+        agent({ id: 'id-1', name: 'worker-1', description: 'd' }),
+      ),
     ).toBe('worker-1');
   });
 
   it('uses full description + short id for unnamed agents — never truncated', () => {
     const long = 'x'.repeat(500);
-    expect(notificationReference(agent({ id: 'ae1e2be26cb41fc74', description: long })))
-      .toBe(`${long} (ae1e2be)`);
+    expect(
+      notificationReference(
+        agent({ id: 'ae1e2be26cb41fc74', description: long }),
+      ),
+    ).toBe(`${long} (ae1e2be)`);
   });
 
   it('falls back to the full id for legacy records', () => {
@@ -303,7 +331,7 @@ describe('resolveAgent', () => {
 
   // --- spoofing / precedence ----------------------------------------------
 
-  it('a description that equals another agent\'s name never shadows the name', () => {
+  it("a description that equals another agent's name never shadows the name", () => {
     const agents = [
       agent({ id: 'id-1', name: 'worker-1', description: 'd1' }),
       agent({ id: 'id-2', description: 'worker-1' }), // tries to spoof the name
@@ -315,7 +343,7 @@ describe('resolveAgent', () => {
     }
   });
 
-  it('a description that equals another agent\'s id never shadows the id', () => {
+  it("a description that equals another agent's id never shadows the id", () => {
     const agents = [
       agent({ id: 'ae1e2be26cb41fc74', description: 'd1' }),
       agent({ id: 'id-2', description: 'ae1e2be26cb41fc74' }), // tries to spoof the id
@@ -330,7 +358,9 @@ describe('resolveAgent', () => {
   it('does not add description addressing to explicitly named agents', () => {
     // Named agents keep name addressing; their description is display-only
     // metadata and must not become a second, shadowable address.
-    const agents = [agent({ id: 'id-1', name: 'worker-1', description: 'shadowable' })];
+    const agents = [
+      agent({ id: 'id-1', name: 'worker-1', description: 'shadowable' }),
+    ];
     expect(resolveAgent(agents, 'shadowable')).toMatchObject({
       resolved: false,
       reason: 'not_found',
@@ -340,7 +370,9 @@ describe('resolveAgent', () => {
   // --- unicode / long descriptions ----------------------------------------
 
   it('resolves CJK descriptions exactly', () => {
-    const agents = [agent({ id: 'id-1', description: '分析并行架构并给出优化建议' })];
+    const agents = [
+      agent({ id: 'id-1', description: '分析并行架构并给出优化建议' }),
+    ];
     const result = resolveAgent(agents, '分析并行架构并给出优化建议');
     expect(result).toMatchObject({ resolved: true, matchedBy: 'description' });
   });
@@ -397,8 +429,12 @@ describe('resolveAgent', () => {
   // --- session isolation ---------------------------------------------------
 
   it('keeps per-session address spaces isolated for identical descriptions', () => {
-    const sessionA = [agent({ id: 'sess-a-1', description: 'same task', sessionId: 'A' })];
-    const sessionB = [agent({ id: 'sess-b-1', description: 'same task', sessionId: 'B' })];
+    const sessionA = [
+      agent({ id: 'sess-a-1', description: 'same task', sessionId: 'A' }),
+    ];
+    const sessionB = [
+      agent({ id: 'sess-b-1', description: 'same task', sessionId: 'B' }),
+    ];
 
     const inA = resolveAgent(sessionA, 'same task');
     const inB = resolveAgent(sessionB, 'same task');
@@ -427,8 +463,14 @@ describe('resolveAgent', () => {
 
   it('treats empty-string name/description on records as absent', () => {
     const agents = [agent({ id: 'id-1', name: '', description: '' })];
-    expect(resolveAgent(agents, 'id-1')).toMatchObject({ resolved: true, matchedBy: 'id' });
-    expect(resolveAgent(agents, '')).toMatchObject({ resolved: false, reason: 'empty' });
+    expect(resolveAgent(agents, 'id-1')).toMatchObject({
+      resolved: true,
+      matchedBy: 'id',
+    });
+    expect(resolveAgent(agents, '')).toMatchObject({
+      resolved: false,
+      reason: 'empty',
+    });
   });
 });
 
@@ -455,9 +497,13 @@ describe('formatAgentList', () => {
 
     const listing = formatAgentList(agents, { now });
     expect(listing).toContain('Subagents (2):');
-    expect(listing).toContain('S2 nspin4 A/B vehicle (ae1e2be) · general-purpose · running · started 19m ago · ae1e2be26cb41fc74');
+    expect(listing).toContain(
+      'S2 nspin4 A/B vehicle (ae1e2be) · general-purpose · running · started 19m ago · ae1e2be26cb41fc74',
+    );
     // Named agents keep their name label (unchanged) and still expose the id.
-    expect(listing).toContain('worker-1 · general-purpose · running · started 18m ago · a31df4cfac7e5ba7f');
+    expect(listing).toContain(
+      'worker-1 · general-purpose · running · started 18m ago · a31df4cfac7e5ba7f',
+    );
   });
 
   it('shows lifecycle status for completed and failed agents', () => {
@@ -474,7 +520,9 @@ describe('formatAgentList', () => {
     const agents = [agent({ id: 'ae1e2be26cb41fc74', startedAt: now })];
     const listing = formatAgentList(agents, { now });
     const row = listing.split('\n')[1];
-    expect(row).toBe('  ae1e2be26cb41fc74 · general-purpose · running · started just now');
+    expect(row).toBe(
+      '  ae1e2be26cb41fc74 · general-purpose · running · started just now',
+    );
   });
 
   it('renders an empty listing', () => {
@@ -509,7 +557,10 @@ describe('formatAgentList', () => {
   });
 
   it('supports a custom title', () => {
-    const listing = formatAgentList([agent({ id: 'id-1' })], { now, title: 'Agents' });
+    const listing = formatAgentList([agent({ id: 'id-1' })], {
+      now,
+      title: 'Agents',
+    });
     expect(listing).toContain('Agents (1):');
   });
 });

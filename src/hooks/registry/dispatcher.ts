@@ -56,7 +56,11 @@ function matcherInputFor(event: HookEvent, input: unknown): string | undefined {
   if (event === 'SessionStart') {
     return typeof rec.source === 'string' ? rec.source : undefined;
   }
-  if (event === 'PermissionRequest' || event === 'PreToolUse' || event === 'PostToolUse') {
+  if (
+    event === 'PermissionRequest' ||
+    event === 'PreToolUse' ||
+    event === 'PostToolUse'
+  ) {
     const tool = rec.tool_name ?? rec.toolName;
     return typeof tool === 'string' ? tool : undefined;
   }
@@ -93,7 +97,10 @@ export function createHookDispatcher(
   const handlers = options.handlers ?? new Map();
   const now = options.now ?? (() => performance.now());
 
-  async function dispatch(event: HookEvent, input: unknown): Promise<DispatchResult> {
+  async function dispatch(
+    event: HookEvent,
+    input: unknown,
+  ): Promise<DispatchResult> {
     const applicable = selectApplicableEntries(
       registry,
       event,

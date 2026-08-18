@@ -32,8 +32,10 @@ const FDFT_REPLACEMENT =
   'All 12 files that set FDFT_WHALE_STREAM=1 are classified affected/not-affected WITH EVIDENCE';
 
 const amendmentBase = {
-  reason: 'The brief count was wrong: 7 listed names are readers/asserters/doc-recipes, not setters',
-  evidence: 'Enumerated setters via grep FDFT_WHALE_STREAM=1: 12 setters, 16 total matches',
+  reason:
+    'The brief count was wrong: 7 listed names are readers/asserters/doc-recipes, not setters',
+  evidence:
+    'Enumerated setters via grep FDFT_WHALE_STREAM=1: 12 setters, 16 total matches',
   authority: 'ses_test-amendment',
   timestamp: '2026-08-10T03:15:00.000Z',
 };
@@ -54,7 +56,10 @@ describe('Ralph PRD Criterion Amendment', () => {
   let testDir: string;
 
   beforeEach(() => {
-    testDir = join(tmpdir(), `ralph-prd-amendment-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    testDir = join(
+      tmpdir(),
+      `ralph-prd-amendment-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     mkdirSync(testDir, { recursive: true });
   });
 
@@ -144,7 +149,8 @@ describe('Ralph PRD Criterion Amendment', () => {
       });
 
       expect(result.ok).toBe(true);
-      const recorded = readPrd(testDir)?.userStories[0].criterionAmendments?.[0];
+      const recorded =
+        readPrd(testDir)?.userStories[0].criterionAmendments?.[0];
       expect(recorded?.timestamp).toBeDefined();
       const parsed = Date.parse(recorded?.timestamp ?? '');
       expect(Number.isNaN(parsed)).toBe(false);
@@ -165,15 +171,26 @@ describe('Ralph PRD Criterion Amendment', () => {
 
     it('is session-scoped', () => {
       writeSamplePrd();
-      amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-      }, 'session-a');
+      amendCriterion(
+        testDir,
+        'US-001',
+        {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+        },
+        'session-a',
+      );
 
-      expect(readPrd(testDir, 'session-a')?.userStories[0].acceptanceCriteria).toEqual([FDFT_REPLACEMENT]);
-      expect(readPrd(testDir, 'session-b')?.userStories[0].acceptanceCriteria).toEqual([FDFT_ORIGINAL]);
-      expect(findPrdPath(testDir, 'session-a')).toBe(getSessionPrdPath(testDir, 'session-a'));
+      expect(
+        readPrd(testDir, 'session-a')?.userStories[0].acceptanceCriteria,
+      ).toEqual([FDFT_REPLACEMENT]);
+      expect(
+        readPrd(testDir, 'session-b')?.userStories[0].acceptanceCriteria,
+      ).toEqual([FDFT_ORIGINAL]);
+      expect(findPrdPath(testDir, 'session-a')).toBe(
+        getSessionPrdPath(testDir, 'session-a'),
+      );
     });
   });
 
@@ -181,7 +198,10 @@ describe('Ralph PRD Criterion Amendment', () => {
     it('removes the criterion with no replacement and retains the original', () => {
       writeSamplePrd();
 
-      const result = supersedeCriterion(testDir, 'US-001', { original: FDFT_ORIGINAL, ...amendmentBase });
+      const result = supersedeCriterion(testDir, 'US-001', {
+        original: FDFT_ORIGINAL,
+        ...amendmentBase,
+      });
 
       expect(result.ok).toBe(true);
       expect(result.amendment).toEqual({
@@ -212,77 +232,93 @@ describe('Ralph PRD Criterion Amendment', () => {
   describe('strict validation', () => {
     it('returns story-not-found for an unknown story', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-999', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-      })).toEqual({ ok: false, error: 'story-not-found' });
+      expect(
+        amendCriterion(testDir, 'US-999', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+        }),
+      ).toEqual({ ok: false, error: 'story-not-found' });
     });
 
     it('returns prd-not-found when no PRD exists', () => {
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-      })).toEqual({ ok: false, error: 'prd-not-found' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+        }),
+      ).toEqual({ ok: false, error: 'prd-not-found' });
     });
 
     it('returns original-not-active when the criterion is not active', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: 'Some inactive criterion',
-        replacement: 'Replacement',
-        ...amendmentBase,
-      })).toEqual({ ok: false, error: 'original-not-active' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: 'Some inactive criterion',
+          replacement: 'Replacement',
+          ...amendmentBase,
+        }),
+      ).toEqual({ ok: false, error: 'original-not-active' });
     });
 
     it('requires a non-empty reason', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-        reason: '   ',
-      })).toEqual({ ok: false, error: 'reason-required' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+          reason: '   ',
+        }),
+      ).toEqual({ ok: false, error: 'reason-required' });
     });
 
     it('requires non-empty evidence', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-        evidence: '',
-      })).toEqual({ ok: false, error: 'evidence-required' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+          evidence: '',
+        }),
+      ).toEqual({ ok: false, error: 'evidence-required' });
     });
 
     it('enforces bounded proof via a minimum evidence length', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-        evidence: 'short',
-      })).toEqual({ ok: false, error: 'evidence-too-short' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+          evidence: 'short',
+        }),
+      ).toEqual({ ok: false, error: 'evidence-too-short' });
       expect(MIN_CRITERION_EVIDENCE_LENGTH).toBe(10);
     });
 
     it('requires an authority', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        replacement: FDFT_REPLACEMENT,
-        ...amendmentBase,
-        authority: '',
-      })).toEqual({ ok: false, error: 'authority-required' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          replacement: FDFT_REPLACEMENT,
+          ...amendmentBase,
+          authority: '',
+        }),
+      ).toEqual({ ok: false, error: 'authority-required' });
     });
 
     it('requires a replacement for amendCriterion', () => {
       writeSamplePrd();
-      expect(amendCriterion(testDir, 'US-001', {
-        original: FDFT_ORIGINAL,
-        ...amendmentBase,
-      })).toEqual({ ok: false, error: 'replacement-required' });
+      expect(
+        amendCriterion(testDir, 'US-001', {
+          original: FDFT_ORIGINAL,
+          ...amendmentBase,
+        }),
+      ).toEqual({ ok: false, error: 'replacement-required' });
     });
 
     it('cannot amend a criterion more than once (the original is no longer active)', () => {
@@ -330,7 +366,10 @@ describe('Ralph PRD Criterion Amendment', () => {
             ...samplePrd.userStories[0],
             acceptanceCriteria: [FDFT_REPLACEMENT],
             criterionAmendments: [
-              { ...resultAmendment(), evidence: undefined as unknown as string },
+              {
+                ...resultAmendment(),
+                evidence: undefined as unknown as string,
+              },
             ],
           },
         ],
@@ -465,16 +504,23 @@ describe('Ralph PRD Criterion Amendment', () => {
           criterionAmendments: [resultAmendment()],
         },
       ]);
-      expect(prd.userStories[0].criterionAmendments).toEqual([resultAmendment()]);
+      expect(prd.userStories[0].criterionAmendments).toEqual([
+        resultAmendment(),
+      ]);
     });
   });
 
   describe('completion semantics', () => {
     it('a superseded criterion no longer blocks completion while the ledger records why', () => {
       writeSamplePrd();
-      supersedeCriterion(testDir, 'US-001', { original: FDFT_ORIGINAL, ...amendmentBase });
+      supersedeCriterion(testDir, 'US-001', {
+        original: FDFT_ORIGINAL,
+        ...amendmentBase,
+      });
 
-      expect(markStoryComplete(testDir, 'US-001', 'Classification done')).toBe(true);
+      expect(markStoryComplete(testDir, 'US-001', 'Classification done')).toBe(
+        true,
+      );
       const story = readPrd(testDir)?.userStories[0];
       expect(story?.passes).toBe(true);
       expect(story?.criterionAmendments?.[0].original).toBe(FDFT_ORIGINAL);
@@ -514,7 +560,10 @@ describe('Ralph PRD Criterion Amendment', () => {
     });
 
     it('formatNextStoryPrompt includes the ledger and the amend instruction', () => {
-      const rendered = formatNextStoryPrompt(amendedStory, join(testDir, 'prd.json'));
+      const rendered = formatNextStoryPrompt(
+        amendedStory,
+        join(testDir, 'prd.json'),
+      );
       expect(rendered).toContain(FDFT_REPLACEMENT);
       expect(rendered).toContain(`~~${FDFT_ORIGINAL}~~`);
       expect(rendered).toContain('amend or supersede it with evidence');
@@ -532,7 +581,10 @@ describe('Ralph PRD Criterion Amendment', () => {
         story_id: 'US-001',
       };
 
-      const prompt = getArchitectVerificationPrompt(verificationState, amendedStory);
+      const prompt = getArchitectVerificationPrompt(
+        verificationState,
+        amendedStory,
+      );
       expect(prompt).toContain(FDFT_REPLACEMENT);
       expect(prompt).toContain(`~~${FDFT_ORIGINAL}~~`);
       expect(prompt).toContain('Amended/Superseded Criteria');

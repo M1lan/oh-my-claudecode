@@ -1,10 +1,18 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
-vi.mock('../servers.js', async importOriginal => {
+vi.mock('../servers.js', async (importOriginal) => {
   const original = await importOriginal<typeof import('../servers.js')>();
   return {
     ...original,
-    commandExists: vi.fn(() => false)
+    commandExists: vi.fn(() => false),
   };
 });
 
@@ -37,17 +45,17 @@ describe('selected Python LSP connection boundary', () => {
     expect(config).toMatchObject({
       command: 'basedpyright-langserver',
       args: ['--stdio'],
-      installHint: 'uv tool install basedpyright'
+      installHint: 'uv tool install basedpyright',
     });
 
     const client = new LspClient(process.cwd(), config!);
     const error = await client.connect().then(
       () => null,
-      reason => reason as Error
+      (reason) => reason as Error,
     );
 
     expect(error?.message).toBe(
-      "Language server 'basedpyright-langserver' not found.\nInstall with: uv tool install basedpyright"
+      "Language server 'basedpyright-langserver' not found.\nInstall with: uv tool install basedpyright",
     );
     expect(error?.message).not.toContain("Language server 'ty'");
   });

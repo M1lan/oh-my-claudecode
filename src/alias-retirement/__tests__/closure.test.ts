@@ -7,7 +7,10 @@ const NOW = new Date('2026-08-12T00:00:00Z');
 
 describe('alias-retirement generated closure', () => {
   it('reports no deletable artifacts while every alias is extended (steady state)', () => {
-    const receipts = verifyAllAliases({ currentVersion: CURRENT_VERSION, now: NOW });
+    const receipts = verifyAllAliases({
+      currentVersion: CURRENT_VERSION,
+      now: NOW,
+    });
     // Inject exists -> always true for listed artifacts (simulates repo still carrying them)
     const report = buildClosureReport(receipts, {
       exists: () => true,
@@ -20,7 +23,9 @@ describe('alias-retirement generated closure', () => {
       expect(e.deletableNow).toBe(false);
       expect(e.blockedBy.length).toBeGreaterThan(0);
     }
-    expect(summarizeClosureForEvidence(report)).toContain('noPrematureDeletion=true');
+    expect(summarizeClosureForEvidence(report)).toContain(
+      'noPrematureDeletion=true',
+    );
     expect(summarizeClosureForEvidence(report)).toContain('allDeletable=false');
   });
 
@@ -54,7 +59,10 @@ describe('alias-retirement generated closure', () => {
   });
 
   it('never treats a missing file as deletable when alias is still extended', () => {
-    const receipts = verifyAllAliases({ currentVersion: CURRENT_VERSION, now: NOW });
+    const receipts = verifyAllAliases({
+      currentVersion: CURRENT_VERSION,
+      now: NOW,
+    });
     const report = buildClosureReport(receipts, {
       exists: () => false,
     });

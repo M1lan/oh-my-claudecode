@@ -22,13 +22,21 @@ describe('registry projections — canonical JSON and digest', () => {
     const d2 = buildRegistryProjection().digest;
     expect(d1).toBe(d2);
     expect(d1).toMatch(/^[0-9a-f]{64}$/);
-    expect(d1).toBe(sha256Hex(canonicalJson(buildRegistryProjection().entries)));
+    expect(d1).toBe(
+      sha256Hex(canonicalJson(buildRegistryProjection().entries)),
+    );
   });
 
   it('changes the digest when entries change', () => {
     const mutated: WorkflowEntry[] = [
       ...WORKFLOW_ENTRIES,
-      { name: 'zz-extra', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: 'test' },
+      {
+        name: 'zz-extra',
+        kind: 'skill',
+        decision: 'keep',
+        riskClass: 'advisory',
+        owner: 'test',
+      },
     ];
     expect(computeRegistryDigest(mutated)).not.toBe(computeRegistryDigest());
   });

@@ -653,7 +653,9 @@ export function getTaskDirectory(sessionId: string): string {
   // Claude Code's documented task-list identity override takes precedence.
   const override = process.env.CLAUDE_CODE_TASK_LIST_ID;
   const identity =
-    typeof override === 'string' && override.trim() && isValidSessionId(override)
+    typeof override === 'string' &&
+    override.trim() &&
+    isValidSessionId(override)
       ? override.trim()
       : sessionId;
   // Security: validate identity before constructing path

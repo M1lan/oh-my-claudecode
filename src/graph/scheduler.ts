@@ -7,13 +7,13 @@
  * mutations are replay-fenced; begin/release commit nothing.
  */
 
-import { createHash } from "node:crypto";
-import { canonicalJson } from "./descriptor.js";
+import { createHash } from 'node:crypto';
+import { canonicalJson } from './descriptor.js';
 import {
   isValidStableId,
   parseGraphApprovalDecision,
   parseGraphNodeResult,
-} from "./schema.js";
+} from './schema.js';
 import type {
   ApplyHumanApprovalInput,
   ApplyNodeResultInput,
@@ -37,13 +37,13 @@ import type {
   SchedulerApplyResult,
   SchedulerTransitionIdentities,
   SealedGraphDescriptor,
-} from "./types.js";
+} from './types.js';
 
 export class GraphSchedulerError extends Error {
   readonly code: GraphSchedulerErrorCode;
   constructor(code: GraphSchedulerErrorCode, message: string) {
     super(message);
-    this.name = "GraphSchedulerError";
+    this.name = 'GraphSchedulerError';
     this.code = code;
   }
 }
@@ -54,7 +54,7 @@ function fail(code: GraphSchedulerErrorCode, message: string): never {
 }
 
 function displayValue(value: unknown): string {
-  if (typeof value === "string") return JSON.stringify(value);
+  if (typeof value === 'string') return JSON.stringify(value);
   try {
     const serialized = JSON.stringify(value);
     return serialized ?? `<${typeof value}>`;
@@ -72,7 +72,7 @@ function parseSchedulerInput<T>(
     return parse(input);
   } catch (error) {
     fail(
-      "invalid_input",
+      'invalid_input',
       `invalid ${what}: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
@@ -89,7 +89,7 @@ function emptyMap<T>(): Record<string, T> {
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
     return false;
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
@@ -97,7 +97,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 function identityField(
   identities: SchedulerTransitionIdentities | undefined,
-  key: "cohort_id" | "join_activation_id",
+  key: 'cohort_id' | 'join_activation_id',
 ): string | undefined {
   return identities !== undefined && Object.hasOwn(identities, key)
     ? identities[key]
@@ -117,7 +117,7 @@ function requireStableId(
 ): asserts value is string {
   if (!isValidStableId(value))
     fail(
-      "invalid_input",
+      'invalid_input',
       `${what} ${displayValue(value)} is not a stable identifier`,
     );
 }
@@ -129,16 +129,16 @@ function requireStableId(
  */
 function toFingerprintJson(value: unknown, seen: Set<object>): unknown {
   if (Array.isArray(value)) {
-    if (seen.has(value)) throw new TypeError("cyclic request value");
+    if (seen.has(value)) throw new TypeError('cyclic request value');
     seen.add(value);
     const normalized = value.map((item) => toFingerprintJson(item, seen));
     seen.delete(value);
     return normalized;
   }
-  if (value !== null && typeof value === "object") {
-    if (seen.has(value)) throw new TypeError("cyclic request value");
+  if (value !== null && typeof value === 'object') {
+    if (seen.has(value)) throw new TypeError('cyclic request value');
     if (!isPlainRecord(value))
-      throw new TypeError("request value must be a plain object");
+      throw new TypeError('request value must be a plain object');
     seen.add(value);
     const normalized: Record<string, unknown> = emptyMap();
     for (const [key, child] of Object.entries(value)) {
@@ -152,11 +152,11 @@ function toFingerprintJson(value: unknown, seen: Set<object>): unknown {
 
 /** Versioned replay fingerprint bound to the descriptor hash. */
 function requestFingerprint(
-  kind: "node_result" | "human_approval" | "resolve_join",
+  kind: 'node_result' | 'human_approval' | 'resolve_join',
   descriptorHash: string,
   request: unknown,
 ): string {
-  return createHash("sha256")
+  return createHash('sha256')
     .update(
       canonicalJson(
         toFingerprintJson(
@@ -170,12 +170,12 @@ function requestFingerprint(
         ),
       ),
     )
-    .digest("hex");
+    .digest('hex');
 }
 
 /** Fingerprint failures (unsupported or cyclic raw values) map to `invalid_input`. */
 function computeFingerprint(
-  kind: "node_result" | "human_approval" | "resolve_join",
+  kind: 'node_result' | 'human_approval' | 'resolve_join',
   descriptorHash: string,
   request: unknown,
 ): string {
@@ -183,7 +183,7 @@ function computeFingerprint(
     return requestFingerprint(kind, descriptorHash, request);
   } catch (error) {
     fail(
-      "invalid_input",
+      'invalid_input',
       `cannot fingerprint request: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
@@ -228,21 +228,21 @@ function fenceDescriptor(
   projection: GraphSchedulerProjection,
 ): void {
   if (!isPlainRecord(projection))
-    fail("invalid_input", "projection must be a plain object");
+    fail('invalid_input', 'projection must be a plain object');
   if (
-    typeof projection.descriptor_hash !== "string" ||
+    typeof projection.descriptor_hash !== 'string' ||
     !/^[a-f0-9]{64}$/.test(projection.descriptor_hash) ||
     !isValidStableId(projection.run_id) ||
     !isValidStableId(projection.revision_id)
   )
-    fail("invalid_input", "projection descriptor binding is malformed");
+    fail('invalid_input', 'projection descriptor binding is malformed');
   if (
     projection.descriptor_hash !== descriptor.descriptor_hash ||
     projection.run_id !== descriptor.run_id ||
     projection.revision_id !== descriptor.revision_id
   ) {
     fail(
-      "descriptor_mismatch",
+      'descriptor_mismatch',
       `projection bound to ${displayValue(projection.run_id)}/${displayValue(projection.revision_id)}/${displayValue(projection.descriptor_hash)}, not ${descriptor.run_id}/${descriptor.revision_id}/${descriptor.descriptor_hash}`,
     );
   }
@@ -301,8 +301,8 @@ function cloneProjection(
     };
   } catch {
     fail(
-      "invalid_input",
-      "projection contains malformed or non-cloneable values",
+      'invalid_input',
+      'projection contains malformed or non-cloneable values',
     );
   }
 }
@@ -319,16 +319,16 @@ function validateIdentities(
 ): void {
   if (identities === undefined) return;
   if (!isPlainRecord(identities))
-    fail("invalid_input", "identities must be a plain object");
+    fail('invalid_input', 'identities must be a plain object');
   const allowedKeys = new Set([
-    "next_activation_ids",
-    "cohort_id",
-    "branch_token_ids",
-    "join_activation_id",
+    'next_activation_ids',
+    'cohort_id',
+    'branch_token_ids',
+    'join_activation_id',
   ]);
   for (const key of Object.keys(identities)) {
     if (!allowedKeys.has(key))
-      fail("invalid_input", `identities contains unknown field ${key}`);
+      fail('invalid_input', `identities contains unknown field ${key}`);
   }
   const declaredEdges = new Set(
     outgoingEdgesOf(descriptor, node.id).map((edge) => edge.id),
@@ -336,29 +336,29 @@ function validateIdentities(
   const validateKeys = (map: unknown, what: string): void => {
     if (map === undefined) return;
     if (!isPlainRecord(map))
-      fail("invalid_input", `${what} must be a plain object`);
+      fail('invalid_input', `${what} must be a plain object`);
     for (const [key, value] of Object.entries(map)) {
       if (!declaredEdges.has(key))
         fail(
-          "undeclared_identity_key",
+          'undeclared_identity_key',
           `${what} key ${key} is not a declared outgoing edge of node ${node.id}`,
         );
       if (!isValidStableId(value))
         fail(
-          "invalid_input",
+          'invalid_input',
           `${what} value ${displayValue(value)} is not a stable identifier`,
         );
     }
   };
-  validateKeys(identities.next_activation_ids, "next_activation_ids");
-  validateKeys(identities.branch_token_ids, "branch_token_ids");
+  validateKeys(identities.next_activation_ids, 'next_activation_ids');
+  validateKeys(identities.branch_token_ids, 'branch_token_ids');
   for (const value of [
-    identityField(identities, "cohort_id"),
-    identityField(identities, "join_activation_id"),
+    identityField(identities, 'cohort_id'),
+    identityField(identities, 'join_activation_id'),
   ]) {
     if (value !== undefined && !isValidStableId(value))
       fail(
-        "invalid_input",
+        'invalid_input',
         `${displayValue(value)} is not a stable identifier`,
       );
   }
@@ -374,7 +374,7 @@ function replayFence(
   if (existing === undefined) return undefined;
   if (existing.request_fingerprint !== fingerprint) {
     fail(
-      "transition_fenced",
+      'transition_fenced',
       `transition ${transitionId} was committed with a different request fingerprint`,
     );
   }
@@ -389,7 +389,7 @@ function assertFreshId(
 ): void {
   if (namespaceIds(projection).has(id)) {
     fail(
-      "duplicate_identity",
+      'duplicate_identity',
       `${what} ${id} collides with an existing identity in the global namespace`,
     );
   }
@@ -399,23 +399,23 @@ function requireActivation(
   projection: GraphSchedulerProjection,
   activationId: string,
 ): GraphActivation {
-  requireStableId(activationId, "activation id");
+  requireStableId(activationId, 'activation id');
   const activation = own(projection.activations, activationId);
   if (activation === undefined)
     fail(
-      "activation_not_found",
+      'activation_not_found',
       `activation ${displayValue(activationId)} not found`,
     );
-  requireStableId(activation.activation_id, "stored activation id");
-  requireStableId(activation.node_id, "stored node id");
-  requireStableId(activation.traversal_owner_id, "stored traversal owner id");
+  requireStableId(activation.activation_id, 'stored activation id');
+  requireStableId(activation.node_id, 'stored node id');
+  requireStableId(activation.traversal_owner_id, 'stored traversal owner id');
   if (
     !Array.isArray(activation.attempt_ids) ||
     !activation.attempt_ids.every(isValidStableId)
   )
-    fail("invalid_input", "stored activation attempt_ids are malformed");
+    fail('invalid_input', 'stored activation attempt_ids are malformed');
   if (activation.active_attempt_id !== undefined)
-    requireStableId(activation.active_attempt_id, "stored active attempt id");
+    requireStableId(activation.active_attempt_id, 'stored active attempt id');
   return activation;
 }
 
@@ -424,7 +424,7 @@ function requireNode(
   nodeId: string,
 ): GraphNode {
   const node = nodeById(descriptor, nodeId);
-  if (node === undefined) fail("node_not_found", `node ${nodeId} not found`);
+  if (node === undefined) fail('node_not_found', `node ${nodeId} not found`);
   return node;
 }
 
@@ -435,10 +435,10 @@ function guardTransitionId(
 ): void {
   if (!isValidStableId(transitionId))
     fail(
-      "invalid_input",
+      'invalid_input',
       `transition id ${displayValue(transitionId)} is not a stable identifier`,
     );
-  assertFreshId(projection, transitionId, "transition id");
+  assertFreshId(projection, transitionId, 'transition id');
 }
 
 /**
@@ -455,7 +455,7 @@ function reservation(
     reserve: (id: string, what: string): void => {
       if (namespaceIds(projection).has(id) || reserved.has(id)) {
         fail(
-          "duplicate_identity",
+          'duplicate_identity',
           `${what} ${id} collides with an existing identity or this mutation's transition ${transitionId}`,
         );
       }
@@ -501,13 +501,13 @@ function createNextActivation(
   extra?: { readonly cohort_id?: string; readonly branch_token_id?: string },
 ): GraphActivation {
   const branchTokenId =
-    extra !== undefined && Object.hasOwn(extra, "branch_token_id")
+    extra !== undefined && Object.hasOwn(extra, 'branch_token_id')
       ? extra.branch_token_id
       : source.branch_token_id;
   const created: GraphActivation = {
     activation_id: activationId,
     node_id: nodeId,
-    status: "ready",
+    status: 'ready',
     attempt_no: 0,
     attempt_ids: [],
     traversal_owner_id: source.traversal_owner_id,
@@ -520,7 +520,7 @@ function createNextActivation(
   const tokenId = created.branch_token_id;
   if (tokenId !== undefined) {
     const token = own(next.branch_tokens, tokenId);
-    if (token !== undefined && token.status === "active") {
+    if (token !== undefined && token.status === 'active') {
       next.branch_tokens[tokenId] = {
         ...token,
         current_activation_id: activationId,
@@ -536,19 +536,19 @@ export function initializeGraphProjection(
   entryActivationIds: Readonly<Record<string, string>>,
 ): GraphSchedulerProjection {
   if (!isPlainRecord(entryActivationIds))
-    fail("invalid_input", "entry activation identities must be a plain object");
+    fail('invalid_input', 'entry activation identities must be a plain object');
   const entrySet = new Set(descriptor.entry_node_ids);
   for (const key of Object.keys(entryActivationIds)) {
     if (!entrySet.has(key))
       fail(
-        "unexpected_identity",
+        'unexpected_identity',
         `identity supplied for non-entry node ${key}`,
       );
   }
   for (const entry of descriptor.entry_node_ids) {
     if (!Object.hasOwn(entryActivationIds, entry))
       fail(
-        "missing_identity",
+        'missing_identity',
         `missing activation identity for entry node ${entry}`,
       );
   }
@@ -557,17 +557,17 @@ export function initializeGraphProjection(
   const seen = new Set<string>();
   for (const entry of descriptor.entry_node_ids) {
     const activationId = identityMapValue(entryActivationIds, entry);
-    requireStableId(activationId, "activation id");
+    requireStableId(activationId, 'activation id');
     if (seen.has(activationId))
       fail(
-        "duplicate_identity",
+        'duplicate_identity',
         `activation identity ${activationId} used more than once`,
       );
     seen.add(activationId);
     activations[activationId] = {
       activation_id: activationId,
       node_id: entry,
-      status: "ready",
+      status: 'ready',
       attempt_no: 0,
       attempt_ids: [],
       traversal_owner_id: activationId,
@@ -595,35 +595,35 @@ export function beginActivationAttempt(
   input: BeginActivationAttemptInput,
 ): GraphSchedulerProjection {
   fenceDescriptor(descriptor, projection);
-  requireStableId(input.activation_id, "activation id");
-  requireStableId(input.attempt_id, "attempt id");
+  requireStableId(input.activation_id, 'activation id');
+  requireStableId(input.attempt_id, 'attempt id');
   const activation = requireActivation(projection, input.activation_id);
-  if (activation.status !== "ready")
+  if (activation.status !== 'ready')
     fail(
-      "activation_not_ready",
+      'activation_not_ready',
       `activation ${input.activation_id} is not ready`,
     );
   const node = requireNode(descriptor, activation.node_id);
-  if (node.kind !== "agent" && node.kind !== "command")
+  if (node.kind !== 'agent' && node.kind !== 'command')
     fail(
-      "unsupported_node_kind",
+      'unsupported_node_kind',
       `node ${node.id} of kind ${node.kind} cannot begin an attempt`,
     );
   if (activation.attempt_no >= node.max_attempts)
     fail(
-      "max_attempts_exceeded",
+      'max_attempts_exceeded',
       `activation ${input.activation_id} already used its budget of ${node.max_attempts} attempts`,
     );
   if (!isValidStableId(input.attempt_id))
     fail(
-      "invalid_input",
+      'invalid_input',
       `attempt id ${displayValue(input.attempt_id)} is not a stable identifier`,
     );
-  assertFreshId(projection, input.attempt_id, "attempt id");
+  assertFreshId(projection, input.attempt_id, 'attempt id');
   const nextProjection = cloneProjection(projection);
   nextProjection.activations[input.activation_id] = {
     ...activation,
-    status: "running",
+    status: 'running',
     attempt_no: activation.attempt_no + 1,
     attempt_ids: [...activation.attempt_ids, input.attempt_id],
     active_attempt_id: input.attempt_id,
@@ -642,27 +642,27 @@ export function releaseAttemptForRetry(
   input: ReleaseAttemptForRetryInput,
 ): GraphSchedulerProjection {
   fenceDescriptor(descriptor, projection);
-  requireStableId(input.activation_id, "activation id");
-  requireStableId(input.attempt_id, "attempt id");
+  requireStableId(input.activation_id, 'activation id');
+  requireStableId(input.attempt_id, 'attempt id');
   const activation = requireActivation(projection, input.activation_id);
   if (
-    activation.status !== "running" ||
+    activation.status !== 'running' ||
     activation.active_attempt_id !== input.attempt_id
   )
     fail(
-      "attempt_fenced",
+      'attempt_fenced',
       `activation ${input.activation_id} is not running attempt ${input.attempt_id}`,
     );
   const node = requireNode(descriptor, activation.node_id);
-  if (node.kind !== "agent" && node.kind !== "command")
+  if (node.kind !== 'agent' && node.kind !== 'command')
     fail(
-      "unsupported_node_kind",
+      'unsupported_node_kind',
       `node ${node.id} of kind ${node.kind} cannot release an attempt`,
     );
   const nextProjection = cloneProjection(projection);
   nextProjection.activations[input.activation_id] = {
     ...activation,
-    status: activation.attempt_no >= node.max_attempts ? "failed" : "ready",
+    status: activation.attempt_no >= node.max_attempts ? 'failed' : 'ready',
     active_attempt_id: undefined,
   };
   return nextProjection;
@@ -675,24 +675,24 @@ export function applyNodeResult(
   input: ApplyNodeResultInput,
 ): SchedulerApplyResult {
   fenceDescriptor(descriptor, projection);
-  requireStableId(input.activation_id, "activation id");
+  requireStableId(input.activation_id, 'activation id');
   const result = parseSchedulerInput(
     parseGraphNodeResult,
     input.result,
-    "node result",
+    'node result',
   );
   const activation = requireActivation(projection, input.activation_id);
   const node = requireNode(descriptor, activation.node_id);
-  if (node.kind === "human-approval")
+  if (node.kind === 'human-approval')
     fail(
-      "approval_requires_dedicated_transition",
+      'approval_requires_dedicated_transition',
       `node ${node.id} requires applyHumanApproval`,
     );
-  if (node.kind === "join")
-    fail("join_is_automatic", `node ${node.id} is resolved by the scheduler`);
+  if (node.kind === 'join')
+    fail('join_is_automatic', `node ${node.id} is resolved by the scheduler`);
   validateIdentities(descriptor, node, input.identities);
   const fingerprint = computeFingerprint(
-    "node_result",
+    'node_result',
     descriptor.descriptor_hash,
     {
       activation_id: input.activation_id,
@@ -705,38 +705,38 @@ export function applyNodeResult(
   if (existing !== undefined)
     return { projection, transition: existing, replayed: true };
   if (
-    activation.status !== "running" ||
+    activation.status !== 'running' ||
     activation.active_attempt_id !== result.attempt_id
   )
     fail(
-      "attempt_fenced",
+      'attempt_fenced',
       `activation ${input.activation_id} is not running attempt ${result.attempt_id}`,
     );
   guardTransitionId(projection, input.transition_id);
   const edges = outgoingEdgesOf(descriptor, node.id);
   const edgeMode =
-    result.outcome === "failed"
-      ? "failed"
+    result.outcome === 'failed'
+      ? 'failed'
       : edges.length === 0
-        ? "terminal"
-        : edges.some((e) => e.kind === "fan_out")
-          ? "fan_out"
-          : edges.some((e) => e.kind === "fixed")
-            ? "fixed"
-            : "routed";
+        ? 'terminal'
+        : edges.some((e) => e.kind === 'fan_out')
+          ? 'fan_out'
+          : edges.some((e) => e.kind === 'fixed')
+            ? 'fixed'
+            : 'routed';
 
-  if (edgeMode === "failed") {
+  if (edgeMode === 'failed') {
     if (result.route !== undefined)
-      fail("undeclared_route", "failed results cannot select routes");
+      fail('undeclared_route', 'failed results cannot select routes');
     const next = cloneProjection(projection);
     next.activations[input.activation_id] = {
       ...activation,
-      status: activation.attempt_no >= node.max_attempts ? "failed" : "ready",
+      status: activation.attempt_no >= node.max_attempts ? 'failed' : 'ready',
       active_attempt_id: undefined,
     };
     const transition: GraphFailedTransition = {
       ...transitionCommon(input, node, fingerprint, descriptor),
-      outcome: "failed",
+      outcome: 'failed',
       selected_edge_ids: [],
       created_activation_ids: [],
       evidence_refs: [...result.evidence_refs],
@@ -757,7 +757,7 @@ export function applyNodeResult(
     result.evidence_refs.length === 0
   )
     fail(
-      "terminal_evidence_required",
+      'terminal_evidence_required',
       `terminal verification node ${node.id} requires at least one evidence reference`,
     );
 
@@ -768,24 +768,24 @@ export function applyNodeResult(
   const next = cloneProjection(projection);
   const { reserve } = reservation(next, input.transition_id);
 
-  if (edgeMode === "fan_out") {
+  if (edgeMode === 'fan_out') {
     if (result.route !== undefined)
-      fail("undeclared_route", `node ${node.id} declares no routes`);
+      fail('undeclared_route', `node ${node.id} declares no routes`);
     const fanEdges = edges.filter(
-      (e): e is Extract<GraphEdge, { kind: "fan_out" }> => e.kind === "fan_out",
+      (e): e is Extract<GraphEdge, { kind: 'fan_out' }> => e.kind === 'fan_out',
     );
     if (fanEdges.length < 2)
       fail(
-        "invalid_input",
+        'invalid_input',
         `fan-out node ${node.id} has fewer than two fan_out edges`,
       );
-    cohortId = identityField(input.identities, "cohort_id");
+    cohortId = identityField(input.identities, 'cohort_id');
     if (cohortId === undefined)
       fail(
-        "missing_identity",
+        'missing_identity',
         `fan-out node ${node.id} requires identities.cohort_id`,
       );
-    reserve(cohortId, "cohort id");
+    reserve(cohortId, 'cohort id');
     const entries = fanEdges.map((fanEdge) => {
       const tokenId = identityMapValue(
         input.identities?.branch_token_ids,
@@ -797,16 +797,16 @@ export function applyNodeResult(
       );
       if (tokenId === undefined)
         fail(
-          "missing_identity",
+          'missing_identity',
           `fan-out node ${node.id} requires branch_token_ids[${fanEdge.id}]`,
         );
       if (branchActivationId === undefined)
         fail(
-          "missing_identity",
+          'missing_identity',
           `fan-out node ${node.id} requires next_activation_ids[${fanEdge.id}]`,
         );
-      reserve(tokenId, "branch token id");
-      reserve(branchActivationId, "activation id");
+      reserve(tokenId, 'branch token id');
+      reserve(branchActivationId, 'activation id');
       return { fanEdge, tokenId, branchActivationId };
     });
     next.cohorts[cohortId] = {
@@ -822,7 +822,7 @@ export function applyNodeResult(
         cohort_id: cohortId,
         branch_id: entry.fanEdge.branch_id,
         owner_join_id: fanEdges[0].owner_join_id,
-        status: "active",
+        status: 'active',
         current_activation_id: entry.branchActivationId,
       };
       createNextActivation(
@@ -836,44 +836,44 @@ export function applyNodeResult(
     }
     selectedEdgeIds = fanEdges.map((e) => e.id);
     createdActivationIds = entries.map((e) => e.branchActivationId);
-  } else if (edgeMode === "fixed" || edgeMode === "routed") {
-    if (edgeMode === "fixed") {
+  } else if (edgeMode === 'fixed' || edgeMode === 'routed') {
+    if (edgeMode === 'fixed') {
       if (result.route !== undefined)
-        fail("undeclared_route", `node ${node.id} declares no routes`);
-      matchedEdge = edges.find((e) => e.kind === "fixed");
+        fail('undeclared_route', `node ${node.id} declares no routes`);
+      matchedEdge = edges.find((e) => e.kind === 'fixed');
     } else {
       if (result.route === undefined)
-        fail("route_required", `node ${node.id} requires a declared route`);
+        fail('route_required', `node ${node.id} requires a declared route`);
       matchedEdge = edges.find(
         (e) =>
-          (e.kind === "conditional" || e.kind === "back_edge") &&
+          (e.kind === 'conditional' || e.kind === 'back_edge') &&
           e.route === result.route,
       );
       if (matchedEdge === undefined)
         fail(
-          "undeclared_route",
+          'undeclared_route',
           `node ${node.id} declares no route ${result.route}`,
         );
     }
   } else if (result.route !== undefined) {
-    fail("undeclared_route", `node ${node.id} declares no routes`); // terminal node
+    fail('undeclared_route', `node ${node.id} declares no routes`); // terminal node
   }
 
   next.activations[input.activation_id] = {
     ...activation,
-    status: "completed",
+    status: 'completed',
     completed_transition_id: input.transition_id,
   };
 
   if (matchedEdge !== undefined) {
     selectedEdgeIds = [matchedEdge.id];
     const targetNode = nodeById(descriptor, matchedEdge.to);
-    if (matchedEdge.kind === "back_edge") {
+    if (matchedEdge.kind === 'back_edge') {
       const counterKey = traversalCounterKey(activation, matchedEdge);
       const count = next.traversal_counts[counterKey] ?? 0;
       if (count + 1 > matchedEdge.max_traversals)
         fail(
-          "traversal_bound_exceeded",
+          'traversal_bound_exceeded',
           `back-edge ${matchedEdge.id} exceeded its max_traversals of ${matchedEdge.max_traversals}`,
         );
       next.traversal_counts[counterKey] = count + 1;
@@ -881,7 +881,7 @@ export function applyNodeResult(
         input.identities,
         matchedEdge,
       );
-      reserve(nextActivationId, "activation id");
+      reserve(nextActivationId, 'activation id');
       createNextActivation(
         next,
         nextActivationId,
@@ -890,44 +890,44 @@ export function applyNodeResult(
         descriptor,
       );
       createdActivationIds = [nextActivationId];
-    } else if (targetNode?.kind === "join") {
+    } else if (targetNode?.kind === 'join') {
       const token = activation.branch_token_id
         ? own(next.branch_tokens, activation.branch_token_id)
         : undefined;
       if (
         token === undefined ||
-        token.status !== "active" ||
+        token.status !== 'active' ||
         token.current_activation_id !== activation.activation_id
       )
         fail(
-          "branch_token_fenced",
+          'branch_token_fenced',
           `activation ${input.activation_id} does not own an active branch token for join ${matchedEdge.to}`,
         );
       next.branch_tokens[token.branch_token_id] = {
         ...token,
-        status: "arrived",
+        status: 'arrived',
         current_activation_id: undefined,
       };
       const cohort = own(next.cohorts, token.cohort_id);
       if (cohort === undefined)
         fail(
-          "join_owner_missing",
+          'join_owner_missing',
           `cohort ${token.cohort_id} for token ${token.branch_token_id} not found`,
         );
       const allArrived = cohort.expected_branch_token_ids.every(
-        (tokenId) => own(next.branch_tokens, tokenId)?.status === "arrived",
+        (tokenId) => own(next.branch_tokens, tokenId)?.status === 'arrived',
       );
       if (allArrived) {
         const joinActivationId = identityField(
           input.identities,
-          "join_activation_id",
+          'join_activation_id',
         );
         if (joinActivationId === undefined)
           fail(
-            "missing_identity",
+            'missing_identity',
             `join ${matchedEdge.to} requires identities.join_activation_id`,
           );
-        reserve(joinActivationId, "activation id");
+        reserve(joinActivationId, 'activation id');
         createNextActivation(
           next,
           joinActivationId,
@@ -947,7 +947,7 @@ export function applyNodeResult(
         input.identities,
         matchedEdge,
       );
-      reserve(nextActivationId, "activation id");
+      reserve(nextActivationId, 'activation id');
       createNextActivation(
         next,
         nextActivationId,
@@ -961,7 +961,7 @@ export function applyNodeResult(
 
   const transition: GraphSucceededTransition = {
     ...transitionCommon(input, node, fingerprint, descriptor),
-    outcome: "succeeded",
+    outcome: 'succeeded',
     selected_edge_ids: selectedEdgeIds,
     created_activation_ids: createdActivationIds,
     evidence_refs: [...result.evidence_refs],
@@ -989,7 +989,7 @@ function requireNextActivationId(
   );
   if (activationId === undefined)
     fail(
-      "missing_identity",
+      'missing_identity',
       `edge ${edge.id} requires identities.next_activation_ids[${edge.id}]`,
     );
   return activationId;
@@ -1007,22 +1007,22 @@ export function applyHumanApproval(
   input: ApplyHumanApprovalInput,
 ): SchedulerApplyResult {
   fenceDescriptor(descriptor, projection);
-  requireStableId(input.activation_id, "activation id");
+  requireStableId(input.activation_id, 'activation id');
   const decision = parseSchedulerInput(
     parseGraphApprovalDecision,
     input.decision,
-    "approval decision",
+    'approval decision',
   );
   const activation = requireActivation(projection, input.activation_id);
   const node = requireNode(descriptor, activation.node_id);
-  if (node.kind !== "human-approval")
+  if (node.kind !== 'human-approval')
     fail(
-      "unsupported_node_kind",
+      'unsupported_node_kind',
       `node ${node.id} of kind ${node.kind} is not a human-approval node`,
     );
   validateIdentities(descriptor, node, input.identities);
   const fingerprint = computeFingerprint(
-    "human_approval",
+    'human_approval',
     descriptor.descriptor_hash,
     {
       activation_id: input.activation_id,
@@ -1035,33 +1035,33 @@ export function applyHumanApproval(
   if (existing !== undefined)
     return { projection, transition: existing, replayed: true };
   guardTransitionId(projection, input.transition_id);
-  if (activation.status !== "ready")
+  if (activation.status !== 'ready')
     fail(
-      "activation_not_ready",
+      'activation_not_ready',
       `activation ${input.activation_id} is not ready`,
     );
   if (decision.evidence_refs.length === 0)
     fail(
-      "terminal_evidence_required",
+      'terminal_evidence_required',
       `approval decision for node ${node.id} requires at least one evidence reference`,
     );
   const outgoing = outgoingEdgesOf(descriptor, node.id);
   const fixedEdge =
-    outgoing.length === 1 && outgoing[0].kind === "fixed"
+    outgoing.length === 1 && outgoing[0].kind === 'fixed'
       ? outgoing[0]
       : undefined;
   if (fixedEdge === undefined)
     fail(
-      "invalid_input",
+      'invalid_input',
       `human-approval node ${node.id} must have exactly one fixed outgoing edge`,
     );
   const next = cloneProjection(projection);
   const { reserve } = reservation(next, input.transition_id);
-  if (decision.decision === "denied") {
-    next.activations[input.activation_id] = { ...activation, status: "failed" };
+  if (decision.decision === 'denied') {
+    next.activations[input.activation_id] = { ...activation, status: 'failed' };
     const transition: GraphDeniedTransition = {
       ...transitionCommon(input, node, fingerprint, descriptor),
-      outcome: "denied",
+      outcome: 'denied',
       selected_edge_ids: [],
       created_activation_ids: [],
       evidence_refs: nonEmptyEvidence(decision.evidence_refs),
@@ -1073,10 +1073,10 @@ export function applyHumanApproval(
     return { projection: next, transition, replayed: false };
   }
   const nextActivationId = requireNextActivationId(input.identities, fixedEdge);
-  reserve(nextActivationId, "activation id");
+  reserve(nextActivationId, 'activation id');
   next.activations[input.activation_id] = {
     ...activation,
-    status: "completed",
+    status: 'completed',
     completed_transition_id: input.transition_id,
   };
   createNextActivation(
@@ -1088,7 +1088,7 @@ export function applyHumanApproval(
   );
   const transition: GraphApprovedTransition = {
     ...transitionCommon(input, node, fingerprint, descriptor),
-    outcome: "approved",
+    outcome: 'approved',
     selected_edge_ids: [fixedEdge.id],
     created_activation_ids: [nextActivationId],
     evidence_refs: nonEmptyEvidence(decision.evidence_refs),
@@ -1107,14 +1107,14 @@ export function resolveJoin(
   input: ResolveJoinInput,
 ): SchedulerApplyResult {
   fenceDescriptor(descriptor, projection);
-  requireStableId(input.activation_id, "activation id");
+  requireStableId(input.activation_id, 'activation id');
   const activation = requireActivation(projection, input.activation_id);
   const node = requireNode(descriptor, activation.node_id);
-  if (node.kind !== "join")
-    fail("join_not_found", `node ${node.id} is not a join node`);
+  if (node.kind !== 'join')
+    fail('join_not_found', `node ${node.id} is not a join node`);
   validateIdentities(descriptor, node, input.identities);
   const fingerprint = computeFingerprint(
-    "resolve_join",
+    'resolve_join',
     descriptor.descriptor_hash,
     {
       activation_id: input.activation_id,
@@ -1129,36 +1129,36 @@ export function resolveJoin(
   const cohortId = activation.cohort_id;
   if (cohortId === undefined)
     fail(
-      "join_not_ready",
+      'join_not_ready',
       `join activation ${input.activation_id} has no cohort`,
     );
   const cohort = own(projection.cohorts, cohortId);
   if (cohort === undefined)
-    fail("join_owner_missing", `cohort ${cohortId} not found`);
+    fail('join_owner_missing', `cohort ${cohortId} not found`);
   if (cohort.owner_join_id !== node.id)
     fail(
-      "join_owner_mismatch",
+      'join_owner_mismatch',
       `cohort ${cohortId} is owned by join ${cohort.owner_join_id}`,
     );
   if (cohort.consumed)
-    fail("join_already_consumed", `cohort ${cohortId} was already consumed`);
-  if (activation.status !== "ready")
+    fail('join_already_consumed', `cohort ${cohortId} was already consumed`);
+  if (activation.status !== 'ready')
     fail(
-      "join_not_ready",
+      'join_not_ready',
       `join activation ${input.activation_id} is not ready`,
     );
   const tokens = cohort.expected_branch_token_ids.map((tokenId) =>
     own(projection.branch_tokens, tokenId),
   );
-  if (tokens.some((token) => token === undefined || token.status !== "arrived"))
+  if (tokens.some((token) => token === undefined || token.status !== 'arrived'))
     fail(
-      "join_not_ready",
+      'join_not_ready',
       `join ${node.id} does not have all branch tokens arrived`,
     );
   const outgoing = outgoingEdgesOf(descriptor, node.id);
-  if (outgoing.length !== 1 || outgoing[0].kind !== "fixed")
+  if (outgoing.length !== 1 || outgoing[0].kind !== 'fixed')
     fail(
-      "invalid_join_edge",
+      'invalid_join_edge',
       `join ${node.id} must have exactly one fixed outgoing edge`,
     );
   const next = cloneProjection(projection);
@@ -1167,13 +1167,13 @@ export function resolveJoin(
     input.identities,
     outgoing[0],
   );
-  reserve(nextActivationId, "activation id");
+  reserve(nextActivationId, 'activation id');
   for (const tokenId of cohort.expected_branch_token_ids) {
     const token = own(next.branch_tokens, tokenId);
     if (token !== undefined)
       next.branch_tokens[tokenId] = {
         ...token,
-        status: "consumed",
+        status: 'consumed',
         current_activation_id: undefined,
         consumed_by_activation_id: activation.activation_id,
       };
@@ -1181,7 +1181,7 @@ export function resolveJoin(
   next.cohorts[cohortId] = { ...cohort, consumed: true };
   next.activations[input.activation_id] = {
     ...activation,
-    status: "completed",
+    status: 'completed',
     completed_transition_id: input.transition_id,
   };
   createNextActivation(
@@ -1193,7 +1193,7 @@ export function resolveJoin(
   );
   const transition: GraphJoinResolvedTransition = {
     ...transitionCommon(input, node, fingerprint, descriptor),
-    outcome: "join_resolved",
+    outcome: 'join_resolved',
     selected_edge_ids: [outgoing[0].id],
     created_activation_ids: [nextActivationId],
     evidence_refs: [],
@@ -1208,8 +1208,8 @@ export function traversalCounterKey(
   activation: GraphActivation,
   edge: GraphEdge,
 ): string {
-  requireStableId(activation.traversal_owner_id, "traversal owner id");
-  requireStableId(edge.id, "edge id");
+  requireStableId(activation.traversal_owner_id, 'traversal owner id');
+  requireStableId(edge.id, 'edge id');
   return canonicalJson([activation.traversal_owner_id, edge.id]);
 }
 
@@ -1222,7 +1222,7 @@ export function listReadyExecutableActivations(
   return readyActivations(
     descriptor,
     projection,
-    (node) => node.kind === "agent" || node.kind === "command",
+    (node) => node.kind === 'agent' || node.kind === 'command',
   );
 }
 
@@ -1235,7 +1235,7 @@ export function listReadyApprovalActivations(
   return readyActivations(
     descriptor,
     projection,
-    (node) => node.kind === "human-approval",
+    (node) => node.kind === 'human-approval',
   );
 }
 
@@ -1248,7 +1248,7 @@ export function listReadyJoinActivations(
   return readyActivations(
     descriptor,
     projection,
-    (node) => node.kind === "join",
+    (node) => node.kind === 'join',
   );
 }
 
@@ -1259,7 +1259,7 @@ function readyActivations(
 ): GraphActivation[] {
   const result: GraphActivation[] = [];
   for (const activation of Object.values(projection.activations)) {
-    if (activation.status !== "ready") continue;
+    if (activation.status !== 'ready') continue;
     const node = nodeById(descriptor, activation.node_id);
     if (node !== undefined && predicate(node)) result.push(activation);
   }
@@ -1279,7 +1279,7 @@ export function isGraphSucceeded(
   const terminalVerified = projection.terminal_verification_activation_ids.some(
     (id) => {
       const activation = own(projection.activations, id);
-      if (activation === undefined || activation.status !== "completed")
+      if (activation === undefined || activation.status !== 'completed')
         return false;
       const transition = activation.completed_transition_id
         ? own(
@@ -1288,14 +1288,14 @@ export function isGraphSucceeded(
           )
         : undefined;
       return (
-        transition?.outcome === "succeeded" &&
+        transition?.outcome === 'succeeded' &&
         transition.evidence_refs.length > 0
       );
     },
   );
   if (!terminalVerified) return false;
   const allCompleted = Object.values(projection.activations).every(
-    (activation) => activation.status === "completed",
+    (activation) => activation.status === 'completed',
   );
   if (!allCompleted) return false;
   return Object.values(projection.cohorts).every((cohort) => cohort.consumed);

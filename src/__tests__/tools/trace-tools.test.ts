@@ -293,11 +293,23 @@ describe('trace-tools', () => {
 
     it('surfaces dirty-worktree stops from abnormal termination (issue #3663)', async () => {
       appendReplayEvent(testDir, 'dirty-sum', {
-        agent: 'ab12345', event: 'agent_stop', agent_type: 'executor', success: false,
-        dirty_worktree: { tracked: 1, untracked: 2, ignored: 0, worktree_root: '/tmp/wt-1', truncated: false },
+        agent: 'ab12345',
+        event: 'agent_stop',
+        agent_type: 'executor',
+        success: false,
+        dirty_worktree: {
+          tracked: 1,
+          untracked: 2,
+          ignored: 0,
+          worktree_root: '/tmp/wt-1',
+          truncated: false,
+        },
       });
 
-      const result = await traceSummaryTool.handler({ sessionId: 'dirty-sum', workingDirectory: testDir });
+      const result = await traceSummaryTool.handler({
+        sessionId: 'dirty-sum',
+        workingDirectory: testDir,
+      });
       const text = result.content[0].text;
 
       expect(text).toContain('1 failed');

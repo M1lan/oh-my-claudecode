@@ -26,7 +26,11 @@ export function sha256Hex(text: string): string {
 }
 
 /** Digest of one section, binding id + version + normalized body. */
-export function digestSection(id: string, version: number, body: string): string {
+export function digestSection(
+  id: string,
+  version: number,
+  body: string,
+): string {
   return sha256Hex(normalizePromptText(`${id}@${version}\n${body}`));
 }
 

@@ -10,37 +10,37 @@
  * BY DOCUMENTED CONTRACT; callers that need a closed error boundary wrap them.
  */
 
-import { z } from "zod";
+import { z } from 'zod';
 
 import type {
   GraphApprovalDecision,
   GraphDescriptor,
   GraphEvidenceReference,
   GraphNodeResult,
-} from "./types.js";
+} from './types.js';
 
 /** Stable identifier: 1–128 chars, ASCII alphanumeric first, then `[A-Za-z0-9._:-]`. */
 export const idSchema = z
   .string()
   .min(1)
   .max(128)
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/, "must be a stable identifier");
+  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]*$/, 'must be a stable identifier');
 
 /** Long-form text bound (goal, instructions, command, prompt). */
 export const textSchema = z.string().min(1).max(32_768);
 
 const sideEffectFreeSchema = z
-  .object({ policy: z.literal("side_effect_free") })
+  .object({ policy: z.literal('side_effect_free') })
   .strict();
 const idempotentSchema = z
   .object({
-    policy: z.literal("idempotent"),
+    policy: z.literal('idempotent'),
     idempotency_key_template: z.string().min(1).max(512),
   })
   .strict();
-const reconcileSchema = z.object({ policy: z.literal("reconcile") }).strict();
+const reconcileSchema = z.object({ policy: z.literal('reconcile') }).strict();
 
-const graphEffectPolicySchema = z.discriminatedUnion("policy", [
+const graphEffectPolicySchema = z.discriminatedUnion('policy', [
   sideEffectFreeSchema,
   idempotentSchema,
   reconcileSchema,
@@ -60,34 +60,34 @@ const executableNodeBase = {
 export const graphAgentNodeSchema = z
   .object({
     ...executableNodeBase,
-    kind: z.literal("agent"),
+    kind: z.literal('agent'),
     instructions: textSchema,
   })
   .strict();
 export const graphCommandNodeSchema = z
   .object({
     ...executableNodeBase,
-    kind: z.literal("command"),
+    kind: z.literal('command'),
     command: textSchema,
   })
   .strict();
 export const graphHumanApprovalNodeSchema = z
   .object({
     ...nodeBase,
-    kind: z.literal("human-approval"),
+    kind: z.literal('human-approval'),
     prompt: textSchema,
   })
   .strict();
 export const graphJoinNodeSchema = z
   .object({
     ...nodeBase,
-    kind: z.literal("join"),
+    kind: z.literal('join'),
     fan_out_node_id: idSchema,
     input_branch_ids: z.array(idSchema).min(2).max(64),
   })
   .strict();
 
-export const graphNodeSchema = z.discriminatedUnion("kind", [
+export const graphNodeSchema = z.discriminatedUnion('kind', [
   graphAgentNodeSchema,
   graphCommandNodeSchema,
   graphHumanApprovalNodeSchema,
@@ -96,15 +96,15 @@ export const graphNodeSchema = z.discriminatedUnion("kind", [
 
 const edgeBase = { id: idSchema, from: idSchema, to: idSchema };
 export const graphFixedEdgeSchema = z
-  .object({ ...edgeBase, kind: z.literal("fixed") })
+  .object({ ...edgeBase, kind: z.literal('fixed') })
   .strict();
 export const graphConditionalEdgeSchema = z
-  .object({ ...edgeBase, kind: z.literal("conditional"), route: idSchema })
+  .object({ ...edgeBase, kind: z.literal('conditional'), route: idSchema })
   .strict();
 export const graphFanOutEdgeSchema = z
   .object({
     ...edgeBase,
-    kind: z.literal("fan_out"),
+    kind: z.literal('fan_out'),
     branch_id: idSchema,
     owner_join_id: idSchema,
   })
@@ -112,13 +112,13 @@ export const graphFanOutEdgeSchema = z
 export const graphBackEdgeSchema = z
   .object({
     ...edgeBase,
-    kind: z.literal("back_edge"),
+    kind: z.literal('back_edge'),
     route: idSchema,
     max_traversals: z.number().int().min(1).max(100),
   })
   .strict();
 
-export const graphEdgeSchema = z.discriminatedUnion("kind", [
+export const graphEdgeSchema = z.discriminatedUnion('kind', [
   graphFixedEdgeSchema,
   graphConditionalEdgeSchema,
   graphFanOutEdgeSchema,
@@ -145,7 +145,7 @@ export const graphDescriptorSchema = z
 
 export const graphEvidenceReferenceSchema = z
   .object({
-    kind: z.enum(["file", "command", "test", "human", "url"]),
+    kind: z.enum(['file', 'command', 'test', 'human', 'url']),
     ref: z.string().min(1).max(2_048),
     summary: z.string().max(2_048).optional(),
   })
@@ -153,7 +153,7 @@ export const graphEvidenceReferenceSchema = z
 
 export const graphNodeResultSchema = z
   .object({
-    outcome: z.enum(["succeeded", "failed"]),
+    outcome: z.enum(['succeeded', 'failed']),
     attempt_id: idSchema,
     route: idSchema.optional(),
     output_summary: z.string().max(8_192).optional(),
@@ -164,7 +164,7 @@ export const graphNodeResultSchema = z
 
 export const graphApprovalDecisionSchema = z
   .object({
-    decision: z.enum(["approved", "denied"]),
+    decision: z.enum(['approved', 'denied']),
     evidence_refs: z.array(graphEvidenceReferenceSchema).max(64),
     output_summary: z.string().max(8_192).optional(),
   })
@@ -200,5 +200,5 @@ export function parseGraphEvidenceReference(
  * values, entry identity keys/values, and identity-map keys.
  */
 export function isValidStableId(value: unknown): boolean {
-  return typeof value === "string" && idSchema.safeParse(value).success;
+  return typeof value === 'string' && idSchema.safeParse(value).success;
 }

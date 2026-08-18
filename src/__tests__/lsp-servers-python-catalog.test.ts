@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 const inheritedPythonLsp = process.env.OMC_PYTHON_LSP;
 
@@ -6,8 +14,8 @@ async function renderServerStatus(installedCommand?: string): Promise<string> {
   vi.resetModules();
   vi.doMock('child_process', () => ({
     spawnSync: vi.fn((_command: string, args: string[]) => ({
-      status: args[0] === installedCommand ? 0 : 1
-    }))
+      status: args[0] === installedCommand ? 0 : 1,
+    })),
   }));
 
   const { lspServersTool } = await import('../tools/lsp-tools.js');
@@ -40,7 +48,9 @@ describe('Python LSP catalog selection', () => {
     const text = await renderServerStatus();
 
     expect(text).toContain('### Not Installed:');
-    expect(text).toContain('- Python Language Server (basedpyright) (basedpyright-langserver)');
+    expect(text).toContain(
+      '- Python Language Server (basedpyright) (basedpyright-langserver)',
+    );
     expect(text).toContain('Extensions: .py, .pyw');
     expect(text).toContain('Install: uv tool install basedpyright');
     expect(text).not.toContain('Python Language Server (ty)');
@@ -62,7 +72,9 @@ describe('Python LSP catalog selection', () => {
 
     expect(text).toContain('### Not Installed:');
     expect(text).toContain('- Python Language Server (ty) (ty)');
-    expect(text).toContain('Install: Install ty from https://github.com/astral-sh/ty');
+    expect(text).toContain(
+      'Install: Install ty from https://github.com/astral-sh/ty',
+    );
     expect(text).not.toContain('Python Language Server (basedpyright)');
     expect(text).not.toContain('Install: uv tool install basedpyright');
   });

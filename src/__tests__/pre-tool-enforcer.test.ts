@@ -2992,15 +2992,23 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
 
     expect(output.continue).toBe(true);
     expect(hookOutput.permissionDecision).toBe('deny');
-    expect(hookOutput.permissionDecisionReason as string).toContain('[SKILL vs AGENT]');
-    expect(hookOutput.permissionDecisionReason as string).toContain('ai-slop-cleaner');
+    expect(hookOutput.permissionDecisionReason as string).toContain(
+      '[SKILL vs AGENT]',
+    );
+    expect(hookOutput.permissionDecisionReason as string).toContain(
+      'ai-slop-cleaner',
+    );
     // Names the correct tool and identifier — no generic "Agent type not found".
     expect(hookOutput.permissionDecisionReason as string).toContain(
       'Skill(skill="oh-my-claudecode:ai-slop-cleaner")',
     );
     // Forbids closest-match substitution (code-simplifier is the attractive wrong answer).
-    expect(hookOutput.permissionDecisionReason as string).toContain('closest match');
-    expect(hookOutput.permissionDecisionReason as string).not.toContain('code-simplifier');
+    expect(hookOutput.permissionDecisionReason as string).toContain(
+      'closest match',
+    );
+    expect(hookOutput.permissionDecisionReason as string).not.toContain(
+      'code-simplifier',
+    );
   });
 
   it('denies Agent call with a bare bundled skill identifier and suggests the canonical namespaced identifier', () => {
@@ -3010,7 +3018,9 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     expect(hookOutput.permissionDecision).toBe('deny');
     // Recovery must be unambiguous: always the plugin-namespaced form, never a
     // bare skill name that could resolve to a different project/user skill.
-    expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:ai-slop-cleaner")');
+    expect(denyReason(output)).toContain(
+      'Skill(skill="oh-my-claudecode:ai-slop-cleaner")',
+    );
     expect(denyReason(output)).not.toContain('Skill(skill="ai-slop-cleaner")');
   });
 
@@ -3019,11 +3029,15 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
 
     expect(hookOutput.permissionDecision).toBe('deny');
-    expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:ai-slop-cleaner")');
+    expect(denyReason(output)).toContain(
+      'Skill(skill="oh-my-claudecode:ai-slop-cleaner")',
+    );
   });
 
   it('denies skill-as-agent even when an explicit model is present (guard precedes model routing)', () => {
-    const output = runTask('oh-my-claudecode:ai-slop-cleaner', 'Task', { model: 'sonnet' });
+    const output = runTask('oh-my-claudecode:ai-slop-cleaner', 'Task', {
+      model: 'sonnet',
+    });
     const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
 
     expect(hookOutput.permissionDecision).toBe('deny');
@@ -3031,7 +3045,12 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
   });
 
   it('denies skill-as-agent even under force-inherit routing', () => {
-    const output = runTask('oh-my-claudecode:ai-slop-cleaner', 'Task', {}, { OMC_ROUTING_FORCE_INHERIT: 'true' });
+    const output = runTask(
+      'oh-my-claudecode:ai-slop-cleaner',
+      'Task',
+      {},
+      { OMC_ROUTING_FORCE_INHERIT: 'true' },
+    );
     const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
 
     expect(hookOutput.permissionDecision).toBe('deny');
@@ -3044,7 +3063,9 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
 
     expect(hookOutput.permissionDecision).toBe('deny');
     expect(denyReason(output)).toContain('alias of "cancel"');
-    expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:cancel")');
+    expect(denyReason(output)).toContain(
+      'Skill(skill="oh-my-claudecode:cancel")',
+    );
   });
 
   it('recognizes the renamed plan skill dir through its registered name omc-plan', () => {
@@ -3053,7 +3074,9 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
 
     expect(hookOutput.permissionDecision).toBe('deny');
     expect(denyReason(output)).toContain('omc-plan');
-    expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
+    expect(denyReason(output)).toContain(
+      'Skill(skill="oh-my-claudecode:omc-plan")',
+    );
   });
   it('resolves the learner directory/canonical collision to skillify (canonical precedence over directory shortcut)', () => {
     // skills/learner/SKILL.md exists, but the canonical registry claims
@@ -3065,20 +3088,34 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     for (const output of [namespaced, bare, owner]) {
       const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
       expect(hookOutput.permissionDecision).toBe('deny');
-      expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:skillify")');
+      expect(denyReason(output)).toContain(
+        'Skill(skill="oh-my-claudecode:skillify")',
+      );
     }
-    expect(denyReason(namespaced)).not.toContain('Skill(skill="oh-my-claudecode:learner")');
-    expect(denyReason(bare)).not.toContain('Skill(skill="oh-my-claudecode:learner")');
+    expect(denyReason(namespaced)).not.toContain(
+      'Skill(skill="oh-my-claudecode:learner")',
+    );
+    expect(denyReason(bare)).not.toContain(
+      'Skill(skill="oh-my-claudecode:learner")',
+    );
   });
 
   it('resolves the understanding-gate and psm alias claims to their canonical owners', () => {
     const gate = runTask('oh-my-claudecode:understanding-gate');
     const psm = runTask('oh-my-claudecode:psm');
 
-    expect((gate.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-    expect(denyReason(gate)).toContain('Skill(skill="oh-my-claudecode:merge-readiness")');
-    expect((psm.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-    expect(denyReason(psm)).toContain('Skill(skill="oh-my-claudecode:project-session-manager")');
+    expect(
+      (gate.hookSpecificOutput as Record<string, unknown>).permissionDecision,
+    ).toBe('deny');
+    expect(denyReason(gate)).toContain(
+      'Skill(skill="oh-my-claudecode:merge-readiness")',
+    );
+    expect(
+      (psm.hookSpecificOutput as Record<string, unknown>).permissionDecision,
+    ).toBe('deny');
+    expect(denyReason(psm)).toContain(
+      'Skill(skill="oh-my-claudecode:project-session-manager")',
+    );
   });
 
   it('does NOT deny a real agent identifier (code-simplifier passes through)', () => {
@@ -3112,8 +3149,14 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     const pluginRoot = join(tempDir, 'plugin');
     mkdirSync(join(pluginRoot, 'agents'), { recursive: true });
     mkdirSync(join(pluginRoot, 'skills', 'wiki'), { recursive: true });
-    writeFileSync(join(pluginRoot, 'agents', 'wiki.md'), '---\nname: wiki\n---\nagent body\n');
-    writeFileSync(join(pluginRoot, 'skills', 'wiki', 'SKILL.md'), '---\nname: wiki\n---\nskill body\n');
+    writeFileSync(
+      join(pluginRoot, 'agents', 'wiki.md'),
+      '---\nname: wiki\n---\nagent body\n',
+    );
+    writeFileSync(
+      join(pluginRoot, 'skills', 'wiki', 'SKILL.md'),
+      '---\nname: wiki\n---\nskill body\n',
+    );
 
     const output = runPreToolEnforcerWithEnv(
       {
@@ -3138,7 +3181,10 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
 
   it('lets a project agent with the same name as a skill win the collision (bare call)', () => {
     mkdirSync(join(tempDir, '.claude', 'agents'), { recursive: true });
-    writeFileSync(join(tempDir, '.claude', 'agents', 'wiki.md'), '---\nname: wiki\n---\nagent body\n');
+    writeFileSync(
+      join(tempDir, '.claude', 'agents', 'wiki.md'),
+      '---\nname: wiki\n---\nagent body\n',
+    );
 
     const output = runTask('wiki');
     const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
@@ -3154,24 +3200,38 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
 
     expect(hookOutput.permissionDecision).toBe('deny');
-    expect(denyReason(output)).toContain('Skill(skill="oh-my-claudecode:wiki")');
+    expect(denyReason(output)).toContain(
+      'Skill(skill="oh-my-claudecode:wiki")',
+    );
   });
 
   it('does NOT deny non-string or empty subagent_type values', () => {
     const numeric = runTask(42 as unknown as string);
     const empty = runTask('   ');
-    expect(numeric.hookSpecificOutput as Record<string, unknown>).not.toHaveProperty('permissionDecision');
-    expect(empty.hookSpecificOutput as Record<string, unknown>).not.toHaveProperty('permissionDecision');
+    expect(
+      numeric.hookSpecificOutput as Record<string, unknown>,
+    ).not.toHaveProperty('permissionDecision');
+    expect(
+      empty.hookSpecificOutput as Record<string, unknown>,
+    ).not.toHaveProperty('permissionDecision');
   });
   it.each(['remember', 'verify', 'debug'])(
     'does NOT suggest the runtime-hidden %s skill for a non-skininthegamebros user (USER_TYPE != ant)',
     (hiddenSkill) => {
-      const namespaced = runTask(`oh-my-claudecode:${hiddenSkill}`, 'Task', {}, { USER_TYPE: '' });
+      const namespaced = runTask(
+        `oh-my-claudecode:${hiddenSkill}`,
+        'Task',
+        {},
+        { USER_TYPE: '' },
+      );
       const bare = runTask(hiddenSkill, 'Task', {}, { USER_TYPE: '' });
 
       for (const output of [namespaced, bare]) {
         expect(output.continue).toBe(true);
-        expect((output.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+        expect(
+          (output.hookSpecificOutput as Record<string, unknown>)
+            .permissionDecision,
+        ).toBeUndefined();
         expect(JSON.stringify(output)).not.toContain('[SKILL vs AGENT]');
       }
     },
@@ -3180,21 +3240,45 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
   it.each(['remember', 'verify', 'debug'])(
     'denies the %s skill for a skininthegamebros user (USER_TYPE=ant)',
     (hiddenSkill) => {
-      const output = runTask(`oh-my-claudecode:${hiddenSkill}`, 'Task', {}, { USER_TYPE: 'ant' });
+      const output = runTask(
+        `oh-my-claudecode:${hiddenSkill}`,
+        'Task',
+        {},
+        { USER_TYPE: 'ant' },
+      );
       const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
 
       expect(hookOutput.permissionDecision).toBe('deny');
-      expect(denyReason(output)).toContain(`Skill(skill="oh-my-claudecode:${hiddenSkill}")`);
+      expect(denyReason(output)).toContain(
+        `Skill(skill="oh-my-claudecode:${hiddenSkill}")`,
+      );
     },
   );
 
   it('still denies visible skills for a non-skininthegamebros user while hidden ones pass through', () => {
-    const visible = runTask('oh-my-claudecode:plan', 'Task', {}, { USER_TYPE: '' });
-    const hidden = runTask('oh-my-claudecode:remember', 'Task', {}, { USER_TYPE: '' });
+    const visible = runTask(
+      'oh-my-claudecode:plan',
+      'Task',
+      {},
+      { USER_TYPE: '' },
+    );
+    const hidden = runTask(
+      'oh-my-claudecode:remember',
+      'Task',
+      {},
+      { USER_TYPE: '' },
+    );
 
-    expect((visible.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-    expect(denyReason(visible)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
-    expect((hidden.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+    expect(
+      (visible.hookSpecificOutput as Record<string, unknown>)
+        .permissionDecision,
+    ).toBe('deny');
+    expect(denyReason(visible)).toContain(
+      'Skill(skill="oh-my-claudecode:omc-plan")',
+    );
+    expect(
+      (hidden.hookSpecificOutput as Record<string, unknown>).permissionDecision,
+    ).toBeUndefined();
   });
   describe('case-insensitive identifier folding (Windows/macOS semantics, issue #3667)', () => {
     it('does NOT suggest a runtime-hidden skill when a case-variant identifier resolves its directory (case-insensitive-faithful harness)', () => {
@@ -3215,7 +3299,11 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
             cwd: tempDir,
             session_id: 'session-3667-ci',
             transcript_path: '',
-            toolInput: { subagent_type: subagentType, description: 'd', prompt: 'p' },
+            toolInput: {
+              subagent_type: subagentType,
+              description: 'd',
+              prompt: 'p',
+            },
           },
           { CLAUDE_PLUGIN_ROOT: pluginRoot, USER_TYPE: '', ...env },
         );
@@ -3224,12 +3312,22 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
       const nonAntLower = run('oh-my-claudecode:remember', {});
       const ant = run('oh-my-claudecode:Remember', { USER_TYPE: 'ant' });
 
-      expect((nonAnt.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (nonAnt.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBeUndefined();
       expect(JSON.stringify(nonAnt)).not.toContain('[SKILL vs AGENT]');
-      expect((nonAntLower.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (nonAntLower.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBeUndefined();
       // Canonical lowercase output spelling is preserved for the entitled user.
-      expect((ant.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(ant)).toContain('Skill(skill="oh-my-claudecode:remember")');
+      expect(
+        (ant.hookSpecificOutput as Record<string, unknown>).permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(ant)).toContain(
+        'Skill(skill="oh-my-claudecode:remember")',
+      );
     });
 
     it.each([
@@ -3238,36 +3336,75 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
       ['oh-my-claudecode:AI-Slop-Cleaner', 'oh-my-claudecode:ai-slop-cleaner'],
       ['oh-my-claudecode:Cancel-Ralph', 'oh-my-claudecode:cancel'],
       ['oh-my-claudecode:PSM', 'oh-my-claudecode:project-session-manager'],
-    ])('denies mixed-case %s with the canonical namespaced identifier %s', (input, expected) => {
-      const output = runTask(input, 'Task', {}, { USER_TYPE: '' });
-      const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
-      expect(hookOutput.permissionDecision).toBe('deny');
-      expect(denyReason(output)).toContain(`Skill(skill="${expected}")`);
-    });
+    ])(
+      'denies mixed-case %s with the canonical namespaced identifier %s',
+      (input, expected) => {
+        const output = runTask(input, 'Task', {}, { USER_TYPE: '' });
+        const hookOutput = output.hookSpecificOutput as Record<string, unknown>;
+        expect(hookOutput.permissionDecision).toBe('deny');
+        expect(denyReason(output)).toContain(`Skill(skill="${expected}")`);
+      },
+    );
 
     it.each(['Remember', 'VERIFY', 'Debug'])(
       'does NOT suggest the mixed-case runtime-hidden %s skill for a non-ant user',
       (hiddenSkill) => {
-        const output = runTask(`oh-my-claudecode:${hiddenSkill}`, 'Task', {}, { USER_TYPE: '' });
-        expect((output.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+        const output = runTask(
+          `oh-my-claudecode:${hiddenSkill}`,
+          'Task',
+          {},
+          { USER_TYPE: '' },
+        );
+        expect(
+          (output.hookSpecificOutput as Record<string, unknown>)
+            .permissionDecision,
+        ).toBeUndefined();
         expect(JSON.stringify(output)).not.toContain('[SKILL vs AGENT]');
       },
     );
 
     it('recognizes case-variant namespace aliases (OMC: / OH-MY-CLAUDECODE:)', () => {
-      const omcUpper = runTask('OMC:ai-slop-cleaner', 'Task', {}, { USER_TYPE: '' });
-      const fullUpper = runTask('OH-MY-CLAUDECODE:Remember', 'Task', {}, { USER_TYPE: '' });
+      const omcUpper = runTask(
+        'OMC:ai-slop-cleaner',
+        'Task',
+        {},
+        { USER_TYPE: '' },
+      );
+      const fullUpper = runTask(
+        'OH-MY-CLAUDECODE:Remember',
+        'Task',
+        {},
+        { USER_TYPE: '' },
+      );
 
-      expect((omcUpper.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(omcUpper)).toContain('Skill(skill="oh-my-claudecode:ai-slop-cleaner")');
+      expect(
+        (omcUpper.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(omcUpper)).toContain(
+        'Skill(skill="oh-my-claudecode:ai-slop-cleaner")',
+      );
       // Hidden skill with a case-variant full namespace still fails closed.
-      expect((fullUpper.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (fullUpper.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBeUndefined();
     });
 
     it('applies case folding before explicit-model and force-inherit routing', () => {
-      const withModel = runTask('oh-my-claudecode:Plan', 'Task', { model: 'sonnet' }, { USER_TYPE: '' });
-      expect((withModel.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(withModel)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
+      const withModel = runTask(
+        'oh-my-claudecode:Plan',
+        'Task',
+        { model: 'sonnet' },
+        { USER_TYPE: '' },
+      );
+      expect(
+        (withModel.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(withModel)).toContain(
+        'Skill(skill="oh-my-claudecode:omc-plan")',
+      );
 
       const forceInheritVisible = runTask(
         'oh-my-claudecode:Plan',
@@ -3275,8 +3412,13 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
         {},
         { USER_TYPE: '', OMC_ROUTING_FORCE_INHERIT: 'true' },
       );
-      expect((forceInheritVisible.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(forceInheritVisible)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
+      expect(
+        (forceInheritVisible.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(forceInheritVisible)).toContain(
+        'Skill(skill="oh-my-claudecode:omc-plan")',
+      );
 
       const forceInheritHidden = runTask(
         'oh-my-claudecode:Remember',
@@ -3284,7 +3426,10 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
         {},
         { USER_TYPE: '', OMC_ROUTING_FORCE_INHERIT: 'true' },
       );
-      expect((forceInheritHidden.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (forceInheritHidden.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBeUndefined();
     });
   });
   describe('native/session-defined bare agent boundary (issue #3667 P1)', () => {
@@ -3292,21 +3437,41 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
       'does NOT deny the bare %s identifier (native Claude agents are not file-discoverable)',
       (nativeAgent) => {
         const output = runTask(nativeAgent, 'Task', {}, { USER_TYPE: '' });
-        expect((output.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+        expect(
+          (output.hookSpecificOutput as Record<string, unknown>)
+            .permissionDecision,
+        ).toBeUndefined();
         expect(JSON.stringify(output)).not.toContain('[SKILL vs AGENT]');
       },
     );
 
     it('denies the plugin-namespaced plan identifier while preserving bare plan', () => {
-      const namespaced = runTask('oh-my-claudecode:plan', 'Task', {}, { USER_TYPE: '' });
+      const namespaced = runTask(
+        'oh-my-claudecode:plan',
+        'Task',
+        {},
+        { USER_TYPE: '' },
+      );
       const omcAlias = runTask('omc:plan', 'Task', {}, { USER_TYPE: '' });
       const bare = runTask('plan', 'Task', {}, { USER_TYPE: '' });
 
-      expect((namespaced.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(namespaced)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
-      expect((omcAlias.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBe('deny');
-      expect(denyReason(omcAlias)).toContain('Skill(skill="oh-my-claudecode:omc-plan")');
-      expect((bare.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (namespaced.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(namespaced)).toContain(
+        'Skill(skill="oh-my-claudecode:omc-plan")',
+      );
+      expect(
+        (omcAlias.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBe('deny');
+      expect(denyReason(omcAlias)).toContain(
+        'Skill(skill="oh-my-claudecode:omc-plan")',
+      );
+      expect(
+        (bare.hookSpecificOutput as Record<string, unknown>).permissionDecision,
+      ).toBeUndefined();
     });
 
     it('still denies bare canonical-registry skill claims (omc-plan, learner, ai-slop-cleaner)', () => {
@@ -3325,9 +3490,15 @@ describe('pre-tool-enforcer skill vs agent namespace guard (issue #3667)', () =>
     it('keeps plugin/project agent collisions winning over skills for bare names', () => {
       // Project agent named `wiki` (also a canonical skill claim) must win.
       mkdirSync(join(tempDir, '.claude', 'agents'), { recursive: true });
-      writeFileSync(join(tempDir, '.claude', 'agents', 'wiki.md'), '---\nname: wiki\n---\nagent body\n');
+      writeFileSync(
+        join(tempDir, '.claude', 'agents', 'wiki.md'),
+        '---\nname: wiki\n---\nagent body\n',
+      );
       const output = runTask('wiki', 'Task', {}, { USER_TYPE: '' });
-      expect((output.hookSpecificOutput as Record<string, unknown>).permissionDecision).toBeUndefined();
+      expect(
+        (output.hookSpecificOutput as Record<string, unknown>)
+          .permissionDecision,
+      ).toBeUndefined();
       expect(JSON.stringify(output)).not.toContain('[SKILL vs AGENT]');
     });
   });
@@ -3337,7 +3508,9 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-session-tracking-'));
+    tempDir = mkdtempSync(
+      join(tmpdir(), 'pre-tool-enforcer-session-tracking-'),
+    );
   });
 
   afterEach(() => {
@@ -3358,33 +3531,66 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
 
   it('reports running agents from the session-scoped tracking file', () => {
     const sessionId = 'session-3732-scoped';
-    writeJson(join(tempDir, '.omc', 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: [
-        { agent_id: 'a1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-        { agent_id: 'a2', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-      ],
-      total_spawned: 203,
-      total_completed: 185,
-      total_failed: 0,
-      last_updated: new Date().toISOString(),
-    });
+    writeJson(
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: [
+          {
+            agent_id: 'a1',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+          {
+            agent_id: 'a2',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+        ],
+        total_spawned: 203,
+        total_completed: 185,
+        total_failed: 0,
+        last_updated: new Date().toISOString(),
+      },
+    );
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 2');
   });
 
   it('prefers session-scoped state over a stale legacy file', () => {
     const sessionId = 'session-3732-precedence';
-    writeJson(join(tempDir, '.omc', 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: [
-        { agent_id: 'a1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-      ],
-      total_spawned: 203,
-      total_completed: 185,
-      total_failed: 0,
-      last_updated: new Date().toISOString(),
-    });
+    writeJson(
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: [
+          {
+            agent_id: 'a1',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+        ],
+        total_spawned: 203,
+        total_completed: 185,
+        total_failed: 0,
+        last_updated: new Date().toISOString(),
+      },
+    );
     // Stale legacy file with contradictory counters (the 160-vs-203 symptom).
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking.json'), {
       agents: [],
@@ -3395,7 +3601,8 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     });
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
 
@@ -3403,7 +3610,11 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     const sessionId = 'session-3732-legacy';
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking.json'), {
       agents: [
-        { agent_id: 'b1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'b1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 7,
       total_completed: 2,
@@ -3412,7 +3623,8 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     });
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
   it('falls back to the canonical resolver legacy name when no session-scoped or plain legacy file exists', () => {
@@ -3423,7 +3635,11 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     // resolveSessionStatePathsForHook and honor this name too.
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking-state.json'), {
       agents: [
-        { agent_id: 'c1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'c1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 11,
       total_completed: 10,
@@ -3432,23 +3648,42 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     });
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
 
   it('resolves the session-scoped tracking read through OMC_STATE_DIR centralized state', () => {
     const sessionId = 'session-3732-centralized';
-    const centralRoot = mkdtempSync(join(tmpdir(), 'pre-tool-enforcer-central-'));
-    const stateRoot = join(centralRoot, `${basename(tempDir)}-${createHash('sha256').update(tempDir).digest('hex').slice(0, 16)}`);
-    writeJson(join(stateRoot, 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: [
-        { agent_id: 'z1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-      ],
-      total_spawned: 4,
-      total_completed: 3,
-      total_failed: 0,
-      last_updated: new Date().toISOString(),
-    });
+    const centralRoot = mkdtempSync(
+      join(tmpdir(), 'pre-tool-enforcer-central-'),
+    );
+    const stateRoot = join(
+      centralRoot,
+      `${basename(tempDir)}-${createHash('sha256').update(tempDir).digest('hex').slice(0, 16)}`,
+    );
+    writeJson(
+      join(
+        stateRoot,
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: [
+          {
+            agent_id: 'z1',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+        ],
+        total_spawned: 4,
+        total_completed: 3,
+        total_failed: 0,
+        last_updated: new Date().toISOString(),
+      },
+    );
 
     const output = runPreToolEnforcerWithEnv(
       {
@@ -3464,7 +3699,8 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     );
     rmSync(centralRoot, { recursive: true, force: true });
 
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     // The canonical resolver (not manual join(stateDir, ...)) routes the read
     // into the centralized state root; a manual stateDir join would miss it.
     expect(advisory).toContain('Active agents: 1');
@@ -3476,24 +3712,40 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     // Under the pre-fix code the unvalidated id flowed into the inline
     // resolver fallback, join()-normalized `sessions/../evil` into `state/evil`,
     // and reported counters from the unrelated file below.
-    writeJson(join(tempDir, '.omc', 'state', 'evil', 'subagent-tracking-state.json'), {
-      agents: [
-        { agent_id: 'x1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-        { agent_id: 'x2', agent_type: 'oh-my-claudecode:executor', status: 'running' },
-      ],
-      total_spawned: 99,
-      last_updated: new Date().toISOString(),
-    });
+    writeJson(
+      join(tempDir, '.omc', 'state', 'evil', 'subagent-tracking-state.json'),
+      {
+        agents: [
+          {
+            agent_id: 'x1',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+          {
+            agent_id: 'x2',
+            agent_type: 'oh-my-claudecode:executor',
+            status: 'running',
+          },
+        ],
+        total_spawned: 99,
+        last_updated: new Date().toISOString(),
+      },
+    );
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking.json'), {
       agents: [
-        { agent_id: 'l1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'l1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 7,
       last_updated: new Date().toISOString(),
     });
 
     const output = spawnAdvisory('../evil');
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     // Safe legacy roots still work for invalid ids...
     expect(advisory).toContain('Active agents: 1');
     // ...but the escaped session-scoped file is never read.
@@ -3505,19 +3757,34 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     // Parseable but shape-corrupt: `agents` is not an array. This candidate
     // must be skipped locally so the legacy fallback still resolves and the
     // hook keeps running instead of aborting into suppressOutput.
-    writeJson(join(tempDir, '.omc', 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: 'corrupt',
-    });
+    writeJson(
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: 'corrupt',
+      },
+    );
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking.json'), {
       agents: [
-        { agent_id: 'l1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'l1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 7,
       last_updated: new Date().toISOString(),
     });
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
 
@@ -3527,19 +3794,34 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     // canonical legacy file for the SAME state name holds the valid data. The
     // resolver's effective read points at the (malformed) scoped file, so the
     // legacy file must still be probed explicitly instead of being skipped.
-    writeJson(join(tempDir, '.omc', 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: 'corrupt',
-    });
+    writeJson(
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: 'corrupt',
+      },
+    );
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking-state.json'), {
       agents: [
-        { agent_id: 'c1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'c1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 11,
       last_updated: new Date().toISOString(),
     });
 
     const output = spawnAdvisory(sessionId);
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
 
@@ -3550,7 +3832,11 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     // `-state.json` name and silently skipped it).
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking-state.json'), {
       agents: [
-        { agent_id: 'c1', agent_type: 'oh-my-claudecode:executor', status: 'running' },
+        {
+          agent_id: 'c1',
+          agent_type: 'oh-my-claudecode:executor',
+          status: 'running',
+        },
       ],
       total_spawned: 11,
       last_updated: new Date().toISOString(),
@@ -3564,15 +3850,26 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
         description: 'issue #3732 no-session regression',
       },
     });
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Active agents: 1');
   });
 
   it('survives all-malformed tracking candidates with a zero count', () => {
     const sessionId = 'session-3732-all-malformed';
-    writeJson(join(tempDir, '.omc', 'state', 'sessions', sessionId, 'subagent-tracking-state.json'), {
-      agents: 'corrupt',
-    });
+    writeJson(
+      join(
+        tempDir,
+        '.omc',
+        'state',
+        'sessions',
+        sessionId,
+        'subagent-tracking-state.json',
+      ),
+      {
+        agents: 'corrupt',
+      },
+    );
     writeJson(join(tempDir, '.omc', 'state', 'subagent-tracking.json'), {
       agents: { agent_id: 'nope' },
       total_spawned: 42,
@@ -3582,7 +3879,8 @@ describe('pre-tool-enforcer session-scoped agent tracking (issue #3732)', () => 
     expect(output.continue).toBe(true);
     // The spawn advisory still flows (no abort into the broad catch's
     // suppressOutput-only path), with a zero agent count.
-    const advisory = (output.hookSpecificOutput as Record<string, unknown>).additionalContext as string;
+    const advisory = (output.hookSpecificOutput as Record<string, unknown>)
+      .additionalContext as string;
     expect(advisory).toContain('Spawning agent:');
     expect(advisory).not.toContain('Active agents:');
   });

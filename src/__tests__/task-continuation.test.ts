@@ -79,25 +79,33 @@ describe('Task System Support', () => {
       const result = getTaskDirectory('session-123');
       // Reads the store Claude Code actually writes under the override, not
       // the session dir — otherwise successful writes look like they vanished.
-      expect(result).toBe(path.join(mockHomedir, '.claude', 'tasks', 'my-team-tasks'));
+      expect(result).toBe(
+        path.join(mockHomedir, '.claude', 'tasks', 'my-team-tasks'),
+      );
     });
 
     it('should fall back to the session id directory when the override is absent', () => {
       delete process.env.CLAUDE_CODE_TASK_LIST_ID;
       const result = getTaskDirectory('session-123');
-      expect(result).toBe(path.join(mockHomedir, '.claude', 'tasks', 'session-123'));
+      expect(result).toBe(
+        path.join(mockHomedir, '.claude', 'tasks', 'session-123'),
+      );
     });
 
     it('should reject a path-traversal override and fall back to the session id', () => {
       process.env.CLAUDE_CODE_TASK_LIST_ID = '../evil';
       const result = getTaskDirectory('session-123');
-      expect(result).toBe(path.join(mockHomedir, '.claude', 'tasks', 'session-123'));
+      expect(result).toBe(
+        path.join(mockHomedir, '.claude', 'tasks', 'session-123'),
+      );
     });
 
     it('should reject an empty override and fall back to the session id', () => {
       process.env.CLAUDE_CODE_TASK_LIST_ID = '   ';
       const result = getTaskDirectory('session-123');
-      expect(result).toBe(path.join(mockHomedir, '.claude', 'tasks', 'session-123'));
+      expect(result).toBe(
+        path.join(mockHomedir, '.claude', 'tasks', 'session-123'),
+      );
     });
 
     it('checkIncompleteTasks reads tasks written under the task-list override', () => {
@@ -105,25 +113,25 @@ describe('Task System Support', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true);
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' })
+        JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' }),
       );
 
       const result = checkIncompleteTasks('session-123');
       expect(result.count).toBe(1);
       // The read must have targeted the override dir, not the session dir.
       expect(vi.mocked(fs.readdirSync).mock.calls[0][0]).toBe(
-        path.join(mockHomedir, '.claude', 'tasks', 'my-team-tasks')
+        path.join(mockHomedir, '.claude', 'tasks', 'my-team-tasks'),
       );
     });
 
     it('checkIncompleteTasks returns zero when only a foreign store exists', () => {
       delete process.env.CLAUDE_CODE_TASK_LIST_ID;
       vi.mocked(fs.existsSync).mockImplementation(
-        (p: any) => typeof p === 'string' && p.includes('my-team-tasks')
+        (p: any) => typeof p === 'string' && p.includes('my-team-tasks'),
       );
       vi.mocked(fs.readdirSync).mockReturnValue(['1.json'] as any);
       vi.mocked(fs.readFileSync).mockReturnValue(
-        JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' })
+        JSON.stringify({ id: '1', subject: 'Task 1', status: 'pending' }),
       );
 
       // Tasks exist only under the team store; session dir is absent.

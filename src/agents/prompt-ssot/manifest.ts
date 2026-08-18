@@ -33,19 +33,21 @@ export const PROMPT_SSOT_MANIFEST: PromptSsotManifest = {
       ],
       acceptsOverlays: true,
     },
-    ...(['planner', 'executor', 'reviewer', 'verifier'] as const).map((role) => ({
-      id: `role-${role}`,
-      description: `Tier-0 role prompt projection: ${role}`,
-      sections: [
-        'policy/operating-principles',
-        'task-contract/verification',
-        'task-contract/execution-protocols',
-        'safety/hard-boundaries',
-        `role/${role}`,
-        'output/evidence-contract',
-      ],
-      acceptsOverlays: true,
-    })),
+    ...(['planner', 'executor', 'reviewer', 'verifier'] as const).map(
+      (role) => ({
+        id: `role-${role}`,
+        description: `Tier-0 role prompt projection: ${role}`,
+        sections: [
+          'policy/operating-principles',
+          'task-contract/verification',
+          'task-contract/execution-protocols',
+          'safety/hard-boundaries',
+          `role/${role}`,
+          'output/evidence-contract',
+        ],
+        acceptsOverlays: true,
+      }),
+    ),
   ],
   rollbackHistory: [],
 };

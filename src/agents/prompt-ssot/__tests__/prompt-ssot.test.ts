@@ -5,11 +5,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import {
-  composeAll,
-  composeProjection,
-  PromptSsotError,
-} from '../compose.js';
+import { composeAll, composeProjection, PromptSsotError } from '../compose.js';
 import { digestProjection, normalizePromptText } from '../digest.js';
 import { PROMPT_SSOT_MANIFEST } from '../manifest.js';
 import { corpusStats, projectionDrift, tokenize } from '../metrics.js';
@@ -57,7 +53,9 @@ describe('manifest and sections integrity', () => {
     expect(di.body.toLowerCase()).not.toContain('alias→');
     expect(rp.body.toLowerCase()).not.toContain('alias→');
     // Coordinator projection includes both
-    const coordSpec = PROMPT_SSOT_MANIFEST.projections.find((p) => p.id === 'coordinator')!;
+    const coordSpec = PROMPT_SSOT_MANIFEST.projections.find(
+      (p) => p.id === 'coordinator',
+    )!;
     expect(coordSpec.sections).toContain('workflow/deep-interview');
     expect(coordSpec.sections).toContain('workflow/ralplan');
   });
@@ -65,8 +63,16 @@ describe('manifest and sections integrity', () => {
 
 describe('deterministic renderer', () => {
   it('composes byte-identical output across repeated runs', () => {
-    const a = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator');
-    const b = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator');
+    const a = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+    );
+    const b = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+    );
     expect(a.fileText).toBe(b.fileText);
     expect(a.metadata.digest).toBe(b.metadata.digest);
   });
@@ -79,7 +85,11 @@ describe('deterministic renderer', () => {
         sections: [...p.sections].reverse(),
       })),
     };
-    const a = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'role-executor');
+    const a = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'role-executor',
+    );
     const b = composeProjection(reordered, PROMPT_SECTIONS, 'role-executor');
     // Rank ordering dominates; within-kind order differs only if two sections
     // share a rank — executor has one section per base rank, so identical.
@@ -87,18 +97,32 @@ describe('deterministic renderer', () => {
   });
 
   it('includes schemaVersion, sourceRevision, and sha256 digest metadata', () => {
-    const composed = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator');
-    expect(composed.fileText).toContain(`schemaVersion: ${PROMPT_SSOT_MANIFEST.schemaVersion}`);
-    expect(composed.fileText).toContain(`sourceRevision: ${PROMPT_SSOT_MANIFEST.sourceRevision}`);
+    const composed = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+    );
+    expect(composed.fileText).toContain(
+      `schemaVersion: ${PROMPT_SSOT_MANIFEST.schemaVersion}`,
+    );
+    expect(composed.fileText).toContain(
+      `sourceRevision: ${PROMPT_SSOT_MANIFEST.sourceRevision}`,
+    );
     expect(composed.fileText).toContain(`sha256: ${composed.metadata.digest}`);
     expect(composed.metadata.digest).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('changes the digest when any section body changes', () => {
     const mutated = PROMPT_SECTIONS.map((s) =>
-      s.id === 'safety/hard-boundaries' ? { ...s, body: `${s.body}\nExtra clause.` } : s,
+      s.id === 'safety/hard-boundaries'
+        ? { ...s, body: `${s.body}\nExtra clause.` }
+        : s,
     );
-    const a = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator');
+    const a = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+    );
     const b = composeProjection(PROMPT_SSOT_MANIFEST, mutated, 'coordinator');
     expect(a.metadata.digest).not.toBe(b.metadata.digest);
   });
@@ -110,10 +134,17 @@ describe('deterministic renderer', () => {
     const broken: PromptSsotManifest = {
       ...PROMPT_SSOT_MANIFEST,
       projections: [
-        { id: 'broken', description: '', sections: ['missing/section'], acceptsOverlays: false },
+        {
+          id: 'broken',
+          description: '',
+          sections: ['missing/section'],
+          acceptsOverlays: false,
+        },
       ],
     };
-    expect(() => composeProjection(broken, PROMPT_SECTIONS, 'broken')).toThrow(PromptSsotError);
+    expect(() => composeProjection(broken, PROMPT_SECTIONS, 'broken')).toThrow(
+      PromptSsotError,
+    );
   });
 
   it('fails closed when a projection drops a required section', () => {
@@ -128,19 +159,28 @@ describe('deterministic renderer', () => {
         },
       ],
     };
-    expect(() => composeProjection(broken, PROMPT_SECTIONS, 'no-safety')).toThrow(
-      /required section/,
-    );
+    expect(() =>
+      composeProjection(broken, PROMPT_SECTIONS, 'no-safety'),
+    ).toThrow(/required section/);
   });
 });
 
 describe('provider/model overlays', () => {
   it('applies provider and model-tier deltas as data selects', () => {
-    const base = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'role-planner');
-    const codexHigh = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'role-planner', {
-      provider: 'codex',
-      modelTier: 'high',
-    });
+    const base = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'role-planner',
+    );
+    const codexHigh = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'role-planner',
+      {
+        provider: 'codex',
+        modelTier: 'high',
+      },
+    );
     expect(codexHigh.body).toContain('Provider Notes: Codex');
     expect(codexHigh.body).toContain('Model Tier: High');
     expect(codexHigh.body).not.toContain('Provider Notes: Gemini');
@@ -149,15 +189,27 @@ describe('provider/model overlays', () => {
   });
 
   it('keeps normative policy text identical across overlays (no copied paragraphs)', () => {
-    const claude = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator', {
-      provider: 'claude',
-      modelTier: 'medium',
-    });
-    const gemini = composeProjection(PROMPT_SSOT_MANIFEST, PROMPT_SECTIONS, 'coordinator', {
-      provider: 'gemini',
-      modelTier: 'low',
-    });
-    const policy = PROMPT_SECTIONS.find((s) => s.id === 'safety/hard-boundaries')!;
+    const claude = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+      {
+        provider: 'claude',
+        modelTier: 'medium',
+      },
+    );
+    const gemini = composeProjection(
+      PROMPT_SSOT_MANIFEST,
+      PROMPT_SECTIONS,
+      'coordinator',
+      {
+        provider: 'gemini',
+        modelTier: 'low',
+      },
+    );
+    const policy = PROMPT_SECTIONS.find(
+      (s) => s.id === 'safety/hard-boundaries',
+    )!;
     for (const line of policy.body.trim().split('\n')) {
       expect(claude.body).toContain(line);
       expect(gemini.body).toContain(line);
@@ -177,7 +229,11 @@ describe('normalization and digest primitives', () => {
 
 describe('metrics', () => {
   it('tokenizer is deterministic and case/punctuation-insensitive', () => {
-    expect(tokenize('Hello,  WORLD\nhello')).toEqual(['hello', 'world', 'hello']);
+    expect(tokenize('Hello,  WORLD\nhello')).toEqual([
+      'hello',
+      'world',
+      'hello',
+    ]);
   });
 
   it('reports zero projection drift for freshly composed bodies', () => {
@@ -189,9 +245,11 @@ describe('metrics', () => {
 
   it('measures lower repeated-clause ratio in SSOT sources than legacy corpus', () => {
     const root = join(__dirname, '..', '..', '..', '..');
-    const legacyFiles = ['CLAUDE.md', 'docs/CLAUDE.md', '.github/CLAUDE.md'].filter((f) =>
-      existsSync(join(root, f)),
-    );
+    const legacyFiles = [
+      'CLAUDE.md',
+      'docs/CLAUDE.md',
+      '.github/CLAUDE.md',
+    ].filter((f) => existsSync(join(root, f)));
     const agentsDir = join(root, 'agents');
     const agentTexts = existsSync(agentsDir)
       ? readdirSync(agentsDir)

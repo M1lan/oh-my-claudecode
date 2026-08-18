@@ -51,7 +51,9 @@ export function normalizeForDigest(content: string): string {
 }
 
 export function computeDigest(content: string): string {
-  return createHash('sha256').update(normalizeForDigest(content), 'utf8').digest('hex');
+  return createHash('sha256')
+    .update(normalizeForDigest(content), 'utf8')
+    .digest('hex');
 }
 
 export function computeRawDigest(bytes: Buffer): string {
@@ -84,20 +86,43 @@ export function validateManifest(value: unknown): string[] {
     return errors;
   }
   const m = value as Record<string, unknown>;
-  if (m.schemaVersion !== PROMPT_MANIFEST_SCHEMA_VERSION) errors.push('schemaVersion must be 1');
-  if (typeof m.engineVersion !== 'string' || !m.engineVersion.trim()) errors.push('engineVersion must be non-empty');
-  if (typeof m.sourceRevision !== 'string' || !/^[a-f0-9]{64}$/.test(m.sourceRevision)) errors.push('sourceRevision must be sha256 hex');
-  if (typeof m.generatedAt !== 'string' || Number.isNaN(Date.parse(m.generatedAt))) errors.push('generatedAt must be ISO date');
-  if (!Array.isArray(m.projections)) errors.push('projections must be an array');
+  if (m.schemaVersion !== PROMPT_MANIFEST_SCHEMA_VERSION)
+    errors.push('schemaVersion must be 1');
+  if (typeof m.engineVersion !== 'string' || !m.engineVersion.trim())
+    errors.push('engineVersion must be non-empty');
+  if (
+    typeof m.sourceRevision !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(m.sourceRevision)
+  )
+    errors.push('sourceRevision must be sha256 hex');
+  if (
+    typeof m.generatedAt !== 'string' ||
+    Number.isNaN(Date.parse(m.generatedAt))
+  )
+    errors.push('generatedAt must be ISO date');
+  if (!Array.isArray(m.projections))
+    errors.push('projections must be an array');
   else {
     for (let i = 0; i < m.projections.length; i++) {
       const r = m.projections[i] as Record<string, unknown>;
-      if (!r || typeof r !== 'object') { errors.push(`projections[${i}] must be object`); continue; }
-      if (!['claude','agent','command','skill'].includes(String(r.kind))) errors.push(`projections[${i}].kind invalid`);
-      if (typeof r.sourcePath !== 'string' || !r.sourcePath) errors.push(`projections[${i}].sourcePath invalid`);
-      if (typeof r.outputPath !== 'string') errors.push(`projections[${i}].outputPath invalid`);
-      if (typeof r.digest !== 'string' || !/^[a-f0-9]{64}$/.test(r.digest)) errors.push(`projections[${i}].digest invalid`);
-      if (typeof r.byteLength !== 'number' || !Number.isSafeInteger(r.byteLength) || r.byteLength < 0) errors.push(`projections[${i}].byteLength invalid`);
+      if (!r || typeof r !== 'object') {
+        errors.push(`projections[${i}] must be object`);
+        continue;
+      }
+      if (!['claude', 'agent', 'command', 'skill'].includes(String(r.kind)))
+        errors.push(`projections[${i}].kind invalid`);
+      if (typeof r.sourcePath !== 'string' || !r.sourcePath)
+        errors.push(`projections[${i}].sourcePath invalid`);
+      if (typeof r.outputPath !== 'string')
+        errors.push(`projections[${i}].outputPath invalid`);
+      if (typeof r.digest !== 'string' || !/^[a-f0-9]{64}$/.test(r.digest))
+        errors.push(`projections[${i}].digest invalid`);
+      if (
+        typeof r.byteLength !== 'number' ||
+        !Number.isSafeInteger(r.byteLength) ||
+        r.byteLength < 0
+      )
+        errors.push(`projections[${i}].byteLength invalid`);
     }
   }
   return errors;

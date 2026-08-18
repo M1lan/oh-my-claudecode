@@ -239,7 +239,9 @@ describe('buildWorkerStartCommand', () => {
     // Supervised launches deliver the attempt-owned descriptor by path; the
     // bootstrap spec (and its percent/quote metacharacters) never travels in
     // the command line or cmd environment (issue #3655).
-    expect(cmd).toContain('set "OMC_WORKER_LAUNCH_SPEC_FILE=C:\\state\\bootstrap.json"');
+    expect(cmd).toContain(
+      'set "OMC_WORKER_LAUNCH_SPEC_FILE=C:\\state\\bootstrap.json"',
+    );
     expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC_B64=');
     expect(cmd).not.toContain('OMC_WORKER_LAUNCH_SPEC=');
     expect(cmd).not.toContain('100% ready %USERPROFILE%');

@@ -100,7 +100,10 @@ export function addressFor(agent: AddressableAgent): string {
  *
  * Truncation applies to display only and always preserves the id suffix.
  */
-export function listingLabel(agent: AddressableAgent, maxWidth: number = 40): string {
+export function listingLabel(
+  agent: AddressableAgent,
+  maxWidth: number = 40,
+): string {
   const name = trimmed(agent.name);
   if (name) return name;
 
@@ -238,7 +241,9 @@ function formatAgo(
 ): string | null {
   if (startedAt === undefined) return null;
   const start =
-    startedAt instanceof Date ? startedAt.getTime() : new Date(startedAt).getTime();
+    startedAt instanceof Date
+      ? startedAt.getTime()
+      : new Date(startedAt).getTime();
   if (!Number.isFinite(start)) return null;
   const elapsedSec = Math.max(0, Math.floor((now.getTime() - start) / 1000));
   if (elapsedSec < 60) return 'just now';

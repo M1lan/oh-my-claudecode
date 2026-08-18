@@ -120,7 +120,9 @@ function isSafeCounter(value: unknown): value is number {
   return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 }
 
-export function isValidPersistedMaxWorkers(value: unknown): value is number | undefined {
+export function isValidPersistedMaxWorkers(
+  value: unknown,
+): value is number | undefined {
   return value === undefined || (isSafeCounter(value) && value >= 1);
 }
 

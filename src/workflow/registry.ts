@@ -30,7 +30,6 @@ import {
 } from './alias-resolver.js';
 import { RETIREMENT_POLICY } from '../alias-retirement/policy.js';
 
-
 export const REGISTRY_SCHEMA_VERSION = 1;
 export const REGISTRY_VERSION = '0.1.0';
 
@@ -41,7 +40,12 @@ export const REGISTRY_OWNER = 'workflow-registry-maintainers';
 // Tier-0 roles (owner decision 1)
 // ---------------------------------------------------------------------------
 
-export const TIER0_ROLES = ['planner', 'executor', 'reviewer', 'verifier'] as const;
+export const TIER0_ROLES = [
+  'planner',
+  'executor',
+  'reviewer',
+  'verifier',
+] as const;
 export type Tier0Role = (typeof TIER0_ROLES)[number];
 
 // ---------------------------------------------------------------------------
@@ -127,7 +131,9 @@ export interface WorkflowEntry {
 
 function entry(e: WorkflowEntry): WorkflowEntry {
   if (e.decision !== 'keep' && !e.canonicalTarget && e.decision !== 'delete') {
-    throw new Error(`registry entry ${e.kind}:${e.name} is ${e.decision} without canonicalTarget`);
+    throw new Error(
+      `registry entry ${e.kind}:${e.name} is ${e.decision} without canonicalTarget`,
+    );
   }
   return e;
 }
@@ -144,67 +150,443 @@ const SKILL_ENTRIES: readonly WorkflowEntry[] = [
   // Tier-0 canonical workflows — owner direction for #3708: deep-interview and
   // ralplan remain independent Tier-0 workflow semantics; other duplicated
   // injection/procedure collapses behind the dispatcher. So Tier-0 is six.
-  entry({ name: 'plan', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Canonical planning workflow.' }),
-  entry({ name: 'deep-interview', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Independent Tier-0 requirements interview — not a plan alias (owner direction #3708).' }),
-  entry({ name: 'ralplan', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Independent Tier-0 consensus planning — not a plan alias (owner direction #3708).' }),
-  entry({ name: 'execute', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, declaredOnly: true, notes: 'Absorbs ultragoal, autopilot, ralph, ultrawork, ultrapilot, swarm, pipeline; optional team execution stays internal.' }),
-  entry({ name: 'review', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, declaredOnly: true, notes: 'Absorbs review routing incl. the merge-readiness advisory lane.' }),
-  entry({ name: 'verify', kind: 'skill', tier: 0, decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Absorbs ultraqa / verification routing.' }),
+  entry({
+    name: 'plan',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Canonical planning workflow.',
+  }),
+  entry({
+    name: 'deep-interview',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes:
+      'Independent Tier-0 requirements interview — not a plan alias (owner direction #3708).',
+  }),
+  entry({
+    name: 'ralplan',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes:
+      'Independent Tier-0 consensus planning — not a plan alias (owner direction #3708).',
+  }),
+  entry({
+    name: 'execute',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    declaredOnly: true,
+    notes:
+      'Absorbs ultragoal, autopilot, ralph, ultrawork, ultrapilot, swarm, pipeline; optional team execution stays internal.',
+  }),
+  entry({
+    name: 'review',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    declaredOnly: true,
+    notes: 'Absorbs review routing incl. the merge-readiness advisory lane.',
+  }),
+  entry({
+    name: 'verify',
+    kind: 'skill',
+    tier: 0,
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Absorbs ultraqa / verification routing.',
+  }),
 
   // Internal lanes / optional modules (not Tier-0 public workflows)
-  entry({ name: 'team', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, internalOnly: true, notes: 'Optional coordinated execution; an implementation detail of execute.' }),
-  entry({ name: 'research', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, internalOnly: true, declaredOnly: true, notes: 'Optional research lane absorbing deep-dive/sciomc/autoresearch.' }),
+  entry({
+    name: 'team',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    internalOnly: true,
+    notes:
+      'Optional coordinated execution; an implementation detail of execute.',
+  }),
+  entry({
+    name: 'research',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    internalOnly: true,
+    declaredOnly: true,
+    notes: 'Optional research lane absorbing deep-dive/sciomc/autoresearch.',
+  }),
 
   // Merge into Tier-0 workflows / internal lanes (bounded aliases during migration)
-  entry({ name: 'autopilot', kind: 'skill', decision: 'merge', canonicalTarget: 'execute', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'ultragoal', kind: 'skill', decision: 'merge', canonicalTarget: 'execute', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'ralph', kind: 'skill', decision: 'merge', canonicalTarget: 'execute', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Continuation/evidence behavior lands in execute (via ultragoal stages).' }),
-  entry({ name: 'ultrawork', kind: 'skill', decision: 'merge', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Parallelism parity via optional team execution.' }),
-  entry({ name: 'ultrapilot', kind: 'skill', decision: 'merge', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, declaredOnly: true, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'swarm', kind: 'skill', decision: 'merge', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, declaredOnly: true, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'pipeline', kind: 'skill', decision: 'merge', canonicalTarget: 'execute', riskClass: 'advisory', owner: REGISTRY_OWNER, declaredOnly: true, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'ultraqa', kind: 'skill', decision: 'merge', canonicalTarget: 'verify', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'merge-readiness', kind: 'skill', decision: 'merge', canonicalTarget: 'review', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Advisory review only; release hard checks stay separate and fail closed.' }),
-  entry({ name: 'deep-dive', kind: 'skill', decision: 'merge', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'sciomc', kind: 'skill', decision: 'merge', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'autoresearch', kind: 'skill', decision: 'merge', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
+  entry({
+    name: 'autopilot',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'execute',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'ultragoal',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'execute',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'ralph',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'execute',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes:
+      'Continuation/evidence behavior lands in execute (via ultragoal stages).',
+  }),
+  entry({
+    name: 'ultrawork',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes: 'Parallelism parity via optional team execution.',
+  }),
+  entry({
+    name: 'ultrapilot',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    declaredOnly: true,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'swarm',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    declaredOnly: true,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'pipeline',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'execute',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    declaredOnly: true,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'ultraqa',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'verify',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'merge-readiness',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'review',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes:
+      'Advisory review only; release hard checks stay separate and fail closed.',
+  }),
+  entry({
+    name: 'deep-dive',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'sciomc',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'autoresearch',
+    kind: 'skill',
+    decision: 'merge',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
 
   // Alias-deprecate to a kept canonical utility
-  entry({ name: 'setup', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'omc-setup', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'mcp-setup', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'omc-setup', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'omc-reference', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'wiki', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'omc-teams', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'learner', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'remember', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'writer-memory', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'remember', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'ccg', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Resolver maps to team/executor by task shape; team is the default lane.' }),
+  entry({
+    name: 'setup',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'omc-setup',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'mcp-setup',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'omc-setup',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'omc-reference',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'wiki',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'omc-teams',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'learner',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'remember',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'writer-memory',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'remember',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'ccg',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes:
+      'Resolver maps to team/executor by task shape; team is the default lane.',
+  }),
 
   // Release maintainer boundary (owner decision 2): compatibility alias to
   // maintainer-only `omc release`; fail-closed; no release mutation in this epic.
-  entry({ name: 'release', kind: 'skill', decision: 'alias-deprecate', canonicalTarget: 'omc-release', riskClass: 'release-authority', owner: REGISTRY_OWNER, maintainerOnly: true, removalMilestone: 'compatibility alias during migration; never auto-removed without owner approval' }),
-  entry({ name: 'omc-release', kind: 'skill', decision: 'keep', riskClass: 'release-authority', owner: REGISTRY_OWNER, maintainerOnly: true, declaredOnly: true, notes: 'Maintainer-only release authority target; not a Tier-0 workflow.' }),
+  entry({
+    name: 'release',
+    kind: 'skill',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'omc-release',
+    riskClass: 'release-authority',
+    owner: REGISTRY_OWNER,
+    maintainerOnly: true,
+    removalMilestone:
+      'compatibility alias during migration; never auto-removed without owner approval',
+  }),
+  entry({
+    name: 'omc-release',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'release-authority',
+    owner: REGISTRY_OWNER,
+    maintainerOnly: true,
+    declaredOnly: true,
+    notes: 'Maintainer-only release authority target; not a Tier-0 workflow.',
+  }),
 
   // Delete candidate: ceremony-only; actual removal still requires retirement evidence
-  entry({ name: 'local-build-reminder', kind: 'skill', decision: 'delete', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Ceremony-only; docs/CI cover the signal. Removal in a separate PR with evidence.' }),
+  entry({
+    name: 'local-build-reminder',
+    kind: 'skill',
+    decision: 'delete',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes:
+      'Ceremony-only; docs/CI cover the signal. Removal in a separate PR with evidence.',
+  }),
 
   // Kept utilities / opt-in tools
-  entry({ name: 'cancel', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'ask', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'skill', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'skillify', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Authoring utility, not a runtime workflow.' }),
-  entry({ name: 'omc-setup', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'omc-doctor', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'wiki', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'remember', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'configure-notifications', kind: 'skill', decision: 'keep', riskClass: 'secrets-privacy', owner: REGISTRY_OWNER, notes: 'Opt-in integration handling secrets; hard boundary retained.' }),
-  entry({ name: 'project-session-manager', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Utility only; workflow-gate behavior removed per plan.' }),
-  entry({ name: 'ai-slop-cleaner', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Opt-in review tool; never a default gate.' }),
-  entry({ name: 'visual-verdict', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Opt-in for visual surfaces.' }),
-  entry({ name: 'external-context', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Opt-in external evidence tool.' }),
-  entry({ name: 'debug', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'deepinit', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'hud', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'self-improve', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER, notes: 'Opt-in learning utility.' }),
-  entry({ name: 'trace', kind: 'skill', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
+  entry({
+    name: 'cancel',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'ask',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'skill',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'skillify',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Authoring utility, not a runtime workflow.',
+  }),
+  entry({
+    name: 'omc-setup',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'omc-doctor',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'wiki',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'remember',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'configure-notifications',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'secrets-privacy',
+    owner: REGISTRY_OWNER,
+    notes: 'Opt-in integration handling secrets; hard boundary retained.',
+  }),
+  entry({
+    name: 'project-session-manager',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Utility only; workflow-gate behavior removed per plan.',
+  }),
+  entry({
+    name: 'ai-slop-cleaner',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Opt-in review tool; never a default gate.',
+  }),
+  entry({
+    name: 'visual-verdict',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Opt-in for visual surfaces.',
+  }),
+  entry({
+    name: 'external-context',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Opt-in external evidence tool.',
+  }),
+  entry({
+    name: 'debug',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'deepinit',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'hud',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'self-improve',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    notes: 'Opt-in learning utility.',
+  }),
+  entry({
+    name: 'trace',
+    kind: 'skill',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
 ];
 
 // ---------------------------------------------------------------------------
@@ -212,37 +594,233 @@ const SKILL_ENTRIES: readonly WorkflowEntry[] = [
 // ---------------------------------------------------------------------------
 
 const COMMAND_ENTRIES: readonly WorkflowEntry[] = [
-  entry({ name: 'ask', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'compact', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'configure-notifications', kind: 'command', decision: 'keep', riskClass: 'secrets-privacy', owner: REGISTRY_OWNER }),
-  entry({ name: 'debug', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'deepinit', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'external-context', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'hud', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'omc-doctor', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'omc-setup', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'project-session-manager', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'remember', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'self-improve', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'skill', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'skillify', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'trace', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'visual-verdict', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'wiki', kind: 'command', decision: 'keep', riskClass: 'advisory', owner: REGISTRY_OWNER }),
-  entry({ name: 'verify', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'verify', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE, notes: 'Command form routes into the Tier-0 verify workflow lane.' }),
-  entry({ name: 'autoresearch', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'ccg', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'deep-dive', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'learner', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'remember', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'mcp-setup', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'omc-setup', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'omc-teams', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'team', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'psm', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'project-session-manager', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'sciomc', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'research', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'writer-memory', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'remember', riskClass: 'advisory', owner: REGISTRY_OWNER, removalMilestone: ALIAS_MILESTONE }),
-  entry({ name: 'release', kind: 'command', decision: 'alias-deprecate', canonicalTarget: 'omc-release', riskClass: 'release-authority', owner: REGISTRY_OWNER, maintainerOnly: true, removalMilestone: 'compatibility alias during migration; never auto-removed without owner approval' }),
+  entry({
+    name: 'ask',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'compact',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'configure-notifications',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'secrets-privacy',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'debug',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'deepinit',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'external-context',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'hud',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'omc-doctor',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'omc-setup',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'project-session-manager',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'remember',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'self-improve',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'skill',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'skillify',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'trace',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'visual-verdict',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'wiki',
+    kind: 'command',
+    decision: 'keep',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+  }),
+  entry({
+    name: 'verify',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'verify',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+    notes: 'Command form routes into the Tier-0 verify workflow lane.',
+  }),
+  entry({
+    name: 'autoresearch',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'ccg',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'deep-dive',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'learner',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'remember',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'mcp-setup',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'omc-setup',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'omc-teams',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'team',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'psm',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'project-session-manager',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'sciomc',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'research',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'writer-memory',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'remember',
+    riskClass: 'advisory',
+    owner: REGISTRY_OWNER,
+    removalMilestone: ALIAS_MILESTONE,
+  }),
+  entry({
+    name: 'release',
+    kind: 'command',
+    decision: 'alias-deprecate',
+    canonicalTarget: 'omc-release',
+    riskClass: 'release-authority',
+    owner: REGISTRY_OWNER,
+    maintainerOnly: true,
+    removalMilestone:
+      'compatibility alias during migration; never auto-removed without owner approval',
+  }),
 ];
 
-export const WORKFLOW_ENTRIES: readonly WorkflowEntry[] = [...SKILL_ENTRIES, ...COMMAND_ENTRIES];
+export const WORKFLOW_ENTRIES: readonly WorkflowEntry[] = [
+  ...SKILL_ENTRIES,
+  ...COMMAND_ENTRIES,
+];
 
 // ---------------------------------------------------------------------------
 // Roles — Tier-0 public roles + internal specialists (plan §4.2, §7)
@@ -264,22 +842,102 @@ export const WORKFLOW_ROLES: readonly RoleEntry[] = [
   { name: 'reviewer', tier: 0, owner: REGISTRY_OWNER },
   { name: 'verifier', tier: 0, owner: REGISTRY_OWNER },
   // Internal specialists (current src/agents/definitions.ts keys minus Tier-0)
-  { name: 'analyst', internalOnly: true, tier0Role: 'planner', owner: REGISTRY_OWNER },
-  { name: 'architect', internalOnly: true, tier0Role: 'reviewer', owner: REGISTRY_OWNER },
-  { name: 'critic', internalOnly: true, tier0Role: 'reviewer', owner: REGISTRY_OWNER },
-  { name: 'code-reviewer', internalOnly: true, tier0Role: 'reviewer', owner: REGISTRY_OWNER },
-  { name: 'security-reviewer', internalOnly: true, tier0Role: 'reviewer', owner: REGISTRY_OWNER },
-  { name: 'test-engineer', internalOnly: true, tier0Role: 'verifier', owner: REGISTRY_OWNER },
-  { name: 'qa-tester', internalOnly: true, tier0Role: 'verifier', owner: REGISTRY_OWNER },
-  { name: 'debugger', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'explore', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'designer', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'writer', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'scientist', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'tracer', internalOnly: true, tier0Role: 'verifier', owner: REGISTRY_OWNER },
-  { name: 'git-master', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'code-simplifier', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
-  { name: 'document-specialist', internalOnly: true, tier0Role: 'executor', owner: REGISTRY_OWNER },
+  {
+    name: 'analyst',
+    internalOnly: true,
+    tier0Role: 'planner',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'architect',
+    internalOnly: true,
+    tier0Role: 'reviewer',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'critic',
+    internalOnly: true,
+    tier0Role: 'reviewer',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'code-reviewer',
+    internalOnly: true,
+    tier0Role: 'reviewer',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'security-reviewer',
+    internalOnly: true,
+    tier0Role: 'reviewer',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'test-engineer',
+    internalOnly: true,
+    tier0Role: 'verifier',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'qa-tester',
+    internalOnly: true,
+    tier0Role: 'verifier',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'debugger',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'explore',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'designer',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'writer',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'scientist',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'tracer',
+    internalOnly: true,
+    tier0Role: 'verifier',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'git-master',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'code-simplifier',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
+  {
+    name: 'document-specialist',
+    internalOnly: true,
+    tier0Role: 'executor',
+    owner: REGISTRY_OWNER,
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -290,7 +948,10 @@ const BY_KEY = new Map<string, WorkflowEntry>(
   WORKFLOW_ENTRIES.map((e) => [`${e.kind}:${e.name}`, e]),
 );
 
-export function getEntry(name: string, kind: SurfaceKind): WorkflowEntry | undefined {
+export function getEntry(
+  name: string,
+  kind: SurfaceKind,
+): WorkflowEntry | undefined {
   return BY_KEY.get(`${kind}:${name}`);
 }
 
@@ -303,7 +964,10 @@ export function getRole(name: string): RoleEntry | undefined {
  * Chained targets may live on either surface kind (e.g. command -> skill lane).
  * Returns undefined for unknown names or broken chains.
  */
-export function resolveCanonical(name: string, kind: SurfaceKind): WorkflowEntry | undefined {
+export function resolveCanonical(
+  name: string,
+  kind: SurfaceKind,
+): WorkflowEntry | undefined {
   let current = getEntry(name, kind);
   const seen = new Set<string>([`${kind}:${name}`]);
   while (current && current.decision !== 'keep') {
@@ -329,7 +993,8 @@ export function isRegistryEnabled(): boolean {
   const env = process.env.OMC_WORKFLOW_REGISTRY;
   if (env !== undefined) {
     const v = env.trim().toLowerCase();
-    if (v === '0' || v === 'false' || v === 'off' || v === 'disabled') return false;
+    if (v === '0' || v === 'false' || v === 'off' || v === 'disabled')
+      return false;
     if (v === '1' || v === 'true' || v === 'on' || v === 'enabled') return true;
   }
   return true;
@@ -345,7 +1010,10 @@ const LANE_TIER0: Record<string, Tier0Workflow> = {
   research: 'plan',
 };
 
-function tier0For(entry0: WorkflowEntry, canonical: WorkflowEntry): Tier0Workflow | undefined {
+function tier0For(
+  entry0: WorkflowEntry,
+  canonical: WorkflowEntry,
+): Tier0Workflow | undefined {
   if (canonical.tier === 0) return canonical.name as Tier0Workflow;
   return LANE_TIER0[canonical.name];
 }
@@ -360,7 +1028,9 @@ function tier0For(entry0: WorkflowEntry, canonical: WorkflowEntry): Tier0Workflo
  * the resolver falls back to its own merged table. Returns undefined for every
  * name when the registry is disabled (rollback).
  */
-export const registryAliasLookup: AliasRegistryLookup = (normalized: string) => {
+export const registryAliasLookup: AliasRegistryLookup = (
+  normalized: string,
+) => {
   if (!isRegistryEnabled()) return undefined;
   const e = getEntry(normalized, 'skill') ?? getEntry(normalized, 'command');
   if (!e || e.decision === 'keep' || e.decision === 'delete') return undefined;
@@ -389,4 +1059,3 @@ export const registryAliasLookup: AliasRegistryLookup = (normalized: string) => 
     isWorkflowAlias: true,
   };
 };
-

@@ -52,7 +52,10 @@ import { sessionFrictionReportCommand } from './commands/session-friction-report
 import { teamCommand } from './commands/team.js';
 import { ralphthonCommand } from './commands/ralphthon.js';
 import { ultragoalCommand, ULTRAGOAL_HELP } from './commands/ultragoal.js';
-import { aliasRetirementCommand, ALIAS_RETIREMENT_HELP } from './commands/alias-retirement.js';
+import {
+  aliasRetirementCommand,
+  ALIAS_RETIREMENT_HELP,
+} from './commands/alias-retirement.js';
 import {
   teleportCommand,
   teleportListCommand,
@@ -1982,7 +1985,9 @@ program
  */
 program
   .command('alias-retirement')
-  .description('Alias retirement verifier and generated-closure inventory (issue #3711)')
+  .description(
+    'Alias retirement verifier and generated-closure inventory (issue #3711)',
+  )
   .helpOption(false)
   .allowUnknownOption(true)
   .allowExcessArguments(true)

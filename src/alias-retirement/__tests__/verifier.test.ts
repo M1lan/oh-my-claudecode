@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { ALIAS_REGISTRY, getAliasRecord } from '../registry.js';
-import { evaluateAlias, verifyAllAliases, summarizeReceipts } from '../verifier.js';
+import {
+  evaluateAlias,
+  verifyAllAliases,
+  summarizeReceipts,
+} from '../verifier.js';
 import { isTemporalThresholdMet } from '../policy.js';
 
 const CURRENT_VERSION = '4.15.10';
@@ -22,7 +26,10 @@ function ineligibleHistory() {
 
 describe('alias-retirement verifier', () => {
   it('emits extension receipts for every alias at current version without telemetry (acceptance guard)', () => {
-    const receipts = verifyAllAliases({ currentVersion: CURRENT_VERSION, now: NOW });
+    const receipts = verifyAllAliases({
+      currentVersion: CURRENT_VERSION,
+      now: NOW,
+    });
     expect(receipts).toHaveLength(ALIAS_REGISTRY.length);
     for (const r of receipts) {
       expect(r.verdict).toBe('extended');
@@ -31,7 +38,9 @@ describe('alias-retirement verifier', () => {
       expect(r.schemaVersion).toBe(1);
       expect(r.currentVersion).toBe(CURRENT_VERSION);
       // Every extension receipt must carry at least one blocker reason
-      expect(r.blockers.join(' ')).toMatch(/temporal|canonical-share|critical-integrations/);
+      expect(r.blockers.join(' ')).toMatch(
+        /temporal|canonical-share|critical-integrations/,
+      );
     }
     const summary = summarizeReceipts(receipts);
     expect(summary.allExtended).toBe(true);
@@ -40,7 +49,12 @@ describe('alias-retirement verifier', () => {
 
   it('understanding-gate is blocked by temporal gate at current version even with perfect telemetry', () => {
     const rec = getAliasRecord('understanding-gate')!;
-    const temporal = isTemporalThresholdMet(rec.introducedVersion, rec.introducedDate, CURRENT_VERSION, NOW);
+    const temporal = isTemporalThresholdMet(
+      rec.introducedVersion,
+      rec.introducedDate,
+      CURRENT_VERSION,
+      NOW,
+    );
     expect(temporal.met).toBe(false);
     // 4.15.3 → 4.15.10 is 0 minors, need 2 more; 2026-07-10 → 2026-08-12 is 33 days, need 57 more
     expect(temporal.minors.met).toBe(false);
@@ -61,7 +75,12 @@ describe('alias-retirement verifier', () => {
 
   it('learner is temporal-eligible at current version but still extended without share telemetry', () => {
     const rec = getAliasRecord('learner')!;
-    const temporal = isTemporalThresholdMet(rec.introducedVersion, rec.introducedDate, CURRENT_VERSION, NOW);
+    const temporal = isTemporalThresholdMet(
+      rec.introducedVersion,
+      rec.introducedDate,
+      CURRENT_VERSION,
+      NOW,
+    );
     expect(temporal.met).toBe(true); // 4.2.15 → 4.15.10 is 13 minors + 174 days
     const receiptNoTelemetry = evaluateAlias({
       record: rec,
@@ -71,7 +90,9 @@ describe('alias-retirement verifier', () => {
       criticalIntegrations: [],
     });
     expect(receiptNoTelemetry.verdict).toBe('extended');
-    expect(receiptNoTelemetry.blockers.some((b) => b.includes('canonical-share'))).toBe(true);
+    expect(
+      receiptNoTelemetry.blockers.some((b) => b.includes('canonical-share')),
+    ).toBe(true);
     expect(receiptNoTelemetry.checks.temporal.met).toBe(true);
   });
 
@@ -102,7 +123,9 @@ describe('alias-retirement verifier', () => {
       criticalIntegrations: [],
     });
     expect(receipt.verdict).toBe('extended');
-    expect(receipt.blockers.some((b) => b.includes('canonical-share'))).toBe(true);
+    expect(receipt.blockers.some((b) => b.includes('canonical-share'))).toBe(
+      true,
+    );
   });
 
   it('critical-integrations block prevents eligibility even when temporal+share are met', () => {
@@ -112,10 +135,15 @@ describe('alias-retirement verifier', () => {
       currentVersion: CURRENT_VERSION,
       now: NOW,
       usageHistory: eligibleHistory(),
-      criticalIntegrations: ['org/repo uses /psm in CI', 'marketplace template references learner'],
+      criticalIntegrations: [
+        'org/repo uses /psm in CI',
+        'marketplace template references learner',
+      ],
     });
     expect(receipt.verdict).toBe('extended');
-    expect(receipt.blockers.some((b) => b.includes('critical-integrations'))).toBe(true);
+    expect(
+      receipt.blockers.some((b) => b.includes('critical-integrations')),
+    ).toBe(true);
     expect(receipt.checks.criticalIntegrations.count).toBe(2);
   });
 

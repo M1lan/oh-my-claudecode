@@ -33,7 +33,10 @@ export interface CorpusStats {
   repeatedTokens: number;
 }
 
-export function corpusStats(texts: readonly string[], nGramSize = 8): CorpusStats {
+export function corpusStats(
+  texts: readonly string[],
+  nGramSize = 8,
+): CorpusStats {
   const tokens = texts.flatMap((t) => tokenize(t));
   const ngramCounts = new Map<string, number>();
   for (let i = 0; i + nGramSize <= tokens.length; i++) {
@@ -52,7 +55,8 @@ export function corpusStats(texts: readonly string[], nGramSize = 8): CorpusStat
     totalTokens: tokens.length,
     uniqueTokens: new Set(tokens).size,
     uniqueNGrams: ngramCounts.size,
-    repeatedClauseRatio: tokens.length === 0 ? 0 : repeatedPositions / tokens.length,
+    repeatedClauseRatio:
+      tokens.length === 0 ? 0 : repeatedPositions / tokens.length,
     repeatedTokens: extraOccurrences,
   };
 }

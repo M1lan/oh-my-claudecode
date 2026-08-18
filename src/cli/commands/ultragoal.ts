@@ -386,7 +386,9 @@ export async function ultragoalCommand(args: string[]): Promise<void> {
       );
       const goalId = positionalText(rest);
       if (goalId.split(/\s+/).filter(Boolean).length > 1)
-        throw new UltragoalError('Expected at most one positional ultragoal id.');
+        throw new UltragoalError(
+          'Expected at most one positional ultragoal id.',
+        );
       const result = await startNextUltragoal(cwd, {
         retryFailed: hasFlag(rest, '--retry-failed'),
         goalId: goalId || undefined,

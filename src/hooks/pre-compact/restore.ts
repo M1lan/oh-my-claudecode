@@ -125,7 +125,10 @@ export function markCheckpointRestored(
     mkdirSync(join(markerPath, '..'), { recursive: true });
     writeFileSync(
       markerPath,
-      JSON.stringify({ restored_at: new Date().toISOString(), checkpoint: checkpointPath }),
+      JSON.stringify({
+        restored_at: new Date().toISOString(),
+        checkpoint: checkpointPath,
+      }),
       'utf-8',
     );
   } catch {
@@ -284,7 +287,12 @@ export function findLatestCheckpointForRestore(
   for (const c of raw) {
     const checkpoint = parseCheckpoint(c.path);
     if (checkpoint) {
-      scored.push({ name: c.name, path: c.path, mtimeMs: c.mtimeMs, checkpoint });
+      scored.push({
+        name: c.name,
+        path: c.path,
+        mtimeMs: c.mtimeMs,
+        checkpoint,
+      });
     } else if (!newestUnparseable || c.mtimeMs > newestUnparseable.mtimeMs) {
       newestUnparseable = c;
     }
@@ -296,7 +304,9 @@ export function findLatestCheckpointForRestore(
       ok: false,
       reason: 'malformed',
       path: c?.path,
-      detail: c ? `could not parse ${c.name} (or it exceeds ${CHECKPOINT_MAX_BYTES} bytes)` : undefined,
+      detail: c
+        ? `could not parse ${c.name} (or it exceeds ${CHECKPOINT_MAX_BYTES} bytes)`
+        : undefined,
     };
   }
 
@@ -312,7 +322,10 @@ export function findLatestCheckpointForRestore(
   const newestOverall = scored[0];
 
   for (const candidate of scored) {
-    if (sessionId && isCheckpointRestored(directory, sessionId, candidate.path)) {
+    if (
+      sessionId &&
+      isCheckpointRestored(directory, sessionId, candidate.path)
+    ) {
       continue;
     }
     // First non-restored candidate.
@@ -365,9 +378,9 @@ export function formatCheckpointRestoreContext(
   ];
 
   const modes = checkpoint.active_modes ?? {};
-  const modeEntries = Object.entries(modes).filter(([, v]) => v != null) as Array<
-    [string, NonNullable<(typeof modes)[keyof typeof modes]>]
-  >;
+  const modeEntries = Object.entries(modes).filter(
+    ([, v]) => v != null,
+  ) as Array<[string, NonNullable<(typeof modes)[keyof typeof modes]>]>;
   if (modeEntries.length > 0) {
     lines.push('', 'Active modes at compaction time:');
     for (const [name, mode] of modeEntries) {
@@ -384,7 +397,8 @@ export function formatCheckpointRestoreContext(
   }
 
   const todos = checkpoint.todo_summary;
-  const todoTotal = (todos?.pending ?? 0) + (todos?.in_progress ?? 0) + (todos?.completed ?? 0);
+  const todoTotal =
+    (todos?.pending ?? 0) + (todos?.in_progress ?? 0) + (todos?.completed ?? 0);
   if (todoTotal > 0) {
     lines.push(
       '',
@@ -411,7 +425,10 @@ export function formatCheckpointRestoreContext(
   }
 
   if (checkpoint.wisdom_exported) {
-    lines.push('', 'Plan wisdom was exported before compaction (see .omc/state/checkpoints/wisdom-*.md).');
+    lines.push(
+      '',
+      'Plan wisdom was exported before compaction (see .omc/state/checkpoints/wisdom-*.md).',
+    );
   }
 
   lines.push(

@@ -62,7 +62,11 @@ async function readMailboxFileMessages(filePath: string): Promise<unknown[]> {
     const raw = await readFile(filePath, 'utf-8');
     const parsed = JSON.parse(raw) as unknown;
     if (Array.isArray(parsed)) return parsed;
-    if (parsed && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>).messages)) {
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      Array.isArray((parsed as Record<string, unknown>).messages)
+    ) {
       return (parsed as Record<string, unknown>).messages as unknown[];
     }
     return [];
@@ -73,7 +77,9 @@ async function readMailboxFileMessages(filePath: string): Promise<unknown[]> {
 }
 
 /** Parse the legacy JSONL mailbox shape (one message per line). */
-async function readMailboxFileMessagesJsonl(filePath: string): Promise<unknown[]> {
+async function readMailboxFileMessagesJsonl(
+  filePath: string,
+): Promise<unknown[]> {
   try {
     if (!existsSync(filePath)) return [];
     const raw = await readFile(filePath, 'utf-8');
@@ -133,16 +139,23 @@ export async function scanMailboxOutstanding(
       if (!isUndelivered(message)) continue;
       if (messageToWorker(message) === recipient) inbound += 1;
       const from = messageFromWorker(message);
-      if (from) outboundBySender.set(from, (outboundBySender.get(from) ?? 0) + 1);
+      if (from)
+        outboundBySender.set(from, (outboundBySender.get(from) ?? 0) + 1);
     }
 
-    const recipientEntry = result[recipient] ?? { undeliveredInbound: 0, undeliveredOutbound: 0 };
+    const recipientEntry = result[recipient] ?? {
+      undeliveredInbound: 0,
+      undeliveredOutbound: 0,
+    };
     result[recipient] = {
       undeliveredInbound: recipientEntry.undeliveredInbound + inbound,
       undeliveredOutbound: recipientEntry.undeliveredOutbound,
     };
     for (const [sender, count] of outboundBySender) {
-      const senderEntry = result[sender] ?? { undeliveredInbound: 0, undeliveredOutbound: 0 };
+      const senderEntry = result[sender] ?? {
+        undeliveredInbound: 0,
+        undeliveredOutbound: 0,
+      };
       result[sender] = {
         undeliveredInbound: senderEntry.undeliveredInbound,
         undeliveredOutbound: senderEntry.undeliveredOutbound + count,

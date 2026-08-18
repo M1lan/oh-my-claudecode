@@ -14,9 +14,9 @@
  * - `verifyDescriptorHash` — non-branding boolean predicate; never throws.
  */
 
-import { createHash } from "node:crypto";
+import { createHash } from 'node:crypto';
 
-import { isValidStableId, parseGraphDescriptorShape } from "./schema.js";
+import { isValidStableId, parseGraphDescriptorShape } from './schema.js';
 import type {
   GraphDescriptor,
   GraphDescriptorInput,
@@ -24,7 +24,7 @@ import type {
   GraphFanOutEdge,
   GraphNode,
   SealedGraphDescriptor,
-} from "./types.js";
+} from './types.js';
 
 const DESCRIPTOR_HASH_PATTERN = /^[a-f0-9]{64}$/;
 
@@ -32,8 +32,8 @@ export class GraphDescriptorValidationError extends Error {
   readonly issues: readonly string[];
 
   constructor(issues: readonly string[]) {
-    super(`Invalid graph descriptor: ${issues.join("; ")}`);
-    this.name = "GraphDescriptorValidationError";
+    super(`Invalid graph descriptor: ${issues.join('; ')}`);
+    this.name = 'GraphDescriptorValidationError';
     this.issues = issues;
   }
 }
@@ -57,31 +57,31 @@ export function canonicalJson(value: unknown): string {
 function serializeCanonical(value: unknown, seen: Set<object>): string {
   if (
     value === null ||
-    typeof value === "boolean" ||
-    typeof value === "string"
+    typeof value === 'boolean' ||
+    typeof value === 'string'
   ) {
     return JSON.stringify(value);
   }
-  if (typeof value === "number") {
+  if (typeof value === 'number') {
     if (!Number.isFinite(value)) {
-      throw new TypeError("Canonical JSON requires finite numbers");
+      throw new TypeError('Canonical JSON requires finite numbers');
     }
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
     if (seen.has(value))
-      throw new TypeError("Canonical JSON rejects cyclic values");
+      throw new TypeError('Canonical JSON rejects cyclic values');
     seen.add(value);
-    const serialized = `[${value.map((item) => serializeCanonical(item, seen)).join(",")}]`;
+    const serialized = `[${value.map((item) => serializeCanonical(item, seen)).join(',')}]`;
     seen.delete(value);
     return serialized;
   }
-  if (typeof value === "object") {
+  if (typeof value === 'object') {
     if (!isPlainObject(value)) {
-      throw new TypeError("Canonical JSON requires plain objects");
+      throw new TypeError('Canonical JSON requires plain objects');
     }
     if (seen.has(value))
-      throw new TypeError("Canonical JSON rejects cyclic values");
+      throw new TypeError('Canonical JSON rejects cyclic values');
     seen.add(value);
     const record = value as Record<string, unknown>;
     const serialized = `{${Object.keys(record)
@@ -90,7 +90,7 @@ function serializeCanonical(value: unknown, seen: Set<object>): string {
         (key) =>
           `${JSON.stringify(key)}:${serializeCanonical(record[key], seen)}`,
       )
-      .join(",")}}`;
+      .join(',')}}`;
     seen.delete(value);
     return serialized;
   }
@@ -102,7 +102,7 @@ function serializeCanonical(value: unknown, seen: Set<object>): string {
 /** Hash payload: the nine contract fields; excludes `descriptor_hash` and runtime fields. */
 function descriptorHashPayload(
   input: GraphDescriptorInput,
-): Omit<GraphDescriptorInput, "descriptor_hash"> {
+): Omit<GraphDescriptorInput, 'descriptor_hash'> {
   return {
     descriptor_version: input.descriptor_version,
     run_id: input.run_id,
@@ -118,14 +118,14 @@ function descriptorHashPayload(
 
 /** Lowercase SHA-256 hex over the canonical compact JSON of the hash payload. */
 export function computeDescriptorHash(input: GraphDescriptorInput): string {
-  return createHash("sha256")
+  return createHash('sha256')
     .update(canonicalJson(descriptorHashPayload(input)))
-    .digest("hex");
+    .digest('hex');
 }
 
 /** Recursively freeze an owned value (descriptors are trees; no cycles). */
 function deepFreeze<T>(value: T): T {
-  if (value !== null && typeof value === "object") {
+  if (value !== null && typeof value === 'object') {
     for (const key of Object.getOwnPropertyNames(value)) {
       deepFreeze((value as Record<string, unknown>)[key]);
     }
@@ -136,10 +136,10 @@ function deepFreeze<T>(value: T): T {
 
 function isRecordWithHash(input: unknown): boolean {
   return (
-    typeof input === "object" &&
+    typeof input === 'object' &&
     input !== null &&
     !Array.isArray(input) &&
-    "descriptor_hash" in input
+    'descriptor_hash' in input
   );
 }
 
@@ -169,7 +169,7 @@ function adjacencyFor(
 ): Map<string, string[]> {
   const result = new Map<string, string[]>();
   for (const edge of edges) {
-    if (!includeBackEdges && edge.kind === "back_edge") continue;
+    if (!includeBackEdges && edge.kind === 'back_edge') continue;
     const targets = result.get(edge.from) ?? [];
     targets.push(edge.to);
     result.set(edge.from, targets);
@@ -284,16 +284,16 @@ function validateOutgoingContracts(
       }
       continue;
     }
-    if (node.kind === "human-approval") {
-      if (edges.length !== 1 || edges[0].kind !== "fixed") {
+    if (node.kind === 'human-approval') {
+      if (edges.length !== 1 || edges[0].kind !== 'fixed') {
         issues.push(
           `human-approval node ${node.id} must have exactly one fixed outgoing edge`,
         );
       }
       continue;
     }
-    if (node.kind === "join") {
-      if (edges.length !== 1 || edges[0].kind !== "fixed") {
+    if (node.kind === 'join') {
+      if (edges.length !== 1 || edges[0].kind !== 'fixed') {
         issues.push(
           `join node ${node.id} must have exactly one fixed outgoing edge`,
         );
@@ -308,28 +308,28 @@ function validateOutgoingContracts(
     }
     // A node whose only outgoing edge(s) are back_edges has no forward exit:
     // once max_traversals is exhausted the result is permanently uncommittable.
-    if (edges.every((edge) => edge.kind === "back_edge")) {
+    if (edges.every((edge) => edge.kind === 'back_edge')) {
       issues.push(
         `node ${node.id} has no non-back-edge exit; a back-edge-only node wedges once max_traversals is exhausted`,
       );
     }
 
     const kinds = new Set(edges.map((edge) => edge.kind));
-    if (kinds.has("fixed") && (edges.length !== 1 || kinds.size !== 1)) {
+    if (kinds.has('fixed') && (edges.length !== 1 || kinds.size !== 1)) {
       issues.push(
         `node ${node.id} must use one fixed edge or an explicit route/fan-out set`,
       );
     }
-    if (kinds.has("fan_out")) {
+    if (kinds.has('fan_out')) {
       if (kinds.size !== 1 || edges.length < 2) {
         issues.push(
           `fan-out node ${node.id} must declare at least two fan_out edges and no other edge kind`,
         );
       }
-    } else if (!kinds.has("fixed")) {
+    } else if (!kinds.has('fixed')) {
       if (
         [...kinds].some(
-          (kind) => kind !== "conditional" && kind !== "back_edge",
+          (kind) => kind !== 'conditional' && kind !== 'back_edge',
         )
       ) {
         issues.push(
@@ -339,13 +339,13 @@ function validateOutgoingContracts(
       const routes = edges
         .filter(
           (edge): edge is Extract<GraphEdge, { route: string }> =>
-            "route" in edge,
+            'route' in edge,
         )
         .map((edge) => edge.route);
       const repeatedRoutes = duplicates(routes);
       if (repeatedRoutes.length > 0) {
         issues.push(
-          `node ${node.id} declares duplicate route(s): ${repeatedRoutes.join(", ")}`,
+          `node ${node.id} declares duplicate route(s): ${repeatedRoutes.join(', ')}`,
         );
       }
     }
@@ -373,7 +373,7 @@ function validateForkRegions(
   const fanGroups = new Map<string, GraphFanOutEdge[]>();
   const branchOwners = new Map<string, string>();
   for (const edge of descriptor.edges) {
-    if (edge.kind !== "fan_out") continue;
+    if (edge.kind !== 'fan_out') continue;
     const group = fanGroups.get(edge.from) ?? [];
     group.push(edge);
     fanGroups.set(edge.from, group);
@@ -396,7 +396,7 @@ function validateForkRegions(
     }
     const joinNodeId = fanEdges[0].owner_join_id;
     const joinNode = nodes.get(joinNodeId);
-    if (joinNode?.kind !== "join") {
+    if (joinNode?.kind !== 'join') {
       issues.push(
         `fan-out node ${fanOutNodeId} references non-join owner ${joinNodeId}`,
       );
@@ -411,12 +411,12 @@ function validateForkRegions(
     const repeatedBranches = duplicates(branchIds);
     if (repeatedBranches.length > 0) {
       issues.push(
-        `fan-out node ${fanOutNodeId} repeats branch ID(s): ${repeatedBranches.join(", ")}`,
+        `fan-out node ${fanOutNodeId} repeats branch ID(s): ${repeatedBranches.join(', ')}`,
       );
     }
     if (
-      [...new Set(branchIds)].sort().join("\0") !==
-      [...new Set(joinNode.input_branch_ids)].sort().join("\0")
+      [...new Set(branchIds)].sort().join('\0') !==
+      [...new Set(joinNode.input_branch_ids)].sort().join('\0')
     ) {
       issues.push(
         `join ${joinNodeId} input branches do not match fan-out ${fanOutNodeId}`,
@@ -447,13 +447,13 @@ function validateForkRegions(
       }
       for (const nodeId of region.nodes) {
         const node = nodes.get(nodeId);
-        if (node?.kind === "join" && nodeId !== joinNodeId) {
+        if (node?.kind === 'join' && nodeId !== joinNodeId) {
           issues.push(
             `nested join ${nodeId} is not allowed inside fork region ${fanOutNodeId}`,
           );
         }
         if (
-          (outgoing.get(nodeId) ?? []).some((edge) => edge.kind === "fan_out")
+          (outgoing.get(nodeId) ?? []).some((edge) => edge.kind === 'fan_out')
         ) {
           issues.push(
             `nested fan-out ${nodeId} is not allowed inside fork region ${fanOutNodeId}`,
@@ -482,7 +482,7 @@ function validateForkRegions(
         );
         if (overlap.length > 0) {
           issues.push(
-            `fork branches ${groupRegions[left].branchId} and ${groupRegions[right].branchId} overlap at ${overlap.join(", ")}`,
+            `fork branches ${groupRegions[left].branchId} and ${groupRegions[right].branchId} overlap at ${overlap.join(', ')}`,
           );
         }
       }
@@ -490,7 +490,7 @@ function validateForkRegions(
   }
 
   for (const node of descriptor.nodes) {
-    if (node.kind === "join" && !fanGroups.has(node.fan_out_node_id)) {
+    if (node.kind === 'join' && !fanGroups.has(node.fan_out_node_id)) {
       issues.push(
         `join ${node.id} has no matching fan-out node ${node.fan_out_node_id}`,
       );
@@ -514,7 +514,7 @@ function validateForkRegions(
   for (const region of regions) {
     for (const edge of descriptor.edges) {
       if (
-        edge.kind === "fan_out" &&
+        edge.kind === 'fan_out' &&
         edge.from === region.fanOutNodeId &&
         edge.branch_id === region.branchId
       ) {
@@ -532,7 +532,7 @@ function validateForkRegions(
           `edge ${edge.id} crosses out of fork branch ${region.branchId}`,
         );
       }
-      if (edge.kind === "back_edge" && fromInside !== toInside) {
+      if (edge.kind === 'back_edge' && fromInside !== toInside) {
         issues.push(
           `back-edge ${edge.id} crosses fork region ${region.fanOutNodeId}`,
         );
@@ -541,7 +541,7 @@ function validateForkRegions(
   }
 
   for (const node of descriptor.nodes) {
-    if (node.kind !== "join") continue;
+    if (node.kind !== 'join') continue;
     const ownerRegions = regions.filter(
       (region) => region.joinNodeId === node.id,
     );
@@ -568,7 +568,7 @@ function validateEntryEligibility(
   for (const entry of descriptor.entry_node_ids) {
     const node = nodes.get(entry);
     if (node === undefined) continue; // existence already reported
-    if (node.kind === "join") {
+    if (node.kind === 'join') {
       issues.push(`entry node ${entry} must not be a join node`);
     } else if (regions.some((region) => region.nodes.has(entry))) {
       issues.push(
@@ -589,21 +589,21 @@ export function validateGraphDescriptor(
 
   const repeatedNodeIds = duplicates(descriptor.nodes.map((node) => node.id));
   if (repeatedNodeIds.length > 0) {
-    issues.push(`duplicate node ID(s): ${repeatedNodeIds.join(", ")}`);
+    issues.push(`duplicate node ID(s): ${repeatedNodeIds.join(', ')}`);
   }
   const repeatedEdgeIds = duplicates(descriptor.edges.map((edge) => edge.id));
   if (repeatedEdgeIds.length > 0) {
-    issues.push(`duplicate edge ID(s): ${repeatedEdgeIds.join(", ")}`);
+    issues.push(`duplicate edge ID(s): ${repeatedEdgeIds.join(', ')}`);
   }
   const repeatedEntries = duplicates(descriptor.entry_node_ids);
   if (repeatedEntries.length > 0) {
-    issues.push(`duplicate entry node ID(s): ${repeatedEntries.join(", ")}`);
+    issues.push(`duplicate entry node ID(s): ${repeatedEntries.join(', ')}`);
   }
 
   const invalidIds: string[] = [];
   for (const node of descriptor.nodes) {
     if (!isValidStableId(node.id)) invalidIds.push(node.id);
-    if (node.kind === "join") {
+    if (node.kind === 'join') {
       if (!isValidStableId(node.fan_out_node_id))
         invalidIds.push(node.fan_out_node_id);
       for (const branchId of node.input_branch_ids) {
@@ -615,10 +615,10 @@ export function validateGraphDescriptor(
     if (!isValidStableId(edge.id)) invalidIds.push(edge.id);
     if (!isValidStableId(edge.from)) invalidIds.push(edge.from);
     if (!isValidStableId(edge.to)) invalidIds.push(edge.to);
-    if (edge.kind === "conditional" || edge.kind === "back_edge") {
+    if (edge.kind === 'conditional' || edge.kind === 'back_edge') {
       if (!isValidStableId(edge.route)) invalidIds.push(edge.route);
     }
-    if (edge.kind === "fan_out") {
+    if (edge.kind === 'fan_out') {
       if (!isValidStableId(edge.branch_id)) invalidIds.push(edge.branch_id);
       if (!isValidStableId(edge.owner_join_id))
         invalidIds.push(edge.owner_join_id);
@@ -632,7 +632,7 @@ export function validateGraphDescriptor(
   }
   if (invalidIds.length > 0) {
     issues.push(
-      `invalid stable ID(s): ${[...new Set(invalidIds)].sort().join(", ")}`,
+      `invalid stable ID(s): ${[...new Set(invalidIds)].sort().join(', ')}`,
     );
   }
 
@@ -650,9 +650,9 @@ export function validateGraphDescriptor(
     issues.push(
       `terminal verification node ${descriptor.terminal_verification_node_id} does not exist`,
     );
-  } else if (terminalNode.kind !== "agent" && terminalNode.kind !== "command") {
+  } else if (terminalNode.kind !== 'agent' && terminalNode.kind !== 'command') {
     issues.push(
-      "terminal verification must be an executable agent or command node",
+      'terminal verification must be an executable agent or command node',
     );
   }
 
@@ -663,7 +663,7 @@ export function validateGraphDescriptor(
     .map((node) => node.id)
     .filter((id) => !reachable.has(id));
   if (unreachable.length > 0) {
-    issues.push(`unreachable node(s): ${unreachable.join(", ")}`);
+    issues.push(`unreachable node(s): ${unreachable.join(', ')}`);
   }
 
   const cycle = findForwardCycle(
@@ -671,11 +671,11 @@ export function validateGraphDescriptor(
     forwardAdjacency,
   );
   if (cycle) {
-    issues.push(`non-back-edge cycle detected: ${cycle.join(" -> ")}`);
+    issues.push(`non-back-edge cycle detected: ${cycle.join(' -> ')}`);
   }
 
   for (const edge of descriptor.edges) {
-    if (edge.kind === "back_edge") {
+    if (edge.kind === 'back_edge') {
       const isReturn =
         edge.to === edge.from ||
         isReachable(edge.to, edge.from, forwardAdjacency);
@@ -693,7 +693,7 @@ export function validateGraphDescriptor(
       .filter((id) => !isReachable(id, terminalNode.id, allAdjacency));
     if (cannotVerify.length > 0) {
       issues.push(
-        `every successful path must reach terminal verification; failing node(s): ${cannotVerify.join(", ")}`,
+        `every successful path must reach terminal verification; failing node(s): ${cannotVerify.join(', ')}`,
       );
     }
   }
@@ -721,7 +721,7 @@ export function validateGraphDescriptor(
 export function parseGraphDescriptor(input: unknown): GraphDescriptor {
   if (isRecordWithHash(input)) {
     throw new GraphDescriptorValidationError([
-      "sealed input must use `parseSealedGraphDescriptor`",
+      'sealed input must use `parseSealedGraphDescriptor`',
     ]);
   }
   const descriptor = validateGraphDescriptor(parseGraphDescriptorShape(input));
@@ -736,7 +736,7 @@ export function parseGraphDescriptor(input: unknown): GraphDescriptor {
 export function sealGraphDescriptor(input: unknown): SealedGraphDescriptor {
   if (isRecordWithHash(input)) {
     throw new GraphDescriptorValidationError([
-      "use `parseSealedGraphDescriptor` for persisted sealed input",
+      'use `parseSealedGraphDescriptor` for persisted sealed input',
     ]);
   }
   const descriptor = validateGraphDescriptor(parseGraphDescriptorShape(input));
@@ -757,23 +757,23 @@ export function parseSealedGraphDescriptor(
   input: unknown,
 ): SealedGraphDescriptor {
   const suppliedHash =
-    typeof input === "object" && input !== null && !Array.isArray(input)
+    typeof input === 'object' && input !== null && !Array.isArray(input)
       ? (input as Record<string, unknown>).descriptor_hash
       : undefined;
-  if (typeof suppliedHash !== "string") {
+  if (typeof suppliedHash !== 'string') {
     throw new GraphDescriptorValidationError([
-      "persisted sealed input must carry a `descriptor_hash`",
+      'persisted sealed input must carry a `descriptor_hash`',
     ]);
   }
   if (!DESCRIPTOR_HASH_PATTERN.test(suppliedHash)) {
     throw new GraphDescriptorValidationError([
-      "`descriptor_hash` must be 64 lowercase hexadecimal characters",
+      '`descriptor_hash` must be 64 lowercase hexadecimal characters',
     ]);
   }
   const descriptor = validateGraphDescriptor(parseGraphDescriptorShape(input));
   if (computeDescriptorHash(descriptor) !== suppliedHash) {
     throw new GraphDescriptorValidationError([
-      "descriptor hash does not match the exact revision",
+      'descriptor hash does not match the exact revision',
     ]);
   }
   const sealed: SealedGraphDescriptor = {

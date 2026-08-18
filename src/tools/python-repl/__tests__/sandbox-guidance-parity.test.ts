@@ -5,7 +5,10 @@ import { fileURLToPath } from 'url';
 import { pythonReplTool } from '../tool.js';
 import { pythonReplTool as pythonReplToolIndex } from '../index.js';
 import { buildListToolsResponse } from '../../../mcp/tool-registry.js';
-import { scientistAgent, SCIENTIST_PROMPT_METADATA } from '../../../agents/scientist.js';
+import {
+  scientistAgent,
+  SCIENTIST_PROMPT_METADATA,
+} from '../../../agents/scientist.js';
 import { loadAgentPrompt } from '../../../agents/utils.js';
 import { extractPythonGuidance } from './guidance-sections.js';
 import { toSdkToolFormat, type GenericToolDefinition } from '../../index.js';
@@ -63,7 +66,13 @@ const IMPORT_DIRECTIVES = [
   'from pathlib',
 ];
 
-const ML_DIRECTIVES = ['simple ml', 'clustering or regression', 'ml model training', 'ml/hypothesis', 'data science'];
+const ML_DIRECTIVES = [
+  'simple ml',
+  'clustering or regression',
+  'ml model training',
+  'ml/hypothesis',
+  'data science',
+];
 
 const SCIENTIST_WORKFLOW_DIRECTIVES = [
   'data files',
@@ -77,7 +86,8 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
   const listToolsDescription = (() => {
     const { tools } = buildListToolsResponse('');
     const python = tools.find((t) => t.name === 'python_repl');
-    if (!python) throw new Error('python_repl missing from standalone ListTools surface');
+    if (!python)
+      throw new Error('python_repl missing from standalone ListTools surface');
     return python.description;
   })();
 
@@ -137,7 +147,9 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
       it(`${name} does not direct file I/O, library APIs, imports, ML, or plotting workflows`, () => {
         const lower = text.toLowerCase();
         for (const term of scientistTerms) {
-          expect(lower, `${name} must not direct "${term}"`).not.toContain(term);
+          expect(lower, `${name} must not direct "${term}"`).not.toContain(
+            term,
+          );
         }
       });
 
@@ -167,7 +179,9 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
       // scientist has no Write/Edit tools and python_repl blocks file I/O and
       // plotting, so a figure-generation workflow is unimplementable.
       const sciomc = readFileSync(
-        fileURLToPath(new URL('../../../../skills/sciomc/SKILL.md', import.meta.url)),
+        fileURLToPath(
+          new URL('../../../../skills/sciomc/SKILL.md', import.meta.url),
+        ),
         'utf-8',
       ).toLowerCase();
       expect(sciomc).toContain('scientist');
@@ -195,19 +209,25 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
         (() => {
           const { tools } = buildListToolsResponse('');
           const python = tools.find((t) => t.name === 'python_repl');
-          if (!python) throw new Error('python_repl missing from standalone ListTools surface');
+          if (!python)
+            throw new Error(
+              'python_repl missing from standalone ListTools surface',
+            );
           return python.inputSchema;
         })(),
       ],
       [
         'Agent SDK toSdkToolFormat inputSchema',
-        toSdkToolFormat(pythonReplToolIndex as unknown as GenericToolDefinition).inputSchema,
+        toSdkToolFormat(pythonReplToolIndex as unknown as GenericToolDefinition)
+          .inputSchema,
       ],
     ];
 
     for (const [name, schema] of schemas) {
       it(`${name} serves parameter descriptions, so schema text is user-facing guidance`, () => {
-        const label = schema.properties.executionLabel as { description?: string };
+        const label = schema.properties.executionLabel as {
+          description?: string;
+        };
         expect(label?.description).toContain('Human-readable label');
       });
 
@@ -220,7 +240,9 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
           'generate plot',
           'save figure',
         ]) {
-          expect(lower, `${name} must not contain "${term}"`).not.toContain(term);
+          expect(lower, `${name} must not contain "${term}"`).not.toContain(
+            term,
+          );
         }
       });
     }
@@ -241,7 +263,9 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
       ],
       [
         'docs/shared/agent-tiers.md',
-        extractPythonGuidance(readDoc('../../../../docs/shared/agent-tiers.md')),
+        extractPythonGuidance(
+          readDoc('../../../../docs/shared/agent-tiers.md'),
+        ),
         ['ml/hypothesis', ...THIRD_PARTY_LIBRARIES],
       ],
       [
@@ -264,23 +288,32 @@ describe('python_repl sandbox guidance parity (#3682)', () => {
       it(`${name} python_repl/scientist guidance does not advertise blocked libraries or directives`, () => {
         const lower = guidance.toLowerCase();
         for (const term of terms) {
-          expect(lower, `${name} guidance must not contain "${term}"`).not.toContain(term);
+          expect(
+            lower,
+            `${name} guidance must not contain "${term}"`,
+          ).not.toContain(term);
         }
       });
     }
 
     it('docs/TOOLS.md guidance keeps the whole Python REPL section, examples included', () => {
-      const guidance = extractPythonGuidance(readDoc('../../../../docs/TOOLS.md'));
+      const guidance = extractPythonGuidance(
+        readDoc('../../../../docs/TOOLS.md'),
+      );
       expect(guidance).toContain('## Python REPL');
       expect(guidance).toContain('### Features');
-      expect(guidance.toLowerCase()).toContain('imports, file i/o, and dynamic code execution are blocked');
+      expect(guidance.toLowerCase()).toContain(
+        'imports, file i/o, and dynamic code execution are blocked',
+      );
       // Neighbouring tool sections stay out of scope.
       expect(guidance).not.toContain('## Session Search');
       expect(guidance).not.toContain('shared_memory_write');
     });
 
     it('docs/REFERENCE.md guidance keeps scientist rows without unrelated agent rows', () => {
-      const guidance = extractPythonGuidance(readDoc('../../../../docs/REFERENCE.md'));
+      const guidance = extractPythonGuidance(
+        readDoc('../../../../docs/REFERENCE.md'),
+      );
       expect(guidance).toContain('`scientist-high`');
       expect(guidance).not.toContain('`git-master`');
     });
@@ -324,7 +357,9 @@ describe('extractPythonGuidance', () => {
     expect(guidance).toContain('## Python REPL');
     expect(guidance).toContain('Sandboxed: imports are blocked.');
     expect(guidance).toContain('### Features');
-    expect(guidance).toContain('python_repl(code="print(sum(data) / len(data))")');
+    expect(guidance).toContain(
+      'python_repl(code="print(sum(data) / len(data))")',
+    );
   });
 
   it('drops unrelated sections and their code blocks', () => {

@@ -266,7 +266,9 @@ function cloneTranscriptData(result: TranscriptData): TranscriptData {
       endTime: cloneDate(agent.endTime),
     })),
     todos: result.todos.map((todo) => ({ ...todo })),
-    incomingMessages: result.incomingMessages?.map((message) => ({ ...message })),
+    incomingMessages: result.incomingMessages?.map((message) => ({
+      ...message,
+    })),
     sessionStart: cloneDate(result.sessionStart),
     lastActivatedSkill: result.lastActivatedSkill
       ? {
@@ -544,7 +546,7 @@ function processEntry(
     // peer messages are not tool results). tool_result blocks are deliberately
     // excluded so an agent quoting a wrapper inside its output cannot spoof an
     // incoming message (issue #3666).
-    if (block.type === "text") {
+    if (block.type === 'text') {
       const text = (block as { text?: string }).text;
       if (text) {
         const wrapper = parseIncomingAgentWrapper(text, entry.sessionId);

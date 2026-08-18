@@ -56,15 +56,21 @@
  */
 
 import { execFileSync } from 'child_process';
-import { existsSync, readFileSync, statSync, mkdirSync, appendFileSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  statSync,
+  mkdirSync,
+  appendFileSync,
+} from 'fs';
 import { dirname, isAbsolute, relative, resolve, sep } from 'path';
 import { readModeState } from '../../lib/mode-state-io.js';
-import { ensureSessionStateDir, getOmcRoot, getSessionStateDir } from '../../lib/worktree-paths.js';
 import {
-  findPrdPath,
-  readPrd,
-  writePrd,
-} from './prd.js';
+  ensureSessionStateDir,
+  getOmcRoot,
+  getSessionStateDir,
+} from '../../lib/worktree-paths.js';
+import { findPrdPath, readPrd, writePrd } from './prd.js';
 
 // ============================================================================
 // Constants
@@ -176,7 +182,12 @@ export interface ObservableCheckResult {
 
 function isPathWithinRoot(root: string, candidate: string): boolean {
   const rel = relative(root, candidate);
-  return rel !== '' && !rel.startsWith('..' + sep) && rel !== '..' && !isAbsolute(rel);
+  return (
+    rel !== '' &&
+    !rel.startsWith('..' + sep) &&
+    rel !== '..' &&
+    !isAbsolute(rel)
+  );
 }
 
 function resolveCheckPath(directory: string, checkPath: string): string | null {
@@ -189,7 +200,10 @@ function resolveCheckPath(directory: string, checkPath: string): string | null {
   return isPathWithinRoot(root, candidate) ? candidate : null;
 }
 
-function runGit(args: string[], directory: string): { exitCode: number; detail: string } {
+function runGit(
+  args: string[],
+  directory: string,
+): { exitCode: number; detail: string } {
   try {
     execFileSync('git', args, {
       cwd: directory,
@@ -201,22 +215,35 @@ function runGit(args: string[], directory: string): { exitCode: number; detail: 
     });
     return { exitCode: 0, detail: '' };
   } catch (error) {
-    const err = error as { status?: number; stderr?: string | Buffer; message?: string };
+    const err = error as {
+      status?: number;
+      stderr?: string | Buffer;
+      message?: string;
+    };
     if (typeof err.status === 'number' && err.status !== 0) {
       // git grep exits 1 when no match; git merge-base --is-ancestor exits 1 when not an ancestor.
-      return { exitCode: err.status, detail: err.status === 1 ? '' : String(err.stderr ?? '') };
+      return {
+        exitCode: err.status,
+        detail: err.status === 1 ? '' : String(err.stderr ?? ''),
+      };
     }
     return { exitCode: -1, detail: err.message ?? String(error) };
   }
 }
 
-function checkFileExists(check: ObservableCheck, directory: string): ObservableCheckResult {
+function checkFileExists(
+  check: ObservableCheck,
+  directory: string,
+): ObservableCheckResult {
   if (!check.path) {
     return { passed: false, detail: 'fileExists check requires a path' };
   }
   const resolved = resolveCheckPath(directory, check.path);
   if (!resolved) {
-    return { passed: false, detail: `path escapes repository root: ${check.path}` };
+    return {
+      passed: false,
+      detail: `path escapes repository root: ${check.path}`,
+    };
   }
   if (!existsSync(resolved) || !statSync(resolved).isFile()) {
     return { passed: false, detail: `file not found: ${check.path}` };
@@ -224,7 +251,10 @@ function checkFileExists(check: ObservableCheck, directory: string): ObservableC
   return { passed: true, detail: `file exists: ${check.path}` };
 }
 
-function checkFileContains(check: ObservableCheck, directory: string): ObservableCheckResult {
+function checkFileContains(
+  check: ObservableCheck,
+  directory: string,
+): ObservableCheckResult {
   const fileResult = checkFileExists(check, directory);
   if (!fileResult.passed) {
     return fileResult;
@@ -239,29 +269,47 @@ function checkFileContains(check: ObservableCheck, directory: string): Observabl
       ? { passed: true, detail: `pattern found in ${check.path}` }
       : { passed: false, detail: `pattern not found in ${check.path}` };
   } catch (error) {
-    return { passed: false, detail: `failed to read ${check.path}: ${error instanceof Error ? error.message : String(error)}` };
+    return {
+      passed: false,
+      detail: `failed to read ${check.path}: ${error instanceof Error ? error.message : String(error)}`,
+    };
   }
 }
 
-function checkGitGrep(check: ObservableCheck, directory: string): ObservableCheckResult {
+function checkGitGrep(
+  check: ObservableCheck,
+  directory: string,
+): ObservableCheckResult {
   if (!check.pattern) {
     return { passed: false, detail: 'gitGrep check requires a pattern' };
   }
   const ref = check.ref ?? 'HEAD';
   const result = runGit(['grep', '-q', '-e', check.pattern, ref], directory);
   if (result.exitCode === 0) {
-    return { passed: true, detail: `git grep ${check.pattern} at ${ref}: found` };
+    return {
+      passed: true,
+      detail: `git grep ${check.pattern} at ${ref}: found`,
+    };
   }
   if (result.exitCode === 1) {
-    return { passed: false, detail: `git grep ${check.pattern} at ${ref}: not found` };
+    return {
+      passed: false,
+      detail: `git grep ${check.pattern} at ${ref}: not found`,
+    };
   }
-  return { passed: false, detail: `git grep failed: ${result.detail || 'git unavailable'}` };
+  return {
+    passed: false,
+    detail: `git grep failed: ${result.detail || 'git unavailable'}`,
+  };
 }
 
 /**
  * Run a single observable check. All checks are bounded and fail closed.
  */
-export function runObservableCheck(check: ObservableCheck, directory: string): ObservableCheckResult {
+export function runObservableCheck(
+  check: ObservableCheck,
+  directory: string,
+): ObservableCheckResult {
   switch (check.type) {
     case 'fileExists':
       return checkFileExists(check, directory);
@@ -270,7 +318,10 @@ export function runObservableCheck(check: ObservableCheck, directory: string): O
     case 'gitGrep':
       return checkGitGrep(check, directory);
     default:
-      return { passed: false, detail: `unknown check type: ${(check as { type: string }).type}` };
+      return {
+        passed: false,
+        detail: `unknown check type: ${(check as { type: string }).type}`,
+      };
   }
 }
 
@@ -309,16 +360,25 @@ function currentBranch(directory: string): string | null {
 }
 
 function branchExists(directory: string, branch: string): boolean {
-  const result = runGit(['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`], directory);
+  const result = runGit(
+    ['rev-parse', '--verify', '--quiet', `refs/heads/${branch}`],
+    directory,
+  );
   if (result.exitCode === 0) {
     return true;
   }
-  const remoteResult = runGit(['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`], directory);
+  const remoteResult = runGit(
+    ['rev-parse', '--verify', '--quiet', `refs/remotes/origin/${branch}`],
+    directory,
+  );
   return remoteResult.exitCode === 0;
 }
 
 function isBranchMergedIntoHead(directory: string, branch: string): boolean {
-  const result = runGit(['merge-base', '--is-ancestor', branch, 'HEAD'], directory);
+  const result = runGit(
+    ['merge-base', '--is-ancestor', branch, 'HEAD'],
+    directory,
+  );
   return result.exitCode === 0;
 }
 
@@ -360,7 +420,9 @@ export function detectStalePrd(
     // Unreadable file: age unknown, treated as fresh so detection stays conservative.
   }
 
-  const unfinished = prd.userStories.filter(s => s.passes !== true).map(s => s.id);
+  const unfinished = prd.userStories
+    .filter((s) => s.passes !== true)
+    .map((s) => s.id);
   const total = prd.userStories.length;
   const completed = total - unfinished.length;
 
@@ -369,13 +431,18 @@ export function detectStalePrd(
 
   // Abnormal exit: the ralph loop state for this session is still active, so
   // Step 8 (`/oh-my-claudecode:cancel`) never ran.
-  const ralphState = readModeState<{ active?: boolean }>('ralph', directory, sessionId);
+  const ralphState = readModeState<{ active?: boolean }>(
+    'ralph',
+    directory,
+    sessionId,
+  );
   const abnormalExit = includeAbnormalExit && ralphState?.active === true;
   if (abnormalExit) {
     reasons.push('Ralph loop state is still active (Step 8 cancel never ran)');
   }
 
-  const staleAfterMs = prd.reconciliation?.staleAfterMs ?? DEFAULT_STALE_PRD_AFTER_MS;
+  const staleAfterMs =
+    prd.reconciliation?.staleAfterMs ?? DEFAULT_STALE_PRD_AFTER_MS;
   if (ageMs > staleAfterMs) {
     reasons.push(`PRD was last touched ${formatAge(ageMs)} ago`);
   }
@@ -388,7 +455,9 @@ export function detectStalePrd(
       if (!branchExists(directory, prd.branchName)) {
         stalePointers.push(`branch "${prd.branchName}" no longer exists`);
       } else if (isBranchMergedIntoHead(directory, prd.branchName)) {
-        stalePointers.push(`branch "${prd.branchName}" is already merged into ${head ?? 'HEAD'}`);
+        stalePointers.push(
+          `branch "${prd.branchName}" is already merged into ${head ?? 'HEAD'}`,
+        );
       }
     }
   }
@@ -419,7 +488,10 @@ export function detectStalePrd(
 function getAuditLogPath(directory: string, sessionId?: string): string {
   if (sessionId) {
     ensureSessionStateDir(sessionId, directory);
-    return resolve(getSessionStateDir(sessionId, directory), PRD_RECONCILIATION_AUDIT_FILENAME);
+    return resolve(
+      getSessionStateDir(sessionId, directory),
+      PRD_RECONCILIATION_AUDIT_FILENAME,
+    );
   }
   const stateDir = resolve(getOmcRoot(directory), 'state');
   if (!existsSync(stateDir)) {
@@ -432,7 +504,11 @@ function getAuditLogPath(directory: string, sessionId?: string): string {
   return resolve(stateDir, PRD_RECONCILIATION_AUDIT_FILENAME);
 }
 
-function appendAuditEntry(directory: string, entry: ReconciliationAuditEntry, sessionId?: string): string | null {
+function appendAuditEntry(
+  directory: string,
+  entry: ReconciliationAuditEntry,
+  sessionId?: string,
+): string | null {
   const auditPath = getAuditLogPath(directory, sessionId);
   try {
     mkdirSync(dirname(auditPath), { recursive: true });
@@ -472,9 +548,10 @@ export function formatStalePrdWarning(detection: StalePrdDetection): string {
   const touched = detection.lastTouchedAt
     ? ` and was last touched ${formatAge(detection.ageMs)} ago`
     : '';
-  const reasons = detection.reasons.length > 0
-    ? ` Signals: ${detection.reasons.join('; ')}.`
-    : '';
+  const reasons =
+    detection.reasons.length > 0
+      ? ` Signals: ${detection.reasons.join('; ')}.`
+      : '';
 
   const lines = [
     `[STALE PRD WARNING] prd.json (${detection.prdPath}) has ${unfinished.length}/${total} unfinished stories${storyList}, ${completed}/${total} complete${touched}.${reasons}`,
@@ -489,10 +566,15 @@ export function formatStalePrdWarning(detection: StalePrdDetection): string {
 // Reconciliation
 // ============================================================================
 
-function buildEvidence(checks: ObservableCheck[], results: ObservableCheckResult[]): string {
+function buildEvidence(
+  checks: ObservableCheck[],
+  results: ObservableCheckResult[],
+): string {
   return checks
     .map((check, i) => {
-      const label = check.description ?? `${check.type}${check.path ? ` ${check.path}` : ''}${check.pattern ? ` ${check.pattern}` : ''}`;
+      const label =
+        check.description ??
+        `${check.type}${check.path ? ` ${check.path}` : ''}${check.pattern ? ` ${check.pattern}` : ''}`;
       return `${label}: ${results[i].passed ? 'PASS' : 'FAIL'}${results[i].detail ? ` (${results[i].detail})` : ''}`;
     })
     .join('; ');
@@ -506,10 +588,21 @@ function buildEvidence(checks: ObservableCheck[], results: ObservableCheckResult
  * configured evidence, or with failing checks, are left untouched. Every
  * decision is audited. Never infers completion from PR/merge status.
  */
-export function reconcileStalePrd(directory: string, sessionId?: string): ReconcileStalePrdResult | null {
+export function reconcileStalePrd(
+  directory: string,
+  sessionId?: string,
+): ReconcileStalePrdResult | null {
   const detection = detectStalePrd(directory, sessionId);
   if (!detection || !detection.stale) {
-    return detection ? { detection, reconciled: [], skipped: [], auditPath: null, warning: null } : null;
+    return detection
+      ? {
+          detection,
+          reconciled: [],
+          skipped: [],
+          auditPath: null,
+          warning: null,
+        }
+      : null;
   }
 
   const prd = readPrd(directory, sessionId);
@@ -534,7 +627,11 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
 
     const checks = checksByStory[story.id];
     if (!checks || checks.length === 0) {
-      skipped.push({ storyId: story.id, reason: 'no configured observable evidence (prd.reconciliation.observableChecks)' });
+      skipped.push({
+        storyId: story.id,
+        reason:
+          'no configured observable evidence (prd.reconciliation.observableChecks)',
+      });
       entries.push({
         timestamp: new Date().toISOString(),
         sessionId,
@@ -549,14 +646,17 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
       continue;
     }
 
-    const results = checks.map(check => runObservableCheck(check, directory));
-    const allPass = results.every(r => r.passed);
+    const results = checks.map((check) => runObservableCheck(check, directory));
+    const allPass = results.every((r) => r.passed);
     const evidence = buildEvidence(checks, results);
 
     if (autoReconcile && allPass) {
       story.passes = true;
       story.architectVerified = false;
-      story.notes = appendStoryNote(story.notes, `Reconciled from observable evidence on ${new Date().toISOString()}: ${evidence}`);
+      story.notes = appendStoryNote(
+        story.notes,
+        `Reconciled from observable evidence on ${new Date().toISOString()}: ${evidence}`,
+      );
       reconciled.push(story.id);
       entries.push({
         timestamp: new Date().toISOString(),
@@ -565,13 +665,19 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
         decision: 'reconciled',
         previousPasses: false,
         newPasses: true,
-        checks: checks.map((check, i) => ({ check, passed: results[i].passed, detail: results[i].detail })),
+        checks: checks.map((check, i) => ({
+          check,
+          passed: results[i].passed,
+          detail: results[i].detail,
+        })),
         evidence,
       });
     } else {
       skipped.push({
         storyId: story.id,
-        reason: autoReconcile ? `observable evidence check failed: ${evidence}` : 'autoReconcile disabled',
+        reason: autoReconcile
+          ? `observable evidence check failed: ${evidence}`
+          : 'autoReconcile disabled',
       });
       entries.push({
         timestamp: new Date().toISOString(),
@@ -580,9 +686,15 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
         decision: 'skipped',
         previousPasses: story.passes,
         newPasses: story.passes,
-        checks: checks.map((check, i) => ({ check, passed: results[i].passed, detail: results[i].detail })),
+        checks: checks.map((check, i) => ({
+          check,
+          passed: results[i].passed,
+          detail: results[i].detail,
+        })),
         evidence,
-        reason: autoReconcile ? 'observable evidence check failed' : 'autoReconcile disabled',
+        reason: autoReconcile
+          ? 'observable evidence check failed'
+          : 'autoReconcile disabled',
       });
     }
   }
@@ -603,7 +715,13 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
     return {
       detection,
       reconciled: [],
-      skipped: [...skipped, ...reconciled.map(storyId => ({ storyId, reason: 'prd write failed after checks passed' }))],
+      skipped: [
+        ...skipped,
+        ...reconciled.map((storyId) => ({
+          storyId,
+          reason: 'prd write failed after checks passed',
+        })),
+      ],
       auditPath,
       warning: formatStalePrdWarning(detection),
     };
@@ -614,10 +732,17 @@ export function reconcileStalePrd(directory: string, sessionId?: string): Reconc
     if (path) auditPath = path;
   }
 
-  const remaining = prd.userStories.filter(s => s.passes !== true).map(s => s.id);
+  const remaining = prd.userStories
+    .filter((s) => s.passes !== true)
+    .map((s) => s.id);
   const warning =
     remaining.length > 0
-      ? formatStalePrdWarning({ ...detection, unfinished: remaining, completed: prd.userStories.length - remaining.length, stale: true })
+      ? formatStalePrdWarning({
+          ...detection,
+          unfinished: remaining,
+          completed: prd.userStories.length - remaining.length,
+          stale: true,
+        })
       : null;
 
   return { detection, reconciled, skipped, auditPath, warning };
@@ -633,7 +758,10 @@ function appendStoryNote(notes: string | undefined, addition: string): string {
  * BEFORE mode-state cleanup removes the ralph state file (the abnormal-exit
  * signal). Never throws; session end must never be blocked by this check.
  */
-export function getSessionEndStalePrdWarning(directory: string, sessionId: string): string | null {
+export function getSessionEndStalePrdWarning(
+  directory: string,
+  sessionId: string,
+): string | null {
   try {
     const detection = detectStalePrd(directory, sessionId);
     if (!detection || detection.unfinished.length === 0) {
@@ -650,7 +778,10 @@ export function getSessionEndStalePrdWarning(directory: string, sessionId: strin
  * configured observable evidence exists, and surface the remaining warning.
  * Never throws; ralph startup must not be blocked by this check.
  */
-export function reconcileStalePrdForStartup(directory: string, sessionId?: string): { warning: string | null } {
+export function reconcileStalePrdForStartup(
+  directory: string,
+  sessionId?: string,
+): { warning: string | null } {
   try {
     const result = reconcileStalePrd(directory, sessionId);
     return { warning: result?.warning ?? null };
@@ -658,4 +789,3 @@ export function reconcileStalePrdForStartup(directory: string, sessionId?: strin
     return { warning: null };
   }
 }
-

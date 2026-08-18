@@ -861,8 +861,12 @@ describe('doctor-conflicts: CLAUDE.md companion file detection (issue #1101)', (
     expect(status!.files).toHaveLength(1);
 
     const report = runConflictCheck();
-    expect(report.mcpRegistrySync.registryPath).toBe(join(TEST_PROJECT_DIR, '.omc-home', 'mcp-registry.json'));
-    expect(report.mcpRegistrySync.codexConfigPath).toBe(join(TEST_PROJECT_DIR, '.codex', 'config.toml'));
+    expect(report.mcpRegistrySync.registryPath).toBe(
+      join(TEST_PROJECT_DIR, '.omc-home', 'mcp-registry.json'),
+    );
+    expect(report.mcpRegistrySync.codexConfigPath).toBe(
+      join(TEST_PROJECT_DIR, '.codex', 'config.toml'),
+    );
     expect(report.hasConflicts).toBe(false);
   });
 

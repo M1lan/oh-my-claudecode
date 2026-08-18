@@ -15,7 +15,12 @@ import {
 } from '../cutover.js';
 
 describe('hook dispatcher cutover flags (#3708)', () => {
-  const envKeys = ['OMC_HOOK_DISPATCHER', 'OMC_HOOK_CUTOVER', 'OMC_HOOK_ROLLBACK', 'OMC_HOOK_DISPATCHER_ROLLBACK'] as const;
+  const envKeys = [
+    'OMC_HOOK_DISPATCHER',
+    'OMC_HOOK_CUTOVER',
+    'OMC_HOOK_ROLLBACK',
+    'OMC_HOOK_DISPATCHER_ROLLBACK',
+  ] as const;
   let saved: Record<string, string | undefined>;
   beforeEach(() => {
     saved = {};
@@ -135,15 +140,16 @@ describe('hook dispatcher bounded telemetry (#3708)', () => {
       durationMs: 1,
       recordedAt: new Date().toISOString(),
     });
-    expect(readDispatchTelemetryTail(2).at(-1)?.appliedDecision).toBe('advisory');
+    expect(readDispatchTelemetryTail(2).at(-1)?.appliedDecision).toBe(
+      'advisory',
+    );
   });
 });
-  it('bridge preserves delegation hard stops under cutover (material enforcement)', async () => {
-    // delegationEnforcementLevel=strict must still hard-block regardless of cutover state;
-    // verify the cutover flags treat PreToolUse as cut over yet delegation contract keeps its deny
-    expect(isFamilyCutoverEnabled('PreToolUse')).toBe(true);
-    // trivial proof: ordinary procedure demotion is now limited to prompt prerequisites,
-    // not delegation. This is verified by the delegation-enforcement-levels suite:
-    // calls enforcement before HUD tracking + blocks propagated from enforcement.
-  });
-
+it('bridge preserves delegation hard stops under cutover (material enforcement)', async () => {
+  // delegationEnforcementLevel=strict must still hard-block regardless of cutover state;
+  // verify the cutover flags treat PreToolUse as cut over yet delegation contract keeps its deny
+  expect(isFamilyCutoverEnabled('PreToolUse')).toBe(true);
+  // trivial proof: ordinary procedure demotion is now limited to prompt prerequisites,
+  // not delegation. This is verified by the delegation-enforcement-levels suite:
+  // calls enforcement before HUD tracking + blocks propagated from enforcement.
+});

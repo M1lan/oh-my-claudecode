@@ -50,11 +50,26 @@ describe('pre-tool-use template source extension detection', () => {
 
   describe('read-only commands stay quiet', () => {
     it.each([
-      ['grep over source files with a stderr redirect', 'grep -n foo *.mjs 2>/dev/null | head'],
-      ['cat of a source file with a stderr redirect', 'cat src/app.mjs 2>/dev/null | head -20'],
-      ['find for source files with a stderr redirect', 'ls -la; find . -name "*.mjs" 2>/dev/null'],
-      ['write and source mention in different segments', 'echo hi > notes.txt; grep -n pattern app.ts'],
-      ['non-source write followed by a source read', 'printf "%s" x > README.md && node --check hooks/run.mjs'],
+      [
+        'grep over source files with a stderr redirect',
+        'grep -n foo *.mjs 2>/dev/null | head',
+      ],
+      [
+        'cat of a source file with a stderr redirect',
+        'cat src/app.mjs 2>/dev/null | head -20',
+      ],
+      [
+        'find for source files with a stderr redirect',
+        'ls -la; find . -name "*.mjs" 2>/dev/null',
+      ],
+      [
+        'write and source mention in different segments',
+        'echo hi > notes.txt; grep -n pattern app.ts',
+      ],
+      [
+        'non-source write followed by a source read',
+        'printf "%s" x > README.md && node --check hooks/run.mjs',
+      ],
     ])('does not warn: %s', (_label, command) => {
       const output = runPreToolUseHook(command);
 
@@ -72,7 +87,9 @@ describe('pre-tool-use template source extension detection', () => {
         output.hookSpecificOutput as { additionalContext?: string } | undefined
       )?.additionalContext;
 
-      expect(additionalContext).toContain('Bash command may modify source files');
+      expect(additionalContext).toContain(
+        'Bash command may modify source files',
+      );
       expect(additionalContext).toContain(`(${command.length} chars)`);
       expect(additionalContext).not.toContain(filler);
     });
@@ -81,8 +98,7 @@ describe('pre-tool-use template source extension detection', () => {
       const command = 'sed -i s/a/b/ src/app.ts';
       const additionalContext = (
         runPreToolUseHook(command).hookSpecificOutput as
-          | { additionalContext?: string }
-          | undefined
+          { additionalContext?: string } | undefined
       )?.additionalContext;
 
       expect(additionalContext).toContain(command);
@@ -95,12 +111,14 @@ describe('pre-tool-use template source extension detection', () => {
       ['in-place sed', 'sed -i s/a/b/ src/app.ts'],
       ['redirect into a source file', 'echo "x" > lib/util.js'],
       ['append into a source file', 'cat fragment.txt >> src/index.mjs'],
-      ['source write after a read-only segment', 'ls -la | head; sed -i s/x/y/ src/main.py'],
+      [
+        'source write after a read-only segment',
+        'ls -la | head; sed -i s/x/y/ src/main.py',
+      ],
     ])('warns: %s', (_label, command) => {
       const output = runPreToolUseHook(command);
       const hookSpecificOutput = output.hookSpecificOutput as
-        | { additionalContext?: string }
-        | undefined;
+        { additionalContext?: string } | undefined;
 
       expect(output.continue).toBe(true);
       expect(hookSpecificOutput?.additionalContext).toContain(

@@ -8,7 +8,14 @@
 
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  existsSync,
+  readFileSync,
+} from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -24,7 +31,11 @@ function makeProject(root: string): string {
   return project;
 }
 
-function writeCheckpoint(project: string, createdAt: string, extra: Record<string, unknown> = {}): string {
+function writeCheckpoint(
+  project: string,
+  createdAt: string,
+  extra: Record<string, unknown> = {},
+): string {
   const dir = join(project, '.omc', 'state', 'checkpoints');
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `checkpoint-${createdAt.replace(/[:.]/g, '-')}.json`);
@@ -47,7 +58,11 @@ interface RunResult {
   stdout: string;
 }
 
-function runHook(payload: Record<string, unknown>, project: string, home: string): RunResult {
+function runHook(
+  payload: Record<string, unknown>,
+  project: string,
+  home: string,
+): RunResult {
   const stdout = execFileSync(NODE, [SCRIPT_PATH], {
     input: JSON.stringify(payload),
     encoding: 'utf-8',
@@ -107,19 +122,15 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
 
   it('restores the newest checkpoint when source=compact', () => {
     writeCheckpoint(project, new Date(Date.now() - 60_000).toISOString());
-    writeCheckpoint(
-      project,
-      new Date().toISOString(),
-      {
-        plan_refs: {
-          boulder: {
-            active_plan: '/repo/.omc/plans/epic.md',
-            plan_name: 'epic',
-            progress: { total: 3, completed: 2, isComplete: false },
-          },
+    writeCheckpoint(project, new Date().toISOString(), {
+      plan_refs: {
+        boulder: {
+          active_plan: '/repo/.omc/plans/epic.md',
+          plan_name: 'epic',
+          progress: { total: 3, completed: 2, isComplete: false },
         },
       },
-    );
+    });
 
     const { stdout } = runHookWithPlugin(
       {
@@ -169,7 +180,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('does not restore on source=resume', () => {
@@ -186,7 +199,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('does not restore a second time for the same session (replay guard)', () => {
@@ -202,7 +217,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       project,
       home,
     );
-    expect(parseContext(first.stdout)).toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(first.stdout)).toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
 
     const second = runHookWithPlugin(
       {
@@ -214,7 +231,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       project,
       home,
     );
-    expect(parseContext(second.stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(second.stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('fails open (no restore) on a malformed checkpoint', () => {
@@ -233,7 +252,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('fails open (no restore) when no checkpoints exist', () => {
@@ -248,7 +269,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('writes the replay marker under the session-scoped restore directory', () => {
@@ -265,7 +288,14 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    const markerPath = join(project, '.omc', 'state', 'checkpoints-restored', 'session-3730', 'restored.json');
+    const markerPath = join(
+      project,
+      '.omc',
+      'state',
+      'checkpoints-restored',
+      'session-3730',
+      'restored.json',
+    );
     expect(existsSync(markerPath)).toBe(true);
     const marker = JSON.parse(readFileSync(markerPath, 'utf-8'));
     expect(marker.checkpoint).toBe(file);
@@ -287,7 +317,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
   });
 
   it('restores without CLAUDE_PLUGIN_ROOT set (self-contained helper, no dist dependency)', () => {
@@ -322,7 +354,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
       home,
     );
 
-    expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+    expect(parseContext(stdout)).not.toContain(
+      'PRECOMPACT CHECKPOINT RESTORED',
+    );
     // No marker escapes the omc root
     expect(existsSync('/tmp/escaped-3730-hook-trav/restored.json')).toBe(false);
   });
@@ -341,7 +375,9 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
         project,
         home,
       );
-      expect(parseContext(stdout)).not.toContain('PRECOMPACT CHECKPOINT RESTORED');
+      expect(parseContext(stdout)).not.toContain(
+        'PRECOMPACT CHECKPOINT RESTORED',
+      );
     }
   });
 });
@@ -349,7 +385,15 @@ describe('session-start.mjs PreCompact checkpoint restore (issue #3730)', () => 
 // Template parity: the templates/hooks/lib/precompact-restore.mjs helper must
 // reject the same traversal payloads as the scripts/ copy.
 describe('templates/hooks/lib/precompact-restore.mjs parity (issue #3730 security)', () => {
-  const TEMPLATE_HELPER = join(__dirname, '..', '..', 'templates', 'hooks', 'lib', 'precompact-restore.mjs');
+  const TEMPLATE_HELPER = join(
+    __dirname,
+    '..',
+    '..',
+    'templates',
+    'hooks',
+    'lib',
+    'precompact-restore.mjs',
+  );
 
   let tempDir: string;
   let project: string;
@@ -357,10 +401,18 @@ describe('templates/hooks/lib/precompact-restore.mjs parity (issue #3730 securit
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), 'omc-precompact-template-parity-'));
     project = join(tempDir, 'project');
-    mkdirSync(join(project, '.omc', 'state', 'checkpoints'), { recursive: true });
+    mkdirSync(join(project, '.omc', 'state', 'checkpoints'), {
+      recursive: true,
+    });
     writeFileSync(
       join(project, '.omc', 'state', 'checkpoints', 'checkpoint-now.json'),
-      JSON.stringify({ created_at: new Date().toISOString(), trigger: 'auto', active_modes: {}, todo_summary: { pending: 1, in_progress: 0, completed: 0 }, wisdom_exported: false }),
+      JSON.stringify({
+        created_at: new Date().toISOString(),
+        trigger: 'auto',
+        active_modes: {},
+        todo_summary: { pending: 1, in_progress: 0, completed: 0 },
+        wisdom_exported: false,
+      }),
       'utf-8',
     );
   });
@@ -370,17 +422,35 @@ describe('templates/hooks/lib/precompact-restore.mjs parity (issue #3730 securit
   });
 
   it('rejects traversal session IDs in the template helper (parity with scripts/)', async () => {
-    const mod = await import(pathToFileURL(TEMPLATE_HELPER).href) as { restorePreCompactCheckpoint: (root: string, sid: string) => { text: string } | null };
+    const mod = (await import(pathToFileURL(TEMPLATE_HELPER).href)) as {
+      restorePreCompactCheckpoint: (
+        root: string,
+        sid: string,
+      ) => { text: string } | null;
+    };
     const omcRoot = join(project, '.omc');
-    const result = mod.restorePreCompactCheckpoint(omcRoot, '../../../../../../tmp/escaped-3730-template-trav');
+    const result = mod.restorePreCompactCheckpoint(
+      omcRoot,
+      '../../../../../../tmp/escaped-3730-template-trav',
+    );
     expect(result).toBeNull();
-    expect(existsSync('/tmp/escaped-3730-template-trav/restored.json')).toBe(false);
+    expect(existsSync('/tmp/escaped-3730-template-trav/restored.json')).toBe(
+      false,
+    );
   });
 
   it('restores a valid session ID in the template helper (parity with scripts/)', async () => {
-    const mod = await import(pathToFileURL(TEMPLATE_HELPER).href) as { restorePreCompactCheckpoint: (root: string, sid: string) => { text: string } | null };
+    const mod = (await import(pathToFileURL(TEMPLATE_HELPER).href)) as {
+      restorePreCompactCheckpoint: (
+        root: string,
+        sid: string,
+      ) => { text: string } | null;
+    };
     const omcRoot = join(project, '.omc');
-    const result = mod.restorePreCompactCheckpoint(omcRoot, 'valid-session-3730');
+    const result = mod.restorePreCompactCheckpoint(
+      omcRoot,
+      'valid-session-3730',
+    );
     expect(result).not.toBeNull();
     expect(result!.text).toContain('PRECOMPACT CHECKPOINT RESTORED');
   });

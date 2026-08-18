@@ -13,7 +13,10 @@ import { emitMonitorDerivedEvents, readTeamEventsByType } from '../events.js';
 const TEAM = 'demo-team';
 const WORKER = 'worker-1';
 
-function seed(cwd: string, options: { undeliveredInbound?: boolean; undeliveredOutbound?: boolean } = {}): string {
+function seed(
+  cwd: string,
+  options: { undeliveredInbound?: boolean; undeliveredOutbound?: boolean } = {},
+): string {
   const stateDir = join(cwd, '.omc', 'state');
   const teamDir = join(stateDir, 'team', TEAM);
   const mailboxDir = join(teamDir, 'mailbox');
@@ -40,13 +43,15 @@ function seed(cwd: string, options: { undeliveredInbound?: boolean; undeliveredO
       join(mailboxDir, 'leader-fixed.json'),
       JSON.stringify({
         worker: 'leader-fixed',
-        messages: [{
-          message_id: 'msg-out-1',
-          from_worker: WORKER,
-          to_worker: 'leader-fixed',
-          body: 'Review findings.',
-          created_at: nowIso,
-        }],
+        messages: [
+          {
+            message_id: 'msg-out-1',
+            from_worker: WORKER,
+            to_worker: 'leader-fixed',
+            body: 'Review findings.',
+            created_at: nowIso,
+          },
+        ],
       }),
     );
   }

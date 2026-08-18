@@ -32,9 +32,28 @@ describe('scanMailboxOutstanding', () => {
       JSON.stringify({
         worker: 'worker-1',
         messages: [
-          { message_id: 'm1', from_worker: 'leader-fixed', to_worker: 'worker-1', body: 'review', created_at: nowIso },
-          { message_id: 'm2', from_worker: 'worker-2', to_worker: 'worker-1', body: 'ping', created_at: nowIso },
-          { message_id: 'm3', from_worker: 'leader-fixed', to_worker: 'worker-1', body: 'acked', created_at: nowIso, delivered_at: nowIso },
+          {
+            message_id: 'm1',
+            from_worker: 'leader-fixed',
+            to_worker: 'worker-1',
+            body: 'review',
+            created_at: nowIso,
+          },
+          {
+            message_id: 'm2',
+            from_worker: 'worker-2',
+            to_worker: 'worker-1',
+            body: 'ping',
+            created_at: nowIso,
+          },
+          {
+            message_id: 'm3',
+            from_worker: 'leader-fixed',
+            to_worker: 'worker-1',
+            body: 'acked',
+            created_at: nowIso,
+            delivered_at: nowIso,
+          },
         ],
       }),
     );
@@ -43,15 +62,30 @@ describe('scanMailboxOutstanding', () => {
       JSON.stringify({
         worker: 'leader-fixed',
         messages: [
-          { message_id: 'm4', from_worker: 'worker-1', to_worker: 'leader-fixed', body: 'report', created_at: nowIso },
+          {
+            message_id: 'm4',
+            from_worker: 'worker-1',
+            to_worker: 'leader-fixed',
+            body: 'report',
+            created_at: nowIso,
+          },
         ],
       }),
     );
 
     const result = await scanMailboxOutstanding(dir);
-    expect(result['worker-1']).toEqual({ undeliveredInbound: 2, undeliveredOutbound: 1 });
-    expect(result['worker-2']).toEqual({ undeliveredInbound: 0, undeliveredOutbound: 1 });
-    expect(result['leader-fixed']).toEqual({ undeliveredInbound: 1, undeliveredOutbound: 1 });
+    expect(result['worker-1']).toEqual({
+      undeliveredInbound: 2,
+      undeliveredOutbound: 1,
+    });
+    expect(result['worker-2']).toEqual({
+      undeliveredInbound: 0,
+      undeliveredOutbound: 1,
+    });
+    expect(result['leader-fixed']).toEqual({
+      undeliveredInbound: 1,
+      undeliveredOutbound: 1,
+    });
   });
 
   it('treats delivered messages as non-outstanding (ack transition clears)', async () => {
@@ -61,13 +95,23 @@ describe('scanMailboxOutstanding', () => {
       JSON.stringify({
         worker: 'worker-1',
         messages: [
-          { message_id: 'm1', from_worker: 'leader-fixed', to_worker: 'worker-1', body: 'review', created_at: nowIso, delivered_at: nowIso },
+          {
+            message_id: 'm1',
+            from_worker: 'leader-fixed',
+            to_worker: 'worker-1',
+            body: 'review',
+            created_at: nowIso,
+            delivered_at: nowIso,
+          },
         ],
       }),
     );
 
     const result = await scanMailboxOutstanding(dir);
-    expect(result['worker-1']).toEqual({ undeliveredInbound: 0, undeliveredOutbound: 0 });
+    expect(result['worker-1']).toEqual({
+      undeliveredInbound: 0,
+      undeliveredOutbound: 0,
+    });
   });
 
   it('supports legacy JSONL mailboxes and bare-array JSON mailboxes', async () => {
@@ -79,13 +123,25 @@ describe('scanMailboxOutstanding', () => {
     writeFileSync(
       join(dir, 'worker-2.json'),
       JSON.stringify([
-        { message_id: 'b1', from_worker: 'leader-fixed', to_worker: 'worker-2', body: 'bare', created_at: nowIso },
+        {
+          message_id: 'b1',
+          from_worker: 'leader-fixed',
+          to_worker: 'worker-2',
+          body: 'bare',
+          created_at: nowIso,
+        },
       ]),
     );
 
     const result = await scanMailboxOutstanding(dir);
-    expect(result['worker-1']).toEqual({ undeliveredInbound: 1, undeliveredOutbound: 0 });
-    expect(result['worker-2']).toEqual({ undeliveredInbound: 1, undeliveredOutbound: 0 });
+    expect(result['worker-1']).toEqual({
+      undeliveredInbound: 1,
+      undeliveredOutbound: 0,
+    });
+    expect(result['worker-2']).toEqual({
+      undeliveredInbound: 1,
+      undeliveredOutbound: 0,
+    });
   });
 
   it('tolerates missing directories, missing files, and malformed JSON (race)', async () => {
@@ -94,7 +150,10 @@ describe('scanMailboxOutstanding', () => {
 
     writeFileSync(join(dir, 'worker-1.json'), '{broken json');
     const mixed = await scanMailboxOutstanding(dir);
-    expect(mixed['worker-1']).toEqual({ undeliveredInbound: 0, undeliveredOutbound: 0 });
+    expect(mixed['worker-1']).toEqual({
+      undeliveredInbound: 0,
+      undeliveredOutbound: 0,
+    });
 
     const single = await countOutstandingForWorker(dir, 'worker-1');
     expect(single).toEqual(ZERO_OUTSTANDING);
@@ -106,11 +165,25 @@ describe('scanMailboxOutstanding', () => {
     writeFileSync(join(dir, 'worker-1.txt'), 'ignored');
     writeFileSync(
       join(dir, 'worker-1.json'),
-      JSON.stringify({ worker: 'worker-1', messages: [{ message_id: 'm1', from_worker: 'x', to_worker: 'worker-1', body: 'b', created_at: nowIso }] }),
+      JSON.stringify({
+        worker: 'worker-1',
+        messages: [
+          {
+            message_id: 'm1',
+            from_worker: 'x',
+            to_worker: 'worker-1',
+            body: 'b',
+            created_at: nowIso,
+          },
+        ],
+      }),
     );
 
     const result = await scanMailboxOutstanding(dir);
-    expect(result['worker-1']).toEqual({ undeliveredInbound: 1, undeliveredOutbound: 0 });
+    expect(result['worker-1']).toEqual({
+      undeliveredInbound: 1,
+      undeliveredOutbound: 0,
+    });
     // 'x' appears as the sender-ledger key for the undelivered message; lock
     // and unknown-extension files are never parsed as mailboxes.
     expect(Object.keys(result).sort()).toEqual(['worker-1', 'x']);
@@ -118,6 +191,8 @@ describe('scanMailboxOutstanding', () => {
 
   it('returns zero for an unknown or empty worker name', async () => {
     expect(await countOutstandingForWorker(dir, '')).toEqual(ZERO_OUTSTANDING);
-    expect(await countOutstandingForWorker(dir, 'ghost')).toEqual(ZERO_OUTSTANDING);
+    expect(await countOutstandingForWorker(dir, 'ghost')).toEqual(
+      ZERO_OUTSTANDING,
+    );
   });
 });

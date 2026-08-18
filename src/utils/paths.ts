@@ -281,7 +281,9 @@ function isUsableVersionPath(path: string): boolean {
   // directory (not usable — the runner validates the resolved root), and a
   // dangling redirect (not usable).
   if (!stats.isDirectory() && !stats.isSymbolicLink()) return false;
-  return PLUGIN_ROOT_REQUIREMENTS.every(required => existsSync(join(path, required)));
+  return PLUGIN_ROOT_REQUIREMENTS.every((required) =>
+    existsSync(join(path, required)),
+  );
 }
 
 /**
@@ -365,7 +367,12 @@ function placeClearingSquatters(
   containedIn: string,
 ): { ok: true } | { ok: false; last: unknown } {
   if (stripTrailing(dirname(path)) !== stripTrailing(containedIn)) {
-    return { ok: false, last: new Error(`refusing to clear ${path}: not a child of ${containedIn}`) };
+    return {
+      ok: false,
+      last: new Error(
+        `refusing to clear ${path}: not a child of ${containedIn}`,
+      ),
+    };
   }
   let last: unknown;
   for (let attempt = 0; attempt < RELINK_ATTEMPTS; attempt++) {
@@ -418,7 +425,11 @@ function relinkStaleVersionDir(versionDir: string, target: string): void {
 
   let failure: unknown;
   try {
-    const placed = placeClearingSquatters(versionDir, () => symlinkSync(target, versionDir, symlinkType), pluginDir);
+    const placed = placeClearingSquatters(
+      versionDir,
+      () => symlinkSync(target, versionDir, symlinkType),
+      pluginDir,
+    );
     if (placed.ok) {
       safeRmSync(asideDir);
       return;
@@ -431,10 +442,16 @@ function relinkStaleVersionDir(versionDir: string, target: string): void {
     failure = err;
   }
 
-  if (!placeClearingSquatters(versionDir, () => renameSync(asideDir, versionDir), pluginDir).ok) {
+  if (
+    !placeClearingSquatters(
+      versionDir,
+      () => renameSync(asideDir, versionDir),
+      pluginDir,
+    ).ok
+  ) {
     throw new Error(
       `could not place redirect symlink (${describeError(failure)}) and could not restore the ` +
-      `original: it is left at ${asideDir}`,
+        `original: it is left at ${asideDir}`,
     );
   }
   throw failure;
@@ -596,7 +613,11 @@ export function purgeStalePluginCacheVersions(options?: {
       // arrive in filesystem order, so a squatter at `4.15.6` could otherwise be
       // relinked first — and that relink clears `4.15.6.omc-stale-<pid>`, the
       // only intact backup, before anyone knows the new symlink can be placed.
-      const asideEntries: { versionDir: string; originalDir: string; ownerPid: number }[] = [];
+      const asideEntries: {
+        versionDir: string;
+        originalDir: string;
+        ownerPid: number;
+      }[] = [];
       const plainVersions: string[] = [];
       for (const version of versions) {
         const aside = ASIDE_SUFFIX_RE.exec(version);
@@ -627,7 +648,9 @@ export function purgeStalePluginCacheVersions(options?: {
         // stays broken with nothing to show for it.
         if (isAsideOwnerAlive(ownerPid)) {
           result.skipped++;
-          result.skippedPaths.push(`${versionDir} (owner pid ${ownerPid} still running)`);
+          result.skippedPaths.push(
+            `${versionDir} (owner pid ${ownerPid} still running)`,
+          );
           continue;
         }
         try {
@@ -640,8 +663,16 @@ export function purgeStalePluginCacheVersions(options?: {
             // lost window.  The aside copy is the sole intact version, so it
             // wins: clear the squatter and move it back, retrying if the
             // squatter comes back while we do.
-            if (!placeClearingSquatters(originalDir, () => renameSync(versionDir, originalDir), pluginDir).ok) {
-              throw new Error(`could not restore it over the path after ${RELINK_ATTEMPTS} attempts`);
+            if (
+              !placeClearingSquatters(
+                originalDir,
+                () => renameSync(versionDir, originalDir),
+                pluginDir,
+              ).ok
+            ) {
+              throw new Error(
+                `could not restore it over the path after ${RELINK_ATTEMPTS} attempts`,
+              );
             }
             result.restored++;
             result.restoredPaths.push(originalDir);
@@ -710,7 +741,10 @@ export function purgeStalePluginCacheVersions(options?: {
           // A no-sibling directory is the only destructive cleanup path.  A
           // session-start occupancy record protects it; registry failures also
           // fail closed rather than treating mtime as a liveness signal.
-          if (occupancy.unavailable || occupancy.roots.has(resolve(versionDir))) {
+          if (
+            occupancy.unavailable ||
+            occupancy.roots.has(resolve(versionDir))
+          ) {
             result.skipped++;
             result.skippedPaths.push(versionDir);
             continue;

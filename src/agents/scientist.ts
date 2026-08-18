@@ -33,7 +33,8 @@ export const SCIENTIST_PROMPT_METADATA: AgentPromptMetadata = {
     { domain: 'EDA', trigger: 'Exploratory data analysis on in-memory data' },
     {
       domain: 'Hypothesis testing',
-      trigger: 'Statistical comparisons with built-in functions on in-memory data',
+      trigger:
+        'Statistical comparisons with built-in functions on in-memory data',
     },
     {
       domain: 'Research stages',

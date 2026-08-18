@@ -269,7 +269,7 @@ const BASEDPYRIGHT_SERVER: LspServerConfig = {
   command: 'basedpyright-langserver',
   args: ['--stdio'],
   extensions: ['.py', '.pyw'],
-  installHint: 'uv tool install basedpyright'
+  installHint: 'uv tool install basedpyright',
 };
 
 /** Resolve the supported Python language server. Only exact basedpyright opts in. */
@@ -384,7 +384,9 @@ export function getServerForLanguage(language: string): LspServerConfig | null {
 
   const serverKey = langMap[language.toLowerCase()];
   if (serverKey && LSP_SERVERS[serverKey]) {
-    return serverKey === 'python' ? resolvePythonServer() : LSP_SERVERS[serverKey];
+    return serverKey === 'python'
+      ? resolvePythonServer()
+      : LSP_SERVERS[serverKey];
   }
 
   return null;

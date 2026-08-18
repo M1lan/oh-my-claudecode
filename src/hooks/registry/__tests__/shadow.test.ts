@@ -37,7 +37,9 @@ afterEach(() => {
   clearShadowLog();
 });
 
-function record(partial: Partial<ShadowComparisonRecord>): ShadowComparisonRecord {
+function record(
+  partial: Partial<ShadowComparisonRecord>,
+): ShadowComparisonRecord {
   return {
     schemaVersion: 1,
     hookType: 'keyword-detector',
@@ -69,7 +71,11 @@ describe('shadow mode — feature flag and rollback (#3707)', () => {
   });
 
   it('shadow observation is a no-op while disabled', async () => {
-    const result = await runShadowObservation('keyword-detector', { continue: true }, 5);
+    const result = await runShadowObservation(
+      'keyword-detector',
+      { continue: true },
+      5,
+    );
     expect(result).toBeNull();
   });
 });
@@ -77,8 +83,14 @@ describe('shadow mode — feature flag and rollback (#3707)', () => {
 describe('shadow comparison — decision equivalence (#3707)', () => {
   it('digests decision shape only, never content (privacy-preserving)', () => {
     const a = decisionDigest({ continue: true, message: 'secret user text A' });
-    const b = decisionDigest({ continue: true, message: 'totally different secret B' });
-    const c = decisionDigest({ continue: false, message: 'secret user text A' });
+    const b = decisionDigest({
+      continue: true,
+      message: 'totally different secret B',
+    });
+    const c = decisionDigest({
+      continue: false,
+      message: 'secret user text A',
+    });
     expect(a).toBe(b); // message content does not affect the digest
     expect(a).not.toBe(c); // decision flag does
     expect(a).toMatch(/^[0-9a-f]{64}$/);
@@ -89,21 +101,39 @@ describe('shadow comparison — decision equivalence (#3707)', () => {
     const registry = getShadowRegistry();
     expect(registry.length).toBeGreaterThan(0);
 
-    const unmapped = compareShadowExecution('not-a-hook', registry, { continue: true }, 1, 1);
+    const unmapped = compareShadowExecution(
+      'not-a-hook',
+      registry,
+      { continue: true },
+      1,
+      1,
+    );
     expect(unmapped.verdict).toBe('unmapped');
     expect(unmapped.event).toBeNull();
 
-    const deferred = compareShadowExecution('keyword-detector', registry, { continue: true }, 1, 1);
+    const deferred = compareShadowExecution(
+      'keyword-detector',
+      registry,
+      { continue: true },
+      1,
+      1,
+    );
     // Side-effecting handlers are not re-executed in shadow mode: equivalence
     // evidence is deferred to the #3708 cutover by design.
     expect(deferred.verdict).toBe('deferred');
     expect(deferred.event).toBe('UserPromptSubmit');
-    expect(deferred.registryEntryIds).toEqual(['UserPromptSubmit:*:keyword-detector.mjs']);
+    expect(deferred.registryEntryIds).toEqual([
+      'UserPromptSubmit:*:keyword-detector.mjs',
+    ]);
   });
 
   it('runShadowObservation records a comparison for a mapped hook type', async () => {
     process.env.OMC_HOOK_SHADOW = '1';
-    const result = await runShadowObservation('keyword-detector', { continue: true }, 3);
+    const result = await runShadowObservation(
+      'keyword-detector',
+      { continue: true },
+      3,
+    );
     expect(result).not.toBeNull();
     expect(result?.event).toBe('UserPromptSubmit');
     expect(['deferred', 'equivalent']).toContain(result?.verdict);
@@ -114,11 +144,17 @@ describe('shadow comparison — decision equivalence (#3707)', () => {
 
   it('flags divergence when the dispatcher selects a different set', async () => {
     process.env.OMC_HOOK_SHADOW = '1';
-    const result = await runShadowObservation('session-start', { continue: true }, 3);
+    const result = await runShadowObservation(
+      'session-start',
+      { continue: true },
+      3,
+    );
     expect(result).not.toBeNull();
     // session-start maps to exactly one registry entry; the dispatcher must
     // select that entry for the SessionStart event.
-    expect(result?.registryEntryIds).toEqual(['SessionStart:*:session-start.mjs']);
+    expect(result?.registryEntryIds).toEqual([
+      'SessionStart:*:session-start.mjs',
+    ]);
     expect(result?.verdict).toBe('deferred');
   });
 });
@@ -171,7 +207,9 @@ describe('shadow mode — no behavior change through the bridge (#3707)', () => 
 
   it('shadow observation never blocks or alters an erroring legacy path', async () => {
     process.env.OMC_HOOK_SHADOW = '1';
-    const output = await processHook('code-simplifier', { directory: '/tmp/omc-shadow-test' } as never);
+    const output = await processHook('code-simplifier', {
+      directory: '/tmp/omc-shadow-test',
+    } as never);
     expect(output.continue).not.toBe(false);
   });
 });

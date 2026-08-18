@@ -341,16 +341,22 @@ describe('Python server selection', () => {
     expect(LSP_SERVERS.python.args).toEqual(['server']);
   });
 
-  it.each(['', '   ', 'ty', 'TY', 'BasedPyright', 'pyright', 'basedpyright ', 'jedi'])(
-    'uses ty for unsupported selector value %j',
-    value => {
-      vi.stubEnv('OMC_PYTHON_LSP', value);
+  it.each([
+    '',
+    '   ',
+    'ty',
+    'TY',
+    'BasedPyright',
+    'pyright',
+    'basedpyright ',
+    'jedi',
+  ])('uses ty for unsupported selector value %j', (value) => {
+    vi.stubEnv('OMC_PYTHON_LSP', value);
 
-      expect(resolvePythonServer()).toBe(LSP_SERVERS.python);
-      expect(getServerForFile('app.py')).toBe(getServerForLanguage('python'));
-      expect(getServerForFile('app.pyw')).toBe(LSP_SERVERS.python);
-    }
-  );
+    expect(resolvePythonServer()).toBe(LSP_SERVERS.python);
+    expect(getServerForFile('app.py')).toBe(getServerForLanguage('python'));
+    expect(getServerForFile('app.pyw')).toBe(LSP_SERVERS.python);
+  });
 
   it('uses basedpyright only for the exact selector value', () => {
     vi.stubEnv('OMC_PYTHON_LSP', 'basedpyright');
@@ -361,7 +367,7 @@ describe('Python server selection', () => {
       command: 'basedpyright-langserver',
       args: ['--stdio'],
       extensions: ['.py', '.pyw'],
-      installHint: 'uv tool install basedpyright'
+      installHint: 'uv tool install basedpyright',
     });
     expect(getServerForFile('app.py')).toBe(server);
     expect(getServerForFile('app.pyw')).toBe(server);
@@ -378,7 +384,9 @@ describe('Python server selection', () => {
   it('lists only the selected Python server', () => {
     vi.stubEnv('OMC_PYTHON_LSP', 'basedpyright');
 
-    const pythonServers = getAllServers().filter(server => server.extensions.includes('.py'));
+    const pythonServers = getAllServers().filter((server) =>
+      server.extensions.includes('.py'),
+    );
     expect(pythonServers).toHaveLength(1);
     expect(pythonServers[0].command).toBe('basedpyright-langserver');
   });

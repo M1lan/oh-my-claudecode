@@ -21,16 +21,28 @@
  * back to legacy mapping without a code revert.
  */
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync, appendFileSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  appendFileSync,
+} from 'fs';
 import { join } from 'path';
 import { getOmcRoot, resolveToWorktreeRoot } from '../lib/worktree-paths.js';
-
 
 // ---------------------------------------------------------------------------
 // Tier-0 contract
 // ---------------------------------------------------------------------------
 
-export const TIER0_WORKFLOWS = ['plan', 'deep-interview', 'ralplan', 'execute', 'review', 'verify'] as const;
+export const TIER0_WORKFLOWS = [
+  'plan',
+  'deep-interview',
+  'ralplan',
+  'execute',
+  'review',
+  'verify',
+] as const;
 export type Tier0Workflow = (typeof TIER0_WORKFLOWS)[number];
 
 export type AliasTarget = Tier0Workflow | 'omc-release';
@@ -59,40 +71,232 @@ const CANONICAL_SET = new Set<string>(TIER0_WORKFLOWS);
 
 export const ALIAS_REGISTRY: readonly AliasEntry[] = [
   // ---- Workflow aliases → execute ----
-  { alias: 'autopilot', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'legacy autopilot pipeline', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ralph', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'ralph continuation/evidence', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ultrawork', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'ultrawork parallelism', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ultrapilot', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'ultrapilot (team+ultragoal)', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'swarm', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'swarm workers', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'pipeline', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'legacy pipeline stages', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'team', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'team orchestration (now executor detail)', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ccg', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'claude-codex-gemini orchestration', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'omc-teams', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'omc-teams command alias', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
+  {
+    alias: 'autopilot',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'legacy autopilot pipeline',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ralph',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'ralph continuation/evidence',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ultrawork',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'ultrawork parallelism',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ultrapilot',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'ultrapilot (team+ultragoal)',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'swarm',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'swarm workers',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'pipeline',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'legacy pipeline stages',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'team',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'team orchestration (now executor detail)',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ccg',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'claude-codex-gemini orchestration',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'omc-teams',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'omc-teams command alias',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
 
   // ---- Workflow aliases → plan ----
-  { alias: 'sciomc', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'sciomc research', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'autoresearch', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'autoresearch lane', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'deep-dive', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'deep-dive research', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ultragoal', canonical: 'execute', tier0: 'execute', owner: 'workflow-registry', description: 'ultragoal stages', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
+  {
+    alias: 'sciomc',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'sciomc research',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'autoresearch',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'autoresearch lane',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'deep-dive',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'deep-dive research',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ultragoal',
+    canonical: 'execute',
+    tier0: 'execute',
+    owner: 'workflow-registry',
+    description: 'ultragoal stages',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
 
   // ---- Workflow aliases → review ----
-  { alias: 'merge-readiness', canonical: 'review', tier0: 'review', owner: 'workflow-registry', description: 'merge-readiness gate', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'ai-slop-cleaner', canonical: 'review', tier0: 'review', owner: 'workflow-registry', description: 'ai-slop-cleaner (opt-in)', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'visual-verdict', canonical: 'review', tier0: 'review', owner: 'workflow-registry', description: 'visual-verdict (opt-in)', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
+  {
+    alias: 'merge-readiness',
+    canonical: 'review',
+    tier0: 'review',
+    owner: 'workflow-registry',
+    description: 'merge-readiness gate',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'ai-slop-cleaner',
+    canonical: 'review',
+    tier0: 'review',
+    owner: 'workflow-registry',
+    description: 'ai-slop-cleaner (opt-in)',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'visual-verdict',
+    canonical: 'review',
+    tier0: 'review',
+    owner: 'workflow-registry',
+    description: 'visual-verdict (opt-in)',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
 
   // ---- Workflow aliases → verify ----
-  { alias: 'ultraqa', canonical: 'verify', tier0: 'verify', owner: 'workflow-registry', description: 'ultraqa QA cycle', removalMilestone: '≥2 minor +90d, ≥95% canonical', isWorkflowAlias: true },
-  { alias: 'verify', canonical: 'verify', tier0: 'verify', owner: 'workflow-registry', description: 'verify (now Tier-0)', removalMilestone: 'canonical', isWorkflowAlias: true },
+  {
+    alias: 'ultraqa',
+    canonical: 'verify',
+    tier0: 'verify',
+    owner: 'workflow-registry',
+    description: 'ultraqa QA cycle',
+    removalMilestone: '≥2 minor +90d, ≥95% canonical',
+    isWorkflowAlias: true,
+  },
+  {
+    alias: 'verify',
+    canonical: 'verify',
+    tier0: 'verify',
+    owner: 'workflow-registry',
+    description: 'verify (now Tier-0)',
+    removalMilestone: 'canonical',
+    isWorkflowAlias: true,
+  },
 
   // ---- Utility compatibility aliases (not Tier-0, kept for diagnostics) ----
-  { alias: 'mcp-setup', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'mcp-setup → omc-setup (utility)', removalMilestone: '≥2 minor +90d', isWorkflowAlias: false },
-  { alias: 'learner', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'learner → skillify/memory', removalMilestone: '≥2 minor +90d', isWorkflowAlias: false },
-  { alias: 'writer-memory', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'writer-memory → memory utility', removalMilestone: '≥2 minor +90d', isWorkflowAlias: false },
-  { alias: 'psm', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'psm → project-session-manager', removalMilestone: '≥2 minor +90d', isWorkflowAlias: false },
-  { alias: 'self-improve', canonical: 'plan', tier0: 'plan', owner: 'workflow-registry', description: 'self-improve (opt-in)', removalMilestone: '≥2 minor +90d', isWorkflowAlias: false },
+  {
+    alias: 'mcp-setup',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'mcp-setup → omc-setup (utility)',
+    removalMilestone: '≥2 minor +90d',
+    isWorkflowAlias: false,
+  },
+  {
+    alias: 'learner',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'learner → skillify/memory',
+    removalMilestone: '≥2 minor +90d',
+    isWorkflowAlias: false,
+  },
+  {
+    alias: 'writer-memory',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'writer-memory → memory utility',
+    removalMilestone: '≥2 minor +90d',
+    isWorkflowAlias: false,
+  },
+  {
+    alias: 'psm',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'psm → project-session-manager',
+    removalMilestone: '≥2 minor +90d',
+    isWorkflowAlias: false,
+  },
+  {
+    alias: 'self-improve',
+    canonical: 'plan',
+    tier0: 'plan',
+    owner: 'workflow-registry',
+    description: 'self-improve (opt-in)',
+    removalMilestone: '≥2 minor +90d',
+    isWorkflowAlias: false,
+  },
 
   // ---- Maintainer-only release ----
-  { alias: 'release', canonical: 'omc-release', owner: 'maintainers', description: 'release → maintainer-only omc release', removalMilestone: 'compatibility alias during migration; never auto-removed without owner approval', isWorkflowAlias: true },
+  {
+    alias: 'release',
+    canonical: 'omc-release',
+    owner: 'maintainers',
+    description: 'release → maintainer-only omc release',
+    removalMilestone:
+      'compatibility alias during migration; never auto-removed without owner approval',
+    isWorkflowAlias: true,
+  },
 ] as const;
 
 const aliasLookup = new Map<string, AliasEntry>();
@@ -108,7 +312,8 @@ export function isResolverEnabled(): boolean {
   const env = process.env.OMC_ALIAS_RESOLVER_ENABLED;
   if (env !== undefined) {
     const v = env.trim().toLowerCase();
-    if (v === '0' || v === 'false' || v === 'off' || v === 'disabled') return false;
+    if (v === '0' || v === 'false' || v === 'off' || v === 'disabled')
+      return false;
     if (v === '1' || v === 'true' || v === 'on' || v === 'enabled') return true;
   }
   // Also respect generic disable env
@@ -121,11 +326,27 @@ export function isResolverEnabled(): boolean {
 // ---------------------------------------------------------------------------
 
 export function isWarningOptedOut(): boolean {
-  const env = process.env.OMC_ALIAS_WARNINGS ?? process.env.OMC_ALIAS_WARNING_OPT_OUT ?? process.env.OMC_ALIAS_NO_WARNING;
+  const env =
+    process.env.OMC_ALIAS_WARNINGS ??
+    process.env.OMC_ALIAS_WARNING_OPT_OUT ??
+    process.env.OMC_ALIAS_NO_WARNING;
   if (env !== undefined) {
     const v = env.trim().toLowerCase();
     const hasWarningsKey = process.env.OMC_ALIAS_WARNINGS !== undefined;
-    if (['0', 'false', 'off', '1', 'true', 'disabled', 'enabled', 'on', 'no', 'yes'].includes(v)) {
+    if (
+      [
+        '0',
+        'false',
+        'off',
+        '1',
+        'true',
+        'disabled',
+        'enabled',
+        'on',
+        'no',
+        'yes',
+      ].includes(v)
+    ) {
       if (hasWarningsKey) {
         if (['0', 'false', 'off', 'disabled', 'no'].includes(v)) return true;
         return false;
@@ -177,7 +398,10 @@ export interface AliasResolution {
   enabled: boolean;
 }
 
-export function formatAliasWarning(alias: string, canonical: AliasTarget): string {
+export function formatAliasWarning(
+  alias: string,
+  canonical: AliasTarget,
+): string {
   if (canonical === 'omc-release') {
     return `Alias "${alias}" is deprecated → use "omc release" (maintainer-only). Run "omc release --help" for the canonical path.`;
   }
@@ -190,8 +414,12 @@ export function resolveWorkflowAlias(rawInput: string): AliasResolution {
 
   // Fast path: resolver disabled → legacy behavior (no alias routing)
   if (!enabled) {
-    const canon = (CANONICAL_SET.has(normalized) ? normalized : normalized) as AliasTarget;
-    const tier0 = (TIER0_WORKFLOWS as readonly string[]).includes(normalized) ? (normalized as Tier0Workflow) : null;
+    const canon = (
+      CANONICAL_SET.has(normalized) ? normalized : normalized
+    ) as AliasTarget;
+    const tier0 = (TIER0_WORKFLOWS as readonly string[]).includes(normalized)
+      ? (normalized as Tier0Workflow)
+      : null;
     return {
       input: rawInput,
       normalized,
@@ -223,11 +451,18 @@ export function resolveWorkflowAlias(rawInput: string): AliasResolution {
 
   const entry = aliasLookup.get(normalized);
   if (entry) {
-    const _isAlias = entry.canonical !== entry.alias.toLowerCase() || !CANONICAL_SET.has(normalized);
+    const _isAlias =
+      entry.canonical !== entry.alias.toLowerCase() ||
+      !CANONICAL_SET.has(normalized);
     // canonical entries that are themselves Tier-0 (e.g. verify) are not aliases even if present in registry
-    const trulyAlias = entry.alias.toLowerCase() !== entry.canonical.toLowerCase() || !CANONICAL_SET.has(normalized);
+    const trulyAlias =
+      entry.alias.toLowerCase() !== entry.canonical.toLowerCase() ||
+      !CANONICAL_SET.has(normalized);
     // For 'verify' canonical entry we still treat as non-alias (isAlias false) to avoid warning on canonical use
-    if (entry.alias.toLowerCase() === entry.canonical.toLowerCase() && CANONICAL_SET.has(normalized)) {
+    if (
+      entry.alias.toLowerCase() === entry.canonical.toLowerCase() &&
+      CANONICAL_SET.has(normalized)
+    ) {
       return {
         input: rawInput,
         normalized,
@@ -241,7 +476,9 @@ export function resolveWorkflowAlias(rawInput: string): AliasResolution {
         enabled: true,
       };
     }
-    const warn = trulyAlias ? formatAliasWarning(entry.alias, entry.canonical) : null;
+    const warn = trulyAlias
+      ? formatAliasWarning(entry.alias, entry.canonical)
+      : null;
     return {
       input: rawInput,
       normalized,
@@ -288,12 +525,19 @@ export function resolveWorkflowAlias(rawInput: string): AliasResolution {
 }
 
 // Adapter seam for future registry (#3703): callers can inject a lookup function
-export type AliasRegistryLookup = (normalized: string) => AliasEntry | undefined;
-export function resolveWorkflowAliasViaRegistry(rawInput: string, lookup: AliasRegistryLookup): AliasResolution {
+export type AliasRegistryLookup = (
+  normalized: string,
+) => AliasEntry | undefined;
+export function resolveWorkflowAliasViaRegistry(
+  rawInput: string,
+  lookup: AliasRegistryLookup,
+): AliasResolution {
   const normalized = normalizeWorkflowInput(rawInput);
   const enabled = isResolverEnabled();
   if (!enabled) {
-    const tier0 = (TIER0_WORKFLOWS as readonly string[]).includes(normalized) ? (normalized as Tier0Workflow) : null;
+    const tier0 = (TIER0_WORKFLOWS as readonly string[]).includes(normalized)
+      ? (normalized as Tier0Workflow)
+      : null;
     return {
       input: rawInput,
       normalized,
@@ -309,8 +553,13 @@ export function resolveWorkflowAliasViaRegistry(rawInput: string, lookup: AliasR
   }
   const entry = lookup(normalized);
   if (entry) {
-    const isAlias = entry.alias.toLowerCase() !== entry.canonical.toLowerCase() || !CANONICAL_SET.has(normalized);
-    if (entry.alias.toLowerCase() === entry.canonical.toLowerCase() && CANONICAL_SET.has(normalized)) {
+    const isAlias =
+      entry.alias.toLowerCase() !== entry.canonical.toLowerCase() ||
+      !CANONICAL_SET.has(normalized);
+    if (
+      entry.alias.toLowerCase() === entry.canonical.toLowerCase() &&
+      CANONICAL_SET.has(normalized)
+    ) {
       return {
         input: rawInput,
         normalized,
@@ -332,7 +581,9 @@ export function resolveWorkflowAliasViaRegistry(rawInput: string, lookup: AliasR
       isAlias: isAlias,
       isCanonical: !isAlias,
       isRelease: entry.canonical === 'omc-release',
-      warning: isAlias ? formatAliasWarning(entry.alias, entry.canonical) : null,
+      warning: isAlias
+        ? formatAliasWarning(entry.alias, entry.canonical)
+        : null,
       mapping: { alias: entry.alias, canonical: entry.canonical },
       enabled: true,
     };
@@ -370,16 +621,18 @@ export function resolveWorkflowAliasViaRegistry(rawInput: string, lookup: AliasR
 // ---------------------------------------------------------------------------
 
 export function getAliasMapping(): AliasMappingDiagnostics[] {
-  return ALIAS_REGISTRY
-    .filter((e) => e.alias.toLowerCase() !== e.canonical.toLowerCase() || !CANONICAL_SET.has(e.alias.toLowerCase()))
-    .map((e) => ({
-      alias: e.alias,
-      canonical: e.canonical,
-      tier0: e.tier0 ?? null,
-      warning: formatAliasWarning(e.alias, e.canonical),
-      owner: e.owner,
-      removalMilestone: e.removalMilestone,
-    }));
+  return ALIAS_REGISTRY.filter(
+    (e) =>
+      e.alias.toLowerCase() !== e.canonical.toLowerCase() ||
+      !CANONICAL_SET.has(e.alias.toLowerCase()),
+  ).map((e) => ({
+    alias: e.alias,
+    canonical: e.canonical,
+    tier0: e.tier0 ?? null,
+    warning: formatAliasWarning(e.alias, e.canonical),
+    owner: e.owner,
+    removalMilestone: e.removalMilestone,
+  }));
 }
 
 export function getDiagnostics(): {
@@ -414,20 +667,28 @@ function aliasWarningsPath(sessionId?: string, worktreeRoot?: string): string {
 
 type WarningsState = Record<string, string>; // alias(normalized) -> iso timestamp warned
 
-function readWarnings(sessionId?: string, worktreeRoot?: string): WarningsState {
+function readWarnings(
+  sessionId?: string,
+  worktreeRoot?: string,
+): WarningsState {
   const p = aliasWarningsPath(sessionId, worktreeRoot);
   try {
     if (!existsSync(p)) return {};
     const raw = readFileSync(p, 'utf-8');
     const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as WarningsState;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed))
+      return parsed as WarningsState;
     return {};
   } catch {
     return {};
   }
 }
 
-function writeWarnings(state: WarningsState, sessionId?: string, worktreeRoot?: string): void {
+function writeWarnings(
+  state: WarningsState,
+  sessionId?: string,
+  worktreeRoot?: string,
+): void {
   const p = aliasWarningsPath(sessionId, worktreeRoot);
   try {
     mkdirSync(join(p, '..'), { recursive: true });
@@ -437,7 +698,11 @@ function writeWarnings(state: WarningsState, sessionId?: string, worktreeRoot?: 
   }
 }
 
-export function shouldEmitWarning(alias: string, sessionId?: string, worktreeRoot?: string): boolean {
+export function shouldEmitWarning(
+  alias: string,
+  sessionId?: string,
+  worktreeRoot?: string,
+): boolean {
   if (isWarningOptedOut()) return false;
   const normalized = normalizeWorkflowInput(alias);
   if (!normalized) return false;
@@ -445,7 +710,11 @@ export function shouldEmitWarning(alias: string, sessionId?: string, worktreeRoo
   return !(normalized in state);
 }
 
-export function markWarningEmitted(alias: string, sessionId?: string, worktreeRoot?: string): void {
+export function markWarningEmitted(
+  alias: string,
+  sessionId?: string,
+  worktreeRoot?: string,
+): void {
   const normalized = normalizeWorkflowInput(alias);
   if (!normalized) return;
   const state = readWarnings(sessionId, worktreeRoot);
@@ -455,11 +724,16 @@ export function markWarningEmitted(alias: string, sessionId?: string, worktreeRo
 }
 
 // Returns warning string if it should be emitted (and marks it), else null
-export function maybeGetAliasWarning(resolution: AliasResolution, sessionId?: string, worktreeRoot?: string): string | null {
+export function maybeGetAliasWarning(
+  resolution: AliasResolution,
+  sessionId?: string,
+  worktreeRoot?: string,
+): string | null {
   if (!resolution.isAlias || !resolution.warning) return null;
   if (isWarningOptedOut()) return null;
   if (!isResolverEnabled()) return null;
-  if (!shouldEmitWarning(resolution.normalized, sessionId, worktreeRoot)) return null;
+  if (!shouldEmitWarning(resolution.normalized, sessionId, worktreeRoot))
+    return null;
   markWarningEmitted(resolution.normalized, sessionId, worktreeRoot);
   // Also record telemetry/receipt even when warning is suppressed later — this call records the warning event
   return resolution.warning;
@@ -495,7 +769,10 @@ export interface AliasReceipts {
   planHead: string;
   generatedAt: string;
   totals: { aliasUses: number; canonicalUses: number };
-  byAlias: Record<string, { count: number; canonical: AliasTarget; lastSeen: string }>;
+  byAlias: Record<
+    string,
+    { count: number; canonical: AliasTarget; lastSeen: string }
+  >;
   byCanonical: Record<string, number>;
   releaseUses: number;
 }
@@ -504,14 +781,38 @@ function readReceipts(worktreeRoot?: string): AliasReceipts {
   const p = receiptsPath(worktreeRoot);
   try {
     if (!existsSync(p)) {
-      return { version: 1, planHead: '0a91273e61dbbd47eb0af4c02844409251e08398', generatedAt: new Date().toISOString(), totals: { aliasUses: 0, canonicalUses: 0 }, byAlias: {}, byCanonical: {}, releaseUses: 0 };
+      return {
+        version: 1,
+        planHead: '0a91273e61dbbd47eb0af4c02844409251e08398',
+        generatedAt: new Date().toISOString(),
+        totals: { aliasUses: 0, canonicalUses: 0 },
+        byAlias: {},
+        byCanonical: {},
+        releaseUses: 0,
+      };
     }
     const raw = readFileSync(p, 'utf-8');
     const parsed = JSON.parse(raw);
     if (parsed && typeof parsed === 'object') return parsed as AliasReceipts;
-    return { version: 1, planHead: '0a91273e61dbbd47eb0af4c02844409251e08398', generatedAt: new Date().toISOString(), totals: { aliasUses: 0, canonicalUses: 0 }, byAlias: {}, byCanonical: {}, releaseUses: 0 };
+    return {
+      version: 1,
+      planHead: '0a91273e61dbbd47eb0af4c02844409251e08398',
+      generatedAt: new Date().toISOString(),
+      totals: { aliasUses: 0, canonicalUses: 0 },
+      byAlias: {},
+      byCanonical: {},
+      releaseUses: 0,
+    };
   } catch {
-    return { version: 1, planHead: '0a91273e61dbbd47eb0af4c02844409251e08398', generatedAt: new Date().toISOString(), totals: { aliasUses: 0, canonicalUses: 0 }, byAlias: {}, byCanonical: {}, releaseUses: 0 };
+    return {
+      version: 1,
+      planHead: '0a91273e61dbbd47eb0af4c02844409251e08398',
+      generatedAt: new Date().toISOString(),
+      totals: { aliasUses: 0, canonicalUses: 0 },
+      byAlias: {},
+      byCanonical: {},
+      releaseUses: 0,
+    };
   }
 }
 
@@ -526,7 +827,10 @@ function writeReceipts(receipts: AliasReceipts, worktreeRoot?: string): void {
   }
 }
 
-export function recordAliasTelemetry(event: Omit<AliasTelemetryEvent, 'timestamp'> & { timestamp?: string }, worktreeRoot?: string): void {
+export function recordAliasTelemetry(
+  event: Omit<AliasTelemetryEvent, 'timestamp'> & { timestamp?: string },
+  worktreeRoot?: string,
+): void {
   const ts = event.timestamp ?? new Date().toISOString();
   const full: AliasTelemetryEvent = { ...event, timestamp: ts };
   // Append telemetry jsonl (diagnostics retain full mapping)
@@ -540,21 +844,31 @@ export function recordAliasTelemetry(event: Omit<AliasTelemetryEvent, 'timestamp
   // Update receipts
   try {
     const receipts = readReceipts(worktreeRoot);
-    if (full.canonical !== full.normalized || aliasLookup.has(full.normalized)) {
+    if (
+      full.canonical !== full.normalized ||
+      aliasLookup.has(full.normalized)
+    ) {
       // Determine if this use was via alias (resolution.isAlias) — here we infer from aliasLookup
       const entry = aliasLookup.get(full.normalized);
-      const isAliasUse = !!entry && entry.alias.toLowerCase() !== entry.canonical.toLowerCase();
+      const isAliasUse =
+        !!entry && entry.alias.toLowerCase() !== entry.canonical.toLowerCase();
       if (isAliasUse) {
         receipts.totals.aliasUses += 1;
         const key = full.normalized;
         const prev = receipts.byAlias[key];
-        receipts.byAlias[key] = { count: (prev?.count ?? 0) + 1, canonical: full.canonical, lastSeen: ts };
-        receipts.byCanonical[full.canonical] = (receipts.byCanonical[full.canonical] ?? 0) + 1;
+        receipts.byAlias[key] = {
+          count: (prev?.count ?? 0) + 1,
+          canonical: full.canonical,
+          lastSeen: ts,
+        };
+        receipts.byCanonical[full.canonical] =
+          (receipts.byCanonical[full.canonical] ?? 0) + 1;
         if (full.release) receipts.releaseUses += 1;
       } else {
         // Canonical use
         receipts.totals.canonicalUses += 1;
-        receipts.byCanonical[full.canonical] = (receipts.byCanonical[full.canonical] ?? 0) + 1;
+        receipts.byCanonical[full.canonical] =
+          (receipts.byCanonical[full.canonical] ?? 0) + 1;
       }
     } else {
       // Unknown token — still count as canonical-ish
@@ -566,16 +880,25 @@ export function recordAliasTelemetry(event: Omit<AliasTelemetryEvent, 'timestamp
   }
 }
 
-export function readTelemetryTail(limit = 100, worktreeRoot?: string): AliasTelemetryEvent[] {
+export function readTelemetryTail(
+  limit = 100,
+  worktreeRoot?: string,
+): AliasTelemetryEvent[] {
   const p = telemetryPath(worktreeRoot);
   try {
     if (!existsSync(p)) return [];
     const raw = readFileSync(p, 'utf-8');
     const lines = raw.split('\n').filter((l) => l.trim().length > 0);
     const tail = lines.slice(-limit);
-    return tail.map((l) => {
-      try { return JSON.parse(l); } catch { return null; }
-    }).filter(Boolean) as AliasTelemetryEvent[];
+    return tail
+      .map((l) => {
+        try {
+          return JSON.parse(l);
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as AliasTelemetryEvent[];
   } catch {
     return [];
   }
@@ -594,13 +917,32 @@ export function clearAliasTelemetryForTests(worktreeRoot?: string): void {
   }
   try {
     const rp = receiptsPath(worktreeRoot);
-    if (existsSync(rp)) writeFileSync(rp, JSON.stringify({ version: 1, planHead: '0a91273e61dbbd47eb0af4c02844409251e08398', generatedAt: new Date().toISOString(), totals: { aliasUses: 0, canonicalUses: 0 }, byAlias: {}, byCanonical: {}, releaseUses: 0 }, null, 2));
+    if (existsSync(rp))
+      writeFileSync(
+        rp,
+        JSON.stringify(
+          {
+            version: 1,
+            planHead: '0a91273e61dbbd47eb0af4c02844409251e08398',
+            generatedAt: new Date().toISOString(),
+            totals: { aliasUses: 0, canonicalUses: 0 },
+            byAlias: {},
+            byCanonical: {},
+            releaseUses: 0,
+          },
+          null,
+          2,
+        ),
+      );
   } catch {
     // ignore
   }
 }
 
-export function clearAliasWarningsForTests(sessionId?: string, worktreeRoot?: string): void {
+export function clearAliasWarningsForTests(
+  sessionId?: string,
+  worktreeRoot?: string,
+): void {
   const p = aliasWarningsPath(sessionId, worktreeRoot);
   try {
     if (existsSync(p)) writeFileSync(p, JSON.stringify({}, null, 2));
@@ -613,33 +955,43 @@ export function clearAliasWarningsForTests(sessionId?: string, worktreeRoot?: st
 // Hook integration helper (narrow seam for bridge/keyword-detector)
 // ---------------------------------------------------------------------------
 
-export function resolveWorkflowInputWithWarning(rawInput: string, sessionId?: string, worktreeRoot?: string): AliasResolution & { warningToEmit: string | null } {
+export function resolveWorkflowInputWithWarning(
+  rawInput: string,
+  sessionId?: string,
+  worktreeRoot?: string,
+): AliasResolution & { warningToEmit: string | null } {
   const res = resolveWorkflowAlias(rawInput);
   let warningToEmit: string | null = null;
   if (res.isAlias && res.warning) {
     warningToEmit = maybeGetAliasWarning(res, sessionId, worktreeRoot);
     // Record telemetry regardless of whether warning was emitted (suppressed warnings still counted)
-    recordAliasTelemetry({
-      alias: res.input,
-      normalized: res.normalized,
-      canonical: res.canonical,
-      tier0: res.tier0,
-      sessionId,
-      warned: warningToEmit !== null,
-      release: res.isRelease,
-    }, worktreeRoot);
-  } else {
-    // Record canonical usage for receipts (helps retirement 95% calc)
-    if (res.isCanonical && res.canonical) {
-      recordAliasTelemetry({
+    recordAliasTelemetry(
+      {
         alias: res.input,
         normalized: res.normalized,
         canonical: res.canonical,
         tier0: res.tier0,
         sessionId,
-        warned: false,
-        release: false,
-      }, worktreeRoot);
+        warned: warningToEmit !== null,
+        release: res.isRelease,
+      },
+      worktreeRoot,
+    );
+  } else {
+    // Record canonical usage for receipts (helps retirement 95% calc)
+    if (res.isCanonical && res.canonical) {
+      recordAliasTelemetry(
+        {
+          alias: res.input,
+          normalized: res.normalized,
+          canonical: res.canonical,
+          tier0: res.tier0,
+          sessionId,
+          warned: false,
+          release: false,
+        },
+        worktreeRoot,
+      );
     }
   }
   return { ...res, warningToEmit };

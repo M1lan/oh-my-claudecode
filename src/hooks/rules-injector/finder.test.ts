@@ -98,7 +98,7 @@ describe('findRuleFiles with no project root (issue #3653)', () => {
   });
 
   it.each(PROJECT_RULE_SUBDIRS)(
-    'still inspects the current file\'s own directory for %s/%s',
+    "still inspects the current file's own directory for %s/%s",
     (parent, subdir) => {
       const own = join(base, 'own');
       const name =

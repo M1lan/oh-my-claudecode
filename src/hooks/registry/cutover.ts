@@ -24,7 +24,13 @@
  * - `OMC_HOOK_CUTOVER` is accepted as an alias for `OMC_HOOK_DISPATCHER`.
  */
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { getOmcRoot, resolveToWorktreeRoot } from '../../lib/worktree-paths.js';
@@ -62,7 +68,10 @@ export function isDispatcherEnabled(): boolean {
 }
 
 function rollbackSet(): Set<string> {
-  const raw = process.env.OMC_HOOK_ROLLBACK ?? process.env.OMC_HOOK_DISPATCHER_ROLLBACK ?? '';
+  const raw =
+    process.env.OMC_HOOK_ROLLBACK ??
+    process.env.OMC_HOOK_DISPATCHER_ROLLBACK ??
+    '';
   const out = new Set<string>();
   for (const tok of raw.split(',')) {
     const n = tok.trim().toLowerCase();
@@ -82,7 +91,9 @@ export function isFamilyCutoverEnabled(event: HookEvent | string): boolean {
 }
 
 /** Whether ordinary injection/procedure enforcement for `event` should be demoted to advisory. */
-export function shouldLoosenOrdinaryEnforcement(event: HookEvent | string): boolean {
+export function shouldLoosenOrdinaryEnforcement(
+  event: HookEvent | string,
+): boolean {
   return isFamilyCutoverEnabled(event);
 }
 
@@ -105,16 +116,22 @@ export function recordDispatchTelemetry(
     try {
       const raw = readFileSync(p, 'utf-8');
       if (raw.length > DISPATCH_TELEMETRY_MAX_BYTES) {
-        const lines = raw.split('\n').filter(l => l.trim().length > 0);
+        const lines = raw.split('\n').filter((l) => l.trim().length > 0);
         let kept = lines.slice(-DISPATCH_TELEMETRY_MAX_RECORDS);
-        while (kept.length > 0 && kept.join('\n').length + 1 > DISPATCH_TELEMETRY_MAX_BYTES) {
+        while (
+          kept.length > 0 &&
+          kept.join('\n').length + 1 > DISPATCH_TELEMETRY_MAX_BYTES
+        ) {
           kept = kept.slice(1);
         }
         writeFileSync(p, kept.length > 0 ? kept.join('\n') + '\n' : '');
       } else {
-        const lines = raw.split('\n').filter(l => l.trim().length > 0);
+        const lines = raw.split('\n').filter((l) => l.trim().length > 0);
         if (lines.length > DISPATCH_TELEMETRY_MAX_RECORDS) {
-          writeFileSync(p, lines.slice(-DISPATCH_TELEMETRY_MAX_RECORDS).join('\n') + '\n');
+          writeFileSync(
+            p,
+            lines.slice(-DISPATCH_TELEMETRY_MAX_RECORDS).join('\n') + '\n',
+          );
         }
       }
     } catch {
@@ -132,39 +149,64 @@ export function readDispatchTelemetryTail(
   try {
     const p = telemetryPath(worktreeRoot);
     if (!existsSync(p)) return [];
-    const lines = readFileSync(p, 'utf-8').split('\n').filter(l => l.trim().length > 0).slice(-limit);
-    return lines.map(l => {
-      try { return JSON.parse(l) as DispatchTelemetryRecord; } catch { return null; }
-    }).filter(Boolean) as DispatchTelemetryRecord[];
-  } catch { return []; }
+    const lines = readFileSync(p, 'utf-8')
+      .split('\n')
+      .filter((l) => l.trim().length > 0)
+      .slice(-limit);
+    return lines
+      .map((l) => {
+        try {
+          return JSON.parse(l) as DispatchTelemetryRecord;
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as DispatchTelemetryRecord[];
+  } catch {
+    return [];
+  }
 }
 
 export function clearDispatchTelemetryForTests(worktreeRoot?: string): void {
   try {
     const p = telemetryPath(worktreeRoot);
     if (existsSync(p)) writeFileSync(p, '');
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 /** Map bridge HookType to its HookEvent family for cutover gating. */
 export function hookEventForType(hookType: string): HookEvent | null {
   switch (hookType) {
-    case 'keyword-detector': return 'UserPromptSubmit';
+    case 'keyword-detector':
+      return 'UserPromptSubmit';
     case 'session-start':
     case 'setup-init':
-    case 'setup-maintenance': return 'SessionStart';
-    case 'pre-tool-use': return 'PreToolUse';
-    case 'permission-request': return 'PermissionRequest';
-    case 'post-tool-use': return 'PostToolUse';
-    case 'subagent-start': return 'SubagentStart';
-    case 'subagent-stop': return 'SubagentStop';
-    case 'pre-compact': return 'PreCompact';
+    case 'setup-maintenance':
+      return 'SessionStart';
+    case 'pre-tool-use':
+      return 'PreToolUse';
+    case 'permission-request':
+      return 'PermissionRequest';
+    case 'post-tool-use':
+      return 'PostToolUse';
+    case 'subagent-start':
+      return 'SubagentStart';
+    case 'subagent-stop':
+      return 'SubagentStop';
+    case 'pre-compact':
+      return 'PreCompact';
     case 'stop-continuation':
     case 'persistent-mode':
     case 'ralph':
-    case 'code-simplifier': return 'Stop';
-    case 'session-end': return 'SessionEnd';
-    case 'autopilot': return null;
-    default: return null;
+    case 'code-simplifier':
+      return 'Stop';
+    case 'session-end':
+      return 'SessionEnd';
+    case 'autopilot':
+      return null;
+    default:
+      return null;
   }
 }

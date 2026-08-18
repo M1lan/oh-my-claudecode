@@ -9,15 +9,8 @@
  * Risk classes reuse the canonical taxonomy from src/workflow/registry.ts.
  */
 
-import {
-  failModeForRisk,
-  type RiskClass,
-} from '../../workflow/registry.js';
-import type {
-  HookEvent,
-  HookRegistryEntry,
-  HooksJson,
-} from './types.js';
+import { failModeForRisk, type RiskClass } from '../../workflow/registry.js';
+import type { HookEvent, HookRegistryEntry, HooksJson } from './types.js';
 import { HOOK_EVENTS } from './types.js';
 
 /**
@@ -59,10 +52,7 @@ function entryId(
 }
 
 export interface RegistryDriftIssue {
-  code:
-    | 'unknown-event'
-    | 'unparseable-command'
-    | 'timeout-mismatch';
+  code: 'unknown-event' | 'unparseable-command' | 'timeout-mismatch';
   message: string;
 }
 
@@ -146,8 +136,7 @@ export function selectApplicableEntries(
   return registry
     .filter(
       (e) =>
-        e.event === event &&
-        (e.matcher === '*' || e.matcher === matcherInput),
+        e.event === event && (e.matcher === '*' || e.matcher === matcherInput),
     )
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
 }

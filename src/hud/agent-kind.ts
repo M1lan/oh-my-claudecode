@@ -17,7 +17,7 @@
  * - `tool_result` content is never classified as an incoming wrapper, so an
  *   agent quoting a wrapper inside its output cannot spoof a message.
  */
-export type AgentKind = "subagent" | "teammate" | "peer-session" | "unknown";
+export type AgentKind = 'subagent' | 'teammate' | 'peer-session' | 'unknown';
 
 export interface AgentSpawnIdentity {
   kind: AgentKind;
@@ -43,9 +43,9 @@ export interface IncomingAgentMessage {
 
 /** Native wrapper tags OMC recognizes (emitted by Claude Code, not OMC). */
 const WRAPPER_TAGS = [
-  { tag: "task-notification", kind: "subagent" as const },
-  { tag: "teammate-message", kind: "teammate" as const },
-  { tag: "agent-message", kind: "peer-session" as const },
+  { tag: 'task-notification', kind: 'subagent' as const },
+  { tag: 'teammate-message', kind: 'teammate' as const },
+  { tag: 'agent-message', kind: 'peer-session' as const },
 ];
 
 /**
@@ -62,13 +62,15 @@ export function classifyAgentSpawn(input: {
 }): AgentSpawnIdentity {
   const spawnedBy = input.sessionId || undefined;
   return input.hasName
-    ? { kind: "teammate", spawnedBy }
-    : { kind: "subagent", spawnedBy };
+    ? { kind: 'teammate', spawnedBy }
+    : { kind: 'subagent', spawnedBy };
 }
 
 /** Extract the value of a `name="..."` / `name='...'` attribute from a tag. */
 function extractAttribute(openTag: string, attr: string): string | undefined {
-  const match = new RegExp(`${attr}\\s*=\\s*["']([^"']*)["']`, "i").exec(openTag);
+  const match = new RegExp(`${attr}\\s*=\\s*["']([^"']*)["']`, 'i').exec(
+    openTag,
+  );
   return match ? match[1] : undefined;
 }
 
@@ -94,9 +96,13 @@ export function parseIncomingAgentWrapper(
   content: string,
   sessionId?: string,
 ): IncomingAgentMessage | null {
-  if (!content || typeof content !== "string") return null;
+  if (!content || typeof content !== 'string') return null;
 
-  let best: { index: number; tag: string; kind: (typeof WRAPPER_TAGS)[number]["kind"] } | null = null;
+  let best: {
+    index: number;
+    tag: string;
+    kind: (typeof WRAPPER_TAGS)[number]['kind'];
+  } | null = null;
   for (const wrapper of WRAPPER_TAGS) {
     const index = content.indexOf(`<${wrapper.tag}`);
     if (index !== -1 && (best === null || index < best.index)) {
@@ -105,29 +111,29 @@ export function parseIncomingAgentWrapper(
   }
   if (!best) return null;
 
-  const openTagEnd = content.indexOf(">", best.index);
+  const openTagEnd = content.indexOf('>', best.index);
   if (openTagEnd === -1) return null;
   const openTag = content.slice(best.index, openTagEnd + 1);
 
   switch (best.kind) {
-    case "subagent":
+    case 'subagent':
       return {
-        kind: "subagent",
-        senderId: extractTaskId(content.slice(openTagEnd + 1)) ?? "unknown",
+        kind: 'subagent',
+        senderId: extractTaskId(content.slice(openTagEnd + 1)) ?? 'unknown',
         spawnedBy: sessionId || undefined,
         redacted: true,
       };
-    case "teammate":
+    case 'teammate':
       return {
-        kind: "teammate",
-        senderId: extractAttribute(openTag, "teammate_id") ?? "unknown",
-        spawnedBy: "native-team",
+        kind: 'teammate',
+        senderId: extractAttribute(openTag, 'teammate_id') ?? 'unknown',
+        spawnedBy: 'native-team',
         redacted: true,
       };
-    case "peer-session":
+    case 'peer-session':
       return {
-        kind: "peer-session",
-        senderId: extractAttribute(openTag, "from") ?? "unknown",
+        kind: 'peer-session',
+        senderId: extractAttribute(openTag, 'from') ?? 'unknown',
         spawnedBy: undefined,
         redacted: true,
       };

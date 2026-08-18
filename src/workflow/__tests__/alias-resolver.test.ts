@@ -25,7 +25,10 @@ import {
 } from '../alias-resolver.js';
 // alias-resolver tests use worktreeRoot override; no direct worktree import needed
 
-function withEnv(overrides: Record<string, string | undefined>, fn: () => void) {
+function withEnv(
+  overrides: Record<string, string | undefined>,
+  fn: () => void,
+) {
   const prev: Record<string, string | undefined> = {};
   for (const k of Object.keys(overrides)) {
     prev[k] = process.env[k];
@@ -58,9 +61,14 @@ describe('alias-resolver — Tier-0 routing', () => {
     delete process.env.OMC_DISABLE_ALIAS_RESOLVER;
   });
   afterEach(() => {
-    if (origQuiet === undefined) delete process.env.OMC_QUIET; else process.env.OMC_QUIET = origQuiet;
-    if (origResolver === undefined) delete process.env.OMC_ALIAS_RESOLVER_ENABLED; else process.env.OMC_ALIAS_RESOLVER_ENABLED = origResolver;
-    if (origDisable === undefined) delete process.env.OMC_DISABLE_ALIAS_RESOLVER; else process.env.OMC_DISABLE_ALIAS_RESOLVER = origDisable;
+    if (origQuiet === undefined) delete process.env.OMC_QUIET;
+    else process.env.OMC_QUIET = origQuiet;
+    if (origResolver === undefined)
+      delete process.env.OMC_ALIAS_RESOLVER_ENABLED;
+    else process.env.OMC_ALIAS_RESOLVER_ENABLED = origResolver;
+    if (origDisable === undefined)
+      delete process.env.OMC_DISABLE_ALIAS_RESOLVER;
+    else process.env.OMC_DISABLE_ALIAS_RESOLVER = origDisable;
   });
 
   it('routes autopilot -> execute', () => {
@@ -114,7 +122,6 @@ describe('alias-resolver — Tier-0 routing', () => {
     expect(r.isAlias).toBe(false);
   });
 
-
   it('routes ccg -> execute', () => {
     expect(resolveWorkflowAlias('ccg').canonical).toBe('execute');
   });
@@ -141,10 +148,11 @@ describe('alias-resolver — Tier-0 routing', () => {
     expect(resolveWorkflowAlias('Ralph').canonical).toBe('execute');
     expect(resolveWorkflowAlias('/ralph').canonical).toBe('execute');
     expect(resolveWorkflowAlias('/omc:autopilot').canonical).toBe('execute');
-    expect(resolveWorkflowAlias('/oh-my-claudecode:ultrawork').canonical).toBe('execute');
+    expect(resolveWorkflowAlias('/oh-my-claudecode:ultrawork').canonical).toBe(
+      'execute',
+    );
     expect(resolveWorkflowAlias('OMC:RALPLAN').canonical).toBe('ralplan');
   });
-
 
   it('unknown tokens pass through without alias flag', () => {
     const r = resolveWorkflowAlias('unknown-workflow-xyz');
@@ -170,10 +178,22 @@ describe('alias-resolver — Tier-0 routing', () => {
   });
 
   it('adapter seam resolveWorkflowAliasViaRegistry honors injected registry', () => {
-    const fake: AliasEntry = { alias: 'my-alias', canonical: 'plan', tier0: 'plan', owner: 'test', description: 'x', removalMilestone: 'test', isWorkflowAlias: true };
+    const fake: AliasEntry = {
+      alias: 'my-alias',
+      canonical: 'plan',
+      tier0: 'plan',
+      owner: 'test',
+      description: 'x',
+      removalMilestone: 'test',
+      isWorkflowAlias: true,
+    };
     const lookup = (k: string) => (k === 'my-alias' ? fake : undefined);
-    expect(resolveWorkflowAliasViaRegistry('my-alias', lookup).canonical).toBe('plan');
-    expect(resolveWorkflowAliasViaRegistry('unknown', lookup).isAlias).toBe(false);
+    expect(resolveWorkflowAliasViaRegistry('my-alias', lookup).canonical).toBe(
+      'plan',
+    );
+    expect(resolveWorkflowAliasViaRegistry('unknown', lookup).isAlias).toBe(
+      false,
+    );
   });
 });
 
@@ -191,10 +211,14 @@ describe('alias-resolver — warnings once/session + diagnostics', () => {
     const mapping = getAliasMapping();
     expect(mapping.length).toBeGreaterThan(10);
     expect(mapping.find((m) => m.alias === 'ralph')?.canonical).toBe('execute');
-    expect(mapping.find((m) => m.alias === 'release')?.canonical).toBe('omc-release');
+    expect(mapping.find((m) => m.alias === 'release')?.canonical).toBe(
+      'omc-release',
+    );
     // diagnostics
     const d = getDiagnostics();
-    expect(d.tier0).toEqual(expect.arrayContaining(['plan', 'execute', 'review', 'verify']));
+    expect(d.tier0).toEqual(
+      expect.arrayContaining(['plan', 'execute', 'review', 'verify']),
+    );
     expect(d.aliases.length).toBe(mapping.length);
     expect(d.planHead).toBe('0a91273e61dbbd47eb0af4c02844409251e08398');
   });
@@ -207,7 +231,13 @@ describe('alias-resolver — warnings once/session + diagnostics', () => {
 });
 
 describe('alias-resolver — automation opt-out', () => {
-  const keys = ['OMC_ALIAS_WARNINGS', 'OMC_ALIAS_WARNING_OPT_OUT', 'OMC_ALIAS_NO_WARNING', 'OMC_ALIAS_WARNINGS_DISABLED', 'OMC_QUIET'];
+  const keys = [
+    'OMC_ALIAS_WARNINGS',
+    'OMC_ALIAS_WARNING_OPT_OUT',
+    'OMC_ALIAS_NO_WARNING',
+    'OMC_ALIAS_WARNINGS_DISABLED',
+    'OMC_QUIET',
+  ];
 
   function cleanup() {
     for (const k of keys) delete process.env[k];
@@ -300,9 +330,42 @@ describe('alias-resolver — telemetry and usage receipts', () => {
     try {
       clearAliasTelemetryForTests(worktreeRoot);
       // alias use
-      recordAliasTelemetry({ alias: 'ralph', normalized: 'ralph', canonical: 'execute', tier0: 'execute', sessionId: 's1', warned: true, release: false }, worktreeRoot);
-      recordAliasTelemetry({ alias: 'ralph', normalized: 'ralph', canonical: 'execute', tier0: 'execute', sessionId: 's1', warned: false, release: false }, worktreeRoot);
-      recordAliasTelemetry({ alias: 'release', normalized: 'release', canonical: 'omc-release', tier0: null, sessionId: 's1', warned: true, release: true }, worktreeRoot);
+      recordAliasTelemetry(
+        {
+          alias: 'ralph',
+          normalized: 'ralph',
+          canonical: 'execute',
+          tier0: 'execute',
+          sessionId: 's1',
+          warned: true,
+          release: false,
+        },
+        worktreeRoot,
+      );
+      recordAliasTelemetry(
+        {
+          alias: 'ralph',
+          normalized: 'ralph',
+          canonical: 'execute',
+          tier0: 'execute',
+          sessionId: 's1',
+          warned: false,
+          release: false,
+        },
+        worktreeRoot,
+      );
+      recordAliasTelemetry(
+        {
+          alias: 'release',
+          normalized: 'release',
+          canonical: 'omc-release',
+          tier0: null,
+          sessionId: 's1',
+          warned: true,
+          release: true,
+        },
+        worktreeRoot,
+      );
       const receipts = readUsageReceipts(worktreeRoot);
       expect(receipts.byAlias['ralph'].count).toBe(2);
       expect(receipts.byAlias['release'].count).toBe(1);
@@ -319,11 +382,18 @@ describe('alias-resolver — telemetry and usage receipts', () => {
   it('registry covers expected aliases and excludes self-canonical entries', () => {
     // verify registry sanity: each alias (except canonical self-entries) routes to Tier-0 or omc-release
     for (const e of ALIAS_REGISTRY) {
-      const isSelfCanonical = e.alias.toLowerCase() === e.canonical.toLowerCase();
+      const isSelfCanonical =
+        e.alias.toLowerCase() === e.canonical.toLowerCase();
       if (isSelfCanonical) {
         expect(TIER0_WORKFLOWS).toContain(e.canonical as any);
       } else {
-        expect(['plan', 'execute', 'review', 'verify', 'omc-release']).toContain(e.canonical);
+        expect([
+          'plan',
+          'execute',
+          'review',
+          'verify',
+          'omc-release',
+        ]).toContain(e.canonical);
       }
     }
   });

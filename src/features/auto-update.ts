@@ -1245,7 +1245,9 @@ export function reconcileUpdateRuntime(options?: {
       );
     }
     if (purgeResult.restored > 0 && options?.verbose) {
-      console.log(`[omc] Restored ${purgeResult.restored} plugin cache version(s) from an interrupted relink`);
+      console.log(
+        `[omc] Restored ${purgeResult.restored} plugin cache version(s) from an interrupted relink`,
+      );
     }
     // Always surface purge errors and skipped backups, even without --verbose.
     // Both leave a version path that live sessions resolve through, so a silent
@@ -1254,7 +1256,9 @@ export function reconcileUpdateRuntime(options?: {
     // forever if that pid was recycled by an unrelated process.
     // Kept non-fatal — reconciliation must not fail on best-effort cleanup.
     for (const skipped of purgeResult.skippedPaths) {
-      console.warn(`[omc] Cache purge warning: left a backup to its running owner: ${skipped}`);
+      console.warn(
+        `[omc] Cache purge warning: left a backup to its running owner: ${skipped}`,
+      );
     }
     for (const err of purgeResult.errors) {
       console.warn(`[omc] Cache purge warning: ${err}`);

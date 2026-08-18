@@ -161,8 +161,13 @@ export async function emitMonitorDerivedEvents(
     }
 
     if (prevState === 'working' && worker.status.state === 'idle') {
-      const mailboxDir = dirname(absPath(cwd, TeamPaths.mailbox(teamName, worker.name)));
-      const outstanding = await countOutstandingForWorker(mailboxDir, worker.name);
+      const mailboxDir = dirname(
+        absPath(cwd, TeamPaths.mailbox(teamName, worker.name)),
+      );
+      const outstanding = await countOutstandingForWorker(
+        mailboxDir,
+        worker.name,
+      );
       await appendTeamEvent(
         teamName,
         {

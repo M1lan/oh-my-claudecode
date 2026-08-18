@@ -158,7 +158,10 @@ function canonicalizeSubagentType(subagentType: string): string {
  * mistake the failure for a typo and substitute a closest-match agent.
  * Exact match only — no fuzzy substitution.
  */
-function skillInvocationHint(agentType: string, originalSubagentType?: string): string | null {
+function skillInvocationHint(
+  agentType: string,
+  originalSubagentType?: string,
+): string | null {
   const primary = resolveBundledSkillPrimary(agentType, originalSubagentType);
   if (!primary) {
     return null;
@@ -180,7 +183,10 @@ const SKININTHEGAMEBROS_ONLY_SKILLS = new Set(['remember', 'verify', 'debug']);
 function isSkillVisibleToUser(skillName: string): boolean {
   // Case-fold before the Set lookup: identifiers are matched case-insensitively
   // while filesystem lookup is case-insensitive on Windows/macOS.
-  return !SKININTHEGAMEBROS_ONLY_SKILLS.has(skillName.toLowerCase()) || isSkininthegamebrosUser();
+  return (
+    !SKININTHEGAMEBROS_ONLY_SKILLS.has(skillName.toLowerCase()) ||
+    isSkininthegamebrosUser()
+  );
 }
 
 /**
@@ -217,8 +223,9 @@ function resolveBundledSkillPrimary(
   // reserved for the pinned plugin namespace so native/session-defined agents
   // (e.g. Claude Code's built-in `Plan` vs the skills/plan dir registering
   // omc-plan) are never mistaken for skills (issue #3667 P1, JS/TS parity).
-  const wasNamespaced = typeof originalSubagentType === 'string'
-    && /^(?:oh-my-claudecode|omc):/i.test(originalSubagentType.trim());
+  const wasNamespaced =
+    typeof originalSubagentType === 'string' &&
+    /^(?:oh-my-claudecode|omc):/i.test(originalSubagentType.trim());
   if (!wasNamespaced) {
     return null;
   }
@@ -434,7 +441,11 @@ export function getModelForAgent(agentType: string): string {
 
   if (!agentDef) {
     const hint = skillInvocationHint(normalizedType, agentType);
-    throw new Error(hint ? `Unknown agent type: ${normalizedType} —${hint}.` : `Unknown agent type: ${normalizedType}`);
+    throw new Error(
+      hint
+        ? `Unknown agent type: ${normalizedType} —${hint}.`
+        : `Unknown agent type: ${normalizedType}`,
+    );
   }
 
   if (!agentDef.model) {

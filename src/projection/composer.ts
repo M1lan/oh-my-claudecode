@@ -14,7 +14,10 @@
 
 import { createHash } from 'node:crypto';
 import { normalizeForDigest, computeDigest } from './manifest.js';
-import { OMC_START_MARKER, OMC_END_MARKER } from '../installer/claude-md-analysis.js';
+import {
+  OMC_START_MARKER,
+  OMC_END_MARKER,
+} from '../installer/claude-md-analysis.js';
 
 export const COMPOSER_SCHEMA_VERSION = 1 as const;
 
@@ -35,7 +38,8 @@ export interface ComposedClaudeProjection {
 function extractCanonicalBody(canonicalDocsRaw: string): string {
   const start = canonicalDocsRaw.indexOf(OMC_START_MARKER);
   const end = canonicalDocsRaw.indexOf(OMC_END_MARKER);
-  if (start === -1 || end === -1 || end < start) throw new Error('canonical docs missing OMC markers');
+  if (start === -1 || end === -1 || end < start)
+    throw new Error('canonical docs missing OMC markers');
   // content between markers exclusive: after START's eol through before END's start
   const startEol = canonicalDocsRaw.indexOf('\n', start);
   if (startEol === -1) throw new Error('malformed start marker');
@@ -64,10 +68,14 @@ export function composeManagedBlock(input: ComposerInput): string {
 export function canonicalSourceRevision(canonicalDocsRaw: string): string {
   const body = extractCanonicalBody(canonicalDocsRaw);
   // The body already has one trailing newline; digest it normalized.
-  return createHash('sha256').update(normalizeForDigest(body), 'utf8').digest('hex');
+  return createHash('sha256')
+    .update(normalizeForDigest(body), 'utf8')
+    .digest('hex');
 }
 
-export function composeAllClaudeProjections(input: ComposerInput): ComposedClaudeProjection[] {
+export function composeAllClaudeProjections(
+  input: ComposerInput,
+): ComposedClaudeProjection[] {
   const content = composeManagedBlock(input);
   const digest = computeDigest(content);
   return [

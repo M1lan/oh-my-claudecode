@@ -8,7 +8,11 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { checkLeaderStaleness, maybeNudgeLeader, type TmuxRunner } from '../../hooks/team-leader-nudge-hook.js';
+import {
+  checkLeaderStaleness,
+  maybeNudgeLeader,
+  type TmuxRunner,
+} from '../../hooks/team-leader-nudge-hook.js';
 
 const TEAM = 'demo-team';
 const WORKER = 'worker-1';
@@ -18,7 +22,10 @@ function writeJsonSync(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2), 'utf-8');
 }
 
-function seedTeam(cwd: string, options: { undeliveredInbound?: boolean; deliveredInbound?: boolean } = {}): string {
+function seedTeam(
+  cwd: string,
+  options: { undeliveredInbound?: boolean; deliveredInbound?: boolean } = {},
+): string {
   const stateDir = join(cwd, '.omc', 'state');
   const teamDir = join(stateDir, 'team', TEAM);
   const nowIso = new Date().toISOString();
@@ -42,14 +49,16 @@ function seedTeam(cwd: string, options: { undeliveredInbound?: boolean; delivere
   if (options.undeliveredInbound || options.deliveredInbound) {
     writeJsonSync(join(teamDir, 'mailbox', `${WORKER}.json`), {
       worker: WORKER,
-      messages: [{
-        message_id: 'msg-1',
-        from_worker: 'leader-fixed',
-        to_worker: WORKER,
-        body: 'Deliver the review findings.',
-        created_at: nowIso,
-        ...(options.deliveredInbound ? { delivered_at: nowIso } : {}),
-      }],
+      messages: [
+        {
+          message_id: 'msg-1',
+          from_worker: 'leader-fixed',
+          to_worker: WORKER,
+          body: 'Deliver the review findings.',
+          created_at: nowIso,
+          ...(options.deliveredInbound ? { delivered_at: nowIso } : {}),
+        },
+      ],
     });
   }
 
@@ -69,7 +78,11 @@ describe('team leader nudge outstanding-work classification (issue #3662)', () =
 
   it('does not count a worker with undelivered inbound messages as idle', async () => {
     const stateDir = seedTeam(cwd, { undeliveredInbound: true });
-    const staleness = await checkLeaderStaleness({ stateDir, teamName: TEAM, nowMs: Date.now() });
+    const staleness = await checkLeaderStaleness({
+      stateDir,
+      teamName: TEAM,
+      nowMs: Date.now(),
+    });
 
     expect(staleness.idleWorkerCount).toBe(0);
     expect(staleness.stale).toBe(false);
@@ -84,7 +97,12 @@ describe('team leader nudge outstanding-work classification (issue #3662)', () =
       },
     };
 
-    const result = await maybeNudgeLeader({ cwd, stateDir, teamName: TEAM, tmux });
+    const result = await maybeNudgeLeader({
+      cwd,
+      stateDir,
+      teamName: TEAM,
+      tmux,
+    });
 
     expect(result.nudged).toBe(false);
     expect(sent).toHaveLength(0);
@@ -92,7 +110,11 @@ describe('team leader nudge outstanding-work classification (issue #3662)', () =
 
   it('restores the idle classification once the message is delivered (ack transition)', async () => {
     const stateDir = seedTeam(cwd, { deliveredInbound: true });
-    const staleness = await checkLeaderStaleness({ stateDir, teamName: TEAM, nowMs: Date.now() });
+    const staleness = await checkLeaderStaleness({
+      stateDir,
+      teamName: TEAM,
+      nowMs: Date.now(),
+    });
 
     expect(staleness.idleWorkerCount).toBe(1);
     expect(staleness.stale).toBe(true);
@@ -108,7 +130,12 @@ describe('team leader nudge outstanding-work classification (issue #3662)', () =
       },
     };
 
-    const result = await maybeNudgeLeader({ cwd, stateDir, teamName: TEAM, tmux });
+    const result = await maybeNudgeLeader({
+      cwd,
+      stateDir,
+      teamName: TEAM,
+      tmux,
+    });
 
     expect(result.nudged).toBe(true);
     expect(sent[0]).toContain('Leader nudge');

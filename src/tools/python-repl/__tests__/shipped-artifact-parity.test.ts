@@ -12,7 +12,10 @@ import { PYTHON_REPL_SANDBOX_BOUNDARY } from '../sandbox.js';
 // to the current source guidance and fails when one goes stale.
 
 const repoFile = (relative: string) =>
-  readFileSync(fileURLToPath(new URL(`../../../../${relative}`, import.meta.url)), 'utf-8');
+  readFileSync(
+    fileURLToPath(new URL(`../../../../${relative}`, import.meta.url)),
+    'utf-8',
+  );
 
 // Contiguous fragments of the canonical source strings. Bundlers concatenate the
 // source's split literals, so these fragments survive every build shape.
@@ -21,7 +24,8 @@ const LABEL_EXAMPLES_FRAGMENT = (() => {
   const description = pythonReplSchema.shape.executionLabel.description;
   if (!description) throw new Error('executionLabel lost its description');
   const [, examples] = description.split('Examples: ');
-  if (!examples) throw new Error('executionLabel description lost its examples');
+  if (!examples)
+    throw new Error('executionLabel description lost its examples');
   return examples;
 })();
 
@@ -53,8 +57,12 @@ describe('committed shipping-surface parity (#3682)', () => {
     const mcpConfig = JSON.parse(repoFile('.mcp.json')) as {
       mcpServers: Record<string, { args?: string[] }>;
     };
-    const args = Object.values(mcpConfig.mcpServers).flatMap((server) => server.args ?? []);
-    expect(args.some((arg) => arg.endsWith('/bridge/mcp-server.cjs'))).toBe(true);
+    const args = Object.values(mcpConfig.mcpServers).flatMap(
+      (server) => server.args ?? [],
+    );
+    expect(args.some((arg) => arg.endsWith('/bridge/mcp-server.cjs'))).toBe(
+      true,
+    );
   });
 
   for (const artifact of PYTHON_REPL_ARTIFACTS) {
@@ -67,7 +75,10 @@ describe('committed shipping-surface parity (#3682)', () => {
     it(`${artifact} no longer advertises blocked libraries or workflows`, () => {
       const content = repoFile(artifact);
       for (const phrase of FORBIDDEN) {
-        expect(content, `${artifact} must not contain "${phrase}"`).not.toContain(phrase);
+        expect(
+          content,
+          `${artifact} must not contain "${phrase}"`,
+        ).not.toContain(phrase);
       }
     });
   }
@@ -75,16 +86,25 @@ describe('committed shipping-surface parity (#3682)', () => {
   it('dist/agents/scientist.js ships sandbox-truthful agent metadata', () => {
     const content = repoFile('dist/agents/scientist.js').toLowerCase();
     expect(content).toContain('sandbox');
-    for (const phrase of ['ml/hypothesis', 'pandas', 'numpy', 'matplotlib', 'scipy']) {
-      expect(content, `dist/agents/scientist.js must not contain "${phrase}"`).not.toContain(
-        phrase,
-      );
+    for (const phrase of [
+      'ml/hypothesis',
+      'pandas',
+      'numpy',
+      'matplotlib',
+      'scipy',
+    ]) {
+      expect(
+        content,
+        `dist/agents/scientist.js must not contain "${phrase}"`,
+      ).not.toContain(phrase);
     }
   });
 
   for (const artifact of BOUNDARY_BEARING_ARTIFACTS) {
     it(`${artifact} ships the canonical sandbox boundary`, () => {
-      expect(repoFile(artifact), `${artifact} is stale: rebuild it`).toContain(BOUNDARY_FRAGMENT);
+      expect(repoFile(artifact), `${artifact} is stale: rebuild it`).toContain(
+        BOUNDARY_FRAGMENT,
+      );
     });
   }
 });

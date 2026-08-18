@@ -174,7 +174,6 @@ export function skillNameFromSkillFilePath(skillFilePath: string): string {
   return basename(dirname(normalizedPath)) || skillFilePath;
 }
 
-
 export function collectCapabilitySurface(
   root = packageRoot(),
 ): CapabilitySurface {

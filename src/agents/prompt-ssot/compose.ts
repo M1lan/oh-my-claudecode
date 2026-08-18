@@ -10,7 +10,11 @@
  * selects, not copied prose.
  */
 
-import { digestProjection, digestSection, normalizePromptText } from './digest.js';
+import {
+  digestProjection,
+  digestSection,
+  normalizePromptText,
+} from './digest.js';
 import type {
   ComposeOverlay,
   ComposedProjection,
@@ -44,7 +48,10 @@ export function selectSections(
   const selected: PromptSection[] = [];
   for (const id of wanted) {
     const section = byId.get(id);
-    if (!section) throw new PromptSsotError(`projection ${projectionId} references missing section: ${id}`);
+    if (!section)
+      throw new PromptSsotError(
+        `projection ${projectionId} references missing section: ${id}`,
+      );
     selected.push(section);
   }
 
@@ -74,10 +81,13 @@ export function composeProjection(
   overlay: ComposeOverlay = {},
 ): ComposedProjection {
   const selected = selectSections(manifest, sections, projectionId, overlay);
-  const body = normalizePromptText(selected.map((s) => s.body.trim()).join('\n\n'));
+  const body = normalizePromptText(
+    selected.map((s) => s.body.trim()).join('\n\n'),
+  );
   const digest = digestProjection(body);
   const sectionDigests: Record<string, string> = {};
-  for (const s of selected) sectionDigests[s.id] = digestSection(s.id, s.version, s.body);
+  for (const s of selected)
+    sectionDigests[s.id] = digestSection(s.id, s.version, s.body);
 
   const header = [
     '<!-- PROMPT-SSOT:GENERATED',
@@ -111,5 +121,7 @@ export function composeAll(
   sections: readonly PromptSection[],
   overlay: ComposeOverlay = {},
 ): ComposedProjection[] {
-  return manifest.projections.map((p) => composeProjection(manifest, sections, p.id, overlay));
+  return manifest.projections.map((p) =>
+    composeProjection(manifest, sections, p.id, overlay),
+  );
 }

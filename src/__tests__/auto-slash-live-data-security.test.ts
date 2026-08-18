@@ -29,8 +29,14 @@ describe('auto slash live-data security', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    projectDir = join(tmpdir(), `omc-live-data-project-${process.pid}-${Date.now()}`);
-    configDir = join(tmpdir(), `omc-live-data-config-${process.pid}-${Date.now()}`);
+    projectDir = join(
+      tmpdir(),
+      `omc-live-data-project-${process.pid}-${Date.now()}`,
+    );
+    configDir = join(
+      tmpdir(),
+      `omc-live-data-config-${process.pid}-${Date.now()}`,
+    );
     mkdirSync(join(projectDir, '.claude', 'commands'), { recursive: true });
     mkdirSync(configDir, { recursive: true });
     writeFileSync(
@@ -57,7 +63,8 @@ describe('auto slash live-data security', () => {
   });
 
   it('blocks shell syntax introduced through $ARGUMENTS', async () => {
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -73,7 +80,8 @@ describe('auto slash live-data security', () => {
   });
 
   it('allows safe arguments on an explicitly authored live-data directive', async () => {
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -94,30 +102,38 @@ describe('auto slash live-data security', () => {
   it.each([
     ['line feed', '\n!git status'],
     ['carriage return', '\r!git status'],
-  ])('blocks a live-data directive introduced through $ARGUMENTS with %s', async (_name, args) => {
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+  ])(
+    'blocks a live-data directive introduced through $ARGUMENTS with %s',
+    async (_name, args) => {
+      const { executeSlashCommand } =
+        await import('../hooks/auto-slash-command/executor.js');
 
-    const result = executeSlashCommand({
-      command: 'live-test',
-      args,
-      raw: `/live-test ${args}`,
-    });
+      const result = executeSlashCommand({
+        command: 'live-test',
+        args,
+        raw: `/live-test ${args}`,
+      });
 
-    expect(result.success).toBe(true);
-    expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: control character rejected');
-    expect(mockedExecSync).not.toHaveBeenCalled();
-    expect(mockedExecFileSync).not.toHaveBeenCalled();
-  });
+      expect(result.success).toBe(true);
+      expect(result.replacementText).toContain('error="true"');
+      expect(result.replacementText).toContain(
+        'blocked: control character rejected',
+      );
+      expect(mockedExecSync).not.toHaveBeenCalled();
+      expect(mockedExecFileSync).not.toHaveBeenCalled();
+    },
+  );
 
   it('blocks a script block introduced through $ARGUMENTS', async () => {
     writeFileSync(
       join(projectDir, '.claude', 'live-data-policy.json'),
       JSON.stringify({ allowed_commands: ['git', 'bash'] }),
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
-    const args = '\n!begin-script bash\nnode -e "process.exit(99)"\n!end-script';
+    const args =
+      '\n!begin-script bash\nnode -e "process.exit(99)"\n!end-script';
     const result = executeSlashCommand({
       command: 'live-test',
       args,
@@ -126,7 +142,9 @@ describe('auto slash live-data security', () => {
 
     expect(result.success).toBe(true);
     expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: control character rejected');
+    expect(result.replacementText).toContain(
+      'blocked: control character rejected',
+    );
     expect(mockedExecSync).not.toHaveBeenCalled();
     expect(mockedExecFileSync).not.toHaveBeenCalled();
   });
@@ -140,7 +158,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'live-data-policy.json'),
       JSON.stringify({ allowed_commands: ['bash', 'git'] }),
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -166,7 +185,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'live-data-policy.json'),
       JSON.stringify({ allowed_commands: ['bash'] }),
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -188,7 +208,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'commands', 'live-test.md'),
       '---\ndescription: Security regression fixture\n---\n$ARGUMENTS\n',
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -198,7 +219,9 @@ describe('auto slash live-data security', () => {
 
     expect(result.success).toBe(true);
     expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: control character rejected');
+    expect(result.replacementText).toContain(
+      'blocked: control character rejected',
+    );
     expect(mockedExecSync).not.toHaveBeenCalled();
     expect(mockedExecFileSync).not.toHaveBeenCalled();
   });
@@ -208,8 +231,10 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'commands', 'live-test.md'),
       '---\ndescription: Security regression fixture\n---\n$ARGUMENTS\n',
     );
-    const { detectSlashCommand } = await import('../hooks/auto-slash-command/detector.js');
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { detectSlashCommand } =
+      await import('../hooks/auto-slash-command/detector.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
     const parsed = detectSlashCommand('/live-test\n!git status');
 
     expect(parsed).not.toBeNull();
@@ -219,7 +244,9 @@ describe('auto slash live-data security', () => {
 
     expect(result.success).toBe(true);
     expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: live-data directive introduced by arguments');
+    expect(result.replacementText).toContain(
+      'blocked: live-data directive introduced by arguments',
+    );
     expect(mockedExecSync).not.toHaveBeenCalled();
     expect(mockedExecFileSync).not.toHaveBeenCalled();
   });
@@ -233,7 +260,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'live-data-policy.json'),
       JSON.stringify({ allowed_patterns: ['^bash'] }),
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -243,7 +271,9 @@ describe('auto slash live-data security', () => {
 
     expect(result.success).toBe(true);
     expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: live-data directive introduced by arguments');
+    expect(result.replacementText).toContain(
+      'blocked: live-data directive introduced by arguments',
+    );
     expect(mockedExecSync).not.toHaveBeenCalled();
     expect(mockedExecFileSync).not.toHaveBeenCalled();
   });
@@ -253,7 +283,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'commands', 'live-test.md'),
       '---\ndescription: Security regression fixture\n---\n```text\n$ARGUMENTS\n```\n',
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -273,7 +304,8 @@ describe('auto slash live-data security', () => {
       join(projectDir, '.claude', 'commands', 'live-test.md'),
       '---\ndescription: Security regression fixture\n---\n```text\n$ARGUMENTS\n!git status\n```\n',
     );
-    const { executeSlashCommand } = await import('../hooks/auto-slash-command/executor.js');
+    const { executeSlashCommand } =
+      await import('../hooks/auto-slash-command/executor.js');
 
     const result = executeSlashCommand({
       command: 'live-test',
@@ -283,7 +315,9 @@ describe('auto slash live-data security', () => {
 
     expect(result.success).toBe(true);
     expect(result.replacementText).toContain('error="true"');
-    expect(result.replacementText).toContain('blocked: live-data directive introduced by arguments');
+    expect(result.replacementText).toContain(
+      'blocked: live-data directive introduced by arguments',
+    );
     expect(mockedExecSync).not.toHaveBeenCalled();
     expect(mockedExecFileSync).not.toHaveBeenCalled();
   });

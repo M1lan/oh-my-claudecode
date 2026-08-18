@@ -1,4 +1,12 @@
-import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 import { LspClient, LspClientManager } from '../client.js';
 
 const inheritedPythonLsp = process.env.OMC_PYTHON_LSP;

@@ -72,7 +72,8 @@ export function buildClosureReport(
     }),
   );
 
-  const allDeletable = entries.length === 0 || entries.every((e) => e.deletableNow);
+  const allDeletable =
+    entries.length === 0 || entries.every((e) => e.deletableNow);
   const noPrematureDeletion =
     // "Premature deletion" would mean a path listed as deletable-only-after-eligible
     // is already missing while its owner is still extended. In the current machine
@@ -99,12 +100,20 @@ export function buildClosureReport(
 
 export function summarizeClosureForEvidence(report: ClosureReport): string {
   const lines: string[] = [];
-  lines.push(`alias-retirement generated closure report: version=${report.currentVersion} at=${report.evaluatedAt}`);
-  lines.push(`allDeletable=${report.allDeletable} noPrematureDeletion=${report.noPrematureDeletion}`);
+  lines.push(
+    `alias-retirement generated closure report: version=${report.currentVersion} at=${report.evaluatedAt}`,
+  );
+  lines.push(
+    `allDeletable=${report.allDeletable} noPrematureDeletion=${report.noPrematureDeletion}`,
+  );
   for (const e of report.entries) {
-    const status = e.deletableNow ? 'deletable-after-eligibility' : `retained (blocked: ${e.blockedBy.slice(0, 2).join(' | ')})`;
+    const status = e.deletableNow
+      ? 'deletable-after-eligibility'
+      : `retained (blocked: ${e.blockedBy.slice(0, 2).join(' | ')})`;
     const existMark = e.exists ? 'exists' : 'missing';
-    lines.push(`- ${e.path} (alias ${e.alias} -> ${e.canonical}): ${existMark}, ${status}`);
+    lines.push(
+      `- ${e.path} (alias ${e.alias} -> ${e.canonical}): ${existMark}, ${status}`,
+    );
   }
   if (report.entries.length === 0) {
     lines.push('(no alias-owned generated artifacts in current registry)');

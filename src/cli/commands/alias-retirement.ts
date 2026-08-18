@@ -9,9 +9,19 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { ALIAS_REGISTRY, assertAliasRegistryIntegrity } from '../../alias-retirement/registry.js';
-import { verifyAllAliases, summarizeReceipts, type BulkEvaluationInput } from '../../alias-retirement/verifier.js';
-import { buildClosureReport, summarizeClosureForEvidence } from '../../alias-retirement/closure.js';
+import {
+  ALIAS_REGISTRY,
+  assertAliasRegistryIntegrity,
+} from '../../alias-retirement/registry.js';
+import {
+  verifyAllAliases,
+  summarizeReceipts,
+  type BulkEvaluationInput,
+} from '../../alias-retirement/verifier.js';
+import {
+  buildClosureReport,
+  summarizeClosureForEvidence,
+} from '../../alias-retirement/closure.js';
 
 export const ALIAS_RETIREMENT_HELP = `omc alias-retirement - Alias retirement verifier and generated-closure inventory (issue #3711)
 
@@ -80,10 +90,13 @@ function parseUsageHistory(
   const parsed = readJsonMaybePath(raw) as Record<string, unknown> | undefined;
   if (!parsed) return undefined;
   if (typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('--usage-history must be a JSON object mapping alias -> array');
+    throw new Error(
+      '--usage-history must be a JSON object mapping alias -> array',
+    );
   }
   for (const [k, v] of Object.entries(parsed)) {
-    if (!Array.isArray(v)) throw new Error(`usageHistory for ${k} must be an array`);
+    if (!Array.isArray(v))
+      throw new Error(`usageHistory for ${k} must be an array`);
   }
   return parsed as BulkEvaluationInput['usageHistoryByAlias'];
 }
@@ -94,10 +107,13 @@ function parseCriticalIntegrations(
   const parsed = readJsonMaybePath(raw) as Record<string, unknown> | undefined;
   if (!parsed) return undefined;
   if (typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('--critical-integrations must be a JSON object mapping alias -> string[]');
+    throw new Error(
+      '--critical-integrations must be a JSON object mapping alias -> string[]',
+    );
   }
   for (const [k, v] of Object.entries(parsed)) {
-    if (!Array.isArray(v)) throw new Error(`criticalIntegrations for ${k} must be an array`);
+    if (!Array.isArray(v))
+      throw new Error(`criticalIntegrations for ${k} must be an array`);
   }
   return parsed as BulkEvaluationInput['criticalIntegrationsByAlias'];
 }
@@ -136,10 +152,14 @@ export async function aliasRetirementCommand(args: string[]): Promise<void> {
     return;
   }
 
-  let usageHistoryByAlias: BulkEvaluationInput['usageHistoryByAlias'] | undefined;
-  let criticalIntegrationsByAlias: BulkEvaluationInput['criticalIntegrationsByAlias'] | undefined;
+  let usageHistoryByAlias:
+    BulkEvaluationInput['usageHistoryByAlias'] | undefined;
+  let criticalIntegrationsByAlias:
+    BulkEvaluationInput['criticalIntegrationsByAlias'] | undefined;
   try {
-    usageHistoryByAlias = parseUsageHistory(readValue(verifyArgs, '--usage-history'));
+    usageHistoryByAlias = parseUsageHistory(
+      readValue(verifyArgs, '--usage-history'),
+    );
     criticalIntegrationsByAlias = parseCriticalIntegrations(
       readValue(verifyArgs, '--critical-integrations'),
     );
@@ -161,10 +181,12 @@ export async function aliasRetirementCommand(args: string[]): Promise<void> {
   if (json || outPath) {
     const payload = {
       schemaVersion: 1,
-      contract: 'alias-retirement: 2 minors AND 90 days AND >=95% for 2 releases AND zero critical integrations (otherwise extension receipt)',
+      contract:
+        'alias-retirement: 2 minors AND 90 days AND >=95% for 2 releases AND zero critical integrations (otherwise extension receipt)',
       owner: 'workflow-registry',
       evaluatedAt: new Date().toISOString(),
-      currentVersion: receipts[0]?.currentVersion ?? currentVersion ?? 'unknown',
+      currentVersion:
+        receipts[0]?.currentVersion ?? currentVersion ?? 'unknown',
       receipts,
       summary: {
         eligible: summary.eligible.map((r) => r.alias),
@@ -191,29 +213,46 @@ export async function aliasRetirementCommand(args: string[]): Promise<void> {
     }
   } else {
     // Human-readable
-    console.log(`Alias retirement verification — ${receipts[0]?.currentVersion ?? 'unknown'} at ${new Date().toISOString()}`);
-    console.log(`Contract: 2 minors AND 90d AND >=95% canonical for 2 releases AND zero critical integrations; otherwise extension.`);
+    console.log(
+      `Alias retirement verification — ${receipts[0]?.currentVersion ?? 'unknown'} at ${new Date().toISOString()}`,
+    );
+    console.log(
+      `Contract: 2 minors AND 90d AND >=95% canonical for 2 releases AND zero critical integrations; otherwise extension.`,
+    );
     console.log('');
     for (const r of receipts) {
-      const verdict = r.verdict === 'eligible' ? 'ELIGIBLE (deletion requires separate review, not performed here)' : 'EXTENDED';
+      const verdict =
+        r.verdict === 'eligible'
+          ? 'ELIGIBLE (deletion requires separate review, not performed here)'
+          : 'EXTENDED';
       console.log(`- ${r.alias} -> ${r.canonical}: ${verdict}`);
       if (r.blockers.length > 0) {
         for (const b of r.blockers) console.log(`    blocker: ${b}`);
       }
       if (r.extensionReceipt) {
-        if (r.nextEligibleDate) console.log(`    nextEligibleDate: ${r.nextEligibleDate} (90d)`);
-        if (r.nextEligibleVersion) console.log(`    nextEligibleVersion: ${r.nextEligibleVersion} (2 minors)`);
+        if (r.nextEligibleDate)
+          console.log(`    nextEligibleDate: ${r.nextEligibleDate} (90d)`);
+        if (r.nextEligibleVersion)
+          console.log(
+            `    nextEligibleVersion: ${r.nextEligibleVersion} (2 minors)`,
+          );
       }
       if (r.generatedArtifacts.length > 0) {
-        console.log(`    generatedArtifacts: ${r.generatedArtifacts.join(', ')}`);
+        console.log(
+          `    generatedArtifacts: ${r.generatedArtifacts.join(', ')}`,
+        );
       }
     }
     console.log('');
-    console.log(`Summary: ${summary.eligible.length} eligible, ${summary.extended.length} extended; allExtended=${summary.allExtended}`);
+    console.log(
+      `Summary: ${summary.eligible.length} eligible, ${summary.extended.length} extended; allExtended=${summary.allExtended}`,
+    );
     console.log('');
     console.log(summarizeClosureForEvidence(closure));
     if (summary.allExtended) {
-      console.log('\nNo aliases are eligible for removal at this version/date without additional telemetry. Extension receipts emitted — see --json for machine evidence.');
+      console.log(
+        '\nNo aliases are eligible for removal at this version/date without additional telemetry. Extension receipts emitted — see --json for machine evidence.',
+      );
     }
   }
 

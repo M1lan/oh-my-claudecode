@@ -18,9 +18,7 @@
 import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import {
-  validateWorkingDirectory,
-} from '../../lib/worktree-paths.js';
+import { validateWorkingDirectory } from '../../lib/worktree-paths.js';
 import { createHookDispatcher } from './dispatcher.js';
 import { buildHookRegistry } from './registry.js';
 import type {
@@ -52,10 +50,18 @@ export function isHookShadowEnabled(): boolean {
  * Normalized decision-shape digest: hashes only the decision structure
  * (continue flag, message presence, decision kind), never content.
  */
-export function decisionDigest(output: ShadowDecisionInput | undefined): string {
+export function decisionDigest(
+  output: ShadowDecisionInput | undefined,
+): string {
   const shape = {
-    continue: output?.continue === false ? false : output?.continue === true ? true : undefined,
-    hasMessage: typeof output?.message === 'string' && output.message.length > 0,
+    continue:
+      output?.continue === false
+        ? false
+        : output?.continue === true
+          ? true
+          : undefined,
+    hasMessage:
+      typeof output?.message === 'string' && output.message.length > 0,
     decisionKind:
       output?.decision === undefined ? undefined : typeof output.decision,
   };
@@ -185,7 +191,8 @@ export async function runShadowObservation(
   try {
     const registry = getShadowRegistry();
     const entries = entriesForHookType(registry, hookType);
-    const event: HookEvent | null = entries.length > 0 ? entries[0].event : null;
+    const event: HookEvent | null =
+      entries.length > 0 ? entries[0].event : null;
 
     // Run the dispatcher in shadow mode for the same event: this exercises
     // selection/ordering/timeout/fail-mode logic with dry-run handlers only.

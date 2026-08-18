@@ -522,7 +522,9 @@ export const interopUpdateTaskTool: ToolDefinition<{
       if (task.result) {
         lines.push(`**Result:** ${truncatePreview(task.result, 200)}`);
       }
-      lines.push(...formatArtifactDescriptorLines('Result', task.resultArtifact));
+      lines.push(
+        ...formatArtifactDescriptorLines('Result', task.resultArtifact),
+      );
 
       if (task.error) {
         lines.push(`**Error:** ${task.error}`);

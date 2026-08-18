@@ -22,17 +22,42 @@ import {
 
 describe('workflow registry — Tier-0 contract', () => {
   it('defines exactly six Tier-0 workflows: plan, deep-interview, ralplan, execute, review, verify (owner direction #3708)', () => {
-    expect([...TIER0_WORKFLOWS]).toEqual(['plan', 'deep-interview', 'ralplan', 'execute', 'review', 'verify']);
+    expect([...TIER0_WORKFLOWS]).toEqual([
+      'plan',
+      'deep-interview',
+      'ralplan',
+      'execute',
+      'review',
+      'verify',
+    ]);
     const tier0 = WORKFLOW_ENTRIES.filter((e) => e.tier === 0);
-    expect(tier0.map((e) => e.name).sort()).toEqual(['deep-interview', 'execute', 'plan', 'ralplan', 'review', 'verify']);
-    expect(tier0.every((e) => e.decision === 'keep' && e.kind === 'skill')).toBe(true);
+    expect(tier0.map((e) => e.name).sort()).toEqual([
+      'deep-interview',
+      'execute',
+      'plan',
+      'ralplan',
+      'review',
+      'verify',
+    ]);
+    expect(
+      tier0.every((e) => e.decision === 'keep' && e.kind === 'skill'),
+    ).toBe(true);
   });
 
-
   it('defines exactly four Tier-0 roles: planner, executor, reviewer, verifier', () => {
-    expect([...TIER0_ROLES]).toEqual(['planner', 'executor', 'reviewer', 'verifier']);
+    expect([...TIER0_ROLES]).toEqual([
+      'planner',
+      'executor',
+      'reviewer',
+      'verifier',
+    ]);
     const tier0 = WORKFLOW_ROLES.filter((r) => r.tier === 0);
-    expect(tier0.map((r) => r.name).sort()).toEqual(['executor', 'planner', 'reviewer', 'verifier']);
+    expect(tier0.map((r) => r.name).sort()).toEqual([
+      'executor',
+      'planner',
+      'reviewer',
+      'verifier',
+    ]);
   });
 
   it('keeps every specialist role internal with a Tier-0 mapping', () => {
@@ -78,8 +103,12 @@ describe('workflow registry — risk classes and gate policy', () => {
 
 describe('workflow registry — aliases and classification', () => {
   it('classifies all 41 installed skills and 28 installed commands exactly once', () => {
-    const skills = WORKFLOW_ENTRIES.filter((e) => e.kind === 'skill' && !e.declaredOnly);
-    const commands = WORKFLOW_ENTRIES.filter((e) => e.kind === 'command' && !e.declaredOnly);
+    const skills = WORKFLOW_ENTRIES.filter(
+      (e) => e.kind === 'skill' && !e.declaredOnly,
+    );
+    const commands = WORKFLOW_ENTRIES.filter(
+      (e) => e.kind === 'command' && !e.declaredOnly,
+    );
     expect(skills).toHaveLength(41);
     expect(commands).toHaveLength(28);
     const keys = WORKFLOW_ENTRIES.map((e) => `${e.kind}:${e.name}`);
@@ -87,7 +116,9 @@ describe('workflow registry — aliases and classification', () => {
   });
 
   it('resolves every merge/alias entry to a keep target without broken chains', () => {
-    const aliases = WORKFLOW_ENTRIES.filter((e) => e.decision === 'merge' || e.decision === 'alias-deprecate');
+    const aliases = WORKFLOW_ENTRIES.filter(
+      (e) => e.decision === 'merge' || e.decision === 'alias-deprecate',
+    );
     expect(aliases.length).toBeGreaterThan(0);
     for (const a of aliases) {
       const canonical = resolveCanonical(a.name, a.kind);
@@ -111,16 +142,21 @@ describe('workflow registry — aliases and classification', () => {
     expect(getEntry('deep-interview', 'skill')?.tier).toBe(0);
     expect(getEntry('ralplan', 'skill')?.decision).toBe('keep');
     expect(getEntry('ralplan', 'skill')?.tier).toBe(0);
-    expect(resolveCanonical('deep-interview', 'skill')?.name).toBe('deep-interview');
+    expect(resolveCanonical('deep-interview', 'skill')?.name).toBe(
+      'deep-interview',
+    );
     expect(resolveCanonical('ralplan', 'skill')?.name).toBe('ralplan');
     expect(resolveCanonical('ultraqa', 'skill')?.name).toBe('verify');
     expect(resolveCanonical('merge-readiness', 'skill')?.name).toBe('review');
   });
 
-
   it('attaches a removal milestone to every removable alias', () => {
     for (const e of WORKFLOW_ENTRIES) {
-      if (e.decision === 'merge' || e.decision === 'alias-deprecate' || e.decision === 'delete') {
+      if (
+        e.decision === 'merge' ||
+        e.decision === 'alias-deprecate' ||
+        e.decision === 'delete'
+      ) {
         expect(e.removalMilestone, `${e.kind}:${e.name}`).toBeDefined();
       }
     }
@@ -158,7 +194,8 @@ describe('workflow registry — retirement policy', () => {
     expect(REMOVAL_MILESTONE).toContain('95%');
   });
   it('re-exports the canonical RETIREMENT_POLICY from alias-retirement/policy.ts (single source of truth)', async () => {
-    const { RETIREMENT_POLICY: canonicalPolicy } = await import('../../alias-retirement/policy.js');
+    const { RETIREMENT_POLICY: canonicalPolicy } =
+      await import('../../alias-retirement/policy.js');
     expect(RETIREMENT_POLICY).toBe(canonicalPolicy);
   });
 });

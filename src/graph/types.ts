@@ -7,26 +7,24 @@
  */
 
 /** Stable node kinds. */
-export type GraphNodeKind = "agent" | "command" | "human-approval" | "join";
+export type GraphNodeKind = 'agent' | 'command' | 'human-approval' | 'join';
 
 /** Effect policy for executable nodes (discriminated object union). */
 export interface GraphSideEffectFreePolicy {
-  readonly policy: "side_effect_free";
+  readonly policy: 'side_effect_free';
 }
 
 export interface GraphIdempotentPolicy {
-  readonly policy: "idempotent";
+  readonly policy: 'idempotent';
   readonly idempotency_key_template: string;
 }
 
 export interface GraphReconcilePolicy {
-  readonly policy: "reconcile";
+  readonly policy: 'reconcile';
 }
 
 export type GraphEffectPolicy =
-  | GraphSideEffectFreePolicy
-  | GraphIdempotentPolicy
-  | GraphReconcilePolicy;
+  GraphSideEffectFreePolicy | GraphIdempotentPolicy | GraphReconcilePolicy;
 
 /** Fields shared by every graph node. */
 export interface GraphNodeBase {
@@ -43,31 +41,28 @@ export interface GraphExecutableNodeBase extends GraphNodeBase {
 }
 
 export interface GraphAgentNode extends GraphExecutableNodeBase {
-  readonly kind: "agent";
+  readonly kind: 'agent';
   readonly instructions: string;
 }
 
 export interface GraphCommandNode extends GraphExecutableNodeBase {
-  readonly kind: "command";
+  readonly kind: 'command';
   readonly command: string;
 }
 
 export interface GraphHumanApprovalNode extends GraphNodeBase {
-  readonly kind: "human-approval";
+  readonly kind: 'human-approval';
   readonly prompt: string;
 }
 
 export interface GraphJoinNode extends GraphNodeBase {
-  readonly kind: "join";
+  readonly kind: 'join';
   readonly fan_out_node_id: string;
   readonly input_branch_ids: readonly string[];
 }
 
 export type GraphNode =
-  | GraphAgentNode
-  | GraphCommandNode
-  | GraphHumanApprovalNode
-  | GraphJoinNode;
+  GraphAgentNode | GraphCommandNode | GraphHumanApprovalNode | GraphJoinNode;
 
 /** Fields shared by every graph edge. */
 export interface GraphEdgeBase {
@@ -77,31 +72,28 @@ export interface GraphEdgeBase {
 }
 
 export interface GraphFixedEdge extends GraphEdgeBase {
-  readonly kind: "fixed";
+  readonly kind: 'fixed';
 }
 
 export interface GraphConditionalEdge extends GraphEdgeBase {
-  readonly kind: "conditional";
+  readonly kind: 'conditional';
   readonly route: string;
 }
 
 export interface GraphFanOutEdge extends GraphEdgeBase {
-  readonly kind: "fan_out";
+  readonly kind: 'fan_out';
   readonly branch_id: string;
   readonly owner_join_id: string;
 }
 
 export interface GraphBackEdge extends GraphEdgeBase {
-  readonly kind: "back_edge";
+  readonly kind: 'back_edge';
   readonly route: string;
   readonly max_traversals: number;
 }
 
 export type GraphEdge =
-  | GraphFixedEdge
-  | GraphConditionalEdge
-  | GraphFanOutEdge
-  | GraphBackEdge;
+  GraphFixedEdge | GraphConditionalEdge | GraphFanOutEdge | GraphBackEdge;
 
 /** Unsealed descriptor input accepted by the draft producers. */
 export interface GraphDescriptorInput {
@@ -127,19 +119,19 @@ export type GraphDescriptor = GraphDescriptorInput;
  */
 export type SealedGraphDescriptor = Omit<
   GraphDescriptorInput,
-  "descriptor_hash"
+  'descriptor_hash'
 > & {
   readonly descriptor_hash: string;
 };
 
 export interface GraphEvidenceReference {
-  readonly kind: "file" | "command" | "test" | "human" | "url";
+  readonly kind: 'file' | 'command' | 'test' | 'human' | 'url';
   readonly ref: string;
   readonly summary?: string;
 }
 
 export interface GraphNodeResult {
-  readonly outcome: "succeeded" | "failed";
+  readonly outcome: 'succeeded' | 'failed';
   readonly attempt_id: string;
   readonly route?: string;
   readonly output_summary?: string;
@@ -148,16 +140,13 @@ export interface GraphNodeResult {
 }
 
 export interface GraphApprovalDecision {
-  readonly decision: "approved" | "denied";
+  readonly decision: 'approved' | 'denied';
   readonly evidence_refs: readonly GraphEvidenceReference[];
   readonly output_summary?: string;
 }
 
 export type GraphActivationStatus =
-  | "ready"
-  | "running"
-  | "completed"
-  | "failed";
+  'ready' | 'running' | 'completed' | 'failed';
 
 export interface GraphActivation {
   readonly activation_id: string;
@@ -172,7 +161,7 @@ export interface GraphActivation {
   readonly traversal_owner_id: string;
 }
 
-export type GraphBranchTokenStatus = "active" | "arrived" | "consumed";
+export type GraphBranchTokenStatus = 'active' | 'arrived' | 'consumed';
 
 export interface GraphBranchToken {
   readonly branch_token_id: string;
@@ -209,7 +198,7 @@ interface GraphCommittedTransitionBase {
 
 /** Succeeded: attempt-bound; edge/activation cardinality varies (fan-out/terminal). */
 export interface GraphSucceededTransition extends GraphCommittedTransitionBase {
-  readonly outcome: "succeeded";
+  readonly outcome: 'succeeded';
   readonly attempt_id: string;
   readonly route?: string;
   readonly output_summary?: string;
@@ -218,7 +207,7 @@ export interface GraphSucceededTransition extends GraphCommittedTransitionBase {
 
 /** Failed: never selects or creates anything. */
 export interface GraphFailedTransition extends GraphCommittedTransitionBase {
-  readonly outcome: "failed";
+  readonly outcome: 'failed';
   readonly attempt_id: string;
   readonly selected_edge_ids: readonly [];
   readonly created_activation_ids: readonly [];
@@ -227,7 +216,7 @@ export interface GraphFailedTransition extends GraphCommittedTransitionBase {
 
 /** Approved: exactly one fixed edge selected and exactly one activation created; evidence is non-empty. */
 export interface GraphApprovedTransition extends GraphCommittedTransitionBase {
-  readonly outcome: "approved";
+  readonly outcome: 'approved';
   readonly selected_edge_ids: readonly [string];
   readonly created_activation_ids: readonly [string];
   readonly evidence_refs: readonly [
@@ -239,7 +228,7 @@ export interface GraphApprovedTransition extends GraphCommittedTransitionBase {
 
 /** Denied: selects/creates nothing; evidence records the decision and is non-empty. */
 export interface GraphDeniedTransition extends GraphCommittedTransitionBase {
-  readonly outcome: "denied";
+  readonly outcome: 'denied';
   readonly selected_edge_ids: readonly [];
   readonly created_activation_ids: readonly [];
   readonly evidence_refs: readonly [
@@ -251,7 +240,7 @@ export interface GraphDeniedTransition extends GraphCommittedTransitionBase {
 
 /** Join resolved: exactly one fixed edge selected and exactly one activation created; no evidence. */
 export interface GraphJoinResolvedTransition extends GraphCommittedTransitionBase {
-  readonly outcome: "join_resolved";
+  readonly outcome: 'join_resolved';
   readonly cohort_id: string;
   readonly selected_edge_ids: readonly [string];
   readonly created_activation_ids: readonly [string];
@@ -326,29 +315,29 @@ export interface SchedulerApplyResult {
 
 /** Closed scheduler error-code union; every scheduler throw uses exactly one code. */
 export type GraphSchedulerErrorCode =
-  | "activation_not_found"
-  | "activation_not_ready"
-  | "max_attempts_exceeded"
-  | "attempt_fenced"
-  | "transition_fenced"
-  | "duplicate_identity"
-  | "missing_identity"
-  | "unexpected_identity"
-  | "undeclared_identity_key"
-  | "invalid_input"
-  | "descriptor_mismatch"
-  | "route_required"
-  | "undeclared_route"
-  | "traversal_bound_exceeded"
-  | "branch_token_fenced"
-  | "join_owner_missing"
-  | "join_owner_mismatch"
-  | "join_not_found"
-  | "join_not_ready"
-  | "join_already_consumed"
-  | "join_is_automatic"
-  | "invalid_join_edge"
-  | "node_not_found"
-  | "terminal_evidence_required"
-  | "approval_requires_dedicated_transition"
-  | "unsupported_node_kind";
+  | 'activation_not_found'
+  | 'activation_not_ready'
+  | 'max_attempts_exceeded'
+  | 'attempt_fenced'
+  | 'transition_fenced'
+  | 'duplicate_identity'
+  | 'missing_identity'
+  | 'unexpected_identity'
+  | 'undeclared_identity_key'
+  | 'invalid_input'
+  | 'descriptor_mismatch'
+  | 'route_required'
+  | 'undeclared_route'
+  | 'traversal_bound_exceeded'
+  | 'branch_token_fenced'
+  | 'join_owner_missing'
+  | 'join_owner_mismatch'
+  | 'join_not_found'
+  | 'join_not_ready'
+  | 'join_already_consumed'
+  | 'join_is_automatic'
+  | 'invalid_join_edge'
+  | 'node_not_found'
+  | 'terminal_evidence_required'
+  | 'approval_requires_dedicated_transition'
+  | 'unsupported_node_kind';

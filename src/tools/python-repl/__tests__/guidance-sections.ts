@@ -41,7 +41,11 @@ function toUnits(markdown: string): Unit[] {
       continue;
     }
     const heading = HEADING.exec(line);
-    units.push(heading ? { lines: [line], headingLevel: heading[1]!.length } : { lines: [line] });
+    units.push(
+      heading
+        ? { lines: [line], headingLevel: heading[1]!.length }
+        : { lines: [line] },
+    );
   }
   return units;
 }
@@ -64,9 +68,13 @@ export function extractPythonGuidance(markdown: string): string {
   for (const unit of units) {
     const text = unit.lines.join('\n');
     if (unit.headingLevel !== undefined) {
-      if (openLevel !== null && unit.headingLevel <= openLevel) openLevel = null;
+      if (openLevel !== null && unit.headingLevel <= openLevel)
+        openLevel = null;
       if (RELEVANT.test(text)) {
-        openLevel = openLevel === null ? unit.headingLevel : Math.min(openLevel, unit.headingLevel);
+        openLevel =
+          openLevel === null
+            ? unit.headingLevel
+            : Math.min(openLevel, unit.headingLevel);
         kept.push(text);
         continue;
       }

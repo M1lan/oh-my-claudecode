@@ -175,7 +175,9 @@ export interface PluginConfig {
      *
      * Env: OMC_MODEL_ALIAS_HAIKU, OMC_MODEL_ALIAS_SONNET, OMC_MODEL_ALIAS_OPUS, OMC_MODEL_ALIAS_FABLE
      */
-    modelAliases?: Partial<Record<'haiku' | 'sonnet' | 'opus' | 'fable', ModelType>>;
+    modelAliases?: Partial<
+      Record<'haiku' | 'sonnet' | 'opus' | 'fable', ModelType>
+    >;
     /** Keywords that force escalation to higher tier */
     escalationKeywords?: string[];
     /** Keywords that suggest lower tier */

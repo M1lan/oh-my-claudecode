@@ -1194,7 +1194,10 @@ export async function processSessionEnd(
   // Stale-unfinished-PRD warning (#3669): surface the divergence at session end
   // BEFORE mode-state cleanup removes the ralph state (the abnormal-exit
   // signal). Never blocks session end.
-  const stalePrdWarning = getSessionEndStalePrdWarning(directory, input.session_id);
+  const stalePrdWarning = getSessionEndStalePrdWarning(
+    directory,
+    input.session_id,
+  );
   if (stalePrdWarning) {
     console.warn(stalePrdWarning);
   }

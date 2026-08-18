@@ -202,7 +202,10 @@ describe('zodToJsonSchema - Descriptions', () => {
     });
 
     const prop = result.properties.executionLabel as Record<string, unknown>;
-    expect(prop).toEqual({ type: 'string', description: 'Human-readable label' });
+    expect(prop).toEqual({
+      type: 'string',
+      description: 'Human-readable label',
+    });
     expect(result.required).not.toContain('executionLabel');
   });
 
@@ -212,7 +215,11 @@ describe('zodToJsonSchema - Descriptions', () => {
     });
 
     const prop = result.properties.timeout as Record<string, unknown>;
-    expect(prop).toEqual({ type: 'number', default: 30, description: 'Timeout in seconds' });
+    expect(prop).toEqual({
+      type: 'number',
+      default: 30,
+      description: 'Timeout in seconds',
+    });
   });
 
   it('should keep an inner description when the wrapper has none', () => {

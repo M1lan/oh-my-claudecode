@@ -1,13 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { ALIAS_REGISTRY, assertAliasRegistryIntegrity, getAliasRecord } from '../registry.js';
-import { createBuiltinSkills, getBuiltinSkill } from '../../features/builtin-skills/skills.js';
+import {
+  ALIAS_REGISTRY,
+  assertAliasRegistryIntegrity,
+  getAliasRecord,
+} from '../registry.js';
+import {
+  createBuiltinSkills,
+  getBuiltinSkill,
+} from '../../features/builtin-skills/skills.js';
 
 describe('alias-retirement registry', () => {
   it('contains exactly the four known compatibility aliases', () => {
     const aliases = ALIAS_REGISTRY.map((r) => r.alias).sort();
-    expect(aliases).toEqual(['cancel-ralph', 'learner', 'psm', 'understanding-gate'].sort());
+    expect(aliases).toEqual(
+      ['cancel-ralph', 'learner', 'psm', 'understanding-gate'].sort(),
+    );
   });
 
   it('has no integrity errors', () => {
@@ -23,11 +32,17 @@ describe('alias-retirement registry', () => {
   it('maps to real canonical skills exposed by the runtime loader', () => {
     for (const rec of ALIAS_REGISTRY) {
       const canonical = getBuiltinSkill(rec.canonical);
-      expect(canonical, `canonical ${rec.canonical} for alias ${rec.alias} must exist`).toBeDefined();
+      expect(
+        canonical,
+        `canonical ${rec.canonical} for alias ${rec.alias} must exist`,
+      ).toBeDefined();
       expect(canonical!.aliasOf).toBeUndefined();
       // alias entry must exist as deprecatedAlias
       const alias = getBuiltinSkill(rec.alias);
-      expect(alias, `alias ${rec.alias} must be resolvable via getBuiltinSkill`).toBeDefined();
+      expect(
+        alias,
+        `alias ${rec.alias} must be resolvable via getBuiltinSkill`,
+      ).toBeDefined();
       expect(alias!.aliasOf).toBe(rec.canonical);
       expect(alias!.deprecatedAlias).toBe(true);
     }
@@ -54,13 +69,18 @@ describe('alias-retirement registry', () => {
     for (const rec of ALIAS_REGISTRY) {
       for (const p of rec.generatedArtifacts) {
         const full = join(process.cwd(), p);
-        expect(existsSync(full), `generated artifact ${p} for alias ${rec.alias} must still exist (issue #3711 temporal rule: no premature removal)`).toBe(true);
+        expect(
+          existsSync(full),
+          `generated artifact ${p} for alias ${rec.alias} must still exist (issue #3711 temporal rule: no premature removal)`,
+        ).toBe(true);
       }
     }
   });
 
   it('every generated artifact owner is a known alias', () => {
-    const allAliases = new Set(ALIAS_REGISTRY.map((r) => r.alias.toLowerCase()));
+    const allAliases = new Set(
+      ALIAS_REGISTRY.map((r) => r.alias.toLowerCase()),
+    );
     for (const rec of ALIAS_REGISTRY) {
       expect(allAliases.has(rec.alias.toLowerCase())).toBe(true);
     }

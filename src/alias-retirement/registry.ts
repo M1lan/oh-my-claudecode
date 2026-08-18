@@ -50,10 +50,13 @@ export const ALIAS_REGISTRY: readonly AliasRecord[] = [
     kind: 'skill',
     introducedVersion: '4.2.15',
     introducedDate: '2026-02-19',
-    owner: 'workflow-registry (src/features/builtin-skills/skills.ts + skills/ + commands/)',
-    removalMilestone: 'TBD: >=4.4.0 && >=2026-05-20 && 2 consecutive releases at >=95% canonical && zero critical integrations',
+    owner:
+      'workflow-registry (src/features/builtin-skills/skills.ts + skills/ + commands/)',
+    removalMilestone:
+      'TBD: >=4.4.0 && >=2026-05-20 && 2 consecutive releases at >=95% canonical && zero critical integrations',
     generatedArtifacts: ['skills/learner/SKILL.md', 'commands/learner.md'],
-    notes: 'skillify frontmatter aliases:[learner]; legacy skills/learner dir and commands/learner.md remain as bounded compatibility alias',
+    notes:
+      'skillify frontmatter aliases:[learner]; legacy skills/learner dir and commands/learner.md remain as bounded compatibility alias',
   },
   {
     alias: 'psm',
@@ -61,10 +64,13 @@ export const ALIAS_REGISTRY: readonly AliasRecord[] = [
     kind: 'skill',
     introducedVersion: '4.2.15',
     introducedDate: '2026-02-19',
-    owner: 'workflow-registry (src/features/builtin-skills/skills.ts + commands/)',
-    removalMilestone: 'TBD: >=4.4.0 && >=2026-05-20 && 2 consecutive releases at >=95% canonical && zero critical integrations',
+    owner:
+      'workflow-registry (src/features/builtin-skills/skills.ts + commands/)',
+    removalMilestone:
+      'TBD: >=4.4.0 && >=2026-05-20 && 2 consecutive releases at >=95% canonical && zero critical integrations',
     generatedArtifacts: ['commands/psm.md'],
-    notes: 'project-session-manager frontmatter aliases:[psm]; no extra skill dir — frontmatter-only alias',
+    notes:
+      'project-session-manager frontmatter aliases:[psm]; no extra skill dir — frontmatter-only alias',
   },
   {
     alias: 'cancel-ralph',
@@ -72,10 +78,13 @@ export const ALIAS_REGISTRY: readonly AliasRecord[] = [
     kind: 'skill',
     introducedVersion: '4.3.0',
     introducedDate: '2026-02-21',
-    owner: 'workflow-registry (src/features/builtin-skills/skills.ts + commands/)',
-    removalMilestone: 'TBD: >=4.5.0 && >=2026-05-22 && 2 consecutive releases at >=95% canonical && zero critical integrations',
+    owner:
+      'workflow-registry (src/features/builtin-skills/skills.ts + commands/)',
+    removalMilestone:
+      'TBD: >=4.5.0 && >=2026-05-22 && 2 consecutive releases at >=95% canonical && zero critical integrations',
     generatedArtifacts: [],
-    notes: 'cancel frontmatter aliases:[cancel-ralph]; frontmatter-only alias, no duplicate projection dir',
+    notes:
+      'cancel frontmatter aliases:[cancel-ralph]; frontmatter-only alias, no duplicate projection dir',
   },
   {
     alias: 'understanding-gate',
@@ -84,9 +93,11 @@ export const ALIAS_REGISTRY: readonly AliasRecord[] = [
     introducedVersion: '4.15.3',
     introducedDate: '2026-07-10',
     owner: 'workflow-registry (src/features/builtin-skills/skills.ts)',
-    removalMilestone: 'TBD: >=4.17.0 && >=2026-10-08 && 2 consecutive releases at >=95% canonical && zero critical integrations',
+    removalMilestone:
+      'TBD: >=4.17.0 && >=2026-10-08 && 2 consecutive releases at >=95% canonical && zero critical integrations',
     generatedArtifacts: [],
-    notes: 'merge-readiness frontmatter aliases: understanding-gate; frontmatter-only alias introduced with merge-readiness gate',
+    notes:
+      'merge-readiness frontmatter aliases: understanding-gate; frontmatter-only alias introduced with merge-readiness gate',
   },
 ] as const;
 
@@ -99,7 +110,8 @@ export function assertAliasRegistryIntegrity(): string[] {
   const errors: string[] = [];
   const seen = new Set<string>();
   for (const rec of ALIAS_REGISTRY) {
-    if (!rec.alias || !rec.canonical) errors.push(`empty alias/canonical for ${JSON.stringify(rec)}`);
+    if (!rec.alias || !rec.canonical)
+      errors.push(`empty alias/canonical for ${JSON.stringify(rec)}`);
     const k = rec.alias.toLowerCase();
     if (seen.has(k)) errors.push(`duplicate alias ${rec.alias}`);
     seen.add(k);
@@ -107,14 +119,23 @@ export function assertAliasRegistryIntegrity(): string[] {
       errors.push(`alias ${rec.alias} equals canonical`);
     }
     // Validate introducedVersion parses
-    const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(rec.introducedVersion.replace(/^v/, ''));
-    if (!m) errors.push(`alias ${rec.alias} has invalid introducedVersion ${rec.introducedVersion}`);
+    const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(
+      rec.introducedVersion.replace(/^v/, ''),
+    );
+    if (!m)
+      errors.push(
+        `alias ${rec.alias} has invalid introducedVersion ${rec.introducedVersion}`,
+      );
     // Validate introducedDate is YYYY-MM-DD
     if (Number.isNaN(new Date(rec.introducedDate).getTime())) {
-      errors.push(`alias ${rec.alias} has invalid introducedDate ${rec.introducedDate}`);
+      errors.push(
+        `alias ${rec.alias} has invalid introducedDate ${rec.introducedDate}`,
+      );
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(rec.introducedDate)) {
-      errors.push(`alias ${rec.alias} introducedDate must be YYYY-MM-DD, got ${rec.introducedDate}`);
+      errors.push(
+        `alias ${rec.alias} introducedDate must be YYYY-MM-DD, got ${rec.introducedDate}`,
+      );
     }
   }
   return errors;

@@ -23,9 +23,9 @@
  *    silent WIP commit is never created here.
  */
 
-import { execFileSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { execFileSync } from 'node:child_process';
+import { existsSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 export const MAX_EVIDENCE_ENTRIES = 20;
 export const GIT_TIMEOUT_MS = 2500;
@@ -53,11 +53,7 @@ export const GIT_MAX_BUFFER = 32 * 1024 * 1024;
 
 /** Kinds of evidence a stop hook can produce (never throws). */
 export type WorktreeEvidenceKind =
-  | "dirty"
-  | "clean"
-  | "not_git"
-  | "cwd_missing"
-  | "git_unavailable";
+  'dirty' | 'clean' | 'not_git' | 'cwd_missing' | 'git_unavailable';
 
 export interface WorktreeDirtyEvidence {
   kind: WorktreeEvidenceKind;
@@ -121,13 +117,11 @@ export function isAbnormalTermination(input: {
 }): boolean {
   if (input.success === true) return false;
   if (input.success === false) return true;
-  if (typeof input.output !== "string" || input.output.trim() === "") {
+  if (typeof input.output !== 'string' || input.output.trim() === '') {
     return false;
   }
   const output: string = input.output;
-  return STRUCTURED_FAILURE_ENVELOPES.some((pattern) =>
-    pattern.test(output),
-  );
+  return STRUCTURED_FAILURE_ENVELOPES.some((pattern) => pattern.test(output));
 }
 
 /**
@@ -143,7 +137,7 @@ export function isAbnormalTermination(input: {
  * reason when git could not be queried.
  */
 /** Porcelain row categories (`XY` prefix), used for exact per-kind totals. */
-type StatusCategory = "tracked" | "untracked" | "ignored";
+type StatusCategory = 'tracked' | 'untracked' | 'ignored';
 
 interface CategoryCounts {
   tracked: number;
@@ -167,9 +161,9 @@ interface GitStatusResult {
 /** Classify a `git status --porcelain` row by its two-character status code. */
 function statusCategory(line: string): StatusCategory {
   const trimmed = line.trim();
-  if (trimmed.startsWith("??")) return "untracked";
-  if (trimmed.startsWith("!!")) return "ignored";
-  return "tracked";
+  if (trimmed.startsWith('??')) return 'untracked';
+  if (trimmed.startsWith('!!')) return 'ignored';
+  return 'tracked';
 }
 
 function runGitBounded(
@@ -178,7 +172,7 @@ function runGitBounded(
   opts: WorktreeEvidenceOptions,
   remainingMs: number,
 ): string {
-  const git = opts.gitCommand || "git";
+  const git = opts.gitCommand || 'git';
   const timeoutMs = Math.max(
     1,
     Math.min(opts.timeoutMs ?? GIT_TIMEOUT_MS, remainingMs),
@@ -186,22 +180,25 @@ function runGitBounded(
   try {
     return execFileSync(git, args, {
       cwd,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
       timeout: timeoutMs,
       maxBuffer: GIT_MAX_BUFFER,
       env: {
         ...process.env,
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_OPTIONAL_LOCKS: "0",
+        GIT_TERMINAL_PROMPT: '0',
+        GIT_OPTIONAL_LOCKS: '0',
       },
     }).trim();
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
-    throw Object.assign(new Error(`git call failed: ${String(code ?? "git_failed")}`), {
-      code: code === "ETIMEDOUT" ? "ETIMEDOUT" : code,
-    });
+    throw Object.assign(
+      new Error(`git call failed: ${String(code ?? 'git_failed')}`),
+      {
+        code: code === 'ETIMEDOUT' ? 'ETIMEDOUT' : code,
+      },
+    );
   }
 }
 
@@ -211,7 +208,7 @@ function runGitStatus(
   opts: WorktreeEvidenceOptions,
   remainingMs: number,
 ): GitStatusResult {
-  const git = opts.gitCommand || "git";
+  const git = opts.gitCommand || 'git';
   const timeoutMs = Math.max(
     1,
     Math.min(opts.timeoutMs ?? GIT_TIMEOUT_MS, remainingMs),
@@ -225,15 +222,15 @@ function runGitStatus(
   try {
     raw = execFileSync(git, args, {
       cwd,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
       windowsHide: true,
       timeout: timeoutMs,
       maxBuffer: GIT_MAX_BUFFER,
       env: {
         ...process.env,
-        GIT_TERMINAL_PROMPT: "0",
-        GIT_OPTIONAL_LOCKS: "0",
+        GIT_TERMINAL_PROMPT: '0',
+        GIT_OPTIONAL_LOCKS: '0',
       },
     });
   } catch (err) {
@@ -242,7 +239,7 @@ function runGitStatus(
       rows: [],
       outputTruncated: false,
       overflow: { tracked: 0, untracked: 0, ignored: 0 },
-      error: code === "ETIMEDOUT" ? "deadline" : String(code ?? "git_failed"),
+      error: code === 'ETIMEDOUT' ? 'deadline' : String(code ?? 'git_failed'),
     };
   }
 
@@ -251,7 +248,7 @@ function runGitStatus(
   const rows: string[] = [];
   let outputTruncated = false;
   const overflow: CategoryCounts = { tracked: 0, untracked: 0, ignored: 0 };
-  for (const line of raw.split("\n")) {
+  for (const line of raw.split('\n')) {
     const trimmed = line.trim();
     if (!trimmed) continue;
     if (rows.length < MAX_EVIDENCE_ENTRIES) {
@@ -268,7 +265,7 @@ function isLinkedWorktree(toplevel: string): boolean {
   try {
     // A linked worktree's toplevel has a `.git` FILE (gitdir: ...); the main
     // repo has a `.git` directory.
-    return statSync(join(toplevel, ".git")).isFile();
+    return statSync(join(toplevel, '.git')).isFile();
   } catch {
     return false;
   }
@@ -276,7 +273,7 @@ function isLinkedWorktree(toplevel: string): boolean {
 
 function sanitizePathPart(value: string): string {
   return value
-    .replace(/[\u0000-\u001f\u007f]/g, "?")
+    .replace(/[\u0000-\u001f\u007f]/g, '?')
     .trim()
     .substring(0, MAX_EVIDENCE_PATH_LENGTH);
 }
@@ -284,16 +281,17 @@ function sanitizePathPart(value: string): string {
 /** Extract the path from a `git status --porcelain` line (rename-aware). */
 function statusEntryPath(line: string): string {
   const payload = line.slice(3);
-  const renameSeparator = " -> ";
+  const renameSeparator = ' -> ';
   const renameIndex = payload.indexOf(renameSeparator);
-  const raw = renameIndex >= 0
-    ? payload.slice(renameIndex + renameSeparator.length)
-    : payload;
+  const raw =
+    renameIndex >= 0
+      ? payload.slice(renameIndex + renameSeparator.length)
+      : payload;
   return sanitizePathPart(raw);
 }
 
 const empty = (): WorktreeDirtyEvidence => ({
-  kind: "clean",
+  kind: 'clean',
   isLinkedWorktree: false,
   trackedCount: 0,
   untrackedCount: 0,
@@ -319,7 +317,7 @@ export function collectWorktreeDirtyEvidence(
 
   try {
     if (!existsSync(cwd)) {
-      return { ...empty(), kind: "cwd_missing", error: "cwd_missing" };
+      return { ...empty(), kind: 'cwd_missing', error: 'cwd_missing' };
     }
 
     let toplevel: string;
@@ -329,30 +327,30 @@ export function collectWorktreeDirtyEvidence(
       // for every subcommand) still resolves the toplevel correctly.
       toplevel = runGitBounded(
         cwd,
-        ["rev-parse", "--show-toplevel"],
+        ['rev-parse', '--show-toplevel'],
         opts,
         remaining(),
       );
     } catch (err) {
       const code = (err as NodeJS.ErrnoException).code;
-      if (code === "ENOENT") {
+      if (code === 'ENOENT') {
         return {
           ...empty(),
-          kind: "git_unavailable",
+          kind: 'git_unavailable',
           error: `git_unavailable:${String(code)}`,
         };
       }
       // ETIMEDOUT means the shared bounded deadline (B5/B8) fired — git is
       // present but the budget was exhausted; never misreport that as a
       // non-repository directory.
-      const isTimeout = code === "ETIMEDOUT";
+      const isTimeout = code === 'ETIMEDOUT';
       return {
         ...empty(),
-        kind: isTimeout ? "git_unavailable" : "not_git",
-        error: isTimeout ? "git_unavailable:deadline" : "not_git",
+        kind: isTimeout ? 'git_unavailable' : 'not_git',
+        error: isTimeout ? 'git_unavailable:deadline' : 'not_git',
       };
     }
-    if (!toplevel) return { ...empty(), kind: "not_git", error: "not_git" };
+    if (!toplevel) return { ...empty(), kind: 'not_git', error: 'not_git' };
 
     const linked = isLinkedWorktree(toplevel);
 
@@ -364,7 +362,7 @@ export function collectWorktreeDirtyEvidence(
     // --untracked-files=all output can never raise ENOBUFS and lose counts.
     const status = runGitStatus(
       toplevel,
-      ["status", "--porcelain", "--untracked-files=all"],
+      ['status', '--porcelain', '--untracked-files=all'],
       opts,
       remaining(),
     );
@@ -372,22 +370,25 @@ export function collectWorktreeDirtyEvidence(
       // A bounded git failure degrades fail-open (never throws). A deadline
       // hit means the shared budget was exhausted; anything else that is not
       // an ENOBUFS overflow is a non-repository or failed-git signal.
-      if (status.error === "deadline") {
+      if (status.error === 'deadline') {
         return {
           ...empty(),
-          kind: "git_unavailable",
-          error: "git_unavailable:deadline",
+          kind: 'git_unavailable',
+          error: 'git_unavailable:deadline',
         };
       }
       return {
         ...empty(),
-        kind: status.error === "ENOBUFS" ? "git_unavailable" : "not_git",
-        error: status.error === "ENOBUFS" ? "git_unavailable:output_overflow" : status.error,
+        kind: status.error === 'ENOBUFS' ? 'git_unavailable' : 'not_git',
+        error:
+          status.error === 'ENOBUFS'
+            ? 'git_unavailable:output_overflow'
+            : status.error,
       };
     }
     const ignoredStatus = runGitStatus(
       toplevel,
-      ["status", "--porcelain", "--ignored=matching"],
+      ['status', '--porcelain', '--ignored=matching'],
       opts,
       remaining(),
     );
@@ -409,7 +410,7 @@ export function collectWorktreeDirtyEvidence(
   } catch {
     // Fail-closed: any unexpected git/filesystem failure must not break the
     // stop hook and must not claim the worktree is dirty.
-    return { ...empty(), kind: "git_unavailable", error: "evidence_failed" };
+    return { ...empty(), kind: 'git_unavailable', error: 'evidence_failed' };
   }
 }
 
@@ -430,7 +431,7 @@ function statusToEvidence(
   for (const line of status.rows) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-    if (trimmed.startsWith("??")) {
+    if (trimmed.startsWith('??')) {
       untracked.push(statusEntryPath(line));
     } else {
       tracked.push(statusEntryPath(line));
@@ -446,12 +447,15 @@ function statusToEvidence(
     for (const line of ignoredStatus.rows) {
       const trimmed = line.trim();
       if (!trimmed) continue;
-      if (trimmed.startsWith("!!")) {
+      if (trimmed.startsWith('!!')) {
         ignored.push(statusEntryPath(line));
       }
     }
   }
-  const entries = [...tracked, ...untracked, ...ignored].slice(0, MAX_EVIDENCE_ENTRIES);
+  const entries = [...tracked, ...untracked, ...ignored].slice(
+    0,
+    MAX_EVIDENCE_ENTRIES,
+  );
   // Overflow rows from the regular status call carry tracked/untracked work.
   // The ignored call repeats the regular status rows, so only its `!!`
   // overflow is consumed — counting its `??`/tracked rows again would
@@ -465,7 +469,7 @@ function statusToEvidence(
     tracked.length + untracked.length + ignored.length > MAX_EVIDENCE_ENTRIES;
 
   return {
-    kind: trackedTotal + untrackedTotal > 0 ? "dirty" : "clean",
+    kind: trackedTotal + untrackedTotal > 0 ? 'dirty' : 'clean',
     worktreeRoot: sanitizePathPart(toplevel),
     isLinkedWorktree: linked,
     trackedCount: trackedTotal,
@@ -486,10 +490,10 @@ export function buildDirtyWorktreeNotice(
   agentId: string,
   agentType: string,
 ): string | null {
-  if (evidence.kind !== "dirty" || !evidence.worktreeRoot) return null;
+  if (evidence.kind !== 'dirty' || !evidence.worktreeRoot) return null;
   const total = evidence.trackedCount + evidence.untrackedCount;
-  const shortId = sanitizePathPart(agentId).substring(0, 7) || "agent";
-  const type = sanitizePathPart(agentType).substring(0, 40) || "subagent";
+  const shortId = sanitizePathPart(agentId).substring(0, 7) || 'agent';
+  const type = sanitizePathPart(agentType).substring(0, 40) || 'subagent';
   return (
     `[OMC] Agent ${shortId} (${type}) terminated with ${total} uncommitted file(s) ` +
     `(${evidence.trackedCount} tracked, ${evidence.untrackedCount} untracked) in ` +

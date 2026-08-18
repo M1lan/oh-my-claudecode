@@ -223,7 +223,13 @@ describe('session-replay', () => {
         success: true,
         synthetic: true,
         telemetry_status: 'unmatched_stop',
-        dirty_worktree: { tracked: 2, untracked: 1, ignored: 0, worktree_root: '/tmp/wt', truncated: false },
+        dirty_worktree: {
+          tracked: 2,
+          untracked: 1,
+          ignored: 0,
+          worktree_root: '/tmp/wt',
+          truncated: false,
+        },
       });
 
       const summary = getReplaySummary(testDir, 'synthetic-dirty');

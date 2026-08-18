@@ -25,7 +25,10 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
 import { getOmcRoot } from '../lib/worktree-paths.js';
-import { countOutstandingForWorker, scanMailboxOutstanding } from '../team/mailbox-outstanding.js';
+import {
+  countOutstandingForWorker,
+  scanMailboxOutstanding,
+} from '../team/mailbox-outstanding.js';
 
 // ── Env helpers ────────────────────────────────────────────────────────────
 
@@ -420,8 +423,10 @@ export async function maybeNotifyLeaderWorkerIdle(params: {
   if (prevState && prevState !== 'unknown') parts.push(`(was: ${prevState})`);
   if (currentTaskId) parts.push(`task: ${currentTaskId}`);
   if (currentReason) parts.push(`reason: ${currentReason}`);
-  if (outstanding.undeliveredInbound > 0) parts.push(`outstanding: ${outstanding.undeliveredInbound} unanswered`);
-  if (outstanding.undeliveredOutbound > 0) parts.push(`undelivered reports: ${outstanding.undeliveredOutbound}`);
+  if (outstanding.undeliveredInbound > 0)
+    parts.push(`outstanding: ${outstanding.undeliveredInbound} unanswered`);
+  if (outstanding.undeliveredOutbound > 0)
+    parts.push(`undelivered reports: ${outstanding.undeliveredOutbound}`);
   const message = `${parts.join('. ')}. ${DEFAULT_MARKER}`;
   const logWorkerIdlePersistenceFailure = createSwallowedErrorLogger(
     'hooks.team-worker maybeNotifyLeaderWorkerIdle persistence failed',
@@ -552,14 +557,16 @@ export async function maybeNotifyLeaderAllWorkersIdle(params: {
   const mailboxDir = join(stateDir, 'team', teamName, 'mailbox');
   const outstandingByWorker = await scanMailboxOutstanding(mailboxDir);
   const totalOutstanding = Object.values(outstandingByWorker).reduce(
-    (sum, counts) => sum + counts.undeliveredInbound + counts.undeliveredOutbound,
+    (sum, counts) =>
+      sum + counts.undeliveredInbound + counts.undeliveredOutbound,
     0,
   );
 
   const N = workers.length;
-  const message = totalOutstanding > 0
-    ? `[OMC] All ${N} worker${N === 1 ? '' : 's'} idle (outstanding: ${totalOutstanding} undelivered directed messages). ${DEFAULT_MARKER}`
-    : `[OMC] All ${N} worker${N === 1 ? '' : 's'} idle. Ready for next instructions. ${DEFAULT_MARKER}`;
+  const message =
+    totalOutstanding > 0
+      ? `[OMC] All ${N} worker${N === 1 ? '' : 's'} idle (outstanding: ${totalOutstanding} undelivered directed messages). ${DEFAULT_MARKER}`
+      : `[OMC] All ${N} worker${N === 1 ? '' : 's'} idle. Ready for next instructions. ${DEFAULT_MARKER}`;
   const logAllWorkersIdlePersistenceFailure = createSwallowedErrorLogger(
     'hooks.team-worker maybeNotifyLeaderAllWorkersIdle persistence failed',
   );

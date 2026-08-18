@@ -23,7 +23,12 @@ describe('alias-retirement policy', () => {
 
   describe('parseVersion', () => {
     it('parses semver', () => {
-      expect(parseVersion('4.15.10')).toEqual({ major: 4, minor: 15, patch: 10, raw: '4.15.10' });
+      expect(parseVersion('4.15.10')).toEqual({
+        major: 4,
+        minor: 15,
+        patch: 10,
+        raw: '4.15.10',
+      });
       expect(parseVersion('v4.3.0')?.minor).toBe(3);
       expect(parseVersion('4.3.0-alpha')?.patch).toBe(0);
     });
@@ -85,11 +90,15 @@ describe('alias-retirement policy', () => {
     it('not met before 90 days', () => {
       const now = new Date('2026-03-20T00:00:00Z');
       expect(isDaysThresholdMet('2026-02-19', now).met).toBe(false);
-      expect(isDaysThresholdMet('2026-07-10', new Date('2026-08-12T00:00:00Z')).met).toBe(false);
+      expect(
+        isDaysThresholdMet('2026-07-10', new Date('2026-08-12T00:00:00Z')).met,
+      ).toBe(false);
     });
     it('met exactly at 90 days', () => {
       const introduced = '2026-02-19';
-      const at90 = new Date(new Date(introduced).getTime() + 90 * 24 * 60 * 60 * 1000);
+      const at90 = new Date(
+        new Date(introduced).getTime() + 90 * 24 * 60 * 60 * 1000,
+      );
       expect(isDaysThresholdMet(introduced, at90).met).toBe(true);
     });
     it('invalid date returns null', () => {
@@ -101,13 +110,23 @@ describe('alias-retirement policy', () => {
   describe('isTemporalThresholdMet (whichever longer: 2 minors AND 90 days)', () => {
     it('requires both minors and days', () => {
       // learner introduced 4.2.15 / 2026-02-19, now is 4.15.10 / 2026-08-12 → both met
-      const r = isTemporalThresholdMet('4.2.15', '2026-02-19', '4.15.10', new Date('2026-08-12T00:00:00Z'));
+      const r = isTemporalThresholdMet(
+        '4.2.15',
+        '2026-02-19',
+        '4.15.10',
+        new Date('2026-08-12T00:00:00Z'),
+      );
       expect(r.met).toBe(true);
       expect(r.minors.met).toBe(true);
       expect(r.days.met).toBe(true);
     });
     it('not met when minors not yet reached even if days met', () => {
-      const r = isTemporalThresholdMet('4.15.3', '2026-07-10', '4.15.10', new Date('2026-08-12T00:00:00Z'));
+      const r = isTemporalThresholdMet(
+        '4.15.3',
+        '2026-07-10',
+        '4.15.10',
+        new Date('2026-08-12T00:00:00Z'),
+      );
       // days: 33 < 90, minors: 0 < 2 → both not met → not met
       expect(r.met).toBe(false);
       expect(r.minors.met).toBe(false);
@@ -115,18 +134,33 @@ describe('alias-retirement policy', () => {
     });
     it('not met when days not yet reached even if minors met', () => {
       // fake: introduced at 4.2.15 but very recent date
-      const r = isTemporalThresholdMet('4.2.15', '2026-07-20', '4.15.10', new Date('2026-08-12T00:00:00Z'));
+      const r = isTemporalThresholdMet(
+        '4.2.15',
+        '2026-07-20',
+        '4.15.10',
+        new Date('2026-08-12T00:00:00Z'),
+      );
       expect(r.minors.met).toBe(true);
       expect(r.days.met).toBe(false);
       expect(r.met).toBe(false);
     });
     it('provides nextEligibleDate and nextEligibleVersion when not met', () => {
-      const r = isTemporalThresholdMet('4.15.3', '2026-07-10', '4.15.10', new Date('2026-08-12T00:00:00Z'));
+      const r = isTemporalThresholdMet(
+        '4.15.3',
+        '2026-07-10',
+        '4.15.10',
+        new Date('2026-08-12T00:00:00Z'),
+      );
       expect(r.nextEligibleDate).toBe('2026-10-08');
       expect(r.nextEligibleVersion).toBe('4.17.0');
     });
     it('learning: nextEligibleVersion null when minors already met', () => {
-      const r = isTemporalThresholdMet('4.2.15', '2026-07-10', '4.15.10', new Date('2026-08-12T00:00:00Z'));
+      const r = isTemporalThresholdMet(
+        '4.2.15',
+        '2026-07-10',
+        '4.15.10',
+        new Date('2026-08-12T00:00:00Z'),
+      );
       expect(r.minors.met).toBe(true);
       expect(r.nextEligibleVersion).toBeNull();
       expect(r.days.met).toBe(false);
@@ -157,7 +191,10 @@ describe('alias-retirement policy', () => {
 
   describe('isConsecutiveCanonicalShareMet', () => {
     it('requires 2 releases by default', () => {
-      expect(isConsecutiveCanonicalShareMet([{ aliasCount: 2, canonicalCount: 98 }]).met).toBe(false);
+      expect(
+        isConsecutiveCanonicalShareMet([{ aliasCount: 2, canonicalCount: 98 }])
+          .met,
+      ).toBe(false);
     });
     it('met when last 2 both >=95%', () => {
       const r = isConsecutiveCanonicalShareMet([
@@ -183,7 +220,10 @@ describe('alias-retirement policy', () => {
     });
     it('no data -> not met', () => {
       expect(isConsecutiveCanonicalShareMet([]).met).toBe(false);
-      expect(isConsecutiveCanonicalShareMet([{ aliasCount: 0, canonicalCount: 0 }]).met).toBe(false);
+      expect(
+        isConsecutiveCanonicalShareMet([{ aliasCount: 0, canonicalCount: 0 }])
+          .met,
+      ).toBe(false);
     });
   });
 });

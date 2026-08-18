@@ -81,7 +81,10 @@ export function isMinorThresholdMet(
   };
 }
 
-export function daysBetween(introducedDateIso: string, now: Date): number | null {
+export function daysBetween(
+  introducedDateIso: string,
+  now: Date,
+): number | null {
   const introduced = new Date(introducedDateIso);
   if (Number.isNaN(introduced.getTime())) return null;
   const ms = now.getTime() - introduced.getTime();
@@ -132,7 +135,9 @@ export function isTemporalThresholdMet(
   let nextEligibleDate: string | null = null;
   if (!days.met && days.elapsed !== null) {
     const introduced = new Date(introducedDateIso);
-    const target = new Date(introduced.getTime() + RETIREMENT_POLICY.minDays * 24 * 60 * 60 * 1000);
+    const target = new Date(
+      introduced.getTime() + RETIREMENT_POLICY.minDays * 24 * 60 * 60 * 1000,
+    );
     nextEligibleDate = target.toISOString().slice(0, 10);
   }
 
@@ -148,7 +153,10 @@ export function isTemporalThresholdMet(
   return { met, minors, days, nextEligibleDate, nextEligibleVersion };
 }
 
-export function canonicalShare(aliasCount: number, canonicalCount: number): number | null {
+export function canonicalShare(
+  aliasCount: number,
+  canonicalCount: number,
+): number | null {
   const total = aliasCount + canonicalCount;
   if (total <= 0) return null;
   if (aliasCount < 0 || canonicalCount < 0) return null;
@@ -162,7 +170,11 @@ export function isCanonicalShareMet(
 ): { met: boolean; share: number | null; reason: string } {
   const share = canonicalShare(aliasCount, canonicalCount);
   if (share === null) {
-    return { met: false, share: null, reason: `no usage data (alias=${aliasCount}, canonical=${canonicalCount})` };
+    return {
+      met: false,
+      share: null,
+      reason: `no usage data (alias=${aliasCount}, canonical=${canonicalCount})`,
+    };
   }
   return {
     met: share >= threshold,
@@ -193,7 +205,11 @@ export function isConsecutiveCanonicalShareMet(
     return {
       met: false,
       evaluated: history.map((h) => {
-        const r = isCanonicalShareMet(h.aliasCount, h.canonicalCount, threshold);
+        const r = isCanonicalShareMet(
+          h.aliasCount,
+          h.canonicalCount,
+          threshold,
+        );
         return { share: r.share, met: r.met };
       }),
       reason: `insufficient releases: have ${history.length}, need ${requiredConsecutive}`,
@@ -211,7 +227,9 @@ export function isConsecutiveCanonicalShareMet(
     reason: met
       ? `last ${requiredConsecutive} releases all >= ${(threshold * 100).toFixed(0)}% canonical`
       : `last ${requiredConsecutive} releases not all >= ${(threshold * 100).toFixed(0)}%: ${evaluated
-          .map((e) => (e.share === null ? 'no-data' : `${(e.share * 100).toFixed(1)}%`))
+          .map((e) =>
+            e.share === null ? 'no-data' : `${(e.share * 100).toFixed(1)}%`,
+          )
           .join(', ')}`,
   };
 }

@@ -32,7 +32,7 @@ import {
   detectStalePrd,
   formatStalePrdWarning,
   reconcileStalePrdForStartup,
-} from "./stale-prd.js";
+} from './stale-prd.js';
 import {
   findProgressPath,
   getProgressContext,
@@ -466,9 +466,13 @@ export function getRalphContext(directory: string, sessionId?: string): string {
   // Add stale-unfinished-PRD warning (#3669): the live loop excludes the
   // active-ralph-state signal (it is the normal case here) and only reports
   // divergence backed by age / stale-pointer signals.
-  const staleDetection = detectStalePrd(directory, sessionId, { includeAbnormalExit: false });
+  const staleDetection = detectStalePrd(directory, sessionId, {
+    includeAbnormalExit: false,
+  });
   if (staleDetection?.stale) {
-    parts.push(`<stale-prd-warning>\n${formatStalePrdWarning(staleDetection)}\n</stale-prd-warning>\n`);
+    parts.push(
+      `<stale-prd-warning>\n${formatStalePrdWarning(staleDetection)}\n</stale-prd-warning>\n`,
+    );
   }
 
   // Add progress context (patterns, learnings)

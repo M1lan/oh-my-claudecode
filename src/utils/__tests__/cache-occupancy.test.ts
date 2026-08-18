@@ -2,12 +2,19 @@ import { describe, expect, it, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, readdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { publishCacheOccupancy, readOccupiedPluginRoots } from '../cache-occupancy.js';
+import {
+  publishCacheOccupancy,
+  readOccupiedPluginRoots,
+} from '../cache-occupancy.js';
 
 describe('cache occupancy registry', () => {
   let dir: string;
-  beforeEach(() => { dir = mkdtempSync(join(tmpdir(), 'omc-occupancy-')); });
-  afterEach(() => { rmSync(dir, { recursive: true, force: true }); });
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'omc-occupancy-'));
+  });
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true });
+  });
 
   it('publishes an atomic, privacy-bounded record and reads the occupied root', async () => {
     const root = join(dir, 'plugins', '1.0.0');

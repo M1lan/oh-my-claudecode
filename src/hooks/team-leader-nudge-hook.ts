@@ -199,7 +199,8 @@ export async function checkLeaderStaleness(params: {
 
     if (status.state === 'idle' || status.state === 'done') {
       // Queued/unanswered directed work means the worker is not truly idle.
-      const outstanding = outstandingByWorker[worker.name]?.undeliveredInbound ?? 0;
+      const outstanding =
+        outstandingByWorker[worker.name]?.undeliveredInbound ?? 0;
       if (outstanding === 0) {
         idleWorkerCount++;
       }

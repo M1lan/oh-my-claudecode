@@ -145,9 +145,10 @@ describe('MCP Tools Contract - Schema Validity', () => {
     // raw shape. A ZodObject here silently serializes the object's instance
     // properties instead of the tool parameters.
     for (const tool of allTools) {
-      expect(tool.schema instanceof z.ZodObject, `${tool.name} must expose a raw shape`).toBe(
-        false,
-      );
+      expect(
+        tool.schema instanceof z.ZodObject,
+        `${tool.name} must expose a raw shape`,
+      ).toBe(false);
       for (const [key, value] of Object.entries(tool.schema)) {
         expect(
           value instanceof z.ZodType,

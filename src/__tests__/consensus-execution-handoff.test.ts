@@ -313,10 +313,16 @@ describe('Issue #3617: consensus reviews are sequential and independent', () => 
       expect(skill).toBeDefined();
 
       const workflowStart = skill!.template.indexOf('The consensus workflow:');
-      const workflowEnd = skill!.template.indexOf('\n## Pre-Execution Gate', workflowStart);
-      const workflow = skillName === 'omc-plan'
-        ? extractSection(skill!.template, 'Consensus Mode')
-        : workflowStart === -1 || workflowEnd === -1 ? undefined : skill!.template.slice(workflowStart, workflowEnd);
+      const workflowEnd = skill!.template.indexOf(
+        '\n## Pre-Execution Gate',
+        workflowStart,
+      );
+      const workflow =
+        skillName === 'omc-plan'
+          ? extractSection(skill!.template, 'Consensus Mode')
+          : workflowStart === -1 || workflowEnd === -1
+            ? undefined
+            : skill!.template.slice(workflowStart, workflowEnd);
       expect(workflow).toBeDefined();
       const consensusWorkflow = workflow!;
 
@@ -324,11 +330,17 @@ describe('Issue #3617: consensus reviews are sequential and independent', () => 
         expect(consensusWorkflow).toContain(literal);
       }
 
-      const architectIdx = consensusWorkflow.indexOf('3. **Architect** reviews');
+      const architectIdx = consensusWorkflow.indexOf(
+        '3. **Architect** reviews',
+      );
       const criticIdx = consensusWorkflow.indexOf('4. **Critic** evaluates');
       const reReviewIdx = consensusWorkflow.indexOf('5. **Re-review loop**');
-      const awaitIdx = consensusWorkflow.indexOf('the Critic Task MUST NOT be issued until the Architect Task has completed and its result has been awaited');
-      const joinIdx = consensusWorkflow.indexOf('combined only by Planner during revision or improvement synthesis');
+      const awaitIdx = consensusWorkflow.indexOf(
+        'the Critic Task MUST NOT be issued until the Architect Task has completed and its result has been awaited',
+      );
+      const joinIdx = consensusWorkflow.indexOf(
+        'combined only by Planner during revision or improvement synthesis',
+      );
 
       expect(architectIdx).toBeGreaterThan(-1);
       expect(criticIdx).toBeGreaterThan(architectIdx);
@@ -339,19 +351,37 @@ describe('Issue #3617: consensus reviews are sequential and independent', () => 
 
       const architectStep = consensusWorkflow.slice(architectIdx, criticIdx);
       const criticStep = consensusWorkflow.slice(criticIdx, reReviewIdx);
-      expect(architectStep).toContain('same fixed plan snapshot produced by Planner in step 1');
-      expect(architectStep).toContain('Architect output MUST NOT be passed to Critic');
+      expect(architectStep).toContain(
+        'same fixed plan snapshot produced by Planner in step 1',
+      );
+      expect(architectStep).toContain(
+        'Architect output MUST NOT be passed to Critic',
+      );
       expect(criticStep).toContain('same fixed plan snapshot');
-      expect(criticStep).toContain('Critic MUST NOT consume or receive the Architect review');
+      expect(criticStep).toContain(
+        'Critic MUST NOT consume or receive the Architect review',
+      );
 
-      expect(consensusWorkflow).not.toMatch(/Architect output (?:is|will be|shall be) (?:passed|forwarded|handed|provided) (?:to|into)/i);
-      expect(consensusWorkflow).not.toMatch(/Critic (?:receives|consumes|uses|relies on) (?:the )?Architect (?:output|review)/i);
-      expect(consensusWorkflow).not.toMatch(/Critic (?:is|will be|shall be) (?:provided|handed|forwarded) (?:the )?Architect (?:output|review)/i);
-      expect(consensusWorkflow).not.toMatch(/(?:run|dispatch) Architect and Critic in parallel/i);
-      expect(consensusWorkflow).not.toMatch(/Architect and Critic (?:may|can|should) (?:run|be dispatched) in parallel/i);
+      expect(consensusWorkflow).not.toMatch(
+        /Architect output (?:is|will be|shall be) (?:passed|forwarded|handed|provided) (?:to|into)/i,
+      );
+      expect(consensusWorkflow).not.toMatch(
+        /Critic (?:receives|consumes|uses|relies on) (?:the )?Architect (?:output|review)/i,
+      );
+      expect(consensusWorkflow).not.toMatch(
+        /Critic (?:is|will be|shall be) (?:provided|handed|forwarded) (?:the )?Architect (?:output|review)/i,
+      );
+      expect(consensusWorkflow).not.toMatch(
+        /(?:run|dispatch) Architect and Critic in parallel/i,
+      );
+      expect(consensusWorkflow).not.toMatch(
+        /Architect and Critic (?:may|can|should) (?:run|be dispatched) in parallel/i,
+      );
 
       if (skillName === 'omc-plan') {
-        expect(consensusWorkflow).toContain('Do NOT run steps 3 and 4 in parallel.');
+        expect(consensusWorkflow).toContain(
+          'Do NOT run steps 3 and 4 in parallel.',
+        );
       } else {
         expect(consensusWorkflow).toContain('MUST run sequentially');
         expect(consensusWorkflow).toContain('same parallel batch');

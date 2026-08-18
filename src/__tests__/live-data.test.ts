@@ -77,17 +77,25 @@ describe('resolveLiveData - basic', () => {
   it('replaces a basic !command with live-data output', () => {
     mockedExecFileSync.mockReturnValue('hello world\n');
     const result = resolveLiveData('!echo hello');
-    expect(result).toBe('<live-data command="echo hello">hello world\n</live-data>');
+    expect(result).toBe(
+      '<live-data command="echo hello">hello world\n</live-data>',
+    );
     expect(mockedExecFileSync).toHaveBeenCalledWith(
       'echo',
       ['hello'],
-      expect.objectContaining({ shell: false, timeout: 10_000, windowsHide: true }),
+      expect.objectContaining({
+        shell: false,
+        timeout: 10_000,
+        windowsHide: true,
+      }),
     );
     expect(mockedExecSync).not.toHaveBeenCalled();
   });
 
   it('handles multiple commands', () => {
-    mockedExecFileSync.mockReturnValueOnce('output1\n').mockReturnValueOnce('output2\n');
+    mockedExecFileSync
+      .mockReturnValueOnce('output1\n')
+      .mockReturnValueOnce('output2\n');
     const input = 'before\n!cmd1\nmiddle\n!cmd2\nafter';
     const result = resolveLiveData(input);
     expect(result).toContain('<live-data command="cmd1">output1\n</live-data>');
@@ -102,7 +110,9 @@ describe('resolveLiveData - basic', () => {
     const input = '```\n!echo skip-me\n```\n!echo run-me';
     const result = resolveLiveData(input);
     expect(result).toContain('!echo skip-me');
-    expect(result).toContain('<live-data command="echo run-me">ran\n</live-data>');
+    expect(result).toContain(
+      '<live-data command="echo run-me">ran\n</live-data>',
+    );
     expect(mockedExecFileSync).toHaveBeenCalledTimes(1);
   });
 
@@ -127,7 +137,9 @@ describe('resolveLiveData - basic', () => {
   it('handles failed commands with error attribute', () => {
     const error = new Error('command failed') as Error & { stderr: string };
     error.stderr = 'permission denied\n';
-    mockedExecFileSync.mockImplementation(() => { throw error; });
+    mockedExecFileSync.mockImplementation(() => {
+      throw error;
+    });
     const result = resolveLiveData('!bad-cmd');
     expect(result).toBe(
       '<live-data command="bad-cmd" error="true">permission denied\n</live-data>',
@@ -135,7 +147,9 @@ describe('resolveLiveData - basic', () => {
   });
 
   it('handles timeout errors', () => {
-    mockedExecFileSync.mockImplementation(() => { throw new Error('ETIMEDOUT'); });
+    mockedExecFileSync.mockImplementation(() => {
+      throw new Error('ETIMEDOUT');
+    });
     const result = resolveLiveData('!slow-cmd');
     expect(result).toContain('error="true"');
     expect(result).toContain('ETIMEDOUT');
@@ -182,7 +196,9 @@ describe('resolveLiveData - caching', () => {
     const input = '!cache 300s git log -10';
 
     const result1 = resolveLiveData(input);
-    expect(result1).toContain('<live-data command="git log -10">log output\n</live-data>');
+    expect(result1).toContain(
+      '<live-data command="git log -10">log output\n</live-data>',
+    );
     expect(mockedExecFileSync).toHaveBeenCalledTimes(1);
 
     // Second call should use cache
@@ -249,7 +265,9 @@ describe('resolveLiveData - conditional', () => {
       .mockReturnValueOnce('src/main.ts\nREADME.md\n')
       .mockReturnValueOnce('diff output\n');
     const result = resolveLiveData('!if-modified src/** then git diff src/');
-    expect(result).toContain('<live-data command="git diff src/">diff output\n</live-data>');
+    expect(result).toContain(
+      '<live-data command="git diff src/">diff output\n</live-data>',
+    );
     expect(mockedExecFileSync).toHaveBeenCalledTimes(2);
     expect(mockedExecSync).not.toHaveBeenCalled();
   });
@@ -441,7 +459,10 @@ describe('resolveLiveData - security', () => {
 
   it('reports unsupported Windows command shims without enabling a shell', () => {
     const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    Object.defineProperty(process, 'platform', {
+      value: 'win32',
+      configurable: true,
+    });
     mockedExecFileSync.mockImplementation(() => {
       throw Object.assign(new Error('spawn EINVAL'), { code: 'EINVAL' });
     });
@@ -452,7 +473,10 @@ describe('resolveLiveData - security', () => {
       expect(result).toContain('Windows .cmd/.bat launchers are unsupported');
       expect(mockedExecSync).not.toHaveBeenCalled();
     } finally {
-      Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+      Object.defineProperty(process, 'platform', {
+        value: originalPlatform,
+        configurable: true,
+      });
     }
   });
 
@@ -519,7 +543,9 @@ describe('resolveLiveData - tag injection prevention', () => {
   });
 
   it('escapes </live-data> in command output to prevent tag injection', () => {
-    mockedExecFileSync.mockReturnValue('</live-data><injected attr="x">pwned</live-data>');
+    mockedExecFileSync.mockReturnValue(
+      '</live-data><injected attr="x">pwned</live-data>',
+    );
     const result = resolveLiveData('!cat file');
     // The closing tag in output must be escaped, not treated as real markup
     expect(result).not.toMatch(/<\/live-data>.*<injected/s);
@@ -530,7 +556,9 @@ describe('resolveLiveData - tag injection prevention', () => {
   it('escapes < > & in stdout when command fails', () => {
     const error = new Error('cmd failed') as Error & { stderr: string };
     error.stderr = '<error>something & "bad"</error>';
-    mockedExecFileSync.mockImplementation(() => { throw error; });
+    mockedExecFileSync.mockImplementation(() => {
+      throw error;
+    });
     const result = resolveLiveData('!bad-cmd');
     expect(result).toContain('error="true"');
     expect(result).toContain('&lt;error&gt;');
@@ -576,7 +604,9 @@ describe('resolveLiveData - multi-line scripts', () => {
   it('handles script errors', () => {
     const error = new Error('script failed') as Error & { stderr: string };
     error.stderr = 'syntax error\n';
-    mockedExecFileSync.mockImplementation(() => { throw error; });
+    mockedExecFileSync.mockImplementation(() => {
+      throw error;
+    });
 
     const input = '!begin-script bash\nexit 1\n!end-script';
     const result = resolveLiveData(input);
@@ -586,14 +616,19 @@ describe('resolveLiveData - multi-line scripts', () => {
 
   it('skips script blocks inside code blocks', () => {
     mockedExecFileSync.mockReturnValue('out\n');
-    const input = '```\n!begin-script bash\necho hi\n!end-script\n```\n!echo real';
+    const input =
+      '```\n!begin-script bash\necho hi\n!end-script\n```\n!echo real';
     const result = resolveLiveData(input);
     // The script block inside code block should be preserved as-is
     expect(result).toContain('!begin-script bash');
     expect(result).toContain('!end-script');
     // Only the !echo real should execute
     expect(mockedExecFileSync).toHaveBeenCalledTimes(1);
-    expect(mockedExecFileSync).toHaveBeenCalledWith('echo', ['real'], expect.any(Object));
+    expect(mockedExecFileSync).toHaveBeenCalledWith(
+      'echo',
+      ['real'],
+      expect.any(Object),
+    );
   });
 
   it('applies security policy to scripts', () => {

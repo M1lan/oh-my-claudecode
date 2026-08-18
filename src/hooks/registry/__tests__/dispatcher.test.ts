@@ -5,7 +5,9 @@ import {
   type HookHandler,
 } from '../index.js';
 
-function entry(partial: Partial<HookRegistryEntry> & { id: string }): HookRegistryEntry {
+function entry(
+  partial: Partial<HookRegistryEntry> & { id: string },
+): HookRegistryEntry {
   return {
     event: 'Stop',
     matcher: '*',
@@ -20,7 +22,9 @@ function entry(partial: Partial<HookRegistryEntry> & { id: string }): HookRegist
   };
 }
 
-const okHandler = (out: Record<string, unknown> = { continue: true }): { handler: HookHandler; dryRun: boolean } => ({
+const okHandler = (
+  out: Record<string, unknown> = { continue: true },
+): { handler: HookHandler; dryRun: boolean } => ({
   handler: () => out,
   dryRun: true,
 });
@@ -38,7 +42,8 @@ describe('hook dispatcher — event parsing and ordering (#3707)', () => {
     const handlers = new Map(
       ['a', 'b', 'c'].map((n) => [
         `Stop:*:${n}`,
-        { handler: () => {
+        {
+          handler: () => {
             calls.push(n);
             return { continue: true };
           },
@@ -55,11 +60,16 @@ describe('hook dispatcher — event parsing and ordering (#3707)', () => {
       'Stop:*:c',
     ]);
     // Non-matching matchers are excluded from dispatch entirely.
-    expect(result.records.some((r) => r.hookId === 'Stop:init:scoped')).toBe(false);
+    expect(result.records.some((r) => r.hookId === 'Stop:init:scoped')).toBe(
+      false,
+    );
   });
 
   it('parses the event once per dispatch and emits structured timing records', async () => {
-    const registry = [entry({ id: 'Stop:*:a' }), entry({ id: 'Stop:*:b', order: 1 })];
+    const registry = [
+      entry({ id: 'Stop:*:a' }),
+      entry({ id: 'Stop:*:b', order: 1 }),
+    ];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
         ['Stop:*:a', okHandler()],
@@ -84,12 +94,15 @@ describe('hook dispatcher — timeout and fail-mode semantics (#3707)', () => {
     ];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
-        ['Stop:*:throws', {
-          handler: () => {
-            throw new Error('boom');
+        [
+          'Stop:*:throws',
+          {
+            handler: () => {
+              throw new Error('boom');
+            },
+            dryRun: true,
           },
-          dryRun: true,
-        }],
+        ],
         ['Stop:*:after', okHandler()],
       ]),
     });
@@ -110,20 +123,30 @@ describe('hook dispatcher — timeout and fail-mode semantics (#3707)', () => {
         riskClass: 'security-boundary',
         failMode: 'fail-closed',
       }),
-      entry({ id: 'PermissionRequest:Bash:after', event: 'PermissionRequest', matcher: 'Bash', order: 1 }),
+      entry({
+        id: 'PermissionRequest:Bash:after',
+        event: 'PermissionRequest',
+        matcher: 'Bash',
+        order: 1,
+      }),
     ];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
-        ['PermissionRequest:Bash:guard', {
-          handler: () => {
-            throw new Error('guard exploded');
+        [
+          'PermissionRequest:Bash:guard',
+          {
+            handler: () => {
+              throw new Error('guard exploded');
+            },
+            dryRun: true,
           },
-          dryRun: true,
-        }],
+        ],
         ['PermissionRequest:Bash:after', okHandler()],
       ]),
     });
-    const result = await dispatcher.dispatch('PermissionRequest', { tool_name: 'Bash' });
+    const result = await dispatcher.dispatch('PermissionRequest', {
+      tool_name: 'Bash',
+    });
     expect(result.records).toHaveLength(1); // later hook never ran
     expect(result.records[0].appliedDecision).toBe('fail-closed');
   });
@@ -132,10 +155,16 @@ describe('hook dispatcher — timeout and fail-mode semantics (#3707)', () => {
     const registry = [entry({ id: 'Stop:*:slow', timeoutMs: 25 })];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
-        ['Stop:*:slow', {
-          handler: () => new Promise((resolve) => setTimeout(() => resolve({ continue: true }), 5000)),
-          dryRun: true,
-        }],
+        [
+          'Stop:*:slow',
+          {
+            handler: () =>
+              new Promise((resolve) =>
+                setTimeout(() => resolve({ continue: true }), 5000),
+              ),
+            dryRun: true,
+          },
+        ],
       ]),
     });
     const started = performance.now();
@@ -152,10 +181,13 @@ describe('hook dispatcher — shadow mode cannot change behavior (#3707)', () =>
     const registry = [entry({ id: 'Stop:*:blocker' })];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
-        ['Stop:*:blocker', {
-          handler: () => ({ continue: false, message: 'would block' }),
-          dryRun: true,
-        }],
+        [
+          'Stop:*:blocker',
+          {
+            handler: () => ({ continue: false, message: 'would block' }),
+            dryRun: true,
+          },
+        ],
       ]),
     });
     const result = await dispatcher.dispatch('Stop', {});
@@ -170,13 +202,16 @@ describe('hook dispatcher — shadow mode cannot change behavior (#3707)', () =>
     const registry = [entry({ id: 'Stop:*:sideeffect' })];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
-        ['Stop:*:sideeffect', {
-          handler: () => {
-            ran = true;
-            return { continue: true };
+        [
+          'Stop:*:sideeffect',
+          {
+            handler: () => {
+              ran = true;
+              return { continue: true };
+            },
+            dryRun: false,
           },
-          dryRun: false,
-        }],
+        ],
       ]),
     });
     const result = await dispatcher.dispatch('Stop', {});
@@ -202,7 +237,10 @@ describe('hook dispatcher — shadow mode cannot change behavior (#3707)', () =>
   });
 
   it('meets the advisory latency budget (p95 <= 200 ms, plan §6.3)', async () => {
-    const registry = [entry({ id: 'Stop:*:a' }), entry({ id: 'Stop:*:b', order: 1 })];
+    const registry = [
+      entry({ id: 'Stop:*:a' }),
+      entry({ id: 'Stop:*:b', order: 1 }),
+    ];
     const dispatcher = createHookDispatcher(registry, {
       handlers: new Map([
         ['Stop:*:a', okHandler()],
