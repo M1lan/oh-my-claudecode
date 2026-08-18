@@ -1123,8 +1123,8 @@ function executeClaudeMdTransaction(request) {
 
 // src/cli/claude-md-coordinator.ts
 var CLAUDE_MD_COORDINATOR_SCHEMA_VERSION = 1;
-var COMPILED_ENGINE_VERSION = true ? "4.15.8" : "";
-var COMPILED_SOURCE_SHA256 = true ? "3e0ff2892bc5baa093751790e8b3406ac6778d9fef472bfb3aed84c1aff59f4d" : "";
+var COMPILED_ENGINE_VERSION = true ? "4.15.10" : "";
+var COMPILED_SOURCE_SHA256 = true ? "458356dd528c2fe2e6fc7afb81bf595b4d1344f7d8bd076ac30de4eb09e35b7e" : "";
 function runClaudeMdCoordinatorHandshake() {
   if (!COMPILED_ENGINE_VERSION || !COMPILED_SOURCE_SHA256) {
     return {
